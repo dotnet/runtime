@@ -193,7 +193,7 @@ test_utf8_seq ()
 	GError *error = NULL;
 	gunichar2 *dst;
 
-	printf ("got: %s\n", src);
+	//printf ("got: %s\n", src);
 	dst = g_utf8_to_utf16 (src, (glong)strlen (src), &in_read, &out_read, &error);
 	if (error != NULL){
 		return error->message;
@@ -240,74 +240,110 @@ test_utf8_to_utf16 ()
 	return OK;
 }
 
+typedef struct {
+	char *content;
+	size_t length;
+} convert_result_t;
+
 RESULT
 test_convert ()
 {
 	static const char *charsets[] = { "UTF-8", "UTF-16LE", "UTF-16BE", "UTF-32LE", "UTF-32BE" };
-	gsize content_length, converted_length, expected_length, k;
-	char *content, *converted, *expected, *path;
+	gsize length, converted_length, n;
+	char *content, *converted, *path;
+	convert_result_t **expected;
 	GError *err = NULL;
 	const char *srcdir;
 	gboolean loaded;
-	guint i, j;
+	guint i, j, k;
+	char c;
 	
 	if (!(srcdir = getenv ("srcdir")) && !(srcdir = getenv ("PWD")))
 		return FAILED ("srcdir not defined!");
 	
+	expected = g_malloc (sizeof (convert_result_t *) * G_N_ELEMENTS (charsets));
+	
+	/* first load all our test samples... */
 	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
 		path = g_strdup_printf ("%s%c%s.txt", srcdir, G_DIR_SEPARATOR, charsets[i]);
-		loaded = g_file_get_contents (path, &content, &content_length, &err);
+		loaded = g_file_get_contents (path, &content, &length, &err);
 		g_free (path);
 		
 		if (!loaded) {
-			fprintf (stderr, "test_convert(): error loading test file for %s: %s\n", charsets[i], err->message);
-			g_error_free (err);
-			err = NULL;
-			continue;
-		}
-		
-		for (j = 0; j < G_N_ELEMENTS (charsets); j++) {
-			path = g_strdup_printf ("%s%c%s.txt", srcdir, G_DIR_SEPARATOR, charsets[j]);
-			loaded = g_file_get_contents (path, &expected, &expected_length, NULL);
-			g_free (path);
-			
-			if (!loaded) {
-				fprintf (stderr, "test_convert(): error loading test file for %s\n", charsets[i]);
-				continue;
+			for (j = 0; j < i; j++) {
+				g_free (expected[j]->content);
+				g_free (expected[j]);
 			}
 			
-			converted = g_convert (content, content_length, charsets[j], charsets[i], NULL, &converted_length, NULL);
+			g_free (expected);
+			
+			return FAILED ("Failed to load content for %s: %s", charsets[i], err->message);
+		}
+		
+		expected[i] = g_malloc (sizeof (convert_result_t));
+		expected[i]->content = content;
+		expected[i]->length = length;
+	}
+	
+	/* test conversion from every charset to every other charset */
+	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
+		for (j = 0; j < G_N_ELEMENTS (charsets); j++) {
+			converted = g_convert (expected[i]->content, expected[i]->length, charsets[j],
+					       charsets[i], NULL, &converted_length, NULL);
 			
 			if (converted == NULL) {
+				for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
+					g_free (expected[k]->content);
+					g_free (expected[k]);
+				}
+				
 				g_free (expected);
-				g_free (content);
+				
 				return FAILED ("Failed to convert from %s to %s: NULL", charsets[i], charsets[j]);
 			}
 			
-			if (converted_length != expected_length) {
+			if (converted_length != expected[j]->length) {
+				length = expected[j]->length;
+				
+				for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
+					g_free (expected[k]->content);
+					g_free (expected[k]);
+				}
+				
 				g_free (converted);
 				g_free (expected);
-				g_free (content);
+				
 				return FAILED ("Failed to convert from %s to %s: expected %u bytes, got %u",
-					       charsets[i], charsets[j], expected_length, converted_length);
+					       charsets[i], charsets[j], length, converted_length);
 			}
 			
-			for (k = 0; k < converted_length; k++) {
-				if (converted[k] != expected[k]) {
+			for (n = 0; n < converted_length; n++) {
+				if (converted[n] != expected[j]->content[n]) {
+					c = expected[j]->content[n];
+					
+					for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
+						g_free (expected[k]->content);
+						g_free (expected[k]);
+					}
+					
 					g_free (converted);
 					g_free (expected);
-					g_free (content);
+					
 					return FAILED ("Failed to convert from %s to %s: expected 0x%x at offset %u, got 0x%x",
-						       charsets[i], charsets[j], expected[k], k, converted[k]);
+						       charsets[i], charsets[j], c, n, converted[n]);
 				}
 			}
 			
 			g_free (converted);
-			g_free (expected);
 		}
-		
-		g_free (content);
 	}
+	
+	for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
+		g_free (expected[k]->content);
+		g_free (expected[k]);
+	}
+	
+	g_free (expected);
 	
 	return OK;
 }

@@ -34,11 +34,6 @@
 #endif
 #include <errno.h>
 
-typedef enum {
-	LittleEndian,
-	BigEndian
-} Endian;
-
 typedef int (* Decoder) (char **inbytes, size_t *inbytesleft, gunichar *outchar);
 typedef int (* Encoder) (gunichar c, char **outbytes, size_t *outbytesleft);
 
@@ -63,17 +58,23 @@ static int encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft);
 static int decode_utf16le (char **inbytes, size_t *inbytesleft, gunichar *outchar);
 static int encode_utf16le (gunichar c, char **outbytes, size_t *outbytesleft);
 
-static int decode_utf32 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf32 (gunichar c, char **outbytes, size_t *outbytesleft);
-
-static int decode_utf16 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf16 (gunichar c, char **outbytes, size_t *outbytesleft);
-
 static int decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
 static int encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft);
 
 static int decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
 static int encode_latin1 (gunichar c, char **outbytes, size_t *outbytesleft);
+
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define decode_utf32 decode_utf32le
+#define encode_utf32 encode_utf32le
+#define decode_utf16 decode_utf16le
+#define encode_utf16 encode_utf16le
+#else
+#define decode_utf32 decode_utf32be
+#define encode_utf32 encode_utf32be
+#define decode_utf16 decode_utf16be
+#define encode_utf16 encode_utf16be
+#endif
 
 static struct {
 	const char *name;
@@ -123,7 +124,7 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 			encoder = charsets[i].encoder;
 	}
 	
-	if (encoder == NULL || decoder == NULL) {
+	if (!encoder || !decoder) {
 #ifdef HAVE_ICONV
 		if ((icd = iconv_open (to_charset, from_charset)) == (iconv_t) -1)
 			return (GIConv) -1;
@@ -215,9 +216,12 @@ g_iconv (GIConv cd, char **inbytes, size_t *inbytesleft,
 	return rc;
 }
 
+/*
+ * Unicode encoders and decoders
+ */
 
 static int
-decode_utf32_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf32be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
 	gunichar *inptr = (gunichar *) *inbytes;
 	size_t inleft = *inbytesleft;
@@ -228,11 +232,7 @@ decode_utf32_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunic
 		return -1;
 	}
 	
-	if (endian == BigEndian)
-		c = GUINT32_FROM_BE (*inptr);
-	else
-		c = GUINT32_FROM_LE (*inptr);
-	
+	c = GUINT32_FROM_BE (*inptr);
 	inleft -= 4;
 	inptr++;
 	
@@ -249,29 +249,35 @@ decode_utf32_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunic
 }
 
 static int
-decode_utf32be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
-{
-	return decode_utf32_be_or_le (BigEndian, inbytes, inbytesleft, outchar);
-}
-
-static int
 decode_utf32le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
-	return decode_utf32_be_or_le (LittleEndian, inbytes, inbytesleft, outchar);
+	gunichar *inptr = (gunichar *) *inbytes;
+	size_t inleft = *inbytesleft;
+	gunichar c;
+	
+	if (inleft < 4) {
+		errno = EINVAL;
+		return -1;
+	}
+	
+	c = GUINT32_FROM_LE (*inptr);
+	inleft -= 4;
+	inptr++;
+	
+	if (c >= 2147483648UL) {
+		errno = EILSEQ;
+		return -1;
+	}
+	
+	*inbytes = (char *) inptr;
+	*inbytesleft = inleft;
+	*outchar = c;
+	
+	return 0;
 }
 
 static int
-decode_utf32 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
-{
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	return decode_utf32_be_or_le (LittleEndian, inbytes, inbytesleft, outchar);
-#else
-	return decode_utf32_be_or_le (BigEndian, inbytes, inbytesleft, outchar);
-#endif
-}
-
-static int
-encode_utf32_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf32be (gunichar c, char **outbytes, size_t *outbytesleft)
 {
 	gunichar *outptr = (gunichar *) *outbytes;
 	size_t outleft = *outbytesleft;
@@ -281,11 +287,7 @@ encode_utf32_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outby
 		return -1;
 	}
 	
-	if (endian == BigEndian)
-		*outptr++ = GUINT32_TO_BE (c);
-	else
-		*outptr++ = GUINT32_TO_LE (c);
-	
+	*outptr++ = GUINT32_TO_BE (c);
 	outleft -= 4;
 	
 	*outbytes = (char *) outptr;
@@ -295,29 +297,27 @@ encode_utf32_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outby
 }
 
 static int
-encode_utf32be (gunichar c, char **outbytes, size_t *outbytesleft)
-{
-	return encode_utf32_be_or_le (BigEndian, c, outbytes, outbytesleft);
-}
-
-static int
 encode_utf32le (gunichar c, char **outbytes, size_t *outbytesleft)
 {
-	return encode_utf32_be_or_le (LittleEndian, c, outbytes, outbytesleft);
+	gunichar *outptr = (gunichar *) *outbytes;
+	size_t outleft = *outbytesleft;
+	
+	if (outleft < 4) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	*outptr++ = GUINT32_TO_LE (c);
+	outleft -= 4;
+	
+	*outbytes = (char *) outptr;
+	*outbytesleft = outleft;
+	
+	return 0;
 }
 
 static int
-encode_utf32 (gunichar c, char **outbytes, size_t *outbytesleft)
-{
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	return encode_utf32_be_or_le (LittleEndian, c, outbytes, outbytesleft);
-#else
-	return encode_utf32_be_or_le (BigEndian, c, outbytes, outbytesleft);
-#endif
-}
-
-static int
-decode_utf16_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf16be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
 	gunichar2 *inptr = (gunichar2 *) *inbytes;
 	size_t inleft = *inbytesleft;
@@ -329,28 +329,20 @@ decode_utf16_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunic
 		return -1;
 	}
 	
-	if (endian == BigEndian)
-		u = GUINT16_FROM_BE (*inptr);
-	else
-		u = GUINT16_FROM_LE (*inptr);
-	
+	u = GUINT16_FROM_BE (*inptr);
 	inleft -= 2;
 	inptr++;
 	
-	if (u >= 0xdc00 && u <= 0xdfff) {
-		errno = EILSEQ;
-		return -1;
-	} else if (u >= 0xd800 && u <= 0xdbff) {
+	if (u < 0xd800) {
+		/* 0x0000 -> 0xd7ff */
+	} else if (u < 0xdc00) {
+		/* 0xd800 -> 0xdbff */
 		if (inleft < 2) {
 			errno = EINVAL;
 			return -1;
 		}
 		
-		if (endian == BigEndian)
-			c = GUINT16_FROM_BE (*inptr);
-		else
-			c = GUINT16_FROM_LE (*inptr);
-		
+		c = GUINT16_FROM_BE (*inptr);
 		inleft -= 2;
 		inptr++;
 		
@@ -360,6 +352,12 @@ decode_utf16_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunic
 		}
 		
 		u = ((u - 0xd800) << 10) + (c - 0xdc00) + 0x0010000UL;
+	} else if (u < 0xe000) {
+		/* 0xdc00 -> 0xdfff */
+		errno = EILSEQ;
+		return -1;
+	} else {
+		/* 0xe000 -> 0xffff */
 	}
 	
 	*inbytes = (char *) inptr;
@@ -370,29 +368,58 @@ decode_utf16_be_or_le (Endian endian, char **inbytes, size_t *inbytesleft, gunic
 }
 
 static int
-decode_utf16be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
-{
-	return decode_utf16_be_or_le (BigEndian, inbytes, inbytesleft, outchar);
-}
-
-static int
 decode_utf16le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
-	return decode_utf16_be_or_le (LittleEndian, inbytes, inbytesleft, outchar);
+	gunichar2 *inptr = (gunichar2 *) *inbytes;
+	size_t inleft = *inbytesleft;
+	gunichar2 c;
+	gunichar u;
+	
+	if (inleft < 2) {
+		errno = EINVAL;
+		return -1;
+	}
+	
+	u = GUINT16_FROM_LE (*inptr);
+	inleft -= 2;
+	inptr++;
+	
+	if (u < 0xd800) {
+		/* 0x0000 -> 0xd7ff */
+	} else if (u < 0xdc00) {
+		/* 0xd800 -> 0xdbff */
+		if (inleft < 2) {
+			errno = EINVAL;
+			return -1;
+		}
+		
+		c = GUINT16_FROM_LE (*inptr);
+		inleft -= 2;
+		inptr++;
+		
+		if (c < 0xdc00 || c > 0xdfff) {
+			errno = EILSEQ;
+			return -1;
+		}
+		
+		u = ((u - 0xd800) << 10) + (c - 0xdc00) + 0x0010000UL;
+	} else if (u < 0xe000) {
+		/* 0xdc00 -> 0xdfff */
+		errno = EILSEQ;
+		return -1;
+	} else {
+		/* 0xe000 -> 0xffff */
+	}
+	
+	*inbytes = (char *) inptr;
+	*inbytesleft = inleft;
+	*outchar = u;
+	
+	return 0;
 }
 
 static int
-decode_utf16 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
-{
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	return decode_utf16_be_or_le (LittleEndian, inbytes, inbytesleft, outchar);
-#else
-	return decode_utf16_be_or_le (BigEndian, inbytes, inbytesleft, outchar);
-#endif
-}
-
-static int
-encode_utf16_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft)
 {
 	gunichar2 *outptr = (gunichar2 *) *outbytes;
 	size_t outleft = *outbytesleft;
@@ -407,11 +434,7 @@ encode_utf16_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outby
 	if (c <= 0xffff && (c < 0xd800 || c > 0xdfff)) {
 		ch = (gunichar2) c;
 		
-		if (endian == BigEndian)
-			*outptr++ = GUINT16_TO_BE (ch);
-		else
-			*outptr++ = GUINT16_TO_LE (ch);
-		
+		*outptr++ = GUINT16_TO_BE (ch);
 		outleft -= 2;
 	} else if (outleft < 4) {
 		errno = E2BIG;
@@ -420,16 +443,10 @@ encode_utf16_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outby
 		c2 = c - 0x10000;
 		
 		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-		if (endian == BigEndian)
-			*outptr++ = GUINT16_TO_BE (ch);
-		else
-			*outptr++ = GUINT16_TO_LE (ch);
+		*outptr++ = GUINT16_TO_BE (ch);
 		
 		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-		if (endian == BigEndian)
-			*outptr++ = GUINT16_TO_BE (ch);
-		else
-			*outptr++ = GUINT16_TO_LE (ch);
+		*outptr++ = GUINT16_TO_BE (ch);
 		
 		outleft -= 4;
 	}
@@ -441,25 +458,42 @@ encode_utf16_be_or_le (Endian endian, gunichar c, char **outbytes, size_t *outby
 }
 
 static int
-encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft)
-{
-	return encode_utf16_be_or_le (BigEndian, c, outbytes, outbytesleft);
-}
-
-static int
 encode_utf16le (gunichar c, char **outbytes, size_t *outbytesleft)
 {
-	return encode_utf16_be_or_le (LittleEndian, c, outbytes, outbytesleft);
-}
-
-static int
-encode_utf16 (gunichar c, char **outbytes, size_t *outbytesleft)
-{
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	return encode_utf16_be_or_le (LittleEndian, c, outbytes, outbytesleft);
-#else
-	return encode_utf16_be_or_le (BigEndian, c, outbytes, outbytesleft);
-#endif
+	gunichar2 *outptr = (gunichar2 *) *outbytes;
+	size_t outleft = *outbytesleft;
+	gunichar2 ch;
+	gunichar c2;
+	
+	if (outleft < 2) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	if (c <= 0xffff && (c < 0xd800 || c > 0xdfff)) {
+		ch = (gunichar2) c;
+		
+		*outptr++ = GUINT16_TO_LE (ch);
+		outleft -= 2;
+	} else if (outleft < 4) {
+		errno = E2BIG;
+		return -1;
+	} else {
+		c2 = c - 0x10000;
+		
+		ch = (gunichar2) ((c2 >> 10) + 0xd800);
+		*outptr++ = GUINT16_TO_LE (ch);
+		
+		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
+		*outptr++ = GUINT16_TO_LE (ch);
+		
+		outleft -= 4;
+	}
+	
+	*outbytes = (char *) outptr;
+	*outbytesleft = outleft;
+	
+	return 0;
 }
 
 static int
