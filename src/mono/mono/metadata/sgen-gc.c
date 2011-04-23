@@ -7156,7 +7156,7 @@ mono_gc_base_init (void)
 	} while (result != 0);
 
 	LOCK_INIT (gc_mutex);
-	LOCK_GC;
+
 	pagesize = mono_pagesize ();
 	gc_debug_file = stdout;
 
@@ -7194,6 +7194,37 @@ mono_gc_base_init (void)
 	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
+
+	pthread_key_create (&remembered_set_key, NULL);
+
+#ifndef HAVE_KW_THREAD
+	pthread_key_create (&thread_info_key, NULL);
+#endif
+
+	/*
+	 * This needs to happen before any internal allocations because
+	 * it inits the small id which is required for hazard pointer
+	 * operations.
+	 */
+	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
+	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
+
+	sigfillset (&sinfo.sa_mask);
+	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
+	sinfo.sa_sigaction = suspend_handler;
+	if (sigaction (suspend_signal_num, &sinfo, NULL) != 0) {
+		g_error ("failed sigaction");
+	}
+
+	sinfo.sa_handler = restart_handler;
+	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
+		g_error ("failed sigaction");
+	}
+
+	sigfillset (&suspend_signal_mask);
+	sigdelset (&suspend_signal_mask, restart_signal_num);
+
+	mono_thread_info_attach (&sinfo);
 
 	if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep")) {
 		mono_sgen_marksweep_init (&major_collector);
@@ -7408,41 +7439,8 @@ mono_gc_base_init (void)
 	global_remset = alloc_remset (1024, NULL, FALSE);
 	global_remset->next = NULL;
 
-	pthread_key_create (&remembered_set_key, NULL);
-
-#ifndef HAVE_KW_THREAD
-	pthread_key_create (&thread_info_key, NULL);
-#endif
-
 	if (use_cardtable)
 		card_table_init ();
-
-	/*
-	 * This needs to happen before any internal allocations because
-	 * it inits the small id which is required for hazard pointer
-	 * operations.
-	 */
-	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
-	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
-
-	sigfillset (&sinfo.sa_mask);
-	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
-	sinfo.sa_sigaction = suspend_handler;
-	if (sigaction (suspend_signal_num, &sinfo, NULL) != 0) {
-		g_error ("failed sigaction");
-	}
-
-	sinfo.sa_handler = restart_handler;
-	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
-		g_error ("failed sigaction");
-	}
-
-	sigfillset (&suspend_signal_mask);
-	sigdelset (&suspend_signal_mask, restart_signal_num);
-
-	UNLOCK_GC;
-
-	mono_thread_info_attach (&sinfo);
 
 	gc_initialized = 1;
 }
