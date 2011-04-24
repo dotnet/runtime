@@ -231,7 +231,9 @@ g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *f
 	g_return_val_if_fail (from_charset != NULL, NULL);
 	
 	if ((cd = g_iconv_open (to_charset, from_charset)) == (GIConv) -1) {
-		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_CONVERSION, g_strerror (ENOTSUP));
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_CONVERSION,
+			     "Conversion from %s to %s not supported.",
+			     from_charset, to_charset);
 		
 		if (bytes_written)
 			*bytes_written = 0;
