@@ -145,6 +145,8 @@ if test $ac_cv_sizeof_void_p = $ac_cv_sizeof_int; then
    GSIZE_FORMAT='"u"'
    G_GUINT64_FORMAT='"llu"'
    G_GINT64_FORMAT='"lld"'
+   G_GUINT32_FORMAT='"lu"'
+   G_GINT32_FORMAT='"ld"'
 elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
    GPOINTER_TO_INT="((gint)(long) (ptr))"
    GPOINTER_TO_UINT="((guint)(long) (ptr))"
@@ -154,6 +156,8 @@ elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
    GSIZE_FORMAT='"lu"'
    G_GUINT64_FORMAT='"lu"'
    G_GINT64_FORMAT='"ld"'
+   G_GUINT32_FORMAT='"u"'
+   G_GINT32_FORMAT='"d"'
 elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
    GPOINTER_TO_INT="((gint)(long long) (ptr))"
    GPOINTER_TO_UINT="((guint)(unsigned long long) (ptr))"
@@ -163,6 +167,8 @@ elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
    GSIZE_FORMAT='"I64u"'
    G_GUINT64_FORMAT='"I64u"'
    G_GINT64_FORMAT='"I64i"'
+   G_GUINT32_FORMAT='"I32u"'
+   G_GINT32_FORMAT='"I32i"'
 else
    AC_MSG_ERROR([unsupported pointer size])
 fi
@@ -204,6 +210,8 @@ AC_SUBST(GSIZE)
 AC_SUBST(GSIZE_FORMAT)
 AC_SUBST(G_GUINT64_FORMAT)
 AC_SUBST(G_GINT64_FORMAT)
+AC_SUBST(G_GUINT32_FORMAT)
+AC_SUBST(G_GINT32_FORMAT)
 
 if test x$enable_quiet_build = xyes; then
    AC_CONFIG_COMMANDS([quiet], [for i in `find src test -name Makefile.in | sed -e 's/Makefile.in/Makefile/g'`; do if test -f $i; then $srcdir/../scripts/patch-quiet.sh $i; fi; done], [shell=$SHELL])
