@@ -466,7 +466,7 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 	gunichar u;
 	int n;
 	
-	u = *inptr++;
+	u = *inptr;
 	
 	if (u < 0x80) {
 		/* simple ascii case */
@@ -501,11 +501,11 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 	}
 	
 	switch (n) {
-	case 6: u = (u << 6) | (*inptr++ ^ 0x80);
-	case 5: u = (u << 6) | (*inptr++ ^ 0x80);
-	case 4: u = (u << 6) | (*inptr++ ^ 0x80);
-	case 3: u = (u << 6) | (*inptr++ ^ 0x80);
-	case 2: u = (u << 6) | (*inptr++ ^ 0x80);
+	case 6: u = (u << 6) | (*++inptr ^ 0x80);
+	case 5: u = (u << 6) | (*++inptr ^ 0x80);
+	case 4: u = (u << 6) | (*++inptr ^ 0x80);
+	case 3: u = (u << 6) | (*++inptr ^ 0x80);
+	case 2: u = (u << 6) | (*++inptr ^ 0x80);
 	}
 	
 	*outchar = u;
