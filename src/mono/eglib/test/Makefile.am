@@ -1,3 +1,5 @@
+EXTRA_DIST = UTF-8.txt UTF-16BE.txt UTF-16LE.txt UTF-32BE.txt UTF-32LE.txt
+
 SOURCES = \
 	test.c 		\
 	test.h 		\
@@ -33,7 +35,7 @@ test_eglib_CFLAGS = -Wall -D_FORTIFY_SOURCE=2 -I$(srcdir)/../src -I../src -DDRIV
 test_eglib_LDADD = ../src/libeglib.la
 
 run-eglib: all
-	./test-eglib
+	srcdir=`readlink -f $(srcdir)` ./test-eglib
 
 if HAVE_GLIB
 
@@ -45,7 +47,7 @@ test_glib_CFLAGS = `pkg-config --cflags glib-2.0` -DDRIVER_NAME=\"GLib\"
 test_glib_LDFLAGS = `pkg-config --libs glib-2.0 gmodule-2.0`
 
 run-glib: all
-	./test-glib
+	srcdir=`readlink -f $(srcdir)` ./test-glib
 
 run-both: run-glib run-eglib
 

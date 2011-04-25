@@ -9042,7 +9042,7 @@ mono_marshal_get_isinst_with_cache (void)
 	if (cached)
 		return cached;
 
-	mb = mono_mb_new (mono_defaults.object_class, "__isisnt_with_cache", MONO_WRAPPER_CASTCLASS);
+	mb = mono_mb_new (mono_defaults.object_class, "__isinst_with_cache", MONO_WRAPPER_CASTCLASS);
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;

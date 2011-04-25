@@ -874,4 +874,15 @@ class Tests {
 		int result = foo.GetDefault<int>();
 		return result;
 	}
+
+	class Response {
+	}
+
+	public static int test_0_687865_isinst_with_cache_wrapper () {
+		object o = new object ();
+		if (o is Action<IEnumerable<Response>>)
+			return 1;
+		else
+			return 0;
+	}
 }

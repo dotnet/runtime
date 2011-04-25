@@ -217,76 +217,116 @@ g_unichar_isspace (gunichar c)
 }
 
 gchar *
-g_convert (const gchar *str, gssize len,
-	   const gchar *to_codeset, const gchar *from_codeset,
-	   gsize *bytes_read, gsize *bytes_written, GError **error)
+g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *from_charset,
+	   gsize *bytes_read, gsize *bytes_written, GError **err)
 {
-	size_t str_len = len == -1 ? strlen (str) : len;
-	const char *strptr = (const char *) str;
-	size_t left, out_left, buffer_size;
-	char *buffer, *output;
-	char *result = NULL;
+	size_t outsize, outused, outleft, inleft, grow, rc;
+	char *result, *outbuf, *inbuf;
+	gboolean flush = FALSE;
+	gboolean done = FALSE;
 	GIConv cd;
 	
-	if ((cd = g_iconv_open (to_codeset, from_codeset)) == (GIConv) -1) {
+	g_return_val_if_fail (str != NULL, NULL);
+	g_return_val_if_fail (to_charset != NULL, NULL);
+	g_return_val_if_fail (from_charset != NULL, NULL);
+	
+	if ((cd = g_iconv_open (to_charset, from_charset)) == (GIConv) -1) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_CONVERSION,
+			     "Conversion from %s to %s not supported.",
+			     from_charset, to_charset);
+		
 		if (bytes_written)
 			*bytes_written = 0;
+		
 		if (bytes_read)
 			*bytes_read = 0;
+		
 		return NULL;
 	}
 	
-	buffer_size = str_len + 1 + 8;
-	buffer = g_malloc (buffer_size);
-	out_left = str_len;
-	output = buffer;
-	left = str_len;
+	inleft = len < 0 ? strlen (str) : len;
+	inbuf = (char *) str;
 	
-	while (left > 0){
-		int res = g_iconv (cd, (char **) &strptr, &left, &output, &out_left);
-		if (res == (size_t) -1){
-			if (errno == E2BIG){
-				char *n;
-				size_t extra_space = 8 + left;
-				size_t output_used = output - buffer;
+	outleft = outsize = MAX (inleft, 8);
+	outbuf = result = g_malloc (outsize + 4);
+	
+	do {
+		if (!flush)
+			rc = g_iconv (cd, &inbuf, &inleft, &outbuf, &outleft);
+		else
+			rc = g_iconv (cd, NULL, NULL, &outbuf, &outleft);
+		
+		if (rc == (size_t) -1) {
+			switch (errno) {
+			case E2BIG:
+				/* grow our result buffer */
+				grow = MAX (inleft, 8) << 1;
+				outused = outbuf - result;
+				outsize += grow;
+				outleft += grow;
+				result = g_realloc (result, outsize + 4);
+				outbuf = result + outused;
+				break;
+			case EINVAL:
+				/* incomplete input, stop converting and terminate here */
+				if (flush)
+					done = TRUE;
+				else
+					flush = TRUE;
+				break;
+			case EILSEQ:
+				/* illegal sequence in the input */
+				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "%s", g_strerror (errno));
 				
-				buffer_size += extra_space;
-				
-				n = g_realloc (buffer, buffer_size);
-				
-				if (n == NULL){
-					if (error != NULL)
-						*error = g_error_new (NULL, G_CONVERT_ERROR_FAILED, "No memory left");
-					g_free (buffer);
-					result = NULL;
-					goto leave;
+				if (bytes_read) {
+					/* save offset of the illegal input sequence */
+					*bytes_read = (inbuf - str);
 				}
-				buffer = n;
-				out_left += extra_space;
-				output = buffer + output_used;
-			} else if (errno == EILSEQ){
-				if (error != NULL)
-					*error = g_error_new (NULL, G_CONVERT_ERROR_ILLEGAL_SEQUENCE, "Invalid multi-byte sequence on input");
-				result = NULL;
-				g_free (buffer);
-				goto leave;
-			} else if (errno == EINVAL){
-				if (error != NULL)
-					*error = g_error_new (NULL, G_CONVERT_ERROR_PARTIAL_INPUT, "Partial character sequence");
-				result = NULL;
-				g_free (buffer);
-				goto leave;
+				
+				if (bytes_written)
+					*bytes_written = 0;
+				
+				g_iconv_close (cd);
+				g_free (result);
+				return NULL;
+			default:
+				/* unknown errno */
+				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED, "%s", g_strerror (errno));
+				
+				if (bytes_written)
+					*bytes_written = 0;
+				
+				if (bytes_read)
+					*bytes_read = 0;
+				
+				g_iconv_close (cd);
+				g_free (result);
+				return NULL;
 			}
-		} 
-	}
-	if (bytes_read != NULL)
-		*bytes_read = strptr - str;
-	if (bytes_written != NULL)
-		*bytes_written = output - buffer;
-	*output = 0;
-	result = buffer;
- leave:
+		} else if (flush) {
+			/* input has been converted and output has been flushed */
+			break;
+		} else {
+			/* input has been converted, need to flush the output */
+			flush = TRUE;
+		}
+	} while (!done);
+	
 	g_iconv_close (cd);
+	
+	/* Note: not all charsets can be null-terminated with a single
+           null byte. UCS2, for example, needs 2 null bytes and UCS4
+           needs 4. I hope that 4 null bytes is enough to terminate all
+           multibyte charsets? */
+	
+	/* null-terminate the result */
+	memset (outbuf, 0, 4);
+	
+	if (bytes_written)
+		*bytes_written = outbuf - result;
+	
+	if (bytes_read)
+		*bytes_read = inbuf - str;
 	
 	return result;
 }

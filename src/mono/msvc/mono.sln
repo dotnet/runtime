@@ -198,13 +198,9 @@ Global
 		{8FEF7F9E-F5F3-470E-91F4-404B7D6BC1BB}.Release|Win32.ActiveCfg = Release|Win32
 		{8FEF7F9E-F5F3-470E-91F4-404B7D6BC1BB}.Release|x64.ActiveCfg = Release|x64
 		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|Win32.ActiveCfg = Debug|Win32
-		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|Win32.Build.0 = Debug|Win32
 		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|x64.ActiveCfg = Debug|x64
-		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|x64.Build.0 = Debug|x64
 		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|Win32.ActiveCfg = Release|Win32
-		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|Win32.Build.0 = Release|Win32
 		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|x64.ActiveCfg = Release|x64
-		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -230,9 +226,9 @@ Global
 		{F51017F9-B7FB-4F87-B7B5-12799D965783} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaPersistentConfig = Debug|Win32
-		AMDCaPersistentStartup = mono
 		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
+		AMDCaPersistentStartup = mono
+		AMDCaPersistentConfig = Debug|Win32
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}

@@ -378,10 +378,16 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 		}
 		THREADS_DEBUG ("restarted thread %p\n", (gpointer)id);
 
-		if (!sleep_duration)
+		if (!sleep_duration) {
+#ifdef HOST_WIN32
+			SwitchToThread ();
+#else
 			sched_yield ();
-		else
+#endif
+		}
+		else {
 			g_usleep (sleep_duration);
+		}
 		sleep_duration += 10;
 	}
 
