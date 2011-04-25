@@ -34,6 +34,9 @@
 #endif
 #include <errno.h>
 
+#define UNROLL_DECODE_UTF8 0
+#define UNROLL_ENCODE_UTF8 0
+
 typedef int (* Decoder) (char *inbuf, size_t inleft, gunichar *outchar);
 typedef int (* Encoder) (gunichar c, char *outbuf, size_t outleft);
 
@@ -464,7 +467,7 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 {
 	unsigned char *inptr = (unsigned char *) inbuf;
 	gunichar u;
-	int n;
+	int n, i;
 	
 	u = *inptr;
 	
@@ -500,6 +503,7 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
+#if UNROLL_DECODE_UTF8
 	switch (n) {
 	case 6: u = (u << 6) | (*++inptr ^ 0x80);
 	case 5: u = (u << 6) | (*++inptr ^ 0x80);
@@ -507,6 +511,10 @@ decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 	case 3: u = (u << 6) | (*++inptr ^ 0x80);
 	case 2: u = (u << 6) | (*++inptr ^ 0x80);
 	}
+#else
+	for (i = 1; i < n; i++)
+		u = (u << 6) | (*++inptr ^ 0x80);
+#endif
 	
 	*outchar = u;
 	
@@ -517,7 +525,7 @@ static int
 encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 {
 	unsigned char *outptr = (unsigned char *) outbuf;
-	int base, n;
+	int base, n, i;
 	
 	if (c < 128UL) {
 		base = 0;
@@ -547,6 +555,7 @@ encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 		return -1;
 	}
 	
+#if UNROLL_ENCODE_UTF8
 	switch (n) {
 	case 6: outptr[5] = (c & 0x3f) | 0x80; c >>= 6;
 	case 5: outptr[4] = (c & 0x3f) | 0x80; c >>= 6;
@@ -555,6 +564,14 @@ encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 	case 2: outptr[1] = (c & 0x3f) | 0x80; c >>= 6;
 	case 1: outptr[0] = c | base;
 	}
+#else
+	for (i = n - 1; i > 0; i--) {
+		outptr[i] = (c & 0x3f) | 0x80;
+		c >>= 6;
+	}
+	
+	outptr[0] = c | base;
+#endif
 	
 	return n;
 }
