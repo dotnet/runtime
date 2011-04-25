@@ -21,56 +21,51 @@ g_convert_error_quark (void)
 	return error_quark;
 }
 
-static gunichar*
+static gchar *
 utf8_case_conv (const gchar *str, gssize len, gboolean upper)
 {
-	glong i, u16len, u32len;
-	gunichar2 *u16str;
-	gunichar *u32str;
-	gchar *u8str;
-	GError **err = NULL;
-
-	u16str = g_utf8_to_utf16 (str, (glong)len, NULL, &u16len, err);
-	u32str = g_utf16_to_ucs4 (u16str, u16len, NULL, &u32len, err);
-	for (i = 0; i < u32len; i++) {
-		u32str [i] = upper ? g_unichar_toupper (u32str [i]) : g_unichar_tolower (u32str [i]);
-	}
-	g_free (u16str);
-	u16str = g_ucs4_to_utf16 (u32str, u32len, NULL, &u16len, err);
-	u8str = g_utf16_to_utf8 (u16str, u16len, NULL, NULL, err);
-	g_free (u32str);
-	g_free (u16str);
-	return (gunichar*)u8str;
+	gunichar *ustr;
+	glong i, ulen;
+	gchar *utf8;
+	
+	//ustr = g_utf8_to_ucs4 (str, (glong) len, NULL, &ulen, NULL);
+	ustr = g_utf8_to_ucs4_fast (str, (glong) len, &ulen);
+	for (i = 0; i < ulen; i++)
+		ustr[i] = upper ? g_unichar_toupper (ustr[i]) : g_unichar_tolower (ustr[i]);
+	utf8 = g_ucs4_to_utf8 (ustr, ulen, NULL, NULL, NULL);
+	g_free (ustr);
+	
+	return utf8;
 }
 
-gchar*
+gchar *
 g_utf8_strup (const gchar *str, gssize len)
 {
-	return (gchar*)utf8_case_conv (str, len, TRUE);
+	return utf8_case_conv (str, len, TRUE);
 }
 
-gchar*
+gchar *
 g_utf8_strdown (const gchar *str, gssize len)
 {
-	return (gchar*)utf8_case_conv (str, len, FALSE);
+	return utf8_case_conv (str, len, FALSE);
 }
 
 gunichar
 g_utf8_get_char_validated (const gchar *str, gssize max_len)
 {
-	gunichar ch = 0;
 	gushort extra_bytes = 0;
 
 	if (max_len == 0)
 		return -2;
 	
-	extra_bytes = g_trailingBytesForUTF8 [*str];
+	extra_bytes = g_trailingBytesForUTF8 [(unsigned char) *str];
 
 	if (max_len <= extra_bytes)
 		return -2;
 
 	if (g_utf8_validate (str, max_len, NULL))
 		return g_utf8_get_char (str);
+	
 	return -1;
 }
 
