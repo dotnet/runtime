@@ -161,8 +161,8 @@ g_iconv_close (GIConv cd)
 }
 
 gsize
-g_iconv (GIConv cd, char **inbytes, size_t *inbytesleft,
-	 char **outbytes, size_t *outbytesleft)
+g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
+	 gchar **outbytes, gsize *outbytesleft)
 {
 	size_t inleft, outleft;
 	char *inptr, *outptr;
