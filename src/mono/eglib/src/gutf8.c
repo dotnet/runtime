@@ -29,16 +29,6 @@ const gchar g_utf8_jump_table[256] = {
 	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,0,0
 };
 
-/*
-* Magic values subtracted from a buffer value during UTF8 conversion.
-* This table contains as many values as there might be trailing bytes
-* in a UTF-8 sequence.
-*/
-static const gulong offsetsFromUTF8[6] = {
-	0x00000000UL, 0x00003080UL, 0x000E2080UL,
-	0x03C82080UL, 0xFA082080UL, 0x82082080UL
-};
-
 static gchar *
 utf8_case_conv (const gchar *str, gssize len, gboolean upper)
 {
