@@ -187,6 +187,28 @@ create_pipe (int *fds, GError **error)
 	return TRUE;
 }
 #endif /* G_OS_WIN32 */
+
+static ssize_t
+write_all (int fd, const void *vbuf, size_t n)
+{
+	const char *buf = (const char *) vbuf;
+	size_t nwritten = 0;
+	ssize_t w;
+	
+	do {
+		do {
+			w = write (fd, buf + nwritten, n - nwritten);
+		} while (w == -1 && errno == EINTR);
+		
+		if (w == -1)
+			return -1;
+		
+		nwritten += w;
+	} while (nwritten < n);
+	
+	return nwritten;
+}
+
 gboolean
 g_spawn_command_line_sync (const gchar *command_line,
 				gchar **standard_output,
@@ -360,12 +382,12 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 
 			if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
 				pid = getpid ();
-				NO_INTR (unused, write (info_pipe [1], &pid, sizeof (pid_t)));
+				NO_INTR (unused, write_all (info_pipe [1], &pid, sizeof (pid_t)));
 			}
 
 			if (working_directory && chdir (working_directory) == -1) {
 				int err = errno;
-				NO_INTR (unused, write (info_pipe [1], &err, sizeof (int)));
+				NO_INTR (unused, write_all (info_pipe [1], &err, sizeof (int)));
 				exit (0);
 			}
 
@@ -407,13 +429,13 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 				arg0 = g_find_program_in_path (argv [0]);
 				if (arg0 == NULL) {
 					int err = ENOENT;
-					write (info_pipe [1], &err, sizeof (int));
+					write_all (info_pipe [1], &err, sizeof (int));
 					exit (0);
 				}
 			}
 
 			execve (arg0, actual_args, envp);
-			write (info_pipe [1], &errno, sizeof (int));
+			write_all (info_pipe [1], &errno, sizeof (int));
 			exit (0);
 		}
 	} else if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
