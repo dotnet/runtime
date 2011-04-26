@@ -105,6 +105,7 @@ get_delayed_free_entry (int index)
 
 	if (!delayed_free_chunk_list) {
 		chunk = alloc_delayed_free_chunk ();
+		mono_memory_write_barrier ();
 		if (InterlockedCompareExchangePointer ((volatile gpointer *)&delayed_free_chunk_list, chunk, NULL) != NULL)
 			free_delayed_free_chunk (chunk);
 	}
@@ -116,6 +117,7 @@ get_delayed_free_entry (int index)
 		DelayedFreeChunk *next = chunk->next;
 		if (!next) {
 			next = alloc_delayed_free_chunk ();
+			mono_memory_write_barrier ();
 			if (InterlockedCompareExchangePointer ((volatile gpointer *) &chunk->next, next, NULL) != NULL) {
 				free_delayed_free_chunk (next);
 				next = chunk->next;
@@ -138,8 +140,12 @@ delayed_free_push (DelayedFreeItem item)
 	while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_FREE) != DFE_STATE_FREE)
 		;
 
-	entry->item = item;
 	mono_memory_write_barrier ();
+
+	entry->item = item;
+
+	mono_memory_write_barrier ();
+
 	entry->state = DFE_STATE_USED;
 }
 
@@ -162,7 +168,12 @@ delayed_free_pop (DelayedFreeItem *item)
 	while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_USED) != DFE_STATE_USED)
 		;
 
+	mono_memory_write_barrier ();
+
 	*item = entry->item;
+
+	mono_memory_write_barrier ();
+
 	entry->state = DFE_STATE_FREE;
 
 	return TRUE;
