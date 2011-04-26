@@ -743,12 +743,13 @@ typedef enum {
 gchar     *g_utf8_strup (const gchar *str, gssize len);
 gchar     *g_utf8_strdown (const gchar *str, gssize len);
 gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
-gunichar*  g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
-gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error);
-gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
-gunichar  *g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
-gchar     *g_ucs4_to_utf8  (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error);
-gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error);
+gunichar  *g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
+gunichar  *g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
+gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err);
+gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
+gunichar  *g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err);
+gchar     *g_ucs4_to_utf8  (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err);
+gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err);
 
 #define u8to16(str) g_utf8_to_utf16(str, (glong)strlen(str), NULL, NULL, NULL)
 
@@ -983,24 +984,17 @@ gchar    *g_convert            (const gchar *str, gssize len,
 /*
  * Unicode manipulation
  */
-/*
-* Index into the table below with the first byte of a UTF-8 sequence to
-* get the number of trailing bytes that are supposed to follow it.
-* Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
-* left as-is for anyone who may want to do such conversion, which was
-* allowed in earlier algorithms.
-*/
-extern const gchar g_trailingBytesForUTF8[256];
+extern const gchar g_utf8_jump_table[256];
 
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
-gunichar  g_utf8_get_char      (const gchar *src);
 gunichar  g_utf8_get_char_validated (const gchar *str, gssize max_len);
+gchar    *g_utf8_find_prev_char (const char *str, const char *p);
+gchar    *g_utf8_prev_char     (const char *str);
+#define   g_utf8_next_char(p)  (p + (g_utf8_jump_table[(guchar)(*p)] + 1))
+gunichar  g_utf8_get_char      (const gchar *src);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
-#define   g_utf8_next_char(p) p + (g_trailingBytesForUTF8[(guchar)(*p)] + 1)
-gchar *   g_utf8_offset_to_pointer (const gchar *str, glong offset);
+gchar    *g_utf8_offset_to_pointer (const gchar *str, glong offset);
 glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
-gchar *   g_utf8_prev_char (const char *str);
-gchar *   g_utf8_find_prev_char (const char *str, const char *p);
 
 /*
  * priorities

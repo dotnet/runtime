@@ -380,9 +380,9 @@ ucs4_to_utf16_check_result (const gunichar2 *result_str, const gunichar2 *expect
 {
 	glong i;
 	if (result_items_read != expected_items_read)
-		return FAILED("Incorrect number of items read %d", result_items_read);
+		return FAILED("Incorrect number of items read; expected %d, got %d", expected_items_read, result_items_read);
 	if (result_items_written != expected_items_written)
-		return FAILED("Incorrect number of items written %d", result_items_written);
+		return FAILED("Incorrect number of items written; expected %d, got %d", expected_items_written, result_items_written);
 	if (result_error && !expect_error)
 		return FAILED("There should not be an error code.");
 	if (!result_error && expect_error)
@@ -490,9 +490,9 @@ utf16_to_ucs4_check_result (const gunichar *result_str, const gunichar *expected
 {
 	glong i;
 	if (result_items_read != expected_items_read)
-		return FAILED("Incorrect number of items read %d", result_items_read);
+		return FAILED("Incorrect number of items read; expected %d, got %d", expected_items_read, result_items_read);
 	if (result_items_written != expected_items_written)
-		return FAILED("Incorrect number of items written %d", result_items_written);
+		return FAILED("Incorrect number of items written; expected %d, got %d", expected_items_written, result_items_written);
 	if (result_error && !expect_error)
 		return FAILED("There should not be an error code.");
 	if (!result_error && expect_error)
@@ -536,13 +536,13 @@ test_utf16_to_ucs4 ()
 	check_result = utf16_to_ucs4_check_result (res, exp1, items_read, 11, items_written, 11, err, FALSE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	items_read = items_written = 0;
 	res = g_utf16_to_ucs4 (str2, 0, &items_read, &items_written, &err);
 	check_result = utf16_to_ucs4_check_result (res, exp2, items_read, 0, items_written, 0, err, FALSE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	items_read = items_written = 0;
 	res = g_utf16_to_ucs4 (str2, 1, &items_read, &items_written, &err);
 	check_result = utf16_to_ucs4_check_result (res, exp2, items_read, 1, items_written, 1, err, FALSE);
@@ -554,32 +554,32 @@ test_utf16_to_ucs4 ()
 	check_result = utf16_to_ucs4_check_result (res, exp2, items_read, 1, items_written, 1, err, FALSE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	items_read = items_written = 0;
 	res = g_utf16_to_ucs4 (str2, 3, &items_read, &items_written, &err);
 	check_result = utf16_to_ucs4_check_result (res, exp2, items_read, 3, items_written, 2, err, FALSE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	items_read = items_written = 0;
 	res = g_utf16_to_ucs4 (str2, 4, &items_read, &items_written, &err);
 	check_result = utf16_to_ucs4_check_result (res, exp2, items_read, 3, items_written, 2, err, FALSE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	items_read = items_written = 0;
 	res = g_utf16_to_ucs4 (str2, 5, &items_read, &items_written, &err);
 	check_result = utf16_to_ucs4_check_result (res, exp2, items_read, 4, items_written, 0, err, TRUE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	items_read = items_written = 0;
 	err = 0;
 	res = g_utf16_to_ucs4 (str3, 5, &items_read, &items_written, &err);
 	check_result = utf16_to_ucs4_check_result (res, exp3, items_read, 1, items_written, 0, err, TRUE);
 	if (check_result) return check_result;
 	g_free (res);
-
+	
 	// This loop tests the bounds of the conversion algorithm
 	current_read_index = current_write_index = 0;
 	for (i=0;i<11;i++) {
