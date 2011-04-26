@@ -41,46 +41,51 @@
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
 {
-	GString *result;
-	const char *s, *p, *next;
-	size_t slen;
+	const char *elem, *next, *endptr;
+	gboolean trimmed;
+	GString *path;
 	va_list args;
+	size_t slen;
 	
 	g_return_val_if_fail (separator != NULL, NULL);
-
-	if (first_element == NULL)
-		return g_strdup ("");
-
-	result = g_string_sized_new (48);
-
+	
+	path = g_string_sized_new (48);
 	slen = strlen (separator);
 	
 	va_start (args, first_element);
-	for (s = first_element; s != NULL; s = next){
-		next = va_arg (args, char *);
-		p = (s + strlen (s));
-
-		if (next && p - slen > s){
-			for (; strncmp (p-slen, separator, slen) == 0; ){
-				p -= slen;
-			}
-		}
-		g_string_append_len (result, s, p - s);
-
-		if (next && *next){
-			int reslen = strlen (result->str);
+	for (elem = first_element; elem != NULL; elem = next) {
+		/* trim any trailing separators from @elem */
+		endptr = elem + strlen (elem);
+		trimmed = FALSE;
+		
+		while (endptr >= elem + slen) {
+			if (strncmp (endptr - slen, separator, slen) != 0)
+				break;
 			
-			if (reslen >= slen && strncmp (separator, result->str + reslen - slen, slen))
-				g_string_append (result, separator);
-
-			for (; strncmp (next, separator, slen) == 0; )
-				next += slen;
+			endptr -= slen;
+			trimmed = TRUE;
 		}
+		
+		/* append elem, not including any trailing separators */
+		if (endptr > elem)
+			g_string_append_len (path, elem, endptr - elem);
+		
+		/* get the next element */
+		do {
+			if (!(next = va_arg (args, char *)))
+				break;
+			
+			/* remove leading separators */
+			while (!strncmp (next, separator, slen))
+				next += slen;
+		} while (*next == '\0');
+		
+		if (next || trimmed)
+			g_string_append_len (path, separator, slen);
 	}
-	g_string_append_c (result, 0);
 	va_end (args);
-
-	return g_string_free (result, FALSE);
+	
+	return g_string_free (path, FALSE);
 }
 
 gchar *
@@ -196,7 +201,7 @@ g_find_program_in_path (const gchar *program)
 	char *p = g_strdup (g_getenv ("PATH"));
 	char *x = p, *l;
 	gchar *curdir = NULL;
-	char *save;
+	char *save = NULL;
 #ifdef G_OS_WIN32
 	char *program_exe;
 	char *suffix_list[5] = {".exe",".cmd",".bat",".com",NULL};
