@@ -52,6 +52,7 @@ libmint_la_LIBADD =				\
 	../utils/libmonoutils.la	\
 	$(libgc_libs)			\
 	$(GLIB_LIBS)			\
+	$(LIBICONV)			\
 	$(ICU_LIBS)			\
 	-lm
 

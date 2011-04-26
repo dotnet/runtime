@@ -927,6 +927,6 @@ else
 libtest_la_LDFLAGS = -rpath `pwd`
 endif
 libtest_la_SOURCES = libtest.c
-libtest_la_LIBADD = $(GLIB_LIBS)
+libtest_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
 
 CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) $(STRESS_TESTS) *.dll *.stdout *.aotlog *.exe stest.dat

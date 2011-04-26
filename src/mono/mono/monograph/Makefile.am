@@ -19,6 +19,7 @@ monograph_LDADD = \
 	$(runtime_lib)			\
 	$(GLIB_LIBS)			\
 	$(LLVM_LIBS)			\
+	$(LIBICONV)			\
 	-lm
 
 GRAPHS=System.Object System.Enum System.Attribute System.ValueType System.Reflection.MemberInfo

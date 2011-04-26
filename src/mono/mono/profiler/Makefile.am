@@ -28,9 +28,9 @@ libmono_profiler_cov_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
 libmono_profiler_aot_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la
 #libmono_profiler_logging_la_SOURCES = mono-profiler-logging.c
-#libmono_profiler_logging_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS)
+#libmono_profiler_logging_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
-libmono_profiler_iomap_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS)
+libmono_profiler_iomap_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_log_la_SOURCES = proflog.c
 libmono_profiler_log_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(Z_LIBS)
 
@@ -56,5 +56,3 @@ check-local: testlog
 
 EXTRA_DIST=utils.c utils.h proflog.h log-profiler.txt perf_event.h \
 	$(PLOG_TESTS_SRC) ptestrunner.pl
-
-

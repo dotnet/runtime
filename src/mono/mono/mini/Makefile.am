@@ -15,35 +15,35 @@ libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)	\
+	$(GLIB_LIBS) $(LIBICONV) \
 	$(libgc_libs)
 
 sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)
+	$(GLIB_LIBS) $(LIBICONV)
 
 if MOONLIGHT
 moon_libs = \
 	$(monodir)/mono/metadata/libmonoruntimemoon.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)
+	$(GLIB_LIBS) $(LIBICONV)
 endif
 
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)	\
+	$(GLIB_LIBS) $(LIBICONV) \
 	$(libgc_static_libs)
 
 sgenstatic_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)
+	$(GLIB_LIBS) $(LIBICONV)
 
 CLASS=$(mcs_topdir)/class/lib/net_4_0
 
