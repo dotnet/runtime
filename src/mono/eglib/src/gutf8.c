@@ -67,6 +67,51 @@ g_utf8_strdown (const gchar *str, gssize len)
 	return utf8_case_conv (str, len, FALSE);
 }
 
+static gboolean
+utf8_validate (const unsigned char *inptr, size_t len)
+{
+	const unsigned char *ptr = inptr + len;
+	unsigned char c;
+	
+	/* Everything falls through when TRUE... */
+	switch (len) {
+	default:
+		return FALSE;
+	case 4:
+		if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+			return FALSE;
+		
+		if ((c == 0xBF || c == 0xBE) && ptr[-1] == 0xBF) {
+			if (ptr[-2] == 0x8F || ptr[-2] == 0x9F ||
+			    ptr[-2] == 0xAF || ptr[-2] == 0xBF)
+				return FALSE;
+		}
+	case 3:
+		if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+			return FALSE;
+	case 2:
+		if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+			return FALSE;
+		
+		/* no fall-through in this inner switch */
+		switch (*inptr) {
+		case 0xE0: if (c < 0xA0) return FALSE;
+		case 0xED: if (c > 0x9F) return FALSE;
+		case 0xEF: if (c == 0xB7 && (ptr[1] > 0x8F && ptr[1] < 0xB0)) return FALSE;
+			if (c == 0xBF && (ptr[1] == 0xBE || ptr[1] == 0xBF)) return FALSE;
+		case 0xF0: if (c < 0x90) return FALSE;
+		case 0xF4: if (c > 0x8F) return FALSE;
+		default:   if (c < 0x80) return FALSE;
+		}
+	case 1: if (*inptr >= 0x80 && *inptr < 0xC2) return FALSE;
+	}
+	
+	if (*inptr > 0xF4)
+		return FALSE;
+	
+	return TRUE;
+}
+
 /**
  * g_utf8_validate:
  * @str: a utf-8 encoded string
@@ -85,67 +130,49 @@ g_utf8_strdown (const gchar *str, gssize len)
 gboolean
 g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 {
-	guchar *ptr, *inptr = (guchar *) str;
+	guchar *inptr = (guchar *) str;
 	gboolean valid = TRUE;
-	guint length;
-	gssize n;
-	guchar c;
+	guint length, min;
+	gssize n = 0;
 	
 	if (max_len == 0)
-		return 0;
+		return FALSE;
 	
-	if (max_len < 0)
-		n = max_len;
-	else
-		n = 0;
-	
-	while (*inptr != 0 && n <= max_len) {
-		length = g_utf8_jump_table[*inptr] + 1;
-		ptr = inptr + length;
-		
-		switch (length) {
-		default:
-			valid = FALSE;
-			/* Everything else falls through when "TRUE"... */
-		case 4:
-			if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+	if (max_len < 0) {
+		while (*inptr != 0) {
+			length = g_utf8_jump_table[*inptr] + 1;
+			if (!utf8_validate (inptr, length)) {
 				valid = FALSE;
-			
-			if ((c == 0xBF || c == 0xBE) && ptr[-1] == 0xBF) {
-				if (ptr[-2] == 0x8F || ptr[-2] == 0x9F ||
-				    ptr[-2] == 0xAF || ptr[-2] == 0xBF)
-					valid = FALSE;
+				break;
 			}
-		case 3:
-			if ((c = (*--ptr)) < 0x80 || c > 0xBF)
-				valid = FALSE;
-		case 2:
-			if ((c = (*--ptr)) < 0x80 || c > 0xBF)
-				valid = FALSE;
 			
-			switch (*inptr) {
-				/* no fall-through in this inner switch */
-			case 0xE0: if (c < 0xA0) valid = FALSE; break;
-			case 0xED: if (c > 0x9F) valid = FALSE; break;
-			case 0xEF: if (c == 0xB7 && (ptr[1] > 0x8F && ptr[1] < 0xB0)) valid = FALSE;
-				   if (c == 0xBF && (ptr[1] == 0xBE || ptr[1] == 0xBF)) valid = FALSE; break;
-			case 0xF0: if (c < 0x90) valid = FALSE; break;
-			case 0xF4: if (c > 0x8F) valid = FALSE; break;
-			default:   if (c < 0x80) valid = FALSE;
-			}
-		case 1: if (*inptr >= 0x80 && *inptr < 0xC2) valid = FALSE;
+			inptr += length;
 		}
-		
-		if (*inptr > 0xF4)
-			valid = FALSE;
-		
-		if (!valid)
-			break;
-		
-		inptr += length;
-		
-		if (max_len > 0)
+	} else {
+		while (n < max_len) {
+			if (*inptr == 0) {
+				/* Note: return FALSE if we encounter nul-byte
+				 * before max_len is reached. */
+				valid = FALSE;
+				break;
+			}
+			
+			length = g_utf8_jump_table[*inptr] + 1;
+			min = MIN (length, max_len - n);
+			
+			if (!utf8_validate (inptr, min)) {
+				valid = FALSE;
+				break;
+			}
+			
+			if (min < length) {
+				valid = FALSE;
+				break;
+			}
+			
+			inptr += length;
 			n += length;
+		}
 	}
 	
 	if (end != NULL)
@@ -157,20 +184,44 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 gunichar
 g_utf8_get_char_validated (const gchar *str, gssize max_len)
 {
-	gushort extra_bytes = 0;
+	unsigned char *inptr = (unsigned char *) str;
+	gunichar u = *inptr;
+	int n, i;
 	
 	if (max_len == 0)
 		return -2;
 	
-	extra_bytes = g_utf8_jump_table[(unsigned char) *str];
+	if (u < 0x80) {
+		/* simple ascii case */
+		return u;
+	} else if (u < 0xc2) {
+		return -1;
+	} else if (u < 0xe0) {
+		u &= 0x1f;
+		n = 2;
+	} else if (u < 0xf0) {
+		u &= 0x0f;
+		n = 3;
+	} else if (u < 0xf8) {
+		u &= 0x07;
+		n = 4;
+	} else if (u < 0xfc) {
+		u &= 0x03;
+		n = 5;
+	} else if (u < 0xfe) {
+		u &= 0x01;
+		n = 6;
+	} else {
+		return -1;
+	}
 	
-	if (max_len <= extra_bytes)
-		return -2;
+	if (!utf8_validate (inptr, n))
+		return -1;
 	
-	if (g_utf8_validate (str, max_len, NULL))
-		return g_utf8_get_char (str);
+	for (i = 1; i < n; i++)
+		u = (u << 6) | (*++inptr ^ 0x80);
 	
-	return -1;
+	return u;
 }
 
 glong
@@ -198,20 +249,34 @@ g_utf8_strlen (const gchar *str, gssize max)
 gunichar
 g_utf8_get_char (const gchar *src)
 {
-	gunichar ch = 0;
-	guchar* ptr = (guchar*) src;
-	gushort extraBytesToRead = g_utf8_jump_table[*ptr];
-
-	switch (extraBytesToRead) {
-	case 5: ch += *ptr++; ch <<= 6; // remember, illegal UTF-8
-	case 4: ch += *ptr++; ch <<= 6; // remember, illegal UTF-8
-	case 3: ch += *ptr++; ch <<= 6;
-	case 2: ch += *ptr++; ch <<= 6;
-	case 1: ch += *ptr++; ch <<= 6;
-	case 0: ch += *ptr;
+	unsigned char *inptr = (unsigned char *) src;
+	gunichar u = *inptr;
+	int n, i;
+	
+	if (u < 0x80) {
+		/* simple ascii case */
+		return u;
+	} else if (u < 0xe0) {
+		u &= 0x1f;
+		n = 2;
+	} else if (u < 0xf0) {
+		u &= 0x0f;
+		n = 3;
+	} else if (u < 0xf8) {
+		u &= 0x07;
+		n = 4;
+	} else if (u < 0xfc) {
+		u &= 0x03;
+		n = 5;
+	} else {
+		u &= 0x01;
+		n = 6;
 	}
-	ch -= offsetsFromUTF8 [extraBytesToRead];
-	return ch;
+	
+	for (i = 1; i < n; i++)
+		u = (u << 6) | (*++inptr ^ 0x80);
+	
+	return u;
 }
 
 gchar *
