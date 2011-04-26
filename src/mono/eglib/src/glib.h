@@ -984,13 +984,13 @@ gchar    *g_convert            (const gchar *str, gssize len,
 /*
  * Unicode manipulation
  */
-extern const gchar g_utf8_jump_table[256];
+extern const guchar g_utf8_jump_table[256];
 
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 gunichar  g_utf8_get_char_validated (const gchar *str, gssize max_len);
 gchar    *g_utf8_find_prev_char (const char *str, const char *p);
 gchar    *g_utf8_prev_char     (const char *str);
-#define   g_utf8_next_char(p)  (p + (g_utf8_jump_table[(guchar)(*p)] + 1))
+#define   g_utf8_next_char(p)  ((p) + g_utf8_jump_table[(guchar)(*p)])
 gunichar  g_utf8_get_char      (const gchar *src);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
 gchar    *g_utf8_offset_to_pointer (const gchar *str, glong offset);

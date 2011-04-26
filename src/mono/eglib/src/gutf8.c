@@ -18,15 +18,15 @@
  * as-is for anyone who may want to do such conversion, which was allowed in
  * earlier algorithms.
 */
-const gchar g_utf8_jump_table[256] = {
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+const guchar g_utf8_jump_table[256] = {
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,0,0
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, 4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
 };
 
 static gchar *
@@ -130,7 +130,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 	
 	if (max_len < 0) {
 		while (*inptr != 0) {
-			length = g_utf8_jump_table[*inptr] + 1;
+			length = g_utf8_jump_table[*inptr];
 			if (!utf8_validate (inptr, length)) {
 				valid = FALSE;
 				break;
@@ -147,7 +147,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 				break;
 			}
 			
-			length = g_utf8_jump_table[*inptr] + 1;
+			length = g_utf8_jump_table[*inptr];
 			min = MIN (length, max_len - n);
 			
 			if (!utf8_validate (inptr, min)) {
@@ -205,8 +205,16 @@ g_utf8_get_char_validated (const gchar *str, gssize max_len)
 		return -1;
 	}
 	
-	if (!utf8_validate (inptr, n))
-		return -1;
+	if (max_len > 0) {
+		if (!utf8_validate (inptr, MIN (max_len, n)))
+			return -1;
+		
+		if (max_len < n)
+			return -2;
+	} else {
+		if (!utf8_validate (inptr, n))
+			return -1;
+	}
 	
 	for (i = 1; i < n; i++)
 		u = (u << 6) | (*++inptr ^ 0x80);
@@ -215,25 +223,31 @@ g_utf8_get_char_validated (const gchar *str, gssize max_len)
 }
 
 glong
-g_utf8_strlen (const gchar *str, gssize max)
+g_utf8_strlen (const gchar *str, gssize max_len)
 {
-	gssize byteCount = 0;
-	guchar* ptr = (guchar*) str;
-	glong length = 0;
-	if (max == 0)
+	const guchar *inptr = (const guchar *) str;
+	glong len = 0, n;
+	
+	if (max_len == 0)
 		return 0;
-	else if (max < 0)
-		byteCount = max;
-	while (*ptr != 0 && byteCount <= max) {
-		gssize cLen = g_utf8_jump_table[*ptr] + 1;
-		if (max > 0 && (byteCount + cLen) > max)
-			return length;
-		ptr += cLen;
-		length++;
-		if (max > 0)
-			byteCount += cLen;
+	
+	if (max_len < 0) {
+		while (*inptr)
+			inptr += g_utf8_jump_table[*inptr];
+		
+		return inptr - (const guchar *) str;
+	} else {
+		while (len < max_len && *inptr) {
+			n = g_utf8_jump_table[*inptr];
+			if ((len + n) > max_len)
+				break;
+			
+			inptr += n;
+			len += n;
+		}
+		
+		return len;
 	}
-	return length;
 }
 
 gunichar
