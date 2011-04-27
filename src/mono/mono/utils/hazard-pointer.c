@@ -134,11 +134,13 @@ get_delayed_free_entry (int index)
 static void
 delayed_free_push (DelayedFreeItem item)
 {
-	int index = InterlockedIncrement (&num_used_delayed_free_entries) - 1;
-	DelayedFreeEntry *entry = get_delayed_free_entry (index);
+	int index, num_used;
+	DelayedFreeEntry *entry;
 
-	while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_FREE) != DFE_STATE_FREE)
-		;
+	do {
+		index = InterlockedIncrement (&num_used_delayed_free_entries) - 1;
+		entry = get_delayed_free_entry (index);
+	} while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_FREE) != DFE_STATE_FREE);
 
 	mono_memory_write_barrier ();
 
@@ -147,6 +149,14 @@ delayed_free_push (DelayedFreeItem item)
 	mono_memory_write_barrier ();
 
 	entry->state = DFE_STATE_USED;
+
+	mono_memory_write_barrier ();
+
+	do {
+		num_used = num_used_delayed_free_entries;
+		if (num_used > index)
+			break;
+	} while (InterlockedCompareExchange (&num_used_delayed_free_entries, index + 1, num_used) != num_used);
 }
 
 static gboolean
@@ -156,23 +166,20 @@ delayed_free_pop (DelayedFreeItem *item)
 	DelayedFreeEntry *entry;
 
 	do {
-		index = num_used_delayed_free_entries;
-		if (index == 0)
-			return FALSE;
-	} while (InterlockedCompareExchange (&num_used_delayed_free_entries, index - 1, index) != index);
+		do {
+			index = num_used_delayed_free_entries;
+			if (index == 0)
+				return FALSE;
+		} while (InterlockedCompareExchange (&num_used_delayed_free_entries, index - 1, index) != index);
 
-	--index;
+		entry = get_delayed_free_entry (index - 1);
+	} while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_USED) != DFE_STATE_USED);
 
-	entry = get_delayed_free_entry (index);
-
-	while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_USED) != DFE_STATE_USED)
-		;
-
-	mono_memory_write_barrier ();
+	mono_memory_barrier ();
 
 	*item = entry->item;
 
-	mono_memory_write_barrier ();
+	mono_memory_barrier ();
 
 	entry->state = DFE_STATE_FREE;
 
