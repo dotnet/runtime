@@ -2458,10 +2458,10 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
  * Finds the bottom handler block running and install a block guard if needed.
  */
 gboolean
-mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
+mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 {
 	FindHandlerBlockData data = { 0 };
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS];
 	gpointer resume_ip;
 
 	/* Guard against a null MonoJitTlsData. This can happens if the thread receives the
@@ -2470,7 +2470,7 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
-	mono_walk_stack_with_ctx (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
+	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
 
 	if (!data.ji)
 		return FALSE;
@@ -2484,16 +2484,12 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	jit_tls->handler_block_return_address = resume_ip;
 	jit_tls->handler_block = data.ei;
 
-#ifndef HOST_WIN32
-	/*Clear current thread from been wapi interrupted otherwise things can go south*/
-	wapi_clear_interruption ();
-#endif
 	return TRUE;
 }
 
 #else
 gboolean
-mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
+mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 {
 	return FALSE;
 }

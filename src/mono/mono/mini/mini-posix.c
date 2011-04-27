@@ -199,7 +199,6 @@ SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
-	MonoContext mctx;
 	gboolean running_managed;
 	MonoException *exc;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -244,9 +243,15 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	 */
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 	if (!mono_aot_only && ctx) {
-		mono_arch_sigctx_to_monoctx (ctx, &mctx);
-		if (mono_install_handler_block_guard (thread, &mctx)) {
-			return;
+		MonoThreadUnwindState unwind_state;
+		if (mono_thread_state_init_from_sigctx (&unwind_state, ctx)) {
+			if (mono_install_handler_block_guard (&unwind_state)) {
+#ifndef HOST_WIN32
+				/*Clear current thread from been wapi interrupted otherwise things can go south*/
+				wapi_clear_interruption ();
+#endif
+				return;
+			}
 		}
 	}
 #endif
