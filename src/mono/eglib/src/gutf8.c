@@ -226,28 +226,29 @@ glong
 g_utf8_strlen (const gchar *str, gssize max_len)
 {
 	const guchar *inptr = (const guchar *) str;
-	glong len = 0, n;
+	glong clen = 0, len = 0, n;
 	
 	if (max_len == 0)
 		return 0;
 	
 	if (max_len < 0) {
-		while (*inptr)
+		while (*inptr) {
 			inptr += g_utf8_jump_table[*inptr];
-		
-		return inptr - (const guchar *) str;
+			len++;
+		}
 	} else {
 		while (len < max_len && *inptr) {
 			n = g_utf8_jump_table[*inptr];
-			if ((len + n) > max_len)
+			if ((clen + n) > max_len)
 				break;
 			
 			inptr += n;
-			len += n;
+			clen += n;
+			len++;
 		}
-		
-		return len;
 	}
+	
+	return len;
 }
 
 gunichar
