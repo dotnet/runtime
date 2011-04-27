@@ -1,3 +1,6 @@
+# Process this file with autoconf to produce a configure script.
+AC_PREREQ([2.62])
+
 AC_INIT(mono, [2.11],
         [http://bugzilla.novell.com/enter_bug.cgi?product=mono])
 
