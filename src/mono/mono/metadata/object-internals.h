@@ -655,6 +655,9 @@ MonoRuntimeExceptionHandlingCallbacks *
 mono_get_eh_callbacks (void) MONO_INTERNAL;
 
 void
+mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx) MONO_INTERNAL;
+
+void
 mono_type_initialization_init (void) MONO_INTERNAL;
 
 void
