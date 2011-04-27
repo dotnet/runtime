@@ -36,7 +36,7 @@ utf8_case_conv (const gchar *str, gssize len, gboolean upper)
 	glong i, ulen;
 	gchar *utf8;
 	
-	ustr = g_utf8_to_ucs4 (str, (glong) len, NULL, &ulen, NULL);
+	ustr = g_utf8_to_ucs4_fast (str, (glong) len, &ulen);
 	for (i = 0; i < ulen; i++)
 		ustr[i] = upper ? g_unichar_toupper (ustr[i]) : g_unichar_tolower (ustr[i]);
 	utf8 = g_ucs4_to_utf8 (ustr, ulen, NULL, NULL, NULL);
