@@ -237,7 +237,10 @@ decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
 	
 	c = GUINT32_FROM_BE (*inptr);
 	
-	if (c >= 2147483648UL) {
+	if (c >= 0xd800 && c < 0xe000) {
+		errno = EILSEQ;
+		return -1;
+	} else if (c >= 0x110000) {
 		errno = EILSEQ;
 		return -1;
 	}
@@ -260,7 +263,10 @@ decode_utf32le (char *inbuf, size_t inleft, gunichar *outchar)
 	
 	c = GUINT32_FROM_LE (*inptr);
 	
-	if (c >= 2147483648UL) {
+	if (c >= 0xd800 && c < 0xe000) {
+		errno = EILSEQ;
+		return -1;
+	} else if (c >= 0x110000) {
 		errno = EILSEQ;
 		return -1;
 	}
@@ -401,7 +407,7 @@ encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 	gunichar2 ch;
 	gunichar c2;
 	
-	if (c < 0xd800) {
+	if (c < 0x10000) {
 		if (outleft < 2) {
 			errno = E2BIG;
 			return -1;
@@ -412,21 +418,7 @@ encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 		*outptr = GUINT16_TO_BE (ch);
 		
 		return 2;
-	} else if (c < 0xe000) {
-		errno = EILSEQ;
-		return -1;
-	} else if (c < 0x10000) {
-		if (outleft < 2) {
-			errno = E2BIG;
-			return -1;
-		}
-		
-		ch = (gunichar2) c;
-		
-		*outptr = GUINT16_TO_BE (ch);
-		
-		return 2;
-	} else if (c < 0x110000) {
+	} else {
 		if (outleft < 4) {
 			errno = E2BIG;
 			return -1;
@@ -441,9 +433,6 @@ encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 		outptr[1] = GUINT16_TO_BE (ch);
 		
 		return 4;
-	} else {
-		errno = EILSEQ;
-		return -1;
 	}
 }
 
@@ -454,7 +443,7 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 	gunichar2 ch;
 	gunichar c2;
 	
-	if (c < 0xd800) {
+	if (c < 0x10000) {
 		if (outleft < 2) {
 			errno = E2BIG;
 			return -1;
@@ -465,21 +454,7 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 		*outptr = GUINT16_TO_LE (ch);
 		
 		return 2;
-	} else if (c < 0xe000) {
-		errno = EILSEQ;
-		return -1;
-	} else if (c < 0x10000) {
-		if (outleft < 2) {
-			errno = E2BIG;
-			return -1;
-		}
-		
-		ch = (gunichar2) c;
-		
-		*outptr = GUINT16_TO_LE (ch);
-		
-		return 2;
-	} else if (c < 0x110000) {
+	} else {
 		if (outleft < 4) {
 			errno = E2BIG;
 			return -1;
@@ -494,9 +469,6 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 		outptr[1] = GUINT16_TO_LE (ch);
 		
 		return 4;
-	} else {
-		errno = EILSEQ;
-		return -1;
 	}
 }
 
@@ -565,27 +537,24 @@ encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 	unsigned char *outptr = (unsigned char *) outbuf;
 	int base, n, i;
 	
-	if (c < 128UL) {
+	if (c < 0x80) {
 		base = 0;
 		n = 1;
-	} else if (c < 2048UL) {
+	} else if (c < 0x800) {
 		base = 192;
 		n = 2;
-	} else if (c < 65536UL) {
+	} else if (c < 0x10000) {
 		base = 224;
 		n = 3;
-	} else if (c < 2097152UL) {
+	} else if (c < 0x200000) {
 		base = 240;
 		n = 4;
-	} else if (c < 67108864UL) {
+	} else if (c < 0x4000000) {
 		base = 248;
 		n = 5;
-	} else if (c < 2147483648UL) {
+	} else {
 		base = 252;
 		n = 6;
-	} else {
-		errno = EINVAL;
-		return -1;
 	}
 	
 	if (outleft < n) {
@@ -815,22 +784,22 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 {
 	int base, n, i;
 	
-	if (c < 128UL) {
+	if (c < 0x80) {
 		base = 0;
 		n = 1;
-	} else if (c < 2048UL) {
+	} else if (c < 0x800) {
 		base = 192;
 		n = 2;
-	} else if (c < 65536UL) {
+	} else if (c < 0x10000) {
 		base = 224;
 		n = 3;
-	} else if (c < 2097152UL) {
+	} else if (c < 0x200000) {
 		base = 240;
 		n = 4;
-	} else if (c < 67108864UL) {
+	} else if (c < 0x4000000) {
 		base = 248;
 		n = 5;
-	} else if (c < 2147483648UL) {
+	} else if (c < 0x80000000) {
 		base = 252;
 		n = 6;
 	} else {
