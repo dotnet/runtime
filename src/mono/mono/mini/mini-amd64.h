@@ -354,8 +354,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_AOT_SUPPORTED 1
 #if !defined( HOST_WIN32 ) && !defined( __native_client__ )
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
-#else
-#define DISABLE_DEBUGGER_AGENT 1
 #endif
 
 #if !defined(HOST_WIN32) || defined(__sun)
