@@ -395,6 +395,13 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 	return info;
 }
 
+/**
+Inject an assynchronous call into the target thread. The target thread must be suspended and
+only a single async call can be setup for a given suspend cycle.
+This async call must cause stack unwinding as the current implementation doesn't save enough state
+to resume execution of the top-of-stack function. It's an acceptable limitation since this is
+currently used only to deliver exceptions.
+*/
 void
 mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data)
 {
