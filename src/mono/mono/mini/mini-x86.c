@@ -801,6 +801,10 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
+	if (ss_trigger_page)
+		mono_vfree (ss_trigger_page, mono_pagesize ());
+	if (bp_trigger_page)
+		mono_vfree (bp_trigger_page, mono_pagesize ());
 	DeleteCriticalSection (&mini_arch_mutex);
 }
 
