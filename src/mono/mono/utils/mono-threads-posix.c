@@ -91,6 +91,13 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 		/*if (EINTR != errno) ABORT("sem_wait failed"); */
 	}
 
+	if (current->async_target) {
+		MonoContext tmp = current->suspend_state.ctx;
+		runtime_callbacks.setup_async_callback (&tmp, current->async_target, current->user_data);
+		current->async_target = current->user_data = NULL;
+		mono_monoctx_to_sigctx (&tmp, context);
+	}
+
 	MONO_SEM_POST (&current->finish_resume_semaphore);
 }
 

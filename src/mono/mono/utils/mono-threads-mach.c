@@ -69,6 +69,36 @@ gboolean
 mono_threads_core_resume (MonoThreadInfo *info)
 {
 	kern_return_t ret;
+
+	if (info->async_target) {
+		MonoContext tmp = info->suspend_state.ctx;
+		mach_msg_type_number_t num_state;
+		thread_state_t state;
+		ucontext_t uctx;
+		mcontext_t mctx;
+
+		mono_threads_get_runtime_callbacks ()->setup_async_callback (&tmp, info->async_target, info->user_data);
+		info->async_target = info->user_data = NULL;
+
+		state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
+		mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
+
+		ret = mono_mach_arch_get_thread_state (info->native_handle, state, &num_state);
+		if (ret != KERN_SUCCESS)
+			return FALSE;
+
+		mono_mach_arch_thread_state_to_mcontext (state, mctx);
+		uctx.uc_mcontext = mctx;
+		mono_monoctx_to_sigctx (&tmp, &uctx);
+
+		mono_mach_arch_mcontext_to_thread_state (mctx, state);
+
+		ret = mono_mach_arch_set_thread_state (info->native_handle, state, num_state);
+		if (ret != KERN_SUCCESS)
+			return FALSE;
+	}
+
+
 	ret = thread_resume (info->native_handle);
 	return ret == KERN_SUCCESS;
 }

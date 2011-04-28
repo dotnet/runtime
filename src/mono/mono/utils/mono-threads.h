@@ -82,6 +82,10 @@ typedef struct {
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
 	MonoThreadUnwindState suspend_state;
+
+	/*async call machinery, thread MUST be suspended before accessing those fields*/
+	void (*async_target)(void*);
+	void *user_data;
 } MonoThreadInfo;
 
 typedef struct {
@@ -150,6 +154,9 @@ mono_thread_info_self_suspend (void) MONO_INTERNAL;
 
 gboolean
 mono_thread_info_new_interrupt_enabled (void) MONO_INTERNAL;
+
+void
+mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data) MONO_INTERNAL;
 
 void
 mono_thread_info_suspend_lock (void) MONO_INTERNAL;

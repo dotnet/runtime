@@ -30,7 +30,7 @@ harder for an operation that is hardly performance critical.
 
 The GC has to acquire this lock before starting a STW to make sure
 a runtime suspend won't make it wronly see a thread in a safepoint
-+when it is in fact not.
+when it is in fact not.
 */
 static CRITICAL_SECTION global_suspend_lock;
 
@@ -393,6 +393,17 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 
 	mono_thread_info_suspend_unlock ();
 	return info;
+}
+
+void
+mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data)
+{
+	g_assert (info->suspend_count);
+	/*FIXME this is a bad assert, we probably should do proper locking and fail if one is already set*/
+	g_assert (!info->async_target);
+	info->async_target = target_func;
+	/* This is not GC tracked */
+	info->user_data = user_data;
 }
 
 /*
