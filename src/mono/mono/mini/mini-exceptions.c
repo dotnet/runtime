@@ -2520,7 +2520,11 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 		return FALSE;
 	}
 
-	mono_arch_sigctx_to_monoctx (sigctx, &ctx->ctx);
+	if (sigctx)
+		mono_arch_sigctx_to_monoctx (sigctx, &ctx->ctx);
+	else
+		MONO_CONTEXT_GET_CURRENT (ctx->ctx);
+
 	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;

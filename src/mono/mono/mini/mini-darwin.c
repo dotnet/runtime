@@ -280,7 +280,10 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 	jit_key = mono_pthread_key_for_tls (mono_get_jit_tls_key ());
 	jit_tls = mono_mach_arch_get_tls_value_from_thread (thread_id, jit_key);
 	domain = mono_mach_arch_get_tls_value_from_thread (thread_id, domain_key);
-	g_assert (jit_tls);
+
+	/*Thread already started to cleanup, can no longer capture unwind state*/
+	if (!jit_tls)
+		return FALSE;
 	g_assert (domain);
 
 	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
