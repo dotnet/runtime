@@ -110,6 +110,9 @@ typedef guint32 gunichar;
 #define FALSE                0
 #define TRUE                 1
 
+#define G_MINSHORT           SHRT_MIN
+#define G_MAXSHORT           SHRT_MAX
+#define G_MAXUSHORT          USHRT_MAX
 #define G_MAXINT             INT_MAX
 #define G_MININT             INT_MIN
 #define G_MAXINT32           INT32_MAX
