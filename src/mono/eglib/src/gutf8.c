@@ -85,13 +85,14 @@ utf8_validate (const unsigned char *inptr, size_t len)
 		
 		/* no fall-through in this inner switch */
 		switch (*inptr) {
-		case 0xE0: if (c < 0xA0) return FALSE;
-		case 0xED: if (c > 0x9F) return FALSE;
+		case 0xE0: if (c < 0xA0) return FALSE; break;
+		case 0xED: if (c > 0x9F) return FALSE; break;
 		case 0xEF: if (c == 0xB7 && (ptr[1] > 0x8F && ptr[1] < 0xB0)) return FALSE;
 			if (c == 0xBF && (ptr[1] == 0xBE || ptr[1] == 0xBF)) return FALSE;
-		case 0xF0: if (c < 0x90) return FALSE;
-		case 0xF4: if (c > 0x8F) return FALSE;
-		default:   if (c < 0x80) return FALSE;
+			break;
+		case 0xF0: if (c < 0x90) return FALSE; break;
+		case 0xF4: if (c > 0x8F) return FALSE; break;
+		default:   if (c < 0x80) return FALSE; break;
 		}
 	case 1: if (*inptr >= 0x80 && *inptr < 0xC2) return FALSE;
 	}
