@@ -2964,7 +2964,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LOADU4_MEM:
 		case OP_LOAD_MEM: {
 			int size = 8;
-			LLVMValueRef index, addr;
+			LLVMValueRef base, index, addr;
 			LLVMTypeRef t;
 			gboolean sext = FALSE, zext = FALSE;
 			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
@@ -2976,15 +2976,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM) || (ins->opcode == OP_LOADU1_MEM) || (ins->opcode == OP_LOADU2_MEM)) {
 				addr = LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE);
-			} else if (ins->inst_offset == 0) {
-				addr = values [ins->inst_basereg];
-			} else if (ins->inst_offset % size != 0) {
-				/* Unaligned load */
-				index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset, FALSE);
-				addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
 			} else {
-				index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-				addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, "");
+				/* _MEMBASE */
+				base = lhs;
+
+				if (ins->inst_offset == 0) {
+					addr = base;
+				} else if (ins->inst_offset % size != 0) {
+					/* Unaligned load */
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset, FALSE);
+					addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
+				} else {
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);
+					addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
+				}
 			}
 
 			addr = convert (ctx, addr, LLVMPointerType (t, 0));
