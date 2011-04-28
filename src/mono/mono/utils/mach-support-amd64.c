@@ -42,7 +42,7 @@ void
 mono_mach_arch_thread_state_to_mcontext (thread_state_t state, mcontext_t context)
 {
 	x86_thread_state64_t *arch_state = (x86_thread_state64_t *) state;
-	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontex64 *) context;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
 
 	ctx->__ss = *arch_state;
 }
@@ -51,7 +51,7 @@ void
 mono_mach_arch_mcontext_to_thread_state (mcontext_t context, thread_state_t state)
 {
 	x86_thread_state64_t *arch_state = (x86_thread_state64_t *) state;
-	struct __darwin_mcontex64 *ctx = (struct __darwin_mcontex64 *) context;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
 
 	*arch_state = ctx->__ss;
 }
