@@ -47,6 +47,15 @@ mono_mach_arch_thread_state_to_mcontext (thread_state_t state, mcontext_t contex
 	ctx->__ss = *arch_state;
 }
 
+void
+mono_mach_arch_mcontext_to_thread_state (mcontext_t context, thread_state_t state)
+{
+	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
+	struct __darwin_mcontext *ctx = (struct __darwin_mcontext *) context;
+
+	*arch_state = ctx->__ss;
+}
+
 int
 mono_mach_arch_get_thread_state_size ()
 {
@@ -64,6 +73,12 @@ mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mac
 	ret = thread_get_state (thread, ARM_THREAD_STATE_COUNT, (thread_state_t) arch_state, count);
 
 	return ret;
+}
+
+kern_return_t
+mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count)
+{
+	return thread_set_state (thread, ARM_THREAD_STATE_COUNT, state, count);
 }
 
 void *
