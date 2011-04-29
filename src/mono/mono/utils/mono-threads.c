@@ -145,12 +145,21 @@ unregister_thread (void *arg)
 
 	THREADS_DEBUG ("unregistering info %p\n", info);
 
-	if (threads_callbacks.thread_unregister)
-		threads_callbacks.thread_unregister (info);
-
+	/*
+	 * We have to remove it from the thread list before cleaning up since 
+	 * otherwise the GC can see a cleaned up thread during collection which
+	 * would result in a crash.
+	 * Removing it before cleaning up is harmless as this thread is for all
+	 * other purposes already dead.
+	 */
 	result = mono_thread_info_remove (info);
 	g_assert (result);
 
+	if (threads_callbacks.thread_unregister)
+		threads_callbacks.thread_unregister (info);
+
+	/*now it's safe to free the thread info.*/
+	mono_thread_hazardous_free_or_queue (info, free_thread_info);
 	mono_thread_small_id_free (small_id);
 }
 
@@ -204,7 +213,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 #endif
 	InitializeCriticalSection (&global_suspend_lock);
 
-	mono_lls_init (&thread_list, free_thread_info);
+	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
 	mono_threads_init_platform ();
 

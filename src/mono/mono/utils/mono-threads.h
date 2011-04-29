@@ -90,6 +90,10 @@ typedef struct {
 
 typedef struct {
 	void* (*thread_register)(THREAD_INFO_TYPE *info, void *baseaddr);
+	/*
+	This callback is called after @info is removed from the thread list.
+	SMR remains functional as its small_id has not been reclaimed.
+	*/
 	void (*thread_unregister)(THREAD_INFO_TYPE *info);
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 } MonoThreadInfoCallbacks;
