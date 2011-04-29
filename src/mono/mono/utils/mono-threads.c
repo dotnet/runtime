@@ -38,7 +38,7 @@ static CRITICAL_SECTION global_suspend_lock;
 static int thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
-static MonoNativeTlsKey thread_info_key;
+static MonoNativeTlsKey thread_info_key, small_id_key;
 static MonoLinkedListSet thread_list;
 
 static inline void
@@ -86,8 +86,7 @@ mono_thread_info_insert (MonoThreadInfo *info)
 static gboolean
 mono_thread_info_remove (MonoThreadInfo *info)
 {
-	/*TLS is gone by now, so we can't rely on it to retrieve hp*/
-	MonoThreadHazardPointers *hp = mono_hazard_pointer_get_by_id (info->small_id);
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 	gboolean res;
 
 	THREADS_DEBUG ("removing info %p\n", info);
@@ -116,6 +115,10 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 
 	InitializeCriticalSection (&info->suspend_lock);
 
+	/*set TLS early so SMR works */
+	mono_native_tls_set_value (thread_info_key, info);
+	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
+
 	THREADS_DEBUG ("registering info %p tid %p small id %x\n", info, mono_thread_info_get_tid (info), info->small_id);
 
 	if (threads_callbacks.thread_register) {
@@ -127,7 +130,6 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	}
 
 	mono_threads_platform_register (info);
-	mono_native_tls_set_value (thread_info_key, info);
 
 	/*If this fail it means a given thread has been registered twice, which doesn't make sense. */
 	result = mono_thread_info_insert (info);
@@ -146,6 +148,12 @@ unregister_thread (void *arg)
 	THREADS_DEBUG ("unregistering info %p\n", info);
 
 	/*
+	 * TLS destruction order is not reliable so small_id might be cleaned up
+	 * before us.
+	 */
+	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
+
+	/*
 	 * We have to remove it from the thread list before cleaning up since 
 	 * otherwise the GC can see a cleaned up thread during collection which
 	 * would result in a crash.
@@ -154,6 +162,7 @@ unregister_thread (void *arg)
 	 */
 	result = mono_thread_info_remove (info);
 	g_assert (result);
+
 
 	if (threads_callbacks.thread_unregister)
 		threads_callbacks.thread_unregister (info);
@@ -167,6 +176,15 @@ MonoThreadInfo*
 mono_thread_info_current (void)
 {
 	return mono_native_tls_get_value (thread_info_key);
+}
+
+int
+mono_thread_info_get_small_id (void)
+{
+	gpointer val = mono_native_tls_get_value (small_id_key);
+	if (!val)
+		return -1;
+	return GPOINTER_TO_INT (val) - 1;
 }
 
 MonoLinkedListSet*
@@ -211,13 +229,17 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 #else
 	res = mono_native_tls_alloc (thread_info_key, unregister_thread);
 #endif
+	g_assert (res);
+
+	res = mono_native_tls_alloc (small_id_key, NULL);
+	g_assert (res);
+
 	InitializeCriticalSection (&global_suspend_lock);
 
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
 	mono_threads_init_platform ();
 
-	g_assert (res);
 	g_assert (sizeof (MonoNativeThreadId) <= sizeof (uintptr_t));
 }
 

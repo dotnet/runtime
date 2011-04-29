@@ -141,6 +141,9 @@ mono_thread_info_dettach (void) MONO_INTERNAL;
 THREAD_INFO_TYPE *
 mono_thread_info_current (void) MONO_INTERNAL;
 
+int
+mono_thread_info_get_small_id (void) MONO_INTERNAL;
+
 MonoLinkedListSet*
 mono_thread_info_list_head (void) MONO_INTERNAL;
 

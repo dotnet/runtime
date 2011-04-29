@@ -297,21 +297,14 @@ is_pointer_hazardous (gpointer p)
 MonoThreadHazardPointers*
 mono_hazard_pointer_get (void)
 {
-	MonoThreadInfo *current_thread = mono_thread_info_current ();
+	int small_id = mono_thread_info_get_small_id ();
 
-	if (!(current_thread && current_thread->small_id >= 0)) {
+	if (small_id < 0) {
 		static MonoThreadHazardPointers emerg_hazard_table;
-		g_warning ("Thread %p may have been prematurely finalized", current_thread);
+		g_warning ("Thread %p may have been prematurely finalized", (gpointer)mono_native_thread_id_get ());
 		return &emerg_hazard_table;
 	}
 
-	return &hazard_table [current_thread->small_id];
-}
-
-MonoThreadHazardPointers*
-mono_hazard_pointer_get_by_id (int small_id)
-{
-	g_assert (small_id >= 0 && small_id <= highest_small_id);
 	return &hazard_table [small_id];
 }
 

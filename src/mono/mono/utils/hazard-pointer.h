@@ -22,7 +22,6 @@ void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free
 void mono_thread_hazardous_try_free_all (void) MONO_INTERNAL;
 MonoThreadHazardPointers* mono_hazard_pointer_get (void) MONO_INTERNAL;
 gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index) MONO_INTERNAL;
-MonoThreadHazardPointers* mono_hazard_pointer_get_by_id (int small_id) MONO_INTERNAL;
 
 #define mono_hazard_pointer_set(hp,i,v)	\
 	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
