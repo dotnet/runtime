@@ -187,6 +187,10 @@ static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32
 static gboolean mono_thread_resume (MonoInternalThread* thread);
 static void mono_thread_start (MonoThread *thread);
 static void signal_thread_state_change (MonoInternalThread *thread);
+static void abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort);
+static void suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt);
+static void self_suspend_internal (MonoInternalThread *thread);
+static void resume_thread_internal (MonoInternalThread *thread);
 
 static MonoException* mono_thread_execute_interruption (MonoInternalThread *thread);
 static void ref_stack_destroy (gpointer rs);
@@ -1987,7 +1991,7 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoInternalThread *t
 	LeaveCriticalSection (this->synch_cs);
 	
 	if (throw) {
-		signal_thread_state_change (this);
+		abort_thread_internal (this, TRUE, FALSE);
 	}
 }
 
@@ -2135,7 +2139,7 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		/* Make sure the thread is awake */
 		mono_thread_resume (thread);
 	
-	signal_thread_state_change (thread);
+	abort_thread_internal (thread, TRUE, TRUE);
 }
 
 void
@@ -2242,7 +2246,7 @@ mono_thread_suspend (MonoInternalThread *thread)
 
 	LeaveCriticalSection (thread->synch_cs);
 
-	signal_thread_state_change (thread);
+	suspend_thread_internal (thread, FALSE);
 	return TRUE;
 }
 
@@ -2274,22 +2278,8 @@ mono_thread_resume (MonoInternalThread *thread)
 		LeaveCriticalSection (thread->synch_cs);
 		return FALSE;
 	}
-	
-	thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (thread->resume_event == NULL) {
-		LeaveCriticalSection (thread->synch_cs);
-		return(FALSE);
-	}
-	
-	/* Awake the thread */
-	SetEvent (thread->suspend_event);
 
-	LeaveCriticalSection (thread->synch_cs);
-
-	/* Wait for the thread to awake */
-	WaitForSingleObject (thread->resume_event, INFINITE);
-	CloseHandle (thread->resume_event);
-	thread->resume_event = NULL;
+	resume_thread_internal (thread);
 
 	return TRUE;
 }
@@ -2355,7 +2345,7 @@ void mono_thread_internal_stop (MonoInternalThread *thread)
 	
 	LeaveCriticalSection (thread->synch_cs);
 	
-	signal_thread_state_change (thread);
+	abort_thread_internal (thread, TRUE, TRUE);
 }
 
 void mono_thread_stop (MonoThread *thread)
@@ -2998,11 +2988,14 @@ void mono_thread_suspend_all_other_threads (void)
 			LeaveCriticalSection (thread->synch_cs);
 
 			/* Signal the thread to suspend */
-			if (signal_suspend)
+			if (mono_thread_info_new_interrupt_enabled ())
+				suspend_thread_internal (thread, TRUE);
+			else if (signal_suspend)
 				signal_thread_state_change (thread);
 		}
 
-		if (eventidx > 0) {
+		/*Only wait on the suspend event if we are using the old path */
+		if (eventidx > 0 && !mono_thread_info_new_interrupt_enabled ()) {
 			WaitForMultipleObjectsEx (eventidx, events, TRUE, 100, FALSE);
 			for (i = 0; i < wait->num; ++i) {
 				MonoInternalThread *thread = wait->threads [i];
@@ -3019,7 +3012,9 @@ void mono_thread_suspend_all_other_threads (void)
 				}
 				LeaveCriticalSection (thread->synch_cs);
 			}
-		} else {
+		}
+		
+		if (eventidx <= 0) {
 			/* 
 			 * If there are threads which are starting up, we wait until they
 			 * are suspended when they try to register in the threads hash.
@@ -3898,39 +3893,7 @@ static MonoException* mono_thread_execute_interruption (MonoInternalThread *thre
 		return thread->abort_exc;
 	}
 	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
-		thread->state &= ~ThreadState_SuspendRequested;
-		thread->state |= ThreadState_Suspended;
-		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-		if (thread->suspend_event == NULL) {
-			LeaveCriticalSection (thread->synch_cs);
-			return(NULL);
-		}
-		if (thread->suspended_event)
-			SetEvent (thread->suspended_event);
-
-		LeaveCriticalSection (thread->synch_cs);
-
-		if (shutting_down) {
-			/* After we left the lock, the runtime might shut down so everything becomes invalid */
-			for (;;)
-				Sleep (1000);
-		}
-		
-		WaitForSingleObject (thread->suspend_event, INFINITE);
-		
-		EnterCriticalSection (thread->synch_cs);
-
-		CloseHandle (thread->suspend_event);
-		thread->suspend_event = NULL;
-		thread->state &= ~ThreadState_Suspended;
-	
-		/* The thread that requested the resume will have replaced this event
-		 * and will be waiting for it
-		 */
-		SetEvent (thread->resume_event);
-
-		LeaveCriticalSection (thread->synch_cs);
-		
+		self_suspend_internal (thread);		
 		return NULL;
 	}
 	else if ((thread->state & ThreadState_StopRequested) != 0) {
@@ -4299,4 +4262,91 @@ mono_thread_kill (MonoInternalThread *thread, int signal)
 #    endif
 #  endif
 #endif
+}
+
+static void
+abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort)
+{
+	if (!mono_thread_info_new_interrupt_enabled ()) {
+		signal_thread_state_change (thread);
+		return;
+	}
+	g_assert (0);
+}
+
+static void
+suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
+{
+	if (!mono_thread_info_new_interrupt_enabled ()) {
+		signal_thread_state_change (thread);
+		return;
+	}
+	g_assert (0);
+}
+
+/*This is called with @thread synch_cs held and it must release it*/
+static void
+self_suspend_internal (MonoInternalThread *thread)
+{
+	if (!mono_thread_info_new_interrupt_enabled ()) {
+		thread->state &= ~ThreadState_SuspendRequested;
+		thread->state |= ThreadState_Suspended;
+		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		if (thread->suspend_event == NULL) {
+			LeaveCriticalSection (thread->synch_cs);
+			return(NULL);
+		}
+		if (thread->suspended_event)
+			SetEvent (thread->suspended_event);
+
+		LeaveCriticalSection (thread->synch_cs);
+
+		if (shutting_down) {
+			/* After we left the lock, the runtime might shut down so everything becomes invalid */
+			for (;;)
+				Sleep (1000);
+		}
+		
+		WaitForSingleObject (thread->suspend_event, INFINITE);
+		
+		EnterCriticalSection (thread->synch_cs);
+
+		CloseHandle (thread->suspend_event);
+		thread->suspend_event = NULL;
+		thread->state &= ~ThreadState_Suspended;
+	
+		/* The thread that requested the resume will have replaced this event
+		 * and will be waiting for it
+		 */
+		SetEvent (thread->resume_event);
+
+		LeaveCriticalSection (thread->synch_cs);
+		return;
+	}
+	g_assert (0);
+}
+
+/*This is called with @thread synch_cs held and it must release it*/
+static void
+resume_thread_internal (MonoInternalThread *thread)
+{
+	if (!mono_thread_info_new_interrupt_enabled ()) {
+		thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		if (thread->resume_event == NULL) {
+			LeaveCriticalSection (thread->synch_cs);
+			return(FALSE);
+		}
+
+		/* Awake the thread */
+		SetEvent (thread->suspend_event);
+
+		LeaveCriticalSection (thread->synch_cs);
+
+		/* Wait for the thread to awake */
+		WaitForSingleObject (thread->resume_event, INFINITE);
+		CloseHandle (thread->resume_event);
+		thread->resume_event = NULL;
+		return;
+	}
+	g_assert (0);
 }
