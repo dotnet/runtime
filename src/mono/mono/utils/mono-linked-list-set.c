@@ -53,6 +53,7 @@ get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers
 
 /*
 Initialize @list and will use @free_node_func to release memory.
+If @free_node_func is null the caller is responsible for releasing node memory. 
 */
 void
 mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *))
@@ -101,9 +102,10 @@ try_again:
 			mono_hazard_pointer_set (hp, 2, cur);
 		} else {
 			next = mono_lls_pointer_unmask (next);
-			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == next)
-				mono_thread_hazardous_free_or_queue (cur, list->free_node_func);
-			else
+			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == next) {
+				if (list->free_node_func)
+					mono_thread_hazardous_free_or_queue (cur, list->free_node_func);
+			} else
 				goto try_again;
 		}
 		cur = mono_lls_pointer_unmask (next);
@@ -159,9 +161,10 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 
 		if (InterlockedCompareExchangePointer ((volatile gpointer*)&cur->next, mask (next, 1), next) != next)
 			continue;
-		if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == cur)
-			mono_thread_hazardous_free_or_queue (value, list->free_node_func);
-		else
+		if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == cur) {
+			if (list->free_node_func)
+				mono_thread_hazardous_free_or_queue (value, list->free_node_func);
+		} else
 			mono_lls_find (list, hp, value->key);
 		return TRUE;
 	}
