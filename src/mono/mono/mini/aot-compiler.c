@@ -5418,8 +5418,6 @@ emit_code (MonoAotCompile *acfg)
 
 		/* Emit unbox trampoline */
 		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-			char call_target [256];
-
 			if (!method->wrapper_type && !method->is_inflated) {
 				g_assert (method->token);
 				sprintf (symbol, "ut_%d", mono_metadata_token_index (method->token) - 1);
@@ -5438,9 +5436,7 @@ emit_code (MonoAotCompile *acfg)
 
 			emit_label (acfg, symbol);
 
-			sprintf (call_target, "%s", cfg->asm_symbol);
-
-			arch_emit_unbox_trampoline (acfg, cfg, cfg->orig_method, call_target);
+			arch_emit_unbox_trampoline (acfg, cfg, cfg->orig_method, cfg->asm_symbol);
 		}
 
 		if (cfg->compile_llvm)
