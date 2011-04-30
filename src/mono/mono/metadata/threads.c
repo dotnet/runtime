@@ -4294,7 +4294,7 @@ self_suspend_internal (MonoInternalThread *thread)
 		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 		if (thread->suspend_event == NULL) {
 			LeaveCriticalSection (thread->synch_cs);
-			return(NULL);
+			return;
 		}
 		if (thread->suspended_event)
 			SetEvent (thread->suspended_event);
@@ -4334,7 +4334,7 @@ resume_thread_internal (MonoInternalThread *thread)
 		thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 		if (thread->resume_event == NULL) {
 			LeaveCriticalSection (thread->synch_cs);
-			return(FALSE);
+			return;
 		}
 
 		/* Awake the thread */
