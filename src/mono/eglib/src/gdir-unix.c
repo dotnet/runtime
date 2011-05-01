@@ -120,18 +120,21 @@ g_mkdir_with_parents (const gchar *pathname, int mode)
 	if (*d == '/')
 		d++;
 	
-	while (*d != '\0') {
-		if (*d == '/') {
-			*d = '\0';
-			rv = mkdir (path, mode);
-			if (rv == -1 && errno != EEXIST) {
-				g_free (path);
-				return -1;
-			}
-			
-			*d++ = '/';
-			while (*d == '/')
-				d++;
+	while (TRUE) {
+		if (*d == '/' || *d == '\0') {
+		  char orig = *d;
+		  *d = '\0';
+		  rv = mkdir (path, mode);
+		  if (rv == -1 && errno != EEXIST) {
+		  	g_free (path);
+			return -1;
+		  }
+
+		  *d++ = orig;
+		  while (orig == '/' && *d == '/')
+		  	d++;
+		  if (orig == '\0')
+		  	break;
 		} else {
 			d++;
 		}
