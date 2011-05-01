@@ -62,8 +62,6 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 
 #define SGEN_MAX_DEBUG_LEVEL 2
 
-//#define SGEN_DEBUG_INTERNAL_ALLOC
-
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
 
@@ -138,8 +136,7 @@ struct _SgenThreadInfo {
 enum {
 	MEMORY_ROLE_GEN0,
 	MEMORY_ROLE_GEN1,
-	MEMORY_ROLE_PINNED,
-	MEMORY_ROLE_INTERNAL
+	MEMORY_ROLE_PINNED
 };
 
 typedef struct _SgenBlock SgenBlock;
@@ -539,8 +536,6 @@ gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
 		}	\
 	} while (0)
 
-typedef struct _SgenInternalAllocator SgenInternalAllocator;
-
 #define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 
 /*
@@ -559,7 +554,6 @@ typedef struct _SgenGrayQueue SgenGrayQueue;
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 
 struct _SgenGrayQueue {
-	SgenInternalAllocator *allocator;
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
 	int balance;
@@ -616,7 +610,6 @@ void mono_sgen_check_section_scan_starts (GCMemSection *section) MONO_INTERNAL;
 
 /* Keep in sync with mono_sgen_dump_internal_mem_usage() in dump_heap()! */
 enum {
-	INTERNAL_MEM_MANAGED,
 	INTERNAL_MEM_PIN_QUEUE,
 	INTERNAL_MEM_FRAGMENT,
 	INTERNAL_MEM_SECTION,
@@ -640,17 +633,13 @@ enum {
 	INTERNAL_MEM_MAX
 };
 
-#define SGEN_INTERNAL_FREELIST_NUM_SLOTS	30
+#define SGEN_PINNED_FREELIST_NUM_SLOTS	30
 
-struct _SgenInternalAllocator {
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-	pthread_t thread;
-#endif
+typedef struct {
 	SgenPinnedChunk *chunk_list;
-	SgenPinnedChunk *free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
-	void *delayed_free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
-	long small_internal_mem_bytes [INTERNAL_MEM_MAX];
-};
+	SgenPinnedChunk *free_lists [SGEN_PINNED_FREELIST_NUM_SLOTS];
+	void *delayed_free_lists [SGEN_PINNED_FREELIST_NUM_SLOTS];
+} SgenPinnedAllocator;
 
 enum {
 	GENERATION_NURSERY,
@@ -659,12 +648,10 @@ enum {
 };
 
 void mono_sgen_init_internal_allocator (void) MONO_INTERNAL;
+void mono_sgen_init_pinned_allocator (void) MONO_INTERNAL;
 
-SgenInternalAllocator* mono_sgen_get_unmanaged_allocator (void) MONO_INTERNAL;
-
-const char* mono_sgen_internal_mem_type_name (int type) MONO_INTERNAL;
 void mono_sgen_report_internal_mem_usage (void) MONO_INTERNAL;
-void mono_sgen_report_internal_mem_usage_full (SgenInternalAllocator *alc) MONO_INTERNAL;
+void mono_sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc) MONO_INTERNAL;
 void mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;
 void mono_sgen_dump_section (GCMemSection *section, const char *type) MONO_INTERNAL;
 void mono_sgen_dump_occupied (char *start, char *end, char *section_start) MONO_INTERNAL;
@@ -679,24 +666,18 @@ void mono_sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 void* mono_sgen_alloc_internal_dynamic (size_t size, int type) MONO_INTERNAL;
 void mono_sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
 
-void* mono_sgen_alloc_internal_fixed (SgenInternalAllocator *allocator, int type) MONO_INTERNAL;
-void mono_sgen_free_internal_fixed (SgenInternalAllocator *allocator, void *addr, int type) MONO_INTERNAL;
-
-void* mono_sgen_alloc_internal_full (SgenInternalAllocator *allocator, size_t size, int type) MONO_INTERNAL;
-void mono_sgen_free_internal_full (SgenInternalAllocator *allocator, void *addr, size_t size, int type) MONO_INTERNAL;
-
-void mono_sgen_free_internal_delayed (void *addr, int type, SgenInternalAllocator *thread_allocator) MONO_INTERNAL;
-void mono_sgen_free_internal_dynamic_delayed (void *addr, size_t size, int type, SgenInternalAllocator *thread_allocator) MONO_INTERNAL;
+void* mono_sgen_alloc_pinned (SgenPinnedAllocator *allocator, size_t size) MONO_INTERNAL;
+void mono_sgen_free_pinned (SgenPinnedAllocator *allocator, void *addr, size_t size) MONO_INTERNAL;
 
 
 void mono_sgen_debug_printf (int level, const char *format, ...) MONO_INTERNAL;
 
 gboolean mono_sgen_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
 
-void mono_sgen_internal_scan_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
-void mono_sgen_internal_scan_pinned_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
+void mono_sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
+void mono_sgen_pinned_scan_pinned_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
 
-void mono_sgen_internal_update_heap_boundaries (SgenInternalAllocator *alc) MONO_INTERNAL;
+void mono_sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc) MONO_INTERNAL;
 
 void** mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void mono_sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
@@ -704,7 +685,7 @@ void mono_sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *que
 
 void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 
-void mono_sgen_add_to_global_remset (SgenInternalAllocator *alc, gpointer ptr) MONO_INTERNAL;
+void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
 

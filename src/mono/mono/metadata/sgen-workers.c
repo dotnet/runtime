@@ -51,7 +51,6 @@ static WorkerData *workers_data;
 static WorkerData workers_gc_thread_data;
 
 static GrayQueue workers_distribute_gray_queue;
-static SgenInternalAllocator workers_distribute_gray_queue_allocator;
 
 #define WORKERS_DISTRIBUTE_GRAY_QUEUE (major_collector.is_parallel ? &workers_distribute_gray_queue : &gray_queue)
 
@@ -117,7 +116,7 @@ workers_wait (void)
 }
 
 static void
-workers_enqueue_job (SgenInternalAllocator *allocator, JobFunc func, void *data)
+workers_enqueue_job (JobFunc func, void *data)
 {
 	int num_entries;
 	JobQueueEntry *entry;
@@ -127,7 +126,7 @@ workers_enqueue_job (SgenInternalAllocator *allocator, JobFunc func, void *data)
 		return;
 	}
 
-	entry = mono_sgen_alloc_internal_fixed (allocator, INTERNAL_MEM_JOB_QUEUE_ENTRY);
+	entry = mono_sgen_alloc_internal (INTERNAL_MEM_JOB_QUEUE_ENTRY);
 	entry->func = func;
 	entry->data = data;
 
@@ -162,7 +161,7 @@ workers_dequeue_and_do_job (WorkerData *data)
 		return FALSE;
 
 	entry->func (data, entry->data);
-	mono_sgen_free_internal_delayed (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY, data->private_gray_queue.allocator);
+	mono_sgen_free_internal (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY);
 	return TRUE;
 }
 
@@ -273,7 +272,7 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 		if (section->end)
 			gray_object_enqueue_section (queue, section);
 		else
-			gray_object_free_queue_section (section, queue->allocator);
+			gray_object_free_queue_section (section);
 	}
 
 	if (data != &workers_gc_thread_data && gray_object_queue_is_empty (queue))
@@ -289,17 +288,11 @@ static void*
 workers_thread_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
-	SgenInternalAllocator allocator;
 
 	if (major_collector.init_worker_thread)
 		major_collector.init_worker_thread (data->major_collector_data);
 
-	memset (&allocator, 0, sizeof (allocator));
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-	allocator.thread = pthread_self ();
-#endif
-
-	gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue, &allocator,
+	gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue,
 			workers_gray_queue_share_redirect, data);
 
 	for (;;) {
@@ -317,7 +310,7 @@ workers_thread_func (void *data_untyped)
 				workers_gray_queue_share_redirect (&data->private_gray_queue);
 			g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
 
-			gray_object_queue_init (&data->private_gray_queue, &allocator);
+			gray_object_queue_init (&data->private_gray_queue);
 
 			did_work = TRUE;
 		}
@@ -342,17 +335,10 @@ workers_distribute_gray_queue_sections (void)
 static void
 workers_init_distribute_gray_queue (void)
 {
-	if (!major_collector.is_parallel) {
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-		mono_sgen_get_unmanaged_allocator ()->thread = pthread_self ();
-#endif
+	if (!major_collector.is_parallel)
 		return;
-	}
 
-	gray_object_queue_init (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator);
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-	workers_distribute_gray_queue_allocator.thread = pthread_self ();
-#endif
+	gray_object_queue_init (&workers_distribute_gray_queue);
 }
 
 static void
@@ -373,7 +359,7 @@ workers_init (int num_workers)
 	MONO_SEM_INIT (&workers_waiting_sem, 0);
 	MONO_SEM_INIT (&workers_done_sem, 0);
 
-	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator,
+	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
 			workers_gray_queue_share_redirect, &workers_gc_thread_data);
 	pthread_mutex_init (&workers_gc_thread_data.stealable_stack_mutex, NULL);
 	workers_gc_thread_data.stealable_stack_fill = 0;
@@ -458,12 +444,8 @@ workers_join (void)
 {
 	int i;
 
-	if (!major_collector.is_parallel) {
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-		mono_sgen_get_unmanaged_allocator ()->thread = NULL;
-#endif
+	if (!major_collector.is_parallel)
 		return;
-	}
 
 	g_assert (gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
 	g_assert (gray_object_queue_is_empty (&workers_distribute_gray_queue));

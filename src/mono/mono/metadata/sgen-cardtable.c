@@ -456,7 +456,7 @@ LOOP_HEAD:
 						major_collector.copy_object ((void**)elem, queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (ptr_in_nursery (new)))
-							mono_sgen_add_to_global_remset (queue->allocator, elem);
+							mono_sgen_add_to_global_remset (elem);
 					}
 				}
 			}

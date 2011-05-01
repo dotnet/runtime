@@ -243,7 +243,8 @@ enum {
  * ######################################################################
  */
 
-static int gc_initialized = 0;
+/* 0 means not initialized, 1 is initialized, -1 means in progress */
+static gint32 gc_initialized = 0;
 /* If set, do a minor collection before every X allocation */
 static guint32 collect_before_allocs = 0;
 /* If set, do a heap consistency check before each minor collection */
@@ -408,7 +409,7 @@ struct _RootRecord {
  * NULL to simplify the elimination of consecutive duplicate
  * entries.
  */
-#define STORE_REMSET_BUFFER_SIZE	1024
+#define STORE_REMSET_BUFFER_SIZE	1023
 
 typedef struct _GenericStoreRememberedSet GenericStoreRememberedSet;
 struct _GenericStoreRememberedSet {
@@ -442,8 +443,7 @@ static gpointer global_remset_cache [2];
  * and doesn't waste any alloc paddin space.
  */
 #define DEFAULT_REMSET_SIZE 1024
-static RememberedSet* alloc_remset (int size, gpointer id);
-static RememberedSet* alloc_global_remset (SgenInternalAllocator *alc, int size, gpointer id);
+static RememberedSet* alloc_remset (int size, gpointer id, gboolean global);
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
@@ -1665,7 +1665,7 @@ global_remset_location_was_not_added (gpointer ptr)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-mono_sgen_add_to_global_remset (SgenInternalAllocator *alc, gpointer ptr)
+mono_sgen_add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
 	gboolean lock = major_collector.is_parallel;
@@ -1696,7 +1696,7 @@ mono_sgen_add_to_global_remset (SgenInternalAllocator *alc, gpointer ptr)
 		*(global_remset->store_next++) = (mword)ptr;
 		goto done;
 	}
-	rs = alloc_global_remset (alc, global_remset->end_set - global_remset->data, NULL);
+	rs = alloc_remset (global_remset->end_set - global_remset->data, NULL, TRUE);
 	rs->next = global_remset;
 	global_remset = rs;
 	*(global_remset->store_next++) = (mword)ptr;
@@ -3132,7 +3132,7 @@ collect_nursery (size_t requested_size)
 
 	try_calculate_minor_collection_allowance (FALSE);
 
-	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
+	gray_object_queue_init (&gray_queue);
 	workers_init_distribute_gray_queue ();
 
 	num_minor_gcs++;
@@ -3172,7 +3172,7 @@ collect_nursery (size_t requested_size)
 
 	sfrjd.heap_start = nursery_start;
 	sfrjd.heap_end = nursery_next;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_remsets, &sfrjd);
+	workers_enqueue_job (job_scan_from_remsets, &sfrjd);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -3202,13 +3202,13 @@ collect_nursery (size_t requested_size)
 	scrrjd_normal.heap_start = nursery_start;
 	scrrjd_normal.heap_end = nursery_next;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_normal);
+	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
 	scrrjd_wbarrier.func = major_collector.copy_object;
 	scrrjd_wbarrier.heap_start = nursery_start;
 	scrrjd_wbarrier.heap_end = nursery_next;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_wbarrier);
+	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
@@ -3216,7 +3216,7 @@ collect_nursery (size_t requested_size)
 	/* thread data */
 	stdjd.heap_start = nursery_start;
 	stdjd.heap_end = nursery_next;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_thread_data, &stdjd);
+	workers_enqueue_job (job_scan_thread_data, &stdjd);
 
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
@@ -3352,7 +3352,7 @@ major_do_collection (const char *reason)
 
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
-	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
+	gray_object_queue_init (&gray_queue);
 	workers_init_distribute_gray_queue ();
 
 	degraded_mode = 0;
@@ -3454,13 +3454,13 @@ major_do_collection (const char *reason)
 	scrrjd_normal.heap_start = heap_start;
 	scrrjd_normal.heap_end = heap_end;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_normal);
+	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
 	scrrjd_wbarrier.func = major_collector.copy_or_mark_object;
 	scrrjd_wbarrier.heap_start = heap_start;
 	scrrjd_wbarrier.heap_end = heap_end;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_wbarrier);
+	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
@@ -3468,7 +3468,7 @@ major_do_collection (const char *reason)
 	/* Threads */
 	stdjd.heap_start = heap_start;
 	stdjd.heap_end = heap_end;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_thread_data, &stdjd);
+	workers_enqueue_job (job_scan_thread_data, &stdjd);
 
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
@@ -3481,10 +3481,10 @@ major_do_collection (const char *reason)
 
 	/* scan the list of objects ready for finalization */
 	sfejd_fin_ready.list = fin_ready_list;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_finalizer_entries, &sfejd_fin_ready);
+	workers_enqueue_job (job_scan_finalizer_entries, &sfejd_fin_ready);
 
 	sfejd_critical_fin.list = critical_fin_list;
-	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_finalizer_entries, &sfejd_critical_fin);
+	workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
 
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
@@ -4486,11 +4486,11 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 			if (was_promoted) {
 				if (ptr_in_nursery (key)) {/*key was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to key %p\n", key));
-					mono_sgen_add_to_global_remset (queue->allocator, &cur->key);
+					mono_sgen_add_to_global_remset (&cur->key);
 				}
 				if (ptr_in_nursery (cur->value)) {/*value was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to value %p\n", cur->value));
-					mono_sgen_add_to_global_remset (queue->allocator, &cur->value);
+					mono_sgen_add_to_global_remset (&cur->value);
 				}
 			}
 		}
@@ -5588,7 +5588,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				mono_sgen_add_to_global_remset (queue->allocator, ptr);
+				mono_sgen_add_to_global_remset (ptr);
 			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
@@ -5603,7 +5603,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				mono_sgen_add_to_global_remset (queue->allocator, ptr);
+				mono_sgen_add_to_global_remset (ptr);
 			++ptr;
 		}
 		return p + 2;
@@ -5722,7 +5722,9 @@ static void
 clear_thread_store_remset_buffer (SgenThreadInfo *info)
 {
 	*info->store_remset_buffer_index_addr = 0;
-	memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+	/* See the comment at the end of sgen_thread_unregister() */
+	if (*info->store_remset_buffer_addr)
+		memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
 }
 
 static size_t
@@ -5853,8 +5855,7 @@ clear_remsets (void)
 		remset->next = NULL;
 		if (remset != global_remset) {
 			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			mono_sgen_free_internal_dynamic_delayed (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET,
-					mono_sgen_get_unmanaged_allocator ());
+			mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 		}
 	}
 	/* the generic store ones */
@@ -5978,7 +5979,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	stack_end = info->stack_end;
 #endif
 
-	info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info);
+	info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info, FALSE);
 	pthread_setspecific (remembered_set_key, info->remset);
 #ifdef HAVE_KW_THREAD
 	remembered_set = info->remset;
@@ -6046,6 +6047,16 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	if (*p->store_remset_buffer_index_addr)
 		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
 	mono_sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
+	/*
+	 * This is currently not strictly required, but we do it
+	 * anyway in case we change thread unregistering:
+
+	 * If the thread is removed from the thread list after
+	 * unregistering (this is currently not the case), and a
+	 * collection occurs, clear_remsets() would want to memset
+	 * this buffer, which would either clobber memory or crash.
+	 */
+	*p->store_remset_buffer_addr = NULL;
 	UNLOCK_GC;
 }
 
@@ -6132,23 +6143,13 @@ dummy_use (gpointer v) {
 
 
 static RememberedSet*
-alloc_remset (int size, gpointer id) {
+alloc_remset (int size, gpointer id, gboolean global)
+{
 	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
 	res->store_next = res->data;
 	res->end_set = res->data + size;
 	res->next = NULL;
-	DEBUG (4, fprintf (gc_debug_file, "Allocated remset size %d at %p for %p\n", size, res->data, id));
-	return res;
-}
-
-static RememberedSet*
-alloc_global_remset (SgenInternalAllocator *alc, int size, gpointer id)
-{
-	RememberedSet* res = mono_sgen_alloc_internal_full (alc, sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
-	res->store_next = res->data;
-	res->end_set = res->data + size;
-	res->next = NULL;
-	DEBUG (4, fprintf (gc_debug_file, "Allocated global remset size %d at %p for %p\n", size, res->data, id));
+	DEBUG (4, fprintf (gc_debug_file, "Allocated%s remset size %d at %p for %p\n", global ? " global" : "", size, res->data, id));
 	return res;
 }
 
@@ -6184,7 +6185,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 			UNLOCK_GC;
 			return;
 		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 		rs->next = REMEMBERED_SET;
 		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -6222,7 +6223,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 			UNLOCK_GC;
 			return;
 		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 		rs->next = REMEMBERED_SET;
 		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -6285,7 +6286,7 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 			UNLOCK_GC;
 			return;
 		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 		rs->next = REMEMBERED_SET;
 		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -6475,7 +6476,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 			UNLOCK_GC;
 			return;
 		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 		rs->next = REMEMBERED_SET;
 		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -6517,7 +6518,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 		UNLOCK_GC;
 		return;
 	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+	rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 
@@ -7146,17 +7147,28 @@ mono_gc_base_init (void)
 	struct sigaction sinfo;
 	glong max_heap = 0;
 	int num_workers;
+	int result;
 
-	/* the gc_initialized guard seems to imply this method is
-	   idempotent, but LOCK_INIT(gc_mutex) might not be.  It's
-	   defined in sgen-gc.h as nothing, so there's no danger at
-	   present. */
+	do {
+		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
+		switch (result) {
+		case 1:
+			/* already inited */
+			return;
+		case -1:
+			/* being inited by another thread */
+			usleep (1000);
+			break;
+		case 0:
+			/* we will init it */
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	} while (result != 0);
+
 	LOCK_INIT (gc_mutex);
-	LOCK_GC;
-	if (gc_initialized) {
-		UNLOCK_GC;
-		return;
-	}
+
 	pagesize = mono_pagesize ();
 	gc_debug_file = stdout;
 
@@ -7194,6 +7206,37 @@ mono_gc_base_init (void)
 	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
+
+	pthread_key_create (&remembered_set_key, NULL);
+
+#ifndef HAVE_KW_THREAD
+	pthread_key_create (&thread_info_key, NULL);
+#endif
+
+	/*
+	 * This needs to happen before any internal allocations because
+	 * it inits the small id which is required for hazard pointer
+	 * operations.
+	 */
+	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
+	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
+
+	sigfillset (&sinfo.sa_mask);
+	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
+	sinfo.sa_sigaction = suspend_handler;
+	if (sigaction (suspend_signal_num, &sinfo, NULL) != 0) {
+		g_error ("failed sigaction");
+	}
+
+	sinfo.sa_handler = restart_handler;
+	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
+		g_error ("failed sigaction");
+	}
+
+	sigfillset (&suspend_signal_mask);
+	sigdelset (&suspend_signal_mask, restart_signal_num);
+
+	mono_thread_info_attach (&sinfo);
 
 	if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep")) {
 		mono_sgen_marksweep_init (&major_collector);
@@ -7405,39 +7448,13 @@ mono_gc_base_init (void)
 	if (major_collector.post_param_init)
 		major_collector.post_param_init ();
 
-	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
-	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
-
-	sigfillset (&sinfo.sa_mask);
-	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
-	sinfo.sa_sigaction = suspend_handler;
-	if (sigaction (suspend_signal_num, &sinfo, NULL) != 0) {
-		g_error ("failed sigaction");
-	}
-
-	sinfo.sa_handler = restart_handler;
-	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
-		g_error ("failed sigaction");
-	}
-
-	sigfillset (&suspend_signal_mask);
-	sigdelset (&suspend_signal_mask, restart_signal_num);
-
-	global_remset = alloc_remset (1024, NULL);
+	global_remset = alloc_remset (1024, NULL, FALSE);
 	global_remset->next = NULL;
-
-	pthread_key_create (&remembered_set_key, NULL);
-
-#ifndef HAVE_KW_THREAD
-	pthread_key_create (&thread_info_key, NULL);
-#endif
 
 	if (use_cardtable)
 		card_table_init ();
 
-	gc_initialized = TRUE;
-	UNLOCK_GC;
-	mono_thread_info_attach (&sinfo);
+	gc_initialized = 1;
 }
 
 int

@@ -39,7 +39,7 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 		queue->free_list = section->next;
 	} else {
 		/* Allocate a new section */
-		section = mono_sgen_alloc_internal_fixed (queue->allocator, INTERNAL_MEM_GRAY_QUEUE);
+		section = mono_sgen_alloc_internal (INTERNAL_MEM_GRAY_QUEUE);
 	}
 
 	section->end = 0;
@@ -50,9 +50,9 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 }
 
 static void
-gray_object_free_queue_section (GrayQueueSection *section, SgenInternalAllocator *thread_allocator)
+gray_object_free_queue_section (GrayQueueSection *section)
 {
-	mono_sgen_free_internal_delayed (section, INTERNAL_MEM_GRAY_QUEUE, thread_allocator);
+	mono_sgen_free_internal (section, INTERNAL_MEM_GRAY_QUEUE);
 }
 
 static inline gboolean
@@ -127,15 +127,13 @@ gray_object_enqueue_section (GrayQueue *queue, GrayQueueSection *section)
 }
 
 static void
-gray_object_queue_init (GrayQueue *queue, SgenInternalAllocator *allocator)
+gray_object_queue_init (GrayQueue *queue)
 {
 	GrayQueueSection *section, *next;
 	int i;
 
 	g_assert (gray_object_queue_is_empty (queue));
 	DEBUG (9, g_assert (queue->balance == 0));
-
-	queue->allocator = allocator;
 
 	/* Free the extra sections allocated during the last collection */
 	i = 0;
@@ -146,14 +144,14 @@ gray_object_queue_init (GrayQueue *queue, SgenInternalAllocator *allocator)
 	while (section->next) {
 		next = section->next;
 		section->next = next->next;
-		gray_object_free_queue_section (next, allocator);
+		gray_object_free_queue_section (next);
 	}
 }
 
 static void
-gray_object_queue_init_with_alloc_prepare (GrayQueue *queue, SgenInternalAllocator *allocator, GrayQueueAllocPrepareFunc func, void *data)
+gray_object_queue_init_with_alloc_prepare (GrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data)
 {
-	gray_object_queue_init (queue, allocator);
+	gray_object_queue_init (queue);
 	queue->alloc_prepare_func = func;
 	queue->alloc_prepare_data = data;
 }

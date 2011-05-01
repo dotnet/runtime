@@ -186,6 +186,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-os-mach.c		\
 	sgen-gc.c		\
 	sgen-internal.c		\
+	sgen-pinned-allocator.c	\
 	sgen-marksweep.c	\
 	sgen-marksweep-fixed.c	\
 	sgen-marksweep-par.c	\
