@@ -1672,7 +1672,7 @@ mono_assembly_name_free (MonoAssemblyName *aname)
 }
 
 static gboolean
-parse_public_key (const gchar *key, gchar** pubkey)
+parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 {
 	const gchar *pkey;
 	gchar header [16], val, *arr;
@@ -1685,11 +1685,12 @@ parse_public_key (const gchar *key, gchar** pubkey)
 	/* allow the ECMA standard key */
 	if (strcmp (key, "00000000000000000400000000000000") == 0) {
 		if (pubkey) {
-			arr = g_strdup ("b77a5c561934e089");
-			*pubkey = arr;
+			*pubkey = g_strdup (key);
+			*is_ecma = TRUE;
 		}
 		return TRUE;
 	}
+	*is_ecma = FALSE;
 	val = g_ascii_xdigit_value (key [0]) << 4;
 	val |= g_ascii_xdigit_value (key [1]);
 	switch (val) {
@@ -1812,9 +1813,19 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	}
 
 	if (key) {
-		if (strcmp (key, "null") == 0 || !parse_public_key (key, &pkey)) {
+		gboolean is_ecma;
+		if (strcmp (key, "null") == 0 || !parse_public_key (key, &pkey, &is_ecma)) {
 			mono_assembly_name_free (aname);
 			return FALSE;
+		}
+
+		if (is_ecma) {
+			if (save_public_key)
+				aname->public_key = (guint8*)pkey;
+			else
+				g_free (pkey);
+			g_strlcpy ((gchar*)aname->public_key_token, "b77a5c561934e089", MONO_PUBLIC_KEY_TOKEN_LENGTH);
+			return TRUE;
 		}
 		
 		len = mono_metadata_decode_blob_size ((const gchar *) pkey, (const gchar **) &pkeyptr);
