@@ -85,10 +85,7 @@ namespace Mono.Linker {
 
 		public ISymbolReaderProvider SymbolReaderProvider {
 			get { return _symbolReaderProvider; }
-			set {
-				_symbolReaderProvider = value;
-				_readerParameters.SymbolReaderProvider = value;
-			}
+			set { _symbolReaderProvider = value; }
 		}
 
 		public ISymbolWriterProvider SymbolWriterProvider {
@@ -166,6 +163,9 @@ namespace Mono.Linker {
 		public void SafeReadSymbols (AssemblyDefinition assembly)
 		{
 			if (!_linkSymbols)
+				return;
+
+			if (assembly.MainModule.HasSymbols)
 				return;
 
 			try {
