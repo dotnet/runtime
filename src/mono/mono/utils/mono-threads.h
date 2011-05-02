@@ -171,6 +171,9 @@ mono_thread_info_suspend_lock (void) MONO_INTERNAL;
 void
 mono_thread_info_suspend_unlock (void) MONO_INTERNAL;
 
+void
+mono_threads_unregister_current_thread (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+
 #if !defined(HOST_WIN32)
 
 int

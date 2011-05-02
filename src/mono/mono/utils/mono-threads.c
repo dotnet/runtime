@@ -154,22 +154,32 @@ unregister_thread (void *arg)
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
 
 	/*
-	 * We have to remove it from the thread list before cleaning up since 
-	 * otherwise the GC can see a cleaned up thread during collection which
-	 * would result in a crash.
-	 * Removing it before cleaning up is harmless as this thread is for all
-	 * other purposes already dead.
-	 */
-	result = mono_thread_info_remove (info);
-	g_assert (result);
-
-
+	The unregister callback is reposible for calling mono_threads_unregister_current_thread
+	since it usually needs to be done in sync with the GC does a stop-the-world.
+	*/
 	if (threads_callbacks.thread_unregister)
 		threads_callbacks.thread_unregister (info);
+	else
+		mono_threads_unregister_current_thread (info);
 
 	/*now it's safe to free the thread info.*/
 	mono_thread_hazardous_free_or_queue (info, free_thread_info);
 	mono_thread_small_id_free (small_id);
+}
+
+/**
+ * Removes the current thread from the thread list.
+ * This must be called from the thread unregister callback and nowhere else.
+ * The current thread must be passed as TLS might have already been cleaned up.
+*/
+void
+mono_threads_unregister_current_thread (MonoThreadInfo *info)
+{
+	gboolean result;
+	g_assert (mono_thread_info_get_tid (info) == mono_native_thread_id_get ());
+	result = mono_thread_info_remove (info);
+	g_assert (result);
+
 }
 
 MonoThreadInfo*

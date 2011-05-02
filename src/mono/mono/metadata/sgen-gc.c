@@ -6057,6 +6057,8 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	 * this buffer, which would either clobber memory or crash.
 	 */
 	*p->store_remset_buffer_addr = NULL;
+
+	mono_threads_unregister_current_thread (p);
 	UNLOCK_GC;
 }
 
