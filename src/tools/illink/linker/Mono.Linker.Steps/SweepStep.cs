@@ -30,6 +30,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps {
 
@@ -54,12 +55,9 @@ namespace Mono.Linker.Steps {
 				return;
 			}
 
-			var types = assembly.MainModule.Types;
-			var cloned_types = new List<TypeDefinition> (types);
+			var types = new List<TypeDefinition> ();
 
-			types.Clear ();
-
-			foreach (TypeDefinition type in cloned_types) {
+			foreach (TypeDefinition type in assembly.MainModule.Types) {
 				if (Annotations.IsMarked (type)) {
 					SweepType (type);
 					types.Add (type);
@@ -69,6 +67,10 @@ namespace Mono.Linker.Steps {
 				if (type.Name == "<Module>")
 					types.Add (type);
 			}
+
+			assembly.MainModule.Types.Clear ();
+			foreach (TypeDefinition type in types)
+				assembly.MainModule.Types.Add (type);
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -100,11 +102,6 @@ namespace Mono.Linker.Steps {
 				references.RemoveAt (i);
 				return;
 			}
-		}
-
-		static ICollection Clone (ICollection collection)
-		{
-			return new ArrayList (collection);
 		}
 
 		void SweepType (TypeDefinition type)
