@@ -190,7 +190,7 @@ static void signal_thread_state_change (MonoInternalThread *thread);
 static void abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort);
 static void suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (MonoInternalThread *thread);
-static void resume_thread_internal (MonoInternalThread *thread);
+static gboolean resume_thread_internal (MonoInternalThread *thread);
 
 static MonoException* mono_thread_execute_interruption (MonoInternalThread *thread);
 static void ref_stack_destroy (gpointer rs);
@@ -2279,9 +2279,7 @@ mono_thread_resume (MonoInternalThread *thread)
 		return FALSE;
 	}
 
-	resume_thread_internal (thread);
-
-	return TRUE;
+	return resume_thread_internal (thread);
 }
 
 void
@@ -4327,14 +4325,14 @@ self_suspend_internal (MonoInternalThread *thread)
 }
 
 /*This is called with @thread synch_cs held and it must release it*/
-static void
+static gboolean
 resume_thread_internal (MonoInternalThread *thread)
 {
 	if (!mono_thread_info_new_interrupt_enabled ()) {
 		thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 		if (thread->resume_event == NULL) {
 			LeaveCriticalSection (thread->synch_cs);
-			return;
+			return FALSE;
 		}
 
 		/* Awake the thread */
@@ -4346,7 +4344,7 @@ resume_thread_internal (MonoInternalThread *thread)
 		WaitForSingleObject (thread->resume_event, INFINITE);
 		CloseHandle (thread->resume_event);
 		thread->resume_event = NULL;
-		return;
+		return TRUE;
 	}
 	g_assert (0);
 }
