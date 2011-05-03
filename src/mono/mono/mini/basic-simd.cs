@@ -3286,6 +3286,24 @@ public class SimdTests {
 			return 4;
 		return 0;
 	}
+
+	class BoxedVector2d
+	{
+	    public Vector2d v;
+	}
+
+	public static int test_0_vector2d_set_x () {
+		var bv = new BoxedVector2d ();
+		var xy = new Vector2d ();
+		xy.X = bv.v.X;
+
+		if (xy.X != 0)
+			return 1;
+		if (xy.Y != 0)
+			return 2;
+		return 0;
+	}
+
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (SimdTests), args);
 	}
