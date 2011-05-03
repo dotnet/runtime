@@ -92,10 +92,14 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	}
 
 	if (current->async_target) {
+#if MONO_ARCH_HAS_MONO_CONTEXT
 		MonoContext tmp = current->suspend_state.ctx;
 		mono_threads_get_runtime_callbacks ()->setup_async_callback (&tmp, current->async_target, current->user_data);
 		current->async_target = current->user_data = NULL;
 		mono_monoctx_to_sigctx (&tmp, context);
+#else
+		g_error ("The new interruption machinery requires a working mono-context");
+#endif
 	}
 
 	MONO_SEM_POST (&current->finish_resume_semaphore);

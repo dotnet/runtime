@@ -121,6 +121,7 @@ typedef struct {
 	: "a" (&(ctx))  \
 	: "memory")
 
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
 
 #elif defined(__x86_64__) /* defined(__i386__) */
 
@@ -182,6 +183,8 @@ typedef struct {
 		: 	\
 		: "a" (&(ctx))	\
 		: "rdx", "memory")
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
 
 #elif defined(__arm__) /* defined(__x86_64__) */
 

@@ -2523,7 +2523,11 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	if (sigctx)
 		mono_arch_sigctx_to_monoctx (sigctx, &ctx->ctx);
 	else
+#if MONO_ARCH_HAS_MONO_CONTEXT
 		MONO_CONTEXT_GET_CURRENT (ctx->ctx);
+#else
+		g_error ("Use a null sigctx requires a working mono-context");
+#endif
 
 	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();

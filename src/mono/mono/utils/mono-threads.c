@@ -140,7 +140,6 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 static void
 unregister_thread (void *arg)
 {
-	gboolean result;
 	MonoThreadInfo *info = arg;
 	int small_id = info->small_id;
 	g_assert (info);
