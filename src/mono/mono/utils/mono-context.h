@@ -201,6 +201,11 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
+// FIXME:
+#define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
+	g_assert_not_reached (); \
+} while (0)
+
 #elif defined(__mono_ppc__) /* defined(__arm__) */
 
 /* we define our own structure and we'll copy the data

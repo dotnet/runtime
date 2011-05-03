@@ -241,4 +241,40 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 /*========================= End of Function ========================*/
 
+#elif defined(__arm__)
+
+#include <mono/utils/mono-context.h>
+#include <mono/arch/arm/arm-codegen.h>
+
+void
+mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif BROKEN_LINUX
+	g_assert_not_reached ();
+#else
+	arm_ucontext *my_uc = sigctx;
+
+	mctx->eip = UCONTEXT_REG_PC (my_uc);
+	mctx->esp = UCONTEXT_REG_SP (my_uc);
+	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
+#endif
+}
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	arm_ucontext *my_uc = ctx;
+
+	UCONTEXT_REG_PC (my_uc) = mctx->eip;
+	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_FP];
+	/* The upper registers are not guaranteed to be valid */
+	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (mgreg_t) * 12);
+#endif
+}
+
 #endif /* #if defined(__i386__) */
