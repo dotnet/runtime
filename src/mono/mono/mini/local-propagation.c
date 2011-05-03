@@ -429,6 +429,30 @@ reg_is_softreg (int reg, const char spec)
 		|| (spec == 'v');
 }
 
+static inline gboolean
+mono_is_simd_accessor (MonoInst *ins)
+{
+	switch (ins->opcode) {
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	case OP_INSERT_I1:
+	case OP_INSERT_I2:
+	case OP_INSERT_I4:
+	case OP_INSERT_I8:
+	case OP_INSERT_R4:
+	case OP_INSERT_R8:
+
+	case OP_INSERTX_U1_SLOW:
+	case OP_INSERTX_I4_SLOW:
+	case OP_INSERTX_R4_SLOW:
+	case OP_INSERTX_R8_SLOW:
+	case OP_INSERTX_I8_SLOW:
+		return TRUE;
+#endif
+	default:
+		return FALSE;
+	}
+}
+
 /**
  * mono_local_deadce:
  *
@@ -508,7 +532,7 @@ mono_local_deadce (MonoCompile *cfg)
 				 * This isn't copyprop, not deadce, but it can only be performed
 				 * after handle_global_vregs () has run.
 				 */
-				if (!get_vreg_to_inst (cfg, ins->sreg1) && (spec2 [MONO_INST_DEST] != ' ') && (def->dreg == ins->sreg1) && !mono_bitset_test_fast (used, ins->sreg1) && !MONO_IS_STORE_MEMBASE (def) && reg_is_softreg (ins->sreg1, spec [MONO_INST_DEST])) {
+				if (!get_vreg_to_inst (cfg, ins->sreg1) && (spec2 [MONO_INST_DEST] != ' ') && (def->dreg == ins->sreg1) && !mono_bitset_test_fast (used, ins->sreg1) && !MONO_IS_STORE_MEMBASE (def) && reg_is_softreg (ins->sreg1, spec [MONO_INST_DEST]) && !mono_is_simd_accessor (def)) {
 					if (cfg->verbose_level > 2) {
 						printf ("\tReverse copyprop in BB%d on ", bb->block_num);
 						mono_print_ins (ins);
