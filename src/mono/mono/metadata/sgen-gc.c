@@ -5224,8 +5224,8 @@ restart_threads_until_none_in_managed_allocator (void)
 			gboolean result;
 			if (info->skip)
 				continue;
-			if (!info->stack_start || info->in_critical_region ||
-					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
+			if (!info->thread_is_dying && (!info->stack_start || info->in_critical_region ||
+					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
 				binary_protocol_thread_restart ((gpointer)mono_thread_info_get_tid (info));
 				result = mono_sgen_resume_thread (info);
 				if (result) {
@@ -5281,13 +5281,10 @@ restart_threads_until_none_in_managed_allocator (void)
 	return num_threads_died;
 }
 
-/* LOCKING: assumes the GC lock is held (by the stopping thread) */
 static void
-suspend_handler (int sig, siginfo_t *siginfo, void *context)
+suspend_thread (SgenThreadInfo *info, void *context)
 {
-	SgenThreadInfo *info;
 	int stop_count;
-	int old_errno = errno;
 #ifdef USE_MONO_CTX
 	MonoContext monoctx;
 #else
@@ -5295,35 +5292,38 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 #endif
 	gpointer stack_start;
 
-	info = mono_thread_info_current ();
-	if (!info)
-		/* This can happen while a thread is dying */
-		return;
+	g_assert (info->doing_handshake);
 
 	info->stopped_domain = mono_domain_get ();
-	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (context);
+	info->stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
 	stop_count = global_stop_count;
 	/* duplicate signal */
-	if (0 && info->stop_count == stop_count) {
-		errno = old_errno;
+	if (0 && info->stop_count == stop_count)
 		return;
-	}
 #ifdef HAVE_KW_THREAD
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
 #endif
-	stack_start = (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE;
+	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
 	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
 		info->stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
-		mono_sigctx_to_monoctx (context, &monoctx);
-		info->monoctx = &monoctx;
+		if (context) {
+			mono_sigctx_to_monoctx (context, &monoctx);
+			info->monoctx = &monoctx;
+		} else {
+			info->monoctx = NULL;
+		}
 #else
-		ARCH_COPY_SIGCTX_REGS (regs, context);
-		info->stopped_regs = regs;
+		if (context) {
+			ARCH_COPY_SIGCTX_REGS (regs, context);
+			info->stopped_regs = regs;
+		} else {
+			info->stopped_regs = NULL;
+		}
 #endif
 	} else {
 		g_assert (!info->stack_start);
@@ -5342,11 +5342,28 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	do {
 		info->signal = 0;
 		sigsuspend (&suspend_signal_mask);
-	} while (info->signal != restart_signal_num);
+	} while (info->signal != restart_signal_num && info->doing_handshake);
 
 	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
 	/* notify the waiting thread */
 	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+}
+
+/* LOCKING: assumes the GC lock is held (by the stopping thread) */
+static void
+suspend_handler (int sig, siginfo_t *siginfo, void *context)
+{
+	SgenThreadInfo *info;
+	int old_errno = errno;
+
+	info = mono_thread_info_current ();
+
+	if (info) {
+		suspend_thread (info, context);
+	} else {
+		/* This can happen while a thread is dying */
+		g_print ("no thread info in suspend\n");
+	}
 
 	errno = old_errno;
 }
@@ -5358,8 +5375,15 @@ restart_handler (int sig)
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-	info->signal = restart_signal_num;
-	DEBUG (4, fprintf (gc_debug_file, "Restart handler in %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+
+	/*
+	 * If a thread is dying there might be no thread info.  In
+	 * that case we rely on info->doing_handshake.
+	 */
+	if (info) {
+		info->signal = restart_signal_num;
+		DEBUG (4, fprintf (gc_debug_file, "Restart handler in %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+	}
 
 	errno = old_errno;
 }
@@ -5502,15 +5526,16 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
 			set_user_copy_or_mark_data (NULL);
 		} else if (!precise) {
-			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
+			if (!info->thread_is_dying)
+				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
 		}
 
 #ifdef USE_MONO_CTX
-		if (!precise)
+		if (!info->thread_is_dying && !precise)
 			conservatively_pin_objects_from ((void**)info->monoctx, (void**)info->monoctx + ARCH_NUM_REGS,
 				start_nursery, end_nursery, PIN_TYPE_STACK);
 #else
-		if (!precise)
+		if (!info->thread_is_dying && !precise)
 			conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
 					start_nursery, end_nursery, PIN_TYPE_STACK);
 #endif
@@ -5924,6 +5949,8 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	info->stop_count = -1;
 	info->skip = 0;
 	info->signal = 0;
+	info->doing_handshake = FALSE;
+	info->thread_is_dying = FALSE;
 	info->stack_start = NULL;
 	info->tlab_start_addr = &TLAB_START;
 	info->tlab_next_addr = &TLAB_NEXT;
@@ -6020,7 +6047,14 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	if (mono_domain_get ())
 		mono_thread_detach (mono_thread_current ());
 
-	LOCK_GC;
+	p->thread_is_dying = TRUE;
+
+	while (!TRYLOCK_GC) {
+		if (p->doing_handshake)
+			suspend_thread (p, NULL);
+		else
+			usleep (50);
+	}
 
 	binary_protocol_thread_unregister ((gpointer)id);
 	DEBUG (3, fprintf (gc_debug_file, "unregister thread %p (%p)\n", p, (gpointer)mono_thread_info_get_tid (p)));

@@ -115,9 +115,15 @@ mono_sgen_thread_handshake (int signum)
 			continue;
 
 		if (signum == suspend_signal_num) {
+			g_assert (!info->doing_handshake);
+			info->doing_handshake = TRUE;
+
 			if (!mono_sgen_suspend_thread (info))
 				continue;
 		} else {
+			g_assert (info->doing_handshake);
+			info->doing_handshake = FALSE;
+
 			ret = thread_resume (info->mach_port);
 			if (ret != KERN_SUCCESS)
 				continue;

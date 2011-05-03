@@ -96,6 +96,8 @@ struct _SgenThreadInfo {
 	int signal;
 	int skip;
 	volatile int in_critical_region;
+	gboolean doing_handshake;
+	gboolean thread_is_dying;
 	void *stack_end;
 	void *stack_start;
 	void *stack_start_limit;
@@ -213,6 +215,7 @@ const static int restart_signal_num = SIGXCPU;
    its use in mono_gc_base_init in sgen-gc.c */
 #define LOCK_INIT(name)
 #define LOCK_GC pthread_mutex_lock (&gc_mutex)
+#define TRYLOCK_GC (pthread_mutex_trylock (&gc_mutex) == 0)
 #define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
 #define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
 #define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)

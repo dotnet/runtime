@@ -64,6 +64,13 @@ mono_sgen_thread_handshake (int signum)
 		}
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/
+		if (signum == suspend_signal_num) {
+			g_assert (!info->doing_handshake);
+			info->doing_handshake = TRUE;
+		} else {
+			g_assert (info->doing_handshake);
+			info->doing_handshake = FALSE;
+		}
 		result = pthread_kill (mono_thread_info_get_tid (info), signum);
 		if (result == 0) {
 			count++;
