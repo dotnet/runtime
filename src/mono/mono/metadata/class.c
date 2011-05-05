@@ -62,7 +62,6 @@ static void setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, Mono
 
 static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter);
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
-static gboolean mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass);
 static void mono_field_resolve_type (MonoClassField *field, MonoError *error);
 static guint32 mono_field_resolve_flags (MonoClassField *field);
 static void mono_class_setup_vtable_full (MonoClass *class, GList *in_setup);
@@ -2557,7 +2556,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		return -1;
 
 	for (i = 0; i < klass->interface_offsets_count; i++) {
-		if (mono_class_is_variant_compatible (itf, klass->interfaces_packed [i])) {
+		if (mono_class_is_variant_compatible (itf, klass->interfaces_packed [i], FALSE)) {
 			*non_exact_match = TRUE;
 			return klass->interface_offsets_packed [i];
 		}
@@ -7271,6 +7270,12 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	return FALSE;
 }
 
+static gboolean
+mono_type_is_generic_argument (MonoType *type)
+{
+	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
+}
+
 gboolean
 mono_class_has_variant_generic_params (MonoClass *klass)
 {
@@ -7289,6 +7294,22 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 	return FALSE;
 }
 
+static gboolean
+mono_gparam_is_reference_conversible (MonoClass *target, MonoClass *candidate, gboolean check_for_reference_conv)
+{
+	if (check_for_reference_conv &&
+		mono_type_is_generic_argument (&target->byval_arg) &&
+		mono_type_is_generic_argument (&candidate->byval_arg)) {
+		MonoGenericParam *gparam = candidate->byval_arg.data.generic_param;
+		MonoGenericParamInfo *pinfo = mono_generic_param_info (gparam);
+		if (!pinfo || (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0)
+			return FALSE;
+	}
+	if (!mono_class_is_assignable_from (target, candidate))
+		return FALSE;
+	return TRUE;
+}
+
 /**
  * @container the generic container from the GTD
  * @klass: the class to be assigned to
@@ -7297,8 +7318,8 @@ mono_class_has_variant_generic_params (MonoClass *klass)
  * Both klass and oklass must be instances of the same generic interface.
  * Return true if @klass can be assigned to a @klass variable
  */
-static gboolean
-mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
+gboolean
+mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean check_for_reference_conv)
 {
 	int j;
 	MonoType **klass_argv, **oklass_argv;
@@ -7325,22 +7346,16 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
 		 */
 		if (param1_class != param2_class) {
 			if (mono_generic_container_get_param_info (container, j)->flags & MONO_GEN_PARAM_VARIANT) {
-				if (!mono_class_is_assignable_from (param1_class, param2_class))
+				if (!mono_gparam_is_reference_conversible (param1_class, param2_class, check_for_reference_conv))
 					return FALSE;
 			} else if (mono_generic_container_get_param_info (container, j)->flags & MONO_GEN_PARAM_COVARIANT) {
-				if (!mono_class_is_assignable_from (param2_class, param1_class))
+				if (!mono_gparam_is_reference_conversible (param2_class, param1_class, check_for_reference_conv))
 					return FALSE;
 			} else
 				return FALSE;
 		}
 	}
 	return TRUE;
-}
-
-static gboolean
-mono_type_is_generic_argument (MonoType *type)
-{
-	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
 }
 
 static gboolean
@@ -7513,13 +7528,13 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			for (i = 0; i < oklass->interface_offsets_count; ++i) {
 				MonoClass *iface = oklass->interfaces_packed [i];
 
-				if (mono_class_is_variant_compatible (klass, iface))
+				if (mono_class_is_variant_compatible (klass, iface, FALSE))
 					return TRUE;
 			}
 		}
 		return FALSE;
 	} else if (klass->delegate) {
-		if (mono_class_has_variant_generic_params (klass) && mono_class_is_variant_compatible (klass, oklass))
+		if (mono_class_has_variant_generic_params (klass) && mono_class_is_variant_compatible (klass, oklass, FALSE))
 			return TRUE;
 	}else if (klass->rank) {
 		MonoClass *eclass, *eoclass;
@@ -7685,7 +7700,7 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return mono_class_implement_interface_slow (target, candidate);
 
  	if (target->delegate && mono_class_has_variant_generic_params (target))
-		return mono_class_is_variant_compatible (target, candidate);
+		return mono_class_is_variant_compatible (target, candidate, FALSE);
 
 	/*FIXME properly handle nullables and arrays */
 	/*FIXME properly handle (M)VAR */

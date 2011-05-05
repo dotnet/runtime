@@ -1276,6 +1276,9 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate) MON
 gboolean
 mono_class_has_variant_generic_params (MonoClass *klass) MONO_INTERNAL;
 
+gboolean
+mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean check_for_reference_conv) MONO_INTERNAL;
+
 gboolean mono_is_corlib_image (MonoImage *image) MONO_INTERNAL;
 
 MonoType*

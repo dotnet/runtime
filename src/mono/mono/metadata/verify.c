@@ -24,6 +24,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/mono-basic-block.h>
+#include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/monobitset.h>
 #include <string.h>
@@ -2063,12 +2064,84 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 		code->stack->stype |= BOXED_MASK;
 }
 
+static MonoClass*
+get_ienumerable_class (void)
+{
+	static MonoClass* generic_ienumerable_class = NULL;
+
+	if (generic_ienumerable_class == NULL)
+		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IEnumerable`1");
+		return generic_ienumerable_class;
+}
+
+static MonoClass*
+get_icollection_class (void)
+{
+	static MonoClass* generic_icollection_class = NULL;
+
+	if (generic_icollection_class == NULL)
+		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "ICollection`1");
+		return generic_icollection_class;
+}
+
+static MonoClass*
+inflate_class_one_arg (MonoClass *gtype, MonoClass *arg0)
+{
+	MonoType *args [1];
+	args [0] = &arg0->byval_arg;
+
+	return mono_class_bind_generic_parameters (gtype, 1, args, FALSE);
+}
+
+static gboolean
+verifier_inflate_and_check_compat (MonoClass *target, MonoClass *gtd, MonoClass *arg)
+{
+	MonoClass *tmp;
+	if (!(tmp = inflate_class_one_arg (gtd, arg)))
+		return FALSE;
+	if (mono_class_is_variant_compatible (target, tmp, TRUE))
+		return TRUE;
+	return FALSE;
+}
+
 static gboolean
 verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 {
-	static MonoClass* generic_icollection_class = NULL;
-	static MonoClass* generic_ienumerable_class = NULL;
 	MonoClass *iface_gtd;
+
+	if (mono_class_has_variant_generic_params (target)) {
+		if (MONO_CLASS_IS_INTERFACE (target)) {
+			if (candidate->rank == 1) {
+				if (verifier_inflate_and_check_compat (target, mono_defaults.generic_ilist_class, candidate->element_class))
+					return TRUE;
+				if (verifier_inflate_and_check_compat (target, get_icollection_class (), candidate->element_class))
+					return TRUE;
+				if (verifier_inflate_and_check_compat (target, get_ienumerable_class (), candidate->element_class))
+					return TRUE;
+			} else {
+				MonoError error;
+				int i;
+				mono_class_setup_interfaces (candidate, &error);
+				if (!mono_error_ok (&error)) {
+					mono_error_cleanup (&error);
+					return FALSE;
+				}
+
+				/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
+				for (i = 0; i < candidate->interface_offsets_count; ++i) {
+					MonoClass *iface = candidate->interfaces_packed [i];
+					if (mono_class_is_variant_compatible (target, iface, TRUE))
+						return TRUE;
+				}
+			}
+		} else if (target->delegate) {
+			if (mono_class_is_variant_compatible (target, candidate, TRUE))
+				return TRUE;
+		}
+		return FALSE;
+	}
 
 	if (mono_class_is_assignable_from (target, candidate))
 		return TRUE;
@@ -2076,19 +2149,14 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	if (!MONO_CLASS_IS_INTERFACE (target) || !target->generic_class || candidate->rank != 1)
 		return FALSE;
 
-	if (generic_icollection_class == NULL) {
-		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "ICollection`1");
-		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IEnumerable`1");
-	}
 	iface_gtd = target->generic_class->container_class;
-	if (iface_gtd != mono_defaults.generic_ilist_class && iface_gtd != generic_icollection_class && iface_gtd != generic_ienumerable_class)
+	if (iface_gtd != mono_defaults.generic_ilist_class && iface_gtd != get_icollection_class () && iface_gtd != get_ienumerable_class ())
 		return FALSE;
 
 	target = mono_class_from_mono_type (target->generic_class->context.class_inst->type_argv [0]);
 	candidate = candidate->element_class;
-	return mono_class_is_assignable_from (target, candidate);
+
+	return TRUE;
 }
 
 /*Verify if type 'candidate' can be stored in type 'target'.
