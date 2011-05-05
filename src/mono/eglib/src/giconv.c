@@ -235,11 +235,7 @@ decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	c = (inptr[0] << 24) | (inptr[1] << 16) | (inptr[2] << 8) | inptr[3];
-#else
-	c = (inptr[3] << 24) | (inptr[2] << 16) | (inptr[1] << 8) | inptr[0];
-#endif
 	
 	if (c >= 0xd800 && c < 0xe000) {
 		errno = EILSEQ;
@@ -265,11 +261,7 @@ decode_utf32le (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	c = (inptr[3] << 24) | (inptr[2] << 16) | (inptr[1] << 8) | inptr[0];
-#else
-	c = (inptr[0] << 24) | (inptr[1] << 16) | (inptr[2] << 8) | inptr[3];
-#endif
 	
 	if (c >= 0xd800 && c < 0xe000) {
 		errno = EILSEQ;
@@ -294,17 +286,10 @@ encode_utf32be (gunichar c, char *outbuf, size_t outleft)
 		return -1;
 	}
 	
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	outptr[0] = (c >> 24) & 0xff;
 	outptr[1] = (c >> 16) & 0xff;
 	outptr[2] = (c >> 8) & 0xff;
 	outptr[3] = c & 0xff;
-#else
-	outptr[0] = c & 0xff;
-	outptr[1] = (c >> 8) & 0xff;
-	outptr[2] = (c >> 16) & 0xff;
-	outptr[3] = (c >> 24) & 0xff;
-#endif
 	
 	return 4;
 }
@@ -319,17 +304,10 @@ encode_utf32le (gunichar c, char *outbuf, size_t outleft)
 		return -1;
 	}
 	
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	outptr[0] = c & 0xff;
 	outptr[1] = (c >> 8) & 0xff;
 	outptr[2] = (c >> 16) & 0xff;
 	outptr[3] = (c >> 24) & 0xff;
-#else
-	outptr[0] = (c >> 24) & 0xff;
-	outptr[1] = (c >> 16) & 0xff;
-	outptr[2] = (c >> 8) & 0xff;
-	outptr[3] = c & 0xff;
-#endif
 	
 	return 4;
 }
@@ -346,11 +324,7 @@ decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	u = (inptr[0] << 8) | inptr[1];
-#else
-	u = (inptr[1] << 8) | inptr[0];
-#endif
 	
 	if (u < 0xd800) {
 		/* 0x0000 -> 0xd7ff */
@@ -363,11 +337,7 @@ decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
 			return -2;
 		}
 		
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		c = (inptr[2] << 8) | inptr[3];
-#else
-		c = (inptr[3] << 8) | inptr[2];
-#endif
 		
 		if (c < 0xdc00 || c > 0xdfff) {
 			errno = EILSEQ;
@@ -401,11 +371,7 @@ decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar)
 		return -1;
 	}
 	
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	u = (inptr[1] << 8) | inptr[0];
-#else
-	u = (inptr[0] << 8) | inptr[1];
-#endif
 	
 	if (u < 0xd800) {
 		/* 0x0000 -> 0xd7ff */
@@ -418,11 +384,7 @@ decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar)
 			return -2;
 		}
 		
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		c = (inptr[3] << 8) | inptr[2];
-#else
-		c = (inptr[2] << 8) | inptr[3];
-#endif
 		
 		if (c < 0xdc00 || c > 0xdfff) {
 			errno = EILSEQ;
@@ -457,13 +419,8 @@ encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 			return -1;
 		}
 		
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		outptr[0] = (c >> 8) & 0xff;
 		outptr[1] = c & 0xff;
-#else
-		outptr[0] = c & 0xff;
-		outptr[1] = (c >> 8) & 0xff;
-#endif
 		
 		return 2;
 	} else {
@@ -475,22 +432,12 @@ encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 		c2 = c - 0x10000;
 		
 		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		outptr[0] = (ch >> 8) & 0xff;
 		outptr[1] = ch & 0xff;
-#else
-		outptr[0] = ch & 0xff;
-		outptr[1] = (ch >> 8) & 0xff;
-#endif
 		
 		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		outptr[2] = (ch >> 8) & 0xff;
 		outptr[3] = ch & 0xff;
-#else
-		outptr[2] = ch & 0xff;
-		outptr[3] = (ch >> 8) & 0xff;
-#endif
 		
 		return 4;
 	}
@@ -509,13 +456,8 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 			return -1;
 		}
 		
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		outptr[0] = c & 0xff;
 		outptr[1] = (c >> 8) & 0xff;
-#else
-		outptr[0] = (c >> 8) & 0xff;
-		outptr[1] = c & 0xff;
-#endif
 		
 		return 2;
 	} else {
@@ -527,22 +469,12 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 		c2 = c - 0x10000;
 		
 		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		outptr[0] = ch & 0xff;
 		outptr[1] = (ch >> 8) & 0xff;
-#else
-		outptr[0] = (ch >> 8) & 0xff;
-		outptr[1] = ch & 0xff;
-#endif
 		
 		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 		outptr[2] = ch & 0xff;
 		outptr[3] = (ch >> 8) & 0xff;
-#else
-		outptr[2] = (ch >> 8) & 0xff;
-		outptr[3] = ch & 0xff;
-#endif
 		
 		return 4;
 	}
