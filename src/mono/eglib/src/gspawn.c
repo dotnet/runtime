@@ -188,12 +188,12 @@ create_pipe (int *fds, GError **error)
 }
 #endif /* G_OS_WIN32 */
 
-static ssize_t
+static int
 write_all (int fd, const void *vbuf, size_t n)
 {
 	const char *buf = (const char *) vbuf;
 	size_t nwritten = 0;
-	ssize_t w;
+	int w;
 	
 	do {
 		do {
