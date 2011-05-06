@@ -48,11 +48,10 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/mman.h>
 
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/hazard-pointer.h>
-#include <mono/io-layer/atomic.h>
+#include <mono/io-layer/io-layer.h>
 
 #include <mono/utils/lock-free-queue.h>
 
