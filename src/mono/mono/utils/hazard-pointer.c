@@ -150,13 +150,15 @@ delayed_free_push (DelayedFreeItem item)
 
 	entry->state = DFE_STATE_USED;
 
-	mono_memory_write_barrier ();
+	mono_memory_barrier ();
 
 	do {
 		num_used = num_used_delayed_free_entries;
 		if (num_used > index)
 			break;
 	} while (InterlockedCompareExchange (&num_used_delayed_free_entries, index + 1, num_used) != num_used);
+
+	mono_memory_write_barrier ();
 }
 
 static gboolean
@@ -175,6 +177,7 @@ delayed_free_pop (DelayedFreeItem *item)
 		entry = get_delayed_free_entry (index - 1);
 	} while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_USED) != DFE_STATE_USED);
 
+	/* Reading the item must happen before CASing the state. */
 	mono_memory_barrier ();
 
 	*item = entry->item;
@@ -182,6 +185,8 @@ delayed_free_pop (DelayedFreeItem *item)
 	mono_memory_barrier ();
 
 	entry->state = DFE_STATE_FREE;
+
+	mono_memory_write_barrier ();
 
 	return TRUE;
 }
@@ -280,15 +285,16 @@ mono_thread_small_id_free (int id)
 static gboolean
 is_pointer_hazardous (gpointer p)
 {
-	int i;
+	int i, j;
 	int highest = highest_small_id;
 
 	g_assert (highest < hazard_table_size);
 
 	for (i = 0; i <= highest; ++i) {
-		if (hazard_table [i].hazard_pointers [0] == p
-				|| hazard_table [i].hazard_pointers [1] == p)
-			return TRUE;
+		for (j = 0; j < HAZARD_POINTER_COUNT; ++j) {
+			if (hazard_table [i].hazard_pointers [j] == p)
+				return TRUE;
+		}
 	}
 
 	return FALSE;

@@ -39,6 +39,9 @@ get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers
 			return p;
 		/* Make it hazardous */
 		mono_hazard_pointer_set (hp, hazard_index, mono_lls_pointer_unmask (p));
+
+		mono_memory_barrier ();
+
 		/* Check that it's still the same.  If not, try
 		   again. */
 		if (*pp != p) {
@@ -81,15 +84,30 @@ mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t 
 
 try_again:
 	prev = &list->head;
+
+	/*
+	 * prev is not really a hazardous pointer, but we return prev
+	 * in hazard pointer 2, so we set it here.  Note also that
+	 * prev is not a pointer to a node.  We use here the fact that
+	 * the first element in a node is the next pointer, so it
+	 * works, but it's not pretty.
+	 */
 	mono_hazard_pointer_set (hp, 2, prev);
 
-	cur = mono_lls_pointer_unmask (get_hazardous_pointer ((gpointer*)prev, hp, 1));
+	cur = get_hazardous_pointer_with_mask ((gpointer*)prev, hp, 1);
 
 	while (1) {
 		if (cur == NULL)
 			return FALSE;
 		next = get_hazardous_pointer_with_mask ((gpointer*)&cur->next, hp, 0);
 		cur_key = cur->key;
+
+		/*
+		 * We need to make sure that we dereference prev below
+		 * after reading cur->next above, so we need a read
+		 * barrier.
+		 */
+		mono_memory_read_barrier ();
 
 		if (*prev != cur)
 			goto try_again;
@@ -102,7 +120,10 @@ try_again:
 			mono_hazard_pointer_set (hp, 2, cur);
 		} else {
 			next = mono_lls_pointer_unmask (next);
-			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == next) {
+			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == cur) {
+				/* The hazard pointer must be cleared after the CAS. */
+				mono_memory_write_barrier ();
+				mono_hazard_pointer_clear (hp, 1);
 				if (list->free_node_func)
 					mono_thread_hazardous_free_or_queue (cur, list->free_node_func);
 			} else
@@ -136,6 +157,8 @@ mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 
 		value->next = cur;
 		mono_hazard_pointer_set (hp, 0, value);
+		/* The CAS must happen after setting the hazard pointer. */
+		mono_memory_write_barrier ();
 		if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, value, cur) == cur)
 			return TRUE;
 	}
@@ -159,9 +182,16 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 		cur = mono_hazard_pointer_get_val (hp, 1);
 		prev = mono_hazard_pointer_get_val (hp, 2);
 
+		g_assert (cur == value);
+
 		if (InterlockedCompareExchangePointer ((volatile gpointer*)&cur->next, mask (next, 1), next) != next)
 			continue;
+		/* The second CAS must happen before the first. */
+		mono_memory_write_barrier ();
 		if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == cur) {
+			/* The CAS must happen before the hazard pointer clear. */
+			mono_memory_write_barrier ();
+			mono_hazard_pointer_clear (hp, 1);
 			if (list->free_node_func)
 				mono_thread_hazardous_free_or_queue (value, list->free_node_func);
 		} else
