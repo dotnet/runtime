@@ -231,6 +231,9 @@ if (ins->inst_target_bb->native_offset) { 					\
 
 #define S390_TRACE_STACK_SIZE (5*sizeof(gpointer)+4*sizeof(gdouble))
 
+#define BREAKPOINT_SIZE		sizeof(breakpoint_t)
+#define S390X_NOP_SIZE	 	sizeof(I_Format)
+
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 /*
@@ -256,6 +259,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "mini-s390x.h"
 #include "cpu-s390x.h"
@@ -337,6 +341,14 @@ typedef struct {
 	gdouble fp[3];		/* F0-F2			    */
 } __attribute__ ((packed)) RegParm;
 
+typedef struct {
+	RR_Format  basr;
+	RI_Format  j;
+	void	   *pTrigger;
+	RXY_Format lg;
+	RXY_Format trigger;
+} __attribute__ ((packed)) breakpoint_t;
+
 /*========================= End of Typedefs ========================*/
 
 /*------------------------------------------------------------------*/
@@ -389,6 +401,19 @@ extern __thread MonoThread *tls_current_object;
 extern __thread gpointer   mono_lmf_addr;
 		
 #endif
+
+/*
+ * The code generated for sequence points reads from this location, 
+ * which is made read-only when single stepping is enabled.
+ */
+static gpointer ss_trigger_page;
+
+/*
+ * Enabled breakpoints read from this trigger page
+ */
+static gpointer bp_trigger_page;
+
+breakpoint_t breakpointCode;
 
 /*====================== End of Global Variables ===================*/
 
@@ -1184,6 +1209,8 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
+	guint8 *code;
+
 #if 0
 	/*
 	 * When we do an architectural level set at z9 or better 
@@ -1199,6 +1226,16 @@ mono_arch_init (void)
 		 : "=m" (facs) : "r" (lFacility) : "0", "cc");
 #endif
 
+	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
+	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
+	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
+	
+	code = (guint8 *) &breakpointCode;
+	s390_basr(code, s390_r13, 0);
+	s390_j(code, 6);
+	s390_llong(code, 0);
+	s390_lg(code, s390_r13, 0, s390_r13, 4);
+	s390_lg(code, s390_r0, 0, s390_r13, 0);
 }
 
 /*========================= End of Function ========================*/
@@ -4193,6 +4230,35 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_NULL: {
 		}
 			break;
+		case OP_SEQ_POINT: {
+			int i;
+
+			if (cfg->compile_aot)
+				NOT_IMPLEMENTED;
+
+			/* 
+			 * Read from the single stepping trigger page. This will cause a
+			 * SIGSEGV when single stepping is enabled.
+			 * We do this _before_ the breakpoint, so single stepping after
+			 * a breakpoint is hit will step to the next IL offset.
+			 */
+			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
+				breakpointCode.pTrigger = ss_trigger_page;
+				memcpy(code, (void *) &breakpointCode, BREAKPOINT_SIZE);
+				code += BREAKPOINT_SIZE;
+			}
+
+			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
+
+			/* 
+			 * A placeholder for a possible breakpoint inserted by
+			 * mono_arch_set_breakpoint ().
+			 */
+			for (i = 0; i < (BREAKPOINT_SIZE / S390X_NOP_SIZE); ++i)
+				s390_nop (code);
+			break;
+		}
+	
 		case OP_BR: 
 			EMIT_UNCOND_BRANCH(ins);
 			break;
@@ -6051,3 +6117,221 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 }
 
 /*========================= End of Function ========================*/
+
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_set_breakpoint.                         */
+/*                                                                  */
+/* Function	- Set a breakpoint at the native code corresponding */
+/*		  to JI at NATIVE_OFFSET.  The location should 	    */
+/*		  contain code emitted by OP_SEQ_POINT.		    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+
+	breakpointCode.pTrigger = bp_trigger_page;
+	memcpy(code, (void *) &breakpointCode, BREAKPOINT_SIZE);
+	code += BREAKPOINT_SIZE;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_clear_breakpoint.                       */
+/*                                                                  */
+/* Function	- Clear the breakpoint at IP.			    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	int i;
+
+	for (i = 0; i < (BREAKPOINT_SIZE / S390X_NOP_SIZE); i++)
+		s390_nop(code);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_is_breakpoint_event.                    */
+/*                                                                  */
+/* Function	- 						    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gboolean
+mono_arch_is_breakpoint_event (void *info, void *sigctx)
+{
+	siginfo_t* sinfo = (siginfo_t*) info;
+	/* Sometimes the address is off by 4 */
+	if (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_ip_for_breakpoint.                  */
+/*                                                                  */
+/* Function	- Convert the IP in the CTX to the address where a  */
+/*                breakpoint was placed.			    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+guint8*
+mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	/* ip points to the instruction causing the fault */
+	ip -= BREAKPOINT_SIZE;
+
+	return ip;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_skip_breakpoint.                        */
+/*                                                                  */
+/* Function	- Modify the CTX so the IP is placed after the 	    */
+/*                breakpoint instruction, so when we resume, the    */
+/*		  instruction is not executed again.		    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_skip_breakpoint (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
+}
+
+/*========================= End of Function ========================*/
+	
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_start_single_stepping.                  */
+/*                                                                  */
+/* Function	- Start single stepping.			    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_start_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
+}
+
+/*========================= End of Function ========================*/
+	
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_stop_single_stepping.                   */
+/*                                                                  */
+/* Function	- Stop single stepping.			   	    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_stop_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_is_single_step_event.                   */
+/*                                                                  */
+/* Function	- Return whether the machine state in sigctx cor-   */
+/*		  responds to a single step event.		    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gboolean
+mono_arch_is_single_step_event (void *info, void *sigctx)
+{
+	siginfo_t* sinfo = (siginfo_t*) info;
+
+	/* Sometimes the address is off by 4 */
+	if (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_ip_for_single_step.                 */
+/*                                                                  */
+/* Function	- Convert the IP in ctx to the address stored in    */
+/*		  seq_points.					    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+guint8*
+mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	return ip;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_skip_single_step.                       */
+/*                                                                  */
+/* Function	- Modify the ctx so the IP is placed after the      */
+/*		  single step trigger instruction, so that the 	    */
+/*		  instruction is not executed again.		    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_skip_single_step (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_seq_point_info.                  */
+/*                                                                  */
+/* Function	- Return a pointer to a data struction which is     */
+/*		  used by the sequence point implementation in      */
+/*		  AOTed code.                       	 	    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
+/*========================= End of Function ========================*/
+
+#endif

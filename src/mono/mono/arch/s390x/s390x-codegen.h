@@ -335,7 +335,7 @@ typedef struct {
 
 typedef struct {
 	char 	op1;
-	char	r1 : 4;
+	char	m1 : 4;
 	char	op2 : 4;
 	short	i2;
 } RI_Format;
@@ -726,6 +726,7 @@ typedef struct {
 #define s390_ngr(c, r1, r2)		S390_RRE(c, 0xb980, r1, r2)
 #define s390_nilh(c, r, v)		S390_RI(c, 0xa56, r, v)
 #define s390_nill(c, r, v)		S390_RI(c, 0xa57, r, v)
+#define s390_nop(c)  			S390_RR(c, 0x07, 0x0, 0)
 #define s390_nr(c, r1, r2)		S390_RR(c, 0x14, r1, r2)
 #define s390_o(c, r, x, b, d)		S390_RX(c, 0x56, r, x, b, d)
 #define s390_og(c, r, x, b, d)		S390_RXY(c, 0xe381, r, x, b, d)

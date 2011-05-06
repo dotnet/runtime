@@ -357,6 +357,8 @@ typedef struct {
 
 #elif defined(__s390x__)
 
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
 typedef struct ucontext MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) 					\
@@ -378,24 +380,8 @@ typedef struct ucontext MonoContext;
 
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
-		"stg	%%r0,0x00(%0)\n\t"	\
-		"stg	%%r1,0x08(%0)\n\t"	\
-		"stg	%%r2,0x10(%0)\n\t"	\
-		"stg	%%r3,0x18(%0)\n\t"	\
-		"stg	%%r4,0x20(%0)\n\t"	\
-		"stg	%%r5,0x28(%0)\n\t"	\
-		"stg	%%r6,0x30(%0)\n\t"	\
-		"stg	%%r7,0x38(%0)\n\t"	\
-		"stg	%%r8,0x40(%0)\n\t"	\
-		"stg	%%r9,0x48(%0)\n\t"	\
-		"stg	%%r10,0x50(%0)\n\t"	\
-		"stg	%%r11,0x58(%0)\n\t"	\
-		"stg	%%r12,0x60(%0)\n\t"	\
-		"stg	%%r13,0x68(%0)\n\t"	\
-		"stg	%%r14,0x70(%0)\n\t"	\
-		"stg	%%r15,0x78(%0)\n"	\
-		: "=&a" (ptr)			\
-		: "0" (cur_thread_regs)		\
+		"stmg	%%r0,%%r15,0(%0)\n"	\
+		: : "r" (&(ctx).uc_mcontext.gregs[0])	\
 		: "memory"			\
 	)
 
