@@ -591,9 +591,6 @@ int current_collection_generation = -1;
 static FinalizeEntry *fin_ready_list = NULL;
 static FinalizeEntry *critical_fin_list = NULL;
 
-static DisappearingLinkHashTable minor_disappearing_link_hash;
-static DisappearingLinkHashTable major_disappearing_link_hash;
-
 static EphemeronLinkNode *ephemeron_list;
 
 static int num_ready_finalizers = 0;
@@ -846,7 +843,7 @@ static void finish_gray_stack (char *start_addr, char *end_addr, int generation,
 static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
 
-static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
+static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
 
 void describe_ptr (char *ptr);
 void check_object (char *start);
@@ -1506,7 +1503,7 @@ clear_domain_process_object (char *obj, MonoDomain *domain)
 	if (remove && ((MonoObject*)obj)->synchronisation) {
 		void **dislink = mono_monitor_get_object_monitor_weak_link ((MonoObject*)obj);
 		if (dislink)
-			mono_gc_register_disappearing_link (NULL, dislink, FALSE);
+			mono_gc_register_disappearing_link (NULL, dislink, FALSE, TRUE);
 	}
 
 	return remove;
@@ -2478,16 +2475,6 @@ generation_name (int generation)
 	switch (generation) {
 	case GENERATION_NURSERY: return "nursery";
 	case GENERATION_OLD: return "old";
-	default: g_assert_not_reached ();
-	}
-}
-
-static DisappearingLinkHashTable*
-get_dislink_hash_table (int generation)
-{
-	switch (generation) {
-	case GENERATION_NURSERY: return &minor_disappearing_link_hash;
-	case GENERATION_OLD: return &major_disappearing_link_hash;
 	default: g_assert_not_reached ();
 	}
 }
@@ -4437,226 +4424,6 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 
 	DEBUG (5, fprintf (gc_debug_file, "Ephemeron run finished. Is it done %d\n", nothing_marked));
 	return nothing_marked;
-}
-
-/* LOCKING: requires that the GC lock is held */
-static void
-null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue)
-{
-	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
-	DisappearingLink **disappearing_link_hash = hash->table;
-	int disappearing_link_hash_size = hash->size;
-	DisappearingLink *entry, *prev;
-	int i;
-	if (!hash->num_links)
-		return;
-	for (i = 0; i < disappearing_link_hash_size; ++i) {
-		prev = NULL;
-		for (entry = disappearing_link_hash [i]; entry;) {
-			char *object;
-			gboolean track = DISLINK_TRACK (entry);
-
-			/*
-			 * Tracked references are processed after
-			 * finalization handling whereas standard weak
-			 * references are processed before.  If an
-			 * object is still not marked after finalization
-			 * handling it means that it either doesn't have
-			 * a finalizer or the finalizer has already run,
-			 * so we must null a tracking reference.
-			 */
-			if (track == before_finalization) {
-				prev = entry;
-				entry = entry->next;
-				continue;
-			}
-
-			object = DISLINK_OBJECT (entry);
-
-			if (object >= start && object < end && !major_collector.is_object_live (object)) {
-				if (object_is_fin_ready (object)) {
-					void **p = entry->link;
-					DisappearingLink *old;
-					*p = NULL;
-					/* remove from list */
-					if (prev)
-						prev->next = entry->next;
-					else
-						disappearing_link_hash [i] = entry->next;
-					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", p, object));
-					old = entry->next;
-					mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-					entry = old;
-					hash->num_links--;
-					continue;
-				} else {
-					char *copy = object;
-					copy_func ((void**)&copy, queue);
-
-					/* Update pointer if it's moved.  If the object
-					 * has been moved out of the nursery, we need to
-					 * remove the link from the minor hash table to
-					 * the major one.
-					 *
-					 * FIXME: what if an object is moved earlier?
-					 */
-
-					if (hash == &minor_disappearing_link_hash && !ptr_in_nursery (copy)) {
-						void **link = entry->link;
-						DisappearingLink *old;
-						/* remove from list */
-						if (prev)
-							prev->next = entry->next;
-						else
-							disappearing_link_hash [i] = entry->next;
-						old = entry->next;
-						mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-						entry = old;
-						hash->num_links--;
-
-						add_or_remove_disappearing_link ((MonoObject*)copy, link,
-							track, GENERATION_OLD);
-
-						DEBUG (5, fprintf (gc_debug_file, "Upgraded dislink at %p to major because object %p moved to %p\n", link, object, copy));
-
-						continue;
-					} else {
-						*entry->link = HIDE_POINTER (copy, track);
-						DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
-					}
-				}
-			}
-			prev = entry;
-			entry = entry->next;
-		}
-	}
-}
-
-/* LOCKING: requires that the GC lock is held */
-static void
-null_links_for_domain (MonoDomain *domain, int generation)
-{
-	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
-	DisappearingLink **disappearing_link_hash = hash->table;
-	int disappearing_link_hash_size = hash->size;
-	DisappearingLink *entry, *prev;
-	int i;
-	for (i = 0; i < disappearing_link_hash_size; ++i) {
-		prev = NULL;
-		for (entry = disappearing_link_hash [i]; entry; ) {
-			char *object = DISLINK_OBJECT (entry);
-			if (object && !((MonoObject*)object)->vtable) {
-				DisappearingLink *next = entry->next;
-
-				if (prev)
-					prev->next = next;
-				else
-					disappearing_link_hash [i] = next;
-
-				if (*(entry->link)) {
-					*(entry->link) = NULL;
-					g_warning ("Disappearing link %p not freed", entry->link);
-				} else {
-					mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-				}
-
-				entry = next;
-				continue;
-			}
-			prev = entry;
-			entry = entry->next;
-		}
-	}
-}
-
-static void
-rehash_dislink (DisappearingLinkHashTable *hash_table)
-{
-	DisappearingLink **disappearing_link_hash = hash_table->table;
-	int disappearing_link_hash_size = hash_table->size;
-	int i;
-	unsigned int hash;
-	DisappearingLink **new_hash;
-	DisappearingLink *entry, *next;
-	int new_size = g_spaced_primes_closest (hash_table->num_links);
-
-	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
-	for (i = 0; i < disappearing_link_hash_size; ++i) {
-		for (entry = disappearing_link_hash [i]; entry; entry = next) {
-			hash = mono_aligned_addr_hash (entry->link) % new_size;
-			next = entry->next;
-			entry->next = new_hash [hash];
-			new_hash [hash] = entry;
-		}
-	}
-	mono_sgen_free_internal_dynamic (disappearing_link_hash,
-			disappearing_link_hash_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
-	hash_table->table = new_hash;
-	hash_table->size = new_size;
-}
-
-/* LOCKING: assumes the GC lock is held */
-static void
-add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation)
-{
-	DisappearingLinkHashTable *hash_table = get_dislink_hash_table (generation);
-	DisappearingLink *entry, *prev;
-	unsigned int hash;
-	DisappearingLink **disappearing_link_hash = hash_table->table;
-	int disappearing_link_hash_size = hash_table->size;
-
-	if (hash_table->num_links >= disappearing_link_hash_size * 2) {
-		rehash_dislink (hash_table);
-		disappearing_link_hash = hash_table->table;
-		disappearing_link_hash_size = hash_table->size;
-	}
-	/* FIXME: add check that link is not in the heap */
-	hash = mono_aligned_addr_hash (link) % disappearing_link_hash_size;
-	entry = disappearing_link_hash [hash];
-	prev = NULL;
-	for (; entry; entry = entry->next) {
-		/* link already added */
-		if (link == entry->link) {
-			/* NULL obj means remove */
-			if (obj == NULL) {
-				if (prev)
-					prev->next = entry->next;
-				else
-					disappearing_link_hash [hash] = entry->next;
-				hash_table->num_links--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n", entry, hash_table->num_links, generation_name (generation)));
-				mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-				*link = NULL;
-			} else {
-				*link = HIDE_POINTER (obj, track); /* we allow the change of object */
-			}
-			return;
-		}
-		prev = entry;
-	}
-	if (obj == NULL)
-		return;
-	entry = mono_sgen_alloc_internal (INTERNAL_MEM_DISLINK);
-	*link = HIDE_POINTER (obj, track);
-	entry->link = link;
-	entry->next = disappearing_link_hash [hash];
-	disappearing_link_hash [hash] = entry;
-	hash_table->num_links++;
-	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p to %s table\n", entry, obj, obj->vtable->klass->name, link, generation_name (generation)));
-}
-
-/* LOCKING: assumes the GC lock is held */
-static void
-mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track)
-{
-	add_or_remove_disappearing_link (NULL, link, FALSE, GENERATION_NURSERY);
-	add_or_remove_disappearing_link (NULL, link, FALSE, GENERATION_OLD);
-	if (obj) {
-		if (ptr_in_nursery (obj))
-			add_or_remove_disappearing_link (obj, link, track, GENERATION_NURSERY);
-		else
-			add_or_remove_disappearing_link (obj, link, track, GENERATION_OLD);
-	}
 }
 
 int
@@ -6793,17 +6560,13 @@ mono_gc_enable_events (void)
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
-	LOCK_GC;
-	mono_gc_register_disappearing_link (obj, link_addr, track);
-	UNLOCK_GC;
+	mono_gc_register_disappearing_link (obj, link_addr, track, FALSE);
 }
 
 void
 mono_gc_weak_link_remove (void **link_addr)
 {
-	LOCK_GC;
-	mono_gc_register_disappearing_link (NULL, link_addr, FALSE);
-	UNLOCK_GC;
+	mono_gc_register_disappearing_link (NULL, link_addr, FALSE, FALSE);
 }
 
 MonoObject*
