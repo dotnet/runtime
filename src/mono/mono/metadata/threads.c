@@ -4261,13 +4261,116 @@ mono_thread_kill (MonoInternalThread *thread, int signal)
 }
 
 static void
+self_interrupt_thread (void *_unused)
+{
+	MonoThreadInfo *info = mono_thread_info_current ();
+	MonoException *exc = mono_thread_execute_interruption (mono_thread_internal_current ()); 
+	if (exc) /*We must use _with_context since we didn't trampoline into the runtime*/
+		mono_raise_exception_with_context (exc, &info->suspend_state.ctx);
+	g_assert_not_reached (); /*this MUST not happen since we can't resume from an async call*/
+}
+
+static gboolean
+mono_jit_info_match (MonoJitInfo *ji, gpointer ip)
+{
+	if (!ji)
+		return FALSE;
+	return ji->code_start <= ip && (char*)ip < (char*)ji->code_start + ji->code_size;
+}
+
+static gboolean
+last_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	MonoJitInfo **dest = data;
+	*dest = frame->ji;
+	return TRUE;
+}
+
+static MonoJitInfo*
+mono_thread_info_get_last_managed (MonoThreadInfo *info)
+{
+	MonoJitInfo *ji = NULL;
+	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, &info->suspend_state, MONO_UNWIND_SIGNAL_SAFE, &ji);
+	return ji;
+}
+
+static void
 abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort)
 {
+	MonoJitInfo *ji;
+	MonoThreadInfo *info = NULL;
+
 	if (!mono_thread_info_new_interrupt_enabled ()) {
 		signal_thread_state_change (thread);
 		return;
 	}
-	g_assert (0);
+
+	/*
+	FIXME this is insanely broken, it doesn't cause interruption to happen
+	synchronously since passing FALSE to mono_thread_request_interruption makes sure it returns NULL
+	*/
+	if (thread == mono_thread_internal_current ()) {
+		/* Do it synchronously */
+		MonoException *exc = mono_thread_request_interruption (can_raise_exception); 
+		if (exc)
+			mono_raise_exception (exc);
+		wapi_interrupt_thread (thread->handle);
+		return;
+	}
+
+	/*FIXME we need to check 2 conditions here, request to interrupt this thread or if the target died*/
+	if (!(info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, TRUE))) {
+		return;
+	}
+
+	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (&info->suspend_state)) {
+		mono_thread_info_resume (mono_thread_info_get_tid (info));
+		return;
+	}
+
+	/*someone is already interrupting it*/
+	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1) {
+		mono_thread_info_resume (mono_thread_info_get_tid (info));
+		return;
+	}
+
+	ji = mono_thread_info_get_last_managed (info);
+	gboolean protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
+	gboolean running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+
+	if (!protected_wrapper && running_managed) {
+		/*We are in managed code*/
+		/*Set the thread to call */
+		if (install_async_abort)
+			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
+		mono_thread_info_resume (mono_thread_info_get_tid (info));
+	} else {
+		/* 
+		 * This will cause waits to be broken.
+		 * It will also prevent the thread from entering a wait, so if the thread returns
+		 * from the wait before it receives the abort signal, it will just spin in the wait
+		 * functions in the io-layer until the signal handler calls QueueUserAPC which will
+		 * make it return.
+		 */
+		InterlockedIncrement (&thread_interruption_requested);
+		mono_thread_info_resume (mono_thread_info_get_tid (info));
+		wapi_interrupt_thread (thread->handle);
+	}
+	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
+}
+
+static void
+transition_to_suspended (MonoInternalThread *thread)
+{
+	if ((thread->state & ThreadState_SuspendRequested) == 0) {
+		g_assert (0); /*FIXME we should not reach this */
+		/*Make sure we balance the suspend count.*/
+		mono_thread_info_resume ((pthread_t)(gpointer)(gsize)thread->tid);
+	} else {
+		thread->state &= ~ThreadState_SuspendRequested;
+		thread->state |= ThreadState_Suspended;
+	}
+	LeaveCriticalSection (thread->synch_cs);
 }
 
 static void
@@ -4277,7 +4380,28 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		signal_thread_state_change (thread);
 		return;
 	}
-	g_assert (0);
+
+	EnterCriticalSection (thread->synch_cs);
+	if (thread == mono_thread_internal_current ()) {
+		transition_to_suspended (thread);
+		mono_thread_info_self_suspend ();
+	} else {
+		MonoThreadInfo *info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, interrupt);
+		MonoJitInfo *ji = mono_thread_info_get_last_managed (info);
+		gboolean protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
+		gboolean running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+
+		if (running_managed && !protected_wrapper) {
+			transition_to_suspended (thread);
+		} else {
+			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
+				InterlockedIncrement (&thread_interruption_requested);
+			if (interrupt)
+				wapi_interrupt_thread (thread->handle);
+			mono_thread_info_resume (mono_thread_info_get_tid (info));
+			LeaveCriticalSection (thread->synch_cs);
+		}
+	}
 }
 
 /*This is called with @thread synch_cs held and it must release it*/
@@ -4319,7 +4443,9 @@ self_suspend_internal (MonoInternalThread *thread)
 		LeaveCriticalSection (thread->synch_cs);
 		return;
 	}
-	g_assert (0);
+
+	transition_to_suspended (thread);
+	mono_thread_info_self_suspend ();
 }
 
 /*This is called with @thread synch_cs held and it must release it*/
@@ -4344,5 +4470,13 @@ resume_thread_internal (MonoInternalThread *thread)
 		thread->resume_event = NULL;
 		return TRUE;
 	}
-	g_assert (0);
+
+	LeaveCriticalSection (thread->synch_cs);	
+	/* Awake the thread */
+	if (!mono_thread_info_resume ((pthread_t)(gpointer)(gsize)thread->tid))
+		return FALSE;
+	EnterCriticalSection (thread->synch_cs);
+	thread->state &= ~ThreadState_Suspended;
+	LeaveCriticalSection (thread->synch_cs);
+	return TRUE;
 }
