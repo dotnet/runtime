@@ -5777,6 +5777,22 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- mono_arch_context_set_int_reg.                    */
+/*                                                                  */
+/* Function	- Set a value in a specified register.              */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
+{
+	ctx->uc_mcontext.gregs[reg] = val;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- mono_arch_get_this_arg_from_call.                 */
 /*                                                                  */
 /* Function	- 						    */
