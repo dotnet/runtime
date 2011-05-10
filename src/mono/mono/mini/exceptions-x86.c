@@ -1028,7 +1028,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	 * resume into the normal stack and do most work there if possible.
 	 */
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	guint64 sp = UCONTEXT_REG_ESP (ctx);
 
 	/* Pass the ctx parameter in TLS */
 	mono_arch_sigctx_to_monoctx (ctx, &jit_tls->ex_ctx);
