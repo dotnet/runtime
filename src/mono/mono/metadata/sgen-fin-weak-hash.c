@@ -127,6 +127,160 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 }
 
 /* LOCKING: requires that the GC lock is held */
+static void
+register_for_finalization (MonoObject *obj, void *user_data, int generation)
+{
+	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
+	FinalizeEntry **finalizable_hash;
+	mword finalizable_hash_size;
+	FinalizeEntry *entry, *prev;
+	unsigned int hash;
+	if (no_finalize)
+		return;
+	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
+	hash = mono_object_hash (obj);
+	rehash_fin_table_if_necessary (hash_table);
+	finalizable_hash = hash_table->table;
+	finalizable_hash_size = hash_table->size;
+	hash %= finalizable_hash_size;
+	prev = NULL;
+	for (entry = finalizable_hash [hash]; entry; entry = entry->next) {
+		if (entry->object == obj) {
+			if (!user_data) {
+				/* remove from the list */
+				if (prev)
+					prev->next = entry->next;
+				else
+					finalizable_hash [hash] = entry->next;
+				hash_table->num_registered--;
+				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
+				mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
+			}
+			return;
+		}
+		prev = entry;
+	}
+	if (!user_data) {
+		/* request to deregister, but already out of the list */
+		return;
+	}
+	entry = mono_sgen_alloc_internal (INTERNAL_MEM_FINALIZE_ENTRY);
+	entry->object = obj;
+	entry->next = finalizable_hash [hash];
+	finalizable_hash [hash] = entry;
+	hash_table->num_registered++;
+	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d) to %s table\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered, generation_name (generation)));
+}
+
+#define STAGE_ENTRY_FREE	0
+#define STAGE_ENTRY_BUSY	1
+#define STAGE_ENTRY_USED	2
+
+typedef struct {
+	gint32 state;
+	MonoObject *obj;
+	void *user_data;
+} StageEntry;
+
+#define NUM_FIN_STAGE_ENTRIES	1024
+
+static volatile gint32 next_fin_stage_entry = 0;
+static StageEntry fin_stage_entries [NUM_FIN_STAGE_ENTRIES];
+
+/* LOCKING: requires that the GC lock is held */
+static void
+process_stage_entries (int num_entries, volatile gint32 *next_entry, StageEntry *entries, void (*process_func) (MonoObject*, void*))
+{
+	int i;
+	int num_registered = 0;
+	int num_busy = 0;
+
+	for (i = 0; i < num_entries; ++i) {
+		gint32 state = entries [i].state;
+
+		if (state == STAGE_ENTRY_BUSY)
+			++num_busy;
+
+		if (state != STAGE_ENTRY_USED ||
+				InterlockedCompareExchange (&entries [i].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_USED) != STAGE_ENTRY_USED) {
+			continue;
+		}
+
+		process_func (entries [i].obj, entries [i].user_data);
+
+		entries [i].obj = NULL;
+		entries [i].user_data = NULL;
+
+		mono_memory_write_barrier ();
+
+		entries [i].state = STAGE_ENTRY_FREE;
+
+		++num_registered;
+	}
+
+	*next_entry = 0;
+
+	/* g_print ("stage busy %d reg %d\n", num_busy, num_registered); */
+}
+
+static gboolean
+add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entries, MonoObject *obj, void *user_data)
+{
+	gint32 index;
+
+	do {
+		do {
+			index = *next_entry;
+			if (index >= num_entries)
+				return FALSE;
+		} while (InterlockedCompareExchange (next_entry, index + 1, index) != index);
+
+		/*
+		 * We don't need a write barrier here.  *next_entry is just a
+		 * help for finding an index, its value is irrelevant for
+		 * correctness.
+		 */
+	} while (entries [index].state != STAGE_ENTRY_FREE ||
+			InterlockedCompareExchange (&entries [index].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_FREE) != STAGE_ENTRY_FREE);
+
+	entries [index].obj = obj;
+	entries [index].user_data = user_data;
+
+	mono_memory_write_barrier ();
+
+	entries [index].state = STAGE_ENTRY_USED;
+
+	return TRUE;
+}
+
+/* LOCKING: requires that the GC lock is held */
+static void
+process_fin_stage_entry (MonoObject *obj, void *user_data)
+{
+	if (ptr_in_nursery (obj))
+		register_for_finalization (obj, user_data, GENERATION_NURSERY);
+	else
+		register_for_finalization (obj, user_data, GENERATION_OLD);
+}
+
+/* LOCKING: requires that the GC lock is held */
+static void
+process_fin_stage_entries (void)
+{
+	process_stage_entries (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, process_fin_stage_entry);
+}
+
+void
+mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+{
+	while (!add_stage_entry (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, obj, user_data)) {
+		LOCK_GC;
+		process_fin_stage_entries ();
+		UNLOCK_GC;
+	}
+}
+
+/* LOCKING: requires that the GC lock is held */
 static int
 finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
 	FinalizeEntryHashTable *hash_table)
@@ -184,6 +338,7 @@ mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int o
 	int result;
 
 	LOCK_GC;
+	process_fin_stage_entries ();
 	result = finalizers_for_domain (domain, out_array, out_size, &minor_finalizable_hash);
 	if (result < out_size) {
 		result += finalizers_for_domain (domain, out_array + result, out_size - result,
@@ -192,62 +347,4 @@ mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int o
 	UNLOCK_GC;
 
 	return result;
-}
-
-static void
-register_for_finalization (MonoObject *obj, void *user_data, int generation)
-{
-	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
-	FinalizeEntry **finalizable_hash;
-	mword finalizable_hash_size;
-	FinalizeEntry *entry, *prev;
-	unsigned int hash;
-	if (no_finalize)
-		return;
-	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
-	hash = mono_object_hash (obj);
-	LOCK_GC;
-	rehash_fin_table_if_necessary (hash_table);
-	finalizable_hash = hash_table->table;
-	finalizable_hash_size = hash_table->size;
-	hash %= finalizable_hash_size;
-	prev = NULL;
-	for (entry = finalizable_hash [hash]; entry; entry = entry->next) {
-		if (entry->object == obj) {
-			if (!user_data) {
-				/* remove from the list */
-				if (prev)
-					prev->next = entry->next;
-				else
-					finalizable_hash [hash] = entry->next;
-				hash_table->num_registered--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
-				mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
-			}
-			UNLOCK_GC;
-			return;
-		}
-		prev = entry;
-	}
-	if (!user_data) {
-		/* request to deregister, but already out of the list */
-		UNLOCK_GC;
-		return;
-	}
-	entry = mono_sgen_alloc_internal (INTERNAL_MEM_FINALIZE_ENTRY);
-	entry->object = obj;
-	entry->next = finalizable_hash [hash];
-	finalizable_hash [hash] = entry;
-	hash_table->num_registered++;
-	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d) to %s table\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered, generation_name (generation)));
-	UNLOCK_GC;
-}
-
-void
-mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
-{
-	if (ptr_in_nursery (obj))
-		register_for_finalization (obj, user_data, GENERATION_NURSERY);
-	else
-		register_for_finalization (obj, user_data, GENERATION_OLD);
 }
