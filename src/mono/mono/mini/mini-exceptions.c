@@ -113,6 +113,7 @@ mono_exceptions_init (void)
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 	cbs.mono_raise_exception = mono_get_throw_exception ();
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
+	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
 	mono_install_eh_callbacks (&cbs);
 }
 
