@@ -81,7 +81,8 @@ sgen_sources = \
 	sgen-gray.c		\
 	sgen-pinning.c		\
 	sgen-pinning-stats.c	\
-	sgen-workers.c
+	sgen-workers.c		\
+	sgen-fin-weak-hash.c
 
 libmonoruntime_la_SOURCES = \
 	$(platform_sources)	\
