@@ -390,6 +390,11 @@ on_gc_notification (GCEventType event)
 {
 	MonoGCEvent e = (MonoGCEvent)event;
 
+	if (e == MONO_GC_EVENT_PRE_STOP_WORLD) 
+		mono_thread_info_suspend_lock ();
+	else if (e == MONO_GC_EVENT_POST_START_WORLD)
+		mono_thread_info_suspend_unlock ();
+	
 	if (e == MONO_GC_EVENT_START) {
 		mono_perfcounters->gc_collections0++;
 		mono_stats.major_gc_count ++;

@@ -5392,11 +5392,13 @@ static void
 acquire_gc_locks (void)
 {
 	LOCK_INTERRUPTION;
+	mono_thread_info_suspend_lock ();
 }
 
 static void
 release_gc_locks (void)
 {
+	mono_thread_info_suspend_unlock ();
 	UNLOCK_INTERRUPTION;
 }
 
