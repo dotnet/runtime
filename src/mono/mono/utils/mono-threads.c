@@ -478,5 +478,16 @@ which means mono-context and setup_async_callback, and we need a mono-threads ba
 gboolean
 mono_thread_info_new_interrupt_enabled (void)
 {
+	/*We need STW gc events to work correctly*/
+#if defined (HAVE_BOEHM_GC) && !defined (USE_INCLUDED_LIBGC)
+	return FALSE:
+#endif
+	/*port not done*/
+#if defined(HOST_WIN32)
+	return FALSE;
+#endif
+#if defined (__i386__)
+	return TRUE;
+#endif
 	return FALSE;
 }
