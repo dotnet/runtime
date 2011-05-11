@@ -826,9 +826,9 @@ static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void process_fin_stage_entries (void);
-static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation);
 static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue);
 static void null_links_for_domain (MonoDomain *domain, int generation);
+static void process_dislink_stage_entries (void);
 static gboolean alloc_fragment_for_size (size_t size);
 static int alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size);
 static void clear_nursery_fragments (char *next);
@@ -1554,6 +1554,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	LOCK_GC;
 
 	process_fin_stage_entries ();
+	process_dislink_stage_entries ();
 
 	clear_nursery_fragments (nursery_next);
 
@@ -3115,6 +3116,7 @@ collect_nursery (size_t requested_size)
 	global_remset_cache_clear ();
 
 	process_fin_stage_entries ();
+	process_dislink_stage_entries ();
 
 	/* pin from pinned handles */
 	init_pinning ();
@@ -3367,6 +3369,7 @@ major_do_collection (const char *reason)
 		card_table_clear ();
 
 	process_fin_stage_entries ();
+	process_dislink_stage_entries ();
 
 	TV_GETTIME (atv);
 	init_pinning ();

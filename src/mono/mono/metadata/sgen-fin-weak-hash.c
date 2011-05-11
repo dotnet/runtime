@@ -391,7 +391,7 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 
 /* LOCKING: assumes the GC lock is held */
 static void
-add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation)
+add_or_remove_disappearing_link (MonoObject *obj, void **link, int generation)
 {
 	DisappearingLinkHashTable *hash_table = get_dislink_hash_table (generation);
 	DisappearingLink *entry, *prev;
@@ -420,9 +420,6 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 				hash_table->num_links--;
 				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n", entry, hash_table->num_links, generation_name (generation)));
 				mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-				*link = NULL;
-			} else {
-				*link = HIDE_POINTER (obj, track); /* we allow the change of object */
 			}
 			return;
 		}
@@ -431,7 +428,6 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 	if (obj == NULL)
 		return;
 	entry = mono_sgen_alloc_internal (INTERNAL_MEM_DISLINK);
-	*link = HIDE_POINTER (obj, track);
 	entry->link = link;
 	entry->next = disappearing_link_hash [hash];
 	disappearing_link_hash [hash] = entry;
@@ -514,8 +510,9 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 						entry = old;
 						hash->num_links--;
 
-						add_or_remove_disappearing_link ((MonoObject*)copy, link,
-							track, GENERATION_OLD);
+						g_assert (copy);
+						*link = HIDE_POINTER (copy, track);
+						add_or_remove_disappearing_link ((MonoObject*)copy, link, GENERATION_OLD);
 
 						DEBUG (5, fprintf (gc_debug_file, "Upgraded dislink at %p to major because object %p moved to %p\n", link, object, copy));
 
@@ -569,21 +566,57 @@ null_links_for_domain (MonoDomain *domain, int generation)
 	}
 }
 
+/* LOCKING: requires that the GC lock is held */
+static void
+process_dislink_stage_entry (MonoObject *obj, void *_link)
+{
+	void **link = _link;
+
+	add_or_remove_disappearing_link (NULL, link, GENERATION_NURSERY);
+	add_or_remove_disappearing_link (NULL, link, GENERATION_OLD);
+	if (obj) {
+		if (ptr_in_nursery (obj))
+			add_or_remove_disappearing_link (obj, link, GENERATION_NURSERY);
+		else
+			add_or_remove_disappearing_link (obj, link, GENERATION_OLD);
+	}
+}
+
+#define NUM_DISLINK_STAGE_ENTRIES	1024
+
+static volatile gint32 next_dislink_stage_entry = 0;
+static StageEntry dislink_stage_entries [NUM_DISLINK_STAGE_ENTRIES];
+
+/* LOCKING: requires that the GC lock is held */
+static void
+process_dislink_stage_entries (void)
+{
+	process_stage_entries (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry, dislink_stage_entries, process_dislink_stage_entry);
+}
+
 static void
 mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc)
 {
+	if (obj)
+		*link = HIDE_POINTER (obj, track);
+	else
+		*link = NULL;
+
+#if 1
+	if (in_gc) {
+		process_dislink_stage_entry (obj, link);
+	} else {
+		while (!add_stage_entry (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry, dislink_stage_entries, obj, link)) {
+			LOCK_GC;
+			process_dislink_stage_entries ();
+			UNLOCK_GC;
+		}
+	}
+#else
 	if (!in_gc)
 		LOCK_GC;
-
-	add_or_remove_disappearing_link (NULL, link, FALSE, GENERATION_NURSERY);
-	add_or_remove_disappearing_link (NULL, link, FALSE, GENERATION_OLD);
-	if (obj) {
-		if (ptr_in_nursery (obj))
-			add_or_remove_disappearing_link (obj, link, track, GENERATION_NURSERY);
-		else
-			add_or_remove_disappearing_link (obj, link, track, GENERATION_OLD);
-	}
-
+	process_dislink_stage_entry (obj, link);
 	if (!in_gc)
 		UNLOCK_GC;
+#endif
 }
