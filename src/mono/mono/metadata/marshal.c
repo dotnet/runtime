@@ -9721,8 +9721,13 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_OBJECT;
 	if (is_monomorphic_array (element_class))
 		return STELEMREF_SEALED_CLASS;
+	/* Compressed interface bitmaps require code that is quite complex, so don't optimize for it. */
 	if (MONO_CLASS_IS_INTERFACE (element_class) && !mono_class_has_variant_generic_params (element_class))
+#ifdef COMPRESSED_INTERFACE_BITMAP
+		return STELEMREF_COMPLEX;
+#else
 		return STELEMREF_INTERFACE;
+#endif
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
 	if (element_class->marshalbyref || element_class->rank || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
