@@ -382,17 +382,21 @@ SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 	if (res)
 		return;
 
-	printf ("Full thread dump:\n");
+	if (mono_thread_info_new_interrupt_enabled ()) {
+		mono_threads_request_thread_dump ();
+	} else {
+		printf ("Full thread dump:\n");
 
-	mono_threads_request_thread_dump ();
+		mono_threads_request_thread_dump ();
 
-	/*
-	 * print_thread_dump () skips the current thread, since sending a signal
-	 * to it would invoke the signal handler below the sigquit signal handler,
-	 * and signal handlers don't create an lmf, so the stack walk could not
-	 * be performed.
-	 */
-	mono_print_thread_dump (ctx);
+		/*
+		 * print_thread_dump () skips the current thread, since sending a signal
+		 * to it would invoke the signal handler below the sigquit signal handler,
+		 * and signal handlers don't create an lmf, so the stack walk could not
+		 * be performed.
+		 */
+		mono_print_thread_dump (ctx);
+	}
 
 	mono_chain_signal (SIG_HANDLER_PARAMS);
 }

@@ -216,5 +216,6 @@ void*    mono_get_special_static_data   (uint32_t offset) MONO_INTERNAL;
 gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset) MONO_INTERNAL;
 
 MonoException* mono_thread_resume_interruption (void) MONO_INTERNAL;
+void mono_threads_perform_thread_dump (void) MONO_INTERNAL;
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

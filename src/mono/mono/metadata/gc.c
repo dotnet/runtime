@@ -1074,6 +1074,8 @@ finalizer_thread (gpointer unused)
 		WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 #endif
 
+		mono_threads_perform_thread_dump ();
+
 		mono_console_handle_async_ops ();
 
 #ifndef DISABLE_ATTACH
