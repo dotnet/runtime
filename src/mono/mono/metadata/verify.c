@@ -2111,6 +2111,9 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 {
 	MonoClass *iface_gtd;
 
+	if (target == candidate)
+		return TRUE;
+
 	if (mono_class_has_variant_generic_params (target)) {
 		if (MONO_CLASS_IS_INTERFACE (target)) {
 			if (candidate->rank == 1) {
@@ -2123,17 +2126,26 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 			} else {
 				MonoError error;
 				int i;
-				mono_class_setup_interfaces (candidate, &error);
-				if (!mono_error_ok (&error)) {
-					mono_error_cleanup (&error);
-					return FALSE;
-				}
+				while (candidate && candidate != mono_defaults.object_class) {
+					mono_class_setup_interfaces (candidate, &error);
+					if (!mono_error_ok (&error)) {
+						mono_error_cleanup (&error);
+						return FALSE;
+					}
 
-				/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
-				for (i = 0; i < candidate->interface_offsets_count; ++i) {
-					MonoClass *iface = candidate->interfaces_packed [i];
-					if (mono_class_is_variant_compatible (target, iface, TRUE))
-						return TRUE;
+					/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
+					for (i = 0; i < candidate->interface_offsets_count; ++i) {
+						MonoClass *iface = candidate->interfaces_packed [i];
+						if (mono_class_is_variant_compatible (target, iface, TRUE))
+							return TRUE;
+					}
+
+					for (i = 0; i < candidate->interface_count; ++i) {
+						MonoClass *iface = candidate->interfaces [i];
+						if (mono_class_is_variant_compatible (target, iface, TRUE))
+							return TRUE;
+					}
+					candidate = candidate->parent;
 				}
 			}
 		} else if (target->delegate) {

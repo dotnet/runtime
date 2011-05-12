@@ -7297,11 +7297,15 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 static gboolean
 mono_gparam_is_reference_conversible (MonoClass *target, MonoClass *candidate, gboolean check_for_reference_conv)
 {
+	if (target == candidate)
+		return TRUE;
+
 	if (check_for_reference_conv &&
 		mono_type_is_generic_argument (&target->byval_arg) &&
 		mono_type_is_generic_argument (&candidate->byval_arg)) {
 		MonoGenericParam *gparam = candidate->byval_arg.data.generic_param;
 		MonoGenericParamInfo *pinfo = mono_generic_param_info (gparam);
+
 		if (!pinfo || (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0)
 			return FALSE;
 	}
@@ -7325,6 +7329,9 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean 
 	MonoType **klass_argv, **oklass_argv;
 	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
 	MonoGenericContainer *container = klass_gtd->generic_container;
+
+	if (klass == oklass)
+		return TRUE;
 
 	/*Viable candidates are instances of the same generic interface*/
 	if (mono_class_get_generic_type_definition (oklass) != klass_gtd || oklass == klass_gtd)
