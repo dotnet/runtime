@@ -4425,7 +4425,9 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		MonoException *exc = mono_thread_request_interruption (can_raise_exception); 
 		if (exc)
 			mono_raise_exception (exc);
+#ifndef HOST_WIN32
 		wapi_interrupt_thread (thread->handle);
+#endif
 		return;
 	}
 
@@ -4465,7 +4467,9 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		 */
 		InterlockedIncrement (&thread_interruption_requested);
 		mono_thread_info_resume (mono_thread_info_get_tid (info));
+#ifndef HOST_WIN32
 		wapi_interrupt_thread (thread->handle);
+#endif
 	}
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
 }
@@ -4507,8 +4511,10 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		} else {
 			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
 				InterlockedIncrement (&thread_interruption_requested);
+#ifndef HOST_WIN32
 			if (interrupt)
 				wapi_interrupt_thread (thread->handle);
+#endif
 			mono_thread_info_resume (mono_thread_info_get_tid (info));
 			LeaveCriticalSection (thread->synch_cs);
 		}
