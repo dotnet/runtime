@@ -3128,7 +3128,7 @@ dump_thread (gpointer key, gpointer value, gpointer user)
 	We probably should loop a bit around trying to get it to either managed code
 	or WSJ state.
 	*/
-	info = mono_thread_info_safe_suspend_sync ((pthread_t)(gpointer)(gsize)thread->tid, FALSE);
+	info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
 
 	if (!info)
 		return;
@@ -4476,7 +4476,7 @@ transition_to_suspended (MonoInternalThread *thread)
 	if ((thread->state & ThreadState_SuspendRequested) == 0) {
 		g_assert (0); /*FIXME we should not reach this */
 		/*Make sure we balance the suspend count.*/
-		mono_thread_info_resume ((pthread_t)(gpointer)(gsize)thread->tid);
+		mono_thread_info_resume ((MonoNativeThreadId)(gpointer)(gsize)thread->tid);
 	} else {
 		thread->state &= ~ThreadState_SuspendRequested;
 		thread->state |= ThreadState_Suspended;
@@ -4584,7 +4584,7 @@ resume_thread_internal (MonoInternalThread *thread)
 
 	LeaveCriticalSection (thread->synch_cs);	
 	/* Awake the thread */
-	if (!mono_thread_info_resume ((pthread_t)(gpointer)(gsize)thread->tid))
+	if (!mono_thread_info_resume ((MonoNativeThreadId)(gpointer)(gsize)thread->tid))
 		return FALSE;
 	EnterCriticalSection (thread->synch_cs);
 	thread->state &= ~ThreadState_Suspended;
