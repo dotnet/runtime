@@ -342,6 +342,12 @@ struct _MonoDomain {
 	MonoClass *socket_class;
 	MonoClass *ad_unloaded_ex_class;
 	MonoClass *process_class;
+
+	/* Cache function pointers for architectures  */
+	/* that require wrappers */
+#if defined(__ia64__) || defined(__ppc64__) || defined(__powerpc64__)
+	GHashTable *ftnptrs_hash;
+#endif
 };
 
 typedef struct  {

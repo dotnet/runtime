@@ -6029,16 +6029,20 @@ mini_get_debug_options (void)
 static gpointer
 mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 {
-#ifdef __ia64__
-	gpointer *desc;
+#if !defined(__ia64__) && !defined(__ppc64__) && !defined(__powerpc64__)
+	return addr;
+#else
 
+	gpointer* desc = NULL;
+
+	if ((desc = g_hash_table_lookup (domain->ftnptrs_hash, addr)))
+		return desc;
+#	ifdef __ia64__
 	desc = mono_domain_code_reserve (domain, 2 * sizeof (gpointer));
 
 	desc [0] = addr;
 	desc [1] = NULL;
-
-	return desc;
-#elif defined(__ppc64__) || defined(__powerpc64__)
+#	elif defined(__ppc64__) || defined(__powerpc64__)
 	gpointer *desc;
 
 	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
@@ -6046,10 +6050,9 @@ mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 	desc [0] = addr;
 	desc [1] = NULL;
 	desc [2] = NULL;
-
+#	endif
+	g_hash_table_insert (domain->ftnptrs_hash, addr, desc);
 	return desc;
-#else
-	return addr;
 #endif
 }
 
