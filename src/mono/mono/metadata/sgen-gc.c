@@ -686,9 +686,11 @@ static pthread_key_t thread_info_key;
 #define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
 #endif
 
+#ifndef DISABLE_CRITICAL_REGION
 /* we use the memory barrier only to prevent compiler reordering (a memory constraint may be enough) */
 #define ENTER_CRITICAL_REGION do {IN_CRITICAL_REGION = 1;mono_memory_barrier ();} while (0)
 #define EXIT_CRITICAL_REGION  do {IN_CRITICAL_REGION = 0;mono_memory_barrier ();} while (0)
+#endif
 
 /*
  * FIXME: What is faster, a TLS variable pointing to a structure, or separate TLS 
@@ -6020,11 +6022,22 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
-	LOCK_GC;
-	memmove (dest, src, size);
 	if (use_cardtable) {
+#ifdef DISABLE_CRITICAL_REGION
+		LOCK_GC;
+#else
+		ENTER_CRITICAL_REGION;
+#endif
+		memmove (dest, src, size);
 		sgen_card_table_mark_range ((mword)dest, size);
+#ifdef DISABLE_CRITICAL_REGION
+		UNLOCK_GC;
+#else
+		EXIT_CRITICAL_REGION;
+#endif
 	} else {
+		LOCK_GC;
+		memmove (dest, src, size);
 		rs = REMEMBERED_SET;
 		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
 			UNLOCK_GC;
@@ -6049,8 +6062,8 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
+		UNLOCK_GC;
 	}
-	UNLOCK_GC;
 }
 
 /**
