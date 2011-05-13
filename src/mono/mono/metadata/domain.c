@@ -1189,6 +1189,7 @@ mono_domain_create (void)
 	domain->jit_info_free_queue = NULL;
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->track_resurrection_handles_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
@@ -1243,7 +1244,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	/* Avoid system error message boxes. */
 	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 #endif
-	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_perfcounters_init ();
 
