@@ -3076,7 +3076,7 @@ static void
 print_thread_dump (MonoInternalThread *thread, MonoThreadInfo *info)
 {
 	GString* text = g_string_new (0);
-	char *name, *wapi_desc;
+	char *name;
 	GError *error = NULL;
 
 	if (thread->name) {
@@ -4410,6 +4410,8 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 {
 	MonoJitInfo *ji;
 	MonoThreadInfo *info = NULL;
+	gboolean protected_wrapper;
+	gboolean running_managed;
 
 	if (!mono_thread_info_new_interrupt_enabled ()) {
 		signal_thread_state_change (thread);
@@ -4448,8 +4450,8 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 	}
 
 	ji = mono_thread_info_get_last_managed (info);
-	gboolean protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
-	gboolean running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+	protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
+	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
 
 	if (!protected_wrapper && running_managed) {
 		/*We are in managed code*/
