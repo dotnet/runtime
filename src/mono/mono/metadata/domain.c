@@ -1243,9 +1243,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	/* Avoid system error message boxes. */
 	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 #endif
-#if defined(__ia64__) || defined(__ppc64__) || defined(__powerpc64__)
 	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-#endif
 
 	mono_perfcounters_init ();
 
@@ -2049,12 +2047,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_destroy (domain->generic_virtual_thunks);
 		domain->generic_virtual_thunks = NULL;
 	}
-#if defined(__ia64__) || defined(__ppc64__) || defined(__powerpc64__)
 	if (domain->ftnptrs_hash) {
 		g_hash_table_destroy (domain->ftnptrs_hash);
 		domain->ftnptrs_hash = NULL;
 	}
-#endif
 
 	DeleteCriticalSection (&domain->finalizable_objects_hash_lock);
 	DeleteCriticalSection (&domain->assemblies_lock);
