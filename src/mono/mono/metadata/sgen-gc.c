@@ -619,10 +619,8 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
  * MAX(nursery_last_pinned_end, nursery_frag_real_end)
  */
 static char *nursery_start = NULL;
-static char *nursery_next = NULL;
-static char *nursery_frag_real_end = NULL;
 static char *nursery_end = NULL;
-static char *nursery_last_pinned_end = NULL;
+static char *nursery_alloc_bound = NULL;
 
 #ifdef HAVE_KW_THREAD
 #define TLAB_ACCESS_INIT
@@ -678,9 +676,6 @@ static __thread long *store_remset_buffer_index_addr;
  * FIXME: Make this self-tuning for each thread.
  */
 static guint32 tlab_size = (1024 * 4);
-
-/*How much space is tolerable to be wasted from the current fragment when allocating a new TLAB*/
-#define MAX_NURSERY_TLAB_WASTE 512
 
 #define MAX_SMALL_OBJ_SIZE	SGEN_MAX_SMALL_OBJ_SIZE
 
@@ -826,7 +821,6 @@ SgenMajorCollector major_collector;
 #include "sgen-gray.c"
 #include "sgen-workers.c"
 #include "sgen-cardtable.c"
-#include "sgen-nursery-allocator.c"
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
  * and we either have 30/62 bitmap bits or nibble-based run-length,
@@ -1476,7 +1470,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
 
-	mono_sgen_clear_nursery_fragments (nursery_next);
+	mono_sgen_clear_nursery_fragments ();
 
 	if (xdomain_checks && domain != mono_get_root_domain ()) {
 		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
@@ -2854,7 +2848,7 @@ collect_nursery (size_t requested_size)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
-	char *orig_nursery_next;
+	char *nursery_next;
 	ScanFromRemsetsJobData sfrjd;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
@@ -2876,10 +2870,11 @@ collect_nursery (size_t requested_size)
 
 	degraded_mode = 0;
 	objects_pinned = 0;
-	orig_nursery_next = nursery_next;
-	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
+	nursery_next = mono_sgen_nursery_alloc_get_upper_alloc_bound ();
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_end);
+
+	nursery_alloc_bound = nursery_next;
 
 	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", num_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
 	max_garbage_amount = nursery_next - nursery_start;
@@ -2890,7 +2885,7 @@ collect_nursery (size_t requested_size)
 	atv = all_atv;
 
 	/* Pinning no longer depends on clearing all nursery fragments */
-	mono_sgen_clear_current_nursery_fragment (orig_nursery_next);
+	mono_sgen_clear_current_nursery_fragment ();
 
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
@@ -3034,7 +3029,10 @@ collect_nursery (size_t requested_size)
 	 * next allocations.
 	 */
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
-	fragment_total = mono_sgen_build_nursery_fragments (pin_queue, next_pin_slot);
+	fragment_total = mono_sgen_build_nursery_fragments (nursery_section, pin_queue, next_pin_slot);
+	if (!fragment_total)
+		degraded_mode = 1;
+
 	/* Clear TLABs for all threads */
 	clear_tlabs ();
 
@@ -3143,7 +3141,7 @@ major_do_collection (const char *reason)
 	atv = all_atv;
 
 	/* Pinning depends on this */
-	mono_sgen_clear_nursery_fragments (nursery_next);
+	mono_sgen_clear_nursery_fragments ();
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
@@ -3354,7 +3352,9 @@ major_do_collection (const char *reason)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	mono_sgen_build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries);
+	if (!mono_sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries))
+		degraded_mode = 1;
+
 	/* Clear TLABs for all threads */
 	clear_tlabs ();
 
@@ -3647,20 +3647,19 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			/*FIXME This codepath is current deadcode since tlab_size > MAX_SMALL_OBJ_SIZE*/
 			if (size > tlab_size) {
 				/* Allocate directly from the nursery */
-				if (nursery_next + size >= nursery_frag_real_end) {
-					if (!mono_sgen_alloc_fragment_for_size (size)) {
-						minor_collect_or_expand_inner (size);
-						if (degraded_mode) {
-							p = alloc_degraded (vtable, size);
-							binary_protocol_alloc_degraded (p, vtable, size);
-							return p;
-						}
+				p = mono_sgen_nursery_alloc (size);
+				if (!p) {
+					minor_collect_or_expand_inner (size);
+					if (degraded_mode) {
+						p = alloc_degraded (vtable, size);
+						binary_protocol_alloc_degraded (p, vtable, size);
+						return p;
+					} else {
+						p = mono_sgen_nursery_alloc (size);
 					}
 				}
 
-				p = (void*)nursery_next;
-				nursery_next += size;
-				if (nursery_next > nursery_frag_real_end) {
+				if (!p) {
 					// no space left
 					g_assert (0);
 				}
@@ -3669,31 +3668,25 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					memset (p, 0, size);
 				}
 			} else {
-				int alloc_size = tlab_size;
-				int available_in_nursery = nursery_frag_real_end - nursery_next;
+				int alloc_size = 0;
 				if (TLAB_START)
 					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
 
-				if (alloc_size >= available_in_nursery) {
-					if (available_in_nursery > MAX_NURSERY_TLAB_WASTE && available_in_nursery > size) {
-						alloc_size = available_in_nursery;
+				p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+				if (!p) {
+					minor_collect_or_expand_inner (tlab_size);
+					if (degraded_mode) {
+						p = alloc_degraded (vtable, size);
+						binary_protocol_alloc_degraded (p, vtable, size);
+						return p;
 					} else {
-						alloc_size = mono_sgen_alloc_fragment_for_size_range (tlab_size, size);
-						if (!alloc_size) {
-							alloc_size = tlab_size;
-							minor_collect_or_expand_inner (tlab_size);
-							if (degraded_mode) {
-								p = alloc_degraded (vtable, size);
-								binary_protocol_alloc_degraded (p, vtable, size);
-								return p;
-							}
-						}
-					}
+						p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+					}					
 				}
 
+
 				/* Allocate a new TLAB from the current nursery fragment */
-				TLAB_START = nursery_next;
-				nursery_next += alloc_size;
+				TLAB_START = (char*)p;
 				TLAB_NEXT = TLAB_START;
 				TLAB_REAL_END = TLAB_START + alloc_size;
 				TLAB_TEMP_END = TLAB_START + MIN (SCAN_START_SIZE, alloc_size);
@@ -6033,7 +6026,7 @@ static gboolean missing_remsets;
  */
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
+		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_end) {	\
 		if (!find_in_remsets ((char*)(ptr)) && (!use_cardtable || !sgen_card_table_address_is_marked ((mword)ptr))) { \
                 fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 		binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
@@ -6201,7 +6194,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 	hwi.callback = callback;
 	hwi.data = data;
 
-	mono_sgen_clear_nursery_fragments (nursery_next);
+	mono_sgen_clear_nursery_fragments ();
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
 
 	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
@@ -7437,6 +7430,12 @@ NurseryClearPolicy
 mono_sgen_get_nursery_clear_policy (void)
 {
 	return nursery_clear_policy;
+}
+
+MonoVTable*
+mono_sgen_get_array_fill_vtable (void)
+{
+	return array_fill_vtable;
 }
 
 #endif /* HAVE_SGEN_GC */
