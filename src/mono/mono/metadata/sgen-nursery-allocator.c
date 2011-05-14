@@ -39,6 +39,7 @@
  * Thread local allocation is done from areas of memory Hotspot calls Thread Local 
  * Allocation Buffers (TLABs).
  */
+
 typedef struct _Fragment Fragment;
 
 struct _Fragment {
@@ -62,10 +63,6 @@ static long long stat_wasted_fragments_used = 0;
 static long long stat_wasted_fragments_bytes = 0;
 
 #endif
-
-static gboolean alloc_fragment_for_size (size_t size);
-static int alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size);
-static void clear_nursery_fragments (char *next);
 
 static Fragment*
 alloc_fragment (void)
@@ -112,8 +109,8 @@ setup_fragment (Fragment *frag, Fragment *prev, size_t size)
 	fragment_freelist = frag;
 }
 
-static void
-clear_current_nursery_fragment (char *next)
+void
+mono_sgen_clear_current_nursery_fragment (char *next)
 {
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		g_assert (next <= nursery_frag_real_end);
@@ -123,8 +120,8 @@ clear_current_nursery_fragment (char *next)
 }
 
 /* Clear all remaining nursery fragments */
-static void
-clear_nursery_fragments (char *next)
+void
+mono_sgen_clear_nursery_fragments (char *next)
 {
 	Fragment *frag;
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
@@ -136,7 +133,7 @@ clear_nursery_fragments (char *next)
 	}
 }
 
-static void
+void
 mono_sgen_nursery_allocator_prepare_for_pinning (void)
 {
 	Fragment *frag;
@@ -193,8 +190,8 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 }
 
 
-static void
-build_nursery_fragments (void **start, int num_entries)
+mword
+mono_sgen_build_nursery_fragments (void **start, int num_entries)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
@@ -235,9 +232,7 @@ build_nursery_fragments (void **start, int num_entries)
 	}
 
 	nursery_next = nursery_frag_real_end = NULL;
-
-	/* Clear TLABs for all threads */
-	clear_tlabs ();
+	return fragment_total;
 }
 
 /*** Nursery memory allocation ***/
@@ -247,8 +242,8 @@ build_nursery_fragments (void **start, int num_entries)
  * nursery_next and nursery_frag_real_end are set to the boundaries of the fragment.
  * Return TRUE if found, FALSE otherwise.
  */
-static gboolean
-alloc_fragment_for_size (size_t size)
+gboolean
+mono_sgen_alloc_fragment_for_size (size_t size)
 {
 	Fragment *frag, *prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
@@ -273,8 +268,8 @@ alloc_fragment_for_size (size_t size)
  * Same as alloc_fragment_for_size but if search for @desired_size fails, try to satisfy @minimum_size.
  * This improves nursery usage.
  */
-static int
-alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
+int
+mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 {
 	Fragment *frag, *prev, *min_prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, desired size: %zd minimum size %zd\n", nursery_frag_real_end, desired_size, minimum_size));
@@ -321,7 +316,7 @@ alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 
 #ifdef HEAVY_STATISTICS
 
-static void
+void
 mono_sgen_nursery_allocator_init_heavy_stats (void)
 {
 	mono_counters_register ("# wasted fragments used", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_used);
@@ -330,8 +325,15 @@ mono_sgen_nursery_allocator_init_heavy_stats (void)
 
 #endif
 
-static void
+void
 mono_sgen_init_nursery_allocator (void)
 {
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
+}
+
+void
+mono_sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nursery_end)
+{
+	/* Setup the single first large fragment */
+	add_fragment (nursery_start, nursery_end);	
 }

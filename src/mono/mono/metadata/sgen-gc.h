@@ -814,6 +814,19 @@ void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback call
 void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 FILE *mono_sgen_get_logfile (void) MONO_INTERNAL;
 
+/* nursery allocator */
+
+void mono_sgen_clear_nursery_fragments (char *next) MONO_INTERNAL;
+void mono_sgen_nursery_allocator_prepare_for_pinning (void) MONO_INTERNAL;
+void mono_sgen_clear_current_nursery_fragment (char *next) MONO_INTERNAL;
+void mono_sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nursery_end) MONO_INTERNAL;
+mword mono_sgen_build_nursery_fragments (void **start, int num_entries) MONO_INTERNAL;
+void mono_sgen_init_nursery_allocator (void) MONO_INTERNAL;
+void mono_sgen_nursery_allocator_init_heavy_stats (void) MONO_INTERNAL;
+int mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size) MONO_INTERNAL;
+gboolean mono_sgen_alloc_fragment_for_size (size_t size) MONO_INTERNAL;
+
+
 #endif /* HAVE_SGEN_GC */
 
 #endif /* __MONO_SGENGC_H__ */

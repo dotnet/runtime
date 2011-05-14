@@ -1486,7 +1486,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
 
-	clear_nursery_fragments (nursery_next);
+	mono_sgen_clear_nursery_fragments (nursery_next);
 
 	if (xdomain_checks && domain != mono_get_root_domain ()) {
 		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
@@ -2184,8 +2184,7 @@ alloc_nursery (void)
 
 	nursery_section = section;
 
-	/* Setup the single first large fragment */
-	add_fragment (nursery_start, nursery_end);
+	mono_sgen_nursery_allocator_set_nursery_bounds (nursery_start, nursery_end);
 }
 
 void*
@@ -2869,6 +2868,7 @@ collect_nursery (size_t requested_size)
 	ScanFromRemsetsJobData sfrjd;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
+	mword fragment_total;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -2900,7 +2900,7 @@ collect_nursery (size_t requested_size)
 	atv = all_atv;
 
 	/* Pinning no longer depends on clearing all nursery fragments */
-	clear_current_nursery_fragment (orig_nursery_next);
+	mono_sgen_clear_current_nursery_fragment (orig_nursery_next);
 
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
@@ -3044,7 +3044,10 @@ collect_nursery (size_t requested_size)
 	 * next allocations.
 	 */
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
-	build_nursery_fragments (pin_queue, next_pin_slot);
+	fragment_total = mono_sgen_build_nursery_fragments (pin_queue, next_pin_slot);
+	/* Clear TLABs for all threads */
+	clear_tlabs ();
+
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_END, 0);
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED_MS (atv, btv);
@@ -3150,7 +3153,7 @@ major_do_collection (const char *reason)
 	atv = all_atv;
 
 	/* Pinning depends on this */
-	clear_nursery_fragments (nursery_next);
+	mono_sgen_clear_nursery_fragments (nursery_next);
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
@@ -3361,7 +3364,9 @@ major_do_collection (const char *reason)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries);
+	mono_sgen_build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries);
+	/* Clear TLABs for all threads */
+	clear_tlabs ();
 
 	TV_GETTIME (atv);
 	time_major_fragment_creation += TV_ELAPSED_MS (btv, atv);
@@ -3443,7 +3448,7 @@ minor_collect_or_expand_inner (size_t size)
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
 		restart_world (0);
 		/* this also sets the proper pointers for the next allocation */
-		if (!alloc_fragment_for_size (size)) {
+		if (!mono_sgen_alloc_fragment_for_size (size)) {
 			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
 			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, last_num_pinned));
@@ -3573,7 +3578,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			collect_nursery (0);
 			restart_world (0);
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
-			if (!degraded_mode && !alloc_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
+			if (!degraded_mode && !mono_sgen_alloc_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
 				// FIXME:
 				g_assert_not_reached ();
 			}
@@ -3653,7 +3658,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			if (size > tlab_size) {
 				/* Allocate directly from the nursery */
 				if (nursery_next + size >= nursery_frag_real_end) {
-					if (!alloc_fragment_for_size (size)) {
+					if (!mono_sgen_alloc_fragment_for_size (size)) {
 						minor_collect_or_expand_inner (size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size);
@@ -3683,7 +3688,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					if (available_in_nursery > MAX_NURSERY_TLAB_WASTE && available_in_nursery > size) {
 						alloc_size = available_in_nursery;
 					} else {
-						alloc_size = alloc_fragment_for_size_range (tlab_size, size);
+						alloc_size = mono_sgen_alloc_fragment_for_size_range (tlab_size, size);
 						if (!alloc_size) {
 							alloc_size = tlab_size;
 							minor_collect_or_expand_inner (tlab_size);
@@ -6206,7 +6211,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 	hwi.callback = callback;
 	hwi.data = data;
 
-	clear_nursery_fragments (nursery_next);
+	mono_sgen_clear_nursery_fragments (nursery_next);
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
 
 	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
