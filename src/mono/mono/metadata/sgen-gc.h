@@ -64,6 +64,18 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
+/* The method used to clear the nursery */
+/* Clearing at nursery collections is the safest, but has bad interactions with caches.
+ * Clearing at TLAB creation is much faster, but more complex and it might expose hard
+ * to find bugs.
+ */
+typedef enum {
+	CLEAR_AT_GC,
+	CLEAR_AT_TLAB_CREATION
+} NurseryClearPolicy;
+
+NurseryClearPolicy mono_sgen_get_nursery_clear_policy (void) MONO_INTERNAL;
+
 
 #if SIZEOF_VOID_P == 4
 typedef guint32 mword;

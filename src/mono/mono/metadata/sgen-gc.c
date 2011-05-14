@@ -354,16 +354,6 @@ mono_gc_flush_info (void)
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-/* The method used to clear the nursery */
-/* Clearing at nursery collections is the safest, but has bad interactions with caches.
- * Clearing at TLAB creation is much faster, but more complex and it might expose hard
- * to find bugs.
- */
-typedef enum {
-	CLEAR_AT_GC,
-	CLEAR_AT_TLAB_CREATION
-} NurseryClearPolicy;
-
 static NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 
 /* the runtime can register areas of memory as roots: we keep two lists of roots,
@@ -7442,5 +7432,11 @@ BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reser
 	return TRUE;
 }
 #endif
+
+NurseryClearPolicy
+mono_sgen_get_nursery_clear_policy (void)
+{
+	return nursery_clear_policy;
+}
 
 #endif /* HAVE_SGEN_GC */

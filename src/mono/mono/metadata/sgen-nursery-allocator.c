@@ -112,7 +112,7 @@ setup_fragment (Fragment *frag, Fragment *prev, size_t size)
 void
 mono_sgen_clear_current_nursery_fragment (char *next)
 {
-	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+	if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
 		g_assert (next <= nursery_frag_real_end);
 		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", next, nursery_frag_real_end));
 		memset (next, 0, nursery_frag_real_end - next);
@@ -124,7 +124,7 @@ void
 mono_sgen_clear_nursery_fragments (char *next)
 {
 	Fragment *frag;
-	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+	if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
 		clear_current_nursery_fragment (next);
 		for (frag = nursery_fragments; frag; frag = frag->next) {
 			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_start, frag->fragment_end));
@@ -138,7 +138,6 @@ mono_sgen_nursery_allocator_prepare_for_pinning (void)
 {
 	Fragment *frag;
 
-	sgen_nursery_allocator_prepare_for_pinning ();
 	/*
 	 * The code below starts the search from an entry in scan_starts, which might point into a nursery
 	 * fragment containing random data. Clearing the nursery fragments takes a lot of time, and searching
@@ -177,7 +176,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= FRAGMENT_MIN_SIZE) {
 		/* memsetting just the first chunk start is bound to provide better cache locality */
-		if (nursery_clear_policy == CLEAR_AT_GC)
+		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_GC)
 			memset (frag_start, 0, frag_size);
 
 		add_fragment (frag_start, frag_end);
@@ -248,7 +247,7 @@ mono_sgen_alloc_fragment_for_size (size_t size)
 	Fragment *frag, *prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
 
-	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+	if (nursery_frag_real_end > nursery_next && mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
 		/* Clear the remaining space, pinning depends on this */
 		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
 	}
@@ -274,7 +273,7 @@ mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_siz
 	Fragment *frag, *prev, *min_prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, desired size: %zd minimum size %zd\n", nursery_frag_real_end, desired_size, minimum_size));
 
-	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+	if (nursery_frag_real_end > nursery_next && mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
 		/* Clear the remaining space, pinning depends on this */
 		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
 	}
