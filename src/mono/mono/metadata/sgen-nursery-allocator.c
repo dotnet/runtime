@@ -56,6 +56,13 @@ static Fragment *nursery_fragments = NULL;
 /* freeelist of fragment structures */
 static Fragment *fragment_freelist = NULL;
 
+#ifdef HEAVY_STATISTICS
+
+static long long stat_wasted_fragments_used = 0;
+static long long stat_wasted_fragments_bytes = 0;
+
+#endif
+
 static gboolean alloc_fragment_for_size (size_t size);
 static int alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size);
 static void clear_nursery_fragments (char *next);
@@ -126,6 +133,36 @@ clear_nursery_fragments (char *next)
 			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_start, frag->fragment_end));
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
 		}
+	}
+}
+
+static void
+mono_sgen_nursery_allocator_prepare_for_pinning (void)
+{
+	Fragment *frag;
+
+	sgen_nursery_allocator_prepare_for_pinning ();
+	/*
+	 * The code below starts the search from an entry in scan_starts, which might point into a nursery
+	 * fragment containing random data. Clearing the nursery fragments takes a lot of time, and searching
+	 * though them too, so lay arrays at each location inside a fragment where a search can start:
+	 * - scan_locations[i]
+	 * - start_nursery
+	 * - the start of each fragment (the last_obj + last_obj case)
+	 * The third encompasses the first two, since scan_locations [i] can't point inside a nursery fragment.
+	 */
+	for (frag = nursery_fragments; frag; frag = frag->next) {
+		MonoArray *o;
+
+		g_assert (frag->fragment_end - frag->fragment_start >= sizeof (MonoArray));
+		o = (MonoArray*)frag->fragment_start;
+		memset (o, 0, sizeof (MonoArray));
+		g_assert (array_fill_vtable);
+		o->obj.vtable = array_fill_vtable;
+		/* Mark this as not a real object */
+		o->obj.synchronisation = GINT_TO_POINTER (-1);
+		o->max_length = (frag->fragment_end - frag->fragment_start) - sizeof (MonoArray);
+		g_assert (frag->fragment_start + safe_object_get_size ((MonoObject*)o) == frag->fragment_end);
 	}
 }
 
@@ -278,4 +315,23 @@ alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 	}
 
 	return 0;
+}
+
+/*** Initialization ***/
+
+#ifdef HEAVY_STATISTICS
+
+static void
+mono_sgen_nursery_allocator_init_heavy_stats (void)
+{
+	mono_counters_register ("# wasted fragments used", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_used);
+	mono_counters_register ("bytes in wasted fragments", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_bytes);
+}
+
+#endif
+
+static void
+mono_sgen_init_nursery_allocator (void)
+{
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
 }

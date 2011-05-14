@@ -291,9 +291,6 @@ static long long stat_global_remsets_readded = 0;
 static long long stat_global_remsets_processed = 0;
 static long long stat_global_remsets_discarded = 0;
 
-static long long stat_wasted_fragments_used = 0;
-static long long stat_wasted_fragments_bytes = 0;
-
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
 static int stat_wbarrier_arrayref_copy = 0;
@@ -1700,30 +1697,8 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	void *addr;
 	int idx;
 	void **definitely_pinned = start;
-	Fragment *frag;
 
-	/*
-	 * The code below starts the search from an entry in scan_starts, which might point into a nursery
-	 * fragment containing random data. Clearing the nursery fragments takes a lot of time, and searching
-	 * though them too, so lay arrays at each location inside a fragment where a search can start:
-	 * - scan_locations[i]
-	 * - start_nursery
-	 * - the start of each fragment (the last_obj + last_obj case)
-	 * The third encompasses the first two, since scan_locations [i] can't point inside a nursery fragment.
-	 */
-	for (frag = nursery_fragments; frag; frag = frag->next) {
-		MonoArray *o;
-
-		g_assert (frag->fragment_end - frag->fragment_start >= sizeof (MonoArray));
-		o = (MonoArray*)frag->fragment_start;
-		memset (o, 0, sizeof (MonoArray));
-		g_assert (array_fill_vtable);
-		o->obj.vtable = array_fill_vtable;
-		/* Mark this as not a real object */
-		o->obj.synchronisation = GINT_TO_POINTER (-1);
-		o->max_length = (frag->fragment_end - frag->fragment_start) - sizeof (MonoArray);
-		g_assert (frag->fragment_start + safe_object_get_size ((MonoObject*)o) == frag->fragment_end);
-	}
+	mono_sgen_nursery_allocator_prepare_for_pinning ();
 
 	while (start < end) {
 		addr = *start;
@@ -2734,8 +2709,7 @@ init_stats (void)
 	mono_counters_register ("# nursery copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_forwarded);
 	mono_counters_register ("# nursery copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_pinned);
 
-	mono_counters_register ("# wasted fragments used", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_used);
-	mono_counters_register ("bytes in wasted fragments", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_bytes);
+	mono_sgen_nursery_allocator_init_heavy_stats ();
 
 	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
 	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
@@ -6537,8 +6511,8 @@ mono_gc_base_init (void)
 
 	init_stats ();
 	mono_sgen_init_internal_allocator ();
+	mono_sgen_init_nursery_allocator ();
 
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_ENTRY, sizeof (FinalizeEntry));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
