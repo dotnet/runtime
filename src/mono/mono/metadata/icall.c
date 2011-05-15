@@ -1909,12 +1909,18 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 	gchar *v;
 	MonoTypeEnum def_type;
 	const char *def_value;
+	MonoType *t;
+	MonoError error;
 
 	MONO_ARCH_SAVE_REGS;
 	
 	mono_class_init (field->parent);
 
-	if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
+	t = mono_field_get_type_checked (field, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+
+	if (!(t->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 		mono_raise_exception (mono_get_exception_invalid_operation (NULL));
 
 	if (field->parent->image->dynamic) {
