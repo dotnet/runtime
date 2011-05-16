@@ -3438,7 +3438,7 @@ minor_collect_or_expand_inner (size_t size)
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
 		restart_world (0);
 		/* this also sets the proper pointers for the next allocation */
-		if (!mono_sgen_alloc_fragment_for_size (size)) {
+		if (!mono_sgen_can_alloc_size (size)) {
 			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
 			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, last_num_pinned));
@@ -3568,7 +3568,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			collect_nursery (0);
 			restart_world (0);
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
-			if (!degraded_mode && !mono_sgen_alloc_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
+			if (!degraded_mode && !mono_sgen_can_alloc_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
 				// FIXME:
 				g_assert_not_reached ();
 			}

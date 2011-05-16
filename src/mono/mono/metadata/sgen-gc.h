@@ -835,13 +835,11 @@ void mono_sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *
 mword mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries) MONO_INTERNAL;
 void mono_sgen_init_nursery_allocator (void) MONO_INTERNAL;
 void mono_sgen_nursery_allocator_init_heavy_stats (void) MONO_INTERNAL;
-int mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size) MONO_INTERNAL;
-gboolean mono_sgen_alloc_fragment_for_size (size_t size) MONO_INTERNAL;
 char* mono_sgen_nursery_alloc_get_upper_alloc_bound (void) MONO_INTERNAL;
 void* mono_sgen_nursery_alloc (size_t size) MONO_INTERNAL;
 void* mono_sgen_nursery_alloc_range (size_t size, size_t min_size, int *out_alloc_size) MONO_INTERNAL;
 MonoVTable* mono_sgen_get_array_fill_vtable (void) MONO_INTERNAL;
-
+gboolean mono_sgen_can_alloc_size (size_t size) MONO_INTERNAL;
 
 #endif /* HAVE_SGEN_GC */
 

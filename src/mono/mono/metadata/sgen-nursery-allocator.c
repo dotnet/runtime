@@ -299,12 +299,27 @@ mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
 
 /*** Nursery memory allocation ***/
 
+gboolean
+mono_sgen_can_alloc_size (size_t size)
+{
+	Fragment *frag;
+
+	if (nursery_frag_real_end - nursery_next >= size)
+		return TRUE;
+
+	for (frag = nursery_fragments; frag; frag = frag->next) {
+		if ((frag->fragment_end - frag->fragment_start) >= size)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * Allocate a new nursery fragment able to hold an object of size @size.
  * nursery_next and nursery_frag_real_end are set to the boundaries of the fragment.
  * Return TRUE if found, FALSE otherwise.
  */
-gboolean
+static gboolean
 mono_sgen_alloc_fragment_for_size (size_t size)
 {
 	Fragment *frag, *prev;
@@ -330,7 +345,7 @@ mono_sgen_alloc_fragment_for_size (size_t size)
  * Same as alloc_fragment_for_size but if search for @desired_size fails, try to satisfy @minimum_size.
  * This improves nursery usage.
  */
-int
+static int
 mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 {
 	Fragment *frag, *prev, *min_prev;
