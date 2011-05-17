@@ -86,7 +86,7 @@ typedef struct _Fragment Fragment;
 struct _Fragment {
 	Fragment *next;
 	char *fragment_start;
-	char *fragment_limit; /* the current soft limit for allocation */
+	char *fragment_next; /* the current soft limit for allocation */
 	char *fragment_end;
 };
 
@@ -102,8 +102,6 @@ static Fragment *nursery_fragments = NULL;
 static Fragment *fragment_freelist = NULL;
 
 /* Allocator cursors */
-static char *nursery_next = NULL;
-static char *nursery_frag_real_end = NULL;
 static char *nursery_last_pinned_end = NULL;
 
 /* XXX Storing this here again is a bit silly, but makes things easier*/
@@ -138,7 +136,7 @@ add_fragment (char *start, char *end)
 
 	fragment = alloc_fragment ();
 	fragment->fragment_start = start;
-	fragment->fragment_limit = start;
+	fragment->fragment_next = start;
 	fragment->fragment_end = end;
 	fragment->next = nursery_fragments;
 	nursery_fragments = fragment;
@@ -146,32 +144,36 @@ add_fragment (char *start, char *end)
 
 
 
-static void
-setup_fragment (Fragment *frag, Fragment *prev, size_t size)
+static void*
+alloc_from_fragment (Fragment *frag, Fragment *prev, size_t size)
 {
-	/* remove from the list */
-	if (prev)
-		prev->next = frag->next;
-	else
-		nursery_fragments = frag->next;
-	nursery_next = frag->fragment_start;
-	nursery_frag_real_end = frag->fragment_end;
+	void *p = frag->fragment_next;
 
-	DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %td (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
-	frag->next = fragment_freelist;
-	fragment_freelist = frag;
+	frag->fragment_next += size;
+	if (frag->fragment_end - frag->fragment_next < FRAGMENT_MIN_SIZE) {
+		
+		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
+			/* Clear the remaining space, pinning depends on this */
+			memset (frag->fragment_next, 0, frag->fragment_end - frag->fragment_next);
+		}
+
+		/* remove from the list */
+		if (prev)
+			prev->next = frag->next;
+		else
+			nursery_fragments = frag->next;
+
+		//DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %td (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
+		frag->next = fragment_freelist;
+		fragment_freelist = frag;
+	}
+
+	return p;
 }
 
 void
 mono_sgen_clear_current_nursery_fragment (void)
 {
-	char *next = nursery_next;
-
-	if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
-		g_assert (next <= nursery_frag_real_end);
-		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", next, nursery_frag_real_end));
-		memset (next, 0, nursery_frag_real_end - next);
-	}
 }
 
 /* Clear all remaining nursery fragments */
@@ -184,8 +186,8 @@ mono_sgen_clear_nursery_fragments (void)
 		mono_sgen_clear_current_nursery_fragment ();
 
 		for (frag = nursery_fragments; frag; frag = frag->next) {
-			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_start, frag->fragment_end));
-			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
+			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_next, frag->fragment_end));
+			memset (frag->fragment_next, 0, frag->fragment_end - frag->fragment_next);
 		}
 	}
 }
@@ -207,15 +209,15 @@ mono_sgen_nursery_allocator_prepare_for_pinning (void)
 	for (frag = nursery_fragments; frag; frag = frag->next) {
 		MonoArray *o;
 
-		g_assert (frag->fragment_end - frag->fragment_start >= sizeof (MonoArray));
-		o = (MonoArray*)frag->fragment_start;
+		g_assert (frag->fragment_end - frag->fragment_next >= sizeof (MonoArray));
+		o = (MonoArray*)frag->fragment_next;
 		memset (o, 0, sizeof (MonoArray));
 		g_assert (mono_sgen_get_array_fill_vtable ());
 		o->obj.vtable = mono_sgen_get_array_fill_vtable ();
 		/* Mark this as not a real object */
 		o->obj.synchronisation = GINT_TO_POINTER (-1);
-		o->max_length = (frag->fragment_end - frag->fragment_start) - sizeof (MonoArray);
-		g_assert (frag->fragment_start + mono_sgen_safe_object_get_size ((MonoObject*)o) == frag->fragment_end);
+		o->max_length = (frag->fragment_end - frag->fragment_next) - sizeof (MonoArray);
+		g_assert (frag->fragment_next + mono_sgen_safe_object_get_size ((MonoObject*)o) == frag->fragment_end);
 	}
 }
 
@@ -287,14 +289,19 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 		
 	}
 
-	nursery_next = nursery_frag_real_end = NULL;
 	return fragment_total;
 }
 
 char *
 mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
 {
-	return MAX (nursery_next, nursery_last_pinned_end);
+	char *p = NULL;
+	Fragment *frag;
+
+	for (frag = nursery_fragments; frag; frag = frag->next)
+		p = MAX (p, frag->fragment_next);
+
+	return MAX (p, nursery_last_pinned_end);
 }
 
 /*** Nursery memory allocation ***/
@@ -304,66 +311,43 @@ mono_sgen_can_alloc_size (size_t size)
 {
 	Fragment *frag;
 
-	if (nursery_frag_real_end - nursery_next >= size)
-		return TRUE;
-
 	for (frag = nursery_fragments; frag; frag = frag->next) {
-		if ((frag->fragment_end - frag->fragment_start) >= size)
+		if ((frag->fragment_end - frag->fragment_next) >= size)
 			return TRUE;
 	}
 	return FALSE;
 }
 
-/*
- * Allocate a new nursery fragment able to hold an object of size @size.
- * nursery_next and nursery_frag_real_end are set to the boundaries of the fragment.
- * Return TRUE if found, FALSE otherwise.
- */
-static gboolean
-mono_sgen_alloc_fragment_for_size (size_t size)
+void*
+mono_sgen_nursery_alloc (size_t size)
 {
 	Fragment *frag, *prev;
-	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
-
-	if (nursery_frag_real_end > nursery_next && mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
-		/* Clear the remaining space, pinning depends on this */
-		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
-	}
+	DEBUG (4, fprintf (gc_debug_file, "Searching nursery for size: %zd\n", size));
 
 	prev = NULL;
 	for (frag = nursery_fragments; frag; frag = frag->next) {
-		if (size <= (frag->fragment_end - frag->fragment_start)) {
-			setup_fragment (frag, prev, size);
-			return TRUE;
+		if (size <= (frag->fragment_end - frag->fragment_next)) {
+			return alloc_from_fragment (frag, prev, size);
 		}
 		prev = frag;
 	}
-	return FALSE;
+	return NULL;
 }
 
-/*
- * Same as alloc_fragment_for_size but if search for @desired_size fails, try to satisfy @minimum_size.
- * This improves nursery usage.
- */
-static int
-mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
+void*
+mono_sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *out_alloc_size)
 {
 	Fragment *frag, *prev, *min_prev;
-	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, desired size: %zd minimum size %zd\n", nursery_frag_real_end, desired_size, minimum_size));
-
-	if (nursery_frag_real_end > nursery_next && mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
-		/* Clear the remaining space, pinning depends on this */
-		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
-	}
+	DEBUG (4, fprintf (gc_debug_file, "Searching for byte range desired size: %zd minimum size %zd\n", desired_size, minimum_size));
 
 	min_prev = GINT_TO_POINTER (-1);
 	prev = NULL;
 
 	for (frag = nursery_fragments; frag; frag = frag->next) {
-		int frag_size = frag->fragment_end - frag->fragment_start;
+		int frag_size = frag->fragment_end - frag->fragment_next;
 		if (desired_size <= frag_size) {
-			setup_fragment (frag, prev, desired_size);
-			return desired_size;
+			*out_alloc_size = desired_size;
+			return alloc_from_fragment (frag, prev, desired_size);
 		}
 		if (minimum_size <= frag_size)
 			min_prev = prev;
@@ -378,53 +362,15 @@ mono_sgen_alloc_fragment_for_size_range (size_t desired_size, size_t minimum_siz
 		else
 			frag = nursery_fragments;
 
-		frag_size = frag->fragment_end - frag->fragment_start;
+		frag_size = frag->fragment_end - frag->fragment_next;
 		HEAVY_STAT (++stat_wasted_fragments_used);
 		HEAVY_STAT (stat_wasted_fragments_bytes += frag_size);
 
-		setup_fragment (frag, min_prev, minimum_size);
-		return frag_size;
+		*out_alloc_size = frag_size;
+		return alloc_from_fragment (frag, min_prev, frag_size);
 	}
 
-	return 0;
-}
-
-void*
-mono_sgen_nursery_alloc (size_t size)
-{
-	void *p;
-
-	if (nursery_next + size >= nursery_frag_real_end) {
-		if (!mono_sgen_alloc_fragment_for_size (size))
-			return NULL;
-	}
-
-	p = nursery_next;
-	nursery_next += size;
-	return p;
-}
-
-void*
-mono_sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *out_alloc_size)
-{
-	void *p;
-	int alloc_size = desired_size;
-	int available_in_nursery = nursery_frag_real_end - nursery_next;
-
-	if (alloc_size >= available_in_nursery) {
-		if (available_in_nursery >= MAX_NURSERY_TLAB_WASTE && available_in_nursery >= minimum_size) {
-			alloc_size = available_in_nursery;
-		} else {
-			alloc_size = mono_sgen_alloc_fragment_for_size_range (desired_size, minimum_size);
-			if (!alloc_size)
-				return NULL;
-		}
-	}
-
-	*out_alloc_size = alloc_size;
-	p = nursery_next;
-	nursery_next += alloc_size;
-	return p;
+	return NULL;
 }
 
 /*** Initialization ***/

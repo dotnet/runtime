@@ -3684,6 +3684,10 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					}					
 				}
 
+				if (!p) {
+					// no space left
+					g_assert (0);
+				}
 
 				/* Allocate a new TLAB from the current nursery fragment */
 				TLAB_START = (char*)p;
