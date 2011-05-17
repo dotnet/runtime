@@ -3644,21 +3644,21 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				return p;
 			}
 
-			/*FIXME This codepath is current deadcode since tlab_size > MAX_SMALL_OBJ_SIZE*/
 			if (size > tlab_size) {
 				/* Allocate directly from the nursery */
-				p = mono_sgen_nursery_alloc (size);
-				if (!p) {
-					minor_collect_or_expand_inner (size);
-					if (degraded_mode) {
-						p = alloc_degraded (vtable, size);
-						binary_protocol_alloc_degraded (p, vtable, size);
-						return p;
-					} else {
-						p = mono_sgen_nursery_alloc (size);
+				do {
+					p = mono_sgen_nursery_alloc (size);
+					if (!p) {
+						minor_collect_or_expand_inner (size);
+						if (degraded_mode) {
+							p = alloc_degraded (vtable, size);
+							binary_protocol_alloc_degraded (p, vtable, size);
+							return p;
+						} else {
+							p = mono_sgen_nursery_alloc (size);
+						}
 					}
-				}
-
+				} while (!p);
 				if (!p) {
 					// no space left
 					g_assert (0);
@@ -3672,18 +3672,20 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				if (TLAB_START)
 					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
 
-				p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
-				if (!p) {
-					minor_collect_or_expand_inner (tlab_size);
-					if (degraded_mode) {
-						p = alloc_degraded (vtable, size);
-						binary_protocol_alloc_degraded (p, vtable, size);
-						return p;
-					} else {
-						p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
-					}					
-				}
-
+				do {
+					p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+					if (!p) {
+						minor_collect_or_expand_inner (tlab_size);
+						if (degraded_mode) {
+							p = alloc_degraded (vtable, size);
+							binary_protocol_alloc_degraded (p, vtable, size);
+							return p;
+						} else {
+							p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+						}		
+					}
+				} while (!p);
+					
 				if (!p) {
 					// no space left
 					g_assert (0);
@@ -3736,7 +3738,19 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	size = ALIGN_UP (size);
 
 	g_assert (vtable->gc_descr);
-	if (size <= MAX_SMALL_OBJ_SIZE) {
+	if (size > MAX_SMALL_OBJ_SIZE)
+		return NULL;
+
+	if (G_UNLIKELY (size > tlab_size)) {
+		/* Allocate directly from the nursery */
+		p = mono_sgen_nursery_alloc (size);
+		if (!p)
+			return NULL;
+
+		if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+			memset (p, 0, size);
+		g_assert (*p == NULL);
+	} else {
 		/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
 		p = (void**)TLAB_NEXT;
@@ -3744,28 +3758,53 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		new_next = (char*)p + size;
 		TLAB_NEXT = new_next;
 
-		if (G_LIKELY (new_next < TLAB_TEMP_END)) {
-			/* Fast path */
+		/*First case, we overflowed the tlab, get a new one*/
+		if (G_UNLIKELY (new_next >= TLAB_REAL_END)) {
+			int alloc_size = 0;
 
-			/* 
-			 * FIXME: We might need a memory barrier here so the change to tlab_next is 
-			 * visible before the vtable store.
-			 */
+			new_next = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
+			p = (void**)new_next;
+			if (!p)
+				return NULL;
 
-			HEAVY_STAT (++stat_objects_alloced);
-			HEAVY_STAT (stat_bytes_alloced += size);
+			g_assert (alloc_size >= size);
+			TLAB_START = (char*)new_next;
+			TLAB_NEXT = new_next + size;
+			TLAB_REAL_END = new_next + alloc_size;
+			TLAB_TEMP_END = new_next + MIN (SCAN_START_SIZE, alloc_size);
 
-			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
-			binary_protocol_alloc (p, vtable, size);
+			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+				memset (new_next, 0, alloc_size);
+			new_next += size;
 			g_assert (*p == NULL);
-			*p = vtable;
-
-			g_assert (TLAB_NEXT == new_next);
-
-			return p;
 		}
+
+
+		/* Second case, we overflowed temp end */
+		if (G_UNLIKELY (new_next >= TLAB_TEMP_END)) {
+			nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
+			/* we just bump tlab_temp_end as well */
+			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
+			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));		
+		}
+
+		g_assert (TLAB_NEXT == new_next);
 	}
-	return NULL;
+
+	/* 
+	 * FIXME: We might need a memory barrier here so the change to tlab_next is 
+	 * visible before the vtable store.
+	 */
+
+	HEAVY_STAT (++stat_objects_alloced);
+	HEAVY_STAT (stat_bytes_alloced += size);
+
+	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+	binary_protocol_alloc (p, vtable, size);
+	g_assert (*p == NULL);
+	*p = vtable;
+
+	return p;
 }
 
 void*
