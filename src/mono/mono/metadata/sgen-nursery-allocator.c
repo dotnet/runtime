@@ -88,6 +88,7 @@ struct _Fragment {
 	char *fragment_start;
 	char *fragment_next; /* the current soft limit for allocation */
 	char *fragment_end;
+	Fragment *next_free; /* We use a different entry for the free list so we can avoid SMR */
 };
 
 /* the minimum size of a fragment that we consider useful for allocation */
@@ -120,12 +121,12 @@ alloc_fragment (void)
 {
 	Fragment *frag = fragment_freelist;
 	if (frag) {
-		fragment_freelist = frag->next;
-		frag->next = NULL;
+		fragment_freelist = frag->next_free;
+		frag->next_free = NULL;
 		return frag;
 	}
 	frag = mono_sgen_alloc_internal (INTERNAL_MEM_FRAGMENT);
-	frag->next = NULL;
+	frag->next_free = NULL;
 	return frag;
 }
 
@@ -164,7 +165,7 @@ alloc_from_fragment (Fragment *frag, Fragment *prev, size_t size)
 			nursery_fragments = frag->next;
 
 		//DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %td (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
-		frag->next = fragment_freelist;
+		frag->next_free = fragment_freelist;
 		fragment_freelist = frag;
 	}
 
@@ -257,7 +258,7 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 
 	while (nursery_fragments) {
 		Fragment *next = nursery_fragments->next;
-		nursery_fragments->next = fragment_freelist;
+		nursery_fragments->next_free = fragment_freelist;
 		fragment_freelist = nursery_fragments;
 		nursery_fragments = next;
 	}
