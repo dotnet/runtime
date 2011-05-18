@@ -1496,3 +1496,98 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 	queue->should_be_deleted = TRUE;
 }
 
+#define unaligned_bytes(ptr) (((size_t)ptr) & (sizeof (void*) - 1))
+#define aligned_end(ptr) ((void*)(((size_t)ptr) & ~(sizeof (void*) - 1)))
+
+/**
+ * Zero @size bytes starting at @dest.
+ *
+ * Use this to zero memory that can hold managed pointers.
+ *
+ * FIXME borrow faster code from some BSD libc or bionic
+ */
+void
+mono_gc_bzero (void *dest, size_t size)
+{
+	char *p = (char*)dest;
+	char *end = p + size;
+	char *align_end = p + unaligned_bytes (p);
+	char *word_end;
+
+	while (p < align_end)
+		*p++ = 0;
+
+	word_end = aligned_end (end);
+	while (p < word_end) {
+		*((void**)p) = NULL;
+		p += sizeof (void*);
+	}
+
+	while (p < end)
+		*p++ = 0;
+}
+
+
+/**
+ * Move @size bytes from @src to @dest.
+ * size MUST be a multiple of sizeof (gpointer)
+ *
+ * FIXME borrow faster code from some BSD libc or bionic
+ */
+void
+mono_gc_memmove (void *dest, const void *src, size_t size)
+{
+	void **p, * const *s;
+
+	p = dest;
+	s = src;
+
+	/*
+	 * A bit of explanation on why we align only dest before doing word copies.
+	 * Pointers to managed objects must always be stored in word aligned addresses, so
+	 * even if dest is misaligned, src will be by the same amount - this ensure proper atomicity of reads.
+	 */
+
+	/*potentially overlap, do a backward copy*/
+	if (dest > src) {
+		char *p = (char*)dest + size;
+		char *s = (char*)src + size;
+		char *start = (char*)dest;
+		char *align_end = aligned_end (p);
+		char *word_start;
+
+		while (p >= align_end)
+			*--p = *--s;
+
+		word_start = start + unaligned_bytes (start);
+		while (p >= word_start) {
+			p -= sizeof (void*);
+			s -= sizeof (void*);			
+			*((void**)p) = *((void**)s);
+		}
+
+		while (p > start)
+			*--p = *--s;
+	} else {
+		char *p = (char*)dest;
+		char *s = (char*)src;
+		char *end = p + size;
+		char *align_end = p + unaligned_bytes (p);
+		char *word_end;
+
+		while (p < align_end)
+			*p++ = *s++;
+
+		word_end = aligned_end (end);
+		while (p < word_end) {
+			*((void**)p) = *((void**)s);
+			p += sizeof (void*);
+			s += sizeof (void*);
+		}
+
+		while (p < end)
+			*p++ = *s++;
+	}
+}
+
+
