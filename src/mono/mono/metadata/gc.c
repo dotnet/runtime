@@ -1496,8 +1496,11 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 	queue->should_be_deleted = TRUE;
 }
 
-#define unaligned_bytes(ptr) (((size_t)ptr) & (sizeof (void*) - 1))
-#define aligned_end(ptr) ((void*)(((size_t)ptr) & ~(sizeof (void*) - 1)))
+#define ptr_mask ((sizeof (void*) - 1))
+#define _toi(ptr) ((size_t)ptr)
+#define unaligned_bytes(ptr) (_toi(ptr) & ptr_mask)
+#define aligned_end(ptr) ((void*)(_toi(ptr) & ~ptr_mask))
+#define align_up(ptr) ((void*) ((_toi(ptr) + ptr_mask) & ~ptr_mask))
 
 /**
  * Zero @size bytes starting at @dest.
@@ -1537,11 +1540,6 @@ mono_gc_bzero (void *dest, size_t size)
 void
 mono_gc_memmove (void *dest, const void *src, size_t size)
 {
-	void **p, * const *s;
-
-	p = dest;
-	s = src;
-
 	/*
 	 * A bit of explanation on why we align only dest before doing word copies.
 	 * Pointers to managed objects must always be stored in word aligned addresses, so
@@ -1556,13 +1554,13 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 		char *align_end = aligned_end (p);
 		char *word_start;
 
-		while (p >= align_end)
+		while (p > align_end)
 			*--p = *--s;
 
-		word_start = start + unaligned_bytes (start);
-		while (p >= word_start) {
+		word_start = align_up (start);
+		while (p > word_start) {
 			p -= sizeof (void*);
-			s -= sizeof (void*);			
+			s -= sizeof (void*);
 			*((void**)p) = *((void**)s);
 		}
 
