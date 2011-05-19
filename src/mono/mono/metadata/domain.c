@@ -2276,7 +2276,7 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 		if (next >= size) {
 			/* 'data' is allocated by alloc_fixed */
 			gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * (size * 2), MONO_GC_ROOT_DESCR_FOR_FIXED (size * 2));
-			memcpy (new_array, domain->static_data_array, sizeof (gpointer) * size);
+			mono_gc_memmove (new_array, domain->static_data_array, sizeof (gpointer) * size);
 			size *= 2;
 			new_array [1] = GINT_TO_POINTER (size);
 			mono_gc_free_fixed (domain->static_data_array);

@@ -1241,7 +1241,7 @@ byte_array_to_domain (MonoArray *arr, MonoDomain *domain)
 		return arr;
 
 	copy = mono_array_new (domain, mono_defaults.byte_class, arr->max_length);
-	memcpy (mono_array_addr (copy, guint8, 0), mono_array_addr (arr, guint8, 0), arr->max_length);
+	mono_gc_memmove (mono_array_addr (copy, guint8, 0), mono_array_addr (arr, guint8, 0), arr->max_length);
 	return copy;
 }
 
@@ -3761,7 +3761,7 @@ free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 	if (!thread->static_data || !thread->static_data [idx])
 		return;
 	ptr = ((char*) thread->static_data [idx]) + (data->offset & 0xffffff);
-	memset (ptr, 0, data->size);
+	mono_gc_bzero (ptr, data->size);
 }
 
 static void

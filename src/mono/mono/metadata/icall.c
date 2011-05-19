@@ -234,7 +234,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	}
 
 	if (!value) {
-		memset (ea, 0,  esize);
+		mono_gc_bzero (ea, esize);
 		return;
 	}
 
@@ -297,7 +297,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 		if (ec->has_references)
 			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
 		else
-			memcpy (ea, (char *)value + sizeof (MonoObject), esize);
+			mono_gc_memmove (ea, (char *)value + sizeof (MonoObject), esize);
 		return;
 	}
 
@@ -681,7 +681,7 @@ static void
 ves_icall_System_Array_ClearInternal (MonoArray *arr, int idx, int length)
 {
 	int sz = mono_array_element_size (mono_object_class (arr));
-	memset (mono_array_addr_with_size (arr, sz, idx), 0, length * sz);
+	mono_gc_bzero (mono_array_addr_with_size (arr, sz, idx), length * sz);
 }
 
 static gboolean
@@ -772,7 +772,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 			mono_value_copy_array (dest, dest_idx, source_addr, length);
 		} else {
 			dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
-			memmove (dest_addr, source_addr, element_size * length);
+			mono_gc_memmove (dest_addr, source_addr, element_size * length);
 		}
 	} else {
 		mono_array_memcpy_refs (dest, dest_idx, source, source_idx, length);
@@ -797,7 +797,7 @@ ves_icall_System_Array_GetGenericValueImpl (MonoObject *this, guint32 pos, gpoin
 	esize = mono_array_element_size (ac);
 	ea = (gpointer*)((char*)ao->vector + (pos * esize));
 
-	memcpy (value, ea, esize);
+	mono_gc_memmove (value, ea, esize);
 }
 
 static void
@@ -826,7 +826,7 @@ ves_icall_System_Array_SetGenericValueImpl (MonoObject *this, guint32 pos, gpoin
 		if (ec->has_references)
 			mono_gc_wbarrier_value_copy (ea, value, 1, ec);
 		else
-			memcpy (ea, value, esize);
+			mono_gc_memmove (ea, value, esize);
 	}
 }
 
@@ -6228,7 +6228,7 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 	if (src != dest)
 		memcpy (dest_buf, src_buf, count);
 	else
-		memmove (dest_buf, src_buf, count); /* Source and dest are the same array */
+		mono_gc_memmove (dest_buf, src_buf, count); /* Source and dest are the same array */
 
 	return TRUE;
 }

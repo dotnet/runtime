@@ -2183,7 +2183,7 @@ zero_static_data (MonoVTable *vtable)
 	MonoClass *klass = vtable->klass;
 
 	if (vtable->data && klass->has_static_refs)
-		memset (vtable->data, 0, mono_class_data_size (klass));
+		mono_gc_bzero (vtable->data, mono_class_data_size (klass));
 }
 
 typedef struct unload_data {

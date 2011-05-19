@@ -63,7 +63,8 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	LAB_0:
 		;
 	} else {
-		memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
+		/*can't trust memcpy doing word copies */
+		mono_gc_memmove (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 	}
 	/* adjust array->bounds */
 	DEBUG (9, g_assert (vt->gc_descr));

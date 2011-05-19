@@ -696,7 +696,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
-	memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
+	mono_gc_memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
 }
 
 void
@@ -713,14 +713,14 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	memmove (dest, src, count * mono_class_value_size (klass, NULL));
+	mono_gc_memmove (dest, src, count * mono_class_value_size (klass, NULL));
 }
 
 void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	/* do not copy the sync state */
-	memcpy ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 			mono_object_class (obj)->instance_size - sizeof (MonoObject));
 }
 
