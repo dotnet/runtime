@@ -62,4 +62,13 @@ typedef struct {
 
 #define mono_ptr_array_size(ARRAY) ((ARRAY).size)
 
+#define mono_ptr_array_reset(ARRAY) do { \
+	(ARRAY).size = 0; \
+} while (0)
+
+#define mono_ptr_array_clear(ARRAY) do { \
+	(ARRAY).size = 0; \
+	mono_gc_bzero ((ARRAY).data, (ARRAY).capacity * sizeof (void*)); \
+} while (0)
+
 #endif
