@@ -22,6 +22,7 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/mono-cq.h>
 #include <mono/metadata/mono-wsq.h>
+#include <mono/metadata/mono-ptr-array.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>

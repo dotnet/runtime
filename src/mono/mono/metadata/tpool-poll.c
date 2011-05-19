@@ -148,7 +148,7 @@ tp_poll_wait (gpointer p)
 	MonoInternalThread *thread;
 	tp_poll_data *data;
 	SocketIOData *socket_io_data = p;
-	gpointer *async_results;
+	MonoPtrArray async_results;
 	gint nresults;
 
 	thread = mono_thread_internal_current ();
@@ -156,7 +156,7 @@ tp_poll_wait (gpointer p)
 	data = socket_io_data->event_data;
 	allocated = INITIAL_POLLFD_SIZE;
 	pfds = g_new0 (mono_pollfd, allocated);
-	async_results = g_new0 (gpointer, allocated * 2);
+	mono_ptr_array_init (async_results, allocated * 2);
 	INIT_POLLFD (pfds, data->pipe [0], MONO_POLLIN);
 	for (i = 1; i < allocated; i++)
 		INIT_POLLFD (&pfds [i], -1, 0);
@@ -199,7 +199,7 @@ tp_poll_wait (gpointer p)
 		if ((pfds->revents & POLL_ERRORS) != 0) {
 			/* We're supposed to die now, as the pipe has been closed */
 			g_free (pfds);
-			g_free (async_results);
+			mono_ptr_array_destroy (async_results);
 			socket_io_cleanup (socket_io_data);
 			return;
 		}
@@ -224,7 +224,7 @@ tp_poll_wait (gpointer p)
 				g_free (oldfd);
 				for (; i < allocated; i++)
 					INIT_POLLFD (&pfds [i], -1, 0);
-				async_results = g_renew (gpointer, async_results, allocated * 2);
+				//async_results = g_renew (gpointer, async_results, allocated * 2);
 			}
 #ifndef HOST_WIN32
 			nread = read (data->pipe [0], one, 1);
@@ -233,7 +233,7 @@ tp_poll_wait (gpointer p)
 #endif
 			if (nread <= 0) {
 				g_free (pfds);
-				g_free (async_results);
+				mono_ptr_array_destroy (async_results);
 				return; /* we're closed */
 			}
 
@@ -251,12 +251,14 @@ tp_poll_wait (gpointer p)
 		EnterCriticalSection (&socket_io_data->io_lock);
 		if (socket_io_data->inited == 3) {
 			g_free (pfds);
-			g_free (async_results);
+			mono_ptr_array_destroy (async_results);
 			LeaveCriticalSection (&socket_io_data->io_lock);
 			return; /* cleanup called */
 		}
 
 		nresults = 0;
+		mono_ptr_array_clear (async_results);
+
 		for (i = 1; i < maxfd && nsock > 0; i++) {
 			pfd = &pfds [i];
 			if (pfd->fd == -1 || pfd->revents == 0)
@@ -266,14 +268,18 @@ tp_poll_wait (gpointer p)
 			list = mono_g_hash_table_lookup (socket_io_data->sock_to_state, GINT_TO_POINTER (pfd->fd));
 			if (list != NULL && (pfd->revents & (MONO_POLLIN | POLL_ERRORS)) != 0) {
 				ares = get_io_event (&list, MONO_POLLIN);
-				if (ares != NULL)
-					async_results [nresults++] = ares;
+				if (ares != NULL) {
+					mono_ptr_array_append (async_results, ares);
+					++nresults;
+				}
 			}
 
 			if (list != NULL && (pfd->revents & (MONO_POLLOUT | POLL_ERRORS)) != 0) {
 				ares = get_io_event (&list, MONO_POLLOUT);
-				if (ares != NULL)
-					async_results [nresults++] = ares;
+				if (ares != NULL) {
+					mono_ptr_array_append (async_results, ares);
+					++nresults;
+				}
 			}
 
 			if (list != NULL) {
@@ -287,8 +293,8 @@ tp_poll_wait (gpointer p)
 			}
 		}
 		LeaveCriticalSection (&socket_io_data->io_lock);
-		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results, nresults);
-		memset (async_results, 0, sizeof (gpointer) * nresults);
+		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results.data, nresults);
+		mono_ptr_array_clear (async_results);
 	}
 }
 
