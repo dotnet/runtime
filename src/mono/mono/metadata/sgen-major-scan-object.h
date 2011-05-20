@@ -58,7 +58,7 @@ minor_scan_object (char *start, SgenGrayQueue *queue)
  * Returns a pointer to the end of the object.
  */
 static char*
-minor_scan_vtype (char *start, mword desc, char* from_start, char* from_end, SgenGrayQueue *queue)
+minor_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 {
 	size_t skip_size;
 

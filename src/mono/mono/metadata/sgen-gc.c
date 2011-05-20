@@ -5161,7 +5161,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		desc = p [1];
 		count = p [2];
 		while (count-- > 0)
-			ptr = (void**) major_collector.minor_scan_vtype ((char*)ptr, desc, start_nursery, end_nursery, queue);
+			ptr = (void**) major_collector.minor_scan_vtype ((char*)ptr, desc, queue);
 		return p + 3;
 	}
 	default:

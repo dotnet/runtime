@@ -446,7 +446,7 @@ LOOP_HEAD:
 			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
 				for (; elem < card_end; elem += elem_size)
-					major_collector.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
+					major_collector.minor_scan_vtype (elem, desc, queue);
 			} else {
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
