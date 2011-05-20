@@ -1512,6 +1512,9 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 void
 mono_gc_bzero (void *dest, size_t size)
 {
+	memset (dest, 0, size);
+	return;
+
 	char *p = (char*)dest;
 	char *end = p + size;
 	char *align_end = p + unaligned_bytes (p);
@@ -1545,6 +1548,8 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 	 * Pointers to managed objects must always be stored in word aligned addresses, so
 	 * even if dest is misaligned, src will be by the same amount - this ensure proper atomicity of reads.
 	 */
+	memmove (dest, src, size);
+	return;
 
 	/*potentially overlap, do a backward copy*/
 	if (dest > src) {
