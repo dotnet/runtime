@@ -49,6 +49,7 @@
 
 #include "utils/mono-counters.h"
 
+#include "metadata/gc-internal.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/mono-gc.h"
