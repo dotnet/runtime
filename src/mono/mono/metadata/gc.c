@@ -1499,7 +1499,7 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 #define ptr_mask ((sizeof (void*) - 1))
 #define _toi(ptr) ((size_t)ptr)
 #define unaligned_bytes(ptr) (_toi(ptr) & ptr_mask)
-#define aligned_end(ptr) ((void*)(_toi(ptr) & ~ptr_mask))
+#define align_down(ptr) ((void*)(_toi(ptr) & ~ptr_mask))
 #define align_up(ptr) ((void*) ((_toi(ptr) + ptr_mask) & ~ptr_mask))
 
 /**
@@ -1512,9 +1512,6 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 void
 mono_gc_bzero (void *dest, size_t size)
 {
-	memset (dest, 0, size);
-	return;
-
 	char *p = (char*)dest;
 	char *end = p + size;
 	char *align_end = p + unaligned_bytes (p);
@@ -1523,7 +1520,7 @@ mono_gc_bzero (void *dest, size_t size)
 	while (p < align_end)
 		*p++ = 0;
 
-	word_end = aligned_end (end);
+	word_end = align_down (end);
 	while (p < word_end) {
 		*((void**)p) = NULL;
 		p += sizeof (void*);
@@ -1548,15 +1545,11 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 	 * Pointers to managed objects must always be stored in word aligned addresses, so
 	 * even if dest is misaligned, src will be by the same amount - this ensure proper atomicity of reads.
 	 */
-	memmove (dest, src, size);
-	return;
-
-	/*potentially overlap, do a backward copy*/
-	if (dest > src) {
+	if (dest > src && ((size_t)((char*)dest - (char*)src) < size)) {
 		char *p = (char*)dest + size;
 		char *s = (char*)src + size;
 		char *start = (char*)dest;
-		char *align_end = aligned_end (p);
+		char *align_end = MAX((char*)p, (char*)align_down (p));
 		char *word_start;
 
 		while (p > align_end)
@@ -1575,13 +1568,13 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 		char *p = (char*)dest;
 		char *s = (char*)src;
 		char *end = p + size;
-		char *align_end = p + unaligned_bytes (p);
+		char *align_end = MIN ((char*)end, (char*)align_up (p));
 		char *word_end;
 
 		while (p < align_end)
 			*p++ = *s++;
 
-		word_end = aligned_end (end);
+		word_end = align_down (end);
 		while (p < word_end) {
 			*((void**)p) = *((void**)s);
 			p += sizeof (void*);
