@@ -943,9 +943,9 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 }
 
 gsize*
-mono_sgen_get_complex_descriptor (GCVTable *vt)
+mono_sgen_get_complex_descriptor (mword desc)
 {
-	return complex_descriptors + (vt->desc >> LOW_TYPE_BITS);
+	return complex_descriptors + (desc >> LOW_TYPE_BITS);
 }
 
 /*

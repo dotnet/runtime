@@ -403,10 +403,10 @@ enum {
 /* a bitmap desc means that there are pointer references or we'd have
  * choosen run-length, instead: add an assert to check.
  */
-#define OBJ_LARGE_BITMAP_FOREACH_PTR(vt,obj)	do {	\
+#define OBJ_LARGE_BITMAP_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
-		gsize _bmap = (vt)->desc >> LOW_TYPE_BITS;	\
+		gsize _bmap = (desc) >> LOW_TYPE_BITS;	\
 		_objptr += OBJECT_HEADER_WORDS;	\
 		while (_bmap) {	\
 			if ((_bmap & 1)) {	\
@@ -417,18 +417,18 @@ enum {
 		}	\
 	} while (0)
 
-gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
+gsize* mono_sgen_get_complex_descriptor (mword desc) MONO_INTERNAL;
 
 #define OBJ_COMPLEX_FOREACH_PTR(vt,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
-		gsize *bitmap_data = mono_sgen_get_complex_descriptor ((vt)); \
+		gsize *bitmap_data = mono_sgen_get_complex_descriptor ((desc)); \
 		int bwords = (*bitmap_data) - 1;	\
 		void **start_run = _objptr;	\
 		bitmap_data++;	\
 		if (0) {	\
 			MonoObject *myobj = (MonoObject*)obj;	\
-			g_print ("found %d at %p (0x%zx): %s.%s\n", bwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
+			g_print ("found %d at %p (0x%zx): %s.%s\n", bwords, (obj), (desc), myobj->vtable->klass->name_space, myobj->vtable->klass->name); \
 		}	\
 		while (bwords-- > 0) {	\
 			gsize _bmap = *bitmap_data++;	\
@@ -448,7 +448,7 @@ gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
 /* this one is untested */
 #define OBJ_COMPLEX_ARR_FOREACH_PTR(vt,obj)	do {	\
 		/* there are pointers */	\
-		gsize *mbitmap_data = mono_sgen_get_complex_descriptor ((vt)); \
+		gsize *mbitmap_data = mono_sgen_get_complex_descriptor ((vt)->desc); \
 		int mbwords = (*mbitmap_data++) - 1;	\
 		int el_size = mono_array_element_size (vt->klass);	\
 		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
@@ -476,12 +476,12 @@ gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
 		}	\
 	} while (0)
 
-#define OBJ_VECTOR_FOREACH_PTR(vt,obj)	do {	\
+#define OBJ_VECTOR_FOREACH_PTR(desc,obj)	do {	\
 		/* note: 0xffffc000 excludes DESC_TYPE_V_PTRFREE */	\
-		if ((vt)->desc & 0xffffc000) {	\
-			int el_size = ((vt)->desc >> 3) & MAX_ELEMENT_SIZE;	\
+		if ((desc) & 0xffffc000) {				\
+			int el_size = ((desc) >> 3) & MAX_ELEMENT_SIZE;	\
 			/* there are pointers */	\
-			int etype = (vt)->desc & 0xc000;	\
+			int etype = (desc) & 0xc000;			\
 			if (etype == (DESC_TYPE_V_REFS << 14)) {	\
 				void **p = (void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector));	\
 				void **end_refs = (void**)((char*)p + el_size * mono_array_length_fast ((MonoArray*)(obj)));	\
@@ -491,8 +491,8 @@ gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
 					++p;	\
 				}	\
 			} else if (etype == DESC_TYPE_V_RUN_LEN << 14) {	\
-				int offset = ((vt)->desc >> 16) & 0xff;	\
-				int num_refs = ((vt)->desc >> 24) & 0xff;	\
+				int offset = ((desc) >> 16) & 0xff;	\
+				int num_refs = ((desc) >> 24) & 0xff;	\
 				char *e_start = (char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector);	\
 				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 				while (e_start < e_end) {	\
@@ -509,7 +509,7 @@ gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
 				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 				while (e_start < e_end) {	\
 					void **p = (void**)e_start;	\
-					gsize _bmap = (vt)->desc >> 16;	\
+					gsize _bmap = (desc) >> 16;	\
 					/* Note: there is no object header here to skip */	\
 					while (_bmap) {	\
 						if ((_bmap & 1)) {	\
