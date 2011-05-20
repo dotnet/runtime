@@ -71,10 +71,6 @@ minor_scan_vtype (char *start, mword desc, char* from_start, char* from_end, Sge
 		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 		g_assert (skip_size);
 		return start + skip_size;
-	case DESC_TYPE_SMALL_BITMAP:
-		OBJ_BITMAP_FOREACH_PTR (desc,start);
-		OBJ_BITMAP_SIZE (skip_size, desc, start);
-		return start + skip_size;
 	case DESC_TYPE_LARGE_BITMAP:
 	case DESC_TYPE_COMPLEX:
 		// FIXME:

@@ -71,14 +71,6 @@
 		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
-	case DESC_TYPE_SMALL_BITMAP:
-#define SCAN OBJ_BITMAP_FOREACH_PTR (desc, start)
-#ifndef SCAN_OBJECT_NOSCAN
-		SCAN;
-#endif
-		SCAN_OBJECT_ACTION;
-#undef SCAN
-		break;
 	case DESC_TYPE_LARGE_BITMAP:
 #define SCAN OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start)
 #ifndef SCAN_OBJECT_NOSCAN
