@@ -57,31 +57,14 @@ minor_scan_object (char *start, SgenGrayQueue *queue)
  * other objects between @from_start and @from_end and copy them to the gray_objects area.
  * Returns a pointer to the end of the object.
  */
-static char*
+static void
 minor_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 {
-	size_t skip_size;
-
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 
-	switch (desc & 0x7) {
-	case DESC_TYPE_RUN_LENGTH:
-		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
-		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-		g_assert (skip_size);
-		return start + skip_size;
-	case DESC_TYPE_LARGE_BITMAP:
-	case DESC_TYPE_COMPLEX:
-		// FIXME:
-		g_assert_not_reached ();
-		break;
-	default:
-		// The other descriptors can't happen with vtypes
-		g_assert_not_reached ();
-		break;
-	}
-	return NULL;
+#define SCAN_OBJECT_NOVTABLE
+#include "sgen-scan-object.h"
 }
 
 #ifdef FIXED_HEAP

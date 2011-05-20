@@ -38,6 +38,9 @@
  * padding at the end) is "skip_size".  "desc" is the object's GC
  * descriptor.  The action can use the macro
  * "SCAN" to scan the object.
+ *
+ * SCAN_OBJECT_NOVTABLE - desc is provided by the includer, instead of
+ * vt.  Complex arrays cannot not be scanned.
  */
 
 #ifndef SCAN_OBJECT_ACTION
@@ -45,6 +48,7 @@
 #endif
 
 {
+#ifndef SCAN_OBJECT_NOVTABLE
 	GCVTable *vt;
 	mword desc;
 
@@ -53,6 +57,7 @@
 
 	/* gcc should be smart enough to remove the bounds check, but it isn't:( */
 	desc = vt->desc;
+#endif
 	switch (desc & 0x7) {
 	case DESC_TYPE_RUN_LENGTH:
 #define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, start)
@@ -88,6 +93,7 @@
 		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
+#ifndef SCAN_OBJECT_NOVTABLE
 	case DESC_TYPE_COMPLEX_ARR:
 		/* this is an array of complex structs */
 #define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start)
@@ -97,6 +103,7 @@
 		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
+#endif
 	default:
 		g_assert_not_reached ();
 	}
@@ -104,3 +111,4 @@
 
 #undef SCAN_OBJECT_NOSCAN
 #undef SCAN_OBJECT_ACTION
+#undef SCAN_OBJECT_NOVTABLE

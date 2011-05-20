@@ -424,7 +424,7 @@ enum {
 	REMSET_LOCATION, /* just a pointer to the exact location */
 	REMSET_RANGE,    /* range of pointer fields */
 	REMSET_OBJECT,   /* mark all the object for scanning */
-	REMSET_VTYPE,    /* a valuetype array described by a gc descriptor and a count */
+	REMSET_VTYPE,    /* a valuetype array described by a gc descriptor, a count and a size */
 	REMSET_TYPE_MASK = 0x3
 };
 
@@ -5155,14 +5155,19 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		major_collector.minor_scan_object ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
+		size_t skip_size;
+
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
-			return p + 3;
+			return p + 4;
 		desc = p [1];
 		count = p [2];
-		while (count-- > 0)
-			ptr = (void**) major_collector.minor_scan_vtype ((char*)ptr, desc, queue);
-		return p + 3;
+		skip_size = p [3];
+		while (count-- > 0) {
+			major_collector.minor_scan_vtype ((char*)ptr, desc, queue);
+			ptr = (void**)((char*)ptr + skip_size);
+		}
+		return p + 4;
 	}
 	default:
 		g_assert_not_reached ();
@@ -5201,7 +5206,7 @@ collect_store_remsets (RememberedSet *remset, mword *bumper)
 			p += 1;
 			break;
 		case REMSET_VTYPE:
-			p += 3;
+			p += 4;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -6032,10 +6037,11 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		g_assert (klass->gc_descr_inited);
 		DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
-		if (rs->store_next + 3 < rs->end_set) {
+		if (rs->store_next + 4 < rs->end_set) {
 			*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 			*(rs->store_next++) = (mword)klass->gc_descr;
 			*(rs->store_next++) = (mword)count;
+			*(rs->store_next++) = (mword)size;
 			UNLOCK_GC;
 			return;
 		}
@@ -6048,6 +6054,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
+		*(rs->store_next++) = (mword)size;
 		UNLOCK_GC;
 	}
 }
@@ -6193,15 +6200,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		desc = p [1];
 		count = p [2];
-
-		switch (desc & 0x7) {
-		case DESC_TYPE_RUN_LENGTH:
-			OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
-			break;
-		default:
-			// FIXME:
-			g_assert_not_reached ();
-		}
+		skip_size = p [3];
 
 		/* The descriptor includes the size of MonoObject */
 		skip_size -= sizeof (MonoObject);
@@ -6209,7 +6208,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
 			*found = TRUE;
 
-		return p + 3;
+		return p + 4;
 	default:
 		g_assert_not_reached ();
 	}

@@ -697,7 +697,7 @@ struct _SgenMajorCollector {
 	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
 	void (*copy_or_mark_object) (void **obj_slot, SgenGrayQueue *queue);
 	void (*minor_scan_object) (char *start, SgenGrayQueue *queue);
-	char* (*minor_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue);
+	void (*minor_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue);
 	void (*major_scan_object) (char *start, SgenGrayQueue *queue);
 	void (*copy_object) (void **obj_slot, SgenGrayQueue *queue);
 	void* (*alloc_object) (int size, gboolean has_references);
