@@ -3627,8 +3627,6 @@ mono_codegen (MonoCompile *cfg)
 
 	max_epilog_size = 0;
 
-	code = cfg->native_code + cfg->code_len;
-
 	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
@@ -3661,6 +3659,7 @@ mono_codegen (MonoCompile *cfg)
 	nacl_allow_target_modification (TRUE);
 #endif
 
+	g_assert (code);
 	memcpy (code, cfg->native_code, cfg->code_len);
 #if defined(__default_codegen__)
 	g_free (cfg->native_code);
