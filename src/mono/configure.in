@@ -459,6 +459,18 @@ if test x"$GCC" = xyes; then
 		   AC_MSG_RESULT(no)
 		   CFLAGS=$ORIG_CFLAGS
 		])
+
+		ORIG_CFLAGS=$CFLAGS
+		CFLAGS="$CFLAGS -Wno-unused-but-set-variable"
+		AC_MSG_CHECKING(for -Wno-unused-but-set-variable option to gcc)
+		AC_TRY_COMPILE([], [
+						   void main () { }
+		], [
+		   AC_MSG_RESULT(yes)
+		], [
+		   AC_MSG_RESULT(no)
+		   CFLAGS=$ORIG_CFLAGS
+		])
 else
 	# The Sun Forte compiler complains about inline functions that access static variables
 	# so disable all inlining.
