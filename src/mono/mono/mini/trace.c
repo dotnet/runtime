@@ -318,10 +318,8 @@ static double seconds_since_start (void)
 }
 
 static void indent (int diff) {
-	int v;
 	if (diff < 0)
 		indent_level += diff;
-	v = indent_level;
 	if (start_time == 0)
 		start_time = mono_100ns_ticks ();
 	printf ("[%p: %.5f %d] ", (void*)GetCurrentThreadId (), seconds_since_start (), indent_level);
