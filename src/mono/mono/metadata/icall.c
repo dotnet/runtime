@@ -1929,6 +1929,8 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 	}
 
 	def_value = mono_class_get_field_default_value (field, &def_type);
+	if (!def_value) /*FIXME, maybe we should try to raise TLE if field->parent is broken */
+		mono_raise_exception (mono_get_exception_invalid_operation (NULL));
 
 	/*FIXME unify this with reflection.c:mono_get_object_from_blob*/
 	switch (def_type) {

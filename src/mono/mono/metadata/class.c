@@ -6463,10 +6463,10 @@ mono_class_get_field_token (MonoClassField *field)
 	int i;
 
 	mono_class_setup_fields_locking (klass);
-	if (klass->exception_type)
-		return 0;
 
 	while (klass) {
+		if (!klass->fields)
+			return 0;
 		for (i = 0; i < klass->field.count; ++i) {
 			if (&klass->fields [i] == field) {
 				int idx = klass->field.first + i + 1;
@@ -6520,7 +6520,9 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 		
 	if (!klass->ext->field_def_values [field_index].data) {
 		cindex = mono_metadata_get_constant_index (field->parent->image, mono_class_get_field_token (field), 0);
-		g_assert (cindex);
+		if (!cindex)
+			return NULL;
+
 		g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
 
 		mono_metadata_decode_row (&field->parent->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
