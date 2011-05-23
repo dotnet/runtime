@@ -4447,24 +4447,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
-
-		/* FIXME this should be integrated to the check below once we support the trampoline version */
-#if defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
-		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 2) {
-			MonoMethod *fast_method = NULL;
-
-			/* Avoid infinite recursion */
-			if (cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN && !strcmp (cfg->method->name, "FastMonitorEnterV4"))
-				return NULL;
-				
-			fast_method = mono_monitor_get_fast_path (cmethod);
-			if (!fast_method)
-				return NULL;
-
-			return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);			
-		}
-#endif
-
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 1) {
 			MonoCallInst *call;

@@ -14,7 +14,6 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/metadata/runtime.h>
 
 #include <errno.h>
 
@@ -382,7 +381,7 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 
 	method = ji->method;
 
-	return mono_runtime_is_critical_method (method) || mono_gc_is_critical_method (method);
+	return mono_gc_is_critical_method (method);
 }
 
 /*
