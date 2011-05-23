@@ -337,10 +337,9 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 	}
 
 	if (mono_debug_using_mono_debugger ()) {
-		guint8 buf [16], *code;
+		guint8 buf [16];
 
 		mono_breakpoint_clean_code (NULL, (gpointer)rip, 8, buf, sizeof (buf));
-		code = buf + 8;
 
 		if (buf [3] == 0xe8) {
 			MonoContext ctx_cp = ctx;
