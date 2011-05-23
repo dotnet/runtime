@@ -4315,8 +4315,12 @@ stop_single_stepping (void)
 static void
 ss_stop (SingleStepReq *ss_req)
 {
+	gboolean use_bps = FALSE;
+
 	if (ss_req->bps) {
 		GSList *l;
+
+		use_bps = TRUE;
 
 		for (l = ss_req->bps; l; l = l->next) {
 			clear_breakpoint (l->data);
