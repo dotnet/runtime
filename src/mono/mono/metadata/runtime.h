@@ -16,6 +16,8 @@ MONO_BEGIN_DECLS
 
 void mono_runtime_shutdown (void) MONO_INTERNAL;
 
+gboolean mono_runtime_is_critical_method (MonoMethod *method) MONO_INTERNAL;
+
 MONO_END_DECLS
 
 #endif /* _MONO_METADATA_RUNTIME_H_ */
