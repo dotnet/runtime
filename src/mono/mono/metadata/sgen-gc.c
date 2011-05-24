@@ -211,7 +211,6 @@
 #include "metadata/threadpool-internals.h"
 #include "metadata/mempool-internals.h"
 #include "metadata/marshal.h"
-#include "metadata/runtime.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -847,7 +846,6 @@ static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
-static gboolean mono_gc_is_critical_method (MonoMethod *method);
 
 void describe_ptr (char *ptr);
 void check_object (char *start);
@@ -6694,12 +6692,6 @@ mono_gc_is_gc_thread (void)
 	return result;
 }
 
-static gboolean
-is_critical_method (MonoMethod *method)
-{
-	return mono_runtime_is_critical_method (method) || mono_gc_is_critical_method (method);
-}
-
 void
 mono_gc_base_init (void)
 {
@@ -6738,8 +6730,6 @@ mono_gc_base_init (void)
 	cb.thread_register = sgen_thread_register;
 	cb.thread_unregister = sgen_thread_unregister;
 	cb.thread_attach = sgen_thread_attach;
-	cb.mono_method_is_critical = is_critical_method;
-
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
 	LOCK_INIT (interruption_mutex);
@@ -7308,7 +7298,7 @@ mono_gc_get_gc_name (void)
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
 static MonoMethod *write_barrier_method;
 
-static gboolean
+gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
 	int i;
