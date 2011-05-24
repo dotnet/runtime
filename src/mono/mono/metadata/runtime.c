@@ -15,6 +15,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/monitor.h>
 
 static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
@@ -41,3 +42,11 @@ mono_runtime_shutdown (void)
 	mono_domain_foreach (fire_process_exit_event, NULL);
 }
 
+
+gboolean
+mono_runtime_is_critical_method (MonoMethod *method)
+{
+	if (mono_monitor_is_il_fastpath_wrapper (method))
+		return TRUE;
+	return FALSE;
+}

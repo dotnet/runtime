@@ -39,6 +39,9 @@ extern void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj, guint32 ms) MONO_INTERNAL;
 extern void ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken) MONO_INTERNAL;
 
+gboolean
+mono_monitor_is_il_fastpath_wrapper (MonoMethod *method) MONO_INTERNAL;
+
 G_END_DECLS
 
 #endif /* _MONO_METADATA_MONITOR_H_ */

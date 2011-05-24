@@ -12,8 +12,8 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>
-#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/domain-internals.h>
 
 #include <errno.h>
 
@@ -381,7 +381,7 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 
 	method = ji->method;
 
-	return mono_gc_is_critical_method (method);
+	return threads_callbacks.mono_method_is_critical (method);
 }
 
 /*
