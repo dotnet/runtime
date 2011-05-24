@@ -9,12 +9,17 @@
 #include <glib.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/runtime.h>
 
 #ifdef HAVE_NULL_GC
 
 void
 mono_gc_base_init (void)
 {
+	MonoThreadInfoCallbacks cb;
+
+	memset (&cb, 0, sizeof (cb));
+	cb.mono_method_is_critical = mono_runtime_is_critical_method;	
 }
 
 void

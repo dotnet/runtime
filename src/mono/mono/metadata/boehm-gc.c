@@ -20,6 +20,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/runtime.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
@@ -171,6 +172,8 @@ mono_gc_base_init (void)
 
 	memset (&cb, 0, sizeof (cb));
 	cb.thread_register = boehm_thread_register;
+	cb.mono_method_is_critical = mono_runtime_is_critical_method;
+	
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 
 	mono_gc_enable_events ();
