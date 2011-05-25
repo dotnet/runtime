@@ -4453,10 +4453,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 2) {
 			MonoMethod *fast_method = NULL;
 
-			/*FIXME fix LLVM and AOT support*/
-			if (COMPILE_LLVM (cfg))
-				return NULL;
-
 			/* Avoid infinite recursion */
 			if (cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN && !strcmp (cfg->method->name, "FastMonitorEnterV4"))
 				return NULL;
