@@ -5572,12 +5572,36 @@ sgen_thread_unregister (SgenThreadInfo *p)
 
 	p->thread_is_dying = TRUE;
 
+	/*
+	There is a race condition between a thread finishing executing and been removed
+	from the GC thread set.
+	This happens on posix systems when TLS data is been cleaned-up, libpthread will
+	set the thread_info slot to NULL before calling the cleanup function. This
+	opens a window in which the thread is registered but has a NULL TLS.
+
+	The suspend signal handler needs TLS data to know where to store thread state
+	data or otherwise it will simply ignore the thread.
+
+	This solution works because the thread doing STW will wait until all threads been
+	suspended handshake back, so there is no race between the doing_hankshake test
+	and the suspend_thread call.
+
+	This is not required on systems that do synchronous STW as those can deal with
+	the above race at suspend time.
+
+	FIXME: I believe we could avoid this by using mono_thread_info_lookup when
+	mono_thread_info_current returns NULL. Or fix mono_thread_info_lookup to do so.
+	*/
+#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+	LOCK_GC;
+#else
 	while (!TRYLOCK_GC) {
 		if (p->doing_handshake)
 			suspend_thread (p, NULL);
 		else
 			usleep (50);
 	}
+#endif
 
 	binary_protocol_thread_unregister ((gpointer)id);
 	DEBUG (3, fprintf (gc_debug_file, "unregister thread %p (%p)\n", p, (gpointer)mono_thread_info_get_tid (p)));
