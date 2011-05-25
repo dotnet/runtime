@@ -53,8 +53,8 @@ mono_cqitem_alloc (void)
 		g_assert (monocq_item_vtable);
 	}
 	queue = (MonoCQItem *) mono_object_new_fast (monocq_item_vtable);
-	queue->array = mono_array_new (domain, mono_defaults.object_class, CQ_ARRAY_SIZE);
-	queue->array_state = mono_array_new (domain, mono_defaults.byte_class, CQ_ARRAY_SIZE);
+	MONO_OBJECT_SETREF (queue, array, mono_array_new (domain, mono_defaults.object_class, CQ_ARRAY_SIZE));
+	MONO_OBJECT_SETREF (queue, array_state, mono_array_new (domain, mono_defaults.byte_class, CQ_ARRAY_SIZE));
 	return queue;
 }
 
@@ -79,7 +79,7 @@ mono_cq_destroy (MonoCQ *cq)
 	if (!cq)
 		return;
 
-	memset (cq, 0, sizeof (MonoCQ));
+	mono_gc_bzero (cq, sizeof (MonoCQ));
 	MONO_GC_UNREGISTER_ROOT (cq->tail);
 	MONO_GC_UNREGISTER_ROOT (cq->head);
 	g_free (cq);
@@ -104,7 +104,7 @@ mono_cq_add_node (MonoCQ *cq)
 	CQ_DEBUG ("Adding node");
 	n = mono_mlist_alloc ((MonoObject *) mono_cqitem_alloc ());
 	prev_tail = cq->tail;
-	prev_tail->next = n;
+	MONO_OBJECT_SETREF (prev_tail, next, n);
 	cq->tail = n;
 }
 
