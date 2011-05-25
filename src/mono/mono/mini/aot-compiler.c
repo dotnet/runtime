@@ -2048,9 +2048,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		}
 		case MONO_WRAPPER_UNKNOWN:
 			if (strcmp (method->name, "FastMonitorEnter") == 0) {
-				encode_value (MONO_AOT_WRAPPER_MONO_ENTER, p, &p);
+				encode_value (MONO_AOT_WRAPPER_MONITOR_ENTER, p, &p);
 			} else if (strcmp (method->name, "FastMonitorExit") == 0) {
-				encode_value (MONO_AOT_WRAPPER_MONO_EXIT, p, &p);
+				encode_value (MONO_AOT_WRAPPER_MONITOR_EXIT, p, &p);
+			} else if (strcmp (method->name, "FastMonitorEnterV4") == 0) {
+				encode_value (MONO_AOT_WRAPPER_MONITOR_ENTER_V4, p, &p);
 			} else if (strcmp (method->name, "PtrToStructure") == 0) {
 				encode_value (MONO_AOT_WRAPPER_PTR_TO_STRUCTURE, p, &p);
 				encode_klass_ref (acfg, method->klass, p, &p);
@@ -2673,6 +2675,21 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_castclass_with_cache ());
 		/* isinst_with_check wrapper */
 		add_method (acfg, mono_marshal_get_isinst_with_cache ());
+
+#if defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
+		{
+			MonoMethodDesc *desc;
+			MonoMethod *m;
+
+			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
+			m = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+			mono_method_desc_free (desc);
+			if (m) {
+				m = mono_monitor_get_fast_path (m);
+				add_method (acfg, m);
+			}
+		}
+#endif
 	}
 
 	/* 

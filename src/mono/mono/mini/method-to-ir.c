@@ -4454,7 +4454,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoMethod *fast_method = NULL;
 
 			/*FIXME fix LLVM and AOT support*/
-			if (COMPILE_LLVM (cfg) || cfg->compile_aot)
+			if (COMPILE_LLVM (cfg))
 				return NULL;
 
 			/* Avoid infinite recursion */
@@ -4465,7 +4465,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (!fast_method)
 				return NULL;
 
-			return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);			
+			return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);
 		}
 #endif
 

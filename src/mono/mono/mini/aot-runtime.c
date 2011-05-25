@@ -605,10 +605,12 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = mono_marshal_get_struct_to_ptr (klass);
 				}
 			} else {
-				if (subtype == MONO_AOT_WRAPPER_MONO_ENTER)
+				if (subtype == MONO_AOT_WRAPPER_MONITOR_ENTER)
 					desc = mono_method_desc_new ("Monitor:Enter", FALSE);
-				else if (subtype == MONO_AOT_WRAPPER_MONO_EXIT)
+				else if (subtype == MONO_AOT_WRAPPER_MONITOR_EXIT)
 					desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+				else if (subtype == MONO_AOT_WRAPPER_MONITOR_ENTER_V4)
+					desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
 				else
 					g_assert_not_reached ();
 				orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
