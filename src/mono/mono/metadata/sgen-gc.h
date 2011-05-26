@@ -204,6 +204,21 @@ struct _GCMemSection {
  */
 #define SGEN_MAX_SMALL_OBJ_SIZE 8000
 
+/*
+ * This is the maximum ammount of memory we're willing to waste in order to speed up allocation.
+ * Wastage comes in thre forms:
+ *
+ * -when building the nursery fragment list, small regions are discarded;
+ * -when allocating memory from a fragment if it ends up below the threshold, we remove it from the fragment list; and
+ * -when allocating a new tlab, we discard the remaining space of the old one
+ *
+ * Increasing this value speeds up allocation but will cause more frequent nursery collections as less space will be used.
+ * Descreasing this value will cause allocation to be slower since we'll have to cycle thru more fragments.
+ * 512 annedoctally keeps wastage under control and doesn't impact allocation performance too much. 
+*/
+#define SGEN_MAX_NURSERY_WASTE 512
+
+
 /* This is also the MAJOR_SECTION_SIZE for the copying major
    collector */
 #define SGEN_PINNED_CHUNK_SIZE	(128 * 1024)

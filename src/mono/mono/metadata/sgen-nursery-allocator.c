@@ -100,15 +100,8 @@ struct _Fragment {
 	Fragment *next_free; /* We use a different entry for the free list so we can avoid SMR */
 };
 
-/* the minimum size of a fragment that we consider useful for allocation */
-#define FRAGMENT_MIN_SIZE (512)
-
-/*How much space is tolerable to be wasted from the current fragment when allocating a new TLAB*/
-#define MAX_NURSERY_TLAB_WASTE 512
-
 /* Enable it so nursery allocation diagnostic data is collected */
 //#define NALLOC_DEBUG 1
-
 
 /* fragments that are free and ready to be used for allocation */
 static Fragment *nursery_fragments = NULL;
@@ -366,13 +359,13 @@ alloc_from_fragment (Fragment *frag, size_t size)
 	if (InterlockedCompareExchangePointer ((volatile gpointer*)&frag->fragment_next, end, p) != p)
 		return NULL;
 
-	if (frag->fragment_end - end < FRAGMENT_MIN_SIZE) {
+	if (frag->fragment_end - end < SGEN_MAX_NURSERY_WASTE) {
 		Fragment *next, **prev_ptr;
 		
 		/*
 		 * Before we clean the remaining nursery, we must claim the remaining space
 		 * as it could end up been used by the range allocator since it can end up
-		 * allocating from this dying fragment as it doesn't respect FRAGMENT_MIN_SIZE
+		 * allocating from this dying fragment as it doesn't respect SGEN_MAX_NURSERY_WASTE
 		 * when doing second chance allocation.
 		 */
 		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION && claim_remaining_size (frag, end)) {
@@ -489,7 +482,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	binary_protocol_empty (frag_start, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
-	if (frag_size >= FRAGMENT_MIN_SIZE) {
+	if (frag_size >= SGEN_MAX_NURSERY_WASTE) {
 		/* memsetting just the first chunk start is bound to provide better cache locality */
 		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_GC)
 			memset (frag_start, 0, frag_size);
