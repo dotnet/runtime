@@ -120,6 +120,13 @@ static char *nursery_end = NULL;
 static gint32 stat_wasted_bytes_trailer = 0;
 static gint32 stat_wasted_bytes_small_areas = 0;
 static gint32 stat_wasted_bytes_discarded_fragments = 0;
+static gint32 stat_nursery_alloc_requests = 0;
+static gint32 stat_alloc_iterations = 0;
+static gint32 stat_alloc_retries = 0;
+
+static gint32 stat_nursery_alloc_range_requests = 0;
+static gint32 stat_alloc_range_iterations = 0;
+static gint32 stat_alloc_range_retries = 0;
 
 #endif
 
@@ -594,16 +601,22 @@ mono_sgen_nursery_alloc (size_t size)
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery for size: %zd\n", size));
 	size = SGEN_ALIGN_UP (size);
 
+	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_requests));
+
 #ifdef NALLOC_DEBUG
 	InterlockedIncrement (&alloc_count);
 #endif
 
 restart:
 	for (frag = unmask (nursery_fragments); frag; frag = unmask (frag->next)) {
+		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
+
 		if (size <= (frag->fragment_end - frag->fragment_next)) {
 			void *p = alloc_from_fragment (frag, size);
-			if (!p)
+			if (!p) {
+				HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
 				goto restart;
+			}
 #ifdef NALLOC_DEBUG
 			add_alloc_record (p, size, FIXED_ALLOC);
 #endif
@@ -618,6 +631,9 @@ mono_sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *ou
 {
 	Fragment *frag, *min_frag;
 	DEBUG (4, fprintf (gc_debug_file, "Searching for byte range desired size: %zd minimum size %zd\n", desired_size, minimum_size));
+
+	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_range_requests));
+
 restart:
 	min_frag = NULL;
 
@@ -627,13 +643,18 @@ restart:
 
 	for (frag = unmask (nursery_fragments); frag; frag = unmask (frag->next)) {
 		int frag_size = frag->fragment_end - frag->fragment_next;
+
+		HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_iterations));
+
 		if (desired_size <= frag_size) {
 			void *p;
 			*out_alloc_size = desired_size;
 
 			p = alloc_from_fragment (frag, desired_size);
-			if (!p)
+			if (!p) {
+				HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_retries));
 				goto restart;
+			}
 #ifdef NALLOC_DEBUG
 			add_alloc_record (p, desired_size, RANGE_ALLOC);
 #endif
@@ -660,8 +681,10 @@ restart:
 		p = alloc_from_fragment (min_frag, frag_size);
 
 		/*XXX restarting here is quite dubious given this is already second chance allocation. */
-		if (!p)
+		if (!p) {
+			HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
 			goto restart;
+		}
 #ifdef NALLOC_DEBUG
 		add_alloc_record (p, frag_size, RANGE_ALLOC);
 #endif
@@ -681,6 +704,14 @@ mono_sgen_nursery_allocator_init_heavy_stats (void)
 	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_trailer);
 	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_small_areas);
 	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_discarded_fragments);
+
+	mono_counters_register ("# nursery alloc requests", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_nursery_alloc_requests);
+	mono_counters_register ("# nursery alloc iterations", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_iterations);
+	mono_counters_register ("# nursery alloc retries", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_retries);
+
+	mono_counters_register ("# nursery alloc range requests", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_nursery_alloc_range_requests);
+	mono_counters_register ("# nursery alloc range iterations", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_range_iterations);
+	mono_counters_register ("# nursery alloc range restries", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_range_retries);
 }
 
 #endif
