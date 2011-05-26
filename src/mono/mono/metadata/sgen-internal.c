@@ -173,10 +173,6 @@ mono_sgen_init_internal_allocator (void)
 		mono_lock_free_allocator_init_size_class (&size_classes [i], allocator_sizes [i]);
 		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i]);
 	}
-
-#ifdef HEAVY_STATISTICS
-	mono_counters_register ("Internal allocs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc);
-#endif
 }
 
 #endif
