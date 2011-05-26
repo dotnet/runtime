@@ -3609,8 +3609,6 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			g_assert (*p == NULL);
 			*p = vtable;
 
-			g_assert (TLAB_NEXT == new_next);
-
 			return p;
 		}
 
@@ -3625,7 +3623,6 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		 * This avoids taking again the GC lock when registering, but this is moot when
 		 * doing thread-local allocation, so it may not be a good idea.
 		 */
-		g_assert (TLAB_NEXT == new_next);
 		if (TLAB_NEXT >= TLAB_REAL_END) {
 			int available_in_tlab;
 			/* 
@@ -3707,7 +3704,6 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
 				TLAB_NEXT += size;
-				g_assert (TLAB_NEXT <= TLAB_REAL_END);
 
 				nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
 			}
@@ -3752,7 +3748,6 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 		if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 			memset (p, 0, size);
-		g_assert (*p == NULL);
 	} else {
 		int available_in_tlab;
 		char *real_end;
@@ -3784,7 +3779,6 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			if (!p)
 				return NULL;
 
-			g_assert (alloc_size >= size);
 			TLAB_START = (char*)new_next;
 			TLAB_NEXT = new_next + size;
 			TLAB_REAL_END = new_next + alloc_size;
@@ -3793,9 +3787,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 				memset (new_next, 0, alloc_size);
 			new_next += size;
-			g_assert (*p == NULL);
 		}
-
 
 		/* Second case, we overflowed temp end */
 		if (G_UNLIKELY (new_next >= TLAB_TEMP_END)) {
