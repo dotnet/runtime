@@ -3627,6 +3627,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		 */
 		g_assert (TLAB_NEXT == new_next);
 		if (TLAB_NEXT >= TLAB_REAL_END) {
+			int available_in_tlab;
 			/* 
 			 * Run out of space in the TLAB. When this happens, some amount of space
 			 * remains in the TLAB, but not enough to satisfy the current allocation
@@ -3644,7 +3645,8 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				return p;
 			}
 
-			if (size > tlab_size) {
+			available_in_tlab = TLAB_REAL_END - TLAB_NEXT;
+			if (size > tlab_size || available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
 				/* Allocate directly from the nursery */
 				do {
 					p = mono_sgen_nursery_alloc (size);
@@ -3671,7 +3673,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				int alloc_size = 0;
 				if (TLAB_START)
 					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
-				mono_sgen_nursery_retire_region (p, TLAB_REAL_END - (char*)p);
+				mono_sgen_nursery_retire_region (p, available_in_tlab);
 
 				do {
 					p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
@@ -3752,18 +3754,31 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			memset (p, 0, size);
 		g_assert (*p == NULL);
 	} else {
+		int available_in_tlab;
+		char *real_end;
 		/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
 		p = (void**)TLAB_NEXT;
 		/* FIXME: handle overflow */
 		new_next = (char*)p + size;
-		TLAB_NEXT = new_next;
 
-		/*First case, we overflowed the tlab, get a new one*/
-		if (G_UNLIKELY (new_next >= TLAB_REAL_END)) {
+		real_end = TLAB_REAL_END;
+		available_in_tlab = real_end - (char*)p;
+
+		if (G_LIKELY (new_next < real_end)) {
+			TLAB_NEXT = new_next;
+		} else if (available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
+			/* Allocate directly from the nursery */
+			p = mono_sgen_nursery_alloc (size);
+			if (!p)
+				return NULL;
+
+			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+				memset (p, 0, size);			
+		} else {
 			int alloc_size = 0;
 
-			mono_sgen_nursery_retire_region (p, TLAB_REAL_END - (char*)p);
+			mono_sgen_nursery_retire_region (p, available_in_tlab);
 			new_next = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 			p = (void**)new_next;
 			if (!p)
@@ -3789,8 +3804,6 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
 			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));		
 		}
-
-		g_assert (TLAB_NEXT == new_next);
 	}
 
 	/* 
