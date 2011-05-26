@@ -124,8 +124,9 @@ static char *nursery_end = NULL;
 
 #ifdef HEAVY_STATISTICS
 
-static long long stat_wasted_fragments_used = 0;
-static long long stat_wasted_fragments_bytes = 0;
+static gint32 stat_wasted_bytes_trailer = 0;
+static gint32 stat_wasted_bytes_small_areas = 0;
+static gint32 stat_wasted_bytes_discarded_fragments = 0;
 
 #endif
 
@@ -377,6 +378,7 @@ alloc_from_fragment (Fragment *frag, size_t size)
 		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION && claim_remaining_size (frag, end)) {
 			/* Clear the remaining space, pinning depends on this. FIXME move this to use phony arrays */
 			memset (end, 0, frag->fragment_end - end);
+			HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_trailer, frag->fragment_end - end));
 #ifdef NALLOC_DEBUG
 			add_alloc_record (end, frag->fragment_end - end, BLOCK_ZEROING);
 #endif
@@ -503,6 +505,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 		/* Clear unused fragments, pinning depends on this */
 		/*TODO place an int[] here instead of the memset if size justify it*/
 		memset (frag_start, 0, frag_size);
+		HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_small_areas, frag_size));
 	}
 }
 
@@ -575,6 +578,7 @@ mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
 void
 mono_sgen_nursery_retire_region (void *address, ssize_t size)
 {
+	HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_discarded_fragments, size));
 }
 
 gboolean
@@ -657,9 +661,6 @@ restart:
 		if (frag_size < minimum_size)
 			goto restart;
 
-		HEAVY_STAT (++stat_wasted_fragments_used);
-		HEAVY_STAT (stat_wasted_fragments_bytes += frag_size);
-
 		*out_alloc_size = frag_size;
 
 		mono_memory_barrier ();
@@ -684,8 +685,9 @@ restart:
 void
 mono_sgen_nursery_allocator_init_heavy_stats (void)
 {
-	mono_counters_register ("# wasted fragments used", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_used);
-	mono_counters_register ("bytes in wasted fragments", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_bytes);
+	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_trailer);
+	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_small_areas);
+	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_discarded_fragments);
 }
 
 #endif
