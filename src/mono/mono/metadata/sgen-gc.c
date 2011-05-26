@@ -3671,6 +3671,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				int alloc_size = 0;
 				if (TLAB_START)
 					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
+				mono_sgen_nursery_retire_region (p, TLAB_REAL_END - (char*)p);
 
 				do {
 					p = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
@@ -3762,6 +3763,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		if (G_UNLIKELY (new_next >= TLAB_REAL_END)) {
 			int alloc_size = 0;
 
+			mono_sgen_nursery_retire_region (p, TLAB_REAL_END - (char*)p);
 			new_next = mono_sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 			p = (void**)new_next;
 			if (!p)

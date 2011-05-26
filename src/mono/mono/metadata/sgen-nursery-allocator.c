@@ -572,6 +572,10 @@ mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
 }
 
 /*** Nursery memory allocation ***/
+void
+mono_sgen_nursery_retire_region (void *address, ssize_t size)
+{
+}
 
 gboolean
 mono_sgen_can_alloc_size (size_t size)
