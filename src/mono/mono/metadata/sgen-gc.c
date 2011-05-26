@@ -7030,11 +7030,6 @@ create_allocator (int atype)
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_stloc (mb, new_next_var);
 
-	/* tlab_next = new_next */
-	mono_mb_emit_ldloc (mb, tlab_next_addr_var);
-	mono_mb_emit_ldloc (mb, new_next_var);
-	mono_mb_emit_byte (mb, CEE_STIND_I);
-
 	/* if (G_LIKELY (new_next < tlab_temp_end)) */
 	mono_mb_emit_ldloc (mb, new_next_var);
 	EMIT_TLS_ACCESS (mb, tlab_temp_end, tlab_temp_end_offset);
@@ -7064,6 +7059,11 @@ create_allocator (int atype)
 	mono_mb_patch_short_branch (mb, slowpath_branch);
 
 	/* FIXME: Memory barrier */
+
+	/* tlab_next = new_next */
+	mono_mb_emit_ldloc (mb, tlab_next_addr_var);
+	mono_mb_emit_ldloc (mb, new_next_var);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
 
 	/* *p = vtable; */
 	mono_mb_emit_ldloc (mb, p_var);
