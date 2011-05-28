@@ -106,18 +106,26 @@ free_thread_info (gpointer mem)
 	g_free (info);
 }
 
+int
+mono_thread_info_register_small_id (void)
+{
+	int small_id = mono_thread_small_id_alloc ();
+	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (small_id + 1));
+	return small_id;
+}
+
 static void*
 register_thread (MonoThreadInfo *info, gpointer baseptr)
 {
+	int small_id = mono_thread_info_register_small_id ();
 	gboolean result;
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
-	info->small_id = mono_thread_small_id_alloc ();
+	info->small_id = small_id;
 
 	InitializeCriticalSection (&info->suspend_lock);
 
 	/*set TLS early so SMR works */
 	mono_native_tls_set_value (thread_info_key, info);
-	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
 
 	THREADS_DEBUG ("registering info %p tid %p small id %x\n", info, mono_thread_info_get_tid (info), info->small_id);
 

@@ -133,6 +133,9 @@ mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks) MONO_INTER
 MonoThreadInfoRuntimeCallbacks *
 mono_threads_get_runtime_callbacks (void) MONO_INTERNAL;
 
+int
+mono_thread_info_register_small_id (void) MONO_INTERNAL;
+
 THREAD_INFO_TYPE *
 mono_thread_info_attach (void *baseptr) MONO_INTERNAL;
 

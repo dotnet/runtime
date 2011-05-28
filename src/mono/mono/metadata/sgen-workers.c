@@ -289,6 +289,8 @@ workers_thread_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
 
+	mono_thread_info_register_small_id ();
+
 	if (major_collector.init_worker_thread)
 		major_collector.init_worker_thread (data->major_collector_data);
 
