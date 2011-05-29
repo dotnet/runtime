@@ -1973,21 +1973,18 @@ ves_icall_System_Threading_Thread_GetState (MonoInternalThread* this)
 
 void ves_icall_System_Threading_Thread_Interrupt_internal (MonoInternalThread *this)
 {
-	gboolean throw = FALSE;
-	
+	MonoInternalThread *current;
+	gboolean throw;
+
 	ensure_synch_cs_set (this);
 
-	if (this == mono_thread_internal_current ())
-		return;
-	
-	EnterCriticalSection (this->synch_cs);
-	
-	this->thread_interrupt_requested = TRUE;
-	
-	if (this->state & ThreadState_WaitSleepJoin) {
-		throw = TRUE;
-	}
-	
+	current = mono_thread_internal_current ();
+
+	EnterCriticalSection (this->synch_cs);	
+
+	this->thread_interrupt_requested = TRUE;	
+	throw = current != this && (this->state & ThreadState_WaitSleepJoin);	
+
 	LeaveCriticalSection (this->synch_cs);
 	
 	if (throw) {
