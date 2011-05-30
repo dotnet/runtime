@@ -783,7 +783,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	owner_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (owner_offset);
 	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
 
-	tramp_size = NACL_SIZE (64, 128);
+	tramp_size = NACL_SIZE (96, 128);
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
