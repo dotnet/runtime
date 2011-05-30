@@ -6,6 +6,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Rodrigo Kumpera
  *
  */
 #include <config.h>
@@ -10949,6 +10950,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	klass->size_inited = 1;
 
 	for (i = 0; i < klass->field.count; ++i) {
+		MonoArray *rva_data;
 		fb = mono_array_get (tb->fields, gpointer, i);
 		field = &klass->fields [i];
 		field->name = mono_string_to_utf8_image (image, fb->name, error);
@@ -10960,8 +10962,14 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		} else {
 			field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type);
 		}
-		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
-			klass->ext->field_def_values [i].data = mono_array_addr (fb->rva_data, char, 0);
+
+		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
+			char *base = mono_array_addr (rva_data, char, 0);
+			size_t size = mono_array_length (rva_data);
+			char *data = mono_image_alloc (klass->image, size);
+			memcpy (data, base, size);
+			klass->ext->field_def_values [i].data = data;
+		}
 		if (fb->offset != -1)
 			field->offset = fb->offset;
 		field->parent = klass;
