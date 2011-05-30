@@ -6,6 +6,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Rodrigo Kumpera
  */
 #include <config.h>
 
@@ -775,12 +776,13 @@ is_valid_type_in_context (VerifyContext *ctx, MonoType *type)
 }
 
 static gboolean
-is_valid_generic_instantiation_in_context (VerifyContext *ctx, MonoGenericInst *ginst)
+is_valid_generic_instantiation_in_context (VerifyContext *ctx, MonoGenericInst *ginst, gboolean check_gtd)
 {
 	int i;
 	for (i = 0; i < ginst->type_argc; ++i) {
 		MonoType *type = ginst->type_argv [i];
-		if (!is_valid_type_in_context (ctx, type))
+			
+		if (!mono_type_is_valid_type_in_context_full (type, ctx->generic_context, TRUE))
 			return FALSE;
 	}
 	return TRUE;
@@ -837,7 +839,7 @@ mono_method_is_valid_generic_instantiation (VerifyContext *ctx, MonoMethod *meth
 	MonoGenericContainer *gc = mono_method_get_generic_container (gmethod->declaring);
 	if (!gc) /*non-generic inflated method - it's part of a generic type  */
 		return TRUE;
-	if (ctx && !is_valid_generic_instantiation_in_context (ctx, ginst))
+	if (ctx && !is_valid_generic_instantiation_in_context (ctx, ginst, TRUE))
 		return FALSE;
 	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
 
@@ -849,7 +851,7 @@ mono_class_is_valid_generic_instantiation (VerifyContext *ctx, MonoClass *klass)
 	MonoGenericClass *gklass = klass->generic_class;
 	MonoGenericInst *ginst = gklass->context.class_inst;
 	MonoGenericContainer *gc = gklass->container_class->generic_container;
-	if (ctx && !is_valid_generic_instantiation_in_context (ctx, ginst))
+	if (ctx && !is_valid_generic_instantiation_in_context (ctx, ginst, TRUE))
 		return FALSE;
 	return is_valid_generic_instantiation (gc, &gklass->context, ginst);
 }
