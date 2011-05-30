@@ -7627,6 +7627,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins_flag = 0;
 			MONO_ADD_INS (bblock, ins);
 			*sp++ = ins;
+			if (ins->flags & MONO_INST_VOLATILE) {
+				MonoInst *barrier;
+
+				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+				MONO_INST_NEW (cfg, barrier, OP_MEMORY_BARRIER);
+				MONO_ADD_INS (cfg->cbb, barrier);
+			}
 			++ip;
 			break;
 		case CEE_STIND_REF:
@@ -7643,6 +7650,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
 			ins_flag = 0;
+
+			if (ins->flags & MONO_INST_VOLATILE) {
+				MonoInst *barrier;
+
+				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+				MONO_INST_NEW (cfg, barrier, OP_MEMORY_BARRIER);
+				MONO_ADD_INS (cfg->cbb, barrier);
+			}
+
 			MONO_ADD_INS (bblock, ins);
 
 			if (cfg->gen_write_barriers && *ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0)))
