@@ -763,8 +763,6 @@ align_pointer (void *ptr)
 
 typedef SgenGrayQueue GrayQueue;
 
-typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
-
 /* forward declarations */
 static int stop_world (int generation);
 static int restart_world (int generation);
@@ -1639,12 +1637,14 @@ drain_gray_stack (GrayQueue *queue, int max_objs)
 	char *obj;
 
 	if (current_collection_generation == GENERATION_NURSERY) {
+		ScanObjectFunc scan_func = mono_sgen_get_minor_scan_object ();
+
 		for (;;) {
 			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
 				return TRUE;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major_collector.minor_scan_object (obj, queue);
+			scan_func (obj, queue);
 		}
 	} else {
 		int i;
@@ -2353,6 +2353,28 @@ mono_sgen_get_copy_object (void)
 	} else {
 		return major_collector.copy_or_mark_object;
 	}
+}
+
+ScanObjectFunc
+mono_sgen_get_minor_scan_object (void)
+{
+	g_assert (current_collection_generation == GENERATION_NURSERY);
+
+	if (collection_is_parallel ())
+		return major_collector.minor_scan_object;
+	else
+		return major_collector.nopar_minor_scan_object;
+}
+
+ScanVTypeFunc
+mono_sgen_get_minor_scan_vtype (void)
+{
+	g_assert (current_collection_generation == GENERATION_NURSERY);
+
+	if (collection_is_parallel ())
+		return major_collector.minor_scan_vtype;
+	else
+		return major_collector.nopar_minor_scan_vtype;
 }
 
 static void
@@ -4956,9 +4978,10 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		major_collector.minor_scan_object ((char*)ptr, queue);
+		mono_sgen_get_minor_scan_object () ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
+		ScanVTypeFunc scan_vtype = mono_sgen_get_minor_scan_vtype ();
 		size_t skip_size;
 
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -4968,7 +4991,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		count = p [2];
 		skip_size = p [3];
 		while (count-- > 0) {
-			major_collector.minor_scan_vtype ((char*)ptr, desc, queue);
+			scan_vtype ((char*)ptr, desc, queue);
 			ptr = (void**)((char*)ptr + skip_size);
 		}
 		return p + 4;

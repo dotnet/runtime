@@ -382,6 +382,8 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
 	CopyOrMarkObjectFunc copy_func = mono_sgen_get_copy_object ();
+	ScanObjectFunc scan_object_func = mono_sgen_get_minor_scan_object ();
+	ScanVTypeFunc scan_vtype_func = mono_sgen_get_minor_scan_vtype ();
 
 	HEAVY_STAT (++large_objects);
 
@@ -447,7 +449,7 @@ LOOP_HEAD:
 			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
 				for (; elem < card_end; elem += elem_size)
-					major_collector.minor_scan_vtype (elem, desc, queue);
+					scan_vtype_func (elem, desc, queue);
 			} else {
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
@@ -477,9 +479,9 @@ LOOP_HEAD:
 		HEAVY_STAT (++bloby_objects);
 		if (cards) {
 			if (sgen_card_table_is_range_marked (cards, (mword)obj, obj_size))
-				major_collector.minor_scan_object (obj, queue);
+				scan_object_func (obj, queue);
 		} else if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size)) {
-			major_collector.minor_scan_object (obj, queue);
+			scan_object_func (obj, queue);
 		}
 	}
 }

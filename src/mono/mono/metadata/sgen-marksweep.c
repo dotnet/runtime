@@ -1849,6 +1849,7 @@ major_scan_card_table (SgenGrayQueue *queue)
 				obj += block_obj_size;
 			}
 		} else {
+			ScanObjectFunc scan_func = mono_sgen_get_minor_scan_object ();
 			guint8 *card_data, *card_base;
 			guint8 *card_data_end;
 
@@ -1887,7 +1888,7 @@ major_scan_card_table (SgenGrayQueue *queue)
 				while (obj < end) {
 					if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
 						HEAVY_STAT (++scanned_objects);
-						minor_scan_object (obj, queue);
+						scan_func (obj, queue);
 					}
 					obj += block_obj_size;
 				}
