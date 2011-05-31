@@ -29,7 +29,10 @@ extern long long stat_scan_object_called_major;
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			copy_object ((ptr), queue);	\
+			if (mono_sgen_nursery_collection_is_parallel ()) \
+				copy_object ((ptr), queue);		\
+			else						\
+				nopar_copy_object ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \

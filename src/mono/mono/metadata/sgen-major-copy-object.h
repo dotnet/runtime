@@ -82,6 +82,90 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 }
 
+static void*
+copy_object_no_checks (void *obj, SgenGrayQueue *queue)
+{
+	MonoVTable *vt = ((MonoObject*)obj)->vtable;
+	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
+	mword objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
+	char *destination = major_alloc_object (objsize, has_references);
+
+	if (G_UNLIKELY (!destination)) {
+		mono_sgen_pin_object (obj, queue);
+		return obj;
+	}
+
+	*(MonoVTable**)destination = vt;
+	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
+
+	/* set the forwarding pointer */
+	SGEN_FORWARD_OBJECT (obj, destination);
+
+	return destination;
+}
+
+/*
+ * This is how the copying happens from the nursery to the old generation.
+ * We assume that at this time all the pinned objects have been identified and
+ * marked as such.
+ * We run scan_object() for each pinned object so that each referenced
+ * objects if possible are copied. The new gray objects created can have
+ * scan_object() run on them right away, too.
+ * Then we run copy_object() for the precisely tracked roots. At this point
+ * all the roots are either gray or black. We run scan_object() on the gray
+ * objects until no more gray objects are created.
+ * At the end of the process we walk again the pinned list and we unmark
+ * the pinned flag. As we go we also create the list of free space for use
+ * in the next allocation runs.
+ *
+ * We need to remember objects from the old generation that point to the new one
+ * (or just addresses?).
+ *
+ * copy_object could be made into a macro once debugged (use inline for now).
+ */
+
+static void
+nopar_copy_object (void **obj_slot, SgenGrayQueue *queue)
+{
+	char *forwarded;
+	char *obj = *obj_slot;
+
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+
+	HEAVY_STAT (++stat_copy_object_called_nursery);
+
+	if (!ptr_in_nursery (obj)) {
+		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
+		return;
+	}
+
+	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
+
+	/*
+	 * Before we can copy the object we must make sure that we are
+	 * allowed to, i.e. that the object not pinned or not already
+	 * forwarded.
+	 */
+
+	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
+		*obj_slot = forwarded;
+		return;
+	}
+	if (SGEN_OBJECT_IS_PINNED (obj)) {
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
+		return;
+	}
+
+	HEAVY_STAT (++stat_objects_copied_nursery);
+
+	*obj_slot = copy_object_no_checks (obj, queue);
+}
+
 #ifdef SGEN_PARALLEL_MARK
 static void
 copy_object (void **obj_slot, SgenGrayQueue *queue)
@@ -155,91 +239,14 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 	}
 }
 #else
-static void*
-copy_object_no_checks (void *obj, SgenGrayQueue *queue)
-{
-	MonoVTable *vt = ((MonoObject*)obj)->vtable;
-	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
-	mword objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
-	char *destination = major_alloc_object (objsize, has_references);
-
-	if (G_UNLIKELY (!destination)) {
-		mono_sgen_pin_object (obj, queue);
-		return obj;
-	}
-
-	*(MonoVTable**)destination = vt;
-	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
-
-	/* set the forwarding pointer */
-	SGEN_FORWARD_OBJECT (obj, destination);
-
-	return destination;
-}
-
-/*
- * This is how the copying happens from the nursery to the old generation.
- * We assume that at this time all the pinned objects have been identified and
- * marked as such.
- * We run scan_object() for each pinned object so that each referenced
- * objects if possible are copied. The new gray objects created can have
- * scan_object() run on them right away, too.
- * Then we run copy_object() for the precisely tracked roots. At this point
- * all the roots are either gray or black. We run scan_object() on the gray
- * objects until no more gray objects are created.
- * At the end of the process we walk again the pinned list and we unmark
- * the pinned flag. As we go we also create the list of free space for use
- * in the next allocation runs.
- *
- * We need to remember objects from the old generation that point to the new one
- * (or just addresses?).
- *
- * copy_object could be made into a macro once debugged (use inline for now).
- */
-
 static void
 copy_object (void **obj_slot, SgenGrayQueue *queue)
 {
-	char *forwarded;
-	char *obj = *obj_slot;
-
-	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
-
-	HEAVY_STAT (++stat_copy_object_called_nursery);
-
-	if (!ptr_in_nursery (obj)) {
-		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
-		return;
-	}
-
-	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
-
-	/*
-	 * Before we can copy the object we must make sure that we are
-	 * allowed to, i.e. that the object not pinned or not already
-	 * forwarded.
-	 */
-
-	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
-		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
-		*obj_slot = forwarded;
-		return;
-	}
-	if (SGEN_OBJECT_IS_PINNED (obj)) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
-		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
-		return;
-	}
-
-	HEAVY_STAT (++stat_objects_copied_nursery);
-
-	*obj_slot = copy_object_no_checks (obj, queue);
+	nopar_copy_object (obj_slot, queue);
 }
 #endif
 
 #define FILL_COLLECTOR_COPY_OBJECT(collector)	do {			\
 		(collector)->copy_object = copy_object;			\
+		(collector)->nopar_copy_object = nopar_copy_object;	\
 	} while (0)

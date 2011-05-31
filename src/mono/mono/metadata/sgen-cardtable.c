@@ -381,6 +381,7 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 {
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
+	CopyOrMarkObjectFunc copy_func = mono_sgen_get_copy_object ();
 
 	HEAVY_STAT (++large_objects);
 
@@ -453,7 +454,7 @@ LOOP_HEAD:
 					gpointer new, old = *(gpointer*)elem;
 					if (G_UNLIKELY (ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
-						major_collector.copy_object ((void**)elem, queue);
+						copy_func ((void**)elem, queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (ptr_in_nursery (new)))
 							mono_sgen_add_to_global_remset (elem);

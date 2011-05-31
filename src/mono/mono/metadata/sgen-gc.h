@@ -576,6 +576,8 @@ struct _SgenGrayQueue {
 	void *alloc_prepare_data;
 };
 
+typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
+
 #if SGEN_MAX_DEBUG_LEVEL >= 9
 #define GRAY_OBJECT_ENQUEUE gray_object_enqueue
 #define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = gray_object_dequeue ((queue)))
@@ -703,6 +705,8 @@ void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
+gboolean mono_sgen_nursery_collection_is_parallel (void) MONO_INTERNAL;
+CopyOrMarkObjectFunc mono_sgen_get_copy_object (void) MONO_INTERNAL;
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 
@@ -727,6 +731,7 @@ struct _SgenMajorCollector {
 	void (*minor_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue);
 	void (*major_scan_object) (char *start, SgenGrayQueue *queue);
 	void (*copy_object) (void **obj_slot, SgenGrayQueue *queue);
+	void (*nopar_copy_object) (void **obj_slot, SgenGrayQueue *queue);
 	void* (*alloc_object) (int size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data);

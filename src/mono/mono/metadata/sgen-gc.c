@@ -259,6 +259,7 @@ static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
+static gboolean nursery_collection_is_parallel = FALSE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
 
@@ -762,7 +763,6 @@ align_pointer (void *ptr)
 
 typedef SgenGrayQueue GrayQueue;
 
-typedef void (*CopyOrMarkObjectFunc) (void**, GrayQueue*);
 typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 
 /* forward declarations */
@@ -793,6 +793,8 @@ static gboolean drain_gray_stack (GrayQueue *queue, int max_objs);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
+
+static gboolean collection_is_parallel (void);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
 static gboolean mono_gc_is_critical_method (MonoMethod *method);
@@ -1577,7 +1579,7 @@ void
 mono_sgen_add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
-	gboolean lock = major_collector.is_parallel;
+	gboolean lock = collection_is_parallel ();
 
 	if (use_cardtable) {
 		sgen_card_table_mark_address ((mword)ptr);
@@ -1647,7 +1649,7 @@ drain_gray_stack (GrayQueue *queue, int max_objs)
 	} else {
 		int i;
 
-		if (major_collector.is_parallel && queue == &workers_distribute_gray_queue)
+		if (collection_is_parallel () && queue == &workers_distribute_gray_queue)
 			return TRUE;
 
 		do {
@@ -1786,7 +1788,7 @@ mono_sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue)
 void
 mono_sgen_pin_object (void *object, GrayQueue *queue)
 {
-	if (major_collector.is_parallel) {
+	if (collection_is_parallel ()) {
 		LOCK_PIN_QUEUE;
 		/*object arrives pinned*/
 		pin_stage_ptr (object);
@@ -2340,6 +2342,19 @@ bridge_register_finalized_object (MonoObject *object)
 	finalized_array [finalized_array_entries++] = object;
 }
 
+CopyOrMarkObjectFunc
+mono_sgen_get_copy_object (void)
+{
+	if (current_collection_generation == GENERATION_NURSERY) {
+		if (collection_is_parallel ())
+			return major_collector.copy_object;
+		else
+			return major_collector.nopar_copy_object;
+	} else {
+		return major_collector.copy_or_mark_object;
+	}
+}
+
 static void
 finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue)
 {
@@ -2348,7 +2363,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	int fin_ready;
 	int ephemeron_rounds = 0;
 	int num_loops;
-	CopyOrMarkObjectFunc copy_func = current_collection_generation == GENERATION_NURSERY ? major_collector.copy_object : major_collector.copy_or_mark_object;
+	CopyOrMarkObjectFunc copy_func = mono_sgen_get_copy_object ();
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2620,7 +2635,7 @@ mono_sgen_register_moved_object (void *obj, void *destination)
 	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
 
 	/* FIXME: handle this for parallel collector */
-	g_assert (!major_collector.is_parallel);
+	g_assert (!collection_is_parallel ());
 
 	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
@@ -2783,6 +2798,25 @@ gboolean
 mono_sgen_need_major_collection (mword space_needed)
 {
 	return need_major_collection (space_needed);
+}
+
+static gboolean
+collection_is_parallel (void)
+{
+	switch (current_collection_generation) {
+	case GENERATION_NURSERY:
+		return nursery_collection_is_parallel;
+	case GENERATION_OLD:
+		return major_collector.is_parallel;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+gboolean
+mono_sgen_nursery_collection_is_parallel (void)
+{
+	return nursery_collection_is_parallel;
 }
 
 static GrayQueue*
@@ -2957,7 +2991,7 @@ collect_nursery (size_t requested_size)
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 	}
 
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		drain_gray_stack (&gray_queue, -1);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
@@ -2968,13 +3002,13 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scrrjd_normal.func = major_collector.copy_object;
+	scrrjd_normal.func = collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
 	scrrjd_normal.heap_start = nursery_start;
 	scrrjd_normal.heap_end = nursery_next;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
 	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
-	scrrjd_wbarrier.func = major_collector.copy_object;
+	scrrjd_wbarrier.func = collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
 	scrrjd_wbarrier.heap_start = nursery_start;
 	scrrjd_wbarrier.heap_end = nursery_next;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
@@ -2992,7 +3026,7 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	btv = atv;
 
-	if (major_collector.is_parallel) {
+	if (collection_is_parallel ()) {
 		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
 			usleep (1000);
@@ -3000,7 +3034,7 @@ collect_nursery (size_t requested_size)
 	}
 	workers_join ();
 
-	if (major_collector.is_parallel)
+	if (collection_is_parallel ())
 		g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
@@ -4778,10 +4812,14 @@ mono_gc_scan_object (void *obj)
 {
 	UserCopyOrMarkData *data = pthread_getspecific (user_copy_or_mark_key);
 
-	if (current_collection_generation == GENERATION_NURSERY)
-		major_collector.copy_object (&obj, data->queue);
-	else
+	if (current_collection_generation == GENERATION_NURSERY) {
+		if (collection_is_parallel ())
+			major_collector.copy_object (&obj, data->queue);
+		else
+			major_collector.nopar_copy_object (&obj, data->queue);
+	} else {
 		major_collector.copy_or_mark_object (&obj, data->queue);
+	}
 	return obj;
 }
 

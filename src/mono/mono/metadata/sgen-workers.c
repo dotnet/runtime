@@ -52,7 +52,7 @@ static WorkerData workers_gc_thread_data;
 
 static GrayQueue workers_distribute_gray_queue;
 
-#define WORKERS_DISTRIBUTE_GRAY_QUEUE (major_collector.is_parallel ? &workers_distribute_gray_queue : &gray_queue)
+#define WORKERS_DISTRIBUTE_GRAY_QUEUE (collection_is_parallel () ? &workers_distribute_gray_queue : &gray_queue)
 
 static volatile gboolean workers_gc_in_progress = FALSE;
 static volatile gboolean workers_marking = FALSE;
@@ -121,7 +121,7 @@ workers_enqueue_job (JobFunc func, void *data)
 	int num_entries;
 	JobQueueEntry *entry;
 
-	if (!major_collector.is_parallel) {
+	if (!collection_is_parallel ()) {
 		func (NULL, data);
 		return;
 	}
@@ -144,7 +144,7 @@ workers_dequeue_and_do_job (WorkerData *data)
 {
 	JobQueueEntry *entry;
 
-	g_assert (major_collector.is_parallel);
+	g_assert (collection_is_parallel ());
 
 	if (!workers_job_queue_num_entries)
 		return FALSE;
@@ -328,7 +328,7 @@ workers_thread_func (void *data_untyped)
 static void
 workers_distribute_gray_queue_sections (void)
 {
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		return;
 
 	workers_gray_queue_share_redirect (&workers_distribute_gray_queue);
@@ -337,7 +337,7 @@ workers_distribute_gray_queue_sections (void)
 static void
 workers_init_distribute_gray_queue (void)
 {
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		return;
 
 	gray_object_queue_init (&workers_distribute_gray_queue);
@@ -404,7 +404,7 @@ workers_start_all_workers (void)
 {
 	int i;
 
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		return;
 
 	if (major_collector.init_worker_thread)
@@ -430,7 +430,7 @@ workers_start_all_workers (void)
 static void
 workers_start_marking (void)
 {
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		return;
 
 	g_assert (workers_started && workers_gc_in_progress);
@@ -446,7 +446,7 @@ workers_join (void)
 {
 	int i;
 
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		return;
 
 	g_assert (gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
@@ -491,7 +491,7 @@ mono_sgen_is_worker_thread (pthread_t thread)
 	if (major_collector.is_worker_thread && major_collector.is_worker_thread (thread))
 		return TRUE;
 
-	if (!major_collector.is_parallel)
+	if (!collection_is_parallel ())
 		return FALSE;
 
 	for (i = 0; i < workers_num; ++i) {
