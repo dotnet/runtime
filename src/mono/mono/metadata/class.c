@@ -3739,12 +3739,11 @@ print_vtable_full (MonoClass *class, MonoMethod** vtable, int size, int first_no
 	}
 	for (i = 0; i < size; ++i) {
 		MonoMethod *cm = vtable [i];
-		if (cm) {
-			char *cm_name = mono_method_full_name (cm, TRUE);
-			char newness = (i < parent_size) ? 'O' : ((i < first_non_interface_slot) ? 'I' : 'N');
-			printf ("  [%c][%03d][INDEX %03d] %s\n", newness, i, cm->slot, cm_name);
-			g_free (cm_name);
-		}
+		char *cm_name = cm ? mono_method_full_name (cm, TRUE) : g_strdup ("nil");
+		char newness = (i < parent_size) ? 'O' : ((i < first_non_interface_slot) ? 'I' : 'N');
+
+		printf ("  [%c][%03d][INDEX %03d] %s [%p]\n", newness, i, cm ? cm->slot : - 1, cm_name, cm);
+		g_free (cm_name);
 	}
 
 	g_free (full_name);
@@ -4146,6 +4145,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			if (im->flags & METHOD_ATTRIBUTE_STATIC)
 				continue;
 
+			TRACE_INTERFACE_VTABLE (printf ("\tchecking iface method %s\n", mono_method_full_name (im,1)));
+
 			// If there is an explicit implementation, just use it right away,
 			// otherwise look for a matching method
 			if (override_im == NULL) {
@@ -4282,6 +4283,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
 							override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
+						TRACE_INTERFACE_VTABLE (printf ("adding iface override from %s [%p] to %s [%p]\n",
+							mono_method_full_name (m1, 1), m1,
+							mono_method_full_name (cm, 1), cm));
 						g_hash_table_insert (override_map, m1, cm);
 						break;
 					}
@@ -4316,6 +4320,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
  			overrides [i * 2 + 1]->slot = decl->slot;
 			if (!override_map)
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
+			TRACE_INTERFACE_VTABLE (printf ("adding explicit override from %s [%p] to %s [%p]\n", 
+				mono_method_full_name (decl, 1), decl,
+				mono_method_full_name (overrides [i * 2 + 1], 1), overrides [i * 2 + 1]));
 			g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
@@ -4330,6 +4337,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	if (override_map) {
 		for (i = 0; i < max_vtsize; ++i)
 			if (vtable [i]) {
+				TRACE_INTERFACE_VTABLE (printf ("checking slot %d method %s[%p] for overrides\n", i, mono_method_full_name (vtable [i], 1), vtable [i]));
+
 				MonoMethod *cm = g_hash_table_lookup (override_map, vtable [i]);
 				if (cm)
 					vtable [i] = cm;
