@@ -2131,7 +2131,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 
 static gchar *get_process_name_from_proc (pid_t pid)
 {
-#ifdef __OpenBSD__
+#if defined(__OpenBSD__)
 	int mib [6];
 	size_t size;
 	struct kinfo_proc2 *pi;
@@ -2190,10 +2190,6 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	free(pi);
 #endif
 #elif defined(__OpenBSD__)
-	int mib [6];
-	size_t size;
-	struct kinfo_proc2 *pi;
-
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC2;
 	mib [2] = KERN_PROC_PID;
