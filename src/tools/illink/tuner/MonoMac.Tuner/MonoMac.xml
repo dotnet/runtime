@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+	<assembly fullname="MonoMac">
+		<namespace fullname="MonoMac.ObjCRuntime" />
+		<!--
+		<type fullname="MonoMac.ObjCRuntime.Runtime" />
+		<type fullname="MonoMac.ObjCRuntime.Class" />
+		<type fullname="MonoMac.ObjCRuntime.Selector" />
+		<type fullname="MonoMac.ObjCRuntime.NativeConstructorBuilder" />
+		<type fullname="MonoMac.ObjCRuntime.NativeImplementationBuilder" />
+		<type fullname="MonoMac.ObjCRuntime.NativeMethodBuilder" />
+		<type fullname="MonoMac.ObjCRuntime.INativeObject" />
+		-->
+		<type fullname="MonoMac.Foundation.NSObject" preserve="fields">
+			<method name="NativeRelease" />
+			<method name="NativeRetain" />
+			<method name="Retain" />
+		</type>
+		<type fullname="MonoMac.Foundation.NSArray" preserve="fields">
+			<method name="ArrayFromHandle" />
+			<method name="StringArrayFromHandle" />
+			<method name="FromNSObjects" />
+			<method name="FromStrings" />
+		</type>
+		<type fullname="MonoMac.Foundation.ExportAttribute" />
+	</assembly>
+	<assembly fullname="mscorlib">
+		<type fullname="System.Runtime.Serialization.FormatterServices">
+			<method name="GetUninitializedObject" />
+		</type>
+		<type fullname="System.Runtime.InteropServices.Marshal">
+			<method name="StructureToPtr" />
+		</type>
+		<type fullname="System.Runtime.InteropServices.MarshalAsAttribute">
+			<field name="MarshalTypeRef" />
+		</type>
+	</assembly>
+</linker>
