@@ -719,7 +719,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	code = buf = mono_domain_code_reserve_align (domain, size, 1);
 
-	if (((gint64)tramp - (gint64)code) >> 31 != 0) {
+	if (((gint64)tramp - (gint64)code) >> 31 != 0 && ((gint64)tramp - (gint64)code) >> 31 != -1) {
 #ifndef MONO_ARCH_NOMAP32BIT
 		g_assert_not_reached ();
 #endif
