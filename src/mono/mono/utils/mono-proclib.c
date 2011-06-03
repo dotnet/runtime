@@ -12,7 +12,6 @@
 #include <windows.h>
 #endif
 
-/* FIXME: bsds untested */
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #include <sys/param.h>
 #include <sys/types.h>
@@ -25,13 +24,11 @@
 #include <sys/user.h>
 #endif
 #ifdef HAVE_STRUCT_KINFO_PROC_KP_PROC
-#  ifdef KERN_PROC2
-#    define kinfo_pid_member p_pid
-#    define kinfo_name_member p_comm
-#  else
 #    define kinfo_pid_member kp_proc.p_pid
 #    define kinfo_name_member kp_proc.p_comm
-#  endif
+#elif defined(__OpenBSD__)
+#    define kinfo_pid_member p_pid
+#    define kinfo_name_member p_comm
 #else
 #define kinfo_pid_member ki_pid
 #define kinfo_name_member ki_comm
