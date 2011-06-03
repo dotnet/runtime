@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <glib.h>
 #include <string.h>
-#include <mono/utils/gc_wrapper.h>
 #include <pthread.h>
 #include <signal.h>
 #include <sched.h>
@@ -28,6 +27,9 @@
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
 #include <mono/io-layer/atomic.h>
+
+#include <mono/utils/mono-threads.h>
+#include <mono/utils/gc_wrapper.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -406,8 +408,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	thread_handle_p->handle = handle;
 	
 
-	ret = mono_gc_pthread_create (&thread_handle_p->id, &attr,
-								  thread_start_routine, (void *)thread_handle_p);
+	ret = mono_threads_pthread_create (&thread_handle_p->id, &attr,
+									   thread_start_routine, (void *)thread_handle_p);
 
 	if (ret != 0) {
 #ifdef DEBUG

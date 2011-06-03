@@ -173,6 +173,7 @@ mono_gc_base_init (void)
 	memset (&cb, 0, sizeof (cb));
 	cb.thread_register = boehm_thread_register;
 	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
+	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
 	
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 
@@ -1217,7 +1218,7 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 int
 mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {
-	return mono_threads_pthread_create (new_thread, attr, start_routine, arg);
+	return pthread_create (new_thread, attr, start_routine, arg);
 }
 
 int

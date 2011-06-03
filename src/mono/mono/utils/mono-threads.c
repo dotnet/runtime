@@ -266,6 +266,12 @@ mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks)
 	runtime_callbacks = *callbacks;
 }
 
+MonoThreadInfoCallbacks *
+mono_threads_get_callbacks (void)
+{
+	return &threads_callbacks;
+}
+
 MonoThreadInfoRuntimeCallbacks *
 mono_threads_get_runtime_callbacks (void)
 {
@@ -488,7 +494,7 @@ mono_thread_info_new_interrupt_enabled (void)
 {
 	/*We need STW gc events to work correctly*/
 #if defined (HAVE_BOEHM_GC) && !defined (USE_INCLUDED_LIBGC)
-	return FALSE:
+	return FALSE;
 #endif
 	/*port not done*/
 #if defined(HOST_WIN32)

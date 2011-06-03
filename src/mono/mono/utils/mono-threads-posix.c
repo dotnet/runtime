@@ -61,7 +61,7 @@ mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, 
 	start_info->arg = arg;
 	start_info->start_routine = start_routine;
 
-	result = pthread_create (new_thread, attr, inner_start_thread, start_info);
+	result = mono_threads_get_callbacks ()->mono_gc_pthread_create (new_thread, attr, inner_start_thread, start_info);
 	if (result == 0) {
 		while (MONO_SEM_WAIT (&(start_info->registered)) != 0) {
 			/*if (EINTR != errno) ABORT("sem_wait failed"); */
