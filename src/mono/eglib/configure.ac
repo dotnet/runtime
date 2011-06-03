@@ -44,6 +44,7 @@ AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
 AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
 
 platform_darwin=no
+platform_android=no
 
 case $host in
 *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
@@ -54,6 +55,13 @@ case $host in
     ;;
 *-*darwin*)
     platform_darwin=yes
+    PATHSEP='/'
+    SEARCHSEP=':'
+    OS="UNIX"
+    PIDTYPE='int'
+    ;;
+*-*-linux-android*)
+    platform_android=yes
     PATHSEP='/'
     SEARCHSEP=':'
     OS="UNIX"
@@ -95,6 +103,7 @@ AC_SUBST(PIDTYPE)
 AM_CONDITIONAL(HOST_WIN32, test x$OS = xWIN32)
 AM_CONDITIONAL(TARGET_WIN32, test x$OS = xWIN32)
 AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
+AM_CONDITIONAL(PLATFORM_ANDROID, test x$platform_android = xyes)
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)

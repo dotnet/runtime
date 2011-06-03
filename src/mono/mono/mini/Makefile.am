@@ -95,16 +95,21 @@ sgen_libraries = libmonosgen-2.0.la
 sgen_static_libraries = libmonosgen-static.la
 endif
 
+if SUPPORT_BOEHM
+boehm_libraries = libmono-2.0.la
+boehm_binaries  = mono
+endif
+
 if HOST_WIN32
 bin_PROGRAMS = mono monow
 else
-bin_PROGRAMS = mono $(sgen_binaries)
+bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries)
 endif
 
 noinst_PROGRAMS = genmdesc
 
 if SHARED_MONO
-shared_libraries = libmono-2.0.la $(sgen_libraries)
+shared_libraries = $(boehm_libraries) $(sgen_libraries)
 endif
 
 lib_LTLIBRARIES = $(shared_libraries)

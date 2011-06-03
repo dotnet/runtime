@@ -29,7 +29,9 @@ platform_sources = $(unix_sources)
 endif
 
 if SHARED_MONO
+if SUPPORT_BOEHM
 bin_PROGRAMS = pedump
+endif
 endif
 
 #
@@ -52,7 +54,9 @@ moon-do-clean:
 endif
 
 if SHARED_MONO
+if SUPPORT_BOEHM
 shared_libraries = libmonoruntime.la
+endif
 endif
 noinst_LTLIBRARIES =  $(shared_libraries) libmonoruntime-static.la $(sgen_libraries) $(moonlight_libraries)
 
@@ -282,6 +286,7 @@ PEDUMP_DTRACE_OBJECT =
 endif
 
 if SHARED_MONO
+if SUPPORT_BOEHM
 pedump_SOURCES =		\
 	pedump.c
 
@@ -290,6 +295,7 @@ pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
 
 if PLATFORM_DARWIN
 pedump_LDFLAGS=-framework CoreFoundation
+endif
 endif
 endif
 

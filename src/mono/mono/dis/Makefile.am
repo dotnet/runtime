@@ -10,7 +10,9 @@ else
 runtime_lib=../interpreter/libmint.la
 endif
 
+if SUPPORT_BOEHM
 bin_PROGRAMS = monodis
+endif
 
 noinst_LIBRARIES = libmonodis.a
 

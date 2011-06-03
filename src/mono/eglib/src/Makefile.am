@@ -63,6 +63,10 @@ INCLUDES = -I$(srcdir)
 
 if HOST_WIN32
 libeglib_la_LIBADD = -lm $(LIBICONV) -lpsapi
+else
+if PLATFORM_ANDROID
+libeglib_la_LIBADD = -llog
+endif
 endif
 
 libeglib_static_la_LIBADD = $(libeglib_la_LIBADD) $(LIBICONV)
