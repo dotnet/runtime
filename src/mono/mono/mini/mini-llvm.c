@@ -4316,6 +4316,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 #endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
+	LLVMAddFunctionAttr (method, LLVMUWTableAttribute);
+
 	if (cfg->compile_aot) {
 		LLVMSetLinkage (method, LLVMInternalLinkage);
 		LLVMSetVisibility (method, LLVMHiddenVisibility);
