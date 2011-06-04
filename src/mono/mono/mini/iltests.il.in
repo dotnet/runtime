@@ -2635,4 +2635,38 @@ END:
 		ldind.i4
 		ret
   	} 		
+
+    .method public static 
+           default int32 regress_693905_inner (int32 x, int32 acc)  cil managed 
+    {
+        // Method begins at RVA 0x2050
+        // Code size 17 (0x11)
+        .maxstack 5
+        IL_0000:  ldarg.0 
+        IL_0001:  brtrue.s IL_0005
+
+        IL_0003:  ldarg.1 
+        IL_0004:  ret 
+        IL_0005:  ldarg.0 
+        IL_0006:  ldc.i4.1 
+        IL_0007:  sub 
+        IL_0008:  ldarg.1 
+        IL_0009:  ldc.i4.1 
+        IL_000a:  add 
+        IL_000b:  starg.s 1
+        IL_000d:  starg.s 0
+        IL_000f:  br.s IL_0000
+
+    } // end of method Test::f
+
+    .method public static 
+           default int32 test_10_regress_693905 ()  cil managed 
+	{
+		ldc.i4.s 0x0a
+        ldc.i4.0 
+        call int32 class Tests::regress_693905_inner(int32, int32)
+		ret
+	}
+		
+
 }
