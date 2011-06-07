@@ -4344,11 +4344,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	 * overriden, then change the other occurances too.
 	 */
 	if (override_map) {
+		MonoMethod *cm;
+
 		for (i = 0; i < max_vtsize; ++i)
 			if (vtable [i]) {
 				TRACE_INTERFACE_VTABLE (printf ("checking slot %d method %s[%p] for overrides\n", i, mono_method_full_name (vtable [i], 1), vtable [i]));
 
-				MonoMethod *cm = g_hash_table_lookup (override_map, vtable [i]);
+				cm = g_hash_table_lookup (override_map, vtable [i]);
 				if (cm)
 					vtable [i] = cm;
 			}

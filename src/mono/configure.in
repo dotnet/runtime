@@ -504,6 +504,7 @@ if test x"$GCC" = xyes; then
 						   void main () { }
 		], [
 		   AC_MSG_RESULT(yes)
+		   CFLAGS="$ORIG_CFLAGS -Wno-unused-but-set-variable"
 		], [
 		   AC_MSG_RESULT(no)
 		   CFLAGS=$ORIG_CFLAGS
