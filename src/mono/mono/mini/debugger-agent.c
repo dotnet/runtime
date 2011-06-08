@@ -1780,21 +1780,6 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain)
 	mono_loader_unlock ();
 }
 
-/*
- * Called when deferred debugger session is attached, 
- * after the VM start event has been sent successfully
- */
-static void
-mono_debugger_agent_on_attach (void)
-{
-	/* Emit load events for currently loaded appdomains, assemblies, and types */
-	mono_loader_lock ();
-	g_hash_table_foreach (domains, emit_appdomain_load, NULL);
-	mono_g_hash_table_foreach (tid_to_thread, emit_thread_start, NULL);
-	mono_assembly_foreach (emit_assembly_load, NULL);
-	mono_loader_unlock ();
-}
-
 static AgentDomainInfo*
 get_agent_domain_info (MonoDomain *domain)
 {
@@ -3045,8 +3030,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 		if (agent_config.defer) {
 			/* Make sure the thread id is always set when doing deferred debugging */
-			if (debugger_thread_id == GetCurrentThreadId ())
+			if (debugger_thread_id == GetCurrentThreadId ()) {
+				/* Don't suspend on events from the debugger thread */
+				suspend_policy = SUSPEND_POLICY_NONE;
 				thread = mono_thread_get_main ();
+			}
 			else thread = mono_thread_current ();
 		} else {
 			if (debugger_thread_id == GetCurrentThreadId () && event != EVENT_KIND_VM_DEATH)
@@ -3151,8 +3139,6 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	
 	if (event == EVENT_KIND_VM_START) {
 		vm_start_event_sent = TRUE;
-		if (agent_config.defer)
-			mono_debugger_agent_on_attach ();
 	}
 	
 	DEBUG (1, fprintf (log_file, "[%p] Sent event %s, suspend=%d.\n", (gpointer)GetCurrentThreadId (), event_to_string (event), suspend_policy));
@@ -3417,6 +3403,25 @@ send_type_load (MonoClass *klass)
 	mono_loader_unlock ();
 	if (type_load)
 		emit_type_load (klass, klass, NULL);
+}
+
+/*
+ * Emit load events for all types currently loaded in the domain.
+ * Takes the loader and domain locks.
+ * user_data is unused.
+ */
+static void
+send_types_for_domain (MonoDomain *domain, void *user_data)
+{
+	AgentDomainInfo *info = NULL;
+	
+	mono_loader_lock ();
+	mono_domain_lock (domain);
+	info =  get_agent_domain_info (domain);
+	g_assert (info);
+	g_hash_table_foreach (info->loaded_classes, emit_type_load, NULL);
+	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 }
 
 static void
@@ -5845,6 +5850,30 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		mono_loader_lock ();
 		g_ptr_array_add (event_requests, req);
+		
+		if (agent_config.defer) {
+			/* Transmit cached data to the client on receipt of the event request */
+			switch (req->event_kind) {
+			case EVENT_KIND_APPDOMAIN_CREATE:
+				/* Emit load events for currently loaded domains */
+				g_hash_table_foreach (domains, emit_appdomain_load, NULL);
+				break;
+			case EVENT_KIND_ASSEMBLY_LOAD:
+				/* Emit load events for currently loaded assemblies */
+				mono_assembly_foreach (emit_assembly_load, NULL);
+				break;
+			case EVENT_KIND_THREAD_START:
+				/* Emit start events for currently started threads */
+				mono_g_hash_table_foreach (tid_to_thread, emit_thread_start, NULL);
+				break;
+			case EVENT_KIND_TYPE_LOAD:
+				/* Emit type load events for currently loaded types */
+				mono_domain_foreach (send_types_for_domain, NULL);
+				break;
+			default:
+				break;
+			}
+		}
 		mono_loader_unlock ();
 
 		buffer_add_int (buf, req->id);
