@@ -2169,21 +2169,23 @@ clear_cached_vtable (MonoVTable *vtable)
 	MonoClass *klass = vtable->klass;
 	MonoDomain *domain = vtable->domain;
 	MonoClassRuntimeInfo *runtime_info;
+	void *data;
 
 	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id)
 		runtime_info->domain_vtables [domain->domain_id] = NULL;
-	if (vtable->data && klass->has_static_refs)
-		mono_gc_free_fixed (vtable->data);
+	if (klass->has_static_refs && (data = mono_vtable_get_static_field_data (vtable)))
+		mono_gc_free_fixed (data);
 }
 
 static G_GNUC_UNUSED void
 zero_static_data (MonoVTable *vtable)
 {
 	MonoClass *klass = vtable->klass;
+	void *data;
 
-	if (vtable->data && klass->has_static_refs)
-		mono_gc_bzero (vtable->data, mono_class_data_size (klass));
+	if (klass->has_static_refs && (data = mono_vtable_get_static_field_data (vtable)))
+		mono_gc_bzero (data, mono_class_data_size (klass));
 }
 
 typedef struct unload_data {

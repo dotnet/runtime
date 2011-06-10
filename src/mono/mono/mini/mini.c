@@ -3078,7 +3078,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			if (run_cctors)
 				mono_runtime_class_init (vtable);
 		}
-		target = (char*)vtable->data + patch_info->data.field->offset;
+		target = (char*)mono_vtable_get_static_field_data (vtable) + patch_info->data.field->offset;
 		break;
 	}
 	case MONO_PATCH_INFO_RVA: {

@@ -784,7 +784,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	if (domain->special_static_fields && (addr = g_hash_table_lookup (domain->special_static_fields, field)))
 		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	else
-		addr = (char*)vtable->data + field->offset;
+		addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
 	
 	return addr;
 }

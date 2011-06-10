@@ -1003,7 +1003,7 @@ mono_class_describe_statics (MonoClass* klass)
 
 	if (!vtable)
 		return;
-	if (!(addr = vtable->data))
+	if (!(addr = mono_vtable_get_static_field_data (vtable)))
 		return;
 
 	for (p = klass; p != NULL; p = p->parent) {

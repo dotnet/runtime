@@ -1560,6 +1560,10 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass) MONO_INTERNAL;
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value) MONO_INTERNAL;
 
+/* exported, used by the debugger */
+void *
+mono_vtable_get_static_field_data (MonoVTable *vt);
+
 char *
 mono_string_to_utf8_ignore (MonoString *s) MONO_INTERNAL;
 

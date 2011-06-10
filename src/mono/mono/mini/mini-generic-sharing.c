@@ -838,7 +838,7 @@ class_type_info (MonoDomain *domain, MonoClass *class, int info_type)
 		MonoVTable *vtable = mono_class_vtable (domain, class);
 		if (!vtable)
 			mono_raise_exception (mono_class_get_exception_for_failure (class));
-		return vtable->data;
+		return mono_vtable_get_static_field_data (vtable);
 	}
 	case MONO_RGCTX_INFO_KLASS:
 		return class;

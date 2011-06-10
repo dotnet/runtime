@@ -57,9 +57,6 @@ void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
 void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void *
-mono_vtable_get_static_field_data (MonoVTable *vt);
-
 gchar *
 mono_debugger_check_runtime_version (const char *filename);
 

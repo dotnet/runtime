@@ -1834,7 +1834,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	MonoClassRuntimeInfo *runtime_info, *old_info;
 	MonoClassField *field;
 	char *t;
-	int i;
+	int i, vtable_slots;
 	int imt_table_bytes = 0;
 	guint32 vtable_size, class_size;
 	guint32 cindex;
@@ -1902,8 +1902,14 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		return NULL;
 	}
 
+	vtable_slots = class->vtable_size;
+	/* we add an additional vtable slot to store the pointer to static field data only when needed */
+	class_size = mono_class_data_size (class);
+	if (class_size)
+		vtable_slots++;
+
 	if (ARCH_USE_IMT) {
-		vtable_size = MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
+		vtable_size = MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
 		if (class->interface_offsets_count) {
 			imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
 			vtable_size += sizeof (gpointer) * (MONO_IMT_SIZE);
@@ -1912,7 +1918,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		}
 	} else {
 		vtable_size = sizeof (gpointer) * (class->max_interface_id + 1) +
-			MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
+			MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
 	}
 
 	mono_stats.used_class_count++;
@@ -1947,7 +1953,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 #endif
 		vt->gc_descr = class->gc_descr;
 
-	if ((class_size = mono_class_data_size (class))) {
+	if (class_size) {
+		/* we store the static field pointer at the end of the vtable: vt->vtable [class->vtable_size] */
 		if (class->has_static_refs) {
 			gpointer statics_gc_descr;
 			int max_set = 0;
@@ -1957,13 +1964,14 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
 			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], class->name_space, class->name, class_size);*/
 			statics_gc_descr = mono_gc_make_descr_from_bitmap (bitmap, max_set + 1);
-			vt->data = mono_gc_alloc_fixed (class_size, statics_gc_descr);
-			mono_domain_add_class_static_data (domain, class, vt->data, NULL);
+			vt->vtable [class->vtable_size] = mono_gc_alloc_fixed (class_size, statics_gc_descr);
+			mono_domain_add_class_static_data (domain, class, vt->vtable [class->vtable_size], NULL);
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
 		} else {
-			vt->data = mono_domain_alloc0 (domain, class_size);
+			vt->vtable [class->vtable_size] = mono_domain_alloc0 (domain, class_size);
 		}
+		vt->has_static_fields = TRUE;
 		mono_stats.class_static_data_size += class_size;
 	}
 
@@ -2015,7 +2023,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			const char *data = mono_field_get_data (field);
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
-			t = (char*)vt->data + field->offset;
+			t = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 			/* some fields don't really have rva, they are just zeroed (bss? bug #343083) */
 			if (!data)
 				continue;
@@ -2977,16 +2985,24 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 		mono_domain_unlock (vt->domain);
 		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
-		dest = (char*)vt->data + field->offset;
+		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
 	set_value (field->type, dest, value, FALSE);
 }
 
-/* Used by the debugger */
+/**
+ * mono_vtable_get_static_field_data:
+ *
+ * Internal use function: return a pointer to the memory holding the static fields
+ * for a class or NULL if there are no static fields.
+ * This is exported only for use by the debugger.
+ */
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt)
 {
-	return vt->data;
+	if (!vt->has_static_fields)
+		return NULL;
+	return vt->vtable [vt->klass->vtable_size];
 }
 
 static guint8*
@@ -3004,7 +3020,7 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 			mono_domain_unlock (vt->domain);
 			src = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 		} else {
-			src = (guint8*)vt->data + field->offset;
+			src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
 		}
 	} else {
 		src = (guint8*)obj + field->offset;
@@ -3260,7 +3276,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
 		src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
 	} else {
-		src = (char*)vt->data + field->offset;
+		src = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
 	set_value (field->type, value, src, TRUE);
 }

@@ -458,7 +458,6 @@ struct MonoVTable {
 	 */
 	void *gc_descr; 	
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
-        gpointer    data; /* to store static class data */
         gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
 	guint16     max_interface_id;
@@ -466,9 +465,12 @@ struct MonoVTable {
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
 	guint init_failed     : 1; /* cctor execution failed */
+	guint has_static_fields : 1; /* pointer to the data stored at the end of the vtable array */
 	guint32     imt_collisions_bitmap;
 	MonoRuntimeGenericContext *runtime_generic_context;
 	/* do not add any fields after vtable, the structure is dynamically extended */
+	/* vtable contains function pointers to methods or their trampolines, at the
+	 end there may be a slot containing the pointer to the static fields */
 	gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
