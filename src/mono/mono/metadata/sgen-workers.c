@@ -491,9 +491,6 @@ mono_sgen_is_worker_thread (pthread_t thread)
 	if (major_collector.is_worker_thread && major_collector.is_worker_thread (thread))
 		return TRUE;
 
-	if (!collection_is_parallel ())
-		return FALSE;
-
 	for (i = 0; i < workers_num; ++i) {
 		if (workers_data [i].thread == thread)
 			return TRUE;
