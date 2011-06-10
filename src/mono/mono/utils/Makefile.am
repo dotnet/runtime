@@ -96,7 +96,8 @@ monoutils_sources = \
 	mono-threads-windows.c	\
 	mono-threads.h	\
 	mono-tls.h	\
-	linux_magic.h
+	linux_magic.h	\
+	mono-memory-model.h
 
 arch_sources = 
 
