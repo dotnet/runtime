@@ -3,6 +3,7 @@
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)
+ *  Rodrigo Kumpera (kumpera@gmail.com)
  *
  * Copyright 2005-2010 Novell, Inc (http://www.novell.com)
  *
@@ -24,6 +25,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.
+ * Copyright 2011 Xamarin, Inc.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -217,6 +219,7 @@
 #include "utils/mono-semaphore.h"
 #include "utils/mono-counters.h"
 #include "utils/mono-proclib.h"
+#include "utils/mono-memory-model.h"
 
 #include <mono/utils/memcheck.h>
 
@@ -648,8 +651,8 @@ static pthread_key_t thread_info_key;
 
 #ifndef DISABLE_CRITICAL_REGION
 /* we use the memory barrier only to prevent compiler reordering (a memory constraint may be enough) */
-#define ENTER_CRITICAL_REGION do {IN_CRITICAL_REGION = 1;mono_memory_barrier ();} while (0)
-#define EXIT_CRITICAL_REGION  do {IN_CRITICAL_REGION = 0;mono_memory_barrier ();} while (0)
+#define ENTER_CRITICAL_REGION do { mono_atomic_store_release (&IN_CRITICAL_REGION, 1);} while (0)
+#define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0);} while (0)
 #endif
 
 /*
