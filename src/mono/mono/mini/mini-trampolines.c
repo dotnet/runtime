@@ -864,6 +864,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	gboolean multicast, callvirt = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	gboolean enable_caching = TRUE;
+	gboolean disable_fast_path = FALSE;
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
 	guint8 *impl_nothis = tramp_data [2];
@@ -893,12 +894,17 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 				method = mono_marshal_get_remoting_invoke (method);
 		}
 		else {
+			MonoMethodSignature *iv_sig;
 			mono_error_init (&err);
 			sig = mono_method_signature_checked (method, &err);
 			if (!sig)
 				mono_error_raise_exception (&err);
-				
-			if (sig->hasthis && method->klass->valuetype)
+
+			iv_sig = mono_method_signature_checked (invoke, &err);
+			if (!iv_sig)
+				mono_error_raise_exception (&err);
+
+			if (sig->hasthis && method->klass->valuetype && !(iv_sig->param_count && iv_sig->params[0]->byref) && delegate->target)
 				method = mono_marshal_get_unbox_wrapper (method);
 		}
 	} else {
@@ -913,7 +919,9 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 		if (!sig)
 			mono_error_raise_exception (&err);
 
-		callvirt = !delegate->target && sig->hasthis;
+		callvirt = !delegate->target && sig->hasthis && (method->flags & METHOD_ATTRIBUTE_VIRTUAL);
+		disable_fast_path = !delegate->target && sig->hasthis;
+
 		if (delegate->target && 
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
@@ -951,7 +959,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	}
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
-	if (!multicast && !callvirt) {
+	if (!multicast && !callvirt && !disable_fast_path) {
 		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature (method)->param_count == mono_method_signature (invoke)->param_count + 1)
 			/* Closed static delegate */
 			code = impl_this;

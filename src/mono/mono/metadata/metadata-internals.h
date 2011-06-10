@@ -258,12 +258,8 @@ struct _MonoImage {
 	/*
 	 * indexed by SignatureMethodPair
 	 */
-	GHashTable *delegate_abstract_invoke_cache;
+	GHashTable *complex_delegate_cache;
 
-	/*
-	 * indexed by SignatureMethodPair
-	 */
-	GHashTable *delegate_bound_static_invoke_cache;
 	/*
 	 * indexed by MonoMethod pointers 
 	 */
