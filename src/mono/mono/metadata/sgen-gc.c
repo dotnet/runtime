@@ -3666,7 +3666,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 			binary_protocol_alloc (p , vtable, size);
 			g_assert (*p == NULL);
-			*p = vtable;
+			mono_atomic_store_release (p, vtable);
 
 			return p;
 		}
@@ -3780,7 +3780,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 		binary_protocol_alloc (p, vtable, size);
-		*p = vtable;
+		mono_atomic_store_release (p, vtable);
 	}
 
 	return p;
@@ -3805,6 +3805,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		if (!p)
 			return NULL;
 
+		/*FIXME we should use weak memory ops here. Should help specially on x86. */
 		if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 			memset (p, 0, size);
 	} else {
@@ -3857,18 +3858,14 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		}
 	}
 
-	/* 
-	 * FIXME: We might need a memory barrier here so the change to tlab_next is 
-	 * visible before the vtable store.
-	 */
-
 	HEAVY_STAT (++stat_objects_alloced);
 	HEAVY_STAT (stat_bytes_alloced += size);
 
 	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	binary_protocol_alloc (p, vtable, size);
-	g_assert (*p == NULL);
-	*p = vtable;
+	g_assert (*p == NULL); /* FIXME disable this in non debug builds */
+
+	mono_atomic_store_release (p, vtable);
 
 	return p;
 }
@@ -3904,6 +3901,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	ENTER_CRITICAL_REGION;
 	arr = mono_gc_try_alloc_obj_nolock (vtable, size);
 	if (arr) {
+		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		arr->max_length = max_length;
 		EXIT_CRITICAL_REGION;
 		return arr;
@@ -3959,6 +3957,7 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	ENTER_CRITICAL_REGION;
 	str = mono_gc_try_alloc_obj_nolock (vtable, size);
 	if (str) {
+		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		str->length = len;
 		EXIT_CRITICAL_REGION;
 		return str;
@@ -4002,7 +4001,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 		binary_protocol_alloc_pinned (p, vtable, size);
-		*p = vtable;
+		mono_atomic_store_release (p, vtable);
 	}
 	UNLOCK_GC;
 	return p;
@@ -4015,7 +4014,7 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 	size_t size = ALIGN_UP (vtable->klass->instance_size);
 	LOCK_GC;
 	res = alloc_degraded (vtable, size);
-	*res = vtable;
+	mono_atomic_store_release (res, vtable);
 	UNLOCK_GC;
 	if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer ((MonoObject*)res);
