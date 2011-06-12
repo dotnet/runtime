@@ -51,6 +51,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/mono-basic-block.h>
 
 #include "mini.h"
@@ -4273,6 +4274,17 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 }
 
 static MonoInst*
+emit_memory_barrier (MonoCompile *cfg, int kind)
+{
+	MonoInst *ins = NULL;
+	MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
+	MONO_ADD_INS (cfg->cbb, ins);
+	ins->backend.memory_barrier_kind = kind;
+
+	return ins;
+}
+
+static MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
@@ -4442,9 +4454,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		} else if (strcmp (cmethod->name, "MemoryBarrier") == 0) {
-			MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-			MONO_ADD_INS (cfg->cbb, ins);
-			return ins;
+			return emit_memory_barrier (cfg, FullBarrier);
 		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 
@@ -7628,11 +7638,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (bblock, ins);
 			*sp++ = ins;
 			if (ins->flags & MONO_INST_VOLATILE) {
-				MonoInst *barrier;
-
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-				MONO_INST_NEW (cfg, barrier, OP_MEMORY_BARRIER);
-				MONO_ADD_INS (cfg->cbb, barrier);
+				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+				emit_memory_barrier (cfg, FullBarrier);
 			}
 			++ip;
 			break;
@@ -7652,11 +7660,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins_flag = 0;
 
 			if (ins->flags & MONO_INST_VOLATILE) {
-				MonoInst *barrier;
-
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-				MONO_INST_NEW (cfg, barrier, OP_MEMORY_BARRIER);
-				MONO_ADD_INS (cfg->cbb, barrier);
+				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+				emit_memory_barrier (cfg, FullBarrier);
 			}
 
 			MONO_ADD_INS (bblock, ins);

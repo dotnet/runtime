@@ -11,7 +11,7 @@
 #define _MONO_UTILS_MONO_MEMMODEL_H_
 
 #include <config.h>
-#include "utils/mono-membar.h"
+#include <mono/utils/mono-membar.h>
 
 /*
 In order to allow for fast concurrent code, we must use fencing to properly order
@@ -29,9 +29,9 @@ Each arch must define which ones needs fencing.
 We assume 3 kinds of barriers are available: load, store and memory (load+store).
 
 TODO: Add support for weaker forms of CAS such as present on ARM.
-TODO: replace all explicit uses of memory barriers with macros from this section. This will make
-a nicer read of lazy init code.
-TODO: if we find places where a data depencency could replace barriers, add macros here to help with it 
+TODO: replace all explicit uses of memory barriers with macros from this section. This will make a nicer read of lazy init code.
+TODO: if we find places where a data depencency could replace barriers, add macros here to help with it
+TODO: some arch with strong consistency, such as x86, support weaker access. We might need to expose more kinds of barriers once we exploit this.
 */
 
 #define MEMORY_BARRIER mono_memory_barrier

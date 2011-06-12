@@ -735,6 +735,7 @@ struct MonoInst {
 		MonoInst *spill_var; /* for OP_ICONV_TO_R8_RAW and OP_FCONV_TO_R8_X */
 		guint16 source_opcode; /*OP_XCONV_R8_TO_I4 needs to know which op was used to do proper widening*/
 		int pc_offset; /* OP_GC_LIVERANGE_START/END */
+		int memory_barrier_kind; /* see mono-memory-model.h for valid values */
 	} backend;
 	
 	MonoClass *klass;
