@@ -185,6 +185,7 @@ case "$host" in
 		host_win32=no
 		platform_android=yes
 		AC_DEFINE(PLATFORM_ANDROID,1,[Targeting the Android platform])
+		AC_DEFINE(TARGET_ANDROID,1,[Targeting the Android platform])
 
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
@@ -2355,12 +2356,12 @@ case "$host" in
 esac
 
 if test "x$host" != "x$target"; then
+   AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
    case "$target" in
    powerpc64-ps3-linux-gnu)
 		TARGET=POWERPC64
 		arch_target=powerpc64
 		AC_DEFINE(TARGET_PS3, 1, [...])
-		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
 		# It would be better to just use TARGET_POWERPC64, but lots of code already
 		# uses this define
 		AC_DEFINE(__mono_ppc64__, 1, [...])
@@ -2373,7 +2374,6 @@ if test "x$host" != "x$target"; then
 		TARGET=POWERPC64
 		arch_target=powerpc64
 		AC_DEFINE(TARGET_XBOX360, 1, [...])
-		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
 		# It would be better to just use TARGET_POWERPC64, but lots of code already
 		# uses this define
 		sizeof_register=8
@@ -2383,7 +2383,6 @@ if test "x$host" != "x$target"; then
 		TARGET=AMD64
 		arch_target=amd64
 		AC_DEFINE(TARGET_AMD64, 1, [...])
-		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
 		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		;;
@@ -2391,6 +2390,7 @@ if test "x$host" != "x$target"; then
 		# TEGRA
 		TARGET=ARM;
 		arch_target=arm;
+		AC_DEFINE(TARGET_ARM, 1, [...])
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__"
@@ -2402,6 +2402,7 @@ if test "x$host" != "x$target"; then
    armv5tel-unknown-linux-gnueabi*)
 		TARGET=ARM;
 		arch_target=arm;
+		AC_DEFINE(TARGET_ARM, 1, [...])
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
@@ -2410,8 +2411,21 @@ if test "x$host" != "x$target"; then
 		# in mono-compiler.h
 		with_tls=pthread
 		;;
+   armv5-*-linux-androideabi*)
+		TARGET=ARM;
+		arch_target=arm;
+		AC_DEFINE(TARGET_ARM, 1, [...])
+		AC_DEFINE(TARGET_ANDROID, 1, [...])
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DARM_FPU_NONE=1"
+		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offset
+		# in mono-compiler.h
+		with_tls=pthread
+		;;
 	*)
-		AC_MSG_WARN([Cross compiling is only supported for targets matching 'powerpc64-{ps3,xbox360}-linux-gnu'])
+		AC_MSG_ERROR([Cross compiling is not supported for target $target])
 	esac
 fi
 
