@@ -40,7 +40,7 @@ using Mono.Tuner;
 
 using Mono.Cecil;
 
-namespace MonoMac.Tuner {
+namespace Mono.Tuner {
 
 	public abstract class MarkNSObjectsBase : BaseSubStep {
 
@@ -127,6 +127,7 @@ namespace MonoMac.Tuner {
 					continue;
 
 				PreserveMethod (type, constructor);
+				break; // only one .ctor can match this
 			}
 		}
 
