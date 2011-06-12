@@ -1066,7 +1066,7 @@ transport_connect (const char *host, int port)
 #else
 	struct hostent *result;
 #endif
-	int sfd, s, res;
+	int sfd = -1, s, res;
 	char port_string [128];
 
 	conn_fd = -1;
