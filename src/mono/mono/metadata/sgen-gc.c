@@ -7121,6 +7121,10 @@ create_allocator (int atype)
 	mono_mb_emit_ldloc (mb, new_next_var);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
+	/*The tlab store must be visible before the the vtable store. This could be replaced with a DDS but doing it with IL would be tricky. */
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);
+	mono_mb_emit_op (mb, CEE_MONO_MEMORY_BARRIER, StoreStoreBarrier);
+
 	/* *p = vtable; */
 	mono_mb_emit_ldloc (mb, p_var);
 	mono_mb_emit_ldarg (mb, 0);
@@ -7133,6 +7137,12 @@ create_allocator (int atype)
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 	}
+
+	/*
+	We must make sure both vtable and max_length are globaly visible before returning to managed land.
+	*/
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);
+	mono_mb_emit_op (mb, CEE_MONO_MEMORY_BARRIER, StoreStoreBarrier);
 
 	/* return p */
 	mono_mb_emit_ldloc (mb, p_var);
