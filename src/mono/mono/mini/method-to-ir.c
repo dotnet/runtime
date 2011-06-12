@@ -10009,6 +10009,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				break;
 			}
+			case CEE_MONO_MEMORY_BARRIER: {
+				CHECK_OPSIZE (5);
+				emit_memory_barrier (cfg, (int)read32 (ip + 1));
+				ip += 5;
+				break;
+			}
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;
