@@ -176,7 +176,9 @@
 	A good place to start is add_nursery_frag. The tricky thing here is
 	placing those objects atomically outside of a collection.
 
-
+ *) Allocation should use asymmetric Dekker synchronization:
+ 	http://blogs.oracle.com/dave/resource/Asymmetric-Dekker-Synchronization.txt
+	This should help weak consistency archs.
  */
 #include "config.h"
 #ifdef HAVE_SGEN_GC
@@ -650,9 +652,16 @@ static pthread_key_t thread_info_key;
 #endif
 
 #ifndef DISABLE_CRITICAL_REGION
-/* we use the memory barrier only to prevent compiler reordering (a memory constraint may be enough) */
-#define ENTER_CRITICAL_REGION do { mono_atomic_store_release (&IN_CRITICAL_REGION, 1);} while (0)
-#define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0);} while (0)
+
+/* Enter must be visible before anything is done in the critical region. */
+#define ENTER_CRITICAL_REGION do { mono_atomic_store_release (&IN_CRITICAL_REGION, 1); } while (0)
+
+/* Exit must make sure all critical regions stores are visible before it signal the end of the region. 
+ * We don't need to emit a full barrier since we
+ */
+#define EXIT_CRITICAL_REGION  do { mono_atomic_store_seq (&IN_CRITICAL_REGION, 0); } while (0)
+
+
 #endif
 
 /*
@@ -3666,7 +3675,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 			binary_protocol_alloc (p , vtable, size);
 			g_assert (*p == NULL);
-			mono_atomic_store_release (p, vtable);
+			mono_atomic_store_seq (p, vtable);
 
 			return p;
 		}
@@ -3780,7 +3789,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 		binary_protocol_alloc (p, vtable, size);
-		mono_atomic_store_release (p, vtable);
+		mono_atomic_store_seq (p, vtable);
 	}
 
 	return p;
@@ -3865,7 +3874,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	binary_protocol_alloc (p, vtable, size);
 	g_assert (*p == NULL); /* FIXME disable this in non debug builds */
 
-	mono_atomic_store_release (p, vtable);
+	mono_atomic_store_seq (p, vtable);
 
 	return p;
 }
@@ -4001,7 +4010,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 		binary_protocol_alloc_pinned (p, vtable, size);
-		mono_atomic_store_release (p, vtable);
+		mono_atomic_store_seq (p, vtable);
 	}
 	UNLOCK_GC;
 	return p;
@@ -4014,7 +4023,7 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 	size_t size = ALIGN_UP (vtable->klass->instance_size);
 	LOCK_GC;
 	res = alloc_degraded (vtable, size);
-	mono_atomic_store_release (res, vtable);
+	mono_atomic_store_seq (res, vtable);
 	UNLOCK_GC;
 	if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer ((MonoObject*)res);
