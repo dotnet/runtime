@@ -35,7 +35,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Tuner {
 
-	static class MethodBodyRocks {
+	public static class MethodBodyRocks {
 
 		public static IEnumerable<TypeDefinition> GetAllTypes (this ModuleDefinition self)
 		{
