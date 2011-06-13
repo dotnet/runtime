@@ -3401,7 +3401,7 @@ verify_assembly_table (VerifyContext *ctx)
 	}
 }
 
-#define INVALID_ASSEMBLYREF_FLAGS_BITS ~(1)
+#define INVALID_ASSEMBLYREF_FLAGS_BITS ~((1 << 0) | (1 << 8) | (1 << 14) | (1 << 15))
 static void
 verify_assemblyref_table (VerifyContext *ctx)
 {
