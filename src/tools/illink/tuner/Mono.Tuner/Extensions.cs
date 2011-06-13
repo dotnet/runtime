@@ -7,7 +7,7 @@ using Mono.Linker;
 
 namespace Mono.Tuner {
 
-	static class Extensions {
+	public static class Extensions {
 
 		public static bool TryGetLinkedAssembly (this LinkContext context, string name, out AssemblyDefinition assembly)
 		{
