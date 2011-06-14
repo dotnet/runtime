@@ -97,7 +97,9 @@ typedef struct {
 	void (*thread_unregister)(THREAD_INFO_TYPE *info);
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 	gboolean (*mono_method_is_critical) (void *method);
+#ifndef HOST_WIN32
 	int (*mono_gc_pthread_create) (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+#endif
 } MonoThreadInfoCallbacks;
 
 typedef struct {
