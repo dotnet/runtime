@@ -156,6 +156,15 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
  * Either IMPL_METHOD or AOT_ADDR will be set on return.
  */
 static gpointer*
+#ifdef __GNUC__
+/*
+ * This works against problems when compiling with gcc 4.6 on arm. The 'then' part of
+ * this line gets executed, even when the condition is false:
+ *		if (impl && mono_method_needs_static_rgctx_invoke (impl, FALSE))
+ *			*need_rgctx_tramp = TRUE;
+ */
+__attribute__ ((noinline))
+#endif
 mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp, gboolean *variance_used, gpointer *aot_addr)
 {
 	MonoObject *this_argument = mono_arch_get_this_arg_from_call (regs, code);
