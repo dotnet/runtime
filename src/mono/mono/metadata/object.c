@@ -6036,15 +6036,9 @@ mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer a
 		delegate->method_ptr = mono_compile_method (method);
 		MONO_OBJECT_SETREF (delegate, target, target);
 	} else if (method && mono_method_signature (method)->hasthis && method->klass->valuetype) {
-		MonoMethod *invoke = mono_get_delegate_invoke (class);
-		MonoMethodSignature *sig = mono_method_signature (invoke);
-		if (!target && sig && sig->param_count && sig->params[0]->byref) {
-			delegate->method_ptr = addr;
-		} else {
-			method = mono_marshal_get_unbox_wrapper (method);
-			delegate->method_ptr = mono_compile_method (method);
-			MONO_OBJECT_SETREF (delegate, target, target);
-		}
+		method = mono_marshal_get_unbox_wrapper (method);
+		delegate->method_ptr = mono_compile_method (method);
+		MONO_OBJECT_SETREF (delegate, target, target);
 	} else {
 		delegate->method_ptr = addr;
 		MONO_OBJECT_SETREF (delegate, target, target);
