@@ -1031,6 +1031,18 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 
 		return bitmap;
 	}
+	case DESC_TYPE_LARGE_BITMAP: {
+		gsize bmap = (d >> LOW_TYPE_BITS) << OBJECT_HEADER_WORDS;
+
+		bitmap = g_new0 (gsize, 1);
+		bitmap [0] = bmap;
+		*numbits = 0;
+		while (bmap) {
+			(*numbits) ++;
+			bmap >>= 1;
+		}
+		return bitmap;
+	}
 	default:
 		g_assert_not_reached ();
 	}
