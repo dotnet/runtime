@@ -38,7 +38,7 @@
 #include <llvm/CodeGen/MachineFunctionPass.h>
 #include <llvm/CodeGen/MachineFunction.h>
 #include <llvm/CodeGen/MachineFrameInfo.h>
-#include <llvm/Support/StandardPasses.h>
+#include <llvm/Support/PassManagerBuilder.h>
 //#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
