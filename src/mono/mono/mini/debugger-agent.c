@@ -516,6 +516,16 @@ typedef struct {
 
 #define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
 
+#ifdef TARGET_WIN32
+#define get_last_sock_error() WSAGetLastError()
+#define MONO_EWOULDBLOCK WSAEWOULDBLOCK
+#define MONO_EINTR WSAEINTR
+#else
+#define get_last_sock_error() errno
+#define MONO_EWOULDBLOCK EWOULDBLOCK
+#define MONO_EINTR EINTR
+#endif
+
 /*
  * Globals
  */
@@ -963,11 +973,11 @@ recv_length (int fd, void *buf, int len, int flags)
 		res = recv (fd, (char *) buf + total, len - total, flags);
 		if (res > 0)
 			total += res;
-		if (agent_config.keepalive && res == -1 && errno == EWOULDBLOCK) {
+		if (agent_config.keepalive && res == -1 && get_last_sock_error () == MONO_EWOULDBLOCK) {
 			process_profiler_event (EVENT_KIND_KEEPALIVE, NULL);
 			goto again;
 		}
-	} while ((res > 0 && total < len) || (res == -1 && errno == EINTR));
+	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
 	return total;
 }
 
@@ -1015,7 +1025,7 @@ transport_handshake (void)
 	sprintf (handshake_msg, "DWP-Handshake");
 	do {
 		res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
-	} while (res == -1 && errno == EINTR);
+	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
 	g_assert (res != -1);
 
 	/* Read answer */
@@ -1113,7 +1123,7 @@ transport_connect (const char *host, int port)
 			/* This will bind the socket to a random port */
 			res = listen (sfd, 16);
 			if (res == -1) {
-				fprintf (stderr, "debugger-agent: Unable to setup listening socket: %s\n", strerror (errno));
+				fprintf (stderr, "debugger-agent: Unable to setup listening socket: %s\n", strerror (get_last_sock_error ()));
 				exit (1);
 			}
 			listen_fd = sfd;
@@ -1245,7 +1255,7 @@ transport_send (guint8 *data, int len)
 
 	do {
 		res = send (conn_fd, data, len, 0);
-	} while (res == -1 && errno == EINTR);
+	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
 	if (res != len)
 		return FALSE;
 	else
