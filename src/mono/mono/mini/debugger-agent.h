@@ -39,4 +39,7 @@ mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx
 void
 mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx) MONO_INTERNAL;
 
+void
+mono_debugger_agent_user_break (void) MONO_INTERNAL;
+
 #endif

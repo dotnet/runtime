@@ -6551,6 +6551,8 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_object_castclass_with_cache, "mono_object_castclass_with_cache", "object object ptr ptr", FALSE);
 	register_icall (mono_object_isinst_with_cache, "mono_object_isinst_with_cache", "object object ptr ptr", FALSE);
 
+	register_icall (mono_debugger_agent_user_break, "mono_debugger_agent_user_break", "void", FALSE);
+
 #endif
 
 	mono_generic_sharing_init ();

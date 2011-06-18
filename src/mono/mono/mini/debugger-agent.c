@@ -288,7 +288,8 @@ typedef enum {
 	EVENT_KIND_STEP = 11,
 	EVENT_KIND_TYPE_LOAD = 12,
 	EVENT_KIND_EXCEPTION = 13,
-	EVENT_KIND_KEEPALIVE = 14
+	EVENT_KIND_KEEPALIVE = 14,
+	EVENT_KIND_USER_BREAK = 15
 } EventKind;
 
 typedef enum {
@@ -3103,6 +3104,8 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			buffer_add_objid (&buf, ei->exc);
 			break;
 		}
+		case EVENT_KIND_USER_BREAK:
+			break;
 		case EVENT_KIND_KEEPALIVE:
 			suspend_policy = SUSPEND_POLICY_NONE;
 			break;
@@ -4065,6 +4068,44 @@ mono_debugger_agent_breakpoint_hit (void *sigctx)
 	 */
 
 	resume_from_signal_handler (sigctx, process_breakpoint);
+}
+
+static gboolean
+user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	if (frame->managed) {
+		*(MonoContext*)data = *ctx;
+
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
+/*
+ * Called by System.Diagnostics.Debugger:Break ().
+ */
+void
+mono_debugger_agent_user_break (void)
+{
+	if (agent_config.enabled) {
+		MonoContext ctx;
+		int suspend_policy;
+		GSList *events;
+
+		/* Obtain a context */
+		MONO_CONTEXT_SET_IP (&ctx, NULL);
+		mono_walk_stack_with_ctx (user_break_cb, NULL, 0, &ctx);
+		g_assert (MONO_CONTEXT_GET_IP (&ctx) != NULL);
+
+		mono_loader_lock ();
+		events = create_event_list (EVENT_KIND_USER_BREAK, NULL, NULL, NULL, &suspend_policy);
+		mono_loader_unlock ();
+
+		process_event (EVENT_KIND_USER_BREAK, NULL, 0, &ctx, events, suspend_policy);
+	} else {
+		G_BREAKPOINT ();
+	}
 }
 
 static const char*
@@ -7557,6 +7598,12 @@ mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx
 void
 mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
 {
+}
+
+void
+mono_debugger_agent_user_break (void)
+{
+	G_BREAKPOINT ();
 }
 
 #endif

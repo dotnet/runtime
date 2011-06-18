@@ -4697,11 +4697,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass->image == mono_defaults.corlib) {
 		if (cmethod->name [0] == 'B' && strcmp (cmethod->name, "Break") == 0
 				&& strcmp (cmethod->klass->name, "Debugger") == 0) {
-			if (should_insert_brekpoint (cfg->method))
-				MONO_INST_NEW (cfg, ins, OP_BREAK);
-			else
+			if (should_insert_brekpoint (cfg->method)) {
+				ins = mono_emit_jit_icall (cfg, mono_debugger_agent_user_break, NULL);
+			} else {
 				MONO_INST_NEW (cfg, ins, OP_NOP);
-			MONO_ADD_INS (cfg->cbb, ins);
+				MONO_ADD_INS (cfg->cbb, ins);
+			}
 			return ins;
 		}
 		if (cmethod->name [0] == 'g' && strcmp (cmethod->name, "get_IsRunningOnWindows") == 0
