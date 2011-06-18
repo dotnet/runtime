@@ -6219,6 +6219,8 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.get_addr_from_ftnptr = mini_get_addr_from_ftnptr;
 	callbacks.get_runtime_build_info = mono_get_runtime_build_info;
 	callbacks.set_cast_details = mono_set_cast_details;
+	callbacks.debug_log = mono_debugger_agent_debug_log;
+	callbacks.debug_log_is_enabled = mono_debugger_agent_debug_log_is_enabled;
 
 #ifdef MONO_ARCH_HAVE_IMT
 	if (mono_use_imt) {

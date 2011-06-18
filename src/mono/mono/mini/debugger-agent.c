@@ -289,7 +289,8 @@ typedef enum {
 	EVENT_KIND_TYPE_LOAD = 12,
 	EVENT_KIND_EXCEPTION = 13,
 	EVENT_KIND_KEEPALIVE = 14,
-	EVENT_KIND_USER_BREAK = 15
+	EVENT_KIND_USER_BREAK = 15,
+	EVENT_KIND_USER_LOG = 16
 } EventKind;
 
 typedef enum {
@@ -508,6 +509,9 @@ typedef struct {
 	MonoObject *exc;
 	MonoContext catch_ctx;
 	gboolean caught;
+	/* For EVENT_KIND_USER_LOG */
+	int level;
+	char *category, *message;
 } EventInfo;
 
 /* Dummy structure used for the profiler callbacks */
@@ -3106,6 +3110,13 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		}
 		case EVENT_KIND_USER_BREAK:
 			break;
+		case EVENT_KIND_USER_LOG: {
+			EventInfo *ei = arg;
+			buffer_add_int (&buf, ei->level);
+			buffer_add_string (&buf, ei->category ? ei->category : "");
+			buffer_add_string (&buf, ei->message ? ei->message : "");
+			break;
+		}
 		case EVENT_KIND_KEEPALIVE:
 			suspend_policy = SUSPEND_POLICY_NONE;
 			break;
@@ -4569,6 +4580,40 @@ ss_destroy (SingleStepReq *req)
 
 	g_free (ss_req);
 	ss_req = NULL;
+}
+
+/*
+ * Called from metadata by the icall for System.Diagnostics.Debugger:Log ().
+ */
+void
+mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
+{
+	int suspend_policy;
+	GSList *events;
+	EventInfo ei;
+
+	if (!agent_config.enabled)
+		return;
+
+	mono_loader_lock ();
+	events = create_event_list (EVENT_KIND_USER_LOG, NULL, NULL, NULL, &suspend_policy);
+	mono_loader_unlock ();
+
+	ei.level = level;
+	ei.category = category ? mono_string_to_utf8 (category) : NULL;
+	ei.message = message ? mono_string_to_utf8 (message) : NULL;
+
+	process_event (EVENT_KIND_USER_LOG, &ei, 0, NULL, events, suspend_policy);
+
+	g_free (ei.category);
+	g_free (ei.message);
+}
+
+gboolean
+mono_debugger_agent_debug_log_is_enabled (void)
+{
+	/* Treat this as true even if there is no event request for EVENT_KIND_USER_LOG */
+	return agent_config.enabled;
 }
 
 void
@@ -7604,6 +7649,17 @@ void
 mono_debugger_agent_user_break (void)
 {
 	G_BREAKPOINT ();
+}
+
+void
+mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
+{
+}
+
+gboolean
+mono_debugger_agent_debug_log_is_enabled (void)
+{
+	return FALSE;
 }
 
 #endif

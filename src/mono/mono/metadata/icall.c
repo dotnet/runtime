@@ -7053,6 +7053,22 @@ ves_icall_System_Diagnostics_Debugger_IsAttached_internal (void)
 	return mono_debug_using_mono_debugger () || mono_is_debugger_attached ();
 }
 
+static MonoBoolean
+ves_icall_System_Diagnostics_Debugger_IsLogging (void)
+{
+	if (mono_get_runtime_callbacks ()->debug_log_is_enabled)
+		return mono_get_runtime_callbacks ()->debug_log_is_enabled ();
+	else
+		return FALSE;
+}
+
+static void
+ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *category, MonoString *message)
+{
+	if (mono_get_runtime_callbacks ()->debug_log)
+		mono_get_runtime_callbacks ()->debug_log (level, category, message);
+}
+
 static void
 ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoString *message)
 {
