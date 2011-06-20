@@ -40,6 +40,7 @@ static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key, small_id_key;
 static MonoLinkedListSet thread_list;
+static gboolean disable_new_interrupt = FALSE;
 
 static inline void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
@@ -484,6 +485,11 @@ mono_thread_info_suspend_unlock (void)
 	LeaveCriticalSection (&global_suspend_lock);
 }
 
+void
+mono_thread_info_disable_new_interrupt (gboolean disable)
+{
+	disable_new_interrupt = disable;
+}
 /*
 Disabled by default for now.
 To enable this we need mini to implement the callbacks by MonoThreadInfoRuntimeCallbacks
@@ -501,7 +507,7 @@ mono_thread_info_new_interrupt_enabled (void)
 	return FALSE;
 #endif
 #if defined (__i386__)
-	return TRUE;
+	return !disable_new_interrupt;
 #endif
 	return FALSE;
 }
