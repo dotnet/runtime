@@ -369,8 +369,9 @@ ms_get_empty_block (void)
 
 	g_assert (empty_blocks);
 
-	block = empty_blocks;
-	empty_blocks = empty_blocks->next_free;
+	do {
+		block = empty_blocks;
+	} while (SGEN_CAS_PTR (&empty_blocks, block->next_free, block) != block);
 
 	block->used = TRUE;
 
