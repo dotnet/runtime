@@ -2835,7 +2835,9 @@ store_local (VerifyContext *ctx, guint32 arg)
 		return;
 
 	value = stack_pop (ctx);
-
+	if (ctx->locals [arg]->byref && stack_slot_is_managed_mutability_pointer (value))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly managed reference when storing on a local variable at 0x%04x", ctx->ip_offset));
+			
 	if (!verify_stack_type_compatibility (ctx, ctx->locals [arg], value)) {
 		char *expected = mono_type_full_name (ctx->locals [arg]);
 		char *found = stack_slot_full_name (value);
