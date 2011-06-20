@@ -7324,6 +7324,67 @@ mono_gc_get_managed_allocator_types (void)
 	return ATYPE_NUM;
 }
 
+static void
+emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
+{
+	memset (nursery_check_return_labels, 0, sizeof (int) * 3);
+#ifdef SGEN_ALIGN_NURSERY
+	// if (ptr_in_nursery (ptr)) return;
+	/*
+	 * Masking out the bits might be faster, but we would have to use 64 bit
+	 * immediates, which might be slower.
+	 */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
+	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
+
+	// if (!ptr_in_nursery (*ptr)) return;
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
+	nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
+#else
+	int label_continue1, label_continue2;
+	int dereferenced_var;
+
+	// if (ptr < (nursery_start)) goto continue;
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ptr (mb, (gpointer) nursery_start);
+	label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
+
+	// if (ptr >= nursery_end)) goto continue;
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ptr (mb, (gpointer) nursery_end);
+	label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
+
+	// Otherwise return
+	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BR);
+
+	// continue:
+	mono_mb_patch_branch (mb, label_continue_1);
+	mono_mb_patch_branch (mb, label_continue_2);
+
+	// Dereference and store in local var
+	dereferenced_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, dereferenced_var);
+
+	// if (*ptr < nursery_start) return;
+	mono_mb_emit_ldloc (mb, dereferenced_var);
+	mono_mb_emit_ptr (mb, (gpointer) nursery_start);
+	nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BLT);
+
+	// if (*ptr >= nursery_end) return;
+	mono_mb_emit_ldloc (mb, dereferenced_var);
+	mono_mb_emit_ptr (mb, (gpointer) nursery_end);
+	nursery_check_return_labels [2] = mono_mb_emit_branch (mb, CEE_BGE);
+#endif	
+}
 
 MonoMethod*
 mono_gc_get_write_barrier (void)
@@ -7332,11 +7393,8 @@ mono_gc_get_write_barrier (void)
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
 #ifdef MANAGED_WBARRIER
-	int label_no_wb_1, label_no_wb_2, label_no_wb_3, label_no_wb_4, label_need_wb, label_slow_path;
-#ifndef SGEN_ALIGN_NURSERY
-	int label_continue_1, label_continue_2, label_no_wb_5;
-	int dereferenced_var;
-#endif
+	int i, nursery_check_labels [3];
+	int label_no_wb_3, label_no_wb_4, label_need_wb, label_slow_path;
 	int buffer_var, buffer_index_var, dummy_var;
 
 #ifdef HAVE_KW_THREAD
@@ -7370,61 +7428,8 @@ mono_gc_get_write_barrier (void)
 
 #ifdef MANAGED_WBARRIER
 	if (mono_runtime_has_tls_get ()) {
-#ifdef SGEN_ALIGN_NURSERY
-		// if (ptr_in_nursery (ptr)) return;
-		/*
-		 * Masking out the bits might be faster, but we would have to use 64 bit
-		 * immediates, which might be slower.
-		 */
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
-		mono_mb_emit_byte (mb, CEE_SHR_UN);
-		mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
-		label_no_wb_1 = mono_mb_emit_branch (mb, CEE_BEQ);
+		emit_nursery_check (mb, nursery_check_labels);
 
-		// if (!ptr_in_nursery (*ptr)) return;
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
-		mono_mb_emit_byte (mb, CEE_SHR_UN);
-		mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
-		label_no_wb_2 = mono_mb_emit_branch (mb, CEE_BNE_UN);
-#else
-
-		// if (ptr < (nursery_start)) goto continue;
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ptr (mb, (gpointer) nursery_start);
-		label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
-
-		// if (ptr >= nursery_end)) goto continue;
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ptr (mb, (gpointer) nursery_end);
-		label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
-
-		// Otherwise return
-		label_no_wb_1 = mono_mb_emit_branch (mb, CEE_BR);
-
-		// continue:
-		mono_mb_patch_branch (mb, label_continue_1);
-		mono_mb_patch_branch (mb, label_continue_2);
-
-		// Dereference and store in local var
-		dereferenced_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_stloc (mb, dereferenced_var);
-
-		// if (*ptr < nursery_start) return;
-		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) nursery_start);
-		label_no_wb_2 = mono_mb_emit_branch (mb, CEE_BLT);
-
-		// if (*ptr >= nursery_end) return;
-		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) nursery_end);
-		label_no_wb_5 = mono_mb_emit_branch (mb, CEE_BGE);
-
-#endif 
 		// if (ptr >= stack_end) goto need_wb;
 		mono_mb_emit_ldarg (mb, 0);
 		EMIT_TLS_ACCESS (mb, stack_end, stack_end_offset);
@@ -7487,13 +7492,12 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 
 		// return;
-		mono_mb_patch_branch (mb, label_no_wb_1);
-		mono_mb_patch_branch (mb, label_no_wb_2);
+		for (i = 0; i < 3; ++i) {
+			if (nursery_check_labels [i])
+				mono_mb_patch_branch (mb, nursery_check_labels [i]);
+		}
 		mono_mb_patch_branch (mb, label_no_wb_3);
 		mono_mb_patch_branch (mb, label_no_wb_4);
-#ifndef SGEN_ALIGN_NURSERY
-		mono_mb_patch_branch (mb, label_no_wb_5);
-#endif
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		// slow path
