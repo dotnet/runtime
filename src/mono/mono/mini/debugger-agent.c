@@ -85,6 +85,11 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #define DISABLE_DEBUGGER_AGENT 1
 #endif
 
+#if defined(__MACH__)
+#include <mono/utils/mono-threads.h>
+#endif
+
+
 #ifndef DISABLE_DEBUGGER_AGENT
 
 #include <mono/io-layer/mono-mutex.h>
@@ -892,6 +897,12 @@ mono_debugger_agent_init (void)
 
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
+
+#if defined(__MACH__)
+	/*FIXME Under darwin, we need to disable the new interruption code since sdb needs to old signal based one.*/
+	mono_thread_info_disable_new_interrupt (TRUE);
+#endif
+
 }
 
 /*
