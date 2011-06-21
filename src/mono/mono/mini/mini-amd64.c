@@ -26,6 +26,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-memory-model.h>
 
 #include "trace.h"
 #include "ir-emit.h"
