@@ -7396,6 +7396,7 @@ mono_gc_get_write_barrier (void)
 	int i, nursery_check_labels [3];
 	int label_no_wb_3, label_no_wb_4, label_need_wb, label_slow_path;
 	int buffer_var, buffer_index_var, dummy_var;
+	gboolean use_managed_barrier;
 
 #ifdef HAVE_KW_THREAD
 	int stack_end_offset = -1, store_remset_buffer_offset = -1;
@@ -7412,8 +7413,6 @@ mono_gc_get_write_barrier (void)
 #endif
 #endif
 
-	g_assert (!use_cardtable);
-
 	// FIXME: Maybe create a separate version for ctors (the branch would be
 	// correctly predicted more times)
 	if (write_barrier_method)
@@ -7427,7 +7426,49 @@ mono_gc_get_write_barrier (void)
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
 #ifdef MANAGED_WBARRIER
-	if (mono_runtime_has_tls_get ()) {
+	use_managed_barrier = TRUE;
+#endif
+
+	if (use_managed_barrier && use_cardtable) {
+		emit_nursery_check (mb, nursery_check_labels);
+		/*
+		addr = sgen_cardtable + ((address >> CARD_BITS) & CARD_MASK)
+		*addr = 1;
+
+		sgen_cardtable: 
+			LDC_PTR sgen_cardtable
+
+		address >> CARD_BITS
+			LDARG_0
+			LDC_I4 CARD_BITS
+			SHR_UN
+		if (SGEN_HAVE_OVERLAPPING_CARDS) {
+			LDC_PTR card_table_mask
+			AND
+		}
+		AND
+		ldc_i4_1
+		stind_i1
+		*/
+		mono_mb_emit_ptr (mb, sgen_cardtable);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_icon (mb, CARD_BITS);
+		mono_mb_emit_byte (mb, CEE_SHR_UN);
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		mono_mb_emit_ptr (mb, (gpointer)card_table_mask);
+		mono_mb_emit_byte (mb, CEE_AND);
+#endif
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_icon (mb, 1);
+		mono_mb_emit_byte (mb, CEE_STIND_I1);
+
+		// return;
+		for (i = 0; i < 3; ++i) {
+			if (nursery_check_labels [i])
+				mono_mb_patch_branch (mb, nursery_check_labels [i]);
+		}		
+		mono_mb_emit_byte (mb, CEE_RET);
+	} else if (use_managed_barrier && mono_runtime_has_tls_get ()) {
 		emit_nursery_check (mb, nursery_check_labels);
 
 		// if (ptr >= stack_end) goto need_wb;
@@ -7502,12 +7543,16 @@ mono_gc_get_write_barrier (void)
 
 		// slow path
 		mono_mb_patch_branch (mb, label_slow_path);
-	}
-#endif
 
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
-	mono_mb_emit_byte (mb, CEE_RET);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
+		mono_mb_emit_byte (mb, CEE_RET);
+	} else {
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
+		mono_mb_emit_byte (mb, CEE_RET);		
+	}
+
 
 	res = mono_mb_create_method (mb, sig, 16);
 	mono_mb_free (mb);
