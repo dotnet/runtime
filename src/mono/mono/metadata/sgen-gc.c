@@ -7455,7 +7455,7 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_icon (mb, CARD_BITS);
 		mono_mb_emit_byte (mb, CEE_SHR_UN);
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-		mono_mb_emit_ptr (mb, (gpointer)card_table_mask);
+		mono_mb_emit_ptr (mb, (gpointer)CARD_MASK);
 		mono_mb_emit_byte (mb, CEE_AND);
 #endif
 		mono_mb_emit_byte (mb, CEE_ADD);
