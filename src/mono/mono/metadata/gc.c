@@ -1289,6 +1289,8 @@ mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
 			is_suffix = TRUE;
 			suffix = str [len - 1];
 			break;
+		default:
+			return FALSE;
 	}
 
 	errno = 0;
