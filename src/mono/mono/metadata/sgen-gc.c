@@ -2366,6 +2366,18 @@ bridge_register_finalized_object (MonoObject *object)
 	finalized_array [finalized_array_entries++] = object;
 }
 
+static void
+bridge_process (void)
+{
+	if (finalized_array_entries <= 0)
+		return;
+
+	g_assert (mono_sgen_need_bridge_processing ());
+	mono_sgen_bridge_processing (finalized_array_entries, finalized_array);
+
+	finalized_array_entries = 0;
+}
+
 CopyOrMarkObjectFunc
 mono_sgen_get_copy_object (void)
 {
@@ -2470,11 +2482,8 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		if (generation == GENERATION_OLD)
 			finalize_in_range (copy_func, nursery_start, nursery_end, GENERATION_NURSERY, queue);
 
-		if (fin_ready != num_ready_finalizers) {
+		if (fin_ready != num_ready_finalizers)
 			++num_loops;
-			if (finalized_array != NULL)
-				mono_sgen_bridge_processing (finalized_array_entries, finalized_array);
-		}
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
@@ -4834,6 +4843,9 @@ restart_world (int generation)
 	max_pause_usec = MAX (usec, max_pause_usec);
 	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
+
+	bridge_process ();
+
 	return count;
 }
 
