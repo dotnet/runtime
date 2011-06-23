@@ -948,8 +948,7 @@ typedef struct {
 
 
 
-
-#include "arm_dpimacros.h"
+#include "mono/arch/arm/arm_dpimacros.h"
 
 #define ARM_NOP(p) ARM_MOV_REG_REG(p, ARMREG_R0, ARMREG_R0)
 
