@@ -3599,8 +3599,22 @@ mono_sgen_free_os_memory (void *addr, size_t size)
  */
 
 static void*
-alloc_degraded (MonoVTable *vtable, size_t size)
+alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 {
+	static int last_major_gc_warned = -1;
+	static int num_degraded = 0;
+
+	if (!for_mature) {
+		if (last_major_gc_warned < num_major_gcs) {
+			++num_degraded;
+			if (num_degraded == 1 || num_degraded == 3)
+				fprintf (stderr, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.\n");
+			else if (num_degraded == 10)
+				fprintf (stderr, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.\n");
+			last_major_gc_warned = num_major_gcs;
+		}
+	}
+
 	if (need_major_collection (0)) {
 		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
 		stop_world (1);
@@ -3717,7 +3731,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			 * for a while, to decrease the number of useless nursery collections.
 			 */
 			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
-				p = alloc_degraded (vtable, size);
+				p = alloc_degraded (vtable, size, FALSE);
 				binary_protocol_alloc_degraded (p, vtable, size);
 				return p;
 			}
@@ -3730,7 +3744,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					if (!p) {
 						minor_collect_or_expand_inner (size);
 						if (degraded_mode) {
-							p = alloc_degraded (vtable, size);
+							p = alloc_degraded (vtable, size, FALSE);
 							binary_protocol_alloc_degraded (p, vtable, size);
 							return p;
 						} else {
@@ -3757,7 +3771,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					if (!p) {
 						minor_collect_or_expand_inner (tlab_size);
 						if (degraded_mode) {
-							p = alloc_degraded (vtable, size);
+							p = alloc_degraded (vtable, size, FALSE);
 							binary_protocol_alloc_degraded (p, vtable, size);
 							return p;
 						} else {
@@ -4034,7 +4048,7 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 	void **res;
 	size_t size = ALIGN_UP (vtable->klass->instance_size);
 	LOCK_GC;
-	res = alloc_degraded (vtable, size);
+	res = alloc_degraded (vtable, size, TRUE);
 	mono_atomic_store_seq (res, vtable);
 	UNLOCK_GC;
 	if (G_UNLIKELY (vtable->klass->has_finalize))
