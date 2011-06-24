@@ -518,6 +518,20 @@ is_executable (const char *prog)
 	return FALSE;
 }
 
+void switchDirectorySeparators(gchar *path)
+{
+	size_t i, pathLength = strlen(path);
+	
+	/* Turn all the slashes round the right way, except for \' */
+	/* There are probably other characters that need to be excluded as well. */
+	for (i = 0; i < pathLength; i++)
+	{
+		if (path[i] == '\\' && i < pathLength - 1 && path[i+1] != '\'' ) {
+			path[i] = '/';
+		}
+	}
+}
+
 gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			WapiSecurityAttributes *process_attrs G_GNUC_UNUSED,
 			WapiSecurityAttributes *thread_attrs G_GNUC_UNUSED,
@@ -580,12 +594,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			goto free_strings;
 		}
 
-		/* Turn all the slashes round the right way */
-		for (i = 0; i < strlen (cmd); i++) {
-			if (cmd[i] == '\\') {
-				cmd[i] = '/';
-			}
-		}
+		switchDirectorySeparators(cmd);
 	}
 	
 	if (cmdline != NULL) {
@@ -612,11 +621,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		}
 
 		/* Turn all the slashes round the right way */
-		for (i = 0; i < strlen (dir); i++) {
-			if (dir[i] == '\\') {
-				dir[i] = '/';
-			}
-		}
+		switchDirectorySeparators(dir);
 	}
 	
 
@@ -737,12 +742,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Turn all the slashes round the right way. Only for
 		 * the prg. name
 		 */
-		token_len = strlen (token);
-		for (i = 0; i < token_len; i++) {
-			if (token[i] == '\\') {
-				token[i] = '/';
-			}
-		}
+		switchDirectorySeparators(token);
 
 		if (g_ascii_isalpha (token[0]) && (token[1] == ':')) {
 			/* Strip off the drive letter.  I can't
