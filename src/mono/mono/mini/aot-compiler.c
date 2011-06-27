@@ -92,6 +92,22 @@
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
+/* predefined values for static readonly fields without needed to run the .cctor */
+typedef struct _ReadOnlyValue ReadOnlyValue;
+struct _ReadOnlyValue {
+	ReadOnlyValue *next;
+	char *name;
+	int type; /* to be used later for typechecking to prevent user errors */
+	union {
+		guint8 i1;
+		guint16 i2;
+		guint32 i4;
+		guint64 i8;
+		gpointer ptr;
+	} value;
+};
+static ReadOnlyValue *readonly_values = NULL;
+
 typedef struct MonoAotOptions {
 	char *outfile;
 	gboolean save_temps;
@@ -4620,6 +4636,83 @@ str_begins_with (const char *str1, const char *str2)
 	return strncmp (str1, str2, len) == 0;
 }
 
+void*
+mono_aot_readonly_field_override (MonoClassField *field)
+{
+	ReadOnlyValue *rdv;
+	for (rdv = readonly_values; rdv; rdv = rdv->next) {
+		char *p = rdv->name;
+		int len;
+		len = strlen (field->parent->name_space);
+		if (strncmp (p, field->parent->name_space, len))
+			continue;
+		p += len;
+		if (*p++ != '.')
+			continue;
+		len = strlen (field->parent->name);
+		if (strncmp (p, field->parent->name, len))
+			continue;
+		p += len;
+		if (*p++ != '.')
+			continue;
+		if (strcmp (p, field->name))
+			continue;
+		switch (rdv->type) {
+		case MONO_TYPE_I1:
+			return &rdv->value.i1;
+		case MONO_TYPE_I2:
+			return &rdv->value.i2;
+		case MONO_TYPE_I4:
+			return &rdv->value.i4;
+		default:
+			break;
+		}
+	}
+	return NULL;
+}
+
+static void
+add_readonly_value (MonoAotOptions *opts, const char *val)
+{
+	ReadOnlyValue *rdv;
+	const char *fval;
+	const char *tval;
+	/* the format of val is:
+	 * namespace.typename.fieldname=type/value
+	 * type can be i1 for uint8/int8/boolean, i2 for uint16/int16/char, i4 for uint32/int32
+	 */
+	fval = strrchr (val, '/');
+	if (!fval) {
+		fprintf (stderr, "AOT : invalid format for readonly field '%s', missing /.\n", val);
+		exit (1);
+	}
+	tval = strrchr (val, '=');
+	if (!tval) {
+		fprintf (stderr, "AOT : invalid format for readonly field '%s', missing =.\n", val);
+		exit (1);
+	}
+	rdv = g_new0 (ReadOnlyValue, 1);
+	rdv->name = g_malloc0 (tval - val + 1);
+	memcpy (rdv->name, val, tval - val);
+	tval++;
+	fval++;
+	if (strncmp (tval, "i1", 2) == 0) {
+		rdv->value.i1 = atoi (fval);
+		rdv->type = MONO_TYPE_I1;
+	} else if (strncmp (tval, "i2", 2) == 0) {
+		rdv->value.i2 = atoi (fval);
+		rdv->type = MONO_TYPE_I2;
+	} else if (strncmp (tval, "i4", 2) == 0) {
+		rdv->value.i4 = atoi (fval);
+		rdv->type = MONO_TYPE_I4;
+	} else {
+		fprintf (stderr, "AOT : unsupported type for readonly field '%s'.\n", tval);
+		exit (1);
+	}
+	rdv->next = readonly_values;
+	readonly_values = rdv;
+}
+
 static void
 mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 {
@@ -4676,6 +4769,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
 			opts->llvm_path = g_strdup (arg + strlen ("llvm-path="));
+		} else if (str_begins_with (arg, "readonly-value=")) {
+			add_readonly_value (opts, arg + strlen ("readonly-value="));
 		} else if (str_begins_with (arg, "info")) {
 			printf ("AOT target setup: %s.\n", AOT_TARGET_STR);
 			exit (0);
@@ -4698,6 +4793,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    nimt-trampolines=\n");
 			printf ("    autoreg\n");
 			printf ("    tool-prefix=\n");
+			printf ("    readonly-value=\n");
 			printf ("    soft-debug\n");
 			printf ("    print-skipped\n");
 			printf ("    stats\n");
@@ -7208,6 +7304,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #else
 
 /* AOT disabled */
+
+void*
+mono_aot_readonly_field_override (MonoClassField *field)
+{
+	return NULL;
+}
 
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
