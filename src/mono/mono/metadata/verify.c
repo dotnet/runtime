@@ -1259,7 +1259,7 @@ in_any_exception_block (MonoMethodHeader *header, guint offset)
  * Verify if it's valid to perform a branch from @offset to @target.
  * This should be used with br and brtrue/false.
  * It returns 0 if valid, 1 for unverifiable and 2 for invalid.
- * The major diferent from other similiar functions is that branching into a
+ * The major different from other similiar functions is that branching into a
  * finally/fault block is invalid instead of just unverifiable.  
  */
 static int
@@ -3168,7 +3168,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			if (!mono_method_is_constructor (ctx->method))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor outside one at 0x%04x", ctx->ip_offset));
 			if (method->klass != ctx->method->klass->parent && method->klass != ctx->method->klass)
-				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor to a type diferent that this or super at 0x%04x", ctx->ip_offset));
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor to a type different that this or super at 0x%04x", ctx->ip_offset));
 
 			ctx->super_ctor_called = TRUE;
 			value = stack_pop_safe (ctx);
