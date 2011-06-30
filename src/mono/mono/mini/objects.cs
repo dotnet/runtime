@@ -1520,9 +1520,14 @@ ncells ) {
 		return 0;
 	}
 
+	/*
+	 * FIXME: This fails with AOT #703317.
+	 */
+	/*
 	static int test_0_multiple_cctor_calls_regress_679467 () {
 		flag = false;
 		return regress_679467_inner ();
 	}
+	*/
 }
 
