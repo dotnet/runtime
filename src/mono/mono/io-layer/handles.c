@@ -1146,7 +1146,9 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 					g_error ("Error destroying handle %p mutex due to %d\n", handle, thr_ret);
 
 				thr_ret = pthread_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
-				if (thr_ret != 0)
+				if (thr_ret == EBUSY && ignore_private_busy_handles)
+					early_exit = TRUE;
+				else if (thr_ret != 0)
 					g_error ("Error destroying handle %p cond var due to %d\n", handle, thr_ret);
 			}
 		} else {
