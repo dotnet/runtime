@@ -66,7 +66,7 @@ namespace Mono.Linker.Steps {
 				break;
 			case AssemblyAction.Copy:
 				CloseSymbols (assembly);
-				CopyAssembly (GetOriginalAssemblyFileInfo (assembly), directory);
+				CopyAssembly (GetOriginalAssemblyFileInfo (assembly), directory, Context.LinkSymbols);
 				break;
 			case AssemblyAction.Delete:
 				CloseSymbols (assembly);
@@ -125,13 +125,22 @@ namespace Mono.Linker.Steps {
 			return new FileInfo (assembly.MainModule.FullyQualifiedName);
 		}
 
-		static void CopyAssembly (FileInfo fi, string directory)
+		static void CopyAssembly (FileInfo fi, string directory, bool symbols)
 		{
 			string target = Path.GetFullPath (Path.Combine (directory, fi.Name));
-			if (fi.FullName == target)
+			string source = fi.FullName;
+			if (source == target)
 				return;
 
-			File.Copy (fi.FullName, target, true);
+			File.Copy (source, target, true);
+
+			if (!symbols)
+				return;
+
+			source += ".mdb";
+			if (!File.Exists (source))
+				return;
+			File.Copy (source, target + ".mdb", true);
 		}
 
 		static string GetAssemblyFileName (AssemblyDefinition assembly, string directory)
