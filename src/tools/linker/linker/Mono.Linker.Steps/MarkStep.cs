@@ -372,7 +372,7 @@ namespace Mono.Linker.Steps {
 			MarkGenericParameterProvider (type);
 
 			if (type.IsValueType)
-				MarkFields (type);
+				MarkFields (type, type.IsEnum);
 
 			if (type.HasInterfaces) {
 				foreach (TypeReference iface in type.Interfaces)
@@ -666,11 +666,11 @@ namespace Mono.Linker.Steps {
 
 			switch (Annotations.GetPreserve (type)) {
 			case TypePreserve.All:
-				MarkFields (type);
+				MarkFields (type, true);
 				MarkMethods (type);
 				break;
 			case TypePreserve.Fields:
-				MarkFields (type);
+				MarkFields (type, true);
 				break;
 			case TypePreserve.Methods:
 				MarkMethods (type);
@@ -696,13 +696,16 @@ namespace Mono.Linker.Steps {
 			MarkMethodCollection (list);
 		}
 
-		void MarkFields (TypeDefinition type)
+		void MarkFields (TypeDefinition type, bool includeStatic)
 		{
 			if (!type.HasFields)
 				return;
 
-			foreach (FieldDefinition field in type.Fields)
+			foreach (FieldDefinition field in type.Fields) {
+				if (!includeStatic && field.IsStatic)
+					continue;
 				MarkField (field);
+			}
 		}
 
 		void MarkMethods (TypeDefinition type)
