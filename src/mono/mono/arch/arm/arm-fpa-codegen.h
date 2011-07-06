@@ -99,25 +99,25 @@ enum {
 	ARM_DEF_COND(cond)
 
 /* FP load and stores */
-#define ARM_LDFS_COND(p,freg,base,offset,cond)	\
+#define ARM_FPA_LDFS_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_LDR,ARM_FPA_SINGLE,0,(base),(freg),(offset)))
-#define ARM_LDFS(p,freg,base,offset)	\
-	ARM_LDFS_COND(p,freg,base,offset,ARMCOND_AL)
+#define ARM_FPA_LDFS(p,freg,base,offset)	\
+	ARM_FPA_LDFS_COND(p,freg,base,offset,ARMCOND_AL)
 
-#define ARM_LDFD_COND(p,freg,base,offset,cond)	\
+#define ARM_FPA_LDFD_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_LDR,ARM_FPA_DOUBLE,0,(base),(freg),(offset)))
-#define ARM_LDFD(p,freg,base,offset)	\
-	ARM_LDFD_COND(p,freg,base,offset,ARMCOND_AL)
+#define ARM_FPA_LDFD(p,freg,base,offset)	\
+	ARM_FPA_LDFD_COND(p,freg,base,offset,ARMCOND_AL)
 
-#define ARM_STFS_COND(p,freg,base,offset,cond)	\
+#define ARM_FPA_STFS_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_STR,ARM_FPA_SINGLE,0,(base),(freg),(offset)))
-#define ARM_STFS(p,freg,base,offset)	\
-	ARM_STFS_COND(p,freg,base,offset,ARMCOND_AL)
+#define ARM_FPA_STFS(p,freg,base,offset)	\
+	ARM_FPA_STFS_COND(p,freg,base,offset,ARMCOND_AL)
 
-#define ARM_STFD_COND(p,freg,base,offset,cond)	\
+#define ARM_FPA_STFD_COND(p,freg,base,offset,cond)	\
 	ARM_EMIT((p), ARM_DEF_FPA_LDF_STF((cond),1,ARMOP_STR,ARM_FPA_DOUBLE,0,(base),(freg),(offset)))
-#define ARM_STFD(p,freg,base,offset)	\
-	ARM_STFD_COND(p,freg,base,offset,ARMCOND_AL)
+#define ARM_FPA_STFD(p,freg,base,offset)	\
+	ARM_FPA_STFD_COND(p,freg,base,offset,ARMCOND_AL)
 
 #define ARM_DEF_FPA_CPDO_MONADIC(cond,op,dreg,sreg,round,prec)	\
 	(1 << 8) | (14 << 24)		|	\
@@ -159,34 +159,34 @@ enum {
 
 #include "arm_fpamacros.h"
 
-#define ARM_RNDDZ_COND(p,dreg,sreg,cond) \
+#define ARM_FPA_RNDDZ_COND(p,dreg,sreg,cond) \
 	ARM_EMIT((p), ARM_DEF_FPA_CPDO_MONADIC((cond),ARM_FPA_RND,(dreg),(sreg),ARM_FPA_ROUND_ZERO,ARM_FPA_ROUND_DOUBLE))
-#define ARM_RNDDZ(p,dreg,sreg)      ARM_RNDD_COND(p,dreg,sreg,ARMCOND_AL)
+#define ARM_FPA_RNDDZ(p,dreg,sreg)      ARM_FPA_RNDD_COND(p,dreg,sreg,ARMCOND_AL)
 
 /* compares */
-#define ARM_FCMP_COND(p,op,sreg1,sreg2,cond)	\
+#define ARM_FPA_FCMP_COND(p,op,sreg1,sreg2,cond)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CMP(cond,op,sreg1,sreg2))
-#define ARM_FCMP(p,op,sreg1,sreg2) ARM_FCMP_COND(p,op,sreg1,sreg2,ARMCOND_AL)
+#define ARM_FPA_FCMP(p,op,sreg1,sreg2) ARM_FPA_FCMP_COND(p,op,sreg1,sreg2,ARMCOND_AL)
 
 /* coprocessor register transfer */
-#define ARM_FLTD(p,fn,rd)	\
+#define ARM_FPA_FLTD(p,fn,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_FLT,(fn),0,(rd),ARM_FPA_ROUND_DOUBLE,ARM_FPA_ROUND_NEAREST))
-#define ARM_FLTS(p,fn,rd)	\
+#define ARM_FPA_FLTS(p,fn,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_FLT,(fn),0,(rd),ARM_FPA_ROUND_SINGLE,ARM_FPA_ROUND_NEAREST))
 
-#define ARM_FIXZ(p,rd,fm)	\
+#define ARM_FPA_FIXZ(p,rd,fm)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_FIX,0,(fm),(rd),0,ARM_FPA_ROUND_ZERO))
 
-#define ARM_WFS(p,rd)	\
+#define ARM_FPA_WFS(p,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_WFS,0,0,(rd),0,ARM_FPA_ROUND_NEAREST))
 
-#define ARM_RFS(p,rd)	\
+#define ARM_FPA_RFS(p,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_RFS,0,0,(rd),0,ARM_FPA_ROUND_NEAREST))
 
-#define ARM_WFC(p,rd)	\
+#define ARM_FPA_WFC(p,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_WFC,0,0,(rd),0,ARM_FPA_ROUND_NEAREST))
 
-#define ARM_RFC(p,rd)	\
+#define ARM_FPA_RFC(p,rd)	\
 	ARM_EMIT(p, ARM_DEF_FPA_CPRT(ARMCOND_AL,ARM_FPA_RFC,0,0,(rd),0,ARM_FPA_ROUND_NEAREST))
 
 #endif /* __MONO_ARM_FPA_CODEGEN_H__ */
