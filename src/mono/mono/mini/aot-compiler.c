@@ -161,6 +161,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *image_table;
 	GPtrArray *globals;
 	GPtrArray *method_order;
+	GHashTable *export_names;
 	guint32 *plt_got_info_offsets;
 	guint32 got_offset, plt_offset, plt_got_offset_base;
 	guint32 final_got_size;
@@ -2804,10 +2805,13 @@ add_wrappers (MonoAotCompile *acfg)
 				MonoCustomAttrEntry *e = &cattr->attrs [j];
 				MonoMethodSignature *sig = mono_method_signature (e->ctor);
 				const char *p = (const char*)e->data;
-				int slen;
+				const char *named;
+				int slen, num_named, named_type, data_type;
 				char *n;
 				MonoType *t;
 				MonoClass *klass;
+				char *export_name = NULL;
+				MonoMethod *wrapper;
 
 				g_assert (method->flags & METHOD_ATTRIBUTE_STATIC);
 
@@ -2833,7 +2837,50 @@ add_wrappers (MonoAotCompile *acfg)
 				klass = mono_class_from_mono_type (t);
 				g_assert (klass->parent == mono_defaults.multicastdelegate_class);
 
+				p += slen;
+
+				num_named = read16 (p);
+				p += 2;
+
+				g_assert (num_named < 2);
+				if (num_named == 1) {
+					int name_len;
+					char *name;
+					MonoType *prop_type;
+
+					/* parse ExportSymbol attribute */
+					named = p;
+					named_type = *named;
+					named += 1;
+					data_type = *named;
+					named += 1;
+
+					name_len = mono_metadata_decode_blob_size (named, &named);
+					name = g_malloc (name_len + 1);
+					memcpy (name, named, name_len);
+					name [name_len] = 0;
+					named += name_len;
+
+					g_assert (named_type == 0x54);
+					g_assert (!strcmp (name, "ExportSymbol"));
+
+					prop_type = &mono_defaults.string_class->byval_arg;
+
+					/* load_cattr_value (), string case */
+					g_assert (*named != (char)0xff);
+					slen = mono_metadata_decode_value (named, &named);
+					export_name = g_malloc (slen + 1);
+					memcpy (export_name, named, slen);
+					export_name [slen] = 0;
+					named += slen;
+				}
+
 				add_method (acfg, mono_marshal_get_managed_wrapper (method, klass, 0));
+
+				wrapper = mono_marshal_get_managed_wrapper (method, klass, 0);
+				add_method (acfg, wrapper);
+				if (export_name)
+					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
 		}
 
@@ -3547,6 +3594,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	char symbol [128];
 	int func_alignment = AOT_FUNC_ALIGNMENT;
 	MonoMethodHeader *header;
+	char *export_name;
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
@@ -3575,6 +3623,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 		emit_local_symbol (acfg, debug_sym, symbol, TRUE);
 		emit_label (acfg, debug_sym);
+	}
+
+	export_name = g_hash_table_lookup (acfg->export_names, method);
+	if (export_name) {
+		/* Emit a global symbol for the method */
+		emit_global_inner (acfg, export_name, TRUE);
+		emit_label (acfg, export_name);
 	}
 
 	if (cfg->verbose_level > 0)
@@ -6919,6 +6974,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->unwind_ops = g_ptr_array_new ();
 	acfg->method_label_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	acfg->method_order = g_ptr_array_new ();
+	acfg->export_names = g_hash_table_new (NULL, NULL);
 	InitializeCriticalSection (&acfg->mutex);
 
 	return acfg;
@@ -6952,6 +7008,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
 	g_hash_table_destroy (acfg->method_label_hash);
+	g_hash_table_destroy (acfg->export_names);
 	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
 		g_hash_table_destroy (acfg->patch_to_got_offset_by_type [i]);
 	g_free (acfg->patch_to_got_offset_by_type);
