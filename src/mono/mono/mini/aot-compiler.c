@@ -2875,8 +2875,6 @@ add_wrappers (MonoAotCompile *acfg)
 					named += slen;
 				}
 
-				add_method (acfg, mono_marshal_get_managed_wrapper (method, klass, 0));
-
 				wrapper = mono_marshal_get_managed_wrapper (method, klass, 0);
 				add_method (acfg, wrapper);
 				if (export_name)
