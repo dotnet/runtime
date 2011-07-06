@@ -94,6 +94,12 @@ int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
 void
 mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
 
+typedef enum {
+	MONO_ARM_FPU_NONE = 0,
+	MONO_ARM_FPU_FPA = 1,
+	MONO_ARM_FPU_VFP = 2
+} MonoArmFPU;
+
 /* keep the size of the structure a multiple of 8 */
 struct MonoLMF {
 	/* 
