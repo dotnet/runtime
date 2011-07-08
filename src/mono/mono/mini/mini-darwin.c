@@ -68,6 +68,12 @@
 #include <dlfcn.h>
 #include <AvailabilityMacros.h>
 
+#if (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5) && !defined (TARGET_ARM)
+#define NEEDS_EXCEPTION_THREAD
+#endif
+
+#ifdef NEEDS_EXCEPTION_THREAD
+
 /*
  * This code disables the CrashReporter of MacOS X by installing
  * a dummy Mach exception handler.
@@ -185,13 +191,15 @@ macosx_register_exception_handler ()
 	mono_gc_register_mach_exception_thread (thread);
 }
 
+#endif
+
 /* This is #define'd by Boehm GC to _GC_dlopen. */
 #undef dlopen
 
 void
 mono_runtime_install_handlers (void)
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
+#ifdef NEEDS_EXCEPTION_THREAD
 	macosx_register_exception_handler ();
 #endif
 	mono_runtime_posix_install_handlers ();
