@@ -337,6 +337,7 @@ static long long time_major_fragment_creation = 0;
 
 int gc_debug_level = 0;
 FILE* gc_debug_file;
+static gboolean debug_print_allowance = FALSE;
 
 /*
 void
@@ -2834,6 +2835,17 @@ try_calculate_minor_collection_allowance (gboolean overwrite)
 	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + last_collection_los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
 
 	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+
+	if (debug_print_allowance) {
+		mword old_major = last_collection_old_num_major_sections * major_collector.section_size;
+		mword new_major = num_major_sections * major_collector.section_size;
+
+		fprintf (gc_debug_file, "Before collection: %ld bytes (%ld major, %ld LOS)\n",
+				old_major + last_collection_old_los_memory_usage, old_major, last_collection_old_los_memory_usage);
+		fprintf (gc_debug_file, "After collection: %ld bytes (%ld major, %ld LOS)\n",
+				new_major + last_collection_los_memory_usage, new_major, last_collection_los_memory_usage);
+		fprintf (gc_debug_file, "Allowance: %ld bytes\n", minor_collection_allowance);
+	}
 
 	if (major_collector.have_computed_minor_collection_allowance)
 		major_collector.have_computed_minor_collection_allowance ();
@@ -6631,7 +6643,7 @@ mono_gc_base_init (void)
 	LOCK_INIT (gc_mutex);
 
 	pagesize = mono_pagesize ();
-	gc_debug_file = stdout;
+	gc_debug_file = stderr;
 
 	cb.thread_register = sgen_thread_register;
 	cb.thread_unregister = sgen_thread_unregister;
@@ -6862,6 +6874,8 @@ mono_gc_base_init (void)
 						gc_debug_file = stderr;
 					g_free (rf);
 				}
+			} else if (!strcmp (opt, "print-allowance")) {
+				debug_print_allowance = TRUE;
 			} else if (!strcmp (opt, "collect-before-allocs")) {
 				collect_before_allocs = 1;
 			} else if (g_str_has_prefix (opt, "collect-before-allocs=")) {
@@ -6903,6 +6917,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  disable-major\n");
 				fprintf (stderr, "  xdomain-checks\n");
 				fprintf (stderr, "  clear-at-gc\n");
+				fprintf (stderr, "  print-allowance\n");
 				exit (1);
 			}
 		}
