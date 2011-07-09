@@ -168,7 +168,7 @@ SIG_HANDLER_SIGNATURE (mono_chain_signal)
 
 	GET_CONTEXT;
 
-	if (saved_handler) {
+	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
 			saved_handler->sa_handler (signal);
 		} else {
