@@ -114,6 +114,8 @@ typedef struct MonoAotModule {
 	guint16 *class_name_table;
 	guint32 *extra_method_table;
 	guint32 *extra_method_info_offsets;
+	guint32 *unbox_trampolines;
+	guint32 *unbox_trampolines_end;
 	guint8 *unwind_info;
 	guint8 *thumb_end;
 
@@ -1220,6 +1222,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->class_name_table = info->class_name_table;
 	amodule->extra_method_table = info->extra_method_table;
 	amodule->extra_method_info_offsets = info->extra_method_info_offsets;
+	amodule->unbox_trampolines = info->unbox_trampolines;
+	amodule->unbox_trampolines_end = info->unbox_trampolines_end;
 	amodule->got_info_offsets = info->got_info_offsets;
 	amodule->unwind_info = info->unwind_info;
 	amodule->mem_end = info->mem_end;
@@ -3529,22 +3533,38 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 {
 	guint32 method_index = mono_metadata_token_index (method->token) - 1;
 	MonoAotModule *amodule;
-	char *symbol;
 	gpointer code;
+	guint32 *ut, *ut_end, *entry;
+	int low, high, entry_index;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_impl (method, FALSE)) {
-		guint32 index = find_extra_method (method, &amodule);
-		g_assert (index != 0xffffff);
-		
-		symbol = g_strdup_printf ("ut_%d", index);
+		method_index = find_extra_method (method, &amodule);
+		g_assert (method_index != 0xffffff);
 	} else {
 		amodule = method->klass->image->aot_module;
 		g_assert (amodule);
-
-		symbol = g_strdup_printf ("ut_%d", method_index);
 	}
-	code = load_function (amodule, symbol);
-	g_free (symbol);
+
+	ut = amodule->unbox_trampolines;
+	ut_end = amodule->unbox_trampolines_end;
+
+	/* Do a binary search in the sorted table */
+	code = NULL;
+	low = 0;
+	high = (ut_end - ut) / 2;
+	while (low < high) {
+		entry_index = (low + high) / 2;
+		entry = &ut [(entry_index * 2)];
+		if (entry [0] < method_index) {
+			low = entry_index + 1;
+		} else if (entry [0] > method_index) {
+			high = entry_index;
+		} else {
+			code = amodule->code + entry [1];
+			break;
+		}
+	}
+	g_assert (code);
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);

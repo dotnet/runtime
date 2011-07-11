@@ -5535,7 +5535,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 static void
 emit_code (MonoAotCompile *acfg)
 {
-	int oindex, i;
+	int oindex, i, prev_index;
 	char symbol [256];
 	char end_symbol [256];
 
@@ -5605,7 +5605,6 @@ emit_code (MonoAotCompile *acfg)
 #ifdef __native_client_codegen__
 			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 #endif
-			emit_global (acfg, symbol, TRUE);
 
 			if (acfg->thumb_mixed && cfg->compile_llvm)
 				fprintf (acfg->fp, "\n.thumb_func\n");
@@ -5657,6 +5656,39 @@ emit_code (MonoAotCompile *acfg)
 		}
 	}
 	emit_line (acfg);
+
+	/* Emit a sorted table mapping methods to their unbox trampolines */
+	sprintf (symbol, "unbox_trampolines");
+	emit_section_change (acfg, RODATA_SECT, 1);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+
+	sprintf (end_symbol, "methods");
+	prev_index = -1;
+	for (i = 0; i < acfg->nmethods; ++i) {
+		MonoCompile *cfg;
+		MonoMethod *method;
+		int index;
+
+		cfg = acfg->cfgs [i];
+		if (!cfg)
+			continue;
+
+		method = cfg->orig_method;
+
+		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+			index = get_method_index (acfg, method);
+			sprintf (symbol, "ut_%d", index);
+
+			emit_int32 (acfg, index);
+			emit_symbol_diff (acfg, symbol, end_symbol, 0);
+			/* Make sure the table is sorted by index */
+			g_assert (index > prev_index);
+			prev_index = index;
+		}
+	}
+	sprintf (symbol, "unbox_trampolines_end");
+	emit_label (acfg, symbol);
 }
 
 static void
@@ -6605,6 +6637,8 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_pointer (acfg, NULL);
 	}
 	emit_pointer (acfg, "assembly_name");
+	emit_pointer (acfg, "unbox_trampolines");
+	emit_pointer (acfg, "unbox_trampolines_end");
 
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
