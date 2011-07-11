@@ -91,7 +91,7 @@ vcall: len:20 clob:c
 vcall_reg: src1:i len:8 clob:c
 vcall_membase: src1:b len:12 clob:c
 iconst: dest:i len:16
-r4const: dest:f len:20
+r4const: dest:f len:24
 r8const: dest:f len:20
 label: len:0
 store_membase_imm: dest:b len:20
