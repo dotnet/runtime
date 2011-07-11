@@ -3534,7 +3534,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 		guint32 index = find_extra_method (method, &amodule);
 		g_assert (index != 0xffffff);
 		
-		symbol = g_strdup_printf ("ut_e_%d", index);
+		symbol = g_strdup_printf ("ut_%d", index);
 	} else {
 		amodule = method->klass->image->aot_module;
 		g_assert (amodule);

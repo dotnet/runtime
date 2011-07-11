@@ -5581,12 +5581,7 @@ emit_code (MonoAotCompile *acfg)
 
 		/* Emit unbox trampoline */
 		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-			if (!method->wrapper_type && !method->is_inflated) {
-				g_assert (method->token);
-				sprintf (symbol, "ut_%d", mono_metadata_token_index (method->token) - 1);
-			} else {
-				sprintf (symbol, "ut_e_%d", get_method_index (acfg, method));
-			}
+			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
 #ifdef __native_client_codegen__
