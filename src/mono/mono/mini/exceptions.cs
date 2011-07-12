@@ -2641,5 +2641,68 @@ class Tests {
 
 		return 0;
 	}
+
+	static int test_0_try_clause_in_finally_clause_regalloc () {
+		// Fill up registers with values
+		object a = new object ();
+		object[] arr1 = new object [1];
+		object[] arr2 = new object [1];
+		object[] arr3 = new object [1];
+		object[] arr4 = new object [1];
+		object[] arr5 = new object [1];
+
+		for (int i = 0; i < 10; ++i)
+			arr1 [0] = a;
+		for (int i = 0; i < 10; ++i)
+			arr2 [0] = a;
+		for (int i = 0; i < 10; ++i)
+			arr3 [0] = a;
+		for (int i = 0; i < 10; ++i)
+			arr4 [0] = a;
+		for (int i = 0; i < 10; ++i)
+			arr5 [0] = a;
+
+		int res = 1;
+		try {
+			try_clause_in_finally_clause_regalloc_inner (out res);
+		} catch (Exception) {
+		}
+		return res;		
+	}
+
+	public static object Throw () {
+		for (int i = 0; i < 10; ++i)
+			;
+		throw new Exception ();
+	}
+
+	static void try_clause_in_finally_clause_regalloc_inner (out int res) {
+		object o = null;
+
+		res = 1;
+		try {
+			o = Throw ();
+		} catch (Exception) {
+			/* Make sure this doesn't branch to the finally */
+			throw new DivideByZeroException ();
+		} finally {
+			try {
+				/* Make sure o is register allocated */
+				if (o == null)
+					res = 0;
+				else
+					res = 1;
+				if (o == null)
+					res = 0;
+				else
+					res = 1;
+				if (o == null)
+					res = 0;
+				else
+					res = 1;
+			} catch (DivideByZeroException) {
+			}
+		}
+	}
 }
 
