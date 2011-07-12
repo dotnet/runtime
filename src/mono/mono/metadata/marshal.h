@@ -80,6 +80,11 @@ typedef struct {
 	guint32 rank, elem_size;
 } ElementAddrWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+	MonoClass *klass;
+} NativeToManagedWrapperInfo;
+
 G_BEGIN_DECLS
 
 /*type of the function pointer of methods returned by mono_marshal_get_runtime_invoke*/

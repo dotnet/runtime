@@ -8705,6 +8705,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 
 /*
  * generates IL code to call managed methods from unmanaged code 
+ * If target_handle==0, the wrapper info will be a NativeToManagedWrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, uint32_t target_handle)
@@ -8839,10 +8840,17 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle);
 
-	if (!target_handle)
+	if (!target_handle) {
+		NativeToManagedWrapperInfo *info;
+
 		res = mono_mb_create_and_cache (cache, method,
 											 mb, csig, sig->param_count + 16);
-	else {
+		// FIXME: Associate it with the method+delegate_klass pair
+		info = mono_image_alloc0 (method->klass->image, sizeof (NativeToManagedWrapperInfo));
+		info->method = method;
+		info->klass = delegate_klass;
+		mono_marshal_set_wrapper_info (res, info);
+	} else {
 		mb->dynamic = 1;
 		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 	}
