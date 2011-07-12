@@ -1962,6 +1962,105 @@ encode_generic_context (MonoAotCompile *acfg, MonoGenericContext *context, guint
 	*endbuf = p;
 }
 
+static void
+encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+
+	g_assert (t->num_mods == 0);
+	g_assert (t->attrs == 0);
+
+	if (t->pinned) {
+		*p = MONO_TYPE_PINNED;
+		++p;
+	}
+	if (t->byref) {
+		*p = MONO_TYPE_BYREF;
+		++p;
+	}
+
+	*p = t->type;
+	p ++;
+
+	switch (t->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_TYPEDBYREF:
+		break;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		encode_klass_ref (acfg, mono_class_from_mono_type (t), p, &p);
+		break;
+	case MONO_TYPE_SZARRAY:
+		encode_klass_ref (acfg, t->data.klass, p, &p);
+		break;
+	case MONO_TYPE_PTR:
+		encode_type (acfg, t->data.type, p, &p);
+		break;
+	case MONO_TYPE_GENERICINST: {
+		MonoClass *gclass = t->data.generic_class->container_class;
+		MonoGenericInst *inst = t->data.generic_class->context.class_inst;
+		int i;
+
+		encode_klass_ref (acfg, gclass, p, &p);
+		encode_value (inst->type_argc, p, &p);
+		for (i = 0; i < inst->type_argc; ++i)
+			encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	*endbuf = p;
+}
+
+static void
+encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+	guint32 flags = 0;
+	int i;
+
+	/* Similar to the metadata encoding */
+	if (sig->generic_param_count)
+		flags |= 0x10;
+	if (sig->hasthis)
+		flags |= 0x20;
+	if (sig->explicit_this)
+		flags |= 0x40;
+	flags |= (sig->call_convention & 0x0F);
+
+	*p = flags;
+	++p;
+	if (sig->generic_param_count)
+		encode_value (sig->generic_param_count, p, &p);
+	encode_value (sig->param_count, p, &p);
+
+	g_assert (sig->call_convention != MONO_CALL_VARARG);
+
+	encode_type (acfg, sig->ret, p, &p);
+	for (i = 0; i < sig->param_count; ++i)
+		encode_type (acfg, sig->params [i], p, &p);
+
+	*endbuf = p;
+}
+
 #define MAX_IMAGE_INDEX 250
 
 static void
@@ -1971,7 +2070,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	guint32 token = method->token;
 	MonoJumpInfoToken *ji;
 	guint8 *p = buf;
-	char *name;
 
 	/*
 	 * The encoding for most methods is as follows:
@@ -1990,44 +2088,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
 		encode_value ((MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE << 24), p, &p);
 
-	/* 
-	 * Some wrapper methods are shared using their signature, encode their 
-	 * stringified signature instead.
-	 * FIXME: Optimize disk usage
-	 */
-	name = NULL;
 	if (method->wrapper_type) {
-		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			if (strcmp (method->name, "runtime_invoke_dynamic")) {
-				name = mono_aot_wrapper_name (method);
-			} else if (mono_marshal_method_from_wrapper (method) != method) {
-				/* Direct wrapper, encode it normally */
-			} else {
-				name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
-			}
-			g_free (tmpsig);
-		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			name = g_strdup_printf ("(wrapper delegate-begin-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_END_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			name = g_strdup_printf ("(wrapper delegate-end-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		}
-	}
-
-	if (name) {
-		encode_value ((MONO_AOT_METHODREF_WRAPPER_NAME << 24), p, &p);
-		strcpy ((char*)p, name);
-		p += strlen (name) + 1;
-		g_free (name);
-	} else if (method->wrapper_type) {
 		encode_value ((MONO_AOT_METHODREF_WRAPPER << 24), p, &p);
 
 		encode_value (method->wrapper_type, p, &p);
@@ -2068,8 +2129,19 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_STELEMREF: {
 			MonoClass *klass = mono_marshal_get_wrapper_info (method);
 
-			/* Make sure this is the 'normal' stelemref wrapper, not the virtual one */
-			g_assert (!klass);
+			if (!klass) {
+				/* Normal wrapper */
+				encode_value (0, p, &p);
+			} else {
+				char *name;
+
+				/* virtual wrapper */
+				name = mono_aot_wrapper_name (method);
+				encode_value (MONO_AOT_WRAPPER_BY_NAME, p, &p);
+				strcpy ((char*)p, name);
+				p += strlen (name) + 1;
+				g_free (name);
+			}
 			break;
 		}
 		case MONO_WRAPPER_UNKNOWN:
@@ -2089,9 +2161,24 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				g_assert_not_reached ();
 			}
 			break;
-		case MONO_WRAPPER_SYNCHRONIZED:
-		case MONO_WRAPPER_MANAGED_TO_NATIVE:
-		case MONO_WRAPPER_RUNTIME_INVOKE: {
+		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
+			MonoMethod *m;
+
+			if (strstr (method->name, "__icall_wrapper")) {
+				encode_value (MONO_AOT_WRAPPER_JIT_ICALL, p, &p);
+
+				strcpy ((char*)p, method->name);
+				p += strlen (method->name) + 1;
+			} else {
+				encode_value (0, p, &p);
+				m = mono_marshal_method_from_wrapper (method);
+				g_assert (m);
+				g_assert (m != method);
+				encode_method_ref (acfg, m, p, &p);
+			}
+			break;
+		}
+		case MONO_WRAPPER_SYNCHRONIZED: {
 			MonoMethod *m;
 
 			m = mono_marshal_method_from_wrapper (method);
@@ -2104,12 +2191,19 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			if (!strcmp (method->name, "ElementAddr")) {
 				ElementAddrWrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
+				printf ("X: %d\n", info->rank);
 				g_assert (info);
 				encode_value (MONO_AOT_WRAPPER_ELEMENT_ADDR, p, &p);
 				encode_value (info->rank, p, &p);
 				encode_value (info->elem_size, p, &p);
 			} else {
-				g_assert_not_reached ();
+				char *name;
+
+				name = mono_aot_wrapper_name (method);
+				encode_value (MONO_AOT_WRAPPER_BY_NAME, p, &p);
+				strcpy ((char*)p, name);
+				p += strlen (name) + 1;
+				g_free (name);
 			}
 			break;
 		case MONO_WRAPPER_CASTCLASS:
@@ -2121,6 +2215,46 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				g_assert_not_reached ();
 			}
 			break;
+		case MONO_WRAPPER_RUNTIME_INVOKE: {
+			if (!strcmp (method->name, "runtime_invoke_dynamic")) {
+				encode_value (MONO_AOT_WRAPPER_RUNTIME_INVOKE_DYNAMIC, p, &p);
+			} else if (mono_marshal_method_from_wrapper (method) != method) {
+				MonoMethod *m;
+
+				/* Direct wrapper, encode it normally */
+				if (!strstr (method->name, "virtual"))
+					encode_value (MONO_AOT_WRAPPER_RUNTIME_INVOKE_DIRECT, p, &p);
+				else
+					encode_value (MONO_AOT_WRAPPER_RUNTIME_INVOKE_VIRTUAL, p, &p);
+
+				m = mono_marshal_method_from_wrapper (method);
+				g_assert (m);
+				g_assert (m != method);
+				encode_method_ref (acfg, m, p, &p);
+			} else {
+				MonoMethodSignature *sig;
+
+				encode_value (0, p, &p);
+
+				sig = mono_method_signature (method);
+				encode_signature (acfg, sig, p, &p);
+			}
+			break;
+		}
+		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
+			MonoMethodSignature *sig = mono_method_signature (method);
+			encode_signature (acfg, sig, p, &p);
+			break;
+		}
+		case MONO_WRAPPER_NATIVE_TO_MANAGED: {
+			NativeToManagedWrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			encode_method_ref (acfg, info->method, p, &p);
+			encode_klass_ref (acfg, info->klass, p, &p);
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -5962,7 +6096,6 @@ emit_extra_methods (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->extra_methods->len; ++i) {
 		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
 		MonoCompile *cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
-		char *name;
 
 		if (!cfg)
 			continue;
@@ -5974,53 +6107,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 		method = cfg->method_to_register;
 
-		name = NULL;
-		if (method->wrapper_type) {
-			gboolean encode_ref = FALSE;
-
-			/* 
-			 * We encode some wrappers using their name, since encoding them
-			 * directly would be difficult. This works because at runtime, we only need to
-			 * check whenever a method ref matches an existing MonoMethod. The downside is
-			 * that the method names are large, so we use the binary encoding if possible.
-			 */
-			switch (method->wrapper_type) {
-			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-			case MONO_WRAPPER_SYNCHRONIZED:
-				encode_ref = TRUE;
-				break;
-			case MONO_WRAPPER_MANAGED_TO_NATIVE:
-				/* Skip JIT icall wrappers */
-				if (!strstr (method->name, "__icall_wrapper"))
-					encode_ref = TRUE;
-				break;
-			case MONO_WRAPPER_UNKNOWN:
-				if (!strcmp (method->name, "PtrToStructure") || !strcmp (method->name, "StructureToPtr"))
-					encode_ref = TRUE;
- 				break;
-			case MONO_WRAPPER_RUNTIME_INVOKE:
-				if (mono_marshal_method_from_wrapper (method) != method && !strstr (method->name, "virtual"))
-					/* Direct wrapper, encode normally */
-					encode_ref = TRUE;
-				break;
-			default:
-				break;
-			}
-
-			if (!encode_ref)
-				name = mono_aot_wrapper_name (method);
-		}
-
-		if (name) {
-			encode_value (1, p, &p);
-			encode_value (method->wrapper_type, p, &p);
-			strcpy ((char*)p, name);
-			p += strlen (name ) + 1;
-			g_free (name);
-		} else {
-			encode_value (0, p, &p);
-			encode_method_ref (acfg, method, p, &p);
-		}
+		encode_method_ref (acfg, method, p, &p);
 
 		g_assert ((p - buf) < buf_size);
 

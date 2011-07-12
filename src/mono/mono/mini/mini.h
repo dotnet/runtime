@@ -113,7 +113,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 76
+#define MONO_AOT_FILE_VERSION 77
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -121,17 +121,15 @@
 /* Constants used to encode different types of methods in AOT */
 enum {
 	MONO_AOT_METHODREF_MIN = 240,
-	/* Method encoded using its name */
-	MONO_AOT_METHODREF_WRAPPER_NAME = 250,
 	/* Runtime provided methods on arrays */
-	MONO_AOT_METHODREF_ARRAY = 251,
-	MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE = 252,
+	MONO_AOT_METHODREF_ARRAY = 250,
+	MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE = 251,
 	/* Wrappers */
-	MONO_AOT_METHODREF_WRAPPER = 253,
+	MONO_AOT_METHODREF_WRAPPER = 252,
 	/* Methods on generic instances */
-	MONO_AOT_METHODREF_GINST = 254,
+	MONO_AOT_METHODREF_GINST = 253,
 	/* Methods resolve using a METHODSPEC token */
-	MONO_AOT_METHODREF_METHODSPEC = 255,
+	MONO_AOT_METHODREF_METHODSPEC = 254,
 };
 
 /* Trampolines which we have a lot of */
@@ -2433,7 +2431,7 @@ void SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
 gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 
-/* for MONO_WRAPPER_UNKNOWN/MANAGED_TO_MANAGED subtypes */
+/* Subtypes of some wrapper types */
 enum {
 	MONO_AOT_WRAPPER_MONITOR_ENTER,
 	MONO_AOT_WRAPPER_MONITOR_EXIT,
@@ -2443,6 +2441,18 @@ enum {
 	MONO_AOT_WRAPPER_CASTCLASS_WITH_CACHE,
 	MONO_AOT_WRAPPER_ISINST_WITH_CACHE,
 	MONO_AOT_WRAPPER_MONITOR_ENTER_V4,
+	MONO_AOT_WRAPPER_JIT_ICALL,
+	MONO_AOT_WRAPPER_RUNTIME_INVOKE_DYNAMIC,
+	MONO_AOT_WRAPPER_RUNTIME_INVOKE_DIRECT,
+	MONO_AOT_WRAPPER_RUNTIME_INVOKE_VIRTUAL,
+	/*
+	 * We can't encode this wrapper directly, so we emit its name instead.
+	 * This means that its not possible to decode this into a method, only to check
+	 * that the method reference matches a given method. This is normally not a problem
+	 * as these wrappers only occur in the extra_methods table, where we already have
+	 * a method we want to lookup.
+	 */
+	MONO_AOT_WRAPPER_BY_NAME,
 	MONO_AOT_WRAPPER_LAST
 };
 
