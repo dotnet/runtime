@@ -1551,7 +1551,7 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 		char *p = (char*)dest + size;
 		char *s = (char*)src + size;
 		char *start = (char*)dest;
-		char *align_end = MAX((char*)p, (char*)align_down (p));
+		char *align_end = MAX((char*)dest, (char*)align_down (p));
 		char *word_start;
 
 		while (p > align_end)
