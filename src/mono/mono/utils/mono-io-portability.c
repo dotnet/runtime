@@ -14,21 +14,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
 
-#ifdef DISABLE_PORTABILITY
-int __mono_io_portability_helpers = PORTABILITY_NONE;
-
-void 
-mono_portability_helpers_init (void)
-{
-}
-
-gchar *
-mono_portability_find_file (const gchar *pathname, gboolean last_exists)
-{
-	return NULL;
-}
-
-#else
+#ifndef DISABLE_PORTABILITY
 
 #include <dirent.h>
 
