@@ -764,6 +764,9 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #if defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self ());
 	*stsize = pthread_get_stacksize_np (pthread_self ());
+
+	/* staddr points to the start of the stack, not the end */
+	*staddr -= *stsize;
 	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
 	return;
 	/* FIXME: simplify the mess below */
