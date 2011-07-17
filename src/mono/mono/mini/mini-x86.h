@@ -83,7 +83,11 @@ struct sigcontext {
 #endif
 
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */
+#if defined(__APPLE__)
+#define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ
+#else
 #define MONO_ARCH_SIGNAL_STACK_SIZE (16 * 1024)
+#endif
 #define MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT 1
 
 #define MONO_ARCH_CPU_SPEC x86_desc
