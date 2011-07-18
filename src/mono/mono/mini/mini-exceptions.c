@@ -1873,7 +1873,7 @@ void
 mono_setup_altstack (MonoJitTlsData *tls)
 {
 	size_t stsize = 0;
-	struct sigaltstack sa;
+	stack_t sa;
 	guint8 *staddr = NULL;
 
 	if (mono_running_on_valgrind ())
@@ -1908,14 +1908,18 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	sa.ss_sp = tls->signal_stack;
 	sa.ss_size = MONO_ARCH_SIGNAL_STACK_SIZE;
+#if __APPLE__
+	sa.ss_flags = 0;
+#else
 	sa.ss_flags = SS_ONSTACK;
-	sigaltstack (&sa, NULL);
+#endif
+	g_assert (sigaltstack (&sa, NULL) == 0);
 }
 
 void
 mono_free_altstack (MonoJitTlsData *tls)
 {
-	struct sigaltstack sa;
+	stack_t sa;
 	int err;
 
 	sa.ss_sp = tls->signal_stack;
