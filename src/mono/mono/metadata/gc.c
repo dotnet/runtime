@@ -1543,6 +1543,17 @@ void
 mono_gc_memmove (void *dest, const void *src, size_t size)
 {
 	/*
+	 * If dest and src are differently aligned with respect to
+	 * pointer size then it makes no sense to do aligned copying.
+	 * In fact, we would end up with unaligned loads which is
+	 * incorrect on some architectures.
+	 */
+	if ((char*)dest - (char*)align_down (dest) != (char*)src - (char*)align_down (src)) {
+		memmove (dest, src, size);
+		return;
+	}
+
+	/*
 	 * A bit of explanation on why we align only dest before doing word copies.
 	 * Pointers to managed objects must always be stored in word aligned addresses, so
 	 * even if dest is misaligned, src will be by the same amount - this ensure proper atomicity of reads.

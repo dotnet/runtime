@@ -5,30 +5,53 @@ namespace BufferTest
 {
 	class Test
 	{
-        public static int Main (string[] args)
-        {
-	        int size = 32;
-	        byte[] array = new byte[size];
+		const byte TotalLength = 32;
 
-
-	        for (byte i = 0; i < size; i++) array[i] = i;
-
-		Buffer.BlockCopy (array, 4, array, 5, 20);
-
-		for (byte i = 0; i < size; i++) {
-			byte expected;
-			if (i > 4 && i < 25)
-				expected = (byte)(i - 1);
+		public static byte Expected (byte dest, byte src, int len, byte i)
+		{
+			if (i >= dest && i < dest + len)
+				return (byte) (src + (i - dest));
 			else
-				expected = i;
-			if (array [i] != expected) {
-				Console.WriteLine ("error at " + i + " expected " + expected + " but got " + array [i]);
-				return 1;
-			}
+				return i;
 		}
 
-		return 0;
-        }
+		public static bool TestMove (byte dest, byte src, int len)
+		{
+			byte[] array = new byte [TotalLength];
+			for (byte i = 0; i < TotalLength; ++i)
+				array [i] = i;
+			Buffer.BlockCopy (array, src, array, dest, len);
+			for (byte i = 0; i < TotalLength; ++i)
+			{
+				if (array [i] != Expected (dest, src, len, i)) {
+					Console.WriteLine ("when copying " + len + " from " + src + " to " + dest + ": expected ");
+					for (byte j = 0; j < TotalLength; ++j)
+						Console.Write ("" + Expected (dest, src, len, j) + " ");
+					Console.WriteLine ();
+					Console.WriteLine ("got");
+					for (byte j = 0; j < TotalLength; ++j)
+						Console.Write ("" + array [j] + " ");
+					Console.WriteLine ();
+					return false;
+				}
+			}
+			return true;
+		}
 
+		public static int Main (string[] args)
+		{
+			bool failed = false;
+			for (byte i = 0; i < TotalLength; ++i) {
+				for (byte j = 0; j < TotalLength; ++j) {
+					byte max = (byte) (TotalLength - Math.Max (i, j));
+					for (byte l = 0; l < max; ++l) {
+						if (!TestMove (i, j, l))
+							failed = true;
+					}
+				}
+			}
+
+			return failed ? 1 : 0;
+		}
 	}
 }
