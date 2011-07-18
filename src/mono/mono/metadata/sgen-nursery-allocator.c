@@ -576,7 +576,7 @@ mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
 
 /*** Nursery memory allocation ***/
 void
-mono_sgen_nursery_retire_region (void *address, ssize_t size)
+mono_sgen_nursery_retire_region (void *address, ptrdiff_t size)
 {
 	HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_discarded_fragments, size));
 }
