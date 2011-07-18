@@ -422,7 +422,13 @@ add_signal_handler (int signo, gpointer handler)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
+/*Apple likes to deliver SIGBUS for *0 */
+#ifdef __APPLE__
+	if (signo == SIGSEGV || signo == SIGBUS) {
+#else
 	if (signo == SIGSEGV) {
+#endif
 		sa.sa_flags |= SA_ONSTACK;
 
 		/* 
