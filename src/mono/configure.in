@@ -1474,7 +1474,11 @@ if test x$target_win32 = xno; then
 			child ()
 			{
 				struct sigaction sa;
+			#ifdef __APPLE__
+				stack_t sas;
+			#else
 				struct sigaltstack sas;
+			#endif
 				pthread_t id;
 				pthread_attr_t attr;
 
@@ -1486,6 +1490,11 @@ if test x$target_win32 = xno; then
 					return;
 				}
 
+				/* x86 darwin deliver segfaults using SIGBUS */
+				if (sigaction (SIGBUS, &sa, NULL) == -1) {
+					perror ("sigaction");
+					return;
+				}
 				sas.ss_sp = malloc (SIGSTKSZ);
 				sas.ss_size = SIGSTKSZ;
 				sas.ss_flags = 0;
