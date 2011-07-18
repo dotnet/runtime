@@ -29,14 +29,135 @@
  */
 
 #include "config.h"
+
 #ifdef HAVE_SGEN_GC
+#if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
+
+#include <errno.h>
 #include <glib.h>
 #include "metadata/sgen-gc.h"
 #include "metadata/gc-internal.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/object-internals.h"
 
-#if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED
+#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+const static int suspend_signal_num = SIGXFSZ;
+#else
+const static int suspend_signal_num = SIGPWR;
+#endif
+const static int restart_signal_num = SIGXCPU;
+
+static MonoSemType suspend_ack_semaphore;
+static MonoSemType *suspend_ack_semaphore_ptr;
+
+static sigset_t suspend_signal_mask;
+
+static void
+suspend_thread (SgenThreadInfo *info, void *context)
+{
+	int stop_count;
+#ifdef USE_MONO_CTX
+	MonoContext monoctx;
+#else
+	gpointer regs [ARCH_NUM_REGS];
+#endif
+	gpointer stack_start;
+
+	g_assert (info->doing_handshake);
+
+	info->stopped_domain = mono_domain_get ();
+	info->stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
+	stop_count = mono_sgen_global_stop_count;
+	/* duplicate signal */
+	if (0 && info->stop_count == stop_count)
+		return;
+
+	mono_sgen_fill_thread_info_for_suspend (info);
+
+	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
+	/* If stack_start is not within the limits, then don't set it
+	   in info and we will be restarted. */
+	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
+		info->stack_start = stack_start;
+
+#ifdef USE_MONO_CTX
+		if (context) {
+			mono_sigctx_to_monoctx (context, &monoctx);
+			info->monoctx = &monoctx;
+		} else {
+			info->monoctx = NULL;
+		}
+#else
+		if (context) {
+			ARCH_COPY_SIGCTX_REGS (regs, context);
+			info->stopped_regs = regs;
+		} else {
+			info->stopped_regs = NULL;
+		}
+#endif
+	} else {
+		g_assert (!info->stack_start);
+	}
+
+	/* Notify the JIT */
+	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, context);
+
+	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for suspend from %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+	/* notify the waiting thread */
+	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+	info->stop_count = stop_count;
+
+	/* wait until we receive the restart signal */
+	do {
+		info->signal = 0;
+		sigsuspend (&suspend_signal_mask);
+	} while (info->signal != restart_signal_num && info->doing_handshake);
+
+	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+	/* notify the waiting thread */
+	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+}
+
+/* LOCKING: assumes the GC lock is held (by the stopping thread) */
+static void
+suspend_handler (int sig, siginfo_t *siginfo, void *context)
+{
+	SgenThreadInfo *info;
+	int old_errno = errno;
+
+	info = mono_thread_info_current ();
+
+	if (info) {
+		suspend_thread (info, context);
+	} else {
+		/* This can happen while a thread is dying */
+		g_print ("no thread info in suspend\n");
+	}
+
+	errno = old_errno;
+}
+
+static void
+restart_handler (int sig)
+{
+	SgenThreadInfo *info;
+	int old_errno = errno;
+
+	info = mono_thread_info_current ();
+
+	/*
+	 * If a thread is dying there might be no thread info.  In
+	 * that case we rely on info->doing_handshake.
+	 */
+	if (info) {
+		info->signal = restart_signal_num;
+		DEBUG (4, fprintf (gc_debug_file, "Restart handler in %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+	}
+
+	errno = old_errno;
+}
+
 gboolean
 mono_sgen_resume_thread (SgenThreadInfo *info)
 {
@@ -49,11 +170,36 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 	return pthread_kill (mono_thread_info_get_tid (info), suspend_signal_num) == 0;
 }
 
+void
+mono_sgen_wait_for_suspend_ack (int count)
+{
+	int i, result;
+
+	for (i = 0; i < count; ++i) {
+		while ((result = MONO_SEM_WAIT (suspend_ack_semaphore_ptr)) != 0) {
+			if (errno != EINTR) {
+				g_error ("sem_wait ()");
+			}
+		}
+	}
+}
+
+gboolean
+mono_sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p)
+{
+    if (!p->doing_handshake)
+	    return FALSE;
+
+    suspend_thread (p, NULL);
+    return TRUE;
+}
+
 int
-mono_sgen_thread_handshake (int signum)
+mono_sgen_thread_handshake (BOOL suspend)
 {
 	int count, result;
 	SgenThreadInfo *info;
+	int signum = suspend ? suspend_signal_num : restart_signal_num;
 
 	MonoNativeThreadId me = mono_native_thread_id_get ();
 
@@ -64,7 +210,7 @@ mono_sgen_thread_handshake (int signum)
 		}
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/
-		if (signum == suspend_signal_num) {
+		if (suspend) {
 			g_assert (!info->doing_handshake);
 			info->doing_handshake = TRUE;
 		} else {
@@ -82,6 +228,36 @@ mono_sgen_thread_handshake (int signum)
 	mono_sgen_wait_for_suspend_ack (count);
 
 	return count;
+}
+
+void
+mono_sgen_os_init (void)
+{
+	struct sigaction sinfo;
+
+	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
+	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
+
+	sigfillset (&sinfo.sa_mask);
+	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
+	sinfo.sa_sigaction = suspend_handler;
+	if (sigaction (suspend_signal_num, &sinfo, NULL) != 0) {
+		g_error ("failed sigaction");
+	}
+
+	sinfo.sa_handler = restart_handler;
+	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
+		g_error ("failed sigaction");
+	}
+
+	sigfillset (&suspend_signal_mask);
+	sigdelset (&suspend_signal_mask, restart_signal_num);
+}
+
+int
+mono_gc_get_suspend_signal (void)
+{
+	return suspend_signal_num;
 }
 #endif
 #endif

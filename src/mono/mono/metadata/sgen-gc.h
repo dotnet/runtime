@@ -102,10 +102,10 @@ struct _SgenThreadInfo {
 	MonoThreadInfo info;
 #if defined(__MACH__)
 	thread_port_t mach_port;
-#endif
-	
-	unsigned int stop_count; /* to catch duplicate signals */
+#else
 	int signal;
+	unsigned int stop_count; /* to catch duplicate signals */
+#endif
 	int skip;
 	volatile int in_critical_region;
 	gboolean doing_handshake;
@@ -227,13 +227,6 @@ struct _GCMemSection {
 
 typedef struct _SgenPinnedChunk SgenPinnedChunk;
 
-#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)
-const static int suspend_signal_num = SIGXFSZ;
-#else
-const static int suspend_signal_num = SIGPWR;
-#endif
-const static int restart_signal_num = SIGXCPU;
-
 /*
  * Recursion is not allowed for the thread lock.
  */
@@ -255,8 +248,6 @@ const static int restart_signal_num = SIGXCPU;
 		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
 
-/* non-pthread will need to provide their own version of start/stop */
-#define USE_SIGNAL_BASED_START_STOP_WORLD 1
 /* we intercept pthread_create calls to know which threads exist */
 #define USE_PTHREAD_INTERCEPT 1
 
@@ -277,6 +268,8 @@ extern int gc_debug_level;
 extern FILE* gc_debug_file;
 
 extern int current_collection_generation;
+
+extern unsigned int mono_sgen_global_stop_count;
 
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
@@ -610,12 +603,14 @@ void* mono_sgen_alloc_os_memory (size_t size, int activate) MONO_INTERNAL;
 void* mono_sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean activate) MONO_INTERNAL;
 void mono_sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
 
-int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
+int mono_sgen_thread_handshake (BOOL suspend) MONO_INTERNAL;
 gboolean mono_sgen_suspend_thread (SgenThreadInfo *info) MONO_INTERNAL;
 gboolean mono_sgen_resume_thread (SgenThreadInfo *info) MONO_INTERNAL;
-
-
 void mono_sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
+gboolean mono_sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p) MONO_INTERNAL;
+void mono_sgen_os_init (void) MONO_INTERNAL;
+
+void mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info) MONO_INTERNAL;
 
 gboolean mono_sgen_is_worker_thread (pthread_t thread) MONO_INTERNAL;
 

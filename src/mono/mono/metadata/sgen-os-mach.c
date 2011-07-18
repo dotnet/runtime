@@ -100,9 +100,15 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 	return TRUE;
 }
 
+void
+mono_sgen_wait_for_suspend_ack (int count)
+{
+    /* mach thread_resume is synchronous so we dont need to wait for them */
+}
+
 /* LOCKING: assumes the GC lock is held */
 int
-mono_sgen_thread_handshake (int signum)
+mono_sgen_thread_handshake (BOOL suspend)
 {
 	SgenThreadInfo *cur_thread = mono_thread_info_current ();
 	kern_return_t ret;
@@ -114,7 +120,7 @@ mono_sgen_thread_handshake (int signum)
 		if (info == cur_thread || mono_sgen_is_worker_thread (mono_thread_info_get_tid (info)))
 			continue;
 
-		if (signum == suspend_signal_num) {
+		if (suspend) {
 			g_assert (!info->doing_handshake);
 			info->doing_handshake = TRUE;
 
@@ -131,6 +137,17 @@ mono_sgen_thread_handshake (int signum)
 		count ++;
 	} END_FOREACH_THREAD_SAFE
 	return count;
+}
+
+void
+mono_sgen_os_init (void)
+{
+}
+
+int
+mono_gc_get_suspend_signal (void)
+{
+	return -1;
 }
 #endif
 #endif
