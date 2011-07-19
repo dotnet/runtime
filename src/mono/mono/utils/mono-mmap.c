@@ -433,7 +433,7 @@ mono_mprotect (void *addr, size_t length, int flags)
 
 #ifndef HAVE_VALLOC_ALIGNED
 void*
-mono_valloc_aligned (size_t length, size_t alignment, int flags)
+mono_valloc_aligned (size_t size, size_t alignment, int flags)
 {
 	/* Allocate twice the memory to be able to put the block on an aligned address */
 	char *mem = mono_valloc (NULL, size + alignment, flags);
