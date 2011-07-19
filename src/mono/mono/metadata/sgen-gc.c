@@ -3120,7 +3120,7 @@ collect_nursery (size_t requested_size)
 	if (collection_is_parallel ()) {
 		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
-			usleep (1000);
+			g_usleep (1000);
 		}
 	}
 	workers_join ();
@@ -3400,7 +3400,7 @@ major_do_collection (const char *reason)
 	if (major_collector.is_parallel) {
 		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
-			usleep (1000);
+			g_usleep (1000);
 		}
 	}
 	workers_join ();
@@ -5378,12 +5378,12 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	FIXME: I believe we could avoid this by using mono_thread_info_lookup when
 	mono_thread_info_current returns NULL. Or fix mono_thread_info_lookup to do so.
 	*/
-#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+#if (defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED) || !defined(HAVE_PTHREAD_KILL)
 	LOCK_GC;
 #else
 	while (!TRYLOCK_GC) {
 		if (!mono_sgen_park_current_thread_if_doing_handshake (p))
-			usleep (50);
+			g_usleep (50);
 	}
 #endif
 
@@ -6529,7 +6529,7 @@ mono_gc_base_init (void)
 			return;
 		case -1:
 			/* being inited by another thread */
-			usleep (1000);
+			g_usleep (1000);
 			break;
 		case 0:
 			/* we will init it */
