@@ -132,15 +132,17 @@ struct _MonoLockFreeAllocDescriptor {
 
 /* Taken from SGen */
 
+static unsigned long
+prot_flags_for_activate (int activate)
+{
+	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
+	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
+}
+
 static void*
 mono_sgen_alloc_os_memory (size_t size, int activate)
 {
-	void *ptr;
-	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
-
-	prot_flags |= MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
-	ptr = mono_valloc (0, size, prot_flags);
-	return ptr;
+	return mono_valloc (0, size, prot_flags_for_activate (activate));
 }
 
 static void
@@ -153,21 +155,7 @@ mono_sgen_free_os_memory (void *addr, size_t size)
 static void*
 mono_sgen_alloc_os_memory_aligned (size_t size, size_t alignment, gboolean activate)
 {
-	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = mono_sgen_alloc_os_memory (size + alignment, activate);
-	char *aligned;
-
-	g_assert (mem);
-
-	aligned = (char*)((gulong)(mem + (alignment - 1)) & ~(alignment - 1));
-	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((gulong)aligned & (alignment - 1)));
-
-	if (aligned > mem)
-		mono_sgen_free_os_memory (mem, aligned - mem);
-	if (aligned + size < mem + size + alignment)
-		mono_sgen_free_os_memory (aligned + size, (mem + size + alignment) - (aligned + size));
-
-	return aligned;
+	return mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
 }
 
 static gpointer

@@ -31,6 +31,7 @@ int          mono_file_map_close (MonoFileMap *fmap);
 
 int   mono_pagesize   (void);
 void* mono_valloc     (void *addr, size_t length, int flags);
+void* mono_valloc_aligned (size_t length, size_t alignment, int flags);
 int   mono_vfree      (void *addr, size_t length);
 void* mono_file_map   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
 int   mono_file_unmap (void *addr, void *handle);
