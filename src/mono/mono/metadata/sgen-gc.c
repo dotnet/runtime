@@ -4419,7 +4419,7 @@ mono_sgen_get_minor_collection_allowance (void)
  */
 
 static void
-rehash_roots (gboolean pinned)
+rehash_roots (int root_type)
 {
 	int i;
 	unsigned int hash;
@@ -4427,19 +4427,19 @@ rehash_roots (gboolean pinned)
 	RootRecord *entry, *next;
 	int new_size;
 
-	new_size = g_spaced_primes_closest (num_roots_entries [pinned]);
+	new_size = g_spaced_primes_closest (num_roots_entries [root_type]);
 	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
-	for (i = 0; i < roots_hash_size [pinned]; ++i) {
-		for (entry = roots_hash [pinned][i]; entry; entry = next) {
+	for (i = 0; i < roots_hash_size [root_type]; ++i) {
+		for (entry = roots_hash [root_type][i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->start_root) % new_size;
 			next = entry->next;
 			entry->next = new_hash [hash];
 			new_hash [hash] = entry;
 		}
 	}
-	mono_sgen_free_internal_dynamic (roots_hash [pinned], roots_hash_size [pinned] * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
-	roots_hash [pinned] = new_hash;
-	roots_hash_size [pinned] = new_size;
+	mono_sgen_free_internal_dynamic (roots_hash [root_type], roots_hash_size [root_type] * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
+	roots_hash [root_type] = new_hash;
+	roots_hash_size [root_type] = new_size;
 }
 
 static RootRecord*
