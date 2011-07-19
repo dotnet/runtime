@@ -45,6 +45,8 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "config.h"
+
 #ifdef HAVE_SGEN_GC
 
 #include "metadata/sgen-gc.h"

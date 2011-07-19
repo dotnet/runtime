@@ -22,6 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "config.h"
 #include "sgen-protocol.h"
 
 #ifdef SGEN_BINARY_PROTOCOL
