@@ -2163,7 +2163,7 @@ mono_sgen_alloc_os_memory (size_t size, int activate)
 
 /* size must be a power of 2 */
 void*
-mono_sgen_alloc_os_memory_aligned (size_t size, size_t alignment, gboolean activate)
+mono_sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean activate)
 {
 	void *ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
 	if (ptr) {
