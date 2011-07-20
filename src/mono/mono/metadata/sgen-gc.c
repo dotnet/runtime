@@ -5246,7 +5246,9 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	thread_info = info;
 #endif
 
+#if !defined(__MACH__)
 	info->stop_count = -1;
+#endif
 	info->skip = 0;
 	info->signal = 0;
 	info->doing_handshake = FALSE;
