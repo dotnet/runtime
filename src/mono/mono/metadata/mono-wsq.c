@@ -11,6 +11,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/mono-wsq.h>
 #include <mono/utils/mono-semaphore.h>
+#include <mono/utils/mono-tls.h>
 
 #define INITIAL_LENGTH	32
 #define WSQ_DEBUG(...)
@@ -25,21 +26,22 @@ struct _MonoWSQ {
 };
 
 #define NO_KEY ((guint32) -1)
-static guint32 wsq_tlskey = NO_KEY;
+static MonoNativeTlsKey wsq_tlskey;
+static gboolean wsq_tlskey_inited = FALSE;
 
 void
 mono_wsq_init ()
 {
-	wsq_tlskey = TlsAlloc ();
+	mono_native_tls_alloc (wsq_tlskey, NULL);
 }
 
 void
 mono_wsq_cleanup ()
 {
-	if (wsq_tlskey == NO_KEY)
+	if (!wsq_tlskey_inited)
 		return;
-	TlsFree (wsq_tlskey);
-	wsq_tlskey = NO_KEY;
+	mono_native_tls_free (wsq_tlskey);
+	wsq_tlskey_inited = FALSE;
 }
 
 MonoWSQ *
@@ -48,7 +50,7 @@ mono_wsq_create ()
 	MonoWSQ *wsq;
 	MonoDomain *root;
 
-	if (wsq_tlskey == NO_KEY)
+	if (!wsq_tlskey_inited)
 		return NULL;
 
 	wsq = g_new0 (MonoWSQ, 1);
@@ -57,7 +59,7 @@ mono_wsq_create ()
 	root = mono_get_root_domain ();
 	wsq->queue = mono_array_new_cached (root, mono_defaults.object_class, INITIAL_LENGTH);
 	MONO_SEM_INIT (&wsq->lock, 1);
-	if (!TlsSetValue (wsq_tlskey, wsq)) {
+	if (!mono_native_tls_set_value (wsq_tlskey, wsq)) {
 		mono_wsq_destroy (wsq);
 		wsq = NULL;
 	}
@@ -74,8 +76,8 @@ mono_wsq_destroy (MonoWSQ *wsq)
 	MONO_GC_UNREGISTER_ROOT (wsq->queue);
 	MONO_SEM_DESTROY (&wsq->lock);
 	memset (wsq, 0, sizeof (MonoWSQ));
-	if (wsq_tlskey != NO_KEY && TlsGetValue (wsq_tlskey) == wsq)
-		TlsSetValue (wsq_tlskey, NULL);
+	if (wsq_tlskey_inited && mono_native_tls_get_value (wsq_tlskey) == wsq)
+		mono_native_tls_set_value (wsq_tlskey, NULL);
 	g_free (wsq);
 }
 
@@ -95,10 +97,10 @@ mono_wsq_local_push (void *obj)
 	int count;
 	MonoWSQ *wsq;
 
-	if (obj == NULL || wsq_tlskey == NO_KEY)
+	if (obj == NULL || !wsq_tlskey_inited)
 		return FALSE;
 
-	wsq = (MonoWSQ *) TlsGetValue (wsq_tlskey);
+	wsq = (MonoWSQ *) mono_native_tls_get_value (wsq_tlskey);
 	if (wsq == NULL) {
 		WSQ_DEBUG ("local_push: no wsq\n");
 		return FALSE;
@@ -145,10 +147,10 @@ mono_wsq_local_pop (void **ptr)
 	gboolean res;
 	MonoWSQ *wsq;
 
-	if (ptr == NULL || wsq_tlskey == NO_KEY)
+	if (ptr == NULL || !wsq_tlskey_inited)
 		return FALSE;
 
-	wsq = (MonoWSQ *) TlsGetValue (wsq_tlskey);
+	wsq = (MonoWSQ *) mono_native_tls_get_value (wsq_tlskey);
 	if (wsq == NULL) {
 		WSQ_DEBUG ("local_pop: no wsq\n");
 		return FALSE;
@@ -185,10 +187,10 @@ mono_wsq_local_pop (void **ptr)
 void
 mono_wsq_try_steal (MonoWSQ *wsq, void **ptr, guint32 ms_timeout)
 {
-	if (wsq == NULL || ptr == NULL || *ptr != NULL || wsq_tlskey == NO_KEY)
+	if (wsq == NULL || ptr == NULL || *ptr != NULL || !wsq_tlskey_inited)
 		return;
 
-	if (TlsGetValue (wsq_tlskey) == wsq)
+	if (mono_native_tls_get_value (wsq_tlskey) == wsq)
 		return;
 
 	if (mono_sem_timedwait (&wsq->lock, ms_timeout, FALSE) == 0) {

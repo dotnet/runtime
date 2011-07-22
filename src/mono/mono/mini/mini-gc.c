@@ -565,7 +565,7 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 	} else {
 		tls->has_context = FALSE;
 	}
-	tls->jit_tls = TlsGetValue (mono_jit_tls_id);
+	tls->jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 }
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)

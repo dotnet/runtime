@@ -53,6 +53,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-tls.h>
 #include <mono/utils/dtrace.h>
 
 #include "mini.h"
@@ -75,7 +76,7 @@ static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 op
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 
-guint32 mono_jit_tls_id = -1;
+MonoNativeTlsKey mono_jit_tls_id;
 
 #ifdef MONO_HAVE_FAST_TLS
 MONO_FAST_TLS_DECLARE(mono_jit_tls);
@@ -2460,7 +2461,7 @@ MONO_FAST_TLS_DECLARE(mono_lmf);
 #endif
 #endif
 
-guint32
+MonoNativeTlsKey
 mono_get_jit_tls_key (void)
 {
 	return mono_jit_tls_id;
@@ -2502,7 +2503,7 @@ mono_get_lmf (void)
 #else
 	MonoJitTlsData *jit_tls;
 
-	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+	if ((jit_tls = mono_native_tls_get_value (mono_jit_tls_id)))
 		return jit_tls->lmf;
 	/*
 	 * We do not assert here because this function can be called from
@@ -2521,7 +2522,7 @@ mono_get_lmf_addr (void)
 #else
 	MonoJitTlsData *jit_tls;
 
-	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+	if ((jit_tls = mono_native_tls_get_value (mono_jit_tls_id)))
 		return &jit_tls->lmf;
 
 	/*
@@ -2534,7 +2535,7 @@ mono_get_lmf_addr (void)
 
 	mono_jit_thread_attach (NULL);
 	
-	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+	if ((jit_tls = mono_native_tls_get_value (mono_jit_tls_id)))
 		return &jit_tls->lmf;
 
 	g_assert_not_reached ();
@@ -2555,7 +2556,7 @@ mono_set_lmf (MonoLMF *lmf)
 static void
 mono_set_jit_tls (MonoJitTlsData *jit_tls)
 {
-	TlsSetValue (mono_jit_tls_id, jit_tls);
+	mono_native_tls_set_value (mono_jit_tls_id, jit_tls);
 
 #ifdef MONO_HAVE_FAST_TLS
 	MONO_FAST_TLS_SET (mono_jit_tls, jit_tls);
@@ -2588,7 +2589,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
 #else
-	if (!TlsGetValue (mono_jit_tls_id)) {
+	if (!mono_native_tls_get_value (mono_jit_tls_id)) {
 		mono_thread_attach (domain);
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
@@ -2606,7 +2607,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 static void
 mono_thread_abort (MonoObject *obj)
 {
-	/* MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id); */
+	/* MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id); */
 	
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
@@ -2634,7 +2635,7 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
 
-	jit_tls = TlsGetValue (mono_jit_tls_id);
+	jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	if (jit_tls)
 		return jit_tls;
 
@@ -5817,7 +5818,7 @@ void
 SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 {
 	MonoJitInfo *ji;
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	gpointer fault_addr = NULL;
 
 	GET_CONTEXT;
@@ -6287,7 +6288,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
-	mono_jit_tls_id = TlsAlloc ();
+	mono_native_tls_alloc (mono_jit_tls_id, NULL);
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
 
 	if (default_opt & MONO_OPT_AOT)
@@ -6696,7 +6697,7 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_cleanup (domain);
 #endif
 
-	free_jit_tls_data (TlsGetValue (mono_jit_tls_id));
+	free_jit_tls_data (mono_native_tls_get_value (mono_jit_tls_id));
 
 	mono_icall_cleanup ();
 
@@ -6737,7 +6738,7 @@ mini_cleanup (MonoDomain *domain)
 	if (mono_inject_async_exc_method)
 		mono_method_desc_free (mono_inject_async_exc_method);
 
-	TlsFree(mono_jit_tls_id);
+	mono_native_tls_free (mono_jit_tls_id);
 
 	DeleteCriticalSection (&jit_mutex);
 

@@ -7,6 +7,7 @@
 #include "mini.h"
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/utils/mono-tls.h>
 
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
@@ -181,7 +182,7 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 };
 
 static LLVMExecutionEngineRef ee;
-static guint32 current_cfg_tls_id;
+static MonoNativeTlsKey current_cfg_tls_id;
 
 static MonoLLVMModule jit_module, aot_module;
 static gboolean jit_module_inited;
@@ -4226,7 +4227,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	mono_loader_lock ();
 
 	/* Used to communicate with the callbacks */
-	TlsSetValue (current_cfg_tls_id, cfg);
+	mono_native_tls_set_value (current_cfg_tls_id, cfg);
 
 	ctx = g_new0 (EmitContext, 1);
 	ctx->cfg = cfg;
@@ -4608,7 +4609,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	g_free (ctx);
 
-	TlsSetValue (current_cfg_tls_id, NULL);
+	mono_native_tls_set_value (current_cfg_tls_id, NULL);
 
 	mono_loader_unlock ();
 }
@@ -4686,7 +4687,7 @@ alloc_cb (LLVMValueRef function, int size)
 {
 	MonoCompile *cfg;
 
-	cfg = TlsGetValue (current_cfg_tls_id);
+	cfg = mono_native_tls_get_value (current_cfg_tls_id);
 
 	if (cfg) {
 		// FIXME: dynamic
@@ -4701,7 +4702,7 @@ emitted_cb (LLVMValueRef function, void *start, void *end)
 {
 	MonoCompile *cfg;
 
-	cfg = TlsGetValue (current_cfg_tls_id);
+	cfg = mono_native_tls_get_value (current_cfg_tls_id);
 	g_assert (cfg);
 	cfg->code_len = (guint8*)end - (guint8*)start;
 }
@@ -4715,7 +4716,7 @@ exception_cb (void *data)
 	gpointer *type_info;
 	int this_reg, this_offset;
 
-	cfg = TlsGetValue (current_cfg_tls_id);
+	cfg = mono_native_tls_get_value (current_cfg_tls_id);
 	g_assert (cfg);
 
 	/*
@@ -5090,7 +5091,7 @@ add_intrinsics (LLVMModuleRef module)
 void
 mono_llvm_init (void)
 {
-	current_cfg_tls_id = TlsAlloc ();
+	mono_native_tls_alloc (current_cfg_tls_id, NULL);
 }
 
 static void

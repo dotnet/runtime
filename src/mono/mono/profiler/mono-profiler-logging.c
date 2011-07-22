@@ -16,6 +16,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/utils/mono-tls.h>
 #include <mono/io-layer/atomic.h>
 #include <string.h>
 #include <stdio.h>
@@ -777,11 +778,11 @@ make_pthread_profiler_key (void) {
 #define CURRENT_THREAD_ID() (gsize) GetCurrentThreadId ()
 
 #ifndef HAVE_KW_THREAD
-static guint32 profiler_thread_id = -1;
-#define LOOKUP_PROFILER_THREAD_DATA() ((ProfilerPerThreadData*)TlsGetValue (profiler_thread_id))
-#define SET_PROFILER_THREAD_DATA(x) TlsSetValue (profiler_thread_id, (x));
-#define ALLOCATE_PROFILER_THREAD_DATA() profiler_thread_id = TlsAlloc ()
-#define FREE_PROFILER_THREAD_DATA() TlsFree (profiler_thread_id)
+static MonoNativeTlsKey profiler_thread_id;
+#define LOOKUP_PROFILER_THREAD_DATA() ((ProfilerPerThreadData*)mono_native_tls_get_value (profiler_thread_id))
+#define SET_PROFILER_THREAD_DATA(x) mono_native_tls_set_value (profiler_thread_id, (x));
+#define ALLOCATE_PROFILER_THREAD_DATA() mono_native_tls_alloc (profiler_thread_id, NULL)
+#define FREE_PROFILER_THREAD_DATA() mono_native_tls_free (profiler_thread_id)
 #endif
 
 #define EVENT_TYPE HANDLE

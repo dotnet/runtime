@@ -43,6 +43,7 @@
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-tls.h>
 
 MonoDefaults mono_defaults;
 
@@ -65,13 +66,13 @@ static guint32 signatures_size;
 /*
  * This TLS variable contains the last type load error encountered by the loader.
  */
-guint32 loader_error_thread_id;
+MonoNativeTlsKey loader_error_thread_id;
 
 /*
  * This TLS variable holds how many times the current thread has acquired the loader 
  * lock.
  */
-guint32 loader_lock_nest_id;
+MonoNativeTlsKey loader_lock_nest_id;
 
 static void dllmap_cleanup (void);
 
@@ -84,8 +85,8 @@ mono_loader_init ()
 		InitializeCriticalSection (&loader_mutex);
 		loader_lock_inited = TRUE;
 
-		loader_error_thread_id = TlsAlloc ();
-		loader_lock_nest_id = TlsAlloc ();
+		mono_native_tls_alloc (loader_error_thread_id, NULL);
+		mono_native_tls_alloc (loader_lock_nest_id, NULL);
 
 		mono_counters_register ("Inflated signatures size",
 								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
@@ -105,8 +106,8 @@ mono_loader_cleanup (void)
 {
 	dllmap_cleanup ();
 
-	TlsFree (loader_error_thread_id);
-	TlsFree (loader_lock_nest_id);
+	mono_native_tls_free (loader_error_thread_id);
+	mono_native_tls_free (loader_lock_nest_id);
 
 	DeleteCriticalSection (&loader_mutex);
 	loader_lock_inited = FALSE;	
@@ -127,7 +128,7 @@ mono_loader_cleanup (void)
 static void
 set_loader_error (MonoLoaderError *error)
 {
-	TlsSetValue (loader_error_thread_id, error);
+	mono_native_tls_set_value (loader_error_thread_id, error);
 }
 
 /**
@@ -265,7 +266,7 @@ mono_loader_set_error_bad_image (char *msg)
 MonoLoaderError*
 mono_loader_get_last_error (void)
 {
-	return (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
+	return (MonoLoaderError*)mono_native_tls_get_value (loader_error_thread_id);
 }
 
 /**
@@ -276,15 +277,15 @@ mono_loader_get_last_error (void)
 void
 mono_loader_clear_error (void)
 {
-	MonoLoaderError *ex = (MonoLoaderError*)TlsGetValue (loader_error_thread_id);
+	MonoLoaderError *ex = (MonoLoaderError*)mono_native_tls_get_value (loader_error_thread_id);
 
 	if (ex) {
 		g_free (ex->class_name);
 		g_free (ex->assembly_name);
 		g_free (ex->msg);
 		g_free (ex);
-	
-		TlsSetValue (loader_error_thread_id, NULL);
+
+		mono_native_tls_set_value (loader_error_thread_id, NULL);
 	}
 }
 
@@ -2174,7 +2175,7 @@ mono_loader_lock (void)
 {
 	mono_locks_acquire (&loader_mutex, LoaderLock);
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
-		TlsSetValue (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (TlsGetValue (loader_lock_nest_id)) + 1));
+		mono_native_tls_set_value (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) + 1));
 	}
 }
 
@@ -2183,7 +2184,7 @@ mono_loader_unlock (void)
 {
 	mono_locks_release (&loader_mutex, LoaderLock);
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
-		TlsSetValue (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (TlsGetValue (loader_lock_nest_id)) - 1));
+		mono_native_tls_set_value (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) - 1));
 	}
 }
 
@@ -2211,7 +2212,7 @@ mono_loader_lock_is_owned_by_self (void)
 {
 	g_assert (loader_lock_track_ownership);
 
-	return GPOINTER_TO_UINT (TlsGetValue (loader_lock_nest_id)) > 0;
+	return GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) > 0;
 }
 
 /*

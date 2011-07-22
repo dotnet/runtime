@@ -301,7 +301,7 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 	if (call_chain_depth == 0) {
 		mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
 	} else {
-		MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+		MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 		int current_frame_index = 1;
 		MonoContext mono_context;
 		guchar *ips [call_chain_depth + 1];

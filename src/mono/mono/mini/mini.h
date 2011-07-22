@@ -23,6 +23,7 @@
 #include <mono/utils/mono-machine.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-tls.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 
@@ -440,7 +441,7 @@ typedef struct MonoLMF MonoLMF;
 typedef struct MonoSpillInfo MonoSpillInfo;
 typedef struct MonoTraceSpec MonoTraceSpec;
 
-extern guint32 mono_jit_tls_id;
+extern MonoNativeTlsKey mono_jit_tls_id;
 extern MonoTraceSpec *mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
@@ -1737,7 +1738,7 @@ MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
 void      mono_set_lmf                      (MonoLMF *lmf) MONO_INTERNAL;
 void      mono_jit_thread_attach            (MonoDomain *domain);
-guint32   mono_get_jit_tls_key              (void) MONO_INTERNAL;
+MonoNativeTlsKey mono_get_jit_tls_key       (void) MONO_INTERNAL;
 gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;

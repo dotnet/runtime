@@ -55,11 +55,6 @@ extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
 extern gpointer GetCurrentThread(void);
 extern guint32 ResumeThread(gpointer handle);
 extern guint32 SuspendThread(gpointer handle);
-extern guint32 mono_pthread_key_for_tls (guint32 idx);
-extern guint32 TlsAlloc(void);
-extern gboolean TlsFree(guint32 idx);
-extern gpointer TlsGetValue(guint32 idx);
-extern gboolean TlsSetValue(guint32 idx, gpointer value);
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 

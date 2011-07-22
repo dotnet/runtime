@@ -722,7 +722,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 static void
 handle_signal_exception (gpointer obj, gboolean test_only)
 {
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
 	static void (*restore_context) (MonoContext *);
 
@@ -756,7 +756,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	 * signal is disabled, and we could run arbitrary code though the debugger. So
 	 * resume into the normal stack and do most work there if possible.
 	 */
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	guint64 sp = UCONTEXT_REG_RSP (ctx);
 
 	/* Pass the ctx parameter in TLS */
@@ -891,7 +891,7 @@ mono_arch_ip_from_context (void *sigctx)
 static void
 restore_soft_guard_pages (void)
 {
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	if (jit_tls->stack_ovf_guard_base)
 		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
 }
