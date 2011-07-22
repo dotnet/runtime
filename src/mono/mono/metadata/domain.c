@@ -47,30 +47,16 @@
  */
 static MonoNativeTlsKey appdomain_thread_id;
 
-/* 
- * Avoid calling TlsSetValue () if possible, since in the io-layer, it acquires
- * a global lock (!) so it is a contention point.
- */
-#if (defined(__i386__) || defined(__x86_64__)) && !defined(HOST_WIN32)
-#define NO_TLS_SET_VALUE
-#endif
-
 #ifdef MONO_HAVE_FAST_TLS
 
 MONO_FAST_TLS_DECLARE(tls_appdomain);
 
 #define GET_APPDOMAIN() ((MonoDomain*)MONO_FAST_TLS_GET(tls_appdomain))
 
-#ifdef NO_TLS_SET_VALUE
-#define SET_APPDOMAIN(x) do { \
-	MONO_FAST_TLS_SET (tls_appdomain,x); \
-} while (FALSE)
-#else
 #define SET_APPDOMAIN(x) do { \
 	MONO_FAST_TLS_SET (tls_appdomain,x); \
 	mono_native_tls_set_value (appdomain_thread_id, x); \
 } while (FALSE)
-#endif
 
 #else /* !MONO_HAVE_FAST_TLS */
 
