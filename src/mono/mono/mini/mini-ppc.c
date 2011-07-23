@@ -5562,12 +5562,8 @@ setup_tls_access (void)
 	   mono_domain_get_tls_offset returning -1) then use keyed access. */
 	if (monodomain_key == -1) {
 		ptk = mono_domain_get_tls_key ();
-		if (ptk < 1024) {
-			ptk = mono_pthread_key_for_tls (ptk);
-			if (ptk < 1024) {
-				monodomain_key = ptk;
-			}
-		}
+		if (ptk < 1024)
+		    monodomain_key = ptk;
 	}
 
 	if ((lmf_pthread_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
@@ -5576,7 +5572,7 @@ setup_tls_access (void)
 	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
 	   mono_get_lmf_addr_tls_offset returning -1) then use keyed access. */
 	if (lmf_pthread_key == -1) {
-		ptk = mono_pthread_key_for_tls (mono_jit_tls_id);
+		ptk = mono_jit_tls_id;
 		if (ptk < 1024) {
 			/*g_print ("MonoLMF at: %d\n", ptk);*/
 			/*if (!try_offset_access (mono_get_lmf_addr (), ptk)) {
