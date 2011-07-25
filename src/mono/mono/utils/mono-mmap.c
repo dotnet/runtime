@@ -431,28 +431,6 @@ mono_mprotect (void *addr, size_t length, int flags)
 }
 #endif // HAVE_MMAP
 
-#ifndef HAVE_VALLOC_ALIGNED
-void*
-mono_valloc_aligned (size_t size, size_t alignment, int flags)
-{
-	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = mono_valloc (NULL, size + alignment, flags);
-	char *aligned;
-
-	g_assert (mem);
-
-	aligned = (char*)((gulong)(mem + (alignment - 1)) & ~(alignment - 1));
-	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((gulong)aligned & (alignment - 1)));
-
-	if (aligned > mem)
-		mono_vfree (mem, aligned - mem);
-	if (aligned + size < mem + size + alignment)
-		mono_vfree (aligned + size, (mem + size + alignment) - (aligned + size));
-
-	return aligned;
-}
-#endif
-
 #if defined(HAVE_SHM_OPEN) && !defined (DISABLE_SHARED_PERFCOUNTERS)
 
 static int
@@ -642,3 +620,25 @@ mono_shared_area_instances (void **array, int count)
 #endif // HAVE_SHM_OPEN
 
 #endif // HOST_WIN32
+
+#ifndef HAVE_VALLOC_ALIGNED
+void*
+mono_valloc_aligned (size_t size, size_t alignment, int flags)
+{
+	/* Allocate twice the memory to be able to put the block on an aligned address */
+	char *mem = mono_valloc (NULL, size + alignment, flags);
+	char *aligned;
+
+	g_assert (mem);
+
+	aligned = (char*)((gulong)(mem + (alignment - 1)) & ~(alignment - 1));
+	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((gulong)aligned & (alignment - 1)));
+
+	if (aligned > mem)
+		mono_vfree (mem, aligned - mem);
+	if (aligned + size < mem + size + alignment)
+		mono_vfree (aligned + size, (mem + size + alignment) - (aligned + size));
+
+	return aligned;
+}
+#endif

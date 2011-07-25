@@ -17,7 +17,7 @@
 #include <unistd.h>
 #endif
 
-#if (defined(HAVE_SEMAPHORE_H) || defined(USE_MACH_SEMA))
+#if (defined (HAVE_SEMAPHORE_H) || defined (USE_MACH_SEMA)) && !defined(HOST_WIN32)
 /* sem_* or semaphore_* functions in use */
 #  ifdef USE_MACH_SEMA
 #    define TIMESPEC mach_timespec_t
