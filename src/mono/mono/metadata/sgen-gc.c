@@ -5528,6 +5528,8 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
+	if (value)
+		binary_protocol_wbarrier (field_ptr, value, value->vtable);
 	if (use_cardtable) {
 		*(void**)field_ptr = value;
 		if (ptr_in_nursery (value))
@@ -5566,6 +5568,8 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
+	if (value)
+		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
 	if (use_cardtable) {
 		*(void**)slot_ptr = value;
 		if (ptr_in_nursery (value))
@@ -5604,6 +5608,18 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 		mono_gc_memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
 		return;
 	}
+
+#ifdef SGEN_BINARY_PROTOCOL
+	{
+		int i;
+		for (i = 0; i < count; ++i) {
+			gpointer dest = (gpointer*)dest_ptr + i;
+			gpointer obj = *((gpointer*)src_ptr + i);
+			if (obj)
+				binary_protocol_wbarrier (dest, obj, (gpointer)LOAD_VTABLE (obj));
+		}
+	}
+#endif
 
 	if (use_cardtable) {
 		gpointer *dest = dest_ptr;
@@ -5807,6 +5823,24 @@ void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size
 	}
 }
 
+#ifdef SGEN_BINARY_PROTOCOL
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj) do {					\
+		gpointer o = *(gpointer*)(ptr);				\
+		if ((o)) {						\
+			gpointer d = ((char*)dest) + ((char*)(ptr) - (char*)(obj)); \
+			binary_protocol_wbarrier (d, o, (gpointer) LOAD_VTABLE (o)); \
+		}							\
+	} while (0)
+
+static void
+scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword desc)
+{
+#define SCAN_OBJECT_NOVTABLE
+#include "sgen-scan-object.h"
+}
+#endif
+
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
@@ -5816,6 +5850,16 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
+#ifdef SGEN_BINARY_PROTOCOL
+	{
+		int i;
+		for (i = 0; i < count; ++i) {
+			scan_object_for_binary_protocol_copy_wbarrier ((char*)dest + i * element_size,
+					(char*)src + i * element_size - sizeof (MonoObject),
+					(mword) klass->gc_descr);
+		}
+	}
+#endif
 	if (use_cardtable) {
 #ifdef DISABLE_CRITICAL_REGION
 		LOCK_GC;
@@ -5879,6 +5923,9 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	DEBUG (6, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
 	size = mono_object_class (obj)->instance_size;
 	LOCK_GC;
+#ifdef SGEN_BINARY_PROTOCOL
+	scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
+#endif
 	/* do not copy the sync state */
 	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 			size - sizeof (MonoObject));
