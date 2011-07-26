@@ -13,6 +13,10 @@
 
 #ifndef DISABLE_SOCKETS
 
+#ifdef __APPLE__
+#define __APPLE_USE_RFC_3542
+#endif
+
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
