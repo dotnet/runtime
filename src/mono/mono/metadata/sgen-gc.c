@@ -6843,6 +6843,8 @@ mono_gc_base_init (void)
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;
 				binary_protocol_init (filename);
+				if (use_cardtable)
+					fprintf (stderr, "Warning: Cardtable write barriers will not be binary-protocolled.\n");
 #endif
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
