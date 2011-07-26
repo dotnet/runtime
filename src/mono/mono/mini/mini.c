@@ -2730,9 +2730,12 @@ mini_thread_cleanup (MonoInternalThread *thread)
 		 *
 		 * The current offender is mono_thread_manage which cleanup threads from the outside.
 		 */
-		if (thread == mono_thread_internal_current ()) {
-			mono_set_lmf (NULL);
+		if (thread == mono_thread_internal_current ())
 			mono_set_jit_tls (NULL);
+
+		/* If we attach a thread but never call into managed land, we might never get an lmf.*/
+		if (mono_get_lmf ()) {
+			mono_set_lmf (NULL);
 			mono_set_lmf_addr (NULL);
 		}
 
