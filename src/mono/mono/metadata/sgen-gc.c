@@ -5380,7 +5380,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	}
 #endif
 
-	binary_protocol_thread_unregister ((gpointer)id);
+	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));
 	DEBUG (3, fprintf (gc_debug_file, "unregister thread %p (%p)\n", p, (gpointer)mono_thread_info_get_tid (p)));
 
 #if defined(__MACH__)
@@ -7321,7 +7321,6 @@ mono_gc_get_write_barrier (void)
 	int i, nursery_check_labels [3];
 	int label_no_wb_3, label_no_wb_4, label_need_wb, label_slow_path;
 	int buffer_var, buffer_index_var, dummy_var;
-	gboolean use_managed_barrier;
 
 #ifdef HAVE_KW_THREAD
 	int stack_end_offset = -1, store_remset_buffer_offset = -1;
@@ -7351,10 +7350,7 @@ mono_gc_get_write_barrier (void)
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
 #ifdef MANAGED_WBARRIER
-	use_managed_barrier = TRUE;
-#endif
-
-	if (use_managed_barrier && use_cardtable) {
+	if (use_cardtable) {
 		emit_nursery_check (mb, nursery_check_labels);
 		/*
 		addr = sgen_cardtable + ((address >> CARD_BITS) & CARD_MASK)
@@ -7393,7 +7389,7 @@ mono_gc_get_write_barrier (void)
 				mono_mb_patch_branch (mb, nursery_check_labels [i]);
 		}		
 		mono_mb_emit_byte (mb, CEE_RET);
-	} else if (use_managed_barrier && mono_runtime_has_tls_get ()) {
+	} else if (mono_runtime_has_tls_get ()) {
 		emit_nursery_check (mb, nursery_check_labels);
 
 		// if (ptr >= stack_end) goto need_wb;
@@ -7472,12 +7468,13 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
 		mono_mb_emit_byte (mb, CEE_RET);
-	} else {
+	} else
+#endif
+	{
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
-		mono_mb_emit_byte (mb, CEE_RET);		
+		mono_mb_emit_byte (mb, CEE_RET);
 	}
-
 
 	res = mono_mb_create_method (mb, sig, 16);
 	mono_mb_free (mb);
