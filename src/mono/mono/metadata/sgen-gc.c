@@ -5807,12 +5807,12 @@ void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size
 	}
 }
 
-
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs;
-	size_t size = count * mono_class_value_size (klass, NULL);
+	size_t element_size = mono_class_value_size (klass, NULL);
+	size_t size = count * element_size;
 	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
@@ -5844,7 +5844,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 			*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 			*(rs->store_next++) = (mword)klass->gc_descr;
 			*(rs->store_next++) = (mword)count;
-			*(rs->store_next++) = (mword)size;
+			*(rs->store_next++) = (mword)element_size;
 			UNLOCK_GC;
 			return;
 		}
@@ -5857,7 +5857,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
-		*(rs->store_next++) = (mword)size;
+		*(rs->store_next++) = (mword)element_size;
 		UNLOCK_GC;
 	}
 }
