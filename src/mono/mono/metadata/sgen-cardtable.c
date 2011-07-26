@@ -377,7 +377,7 @@ find_next_card (guint8 *card_data, guint8 *end)
 }
 
 void
-sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue)
+sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
@@ -394,6 +394,7 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 		guint8 *card_data, *card_base;
 		guint8 *card_data_end;
 		char *obj_start = sgen_card_table_align_pointer (obj);
+		mword obj_size = mono_sgen_par_object_get_size (vt, (MonoObject*)obj);
 		char *obj_end = obj + obj_size;
 		size_t card_count;
 		int extra_idx = 0;
@@ -478,9 +479,9 @@ LOOP_HEAD:
 	} else {
 		HEAVY_STAT (++bloby_objects);
 		if (cards) {
-			if (sgen_card_table_is_range_marked (cards, (mword)obj, obj_size))
+			if (sgen_card_table_is_range_marked (cards, (mword)obj, block_obj_size))
 				scan_object_func (obj, queue);
-		} else if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size)) {
+		} else if (sgen_card_table_region_begin_scanning ((mword)obj, block_obj_size)) {
 			scan_object_func (obj, queue);
 		}
 	}
