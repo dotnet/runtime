@@ -800,7 +800,16 @@ mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 	}
 }
 
-#define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
+static inline guint
+mono_sgen_safe_object_get_size (MonoObject *obj)
+{
+       char *forwarded;
+
+       if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
+               obj = (MonoObject*)forwarded;
+
+       return mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
+}
 
 const char* mono_sgen_safe_name (void* obj) MONO_INTERNAL;
 
