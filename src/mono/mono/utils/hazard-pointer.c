@@ -12,30 +12,13 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/lock-free-array-queue.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef struct {
 	gpointer p;
 	MonoHazardousFreeFunc free_func;
 } DelayedFreeItem;
-
-enum {
-	DFE_STATE_FREE,
-	DFE_STATE_USED,
-	DFE_STATE_BUSY
-};
-
-typedef struct {
-	gint32 state;
-	DelayedFreeItem item;
-} DelayedFreeEntry;
-
-typedef struct _DelayedFreeChunk DelayedFreeChunk;
-struct _DelayedFreeChunk {
-	DelayedFreeChunk *next;
-	gint32 num_entries;
-	DelayedFreeEntry entries [MONO_ZERO_LEN_ARRAY];
-};
 
 /* The hazard table */
 #if MONO_SMALL_CONFIG
@@ -49,147 +32,13 @@ static MonoThreadHazardPointers * volatile hazard_table = NULL;
 
 /* The table where we keep pointers to blocks to be freed but that
    have to wait because they're guarded by a hazard pointer. */
-static volatile gint32 num_used_delayed_free_entries;
-static DelayedFreeChunk *delayed_free_chunk_list;
+static MonoLockFreeArrayQueue delayed_free_queue = MONO_LOCK_FREE_ARRAY_QUEUE_INIT (sizeof (DelayedFreeItem));
 
 /* The table for small ID assignment */
 static CRITICAL_SECTION small_id_mutex;
 static int small_id_next;
 static int highest_small_id = -1;
 static MonoBitSet *small_id_table;
-
-/*
- * Delayed free table
- *
- * The table is a linked list of arrays (chunks).  Chunks are never
- * removed from the list, only added to the end, in a lock-free manner.
- *
- * Adding or removing an entry in the table is only possible at the end.
- * To do so, the thread first has to increment or decrement
- * num_used_delayed_free_entries.  The entry thus added or removed now
- * "belongs" to that thread.  It first CASes the state to BUSY,
- * writes/reads the entry, and then sets the state to USED or FREE.
- *
- * Note that it's possible that there is contention.  Some thread will
- * always make progress, though.
- *
- * The simplest case of contention is one thread pushing and another
- * thread popping the same entry.  The state is FREE at first, so the
- * pushing thread succeeds in setting it to BUSY.  The popping thread
- * will only succeed with its CAS once the state is USED, which is the
- * case after the pushing thread has finished pushing.
- */
-
-static DelayedFreeChunk*
-alloc_delayed_free_chunk (void)
-{
-	int size = mono_pagesize ();
-	int num_entries = (size - (sizeof (DelayedFreeChunk) - sizeof (DelayedFreeEntry) * MONO_ZERO_LEN_ARRAY)) / sizeof (DelayedFreeEntry);
-	DelayedFreeChunk *chunk = mono_valloc (0, size, MONO_MMAP_READ | MONO_MMAP_WRITE);
-	chunk->num_entries = num_entries;
-	return chunk;
-}
-
-static void
-free_delayed_free_chunk (DelayedFreeChunk *chunk)
-{
-	mono_vfree (chunk, mono_pagesize ());
-}
-
-static DelayedFreeEntry*
-get_delayed_free_entry (int index)
-{
-	DelayedFreeChunk *chunk;
-
-	g_assert (index >= 0);
-
-	if (!delayed_free_chunk_list) {
-		chunk = alloc_delayed_free_chunk ();
-		mono_memory_write_barrier ();
-		if (InterlockedCompareExchangePointer ((volatile gpointer *)&delayed_free_chunk_list, chunk, NULL) != NULL)
-			free_delayed_free_chunk (chunk);
-	}
-
-	chunk = delayed_free_chunk_list;
-	g_assert (chunk);
-
-	while (index >= chunk->num_entries) {
-		DelayedFreeChunk *next = chunk->next;
-		if (!next) {
-			next = alloc_delayed_free_chunk ();
-			mono_memory_write_barrier ();
-			if (InterlockedCompareExchangePointer ((volatile gpointer *) &chunk->next, next, NULL) != NULL) {
-				free_delayed_free_chunk (next);
-				next = chunk->next;
-				g_assert (next);
-			}
-		}
-		index -= chunk->num_entries;
-		chunk = next;
-	}
-
-	return &chunk->entries [index];
-}
-
-static void
-delayed_free_push (DelayedFreeItem item)
-{
-	int index, num_used;
-	DelayedFreeEntry *entry;
-
-	do {
-		index = InterlockedIncrement (&num_used_delayed_free_entries) - 1;
-		entry = get_delayed_free_entry (index);
-	} while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_FREE) != DFE_STATE_FREE);
-
-	mono_memory_write_barrier ();
-
-	entry->item = item;
-
-	mono_memory_write_barrier ();
-
-	entry->state = DFE_STATE_USED;
-
-	mono_memory_barrier ();
-
-	do {
-		num_used = num_used_delayed_free_entries;
-		if (num_used > index)
-			break;
-	} while (InterlockedCompareExchange (&num_used_delayed_free_entries, index + 1, num_used) != num_used);
-
-	mono_memory_write_barrier ();
-}
-
-static gboolean
-delayed_free_pop (DelayedFreeItem *item)
-{
-	int index;
-	DelayedFreeEntry *entry;
-
-	do {
-		do {
-			index = num_used_delayed_free_entries;
-			if (index == 0)
-				return FALSE;
-		} while (InterlockedCompareExchange (&num_used_delayed_free_entries, index - 1, index) != index);
-
-		entry = get_delayed_free_entry (index - 1);
-	} while (InterlockedCompareExchange (&entry->state, DFE_STATE_BUSY, DFE_STATE_USED) != DFE_STATE_USED);
-
-	/* Reading the item must happen before CASing the state. */
-	mono_memory_barrier ();
-
-	*item = entry->item;
-
-	mono_memory_barrier ();
-
-	entry->state = DFE_STATE_FREE;
-
-	mono_memory_write_barrier ();
-
-	return TRUE;
-}
 
 /*
  * Allocate a small thread id.
@@ -348,13 +197,13 @@ static gboolean
 try_free_delayed_free_item (void)
 {
 	DelayedFreeItem item;
-	gboolean popped = delayed_free_pop (&item);
+	gboolean popped = mono_lock_free_array_queue_pop (&delayed_free_queue, &item);
 
 	if (!popped)
 		return FALSE;
 
 	if (is_pointer_hazardous (item.p)) {
-		delayed_free_push (item);
+		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 		return FALSE;
 	}
 
@@ -380,7 +229,7 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 
 		++mono_stats.hazardous_pointer_count;
 
-		delayed_free_push (item);
+		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 	} else {
 		free_func (p);
 	}
@@ -402,17 +251,9 @@ mono_thread_smr_init (void)
 void
 mono_thread_smr_cleanup (void)
 {
-	DelayedFreeChunk *chunk;
-
 	mono_thread_hazardous_try_free_all ();
 
-	chunk = delayed_free_chunk_list;
-	delayed_free_chunk_list = NULL;
-	while (chunk) {
-		DelayedFreeChunk *next = chunk->next;
-		free_delayed_free_chunk (chunk);
-		chunk = next;
-	}
+	mono_lock_free_array_queue_cleanup (&delayed_free_queue);
 
 	/*FIXME, can't we release the small id table here?*/
 }

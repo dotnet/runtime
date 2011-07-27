@@ -88,6 +88,8 @@ monoutils_sources = \
 	lock-free-queue.h	\
 	lock-free-alloc.c	\
 	lock-free-alloc.h	\
+	lock-free-array-queue.c	\
+	lock-free-array-queue.h	\
 	mono-linked-list-set.c	\
 	mono-linked-list-set.h	\
 	mono-threads.c	\
