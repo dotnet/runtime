@@ -6750,6 +6750,11 @@ mono_gc_base_init (void)
 						exit (1);
 					}
 
+					if (val < SGEN_MAX_NURSERY_WASTE) {
+						fprintf (stderr, "The nursery size must be at least %d bytes.\n", SGEN_MAX_NURSERY_WASTE);
+						exit (1);
+					}
+
 					default_nursery_bits = 0;
 					while (1 << (++ default_nursery_bits) != default_nursery_size)
 						;
