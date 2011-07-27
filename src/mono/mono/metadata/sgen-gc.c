@@ -5431,12 +5431,6 @@ sgen_thread_attach (SgenThreadInfo *info)
 	
 	if (gc_callbacks.thread_attach_func && !info->runtime_data)
 		info->runtime_data = gc_callbacks.thread_attach_func ();
-
-	/* Need a better place to initialize this */
-	if (!array_fill_vtable && mono_get_root_domain ()) {
-		array_fill_vtable = mono_class_vtable (mono_get_root_domain (), mono_array_class_get (mono_defaults.byte_class, 1));
-	}
-	
 }
 gboolean
 mono_gc_register_thread (void *baseptr)
@@ -7600,6 +7594,24 @@ mono_sgen_get_nursery_clear_policy (void)
 MonoVTable*
 mono_sgen_get_array_fill_vtable (void)
 {
+	if (!array_fill_vtable) {
+		static MonoClass klass;
+		static MonoVTable vtable;
+
+		MonoDomain *domain = mono_get_root_domain ();
+		g_assert (domain);
+
+		klass.element_class = mono_defaults.byte_class;
+		klass.rank = 1;
+		klass.instance_size = sizeof (MonoArray);
+		klass.sizes.element_size = 1;
+
+		vtable.klass = &klass;
+		vtable.gc_descr = NULL;
+		vtable.rank = 1;
+
+		array_fill_vtable = &vtable;
+	}
 	return array_fill_vtable;
 }
 
