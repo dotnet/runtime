@@ -1276,7 +1276,12 @@ mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
 	gboolean is_suffix = FALSE;
 	char suffix;
 
-	switch (str [len - 1]) {
+	if (!len)
+		return FALSE;
+
+	suffix = str [len - 1];
+
+	switch (suffix) {
 		case 'g':
 		case 'G':
 			shift += 10;
@@ -1287,10 +1292,11 @@ mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
 		case 'K':
 			shift += 10;
 			is_suffix = TRUE;
-			suffix = str [len - 1];
 			break;
 		default:
-			return FALSE;
+			if (!isdigit (suffix))
+				return FALSE;
+			break;
 	}
 
 	errno = 0;
