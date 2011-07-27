@@ -2040,9 +2040,6 @@ init_user_copy_or_mark_key (void)
 static void
 set_user_copy_or_mark_data (UserCopyOrMarkData *data)
 {
-	static pthread_once_t init_control = PTHREAD_ONCE_INIT;
-	pthread_once (&init_control, init_user_copy_or_mark_key);
-
 	pthread_setspecific (user_copy_or_mark_key, data);
 }
 
@@ -6589,6 +6586,8 @@ mono_gc_base_init (void)
 	LOCK_INIT (interruption_mutex);
 	LOCK_INIT (global_remset_mutex);
 	LOCK_INIT (pin_queue_mutex);
+
+	init_user_copy_or_mark_key ();
 
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
 		opts = g_strsplit (env, ",", -1);
