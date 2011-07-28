@@ -22,34 +22,23 @@
 
 #include <mono/utils/lock-free-array-queue.h>
 
-enum {
-	STATE_FREE,
-	STATE_USED,
-	STATE_BUSY
-};
-
-typedef struct {
-	gint32 state;
-	gpointer data [MONO_ZERO_LEN_ARRAY];
-} Entry;
-
-struct _MonoLockFreeArrayQueueChunk {
-	MonoLockFreeArrayQueueChunk *next;
+struct _MonoLockFreeArrayChunk {
+	MonoLockFreeArrayChunk *next;
 	gint32 num_entries;
 	char entries [MONO_ZERO_LEN_ARRAY];
 };
 
-typedef MonoLockFreeArrayQueueChunk Chunk;
-typedef MonoLockFreeArrayQueue Queue;
+typedef MonoLockFreeArrayChunk Chunk;
 
-#define ENTRY_SIZE(q)	(sizeof (Entry) - sizeof (gpointer) * MONO_ZERO_LEN_ARRAY + (q)->entry_size)
+#define CHUNK_NTH(arr,chunk,index)	((chunk)->entries + (index) * (arr)->entry_size)
 
 static Chunk*
-alloc_chunk (Queue *q)
+alloc_chunk (MonoLockFreeArray *arr)
 {
 	int size = mono_pagesize ();
-	int num_entries = (size - (sizeof (Chunk) - ENTRY_SIZE (q) * MONO_ZERO_LEN_ARRAY)) / ENTRY_SIZE (q);
+	int num_entries = (size - (sizeof (Chunk) - arr->entry_size * MONO_ZERO_LEN_ARRAY)) / arr->entry_size;
 	Chunk *chunk = mono_valloc (0, size, MONO_MMAP_READ | MONO_MMAP_WRITE);
+	g_assert (chunk);
 	chunk->num_entries = num_entries;
 	return chunk;
 }
@@ -60,27 +49,27 @@ free_chunk (Chunk *chunk)
 	mono_vfree (chunk, mono_pagesize ());
 }
 
-static Entry*
-get_entry (Queue *q, int index)
+gpointer
+mono_lock_free_array_nth (MonoLockFreeArray *arr, int index)
 {
 	Chunk *chunk;
 
 	g_assert (index >= 0);
 
-	if (!q->chunk_list) {
-		chunk = alloc_chunk (q);
+	if (!arr->chunk_list) {
+		chunk = alloc_chunk (arr);
 		mono_memory_write_barrier ();
-		if (InterlockedCompareExchangePointer ((volatile gpointer *)&q->chunk_list, chunk, NULL) != NULL)
+		if (InterlockedCompareExchangePointer ((volatile gpointer *)&arr->chunk_list, chunk, NULL) != NULL)
 			free_chunk (chunk);
 	}
 
-	chunk = q->chunk_list;
+	chunk = arr->chunk_list;
 	g_assert (chunk);
 
 	while (index >= chunk->num_entries) {
 		Chunk *next = chunk->next;
 		if (!next) {
-			next = alloc_chunk (q);
+			next = alloc_chunk (arr);
 			mono_memory_write_barrier ();
 			if (InterlockedCompareExchangePointer ((volatile gpointer *) &chunk->next, next, NULL) != NULL) {
 				free_chunk (next);
@@ -92,8 +81,53 @@ get_entry (Queue *q, int index)
 		chunk = next;
 	}
 
-	return (Entry*) (chunk->entries + index * ENTRY_SIZE (q));
+	return CHUNK_NTH (arr, chunk, index);
 }
+
+gpointer
+mono_lock_free_array_iterate (MonoLockFreeArray *arr, MonoLockFreeArrayIterateFunc func, gpointer user_data)
+{
+	Chunk *chunk;
+	for (chunk = arr->chunk_list; chunk; chunk = chunk->next) {
+		int i;
+		for (i = 0; i < chunk->num_entries; ++i) {
+			gpointer result = func (i, CHUNK_NTH (arr, chunk, i), user_data);
+			if (result)
+				return result;
+		}
+	}
+	return NULL;
+}
+
+void
+mono_lock_free_array_cleanup (MonoLockFreeArray *arr)
+{
+	Chunk *chunk;
+
+	chunk = arr->chunk_list;
+	arr->chunk_list = NULL;
+	while (chunk) {
+		Chunk *next = chunk->next;
+		free_chunk (chunk);
+		chunk = next;
+	}
+}
+
+enum {
+	STATE_FREE,
+	STATE_USED,
+	STATE_BUSY
+};
+
+typedef struct {
+	gint32 state;
+	gpointer data [MONO_ZERO_LEN_ARRAY];
+} Entry;
+
+typedef MonoLockFreeArrayQueue Queue;
+
+/* The queue's entry size, calculated from the array's. */
+#define ENTRY_SIZE(q)	((q)->array.entry_size - sizeof (gpointer))
 
 void
 mono_lock_free_array_queue_push (MonoLockFreeArrayQueue *q, gpointer entry_data_ptr)
@@ -103,12 +137,12 @@ mono_lock_free_array_queue_push (MonoLockFreeArrayQueue *q, gpointer entry_data_
 
 	do {
 		index = InterlockedIncrement (&q->num_used_entries) - 1;
-		entry = get_entry (q, index);
+		entry = mono_lock_free_array_nth (&q->array, index);
 	} while (InterlockedCompareExchange (&entry->state, STATE_BUSY, STATE_FREE) != STATE_FREE);
 
 	mono_memory_write_barrier ();
 
-	memcpy (entry->data, entry_data_ptr, q->entry_size);
+	memcpy (entry->data, entry_data_ptr, ENTRY_SIZE (q));
 
 	mono_memory_write_barrier ();
 
@@ -138,13 +172,13 @@ mono_lock_free_array_queue_pop (MonoLockFreeArrayQueue *q, gpointer entry_data_p
 				return FALSE;
 		} while (InterlockedCompareExchange (&q->num_used_entries, index - 1, index) != index);
 
-		entry = get_entry (q, index - 1);
+		entry = mono_lock_free_array_nth (&q->array, index - 1);
 	} while (InterlockedCompareExchange (&entry->state, STATE_BUSY, STATE_USED) != STATE_USED);
 
 	/* Reading the item must happen before CASing the state. */
 	mono_memory_barrier ();
 
-	memcpy (entry_data_ptr, entry->data, q->entry_size);
+	memcpy (entry_data_ptr, entry->data, ENTRY_SIZE (q));
 
 	mono_memory_barrier ();
 
@@ -158,14 +192,6 @@ mono_lock_free_array_queue_pop (MonoLockFreeArrayQueue *q, gpointer entry_data_p
 void
 mono_lock_free_array_queue_cleanup (MonoLockFreeArrayQueue *q)
 {
-	Chunk *chunk;
-
-	chunk = q->chunk_list;
-	q->chunk_list = NULL;
-	while (chunk) {
-		Chunk *next = chunk->next;
-		free_chunk (chunk);
-		chunk = next;
-	}
+	mono_lock_free_array_cleanup (&q->array);
 	q->num_used_entries = 0;
 }
