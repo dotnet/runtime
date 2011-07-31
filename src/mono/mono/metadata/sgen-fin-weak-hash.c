@@ -4,10 +4,10 @@
  *
  * Copyright 2011 Xamarin Inc.
  */
-static FinalizeEntryHashTable minor_finalizable_hash;
-static FinalizeEntryHashTable major_finalizable_hash;
+static SgenHashTable minor_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (SgenHashFunc)mono_object_hash);
+static SgenHashTable major_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (SgenHashFunc)mono_object_hash);
 
-static FinalizeEntryHashTable*
+static SgenHashTable*
 get_finalize_entry_hash_table (int generation)
 {
 	switch (generation) {
@@ -19,159 +19,67 @@ get_finalize_entry_hash_table (int generation)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-rehash_fin_table (FinalizeEntryHashTable *hash_table)
-{
-	FinalizeEntry **finalizable_hash = hash_table->table;
-	mword finalizable_hash_size = hash_table->size;
-	int i;
-	unsigned int hash;
-	FinalizeEntry **new_hash;
-	FinalizeEntry *entry, *next;
-	int new_size = g_spaced_primes_closest (hash_table->num_registered);
-
-	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		for (entry = finalizable_hash [i]; entry; entry = next) {
-			hash = mono_object_hash (entry->object) % new_size;
-			next = entry->next;
-			entry->next = new_hash [hash];
-			new_hash [hash] = entry;
-		}
-	}
-	mono_sgen_free_internal_dynamic (finalizable_hash, finalizable_hash_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
-	hash_table->table = new_hash;
-	hash_table->size = new_size;
-}
-
-/* LOCKING: requires that the GC lock is held */
-static void
-rehash_fin_table_if_necessary (FinalizeEntryHashTable *hash_table)
-{
-	if (hash_table->num_registered >= hash_table->size * 2)
-		rehash_fin_table (hash_table);
-}
-
-/* LOCKING: requires that the GC lock is held */
-static void
 finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
 {
-	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
-	FinalizeEntry *entry, *prev;
-	int i;
-	FinalizeEntry **finalizable_hash = hash_table->table;
-	mword finalizable_hash_size = hash_table->size;
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
+	MonoObject *object;
+	gpointer dummy;
 
 	if (no_finalize)
 		return;
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		prev = NULL;
-		for (entry = finalizable_hash [i]; entry;) {
-			if ((char*)entry->object >= start && (char*)entry->object < end && !major_collector.is_object_live (entry->object)) {
-				gboolean is_fin_ready = object_is_fin_ready (entry->object);
-				char *copy = entry->object;
-				copy_func ((void**)&copy, queue);
-				if (is_fin_ready) {
-					char *from;
-					FinalizeEntry *next;
-					/* Make it survive */
-					from = entry->object;
-					entry->object = copy;
-					/* remove and put in fin_ready_list */
-					if (prev)
-						prev->next = entry->next;
-					else
-						finalizable_hash [i] = entry->next;
-					next = entry->next;
-					num_ready_finalizers++;
-					hash_table->num_registered--;
-					queue_finalization_entry (entry);
-					bridge_register_finalized_object ((MonoObject*)copy);
-					DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", entry->object, safe_name (entry->object), from, num_ready_finalizers, hash_table->num_registered));
-					entry = next;
+	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+		if ((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)) {
+			gboolean is_fin_ready = object_is_fin_ready (object);
+			MonoObject *copy = object;
+			copy_func ((void**)&copy, queue);
+			if (is_fin_ready) {
+				/* remove and put in fin_ready_list */
+				SGEN_HASH_TABLE_FOREACH_REMOVE;
+				num_ready_finalizers++;
+				queue_finalization_entry (copy);
+				bridge_register_finalized_object (copy);
+				/* Make it survive */
+				DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", copy, safe_name (copy), object, num_ready_finalizers, mono_sgen_hash_table_num_entries (hash_table)));
+				continue;
+			} else {
+				if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
+					/* remove from the list */
+					SGEN_HASH_TABLE_FOREACH_REMOVE;
+
+					/* insert it into the major hash */
+					mono_sgen_hash_table_replace (&major_finalizable_hash, copy, NULL);
+
+					DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), object));
+
 					continue;
 				} else {
-					char *from = entry->object;
-					if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
-						FinalizeEntry *next = entry->next;
-						unsigned int major_hash;
-						/* remove from the list */
-						if (prev)
-							prev->next = entry->next;
-						else
-							finalizable_hash [i] = entry->next;
-						hash_table->num_registered--;
-
-						entry->object = copy;
-
-						/* insert it into the major hash */
-						rehash_fin_table_if_necessary (&major_finalizable_hash);
-						major_hash = mono_object_hash ((MonoObject*) copy) %
-							major_finalizable_hash.size;
-						entry->next = major_finalizable_hash.table [major_hash];
-						major_finalizable_hash.table [major_hash] = entry;
-						major_finalizable_hash.num_registered++;
-
-						DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), from));
-
-						entry = next;
-						continue;
-					} else {
-						/* update pointer */
-						DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", entry->object, safe_name (entry->object), from));
-						entry->object = copy;
-					}
+					/* update pointer */
+					DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", copy, safe_name (copy), object));
+					SGEN_HASH_TABLE_FOREACH_SET_KEY (copy);
 				}
 			}
-			prev = entry;
-			entry = entry->next;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 /* LOCKING: requires that the GC lock is held */
 static void
 register_for_finalization (MonoObject *obj, void *user_data, int generation)
 {
-	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
-	FinalizeEntry **finalizable_hash;
-	mword finalizable_hash_size;
-	FinalizeEntry *entry, *prev;
-	unsigned int hash;
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
+
 	if (no_finalize)
 		return;
+
 	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
-	hash = mono_object_hash (obj);
-	rehash_fin_table_if_necessary (hash_table);
-	finalizable_hash = hash_table->table;
-	finalizable_hash_size = hash_table->size;
-	hash %= finalizable_hash_size;
-	prev = NULL;
-	for (entry = finalizable_hash [hash]; entry; entry = entry->next) {
-		if (entry->object == obj) {
-			if (!user_data) {
-				/* remove from the list */
-				if (prev)
-					prev->next = entry->next;
-				else
-					finalizable_hash [hash] = entry->next;
-				hash_table->num_registered--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
-				mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
-			}
-			return;
-		}
-		prev = entry;
+
+	if (user_data) {
+		if (mono_sgen_hash_table_replace (hash_table, obj, NULL))
+			DEBUG (5, fprintf (gc_debug_file, "Added finalizer for object: %p (%s) (%d) to %s table\n", obj, obj->vtable->klass->name, hash_table->num_entries, generation_name (generation)));
+	} else {
+		if (mono_sgen_hash_table_remove (hash_table, obj))
+			DEBUG (5, fprintf (gc_debug_file, "Removed finalizer for object: %p (%s) (%d)\n", obj, obj->vtable->klass->name, hash_table->num_entries));
 	}
-	if (!user_data) {
-		/* request to deregister, but already out of the list */
-		return;
-	}
-	entry = mono_sgen_alloc_internal (INTERNAL_MEM_FINALIZE_ENTRY);
-	entry->object = obj;
-	entry->next = finalizable_hash [hash];
-	finalizable_hash [hash] = entry;
-	hash_table->num_registered++;
-	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d) to %s table\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered, generation_name (generation)));
 }
 
 #define STAGE_ENTRY_FREE	0
@@ -285,39 +193,26 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 /* LOCKING: requires that the GC lock is held */
 static int
 finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
-	FinalizeEntryHashTable *hash_table)
+	SgenHashTable *hash_table)
 {
-	FinalizeEntry **finalizable_hash = hash_table->table;
-	mword finalizable_hash_size = hash_table->size;
-	FinalizeEntry *entry, *prev;
-	int i, count;
+	MonoObject *object;
+	gpointer dummy;
+	int count;
 
 	if (no_finalize || !out_size || !out_array)
 		return 0;
 	count = 0;
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		prev = NULL;
-		for (entry = finalizable_hash [i]; entry;) {
-			if (mono_object_domain (entry->object) == domain) {
-				FinalizeEntry *next;
-				/* remove and put in out_array */
-				if (prev)
-					prev->next = entry->next;
-				else
-					finalizable_hash [i] = entry->next;
-				next = entry->next;
-				hash_table->num_registered--;
-				out_array [count ++] = entry->object;
-				DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", entry->object, safe_name (entry->object), num_ready_finalizers, hash_table->num_registered));
-				entry = next;
-				if (count == out_size)
-					return count;
-				continue;
-			}
-			prev = entry;
-			entry = entry->next;
+	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+		if (mono_object_domain (object) == domain) {
+			/* remove and put in out_array */
+			SGEN_HASH_TABLE_FOREACH_REMOVE;
+			out_array [count ++] = object;
+			DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", object, safe_name (object), num_ready_finalizers, mono_sgen_hash_table_num_entries (hash_table)));
+			if (count == out_size)
+				return count;
+			continue;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 	return count;
 }
 

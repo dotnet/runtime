@@ -505,17 +505,10 @@ static LOCK_DECLARE (pin_queue_mutex);
 #define LOCK_PIN_QUEUE pthread_mutex_lock (&pin_queue_mutex)
 #define UNLOCK_PIN_QUEUE pthread_mutex_unlock (&pin_queue_mutex)
 
-typedef struct _FinalizeEntry FinalizeEntry;
-struct _FinalizeEntry {
-	FinalizeEntry *next;
+typedef struct _FinalizeReadyEntry FinalizeReadyEntry;
+struct _FinalizeReadyEntry {
+	FinalizeReadyEntry *next;
 	void *object;
-};
-
-typedef struct _FinalizeEntryHashTable FinalizeEntryHashTable;
-struct _FinalizeEntryHashTable {
-	FinalizeEntry **table;
-	mword size;
-	int num_registered;
 };
 
 typedef struct _DisappearingLink DisappearingLink;
@@ -557,8 +550,8 @@ int current_collection_generation = -1;
 #define DISLINK_TRACK(d)	((~(gulong)(*(d)->link)) & 1)
 
 /* objects that are ready to be finalized */
-static FinalizeEntry *fin_ready_list = NULL;
-static FinalizeEntry *critical_fin_list = NULL;
+static FinalizeReadyEntry *fin_ready_list = NULL;
+static FinalizeReadyEntry *critical_fin_list = NULL;
 
 static EphemeronLinkNode *ephemeron_list;
 
@@ -793,7 +786,7 @@ static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 static void scan_from_global_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
-static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue);
+static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
 static void report_finalizer_roots (void);
 static void report_registered_roots (void);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
@@ -2254,10 +2247,10 @@ mono_gc_get_logfile (void)
 }
 
 static void
-report_finalizer_roots_list (FinalizeEntry *list)
+report_finalizer_roots_list (FinalizeReadyEntry *list)
 {
 	GCRootReport report;
-	FinalizeEntry *fin;
+	FinalizeReadyEntry *fin;
 
 	report.count = 0;
 	for (fin = list; fin; fin = fin->next) {
@@ -2354,9 +2347,9 @@ report_registered_roots (void)
 }
 
 static void
-scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue)
+scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue)
 {
-	FinalizeEntry *fin;
+	FinalizeReadyEntry *fin;
 
 	for (fin = list; fin; fin = fin->next) {
 		if (!fin->object)
@@ -3227,7 +3220,7 @@ collect_nursery (size_t requested_size)
 
 typedef struct
 {
-	FinalizeEntry *list;
+	FinalizeReadyEntry *list;
 } ScanFinalizerEntriesJobData;
 
 static void
@@ -4105,23 +4098,23 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 #define object_is_fin_ready(obj) (!object_is_pinned (obj) && !object_is_forwarded (obj))
 
 static gboolean
-is_critical_finalizer (FinalizeEntry *entry)
+has_critical_finalizer (MonoObject *obj)
 {
-	MonoObject *obj;
 	MonoClass *class;
 
 	if (!mono_defaults.critical_finalizer_object)
 		return FALSE;
 
-	obj = entry->object;
 	class = ((MonoVTable*)LOAD_VTABLE (obj))->klass;
 
 	return mono_class_has_parent (class, mono_defaults.critical_finalizer_object);
 }
 
 static void
-queue_finalization_entry (FinalizeEntry *entry) {
-	if (is_critical_finalizer (entry)) {
+queue_finalization_entry (MonoObject *obj) {
+	FinalizeReadyEntry *entry = mono_sgen_alloc_internal (INTERNAL_MEM_FINALIZE_READY_ENTRY);
+	entry->object = obj;
+	if (has_critical_finalizer (obj)) {
 		entry->next = critical_fin_list;
 		critical_fin_list = entry;
 	} else {
@@ -4313,7 +4306,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 int
 mono_gc_invoke_finalizers (void)
 {
-	FinalizeEntry *entry = NULL;
+	FinalizeReadyEntry *entry = NULL;
 	gboolean entry_is_critical = FALSE;
 	int count = 0;
 	void *obj;
@@ -4322,7 +4315,7 @@ mono_gc_invoke_finalizers (void)
 		LOCK_GC;
 
 		if (entry) {
-			FinalizeEntry **list = entry_is_critical ? &critical_fin_list : &fin_ready_list;
+			FinalizeReadyEntry **list = entry_is_critical ? &critical_fin_list : &fin_ready_list;
 
 			/* We have finalized entry in the last
 			   interation, now we need to remove it from
@@ -4330,12 +4323,12 @@ mono_gc_invoke_finalizers (void)
 			if (*list == entry)
 				*list = entry->next;
 			else {
-				FinalizeEntry *e = *list;
+				FinalizeReadyEntry *e = *list;
 				while (e->next != entry)
 					e = e->next;
 				e->next = entry->next;
 			}
-			mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
+			mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_READY_ENTRY);
 			entry = NULL;
 		}
 
@@ -6614,7 +6607,7 @@ mono_gc_base_init (void)
 	mono_sgen_init_nursery_allocator ();
 
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_ENTRY, sizeof (FinalizeEntry));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_READY_ENTRY, sizeof (FinalizeReadyEntry));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
