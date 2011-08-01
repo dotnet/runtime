@@ -279,6 +279,10 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_NOMAP32BIT
 
+#elif defined (__DragonFly__)
+
+#define MONO_ARCH_NOMAP32BIT
+
 #elif defined (__FreeBSD__)
 
 #define REG_RAX 7
