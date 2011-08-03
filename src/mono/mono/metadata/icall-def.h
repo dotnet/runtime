@@ -177,10 +177,10 @@ ICALL(DEBUGR_3, "Log", ves_icall_System_Diagnostics_Debugger_Log)
 ICALL_TYPE(TRACEL, "System.Diagnostics.DefaultTraceListener", TRACEL_1)
 ICALL(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString)
 
-#ifndef DISABLE_PROCESS_HANDLING
 ICALL_TYPE(FILEV, "System.Diagnostics.FileVersionInfo", FILEV_1)
 ICALL(FILEV_1, "GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal)
 
+#ifndef DISABLE_PROCESS_HANDLING
 ICALL_TYPE(PERFCTR, "System.Diagnostics.PerformanceCounter", PERFCTR_1)
 ICALL(PERFCTR_1, "FreeData", mono_perfcounter_free_data)
 ICALL(PERFCTR_2, "GetImpl", mono_perfcounter_get_impl)
