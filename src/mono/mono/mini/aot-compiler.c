@@ -1490,7 +1490,9 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 
 	/* No match */
 	arm_patch (labels [3], code);
-	ARM_DBRK (code);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 4);
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
+	ARM_POP (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_PC));
 
 	/* Fixup offset */
 	code2 = labels [0];
