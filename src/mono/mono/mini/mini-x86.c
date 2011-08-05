@@ -1822,8 +1822,10 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 	This is required for code patching to be safe on SMP machines.
 	*/
 	pad_size = (guint32)(code + 1 - cfg->native_code) & 0x3;
+#ifndef __native_client_codegen__
 	if (needs_paddings && pad_size)
 		x86_padding (code, 4 - pad_size);
+#endif
 
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 	x86_call_code (code, 0);
