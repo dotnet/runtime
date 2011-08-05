@@ -98,8 +98,8 @@ case "$host" in
 			if test "x$host" == "x$build"; then
 				AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 			fi
-			CC="gcc -mno-cygwin -g"
-			CXX="g++ -mno-cygwin -g"
+			CC="i686-pc-mingw32-gcc -mno-cygwin -g"
+			CXX="i686-pc-mingw32-g++ -mno-cygwin -g"
 			# So libgc configure gets -mno-cygwin
 			export CC
 			export CXX
