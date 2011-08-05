@@ -25,7 +25,7 @@
  * MONO_CONTEXT_GET_CURRENT captures the current context as close as possible. One reg might be clobbered
  *  to hold the address of the target MonoContext. It will be a caller save one, so should not be a problem.
  */
-#if defined(__i386__)
+#if (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
@@ -125,7 +125,7 @@ typedef struct {
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 #endif
 
-#elif defined(__x86_64__) /* defined(__i386__) */
+#elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
 
 
 #if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
@@ -162,6 +162,31 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
 
+#if defined(__native_client__)
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"movq $0x0,  %%nacl:0x00(%%r15, %0, 1)\n"	\
+		"movq %%rbx, %%nacl:0x08(%%r15, %0, 1)\n"	\
+		"movq %%rcx, %%nacl:0x10(%%r15, %0, 1)\n"	\
+		"movq %%rdx, %%nacl:0x18(%%r15, %0, 1)\n"	\
+		"movq %%rbp, %%nacl:0x20(%%r15, %0, 1)\n"	\
+		"movq %%rsp, %%nacl:0x28(%%r15, %0, 1)\n"	\
+		"movq %%rsi, %%nacl:0x30(%%r15, %0, 1)\n"	\
+		"movq %%rdi, %%nacl:0x38(%%r15, %0, 1)\n"	\
+		"movq %%r8,  %%nacl:0x40(%%r15, %0, 1)\n"	\
+		"movq %%r9,  %%nacl:0x48(%%r15, %0, 1)\n"	\
+		"movq %%r10, %%nacl:0x50(%%r15, %0, 1)\n"	\
+		"movq %%r11, %%nacl:0x58(%%r15, %0, 1)\n"	\
+		"movq %%r12, %%nacl:0x60(%%r15, %0, 1)\n"	\
+		"movq %%r13, %%nacl:0x68(%%r15, %0, 1)\n"	\
+		"movq %%r14, %%nacl:0x70(%%r15, %0, 1)\n"	\
+		"movq %%r15, %%nacl:0x78(%%r15, %0, 1)\n"	\
+		"leaq (%%rip), %%rdx\n"	\
+		"movq %%rdx, %%nacl:0x80(%%r15, %0, 1)\n"	\
+		: 	\
+		: "a" ((int64_t)&(ctx))	\
+		: "rdx", "memory")
+#else
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
 		"movq $0x0,  0x00(%0)\n"	\
@@ -185,6 +210,7 @@ typedef struct {
 		: 	\
 		: "a" (&(ctx))	\
 		: "rdx", "memory")
+#endif
 
 #if !defined(HOST_WIN32)
 #define MONO_ARCH_HAS_MONO_CONTEXT 1

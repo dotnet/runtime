@@ -2533,7 +2533,7 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	if (sigctx)
 		mono_arch_sigctx_to_monoctx (sigctx, &ctx->ctx);
 	else
-#if MONO_ARCH_HAS_MONO_CONTEXT
+#if MONO_ARCH_HAS_MONO_CONTEXT && !defined(MONO_CROSS_COMPILE)
 		MONO_CONTEXT_GET_CURRENT (ctx->ctx);
 #else
 		g_error ("Use a null sigctx requires a working mono-context");

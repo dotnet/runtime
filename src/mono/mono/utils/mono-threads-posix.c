@@ -17,7 +17,8 @@
 
 #include <errno.h>
 
-#if defined(_POSIX_VERSION)
+#if defined(_POSIX_VERSION) || defined(__native_client__)
+#include <signal.h>
 
 typedef struct {
 	void *(*start_routine)(void*);
@@ -74,6 +75,7 @@ mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, 
 
 #if !defined (__MACH__)
 
+#if !defined(__native_client__)
 static void
 suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 {
@@ -104,10 +106,12 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 	MONO_SEM_POST (&current->finish_resume_semaphore);
 }
+#endif
 
 static void
 mono_posix_add_signal_handler (int signo, gpointer handler)
 {
+#if !defined(__native_client__)
 	/*FIXME, move the code from mini to utils and do the right thing!*/
 	struct sigaction sa;
 	struct sigaction previous_sa;
@@ -119,17 +123,20 @@ mono_posix_add_signal_handler (int signo, gpointer handler)
 	ret = sigaction (signo, &sa, &previous_sa);
 
 	g_assert (ret != -1);
+#endif
 }
 
 void
 mono_threads_init_platform (void)
 {
+#if !defined(__native_client__)
 	/*
 	FIXME we should use all macros from mini to make this more portable
 	FIXME it would be very sweet if sgen could end up using this too.
 	*/
 	if (mono_thread_info_new_interrupt_enabled ())
 		mono_posix_add_signal_handler (mono_thread_get_abort_signal (), suspend_signal_handler);
+#endif
 }
 
 /*nothing to be done here since suspend always abort syscalls due using signals*/

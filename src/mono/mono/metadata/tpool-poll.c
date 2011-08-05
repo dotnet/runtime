@@ -141,6 +141,10 @@ tp_poll_wait (gpointer p)
 #define INITIAL_POLLFD_SIZE	1024
 #endif
 #define POLL_ERRORS (MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)
+
+#ifdef DISABLE_SOCKETS
+#define socket_io_cleanup(x)
+#endif
 	mono_pollfd *pfds;
 	gint maxfd = 1;
 	gint allocated;

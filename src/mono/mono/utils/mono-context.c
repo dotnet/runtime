@@ -11,7 +11,7 @@
 #include <ucontext.h>
 #endif
 
-#if defined(__i386__)
+#if (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
 #include <mono/utils/mono-context.h>
 
@@ -100,7 +100,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #endif /* __native_client__ */
 }
 
-#elif defined(__x86_64__) /* defined(__i386__) */
+#elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
 
 #include <mono/utils/mono-context.h>
 

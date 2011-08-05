@@ -3654,6 +3654,8 @@ unescape_octal (gchar *str)
 	}
 	*wptr = '\0';
 }
+static gint32 GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf);
+
 #if __linux__
 #define GET_LOGICAL_DRIVE_STRINGS_BUFFER 512
 #define GET_LOGICAL_DRIVE_STRINGS_MOUNTPOINT_BUFFER 512
@@ -3680,7 +3682,6 @@ typedef struct
 
 static gboolean GetLogicalDriveStrings_Mounts (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state);
 static gboolean GetLogicalDriveStrings_MountInfo (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state);
-static gint32 GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf);
 static void append_to_mountpoint (LinuxMountInfoParseState *state);
 static gboolean add_drive_string (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state);
 
@@ -4414,7 +4415,7 @@ get_fstypename (gchar *utfpath)
 }
 
 /* Linux has struct statfs which has a different layout */
-#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD)
+#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__)
 gboolean
 GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
 {

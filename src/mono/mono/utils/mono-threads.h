@@ -73,7 +73,7 @@ typedef struct {
 	int suspend_count;
 
 	/* only needed by the posix backend */ 
-#if defined(_POSIX_VERSION) && !defined (__MACH__)
+#if (defined(_POSIX_VERSION) || defined(__native_client__)) && !defined (__MACH__)
 	MonoSemType suspend_semaphore;
 	MonoSemType resume_semaphore; 
 	MonoSemType finish_resume_semaphore;
