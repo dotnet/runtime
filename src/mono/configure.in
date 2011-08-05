@@ -114,9 +114,6 @@ case "$host" in
 			export CC
 			export CXX
 			CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -mno-cygwin"
-
-			# Test C compiler
-			AC_TRY_COMPILE([int main () { return 0; }], [], [AC_ERROR(C compiler gcc-3.exe doesn't seem to work. Make you sure have the 'gcc-core' and 'gcc-g++' cygwin packages installed.)])
 		else
 			target_win32=yes
 			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32/MinGW])
