@@ -98,12 +98,25 @@ case "$host" in
 			if test "x$host" == "x$build"; then
 				AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 			fi
-			CC="gcc -mno-cygwin -g"
-			CXX="g++ -mno-cygwin -g"
+			#
+			# gcc-3/g++-3 are from the gcc-core/gcc-g++ cygwin packages.
+			# Other gcc packages will not work:
+			# - the gcc-4 packages no longer support -mno-cygwin
+			# - the mingw-gcc packages produce executables which depends on a libgcc<...>
+			# dll, which means we would have to distribute that file too.
+			#
+			if test "x$CC" != "x"; then
+				AC_ERROR(Don't set CC. mono can only be compiled with gcc-3 from the 'gcc-core' package)
+			fi
+			CC="gcc-3.exe -mno-cygwin -g"
+			CXX="g++-3.exe -mno-cygwin -g"
 			# So libgc configure gets -mno-cygwin
 			export CC
 			export CXX
 			CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -mno-cygwin"
+
+			# Test C compiler
+			AC_TRY_COMPILE([int main () { return 0; }], [], [AC_ERROR(C compiler gcc-3.exe doesn't seem to work. Make you sure have the 'gcc-core' and 'gcc-g++' cygwin packages installed.)])
 		else
 			target_win32=yes
 			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32/MinGW])
