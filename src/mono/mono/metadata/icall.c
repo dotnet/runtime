@@ -7357,9 +7357,34 @@ ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
 	*decHexDigits = Formatter_DecHexDigits;
 }
 
+static void
+get_category_data (int version,
+		   guint8 const **category_data,
+		   guint16 const **category_astral_index)
+{
+	*category_astral_index = NULL;
+
+#ifndef DISABLE_NET_4_0
+	if (version == 4) {
+		*category_data = CategoryData_v4;
+#ifndef DISABLE_ASTRAL
+		*category_astral_index = CategoryData_v4_astral_index;
+#endif
+		return;
+	}
+#endif
+
+	*category_data = CategoryData_v2;
+#ifndef DISABLE_ASTRAL
+	*category_astral_index = CategoryData_v2_astral_index;
+#endif
+}
+
 /* These parameters are "readonly" in corlib/System/Char.cs */
 static void
-ves_icall_System_Char_GetDataTablePointers (guint8 const **category_data,
+ves_icall_System_Char_GetDataTablePointers (int category_data_version,
+					    guint8 const **category_data,
+					    guint16 const **category_astral_index,
 					    guint8 const **numeric_data,
 					    gdouble const **numeric_data_values,
 					    guint16 const **to_lower_data_low,
@@ -7367,7 +7392,7 @@ ves_icall_System_Char_GetDataTablePointers (guint8 const **category_data,
 					    guint16 const **to_upper_data_low,
 					    guint16 const **to_upper_data_high)
 {
-	*category_data = CategoryData;
+	get_category_data (category_data_version, category_data, category_astral_index);
 	*numeric_data = NumericData;
 	*numeric_data_values = NumericDataValues;
 	*to_lower_data_low = ToLowerDataLow;
