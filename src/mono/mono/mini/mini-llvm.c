@@ -2468,7 +2468,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
 
 			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
-				LLVMBuildCondBr (builder, cmp, get_bb (ctx, ins->next->inst_true_bb), get_bb (ctx, ins->next->inst_false_bb));
+				if (ins->next->inst_true_bb == ins->next->inst_false_bb) {
+					/*
+					 * If the target bb contains PHI instructions, LLVM requires
+					 * two PHI entries for this bblock, while we only generate one.
+					 * So convert this to an unconditional bblock. (bxc #171).
+					 */
+					LLVMBuildBr (builder, get_bb (ctx, ins->next->inst_true_bb));
+				} else {
+					LLVMBuildCondBr (builder, cmp, get_bb (ctx, ins->next->inst_true_bb), get_bb (ctx, ins->next->inst_false_bb));
+				}
 				has_terminator = TRUE;
 			} else if (MONO_IS_SETCC (ins->next)) {
 				sprintf (dname_buf, "t%d", ins->next->dreg);
