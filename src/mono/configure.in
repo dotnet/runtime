@@ -2405,12 +2405,6 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		;;
-   *-*-nacl)
-		TARGET=X86
-		arch_target=x86
-		AC_DEFINE(TARGET_X86, 1, [...])
-		sizeof_register=4
-		;;
    armv7l-unknown-linux-gnueabi*)
 		# TEGRA
 		TARGET=ARM;
