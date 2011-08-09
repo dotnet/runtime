@@ -22,7 +22,7 @@
 
 #if defined(__native_client_codegen__) && defined(__native_client__)
 #include <malloc.h>
-#include <sys/nacl_syscalls.h>
+#include <nacl/nacl_dyncode.h>
 #endif
 
 /*
