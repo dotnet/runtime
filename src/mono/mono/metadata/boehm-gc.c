@@ -1235,6 +1235,12 @@ mono_gc_pthread_detach (pthread_t thread)
 	return pthread_detach (thread);
 }
 
+void
+mono_gc_pthread_exit (void *retval)
+{
+	pthread_exit (retval);
+}
+
 #endif
 
 #ifdef HOST_WIN32

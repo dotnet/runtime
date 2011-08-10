@@ -205,7 +205,7 @@ static void thread_exit (guint32 exitstatus, gpointer handle)
 	/* Call pthread_exit() to call destructors and really exit the
 	 * thread
 	 */
-	pthread_exit (NULL);
+	mono_gc_pthread_exit (NULL);
 }
 
 static void thread_attached_exit (gpointer handle)
@@ -270,7 +270,7 @@ static void *thread_start_routine (gpointer args)
 		   shutting down we still end up here, and at this
 		   point the thread_hash_key might already be
 		   destroyed. */
-		pthread_exit (NULL);
+		mono_gc_pthread_exit (NULL);
 	}
 
 #ifdef DEBUG
@@ -573,7 +573,7 @@ void ExitThread(guint32 exitcode)
 		thread_exit(exitcode, thread);
 	} else {
 		/* Just blow this thread away */
-		pthread_exit (NULL);
+		mono_gc_pthread_exit (NULL);
 	}
 }
 
