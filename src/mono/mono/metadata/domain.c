@@ -1241,7 +1241,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_gc_base_init ();
 
 	MONO_FAST_TLS_INIT (tls_appdomain);
-	mono_native_tls_alloc (appdomain_thread_id, NULL);
+	mono_native_tls_alloc (&appdomain_thread_id, NULL);
 
 	InitializeCriticalSection (&appdomains_mutex);
 

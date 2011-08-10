@@ -35,7 +35,7 @@ mono_wsq_init ()
 	if (wsq_tlskey_inited)
 		return;
 
-	mono_native_tls_alloc (wsq_tlskey, NULL);
+	mono_native_tls_alloc (&wsq_tlskey, NULL);
 	wsq_tlskey_inited = TRUE;
 }
 

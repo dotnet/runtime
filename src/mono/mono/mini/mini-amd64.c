@@ -1288,10 +1288,10 @@ mono_arch_init (void)
 
 	InitializeCriticalSection (&mini_arch_mutex);
 #if defined(__native_client_codegen__)
-	mono_native_tls_alloc (nacl_instruction_depth, NULL);
+	mono_native_tls_alloc (&nacl_instruction_depth, NULL);
 	mono_native_tls_set_value (nacl_instruction_depth, (gpointer)0);
-	mono_native_tls_alloc (nacl_rex_tag, NULL);
-	mono_native_tls_alloc (nacl_legacy_prefix_tag, NULL);
+	mono_native_tls_alloc (&nacl_rex_tag, NULL);
+	mono_native_tls_alloc (&nacl_legacy_prefix_tag, NULL);
 #endif
 
 #ifdef MONO_ARCH_NOMAP32BIT

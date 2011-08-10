@@ -243,13 +243,13 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	threads_callbacks = *callbacks;
 	thread_info_size = info_size;
 #ifdef HOST_WIN32
-	res = mono_native_tls_alloc (thread_info_key, NULL);
+	res = mono_native_tls_alloc (&thread_info_key, NULL);
 #else
-	res = mono_native_tls_alloc (thread_info_key, unregister_thread);
+	res = mono_native_tls_alloc (&thread_info_key, unregister_thread);
 #endif
 	g_assert (res);
 
-	res = mono_native_tls_alloc (small_id_key, NULL);
+	res = mono_native_tls_alloc (&small_id_key, NULL);
 	g_assert (res);
 
 	InitializeCriticalSection (&global_suspend_lock);

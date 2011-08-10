@@ -16,7 +16,7 @@
 #include <windows.h>
 
 #define MonoNativeTlsKey DWORD
-#define mono_native_tls_alloc(key,destructor) ((key = TlsAlloc ()) != TLS_OUT_OF_INDEXES && destructor == NULL)
+#define mono_native_tls_alloc(key,destructor) ((*(key) = TlsAlloc ()) != TLS_OUT_OF_INDEXES && destructor == NULL)
 #define mono_native_tls_free TlsFree
 #define mono_native_tls_set_value TlsSetValue
 #define mono_native_tls_get_value TlsGetValue
@@ -26,10 +26,25 @@
 #include <pthread.h>
 
 #define MonoNativeTlsKey pthread_key_t
-#define mono_native_tls_alloc(key,destructor) (pthread_key_create (&key, destructor) == 0) 
-#define mono_native_tls_free pthread_key_delete
-#define mono_native_tls_set_value(k,v) (!pthread_setspecific ((k), (v)))
 #define mono_native_tls_get_value pthread_getspecific
+
+static inline int
+mono_native_tls_alloc (MonoNativeTlsKey *key, void *destructor)
+{
+	return pthread_key_create (key, destructor) == 0;
+}
+
+static inline void
+mono_native_tls_free (MonoNativeTlsKey key)
+{
+	pthread_key_delete (key);
+}
+
+static inline int
+mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
+{
+	return !pthread_setspecific (key, value);
+}
 
 #endif /* HOST_WIN32 */
 

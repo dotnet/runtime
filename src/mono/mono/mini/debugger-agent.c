@@ -850,7 +850,7 @@ mono_debugger_agent_init (void)
 	mono_profiler_install_jit_end (jit_end);
 	mono_profiler_install_method_invoke (start_runtime_invoke, end_runtime_invoke);
 
-	mono_native_tls_alloc (debugger_tls_id, NULL);
+	mono_native_tls_alloc (&debugger_tls_id, NULL);
 
 	thread_to_tls = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
 	MONO_GC_REGISTER_ROOT_FIXED (thread_to_tls);

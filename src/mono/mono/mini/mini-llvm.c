@@ -5100,7 +5100,7 @@ add_intrinsics (LLVMModuleRef module)
 void
 mono_llvm_init (void)
 {
-	mono_native_tls_alloc (current_cfg_tls_id, NULL);
+	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 }
 
 static void

@@ -202,8 +202,8 @@ mono_marshal_init (void)
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
 		marshal_mutex_initialized = TRUE;
-		mono_native_tls_alloc (last_error_tls_id, NULL);
-		mono_native_tls_alloc (load_type_info_tls_id, NULL);
+		mono_native_tls_alloc (&last_error_tls_id, NULL);
+		mono_native_tls_alloc (&load_type_info_tls_id, NULL);
 
 		register_icall (ves_icall_System_Threading_Thread_ResetAbort, "ves_icall_System_Threading_Thread_ResetAbort", "void", TRUE);
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);

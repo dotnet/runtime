@@ -85,8 +85,8 @@ mono_loader_init ()
 		InitializeCriticalSection (&loader_mutex);
 		loader_lock_inited = TRUE;
 
-		mono_native_tls_alloc (loader_error_thread_id, NULL);
-		mono_native_tls_alloc (loader_lock_nest_id, NULL);
+		mono_native_tls_alloc (&loader_error_thread_id, NULL);
+		mono_native_tls_alloc (&loader_lock_nest_id, NULL);
 
 		mono_counters_register ("Inflated signatures size",
 								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
