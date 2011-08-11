@@ -1861,6 +1861,25 @@ parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemb
 	return res;
 }
 
+static gboolean
+split_key_value (const gchar *pair, gchar **key, guint32 *keylen, gchar **value)
+{
+	char *eqsign = strchr (pair, '=');
+	if (!eqsign) {
+		*key = NULL;
+		*keylen = 0;
+		*value = NULL;
+		return FALSE;
+	}
+
+	*key = (gchar*)pair;
+	*keylen = eqsign - *key;
+	while (*keylen > 0 && g_ascii_isspace ((*key) [*keylen - 1]))
+		(*keylen)--;
+	*value = g_strstrip (eqsign + 1);
+	return TRUE;
+}
+
 gboolean
 mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key, gboolean *is_version_defined, gboolean *is_token_defined)
 {
@@ -1871,7 +1890,8 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	gchar *key = NULL;
 	gchar *retargetable = NULL;
 	gboolean res;
-	gchar *value;
+	gchar *value, *part_name;
+	guint32 part_name_len;
 	gchar **parts;
 	gchar **tmp;
 	gboolean version_defined;
@@ -1897,10 +1917,12 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	tmp++;
 
 	while (*tmp) {
-		value = g_strstrip (*tmp);
-		if (!g_ascii_strncasecmp (value, "Version=", 8)) {
+		if (!split_key_value (g_strstrip (*tmp), &part_name, &part_name_len, &value))
+			goto cleanup_and_fail;
+
+		if (part_name_len == 7 && !g_ascii_strncasecmp (part_name, "Version", part_name_len)) {
 			*is_version_defined = TRUE;
-			version = g_strstrip (value + 8);
+			version = value;
 			if (strlen (version) == 0) {
 				goto cleanup_and_fail;
 			}
@@ -1908,8 +1930,8 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		if (!g_ascii_strncasecmp (value, "Culture=", 8)) {
-			culture = g_strstrip (value + 8);
+		if (part_name_len == 7 && !g_ascii_strncasecmp (part_name, "Culture", part_name_len)) {
+			culture = value;
 			if (strlen (culture) == 0) {
 				goto cleanup_and_fail;
 			}
@@ -1917,9 +1939,9 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
+		if (part_name_len == 14 && !g_ascii_strncasecmp (part_name, "PublicKeyToken", part_name_len)) {
 			*is_token_defined = TRUE;
-			token = g_strstrip (value + 15);
+			token = value;
 			if (strlen (token) == 0) {
 				goto cleanup_and_fail;
 			}
@@ -1927,8 +1949,8 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		if (!g_ascii_strncasecmp (value, "PublicKey=", 10)) {
-			key = g_strstrip (value + 10);
+		if (part_name_len == 9 && !g_ascii_strncasecmp (part_name, "PublicKey", part_name_len)) {
+			key = value;
 			if (strlen (key) == 0) {
 				goto cleanup_and_fail;
 			}
@@ -1936,8 +1958,8 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		if (!g_ascii_strncasecmp (value, "Retargetable=", 13)) {
-			retargetable = g_strstrip (value + 13);
+		if (part_name_len == 12 && !g_ascii_strncasecmp (part_name, "Retargetable", part_name_len)) {
+			retargetable = value;
 			if (strlen (retargetable) == 0) {
 				goto cleanup_and_fail;
 			}
@@ -1950,17 +1972,16 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		if (!g_ascii_strncasecmp (value, "ProcessorArchitecture=", 22)) {
-			char *s = g_strstrip (value + 22);
-			if (!g_ascii_strcasecmp (s, "None"))
+		if (part_name_len == 21 && !g_ascii_strncasecmp (part_name, "ProcessorArchitecture", part_name_len)) {
+			if (!g_ascii_strcasecmp (value, "None"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_NONE;
-			else if (!g_ascii_strcasecmp (s, "MSIL"))
+			else if (!g_ascii_strcasecmp (value, "MSIL"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_MSIL;
-			else if (!g_ascii_strcasecmp (s, "X86"))
+			else if (!g_ascii_strcasecmp (value, "X86"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_X86;
-			else if (!g_ascii_strcasecmp (s, "IA64"))
+			else if (!g_ascii_strcasecmp (value, "IA64"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_IA64;
-			else if (!g_ascii_strcasecmp (s, "AMD64"))
+			else if (!g_ascii_strcasecmp (value, "AMD64"))
 				arch = MONO_PROCESSOR_ARCHITECTURE_AMD64;
 			else
 				goto cleanup_and_fail;
