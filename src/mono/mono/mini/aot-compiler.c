@@ -202,6 +202,7 @@ typedef struct MonoAotCompile {
 	MonoClass **typespec_classes;
 	GString *llc_args;
 	GString *as_args;
+	char *assembly_name_sym;
 	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
 } MonoAotCompile;
 
@@ -5376,7 +5377,7 @@ mono_aot_get_method_name (MonoCompile *cfg)
 {
 	if (llvm_acfg->aot_opts.static_link)
 		/* Include the assembly name too to avoid duplicate symbol errors */
-		return g_strdup_printf ("%s_%s", llvm_acfg->image->assembly->aname.name, get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash));
+		return g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash));
 	else
 		return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
 }
@@ -7090,6 +7091,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg->got_symbol_base = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
 	acfg->plt_symbol = g_strdup_printf ("%smono_aot_%s_plt", acfg->llvm_label_prefix, acfg->image->assembly->aname.name);
+	acfg->assembly_name_sym = g_strdup (acfg->image->assembly->aname.name);
 
 	/* Get rid of characters which cannot occur in symbols */
 	for (p = acfg->got_symbol_base; *p; ++p) {
@@ -7097,6 +7099,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			*p = '_';
 	}
 	for (p = acfg->plt_symbol; *p; ++p) {
+		if (!(isalnum (*p) || *p == '_'))
+			*p = '_';
+	}
+	for (p = acfg->assembly_name_sym; *p; ++p) {
 		if (!(isalnum (*p) || *p == '_'))
 			*p = '_';
 	}
