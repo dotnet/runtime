@@ -20,7 +20,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <string.h>
 
-#define DATA_TABLE_CHUNK_SIZE		16384
+#define DATA_TABLE_CHUNK_SIZE		(16384-sizeof (MonoDebugDataChunk))
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
