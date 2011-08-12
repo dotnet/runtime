@@ -2529,7 +2529,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	mono_aot_lock ();
 	if (!amodule->methods_loaded)
-		amodule->methods_loaded = g_new0 (guint32, amodule->info.nmethods + 1);
+		amodule->methods_loaded = g_new0 (guint32, amodule->info.nmethods / 32 + 1);
 	mono_aot_unlock ();
 
 	if ((amodule->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
