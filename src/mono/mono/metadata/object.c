@@ -3856,9 +3856,9 @@ mono_unhandled_exception (MonoObject *exc)
 		}
 
 		/* set exitcode only if we will abort the process */
-		if (abort_process)
-			mono_environment_exitcode_set (1);
 		if ((current_appdomain_delegate == NULL) && (root_appdomain_delegate == NULL)) {
+			if (abort_process)
+				mono_environment_exitcode_set (1);
 			mono_print_unhandled_exception (exc);
 		} else {
 			if (root_appdomain_delegate) {
