@@ -4185,6 +4185,8 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 			cant_encode = TRUE;
 	}
 
+	mono_class_has_finalizer (klass);
+
 	if (klass->generic_container || cant_encode) {
 		encode_value (-1, p, &p);
 	} else {
