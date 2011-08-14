@@ -21,6 +21,7 @@ typedef enum {
 typedef enum {
 	MONO_UNWIND_NONE = 0x0,
 	MONO_UNWIND_LOOKUP_IL_OFFSET = 0x1,
+	/* NOT signal safe */
 	MONO_UNWIND_LOOKUP_ACTUAL_METHOD = 0x2,
 	/*
 	 * Store the locations where caller-saved registers are saved on the stack in
