@@ -183,7 +183,8 @@ dyn_array_append (DynArray *dst, DynArray *src)
  * just one source, so use the srcs pointer itself.
  */
 typedef struct _HashEntry {
-	MonoObject *obj;
+	MonoObject *obj;	/* This is a duplicate - it's already stored in the hash table */
+
 	gboolean is_bridge;
 	gboolean is_visited;
 
@@ -192,8 +193,6 @@ typedef struct _HashEntry {
 	DynArray srcs;
 
 	int scc_index;
-
-	struct _HashEntry *next;
 } HashEntry;
 
 typedef struct _SCC {
@@ -203,9 +202,7 @@ typedef struct _SCC {
 	DynArray xrefs;		/* these are incoming, not outgoing */
 } SCC;
 
-static int num_hash_entries = 0;
-static int hash_size = 0;
-static HashEntry **hash_table = NULL;
+static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DATA, INTERNAL_MEM_BRIDGE_DATA, sizeof (HashEntry), (SgenHashFunc)mono_aligned_addr_hash);
 
 static MonoGCBridgeCallbacks bridge_callbacks;
 
@@ -223,88 +220,25 @@ mono_sgen_need_bridge_processing (void)
 	return bridge_callbacks.cross_references != NULL;
 }
 
-static HashEntry**
-alloc_hash_table (int size)
-{
-	HashEntry **table;
-	table = mono_sgen_alloc_internal_dynamic (sizeof (HashEntry*) * size, INTERNAL_MEM_BRIDGE_DATA);
-	memset (table, 0, sizeof (HashEntry*) * size);
-	return table;
-}
-
-static void
-rehash (void)
-{
-	HashEntry **new_table;
-	int new_size = hash_size << 1;
-	int i;
-
-	new_table = alloc_hash_table (new_size);
-	for (i = 0; i < hash_size; ++i) {
-		HashEntry *entry = hash_table [i];
-		while (entry != NULL) {
-			HashEntry *next = entry->next;
-			int hash = ((mword)entry->obj >> 4) & (new_size - 1);
-			entry->next = new_table [hash];
-			new_table [hash] = entry;
-			entry = next;
-		}
-	}
-
-	mono_sgen_free_internal_dynamic (hash_table, sizeof (HashEntry*) * hash_size, INTERNAL_MEM_BRIDGE_DATA);
-
-	hash_table = new_table;
-	hash_size = new_size;
-}
-
-static HashEntry*
-lookup_hash_entry (MonoObject *obj)
-{
-	int hash = (mword)obj >> 4;
-	HashEntry *entry;
-
-	if (!hash_table) {
-		g_assert (hash_size == 0 && num_hash_entries == 0);
-		hash_size = 32;
-		hash_table = alloc_hash_table (hash_size);
-	}
-
-	hash &= hash_size - 1;
-	for (entry = hash_table [hash]; entry != NULL; entry = entry->next) {
-		if (entry->obj == obj)
-			return entry;
-	}
-
-	return NULL;
-}
-
 static HashEntry*
 get_hash_entry (MonoObject *obj)
 {
-	HashEntry *entry = lookup_hash_entry (obj);
-	int hash;
+	HashEntry *entry = mono_sgen_hash_table_lookup (&hash_table, obj);
+	HashEntry new_entry;
 
 	if (entry)
 		return entry;
 
-	entry = mono_sgen_alloc_internal_dynamic (sizeof (HashEntry), INTERNAL_MEM_BRIDGE_DATA);
-	memset (entry, 0, sizeof (HashEntry));
+	memset (&new_entry, 0, sizeof (HashEntry));
 
-	entry->obj = obj;
-	dyn_array_ptr_init (&entry->srcs);
-	entry->finishing_time = -1;
-	entry->scc_index = -1;
+	new_entry.obj = obj;
+	dyn_array_ptr_init (&new_entry.srcs);
+	new_entry.finishing_time = -1;
+	new_entry.scc_index = -1;
 
-	hash = ((mword)obj >> 4) & (hash_size - 1);
-	entry->next = hash_table [hash];
-	hash_table [hash] = entry;
+	mono_sgen_hash_table_replace (&hash_table, obj, &new_entry);
 
-	++num_hash_entries;
-
-	if (num_hash_entries > hash_size >> 1)
-		rehash ();
-
-	return entry;
+	return mono_sgen_hash_table_lookup (&hash_table, obj);
 }
 
 static void
@@ -316,31 +250,19 @@ add_source (HashEntry *entry, HashEntry *src)
 static void
 free_data (void)
 {
-	int i;
+	MonoObject *obj;
+	HashEntry *entry;
 	int total_srcs = 0;
 	int max_srcs = 0;
 
-	if (hash_table == NULL)
-		return;
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		total_srcs += entry->srcs.size;
+		if (entry->srcs.size > max_srcs)
+			max_srcs = entry->srcs.size;
+		dyn_array_uninit (&entry->srcs);
+	} SGEN_HASH_TABLE_FOREACH_END;
 
-	for (i = 0; i < hash_size; ++i) {
-		HashEntry *entry = hash_table [i];
-		while (entry != NULL) {
-			HashEntry *next = entry->next;
-			total_srcs += entry->srcs.size;
-			if (entry->srcs.size > max_srcs)
-				max_srcs = entry->srcs.size;
-			dyn_array_uninit (&entry->srcs);
-			mono_sgen_free_internal_dynamic (entry, sizeof (HashEntry), INTERNAL_MEM_BRIDGE_DATA);
-			entry = next;
-		}
-	}
-
-	mono_sgen_free_internal_dynamic (hash_table, sizeof (HashEntry*) * hash_size, INTERNAL_MEM_BRIDGE_DATA);
-
-	hash_size = 0;
-	num_hash_entries = 0;
-	hash_table = NULL;
+	mono_sgen_hash_table_clean (&hash_table);
 
 	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
@@ -367,11 +289,11 @@ object_is_live (MonoObject **objp)
 	MonoObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
 	if (fwd) {
 		*objp = fwd;
-		return lookup_hash_entry (fwd) == NULL;
+		return mono_sgen_hash_table_lookup (&hash_table, fwd) == NULL;
 	}
 	if (!mono_sgen_object_is_live (obj))
 		return FALSE;
-	return lookup_hash_entry (obj) == NULL;
+	return mono_sgen_hash_table_lookup (&hash_table, obj) == NULL;
 }
 
 static DynArray dfs_stack;
@@ -497,6 +419,8 @@ compare_hash_entries (const void *ep1, const void *ep2)
 void
 mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 {
+	MonoObject *obj;
+	HashEntry *entry;
 	HashEntry **all_entries;
 	int j = 0;
 	int num_sccs, num_xrefs;
@@ -535,33 +459,23 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 
 	/* alloc and fill array of all entries */
 
-	all_entries = mono_sgen_alloc_internal_dynamic (sizeof (HashEntry*) * num_hash_entries, INTERNAL_MEM_BRIDGE_DATA);
+	all_entries = mono_sgen_alloc_internal_dynamic (sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA);
 
 	j = 0;
-	max_entries = 0;
-	for (i = 0; i < hash_size; ++i) {
-		HashEntry *entry;
-		int length = 0;
-		for (entry = hash_table [i]; entry != NULL; entry = entry->next) {
-			g_assert (entry->finishing_time >= 0);
-			all_entries [j++] = entry;
-			++length;
-		}
-		if (length > max_entries)
-			max_entries = length;
-	}
-	g_assert (j == num_hash_entries);
-
-	//g_print ("max hash bucket length %d\n", max_entries);
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		g_assert (entry->finishing_time >= 0);
+		all_entries [j++] = entry;
+	} SGEN_HASH_TABLE_FOREACH_END;
+	g_assert (j == hash_table.num_entries);
 
 	/* sort array according to decreasing finishing time */
 
-	qsort (all_entries, num_hash_entries, sizeof (HashEntry*), compare_hash_entries);
+	qsort (all_entries, hash_table.num_entries, sizeof (HashEntry*), compare_hash_entries);
 
 	/* second DFS pass */
 
 	dyn_array_init (&sccs, sizeof (SCC));
-	for (i = 0; i < num_hash_entries; ++i) {
+	for (i = 0; i < hash_table.num_entries; ++i) {
 		HashEntry *entry = all_entries [i];
 		if (entry->scc_index < 0) {
 			int index = sccs.size;
@@ -605,16 +519,12 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 		num_xrefs += scc->xrefs.size;
 	}
 
-	for (i = 0; i < hash_size; ++i) {
-		HashEntry *entry;
-		for (entry = hash_table [i]; entry != NULL; entry = entry->next) {
-			SCC *scc;
-			if (!entry->is_bridge)
-				continue;
-			scc = DYN_ARRAY_REF (&sccs, entry->scc_index);
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		if (entry->is_bridge) {
+			SCC *scc = DYN_ARRAY_REF (&sccs, entry->scc_index);
 			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = entry->obj;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 
 	api_xrefs = mono_sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA);
 	j = 0;
@@ -650,7 +560,7 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 	}
 	dyn_array_uninit (&sccs);
 
-	mono_sgen_free_internal_dynamic (all_entries, sizeof (HashEntry*) * num_hash_entries, INTERNAL_MEM_BRIDGE_DATA);
+	mono_sgen_free_internal_dynamic (all_entries, sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA);
 
 	free_data ();
 
