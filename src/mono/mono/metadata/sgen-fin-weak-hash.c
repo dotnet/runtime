@@ -77,7 +77,7 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 		if (mono_sgen_hash_table_replace (hash_table, obj, NULL))
 			DEBUG (5, fprintf (gc_debug_file, "Added finalizer for object: %p (%s) (%d) to %s table\n", obj, obj->vtable->klass->name, hash_table->num_entries, generation_name (generation)));
 	} else {
-		if (mono_sgen_hash_table_remove (hash_table, obj))
+		if (mono_sgen_hash_table_remove (hash_table, obj, NULL))
 			DEBUG (5, fprintf (gc_debug_file, "Removed finalizer for object: %p (%s) (%d)\n", obj, obj->vtable->klass->name, hash_table->num_entries));
 	}
 }

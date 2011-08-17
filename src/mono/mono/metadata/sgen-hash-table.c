@@ -67,20 +67,47 @@ rehash_if_necessary (SgenHashTable *hash_table)
 		rehash (hash_table);
 }
 
-gboolean
-mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
+static SgenHashTableEntry*
+lookup (SgenHashTable *hash_table, gpointer key, int *_hash)
 {
 	SgenHashTableEntry *entry;
 	int hash;
 
-	rehash_if_necessary (hash_table);
+	if (!hash_table->size)
+		return NULL;
+
 	hash = hash_table->hash_func (key) % hash_table->size;
+	if (_hash)
+		*_hash = hash;
 
 	for (entry = hash_table->table [hash]; entry; entry = entry->next) {
-		if (entry->key == key) {
-			memcpy (entry->data, data, hash_table->data_size);
-			return FALSE;
-		}
+		if (entry->key == key)
+			return entry;
+	}
+	return NULL;
+}
+
+gpointer
+mono_sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
+{
+	SgenHashTableEntry *entry = lookup (hash_table, key, NULL);
+	if (!entry)
+		return NULL;
+	return entry->data;
+}
+
+gboolean
+mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
+{
+	int hash;
+	SgenHashTableEntry *entry;
+
+	rehash_if_necessary (hash_table);
+	entry = lookup (hash_table, key, &hash);
+
+	if (entry) {
+		memcpy (entry->data, data, hash_table->data_size);
+		return FALSE;
 	}
 
 	entry = mono_sgen_alloc_internal (hash_table->entry_mem_type);
@@ -97,7 +124,7 @@ mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer 
 }
 
 gboolean
-mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key)
+mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer data_return)
 {
 	SgenHashTableEntry *entry, *prev;
 	int hash;
@@ -114,6 +141,9 @@ mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key)
 				hash_table->table [hash] = entry->next;
 
 			hash_table->num_entries--;
+
+			if (data_return)
+				memcpy (data_return, entry->data, hash_table->data_size);
 
 			mono_sgen_free_internal (entry, hash_table->entry_mem_type);
 

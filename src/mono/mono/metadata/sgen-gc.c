@@ -370,8 +370,6 @@ static NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
  */
 typedef struct _RootRecord RootRecord;
 struct _RootRecord {
-	RootRecord *next;
-	char *start_root;
 	char *end_root;
 	mword root_desc;
 };
@@ -569,10 +567,12 @@ enum {
 /* 
  * Different kinds of roots are kept separate to speed up pin_from_roots () for example.
  */
-static RootRecord **roots_hash [ROOT_TYPE_NUM] = { NULL, NULL };
-static int roots_hash_size [ROOT_TYPE_NUM] = { 0, 0, 0 };
+static SgenHashTable roots_hash [ROOT_TYPE_NUM] = {
+	SGEN_HASH_TABLE_INIT (INTERNAL_MEM_ROOTS_TABLE, INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord), (SgenHashFunc)mono_aligned_addr_hash),
+	SGEN_HASH_TABLE_INIT (INTERNAL_MEM_ROOTS_TABLE, INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord), (SgenHashFunc)mono_aligned_addr_hash),
+	SGEN_HASH_TABLE_INIT (INTERNAL_MEM_ROOTS_TABLE, INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord), (SgenHashFunc)mono_aligned_addr_hash)
+};
 static mword roots_size = 0; /* amount of memory in the root set */
-static int num_roots_entries [ROOT_TYPE_NUM] = { 0, 0, 0 };
 
 #define GC_ROOT_NUM 32
 typedef struct {
@@ -1237,56 +1237,55 @@ check_root_obj_specific_ref_from_marker (void **obj)
 static void
 scan_roots_for_specific_ref (MonoObject *key, int root_type)
 {
-	int i;
+	void **start_root;
 	RootRecord *root;
 	check_key = key;
-	for (i = 0; i < roots_hash_size [root_type]; ++i) {
-		for (root = roots_hash [root_type][i]; root; root = root->next) {
-			void **start_root = (void**)root->start_root;
-			mword desc = root->root_desc;
 
-			check_root = root;
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+		mword desc = root->root_desc;
 
-			switch (desc & ROOT_DESC_TYPE_MASK) {
-			case ROOT_DESC_BITMAP:
-				desc >>= ROOT_DESC_TYPE_SHIFT;
-				while (desc) {
-					if (desc & 1)
-						check_root_obj_specific_ref (root, key, *start_root);
-					desc >>= 1;
-					start_root++;
+		check_root = root;
+
+		switch (desc & ROOT_DESC_TYPE_MASK) {
+		case ROOT_DESC_BITMAP:
+			desc >>= ROOT_DESC_TYPE_SHIFT;
+			while (desc) {
+				if (desc & 1)
+					check_root_obj_specific_ref (root, key, *start_root);
+				desc >>= 1;
+				start_root++;
+			}
+			return;
+		case ROOT_DESC_COMPLEX: {
+			gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
+			int bwords = (*bitmap_data) - 1;
+			void **start_run = start_root;
+			bitmap_data++;
+			while (bwords-- > 0) {
+				gsize bmap = *bitmap_data++;
+				void **objptr = start_run;
+				while (bmap) {
+					if (bmap & 1)
+						check_root_obj_specific_ref (root, key, *objptr);
+					bmap >>= 1;
+					++objptr;
 				}
-				return;
-			case ROOT_DESC_COMPLEX: {
-				gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
-				int bwords = (*bitmap_data) - 1;
-				void **start_run = start_root;
-				bitmap_data++;
-				while (bwords-- > 0) {
-					gsize bmap = *bitmap_data++;
-					void **objptr = start_run;
-					while (bmap) {
-						if (bmap & 1)
-							check_root_obj_specific_ref (root, key, *objptr);
-						bmap >>= 1;
-						++objptr;
-					}
-					start_run += GC_BITS_PER_WORD;
-				}
-				break;
+				start_run += GC_BITS_PER_WORD;
 			}
-			case ROOT_DESC_USER: {
-				MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
-				marker (start_root, check_root_obj_specific_ref_from_marker);
-				break;
-			}
-			case ROOT_DESC_RUN_LEN:
-				g_assert_not_reached ();
-			default:
-				g_assert_not_reached ();
-			}
+			break;
 		}
-	}
+		case ROOT_DESC_USER: {
+			MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+			marker (start_root, check_root_obj_specific_ref_from_marker);
+			break;
+		}
+		case ROOT_DESC_RUN_LEN:
+			g_assert_not_reached ();
+		default:
+			g_assert_not_reached ();
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;
+
 	check_key = NULL;
 	check_root = NULL;
 }
@@ -1294,8 +1293,8 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 void
 mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise)
 {
+	void **ptr;
 	RootRecord *root;
-	int i;
 
 	scan_object_for_specific_ref_precise = precise;
 
@@ -1309,16 +1308,12 @@ mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise)
 	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
 	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
 
-	for (i = 0; i < roots_hash_size [ROOT_TYPE_PINNED]; ++i) {
-		for (root = roots_hash [ROOT_TYPE_PINNED][i]; root; root = root->next) {
-			void **ptr = (void**)root->start_root;
-
-			while (ptr < (void**)root->end_root) {
-				check_root_obj_specific_ref (root, *ptr, key);
-				++ptr;
-			}
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], ptr, root) {
+		while (ptr < (void**)root->end_root) {
+			check_root_obj_specific_ref (root, *ptr, key);
+			++ptr;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 static gboolean
@@ -1364,59 +1359,57 @@ check_obj_not_in_domain (void **o)
 static void
 scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 {
-	int i;
+	void **start_root;
 	RootRecord *root;
 	check_domain = domain;
-	for (i = 0; i < roots_hash_size [root_type]; ++i) {
-		for (root = roots_hash [root_type][i]; root; root = root->next) {
-			void **start_root = (void**)root->start_root;
-			mword desc = root->root_desc;
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+		mword desc = root->root_desc;
 
-			/* The MonoDomain struct is allowed to hold
-			   references to objects in its own domain. */
-			if (start_root == (void**)domain)
-				continue;
+		/* The MonoDomain struct is allowed to hold
+		   references to objects in its own domain. */
+		if (start_root == (void**)domain)
+			continue;
 
-			switch (desc & ROOT_DESC_TYPE_MASK) {
-			case ROOT_DESC_BITMAP:
-				desc >>= ROOT_DESC_TYPE_SHIFT;
-				while (desc) {
-					if ((desc & 1) && *start_root)
-						check_obj_not_in_domain (*start_root);
-					desc >>= 1;
-					start_root++;
+		switch (desc & ROOT_DESC_TYPE_MASK) {
+		case ROOT_DESC_BITMAP:
+			desc >>= ROOT_DESC_TYPE_SHIFT;
+			while (desc) {
+				if ((desc & 1) && *start_root)
+					check_obj_not_in_domain (*start_root);
+				desc >>= 1;
+				start_root++;
+			}
+			break;
+		case ROOT_DESC_COMPLEX: {
+			gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
+			int bwords = (*bitmap_data) - 1;
+			void **start_run = start_root;
+			bitmap_data++;
+			while (bwords-- > 0) {
+				gsize bmap = *bitmap_data++;
+				void **objptr = start_run;
+				while (bmap) {
+					if ((bmap & 1) && *objptr)
+						check_obj_not_in_domain (*objptr);
+					bmap >>= 1;
+					++objptr;
 				}
-				break;
-			case ROOT_DESC_COMPLEX: {
-				gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
-				int bwords = (*bitmap_data) - 1;
-				void **start_run = start_root;
-				bitmap_data++;
-				while (bwords-- > 0) {
-					gsize bmap = *bitmap_data++;
-					void **objptr = start_run;
-					while (bmap) {
-						if ((bmap & 1) && *objptr)
-							check_obj_not_in_domain (*objptr);
-						bmap >>= 1;
-						++objptr;
-					}
-					start_run += GC_BITS_PER_WORD;
-				}
-				break;
+				start_run += GC_BITS_PER_WORD;
 			}
-			case ROOT_DESC_USER: {
-				MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
-				marker (start_root, check_obj_not_in_domain);
-				break;
-			}
-			case ROOT_DESC_RUN_LEN:
-				g_assert_not_reached ();
-			default:
-				g_assert_not_reached ();
-			}
+			break;
 		}
-	}
+		case ROOT_DESC_USER: {
+			MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+			marker (start_root, check_obj_not_in_domain);
+			break;
+		}
+		case ROOT_DESC_RUN_LEN:
+			g_assert_not_reached ();
+		default:
+			g_assert_not_reached ();
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;
+
 	check_domain = NULL;
 }
 
@@ -1968,23 +1961,22 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 static G_GNUC_UNUSED void
 find_pinning_reference (char *obj, size_t size)
 {
+	char **start;
 	RootRecord *root;
-	int i;
 	char *endobj = obj + size;
-	for (i = 0; i < roots_hash_size [0]; ++i) {
-		for (root = roots_hash [0][i]; root; root = root->next) {
-			/* if desc is non-null it has precise info */
-			if (!root->root_desc) {
-				char ** start = (char**)root->start_root;
-				while (start < (char**)root->end_root) {
-					if (*start >= obj && *start < endobj) {
-						DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in pinned roots %p-%p (at %p in record %p)\n", obj, root->start_root, root->end_root, start, root));
-					}
-					start++;
+
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_NORMAL], start, root) {
+		/* if desc is non-null it has precise info */
+		if (!root->root_desc) {
+			while (start < (char**)root->end_root) {
+				if (*start >= obj && *start < endobj) {
+					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in pinned roots %p-%p\n", obj, start, root->end_root));
 				}
+				start++;
 			}
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
+
 	find_pinning_ref_from_thread (obj, size);
 }
 
@@ -1996,16 +1988,14 @@ find_pinning_reference (char *obj, size_t size)
 static void
 pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
+	void **start_root;
 	RootRecord *root;
-	int i;
-	DEBUG (2, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d/%d entries)\n", (int)roots_size, num_roots_entries [ROOT_TYPE_NORMAL], num_roots_entries [ROOT_TYPE_PINNED]));
+	DEBUG (2, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d/%d entries)\n", (int)roots_size, roots_hash [ROOT_TYPE_NORMAL].num_entries, roots_hash [ROOT_TYPE_PINNED].num_entries));
 	/* objects pinned from the API are inside these roots */
-	for (i = 0; i < roots_hash_size [ROOT_TYPE_PINNED]; ++i) {
-		for (root = roots_hash [ROOT_TYPE_PINNED][i]; root; root = root->next) {
-			DEBUG (6, fprintf (gc_debug_file, "Pinned roots %p-%p\n", root->start_root, root->end_root));
-			conservatively_pin_objects_from ((void**)root->start_root, (void**)root->end_root, start_nursery, end_nursery, PIN_TYPE_OTHER);
-		}
-	}
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], start_root, root) {
+		DEBUG (6, fprintf (gc_debug_file, "Pinned roots %p-%p\n", start_root, root->end_root));
+		conservatively_pin_objects_from (start_root, (void**)root->end_root, start_nursery, end_nursery, PIN_TYPE_OTHER);
+	} SGEN_HASH_TABLE_FOREACH_END;
 	/* now deal with the thread stacks
 	 * in the future we should be able to conservatively scan only:
 	 * *) the cpu registers
@@ -2327,15 +2317,13 @@ static void
 report_registered_roots_by_type (int root_type)
 {
 	GCRootReport report;
-	int i;
+	void **start_root;
 	RootRecord *root;
 	report.count = 0;
-	for (i = 0; i < roots_hash_size [root_type]; ++i) {
-		for (root = roots_hash [root_type][i]; root; root = root->next) {
-			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
-			precisely_report_roots_from (&report, (void**)root->start_root, (void**)root->end_root, root->root_desc);
-		}
-	}
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+		DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", start_root, root->end_root, (void*)root->root_desc));
+		precisely_report_roots_from (&report, start_root, (void**)root->end_root, root->root_desc);
+	} SGEN_HASH_TABLE_FOREACH_END;
 	notify_gc_roots (&report);
 }
 
@@ -2574,14 +2562,12 @@ static int last_num_pinned = 0;
 static void
 scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue)
 {
-	int i;
+	void **start_root;
 	RootRecord *root;
-	for (i = 0; i < roots_hash_size [root_type]; ++i) {
-		for (root = roots_hash [root_type][i]; root; root = root->next) {
-			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
-			precisely_scan_objects_from (copy_func, (void**)root->start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, queue);
-		}
-	}
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+		DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", start_root, root->end_root, (void*)root->root_desc));
+		precisely_scan_objects_from (copy_func, start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, queue);
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 void
@@ -4400,90 +4386,39 @@ mono_sgen_get_minor_collection_allowance (void)
  * ######################################################################
  */
 
-static void
-rehash_roots (int root_type)
-{
-	int i;
-	unsigned int hash;
-	RootRecord **new_hash;
-	RootRecord *entry, *next;
-	int new_size;
-
-	new_size = g_spaced_primes_closest (num_roots_entries [root_type]);
-	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
-	for (i = 0; i < roots_hash_size [root_type]; ++i) {
-		for (entry = roots_hash [root_type][i]; entry; entry = next) {
-			hash = mono_aligned_addr_hash (entry->start_root) % new_size;
-			next = entry->next;
-			entry->next = new_hash [hash];
-			new_hash [hash] = entry;
-		}
-	}
-	mono_sgen_free_internal_dynamic (roots_hash [root_type], roots_hash_size [root_type] * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
-	roots_hash [root_type] = new_hash;
-	roots_hash_size [root_type] = new_size;
-}
-
-static RootRecord*
-find_root (int root_type, char *start, guint32 addr_hash)
-{
-	RootRecord *new_root;
-
-	guint32 hash = addr_hash % roots_hash_size [root_type];
-	for (new_root = roots_hash [root_type][hash]; new_root; new_root = new_root->next) {
-		/* we allow changing the size and the descriptor (for thread statics etc) */
-		if (new_root->start_root == start) {
-			return new_root;
-		}
-	}
-
-	return NULL;
-}
-
 /*
  * We do not coalesce roots.
  */
 static int
 mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_type)
 {
-	RootRecord *new_root;
-	unsigned int hash, addr_hash = mono_aligned_addr_hash (start);
+	RootRecord new_root;
 	int i;
 	LOCK_GC;
 	for (i = 0; i < ROOT_TYPE_NUM; ++i) {
-		if (num_roots_entries [i] >= roots_hash_size [i] * 2)
-			rehash_roots (i);
-	}
-	for (i = 0; i < ROOT_TYPE_NUM; ++i) {
-		new_root = find_root (i, start, addr_hash);
+		RootRecord *root = mono_sgen_hash_table_lookup (&roots_hash [i], start);
 		/* we allow changing the size and the descriptor (for thread statics etc) */
-		if (new_root) {
-			size_t old_size = new_root->end_root - new_root->start_root;
-			new_root->end_root = new_root->start_root + size;
-			g_assert (((new_root->root_desc != 0) && (descr != NULL)) ||
-					  ((new_root->root_desc == 0) && (descr == NULL)));
-			new_root->root_desc = (mword)descr;
+		if (root) {
+			size_t old_size = root->end_root - start;
+			root->end_root = start + size;
+			g_assert (((root->root_desc != 0) && (descr != NULL)) ||
+					  ((root->root_desc == 0) && (descr == NULL)));
+			root->root_desc = (mword)descr;
 			roots_size += size;
 			roots_size -= old_size;
 			UNLOCK_GC;
 			return TRUE;
 		}
 	}
-	new_root = mono_sgen_alloc_internal (INTERNAL_MEM_ROOT_RECORD);
-	if (new_root) {
-		new_root->start_root = start;
-		new_root->end_root = new_root->start_root + size;
-		new_root->root_desc = (mword)descr;
-		roots_size += size;
-		hash = addr_hash % roots_hash_size [root_type];
-		num_roots_entries [root_type]++;
-		new_root->next = roots_hash [root_type] [hash];
-		roots_hash [root_type][hash] = new_root;
-		DEBUG (3, fprintf (gc_debug_file, "Added root %p for range: %p-%p, descr: %p  (%d/%d bytes)\n", new_root, new_root->start_root, new_root->end_root, descr, (int)size, (int)roots_size));
-	} else {
-		UNLOCK_GC;
-		return FALSE;
-	}
+
+	new_root.end_root = start + size;
+	new_root.root_desc = (mword)descr;
+
+	mono_sgen_hash_table_replace (&roots_hash [root_type], start, &new_root);
+	roots_size += size;
+
+	DEBUG (3, fprintf (gc_debug_file, "Added root for range: %p-%p, descr: %p  (%d/%d bytes)\n", start, new_root.end_root, descr, (int)size, (int)roots_size));
+
 	UNLOCK_GC;
 	return TRUE;
 }
@@ -4503,30 +4438,13 @@ mono_gc_register_root_wbarrier (char *start, size_t size, void *descr)
 void
 mono_gc_deregister_root (char* addr)
 {
-	RootRecord *tmp, *prev;
-	unsigned int hash, addr_hash = mono_aligned_addr_hash (addr);
 	int root_type;
+	RootRecord root;
 
 	LOCK_GC;
 	for (root_type = 0; root_type < ROOT_TYPE_NUM; ++root_type) {
-		hash = addr_hash % roots_hash_size [root_type];
-		tmp = roots_hash [root_type][hash];
-		prev = NULL;
-		while (tmp) {
-			if (tmp->start_root == (char*)addr) {
-				if (prev)
-					prev->next = tmp->next;
-				else
-					roots_hash [root_type][hash] = tmp->next;
-				roots_size -= (tmp->end_root - tmp->start_root);
-				num_roots_entries [root_type]--;
-				DEBUG (3, fprintf (gc_debug_file, "Removed root %p for range: %p-%p\n", tmp, tmp->start_root, tmp->end_root));
-				mono_sgen_free_internal (tmp, INTERNAL_MEM_ROOT_RECORD);
-				break;
-			}
-			prev = tmp;
-			tmp = tmp->next;
-		}
+		if (mono_sgen_hash_table_remove (&roots_hash [root_type], addr, &root))
+			roots_size -= (root.end_root - addr);
 	}
 	UNLOCK_GC;
 }
@@ -6609,7 +6527,6 @@ mono_gc_base_init (void)
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_READY_ENTRY, sizeof (FinalizeReadyEntry));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
 	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
