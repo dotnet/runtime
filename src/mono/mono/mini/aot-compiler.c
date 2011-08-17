@@ -2818,7 +2818,12 @@ add_wrappers (MonoAotCompile *acfg)
 				char *export_name = NULL;
 				MonoMethod *wrapper;
 
-				g_assert (method->flags & METHOD_ATTRIBUTE_STATIC);
+				/* this cannot be enforced by the C# compiler so we must give the user some warning before aborting */
+				if (!(method->flags & METHOD_ATTRIBUTE_STATIC)) {
+					g_warning ("AOT restriction: Method '%s' must be static since it is decorated with [MonoPInvokeCallback]. See http://ios.xamarin.com/Documentation/Limitations#Reverse_Callbacks", 
+						mono_method_full_name (method, TRUE));
+					exit (1);
+				}
 
 				g_assert (sig->param_count == 1);
 				g_assert (sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (mono_class_from_mono_type (sig->params [0])->name, "Type"));
