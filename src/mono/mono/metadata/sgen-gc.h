@@ -915,13 +915,14 @@ gboolean mono_sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpoint
 				(v) = (gpointer)__entry->data;
 
 /* The loop must be continue'd after using this! */
-#define SGEN_HASH_TABLE_FOREACH_REMOVE	do {				\
+#define SGEN_HASH_TABLE_FOREACH_REMOVE(free)	do {			\
 		SgenHashTableEntry *__next = __entry->next;		\
 		if (__prev)						\
 			__prev->next = __next;				\
 		else							\
 			__table [__i] = __next;				\
-		mono_sgen_free_internal (__entry, __hash_table->entry_mem_type); \
+		if ((free))						\
+			mono_sgen_free_internal (__entry, __hash_table->entry_mem_type); \
 		__entry = __next;					\
 		--__hash_table->num_entries;				\
 	} while (0)

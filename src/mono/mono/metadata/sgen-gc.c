@@ -509,19 +509,6 @@ struct _FinalizeReadyEntry {
 	void *object;
 };
 
-typedef struct _DisappearingLink DisappearingLink;
-struct _DisappearingLink {
-	DisappearingLink *next;
-	void **link;
-};
-
-typedef struct _DisappearingLinkHashTable DisappearingLinkHashTable;
-struct _DisappearingLinkHashTable {
-	DisappearingLink **table;
-	mword size;
-	int num_links;
-};
-
 typedef struct _EphemeronLinkNode EphemeronLinkNode;
 
 struct _EphemeronLinkNode {
@@ -543,9 +530,6 @@ int current_collection_generation = -1;
  */
 #define HIDE_POINTER(p,t)	((gpointer)(~((gulong)(p)|((t)?1:0))))
 #define REVEAL_POINTER(p)	((gpointer)((~(gulong)(p))&~3L))
-
-#define DISLINK_OBJECT(d)	(REVEAL_POINTER (*(d)->link))
-#define DISLINK_TRACK(d)	((~(gulong)(*(d)->link)) & 1)
 
 /* objects that are ready to be finalized */
 static FinalizeReadyEntry *fin_ready_list = NULL;
@@ -6526,7 +6510,6 @@ mono_gc_base_init (void)
 
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_READY_ENTRY, sizeof (FinalizeReadyEntry));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
 	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
