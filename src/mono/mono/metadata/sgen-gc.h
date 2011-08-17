@@ -630,6 +630,7 @@ enum {
 	INTERNAL_MEM_SCAN_STARTS,
 	INTERNAL_MEM_FIN_TABLE,
 	INTERNAL_MEM_FINALIZE_ENTRY,
+	INTERNAL_MEM_FINALIZE_READY_ENTRY,
 	INTERNAL_MEM_DISLINK_TABLE,
 	INTERNAL_MEM_DISLINK,
 	INTERNAL_MEM_ROOTS_TABLE,
@@ -871,6 +872,71 @@ void* mono_sgen_nursery_alloc_range (size_t size, size_t min_size, int *out_allo
 MonoVTable* mono_sgen_get_array_fill_vtable (void) MONO_INTERNAL;
 gboolean mono_sgen_can_alloc_size (size_t size) MONO_INTERNAL;
 void mono_sgen_nursery_retire_region (void *address, ptrdiff_t size) MONO_INTERNAL;
+
+/* hash tables */
+
+typedef int (*SgenHashFunc) (gpointer key);
+
+typedef struct _SgenHashTableEntry SgenHashTableEntry;
+struct _SgenHashTableEntry {
+	SgenHashTableEntry *next;
+	gpointer key;
+	char data [MONO_ZERO_LEN_ARRAY]; /* data is pointer-aligned */
+};
+
+typedef struct {
+	int table_mem_type;
+	int entry_mem_type;
+	int data_size;
+	SgenHashFunc hash_func;
+	SgenHashTableEntry **table;
+	int size;
+	int num_entries;
+} SgenHashTable;
+
+#define SGEN_HASH_TABLE_INIT(table_type,entry_type,data_size,func)	{ (table_type), (entry_type), (data_size), (func), NULL, 0, 0 }
+#define SGEN_HASH_TABLE_ENTRY_SIZE(data_size)			((data_size) + sizeof (SgenHashTableEntry*) + sizeof (gpointer))
+
+gpointer mono_sgen_hash_table_lookup (SgenHashTable *table, gpointer key) MONO_INTERNAL;
+gboolean mono_sgen_hash_table_replace (SgenHashTable *table, gpointer key, gpointer data) MONO_INTERNAL;
+gboolean mono_sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpointer data_return) MONO_INTERNAL;
+
+void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
+
+#define mono_sgen_hash_table_num_entries(h)	((h)->num_entries)
+
+#define SGEN_HASH_TABLE_FOREACH(h,k,v) do {				\
+		SgenHashTable *__hash_table = (h);			\
+		SgenHashTableEntry **__table = __hash_table->table;	\
+		SgenHashTableEntry *__entry, *__prev;			\
+		int __i;						\
+		for (__i = 0; __i < (h)->size; ++__i) {			\
+			__prev = NULL;					\
+			for (__entry = __table [__i]; __entry; ) {	\
+				(k) = __entry->key;			\
+				(v) = (gpointer)__entry->data;
+
+/* The loop must be continue'd after using this! */
+#define SGEN_HASH_TABLE_FOREACH_REMOVE(free)	do {			\
+		SgenHashTableEntry *__next = __entry->next;		\
+		if (__prev)						\
+			__prev->next = __next;				\
+		else							\
+			__table [__i] = __next;				\
+		if ((free))						\
+			mono_sgen_free_internal (__entry, __hash_table->entry_mem_type); \
+		__entry = __next;					\
+		--__hash_table->num_entries;				\
+	} while (0)
+
+#define SGEN_HASH_TABLE_FOREACH_SET_KEY(k)	((__entry)->key = (k))
+
+#define SGEN_HASH_TABLE_FOREACH_END					\
+				__prev = __entry;			\
+				__entry = __entry->next;		\
+			}						\
+		}							\
+	} while (0)
 
 #endif /* HAVE_SGEN_GC */
 

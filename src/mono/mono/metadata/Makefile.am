@@ -209,6 +209,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-protocol.h		\
 	sgen-scan-object.h	\
 	sgen-nursery-allocator.c	\
+	sgen-hash-table.c	\
 	string-icalls.c 	\
 	string-icalls.h 	\
 	sysmath.h		\

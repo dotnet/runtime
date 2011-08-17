@@ -1,13 +1,16 @@
+#define DISLINK_OBJECT(l)	(REVEAL_POINTER (*(void**)(l)))
+#define DISLINK_TRACK(l)	((~(gulong)(*(void**)(l))) & 1)
+
 /*
  * The finalizable hash has the object as the key, the 
  * disappearing_link hash, has the link address as key.
  *
  * Copyright 2011 Xamarin Inc.
  */
-static FinalizeEntryHashTable minor_finalizable_hash;
-static FinalizeEntryHashTable major_finalizable_hash;
+static SgenHashTable minor_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (SgenHashFunc)mono_object_hash);
+static SgenHashTable major_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (SgenHashFunc)mono_object_hash);
 
-static FinalizeEntryHashTable*
+static SgenHashTable*
 get_finalize_entry_hash_table (int generation)
 {
 	switch (generation) {
@@ -19,159 +22,67 @@ get_finalize_entry_hash_table (int generation)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-rehash_fin_table (FinalizeEntryHashTable *hash_table)
-{
-	FinalizeEntry **finalizable_hash = hash_table->table;
-	mword finalizable_hash_size = hash_table->size;
-	int i;
-	unsigned int hash;
-	FinalizeEntry **new_hash;
-	FinalizeEntry *entry, *next;
-	int new_size = g_spaced_primes_closest (hash_table->num_registered);
-
-	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		for (entry = finalizable_hash [i]; entry; entry = next) {
-			hash = mono_object_hash (entry->object) % new_size;
-			next = entry->next;
-			entry->next = new_hash [hash];
-			new_hash [hash] = entry;
-		}
-	}
-	mono_sgen_free_internal_dynamic (finalizable_hash, finalizable_hash_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
-	hash_table->table = new_hash;
-	hash_table->size = new_size;
-}
-
-/* LOCKING: requires that the GC lock is held */
-static void
-rehash_fin_table_if_necessary (FinalizeEntryHashTable *hash_table)
-{
-	if (hash_table->num_registered >= hash_table->size * 2)
-		rehash_fin_table (hash_table);
-}
-
-/* LOCKING: requires that the GC lock is held */
-static void
 finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
 {
-	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
-	FinalizeEntry *entry, *prev;
-	int i;
-	FinalizeEntry **finalizable_hash = hash_table->table;
-	mword finalizable_hash_size = hash_table->size;
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
+	MonoObject *object;
+	gpointer dummy;
 
 	if (no_finalize)
 		return;
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		prev = NULL;
-		for (entry = finalizable_hash [i]; entry;) {
-			if ((char*)entry->object >= start && (char*)entry->object < end && !major_collector.is_object_live (entry->object)) {
-				gboolean is_fin_ready = object_is_fin_ready (entry->object);
-				char *copy = entry->object;
-				copy_func ((void**)&copy, queue);
-				if (is_fin_ready) {
-					char *from;
-					FinalizeEntry *next;
-					/* Make it survive */
-					from = entry->object;
-					entry->object = copy;
-					/* remove and put in fin_ready_list */
-					if (prev)
-						prev->next = entry->next;
-					else
-						finalizable_hash [i] = entry->next;
-					next = entry->next;
-					num_ready_finalizers++;
-					hash_table->num_registered--;
-					queue_finalization_entry (entry);
-					bridge_register_finalized_object ((MonoObject*)copy);
-					DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", entry->object, safe_name (entry->object), from, num_ready_finalizers, hash_table->num_registered));
-					entry = next;
+	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+		if ((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)) {
+			gboolean is_fin_ready = object_is_fin_ready (object);
+			MonoObject *copy = object;
+			copy_func ((void**)&copy, queue);
+			if (is_fin_ready) {
+				/* remove and put in fin_ready_list */
+				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+				num_ready_finalizers++;
+				queue_finalization_entry (copy);
+				bridge_register_finalized_object (copy);
+				/* Make it survive */
+				DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", copy, safe_name (copy), object, num_ready_finalizers, mono_sgen_hash_table_num_entries (hash_table)));
+				continue;
+			} else {
+				if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
+					/* remove from the list */
+					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+
+					/* insert it into the major hash */
+					mono_sgen_hash_table_replace (&major_finalizable_hash, copy, NULL);
+
+					DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), object));
+
 					continue;
 				} else {
-					char *from = entry->object;
-					if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
-						FinalizeEntry *next = entry->next;
-						unsigned int major_hash;
-						/* remove from the list */
-						if (prev)
-							prev->next = entry->next;
-						else
-							finalizable_hash [i] = entry->next;
-						hash_table->num_registered--;
-
-						entry->object = copy;
-
-						/* insert it into the major hash */
-						rehash_fin_table_if_necessary (&major_finalizable_hash);
-						major_hash = mono_object_hash ((MonoObject*) copy) %
-							major_finalizable_hash.size;
-						entry->next = major_finalizable_hash.table [major_hash];
-						major_finalizable_hash.table [major_hash] = entry;
-						major_finalizable_hash.num_registered++;
-
-						DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), from));
-
-						entry = next;
-						continue;
-					} else {
-						/* update pointer */
-						DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", entry->object, safe_name (entry->object), from));
-						entry->object = copy;
-					}
+					/* update pointer */
+					DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", copy, safe_name (copy), object));
+					SGEN_HASH_TABLE_FOREACH_SET_KEY (copy);
 				}
 			}
-			prev = entry;
-			entry = entry->next;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 /* LOCKING: requires that the GC lock is held */
 static void
 register_for_finalization (MonoObject *obj, void *user_data, int generation)
 {
-	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
-	FinalizeEntry **finalizable_hash;
-	mword finalizable_hash_size;
-	FinalizeEntry *entry, *prev;
-	unsigned int hash;
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
+
 	if (no_finalize)
 		return;
+
 	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
-	hash = mono_object_hash (obj);
-	rehash_fin_table_if_necessary (hash_table);
-	finalizable_hash = hash_table->table;
-	finalizable_hash_size = hash_table->size;
-	hash %= finalizable_hash_size;
-	prev = NULL;
-	for (entry = finalizable_hash [hash]; entry; entry = entry->next) {
-		if (entry->object == obj) {
-			if (!user_data) {
-				/* remove from the list */
-				if (prev)
-					prev->next = entry->next;
-				else
-					finalizable_hash [hash] = entry->next;
-				hash_table->num_registered--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
-				mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
-			}
-			return;
-		}
-		prev = entry;
+
+	if (user_data) {
+		if (mono_sgen_hash_table_replace (hash_table, obj, NULL))
+			DEBUG (5, fprintf (gc_debug_file, "Added finalizer for object: %p (%s) (%d) to %s table\n", obj, obj->vtable->klass->name, hash_table->num_entries, generation_name (generation)));
+	} else {
+		if (mono_sgen_hash_table_remove (hash_table, obj, NULL))
+			DEBUG (5, fprintf (gc_debug_file, "Removed finalizer for object: %p (%s) (%d)\n", obj, obj->vtable->klass->name, hash_table->num_entries));
 	}
-	if (!user_data) {
-		/* request to deregister, but already out of the list */
-		return;
-	}
-	entry = mono_sgen_alloc_internal (INTERNAL_MEM_FINALIZE_ENTRY);
-	entry->object = obj;
-	entry->next = finalizable_hash [hash];
-	finalizable_hash [hash] = entry;
-	hash_table->num_registered++;
-	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d) to %s table\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered, generation_name (generation)));
 }
 
 #define STAGE_ENTRY_FREE	0
@@ -285,39 +196,26 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 /* LOCKING: requires that the GC lock is held */
 static int
 finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
-	FinalizeEntryHashTable *hash_table)
+	SgenHashTable *hash_table)
 {
-	FinalizeEntry **finalizable_hash = hash_table->table;
-	mword finalizable_hash_size = hash_table->size;
-	FinalizeEntry *entry, *prev;
-	int i, count;
+	MonoObject *object;
+	gpointer dummy;
+	int count;
 
 	if (no_finalize || !out_size || !out_array)
 		return 0;
 	count = 0;
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		prev = NULL;
-		for (entry = finalizable_hash [i]; entry;) {
-			if (mono_object_domain (entry->object) == domain) {
-				FinalizeEntry *next;
-				/* remove and put in out_array */
-				if (prev)
-					prev->next = entry->next;
-				else
-					finalizable_hash [i] = entry->next;
-				next = entry->next;
-				hash_table->num_registered--;
-				out_array [count ++] = entry->object;
-				DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", entry->object, safe_name (entry->object), num_ready_finalizers, hash_table->num_registered));
-				entry = next;
-				if (count == out_size)
-					return count;
-				continue;
-			}
-			prev = entry;
-			entry = entry->next;
+	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+		if (mono_object_domain (object) == domain) {
+			/* remove and put in out_array */
+			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+			out_array [count ++] = object;
+			DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", object, safe_name (object), num_ready_finalizers, mono_sgen_hash_table_num_entries (hash_table)));
+			if (count == out_size)
+				return count;
+			continue;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 	return count;
 }
 
@@ -351,10 +249,10 @@ mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int o
 	return result;
 }
 
-static DisappearingLinkHashTable minor_disappearing_link_hash;
-static DisappearingLinkHashTable major_disappearing_link_hash;
+static SgenHashTable minor_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, (SgenHashFunc)mono_aligned_addr_hash);
+static SgenHashTable major_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, (SgenHashFunc)mono_aligned_addr_hash);
 
-static DisappearingLinkHashTable*
+static SgenHashTable*
 get_dislink_hash_table (int generation)
 {
 	switch (generation) {
@@ -366,126 +264,52 @@ get_dislink_hash_table (int generation)
 
 /* LOCKING: assumes the GC lock is held */
 static void
-rehash_dislink (DisappearingLinkHashTable *hash_table)
-{
-	DisappearingLink **disappearing_link_hash = hash_table->table;
-	int disappearing_link_hash_size = hash_table->size;
-	int i;
-	unsigned int hash;
-	DisappearingLink **new_hash;
-	DisappearingLink *entry, *next;
-	int new_size = g_spaced_primes_closest (hash_table->num_links);
-
-	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
-	for (i = 0; i < disappearing_link_hash_size; ++i) {
-		for (entry = disappearing_link_hash [i]; entry; entry = next) {
-			hash = mono_aligned_addr_hash (entry->link) % new_size;
-			next = entry->next;
-			entry->next = new_hash [hash];
-			new_hash [hash] = entry;
-		}
-	}
-	mono_sgen_free_internal_dynamic (disappearing_link_hash,
-			disappearing_link_hash_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
-	hash_table->table = new_hash;
-	hash_table->size = new_size;
-}
-
-/* LOCKING: assumes the GC lock is held */
-static void
 add_or_remove_disappearing_link (MonoObject *obj, void **link, int generation)
 {
-	DisappearingLinkHashTable *hash_table = get_dislink_hash_table (generation);
-	DisappearingLink *entry, *prev;
-	unsigned int hash;
-	DisappearingLink **disappearing_link_hash = hash_table->table;
-	int disappearing_link_hash_size = hash_table->size;
+	SgenHashTable *hash_table = get_dislink_hash_table (generation);
 
-	if (hash_table->num_links >= disappearing_link_hash_size * 2) {
-		rehash_dislink (hash_table);
-		disappearing_link_hash = hash_table->table;
-		disappearing_link_hash_size = hash_table->size;
-	}
-	/* FIXME: add check that link is not in the heap */
-	hash = mono_aligned_addr_hash (link) % disappearing_link_hash_size;
-	entry = disappearing_link_hash [hash];
-	prev = NULL;
-	for (; entry; entry = entry->next) {
-		/* link already added */
-		if (link == entry->link) {
-			/* NULL obj means remove */
-			if (obj == NULL) {
-				if (prev)
-					prev->next = entry->next;
-				else
-					disappearing_link_hash [hash] = entry->next;
-				hash_table->num_links--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n", entry, hash_table->num_links, generation_name (generation)));
-				mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-			}
-			return;
+	if (!obj) {
+		if (mono_sgen_hash_table_remove (hash_table, link, NULL)) {
+			DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n",
+					link, hash_table->num_entries, generation_name (generation)));
 		}
-		prev = entry;
-	}
-	if (obj == NULL)
 		return;
-	entry = mono_sgen_alloc_internal (INTERNAL_MEM_DISLINK);
-	entry->link = link;
-	entry->next = disappearing_link_hash [hash];
-	disappearing_link_hash [hash] = entry;
-	hash_table->num_links++;
-	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p to %s table\n", entry, obj, obj->vtable->klass->name, link, generation_name (generation)));
+	}
+
+	mono_sgen_hash_table_replace (hash_table, link, NULL);
+	DEBUG (5, fprintf (gc_debug_file, "Added dislink for object: %p (%s) at %p to %s table\n",
+			obj, obj->vtable->klass->name, link, generation_name (generation)));
 }
 
 /* LOCKING: requires that the GC lock is held */
 static void
 null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue)
 {
-	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
-	DisappearingLink **disappearing_link_hash = hash->table;
-	int disappearing_link_hash_size = hash->size;
-	DisappearingLink *entry, *prev;
-	int i;
-	if (!hash->num_links)
-		return;
-	for (i = 0; i < disappearing_link_hash_size; ++i) {
-		prev = NULL;
-		for (entry = disappearing_link_hash [i]; entry;) {
-			char *object;
-			gboolean track = DISLINK_TRACK (entry);
+	void **link;
+	gpointer dummy;
+	SgenHashTable *hash = get_dislink_hash_table (generation);
 
-			/*
-			 * Tracked references are processed after
-			 * finalization handling whereas standard weak
-			 * references are processed before.  If an
-			 * object is still not marked after finalization
-			 * handling it means that it either doesn't have
-			 * a finalizer or the finalizer has already run,
-			 * so we must null a tracking reference.
-			 */
-			if (track == before_finalization) {
-				prev = entry;
-				entry = entry->next;
-				continue;
-			}
+	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
+		char *object;
+		gboolean track = DISLINK_TRACK (link);
 
-			object = DISLINK_OBJECT (entry);
+		/*
+		 * Tracked references are processed after
+		 * finalization handling whereas standard weak
+		 * references are processed before.  If an
+		 * object is still not marked after finalization
+		 * handling it means that it either doesn't have
+		 * a finalizer or the finalizer has already run,
+		 * so we must null a tracking reference.
+		 */
+		if (track != before_finalization) {
+			object = DISLINK_OBJECT (link);
 
 			if (object >= start && object < end && !major_collector.is_object_live (object)) {
 				if (object_is_fin_ready (object)) {
-					void **p = entry->link;
-					DisappearingLink *old;
-					*p = NULL;
-					/* remove from list */
-					if (prev)
-						prev->next = entry->next;
-					else
-						disappearing_link_hash [i] = entry->next;
-					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", p, object));
-					old = entry->next;
-					mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-					entry = old;
-					hash->num_links--;
+					*link = NULL;
+					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", link, object));
+					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 					continue;
 				} else {
 					char *copy = object;
@@ -500,17 +324,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 					 */
 
 					if (hash == &minor_disappearing_link_hash && !ptr_in_nursery (copy)) {
-						void **link = entry->link;
-						DisappearingLink *old;
-						/* remove from list */
-						if (prev)
-							prev->next = entry->next;
-						else
-							disappearing_link_hash [i] = entry->next;
-						old = entry->next;
-						mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-						entry = old;
-						hash->num_links--;
+						SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 
 						g_assert (copy);
 						*link = HIDE_POINTER (copy, track);
@@ -520,52 +334,38 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 
 						continue;
 					} else {
-						*entry->link = HIDE_POINTER (copy, track);
-						DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
+						*link = HIDE_POINTER (copy, track);
+						DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", link, DISLINK_OBJECT (link)));
 					}
 				}
 			}
-			prev = entry;
-			entry = entry->next;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 /* LOCKING: requires that the GC lock is held */
 static void
 null_links_for_domain (MonoDomain *domain, int generation)
 {
-	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
-	DisappearingLink **disappearing_link_hash = hash->table;
-	int disappearing_link_hash_size = hash->size;
-	DisappearingLink *entry, *prev;
-	int i;
-	for (i = 0; i < disappearing_link_hash_size; ++i) {
-		prev = NULL;
-		for (entry = disappearing_link_hash [i]; entry; ) {
-			char *object = DISLINK_OBJECT (entry);
-			if (object && !((MonoObject*)object)->vtable) {
-				DisappearingLink *next = entry->next;
+	void **link;
+	gpointer dummy;
+	SgenHashTable *hash = get_dislink_hash_table (generation);
+	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
+		char *object = DISLINK_OBJECT (link);
+		if (object && !((MonoObject*)object)->vtable) {
+			gboolean free = TRUE;
 
-				if (prev)
-					prev->next = next;
-				else
-					disappearing_link_hash [i] = next;
-
-				if (*(entry->link)) {
-					*(entry->link) = NULL;
-					g_warning ("Disappearing link %p not freed", entry->link);
-				} else {
-					mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
-				}
-
-				entry = next;
-				continue;
+			if (*link) {
+				*link = NULL;
+				free = FALSE;
+				g_warning ("Disappearing link %p not freed", link);
 			}
-			prev = entry;
-			entry = entry->next;
+
+			SGEN_HASH_TABLE_FOREACH_REMOVE (free);
+
+			continue;
 		}
-	}
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 /* LOCKING: requires that the GC lock is held */
