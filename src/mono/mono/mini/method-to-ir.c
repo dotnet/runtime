@@ -6,6 +6,8 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *
  * (C) 2002 Ximian, Inc.
+ * Copyright 2003-2010 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
 #include <config.h>

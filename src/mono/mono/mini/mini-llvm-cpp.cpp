@@ -1,7 +1,8 @@
 //
 // mini-llvm-cpp.cpp: C++ support classes for the mono LLVM integration
 //
-// (C) 2009 Novell, Inc.
+// (C) 2009-2011 Novell, Inc.
+// Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
 //
 
 //

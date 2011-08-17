@@ -1,6 +1,8 @@
 /*
  * The finalizable hash has the object as the key, the 
  * disappearing_link hash, has the link address as key.
+ *
+ * Copyright 2011 Xamarin Inc.
  */
 static FinalizeEntryHashTable minor_finalizable_hash;
 static FinalizeEntryHashTable major_finalizable_hash;

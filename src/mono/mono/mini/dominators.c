@@ -6,6 +6,7 @@
  *   Paolo Molaro (lupus@ximian.com)
  *
  * (C) 2003 Ximian, Inc.
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>

@@ -5,6 +5,7 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
 #include <config.h>

@@ -4,7 +4,8 @@
  * Author:
  *   Mark Probst (mark.probst@gmail.com)
  *
- * (C) 2007 Novell, Inc.
+ * Copyright 2007-2011 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
 #include <config.h>

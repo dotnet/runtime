@@ -6,7 +6,9 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Patrik Torstensson
  *
- * (C) 2003 Ximian, Inc.
+ * Copyright 2003 Ximian, Inc.
+ * Copyright 2003-2011 Novell Inc.
+ * Copyright 2011 Xamarin Inc.
  */
 #include "mini.h"
 #include <string.h>

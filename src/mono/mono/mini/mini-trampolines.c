@@ -1,4 +1,8 @@
-
+/*
+ * (C) 2003 Ximian, Inc.
+ * (C) 2003-2011 Novell, Inc.
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+ */
 #include <config.h>
 #include <glib.h>
 

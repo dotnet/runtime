@@ -9,6 +9,7 @@
  *   Massimiliano Mantione (massi@ximian.com)
  *
  * (C) 2006 Novell, Inc.  http://www.novell.com
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
 
