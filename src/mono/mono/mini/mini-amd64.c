@@ -10,6 +10,8 @@
  *   Zoltan Varga (vargaz@gmail.com)
  *
  * (C) 2003 Ximian, Inc.
+ * Copyright 2003-2011 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 #include "mini.h"
 #include <string.h>

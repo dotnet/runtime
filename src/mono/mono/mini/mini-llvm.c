@@ -1,7 +1,8 @@
 /*
  * mini-llvm.c: llvm "Backend" for the mono JIT
  *
- * (C) 2009 Novell, Inc.
+ * Copyright 2009-2011 Novell Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  */
 
 #include "mini.h"

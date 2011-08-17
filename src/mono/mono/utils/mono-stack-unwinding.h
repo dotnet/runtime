@@ -1,3 +1,7 @@
+/*
+ * Copyright 2008-2010 Novell, Inc.
+ * Copyright 2011 Xamarin Inc.
+ */
 #ifndef __MONO_MONO_STACK_UNWINDING_H__
 #define __MONO_MONO_STACK_UNWINDING_H__
 

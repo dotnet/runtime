@@ -5,6 +5,7 @@
  *   Zoltan Varga (vargaz@gmail.com)
  *
  * Copyright 2009-2010 Novell, Inc.
+ * Copyright 2011 Xamarin Inc.
  */
 
 #include <config.h>

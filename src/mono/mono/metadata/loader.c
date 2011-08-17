@@ -8,6 +8,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  *
  * This file is used by the interpreter and the JIT engine to locate
  * assemblies.  Used to load AssemblyRef and later to resolve various

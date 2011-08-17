@@ -4,7 +4,8 @@
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)
  *
- * (C) 2011 Novell, Inc
+ * Copyright 2011 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
 #ifndef __MONO_TLS_H__

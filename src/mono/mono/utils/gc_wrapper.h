@@ -1,3 +1,7 @@
+/* 
+ * Copyright 2004-2011 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+ */
 #ifndef __MONO_OS_GC_WRAPPER_H__
 #define __MONO_OS_GC_WRAPPER_H__
 

@@ -5,7 +5,8 @@
  * 	Paolo Molaro (lupus@ximian.com)
  *  Rodrigo Kumpera (kumpera@gmail.com)
  *
- * Copyright 2005-2010 Novell, Inc (http://www.novell.com)
+ * Copyright 2005-2011 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  *
  * Thread start/stop adapted from Boehm's GC:
  * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
