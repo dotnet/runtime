@@ -70,6 +70,7 @@ lookup (SgenHashTable *hash_table, gpointer key, guint *_hash)
 {
 	SgenHashTableEntry *entry;
 	guint hash;
+	GEqualFunc equal = hash_table->equal_func;
 
 	if (!hash_table->size)
 		return NULL;
@@ -79,7 +80,7 @@ lookup (SgenHashTable *hash_table, gpointer key, guint *_hash)
 		*_hash = hash;
 
 	for (entry = hash_table->table [hash]; entry; entry = entry->next) {
-		if (entry->key == key)
+		if ((equal && equal (entry->key, key)) || (!equal && entry->key == key))
 			return entry;
 	}
 	return NULL;
@@ -126,13 +127,14 @@ mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer d
 {
 	SgenHashTableEntry *entry, *prev;
 	guint hash;
+	GEqualFunc equal = hash_table->equal_func;
 
 	rehash_if_necessary (hash_table);
 	hash = hash_table->hash_func (key) % hash_table->size;
 
 	prev = NULL;
 	for (entry = hash_table->table [hash]; entry; entry = entry->next) {
-		if (entry->key == key) {
+		if ((equal && equal (entry->key, key)) || (!equal && entry->key == key)) {
 			if (prev)
 				prev->next = entry->next;
 			else

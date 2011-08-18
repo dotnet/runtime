@@ -887,12 +887,13 @@ typedef struct {
 	int entry_mem_type;
 	size_t data_size;
 	GHashFunc hash_func;
+	GEqualFunc equal_func;
 	SgenHashTableEntry **table;
 	guint size;
 	guint num_entries;
 } SgenHashTable;
 
-#define SGEN_HASH_TABLE_INIT(table_type,entry_type,data_size,func)	{ (table_type), (entry_type), (data_size), (func), NULL, 0, 0 }
+#define SGEN_HASH_TABLE_INIT(table_type,entry_type,data_size,hash_func,equal_func)	{ (table_type), (entry_type), (data_size), (hash_func), (equal_func), NULL, 0, 0 }
 #define SGEN_HASH_TABLE_ENTRY_SIZE(data_size)			((data_size) + sizeof (SgenHashTableEntry*) + sizeof (gpointer))
 
 gpointer mono_sgen_hash_table_lookup (SgenHashTable *table, gpointer key) MONO_INTERNAL;
