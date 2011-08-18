@@ -39,8 +39,10 @@ typedef HANDLE MonoNativeThreadHandle;
 typedef thread_port_t MonoNativeThreadHandle;
 
 #else
-/*FIXME this should be pid_t on posix - to handle android borken signaling */
-typedef pthread_t MonoNativeThreadHandle;
+
+#include <unistd.h>
+
+typedef pid_t MonoNativeThreadHandle;
 
 #endif /* defined(__MACH__) */
 
@@ -65,7 +67,7 @@ enum {
 typedef struct {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
-	MonoNativeThreadHandle native_handle;
+	MonoNativeThreadHandle native_handle; /* Valid on mach and android */
 	int thread_state;
 
 	/* suspend machinery, fields protected by the suspend_lock */
@@ -192,6 +194,12 @@ mono_thread_info_disable_new_interrupt (gboolean disable) MONO_INTERNAL;
 
 int
 mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) MONO_INTERNAL;
+
+#if !defined(__MACH__)
+/*Use this instead of pthread_kill */
+int
+mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum) MONO_INTERNAL;
+#endif
 
 #endif /* !defined(HOST_WIN32) */
 

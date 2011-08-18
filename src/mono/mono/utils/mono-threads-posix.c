@@ -17,6 +17,10 @@
 
 #include <errno.h>
 
+#if defined(PLATFORM_ANDROID)
+extern int tkill (pid_t tid, int signal);
+#endif
+
 #if defined(_POSIX_VERSION) || defined(__native_client__)
 #include <signal.h>
 
@@ -145,6 +149,23 @@ mono_threads_core_interrupt (MonoThreadInfo *info)
 {
 }
 
+int
+mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
+{
+#if defined (PLATFORM_ANDROID)
+	int result, old_errno = errno;
+	result = tkill (info->native_handle, signum);
+	if (result < 0) {
+		result = errno;
+		errno = old_errno;
+	}
+	return result;
+#else
+	return pthread_kill (mono_thread_info_get_tid (info), signum);
+#endif
+
+}
+
 /*
 We self suspend using signals since thread_state_init_from_sigctx only supports
 a null context on a few targets.
@@ -154,7 +175,7 @@ mono_threads_core_self_suspend (MonoThreadInfo *info)
 {
 	/*FIXME, check return value*/
 	info->self_suspend = TRUE;
-	pthread_kill (mono_thread_info_get_tid (info), mono_thread_get_abort_signal ());
+	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
 }
 
 gboolean
@@ -162,7 +183,7 @@ mono_threads_core_suspend (MonoThreadInfo *info)
 {
 	/*FIXME, check return value*/
 	info->self_suspend = FALSE;
-	pthread_kill (mono_thread_info_get_tid (info), mono_thread_get_abort_signal ());
+	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
 	while (MONO_SEM_WAIT (&info->suspend_semaphore) != 0) {
 		/* g_assert (errno == EINTR); */
 	}
@@ -186,6 +207,10 @@ mono_threads_platform_register (MonoThreadInfo *info)
 	MONO_SEM_INIT (&info->suspend_semaphore, 0);
 	MONO_SEM_INIT (&info->resume_semaphore, 0);
 	MONO_SEM_INIT (&info->finish_resume_semaphore, 0);
+
+#if defined (PLATFORM_ANDROID)
+	info->native_handle = (gpointer) gettid ();
+#endif
 }
 
 void
