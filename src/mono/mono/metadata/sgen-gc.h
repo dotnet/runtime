@@ -875,8 +875,6 @@ void mono_sgen_nursery_retire_region (void *address, ptrdiff_t size) MONO_INTERN
 
 /* hash tables */
 
-typedef int (*SgenHashFunc) (gpointer key);
-
 typedef struct _SgenHashTableEntry SgenHashTableEntry;
 struct _SgenHashTableEntry {
 	SgenHashTableEntry *next;
@@ -887,11 +885,11 @@ struct _SgenHashTableEntry {
 typedef struct {
 	int table_mem_type;
 	int entry_mem_type;
-	int data_size;
-	SgenHashFunc hash_func;
+	size_t data_size;
+	GHashFunc hash_func;
 	SgenHashTableEntry **table;
-	int size;
-	int num_entries;
+	guint size;
+	guint num_entries;
 } SgenHashTable;
 
 #define SGEN_HASH_TABLE_INIT(table_type,entry_type,data_size,func)	{ (table_type), (entry_type), (data_size), (func), NULL, 0, 0 }
@@ -909,7 +907,7 @@ void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
 		SgenHashTable *__hash_table = (h);			\
 		SgenHashTableEntry **__table = __hash_table->table;	\
 		SgenHashTableEntry *__entry, *__prev;			\
-		int __i;						\
+		guint __i;						\
 		for (__i = 0; __i < (h)->size; ++__i) {			\
 			__prev = NULL;					\
 			for (__entry = __table [__i]; __entry; ) {	\

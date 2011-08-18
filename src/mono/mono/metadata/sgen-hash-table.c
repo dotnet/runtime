@@ -31,12 +31,10 @@ static void
 rehash (SgenHashTable *hash_table)
 {
 	SgenHashTableEntry **old_hash = hash_table->table;
-	int old_hash_size = hash_table->size;
-	int i;
-	unsigned int hash;
+	guint old_hash_size = hash_table->size;
+	guint i, hash, new_size;
 	SgenHashTableEntry **new_hash;
 	SgenHashTableEntry *entry, *next;
-	int new_size;
 
 	if (!old_hash) {
 		mono_sgen_register_fixed_internal_mem_type (hash_table->entry_mem_type,
@@ -68,10 +66,10 @@ rehash_if_necessary (SgenHashTable *hash_table)
 }
 
 static SgenHashTableEntry*
-lookup (SgenHashTable *hash_table, gpointer key, int *_hash)
+lookup (SgenHashTable *hash_table, gpointer key, guint *_hash)
 {
 	SgenHashTableEntry *entry;
-	int hash;
+	guint hash;
 
 	if (!hash_table->size)
 		return NULL;
@@ -99,7 +97,7 @@ mono_sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
 gboolean
 mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
 {
-	int hash;
+	guint hash;
 	SgenHashTableEntry *entry;
 
 	rehash_if_necessary (hash_table);
@@ -127,7 +125,7 @@ gboolean
 mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer data_return)
 {
 	SgenHashTableEntry *entry, *prev;
-	int hash;
+	guint hash;
 
 	rehash_if_necessary (hash_table);
 	hash = hash_table->hash_func (key) % hash_table->size;
@@ -158,7 +156,7 @@ mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer d
 void
 mono_sgen_hash_table_clean (SgenHashTable *hash_table)
 {
-	int i;
+	guint i;
 
 	if (!hash_table->size) {
 		g_assert (!hash_table->table);

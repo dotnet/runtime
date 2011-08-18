@@ -7,8 +7,8 @@
  *
  * Copyright 2011 Xamarin Inc.
  */
-static SgenHashTable minor_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (SgenHashFunc)mono_object_hash);
-static SgenHashTable major_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (SgenHashFunc)mono_object_hash);
+static SgenHashTable minor_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (GHashFunc)mono_object_hash);
+static SgenHashTable major_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (GHashFunc)mono_object_hash);
 
 static SgenHashTable*
 get_finalize_entry_hash_table (int generation)
@@ -249,8 +249,8 @@ mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int o
 	return result;
 }
 
-static SgenHashTable minor_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, (SgenHashFunc)mono_aligned_addr_hash);
-static SgenHashTable major_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, (SgenHashFunc)mono_aligned_addr_hash);
+static SgenHashTable minor_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, mono_aligned_addr_hash);
+static SgenHashTable major_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, mono_aligned_addr_hash);
 
 static SgenHashTable*
 get_dislink_hash_table (int generation)
