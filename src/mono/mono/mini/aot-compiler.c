@@ -5486,12 +5486,16 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * The following optimizations cannot be enabled:
 	 * - 'tailcallelim'
 	 * - 'jump-threading' changes our blockaddress references to int constants.
+	 * - 'basiccg' fails because it contains:
+	 * if (CS && !isa<IntrinsicInst>(II)) {
+	 * and isa<IntrinsicInst> is false for invokes to intrinsics (iltests.exe).
+	 * - 'prune-eh' and 'functionattrs' depend on 'basiccg'.
 	 * The opt list below was produced by taking the output of:
 	 * llvm-as < /dev/null | opt -O2 -disable-output -debug-pass=Arguments
 	 * then removing tailcallelim + the global opts, and adding a second gvn.
 	 */
 	opts = g_strdup ("-instcombine -simplifycfg");
-	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -domfrontier -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -iv-users -indvars -loop-deletion -loop-simplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -simplifycfg -preverify -domtree -verify");
+	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -domfrontier -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -iv-users -indvars -loop-deletion -loop-simplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -simplifycfg -preverify -domtree -verify");
 #if 1
 	command = g_strdup_printf ("%sopt -f %s -o temp.opt.bc temp.bc", acfg->aot_opts.llvm_path, opts);
 	printf ("Executing opt: %s\n", command);
