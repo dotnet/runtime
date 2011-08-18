@@ -161,13 +161,13 @@ restart_handler (int sig)
 gboolean
 mono_sgen_resume_thread (SgenThreadInfo *info)
 {
-	return pthread_kill (mono_thread_info_get_tid (info), restart_signal_num) == 0;
+	return mono_threads_pthread_kill (info, restart_signal_num) == 0;
 }
 
 gboolean
 mono_sgen_suspend_thread (SgenThreadInfo *info)
 {
-	return pthread_kill (mono_thread_info_get_tid (info), suspend_signal_num) == 0;
+	return mono_threads_pthread_kill (info, suspend_signal_num) == 0;
 }
 
 void
