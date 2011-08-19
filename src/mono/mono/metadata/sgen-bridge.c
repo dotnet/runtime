@@ -90,9 +90,10 @@ dyn_array_uninit (DynArray *da)
 static void
 dyn_array_ensure_capacity (DynArray *da, int capacity)
 {
+	int old_capacity = da->capacity;
 	char *new_data;
 
-	if (capacity <= da->capacity)
+	if (capacity <= old_capacity)
 		return;
 
 	if (da->capacity == 0)
@@ -102,7 +103,7 @@ dyn_array_ensure_capacity (DynArray *da, int capacity)
 
 	new_data = mono_sgen_alloc_internal_dynamic (da->elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA);
 	memcpy (new_data, da->data, da->elem_size * da->size);
-	mono_sgen_free_internal_dynamic (da->data, da->elem_size * da->size, INTERNAL_MEM_BRIDGE_DATA);
+	mono_sgen_free_internal_dynamic (da->data, da->elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = new_data;
 }
 
