@@ -636,6 +636,8 @@ enum {
 	INTERNAL_MEM_ROOTS_TABLE,
 	INTERNAL_MEM_ROOT_RECORD,
 	INTERNAL_MEM_STATISTICS,
+	INTERNAL_MEM_STAT_PINNED_CLASS,
+	INTERNAL_MEM_STAT_REMSET_CLASS,
 	INTERNAL_MEM_REMSET,
 	INTERNAL_MEM_GRAY_QUEUE,
 	INTERNAL_MEM_STORE_REMSET,
@@ -699,6 +701,8 @@ void mono_sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INT
 void mono_sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue) MONO_INTERNAL;
 
 void mono_sgen_pin_stats_register_object (char *obj, size_t size);
+void mono_sgen_pin_stats_register_global_remset (char *obj);
+void mono_sgen_pin_stats_print_class_stats (void);
 
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
