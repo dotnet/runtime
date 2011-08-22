@@ -24,7 +24,7 @@ if HAVE_OPROFILE
 endif
 
 libmono_profiler_cov_la_SOURCES = mono-cov.c
-libmono_profiler_cov_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la
+libmono_profiler_cov_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
 libmono_profiler_aot_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
 #libmono_profiler_logging_la_SOURCES = mono-profiler-logging.c
