@@ -34,24 +34,6 @@ mono_threads_core_interrupt (MonoThreadInfo *info)
 	thread_abort_safely (info->native_handle);
 }
 
-void
-mono_threads_core_self_suspend (MonoThreadInfo *info)
-{
-	kern_return_t kern_ret;
-	gboolean ret;
-
-	g_assert (info);
-
-	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->suspend_state, NULL);
-	g_assert (ret);
-
-	/* we must unlock only after context is captured. */
-	LeaveCriticalSection (&info->suspend_lock);
-
-	kern_ret = thread_suspend (info->native_handle);
-	g_assert (kern_ret == KERN_SUCCESS);
-}
-
 gboolean
 mono_threads_core_suspend (MonoThreadInfo *info)
 {

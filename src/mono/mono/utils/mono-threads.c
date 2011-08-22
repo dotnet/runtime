@@ -103,6 +103,8 @@ free_thread_info (gpointer mem)
 	MonoThreadInfo *info = mem;
 
 	DeleteCriticalSection (&info->suspend_lock);
+	MONO_SEM_DESTROY (&info->resume_semaphore);
+	MONO_SEM_DESTROY (&info->finish_resume_semaphore);
 	mono_threads_platform_free (info);
 
 	g_free (info);
@@ -125,6 +127,8 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	info->small_id = small_id;
 
 	InitializeCriticalSection (&info->suspend_lock);
+	MONO_SEM_INIT (&info->resume_semaphore, 0);
+	MONO_SEM_INIT (&info->finish_resume_semaphore, 0);
 
 	/*set TLS early so SMR works */
 	mono_native_tls_set_value (thread_info_key, info);
@@ -294,7 +298,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 	EnterCriticalSection (&info->suspend_lock);
 
 	/*thread is on the process of detaching*/
-	if (info->thread_state > STATE_RUNNING) {
+	if (mono_thread_info_run_state (info) > STATE_RUNNING) {
 		mono_hazard_pointer_clear (hp, 1);
 		return NULL;
 	}
@@ -318,6 +322,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 		mono_threads_core_interrupt (info);
 
 	++info->suspend_count;
+	info->thread_state |= STATE_SUSPENDED;
 	LeaveCriticalSection (&info->suspend_lock);
 	mono_hazard_pointer_clear (hp, 1);
 
@@ -325,8 +330,9 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 }
 
 void
-mono_thread_info_self_suspend ()
+mono_thread_info_self_suspend (void)
 {
+	gboolean ret;
 	MonoThreadInfo *info = mono_thread_info_current ();
 	if (!info)
 		return;
@@ -338,12 +344,36 @@ mono_thread_info_self_suspend ()
 	g_assert (info->suspend_count == 0);
 	++info->suspend_count;
 
-	/*
-	The internal API contract with this function is a bit out of the ordinary.
-	mono_threads_core_self_suspend executes with suspend_lock taken and must
-	release it after capturing the current context.
-	*/
-	mono_threads_core_self_suspend (info);
+	info->thread_state |= STATE_SELF_SUSPENDED;
+
+	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->suspend_state, NULL);
+	g_assert (ret);
+
+	LeaveCriticalSection (&info->suspend_lock);
+
+	while (MONO_SEM_WAIT (&info->resume_semaphore) != 0) {
+		/*if (EINTR != errno) ABORT("sem_wait failed"); */
+	}
+
+	g_assert (!info->async_target); /*FIXME this should happen normally for suspend. */
+	MONO_SEM_POST (&info->finish_resume_semaphore);
+}
+
+static gboolean
+mono_thread_info_resume_internal (MonoThreadInfo *info)
+{
+	gboolean result;
+	if (mono_thread_info_suspend_state (info) == STATE_SELF_SUSPENDED) {
+		MONO_SEM_POST (&info->resume_semaphore);
+		while (MONO_SEM_WAIT (&info->finish_resume_semaphore) != 0) {
+			/* g_assert (errno == EINTR); */
+		}
+		result = TRUE;
+	} else {
+		result = mono_threads_core_resume (info);
+	}
+	info->thread_state &= ~SUSPEND_STATE_MASK;
+	return result;
 }
 
 gboolean
@@ -372,7 +402,7 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 	g_assert (mono_thread_info_get_tid (info));
 
 	if (--info->suspend_count == 0)
-		result = mono_threads_core_resume (info);
+		result = mono_thread_info_resume_internal (info);
 
 	LeaveCriticalSection (&info->suspend_lock);
 	mono_hazard_pointer_clear (hp, 1);

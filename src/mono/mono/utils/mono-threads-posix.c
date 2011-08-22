@@ -88,10 +88,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 	g_assert (ret);
 
-	if (current->self_suspend)
-		LeaveCriticalSection (&current->suspend_lock);
-	else
-		MONO_SEM_POST (&current->suspend_semaphore);
+	MONO_SEM_POST (&current->suspend_semaphore);
 		
 	while (MONO_SEM_WAIT (&current->resume_semaphore) != 0) {
 		/*if (EINTR != errno) ABORT("sem_wait failed"); */
@@ -166,23 +163,10 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 
 }
 
-/*
-We self suspend using signals since thread_state_init_from_sigctx only supports
-a null context on a few targets.
-*/
-void
-mono_threads_core_self_suspend (MonoThreadInfo *info)
-{
-	/*FIXME, check return value*/
-	info->self_suspend = TRUE;
-	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
-}
-
 gboolean
 mono_threads_core_suspend (MonoThreadInfo *info)
 {
 	/*FIXME, check return value*/
-	info->self_suspend = FALSE;
 	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
 	while (MONO_SEM_WAIT (&info->suspend_semaphore) != 0) {
 		/* g_assert (errno == EINTR); */
@@ -205,8 +189,6 @@ void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
 	MONO_SEM_INIT (&info->suspend_semaphore, 0);
-	MONO_SEM_INIT (&info->resume_semaphore, 0);
-	MONO_SEM_INIT (&info->finish_resume_semaphore, 0);
 
 #if defined (PLATFORM_ANDROID)
 	info->native_handle = (gpointer) gettid ();
@@ -217,8 +199,6 @@ void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
 	MONO_SEM_DESTROY (&info->suspend_semaphore);
-	MONO_SEM_DESTROY (&info->resume_semaphore);
-	MONO_SEM_DESTROY (&info->finish_resume_semaphore);
 }
 
 #endif /*!defined (__MACH__)*/

@@ -58,11 +58,19 @@ typedef pthread_t MonoNativeThreadId;
 #endif
 
 enum {
-	STATE_STARTING,
-	STATE_RUNNING,
-	STATE_SHUTTING_DOWN,
-	STATE_DEAD
+	STATE_STARTING			= 0x01,
+	STATE_RUNNING			= 0x02,
+	STATE_SHUTTING_DOWN		= 0x03,
+	STATE_DEAD				= 0x04,
+	RUN_STATE_MASK			= 0x0F,
+
+	STATE_SUSPENDED			= 0x10,
+	STATE_SELF_SUSPENDED	= 0x20,
+	SUSPEND_STATE_MASK		= 0xF0,
 };
+
+#define mono_thread_info_run_state(info) ((info)->thread_state & RUN_STATE_MASK)
+#define mono_thread_info_suspend_state(info) ((info)->thread_state & SUSPEND_STATE_MASK)
 
 typedef struct {
 	MonoLinkedListSetNode node;
@@ -74,12 +82,12 @@ typedef struct {
 	CRITICAL_SECTION suspend_lock;
 	int suspend_count;
 
+	MonoSemType finish_resume_semaphore;
+	MonoSemType resume_semaphore; 
+
 	/* only needed by the posix backend */ 
 #if (defined(_POSIX_VERSION) || defined(__native_client__)) && !defined (__MACH__)
 	MonoSemType suspend_semaphore;
-	MonoSemType resume_semaphore; 
-	MonoSemType finish_resume_semaphore;
-	gboolean self_suspend;
 #endif
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
@@ -209,7 +217,6 @@ gboolean mono_threads_core_suspend (MonoThreadInfo *info) MONO_INTERNAL;
 gboolean mono_threads_core_resume (MonoThreadInfo *info) MONO_INTERNAL;
 void mono_threads_platform_register (MonoThreadInfo *info) MONO_INTERNAL; //ok
 void mono_threads_platform_free (MonoThreadInfo *info) MONO_INTERNAL;
-void mono_threads_core_self_suspend (MonoThreadInfo *info) MONO_INTERNAL;
 void mono_threads_core_interrupt (MonoThreadInfo *info) MONO_INTERNAL;
 
 #endif /* __MONO_THREADS_H__ */
