@@ -2688,4 +2688,20 @@ END:
 		ret
 	}
 
+     .field  public static int32 static_a
+
+	.method public static
+			default int32 test_4_ldfld_stfld_static () cil managed
+	{
+		ldnull
+		ldc.i4 2
+		stfld int32 Tests::static_a
+		ldnull
+		ldfld int32 Tests::static_a
+		ldnull
+		ldflda int32 Tests::static_a
+		ldind.i4
+		add
+		ret
+	}
 }

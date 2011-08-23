@@ -8593,22 +8593,43 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_LDFLD:
 		case CEE_LDFLDA:
-		case CEE_STFLD: {
+		case CEE_STFLD:
+		case CEE_LDSFLD:
+		case CEE_LDSFLDA:
+		case CEE_STSFLD: {
 			MonoClassField *field;
 			int costs;
 			guint foffset;
+			gboolean is_instance;
+			int op;
+			gpointer addr = NULL;
+			gboolean is_special_static;
+			MonoType *ftype;
+			MonoInst *store_val = NULL;
 
-			if (*ip == CEE_STFLD) {
-				CHECK_STACK (2);
-				sp -= 2;
+			op = *ip;
+			is_instance = (op == CEE_LDFLD || op == CEE_LDFLDA || op == CEE_STFLD);
+			if (is_instance) {
+				if (op == CEE_STFLD) {
+					CHECK_STACK (2);
+					sp -= 2;
+					store_val = sp [1];
+				} else {
+					CHECK_STACK (1);
+					--sp;
+				}
+				if (sp [0]->type == STACK_I4 || sp [0]->type == STACK_I8 || sp [0]->type == STACK_R8)
+					UNVERIFIED;
+				if (*ip != CEE_LDFLD && sp [0]->type == STACK_VTYPE)
+					UNVERIFIED;
 			} else {
-				CHECK_STACK (1);
-				--sp;
+				if (op == CEE_STSFLD) {
+					CHECK_STACK (1);
+					sp--;
+					store_val = sp [0];
+				}
 			}
-			if (sp [0]->type == STACK_I4 || sp [0]->type == STACK_I8 || sp [0]->type == STACK_R8)
-				UNVERIFIED;
-			if (*ip != CEE_LDFLD && sp [0]->type == STACK_VTYPE)
-				UNVERIFIED;
+
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -8624,16 +8645,44 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				FIELD_ACCESS_FAILURE;
 			mono_class_init (klass);
 
-			if (*ip != CEE_LDFLDA && is_magic_tls_access (field))
+			if (is_instance && *ip != CEE_LDFLDA && is_magic_tls_access (field))
 				UNVERIFIED;
+
+			/* if the class is Critical then transparent code cannot access it's fields */
+			if (!is_instance && mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
+
 			/* XXX this is technically required but, so far (SL2), no [SecurityCritical] types (not many exists) have
 			   any visible *instance* field  (in fact there's a single case for a static field in Marshal) XXX
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
 			*/
 
+			/*
+			 * LDFLD etc. is usable on static fields as well, so convert those cases to
+			 * the static case.
+			 */
+			if (is_instance && field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+				switch (op) {
+				case CEE_LDFLD:
+					op = CEE_LDSFLD;
+					break;
+				case CEE_STFLD:
+					op = CEE_STSFLD;
+					break;
+				case CEE_LDFLDA:
+					op = CEE_LDSFLDA;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+				is_instance = FALSE;
+			}
+
+			/* INSTANCE CASE */
+
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
-			if (*ip == CEE_STFLD) {
+			if (op == CEE_STFLD) {
 				if (target_type_is_incompatible (cfg, field->type, sp [1]))
 					UNVERIFIED;
 				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
@@ -8686,8 +8735,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
-				MonoMethod *wrapper = (*ip == CEE_LDFLDA) ? mono_marshal_get_ldflda_wrapper (field->type) : mono_marshal_get_ldfld_wrapper (field->type); 
+			if (is_instance && ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class)) {
+				MonoMethod *wrapper = (op == CEE_LDFLDA) ? mono_marshal_get_ldflda_wrapper (field->type) : mono_marshal_get_ldfld_wrapper (field->type); 
 				MonoInst *iargs [4];
 
 				iargs [0] = sp [0];
@@ -8710,7 +8759,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = mono_emit_method_call (cfg, wrapper, iargs, NULL);
 					*sp++ = ins;
 				}
-			} else {
+			} else if (is_instance) {
 				if (sp [0]->type == STACK_VTYPE) {
 					MonoInst *var;
 
@@ -8726,7 +8775,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					sp [0] = ins;
 				}
 
-				if (*ip == CEE_LDFLDA) {
+				if (op == CEE_LDFLDA) {
 					if (is_magic_tls_access (field)) {
 						ins = sp [0];
 						*sp++ = create_magic_tls_access (cfg, field, &cached_tls_addr, ins);
@@ -8755,36 +8804,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = load;
 				}
 			}
-			ins_flag = 0;
-			ip += 5;
-			break;
-		}
-		case CEE_LDSFLD:
-		case CEE_LDSFLDA:
-		case CEE_STSFLD: {
-			MonoClassField *field;
-			gpointer addr = NULL;
-			gboolean is_special_static;
-			MonoType *ftype;
 
-			CHECK_OPSIZE (5);
-			token = read32 (ip + 1);
-
-			if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				field = mono_method_get_wrapper_data (method, token);
-				klass = field->parent;
+			if (is_instance) {
+				ins_flag = 0;
+				ip += 5;
+				break;
 			}
-			else
-				field = mono_field_from_token (image, token, &klass, generic_context);
-			if (!field)
-				LOAD_ERROR;
-			mono_class_init (klass);
-			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
-				FIELD_ACCESS_FAILURE;
 
-			/* if the class is Critical then transparent code cannot access it's fields */
-			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
+			/* STATIC CASE */
 
 			/*
 			 * We can only support shared generic static
@@ -8793,7 +8820,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * the generic class init.
 			 */
 #ifndef MONO_ARCH_VTABLE_REG
-			GENERIC_SHARING_FAILURE (*ip);
+			GENERIC_SHARING_FAILURE (op);
 #endif
 
 			if (cfg->generic_sharing_context)
@@ -8953,16 +8980,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Generate IR to do the actual load/store operation */
 
-			if (*ip == CEE_LDSFLDA) {
+			if (op == CEE_LDSFLDA) {
 				ins->klass = mono_class_from_mono_type (ftype);
 				ins->type = STACK_PTR;
 				*sp++ = ins;
-			} else if (*ip == CEE_STSFLD) {
+			} else if (op == CEE_STSFLD) {
 				MonoInst *store;
-				CHECK_STACK (1);
-				sp--;
 
-				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, sp [0]->dreg);
+				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, store_val->dreg);
 				store->flags |= ins_flag;
 			} else {
 				gboolean is_const = FALSE;
