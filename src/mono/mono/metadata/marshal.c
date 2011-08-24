@@ -1466,11 +1466,7 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_LPWSTR_STR:
 		return mono_string_from_utf16;
 	case MONO_MARSHAL_CONV_LPTSTR_STR:
-#ifdef TARGET_WIN32
-		return mono_string_from_utf16;
-#else
 		return mono_string_new_wrapper;
-#endif
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		return mono_string_new_wrapper;
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
