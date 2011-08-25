@@ -351,6 +351,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		if (!ltype) {
 			int i, size;
 			LLVMTypeRef *eltypes;
+			char *name;
 
 			size = get_vtype_size (t);
 
@@ -358,8 +359,9 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 			for (i = 0; i < size; ++i)
 				eltypes [i] = LLVMInt8Type ();
 
-			/* We couldn't name these types since LLVM uses structural type equality */
-			ltype = LLVMStructType (eltypes, size, FALSE);
+			name = mono_type_full_name (&klass->byval_arg);
+			ltype = LLVMStructCreateNamed (LLVMGetGlobalContext (), name);
+			LLVMStructSetBody (ltype, eltypes, size, FALSE);
 			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
 			g_free (eltypes);
 		}
