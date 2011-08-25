@@ -2115,7 +2115,7 @@ if test "x$enable_llvm" = "xyes"; then
    # from LLVM classes.
    LLVM_CXXFLAGS="`$LLVM_CONFIG --cxxflags` -fno-rtti"
    LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
-   LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit x86codegen`
+   LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit mcjit x86codegen`
    LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"
 
    # Should be something like '2.6' or '2.7svn'

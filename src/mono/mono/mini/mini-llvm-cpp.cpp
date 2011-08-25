@@ -31,6 +31,7 @@
 #include <llvm/Target/TargetData.h>
 #include <llvm/Target/TargetRegisterInfo.h>
 #include <llvm/Analysis/Verifier.h>
+#include <llvm/Analysis/Passes.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/CommandLine.h>
 #include "llvm/Support/PassNameParser.h"
@@ -39,7 +40,6 @@
 #include <llvm/CodeGen/MachineFunctionPass.h>
 #include <llvm/CodeGen/MachineFunction.h>
 #include <llvm/CodeGen/MachineFrameInfo.h>
-#include <llvm/Support/PassManagerBuilder.h>
 //#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
@@ -50,8 +50,6 @@
 #define LLVM_CHECK_VERSION(major,minor) \
 	((LLVM_MAJOR_VERSION > (major)) ||									\
 	 ((LLVM_MAJOR_VERSION == (major)) && (LLVM_MINOR_VERSION >= (minor))))
-
-extern "C" void LLVMInitializeX86TargetInfo();
 
 using namespace llvm;
 
@@ -442,6 +440,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
+  LLVMInitializeX86TargetMC ();
 
   mono_mm = new MonoJITMemoryManager ();
   mono_mm->alloc_cb = alloc_cb;
@@ -450,7 +449,12 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   // PrettyStackTrace installs signal handlers which trip up libgc
   DisablePrettyStackTrace = true;
 
-  ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, CodeGenOpt::Default);
+  /*
+   * The Default code model doesn't seem to work on amd64,
+   * test_0_fields_with_big_offsets (among others) crashes, because LLVM tries to call
+   * memset using a normal pcrel code which is in 32bit memory, while memset isn't.
+   */
+  ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, CodeGenOpt::Default, true, Reloc::Default, CodeModel::Large);
   if (!EE) {
 	  errs () << "Unable to create LLVM ExecutionEngine: " << Error << "\n";
 	  g_assert_not_reached ();
