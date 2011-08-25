@@ -697,7 +697,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				 */
 				if (reg_locations [i]) {
 					DEBUG (fprintf (logfile, "\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
-					mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
+					mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + sizeof (mgreg_t));
 					scanned_registers += sizeof (mgreg_t);
 				}
 
@@ -726,7 +726,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			for (i = 0; i < MONO_MAX_IREGS; ++i) {
 				if (reg_locations [i]) {
 					DEBUG (fprintf (logfile, "\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
-					mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
+					mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + sizeof (mgreg_t));
 					scanned_registers += sizeof (mgreg_t);
 				}
 				reg_locations [i] = NULL;
@@ -967,12 +967,12 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	for (i = 0; i < MONO_MAX_IREGS; ++i) {
 		if (reg_locations [i]) {
 			DEBUG (fprintf (logfile, "\tscan saved reg location %p.\n", reg_locations [i]));
-			mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
+			mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + sizeof (mgreg_t));
 			scanned_registers += sizeof (mgreg_t);
 		}
 		if (new_reg_locations [i]) {
 			DEBUG (fprintf (logfile, "\tscan saved reg location %p.\n", new_reg_locations [i]));
-			mono_gc_conservatively_scan_area (new_reg_locations [i], new_reg_locations [i] + sizeof (mgreg_t));
+			mono_gc_conservatively_scan_area (new_reg_locations [i], (char*)new_reg_locations [i] + sizeof (mgreg_t));
 			scanned_registers += sizeof (mgreg_t);
 		}
 	}
