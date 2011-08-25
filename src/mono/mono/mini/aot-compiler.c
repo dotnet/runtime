@@ -205,6 +205,7 @@ typedef struct MonoAotCompile {
 	GString *llc_args;
 	GString *as_args;
 	char *assembly_name_sym;
+	GHashTable *plt_entry_debug_sym_cache;
 	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
 } MonoAotCompile;
 
@@ -260,6 +261,9 @@ get_patch_name (int info)
 }
 
 #endif
+
+static char*
+get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cache);
 
 /* Wrappers around the image writer functions */
 
@@ -2318,7 +2322,12 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		res->plt_offset = acfg->plt_offset;
 		res->ji = new_ji;
 		res->symbol = get_plt_symbol (acfg, res->plt_offset, patch_info);
-		res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
+		if (acfg->aot_opts.write_symbols)
+			res->debug_sym = get_plt_entry_debug_sym (acfg, res->ji, acfg->plt_entry_debug_sym_cache);
+		if (res->debug_sym)
+			res->llvm_symbol = g_strdup_printf ("%s_%s_llvm", res->symbol, res->debug_sym);
+		else
+			res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
 
 		g_hash_table_insert (acfg->patch_to_plt_entry, new_ji, res);
 
@@ -4277,9 +4286,6 @@ emit_plt (MonoAotCompile *acfg)
 {
 	char symbol [128];
 	int i;
-	GHashTable *cache;
-
-	cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	emit_line (acfg);
 	sprintf (symbol, "plt");
@@ -4329,8 +4335,6 @@ emit_plt (MonoAotCompile *acfg)
 			}
 		}
 
-		if (acfg->aot_opts.write_symbols)
-			plt_entry->debug_sym = get_plt_entry_debug_sym (acfg, ji, cache);
 		debug_sym = plt_entry->debug_sym;
 
 		if (acfg->thumb_mixed && !plt_entry->jit_used)
@@ -4411,8 +4415,6 @@ emit_plt (MonoAotCompile *acfg)
 
 	sprintf (symbol, "plt_end");
 	emit_label (acfg, symbol);
-
-	g_hash_table_destroy (cache);
 }
 
 static G_GNUC_UNUSED void
@@ -6984,6 +6986,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->method_label_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	acfg->method_order = g_ptr_array_new ();
 	acfg->export_names = g_hash_table_new (NULL, NULL);
+	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	InitializeCriticalSection (&acfg->mutex);
 
 	return acfg;
@@ -7018,6 +7021,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->unwind_info_offsets);
 	g_hash_table_destroy (acfg->method_label_hash);
 	g_hash_table_destroy (acfg->export_names);
+	g_hash_table_destroy (acfg->plt_entry_debug_sym_cache);
 	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
 		g_hash_table_destroy (acfg->patch_to_got_offset_by_type [i]);
 	g_free (acfg->patch_to_got_offset_by_type);
