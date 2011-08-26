@@ -336,6 +336,7 @@
   <ItemGroup>
     <ClCompile Include="..\mono\utils\hazard-pointer.c" />
     <ClCompile Include="..\mono\utils\dlmalloc.c" />
+    <ClCompile Include="..\mono\utils\lock-free-array-queue.c" />
     <ClCompile Include="..\mono\utils\mono-codeman.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
