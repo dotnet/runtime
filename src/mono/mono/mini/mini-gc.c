@@ -373,6 +373,11 @@ encode_frame_reg (int frame_reg)
 		return 0;
 	else if (frame_reg == X86_ESP)
 		return 1;
+#elif defined(TARGET_ARM)
+	if (frame_reg == ARMREG_SP)
+		return 0;
+	else if (frame_reg == ARMREG_FP)
+		return 1;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -393,6 +398,11 @@ decode_frame_reg (int encoded)
 		return X86_EBP;
 	else if (encoded == 1)
 		return X86_ESP;
+#elif defined(TARGET_ARM)
+	if (encoded == 0)
+		return ARMREG_SP;
+	else if (encoded == 1)
+		return ARMREG_FP;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -408,6 +418,8 @@ static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, 
 #endif
 #elif defined(TARGET_X86)
 static int callee_saved_regs [] = { X86_EBX, X86_ESI, X86_EDI };
+#elif defined(TARGET_ARM)
+static int callee_saved_regs [] = { ARMREG_V1, ARMREG_V2, ARMREG_V3, ARMREG_V4, ARMREG_V5, ARMREG_V7, ARMREG_FP };
 #endif
 
 static guint32
@@ -620,6 +632,11 @@ get_frame_pointer (MonoContext *ctx, int frame_reg)
 			return ctx->esp;
 		else if (frame_reg == X86_EBP)
 			return ctx->ebp;
+#elif defined(TARGET_ARM)
+		if (frame_reg == ARMREG_SP)
+			return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
+		else if (frame_reg == ARMREG_FP)
+			return (mgreg_t)MONO_CONTEXT_GET_BP (ctx);
 #endif
 		g_assert_not_reached ();
 		return 0;
@@ -1424,6 +1441,8 @@ process_other_slots (MonoCompile *cfg)
 		if (cfg->verbose_level > 1) {
 			if (type == SLOT_REF)
 				printf ("\tref slot at fp+0x%x (slot = %d)\n", offset, slot);
+			else if (type == SLOT_NOREF)
+				printf ("\tnoref slot at 0x%x(fp) (slot = %d)\n", offset, slot);
 		}
 	}
 }
@@ -1662,6 +1681,11 @@ process_variables (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 			if (cfg->verbose_level > 1)
 				printf ("\tnoref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
+			if (!t->byref && sizeof (mgreg_t) == 4 && (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_R8)) {
+				set_slot_everywhere (gcfg, pos + 1, SLOT_NOREF);
+				if (cfg->verbose_level > 1)
+					printf ("\tnoref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)(ins->inst_offset + 4) : (int)ins->inst_offset + 4, vmv->vreg, pos + 1, mono_type_full_name (ins->inst_vtype));
+			}
 			continue;
 		}
 
@@ -1898,7 +1922,7 @@ compute_frame_size (MonoCompile *cfg)
 	/* Compute min/max offsets from the fp */
 
 	/* Locals */
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM)
 	locals_min_offset = ALIGN_TO (cfg->locals_min_stack_offset, SIZEOF_SLOT);
 	locals_max_offset = cfg->locals_max_stack_offset;
 #else
@@ -1948,6 +1972,10 @@ compute_frame_size (MonoCompile *cfg)
 	min_offset = MIN (min_offset, -cfg->arch.sp_fp_offset);
 #elif defined(TARGET_X86)
 	min_offset = MIN (min_offset, - (cfg->arch.sp_fp_offset + cfg->arch.param_area_size));
+#elif defined(TARGET_ARM)
+	// FIXME:
+#else
+	NOT_IMPLEMENTED;
 #endif
 
 	gcfg->min_offset = min_offset;

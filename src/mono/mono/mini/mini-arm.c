@@ -21,6 +21,7 @@
 #include "trace.h"
 #include "ir-emit.h"
 #include "debugger-agent.h"
+#include "mini-gc.h"
 #include "mono/arch/arm/arm-fpa-codegen.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
@@ -45,6 +46,8 @@
 #else
 #define IS_SOFT_FLOAT 0
 #endif
+
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 static gint lmf_tls_offset = -1;
 static gint lmf_addr_tls_offset = -1;
@@ -310,6 +313,7 @@ static guint8*
 emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
 	gboolean get_lmf_fast = FALSE;
+	int i;
 
 #ifdef HAVE_AEABI_READ_TP
 	gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
@@ -351,6 +355,9 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	/* save the current IP */
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
 	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
+
+	for (i = 0; i < sizeof (MonoLMF); i += sizeof (mgreg_t))
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + i, SLOT_NOREF);
 
 	return code;
 }
@@ -1501,6 +1508,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += size;
 	}
 
+	cfg->locals_min_stack_offset = offset;
+
 	curinst = cfg->locals_start;
 	for (i = curinst; i < cfg->num_varinfo; ++i) {
 		ins = cfg->varinfo [i];
@@ -1521,6 +1530,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		 */
 		if (align < 4 && size >= 4)
 			align = 4;
+		if (ALIGN_TO (offset, align) > ALIGN_TO (offset, 4))
+			mini_gc_set_slot_type_from_fp (cfg, ALIGN_TO (offset, 4), SLOT_NOREF);
 		offset += align - 1;
 		offset &= ~(align - 1);
 		ins->opcode = OP_REGOFFSET;
@@ -1529,6 +1540,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += size;
 		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
 	}
+
+	cfg->locals_max_stack_offset = offset;
 
 	curinst = 0;
 	if (sig->hasthis) {
@@ -1571,6 +1584,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			/* The code in the prolog () stores words when storing vtypes received in a register */
 			if (MONO_TYPE_ISSTRUCT (sig->params [i]))
 				align = 4;
+			if (ALIGN_TO (offset, align) > ALIGN_TO (offset, 4))
+				mini_gc_set_slot_type_from_fp (cfg, ALIGN_TO (offset, 4), SLOT_NOREF);
 			offset += align - 1;
 			offset &= ~(align - 1);
 			ins->inst_offset = offset;
@@ -1580,6 +1595,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* align the offset to 8 bytes */
+	if (ALIGN_TO (offset, 8) > ALIGN_TO (offset, 4))
+		mini_gc_set_slot_type_from_fp (cfg, ALIGN_TO (offset, 4), SLOT_NOREF);
 	offset += 8 - 1;
 	offset &= ~(8 - 1);
 
@@ -4108,6 +4125,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			code = emit_call_seq (cfg, code);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_FCALL_REG:
@@ -4117,6 +4136,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
 			code = emit_call_reg (code, ins->sreg1);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
@@ -4147,6 +4168,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
 			}
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_LOCALLOC: {
@@ -4786,6 +4809,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+
+		case OP_GC_LIVENESS_DEF:
+		case OP_GC_LIVENESS_USE:
+		case OP_GC_PARAM_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			break;
+		case OP_GC_SPILL_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
+			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
@@ -4934,7 +4968,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i, rot_amount;
+	int alloc_size, orig_alloc_size, pos, max_offset, i, rot_amount;
 	guint8 *code;
 	CallInfo *cinfo;
 	int tracing = 0;
@@ -4989,13 +5023,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		for (i = 0; i < 16; ++i) {
 			if ((cfg->used_int_regs & (1 << i))) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
+				mini_gc_set_slot_type_from_cfa (cfg, (- prev_sp_offset) + reg_offset, SLOT_NOREF);
 				reg_offset += 4;
 			}
 		}
 		if (iphone_abi) {
 			mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
+			mini_gc_set_slot_type_from_cfa (cfg, -4, SLOT_NOREF);
 		} else {
 			mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
+			mini_gc_set_slot_type_from_cfa (cfg, -4, SLOT_NOREF);
 		}
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
@@ -5013,6 +5050,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		lmf_offset = pos;
 	}
 	alloc_size += pos;
+	orig_alloc_size = alloc_size;
 	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
 	if (alloc_size & (MONO_ARCH_FRAME_ALIGNMENT - 1)) {
 		alloc_size += MONO_ARCH_FRAME_ALIGNMENT - 1;
@@ -5038,6 +5076,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	//g_print ("prev_sp_offset: %d, alloc_size:%d\n", prev_sp_offset, alloc_size);
 	prev_sp_offset += alloc_size;
+
+	for (i = 0; i < alloc_size - orig_alloc_size; i += 4)
+		mini_gc_set_slot_type_from_cfa (cfg, (- prev_sp_offset) + orig_alloc_size + i, SLOT_NOREF);
 
         /* compute max_offset in order to use short forward jumps
 	 * we could skip do it on arm because the immediate displacement
