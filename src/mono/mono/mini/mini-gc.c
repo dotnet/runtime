@@ -850,7 +850,11 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		}
 		cindex = i;
 
-		g_assert (real_frame_start >= stack_limit);
+		/* 
+		 * This is not neccessary true on x86 because frames have a different size at each
+		 * call site.
+		 */
+		//g_assert (real_frame_start >= stack_limit);
 
 		if (real_frame_start > stack_limit) {
 			/* This scans the previously skipped frames as well */
@@ -1708,6 +1712,10 @@ sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 	/* fp = sp + offset */
 	g_assert (cfg->frame_reg == AMD64_RBP);
 	return (- cfg->arch.sp_fp_offset + sp_offset);
+#elif defined(TARGET_X86)
+	/* The offset is computed from the sp at the start of the call sequence */
+	g_assert (cfg->frame_reg == X86_EBP);
+	return (- cfg->arch.sp_fp_offset - sp_offset);	
 #else
 	NOT_IMPLEMENTED;
 	return -1;
@@ -1740,7 +1748,7 @@ static void
 process_param_area_slots (MonoCompile *cfg)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
-	int i;
+	int cindex, i;
 	gboolean *is_param;
 
 	/*
@@ -1753,18 +1761,29 @@ process_param_area_slots (MonoCompile *cfg)
 
 	is_param = mono_mempool_alloc0 (cfg->mempool, gcfg->nslots * sizeof (gboolean));
 
-	for (i = 0; i < gcfg->ncallsites; ++i) {
-		GCCallSite *callsite = gcfg->callsites [i];
+	for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
+		GCCallSite *callsite = gcfg->callsites [cindex];
 		GSList *l;
 
 		for (l = callsite->param_slots; l; l = l->next) {
 			MonoInst *def = l->data;
+			MonoType *t = def->inst_vtype;
 			int sp_offset = def->inst_offset;
 			int fp_offset = sp_offset_to_fp_offset (cfg, sp_offset);
 			int slot = fp_offset_to_slot (cfg, fp_offset);
+			guint32 align;
+			guint32 size;
 
-			g_assert (slot >= 0 && slot < gcfg->nslots);
-			is_param [slot] = TRUE;
+			if (MONO_TYPE_ISSTRUCT (t)) {
+				size = mini_type_stack_size_full (cfg->generic_sharing_context, t, &align, FALSE);
+			} else {
+				size = sizeof (mgreg_t);
+			}
+
+			for (i = 0; i < size / sizeof (mgreg_t); ++i) {
+				g_assert (slot + i >= 0 && slot + i < gcfg->nslots);
+				is_param [slot + i] = TRUE;
+			}
 		}
 	}
 
@@ -1774,8 +1793,8 @@ process_param_area_slots (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, i, SLOT_NOREF);
 	}
 
-	for (i = 0; i < gcfg->ncallsites; ++i) {
-		GCCallSite *callsite = gcfg->callsites [i];
+	for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
+		GCCallSite *callsite = gcfg->callsites [cindex];
 		GSList *l;
 
 		for (l = callsite->param_slots; l; l = l->next) {
@@ -1786,10 +1805,25 @@ process_param_area_slots (MonoCompile *cfg)
 			int slot = fp_offset_to_slot (cfg, fp_offset);
 			GCSlotType type = type_to_gc_slot_type (cfg, t);
 
-			/* The slot is live between the def instruction and the call */
-			set_slot_in_range (gcfg, slot, def->backend.pc_offset, callsite->pc_offset + 1, type);
-			if (cfg->verbose_level > 1)
-				printf ("\t%s param area slot at %s0x%x(fp)=0x%x(sp) (slot = %d) [0x%x-0x%x]\n", slot_type_to_string (type), fp_offset >= 0 ? "+" : "-", ABS (fp_offset), sp_offset, slot, def->backend.pc_offset, callsite->pc_offset + 1);
+			if (MONO_TYPE_ISSTRUCT (t)) {
+				guint32 align;
+				guint32 size;
+				int size_in_slots;
+
+				size = mini_type_stack_size_full (cfg->generic_sharing_context, t, &align, FALSE);
+				size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
+				// FIXME: slot type
+				for (i = 0; i < size_in_slots; ++i) {
+					set_slot_in_range (gcfg, slot + i, def->backend.pc_offset, callsite->pc_offset + 1, type);
+				}
+				if (cfg->verbose_level > 1)
+					printf ("\t%s param area slots at %s0x%x(fp)=0x%x(sp) (slot = %d-%d) [0x%x-0x%x]\n", slot_type_to_string (type), fp_offset >= 0 ? "+" : "-", ABS (fp_offset), sp_offset, slot, slot + (size / (int)sizeof (mgreg_t)), def->backend.pc_offset, callsite->pc_offset + 1);
+			} else {
+				/* The slot is live between the def instruction and the call */
+				set_slot_in_range (gcfg, slot, def->backend.pc_offset, callsite->pc_offset + 1, type);
+				if (cfg->verbose_level > 1)
+					printf ("\t%s param area slot at %s0x%x(fp)=0x%x(sp) (slot = %d) [0x%x-0x%x]\n", slot_type_to_string (type), fp_offset >= 0 ? "+" : "-", ABS (fp_offset), sp_offset, slot, def->backend.pc_offset, callsite->pc_offset + 1);
+			}
 		}
 	}
 }
@@ -1912,6 +1946,8 @@ compute_frame_size (MonoCompile *cfg)
 	/* Param area slots */
 #ifdef TARGET_AMD64
 	min_offset = MIN (min_offset, -cfg->arch.sp_fp_offset);
+#elif defined(TARGET_X86)
+	min_offset = MIN (min_offset, - (cfg->arch.sp_fp_offset + cfg->arch.param_area_size));
 #endif
 
 	gcfg->min_offset = min_offset;

@@ -168,6 +168,7 @@ struct MonoLMF {
 typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
+	int sp_fp_offset, param_area_size;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)
