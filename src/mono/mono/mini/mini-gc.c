@@ -24,6 +24,8 @@ typedef guint32 mword;
 typedef guint64 mword;
 #endif
 
+#define SIZEOF_SLOT ((int)sizeof (mgreg_t))
+
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
 /* Contains state needed by the GC Map construction code */
@@ -448,9 +450,9 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 {
 	guint32 flags, freg;
 
-	encode_sleb128 (map->start_offset / sizeof (mgreg_t), buf, &buf);
-	encode_sleb128 (map->end_offset / sizeof (mgreg_t), buf, &buf);
-	encode_sleb128 (map->map_offset / sizeof (mgreg_t), buf, &buf);
+	encode_sleb128 (map->start_offset / SIZEOF_SLOT, buf, &buf);
+	encode_sleb128 (map->end_offset / SIZEOF_SLOT, buf, &buf);
+	encode_sleb128 (map->map_offset / SIZEOF_SLOT, buf, &buf);
 	encode_uleb128 (map->nslots, buf, &buf);
 	g_assert (map->callsite_entry_size <= 4);
 	freg = encode_frame_reg (map->frame_reg);
@@ -479,9 +481,9 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	int stack_bitmap_size, reg_ref_bitmap_size, reg_pin_bitmap_size, offset, freg;
 	int i, n;
 
-	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
-	map->end_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
-	map->map_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
+	map->start_offset = decode_sleb128 (buf, &buf) * SIZEOF_SLOT;
+	map->end_offset = decode_sleb128 (buf, &buf) * SIZEOF_SLOT;
+	map->map_offset = decode_sleb128 (buf, &buf) * SIZEOF_SLOT;
 	map->nslots = decode_uleb128 (buf, &buf);
 	flags = decode_uleb128 (buf, &buf);
 	map->has_ref_slots = (flags & 1) ? 1 : 0;
@@ -697,8 +699,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				 */
 				if (reg_locations [i]) {
 					DEBUG (fprintf (logfile, "\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
-					mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + sizeof (mgreg_t));
-					scanned_registers += sizeof (mgreg_t);
+					mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + SIZEOF_SLOT);
+					scanned_registers += SIZEOF_SLOT;
 				}
 
 				reg_locations [i] = new_reg_locations [i];
@@ -707,7 +709,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			}
 		}
 
-		g_assert ((mgreg_t)stack_limit % sizeof (mgreg_t) == 0);
+		g_assert ((mgreg_t)stack_limit % SIZEOF_SLOT == 0);
 
 		res = mono_find_jit_info_ext (frame.domain ? frame.domain : mono_domain_get (), tls->jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
 		if (!res)
@@ -726,8 +728,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			for (i = 0; i < MONO_MAX_IREGS; ++i) {
 				if (reg_locations [i]) {
 					DEBUG (fprintf (logfile, "\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
-					mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + sizeof (mgreg_t));
-					scanned_registers += sizeof (mgreg_t);
+					mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + SIZEOF_SLOT);
+					scanned_registers += SIZEOF_SLOT;
 				}
 				reg_locations [i] = NULL;
 				new_reg_locations [i] = NULL;
@@ -869,19 +871,19 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				pinned = pin_bitmap [i / 8] & (1 << (i % 8));
 				if (pinned) {
 					DEBUG (fprintf (logfile, "\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
-					mono_gc_conservatively_scan_area (p, p + sizeof (mgreg_t));
-					scanned_conservatively += sizeof (mgreg_t);
+					mono_gc_conservatively_scan_area (p, p + SIZEOF_SLOT);
+					scanned_conservatively += SIZEOF_SLOT;
 				} else {
-					scanned_precisely += sizeof (mgreg_t);
+					scanned_precisely += SIZEOF_SLOT;
 				}
-				p += sizeof (mgreg_t);
+				p += SIZEOF_SLOT;
 			}
 		} else {
-			scanned_precisely += (map->nslots * sizeof (mgreg_t));
+			scanned_precisely += (map->nslots * SIZEOF_SLOT);
 		}
 
 		/* The area outside of start-end is NOREF */
-		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
+		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * SIZEOF_SLOT);
 
 		/* Mark registers */
 		precise_regmask = map->used_int_regs | (1 << map->frame_reg);
@@ -967,13 +969,13 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	for (i = 0; i < MONO_MAX_IREGS; ++i) {
 		if (reg_locations [i]) {
 			DEBUG (fprintf (logfile, "\tscan saved reg location %p.\n", reg_locations [i]));
-			mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + sizeof (mgreg_t));
-			scanned_registers += sizeof (mgreg_t);
+			mono_gc_conservatively_scan_area (reg_locations [i], (char*)reg_locations [i] + SIZEOF_SLOT);
+			scanned_registers += SIZEOF_SLOT;
 		}
 		if (new_reg_locations [i]) {
 			DEBUG (fprintf (logfile, "\tscan saved reg location %p.\n", new_reg_locations [i]));
-			mono_gc_conservatively_scan_area (new_reg_locations [i], (char*)new_reg_locations [i] + sizeof (mgreg_t));
-			scanned_registers += sizeof (mgreg_t);
+			mono_gc_conservatively_scan_area (new_reg_locations [i], (char*)new_reg_locations [i] + SIZEOF_SLOT);
+			scanned_registers += SIZEOF_SLOT;
 		}
 	}
 
@@ -1028,7 +1030,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			gboolean live;
 
 			for (i = 0; i < fi->nslots; ++i) {
-				MonoObject **ptr = (MonoObject**)(frame_start + (i * sizeof (mgreg_t)));
+				MonoObject **ptr = (MonoObject**)(frame_start + (i * SIZEOF_SLOT));
 
 				live = ref_bitmap [i / 8] & (1 << (i % 8));
 
@@ -1166,7 +1168,7 @@ mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType typ
 	if (!cfg->compute_gc_maps)
 		return;
 
-	g_assert (slot_offset % sizeof (mgreg_t) == 0);
+	g_assert (slot_offset % SIZEOF_SLOT == 0);
 
 	gcfg->stack_slots_from_fp = g_slist_prepend_mempool (cfg->mempool, gcfg->stack_slots_from_fp, GINT_TO_POINTER (((slot_offset) << 16) | type));
 }
@@ -1184,13 +1186,13 @@ void
 mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType type)
 {
 	MonoCompileGC *gcfg = (MonoCompileGC*)cfg->gc_info;
-	int slot = - (slot_offset / sizeof (mgreg_t));
+	int slot = - (slot_offset / SIZEOF_SLOT);
 
 	if (!cfg->compute_gc_maps)
 		return;
 
 	g_assert (slot_offset <= 0);
-	g_assert (slot_offset % sizeof (mgreg_t) == 0);
+	g_assert (slot_offset % SIZEOF_SLOT == 0);
 
 	gcfg->stack_slots_from_cfa = g_slist_prepend_mempool (cfg->mempool, gcfg->stack_slots_from_cfa, GUINT_TO_POINTER (((slot) << 16) | type));
 }
@@ -1200,7 +1202,7 @@ fp_offset_to_slot (MonoCompile *cfg, int offset)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
 
-	return (offset - gcfg->min_offset) / sizeof (mgreg_t);
+	return (offset - gcfg->min_offset) / SIZEOF_SLOT;
 }
 
 static inline int
@@ -1208,7 +1210,7 @@ slot_to_fp_offset (MonoCompile *cfg, int slot)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
 
-	return (slot * sizeof (mgreg_t)) + gcfg->min_offset;
+	return (slot * SIZEOF_SLOT) + gcfg->min_offset;
 }
 
 static inline void
@@ -1391,14 +1393,14 @@ process_other_slots (MonoCompile *cfg)
 		 * fp + cfa_offset == cfa
 		 * -> slot_addr == fp + (cfa_offset - <cfa_slot>*4/8)
 		 */
-		slot = (cfg->cfa_offset / sizeof (mgreg_t)) - cfa_slot - (gcfg->min_offset / sizeof (mgreg_t));
+		slot = (cfg->cfa_offset / SIZEOF_SLOT) - cfa_slot - (gcfg->min_offset / SIZEOF_SLOT);
 
 		set_slot_everywhere (gcfg, slot, type);
 
 		if (cfg->verbose_level > 1) {
 			int fp_offset = slot_to_fp_offset (cfg, slot);
 			if (type == SLOT_NOREF)
-				printf ("\tnoref slot at %s0x%x(fp) (slot = %d) (cfa - 0x%x)\n", fp_offset >= 0 ? "" : "-", ABS (fp_offset), slot, (int)(cfa_slot * sizeof (mgreg_t)));
+				printf ("\tnoref slot at %s0x%x(fp) (slot = %d) (cfa - 0x%x)\n", fp_offset >= 0 ? "" : "-", ABS (fp_offset), slot, (int)(cfa_slot * SIZEOF_SLOT));
 		}
 	}
 
@@ -1435,8 +1437,8 @@ process_variables (MonoCompile *cfg)
 	int locals_max_offset = gcfg->locals_max_offset;
 
 	/* Slots for locals are NOREF by default */
-	locals_min_slot = (locals_min_offset - gcfg->min_offset) / sizeof (mgreg_t);
-	locals_max_slot = (locals_max_offset - gcfg->min_offset) / sizeof (mgreg_t);
+	locals_min_slot = (locals_min_offset - gcfg->min_offset) / SIZEOF_SLOT;
+	locals_max_slot = (locals_max_offset - gcfg->min_offset) / SIZEOF_SLOT;
 	for (i = locals_min_slot; i < locals_max_slot; ++i) {
 		set_slot_everywhere (gcfg, i, SLOT_NOREF);
 	}
@@ -1521,7 +1523,7 @@ process_variables (MonoCompile *cfg)
 		if (ins->opcode != OP_REGOFFSET)
 			continue;
 
-		if (ins->inst_offset % sizeof (mgreg_t) != 0)
+		if (ins->inst_offset % SIZEOF_SLOT != 0)
 			continue;
 
 		if (is_arg && ins->inst_offset >= gcfg->max_offset)
@@ -1551,7 +1553,7 @@ process_variables (MonoCompile *cfg)
 				size = mono_class_native_size (ins->klass, NULL);
 			else
 				size = mono_class_value_size (ins->klass, NULL);
-			size_in_slots = ALIGN_TO (size, sizeof (mgreg_t)) / sizeof (mgreg_t);
+			size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
 
 			if (!ins->klass->has_references) {
 				if (is_arg) {
@@ -1585,7 +1587,7 @@ process_variables (MonoCompile *cfg)
 				pin = TRUE;
 
 			if (cfg->verbose_level > 1)
-				printf ("\tvtype R%d at fp+0x%x-0x%x: %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (mgreg_t))), mono_type_full_name (ins->inst_vtype));
+				printf ("\tvtype R%d at fp+0x%x-0x%x: %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / SIZEOF_SLOT)), mono_type_full_name (ins->inst_vtype));
 
 			if (bitmap) {
 				for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
@@ -1593,7 +1595,7 @@ process_variables (MonoCompile *cfg)
 						for (j = 0; j < numbits; ++j) {
 							if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
 								/* The descriptor is for the boxed object */
-								set_slot (gcfg, (pos + j - (sizeof (MonoObject) / sizeof (mgreg_t))), cindex, pin ? SLOT_PIN : SLOT_REF);
+								set_slot (gcfg, (pos + j - (sizeof (MonoObject) / SIZEOF_SLOT)), cindex, pin ? SLOT_PIN : SLOT_REF);
 							}
 						}
 					}
@@ -1602,7 +1604,7 @@ process_variables (MonoCompile *cfg)
 				if (cfg->verbose_level > 1) {
 					for (j = 0; j < numbits; ++j) {
 						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD)))
-							printf ("\t\t%s slot at 0x%x(fp) (slot = %d)\n", pin ? "pin" : "ref", (int)(ins->inst_offset + (j * sizeof (mgreg_t))), (int)(pos + j - (sizeof (MonoObject) / sizeof (mgreg_t))));
+							printf ("\t\t%s slot at 0x%x(fp) (slot = %d)\n", pin ? "pin" : "ref", (int)(ins->inst_offset + (j * SIZEOF_SLOT)), (int)(pos + j - (sizeof (MonoObject) / SIZEOF_SLOT)));
 					}
 				}
 			} else {
@@ -1863,15 +1865,15 @@ compute_frame_size (MonoCompile *cfg)
 
 	/* Locals */
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-	locals_min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (mgreg_t));
+	locals_min_offset = ALIGN_TO (cfg->locals_min_stack_offset, SIZEOF_SLOT);
 	locals_max_offset = cfg->locals_max_stack_offset;
 #else
 	/* min/max stack offset needs to be computed in mono_arch_allocate_vars () */
 	NOT_IMPLEMENTED;
 #endif
 
-	locals_min_offset = ALIGN_TO (locals_min_offset, sizeof (mgreg_t));
-	locals_max_offset = ALIGN_TO (locals_max_offset, sizeof (mgreg_t));
+	locals_min_offset = ALIGN_TO (locals_min_offset, SIZEOF_SLOT);
+	locals_max_offset = ALIGN_TO (locals_max_offset, SIZEOF_SLOT);
 
 	min_offset = locals_min_offset;
 	max_offset = locals_max_offset;
@@ -1903,7 +1905,7 @@ compute_frame_size (MonoCompile *cfg)
 
 	/* Spill slots */
 	if (!(cfg->flags & MONO_CFG_HAS_SPILLUP)) {
-		int stack_offset = ALIGN_TO (cfg->stack_offset, sizeof (mgreg_t));
+		int stack_offset = ALIGN_TO (cfg->stack_offset, SIZEOF_SLOT);
 		min_offset = MIN (min_offset, (-stack_offset));
 	}
 
@@ -1961,7 +1963,7 @@ init_gcfg (MonoCompile *cfg)
 	if (cfg->verbose_level > 1)
 		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), gcfg->min_offset, gcfg->max_offset);
 
-	nslots = (gcfg->max_offset - gcfg->min_offset) / sizeof (mgreg_t);
+	nslots = (gcfg->max_offset - gcfg->min_offset) / SIZEOF_SLOT;
 	nregs = NREGS;
 
 	gcfg->nslots = nslots;
@@ -2109,8 +2111,8 @@ create_map (MonoCompile *cfg)
 
 	map->frame_reg = cfg->frame_reg;
 	map->start_offset = gcfg->min_offset;
-	map->end_offset = gcfg->min_offset + (nslots * sizeof (mgreg_t));
-	map->map_offset = start * sizeof (mgreg_t);
+	map->end_offset = gcfg->min_offset + (nslots * SIZEOF_SLOT);
+	map->map_offset = start * SIZEOF_SLOT;
 	map->nslots = end - start;
 	map->has_ref_slots = has_ref_slots;
 	map->has_pin_slots = has_pin_slots;

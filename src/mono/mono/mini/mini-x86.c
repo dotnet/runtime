@@ -32,6 +32,7 @@
 #include "mini-x86.h"
 #include "cpu-x86.h"
 #include "ir-emit.h"
+#include "mini-gc.h"
 
 /* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
@@ -4939,6 +4940,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	// IP saved at CFA - 4
 	/* There is no IP reg on x86 */
 	mono_emit_unwind_op_offset (cfg, code, X86_NREG, -cfa_offset);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 
 	need_stack_frame = needs_stack_frame (cfg);
 
@@ -4949,6 +4951,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
 		x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, X86_EBP);
+		/* These are handled automatically by the stack marking code */
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 	} else {
 		cfg->frame_reg = X86_ESP;
 	}
@@ -5078,6 +5082,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			pos += 4;
 			cfa_offset += sizeof (gpointer);
 			mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
+			/* These are handled automatically by the stack marking code */
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_EDI)) {
@@ -5085,6 +5091,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			pos += 4;
 			cfa_offset += sizeof (gpointer);
 			mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
@@ -5092,6 +5099,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			pos += 4;
 			cfa_offset += sizeof (gpointer);
 			mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 	}
 
