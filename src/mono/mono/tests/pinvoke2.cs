@@ -1300,6 +1300,8 @@ public class Tests {
 	 * Pointers to structures can not be passed
 	 */
 
+	/* This seems to be allowed by MS in some cases */
+	/*
 	public struct CharInfo {
 		public char Character;
 		public short Attributes;
@@ -1321,6 +1323,7 @@ public class Tests {
 		}
 		return 1;
 	}
+	*/
 
 	/*
 	 * LPWStr marshalling
