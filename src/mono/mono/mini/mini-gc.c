@@ -1494,8 +1494,10 @@ process_variables (MonoCompile *cfg)
 		gboolean byref, is_this = FALSE;
 		gboolean is_arg = i < cfg->locals_start;
 
-		if (ins == cfg->ret)
-			continue;
+		if (ins == cfg->ret) {
+			if (!(ins->opcode == OP_REGOFFSET && MONO_TYPE_ISSTRUCT (t)))
+				continue;
+		}
 
 		vmv = MONO_VARINFO (cfg, i);
 
@@ -1578,6 +1580,9 @@ process_variables (MonoCompile *cfg)
 				size = mono_class_value_size (ins->klass, NULL);
 			size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
 
+			if (cfg->verbose_level > 1)
+				printf ("\tvtype R%d at 0x%x(fp)-0x%x(fp) (slot %d-%d): %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / SIZEOF_SLOT)), pos, pos + size_in_slots, mono_type_full_name (ins->inst_vtype));
+
 			if (!ins->klass->has_references) {
 				if (is_arg) {
 					for (j = 0; j < size_in_slots; ++j)
@@ -1608,9 +1613,6 @@ process_variables (MonoCompile *cfg)
 
 			if (ins->backend.is_pinvoke)
 				pin = TRUE;
-
-			if (cfg->verbose_level > 1)
-				printf ("\tvtype R%d at fp+0x%x-0x%x: %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / SIZEOF_SLOT)), mono_type_full_name (ins->inst_vtype));
 
 			if (bitmap) {
 				for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {

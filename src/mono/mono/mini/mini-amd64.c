@@ -1821,9 +1821,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->inst_basereg = cfg->frame_reg;
 			if (cfg->arch.omit_fp) {
 				cfg->ret->inst_offset = offset;
-				offset += 16;
+				offset += cinfo->ret.pair_storage [1] == ArgNone ? 8 : 16;
 			} else {
-				offset += 16;
+				offset += cinfo->ret.pair_storage [1] == ArgNone ? 8 : 16;
 				cfg->ret->inst_offset = - offset;
 			}
 			break;
