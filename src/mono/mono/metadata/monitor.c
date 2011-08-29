@@ -871,11 +871,14 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static MonoMethod *compare_exchange_method;
-	int obj_null_branch, true_locktaken_branch, syncp_null_branch, has_owner_branch, other_owner_branch, tid_branch, thin_hash_branch;
+	int obj_null_branch, true_locktaken_branch = 0, syncp_null_branch, has_owner_branch, other_owner_branch, tid_branch, thin_hash_branch;
 	int tid_loc, syncp_loc, owner_loc;
 	int thread_tls_offset;
 	gboolean is_v4 = mono_method_signature (monitor_enter_method)->param_count == 2;
 	int fast_path_idx = is_v4 ? FASTPATH_ENTERV4 : FASTPATH_ENTER;
+
+	/* The !is_v4 version is not used/tested */
+	g_assert (is_v4);
 
 	thread_tls_offset = mono_thread_get_tls_offset ();
 	if (thread_tls_offset == -1)
@@ -907,7 +910,7 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	syncp_loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	owner_loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-	emit_obj_syncp_check (mb, syncp_loc, &obj_null_branch, &true_locktaken_branch, &syncp_null_branch, &thin_hash_branch, FALSE);
+	emit_obj_syncp_check (mb, syncp_loc, &obj_null_branch, is_v4 ? &true_locktaken_branch : NULL, &syncp_null_branch, &thin_hash_branch, FALSE);
 
 	/*
 	  mono. tls	thread_tls_offset					threadp
@@ -1015,6 +1018,8 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	mono_mb_patch_short_branch (mb, syncp_null_branch);
 	mono_mb_patch_short_branch (mb, has_owner_branch);
 	mono_mb_patch_short_branch (mb, other_owner_branch);
+	if (true_locktaken_branch)
+		mono_mb_patch_short_branch (mb, true_locktaken_branch);
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
 	if (is_v4)
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
