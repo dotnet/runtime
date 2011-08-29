@@ -2806,15 +2806,17 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 
 		/* Monitor Enter/Exit */
-		desc = mono_method_desc_new ("Monitor:Enter", FALSE);
+		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
 		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		g_assert (orig_method);
-		mono_method_desc_free (desc);
-		method = mono_monitor_get_fast_path (orig_method);
-		if (method)
+		/* This is a v4 method */
+		if (orig_method) {
+			method = mono_monitor_get_fast_path (orig_method);
+			if (method)
 			add_method (acfg, method);
+		}
+		mono_method_desc_free (desc);
 
-		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+		desc = mono_method_desc_new ("Monitor:Exit(object)", FALSE);
 		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (orig_method);
 		mono_method_desc_free (desc);
@@ -5176,7 +5178,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
-		//printf ("E: %s\n", mono_method_full_name (method, TRUE));
+		if (acfg->aot_opts.print_skipped_methods)
+			printf ("Skip (JIT failure): %s\n", mono_method_full_name (method, TRUE));
 		/* Let the exception happen at runtime */
 		return;
 	}
