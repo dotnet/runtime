@@ -899,8 +899,10 @@ mono_debugger_agent_init (void)
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
 
-	/*FIXME: we need to disable the new interruption code since sdb needs to old signal based one.*/
+	/* FIXME: Is this still needed ? */
+#if defined(__MACH__)
 	mono_thread_info_disable_new_interrupt (TRUE);
+#endif
 }
 
 /*
@@ -2069,23 +2071,18 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 }
 
 /*
- * mono_debugger_agent_thread_interrupt:
+ * thread_interrupt:
  *
- *   Called by the abort signal handler.
- * Should be signal safe.
+ *   Process interruption of a thread. If SIGCTX is set, process the current thread. If
+ * INFO is set, process the thread described by INFO.
+ * This should be signal safe.
  */
-gboolean
-mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
+static gboolean
+thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, MonoJitInfo *ji)
 {
-	DebuggerTlsData *tls;
 	gboolean res;
-
-	if (!inited)
-		return FALSE;
-
-	tls = mono_native_tls_get_value (debugger_tls_id);
-	if (!tls)
-		return FALSE;
+	gpointer ip;
+	MonoNativeThreadId tid;
 
 	/*
 	 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
@@ -2110,12 +2107,24 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 	InterlockedDecrement (&tls->interrupt_count);
 #endif
 
+	if (sigctx)
+		ip = mono_arch_ip_from_context (sigctx);
+	else if (info)
+		ip = MONO_CONTEXT_GET_IP (&info->suspend_state.ctx);
+	else
+		ip = NULL;
+
+	if (info)
+		tid = mono_thread_info_get_tid (info);
+	else
+		tid = GetCurrentThreadId ();
+
 	// FIXME: Races when the thread leaves managed code before hitting a single step
 	// event.
 
 	if (ji) {
 		/* Running managed code, will be suspended by the single step code */
-		DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)GetCurrentThreadId (), ji->method->name, mono_arch_ip_from_context (sigctx)));
+		DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)(gsize)tid, ji->method->name, ip));
 		return TRUE;
 	} else {
 		/* 
@@ -2130,8 +2139,8 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 
 			// FIXME: printf is not signal safe, but this is only used during
 			// debugger debugging
-			if (sigctx)
-				DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)GetCurrentThreadId (), mono_arch_ip_from_context (sigctx)));
+			if (ip)
+				DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)(gsize)tid, ip));
 			//save_thread_context (&ctx);
 
 			if (!tls->thread)
@@ -2151,13 +2160,14 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			data.last_frame_set = FALSE;
 			if (sigctx) {
 				mono_arch_sigctx_to_monoctx (sigctx, &ctx);
-				mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 				/* 
 				 * Don't pass MONO_UNWIND_ACTUAL_METHOD, its not signal safe, and
 				 * get_last_frame () doesn't need it, the last frame cannot be a ginst
 				 * since we are not in a JITted method.
 				 */
 				mono_walk_stack_with_ctx (get_last_frame, &ctx, MONO_UNWIND_NONE, &data);
+			} else if (info) {
+				mono_get_eh_callbacks ()->mono_walk_stack_with_state (get_last_frame, &info->suspend_state, MONO_UNWIND_SIGNAL_SAFE, &data);
 			}
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
@@ -2168,6 +2178,7 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 
 				memcpy (&tls->async_state.ctx, &data.ctx, sizeof (MonoContext));
 				tls->async_state.unwind_data [MONO_UNWIND_DATA_LMF] = data.lmf;
+				tls->async_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = tls->thread->jit_data;
 			} else {
 				tls->async_state.valid = FALSE;
 			}
@@ -2179,6 +2190,27 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 		}
 		return TRUE;
 	}
+}
+
+/*
+ * mono_debugger_agent_thread_interrupt:
+ *
+ *   Called by the abort signal handler.
+ * Should be signal safe.
+ */
+gboolean
+mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
+{
+	DebuggerTlsData *tls;
+
+	if (!inited)
+		return FALSE;
+
+	tls = mono_native_tls_get_value (debugger_tls_id);
+	if (!tls)
+		return FALSE;
+
+	return thread_interrupt (tls, NULL, sigctx, ji);
 }
 
 #ifdef HOST_WIN32
@@ -2242,7 +2274,21 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 #ifdef HOST_WIN32
 	QueueUserAPC (notify_thread_apc, thread->handle, NULL);
 #else
-	mono_thread_kill (thread, mono_thread_get_abort_signal ());
+	if (mono_thread_info_new_interrupt_enabled ()) {
+		MonoThreadInfo *info;
+		MonoJitInfo *ji;
+
+		info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
+		g_assert (info);
+
+		ji = mono_jit_info_table_find (info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+
+		thread_interrupt (tls, info, NULL, ji);
+
+		mono_thread_info_resume (mono_thread_info_get_tid (info));
+	} else {
+		mono_thread_kill (thread, mono_thread_get_abort_signal ());
+	}
 #endif
 }
 
