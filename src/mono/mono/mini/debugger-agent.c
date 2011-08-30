@@ -899,11 +899,8 @@ mono_debugger_agent_init (void)
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
 
-#if defined(__MACH__)
-	/*FIXME Under darwin, we need to disable the new interruption code since sdb needs to old signal based one.*/
+	/*FIXME: we need to disable the new interruption code since sdb needs to old signal based one.*/
 	mono_thread_info_disable_new_interrupt (TRUE);
-#endif
-
 }
 
 /*
