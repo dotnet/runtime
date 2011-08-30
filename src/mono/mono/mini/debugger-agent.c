@@ -2078,6 +2078,7 @@ gboolean
 mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 {
 	DebuggerTlsData *tls;
+	gboolean res;
 
 	if (!inited)
 		return FALSE;
@@ -2160,8 +2161,13 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			}
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
-				g_assert (mono_thread_state_init_from_monoctx (&tls->async_state, sigctx));
-				g_assert (mono_thread_state_init_from_monoctx (&tls->context, sigctx));
+				res = mono_thread_state_init_from_sigctx (&tls->async_state, &ctx);
+				g_assert (res);
+				mono_thread_state_init_from_sigctx (&tls->context, &ctx);
+				g_assert (res);
+
+				memcpy (&tls->async_state.ctx, &data.ctx, sizeof (MonoContext));
+				tls->async_state.unwind_data [MONO_UNWIND_DATA_LMF] = data.lmf;
 			} else {
 				tls->async_state.valid = FALSE;
 			}
