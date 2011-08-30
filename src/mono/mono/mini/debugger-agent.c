@@ -7103,9 +7103,15 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->method, frame->domain);
-		if (!frame->jit)
+		if (!frame->jit) {
+			char *s;
+
 			/* This could happen for aot images with no jit debug info */
+			s = mono_method_full_name (frame->method, TRUE);
+			DEBUG (1, fprintf (log_file, "[dbg] No debug information found for '%s'.\n", s));
+			g_free (s);
 			return ERR_ABSENT_INFORMATION;
+		}
 	}
 	jit = frame->jit;
 
