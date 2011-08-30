@@ -2161,9 +2161,9 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			}
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
-				res = mono_thread_state_init_from_sigctx (&tls->async_state, &ctx);
+				res = mono_thread_state_init_from_monoctx (&tls->async_state, &ctx);
 				g_assert (res);
-				mono_thread_state_init_from_sigctx (&tls->context, &ctx);
+				mono_thread_state_init_from_monoctx (&tls->context, &ctx);
 				g_assert (res);
 
 				memcpy (&tls->async_state.ctx, &data.ctx, sizeof (MonoContext));
