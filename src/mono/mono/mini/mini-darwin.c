@@ -5,7 +5,8 @@
  *   Mono Team (mono-list@lists.ximian.com)
  *
  * Copyright 2001-2003 Ximian, Inc.
- * Copyright 2003-2008 Ximian, Inc.
+ * Copyright 2003-2011 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  *
  * See LICENSE for licensing information.
  */
