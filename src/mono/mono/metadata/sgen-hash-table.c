@@ -119,7 +119,22 @@ mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer 
 	hash_table->num_entries++;
 
 	return TRUE;
+}
 
+gboolean
+mono_sgen_hash_table_set_value (SgenHashTable *hash_table, gpointer key, gpointer data)
+{
+	guint hash;
+	SgenHashTableEntry *entry;
+
+	entry = lookup (hash_table, key, &hash);
+
+	if (entry) {
+		memcpy (entry->data, data, hash_table->data_size);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 gboolean

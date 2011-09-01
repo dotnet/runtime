@@ -902,6 +902,7 @@ typedef struct {
 
 gpointer mono_sgen_hash_table_lookup (SgenHashTable *table, gpointer key) MONO_INTERNAL;
 gboolean mono_sgen_hash_table_replace (SgenHashTable *table, gpointer key, gpointer data) MONO_INTERNAL;
+gboolean mono_sgen_hash_table_set_value (SgenHashTable *table, gpointer key, gpointer data) MONO_INTERNAL;
 gboolean mono_sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpointer data_return) MONO_INTERNAL;
 
 void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
