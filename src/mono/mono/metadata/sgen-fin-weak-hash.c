@@ -20,6 +20,72 @@ get_finalize_entry_hash_table (int generation)
 	}
 }
 
+#define BRIDGE_OBJECT_MARKED ((void*)-1)
+
+/* LOCKING: requires that the GC lock is held */
+void
+mono_sgen_mark_bridge_object (MonoObject *obj)
+{
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD);
+
+	mono_sgen_hash_table_set_value (hash_table, obj, BRIDGE_OBJECT_MARKED);
+}
+
+/* LOCKING: requires that the GC lock is held */
+static void
+collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
+{
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
+	MonoObject *object;
+	gpointer value;
+	char *copy;
+
+	if (no_finalize)
+		return;
+
+	SGEN_HASH_TABLE_FOREACH (hash_table, object, value) {
+
+		/* Bridge code told us to ignore this one */
+		if (value == BRIDGE_OBJECT_MARKED)
+			continue;
+
+		/* Object is a bridge object and major heap says it's dead  */
+		if (!((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)))
+			continue;
+
+		/* Nursery says the object is dead. */
+		if (!object_is_fin_ready (object))
+			continue;
+
+		if (!mono_sgen_is_bridge_object (object))
+			continue;
+
+		copy = (char*)object;
+		copy_func ((void**)&copy, queue);
+
+		bridge_register_finalized_object ((MonoObject*)copy);
+		
+		if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
+			/* remove from the list */
+			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+
+			/* insert it into the major hash */
+			mono_sgen_hash_table_replace (&major_finalizable_hash, copy, value);
+
+			DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), object));
+
+			continue;
+		} else {
+			/* update pointer */
+			DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", copy, safe_name (copy), object));
+			SGEN_HASH_TABLE_FOREACH_SET_KEY (copy);
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;
+
+	drain_gray_stack (queue, -1);
+}
+
+
 /* LOCKING: requires that the GC lock is held */
 static void
 finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
@@ -40,7 +106,6 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 				num_ready_finalizers++;
 				queue_finalization_entry (copy);
-				bridge_register_finalized_object (copy);
 				/* Make it survive */
 				DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", copy, safe_name (copy), object, num_ready_finalizers, mono_sgen_hash_table_num_entries (hash_table)));
 				continue;

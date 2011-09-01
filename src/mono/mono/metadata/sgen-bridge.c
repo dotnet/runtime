@@ -216,6 +216,12 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 }
 
 gboolean
+mono_sgen_is_bridge_object (MonoObject *obj)
+{
+	return bridge_callbacks.is_bridge_object (obj);
+}
+
+gboolean
 mono_sgen_need_bridge_processing (void)
 {
 	return bridge_callbacks.cross_references != NULL;
@@ -570,6 +576,14 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 	/* callback */
 
 	bridge_callbacks.cross_references (num_sccs, api_sccs, num_xrefs, api_xrefs);
+
+/*Release for finalization those objects we no longer care. */
+	for (i = 0; i < num_sccs; ++i) {
+		if (!api_sccs [i]->objs [0])
+			continue;
+		for (j = 0; j < api_sccs [i]->num_objs; ++j)
+			mono_sgen_mark_bridge_object (api_sccs [i]->objs [j]);
+	}
 
 	/* free callback data */
 

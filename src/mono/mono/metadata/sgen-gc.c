@@ -776,6 +776,7 @@ static void report_finalizer_roots (void);
 static void report_registered_roots (void);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
+static void collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void process_fin_stage_entries (void);
 static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue);
@@ -2484,6 +2485,12 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 			++ephemeron_rounds;
 		} while (!done_with_ephemerons);
 
+		if (mono_sgen_need_bridge_processing ()) {
+			collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
+			if (generation == GENERATION_OLD)
+				collect_bridge_objects (copy_func, nursery_start, nursery_end, GENERATION_NURSERY, queue);
+		}
+		
 		fin_ready = num_ready_finalizers;
 		finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
