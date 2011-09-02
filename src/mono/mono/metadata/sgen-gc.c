@@ -223,7 +223,9 @@
 #include "utils/mono-counters.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"
+#include "utils/mono-logger-internal.h"
 
+#include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/memcheck.h>
 
 #if defined(__MACH__)
@@ -489,6 +491,12 @@ static mword total_alloc = 0;
 static mword memory_pressure = 0;
 static mword minor_collection_allowance;
 static int minor_collection_sections_alloced = 0;
+
+
+/* GC Logging stats */
+static int last_major_num_sections = 0;
+static int last_los_memory_usage = 0;
+static gboolean major_collection_hapenned = FALSE;
 
 static GCMemSection *nursery_section = NULL;
 static mword lowest_heap_address = ~(mword)0;
@@ -3526,6 +3534,7 @@ major_collection (const char *reason)
 		return;
 	}
 
+	major_collection_hapenned = TRUE;
 	current_collection_generation = GENERATION_OLD;
 	major_do_collection (reason);
 	current_collection_generation = -1;
@@ -3534,11 +3543,15 @@ major_collection (const char *reason)
 void
 sgen_collect_major_no_lock (const char *reason)
 {
-	 mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
-	 stop_world (1);
-	 major_collection (reason);
-	 restart_world (1);
-	 mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
+	gint64 gc_start_time;
+
+	mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
+	gc_start_time = mono_100ns_ticks ();
+	stop_world (1);
+	major_collection (reason);
+	restart_world (1);
+	mono_trace_message (MONO_TRACE_GC, "major gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
+	mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 }
 
 /*
@@ -3554,16 +3567,31 @@ minor_collect_or_expand_inner (size_t size)
 
 	g_assert (nursery_section);
 	if (do_minor_collection) {
+		gint64 total_gc_time, major_gc_time = 0;
+
 		mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
+		total_gc_time = mono_100ns_ticks ();
+
 		stop_world (0);
 		if (collect_nursery (size)) {
 			mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
+			major_gc_time = mono_100ns_ticks ();
+
 			major_collection ("minor overflow");
+
 			/* keep events symmetric */
+			major_gc_time = mono_100ns_ticks () - major_gc_time;
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 		}
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
 		restart_world (0);
+
+		total_gc_time = mono_100ns_ticks () - total_gc_time;
+		if (major_gc_time)
+			mono_trace_message (MONO_TRACE_GC, "overflow major gc took %d usecs minor gc took %d usecs", total_gc_time / 10, (total_gc_time - major_gc_time) / 10);
+		else
+			mono_trace_message (MONO_TRACE_GC, "minor gc took %d usecs", total_gc_time / 10);
+		
 		/* this also sets the proper pointers for the next allocation */
 		if (!mono_sgen_can_alloc_size (size)) {
 			int i;
@@ -3630,10 +3658,16 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 	}
 
 	if (need_major_collection (0)) {
+		gint64 gc_start_time;
+
 		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
+		gc_start_time = mono_100ns_ticks ();
+
 		stop_world (1);
 		major_collection ("degraded overflow");
 		restart_world (1);
+
+		mono_trace_message (MONO_TRACE_GC, "major gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 		mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 	}
 
@@ -3671,10 +3705,16 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 		InterlockedIncrement (&alloc_count);
 		if (((alloc_count % collect_before_allocs) == 0) && nursery_section) {
+			gint64 gc_start_time;
+
 			mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
+			gc_start_time = mono_100ns_ticks ();
+
 			stop_world (0);
 			collect_nursery (0);
 			restart_world (0);
+
+			mono_trace_message (MONO_TRACE_GC, "minor gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
 			if (!degraded_mode && !mono_sgen_can_alloc_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
 				// FIXME:
@@ -4621,6 +4661,10 @@ stop_world (int generation)
 	g_assert (count >= 0);
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
+
+	last_major_num_sections = major_collector.get_num_major_sections ();
+	last_los_memory_usage = los_memory_usage;
+	major_collection_hapenned = FALSE;
 	return count;
 }
 
@@ -4628,10 +4672,11 @@ stop_world (int generation)
 static int
 restart_world (int generation)
 {
-	int count;
+	int count, i, num_major_sections;
 	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
-	unsigned long usec;
+	TV_DECLARE (end_bridge);
+	unsigned long usec, bridge_usec;
 
 	/* notify the profiler of the leftovers */
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES)) {
@@ -4660,6 +4705,25 @@ restart_world (int generation)
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 
 	bridge_process ();
+
+	TV_GETTIME (end_bridge);
+	bridge_usec = TV_ELAPSED (end_sw, end_bridge);
+
+	num_major_sections = major_collector.get_num_major_sections ();
+	if (major_collection_hapenned)
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR: %s pause %.2fms, bridge %.2fms major %dK/%dK los %dK/%dK",
+			generation ? "" : "(minor overflow)",
+			(int)usec / 1000.0f, (int)bridge_usec / 1000.0f,
+			major_collector.section_size * num_major_sections / 1024,
+			major_collector.section_size * last_major_num_sections / 1024,
+			los_memory_usage / 1024,
+			last_los_memory_usage / 1024);
+	else
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR: pause %.2fms, bridge %.2fms promoted %dK major %dK los %dK",
+			(int)usec / 1000.0f, (int)bridge_usec / 1000.0f,
+			(num_major_sections - last_major_num_sections) * major_collector.section_size / 1024,
+			major_collector.section_size * num_major_sections / 1024,
+			los_memory_usage / 1024);
 
 	return count;
 }

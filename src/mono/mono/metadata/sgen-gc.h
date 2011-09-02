@@ -852,7 +852,6 @@ struct _LOSObject {
 
 extern LOSObject *los_object_list;
 extern mword los_memory_usage;
-extern mword last_los_memory_usage;
 
 void mono_sgen_los_free_object (LOSObject *obj) MONO_INTERNAL;
 void* mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size) MONO_INTERNAL;
