@@ -9315,7 +9315,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	GHashTable *cache;
 	MonoMethod *res;
 	int pos_failed, pos_end;
-	char *name;
+	char *name, *klass_name;
 	MonoMethod *can_cast_to;
 	MonoMethodDesc *desc;
 	MonoMethodBuilder *mb;
@@ -9330,9 +9330,11 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 		isint_sig->ret = &mono_defaults.object_class->byval_arg;
 		isint_sig->pinvoke = 0;
 	}
-	
-	name = g_strdup_printf ("__proxy_isinst_wrapper_%s", klass->name); 
+
+	klass_name = mono_type_full_name (&klass->byval_arg);
+	name = g_strdup_printf ("__proxy_isinst_wrapper_%s", klass_name); 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_PROXY_ISINST);
+	g_free (klass_name);
 	g_free (name);
 	
 	mb->method->save_lmf = 1;
