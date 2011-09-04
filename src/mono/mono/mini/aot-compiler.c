@@ -165,6 +165,8 @@ typedef struct MonoAotCompile {
 	GPtrArray *globals;
 	GPtrArray *method_order;
 	GHashTable *export_names;
+	/* Maps MonoClass* -> blob offset */
+	GHashTable *klass_blob_hash;
 	guint32 *plt_got_info_offsets;
 	guint32 got_offset, plt_offset, plt_got_offset_base;
 	guint32 final_got_size;
@@ -1861,16 +1863,18 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 static void
 encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8 **endbuf);
 
-/*
- * encode_klass_ref:
- *
- *   Encode a reference to KLASS. We use our home-grown encoding instead of the
- * standard metadata encoding.
- */
 static void
-encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
+encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf);
+
+static void
+encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
+
+	/*
+	 * The encoding begins with one of the MONO_AOT_TYPEREF values, followed by additional
+	 * information.
+	 */
 
 	if (klass->generic_class) {
 		guint32 token;
@@ -1879,34 +1883,41 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 		/* Find a typespec for a class if possible */
 		token = find_typespec_for_class (acfg, klass);
 		if (token) {
+			encode_value (MONO_AOT_TYPEREF_TYPESPEC_TOKEN, p, &p);
 			encode_value (token, p, &p);
-			encode_value (get_image_index (acfg, acfg->image), p, &p);
 		} else {
 			MonoClass *gclass = klass->generic_class->container_class;
 			MonoGenericInst *inst = klass->generic_class->context.class_inst;
 			int i;
+			static int count = 0;
+			guint8 *p1 = p;
 
-			/* Encode it ourselves */
-			/* Marker */
-			encode_value (MONO_TOKEN_TYPE_SPEC, p, &p);
-			encode_value (MONO_TYPE_GENERICINST, p, &p);
+			encode_value (MONO_AOT_TYPEREF_GINST, p, &p);
 			encode_klass_ref (acfg, gclass, p, &p);
 			encode_value (inst->type_argc, p, &p);
 			for (i = 0; i < inst->type_argc; ++i)
 				encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
+
+			count += p - p1;
 		}
 	} else if (klass->type_token) {
+		int iindex = get_image_index (acfg, klass->image);
+
 		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
-		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, p, &p);
-		encode_value (get_image_index (acfg, klass->image), p, &p);
+		if (iindex == 0) {
+			encode_value (MONO_AOT_TYPEREF_TYPEDEF_INDEX, p, &p);
+			encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, p, &p);
+		} else {
+			encode_value (MONO_AOT_TYPEREF_TYPEDEF_INDEX_IMAGE, p, &p);
+			encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, p, &p);
+			encode_value (get_image_index (acfg, klass->image), p, &p);
+		}
 	} else if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR)) {
 		MonoGenericContainer *container = mono_type_get_generic_param_owner (&klass->byval_arg);
 		g_assert (container);
 
-		/* Marker */
-		encode_value (MONO_TOKEN_TYPE_SPEC, p, &p);
+		encode_value (MONO_AOT_TYPEREF_VAR, p, &p);
 		encode_value (klass->byval_arg.type, p, &p);
-
 		encode_value (mono_type_get_generic_param_num (&klass->byval_arg), p, &p);
 		
 		encode_value (container->is_method, p, &p);
@@ -1917,12 +1928,66 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 	} else {
 		/* Array class */
 		g_assert (klass->rank > 0);
-		encode_value (MONO_TOKEN_TYPE_DEF, p, &p);
-		encode_value (get_image_index (acfg, klass->image), p, &p);
+		encode_value (MONO_AOT_TYPEREF_ARRAY, p, &p);
 		encode_value (klass->rank, p, &p);
 		encode_klass_ref (acfg, klass->element_class, p, &p);
 	}
 	*endbuf = p;
+}
+
+/*
+ * encode_klass_ref:
+ *
+ *   Encode a reference to KLASS. We use our home-grown encoding instead of the
+ * standard metadata encoding.
+ */
+static void
+encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
+{
+	gboolean shared = FALSE;
+
+	/* 
+	 * The encoding of generic instances is large so emit them only once.
+	 */
+	if (klass->generic_class) {
+		guint32 token;
+		g_assert (klass->type_token);
+
+		/* Find a typespec for a class if possible */
+		token = find_typespec_for_class (acfg, klass);
+		if (!token)
+			shared = TRUE;
+	} else if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR)) {
+		shared = TRUE;
+	}
+
+	if (shared) {
+		uint offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->klass_blob_hash, klass));
+		guint8 *buf2, *p;
+
+		if (!offset) {
+			buf2 = g_malloc (1024);
+			p = buf2;
+
+			encode_klass_ref_inner (acfg, klass, p, &p);
+			g_assert (p - buf2 < 1024);
+
+			offset = add_to_blob (acfg, buf2, p - buf2);
+			g_free (buf2);
+
+			g_hash_table_insert (acfg->klass_blob_hash, klass, GUINT_TO_POINTER (offset + 1));
+		} else {
+			offset --;
+		}
+
+		p = buf;
+		encode_value (MONO_AOT_TYPEREF_BLOB_INDEX, p, &p);
+		encode_value (offset, p, &p);
+		*endbuf = p;
+		return;
+	}
+
+	encode_klass_ref_inner (acfg, klass, buf, endbuf);
 }
 
 static void
@@ -7115,6 +7180,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->method_label_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	acfg->method_order = g_ptr_array_new ();
 	acfg->export_names = g_hash_table_new (NULL, NULL);
+	acfg->klass_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	InitializeCriticalSection (&acfg->mutex);
 
@@ -7151,6 +7217,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_label_hash);
 	g_hash_table_destroy (acfg->export_names);
 	g_hash_table_destroy (acfg->plt_entry_debug_sym_cache);
+	g_hash_table_destroy (acfg->klass_blob_hash);
 	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
 		g_hash_table_destroy (acfg->patch_to_got_offset_by_type [i]);
 	g_free (acfg->patch_to_got_offset_by_type);

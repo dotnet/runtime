@@ -113,7 +113,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 77
+#define MONO_AOT_FILE_VERSION 78
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -130,6 +130,24 @@ enum {
 	MONO_AOT_METHODREF_GINST = 253,
 	/* Methods resolve using a METHODSPEC token */
 	MONO_AOT_METHODREF_METHODSPEC = 254,
+};
+
+/* Constants used to encode different types of types in AOT */
+enum {
+	/* typedef index */
+	MONO_AOT_TYPEREF_TYPEDEF_INDEX = 1,
+	/* typedef index + image index */
+	MONO_AOT_TYPEREF_TYPEDEF_INDEX_IMAGE = 2,
+	/* typespec token */
+	MONO_AOT_TYPEREF_TYPESPEC_TOKEN = 3,
+	/* generic inst */
+	MONO_AOT_TYPEREF_GINST = 4,
+	/* type/method variable */
+	MONO_AOT_TYPEREF_VAR = 5,
+	/* array */
+	MONO_AOT_TYPEREF_ARRAY = 6,
+	/* blob index of the type encoding */
+	MONO_AOT_TYPEREF_BLOB_INDEX = 7
 };
 
 /* Trampolines which we have a lot of */

@@ -357,100 +357,130 @@ static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoImage *image;
-	MonoClass *klass, *eklass;
-	guint32 token, rank;
+	MonoClass *klass = NULL, *eklass;
+	guint32 token, rank, idx;
 	guint8 *p = buf;
+	int reftype;
 
-	token = decode_value (p, &p);
-	if (token == 0) {
+	reftype = decode_value (p, &p);
+	if (reftype == 0) {
 		*endbuf = p;
 		return NULL;
 	}
-	if (mono_metadata_token_table (token) == 0) {
-		image = load_image (module, decode_value (p, &p), TRUE);
-		if (!image)
+
+	switch (reftype) {
+	case MONO_AOT_TYPEREF_TYPEDEF_INDEX:
+		idx = decode_value (p, &p);
+		image = load_image (module, 0, TRUE);
+		if (!image) {
+			NOT_IMPLEMENTED;
 			return NULL;
-		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + token);
-	} else if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
-		if (token == MONO_TOKEN_TYPE_SPEC) {
-			MonoTypeEnum type = decode_value (p, &p);
-
-			if (type == MONO_TYPE_GENERICINST) {
-				MonoClass *gclass;
-				MonoGenericContext ctx;
-				MonoType *type;
-
-				gclass = decode_klass_ref (module, p, &p);
-				if (!gclass)
-					return NULL;
-				g_assert (gclass->generic_container);
-
-				memset (&ctx, 0, sizeof (ctx));
-				ctx.class_inst = decode_generic_inst (module, p, &p);
-				if (!ctx.class_inst)
-					return NULL;
-				type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
-				klass = mono_class_from_mono_type (type);
-				mono_metadata_free_type (type);
-			} else if ((type == MONO_TYPE_VAR) || (type == MONO_TYPE_MVAR)) {
-				MonoType *t;
-				MonoGenericContainer *container;
-
-				int num = decode_value (p, &p);
-				gboolean is_method = decode_value (p, &p);
-
-				if (is_method) {
-					MonoMethod *method_def;
-					g_assert (type == MONO_TYPE_MVAR);
-					method_def = decode_resolve_method_ref (module, p, &p);
-					if (!method_def)
-						return NULL;
-
-					container = mono_method_get_generic_container (method_def);
-				} else {
-					MonoClass *class_def;
-					g_assert (type == MONO_TYPE_VAR);
-					class_def = decode_klass_ref (module, p, &p);
-					if (!class_def)
-						return NULL;
-
-					container = class_def->generic_container;
-				}
-
-				g_assert (container);
-
-				// FIXME: Memory management
-				t = g_new0 (MonoType, 1);
-				t->type = type;
-				t->data.generic_param = mono_generic_container_get_param (container, num);
-
-				// FIXME: Maybe use types directly to avoid
-				// the overhead of creating MonoClass-es
-				klass = mono_class_from_mono_type (t);
-
-				g_free (t);
-			} else {
-				g_assert_not_reached ();
-			}
-		} else {
-			image = load_image (module, decode_value (p, &p), TRUE);
-			if (!image)
-				return NULL;
-			klass = mono_class_get (image, token);
 		}
-	} else if (token == MONO_TOKEN_TYPE_DEF) {
-		/* Array */
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + idx);
+		break;
+	case MONO_AOT_TYPEREF_TYPEDEF_INDEX_IMAGE:
+		idx = decode_value (p, &p);
 		image = load_image (module, decode_value (p, &p), TRUE);
-		if (!image)
+		if (!image) {
+			NOT_IMPLEMENTED;
 			return NULL;
+		}
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + idx);
+		break;
+	case MONO_AOT_TYPEREF_TYPESPEC_TOKEN:
+		token = decode_value (p, &p);
+		image = load_image (module, 0, TRUE);
+		if (!image) {
+			NOT_IMPLEMENTED;
+			return NULL;
+		}
+		klass = mono_class_get (image, token);
+		break;
+	case MONO_AOT_TYPEREF_GINST: {
+		MonoClass *gclass;
+		MonoGenericContext ctx;
+		MonoType *type;
+
+		gclass = decode_klass_ref (module, p, &p);
+		if (!gclass) {
+			NOT_IMPLEMENTED;
+			return NULL;
+		}
+		g_assert (gclass->generic_container);
+
+		memset (&ctx, 0, sizeof (ctx));
+		ctx.class_inst = decode_generic_inst (module, p, &p);
+		if (!ctx.class_inst) {
+			NOT_IMPLEMENTED;
+			return NULL;
+		}
+		type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
+		klass = mono_class_from_mono_type (type);
+		mono_metadata_free_type (type);
+		break;
+	}
+	case MONO_AOT_TYPEREF_VAR: {
+		MonoType *t;
+		MonoGenericContainer *container;
+		int type = decode_value (p, &p);
+		int num = decode_value (p, &p);
+		gboolean is_method = decode_value (p, &p);
+
+		if (is_method) {
+			MonoMethod *method_def;
+			g_assert (type == MONO_TYPE_MVAR);
+			method_def = decode_resolve_method_ref (module, p, &p);
+			if (!method_def) {
+			NOT_IMPLEMENTED;
+				return NULL;
+			}
+
+			container = mono_method_get_generic_container (method_def);
+		} else {
+			MonoClass *class_def;
+			g_assert (type == MONO_TYPE_VAR);
+			class_def = decode_klass_ref (module, p, &p);
+			if (!class_def) {
+			NOT_IMPLEMENTED;
+				return NULL;
+			}
+
+			container = class_def->generic_container;
+		}
+
+		g_assert (container);
+
+		// FIXME: Memory management
+		t = g_new0 (MonoType, 1);
+		t->type = type;
+		t->data.generic_param = mono_generic_container_get_param (container, num);
+
+		// FIXME: Maybe use types directly to avoid
+		// the overhead of creating MonoClass-es
+		klass = mono_class_from_mono_type (t);
+
+		g_free (t);
+		break;
+	}
+	case MONO_AOT_TYPEREF_ARRAY:
+		/* Array */
 		rank = decode_value (p, &p);
 		eklass = decode_klass_ref (module, p, &p);
 		klass = mono_array_class_get (eklass, rank);
-	} else {
+		break;
+	case MONO_AOT_TYPEREF_BLOB_INDEX: {
+		guint32 offset = decode_value (p, &p);
+		guint8 *p2;
+
+		p2 = module->blob + offset;
+		klass = decode_klass_ref (module, p2, &p2);
+		break;
+	}
+	default:
 		g_assert_not_reached ();
 	}
 	g_assert (klass);
-
+	//printf ("BLA: %s\n", mono_type_full_name (&klass->byval_arg));
 	*endbuf = p;
 	return klass;
 }
