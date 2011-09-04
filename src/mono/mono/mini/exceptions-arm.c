@@ -407,7 +407,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->eip = regs [ARMREG_LR];
 		new_ctx->esp = (gsize)cfa;
 
-		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->esp)) {
+		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->sp)) {
 			/* remove any unused lmf */
 			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
@@ -441,7 +441,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 		
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
+		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->ip, NULL))) {
 			frame->ji = ji;
 		} else {
 			if (!(*lmf)->method)
@@ -453,13 +453,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		 * The LMF is saved at the start of the method using:
 		 * ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP)
 		 * ARM_PUSH (code, 0x5ff0);
-		 * So it stores the register state as it existed at the caller.
+		 * So it stores the register state as it existed at the caller. We need to
+		 * produce the register state which existed at the time of the call which
+		 * transitioned to native call, so we save the sp/fp/ip in the LMF.
 		 */
 		memcpy (&new_ctx->regs [0], &(*lmf)->iregs [0], sizeof (mgreg_t) * 13);
-		/* SP is skipped */
-		new_ctx->regs [ARMREG_LR] = (*lmf)->iregs [ARMREG_LR - 1];
-		new_ctx->esp = (*lmf)->iregs [ARMREG_IP];
-		new_ctx->eip = new_ctx->regs [ARMREG_LR];
+		new_ctx->esp = (*lmf)->sp;
+		new_ctx->eip = (*lmf)->ip;
+		new_ctx->regs [ARMREG_FP] = (*lmf)->fp;
 
 		/* Clear thumb bit */
 		new_ctx->eip &= ~1;

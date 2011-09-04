@@ -351,10 +351,11 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	/* *(lmf_addr) = r1 */
 	ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* Skip method (only needed for trampoline LMF frames) */
-	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, esp));
+	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, sp));
+	ARM_STR_IMM (code, ARMREG_FP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, fp));
 	/* save the current IP */
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ip));
 
 	for (i = 0; i < sizeof (MonoLMF); i += sizeof (mgreg_t))
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + i, SLOT_NOREF);

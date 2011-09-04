@@ -110,8 +110,9 @@ struct MonoLMF {
 	gpointer    lmf_addr;
 	/* This is only set in trampoline LMF frames */
 	MonoMethod *method;
-	gulong     esp;
-	gulong     eip;
+	gulong     sp;
+	gulong     ip;
+	gulong     fp;
 	/* all but sp and pc: matches the PUSH instruction layout in the trampolines
 	 * 0-4 should be considered undefined (execpt in the magic tramp)
 	 * sp is saved at IP.

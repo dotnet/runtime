@@ -242,17 +242,19 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ARM_MOV_REG_IMM8 (code, ARMREG_R2, 0);
 		ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, method));
 	}
-	/* Save sp into lmf->iregs, the eh code expects it to be at IP */
+	/* save caller SP */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, cfa_offset);
-	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, iregs) + (ARMREG_IP * sizeof (mgreg_t)));
-	ARM_STR_IMM (code, ARMREG_SP, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, esp));
+	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, sp));
+	/* save caller FP */
+	ARM_LDR_IMM (code, ARMREG_R2, ARMREG_V1, (G_STRUCT_OFFSET (MonoLMF, iregs) + ARMREG_FP*4));
+	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, fp));
 	/* save the IP (caller ip) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 		ARM_MOV_REG_IMM8 (code, ARMREG_R2, 0);
 	} else {
 		ARM_LDR_IMM (code, ARMREG_R2, ARMREG_V1, (G_STRUCT_OFFSET (MonoLMF, iregs) + 13*4));
 	}
-	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, eip));
+	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, ip));
 
 	/*
 	 * Now we're ready to call xxx_trampoline ().
