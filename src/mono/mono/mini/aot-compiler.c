@@ -141,6 +141,7 @@ typedef struct MonoAotStats {
 	int methods_without_got_slots, direct_calls, all_calls, llvm_count;
 	int got_slots, offsets_size;
 	int got_slot_types [MONO_PATCH_INFO_NONE];
+	int got_slot_info_sizes [MONO_PATCH_INFO_NONE];
 	int jit_time, gen_time, link_time;
 } MonoAotStats;
 
@@ -6419,6 +6420,8 @@ emit_got_info (MonoAotCompile *acfg)
 		MonoPltEntry *plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 
 		g_ptr_array_add (acfg->got_patches, plt_entry->ji);
+
+		acfg->stats.got_slot_types [plt_entry->ji->type] ++;
 	}
 
 	acfg->got_offset += acfg->plt_offset;
@@ -6444,12 +6447,14 @@ emit_got_info (MonoAotCompile *acfg)
 		acfg->plt_got_info_offsets [0] = 0;
 	for (i = 0; i < acfg->got_patches->len; ++i) {
 		MonoJumpInfo *ji = g_ptr_array_index (acfg->got_patches, i);
+		guint8 *p2;
 
 		p = buf;
 
 		encode_value (ji->type, p, &p);
+		p2 = p;
 		encode_patch (acfg, ji, p, &p);
-
+		acfg->stats.got_slot_info_sizes [ji->type] += p - p2;
 		g_assert (p - buf <= buf_size);
 		got_info_offsets [i] = add_to_blob (acfg, buf, p - buf);
 
@@ -7493,7 +7498,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		printf ("GOT slot distribution:\n");
 		for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
 			if (acfg->stats.got_slot_types [i])
-				printf ("\t%s: %d\n", get_patch_name (i), acfg->stats.got_slot_types [i]);
+				printf ("\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
 	}
 
 	printf ("JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
