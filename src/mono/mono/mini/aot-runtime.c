@@ -335,15 +335,21 @@ decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *
 {
 	gboolean has_class_inst, has_method_inst;
 	guint8 *p = buf;
+	guint8 *p2;
+	int argc;
 
-	has_class_inst = decode_value (p, &p);
-	if (has_class_inst) {
+	p2 = p;
+	argc = decode_value (p, &p);
+	if (argc) {
+		p = p2;
 		ctx->class_inst = decode_generic_inst (module, p, &p);
 		if (!ctx->class_inst)
 			return FALSE;
 	}
-	has_method_inst = decode_value (p, &p);
-	if (has_method_inst) {
+	p2 = p;
+	argc = decode_value (p, &p);
+	if (argc) {
+		p = p2;
 		ctx->method_inst = decode_generic_inst (module, p, &p);
 		if (!ctx->method_inst)
 			return FALSE;
@@ -2620,13 +2626,19 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		gboolean res;
 		MonoJumpInfoRgctxEntry *entry;
+		guint32 offset, val;
+		guint8 *p2;
+
+		offset = decode_value (p, &p);
+		val = decode_value (p, &p);
 
 		entry = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
-		entry->method = decode_resolve_method_ref (aot_module, p, &p);
-		entry->in_mrgctx = decode_value (p, &p);
-		entry->info_type = decode_value (p, &p);
+		p2 = aot_module->blob + offset;
+		entry->method = decode_resolve_method_ref (aot_module, p2, &p2);
+		entry->in_mrgctx = ((val & 1) > 0) ? TRUE : FALSE;
+		entry->info_type = (val >> 1) & 0xff;
 		entry->data = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
-		entry->data->type = decode_value (p, &p);
+		entry->data->type = (val >> 9) & 0xff;
 		
 		res = decode_patch (aot_module, mp, entry->data, p, &p);
 		if (!res)
