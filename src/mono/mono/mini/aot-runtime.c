@@ -2928,7 +2928,7 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, const 
 	guint32 index;
 	static guint32 n_extra_decodes;
 
-	if (!amodule)
+	if (!amodule || amodule->out_of_date)
 		return 0xffffff;
 
 	table_size = amodule->extra_method_table [0];
