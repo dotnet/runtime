@@ -333,7 +333,6 @@ decode_generic_inst (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 static gboolean
 decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *buf, guint8 **endbuf)
 {
-	gboolean has_class_inst, has_method_inst;
 	guint8 *p = buf;
 	guint8 *p2;
 	int argc;
