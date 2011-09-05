@@ -372,28 +372,22 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	case MONO_AOT_TYPEREF_TYPEDEF_INDEX:
 		idx = decode_value (p, &p);
 		image = load_image (module, 0, TRUE);
-		if (!image) {
-			NOT_IMPLEMENTED;
+		if (!image)
 			return NULL;
-		}
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + idx);
 		break;
 	case MONO_AOT_TYPEREF_TYPEDEF_INDEX_IMAGE:
 		idx = decode_value (p, &p);
 		image = load_image (module, decode_value (p, &p), TRUE);
-		if (!image) {
-			NOT_IMPLEMENTED;
+		if (!image)
 			return NULL;
-		}
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + idx);
 		break;
 	case MONO_AOT_TYPEREF_TYPESPEC_TOKEN:
 		token = decode_value (p, &p);
 		image = load_image (module, 0, TRUE);
-		if (!image) {
-			NOT_IMPLEMENTED;
+		if (!image)
 			return NULL;
-		}
 		klass = mono_class_get (image, token);
 		break;
 	case MONO_AOT_TYPEREF_GINST: {
@@ -402,18 +396,14 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		MonoType *type;
 
 		gclass = decode_klass_ref (module, p, &p);
-		if (!gclass) {
-			NOT_IMPLEMENTED;
+		if (!gclass)
 			return NULL;
-		}
 		g_assert (gclass->generic_container);
 
 		memset (&ctx, 0, sizeof (ctx));
 		ctx.class_inst = decode_generic_inst (module, p, &p);
-		if (!ctx.class_inst) {
-			NOT_IMPLEMENTED;
+		if (!ctx.class_inst)
 			return NULL;
-		}
 		type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
 		klass = mono_class_from_mono_type (type);
 		mono_metadata_free_type (type);
@@ -430,20 +420,16 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			MonoMethod *method_def;
 			g_assert (type == MONO_TYPE_MVAR);
 			method_def = decode_resolve_method_ref (module, p, &p);
-			if (!method_def) {
-			NOT_IMPLEMENTED;
+			if (!method_def)
 				return NULL;
-			}
 
 			container = mono_method_get_generic_container (method_def);
 		} else {
 			MonoClass *class_def;
 			g_assert (type == MONO_TYPE_VAR);
 			class_def = decode_klass_ref (module, p, &p);
-			if (!class_def) {
-			NOT_IMPLEMENTED;
+			if (!class_def)
 				return NULL;
-			}
 
 			container = class_def->generic_container;
 		}
