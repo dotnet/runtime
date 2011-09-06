@@ -356,7 +356,7 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 	/* adjust eip so that it point into the call instruction */
 	ctx.rip -= 1;
 
-	mono_handle_exception (&ctx, exc, (gpointer)rip, FALSE);
+	mono_handle_exception (&ctx, exc);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
@@ -735,7 +735,7 @@ handle_signal_exception (gpointer obj)
 	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
 		return;
 
-	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), FALSE);
+	mono_handle_exception (&ctx, obj);
 
 	restore_context (&ctx);
 }
@@ -763,7 +763,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
  * @obj: the exception object
  */
 gboolean
-mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *sigctx, gpointer obj)
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
 	MonoContext mctx;
@@ -778,7 +778,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	/* Pass the ctx parameter in TLS */
 	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 
-	g_assert (!test_only);
 	mctx = jit_tls->ex_ctx;
 	mono_arch_setup_async_callback (&mctx, handle_signal_exception, obj);
 	mono_monoctx_to_sigctx (&mctx, sigctx);
@@ -792,7 +791,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj))
 		return TRUE;
 
-	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), test_only);
+	mono_handle_exception (&mctx, obj);
 
 	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
 
@@ -938,7 +937,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 		restore_context (&mctx);
 	}
 
-	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), FALSE);
+	mono_handle_exception (&mctx, obj);
 	if (stack_ovf)
 		prepare_for_guard_pages (&mctx);
 	restore_context (&mctx);

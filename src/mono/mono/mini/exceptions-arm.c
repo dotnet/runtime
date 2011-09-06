@@ -155,7 +155,7 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, (gpointer)(eip + 4), FALSE);
+	mono_handle_exception (&ctx, exc);
 	restore_context (&ctx);
 	g_assert_not_reached ();
 }
@@ -515,7 +515,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
  *   Called by resuming from a signal handler.
  */
 static void
-handle_signal_exception (gpointer obj, gboolean test_only)
+handle_signal_exception (gpointer obj)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
@@ -526,7 +526,7 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
-	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), test_only);
+	mono_handle_exception (&ctx, obj);
 
 	restore_context (&ctx);
 }
@@ -548,7 +548,7 @@ get_handle_signal_exception_addr (void)
  * This is the function called from the signal handler
  */
 gboolean
-mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *ctx, gpointer obj)
 {
 #if defined(MONO_CROSS_COMPILE)
 	g_assert_not_reached ();
@@ -566,7 +566,6 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 	/* The others in registers */
 	UCONTEXT_REG_R0 (sigctx) = (gsize)obj;
-	UCONTEXT_REG_R1 (sigctx) = test_only;
 
 	/* Allocate a stack frame */
 	sp -= 16;
@@ -589,7 +588,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 
 	mono_arch_sigctx_to_monoctx (ctx, &mctx);
 
-	result = mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
+	result = mono_handle_exception (&mctx, obj);
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */

@@ -338,7 +338,7 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, (gpointer)eip, FALSE);
+	mono_handle_exception (&ctx, exc);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
@@ -667,14 +667,14 @@ mono_ppc_set_func_into_sigctx (void *sigctx, void *func)
 }
 
 static void
-altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
+altstack_handle_and_restore (void *sigctx, gpointer obj)
 {
 	void (*restore_context) (MonoContext *);
 	MonoContext mctx;
 
 	restore_context = mono_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
-	mono_handle_exception (&mctx, obj, (gpointer)mctx.sc_ir, test_only);
+	mono_handle_exception (&mctx, obj);
 	restore_context (&mctx);
 }
 
@@ -750,7 +750,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
  *   Called by resuming from a signal handler.
  */
 static void
-handle_signal_exception (gpointer obj, gboolean test_only)
+handle_signal_exception (gpointer obj)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
@@ -761,7 +761,7 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
-	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), test_only);
+	mono_handle_exception (&ctx, obj);
 
 	restore_context (&ctx);
 }
@@ -785,7 +785,7 @@ setup_ucontext_return (void *uc, gpointer func)
 }
 
 gboolean
-mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *ctx, gpointer obj)
 {
 #if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_REG_Rn)
 	/*
@@ -803,7 +803,6 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 	/* The others in registers */
 	UCONTEXT_REG_Rn (sigctx, PPC_FIRST_ARG_REG) = (gsize)obj;
-	UCONTEXT_REG_Rn (sigctx, PPC_FIRST_ARG_REG + 1) = test_only;
 
 	/* Allocate a stack frame below the red zone */
 	/* Similar to mono_arch_handle_altstack_exception () */
@@ -822,7 +821,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 
 	mono_arch_sigctx_to_monoctx (ctx, &mctx);
 
-	result = mono_handle_exception (&mctx, obj, (gpointer)mctx.sc_ir, test_only);
+	result = mono_handle_exception (&mctx, obj);
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */

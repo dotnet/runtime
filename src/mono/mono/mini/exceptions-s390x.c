@@ -69,8 +69,7 @@
 /*------------------------------------------------------------------*/
 
 gboolean mono_arch_handle_exception (void     *ctx,
-				     gpointer obj, 
-				     gboolean test_only);
+				     gpointer obj);
 
 /*========================= End of Prototypes ======================*/
 
@@ -267,7 +266,7 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 			mono_ex->stack_trace = NULL;
 	}
 //	mono_arch_handle_exception (&ctx, exc, FALSE);
-	mono_handle_exception (&ctx, exc, (gpointer) ip, FALSE);
+	mono_handle_exception (&ctx, exc);
 	restore_context(&ctx);
 
 	g_assert_not_reached ();
@@ -539,15 +538,13 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 /*                                                                  */
 /* Parameters   - ctx       - Saved processor state                 */
 /*                obj       - The exception object                  */
-/*                test_only - Only test if the exception is caught, */
-/*                            but don't call handlers               */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *uc, gpointer obj)
 {
-	return mono_handle_exception (uc, obj, mono_arch_ip_from_context(uc), test_only);
+	return mono_handle_exception (uc, obj);
 }
 
 /*========================= End of Function ========================*/

@@ -5800,7 +5800,7 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 	}
 	
-	mono_arch_handle_exception (ctx, exc, FALSE);
+	mono_arch_handle_exception (ctx, exc);
 }
 
 void
@@ -5811,7 +5811,7 @@ SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)
 
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
-	mono_arch_handle_exception (ctx, exc, FALSE);
+	mono_arch_handle_exception (ctx, exc);
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
@@ -5894,7 +5894,7 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 	}
 			
-	mono_arch_handle_exception (ctx, NULL, FALSE);
+	mono_arch_handle_exception (ctx, NULL);
 #endif
 }
 
@@ -5906,7 +5906,7 @@ SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)
 
 	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
 	
-	mono_arch_handle_exception (ctx, exc, FALSE);
+	mono_arch_handle_exception (ctx, exc);
 }
 
 /* mono_jit_create_remoting_trampoline:

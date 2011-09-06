@@ -1190,7 +1190,7 @@ wrap_non_exception_throws (MonoMethod *m)
  * OUT_FILTER_IDX. Return TRUE if the exception is caught, FALSE otherwise.
  */
 static gboolean
-mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpointer original_ip, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoObject *non_exception)
+mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoObject *non_exception)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji;
@@ -1386,7 +1386,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpoin
  * @resume: whenever to resume unwinding based on the state in MonoJitTlsData.
  */
 static gboolean
-mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean resume, MonoJitInfo **out_ji)
+mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume, MonoJitInfo **out_ji)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji;
@@ -1505,7 +1505,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		mono_profiler_exception_thrown (obj);
 		jit_tls->orig_ex_ctx_set = FALSE;
 
-		res = mono_handle_exception_internal_first_pass (&ctx_cp, obj, original_ip, &first_filter_idx, &ji, non_exception);
+		res = mono_handle_exception_internal_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, non_exception);
 
 		if (!res) {
 			if (mono_break_on_exc)
@@ -1779,7 +1779,7 @@ mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
 		 * The debugger wants us to stop only if this exception is user-unhandled.
 		 */
 
-		ret = mono_handle_exception_internal_first_pass (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), NULL, &ji, NULL);
+		ret = mono_handle_exception_internal_first_pass (&ctx_cp, obj, NULL, &ji, NULL);
 		if (ret && (ji != NULL) && (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 			/*
 			 * The exception is handled in a runtime-invoke wrapper, that means that it's unhandled
@@ -1849,16 +1849,13 @@ mono_debugger_run_finally (MonoContext *start_ctx)
  * mono_handle_exception:
  * @ctx: saved processor state
  * @obj: the exception object
- * @test_only: only test if the exception is caught, but dont call handlers
  */
 gboolean
-mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only)
+mono_handle_exception (MonoContext *ctx, gpointer obj)
 {
-	if (!test_only)
-		mono_perfcounters->exceptions_thrown++;
+	mono_perfcounters->exceptions_thrown++;
 
-	g_assert (!test_only);
-	return mono_handle_exception_internal (ctx, obj, original_ip, FALSE, NULL);
+	return mono_handle_exception_internal (ctx, obj, FALSE, NULL);
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -2382,7 +2379,7 @@ mono_resume_unwind (MonoContext *ctx)
 	MONO_CONTEXT_SET_SP (ctx, MONO_CONTEXT_GET_SP (&jit_tls->resume_state.ctx));
 	new_ctx = *ctx;
 
-	mono_handle_exception_internal (&new_ctx, jit_tls->resume_state.ex_obj, NULL, TRUE, NULL);
+	mono_handle_exception_internal (&new_ctx, jit_tls->resume_state.ex_obj, TRUE, NULL);
 
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
@@ -2599,7 +2596,7 @@ mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx)
 	void (*restore_context) (MonoContext *);
 	restore_context = mono_get_restore_context ();
 
-	mono_handle_exception (ctx, exc, NULL, FALSE);
+	mono_handle_exception (ctx, exc);
 	restore_context (ctx);
 }
 

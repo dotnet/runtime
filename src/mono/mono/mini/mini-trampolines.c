@@ -1014,7 +1014,7 @@ mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tram
 		if (!restore_context)
 			restore_context = mono_get_restore_context ();
 
-		mono_handle_exception (&ctx, exc, NULL, FALSE);
+		mono_handle_exception (&ctx, exc);
 		restore_context (&ctx);
 	}
 

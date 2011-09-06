@@ -278,7 +278,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, (gpointer)(eip + 8), FALSE);
+	mono_handle_exception (&ctx, exc);
 
 	restore_context (&ctx);
 
@@ -600,7 +600,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
  * This is the function called from the signal handler
  */
 gboolean
-mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *sigctx, gpointer obj)
 {
 	struct ucontext *uc = sigctx;
 	MonoContext mctx;
@@ -619,7 +619,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	}
 	g_assert (grs == MONO_SAVED_GREGS && frs == MONO_SAVED_FREGS);
 
-	result = mono_handle_exception (&mctx, obj, (gpointer)mctx.pc, test_only);
+	result = mono_handle_exception (&mctx, obj);
 
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 

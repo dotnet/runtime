@@ -219,7 +219,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, (void *)eip, FALSE);
+	mono_handle_exception (&ctx, exc);
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("throw_exception: restore to pc=%p sp=%p fp=%p ctx=%p\n",
 		 (void *) ctx.sc_pc, (void *) ctx.sc_regs[mips_sp],
@@ -554,7 +554,7 @@ mono_arch_ip_from_context (void *sigctx)
  * This is the function called from the signal handler
  */
 gboolean
-mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *ctx, gpointer obj)
 {
 	MonoContext mctx;
 	gboolean result;
@@ -563,7 +563,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("mono_arch_handle_exception: pc=%p\n", (void *) mctx.sc_pc);
 #endif
-	mono_handle_exception (&mctx, obj, (gpointer)mctx.sc_pc, test_only);
+	mono_handle_exception (&mctx, obj);
 	result = TRUE;
 
 #ifdef DEBUG_EXCEPTIONS

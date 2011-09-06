@@ -261,7 +261,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	if (!exc)
 		return;
 
-	mono_arch_handle_exception (ctx, exc, FALSE);
+	mono_arch_handle_exception (ctx, exc);
 }
 
 #if defined(__i386__) || defined(__x86_64__)

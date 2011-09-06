@@ -83,8 +83,7 @@ mono_win32_get_handle_stackoverflow (void)
 	/* get stack overflow exception from domain object */
 	x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoDomain, stack_overflow_ex), 4);
 
-	/* call mono_arch_handle_exception (sctx, stack_overflow_exception_obj, FALSE) */
-	x86_push_imm (code, 0);
+	/* call mono_arch_handle_exception (sctx, stack_overflow_exception_obj) */
 	x86_push_reg (code, X86_EAX);
 	x86_push_reg (code, X86_EBX);
 	x86_call_code (code, mono_arch_handle_exception);
@@ -463,7 +462,7 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 	/* adjust eip so that it point into the call instruction */
 	ctx.eip -= 1;
 
-	mono_handle_exception (&ctx, exc, (gpointer)eip, FALSE);
+	mono_handle_exception (&ctx, exc);
 
 	restore_context (&ctx);
 
@@ -944,7 +943,7 @@ handle_signal_exception (gpointer obj)
 	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
 		return;
 
-	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), FALSE);
+	mono_handle_exception (&ctx, obj);
 
 	restore_context (&ctx);
 }
@@ -1016,7 +1015,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 }
 
 gboolean
-mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *sigctx, gpointer obj)
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
 	MonoContext mctx;
@@ -1032,7 +1031,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	/* Pass the ctx parameter in TLS */
 	mono_arch_sigctx_to_monoctx (ctx, &jit_tls->ex_ctx);
 
-	g_assert (!test_only);
 	mctx = jit_tls->ex_ctx;
 	mono_setup_async_callback (&mctx, handle_signal_exception, obj);
 	mono_monoctx_to_sigctx (&mctx, sigctx);
@@ -1045,7 +1043,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 
 	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 
-	g_assert (!test_only);
 	mctx = jit_tls->ex_ctx;
 	mono_setup_async_callback (&mctx, handle_signal_exception, obj);
 	mono_monoctx_to_sigctx (&mctx, sigctx);
@@ -1059,7 +1056,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj))
 		return TRUE;
 
-	mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
+	mono_handle_exception (&mctx, obj);
 
 	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
 
@@ -1108,7 +1105,7 @@ altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 		restore_context (&mctx);
 	}
 
-	mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, FALSE);
+	mono_handle_exception (&mctx, obj);
 	if (stack_ovf)
 		prepare_for_guard_pages (&mctx);
 	restore_context (&mctx);
@@ -1149,6 +1146,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	 *   ctx arg
 	 *   return ip
 	 */
+	// FIXME: test_only is no more.
  	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 4;
 	frame_size += 15;
 	frame_size &= ~15;

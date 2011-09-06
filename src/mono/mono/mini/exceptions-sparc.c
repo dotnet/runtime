@@ -183,7 +183,7 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, ip, FALSE);
+	mono_handle_exception (&ctx, exc);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
@@ -390,7 +390,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 #ifdef __linux__
 
 gboolean
-mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *sigctx, gpointer obj)
 {
        MonoContext mctx;
        struct sigcontext *sc = sigctx;
@@ -407,7 +407,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
        window = (gpointer*)(((guint8*)mctx.sp) + MONO_SPARC_STACK_BIAS);
        mctx.fp = window [sparc_fp - 16];
 
-       mono_handle_exception (&mctx, obj, mctx.ip, test_only);
+       mono_handle_exception (&mctx, obj);
 
 #ifdef SPARCV9
        sc->sigc_regs.tpc = (unsigned long) mctx.ip;
@@ -443,7 +443,7 @@ mono_arch_ip_from_context (void *sigctx)
 #else /* !__linux__ */
 
 gboolean
-mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+mono_arch_handle_exception (void *sigctx, gpointer obj)
 {
 	MonoContext mctx;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
@@ -461,7 +461,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	window = (gpointer*)(((guint8*)mctx.sp) + MONO_SPARC_STACK_BIAS);
 	mctx.fp = window [sparc_fp - 16];
 
-	mono_handle_exception (&mctx, obj, mctx.ip, test_only);
+	mono_handle_exception (&mctx, obj);
 	
 	/* We can't use restore_context to return from a signal handler */
 	ctx->uc_mcontext.gregs [REG_PC] = mctx.ip;
