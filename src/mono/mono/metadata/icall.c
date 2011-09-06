@@ -2808,7 +2808,13 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 		if (this) {
 			if (!mono_object_isinst (this, m->klass)) {
-				mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Object does not match target type."));
+				char *this_name = mono_type_get_full_name (mono_object_get_class (this));
+				char *target_name = mono_type_get_full_name (m->klass);
+				char *msg = g_strdup_printf ("Object of type '%s' doesn't match target type '%s'", this_name, target_name);
+				mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", msg));
+				g_free (msg);
+				g_free (target_name);
+				g_free (this_name);
 				return NULL;
 			}
 			m = mono_object_get_virtual_method (this, m);
