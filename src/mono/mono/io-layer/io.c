@@ -1740,15 +1740,6 @@ gboolean DeleteFile(const gunichar2 *name)
 		return(FALSE);
 	}
 
-	if (attrs & FILE_ATTRIBUTE_READONLY) {
-#ifdef DEBUG
-		g_message ("%s: file %s is readonly", __func__, filename);
-#endif
-		SetLastError (ERROR_ACCESS_DENIED);
-		g_free (filename);
-		return(FALSE);
-	}
-
 #if 0
 	/* Check to make sure sharing allows us to open the file for
 	 * writing.  See bug 323389.
