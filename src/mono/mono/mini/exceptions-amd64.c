@@ -721,7 +721,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
  *   Called by resuming from a signal handler.
  */
 static void
-handle_signal_exception (gpointer obj, gboolean test_only)
+handle_signal_exception (gpointer obj)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
@@ -735,9 +735,25 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
 		return;
 
-	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), test_only);
+	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), FALSE);
 
 	restore_context (&ctx);
+}
+
+void
+mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
+{
+	guint64 sp = ctx->rsp;
+
+	ctx->rdi = (guint64)user_data;
+
+	/* Allocate a stack frame below the red zone */
+	sp -= 128;
+	/* The stack should be unaligned */
+	if (sp % 8 == 0)
+		sp -= 8;
+	ctx->rsp = sp;
+	ctx->rip = (guint64)async_cb;
 }
 
 /**
@@ -750,7 +766,7 @@ gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
+	MonoContext mctx;
 
 	/*
 	 * Handling the exception in the signal handler is problematic, since the original
@@ -758,22 +774,14 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	 * resume into the normal stack and do most work there if possible.
 	 */
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
-	guint64 sp = UCONTEXT_REG_RSP (ctx);
 
 	/* Pass the ctx parameter in TLS */
-	mono_arch_sigctx_to_monoctx (ctx, &jit_tls->ex_ctx);
-	/* The others in registers */
-	UCONTEXT_REG_RDI (ctx) = (guint64)obj;
-	UCONTEXT_REG_RSI (ctx) = test_only;
+	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 
-	/* Allocate a stack frame below the red zone */
-	sp -= 128;
-	/* The stack should be unaligned */
-	if (sp % 8 == 0)
-		sp -= 8;
-	UCONTEXT_REG_RSP (ctx) = sp;
-
-	UCONTEXT_REG_RIP (ctx) = (guint64)handle_signal_exception;
+	g_assert (!test_only);
+	mctx = jit_tls->ex_ctx;
+	mono_arch_setup_async_callback (&mctx, handle_signal_exception, obj);
+	mono_monoctx_to_sigctx (&mctx, sigctx);
 
 	return TRUE;
 #else

@@ -386,6 +386,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 #define MONO_ARCH_GC_MAPS_SUPPORTED 1
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
+#define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 
 gboolean
 mono_amd64_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;
