@@ -3056,6 +3056,8 @@ event_to_string (EventKind event)
 	case EVENT_KIND_TYPE_LOAD: return "TYPE_LOAD";
 	case EVENT_KIND_EXCEPTION: return "EXCEPTION";
 	case EVENT_KIND_KEEPALIVE: return "KEEPALIVE";
+	case EVENT_KIND_USER_BREAK: return "USER_BREAK";
+	case EVENT_KIND_USER_LOG: return "USER_LOG";
 	default:
 		g_assert_not_reached ();
 	}
