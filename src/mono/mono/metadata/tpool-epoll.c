@@ -32,8 +32,13 @@ tp_epoll_init (SocketIOData *data)
 #endif
 	if (result->epollfd == -1) {
 		int err = errno;
-		if (g_getenv ("MONO_DEBUG"))
-			g_message ("epoll_create*() failed: %d %s", err, g_strerror (err));
+		if (g_getenv ("MONO_DEBUG")) {
+#ifdef EPOLL_CLOEXEC
+			g_message ("epoll_create1(EPOLL_CLOEXEC) failed: %d %s", err, g_strerror (err));
+#else
+			g_message ("epoll_create(256) failed: %d %s", err, g_strerror (err));
+#endif
+		}
 
 		return NULL;
 	}
