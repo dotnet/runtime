@@ -9,7 +9,11 @@ using System.Diagnostics;
 		{
 			AsyncCallback cback = new AsyncCallback(ResolveCallback);
 			IAsyncResult res = Dns.BeginGetHostEntry("localhost", cback, null);
-			System.Threading.Thread.Sleep(2000);
+			for (int i = 0; i < 100; ++i) {
+				if (frame_count != 0)
+					break;
+				System.Threading.Thread.Sleep(100);
+			}
 			/*
 			 * seems to be broken
 			while (!res.IsCompleted) {
