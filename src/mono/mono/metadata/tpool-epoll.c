@@ -30,8 +30,13 @@ tp_epoll_init (SocketIOData *data)
 	result->epollfd = epoll_create (256); /* The number does not really matter */
 	fcntl (result->epollfd, F_SETFD, FD_CLOEXEC);
 #endif
-	if (result->epollfd == -1)
+	if (result->epollfd == -1) {
+		int err = errno;
+		if (g_getenv ("MONO_DEBUG"))
+			g_message ("epoll_create*() failed: %d %s", err, g_strerror (err));
+
 		return NULL;
+	}
 
 	data->shutdown = tp_epoll_shutdown;
 	data->modify = tp_epoll_modify;
