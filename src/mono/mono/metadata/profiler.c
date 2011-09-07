@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "mono/metadata/profiler-private.h"
+#include "mono/metadata/assembly.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/debug-mono-symfile.h"
@@ -1029,6 +1030,38 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 typedef void (*ProfilerInitializer) (const char*);
 #define INITIALIZER_NAME "mono_profiler_startup"
 
+
+static gboolean
+load_profiler_from_directory (const char *directory, const char *libname, const char *desc)
+{
+	MonoDl *pmodule = NULL;
+	char* path;
+	char *err;
+	void *iter;
+
+	iter = NULL;
+	err = NULL;
+	while ((path = mono_dl_build_path (directory, libname, &iter))) {
+		g_free (err);
+		pmodule = mono_dl_open (path, MONO_DL_LAZY, &err);
+		if (pmodule) {
+			ProfilerInitializer func;
+			if ((err = mono_dl_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func))) {
+				g_warning ("Cannot find initializer function %s in profiler module: %s (%s)", INITIALIZER_NAME, libname, err);
+				g_free (err);
+				err = NULL;
+			} else {
+				func (desc);
+			}
+			g_free (path);
+			return TRUE;
+		}
+		g_free (path);
+	}
+		
+	return FALSE;
+}
+
 /**
  * mono_profiler_load:
  * @desc: arguments to configure the profiler
@@ -1074,13 +1107,9 @@ mono_profiler_load (const char *desc)
 		desc = cdesc = g_string_free (str, FALSE);
 	}
 	{
-		MonoDl *pmodule = NULL;
 		const char* col = strchr (desc, ':');
 		char* libname;
-		char* path;
 		char *mname;
-		char *err;
-		void *iter;
 		if (col != NULL) {
 			mname = g_memdup (desc, col - desc + 1);
 			mname [col - desc] = 0;
@@ -1088,31 +1117,12 @@ mono_profiler_load (const char *desc)
 			mname = g_strdup (desc);
 		}
 		libname = g_strdup_printf ("mono-profiler-%s", mname);
-		iter = NULL;
-		err = NULL;
-		while ((path = mono_dl_build_path (NULL, libname, &iter))) {
-			g_free (err);
-			pmodule = mono_dl_open (path, MONO_DL_LAZY, &err);
-			if (pmodule) {
-				ProfilerInitializer func;
-				if ((err = mono_dl_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func))) {
-					g_warning ("Cannot find initializer function %s in profiler module: %s (%s)", INITIALIZER_NAME, libname, err);
-					g_free (err);
-					err = NULL;
-				} else {
-					func (desc);
-				}
-				break;
-			}
-			g_free (path);
-		}
-		if (!pmodule) {
-			g_warning ("Error loading profiler module '%s': %s", libname, err);
-			g_free (err);
-		}
+		if (!load_profiler_from_directory (NULL, libname, desc))
+			if (!load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc))
+				g_warning ("Error loading profiler module '%s'", libname);
+			
 		g_free (libname);
 		g_free (mname);
-		g_free (path);
 	}
 	g_free (cdesc);
 }
