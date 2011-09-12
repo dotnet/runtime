@@ -1,3 +1,7 @@
+//
+// Copyright 2011 Xamarin Inc (http://www.xamarin.com).
+//
+
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
