@@ -180,6 +180,77 @@ dyn_array_append (DynArray *dst, DynArray *src)
 	dst->size += src->size;
 }
 
+static DynArray merge_array;
+
+static void
+dyn_array_int_merge (DynArray *dst, DynArray *src)
+{
+	int i, j;
+
+	dyn_array_ensure_capacity (&merge_array, dst->size + src->size);
+	merge_array.size = 0;
+
+	for (i = j = 0; i < dst->size || j < src->size; ) {
+		if (i < dst->size && j < src->size) {
+			int a = DYN_ARRAY_INT_REF (dst, i); 
+			int b = DYN_ARRAY_INT_REF (src, j); 
+			if (a < b) {
+				dyn_array_int_add (&merge_array, a);
+				++i;
+			} else if (a == b) {
+				dyn_array_int_add (&merge_array, a);
+				++i;
+				++j;	
+			} else {
+				dyn_array_int_add (&merge_array, b);
+				++j;
+			}
+		} else if (i < dst->size) {
+			dyn_array_int_add (&merge_array, DYN_ARRAY_INT_REF (dst, i));
+			++i;
+		} else {
+			dyn_array_int_add (&merge_array, DYN_ARRAY_INT_REF (src, j));
+			++j;
+		}
+	}
+
+	if (merge_array.size > dst->size) {
+		dyn_array_ensure_capacity (dst, merge_array.size);
+		memcpy (DYN_ARRAY_REF (dst, 0), DYN_ARRAY_REF (&merge_array, 0), merge_array.size * merge_array.elem_size);
+		dst->size = merge_array.size;
+	}
+}
+
+static void
+dyn_array_int_merge_one (DynArray *array, int value)
+{
+	int i;
+	int tmp;
+	int end = array->size;
+
+	for (i = 0; i < end; ++i) {
+		if (DYN_ARRAY_INT_REF (array, i) == value)
+			return;
+		else if (DYN_ARRAY_INT_REF (array, i) > value)
+			break;
+	}
+
+	dyn_array_ensure_capacity (array, array->size + 1);
+
+	if (i < end) {
+		tmp = DYN_ARRAY_INT_REF (array, i);
+		for (; i <= end; ++i) {
+			DYN_ARRAY_INT_REF (array, i) = value;
+			value = tmp;
+			tmp = DYN_ARRAY_INT_REF (array, i + 1);
+		}
+		DYN_ARRAY_INT_REF (array, end + 1) = tmp;
+	} else {
+		DYN_ARRAY_INT_REF (array, end) = value;
+	}
+	++array->size;
+}
+
 /*
  * FIXME: Optimizations:
  *
@@ -274,6 +345,7 @@ free_data (void)
 
 	mono_sgen_hash_table_clean (&hash_table);
 
+	dyn_array_uninit (&merge_array);
 	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
 
@@ -375,11 +447,10 @@ scc_add_xref (SCC *src, SCC *dst)
 	if (dyn_array_int_contains (&dst->xrefs, src->index))
 		return;
 	if (src->num_bridge_entries) {
-		dyn_array_int_add (&dst->xrefs, src->index);
+		dyn_array_int_merge_one (&dst->xrefs, src->index);
 	} else {
 		int i;
-		// FIXME: uniq here
-		dyn_array_append (&dst->xrefs, &src->xrefs);
+		dyn_array_int_merge (&dst->xrefs, &src->xrefs);
 		for (i = 0; i < dst->xrefs.size; ++i)
 			g_assert (DYN_ARRAY_INT_REF (&dst->xrefs, i) != dst->index);
 	}
@@ -477,6 +548,7 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 	/* first DFS pass */
 
 	dyn_array_ptr_init (&dfs_stack);
+	dyn_array_int_init (&merge_array);
 
 	current_time = 0;
 	for (i = 0; i < num_objs; ++i)
