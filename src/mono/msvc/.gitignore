@@ -1,2 +1,9 @@
 /Makefile
 /Makefile.in
+/*.user
+/*.suo
+/*.sdf
+/*.opensdf
+/ipch/
+/Win32/
+/x64/
