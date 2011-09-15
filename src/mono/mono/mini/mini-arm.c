@@ -4255,6 +4255,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			int i, rot_amount;
+
+			/* Reserve a param area, see filter-stack.exe */
+			if (cfg->param_area) {
+				if ((i = mono_arm_is_rotated_imm8 (cfg->param_area, &rot_amount)) >= 0) {
+					ARM_SUB_REG_IMM (code, ARMREG_SP, ARMREG_SP, i, rot_amount);
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->param_area);
+					ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
+				}
+			}
 
 			if (arm_is_imm12 (spvar->inst_offset)) {
 				ARM_STR_IMM (code, ARMREG_LR, spvar->inst_basereg, spvar->inst_offset);
@@ -4266,6 +4277,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ENDFILTER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			int i, rot_amount;
+
+			/* Free the param area */
+			if (cfg->param_area) {
+				if ((i = mono_arm_is_rotated_imm8 (cfg->param_area, &rot_amount)) >= 0) {
+					ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, i, rot_amount);
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->param_area);
+					ARM_ADD_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
+				}
+			}
 
 			if (ins->sreg1 != ARMREG_R0)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
@@ -4281,6 +4303,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ENDFINALLY: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			int i, rot_amount;
+
+			/* Free the param area */
+			if (cfg->param_area) {
+				if ((i = mono_arm_is_rotated_imm8 (cfg->param_area, &rot_amount)) >= 0) {
+					ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, i, rot_amount);
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->param_area);
+					ARM_ADD_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
+				}
+			}
 
 			if (arm_is_imm12 (spvar->inst_offset)) {
 				ARM_LDR_IMM (code, ARMREG_IP, spvar->inst_basereg, spvar->inst_offset);
