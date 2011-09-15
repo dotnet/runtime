@@ -2727,6 +2727,7 @@ esac
 AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],                  [], [with_profile4=yes])
 AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid 2.1 assemblies (defaults to no)], [], [with_monodroid=no])
 AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the MonoTouch 2.1 assemblies (defaults to no)], [], [with_monotouch=no])
+AC_ARG_WITH(mobile,    [  --with-mobile=yes,no            If you want to build the Mobile 2.1 assemblies (defaults to no)], [], [with_mobile=no])
 
 OPROFILE=no
 AC_ARG_WITH(oprofile,[  --with-oprofile=no,<oprofile install dir>   Enable oprofile support (defaults to no)],[
@@ -2807,6 +2808,7 @@ AM_CONDITIONAL(MOONLIGHT_SGEN, [test "x$with_moon_gc" = "xsgen"])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
 AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" = xyes])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" = xyes])
+AM_CONDITIONAL(INSTALL_MOBILE, [test "x$with_mobile" = xyes])
 
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
@@ -3165,6 +3167,7 @@ echo "
 	Moon Profile:  $with_moonlight ($with_moon_gc)
 	MonoDroid:     $with_monodroid
 	MonoTouch:     $with_monotouch
+	Mobile:        $with_mobile
 	JNI support:   $jdk_headers_found
 	libgdiplus:    $libgdiplus_msg
 	zlib:          $zlib_msg
