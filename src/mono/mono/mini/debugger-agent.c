@@ -4386,24 +4386,36 @@ void
 debugger_agent_single_step_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
+	MonoContext orig_restore_ctx;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
+
+	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
+	memcpy (&orig_restore_ctx, &tls->restore_ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_ctx, ctx, sizeof (MonoContext));
 
 	process_single_step_inner (tls);
+
+	memcpy (ctx, &tls->restore_ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
 }
 
 void
 debugger_agent_breakpoint_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
+	MonoContext orig_restore_ctx;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
+	memcpy (&orig_restore_ctx, &tls->restore_ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_ctx, ctx, sizeof (MonoContext));
 
 	process_breakpoint_inner (tls);
+
+	memcpy (ctx, &tls->restore_ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
 }
 
 /*
@@ -5483,6 +5495,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		ext.lmf.previous_lmf = *(lmf_addr);
 		/* Mark that this is a MonoLMFExt */
 		ext.lmf.previous_lmf = (gpointer)(((gssize)ext.lmf.previous_lmf) | 2);
+		ext.lmf.sp = (gssize)&ext;
 #elif defined(TARGET_POWERPC)
 		ext.lmf.previous_lmf = *(lmf_addr);
 		/* Mark that this is a MonoLMFExt */
