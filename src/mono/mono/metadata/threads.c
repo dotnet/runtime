@@ -368,6 +368,8 @@ static void thread_cleanup (MonoInternalThread *thread)
 	}
 	mono_release_type_locks (thread);
 
+	ensure_synch_cs_set (thread);
+
 	EnterCriticalSection (thread->synch_cs);
 
 	thread->state |= ThreadState_Stopped;
