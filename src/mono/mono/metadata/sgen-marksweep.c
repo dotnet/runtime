@@ -373,7 +373,7 @@ ms_get_empty_block (void)
 
 	do {
 		block = empty_blocks;
-	} while (SGEN_CAS_PTR (&empty_blocks, block->next_free, block) != block);
+	} while (SGEN_CAS_PTR ((gpointer*)&empty_blocks, block->next_free, block) != block);
 
 	block->used = TRUE;
 
@@ -414,7 +414,7 @@ ms_get_empty_block (void)
 			do {
 				empty = empty_blocks;
 				*(void**)block = empty;
-			} while (SGEN_CAS_PTR (&empty_blocks, block, empty) != empty);
+			} while (SGEN_CAS_PTR ((gpointer*)&empty_blocks, block, empty) != empty);
 			p += MS_BLOCK_SIZE;
 		}
 

@@ -171,7 +171,7 @@ dyn_array_int_contains (DynArray *da, int x)
 	return FALSE;
 }
 
-static void
+static void G_GNUC_UNUSED
 dyn_array_append (DynArray *dst, DynArray *src)
 {
 	g_assert (dst->elem_size == src->elem_size);

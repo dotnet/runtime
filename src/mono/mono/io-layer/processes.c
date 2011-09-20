@@ -518,7 +518,8 @@ is_executable (const char *prog)
 	return FALSE;
 }
 
-void switchDirectorySeparators(gchar *path)
+static void
+switchDirectorySeparators(gchar *path)
 {
 	size_t i, pathLength = strlen(path);
 	
@@ -678,7 +679,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	} else {
 		gchar *token = NULL;
 		char quote;
-		gint token_len;
 		
 		/* Dig out the first token from args, taking quotation
 		 * marks into account
