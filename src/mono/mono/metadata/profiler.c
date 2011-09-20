@@ -1119,7 +1119,7 @@ mono_profiler_load (const char *desc)
 		}
 		libname = g_strdup_printf ("mono-profiler-%s", mname);
 		if (!load_profiler_from_directory (NULL, libname, desc))
-			if (!load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc))
+			if (!load_profiler_from_directory (MONO_ASSEMBLIES, libname, desc))
 				g_warning ("Error loading profiler module '%s'", libname);
 			
 		g_free (libname);
