@@ -223,6 +223,7 @@ typedef struct {
 	gulong esp;          // sp
 	gulong regs [16];
 	double fregs [8];
+	gulong cpsr;
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */

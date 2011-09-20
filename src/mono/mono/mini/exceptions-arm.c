@@ -488,6 +488,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 
 	mctx->eip = UCONTEXT_REG_PC (my_uc);
 	mctx->esp = UCONTEXT_REG_SP (my_uc);
+	mctx->cpsr = UCONTEXT_REG_CPSR (my_uc);
 	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
 #endif
 }
@@ -504,6 +505,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 	UCONTEXT_REG_PC (my_uc) = mctx->eip;
 	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_FP];
+	UCONTEXT_REG_CPSR (my_uc) = mctx->cpsr;
 	/* The upper registers are not guaranteed to be valid */
 	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (mgreg_t) * 12);
 #endif
@@ -608,4 +610,20 @@ mono_arch_ip_from_context (void *sigctx)
 	arm_ucontext *my_uc = sigctx;
 	return (void*) UCONTEXT_REG_PC (my_uc);
 #endif
+}
+
+void
+mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
+{
+	guint64 sp = ctx->esp;
+
+	// FIXME:
+	g_assert (!user_data);
+
+	/* Allocate a stack frame */
+	sp -= 16;
+	MONO_CONTEXT_SET_SP (ctx, sp);
+	MONO_CONTEXT_SET_IP (ctx, async_cb);
+
+	// FIXME: thumb/arm
 }
