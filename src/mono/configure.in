@@ -2724,7 +2724,7 @@ case "x$gc" in
 esac
 
 #AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0 FX (defaults to yes)],                 [], [with_profile2=yes])
-AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],                  [], [with_profile4=yes])
+AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.x FX (defaults to yes)],                  [], [with_profile4=yes])
 AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid 2.1 assemblies (defaults to no)], [], [with_monodroid=no])
 AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the MonoTouch 2.1 assemblies (defaults to no)], [], [with_monotouch=no])
 AC_ARG_WITH(mobile,    [  --with-mobile=yes,no            If you want to build the Mobile 2.1 assemblies (defaults to no)], [], [with_mobile=no])
@@ -3124,6 +3124,10 @@ fi
 
     if test x$with_moonlight != xno; then
       echo "MOONLIGHT = 1" >> $srcdir/$mcsdir/build/config.make
+    fi
+    
+    if test x$with_profile4 != xyes; then
+      echo "DEFAULT_PROFILE = net_2_0" >> $srcdir/$mcsdir/build/config.make
     fi
 
   fi
