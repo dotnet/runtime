@@ -97,6 +97,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 			g_assert (objsize <= SGEN_MAX_SMALL_OBJ_SIZE);
 			pin_major_object (obj, queue);
 		}
+		mono_sgen_set_pinned_from_failed_allocation (objsize);
 		return obj;
 	}
 

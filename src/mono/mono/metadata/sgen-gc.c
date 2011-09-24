@@ -486,6 +486,8 @@ static mword pagesize = 4096;
 static mword nursery_size;
 static int degraded_mode = 0;
 
+static mword bytes_pinned_from_failed_allocation = 0;
+
 static mword total_alloc = 0;
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
@@ -2902,6 +2904,18 @@ mono_sgen_need_major_collection (mword space_needed)
 	return need_major_collection (space_needed);
 }
 
+static void
+reset_pinned_from_failed_allocation (void)
+{
+	bytes_pinned_from_failed_allocation = 0;
+}
+
+void
+mono_sgen_set_pinned_from_failed_allocation (mword objsize)
+{
+	bytes_pinned_from_failed_allocation += objsize;
+}
+
 static gboolean
 collection_is_parallel (void)
 {
@@ -3000,6 +3014,8 @@ collect_nursery (size_t requested_size)
 	mono_perfcounters->gc_collections0++;
 
 	current_collection_generation = GENERATION_NURSERY;
+
+	reset_pinned_from_failed_allocation ();
 
 	binary_protocol_collection (GENERATION_NURSERY);
 	check_scan_starts ();
@@ -3229,7 +3245,7 @@ job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 			job_gray_queue (worker_data));
 }
 
-static void
+static gboolean
 major_do_collection (const char *reason)
 {
 	LOSObject *bigobj, *prevbo;
@@ -3248,6 +3264,8 @@ major_do_collection (const char *reason)
 	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
 
 	mono_perfcounters->gc_collections1++;
+
+	reset_pinned_from_failed_allocation ();
 
 	last_collection_old_num_major_sections = major_collector.get_num_major_sections ();
 
@@ -3526,11 +3544,15 @@ major_do_collection (const char *reason)
 	binary_protocol_flush_buffers (FALSE);
 
 	//consistency_check ();
+
+	return bytes_pinned_from_failed_allocation > 0;
 }
 
 static void
 major_collection (const char *reason)
 {
+	gboolean need_minor_collection;
+
 	if (disable_major_collections) {
 		collect_nursery (0);
 		return;
@@ -3538,8 +3560,11 @@ major_collection (const char *reason)
 
 	major_collection_hapenned = TRUE;
 	current_collection_generation = GENERATION_OLD;
-	major_do_collection (reason);
+	need_minor_collection = major_do_collection (reason);
 	current_collection_generation = -1;
+
+	if (need_minor_collection)
+		collect_nursery (0);
 }
 
 void

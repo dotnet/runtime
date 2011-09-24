@@ -837,6 +837,7 @@ void mono_sgen_release_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;
 gboolean mono_sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
+void mono_sgen_set_pinned_from_failed_allocation (mword objsize) MONO_INTERNAL;
 
 /* LOS */
 

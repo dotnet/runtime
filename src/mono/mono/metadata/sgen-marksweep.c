@@ -1097,6 +1097,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			}
 
 			pin_or_update_par (ptr, obj, vt, queue);
+			mono_sgen_set_pinned_from_failed_allocation (objsize);
 			return;
 		}
 
