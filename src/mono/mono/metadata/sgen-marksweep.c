@@ -1012,6 +1012,14 @@ major_dump_heap (FILE *heap_dump_file)
 		}							\
 	} while (0)
 
+static void
+pin_major_object (void *obj, SgenGrayQueue *queue)
+{
+	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
+	block->has_pinned = TRUE;
+	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+}
+
 #ifdef SGEN_PARALLEL_MARK
 static void
 pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
@@ -1019,9 +1027,13 @@ pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
 	for (;;) {
 		mword vtable_word;
 
-		if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
-			mono_sgen_pin_object (obj, queue);
-			break;
+		if (ptr_in_nursery (obj)) {
+			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+				mono_sgen_pin_object (obj, queue);
+				break;
+			}
+		} else {
+			pin_major_object (obj, queue);
 		}
 
 		vtable_word = *(mword*)obj;
@@ -1288,6 +1300,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 #endif
 
 			if (evacuate && !block->has_pinned) {
+				g_assert (!SGEN_OBJECT_IS_PINNED (obj));
 				if (block->is_to_space)
 					return;
 				HEAVY_STAT (++stat_major_objects_evacuated);

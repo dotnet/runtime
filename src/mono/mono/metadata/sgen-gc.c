@@ -1824,6 +1824,7 @@ mono_sgen_pin_object (void *object, GrayQueue *queue)
 			mono_sgen_pin_stats_register_object (object, safe_object_get_size (object));
 	}
 	GRAY_OBJECT_ENQUEUE (queue, object);
+	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 }
 
 /* Sort the addresses in array in increasing order.
@@ -3331,6 +3332,7 @@ major_do_collection (const char *reason)
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		int dummy;
 		if (mono_sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &dummy)) {
+			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (bigobj->data));
 			pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);

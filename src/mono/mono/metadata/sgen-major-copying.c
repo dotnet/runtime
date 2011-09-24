@@ -279,6 +279,8 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	return p;
 }
 
+#define pin_major_object	mono_sgen_pin_object
+
 #include "sgen-major-copy-object.h"
 
 static void

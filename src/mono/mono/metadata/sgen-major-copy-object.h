@@ -91,7 +91,12 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	char *destination = major_alloc_object (objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
-		mono_sgen_pin_object (obj, queue);
+		if (ptr_in_nursery (obj)) {
+			mono_sgen_pin_object (obj, queue);
+		} else {
+			g_assert (objsize <= SGEN_MAX_SMALL_OBJ_SIZE);
+			pin_major_object (obj, queue);
+		}
 		return obj;
 	}
 
