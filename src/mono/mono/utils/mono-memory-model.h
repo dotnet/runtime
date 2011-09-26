@@ -56,7 +56,9 @@ Both x86 and amd64 follow the SPO memory model:
 
 /*Neither sfence or mfence provide the required semantics here*/
 #define STORE_LOAD_FENCE MEMORY_BARRIER
-#define STORE_RELEASE_FENCE MEMORY_BARRIER
+
+#define LOAD_RELEASE_FENCE MEMORY_BARRIER
+#define STORE_ACQUIRE_FENCE MEMORY_BARRIER
 
 #elif defined(__arm__)
 /*
@@ -75,8 +77,10 @@ LDR R3, [R4, R0]
 #define STORE_STORE_FENCE STORE_BARRIER
 #define LOAD_LOAD_FENCE LOAD_BARRIER
 #define STORE_LOAD_FENCE MEMORY_BARRIER
-#define LOAD_STORE_FENCE MEMORY_BARRIER
+#define STORE_ACQUIRE_FENCE MEMORY_BARRIER
 #define STORE_RELEASE_FENCE MEMORY_BARRIER
+#define LOAD_ACQUIRE_FENCE MEMORY_BARRIER
+#define LOAD_RELEASE_FENCE MEMORY_BARRIER
 
 #else
 
@@ -85,7 +89,10 @@ LDR R3, [R4, R0]
 #define LOAD_LOAD_FENCE LOAD_BARRIER
 #define STORE_LOAD_FENCE MEMORY_BARRIER
 #define LOAD_STORE_FENCE MEMORY_BARRIER
+#define STORE_ACQUIRE_FENCE MEMORY_BARRIER
 #define STORE_RELEASE_FENCE MEMORY_BARRIER
+#define LOAD_ACQUIRE_FENCE MEMORY_BARRIER
+#define LOAD_RELEASE_FENCE MEMORY_BARRIER
 
 #endif
 
@@ -105,21 +112,22 @@ LDR R3, [R4, R0]
 #define LOAD_STORE_FENCE
 #endif 
 
-/*
-Acquire/release semantics macros.
+#ifndef STORE_RELEASE_FENCE
+#define STORE_RELEASE_FENCE
+#endif
 
-Acquire/release models what most code needs, which is to do load/store pairing of barriers
-from multiple threads.
-Release semantics makes sure all stores are visible before any subsequent memory access.
-Acquire semantics make sure all following loads won't be visible before the current one.
+#ifndef LOAD_RELEASE_FENCE
+#define LOAD_RELEASE_FENCE
+#endif
 
-This is a slightly harmless variantion on ECMA's that further constraints ordering amongs
-different kinds of access.
-*/
-#define mono_atomic_store_release(target,value) do {	\
-	*(target) = (value);	\
-	STORE_RELEASE_FENCE;	\
-} while (0)
+#ifndef STORE_ACQUIRE_FENCE
+#define STORE_ACQUIRE_FENCE
+#endif
+
+#ifndef LOAD_ACQUIRE_FENCE
+#define LOAD_ACQUIRE_FENCE
+#endif
+
 
 /*Makes sure all previous stores as visible before */
 #define mono_atomic_store_seq(target,value) do {	\
@@ -128,16 +136,28 @@ different kinds of access.
 } while (0)
 
 
-/*Combines the guarantees of store_release and store_seq.*/
-#define mono_atomic_store_release_seq(target,value) do {	\
-	mono_atomic_store_seq (target, value)	\
+/*
+Acquire/release semantics macros.
+*/
+#define mono_atomic_store_release(target,value) do {	\
 	STORE_RELEASE_FENCE;	\
+	*(target) = (value);	\
 } while (0)
 
+#define mono_atomic_load_release(target) ({	\
+	typeof (*target) __tmp;	\
+	LOAD_RELEASE_FENCE;	\
+	__tmp = *target;	\
+	__tmp; })
 
 #define mono_atomic_load_acquire(target) ({	\
 	typeof (*target) __tmp = *target;	\
-	LOAD_LOAD_FENCE;	\
+	LOAD_ACQUIRE_FENCE;	\
 	__tmp; })
+
+#define mono_atomic_store_acquire(target,value) ({	\
+	*target = value;	\
+	STORE_ACQUIRE_FENCE;	\
+	})
 
 #endif /* _MONO_UTILS_MONO_MEMMODEL_H_ */
