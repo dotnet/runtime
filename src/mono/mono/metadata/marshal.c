@@ -37,6 +37,7 @@
 #include "mono/metadata/cominterop.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
+#include "mono/utils/mono-memory-model.h"
 #include <string.h>
 #include <errno.h>
 
@@ -9031,6 +9032,8 @@ mono_marshal_get_castclass_with_cache (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_method (mb, sig, 8);
+	STORE_STORE_FENCE;
+
 	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
 		mono_free_method (res);
 		mono_metadata_free_method_signature (sig);
@@ -9145,6 +9148,8 @@ mono_marshal_get_isinst_with_cache (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_method (mb, sig, 8);
+	STORE_STORE_FENCE;
+
 	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
 		mono_free_method (res);
 		mono_metadata_free_method_signature (sig);

@@ -10,6 +10,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/mono-cq.h>
 #include <mono/metadata/mono-mlist.h>
+#include <mono/utils/mono-memory-model.h>
 
 #define CQ_DEBUG(...)
 //#define CQ_DEBUG(...) g_message(__VA_ARGS__)
@@ -126,6 +127,7 @@ mono_cqitem_try_enqueue (MonoCQ *cq, MonoObject *obj)
 
 		if (InterlockedCompareExchange (&queue->last, pos + 1, pos) == pos) {
 			mono_array_setref (queue->array, pos, obj);
+			STORE_STORE_FENCE;
 			mono_array_set (queue->array_state, char, pos, TRUE);
 			if ((pos + 1) == CQ_ARRAY_SIZE) {
 				CQ_DEBUG ("enqueue(): pos + 1 == CQ_ARRAY_SIZE, %d. Adding node.", CQ_ARRAY_SIZE);
@@ -201,9 +203,23 @@ mono_cqitem_try_dequeue (MonoCQ *cq, MonoObject **obj)
 			while (mono_array_get (queue->array_state, char, pos) == FALSE) {
 				SleepEx (0, FALSE);
 			}
+			LOAD_LOAD_FENCE;
 			*obj = mono_array_get (queue->array, MonoObject *, pos);
+
+			/*
+			Here don't need to fence since the only spot that reads it is the one above.
+			Additionally, the first store is superfluous, so it can happen OOO with the second.
+			*/
 			mono_array_set (queue->array, MonoObject *, pos, NULL);
 			mono_array_set (queue->array_state, char, pos, FALSE);
+			
+			/*
+			We should do a STORE_LOAD fence here to make sure subsequent loads see new state instead
+			of the above stores. We can safely ignore this as the only issue of seeing a stale value
+			is the thread yielding. Given how unfrequent this will be in practice, we better avoid the
+			very expensive STORE_LOAD fence.
+			*/
+			
 			if ((pos + 1) == CQ_ARRAY_SIZE) {
 				mono_cq_remove_node (cq);
 			}
