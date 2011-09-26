@@ -116,8 +116,6 @@ collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, 
 			SGEN_HASH_TABLE_FOREACH_SET_KEY (tagget_object_apply (copy, tag));
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
-
-	drain_gray_stack (queue, -1);
 }
 
 

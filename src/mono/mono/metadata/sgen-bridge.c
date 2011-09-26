@@ -503,25 +503,19 @@ compare_hash_entries (const void *ep1, const void *ep2)
 	return e2->finishing_time - e1->finishing_time;
 }
 
+static unsigned long step_1, step_2, step_3, step_4, step_5, step_6, step_7, step_8;
+static int fist_pass_links, second_pass_links, sccs_links;
+static int max_sccs_links = 0;
+
 void
-mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
+mono_sgen_bridge_processing_start (int num_objs, MonoObject **objs)
 {
-	MonoObject *obj;
-	HashEntry *entry;
-	HashEntry **all_entries;
 	int j = 0;
-	int num_sccs, num_xrefs;
-	int max_entries, max_xrefs;
 	int i;
-	MonoGCBridgeSCC **api_sccs;
-	MonoGCBridgeXRef *api_xrefs;
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
-	int hash_table_size, sccs_size;
-	unsigned long step_1, step_2, step_3, step_4, step_5, step_6, step_7, step_8;
-	int fist_pass_links = 0, second_pass_links = 0, sccs_links = 0;
-	int max_sccs_links = 0;
 
+	fist_pass_links = second_pass_links = sccs_links = 0;
 	dsf1_passes = dsf2_passes = 0;
 	SGEN_TV_GETTIME (atv);
 
@@ -557,8 +551,24 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
+}
 
-	//g_print ("%d entries - hash size %d\n", num_hash_entries, hash_size);
+void
+mono_sgen_bridge_processing_finish (int num_objs, MonoObject **objs)
+{
+	int i, j;
+	int num_sccs, num_xrefs;
+	int max_entries, max_xrefs;
+	int hash_table_size, sccs_size;
+	MonoObject *obj;
+	HashEntry *entry;
+	HashEntry **all_entries;
+	MonoGCBridgeSCC **api_sccs;
+	MonoGCBridgeXRef *api_xrefs;
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
+
+	SGEN_TV_GETTIME (atv);
 
 	/* alloc and fill array of all entries */
 
