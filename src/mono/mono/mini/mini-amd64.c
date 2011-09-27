@@ -4753,7 +4753,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-				code = mono_arch_instrument_epilog_full (cfg, mono_profiler_method_leave, code, FALSE, FALSE);
+				code = mono_arch_instrument_epilog_full (cfg, mono_profiler_method_leave, code, FALSE, TRUE);
 
 			g_assert (!cfg->method->save_lmf);
 
@@ -7554,6 +7554,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	MonoType *ret_type = mini_type_get_underlying_type (NULL, mono_method_signature (method)->ret);
+	int i;
 	
 	switch (ret_type->type) {
 	case MONO_TYPE_VOID:
@@ -7622,8 +7623,8 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		amd64_mov_reg_imm (code, AMD64_RAX, 0);
 
 	if (preserve_argument_registers) {
-		amd64_push_reg (code, MONO_AMD64_ARG_REG1);
-		amd64_push_reg (code, MONO_AMD64_ARG_REG2);
+		for (i = 0; i < PARAM_REGS; ++i)
+			amd64_push_reg (code, param_regs [i]);
 	}
 
 	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_METHODCONST, method);
@@ -7631,8 +7632,8 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func, TRUE);
 
 	if (preserve_argument_registers) {
-		amd64_pop_reg (code, MONO_AMD64_ARG_REG2);
-		amd64_pop_reg (code, MONO_AMD64_ARG_REG1);
+		for (i = PARAM_REGS - 1; i >= 0; --i)
+			amd64_pop_reg (code, param_regs [i]);
 	}
 
 	/* Restore result */
