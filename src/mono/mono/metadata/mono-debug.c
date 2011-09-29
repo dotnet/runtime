@@ -279,6 +279,9 @@ _mono_debug_init_corlib (MonoDomain *domain)
 void
 mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents, int size)
 {
+	if (!mono_debug_initialized)
+		return;
+
 	mono_debug_open_image (image, raw_contents, size);
 }
 
