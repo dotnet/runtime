@@ -121,7 +121,7 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 	{"v2.0.50727","2.0", { {2,0,0,0},    {8,0,0,0}, { 3, 5, 0, 0 } }	},
 	{"v4.0.20506","4.0", { {4,0,0,0},    {10,0,0,0}, { 4, 0, 0, 0 } }   },
 	{"v4.0.30128","4.0", { {4,0,0,0},    {10,0,0,0}, { 4, 0, 0, 0 } }   },
-	{"v4.0.30319","4.0", { {4,0,0,0},    {10,0,0,0}, { 4, 0, 0, 0 } }   },
+	{"v4.0.30319","4.5", { {4,0,0,0},    {10,0,0,0}, { 4, 0, 0, 0 } }   },
 	{"moonlight", "2.1", { {2,0,5,0},    {9,0,0,0}, { 3, 5, 0, 0 } }    },
 };
 
@@ -2532,24 +2532,24 @@ get_runtime_by_version (const char *version)
 {
 	int n;
 	int max = G_N_ELEMENTS (supported_runtimes);
-	gboolean do_partial_match;
 	int vlen;
 
 	if (!version)
 		return NULL;
 
-	vlen = strlen (version);
-	if (vlen >= 4 && version [1] - '0' >= 4)
-		do_partial_match = TRUE;
-	else
-		do_partial_match = FALSE;
-
 	for (n=0; n<max; n++) {
-		if (do_partial_match && strncmp (version, supported_runtimes[n].runtime_version, 4) == 0)
-			return &supported_runtimes[n];
 		if (strcmp (version, supported_runtimes[n].runtime_version) == 0)
 			return &supported_runtimes[n];
 	}
+	
+	vlen = strlen (version);
+	if (vlen >= 4 && version [1] - '0' >= 4) {
+		for (n=0; n<max; n++) {
+			if (strncmp (version, supported_runtimes[n].runtime_version, 4) == 0)
+				return &supported_runtimes[n];
+		}
+	}
+	
 	return NULL;
 }
 
