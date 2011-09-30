@@ -1,5 +1,5 @@
 AC_INIT(eglib, [0.3],
-        [http://bugzilla.novell.com/enter_bug.cgi?product=mono])
+        [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 
 AC_CONFIG_SRCDIR([README])
 AC_CONFIG_MACRO_DIR([m4])
