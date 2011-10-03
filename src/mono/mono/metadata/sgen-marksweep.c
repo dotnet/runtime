@@ -229,7 +229,7 @@ static long long stat_slots_allocated_in_vain = 0;
 #endif
 
 static gboolean ms_sweep_in_progress = FALSE;
-static pthread_t ms_sweep_thread;
+static MonoNativeThreadId ms_sweep_thread;
 static MonoSemType ms_sweep_cmd_semaphore;
 static MonoSemType ms_sweep_done_semaphore;
 
@@ -1470,7 +1470,7 @@ ms_sweep (void)
 	have_swept = TRUE;
 }
 
-static void*
+static mono_native_thread_return_t
 ms_sweep_thread_func (void *dummy)
 {
 	g_assert (concurrent_sweep);
@@ -1916,7 +1916,7 @@ major_scan_card_table (SgenGrayQueue *queue)
 #endif
 
 static gboolean
-major_is_worker_thread (pthread_t thread)
+major_is_worker_thread (MonoNativeThreadId thread)
 {
 	if (concurrent_sweep)
 		return thread == ms_sweep_thread;
@@ -1981,7 +1981,7 @@ static void
 post_param_init (void)
 {
 	if (concurrent_sweep) {
-		if (pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL)) {
+		if (mono_native_thread_create (&ms_sweep_thread, ms_sweep_thread_func, NULL)) {
 			fprintf (stderr, "Error: Could not create sweep thread.\n");
 			exit (1);
 		}

@@ -26,7 +26,7 @@
 
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
-	pthread_t thread;
+	MonoNativeThreadId thread;
 	void *major_collector_data;
 
 	GrayQueue private_gray_queue; /* only read/written by worker thread */
@@ -284,7 +284,7 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 		workers_wake_up_all ();
 }
 
-static void*
+static mono_native_thread_return_t
 workers_thread_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
@@ -396,7 +396,7 @@ workers_start_worker (int index)
 	g_assert (index >= 0 && index < workers_num);
 
 	g_assert (!workers_data [index].thread);
-	pthread_create (&workers_data [index].thread, NULL, workers_thread_func, &workers_data [index]);
+	mono_native_thread_create (&workers_data [index].thread, workers_thread_func, &workers_data [index]);
 }
 
 static void
@@ -484,7 +484,7 @@ workers_join (void)
 }
 
 gboolean
-mono_sgen_is_worker_thread (pthread_t thread)
+mono_sgen_is_worker_thread (MonoNativeThreadId thread)
 {
 	int i;
 

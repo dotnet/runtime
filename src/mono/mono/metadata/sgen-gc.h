@@ -614,7 +614,7 @@ void mono_sgen_os_init (void) MONO_INTERNAL;
 
 void mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info) MONO_INTERNAL;
 
-gboolean mono_sgen_is_worker_thread (pthread_t thread) MONO_INTERNAL;
+gboolean mono_sgen_is_worker_thread (MonoNativeThreadId thread) MONO_INTERNAL;
 
 void mono_sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
 
@@ -764,7 +764,7 @@ struct _SgenMajorCollector {
 	int (*get_num_major_sections) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
-	gboolean (*is_worker_thread) (pthread_t thread);
+	gboolean (*is_worker_thread) (MonoNativeThreadId thread);
 	void (*post_param_init) (void);
 	void* (*alloc_worker_data) (void);
 	void (*init_worker_thread) (void *data);

@@ -48,8 +48,12 @@ typedef pid_t MonoNativeThreadHandle;
 
 typedef pthread_t MonoNativeThreadId;
 
+typedef void* mono_native_thread_return_t;
+
 #define mono_native_thread_id_get pthread_self
 #define mono_native_thread_id_equals(a,b) pthread_equal((a),(b))
+
+#define mono_native_thread_create(tid,func,arg)	(pthread_create ((tid), NULL, (func), (arg)) == 0)
 
 #endif /* #ifdef HOST_WIN32 */
 

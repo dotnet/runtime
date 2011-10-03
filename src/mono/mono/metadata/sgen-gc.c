@@ -698,7 +698,7 @@ static int moved_objects_idx = 0;
 static MonoVTable *array_fill_vtable;
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
-pthread_t main_gc_thread = NULL;
+MonoNativeThreadId main_gc_thread = NULL;
 #endif
 
 /*
@@ -3386,7 +3386,7 @@ major_do_collection (const char *reason)
 	major_collector.init_to_space ();
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
-	main_gc_thread = pthread_self ();
+	main_gc_thread = mono_native_thread_self ();
 #endif
 
 	workers_start_all_workers ();
