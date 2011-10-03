@@ -216,7 +216,7 @@ static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 #ifdef HAVE_KW_THREAD
 static __thread MSBlockInfo ***workers_free_block_lists;
 #else
-static pthread_key_t workers_free_block_lists_key;
+static MonoNativeTlsKey workers_free_block_lists_key;
 #endif
 #endif
 
@@ -295,7 +295,7 @@ ms_find_block_obj_size_index (int size)
 #ifdef HAVE_KW_THREAD
 #define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (workers_free_block_lists, (p), (r)))
 #else
-#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)(pthread_getspecific (workers_free_block_lists_key))), (p), (r)))
+#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)(mono_native_tls_get_value (workers_free_block_lists_key))), (p), (r)))
 #endif
 #else
 //#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (free_block_lists, (p), (r)))
@@ -1958,7 +1958,7 @@ major_init_worker_thread (void *data)
 #ifdef HAVE_KW_THREAD
 	workers_free_block_lists = data;
 #else
-	pthread_setspecific (workers_free_block_lists_key, data);
+	mono_native_tls_set_value (workers_free_block_lists_key, data);
 #endif
 }
 
@@ -2044,7 +2044,7 @@ mono_sgen_marksweep_init
 	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
 
 #ifndef HAVE_KW_THREAD
-	pthread_key_create (&workers_free_block_lists_key, NULL);
+	mono_native_tls_alloc (&workers_free_block_lists_key, NULL);
 #endif
 #endif
 

@@ -404,7 +404,7 @@ enum {
 #ifdef HAVE_KW_THREAD
 static __thread RememberedSet *remembered_set MONO_TLS_FAST;
 #endif
-static pthread_key_t remembered_set_key;
+static MonoNativeTlsKey remembered_set_key;
 static RememberedSet *global_remset;
 static RememberedSet *freed_thread_remsets;
 static GenericStoreRememberedSet *generic_store_remsets = NULL;
@@ -629,8 +629,8 @@ static char *nursery_alloc_bound = NULL;
 #define STORE_REMSET_BUFFER_INDEX	store_remset_buffer_index
 #define IN_CRITICAL_REGION thread_info->in_critical_region
 #else
-static pthread_key_t thread_info_key;
-#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = pthread_getspecific (thread_info_key)
+static MonoNativeTlsKey thread_info_key;
+#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
 #define TLAB_START	(__thread_info__->tlab_start)
 #define TLAB_NEXT	(__thread_info__->tlab_next)
 #define TLAB_TEMP_END	(__thread_info__->tlab_temp_end)
@@ -2020,24 +2020,24 @@ typedef struct {
 	GrayQueue *queue;
 } UserCopyOrMarkData;
 
-static pthread_key_t user_copy_or_mark_key;
+static MonoNativeTlsKey user_copy_or_mark_key;
 
 static void
 init_user_copy_or_mark_key (void)
 {
-	pthread_key_create (&user_copy_or_mark_key, NULL);
+	mono_native_tls_alloc (&user_copy_or_mark_key, NULL);
 }
 
 static void
 set_user_copy_or_mark_data (UserCopyOrMarkData *data)
 {
-	pthread_setspecific (user_copy_or_mark_key, data);
+	mono_native_tls_set_value (user_copy_or_mark_key, data);
 }
 
 static void
 single_arg_user_copy_or_mark (void **obj)
 {
-	UserCopyOrMarkData *data = pthread_getspecific (user_copy_or_mark_key);
+	UserCopyOrMarkData *data = mono_native_tls_get_value (user_copy_or_mark_key);
 
 	data->func (obj, data->queue);
 }
@@ -4799,7 +4799,7 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 void*
 mono_gc_scan_object (void *obj)
 {
-	UserCopyOrMarkData *data = pthread_getspecific (user_copy_or_mark_key);
+	UserCopyOrMarkData *data = mono_native_tls_get_value (user_copy_or_mark_key);
 
 	if (current_collection_generation == GENERATION_NURSERY) {
 		if (collection_is_parallel ())
@@ -5255,8 +5255,8 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 #ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
 
-	g_assert (!pthread_getspecific (thread_info_key));
-	pthread_setspecific (thread_info_key, info);
+	g_assert (!mono_native_tls_get_value (thread_info_key));
+	mono_native_tls_set_value (thread_info_key, info);
 #else
 	thread_info = info;
 #endif
@@ -5324,7 +5324,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 #endif
 
 	info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info, FALSE);
-	pthread_setspecific (remembered_set_key, info->remset);
+	mono_native_tls_set_value (remembered_set_key, info->remset);
 #ifdef HAVE_KW_THREAD
 	remembered_set = info->remset;
 #endif
@@ -6637,10 +6637,10 @@ mono_gc_base_init (void)
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
-	pthread_key_create (&remembered_set_key, NULL);
+	mono_native_tls_alloc (&remembered_set_key, NULL);
 
 #ifndef HAVE_KW_THREAD
-	pthread_key_create (&thread_info_key, NULL);
+	mono_native_tls_alloc (&thread_info_key, NULL);
 #endif
 
 	/*
