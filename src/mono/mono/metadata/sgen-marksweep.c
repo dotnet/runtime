@@ -176,8 +176,8 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
 #ifdef SGEN_PARALLEL_MARK
 static LOCK_DECLARE (ms_block_list_mutex);
-#define LOCK_MS_BLOCK_LIST pthread_mutex_lock (&ms_block_list_mutex)
-#define UNLOCK_MS_BLOCK_LIST pthread_mutex_unlock (&ms_block_list_mutex)
+#define LOCK_MS_BLOCK_LIST mono_mutex_lock (&ms_block_list_mutex)
+#define UNLOCK_MS_BLOCK_LIST mono_mutex_unlock (&ms_block_list_mutex)
 #endif
 
 /* we get this at init */
@@ -2034,7 +2034,9 @@ mono_sgen_marksweep_init
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES * 8; ++i)
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
 
+#ifdef SGEN_PARALLEL_MARK
 	LOCK_INIT (ms_block_list_mutex);
+#endif
 
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);

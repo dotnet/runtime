@@ -38,6 +38,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <signal.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/io-layer/mono-mutex.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-archdep.h>
@@ -231,15 +232,15 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 /*
  * Recursion is not allowed for the thread lock.
  */
-#define LOCK_DECLARE(name) pthread_mutex_t name = PTHREAD_MUTEX_INITIALIZER
+#define LOCK_DECLARE(name) mono_mutex_t name
 /* if changing LOCK_INIT to something that isn't idempotent, look at
    its use in mono_gc_base_init in sgen-gc.c */
-#define LOCK_INIT(name)
-#define LOCK_GC pthread_mutex_lock (&gc_mutex)
-#define TRYLOCK_GC (pthread_mutex_trylock (&gc_mutex) == 0)
-#define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
-#define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
-#define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)
+#define LOCK_INIT(name)	mono_mutex_init (&(name), NULL)
+#define LOCK_GC mono_mutex_lock (&gc_mutex)
+#define TRYLOCK_GC (mono_mutex_trylock (&gc_mutex) == 0)
+#define UNLOCK_GC mono_mutex_unlock (&gc_mutex)
+#define LOCK_INTERRUPTION mono_mutex_lock (&interruption_mutex)
+#define UNLOCK_INTERRUPTION mono_mutex_unlock (&interruption_mutex)
 
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
 #define SGEN_ATOMIC_ADD(x,i)	do {					\

@@ -508,11 +508,11 @@ static LOCK_DECLARE (interruption_mutex);
 static LOCK_DECLARE (global_remset_mutex);
 static LOCK_DECLARE (pin_queue_mutex);
 
-#define LOCK_GLOBAL_REMSET pthread_mutex_lock (&global_remset_mutex)
-#define UNLOCK_GLOBAL_REMSET pthread_mutex_unlock (&global_remset_mutex)
+#define LOCK_GLOBAL_REMSET mono_mutex_lock (&global_remset_mutex)
+#define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
 
-#define LOCK_PIN_QUEUE pthread_mutex_lock (&pin_queue_mutex)
-#define UNLOCK_PIN_QUEUE pthread_mutex_unlock (&pin_queue_mutex)
+#define LOCK_PIN_QUEUE mono_mutex_lock (&pin_queue_mutex)
+#define UNLOCK_PIN_QUEUE mono_mutex_unlock (&pin_queue_mutex)
 
 typedef struct _FinalizeReadyEntry FinalizeReadyEntry;
 struct _FinalizeReadyEntry {
