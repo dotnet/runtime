@@ -176,8 +176,8 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
 #ifdef SGEN_PARALLEL_MARK
 static LOCK_DECLARE (ms_block_list_mutex);
-#define LOCK_MS_BLOCK_LIST pthread_mutex_lock (&ms_block_list_mutex)
-#define UNLOCK_MS_BLOCK_LIST pthread_mutex_unlock (&ms_block_list_mutex)
+#define LOCK_MS_BLOCK_LIST mono_mutex_lock (&ms_block_list_mutex)
+#define UNLOCK_MS_BLOCK_LIST mono_mutex_unlock (&ms_block_list_mutex)
 #endif
 
 /* we get this at init */
@@ -216,7 +216,7 @@ static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 #ifdef HAVE_KW_THREAD
 static __thread MSBlockInfo ***workers_free_block_lists;
 #else
-static pthread_key_t workers_free_block_lists_key;
+static MonoNativeTlsKey workers_free_block_lists_key;
 #endif
 #endif
 
@@ -229,7 +229,7 @@ static long long stat_slots_allocated_in_vain = 0;
 #endif
 
 static gboolean ms_sweep_in_progress = FALSE;
-static pthread_t ms_sweep_thread;
+static MonoNativeThreadId ms_sweep_thread;
 static MonoSemType ms_sweep_cmd_semaphore;
 static MonoSemType ms_sweep_done_semaphore;
 
@@ -295,7 +295,7 @@ ms_find_block_obj_size_index (int size)
 #ifdef HAVE_KW_THREAD
 #define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (workers_free_block_lists, (p), (r)))
 #else
-#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)(pthread_getspecific (workers_free_block_lists_key))), (p), (r)))
+#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)(mono_native_tls_get_value (workers_free_block_lists_key))), (p), (r)))
 #endif
 #else
 //#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (free_block_lists, (p), (r)))
@@ -1470,7 +1470,7 @@ ms_sweep (void)
 	have_swept = TRUE;
 }
 
-static void*
+static mono_native_thread_return_t
 ms_sweep_thread_func (void *dummy)
 {
 	g_assert (concurrent_sweep);
@@ -1916,7 +1916,7 @@ major_scan_card_table (SgenGrayQueue *queue)
 #endif
 
 static gboolean
-major_is_worker_thread (pthread_t thread)
+major_is_worker_thread (MonoNativeThreadId thread)
 {
 	if (concurrent_sweep)
 		return thread == ms_sweep_thread;
@@ -1958,7 +1958,7 @@ major_init_worker_thread (void *data)
 #ifdef HAVE_KW_THREAD
 	workers_free_block_lists = data;
 #else
-	pthread_setspecific (workers_free_block_lists_key, data);
+	mono_native_tls_set_value (workers_free_block_lists_key, data);
 #endif
 }
 
@@ -1981,7 +1981,7 @@ static void
 post_param_init (void)
 {
 	if (concurrent_sweep) {
-		if (pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL)) {
+		if (mono_native_thread_create (&ms_sweep_thread, ms_sweep_thread_func, NULL)) {
 			fprintf (stderr, "Error: Could not create sweep thread.\n");
 			exit (1);
 		}
@@ -2034,7 +2034,9 @@ mono_sgen_marksweep_init
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES * 8; ++i)
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
 
+#ifdef SGEN_PARALLEL_MARK
 	LOCK_INIT (ms_block_list_mutex);
+#endif
 
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
@@ -2044,7 +2046,7 @@ mono_sgen_marksweep_init
 	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
 
 #ifndef HAVE_KW_THREAD
-	pthread_key_create (&workers_free_block_lists_key, NULL);
+	mono_native_tls_alloc (&workers_free_block_lists_key, NULL);
 #endif
 #endif
 

@@ -38,6 +38,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <signal.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/io-layer/mono-mutex.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-archdep.h>
@@ -125,19 +126,20 @@ struct _SgenThreadInfo {
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
 
-#if defined(__MACH__)
 #ifdef USE_MONO_CTX
+#ifdef __MACH__
 	MonoContext ctx;		/* ditto */
+#endif
+	MonoContext *monoctx;	/* ditto */
+
 #else
+
+#if defined(__MACH__) || defined(HOST_WIN32)
 	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
 #endif
-#endif
-
-#ifdef USE_MONO_CTX
-	MonoContext *monoctx;	/* ditto */
-#else
 	gpointer *stopped_regs;	    /* ditto */
 #endif
+
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;
@@ -231,15 +233,15 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 /*
  * Recursion is not allowed for the thread lock.
  */
-#define LOCK_DECLARE(name) pthread_mutex_t name = PTHREAD_MUTEX_INITIALIZER
+#define LOCK_DECLARE(name) mono_mutex_t name
 /* if changing LOCK_INIT to something that isn't idempotent, look at
    its use in mono_gc_base_init in sgen-gc.c */
-#define LOCK_INIT(name)
-#define LOCK_GC pthread_mutex_lock (&gc_mutex)
-#define TRYLOCK_GC (pthread_mutex_trylock (&gc_mutex) == 0)
-#define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
-#define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
-#define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)
+#define LOCK_INIT(name)	mono_mutex_init (&(name), NULL)
+#define LOCK_GC mono_mutex_lock (&gc_mutex)
+#define TRYLOCK_GC (mono_mutex_trylock (&gc_mutex) == 0)
+#define UNLOCK_GC mono_mutex_unlock (&gc_mutex)
+#define LOCK_INTERRUPTION mono_mutex_lock (&interruption_mutex)
+#define UNLOCK_INTERRUPTION mono_mutex_unlock (&interruption_mutex)
 
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
 #define SGEN_ATOMIC_ADD(x,i)	do {					\
@@ -249,8 +251,10 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
 
+#ifndef HOST_WIN32
 /* we intercept pthread_create calls to know which threads exist */
 #define USE_PTHREAD_INTERCEPT 1
+#endif
 
 #ifdef HEAVY_STATISTICS
 #define HEAVY_STAT(x)	x
@@ -575,8 +579,8 @@ typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-#define GRAY_OBJECT_ENQUEUE gray_object_enqueue
-#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = gray_object_dequeue ((queue)))
+#define GRAY_OBJECT_ENQUEUE mono_sgen_gray_object_enqueue
+#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = mono_sgen_gray_object_dequeue ((queue)))
 #else
 #define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
 		if (G_UNLIKELY (!(queue)->first || (queue)->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE)) \
@@ -613,7 +617,7 @@ void mono_sgen_os_init (void) MONO_INTERNAL;
 
 void mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info) MONO_INTERNAL;
 
-gboolean mono_sgen_is_worker_thread (pthread_t thread) MONO_INTERNAL;
+gboolean mono_sgen_is_worker_thread (MonoNativeThreadId thread) MONO_INTERNAL;
 
 void mono_sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
 
@@ -763,7 +767,7 @@ struct _SgenMajorCollector {
 	int (*get_num_major_sections) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
-	gboolean (*is_worker_thread) (pthread_t thread);
+	gboolean (*is_worker_thread) (MonoNativeThreadId thread);
 	void (*post_param_init) (void);
 	void* (*alloc_worker_data) (void);
 	void (*init_worker_thread) (void *data);

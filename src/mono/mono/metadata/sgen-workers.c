@@ -26,12 +26,12 @@
 
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
-	pthread_t thread;
+	MonoNativeThreadId thread;
 	void *major_collector_data;
 
 	GrayQueue private_gray_queue; /* only read/written by worker thread */
 
-	pthread_mutex_t stealable_stack_mutex;
+	mono_mutex_t stealable_stack_mutex;
 	volatile int stealable_stack_fill;
 	char *stealable_stack [STEALABLE_STACK_SIZE];
 };
@@ -130,11 +130,11 @@ workers_enqueue_job (JobFunc func, void *data)
 	entry->func = func;
 	entry->data = data;
 
-	pthread_mutex_lock (&workers_job_queue_mutex);
+	mono_mutex_lock (&workers_job_queue_mutex);
 	entry->next = workers_job_queue;
 	workers_job_queue = entry;
 	num_entries = ++workers_job_queue_num_entries;
-	pthread_mutex_unlock (&workers_job_queue_mutex);
+	mono_mutex_unlock (&workers_job_queue_mutex);
 
 	workers_wake_up (num_entries);
 }
@@ -149,13 +149,13 @@ workers_dequeue_and_do_job (WorkerData *data)
 	if (!workers_job_queue_num_entries)
 		return FALSE;
 
-	pthread_mutex_lock (&workers_job_queue_mutex);
+	mono_mutex_lock (&workers_job_queue_mutex);
 	entry = (JobQueueEntry*)workers_job_queue;
 	if (entry) {
 		workers_job_queue = entry->next;
 		--workers_job_queue_num_entries;
 	}
-	pthread_mutex_unlock (&workers_job_queue_mutex);
+	mono_mutex_unlock (&workers_job_queue_mutex);
 
 	if (!entry)
 		return FALSE;
@@ -176,7 +176,7 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 	if (!victim_data->stealable_stack_fill)
 		return FALSE;
 
-	if (lock && pthread_mutex_trylock (&victim_data->stealable_stack_mutex))
+	if (lock && mono_mutex_trylock (&victim_data->stealable_stack_mutex))
 		return FALSE;
 
 	n = num = (victim_data->stealable_stack_fill + 1) / 2;
@@ -196,7 +196,7 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 	victim_data->stealable_stack_fill -= num;
 
 	if (lock)
-		pthread_mutex_unlock (&victim_data->stealable_stack_mutex);
+		mono_mutex_unlock (&victim_data->stealable_stack_mutex);
 
 	if (data == victim_data) {
 		if (lock)
@@ -256,7 +256,7 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 	}
 
 	/* The stealable stack is empty, so fill it. */
-	pthread_mutex_lock (&data->stealable_stack_mutex);
+	mono_mutex_lock (&data->stealable_stack_mutex);
 
 	while (data->stealable_stack_fill < STEALABLE_STACK_SIZE &&
 			(section = gray_object_dequeue_section (queue))) {
@@ -278,13 +278,13 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 	if (data != &workers_gc_thread_data && gray_object_queue_is_empty (queue))
 		workers_steal (data, data, FALSE);
 
-	pthread_mutex_unlock (&data->stealable_stack_mutex);
+	mono_mutex_unlock (&data->stealable_stack_mutex);
 
 	if (workers_gc_in_progress)
 		workers_wake_up_all ();
 }
 
-static void*
+static mono_native_thread_return_t
 workers_thread_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
@@ -363,7 +363,7 @@ workers_init (int num_workers)
 
 	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
 			workers_gray_queue_share_redirect, &workers_gc_thread_data);
-	pthread_mutex_init (&workers_gc_thread_data.stealable_stack_mutex, NULL);
+	mono_mutex_init (&workers_gc_thread_data.stealable_stack_mutex, NULL);
 	workers_gc_thread_data.stealable_stack_fill = 0;
 
 	if (major_collector.alloc_worker_data)
@@ -371,7 +371,7 @@ workers_init (int num_workers)
 
 	for (i = 0; i < workers_num; ++i) {
 		/* private gray queue is inited by the thread itself */
-		pthread_mutex_init (&workers_data [i].stealable_stack_mutex, NULL);
+		mono_mutex_init (&workers_data [i].stealable_stack_mutex, NULL);
 		workers_data [i].stealable_stack_fill = 0;
 
 		if (major_collector.alloc_worker_data)
@@ -396,7 +396,7 @@ workers_start_worker (int index)
 	g_assert (index >= 0 && index < workers_num);
 
 	g_assert (!workers_data [index].thread);
-	pthread_create (&workers_data [index].thread, NULL, workers_thread_func, &workers_data [index]);
+	mono_native_thread_create (&workers_data [index].thread, workers_thread_func, &workers_data [index]);
 }
 
 static void
@@ -484,7 +484,7 @@ workers_join (void)
 }
 
 gboolean
-mono_sgen_is_worker_thread (pthread_t thread)
+mono_sgen_is_worker_thread (MonoNativeThreadId thread)
 {
 	int i;
 

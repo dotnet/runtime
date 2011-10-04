@@ -57,11 +57,6 @@
 
 #elif defined(HAVE_SGEN_GC)
 
-#if defined(HOST_WIN32)
-#define CreateThread mono_gc_CreateThread
-
-#endif
-
 #else /* not Boehm and not sgen GC */
 #endif
 

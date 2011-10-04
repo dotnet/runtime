@@ -42,7 +42,6 @@ struct _BinaryProtocolBuffer {
 };
 
 static BinaryProtocolBuffer *binary_protocol_buffers = NULL;
-LOCK_DECLARE (binary_protocol_mutex);
 
 void
 binary_protocol_init (const char *filename)

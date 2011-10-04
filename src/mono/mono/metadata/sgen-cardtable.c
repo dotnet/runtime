@@ -34,7 +34,9 @@
 //#define CARDTABLE_STATS
 
 #include <unistd.h>
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 #include <sys/types.h>
 
 guint8 *sgen_cardtable;
