@@ -22,6 +22,7 @@ my %valid_flow;
 open OUTPUT, ">$ARGV[1]" || die "Can not create $ARGV[1] file: $!";
 
 my $parser = new XML::Parser (Handlers => {Start => \&handle_opcode});
+print_header();
 $parser->parsefile($ARGV[0]);
 print_trailer();
 close(OUTPUT) || die "Can not close file: $!";
@@ -51,6 +52,12 @@ sub handle_opcode {
 
     print OUTPUT "OPDEF(CEE_$uname, \"$name\", $input, $output, $args, X, $count, $o1, $o2, $ff)\n";
     
+}
+
+sub print_header {
+print OUTPUT<<EOF;
+/* GENERATED FILE, DO NOT EDIT */
+EOF
 }
 
 sub print_trailer {

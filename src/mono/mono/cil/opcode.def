@@ -1,3 +1,4 @@
+/* GENERATED FILE, DO NOT EDIT */
 OPDEF(CEE_NOP, "nop", Pop0, Push0, InlineNone, X, 1, 0xFF, 0x00, NEXT)
 OPDEF(CEE_BREAK, "break", Pop0, Push0, InlineNone, X, 1, 0xFF, 0x01, ERROR)
 OPDEF(CEE_LDARG_0, "ldarg.0", Pop0, Push1, InlineNone, X, 1, 0xFF, 0x02, NEXT)
