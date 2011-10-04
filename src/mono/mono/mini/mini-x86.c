@@ -6203,7 +6203,9 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	case X86_EBP: return ctx->ebp;
 	case X86_ESI: return ctx->esi;
 	case X86_EDI: return ctx->edi;
-	default: g_assert_not_reached ();
+	default:
+		g_assert_not_reached ();
+		return 0;
 	}
 }
 
