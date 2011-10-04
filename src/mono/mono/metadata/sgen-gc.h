@@ -579,8 +579,8 @@ typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-#define GRAY_OBJECT_ENQUEUE gray_object_enqueue
-#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = gray_object_dequeue ((queue)))
+#define GRAY_OBJECT_ENQUEUE mono_sgen_gray_object_enqueue
+#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = mono_sgen_gray_object_dequeue ((queue)))
 #else
 #define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
 		if (G_UNLIKELY (!(queue)->first || (queue)->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE)) \
