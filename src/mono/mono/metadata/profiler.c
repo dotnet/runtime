@@ -1111,6 +1111,8 @@ mono_profiler_load (const char *desc)
 		const char* col = strchr (desc, ':');
 		char* libname;
 		char *mname;
+		gboolean res;
+
 		if (col != NULL) {
 			mname = g_memdup (desc, col - desc + 1);
 			mname [col - desc] = 0;
@@ -1118,10 +1120,13 @@ mono_profiler_load (const char *desc)
 			mname = g_strdup (desc);
 		}
 		libname = g_strdup_printf ("mono-profiler-%s", mname);
-		if (!load_profiler_from_directory (NULL, libname, desc))
-			if (!load_profiler_from_directory (MONO_ASSEMBLIES, libname, desc))
+		if (!load_profiler_from_directory (NULL, libname, desc)) {
+#if defined (MONO_ASSEMBLIES)
+			res = load_profiler_from_directory (MONO_ASSEMBLIES, libname, desc);
+#endif
+			if (!res)
 				g_warning ("Error loading profiler module '%s'", libname);
-			
+		}			
 		g_free (libname);
 		g_free (mname);
 	}
