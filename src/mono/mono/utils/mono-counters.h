@@ -2,6 +2,7 @@
 #define __MONO_COUNTERS_H__
 
 #include <stdio.h>
+#include <mono/utils/mono-publib.h>
 
 enum {
 	MONO_COUNTER_INT,    /* 32 bit int */
@@ -38,6 +39,19 @@ void mono_counters_register (const char* descr, int type, void *addr);
 void mono_counters_dump (int section_mask, FILE *outfile);
 
 void mono_counters_cleanup (void);
+
+typedef enum {
+	MONO_RESOURCE_JIT_CODE, /* bytes */
+	MONO_RESOURCE_METADATA, /* bytes */
+	MONO_RESOURCE_GC_HEAP,  /* bytes */
+	MONO_RESOURCE_COUNT /* non-ABI value */
+} MonoResourceType;
+
+typedef void (*MonoResourceCallback) (int resource_type, uintptr_t value, int is_soft);
+
+int  mono_runtime_resource_limit        (int resource_type, uintptr_t soft_limit, uintptr_t hard_limit);
+void mono_runtime_resource_set_callback (MonoResourceCallback callback);
+void mono_runtime_resource_check_limit  (int resource_type, uintptr_t value);
 
 #endif /* __MONO_COUNTERS_H__ */
 

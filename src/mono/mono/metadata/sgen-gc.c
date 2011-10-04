@@ -733,6 +733,7 @@ mono_sgen_try_alloc_space (mword size, int space)
 		return FALSE;
 
 	allocated_heap += size;
+	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
 	return TRUE;
 }
 
