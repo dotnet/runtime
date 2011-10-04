@@ -840,7 +840,36 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	int pos, first, last;
 
 	if (aname->name == NULL) return aname;
+
 	current_runtime = mono_get_runtime_info ();
+
+	if (aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) {
+		const AssemblyVersionSet* vset;
+
+		/* Remap to current runtime */
+		vset = &current_runtime->version_sets [0];
+
+		memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
+		dest_aname->major = vset->major;
+		dest_aname->minor = vset->minor;
+		dest_aname->build = vset->build;
+		dest_aname->revision = vset->revision;
+		dest_aname->flags &= ~ASSEMBLYREF_RETARGETABLE_FLAG;
+
+		/* Remap assembly name */
+		if (!strcmp (aname->name, "System.Net"))
+			dest_aname->name = g_strdup ("System");
+
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
+					aname->name,
+					aname->major, aname->minor, aname->build, aname->revision,
+					dest_aname->name,
+					vset->major, vset->minor, vset->build, vset->revision
+					);
+
+		return dest_aname;
+	}
 
 	first = 0;
 	last = G_N_ELEMENTS (framework_assemblies) - 1;
