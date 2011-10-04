@@ -337,7 +337,7 @@ static long long time_major_los_sweep = 0;
 static long long time_major_sweep = 0;
 static long long time_major_fragment_creation = 0;
 
-#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
+#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a; fflush (gc_debug_file); } while (0)
 
 int gc_debug_level = 0;
 FILE* gc_debug_file;
@@ -4828,7 +4828,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 			continue;
 		}
-		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
+		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %ld, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
 		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 			UserCopyOrMarkData data = { NULL, queue };
 			set_user_copy_or_mark_data (&data);
@@ -5332,7 +5332,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
 	STORE_REMSET_BUFFER_INDEX = 0;
 
-	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p)\n", info, (gpointer)mono_thread_info_get_tid (info)));
+	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) stack end %p\n", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end));
 
 	if (gc_callbacks.thread_attach_func)
 		info->runtime_data = gc_callbacks.thread_attach_func ();
