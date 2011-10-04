@@ -4582,11 +4582,13 @@ mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info)
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
+#ifndef HOST_WIN32
 #ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
+#endif
 #endif
 #endif
 #endif
@@ -4636,7 +4638,11 @@ restart_threads_until_none_in_managed_allocator (void)
 		mono_sgen_wait_for_suspend_ack (restart_count);
 
 		if (sleep_duration < 0) {
+#ifdef HOST_WIN32
+			SwitchToThread ();
+#else
 			sched_yield ();
+#endif
 			sleep_duration = 0;
 		} else {
 			g_usleep (sleep_duration);
@@ -6603,7 +6609,9 @@ mono_gc_base_init (void)
 	cb.thread_unregister = sgen_thread_unregister;
 	cb.thread_attach = sgen_thread_attach;
 	cb.mono_method_is_critical = (gpointer)is_critical_method;
+#ifndef HOST_WIN32
 	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
+#endif
 
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 

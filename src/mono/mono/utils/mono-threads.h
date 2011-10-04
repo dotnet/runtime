@@ -24,10 +24,17 @@
 #include <windows.h>
 
 typedef DWORD MonoNativeThreadId;
-typedef HANDLE MonoNativeThreadHandle;
+typedef HANDLE MonoNativeThreadHandle; /* unused */
+
+typedef DWORD mono_native_thread_return_t;
 
 #define mono_native_thread_id_get GetCurrentThreadId
 #define mono_native_thread_id_equals(a,b) ((a) == ((b))
+
+HANDLE mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, LPTHREAD_START_ROUTINE start_routine,
+		LPVOID arg, DWORD creation_flags, LPDWORD thread_id) MONO_INTERNAL;
+
+#define mono_native_thread_create(id,func,arg)	(CreateThread (NULL, 0, (func), (arg), 0, (id)) != NULL)
 
 #else
 

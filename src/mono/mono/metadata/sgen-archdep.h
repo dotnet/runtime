@@ -35,7 +35,24 @@
 #define REDZONE_SIZE	0
 
 #define ARCH_NUM_REGS 8
+
+#ifdef MONO_ARCH_HAS_MONO_CONTEXT
 #define USE_MONO_CTX
+#else
+#define ARCH_STORE_REGS(ptr)	\
+	__asm__ __volatile__(	\
+		"mov %%edi,0(%0)\n"	\
+		"mov %%esi,4(%0)\n"	\
+		"mov %%ebx,8(%0)\n"	\
+		"mov %%edx,12(%0)\n"	\
+		"mov %%ecx,16(%0)\n"	\
+		"mov %%eax,20(%0)\n"	\
+		"mov %%ebp,24(%0)\n"	\
+		"mov %%esp,28(%0)\n"	\
+		:			\
+		: "r" (ptr)	\
+	)
+#endif
 
 /*FIXME, move this to mono-sigcontext as this is generaly useful.*/
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_ESP ((ctx)))

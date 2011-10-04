@@ -167,6 +167,7 @@ typedef HANDLE mono_cond_t;
 
 #define mono_mutex_init(mutex,attr) InitializeCriticalSection((mutex))
 #define mono_mutex_lock(mutex) EnterCriticalSection((mutex))
+#define mono_mutex_trylock(mutex) TryEnterCriticalSection((mutex))
 #define mono_mutex_unlock(mutex)  LeaveCriticalSection((mutex))
 #define mono_mutex_destroy(mutex) DeleteCriticalSection((mutex))
 
@@ -178,7 +179,6 @@ typedef HANDLE mono_cond_t;
 #define mono_cond_broadcast(cond) (!SetEvent(*(cond)))
 #define mono_cond_destroy(cond) CloseHandle(*(cond))
 
-#define MONO_MUTEX_INITIALIZER NULL
 #define MONO_COND_INITIALIZER NULL
 #endif
 

@@ -189,6 +189,7 @@ libmonoruntime_la_SOURCES = \
 	security-manager.h	\
 	sgen-os-posix.c		\
 	sgen-os-mach.c		\
+	sgen-os-win32.c		\
 	sgen-gc.c		\
 	sgen-internal.c		\
 	sgen-pinned-allocator.c	\

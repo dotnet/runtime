@@ -126,19 +126,20 @@ struct _SgenThreadInfo {
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
 
-#if defined(__MACH__)
 #ifdef USE_MONO_CTX
+#ifdef __MACH__
 	MonoContext ctx;		/* ditto */
+#endif
+	MonoContext *monoctx;	/* ditto */
+
 #else
+
+#if defined(__MACH__) || defined(HOST_WIN32)
 	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
 #endif
-#endif
-
-#ifdef USE_MONO_CTX
-	MonoContext *monoctx;	/* ditto */
-#else
 	gpointer *stopped_regs;	    /* ditto */
 #endif
+
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;
@@ -250,8 +251,10 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
 
+#ifndef HOST_WIN32
 /* we intercept pthread_create calls to know which threads exist */
 #define USE_PTHREAD_INTERCEPT 1
+#endif
 
 #ifdef HEAVY_STATISTICS
 #define HEAVY_STAT(x)	x

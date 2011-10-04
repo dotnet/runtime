@@ -2220,6 +2220,7 @@ case "$host" in
 			sgen_supported=true
 			;;
 		  cygwin*)
+			sgen_supported=true
 			have_visibility_hidden=no		  
 			;;
 		  haiku*)
