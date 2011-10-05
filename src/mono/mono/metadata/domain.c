@@ -57,12 +57,16 @@ MONO_FAST_TLS_DECLARE(tls_appdomain);
 #define SET_APPDOMAIN(x) do { \
 	MONO_FAST_TLS_SET (tls_appdomain,x); \
 	mono_native_tls_set_value (appdomain_thread_id, x); \
+	mono_gc_set_current_thread_appdomain (x); \
 } while (FALSE)
 
 #else /* !MONO_HAVE_FAST_TLS */
 
 #define GET_APPDOMAIN() ((MonoDomain *)mono_native_tls_get_value (appdomain_thread_id))
-#define SET_APPDOMAIN(x) mono_native_tls_set_value (appdomain_thread_id, x);
+#define SET_APPDOMAIN(x) do {						\
+		mono_native_tls_set_value (appdomain_thread_id, x);	\
+		mono_gc_set_current_thread_appdomain (x);		\
+	} while (FALSE)
 
 #endif
 

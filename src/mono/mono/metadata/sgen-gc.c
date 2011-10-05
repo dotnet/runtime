@@ -2231,6 +2231,14 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	return nursery_start;
 }
 
+void
+mono_gc_set_current_thread_appdomain (MonoDomain *domain)
+{
+	SgenThreadInfo *info = mono_thread_info_current ();
+	g_assert (info);
+	info->stopped_domain = domain;
+}
+
 gboolean
 mono_gc_precise_stack_mark_enabled (void)
 {

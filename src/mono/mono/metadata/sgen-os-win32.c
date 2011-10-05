@@ -55,7 +55,6 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 
 	CloseHandle (handle);
 
-	info->stopped_domain = NULL; /* FIXME: implement! */
 	info->stopped_ip = (gpointer)context.Eip;
 	info->stack_start = (char*)context.Esp - REDZONE_SIZE;
 

@@ -341,6 +341,11 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	return NULL;
 }
 
+void
+mono_gc_set_current_thread_appdomain (MonoDomain *domain)
+{
+}
+
 gboolean
 mono_gc_precise_stack_mark_enabled (void)
 {
