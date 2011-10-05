@@ -4590,13 +4590,11 @@ mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info)
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
-#ifndef HOST_WIN32
 #ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
-#endif
 #endif
 #endif
 #endif
@@ -6946,7 +6944,7 @@ enum {
  * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
  * where the two are the same.
  */
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined (HOST_WIN32)
 #define EMIT_TLS_ACCESS(mb,member,dummy)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
