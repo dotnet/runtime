@@ -201,8 +201,6 @@ mono_threads_platform_free (MonoThreadInfo *info)
 	MONO_SEM_DESTROY (&info->suspend_semaphore);
 }
 
-#endif /*!defined (__MACH__)*/
-
 MonoNativeThreadId
 mono_native_thread_id_get (void)
 {
@@ -225,5 +223,7 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
 	return pthread_create (tid, NULL, func, arg) == 0;
 }
+
+#endif /*!defined (__MACH__)*/
 
 #endif
