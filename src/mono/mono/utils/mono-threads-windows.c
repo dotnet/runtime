@@ -112,4 +112,23 @@ mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, 
 	return result;
 }
 
+
+MonoNativeThreadId
+mono_native_thread_id_get (void)
+{
+	return GetCurrentThreadId ();
+}
+
+gboolean
+mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
+{
+	return id1 == id2;
+}
+
+gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
+{
+	return CreateThread (NULL, 0, (func), (arg), 0, (tid)) != NULL;
+}
+
 #endif

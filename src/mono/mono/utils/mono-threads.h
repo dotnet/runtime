@@ -28,14 +28,6 @@ typedef HANDLE MonoNativeThreadHandle; /* unused */
 
 typedef DWORD mono_native_thread_return_t;
 
-#define mono_native_thread_id_get GetCurrentThreadId
-#define mono_native_thread_id_equals(a,b) ((a) == ((b))
-
-HANDLE mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, LPTHREAD_START_ROUTINE start_routine,
-		LPVOID arg, DWORD creation_flags, LPDWORD thread_id) MONO_INTERNAL;
-
-#define mono_native_thread_create(id,func,arg)	(CreateThread (NULL, 0, (func), (arg), 0, (id)) != NULL)
-
 #else
 
 #include <pthread.h>
@@ -56,13 +48,6 @@ typedef pid_t MonoNativeThreadHandle;
 typedef pthread_t MonoNativeThreadId;
 
 typedef void* mono_native_thread_return_t;
-
-MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
-
-gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2) MONO_INTERNAL;
-
-gboolean
-mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg) MONO_INTERNAL;
 
 #endif /* #ifdef HOST_WIN32 */
 
@@ -231,5 +216,12 @@ gboolean mono_threads_core_resume (MonoThreadInfo *info) MONO_INTERNAL;
 void mono_threads_platform_register (MonoThreadInfo *info) MONO_INTERNAL; //ok
 void mono_threads_platform_free (MonoThreadInfo *info) MONO_INTERNAL;
 void mono_threads_core_interrupt (MonoThreadInfo *info) MONO_INTERNAL;
+
+MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
+
+gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2) MONO_INTERNAL;
+
+gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg) MONO_INTERNAL;
 
 #endif /* __MONO_THREADS_H__ */
