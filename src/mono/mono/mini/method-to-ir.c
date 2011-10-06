@@ -4519,7 +4519,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				 strcmp (cfg->method->name, "FastMonitorExit") == 0))
 			return NULL;
 
-		if ((strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 1) ||
+		if ((strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 2) ||
 				strcmp (cmethod->name, "Exit") == 0)
 			fast_method = mono_monitor_get_fast_path (cmethod);
 		if (!fast_method)
