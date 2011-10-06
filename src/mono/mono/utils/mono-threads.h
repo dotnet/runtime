@@ -57,10 +57,12 @@ typedef pthread_t MonoNativeThreadId;
 
 typedef void* mono_native_thread_return_t;
 
-#define mono_native_thread_id_get pthread_self
-#define mono_native_thread_id_equals(a,b) pthread_equal((a),(b))
+MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 
-#define mono_native_thread_create(tid,func,arg)	(pthread_create ((tid), NULL, (func), (arg)) == 0)
+gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2) MONO_INTERNAL;
+
+gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg) MONO_INTERNAL;
 
 #endif /* #ifdef HOST_WIN32 */
 

@@ -203,4 +203,27 @@ mono_threads_platform_free (MonoThreadInfo *info)
 
 #endif /*!defined (__MACH__)*/
 
+MonoNativeThreadId
+mono_native_thread_id_get (void)
+{
+	return pthread_self ();
+}
+
+gboolean
+mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
+{
+	return pthread_equal (id1, id2);
+}
+
+/*
+ * mono_native_thread_create:
+ *
+ *   Low level thread creation function without any GC wrappers.
+ */
+gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
+{
+	return pthread_create (tid, NULL, func, arg) == 0;
+}
+
 #endif
