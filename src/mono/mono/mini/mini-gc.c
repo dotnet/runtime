@@ -1447,6 +1447,33 @@ process_other_slots (MonoCompile *cfg)
 	}
 }
 
+static gsize*
+get_vtype_bitmap (MonoType *t, int *numbits)
+{
+	MonoClass *klass = mono_class_from_mono_type (t);
+
+	if (klass->generic_container || mono_class_is_open_constructed_type (t)) {
+		/* FIXME: Generic sharing */
+		return NULL;
+	} else {
+		mono_class_compute_gc_descriptor (klass);
+
+		return mono_gc_get_bitmap_for_descr (klass->gc_descr, numbits);
+	}
+}
+
+static inline const char*
+get_offset_sign (int offset)
+{
+	return offset < 0 ? "-" : "+";
+}
+
+static inline int
+get_offset_val (int offset)
+{
+	return offset < 0 ? (- offset) : offset;
+}
+
 static void
 process_variables (MonoCompile *cfg)
 {
@@ -1562,7 +1589,7 @@ process_variables (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 
 			if (cfg->verbose_level > 1) {
-				printf ("\tdead arg at fp%s0x%x (slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "+", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
+				printf ("\tdead arg at fp%s0x%x (slot = %d): %s\n", get_offset_sign (ins->inst_offset), get_offset_val (ins->inst_offset), pos, mono_type_full_name (ins->inst_vtype));
 			}
 			continue;
 		}
@@ -1581,7 +1608,7 @@ process_variables (MonoCompile *cfg)
 			size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
 
 			if (cfg->verbose_level > 1)
-				printf ("\tvtype R%d at 0x%x(fp)-0x%x(fp) (slot %d-%d): %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / SIZEOF_SLOT)), pos, pos + size_in_slots, mono_type_full_name (ins->inst_vtype));
+				printf ("\tvtype R%d at %s0x%x(fp)-%s0x%x(fp) (slot %d-%d): %s\n", vmv->vreg, get_offset_sign (ins->inst_offset), get_offset_val (ins->inst_offset), get_offset_sign (ins->inst_offset), get_offset_val (ins->inst_offset + (size_in_slots * SIZEOF_SLOT)), pos, pos + size_in_slots, mono_type_full_name (ins->inst_vtype));
 
 			if (!ins->klass->has_references) {
 				if (is_arg) {
@@ -1591,25 +1618,18 @@ process_variables (MonoCompile *cfg)
 				continue;
 			}
 
-			if (ins->klass->generic_container || mono_class_is_open_constructed_type (t)) {
-				/* FIXME: Generic sharing */
+			bitmap = get_vtype_bitmap (t, &numbits);
+			if (!bitmap)
 				pin = TRUE;
-			} else {
-				mono_class_compute_gc_descriptor (ins->klass);
 
-				bitmap = mono_gc_get_bitmap_for_descr (ins->klass->gc_descr, &numbits);
-				if (!bitmap)
-					pin = TRUE;
-
-				/*
-				 * Most vtypes are marked volatile because of the LDADDR instructions,
-				 * and they have no liveness information since they are decomposed
-				 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
-				 * them during VZERO decomposition.
-				 */
-				if (!pc_offsets [vmv->vreg])
-					pin = TRUE;
-			}
+			/*
+			 * Most vtypes are marked volatile because of the LDADDR instructions,
+			 * and they have no liveness information since they are decomposed
+			 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
+			 * them during VZERO decomposition.
+			 */
+			if (!pc_offsets [vmv->vreg])
+				pin = TRUE;
 
 			if (ins->backend.is_pinvoke)
 				pin = TRUE;
@@ -1835,20 +1855,35 @@ process_param_area_slots (MonoCompile *cfg)
 				guint32 align;
 				guint32 size;
 				int size_in_slots;
+				gsize *bitmap;
+				int j, numbits;
 
 				size = mini_type_stack_size_full (cfg->generic_sharing_context, t, &align, FALSE);
 				size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
-				// FIXME: slot type
-				for (i = 0; i < size_in_slots; ++i) {
-					set_slot_in_range (gcfg, slot + i, def->backend.pc_offset, callsite->pc_offset + 1, type);
+
+				bitmap = get_vtype_bitmap (t, &numbits);
+				if (type == SLOT_NOREF || !bitmap) {
+					for (i = 0; i < size_in_slots; ++i) {
+						set_slot_in_range (gcfg, slot + i, def->backend.pc_offset, callsite->pc_offset + 1, type);
+					}
+					if (cfg->verbose_level > 1)
+						printf ("\t%s param area slots at %s0x%x(fp)=0x%x(sp) (slot = %d-%d) [0x%x-0x%x]\n", slot_type_to_string (type), get_offset_sign (fp_offset), get_offset_val (fp_offset), sp_offset, slot, slot + (size / (int)sizeof (mgreg_t)), def->backend.pc_offset, callsite->pc_offset + 1);
+				} else {
+					for (j = 0; j < numbits; ++j) {
+						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
+							/* The descriptor is for the boxed object */
+							set_slot (gcfg, (slot + j - (sizeof (MonoObject) / SIZEOF_SLOT)), cindex, SLOT_REF);
+						}
+					}
+					if (cfg->verbose_level > 1)
+						printf ("\tvtype param area slots at %s0x%x(fp)=0x%x(sp) (slot = %d-%d) [0x%x-0x%x]\n", get_offset_sign (fp_offset), get_offset_val (fp_offset), sp_offset, slot, slot + (size / (int)sizeof (mgreg_t)), def->backend.pc_offset, callsite->pc_offset + 1);
 				}
-				if (cfg->verbose_level > 1)
-					printf ("\t%s param area slots at %s0x%x(fp)=0x%x(sp) (slot = %d-%d) [0x%x-0x%x]\n", slot_type_to_string (type), fp_offset >= 0 ? "+" : "-", ABS (fp_offset), sp_offset, slot, slot + (size / (int)sizeof (mgreg_t)), def->backend.pc_offset, callsite->pc_offset + 1);
+				g_free (bitmap);
 			} else {
 				/* The slot is live between the def instruction and the call */
 				set_slot_in_range (gcfg, slot, def->backend.pc_offset, callsite->pc_offset + 1, type);
 				if (cfg->verbose_level > 1)
-					printf ("\t%s param area slot at %s0x%x(fp)=0x%x(sp) (slot = %d) [0x%x-0x%x]\n", slot_type_to_string (type), fp_offset >= 0 ? "+" : "-", ABS (fp_offset), sp_offset, slot, def->backend.pc_offset, callsite->pc_offset + 1);
+					printf ("\t%s param area slot at %s0x%x(fp)=0x%x(sp) (slot = %d) [0x%x-0x%x]\n", slot_type_to_string (type), get_offset_sign (fp_offset), get_offset_val (fp_offset), sp_offset, slot, def->backend.pc_offset, callsite->pc_offset + 1);
 			}
 		}
 	}
