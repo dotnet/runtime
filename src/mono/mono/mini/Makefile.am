@@ -101,7 +101,7 @@ boehm_binaries  = mono
 endif
 
 if HOST_WIN32
-bin_PROGRAMS = mono monow
+bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries) monow
 else
 bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries)
 endif

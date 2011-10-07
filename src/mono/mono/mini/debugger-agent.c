@@ -6513,8 +6513,12 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_GET_CATTRS: {
-		MonoClass *attr_klass = decode_typeid (p, &p, end, NULL, &err);
+		MonoClass *attr_klass;
 		MonoCustomAttrInfo *cinfo;
+
+		attr_klass = decode_typeid (p, &p, end, NULL, &err);
+		if (!attr_klass)
+			return err;
 
 		cinfo = mono_custom_attrs_from_class (klass);
 
