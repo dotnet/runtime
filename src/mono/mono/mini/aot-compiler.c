@@ -550,12 +550,10 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #endif
 #endif
 
-#ifdef TARGET_WIN32
-#define AOT_TARGET_STR "WIN32"
-#endif
-
 #ifdef TARGET_X86
-#ifdef __native_client_codegen__
+#ifdef TARGET_WIN32
+#define AOT_TARGET_STR "X86 (WIN32)"
+#elif defined(__native_client_codegen__)
 #define AOT_TARGET_STR "X86 (native client codegen)"
 #else
 #define AOT_TARGET_STR "X86 (!native client codegen)"
