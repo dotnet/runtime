@@ -1331,7 +1331,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	MonoDomain *domain = mono_domain_get ();
 	guint8 *buf, *start;
 
-	buf = start = mono_domain_code_reserve (domain, 2 * sizeof (gpointer));
+	buf = start = mono_domain_alloc0 (domain, 2 * sizeof (gpointer));
 
 	*(gpointer*)(gpointer)buf = image;
 	buf += sizeof (gpointer);
