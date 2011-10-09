@@ -2231,6 +2231,14 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	return nursery_start;
 }
 
+void
+mono_gc_set_current_thread_appdomain (MonoDomain *domain)
+{
+	SgenThreadInfo *info = mono_thread_info_current ();
+	g_assert (info);
+	info->stopped_domain = domain;
+}
+
 gboolean
 mono_gc_precise_stack_mark_enabled (void)
 {
@@ -4582,13 +4590,11 @@ mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info)
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
-#ifndef HOST_WIN32
 #ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
-#endif
 #endif
 #endif
 #endif
@@ -6938,7 +6944,7 @@ enum {
  * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
  * where the two are the same.
  */
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined (HOST_WIN32)
 #define EMIT_TLS_ACCESS(mb,member,dummy)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\

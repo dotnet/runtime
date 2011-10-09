@@ -137,7 +137,13 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags)
 int
 mono_vfree (void *addr, size_t length)
 {
-	int res = VirtualFree (addr, 0, MEM_RELEASE);
+	MEMORY_BASIC_INFORMATION mbi;
+	SIZE_T query_result = VirtualQuery (addr, &mbi, sizeof (mbi));
+	BOOL res;
+
+	g_assert (query_result);
+
+	res = VirtualFree (mbi.AllocationBase, 0, MEM_RELEASE);
 
 	g_assert (res);
 
