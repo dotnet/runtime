@@ -528,7 +528,7 @@ typedef struct {
 
 #define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
 
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 #define get_last_sock_error() WSAGetLastError()
 #define MONO_EWOULDBLOCK WSAEWOULDBLOCK
 #define MONO_EINTR WSAEINTR
