@@ -32,11 +32,13 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 	CONTEXT context;
 	DWORD result;
 
+	g_assert (id != GetCurrentThreadId ());
+
 	g_assert (handle);
 
 	result = SuspendThread (handle);
-	g_assert (result != (DWORD)-1);
 	if (result == (DWORD)-1) {
+		fprintf (stderr, "could not suspend thread %x (handle %p): %d\n", id, handle, GetLastError ()); fflush (stderr);
 		CloseHandle (handle);
 		return FALSE;
 	}
