@@ -90,7 +90,6 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/utils/mono-threads.h>
 #endif
 
-
 #ifndef DISABLE_DEBUGGER_AGENT
 
 #include <mono/io-layer/mono-mutex.h>
@@ -253,6 +252,15 @@ typedef struct {
 	 */
 	MonoContext restore_ctx;
 } DebuggerTlsData;
+
+typedef struct {
+	const char *name;
+	void (*connect) (const char *address);
+	void (*close1) (void);
+	void (*close2) (void);
+	gboolean (*send) (void *buf, int len);
+	int (*recv) (void *buf, int len);
+} DebuggerTransport;
 
 /* 
  * Wire Protocol definitions
@@ -553,8 +561,10 @@ static AgentConfig agent_config;
  */
 static gint32 inited;
 
+#ifndef DISABLE_SOCKET_TRANSPORT
 static int conn_fd;
 static int listen_fd;
+#endif
 
 static int packet_id = 0;
 
@@ -621,7 +631,10 @@ static gboolean protocol_version_set;
 /* A hash table containing all active domains */
 static GHashTable *domains;
 
-static void transport_connect (const char *host, int port);
+static void transport_init (void);
+static void transport_connect (const char *address);
+static gboolean transport_handshake (void);
+static void register_transport (DebuggerTransport *trans);
 
 static guint32 WINAPI debugger_thread (void *arg);
 
@@ -695,6 +708,11 @@ static void stop_debugger_thread (void);
 static void finish_agent_init (gboolean on_startup);
 
 static void process_profiler_event (EventKind event, gpointer arg);
+
+#ifndef DISABLE_SOCKET_TRANSPORT
+static void
+register_socket_transport (void);
+#endif
 
 static int
 parse_address (char *address, char **host, int *port)
@@ -813,19 +831,18 @@ mono_debugger_agent_parse_options (char *options)
 		fprintf (stderr, "debugger-agent: The 'transport' option is mandatory.\n");
 		exit (1);
 	}
-	if (strcmp (agent_config.transport, "dt_socket") != 0) {
-		fprintf (stderr, "debugger-agent: The only supported value for the 'transport' option is 'dt_socket'.\n");
-		exit (1);
-	}
 
 	if (agent_config.address == NULL && !agent_config.server) {
 		fprintf (stderr, "debugger-agent: The 'address' option is mandatory.\n");
 		exit (1);
 	}
 
-	if (agent_config.address && parse_address (agent_config.address, &host, &port)) {
-		fprintf (stderr, "debugger-agent: The format of the 'address' options is '<host>:<port>'\n");
-		exit (1);
+	// FIXME:
+	if (!strcmp (agent_config.transport, "dt_socket")) {
+		if (agent_config.address && parse_address (agent_config.address, &host, &port)) {
+			fprintf (stderr, "debugger-agent: The format of the 'address' options is '<host>:<port>'\n");
+			exit (1);
+		}
 	}
 }
 
@@ -834,6 +851,8 @@ mono_debugger_agent_init (void)
 {
 	if (!agent_config.enabled)
 		return;
+
+	transport_init ();
 
 	/* Need to know whenever a thread has acquired the loader mutex */
 	mono_loader_lock_track_ownership (TRUE);
@@ -916,8 +935,6 @@ mono_debugger_agent_init (void)
 static void
 finish_agent_init (gboolean on_startup)
 {
-	char *host;
-	int port;
 	int res;
 
 	if (InterlockedCompareExchange (&inited, 1, 0) == 1)
@@ -941,15 +958,7 @@ finish_agent_init (gboolean on_startup)
 		}
 	}
 
-	if (agent_config.address) {
-		res = parse_address (agent_config.address, &host, &port);
-		g_assert (res == 0);
-	} else {
-		host = NULL;
-		port = 0;
-	}
-
-	transport_connect (host, port);
+	transport_connect (agent_config.address);
 
 	if (!on_startup) {
 		/* Do some which is usually done after sending the VMStart () event */
@@ -975,15 +984,23 @@ mono_debugger_agent_cleanup (void)
 }
 
 /*
+ * SOCKET TRANSPORT
+ */
+
+#ifndef DISABLE_SOCKET_TRANSPORT
+
+/*
  * recv_length:
  *
  * recv() + handle incomplete reads and EINTR
  */
 static int
-recv_length (int fd, void *buf, int len, int flags)
+socket_transport_recv (void *buf, int len)
 {
 	int res;
 	int total = 0;
+	int fd = conn_fd;
+	int flags = 0;
 
 	do {
 	again:
@@ -1019,7 +1036,7 @@ set_keepalive (void)
 }
 
 static int
-transport_accept (int socket_fd)
+socket_transport_accept (int socket_fd)
 {
 	conn_fd = accept (socket_fd, NULL, NULL);
 	if (conn_fd == -1) {
@@ -1032,60 +1049,26 @@ transport_accept (int socket_fd)
 }
 
 static gboolean
-transport_handshake (void)
+socket_transport_send (void *data, int len)
 {
-	char handshake_msg [128];
-	guint8 buf [128];
 	int res;
-	
-	/* Write handshake message */
-	sprintf (handshake_msg, "DWP-Handshake");
+
 	do {
-		res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
+		res = send (conn_fd, data, len, 0);
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-	g_assert (res != -1);
-
-	/* Read answer */
-	res = recv_length (conn_fd, buf, strlen (handshake_msg), 0);
-	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
-		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
+	if (res != len)
 		return FALSE;
-	}
-
-	/*
-	 * To support older clients, the client sends its protocol version after connecting
-	 * using a command. Until that is received, default to our protocol version.
-	 */
-	major_version = MAJOR_VERSION;
-	minor_version = MINOR_VERSION;
-	protocol_version_set = FALSE;
-
-	/* 
-	 * Set TCP_NODELAY on the socket so the client receives events/command
-	 * results immediately.
-	 */
-	{
-		int flag = 1;
-		int result = setsockopt (conn_fd,
-                                 IPPROTO_TCP,
-                                 TCP_NODELAY,
-                                 (char *) &flag,
-                                 sizeof(int));
-		g_assert (result >= 0);
-	}
-
-	set_keepalive ();
-	
-	return TRUE;
+	else
+		return TRUE;
 }
 
 /*
- * transport_connect:
+ * socket_transport_connect:
  *
  *   Connect/Listen on HOST:PORT. If HOST is NULL, generate an address and listen on it.
  */
 static void
-transport_connect (const char *host, int port)
+socket_transport_connect (const char *address)
 {
 #ifdef HAVE_GETADDRINFO
 	struct addrinfo hints;
@@ -1095,6 +1078,16 @@ transport_connect (const char *host, int port)
 #endif
 	int sfd = -1, s, res;
 	char port_string [128];
+	char *host;
+	int port;
+
+	if (agent_config.address) {
+		res = parse_address (agent_config.address, &host, &port);
+		g_assert (res == 0);
+	} else {
+		host = NULL;
+		port = 0;
+	}
 
 	conn_fd = -1;
 	listen_fd = -1;
@@ -1150,7 +1143,7 @@ transport_connect (const char *host, int port)
 			res = getsockname (sfd, &addr, &addrlen);
 			g_assert (res == 0);
 
-			host = "127.0.0.1";
+			host = (char*)"127.0.0.1";
 			port = ntohs (addr.sin_port);
 
 			/* Emit the address to stdout */
@@ -1213,7 +1206,7 @@ transport_connect (const char *host, int port)
 			}
 		}
 
-		conn_fd = transport_accept (sfd);
+		conn_fd = socket_transport_accept (sfd);
 		if (conn_fd == -1)
 			exit (1);
 
@@ -1265,26 +1258,9 @@ transport_connect (const char *host, int port)
 		exit (1);
 }
 
-static gboolean
-transport_send (guint8 *data, int len)
-{
-	int res;
-
-	do {
-		res = send (conn_fd, data, len, 0);
-	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-	if (res != len)
-		return FALSE;
-	else
-		return TRUE;
-}
-
 static void
-stop_debugger_thread (void)
+socket_transport_close1 (void)
 {
-	if (!inited)
-		return;
-
 	/* This will interrupt the agent thread */
 	/* Close the read part only so it can still send back replies */
 	/* Also shut down the connection listener so that we can exit normally */
@@ -1298,6 +1274,166 @@ stop_debugger_thread (void)
 	shutdown (listen_fd, SHUT_RDWR);
 	close (listen_fd);
 #endif
+}
+
+static void
+socket_transport_close2 (void)
+{
+#ifdef HOST_WIN32
+	shutdown (conn_fd, SD_BOTH);
+#else
+	shutdown (conn_fd, SHUT_RDWR);
+#endif
+}
+
+static void
+register_socket_transport (void)
+{
+	DebuggerTransport trans;
+
+	trans.name = "dt_socket";
+	trans.connect = socket_transport_connect;
+	trans.close1 = socket_transport_close1;
+	trans.close2 = socket_transport_close2;
+	trans.send = socket_transport_send;
+	trans.recv = socket_transport_recv;
+
+	register_transport (&trans);
+}
+
+#endif /* DISABLE_SOCKET_TRANSPORT */
+
+/*
+ * TRANSPORT CODE
+ */
+
+#define MAX_TRANSPORTS 16
+
+static DebuggerTransport *transport;
+
+static DebuggerTransport transports [MAX_TRANSPORTS];
+static int ntransports;
+
+static void
+register_transport (DebuggerTransport *trans)
+{
+	g_assert (ntransports < MAX_TRANSPORTS);
+
+	memcpy (&transports [ntransports], trans, sizeof (DebuggerTransport));
+	ntransports ++;
+}
+
+static void
+transport_init (void)
+{
+	int i;
+
+#ifndef DISABLE_SOCKET_TRANSPORT
+	register_socket_transport ();
+#endif
+
+	for (i = 0; i < ntransports; ++i) {
+		if (!strcmp (agent_config.transport, transports [i].name))
+			break;
+	}
+	if (i == ntransports) {
+		fprintf (stderr, "debugger-agent: The supported values for the 'transport' option are: ");
+		for (i = 0; i < ntransports; ++i)
+			fprintf (stderr, "%s'%s'", i > 0 ? ", " : "", transports [i].name);
+		fprintf (stderr, "\n");
+		exit (1);
+	}
+	transport = &transports [i];
+}
+
+void
+transport_connect (const char *address)
+{
+	transport->connect (address);
+}
+
+static void
+transport_close1 (void)
+{
+	transport->close1 ();
+}
+
+static void
+transport_close2 (void)
+{
+	transport->close2 ();
+}
+
+static int
+transport_send (void *buf, int len)
+{
+	return transport->send (buf, len);
+}
+
+static int
+transport_recv (void *buf, int len)
+{
+	return transport->recv (buf, len);
+}
+
+static gboolean
+transport_handshake (void)
+{
+	char handshake_msg [128];
+	guint8 buf [128];
+	int res;
+	
+	/* Write handshake message */
+	sprintf (handshake_msg, "DWP-Handshake");
+	do {
+		res = transport_send (handshake_msg, strlen (handshake_msg));
+	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+	g_assert (res != -1);
+
+	/* Read answer */
+	res = transport_recv (buf, strlen (handshake_msg));
+	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
+		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
+		return FALSE;
+	}
+
+	/*
+	 * To support older clients, the client sends its protocol version after connecting
+	 * using a command. Until that is received, default to our protocol version.
+	 */
+	major_version = MAJOR_VERSION;
+	minor_version = MINOR_VERSION;
+	protocol_version_set = FALSE;
+
+#ifndef DISABLE_SOCKET_TRANSPORT
+	// FIXME: Move this somewhere else
+	/* 
+	 * Set TCP_NODELAY on the socket so the client receives events/command
+	 * results immediately.
+	 */
+	{
+		int flag = 1;
+		int result = setsockopt (conn_fd,
+                                 IPPROTO_TCP,
+                                 TCP_NODELAY,
+                                 (char *) &flag,
+                                 sizeof(int));
+		g_assert (result >= 0);
+	}
+
+	set_keepalive ();
+#endif
+	
+	return TRUE;
+}
+
+static void
+stop_debugger_thread (void)
+{
+	if (!inited)
+		return;
+
+	transport_close1 ();
 
 	/* 
 	 * Wait for the thread to exit.
@@ -1326,11 +1462,7 @@ stop_debugger_thread (void)
 		} while (!debugger_thread_exited);
 	}
 
-#ifdef HOST_WIN32
-	shutdown (conn_fd, SD_BOTH);
-#else
-	shutdown (conn_fd, SHUT_RDWR);
-#endif
+	transport_close2 ();
 }
 
 static void
@@ -5798,11 +5930,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			mono_thread_suspend_all_other_threads ();
 			DEBUG(1, fprintf (log_file, "Shutting down the runtime...\n"));
 			mono_runtime_quit ();
-#ifdef HOST_WIN32
-			shutdown (conn_fd, SD_BOTH);
-#else
-			shutdown (conn_fd, SHUT_RDWR);
-#endif
+			transport_close2 ();
 			DEBUG(1, fprintf (log_file, "Exiting...\n"));
 
 			exit (exit_code);
@@ -5902,7 +6030,12 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_SET_KEEPALIVE: {
 		int timeout = decode_int (p, &p, end);
 		agent_config.keepalive = timeout;
+		// FIXME:
+#ifndef DISABLE_SOCKET_TRANSPORT
 		set_keepalive ();
+#else
+		NOT_IMPLEMENTED;
+#endif
 		break;
 	}
 
@@ -7520,19 +7653,23 @@ cmd_to_string (CommandSet set, int command)
 static gboolean
 wait_for_attach (void)
 {
+#ifndef DISABLE_SOCKET_TRANSPORT
 	if (listen_fd == -1) {
 		DEBUG (1, fprintf (log_file, "[dbg] Invalid listening socket\n"));
 		return FALSE;
 	}
 
 	/* Block and wait for client connection */
-	conn_fd = transport_accept (listen_fd);
+	conn_fd = socket_transport_accept (listen_fd);
 	DEBUG (1, fprintf (log_file, "Accepted connection on %d\n", conn_fd));
 	if (conn_fd == -1) {
 		DEBUG (1, fprintf (log_file, "[dbg] Bad client connection\n"));
 		return FALSE;
 	}
-	
+#else
+	g_assert_not_reached ();
+#endif
+
 	/* Handshake */
 	disconnected = !transport_handshake ();
 	if (disconnected) {
@@ -7581,7 +7718,7 @@ debugger_thread (void *arg)
 	}
 	
 	while (!attach_failed) {
-		res = recv_length (conn_fd, header, HEADER_LENGTH, 0);
+		res = transport_recv (header, HEADER_LENGTH);
 
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH)
@@ -7614,7 +7751,7 @@ debugger_thread (void *arg)
 		data = g_malloc (len - HEADER_LENGTH);
 		if (len - HEADER_LENGTH > 0)
 		{
-			res = recv_length (conn_fd, data, len - HEADER_LENGTH, 0);
+			res = transport_recv (data, len - HEADER_LENGTH);
 			if (res != len - HEADER_LENGTH)
 				break;
 		}
