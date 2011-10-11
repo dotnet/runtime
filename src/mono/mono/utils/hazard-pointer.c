@@ -9,6 +9,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-threads.h>
@@ -143,6 +144,7 @@ is_pointer_hazardous (gpointer p)
 		for (j = 0; j < HAZARD_POINTER_COUNT; ++j) {
 			if (hazard_table [i].hazard_pointers [j] == p)
 				return TRUE;
+			LOAD_LOAD_FENCE;
 		}
 	}
 
