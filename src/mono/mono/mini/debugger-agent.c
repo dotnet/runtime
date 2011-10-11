@@ -4752,19 +4752,20 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		/* Compute the initial line info */
 		compute_frame_info (thread, tls);
 
-		g_assert (tls->frame_count);
-		frame = tls->frames [0];
+		if (tls->frame_count) {
+			frame = tls->frames [0];
 
-		ss_req->last_method = frame->method;
-		ss_req->last_line = -1;
+			ss_req->last_method = frame->method;
+			ss_req->last_line = -1;
 
-		minfo = mono_debug_lookup_method (frame->method);
-		if (minfo && frame->il_offset != -1) {
-			MonoDebugSourceLocation *loc = mono_debug_symfile_lookup_location (minfo, frame->il_offset);
+			minfo = mono_debug_lookup_method (frame->method);
+			if (minfo && frame->il_offset != -1) {
+				MonoDebugSourceLocation *loc = mono_debug_symfile_lookup_location (minfo, frame->il_offset);
 
-			if (loc) {
-				ss_req->last_line = loc->row;
-				g_free (loc);
+				if (loc) {
+					ss_req->last_line = loc->row;
+					g_free (loc);
+				}
 			}
 		}
 	}
@@ -4774,14 +4775,15 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 
 		compute_frame_info (thread, tls);
 
-		g_assert (tls->frame_count);
-		frame = tls->frames [0];
+		if (tls->frame_count) {
+			frame = tls->frames [0];
 
-		if (!method && frame->il_offset != -1) {
-			/* FIXME: Sort the table and use a binary search */
-			sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
-			g_assert (sp);
-			method = frame->method;
+			if (!method && frame->il_offset != -1) {
+				/* FIXME: Sort the table and use a binary search */
+				sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
+				g_assert (sp);
+				method = frame->method;
+			}
 		}
 	}
 
