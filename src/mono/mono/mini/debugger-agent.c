@@ -6517,7 +6517,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		MonoCustomAttrInfo *cinfo;
 
 		attr_klass = decode_typeid (p, &p, end, NULL, &err);
-		if (!attr_klass)
+		/* attr_klass can be NULL */
+		if (err)
 			return err;
 
 		cinfo = mono_custom_attrs_from_class (klass);
