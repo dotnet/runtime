@@ -213,48 +213,6 @@ typedef struct {
 
 #define MONO_SIZEOF_CLASS_RUNTIME_INFO (sizeof (MonoClassRuntimeInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
-enum {
-	MONO_RGCTX_INFO_STATIC_DATA,
-	MONO_RGCTX_INFO_KLASS,
-	MONO_RGCTX_INFO_VTABLE,
-	MONO_RGCTX_INFO_TYPE,
-	MONO_RGCTX_INFO_REFLECTION_TYPE,
-	MONO_RGCTX_INFO_METHOD,
-	MONO_RGCTX_INFO_GENERIC_METHOD_CODE,
-	MONO_RGCTX_INFO_CLASS_FIELD,
-	MONO_RGCTX_INFO_METHOD_RGCTX,
-	MONO_RGCTX_INFO_METHOD_CONTEXT,
-	MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK,
-	MONO_RGCTX_INFO_METHOD_DELEGATE_CODE,
-	MONO_RGCTX_INFO_CAST_CACHE
-};
-
-typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
-	int info_type;
-	gpointer data;
-	struct _MonoRuntimeGenericContextOtherInfoTemplate *next;
-} MonoRuntimeGenericContextOtherInfoTemplate;
-
-typedef struct {
-	MonoClass *next_subclass;
-	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
-	GSList *method_templates;
-} MonoRuntimeGenericContextTemplate;
-
-typedef struct {
-	MonoVTable *class_vtable; /* must be the first element */
-	MonoGenericInst *method_inst;
-	gpointer infos [MONO_ZERO_LEN_ARRAY];
-} MonoMethodRuntimeGenericContext;
-
-#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (sizeof (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
-
-#define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
-#define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
-#define MONO_RGCTX_SLOT_INDEX(s)	((s) & 0x7fffffff)
-#define MONO_RGCTX_SLOT_IS_MRGCTX(s)	(((s) & 0x80000000) ? TRUE : FALSE)
-
-
 #define MONO_CLASS_PROP_EXCEPTION_DATA 0
 
 /* 

@@ -1004,6 +1004,48 @@ typedef struct {
 	MonoContext ctx; /* if debugger_invoke is TRUE */
 } MonoLMFExt;
 
+/* Generic sharing */
+typedef enum {
+	MONO_RGCTX_INFO_STATIC_DATA,
+	MONO_RGCTX_INFO_KLASS,
+	MONO_RGCTX_INFO_VTABLE,
+	MONO_RGCTX_INFO_TYPE,
+	MONO_RGCTX_INFO_REFLECTION_TYPE,
+	MONO_RGCTX_INFO_METHOD,
+	MONO_RGCTX_INFO_GENERIC_METHOD_CODE,
+	MONO_RGCTX_INFO_CLASS_FIELD,
+	MONO_RGCTX_INFO_METHOD_RGCTX,
+	MONO_RGCTX_INFO_METHOD_CONTEXT,
+	MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK,
+	MONO_RGCTX_INFO_METHOD_DELEGATE_CODE,
+	MONO_RGCTX_INFO_CAST_CACHE
+} MonoRgctxInfoType;
+
+typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
+	MonoRgctxInfoType info_type;
+	gpointer data;
+	struct _MonoRuntimeGenericContextOtherInfoTemplate *next;
+} MonoRuntimeGenericContextOtherInfoTemplate;
+
+typedef struct {
+	MonoClass *next_subclass;
+	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
+	GSList *method_templates;
+} MonoRuntimeGenericContextTemplate;
+
+typedef struct {
+	MonoVTable *class_vtable; /* must be the first element */
+	MonoGenericInst *method_inst;
+	gpointer infos [MONO_ZERO_LEN_ARRAY];
+} MonoMethodRuntimeGenericContext;
+
+#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (sizeof (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
+#define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
+#define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
+#define MONO_RGCTX_SLOT_INDEX(s)	((s) & 0x7fffffff)
+#define MONO_RGCTX_SLOT_IS_MRGCTX(s)	(((s) & 0x80000000) ? TRUE : FALSE)
+
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
 #include "patch-info.h"
@@ -1073,7 +1115,7 @@ struct MonoJumpInfoRgctxEntry {
 	MonoMethod *method;
 	gboolean in_mrgctx;
 	MonoJumpInfo *data; /* describes the data to be loaded */
-	int info_type;
+	MonoRgctxInfoType info_type;
 };
 
 typedef enum {
@@ -2254,7 +2296,7 @@ mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
 
 guint32
 mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
-	int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
+	MonoRgctxInfoType info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
 
 MonoGenericContext
 mono_method_construct_object_context (MonoMethod *method) MONO_INTERNAL;

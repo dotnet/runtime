@@ -2347,9 +2347,9 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 }
 
 static MonoInst*
-emit_get_rgctx_method (MonoCompile *cfg, int context_used, MonoMethod *cmethod, int rgctx_type);
+emit_get_rgctx_method (MonoCompile *cfg, int context_used, MonoMethod *cmethod, MonoRgctxInfoType rgctx_type);
 static MonoInst*
-emit_get_rgctx_klass (MonoCompile *cfg, int context_used, MonoClass *klass, int rgctx_type);
+emit_get_rgctx_klass (MonoCompile *cfg, int context_used, MonoClass *klass, MonoRgctxInfoType rgctx_type);
 
 static MonoInst*
 mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
@@ -2953,7 +2953,7 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 }
 
 static MonoJumpInfoRgctxEntry *
-mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean in_mrgctx, MonoJumpInfoType patch_type, gconstpointer patch_data, int info_type)
+mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean in_mrgctx, MonoJumpInfoType patch_type, gconstpointer patch_data, MonoRgctxInfoType info_type)
 {
 	MonoJumpInfoRgctxEntry *res = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
 	res->method = method;
@@ -2974,7 +2974,7 @@ emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *ent
 
 static MonoInst*
 emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
-					  MonoClass *klass, int rgctx_type)
+					  MonoClass *klass, MonoRgctxInfoType rgctx_type)
 {
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_CLASS, klass, rgctx_type);
 	MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
@@ -2990,7 +2990,7 @@ emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
  */
 static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used,
-					   MonoMethod *cmethod, int rgctx_type)
+					   MonoMethod *cmethod, MonoRgctxInfoType rgctx_type)
 {
 	if (!context_used) {
 		MonoInst *ins;
@@ -3015,7 +3015,7 @@ emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 
 static MonoInst*
 emit_get_rgctx_field (MonoCompile *cfg, int context_used,
-					  MonoClassField *field, int rgctx_type)
+					  MonoClassField *field, MonoRgctxInfoType rgctx_type)
 {
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_FIELD, field, rgctx_type);
 	MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);

@@ -366,7 +366,7 @@ alloc_oti (MonoImage *image)
  * Some info types expect that each insert results in a new slot been assigned.
  */
 static int
-other_info_has_identity (int info_type)
+other_info_has_identity (MonoRgctxInfoType info_type)
 {
 	return info_type != MONO_RGCTX_INFO_CAST_CACHE;
 }
@@ -376,7 +376,7 @@ other_info_has_identity (int info_type)
  */
 static void
 rgctx_template_set_other_slot (MonoImage *image, MonoRuntimeGenericContextTemplate *template, int type_argc,
-	int slot, gpointer data, int info_type)
+	int slot, gpointer data, MonoRgctxInfoType info_type)
 {
 	static gboolean inited = FALSE;
 	static int num_markers = 0;
@@ -491,7 +491,7 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 }
 
 static gpointer
-inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, MonoClass *class, gboolean temporary)
+inflate_other_data (gpointer data, MonoRgctxInfoType info_type, MonoGenericContext *context, MonoClass *class, gboolean temporary)
 {
 	MonoError error;
 
@@ -573,7 +573,7 @@ inflate_other_info (MonoRuntimeGenericContextOtherInfoTemplate *oti,
 }
 
 static void
-free_inflated_info (int info_type, gpointer info)
+free_inflated_info (MonoRgctxInfoType info_type, gpointer info)
 {
 	if (!info)
 		return;
@@ -832,7 +832,7 @@ class_get_rgctx_template_oti (MonoClass *class, int type_argc, guint32 slot, gbo
 }
 
 static gpointer
-class_type_info (MonoDomain *domain, MonoClass *class, int info_type)
+class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_type)
 {
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: {
@@ -952,7 +952,7 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
  * LOCKING: loader lock
  */
 static void
-fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointer data, int info_type)
+fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointer data, MonoRgctxInfoType info_type)
 {
 	MonoRuntimeGenericContextTemplate *template = mono_class_get_runtime_generic_context_template (class);
 	MonoClass *subclass;
@@ -984,7 +984,7 @@ fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointe
  * LOCKING: loader lock
  */
 static int
-register_other_info (MonoClass *class, int type_argc, gpointer data, int info_type)
+register_other_info (MonoClass *class, int type_argc, gpointer data, MonoRgctxInfoType info_type)
 {
 	int i;
 	MonoRuntimeGenericContextTemplate *template = mono_class_get_runtime_generic_context_template (class);
@@ -1028,7 +1028,7 @@ register_other_info (MonoClass *class, int type_argc, gpointer data, int info_ty
 }
 
 static gboolean
-other_info_equal (gpointer data1, gpointer data2, int info_type)
+other_info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 {
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA:
@@ -1054,7 +1054,7 @@ other_info_equal (gpointer data1, gpointer data2, int info_type)
 }
 
 static int
-lookup_or_register_other_info (MonoClass *class, int type_argc, gpointer data, int info_type,
+lookup_or_register_other_info (MonoClass *class, int type_argc, gpointer data, MonoRgctxInfoType info_type,
 	MonoGenericContext *generic_context)
 {
 	static gboolean inited = FALSE;
@@ -1110,13 +1110,13 @@ lookup_or_register_other_info (MonoClass *class, int type_argc, gpointer data, i
  * @info_type: the type of info to register about data
  * @generic_context: a generic context
  *
- * Looks up and, if necessary, adds information about other_class in
+ * Looks up and, if necessary, adds information about data/info_type in
  * method's or method's class runtime generic context.  Returns the
  * encoded slot number.
  */
 guint32
 mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
-	int info_type, MonoGenericContext *generic_context)
+	MonoRgctxInfoType info_type, MonoGenericContext *generic_context)
 {
 	MonoClass *class = method->klass;
 	int type_argc, index;
