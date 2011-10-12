@@ -667,8 +667,8 @@ heap_walk (MonoProfiler *profiler)
 		do_walk = 1;
 	else if (hs_mode_gc && (gc_count % hs_mode_gc) == 0)
 		do_walk = 1;
-	else if (hs_mode_ondemand && heapshot_requested)
-		do_walk = 1;
+	else if (hs_mode_ondemand)
+		do_walk = heapshot_requested;
 	else if (!hs_mode_ms && !hs_mode_gc && profiler->last_gc_gen_started == mono_gc_max_generation ())
 		do_walk = 1;
 
