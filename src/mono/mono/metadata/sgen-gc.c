@@ -498,7 +498,7 @@ static int minor_collection_sections_alloced = 0;
 /* GC Logging stats */
 static int last_major_num_sections = 0;
 static int last_los_memory_usage = 0;
-static gboolean major_collection_hapenned = FALSE;
+static gboolean major_collection_happened = FALSE;
 
 static GCMemSection *nursery_section = NULL;
 static mword lowest_heap_address = ~(mword)0;
@@ -3584,7 +3584,7 @@ major_collection (const char *reason)
 		return;
 	}
 
-	major_collection_hapenned = TRUE;
+	major_collection_happened = TRUE;
 	current_collection_generation = GENERATION_OLD;
 	need_minor_collection = major_do_collection (reason);
 	current_collection_generation = -1;
@@ -4721,7 +4721,7 @@ stop_world (int generation)
 
 	last_major_num_sections = major_collector.get_num_major_sections ();
 	last_los_memory_usage = los_memory_usage;
-	major_collection_hapenned = FALSE;
+	major_collection_happened = FALSE;
 	return count;
 }
 
@@ -4729,7 +4729,7 @@ stop_world (int generation)
 static int
 restart_world (int generation)
 {
-	int count, i, num_major_sections;
+	int count, num_major_sections;
 	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
 	TV_DECLARE (end_bridge);
@@ -4767,7 +4767,7 @@ restart_world (int generation)
 	bridge_usec = TV_ELAPSED (end_sw, end_bridge);
 
 	num_major_sections = major_collector.get_num_major_sections ();
-	if (major_collection_hapenned)
+	if (major_collection_happened)
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR: %s pause %.2fms, bridge %.2fms major %dK/%dK los %dK/%dK",
 			generation ? "" : "(minor overflow)",
 			(int)usec / 1000.0f, (int)bridge_usec / 1000.0f,
