@@ -2235,8 +2235,12 @@ void
 mono_gc_set_current_thread_appdomain (MonoDomain *domain)
 {
 	SgenThreadInfo *info = mono_thread_info_current ();
-	g_assert (info);
-	info->stopped_domain = domain;
+
+	/* Could be called from sgen_thread_unregister () with a NULL info */
+	if (domain) {
+		g_assert (info);
+		info->stopped_domain = domain;
+	}
 }
 
 gboolean
