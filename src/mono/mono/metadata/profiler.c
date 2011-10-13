@@ -1033,6 +1033,46 @@ typedef void (*ProfilerInitializer) (const char*);
 
 
 static gboolean
+load_profiler (MonoDl *pmodule, const char *desc, const char *symbol)
+{
+	char *err;
+	ProfilerInitializer func;
+
+	if (!pmodule)
+		return FALSE;
+
+	if ((err = mono_dl_symbol (pmodule, symbol, (gpointer *) &func))) {
+		g_free (err);
+		return FALSE;
+	} else {
+		func (desc);
+	}
+	return TRUE;
+}
+
+static gboolean
+load_embedded_profiler (const char *desc, const char *name)
+{
+	char *err = NULL;
+	char *symbol;
+	MonoDl *pmodule = NULL;
+	gboolean result;
+
+	pmodule = mono_dl_open (NULL, MONO_DL_LAZY, &err);
+	if (!pmodule) {
+		g_warning ("Could not open main executable (%s)", err);
+		g_free (err);
+		return FALSE;
+	}
+
+	symbol = g_strdup_printf (INITIALIZER_NAME "_%s", name);
+	result = load_profiler (pmodule, desc, symbol);
+	g_free (symbol);
+
+	return result;
+}
+
+static gboolean
 load_profiler_from_directory (const char *directory, const char *libname, const char *desc)
 {
 	MonoDl *pmodule = NULL;
@@ -1043,21 +1083,11 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 	iter = NULL;
 	err = NULL;
 	while ((path = mono_dl_build_path (directory, libname, &iter))) {
-		g_free (err);
 		pmodule = mono_dl_open (path, MONO_DL_LAZY, &err);
-		if (pmodule) {
-			ProfilerInitializer func;
-			if ((err = mono_dl_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func))) {
-				g_warning ("Cannot find initializer function %s in profiler module: %s (%s)", INITIALIZER_NAME, libname, err);
-				g_free (err);
-				err = NULL;
-			} else {
-				func (desc);
-			}
-			g_free (path);
-			return TRUE;
-		}
 		g_free (path);
+		g_free (err);
+		if (pmodule)
+			return load_profiler (pmodule, desc, INITIALIZER_NAME);
 	}
 		
 	return FALSE;
@@ -1119,15 +1149,18 @@ mono_profiler_load (const char *desc)
 		} else {
 			mname = g_strdup (desc);
 		}
-		libname = g_strdup_printf ("mono-profiler-%s", mname);
-		if (!load_profiler_from_directory (NULL, libname, desc)) {
+		if (!load_embedded_profiler (desc, mname)) {
+			libname = g_strdup_printf ("mono-profiler-%s", mname);
+			if (!load_profiler_from_directory (NULL, libname, desc))
 #if defined (MONO_ASSEMBLIES)
-			res = load_profiler_from_directory (MONO_ASSEMBLIES, libname, desc);
+				res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
+#else
+				res = FALSE;
 #endif
-			if (!res)
-				g_warning ("Error loading profiler module '%s'", libname);
-		}			
-		g_free (libname);
+				if (!res)
+					g_warning ("The %s profiler wasn't found in the main executable nor could it be loaded from '%s'.", libname);
+			g_free (libname);
+		}
 		g_free (mname);
 	}
 	g_free (cdesc);

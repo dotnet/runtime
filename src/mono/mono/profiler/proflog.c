@@ -2198,6 +2198,19 @@ set_hsmode (char* val, int allow_empty)
 extern void
 mono_profiler_startup (const char *desc);
 
+extern void
+mono_profiler_startup_log (const char *desc);
+
+/*
+ * this is the entry point that will be used when the profiler
+ * is embedded inside the main executable.
+ */
+void
+mono_profiler_startup_log (const char *desc)
+{
+	mono_profiler_startup (desc);
+}
+
 void
 mono_profiler_startup (const char *desc)
 {
