@@ -428,7 +428,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 
 	s = get_pid_status_item_buf (pid, item, buf, sizeof (buf), error);
 	if (s)
-		return atoi (s) * multiplier;
+		return ((gint64) atol (s)) * multiplier;
 	return 0;
 #endif
 }
