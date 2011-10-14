@@ -4845,14 +4845,15 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			continue;
 		}
 		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %ld, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
-		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
-			UserCopyOrMarkData data = { NULL, queue };
-			set_user_copy_or_mark_data (&data);
-			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
-			set_user_copy_or_mark_data (NULL);
-		} else if (!precise) {
-			if (!info->thread_is_dying)
+		if (!info->thread_is_dying) {
+			if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
+				UserCopyOrMarkData data = { NULL, queue };
+				set_user_copy_or_mark_data (&data);
+				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
+				set_user_copy_or_mark_data (NULL);
+			} else if (!precise) {
 				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
+			}
 		}
 
 #ifdef USE_MONO_CTX
