@@ -1997,6 +1997,9 @@ create_profiler (const char *filename)
 	if (*nf == '|') {
 		prof->file = popen (nf + 1, "w");
 		prof->pipe_output = 1;
+	} else if (*nf == '#') {
+		int fd = strtol (nf + 1, NULL, 10);
+		prof->file = fdopen (fd, "a");
 	} else {
 		FILE *f;
 		if (force_delete)

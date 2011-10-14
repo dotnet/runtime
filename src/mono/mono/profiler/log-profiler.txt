@@ -133,6 +133,8 @@ date and time, then do according to *OUTSPEC*:
 	and feed the data to its standard input
 	* if *OUTSPEC* begins with a *-* character, use the rest of OUTSPEC as
 	the filename, but force overwrite any existing file by that name
+	* if *OUTSPEC* begins with a *#* character, use the rest of OUTSPEC as a
+	file descriptor and feed the data to it.
 	* otherwise write the data the the named file: note that is a file by that
 	name already exists, a warning is issued and profiling is disabled.
 
