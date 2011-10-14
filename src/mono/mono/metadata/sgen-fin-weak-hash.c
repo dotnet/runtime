@@ -458,7 +458,11 @@ null_links_for_domain (MonoDomain *domain, int generation)
 			if (*link) {
 				*link = NULL;
 				free = FALSE;
-				g_warning ("Disappearing link %p not freed", link);
+				/*
+				 * This can happen if finalizers are not ran, i.e. Environment.Exit ()
+				 * is called from finalizer like in finalizer-abort.cs.
+				 */
+				DEBUG (5, fprintf (gc_debug_file, "Disappearing link %p not freed", link));
 			}
 
 			SGEN_HASH_TABLE_FOREACH_REMOVE (free);
