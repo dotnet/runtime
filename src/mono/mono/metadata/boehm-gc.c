@@ -163,9 +163,12 @@ mono_gc_base_init (void)
 				}
 				continue;
 			} else {
+				/* Could be a parameter for sgen */
+				/*
 				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
 				fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				exit (1);
+				*/
 			}
 		}
 		g_strfreev (opts);
