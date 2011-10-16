@@ -2982,6 +2982,20 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/machine.config],
     cd $depth
 ],[LN_S='$LN_S'])
 
+AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/web.config],
+[   depth=../../../..
+    case $srcdir in
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+    .) reldir=$depth ;;
+    *) reldir=$depth/$srcdir ;;
+    esac
+    $ac_aux_dir/install-sh -d runtime/etc/mono/4.5
+    cd runtime/etc/mono/4.5
+    rm -f web.config
+    $LN_S $reldir/data/net_4_5/web.config web.config
+    cd $depth
+],[LN_S='$LN_S'])
+
 if test x$enable_quiet_build = xyes; then
    AC_CONFIG_COMMANDS([quiet], [for i in `find mono libgc support -name Makefile.in | sed -e 's/Makefile.in/Makefile/g'`; do if test -f $i; then $srcdir/scripts/patch-quiet.sh $i; fi; done], [shell=$SHELL])
    AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/echo "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
