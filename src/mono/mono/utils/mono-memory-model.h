@@ -82,6 +82,14 @@ LDR R3, [R4, R0]
 #define LOAD_ACQUIRE_FENCE MEMORY_BARRIER
 #define LOAD_RELEASE_FENCE MEMORY_BARRIER
 
+#elif defined(__s390x__)
+
+#define STORE_STORE_FENCE do {} while (0)
+#define LOAD_LOAD_FENCE  do {} while (0)
+#define STORE_LOAD_FENCE do {} while (0)
+#define LOAD_STORE_FENCE do {} while (0)
+#define STORE_RELEASE_FENCE do {} while (0)
+
 #else
 
 /*default implementation with the weakest possible memory model */

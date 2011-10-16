@@ -265,6 +265,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include "cpu-s390x.h"
 #include "jit-icalls.h"
 #include "ir-emit.h"
+#include "trace.h"
 
 /*========================= End of Includes ========================*/
 
@@ -639,6 +640,97 @@ indent (int diff) {
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- cvtMonoType                                       */
+/*                                                                  */
+/* Function	- Convert a mono-type to a string.                  */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+static const char *
+cvtMonoType(MonoTypeEnum t)
+{
+  switch(t)
+    {
+    case MONO_TYPE_END:
+      return "MONO_TYPE_END";
+    case MONO_TYPE_VOID:
+      return "MONO_TYPE_VOID";
+    case MONO_TYPE_BOOLEAN:
+      return "MONO_TYPE_BOOLEAN";
+    case MONO_TYPE_CHAR:
+      return "MONO_TYPE_CHAR";
+    case MONO_TYPE_I1:
+      return "MONO_TYPE_I1";
+    case MONO_TYPE_U1:
+      return "MONO_TYPE_U1";
+    case MONO_TYPE_I2:
+      return "MONO_TYPE_I2";
+    case MONO_TYPE_U2:
+      return "MONO_TYPE_U2";
+    case MONO_TYPE_I4:
+      return "MONO_TYPE_I4";
+    case MONO_TYPE_U4:
+      return "MONO_TYPE_U4";
+    case MONO_TYPE_I8:
+      return "MONO_TYPE_I8";
+    case MONO_TYPE_U8:
+      return "MONO_TYPE_U8";
+    case MONO_TYPE_R4:
+      return "MONO_TYPE_R4";
+    case MONO_TYPE_R8:
+      return "MONO_TYPE_R8";
+    case MONO_TYPE_STRING:
+      return "MONO_TYPE_STRING";
+    case MONO_TYPE_PTR:
+      return "MONO_TYPE_PTR";
+    case MONO_TYPE_BYREF:
+      return "MONO_TYPE_BYREF";
+    case MONO_TYPE_VALUETYPE:
+      return "MONO_TYPE_VALUETYPE";
+    case MONO_TYPE_CLASS:
+      return "MONO_TYPE_CLASS";
+    case MONO_TYPE_VAR:
+      return "MONO_TYPE_VAR";
+    case MONO_TYPE_ARRAY:
+      return "MONO_TYPE_ARRAY";
+    case MONO_TYPE_GENERICINST:
+      return "MONO_TYPE_GENERICINST";
+    case MONO_TYPE_TYPEDBYREF:
+      return "MONO_TYPE_TYPEDBYREF";
+    case MONO_TYPE_I:
+      return "MONO_TYPE_I";
+    case MONO_TYPE_U:
+      return "MONO_TYPE_U";
+    case MONO_TYPE_FNPTR:
+      return "MONO_TYPE_FNPTR";
+    case MONO_TYPE_OBJECT:
+      return "MONO_TYPE_OBJECT";
+    case MONO_TYPE_SZARRAY:
+      return "MONO_TYPE_SZARRAY";
+    case MONO_TYPE_MVAR:
+      return "MONO_TYPE_MVAR";
+    case MONO_TYPE_CMOD_REQD:
+      return "MONO_TYPE_CMOD_REQD";
+    case MONO_TYPE_CMOD_OPT:
+      return "MONO_TYPE_CMOD_OPT";
+    case MONO_TYPE_INTERNAL:
+      return "MONO_TYPE_INTERNAL";
+    case MONO_TYPE_MODIFIER:
+      return "MONO_TYPE_MODIFIER";
+    case MONO_TYPE_SENTINEL:
+      return "MONO_TYPE_SENTINEL";
+    case MONO_TYPE_PINNED:
+      return "MONO_TYPE_PINNED";
+    default:
+      ;
+    }
+  return "unknown";
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- decodeParm                                        */
 /*                                                                  */
 /* Function	- Decode a parameter for the trace.                 */
@@ -772,7 +864,7 @@ enum_parmtype:
 				printf("[VALUETYPE:");
 				for (i = 0; i < size; i++)
 					printf("%02x,", *((guint8 *)curParm+i));
-				printf("]");
+				printf("], ");
 				break;
 			}
 			case MONO_TYPE_TYPEDBYREF: {
@@ -784,7 +876,7 @@ enum_parmtype:
 				break;
 			}
 			default :
-				printf("[?? - %d], ",simpleType);
+				printf("[%s], ",cvtMonoType(simpleType));
 		}
 	}
 }
@@ -836,24 +928,32 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	if (sig->hasthis) {
 		gpointer *this = (gpointer *) rParm->gr[iParm];
 		obj = (MonoObject *) this;
-		if (method->klass->valuetype) { 
+		switch(method->klass->this_arg.type) {
+		case MONO_TYPE_VALUETYPE:
 			if (obj) {
-				printf("this:[value:%p:%016lx], ", 
-				       this, *((guint64 *)(this+sizeof(MonoObject))));
+				guint64 *value = ((void *)this + sizeof(MonoObject));
+				printf("this:[value:%p:%016lx], ", this, *value);
 			} else 
 				printf ("this:[NULL], ");
-		} else {
+			break;
+		case MONO_TYPE_STRING:
 			if (obj) {
-				class = obj->vtable->klass;
-				if (class == mono_defaults.string_class) {
-					printf ("this:[STRING:%p:%s], ", 
-						obj, mono_string_to_utf8 ((MonoString *)obj));
-				} else {
-					printf ("this:%p[%s.%s], ", 
-						obj, class->name_space, class->name);
-				}
+				if (obj->vtable) {
+					class = obj->vtable->klass;
+					if (class == mono_defaults.string_class) {
+						printf ("this:[STRING:%p:%s], ", 
+							obj, mono_string_to_utf8 ((MonoString *)obj));
+					} else {
+						printf ("this:%p[%s.%s], ", 
+							obj, class->name_space, class->name);
+					}
+				} else 
+					printf("vtable:[NULL], ");
 			} else 
-				printf ("this:NULL, ");
+				printf ("this:[NULL], ");
+			break;
+		default :
+			printf("this[%s]: %p, ",cvtMonoType(method->klass->this_arg.type),this);
 		}
 		oParm++;
 	}
