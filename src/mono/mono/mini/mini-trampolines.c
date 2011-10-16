@@ -1438,7 +1438,6 @@ gpointer
 mono_create_monitor_enter_trampoline (void)
 {
 	static gpointer code;
-	MonoTrampInfo *info;
 
 	if (mono_aot_only) {
 		if (!code)
@@ -1450,6 +1449,8 @@ mono_create_monitor_enter_trampoline (void)
 	mono_trampolines_lock ();
 
 	if (!code) {
+		MonoTrampInfo *info;
+
 		code = mono_arch_create_monitor_enter_trampoline (&info, FALSE);
 		if (info) {
 			mono_save_trampoline_xdebug_info (info);
@@ -1472,7 +1473,6 @@ gpointer
 mono_create_monitor_exit_trampoline (void)
 {
 	static gpointer code;
-	MonoTrampInfo *info;
 
 	if (mono_aot_only) {
 		if (!code)
@@ -1484,6 +1484,8 @@ mono_create_monitor_exit_trampoline (void)
 	mono_trampolines_lock ();
 
 	if (!code) {
+		MonoTrampInfo *info;
+
 		code = mono_arch_create_monitor_exit_trampoline (&info, FALSE);
 		if (info) {
 			mono_save_trampoline_xdebug_info (info);
