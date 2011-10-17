@@ -324,7 +324,8 @@ typedef enum {
 	ERR_UNLOADED = 103,
 	ERR_NO_INVOCATION = 104,
 	ERR_ABSENT_INFORMATION = 105,
-	ERR_NO_SEQ_POINT_AT_IL_OFFSET = 106
+	ERR_NO_SEQ_POINT_AT_IL_OFFSET = 106,
+	ERR_LOADER_ERROR = 200, /*XXX extend the protocol to pass this information down the pipe */
 } ErrorCode;
 
 typedef enum {
@@ -368,6 +369,10 @@ typedef enum {
 	INVOKE_FLAG_DISABLE_BREAKPOINTS = 1,
 	INVOKE_FLAG_SINGLE_THREADED = 2
 } InvokeFlags;
+
+typedef enum {
+	BINDING_FLAGS_IGNORE_CASE = 0x70000000,
+} BindingFlagsExtensions;
 
 typedef enum {
 	CMD_VM_VERSION = 1,
@@ -449,7 +454,8 @@ typedef enum {
 	CMD_TYPE_GET_FIELD_CATTRS = 11,
 	CMD_TYPE_GET_PROPERTY_CATTRS = 12,
 	CMD_TYPE_GET_SOURCE_FILES_2 = 13,
-	CMD_TYPE_GET_VALUES_2 = 14
+	CMD_TYPE_GET_VALUES_2 = 14,
+	CMD_TYPE_GET_METHODS_BY_NAME_FLAGS = 15,
 } CmdType;
 
 typedef enum {
@@ -6854,6 +6860,24 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_byte (buf, 1);
 		else
 			buffer_add_byte (buf, 0);
+		break;
+	}
+	case CMD_TYPE_GET_METHODS_BY_NAME_FLAGS: {
+		char *name = decode_string (p, &p, end);
+		int i, flags = decode_int (p, &p, end);
+		MonoException *ex = NULL;
+		GPtrArray *array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, (flags & BINDING_FLAGS_IGNORE_CASE) != 0, &ex);
+
+		if (!array)
+			return ERR_LOADER_ERROR;
+		buffer_add_int (buf, array->len);
+		for (i = 0; i < array->len; ++i) {
+			MonoMethod *method = g_ptr_array_index (array, i);
+			buffer_add_methodid (buf, domain, method);
+		}
+
+		g_ptr_array_free (array, TRUE);
+		g_free (name);
 		break;
 	}
 	default:
