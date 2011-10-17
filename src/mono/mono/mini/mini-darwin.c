@@ -228,7 +228,7 @@ mono_runtime_syscall_fork ()
 }
 
 gboolean
-mono_gdb_render_native_backtraces ()
+mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
 	const char *argv [5];
 	char gdb_template [] = "/tmp/mono-gdb-commands.XXXXXX";
@@ -241,7 +241,7 @@ mono_gdb_render_native_backtraces ()
 	if (mkstemp (gdb_template) != -1) {
 		FILE *gdb_commands = fopen (gdb_template, "w");
 
-		fprintf (gdb_commands, "attach %ld\n", (long) getpid ());
+		fprintf (gdb_commands, "attach %ld\n", (long) crashed_pid);
 		fprintf (gdb_commands, "info threads\n");
 		fprintf (gdb_commands, "thread apply all bt\n");
 

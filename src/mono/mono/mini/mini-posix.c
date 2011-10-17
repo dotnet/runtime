@@ -652,7 +652,7 @@ mono_runtime_syscall_fork ()
 }
 
 gboolean
-mono_gdb_render_native_backtraces ()
+mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
 	const char *argv [9];
 	char buf1 [128];
@@ -663,7 +663,7 @@ mono_gdb_render_native_backtraces ()
 	}
 
 	argv [1] = "-ex";
-	sprintf (buf1, "attach %ld", (long)getpid ());
+	sprintf (buf1, "attach %ld", (long) crashed_pid);
 	argv [2] = buf1;
 	argv [3] = "--ex";
 	argv [4] = "info threads";

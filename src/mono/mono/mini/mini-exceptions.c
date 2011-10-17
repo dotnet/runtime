@@ -2223,6 +2223,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		pid_t pid;
 		int status;
 		char buffer [1024];
+		pid_t crashed_pid = getpid ();
 
 		res = pipe (stdout_pipe);
 		g_assert (res != -1);
@@ -2241,7 +2242,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 			for (i = getdtablesize () - 1; i >= 3; i--)
 				close (i);
 
-			if (!mono_gdb_render_native_backtraces ())
+			if (!mono_gdb_render_native_backtraces (crashed_pid))
 				close (STDOUT_FILENO);
 
 			exit (1);
