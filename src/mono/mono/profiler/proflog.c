@@ -563,6 +563,7 @@ dump_header (MonoProfiler *profiler)
 	}
 #else
 	fwrite (hbuf, p - hbuf, 1, profiler->file);
+	fflush (profiler->file);
 #endif
 }
 
@@ -588,6 +589,7 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 #endif
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fwrite (buf->buf, buf->data - buf->buf, 1, profiler->file);
+		fflush (profiler->file);
 #if defined (HAVE_SYS_ZLIB)
 	}
 #endif
