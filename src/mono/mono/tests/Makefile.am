@@ -13,7 +13,7 @@ JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mon
 
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_5
 with_mono_path_moonlight = MONO_PATH=$(mcs_topdir)/class/lib/moonlight_raw
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
@@ -21,10 +21,10 @@ RUNTIME_MOONLIGHT = $(with_mono_path_moonlight) $(top_builddir)/runtime/mono-wra
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
-	$(RUNTIME) $(mcs_topdir)/class/lib/net_4_0/mkbundle.exe
+	$(RUNTIME) $(mcs_topdir)/class/lib/net_4_5/mkbundle.exe
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
-ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_4_0/ilasm.exe
+ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_4_5/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
