@@ -2291,6 +2291,8 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 				/* Already terminated */
 				return TRUE;
 
+			tls->context.valid = FALSE;
+
 			/*
 			 * We are in a difficult position: we want to be able to provide stack
 			 * traces for this thread, but we can't use the current ctx+lmf, since
@@ -2324,9 +2326,9 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 				tls->async_state.unwind_data [MONO_UNWIND_DATA_LMF] = data.lmf;
 				tls->async_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = tls->thread->jit_data;
 			} else {
+				/* No managed frames */
 				tls->async_state.valid = FALSE;
 			}
-
 			mono_memory_barrier ();
 
 			tls->suspended = TRUE;
