@@ -269,7 +269,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 7
+#define MINOR_VERSION 8
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -385,7 +385,8 @@ typedef enum {
 	CMD_VM_INVOKE_METHOD = 7,
 	CMD_VM_SET_PROTOCOL_VERSION = 8,
 	CMD_VM_ABORT_INVOKE = 9,
-	CMD_VM_SET_KEEPALIVE = 10
+	CMD_VM_SET_KEEPALIVE = 10,
+	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11
 } CmdVM;
 
 typedef enum {
@@ -414,7 +415,7 @@ typedef enum {
 	CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY = 4,
 	CMD_APPDOMAIN_CREATE_STRING = 5,
 	CMD_APPDOMAIN_GET_CORLIB = 6,
-	CMD_APPDOMAIN_CREATE_BOXED_VALUE = 7,
+	CMD_APPDOMAIN_CREATE_BOXED_VALUE = 7
 } CmdAppDomain;
 
 typedef enum {
@@ -1893,6 +1894,10 @@ typedef struct {
 	GHashTable *val_to_id [ID_NUM];
 	/* Classes whose class load event has been sent */
 	GHashTable *loaded_classes;
+	/* Maps MonoClass->GPtrArray of file names */
+	GHashTable *source_files;
+	/* Maps source file basename -> GSList of classes */
+	GHashTable *source_file_to_class;
 } AgentDomainInfo;
 
 /* Maps id -> Id */
@@ -1927,12 +1932,30 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain)
 {
 	AgentDomainInfo *info = domain_jit_info (domain)->agent_info;
 	int i, j;
+	GHashTableIter iter;
+	GPtrArray *file_names;
+	char *basename;
+	GSList *l;
 
 	if (info) {
 		for (i = 0; i < ID_NUM; ++i)
 			if (info->val_to_id [i])
 				g_hash_table_destroy (info->val_to_id [i]);
 		g_hash_table_destroy (info->loaded_classes);
+
+		g_hash_table_iter_init (&iter, info->source_files);
+		while (g_hash_table_iter_next (&iter, NULL, (void**)&file_names)) {
+			for (i = 0; i < file_names->len; ++i)
+				g_free (g_ptr_array_index (file_names, i));
+			g_ptr_array_free (file_names, TRUE);
+		}
+
+		g_hash_table_iter_init (&iter, info->source_file_to_class);
+		while (g_hash_table_iter_next (&iter, (void**)&basename, (void**)&l)) {
+			g_free (basename);
+			g_slist_free (l);
+		}
+
 		g_free (info);
 	}
 
@@ -1965,6 +1988,8 @@ get_agent_domain_info (MonoDomain *domain)
 	if (!info) {
 		info = domain_jit_info (domain)->agent_info = g_new0 (AgentDomainInfo, 1);
 		info->loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		info->source_files = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		info->source_file_to_class = g_hash_table_new (g_str_hash, g_str_equal);
 	}
 
 	mono_domain_unlock (domain);
@@ -5846,6 +5871,37 @@ is_really_suspended (gpointer key, gpointer value, gpointer user_data)
 	return res;
 }
 
+static GPtrArray*
+get_source_files_for_type (MonoClass *klass)
+{
+	gpointer iter = NULL;
+	MonoMethod *method;
+	char *source_file;
+	GPtrArray *files;
+	int i;
+
+	files = g_ptr_array_new ();
+
+	while ((method = mono_class_get_methods (klass, &iter))) {
+		MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
+
+		if (minfo) {
+			mono_debug_symfile_get_line_numbers (minfo, &source_file, NULL, NULL, NULL);
+			if (!source_file)
+				continue;
+
+			for (i = 0; i < files->len; ++i)
+				if (!strcmp (g_ptr_array_index (files, i), source_file))
+					break;
+			if (i == files->len)
+				g_ptr_array_add (files, g_strdup (source_file));
+			g_free (source_file);
+		}
+	}
+
+	return files;
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -6082,6 +6138,78 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 #else
 		NOT_IMPLEMENTED;
 #endif
+		break;
+	}
+	case CMD_VM_GET_TYPES_FOR_SOURCE_FILE: {
+		GHashTableIter iter, kiter;
+		MonoDomain *domain;
+		MonoClass *klass;
+		GPtrArray *files;
+		int i;
+		char *fname, *basename;
+		gboolean ignore_case;
+		GSList *class_list, *l;
+		GPtrArray *res_classes, *res_domains;
+
+		fname = decode_string (p, &p, end);
+		ignore_case = decode_byte (p, &p, end);
+
+		basename = g_path_get_basename (fname);
+
+		res_classes = g_ptr_array_new ();
+		res_domains = g_ptr_array_new ();
+
+		mono_loader_lock ();
+		g_hash_table_iter_init (&iter, domains);
+		while (g_hash_table_iter_next (&iter, NULL, (void**)&domain)) {
+			AgentDomainInfo *info = domain_jit_info (domain)->agent_info;
+
+			/* Update 'source_file_to_class' cache */
+			g_hash_table_iter_init (&kiter, info->loaded_classes);
+			while (g_hash_table_iter_next (&kiter, NULL, (void**)&klass)) {
+				if (!g_hash_table_lookup (info->source_files, klass)) {
+					files = get_source_files_for_type (klass);
+					g_hash_table_insert (info->source_files, klass, files);
+
+					for (i = 0; i < files->len; ++i) {
+						char *s = g_ptr_array_index (files, i);
+						char *s2 = g_path_get_basename (s);
+
+						class_list = g_hash_table_lookup (info->source_file_to_class, s2);
+						if (!class_list) {
+							class_list = g_slist_prepend (class_list, klass);
+							g_hash_table_insert (info->source_file_to_class, g_strdup (s2), class_list);
+						} else {
+							class_list = g_slist_prepend (class_list, klass);
+							g_hash_table_insert (info->source_file_to_class, s2, class_list);
+						}
+
+						g_free (s2);
+					}
+				}
+			}
+
+			if (ignore_case)
+				NOT_IMPLEMENTED;
+			
+			class_list = g_hash_table_lookup (info->source_file_to_class, basename);
+			for (l = class_list; l; l = l->next) {
+				klass = l->data;
+
+				g_ptr_array_add (res_classes, klass);
+				g_ptr_array_add (res_domains, domain);
+			}
+		}
+		mono_loader_unlock ();
+
+		g_free (fname);
+		g_free (basename);
+
+		buffer_add_int (buf, res_classes->len);
+		for (i = 0; i < res_classes->len; ++i)
+			buffer_add_typeid (buf, g_ptr_array_index (res_domains, i), g_ptr_array_index (res_classes, i));
+		g_ptr_array_free (res_classes, TRUE);
+		g_ptr_array_free (res_domains, TRUE);
 		break;
 	}
 
@@ -6863,30 +6991,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	}
 	case CMD_TYPE_GET_SOURCE_FILES:
 	case CMD_TYPE_GET_SOURCE_FILES_2: {
-		gpointer iter = NULL;
-		MonoMethod *method;
 		char *source_file, *base;
 		GPtrArray *files;
 		int i;
 
-		files = g_ptr_array_new ();
-
-		while ((method = mono_class_get_methods (klass, &iter))) {
-			MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
-
-			if (minfo) {
-				mono_debug_symfile_get_line_numbers (minfo, &source_file, NULL, NULL, NULL);
-				if (!source_file)
-					continue;
-
-				for (i = 0; i < files->len; ++i)
-					if (!strcmp (g_ptr_array_index (files, i), source_file))
-						break;
-				if (i == files->len)
-					g_ptr_array_add (files, g_strdup (source_file));
-				g_free (source_file);
-			}
-		}
+		files = get_source_files_for_type (klass);
 
 		buffer_add_int (buf, files->len);
 		for (i = 0; i < files->len; ++i) {
