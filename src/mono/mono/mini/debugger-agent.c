@@ -269,7 +269,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 6
+#define MINOR_VERSION 7
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -334,7 +334,8 @@ typedef enum {
 	MOD_KIND_LOCATION_ONLY = 7,
 	MOD_KIND_EXCEPTION_ONLY = 8,
 	MOD_KIND_STEP = 10,
-	MOD_KIND_ASSEMBLY_ONLY = 11
+	MOD_KIND_ASSEMBLY_ONLY = 11,
+	MOD_KIND_SOURCE_FILE_ONLY = 12
 } ModifierKind;
 
 typedef enum {
@@ -491,6 +492,7 @@ typedef struct {
 		MonoInternalThread *thread; /* For kind == MOD_KIND_THREAD_ONLY */
 		MonoClass *exc_class; /* For kind == MONO_KIND_EXCEPTION_ONLY */
 		MonoAssembly **assemblies; /* For kind == MONO_KIND_ASSEMBLY_ONLY */
+		GHashTable *source_files; /* For kind == MONO_KIND_SOURCE_FILE_ONLY */
 	} data;
 	gboolean caught, uncaught; /* For kind == MOD_KIND_EXCEPTION_ONLY */
 } Modifier;
@@ -533,6 +535,8 @@ typedef struct {
 	/* For EVENT_KIND_USER_LOG */
 	int level;
 	char *category, *message;
+	/* For EVENT_KIND_TYPE_LOAD */
+	MonoClass *klass;
 } EventInfo;
 
 /* Dummy structure used for the profiler callbacks */
@@ -3170,6 +3174,27 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 					}
 					if (!found)
 						filtered = TRUE;
+				} else if (mod->kind == MOD_KIND_SOURCE_FILE_ONLY && ei && ei->klass) {
+					gpointer iter = NULL;
+					MonoMethod *method;
+					char *source_file;
+					gboolean found = FALSE;
+
+					while ((method = mono_class_get_methods (ei->klass, &iter))) {
+						MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
+
+						if (minfo) {
+							mono_debug_symfile_get_line_numbers (minfo, &source_file, NULL, NULL, NULL);
+							if (!source_file)
+								continue;
+							// FIXME: flags
+							if (g_hash_table_lookup (mod->data.source_files, source_file))
+								found = TRUE;
+							g_free (source_file);
+						}
+					}
+					if (!found)
+						filtered = TRUE;
 				}
 			}
 
@@ -3408,9 +3433,15 @@ process_profiler_event (EventKind event, gpointer arg)
 {
 	int suspend_policy;
 	GSList *events;
+	EventInfo ei, *ei_arg = NULL;
+
+	if (event == EVENT_KIND_TYPE_LOAD) {
+		ei.klass = arg;
+		ei_arg = &ei;
+	}
 
 	mono_loader_lock ();
-	events = create_event_list (event, NULL, NULL, NULL, &suspend_policy);
+	events = create_event_list (event, NULL, NULL, ei_arg, &suspend_policy);
 	mono_loader_unlock ();
 
 	process_event (event, arg, 0, NULL, events, suspend_policy);
@@ -6076,6 +6107,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoThread *step_thread;
 		int size = 0, depth = 0, step_thread_id = 0;
 		MonoDomain *domain;
+		Modifier *modifier;
 
 		event_kind = decode_byte (p, &p, end);
 		suspend_policy = decode_byte (p, &p, end);
@@ -6139,6 +6171,18 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 						return err;
 					}
 				}
+			} else if (mod == MOD_KIND_SOURCE_FILE_ONLY) {
+				int n = decode_int (p, &p, end);
+				int j;
+
+				modifier = &req->modifiers [i];
+				modifier->data.source_files = g_hash_table_new (g_str_hash, g_str_equal);
+				for (j = 0; j < n; ++j) {
+					char *s = decode_string (p, &p, end);
+
+					if (s)
+						g_hash_table_insert (modifier->data.source_files, s, s);
+				}
 			} else {
 				g_free (req);
 				return ERR_NOT_IMPLEMENTED;
@@ -6174,6 +6218,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		} else if (req->event_kind == EVENT_KIND_METHOD_EXIT) {
 			req->info = set_breakpoint (NULL, METHOD_EXIT_IL_OFFSET, req, NULL);
 		} else if (req->event_kind == EVENT_KIND_EXCEPTION) {
+		} else if (req->event_kind == EVENT_KIND_TYPE_LOAD) {
 		} else {
 			if (req->nmodifiers) {
 				g_free (req);
