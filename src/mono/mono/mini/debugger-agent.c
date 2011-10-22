@@ -75,6 +75,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-stack-unwinding.h>
+#include <mono/utils/mono-time.h>
 #include "debugger-agent.h"
 #include "mini.h"
 
@@ -5585,6 +5586,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	MonoLMFExt ext;
 #endif
+	MonoStopwatch watch;
 
 	if (invoke->method) {
 		/* 
@@ -5721,10 +5723,13 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 	}
 #endif
 
+	mono_stopwatch_start (&watch);
 	if (m->klass->valuetype)
 		res = mono_runtime_invoke (m, this_buf, args, &exc);
 	else
 		res = mono_runtime_invoke (m, this, args, &exc);
+	mono_stopwatch_stop (&watch);
+	DEBUG (1, fprintf (log_file, "[%p] Invoke result: %p, exc: %s, time: %ld ms.\n", (gpointer)GetCurrentThreadId (), res, exc ? exc->vtable->klass->name : NULL, mono_stopwatch_elapsed_ms (&watch)));
 	if (exc) {
 		buffer_add_byte (buf, 0);
 		buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &exc, domain);
