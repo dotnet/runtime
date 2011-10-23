@@ -390,7 +390,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		break;
 	case MONO_AOT_TYPEREF_TYPESPEC_TOKEN:
 		token = decode_value (p, &p);
-		image = load_image (module, 0, TRUE);
+		image = module->assembly->image;
 		if (!image)
 			return NULL;
 		klass = mono_class_get (image, token);
