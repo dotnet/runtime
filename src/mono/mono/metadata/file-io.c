@@ -31,6 +31,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/strenc.h>
+#include <utils/mono-io-portability.h>
 
 #undef DEBUG
 
@@ -1107,7 +1108,10 @@ ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 #if defined (TARGET_WIN32)
 	return (gunichar2) '/';	/* forward slash */
 #else
-	return (gunichar2) '/';	/* slash, same as DirectorySeparatorChar */
+	if (IS_PORTABILITY_SET)
+		return (gunichar2) '\\';	/* backslash */
+	else
+		return (gunichar2) '/';	/* forward slash */
 #endif
 }
 
