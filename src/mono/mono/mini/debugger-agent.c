@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 8
+#define MINOR_VERSION 9
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -387,7 +387,8 @@ typedef enum {
 	CMD_VM_SET_PROTOCOL_VERSION = 8,
 	CMD_VM_ABORT_INVOKE = 9,
 	CMD_VM_SET_KEEPALIVE = 10,
-	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11
+	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11,
+	CMD_VM_GET_TYPES = 12
 } CmdVM;
 
 typedef enum {
@@ -6209,6 +6210,62 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		g_free (fname);
 		g_free (basename);
+
+		buffer_add_int (buf, res_classes->len);
+		for (i = 0; i < res_classes->len; ++i)
+			buffer_add_typeid (buf, g_ptr_array_index (res_domains, i), g_ptr_array_index (res_classes, i));
+		g_ptr_array_free (res_classes, TRUE);
+		g_ptr_array_free (res_domains, TRUE);
+		break;
+	}
+	case CMD_VM_GET_TYPES: {
+		GHashTableIter iter;
+		MonoDomain *domain;
+		int i;
+		char *name;
+		gboolean ignore_case;
+		GPtrArray *res_classes, *res_domains;
+		MonoTypeNameParse info;
+
+		name = decode_string (p, &p, end);
+		ignore_case = decode_byte (p, &p, end);
+
+		if (!mono_reflection_parse_type (name, &info)) {
+			g_free (name);
+			mono_reflection_free_type_info (&info);
+			return ERR_INVALID_ARGUMENT;
+		}
+
+		res_classes = g_ptr_array_new ();
+		res_domains = g_ptr_array_new ();
+
+		mono_loader_lock ();
+		g_hash_table_iter_init (&iter, domains);
+		while (g_hash_table_iter_next (&iter, NULL, (void**)&domain)) {
+			MonoAssembly *ass;
+			gboolean type_resolve;
+			MonoType *t;
+			GSList *tmp;
+
+			mono_domain_assemblies_lock (domain);
+			for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+				ass = tmp->data;
+
+				if (ass->image) {
+					type_resolve = TRUE;
+					t = mono_reflection_get_type (ass->image, &info, ignore_case, &type_resolve);
+					if (t) {
+						g_ptr_array_add (res_classes, mono_type_get_class (t));
+						g_ptr_array_add (res_domains, domain);
+					}
+				}
+			}
+			mono_domain_assemblies_unlock (domain);
+		}
+		mono_loader_unlock ();
+
+		g_free (name);
+		mono_reflection_free_type_info (&info);
 
 		buffer_add_int (buf, res_classes->len);
 		for (i = 0; i < res_classes->len; ++i)
