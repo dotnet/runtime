@@ -15,7 +15,7 @@ gint64  mono_100ns_datetime  (void) MONO_INTERNAL;
 
 /* Stopwatch class for internal runtime use */
 typedef struct {
-	gint32 start, stop;
+	gint64 start, stop;
 } MonoStopwatch;
 
 static inline void
