@@ -1952,6 +1952,7 @@ start_helper_thread (MonoProfiler* prof)
 		close (prof->server_socket);
 		return 0;
 	}
+	slen = sizeof (server_address);
 	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen) == 0) {
 		prof->command_port = ntohs (server_address.sin_port);
 		/*fprintf (stderr, "Assigned server port: %d\n", prof->command_port);*/
