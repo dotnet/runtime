@@ -832,6 +832,10 @@ void mono_sgen_register_test_bridge_callbacks (void) MONO_INTERNAL;
 gboolean mono_sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void mono_sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 
+gboolean mono_sgen_gc_is_object_ready_for_finalization (void *object) MONO_INTERNAL;
+void mono_sgen_gc_lock (void) MONO_INTERNAL;
+void mono_sgen_gc_unlock (void) MONO_INTERNAL;
+
 enum {
 	SPACE_MAJOR,
 	SPACE_LOS

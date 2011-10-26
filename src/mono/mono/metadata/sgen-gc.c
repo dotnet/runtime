@@ -4177,6 +4177,13 @@ mono_gc_alloc_mature (MonoVTable *vtable)
  */
 #define object_is_fin_ready(obj) (!object_is_pinned (obj) && !object_is_forwarded (obj))
 
+
+gboolean
+mono_sgen_gc_is_object_ready_for_finalization (void *object)
+{
+	return !major_collector.is_object_live (object) && object_is_fin_ready (object);
+}
+
 static gboolean
 has_critical_finalizer (MonoObject *obj)
 {
@@ -7674,6 +7681,18 @@ mono_sgen_get_array_fill_vtable (void)
 		array_fill_vtable = &vtable;
 	}
 	return array_fill_vtable;
+}
+
+void
+mono_sgen_gc_lock (void)
+{
+	LOCK_GC;
+}
+
+void
+mono_sgen_gc_unlock (void)
+{
+	UNLOCK_GC;
 }
 
 #endif /* HAVE_SGEN_GC */
