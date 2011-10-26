@@ -146,7 +146,7 @@ mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 						     "dislink", "roots-table", "root-record", "statistics",
 						     "remset", "gray-queue", "store-remset", "marksweep-tables",
 						     "marksweep-block-info", "ephemeron-link", "worker-data",
-						     "bridge-data", "job-queue-entry" };
+						     "bridge-data", "job-queue-entry", "toggleref-data" };
 
 	int i;
 

@@ -652,6 +652,7 @@ enum {
 	INTERNAL_MEM_WORKER_DATA,
 	INTERNAL_MEM_BRIDGE_DATA,
 	INTERNAL_MEM_JOB_QUEUE_ENTRY,
+	INTERNAL_MEM_TOGGLEREF_DATA,
 	INTERNAL_MEM_MAX
 };
 
@@ -831,6 +832,10 @@ void mono_sgen_bridge_processing_finish (int num_objs, MonoObject **objs) MONO_I
 void mono_sgen_register_test_bridge_callbacks (void) MONO_INTERNAL;
 gboolean mono_sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void mono_sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
+
+void mono_sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_process_togglerefs (void) MONO_INTERNAL;
+
 
 gboolean mono_sgen_gc_is_object_ready_for_finalization (void *object) MONO_INTERNAL;
 void mono_sgen_gc_lock (void) MONO_INTERNAL;
