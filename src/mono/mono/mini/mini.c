@@ -3447,12 +3447,21 @@ collect_pred_seq_points (MonoBasicBlock *bb, MonoInst *ins, GSList **next, int d
 {
 	int i;
 	MonoBasicBlock *in_bb;
+	GSList *l;
 
 	for (i = 0; i < bb->in_count; ++i) {
 		in_bb = bb->in_bb [i];
 
 		if (in_bb->last_seq_point) {
-			next [in_bb->last_seq_point->backend.size] = g_slist_append (next [in_bb->last_seq_point->backend.size], GUINT_TO_POINTER (ins->backend.size));
+			int src_index = in_bb->last_seq_point->backend.size;
+			int dst_index = ins->backend.size;
+
+			/* bb->in_bb might contain duplicates */
+			for (l = next [src_index]; l; l = l->next)
+				if (GPOINTER_TO_UINT (l->data) == dst_index)
+					break;
+			if (!l)
+				next [src_index] = g_slist_append (next [src_index], GUINT_TO_POINTER (dst_index));
 		} else {
 			/* Have to look at its predecessors */
 			if (depth < 5)
@@ -3499,7 +3508,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		for (l = bb_seq_points; l; l = l->next) {
 			MonoInst *ins = l->data;
 
-			if (!(ins->flags & MONO_INST_SINGLE_STEP_LOC))
+			if (ins->inst_imm == METHOD_ENTRY_IL_OFFSET || ins->inst_imm == METHOD_EXIT_IL_OFFSET)
+				/* Used to implement method entry/exit events */
 				continue;
 
 			if (last != NULL) {
