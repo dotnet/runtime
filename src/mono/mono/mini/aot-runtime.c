@@ -503,7 +503,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	guint8 *p = buf;
 	MonoType *t;
 
-	t = g_malloc (sizeof (MonoType));
+	t = g_malloc0 (sizeof (MonoType));
 
 	while (TRUE) {
 		if (*p == MONO_TYPE_PINNED) {
