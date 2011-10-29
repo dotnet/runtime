@@ -2876,7 +2876,7 @@ find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
  *   Find the sequence point corresponding to the IL offset IL_OFFSET, which
  * should be the location of a sequence point.
  */
-static SeqPoint*
+static G_GNUC_UNUSED SeqPoint*
 find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info)
 {
 	MonoSeqPointInfo *seq_points;
@@ -3265,6 +3265,8 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	MonoDomain *domain = mono_domain_get ();
 	MonoThread *thread = NULL;
 	gboolean send_success = FALSE;
+	static int ecount;
+	int nevents;
 
 	if (!inited) {
 		DEBUG (2, fprintf (log_file, "Debugger agent not initialized yet: dropping %s\n", event_to_string (event)));
@@ -3313,13 +3315,16 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		}
 	}
 
+	nevents = g_slist_length (events);
 	buffer_init (&buf, 128);
 	buffer_add_byte (&buf, suspend_policy);
-	buffer_add_int (&buf, g_slist_length (events)); // n of events
+	buffer_add_int (&buf, nevents);
 
 	for (l = events; l; l = l->next) {
 		buffer_add_byte (&buf, event); // event kind
 		buffer_add_int (&buf, GPOINTER_TO_INT (l->data)); // request id
+
+		ecount ++;
 
 		if (!thread)
 			thread = mono_thread_current ();
@@ -3419,9 +3424,8 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	if (event == EVENT_KIND_VM_START) {
 		vm_start_event_sent = TRUE;
 	}
-	
-	DEBUG (1, fprintf (log_file, "[%p] Sent event %s, suspend=%d.\n", (gpointer)GetCurrentThreadId (), event_to_string (event), suspend_policy));
 
+	DEBUG (1, fprintf (log_file, "[%p] Sent %d events %s(%d), suspend=%d.\n", (gpointer)GetCurrentThreadId (), nevents, event_to_string (event), ecount, suspend_policy));
 
 	switch (suspend_policy) {
 	case SUSPEND_POLICY_NONE:
@@ -4238,7 +4242,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 			g_ptr_array_add (ss_reqs, req);
 
 		/* Start single stepping again from the current sequence point */
-		ss_start (ss_req, ji->method, sp, info, ctx, NULL, FALSE);
+		ss_start (ss_req, ji->method, sp, info, ctx, tls, FALSE);
 	}
 	
 	if (ss_reqs->len > 0)
@@ -4402,8 +4406,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 	GSList *events;
 	MonoContext *ctx = &tls->restore_ctx;
 	SeqPoint *sp;
-
-	// FIXME: Speed this up
+	MonoSeqPointInfo *info;
 
 	ip = MONO_CONTEXT_GET_IP (ctx);
 
@@ -4428,24 +4431,6 @@ process_single_step_inner (DebuggerTlsData *tls)
 		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (ji->method, TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
 	}
 
-	/*
-	 * We implement step over/out by single stepping until we reach the same 
-	 * frame/parent frame.
-	 * FIXME:
-	 * - this is slow
-	 * - stack growing upward
-	 * - localloc
-	 * - exceptions
-	 */
-	if (ss_req->depth != STEP_DEPTH_INTO) {
-		if (ss_req->depth == STEP_DEPTH_OVER && MONO_CONTEXT_GET_SP (ctx) < ss_req->last_sp)
-			return;
-		if (ss_req->depth == STEP_DEPTH_OUT && MONO_CONTEXT_GET_SP (ctx) <= ss_req->last_sp)
-			return;
-
-		ss_req->last_sp = MONO_CONTEXT_GET_SP (ctx);
-	}
-
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 	g_assert (ji);
 	g_assert (ji->method);
@@ -4465,12 +4450,17 @@ process_single_step_inner (DebuggerTlsData *tls)
 	 * The ip points to the instruction causing the single step event, which is before
 	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-	sp = find_next_seq_point_for_native_offset (domain, ji->method, (guint8*)ip - (guint8*)ji->code_start, NULL);
+	sp = find_next_seq_point_for_native_offset (domain, ji->method, (guint8*)ip - (guint8*)ji->code_start, &info);
 	if (!sp)
 		return;
 	il_offset = sp->il_offset;
 
+	// FIXME: No tests fail if this is disabled
+#if 0
 	if (ss_req->size == STEP_SIZE_LINE) {
+		// FIXME:
+		NOT_IMPLEMENTED;
+
 		/* Step until a different source line is reached */
 		MonoDebugMethodInfo *minfo;
 
@@ -4499,6 +4489,10 @@ process_single_step_inner (DebuggerTlsData *tls)
 			}
 		}
 	}
+#endif
+
+	/* Start single stepping again from the current sequence point */
+	ss_start (ss_req, ji->method, sp, info, ctx, tls, FALSE);
 
 	// FIXME: Has to lock earlier
 
@@ -4661,6 +4655,8 @@ ss_stop (SingleStepReq *ss_req)
  * ss_start:
  *
  *   Start the single stepping operation given by SS_REQ from the sequence point SP.
+ * If CTX is not set, then this can target any thread. If CTX is set, then TLS should
+ * belong to the same thread as CTX.
  */
 static void
 ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch)
@@ -4668,6 +4664,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	int i, frame_index;
 	SeqPoint *next_sp;
 	MonoBreakpoint *bp;
+	gboolean enable_global = FALSE;
 
 	/* Stop the previous operation */
 	ss_stop (ss_req);
@@ -4678,22 +4675,41 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	if (step_to_catch) {
 		bp = set_breakpoint (method, sp->il_offset, ss_req->req, NULL);
 		ss_req->bps = g_slist_append (ss_req->bps, bp);
-	} else if (ss_req->depth == STEP_DEPTH_OVER) {
+	} else {
 		frame_index = 1;
+
+		if ((!sp || sp->next_len == 0 || ss_req->depth == STEP_DEPTH_OUT) && ctx) {
+			/* Need parent frames */
+			if (!tls->context.valid)
+				mono_thread_state_init_from_monoctx (&tls->context, ctx);
+			compute_frame_info (tls->thread, tls);
+		}
+
 		/*
 		 * Find the first sequence point in the current or in a previous frame which
 		 * is not the last in its method.
 		 */
-		while (sp && sp->next_len == 0) {
-			sp = NULL;
-			if (tls && frame_index < tls->frame_count) {
+		if (ss_req->depth == STEP_DEPTH_OUT) {
+			/* Ignore seq points in current method */
+			while (frame_index < tls->frame_count) {
 				StackFrame *frame = tls->frames [frame_index];
 
 				method = frame->method;
-				if (frame->il_offset != -1) {
-					sp = find_seq_point (frame->domain, frame->method, frame->il_offset, &info);
-				}
+				sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
 				frame_index ++;
+				if (sp && sp->next_len != 0)
+					break;
+			}
+		} else {
+			while (sp && sp->next_len == 0) {
+				sp = NULL;
+				if (frame_index < tls->frame_count) {
+					StackFrame *frame = tls->frames [frame_index];
+
+					method = frame->method;
+					sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
+					frame_index ++;
+				}
 			}
 		}
 
@@ -4705,9 +4721,18 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 				ss_req->bps = g_slist_append (ss_req->bps, bp);
 			}
 		}
+
+		if (ss_req->depth == STEP_DEPTH_INTO) {
+			/* Enable global stepping so we stop at method entry too */
+			enable_global = TRUE;
+		}
 	}
 
-	if (!ss_req->bps) {
+	if (enable_global) {
+		DEBUG (1, fprintf (log_file, "[dbg] Turning on global single stepping.\n"));
+		ss_req->global = TRUE;
+		start_single_stepping ();
+	} else if (!ss_req->bps) {
 		DEBUG (1, fprintf (log_file, "[dbg] Turning on global single stepping.\n"));
 		ss_req->global = TRUE;
 		start_single_stepping ();
@@ -4826,7 +4851,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		}
 	}
 
-	ss_start (ss_req, method, sp, info, NULL, tls, step_to_catch);
+	ss_start (ss_req, method, sp, info, &tls->context.ctx, tls, step_to_catch);
 
 	return 0;
 }
@@ -7477,10 +7502,17 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		int i, start_frame, length;
 
 		// Wait for suspending if it already started
+		// FIXME: Races with suspend_count
+		while (!is_suspended ()) {
+			if (suspend_count)
+				wait_for_suspend ();
+		}
+		/*
 		if (suspend_count)
 			wait_for_suspend ();
 		if (!is_suspended ())
 			return ERR_NOT_SUSPENDED;
+		*/
 
 		start_frame = decode_int (p, &p, end);
 		length = decode_int (p, &p, end);

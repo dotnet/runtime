@@ -6261,7 +6261,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * stack is empty.
 		 */
 		if (seq_points && sp == stack_start) {
-			NEW_SEQ_POINT (cfg, ins, ip - header->code, TRUE);
+			/*
+			 * Make methods interruptable at the beginning, and at the targets of
+			 * backward branches.
+			 * Also, do this at the start of every bblock too,
+			 * to be able to handle instructions with inprecise control flow like
+			 * throw/endfinally.
+			 * FIXME: Avoid this somehow.
+			 */
+			gboolean intr_loc = ip == header->code || cfg->cbb->in_count > 1 || !cfg->cbb->last_ins;
+
+			/* Avoid sequence points on empty IL like .volatile */
+			// FIXME: Enable this
+			//if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_SEQ_POINT)) {
+			NEW_SEQ_POINT (cfg, ins, ip - header->code, intr_loc);
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 
