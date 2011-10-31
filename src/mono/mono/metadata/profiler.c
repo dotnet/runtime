@@ -1141,7 +1141,7 @@ mono_profiler_load (const char *desc)
 		const char* col = strchr (desc, ':');
 		char* libname;
 		char *mname;
-		gboolean res;
+		gboolean res = FALSE;
 
 		if (col != NULL) {
 			mname = g_memdup (desc, col - desc + 1);
