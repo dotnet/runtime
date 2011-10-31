@@ -5926,22 +5926,6 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 }
 
 /*
- * mono_arch_get_ip_for_breakpoint:
- *
- *   See mini-amd64.c for docs.
- */
-guint8*
-mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	/* ip points at the ldptr instruction */
-	ip -= PPC_LOAD_SEQUENCE_LENGTH;
-
-	return ip;
-}
-
-/*
  * mono_arch_skip_breakpoint:
  *
  *   See mini-amd64.c for docs.
@@ -5993,20 +5977,6 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 		return TRUE;
 	else
 		return FALSE;
-}
-
-/*
- * mono_arch_get_ip_for_single_step:
- *
- *   See mini-amd64.c for docs.
- */
-guint8*
-mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	/* ip points after the ldptr instruction */
-	return ip;
 }
 
 /*

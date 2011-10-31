@@ -6301,28 +6301,6 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_get_ip_for_breakpoint.                  */
-/*                                                                  */
-/* Function	- Convert the IP in the CTX to the address where a  */
-/*                breakpoint was placed.			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-guint8*
-mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	/* ip points to the instruction causing the fault */
-	ip -= BREAKPOINT_SIZE;
-
-	return ip;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_skip_breakpoint.                        */
 /*                                                                  */
 /* Function	- Modify the CTX so the IP is placed after the 	    */
@@ -6390,25 +6368,6 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 		return TRUE;
 	else
 		return FALSE;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_get_ip_for_single_step.                 */
-/*                                                                  */
-/* Function	- Convert the IP in ctx to the address stored in    */
-/*		  seq_points.					    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-guint8*
-mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	return ip;
 }
 
 /*========================= End of Function ========================*/

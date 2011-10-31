@@ -3817,6 +3817,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * Have to emit nops to keep the difference between the offset
 				 * stored in seq_points and breakpoint instruction constant,
 				 * mono_arch_get_ip_for_breakpoint () depends on this.
+				 * FIXME: This is no longer needed.
 				 */
 				if (val & 0xFF00)
 					ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF00) >> 8, 24);
@@ -6161,31 +6162,6 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 	} else {
 		return FALSE;
 	}
-}
-
-guint8*
-mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	if (ji->from_aot)
-		ip -= 6 * 4;
-	else if (mini_get_debug_options ()->soft_breakpoints)
-		ip -= 4;
-	else
-		ip -= 12;
-
-	return ip;
-}
-
-guint8*
-mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	ip += 4;
-
-	return ip;
 }
 
 /*

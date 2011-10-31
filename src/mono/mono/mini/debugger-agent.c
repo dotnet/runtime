@@ -2788,33 +2788,6 @@ is_suspended (void)
 }
 
 /*
- * find_seq_point_for_native_offset:
- *
- *   Find the sequence point corresponding to the native offset NATIVE_OFFSET, which
- * should be the location of a sequence point.
- */
-static SeqPoint*
-find_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
-{
-	MonoSeqPointInfo *seq_points;
-	int i;
-
-	mono_domain_lock (domain);
-	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-	mono_domain_unlock (domain);
-	g_assert (seq_points);
-
-	*info = seq_points;
-
-	for (i = 0; i < seq_points->len; ++i) {
-		if (seq_points->seq_points [i].native_offset == native_offset)
-			return &seq_points->seq_points [i];
-	}
-
-	return NULL;
-}
-
-/*
  * find_next_seq_point_for_native_offset:
  *
  *   Find the first sequence point after NATIVE_OFFSET.
@@ -2830,7 +2803,8 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	mono_domain_unlock (domain);
 	g_assert (seq_points);
 
-	*info = seq_points;
+	if (info)
+		*info = seq_points;
 
 	for (i = 0; i < seq_points->len; ++i) {
 		if (seq_points->seq_points [i].native_offset >= native_offset)
@@ -2856,7 +2830,8 @@ find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	mono_domain_unlock (domain);
 	g_assert (seq_points);
 
-	*info = seq_points;
+	if (info)
+		*info = seq_points;
 
 	for (i = seq_points->len - 1; i >= 0; --i) {
 		if (seq_points->seq_points [i].native_offset <= native_offset)
@@ -2891,40 +2866,6 @@ find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSe
 	}
 
 	return NULL;
-}
-
-/*
- * compute_il_offset:
- *
- *    Compute the IL offset corresponding to NATIVE_OFFSET, which should be
- * a location of a sequence point.
- * We use this function instead of mono_debug_il_offset_from_address () etc,
- * which doesn't seem to work in a lot of cases.
- */
-static gint32
-compute_il_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset)
-{
-	MonoSeqPointInfo *seq_points;
-	int i, last_il_offset, seq_il_offset, seq_native_offset;
-
-	mono_domain_lock (domain);
-	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-	mono_domain_unlock (domain);
-	g_assert (seq_points);
-
-	last_il_offset = -1;
-
-	/* Find the sequence point */
-	for (i = 0; i < seq_points->len; ++i) {
-		seq_il_offset = seq_points->seq_points [i].il_offset;
-		seq_native_offset = seq_points->seq_points [i].native_offset;
-
-		if (seq_native_offset > native_offset)
-			break;
-		last_il_offset = seq_il_offset;
-	}
-
-	return last_il_offset;
 }
 
 typedef struct {
@@ -3781,6 +3722,7 @@ typedef struct {
 	guint8 *ip;
 	MonoJitInfo *ji;
 	MonoDomain *domain;
+	SeqPoint *sp;
 } BreakpointInstance;
 
 /*
@@ -3826,18 +3768,16 @@ static void
 insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo *ji, MonoBreakpoint *bp, MonoError *error)
 {
 	int i, count;
-	gint32 il_offset = -1, native_offset;
 	BreakpointInstance *inst;
+	SeqPoint *sp = NULL;
 
 	if (error)
 		mono_error_init (error);
 
-	native_offset = 0;
 	for (i = 0; i < seq_points->len; ++i) {
-		il_offset = seq_points->seq_points [i].il_offset;
-		native_offset = seq_points->seq_points [i].native_offset;
+		sp = &seq_points->seq_points [i];
 
-		if (il_offset == bp->il_offset)
+		if (sp->il_offset == bp->il_offset)
 			break;
 	}
 
@@ -3854,8 +3794,9 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	}
 
 	inst = g_new0 (BreakpointInstance, 1);
-	inst->native_offset = native_offset;
-	inst->ip = (guint8*)ji->code_start + native_offset;
+	inst->sp = sp;
+	inst->native_offset = sp->native_offset;
+	inst->ip = (guint8*)ji->code_start + sp->native_offset;
 	inst->ji = ji;
 	inst->domain = domain;
 
@@ -3875,7 +3816,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 #endif
 	}
 
-	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x.\n", mono_method_full_name (ji->method, TRUE), (int)il_offset));	
+	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x.\n", mono_method_full_name (ji->method, TRUE), (int)sp->il_offset));	
 }
 
 static void
@@ -4145,7 +4086,7 @@ static void
 process_breakpoint_inner (DebuggerTlsData *tls)
 {
 	MonoJitInfo *ji;
-	guint8 *orig_ip, *ip;
+	guint8 *ip;
 	int i, j, suspend_policy;
 	guint32 native_offset;
 	MonoBreakpoint *bp;
@@ -4154,29 +4095,26 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
 	MonoContext *ctx = &tls->restore_ctx;
+	MonoSeqPointInfo *info;
+	SeqPoint *sp;
 
 	// FIXME: Speed this up
 
-	orig_ip = ip = MONO_CONTEXT_GET_IP (ctx);
+	ip = MONO_CONTEXT_GET_IP (ctx);
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
 	g_assert (ji);
 	g_assert (ji->method);
 
+	if (ji->method->wrapper_type || tls->disable_breakpoints)
+		return;
+
 	/* Compute the native offset of the breakpoint from the ip */
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-	ip = mono_arch_get_ip_for_breakpoint (ji, ctx);
 	native_offset = ip - (guint8*)ji->code_start;	
-#else
-	NOT_IMPLEMENTED;
-#endif
 
 	/* 
 	 * Skip the instruction causing the breakpoint signal.
 	 */
 	mono_arch_skip_breakpoint (ctx);
-
-	if (ji->method->wrapper_type || tls->disable_breakpoints)
-		return;
 
 	bp_reqs = g_ptr_array_new ();
 	ss_reqs = g_ptr_array_new ();
@@ -4185,6 +4123,12 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, native_offset));
 
 	mono_loader_lock ();
+
+	/*
+	 * The ip points to the instruction causing the breakpoint event, which is after
+	 * the offset recorded in the seq point map, so find the prev seq point before ip.
+	 */
+	sp = find_prev_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
 
 	bp = NULL;
 	for (i = 0; i < breakpoints->len; ++i) {
@@ -4195,7 +4139,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 
 		for (j = 0; j < bp->children->len; ++j) {
 			inst = g_ptr_array_index (bp->children, j);
-			if (inst->ji == ji && inst->native_offset == native_offset) {
+			if (inst->ji == ji && inst->sp == sp) {
 				if (bp->req->event_kind == EVENT_KIND_STEP) {
 					g_ptr_array_add (ss_reqs_orig, bp->req);
 				} else {
@@ -4205,33 +4149,11 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 		}
 	}
 	if (bp_reqs->len == 0 && ss_reqs_orig->len == 0) {
-		MonoSeqPointInfo *seq_points;
-		int seq_il_offset, seq_native_offset;
-		MonoDomain *domain = mono_domain_get ();
-
 		/* Maybe a method entry/exit event */
-		mono_domain_lock (domain);
-		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, ji->method);
-		mono_domain_unlock (domain);
-		if (!seq_points) {
-			// FIXME: Generic sharing */
-			mono_loader_unlock ();
-			return;
-		}
-		g_assert (seq_points);
-
-		for (i = 0; i < seq_points->len; ++i) {
-			seq_il_offset = seq_points->seq_points [i].il_offset;
-			seq_native_offset = seq_points->seq_points [i].native_offset;
-
-			if (native_offset == seq_native_offset) {
-				if (seq_il_offset == METHOD_ENTRY_IL_OFFSET)
-					kind = EVENT_KIND_METHOD_ENTRY;
-				else if (seq_il_offset == METHOD_EXIT_IL_OFFSET)
-					kind = EVENT_KIND_METHOD_EXIT;
-				break;
-			}
-		}
+		if (sp->il_offset == METHOD_ENTRY_IL_OFFSET)
+			kind = EVENT_KIND_METHOD_ENTRY;
+		else if (sp->il_offset == METHOD_EXIT_IL_OFFSET)
+			kind = EVENT_KIND_METHOD_EXIT;
 	}
 
 	/* Process single step requests */
@@ -4239,11 +4161,6 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 		EventRequest *req = g_ptr_array_index (ss_reqs_orig, i);
 		SingleStepReq *ss_req = req->info;
 		gboolean hit = TRUE;
-		MonoSeqPointInfo *info;
-		SeqPoint *sp;
-
-		sp = find_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
-		g_assert (sp);
 
 		if (ss_req->size == STEP_SIZE_LINE) {
 			/* Have to check whenever a different source line was reached */
@@ -4433,6 +4350,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 	MonoDomain *domain;
 	GSList *events;
 	MonoContext *ctx = &tls->restore_ctx;
+	SeqPoint *sp;
 
 	// FIXME: Speed this up
 
@@ -4492,24 +4410,14 @@ process_single_step_inner (DebuggerTlsData *tls)
 	if (ji->method->klass == mono_defaults.string_class && (!strcmp (ji->method->name, "memset") || strstr (ji->method->name, "memcpy")))
 		return;
 
-	/* 
-	 * The ip points to the instruction causing the single step event, convert it
-	 * to the offset stored in seq_points.
+	/*
+	 * The ip points to the instruction causing the single step event, which is before
+	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-	ip = mono_arch_get_ip_for_single_step (ji, ctx);
-#else
-	g_assert_not_reached ();
-#endif
-
-	/* 
-	 * mono_debug_lookup_source_location () doesn't work for IL offset 0 for 
-	 * example, so do things by hand.
-	 */
-	il_offset = compute_il_offset (domain, ji->method, (guint8*)ip - (guint8*)ji->code_start);
-
-	if (il_offset == -1)
+	sp = find_next_seq_point_for_native_offset (domain, ji->method, (guint8*)ip - (guint8*)ji->code_start, NULL);
+	if (!sp)
 		return;
+	il_offset = sp->il_offset;
 
 	if (ss_req->size == STEP_SIZE_LINE) {
 		/* Step until a different source line is reached */

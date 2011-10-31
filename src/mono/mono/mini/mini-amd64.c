@@ -4294,8 +4294,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* 
 			 * This is the address which is saved in seq points, 
-			 * get_ip_for_single_step () / get_ip_for_breakpoint () needs to compute this
-			 * from the address of the instruction causing the fault.
 			 */
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
@@ -8548,22 +8546,6 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 }
 
 /*
- * mono_arch_get_ip_for_breakpoint:
- *
- *   Convert the ip in CTX to the address where a breakpoint was placed.
- */
-guint8*
-mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	/* ip points to the instruction causing the fault */
-	ip -= (breakpoint_size - breakpoint_fault_size);
-
-	return ip;
-}
-
-/*
  * mono_arch_skip_breakpoint:
  *
  *   Modify CTX so the ip is placed after the breakpoint instruction, so when
@@ -8617,21 +8599,6 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 	else
 		return FALSE;
 #endif
-}
-
-/*
- * mono_arch_get_ip_for_single_step:
- *
- *   Convert the ip in CTX to the address stored in seq_points.
- */
-guint8*
-mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	ip += single_step_fault_size;
-
-	return ip;
 }
 
 /*

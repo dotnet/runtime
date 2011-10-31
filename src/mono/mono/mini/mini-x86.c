@@ -6625,36 +6625,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 #endif
 }
 
-/*
- * mono_arch_get_ip_for_breakpoint:
- *
- *   See mini-amd64.c for docs.
- */
-guint8*
-mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	return ip;
-}
-
 #define BREAKPOINT_SIZE 6
-
-/*
- * mono_arch_get_ip_for_single_step:
- *
- *   See mini-amd64.c for docs.
- */
-guint8*
-mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	/* Size of x86_alu_reg_imm */
-	ip += 6;
-
-	return ip;
-}
 
 /*
  * mono_arch_skip_breakpoint:
