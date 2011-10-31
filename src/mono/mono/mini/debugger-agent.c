@@ -4105,9 +4105,6 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	g_assert (ji);
 	g_assert (ji->method);
 
-	if (ji->method->wrapper_type || tls->disable_breakpoints)
-		return;
-
 	/* Compute the native offset of the breakpoint from the ip */
 	native_offset = ip - (guint8*)ji->code_start;	
 
@@ -4115,6 +4112,9 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 * Skip the instruction causing the breakpoint signal.
 	 */
 	mono_arch_skip_breakpoint (ctx);
+
+	if (ji->method->wrapper_type || tls->disable_breakpoints)
+		return;
 
 	bp_reqs = g_ptr_array_new ();
 	ss_reqs = g_ptr_array_new ();
