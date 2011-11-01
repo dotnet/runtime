@@ -37,10 +37,6 @@
 #include <sys/wait.h>  /* for WIFEXITED, WEXITSTATUS */
 #endif
 
-#ifdef HAVE_DL_ITERATE_PHDR
-#include <link.h>
-#endif
-
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
