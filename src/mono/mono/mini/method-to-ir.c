@@ -4853,6 +4853,39 @@ check_inline_caller_method_name_limit (MonoMethod *caller_method)
 }
 #endif
 
+static void
+emit_init_rvar (MonoCompile *cfg, MonoInst *rvar, MonoType *rtype)
+{
+	static double r8_0 = 0.0;
+	MonoInst *ins;
+
+	switch (rvar->type) {
+	case STACK_I4:
+		MONO_EMIT_NEW_ICONST (cfg, rvar->dreg, 0);
+		break;
+	case STACK_I8:
+		MONO_EMIT_NEW_I8CONST (cfg, rvar->dreg, 0);
+		break;
+	case STACK_PTR:
+	case STACK_MP:
+	case STACK_OBJ:
+		MONO_EMIT_NEW_PCONST (cfg, rvar->dreg, 0);
+		break;
+	case STACK_R8:
+		MONO_INST_NEW (cfg, ins, OP_R8CONST);
+		ins->type = STACK_R8;
+		ins->inst_p0 = (void*)&r8_0;
+		ins->dreg = rvar->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		break;
+	case STACK_VTYPE:
+		MONO_EMIT_NEW_VZERO (cfg, rvar->dreg, mono_class_from_mono_type (rtype));
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
 		guchar *ip, guint real_offset, GList *dont_inline, gboolean inline_always)
@@ -5001,6 +5034,24 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 				cfg->cbb = prev_cbb;
 			}
 		} else {
+			/* 
+			 * Its possible that the rvar is set in some prev bblock, but not in others.
+			 * (#1835).
+			 */
+			if (rvar) {
+				MonoBasicBlock *bb;
+
+				for (i = 0; i < ebblock->in_count; ++i) {
+					bb = ebblock->in_bb [i];
+
+					if (bb->last_ins && bb->last_ins->opcode == OP_NOT_REACHED) {
+						cfg->cbb = bb;
+
+						emit_init_rvar (cfg, rvar, fsig->ret);
+					}
+				}
+			}
+
 			cfg->cbb = ebblock;
 		}
 
@@ -5009,35 +5060,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			 * If the inlined method contains only a throw, then the ret var is not 
 			 * set, so set it to a dummy value.
 			 */
-			if (!ret_var_set) {
-				static double r8_0 = 0.0;
-
-				switch (rvar->type) {
-				case STACK_I4:
-					MONO_EMIT_NEW_ICONST (cfg, rvar->dreg, 0);
-					break;
-				case STACK_I8:
-					MONO_EMIT_NEW_I8CONST (cfg, rvar->dreg, 0);
-					break;
-				case STACK_PTR:
-				case STACK_MP:
-				case STACK_OBJ:
-					MONO_EMIT_NEW_PCONST (cfg, rvar->dreg, 0);
-					break;
-				case STACK_R8:
-					MONO_INST_NEW (cfg, ins, OP_R8CONST);
-					ins->type = STACK_R8;
-					ins->inst_p0 = (void*)&r8_0;
-					ins->dreg = rvar->dreg;
-					MONO_ADD_INS (cfg->cbb, ins);
-					break;
-				case STACK_VTYPE:
-					MONO_EMIT_NEW_VZERO (cfg, rvar->dreg, mono_class_from_mono_type (fsig->ret));
-					break;
-				default:
-					g_assert_not_reached ();
-				}
-			}
+			if (!ret_var_set)
+				emit_init_rvar (cfg, rvar, fsig->ret);
 
 			EMIT_NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
 			*sp++ = ins;

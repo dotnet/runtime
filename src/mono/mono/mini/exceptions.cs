@@ -2704,5 +2704,26 @@ class Tests {
 			}
 		}
 	}
+
+    public static bool t_1835_inner () {
+        bool a = true;
+        if (a) throw new Exception();
+        return true;
+    }
+
+	[MethodImpl(MethodImplOptions.NoInlining)] 
+    public static bool t_1835_inner_2 () {
+		bool b = t_1835_inner ();
+		return b;
+	}
+
+	public static int test_0_inline_retval_throw_in_branch_1835 () {
+		try {
+			t_1835_inner_2 ();
+		} catch {
+			return 0;
+		}
+		return 1;
+	}
 }
 
