@@ -177,7 +177,7 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	else
 		toggleref_array [toogleref_array_size++].weak_ref = object;
 
-	mono_sgen_gc_unlock;
+	mono_sgen_gc_unlock ();
 }
 
 /**
