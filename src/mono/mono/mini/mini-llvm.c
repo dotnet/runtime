@@ -1845,7 +1845,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	LLVMValueRef *addresses = ctx->addresses;
 	MonoCallInst *call = (MonoCallInst*)ins;
 	MonoMethodSignature *sig = call->signature;
-	LLVMValueRef callee, lcall;
+	LLVMValueRef callee = NULL, lcall;
 	LLVMValueRef *args;
 	LLVMCallInfo *cinfo;
 	GSList *l;
@@ -3420,7 +3420,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LOADV_MEMBASE:
 		case OP_VMOVE: {
 			MonoClass *klass = ins->klass;
-			LLVMValueRef src, dst, args [5];
+			LLVMValueRef src = NULL, dst, args [5];
 			gboolean done = FALSE;
 
 			if (!klass) {
@@ -3562,7 +3562,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ORPD:
 		case OP_XORPD: {
 			LLVMTypeRef t, rt;
-			LLVMValueRef v;
+			LLVMValueRef v = NULL;
 
 			switch (ins->opcode) {
 			case OP_ANDPS:
