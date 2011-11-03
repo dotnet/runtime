@@ -1223,3 +1223,35 @@ void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 	}
 }
 
+//Support for io-layer free mmap'd files.
+
+#if (defined (__MACH__) && defined (TARGET_ARM)) || defined (TARGET_ANDROID)
+
+gint64
+mono_filesize_from_path (MonoString *string)
+{
+	struct stat buf;
+	gint64 res;
+	char *path = mono_string_to_utf8 (string);
+	
+	if (stat (path, &buf) == -1)
+		res = -1;
+	else
+		res = (gint64)buf.st_size;
+
+	g_free (path);
+	return res;
+}
+
+gint64
+mono_filesize_from_fd (int fd)
+{
+	struct stat buf;
+
+	if (fstat (fd, &buf) == -1)
+		return (gint64)-1;
+
+	return (gint64)buf.st_size;
+}
+
+#endif
