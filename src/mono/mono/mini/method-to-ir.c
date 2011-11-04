@@ -6264,12 +6264,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/*
 			 * Make methods interruptable at the beginning, and at the targets of
 			 * backward branches.
-			 * Also, do this at the start of every bblock too,
+			 * Also, do this at the start of every bblock in methods with clauses too,
 			 * to be able to handle instructions with inprecise control flow like
 			 * throw/endfinally.
-			 * FIXME: Avoid this somehow.
+			 * Backward branches are handled at the end of method-to-ir ().
 			 */
-			gboolean intr_loc = ip == header->code || cfg->cbb->in_count > 1 || !cfg->cbb->last_ins;
+			gboolean intr_loc = ip == header->code || (!cfg->cbb->last_ins && cfg->header->num_clauses);
 
 			/* Avoid sequence points on empty IL like .volatile */
 			// FIXME: Enable this
@@ -10663,6 +10663,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (ins->opcode == OP_LOCAL && ins->type == STACK_OBJ)
 				MONO_EMIT_NEW_PCONST (cfg, ins->dreg, NULL);
 		}
+	}
+
+	if (seq_points) {
+		MonoBasicBlock *bb;
+
+		/*
+		 * Make seq points at backward branch targets interruptable.
+		 */
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			if (bb->code && bb->in_count > 1 && bb->code->opcode == OP_SEQ_POINT)
+				bb->code->flags |= MONO_INST_SINGLE_STEP_LOC;
 	}
 
 	/* Add a sequence point for method entry/exit events */
