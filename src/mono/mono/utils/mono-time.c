@@ -62,6 +62,11 @@ mono_100ns_datetime (void)
 #include <sys/sysctl.h>
 #endif
 
+#if defined(PLATFORM_MACOSX)
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+#endif
+
 #include <time.h>
 
 static gint64
@@ -131,6 +136,15 @@ mono_100ns_ticks (void)
 		}
 	}
 	
+#elif defined(PLATFORM_MACOSX)
+	/* http://developer.apple.com/library/mac/#qa/qa1398/_index.html */
+	static mach_timebase_info_data_t timebase;
+	guint64 now = mach_absolute_time ();
+	if (timebase.denom == 0) {
+		mach_timebase_info (&timebase);
+		timebase.denom *= 100; /* we return 100ns ticks */
+	}
+	return now * timebase.numer / timebase.denom;
 #endif
 	if (gettimeofday (&tv, NULL) == 0)
 		return ((gint64)tv.tv_sec * 1000000 + tv.tv_usec) * 10;
