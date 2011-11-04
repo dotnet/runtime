@@ -1158,7 +1158,7 @@ mono_profiler_load (const char *desc)
 				res = FALSE;
 #endif
 				if (!res)
-					g_warning ("The %s profiler wasn't found in the main executable nor could it be loaded from '%s'.", libname);
+					g_warning ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
 			g_free (libname);
 		}
 		g_free (mname);
