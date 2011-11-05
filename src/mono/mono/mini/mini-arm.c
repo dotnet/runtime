@@ -3813,20 +3813,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				/* Add the offset */
 				val = ((offset / 4) * sizeof (guint8*)) + G_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF), 0);
-				/* 
-				 * Have to emit nops to keep the difference between the offset
-				 * stored in seq_points and breakpoint instruction constant,
-				 * mono_arch_get_ip_for_breakpoint () depends on this.
-				 * FIXME: This is no longer needed.
-				 */
 				if (val & 0xFF00)
 					ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF00) >> 8, 24);
-				else
-					ARM_NOP (code);
 				if (val & 0xFF0000)
 					ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF0000) >> 16, 16);
-				else
-					ARM_NOP (code);
 				g_assert (!(val & 0xFF000000));
 				/* Load the info->bp_addrs [offset], which is either 0 or the address of a trigger page */
 				ARM_LDR_IMM (code, dreg, dreg, 0);
