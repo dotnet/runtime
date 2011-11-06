@@ -241,7 +241,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 /*========================= End of Function ========================*/
 
-#elif defined(__arm__)
+#elif (defined(__arm__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM))
 
 #include <mono/utils/mono-context.h>
 #include <mono/arch/arm/arm-codegen.h>
