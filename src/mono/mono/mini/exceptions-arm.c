@@ -59,12 +59,9 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	ctx_reg = ARMREG_R0;
 
-	/* move eip to PC */
+	/* move pc to PC */
 	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, pc));
 	ARM_STR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_PC * sizeof (mgreg_t)));
-	/* move sp to SP */
-	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, sp));
-	ARM_STR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_SP * sizeof (mgreg_t)));
 
 	/* restore everything */
 	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs));
@@ -395,7 +392,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < 16; ++i)
 			regs [i] = new_ctx->regs [i];
-		regs [ARMREG_SP] = new_ctx->sp;
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
@@ -405,7 +401,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		for (i = 0; i < 16; ++i)
 			new_ctx->regs [i] = regs [i];
 		new_ctx->pc = regs [ARMREG_LR];
-		new_ctx->sp = (gsize)cfa;
+		new_ctx->regs [ARMREG_SP] = (gsize)cfa;
 
 		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->sp)) {
 			/* remove any unused lmf */
@@ -458,8 +454,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		 * transitioned to native call, so we save the sp/fp/ip in the LMF.
 		 */
 		memcpy (&new_ctx->regs [0], &(*lmf)->iregs [0], sizeof (mgreg_t) * 13);
-		new_ctx->sp = (*lmf)->sp;
 		new_ctx->pc = (*lmf)->ip;
+		new_ctx->regs [ARMREG_SP] = (*lmf)->sp;
 		new_ctx->regs [ARMREG_FP] = (*lmf)->fp;
 
 		/* Clear thumb bit */
@@ -487,7 +483,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	arm_ucontext *my_uc = sigctx;
 
 	mctx->pc = UCONTEXT_REG_PC (my_uc);
-	mctx->sp = UCONTEXT_REG_SP (my_uc);
+	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (my_uc);
 	mctx->cpsr = UCONTEXT_REG_CPSR (my_uc);
 	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
 #endif
@@ -615,7 +611,7 @@ mono_arch_ip_from_context (void *sigctx)
 void
 mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
 {
-	guint64 sp = ctx->sp;
+	mgreg_t sp = (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 
 	// FIXME:
 	g_assert (!user_data);

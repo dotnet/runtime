@@ -257,7 +257,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	arm_ucontext *my_uc = sigctx;
 
 	mctx->pc = UCONTEXT_REG_PC (my_uc);
-	mctx->sp = UCONTEXT_REG_SP (my_uc);
+	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (my_uc);
 	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
 #endif
 }

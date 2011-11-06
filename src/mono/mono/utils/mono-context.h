@@ -220,7 +220,6 @@ typedef struct {
 
 typedef struct {
 	mgreg_t pc;
-	mgreg_t sp;
 	mgreg_t regs [16];
 	double fregs [8];
 	mgreg_t cpsr;
@@ -229,11 +228,11 @@ typedef struct {
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (mgreg_t)ip; } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (mgreg_t)bp; } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->sp = (mgreg_t)bp; } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (mgreg_t)bp; } while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->pc))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->regs [ARMREG_SP]))
 
 // FIXME:
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\

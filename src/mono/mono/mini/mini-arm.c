@@ -608,7 +608,7 @@ create_function_wrapper (gpointer function)
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoContext));
 
 	/* save ip, lr and pc into their correspodings ctx.regs slots. */
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_IP);
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + sizeof (mgreg_t) * ARMREG_IP);
 	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
 	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
 
@@ -622,7 +622,7 @@ create_function_wrapper (gpointer function)
 	/* make ctx.esp hold the actual value of sp at the beginning of this method. */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_FP, sizeof (MonoContext));
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, 4 * ARMREG_SP);
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, sp));
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
 
 	/* make ctx.eip hold the address of the call. */
 	ARM_SUB_REG_IMM8 (code, ARMREG_LR, ARMREG_LR, 4);
@@ -642,8 +642,6 @@ create_function_wrapper (gpointer function)
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, pc));
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
-	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, sp));
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
 
 	/* make ip point to the regs array, then restore everything, including pc. */
 	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs));
@@ -5969,19 +5967,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	if (reg == ARMREG_SP)
-		return ctx->sp;
-	else
-		return ctx->regs [reg];
+	return ctx->regs [reg];
 }
 
 void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
 {
-	if (reg == ARMREG_SP)
-		ctx->sp = val;
-	else
-		ctx->regs [reg] = val;
+	ctx->regs [reg] = val;
 }
 
 /*
