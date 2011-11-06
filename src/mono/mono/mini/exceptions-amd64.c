@@ -874,7 +874,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 void
 mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
 {
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
+#if defined(MONO_ARCH_USE_SIGACTION)
 	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (sigctx), NULL);
