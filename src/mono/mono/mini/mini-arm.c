@@ -622,11 +622,11 @@ create_function_wrapper (gpointer function)
 	/* make ctx.esp hold the actual value of sp at the beginning of this method. */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_FP, sizeof (MonoContext));
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, 4 * ARMREG_SP);
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, esp));
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, sp));
 
 	/* make ctx.eip hold the address of the call. */
 	ARM_SUB_REG_IMM8 (code, ARMREG_LR, ARMREG_LR, 4);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, eip));
+	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, pc));
 
 	/* r0 now points to the MonoContext */
 	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_FP);
@@ -639,10 +639,10 @@ create_function_wrapper (gpointer function)
 	ARM_BLX_REG (code, ARMREG_IP);
 
 	/* we're back; save ctx.eip and ctx.esp into the corresponding regs slots. */
-	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, eip));
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, pc));
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
-	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, esp));
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, sp));
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
 
 	/* make ip point to the regs array, then restore everything, including pc. */
@@ -5970,7 +5970,7 @@ mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	if (reg == ARMREG_SP)
-		return ctx->esp;
+		return ctx->sp;
 	else
 		return ctx->regs [reg];
 }
@@ -5979,7 +5979,7 @@ void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
 {
 	if (reg == ARMREG_SP)
-		ctx->esp = val;
+		ctx->sp = val;
 	else
 		ctx->regs [reg] = val;
 }

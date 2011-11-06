@@ -92,7 +92,7 @@ guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
 
 void
-mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
 
 typedef enum {
 	MONO_ARM_FPU_NONE = 0,
@@ -110,14 +110,14 @@ struct MonoLMF {
 	gpointer    lmf_addr;
 	/* This is only set in trampoline LMF frames */
 	MonoMethod *method;
-	gulong     sp;
-	gulong     ip;
-	gulong     fp;
+	mgreg_t    sp;
+	mgreg_t    ip;
+	mgreg_t    fp;
 	/* all but sp and pc: matches the PUSH instruction layout in the trampolines
 	 * 0-4 should be considered undefined (execpt in the magic tramp)
 	 * sp is saved at IP.
 	 */
-	gulong     iregs [14];
+	mgreg_t    iregs [14];
 };
 
 typedef struct MonoCompileArch {
@@ -194,13 +194,13 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 void
-mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
 
 void
-mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
 
 void
-mono_arm_resume_unwind (guint32 dummy1, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
 
 gboolean
 mono_arm_thumb_supported (void);
