@@ -5647,7 +5647,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 	else
 		res = mono_runtime_invoke (m, this, args, &exc);
 	mono_stopwatch_stop (&watch);
-	DEBUG (1, fprintf (log_file, "[%p] Invoke result: %p, exc: %s, time: %ld ms.\n", (gpointer)GetCurrentThreadId (), res, exc ? exc->vtable->klass->name : NULL, mono_stopwatch_elapsed_ms (&watch)));
+	DEBUG (1, fprintf (log_file, "[%p] Invoke result: %p, exc: %s, time: %ld ms.\n", (gpointer)GetCurrentThreadId (), res, exc ? exc->vtable->klass->name : NULL, (long)mono_stopwatch_elapsed_ms (&watch)));
 	if (exc) {
 		buffer_add_byte (buf, 0);
 		buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &exc, domain);

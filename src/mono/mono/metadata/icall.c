@@ -2791,6 +2791,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	 * greater flexibility.
 	 */
 	MonoMethod *m = method->method;
+	MonoMethodSignature *sig = mono_method_signature (m);
 	int pcount;
 	void *obj = this;
 
@@ -2828,8 +2829,13 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		}
 	}
 
+	if (sig->ret->byref) {
+		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef type via reflection"));
+		return NULL;
+	}
+
 	pcount = params? mono_array_length (params): 0;
-	if (pcount != mono_method_signature (m)->param_count) {
+	if (pcount != sig->param_count) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 		return NULL;
 	}

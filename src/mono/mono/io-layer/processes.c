@@ -1529,6 +1529,9 @@ gboolean CloseProcess(gpointer handle)
 	return CloseHandle (handle);
 }
 
+/*
+ * The caller owns the returned handle and must call CloseProcess () on it to clean it up.
+ */
 gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 pid)
 {
 	/* Find the process handle that corresponds to pid */
@@ -1560,8 +1563,7 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 		}
 	}
 
-	_wapi_handle_ref (handle);
-	
+	/* _wapi_search_handle () already added a ref */
 	return(handle);
 }
 

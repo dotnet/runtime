@@ -816,6 +816,7 @@ _wapi_handle_foreach (WapiHandleType type,
  * unreffed if the check function returns FALSE, so callers must not
  * rely on the handle persisting (unless the check function returns
  * TRUE)
+ * The caller owns the returned handle.
  */
 gpointer _wapi_search_handle (WapiHandleType type,
 			      gboolean (*check)(gpointer test, gpointer user),

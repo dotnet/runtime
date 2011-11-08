@@ -23,16 +23,22 @@ if HAVE_OPROFILE
 # Do something that uses OPROFILE_CFLAGS and OPROFILE_LIBS
 endif
 
+if SUPPORT_BOEHM
+LIBMONO=$(top_builddir)/mono/mini/libmono-$(API_VER).la
+else
+LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
+endif
+
 libmono_profiler_cov_la_SOURCES = mono-cov.c
-libmono_profiler_cov_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_cov_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
-libmono_profiler_aot_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 #libmono_profiler_logging_la_SOURCES = mono-profiler-logging.c
-#libmono_profiler_logging_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
+#libmono_profiler_logging_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
-libmono_profiler_iomap_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_log_la_SOURCES = proflog.c
-libmono_profiler_log_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(Z_LIBS)
+libmono_profiler_log_la_LIBADD = $(LIBMONO) $(Z_LIBS)
 
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS)

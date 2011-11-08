@@ -802,85 +802,13 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-#if defined(__native_client_codegen__) || defined(__native_client__)
-	printf("WARNING: mono_arch_sigctx_to_monoctx() called!\n");
-#endif
-
-#if defined(MONO_ARCH_USE_SIGACTION)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-	mctx->rax = UCONTEXT_REG_RAX (ctx);
-	mctx->rbx = UCONTEXT_REG_RBX (ctx);
-	mctx->rcx = UCONTEXT_REG_RCX (ctx);
-	mctx->rdx = UCONTEXT_REG_RDX (ctx);
-	mctx->rbp = UCONTEXT_REG_RBP (ctx);
-	mctx->rsp = UCONTEXT_REG_RSP (ctx);
-	mctx->rsi = UCONTEXT_REG_RSI (ctx);
-	mctx->rdi = UCONTEXT_REG_RDI (ctx);
-	mctx->rip = UCONTEXT_REG_RIP (ctx);
-	mctx->r12 = UCONTEXT_REG_R12 (ctx);
-	mctx->r13 = UCONTEXT_REG_R13 (ctx);
-	mctx->r14 = UCONTEXT_REG_R14 (ctx);
-	mctx->r15 = UCONTEXT_REG_R15 (ctx);
-#else
-	MonoContext *ctx = (MonoContext *)sigctx;
-
-	mctx->rax = ctx->rax;
-	mctx->rbx = ctx->rbx;
-	mctx->rcx = ctx->rcx;
-	mctx->rdx = ctx->rdx;
-	mctx->rbp = ctx->rbp;
-	mctx->rsp = ctx->rsp;
-	mctx->rsi = ctx->rsi;
-	mctx->rdi = ctx->rdi;
-	mctx->rip = ctx->rip;
-	mctx->r12 = ctx->r12;
-	mctx->r13 = ctx->r13;
-	mctx->r14 = ctx->r14;
-	mctx->r15 = ctx->r15;
-#endif
+	mono_sigctx_to_monoctx (sigctx, mctx);
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
-#if defined(__native_client__) || defined(__native_client_codegen__)
-  printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
-#endif
-
-#if defined(MONO_ARCH_USE_SIGACTION)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-	UCONTEXT_REG_RAX (ctx) = mctx->rax;
-	UCONTEXT_REG_RBX (ctx) = mctx->rbx;
-	UCONTEXT_REG_RCX (ctx) = mctx->rcx;
-	UCONTEXT_REG_RDX (ctx) = mctx->rdx;
-	UCONTEXT_REG_RBP (ctx) = mctx->rbp;
-	UCONTEXT_REG_RSP (ctx) = mctx->rsp;
-	UCONTEXT_REG_RSI (ctx) = mctx->rsi;
-	UCONTEXT_REG_RDI (ctx) = mctx->rdi;
-	UCONTEXT_REG_RIP (ctx) = mctx->rip;
-	UCONTEXT_REG_R12 (ctx) = mctx->r12;
-	UCONTEXT_REG_R13 (ctx) = mctx->r13;
-	UCONTEXT_REG_R14 (ctx) = mctx->r14;
-	UCONTEXT_REG_R15 (ctx) = mctx->r15;
-#else
-	MonoContext *ctx = (MonoContext *)sigctx;
-
-	ctx->rax = mctx->rax;
-	ctx->rbx = mctx->rbx;
-	ctx->rcx = mctx->rcx;
-	ctx->rdx = mctx->rdx;
-	ctx->rbp = mctx->rbp;
-	ctx->rsp = mctx->rsp;
-	ctx->rsi = mctx->rsi;
-	ctx->rdi = mctx->rdi;
-	ctx->rip = mctx->rip;
-	ctx->r12 = mctx->r12;
-	ctx->r13 = mctx->r13;
-	ctx->r14 = mctx->r14;
-	ctx->r15 = mctx->r15;
-#endif
+	mono_monoctx_to_sigctx (mctx, sigctx);
 }
 
 gpointer
@@ -946,7 +874,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 void
 mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
 {
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
+#if defined(MONO_ARCH_USE_SIGACTION)
 	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (sigctx), NULL);

@@ -216,24 +216,23 @@ typedef struct {
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 #endif
 
-#elif defined(__arm__) /* defined(__x86_64__) */
+#elif (defined(__arm__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM)) /* defined(__x86_64__) */
 
 typedef struct {
-	gulong eip;          // pc 
-	gulong esp;          // sp
-	gulong regs [16];
+	mgreg_t pc;
+	mgreg_t regs [16];
 	double fregs [8];
-	gulong cpsr;
+	mgreg_t cpsr;
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (int)ip; } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (int)bp; } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->esp = (int)bp; } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (mgreg_t)ip; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (mgreg_t)bp; } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (mgreg_t)bp; } while (0); 
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->pc))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->regs [ARMREG_SP]))
 
 // FIXME:
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\

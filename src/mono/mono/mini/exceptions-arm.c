@@ -59,12 +59,9 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	ctx_reg = ARMREG_R0;
 
-	/* move eip to PC */
-	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, eip));
+	/* move pc to PC */
+	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, pc));
 	ARM_STR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_PC * sizeof (mgreg_t)));
-	/* move sp to SP */
-	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, esp));
-	ARM_STR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_SP * sizeof (mgreg_t)));
 
 	/* restore everything */
 	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs));
@@ -108,7 +105,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	/* restore all the regs from ctx (in r0), but not sp, the stack pointer */
 	ctx_reg = ARMREG_R0;
-	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, eip));
+	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, pc));
 	ARM_ADD_REG_IMM8 (code, ARMREG_LR, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs) + (MONO_ARM_FIRST_SAVED_REG * sizeof (mgreg_t)));
 	ARM_LDM (code, ARMREG_LR, MONO_ARM_REGSAVE_MASK);
 	/* call handler at eip (r1) and set the first arg with the exception (r2) */
@@ -130,23 +127,23 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 void
-mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
-	gboolean rethrow = eip & 1;
+	gboolean rethrow = pc & 1;
 
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
 
-	eip &= ~1; /* clear the optional rethrow bit */
+	pc &= ~1; /* clear the optional rethrow bit */
 	/* adjust eip so that it point into the call instruction */
-	eip -= 4;
+	pc -= 4;
 
 	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, int_regs [ARMREG_FP - 4]);
-	MONO_CONTEXT_SET_SP (&ctx, esp);
-	MONO_CONTEXT_SET_IP (&ctx, eip);
+	MONO_CONTEXT_SET_SP (&ctx, sp);
+	MONO_CONTEXT_SET_IP (&ctx, pc);
 	memcpy (((guint8*)&ctx.regs) + (ARMREG_R4 * sizeof (mgreg_t)), int_regs, 8 * sizeof (mgreg_t));
 	/* memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS); */
 
@@ -161,26 +158,26 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 }
 
 void
-mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
 {
 	/* Clear thumb bit */
-	eip &= ~1;
+	pc &= ~1;
 
-	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, type_token), eip, esp, int_regs, fp_regs);
+	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, type_token), pc, sp, int_regs, fp_regs);
 }
 
 void
-mono_arm_resume_unwind (guint32 dummy1, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
 {
 	MonoContext ctx;
 
-	eip &= ~1; /* clear the optional rethrow bit */
+	pc &= ~1; /* clear the optional rethrow bit */
 	/* adjust eip so that it point into the call instruction */
-	eip -= 4;
+	pc -= 4;
 
 	MONO_CONTEXT_SET_BP (&ctx, int_regs [ARMREG_FP - 4]);
-	MONO_CONTEXT_SET_SP (&ctx, esp);
-	MONO_CONTEXT_SET_IP (&ctx, eip);
+	MONO_CONTEXT_SET_SP (&ctx, sp);
+	MONO_CONTEXT_SET_IP (&ctx, pc);
 	memcpy (((guint8*)&ctx.regs) + (ARMREG_R4 * sizeof (mgreg_t)), int_regs, 8 * sizeof (mgreg_t));
 
 	mono_resume_unwind (&ctx);
@@ -395,7 +392,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < 16; ++i)
 			regs [i] = new_ctx->regs [i];
-		regs [ARMREG_SP] = new_ctx->esp;
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
@@ -404,8 +400,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < 16; ++i)
 			new_ctx->regs [i] = regs [i];
-		new_ctx->eip = regs [ARMREG_LR];
-		new_ctx->esp = (gsize)cfa;
+		new_ctx->pc = regs [ARMREG_LR];
+		new_ctx->regs [ARMREG_SP] = (gsize)cfa;
 
 		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->sp)) {
 			/* remove any unused lmf */
@@ -413,10 +409,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		/* Clear thumb bit */
-		new_ctx->eip &= ~1;
+		new_ctx->pc &= ~1;
 
 		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->eip--;
+		new_ctx->pc--;
 
 		return TRUE;
 	} else if (*lmf) {
@@ -458,15 +454,15 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		 * transitioned to native call, so we save the sp/fp/ip in the LMF.
 		 */
 		memcpy (&new_ctx->regs [0], &(*lmf)->iregs [0], sizeof (mgreg_t) * 13);
-		new_ctx->esp = (*lmf)->sp;
-		new_ctx->eip = (*lmf)->ip;
+		new_ctx->pc = (*lmf)->ip;
+		new_ctx->regs [ARMREG_SP] = (*lmf)->sp;
 		new_ctx->regs [ARMREG_FP] = (*lmf)->fp;
 
 		/* Clear thumb bit */
-		new_ctx->eip &= ~1;
+		new_ctx->pc &= ~1;
 
 		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->eip--;
+		new_ctx->pc--;
 
 		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 
@@ -479,36 +475,13 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-#ifdef MONO_CROSS_COMPILE
-	g_assert_not_reached ();
-#elif BROKEN_LINUX
-	g_assert_not_reached ();
-#else
-	arm_ucontext *my_uc = sigctx;
-
-	mctx->eip = UCONTEXT_REG_PC (my_uc);
-	mctx->esp = UCONTEXT_REG_SP (my_uc);
-	mctx->cpsr = UCONTEXT_REG_CPSR (my_uc);
-	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
-#endif
+	mono_sigctx_to_monoctx (sigctx, mctx);
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
-#ifdef MONO_CROSS_COMPILE
-	g_assert_not_reached ();
-#elif BROKEN_LINUX
-	g_assert_not_reached ();
-#else
-	arm_ucontext *my_uc = ctx;
-
-	UCONTEXT_REG_PC (my_uc) = mctx->eip;
-	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_FP];
-	UCONTEXT_REG_CPSR (my_uc) = mctx->cpsr;
-	/* The upper registers are not guaranteed to be valid */
-	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (mgreg_t) * 12);
-#endif
+	mono_monoctx_to_sigctx (mctx, ctx);
 }
 
 /*
@@ -604,8 +577,6 @@ mono_arch_ip_from_context (void *sigctx)
 {
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif BROKEN_LINUX
-	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;
 	return (void*) UCONTEXT_REG_PC (my_uc);
@@ -615,7 +586,7 @@ mono_arch_ip_from_context (void *sigctx)
 void
 mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
 {
-	guint64 sp = ctx->esp;
+	mgreg_t sp = (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 
 	// FIXME:
 	g_assert (!user_data);

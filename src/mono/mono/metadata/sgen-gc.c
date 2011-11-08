@@ -6711,8 +6711,8 @@ mono_gc_base_init (void)
 	if (num_workers > 16)
 		num_workers = 16;
 
-	/* Keep this the default for now */
-	conservative_stack_mark = TRUE;
+	///* Keep this the default for now */
+	//conservative_stack_mark = TRUE;
 
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {

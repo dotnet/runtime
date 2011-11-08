@@ -241,7 +241,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 /*========================= End of Function ========================*/
 
-#elif defined(__arm__)
+#elif (defined(__arm__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM))
 
 #include <mono/utils/mono-context.h>
 #include <mono/arch/arm/arm-codegen.h>
@@ -251,13 +251,12 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif BROKEN_LINUX
-	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;
 
-	mctx->eip = UCONTEXT_REG_PC (my_uc);
-	mctx->esp = UCONTEXT_REG_SP (my_uc);
+	mctx->pc = UCONTEXT_REG_PC (my_uc);
+	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (my_uc);
+	mctx->cpsr = UCONTEXT_REG_CPSR (my_uc);
 	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
 #endif
 }
@@ -270,8 +269,9 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 #else
 	arm_ucontext *my_uc = ctx;
 
-	UCONTEXT_REG_PC (my_uc) = mctx->eip;
+	UCONTEXT_REG_PC (my_uc) = mctx->pc;
 	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_FP];
+	UCONTEXT_REG_CPSR (my_uc) = mctx->cpsr;
 	/* The upper registers are not guaranteed to be valid */
 	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (mgreg_t) * 12);
 #endif
