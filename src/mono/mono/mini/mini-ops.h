@@ -1011,6 +1011,9 @@ MINI_OP(OP_CHECK_FINITE,           "ppc_check_finite", NONE, IREG, NONE)
 #if defined(TARGET_ARM)
 MINI_OP(OP_ARM_RSBS_IMM,            "arm_rsbs_imm", IREG, IREG, NONE)
 MINI_OP(OP_ARM_RSC_IMM,             "arm_rsc_imm", IREG, IREG, NONE)
+/* Load an R4 value to an fp register but don't convert to R8 */
+MINI_OP(OP_ARM_LOADR4_MEMBASE,      "arm_loadr4_membase", FREG, IREG, NONE)
+MINI_OP(OP_ARM_OUTARG_VFP_R4,       "arm_outarg_vfp_r4", FREG, FREG, NONE)
 #endif
 
 #if defined(__sparc__) || defined(sparc)

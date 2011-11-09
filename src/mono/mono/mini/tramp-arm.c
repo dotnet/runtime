@@ -14,6 +14,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/arm/arm-codegen.h>
+#include <mono/arch/arm/arm-vfp-codegen.h>
 
 #include "mini.h"
 #include "mini-arm.h"
@@ -127,9 +128,11 @@ emit_bx (guint8* code, int reg)
 	return code;
 }
 
+#define N_VFP_ARGREGS 16
+
 /* Stack size for trampoline function 
  */
-#define STACK ALIGN_TO (sizeof (MonoLMF), 8)
+#define STACK ((ALIGN_TO (sizeof (MonoLMF), 8)) + (N_VFP_ARGREGS * 8))
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -215,17 +218,19 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * The pointer to the struct is put in r1.
 	 * the iregs array is already allocated on the stack by push.
 	 */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, STACK - regsave_size);
+	code = mono_arm_emit_load_imm (code, ARMREG_R2, STACK - regsave_size);
+	ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_R2);
 	cfa_offset += STACK - regsave_size;
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	/* V1 == lmf */
-	ARM_ADD_REG_IMM8 (code, ARMREG_V1, ARMREG_SP, STACK - sizeof (MonoLMF));
+	code = mono_arm_emit_load_imm (code, ARMREG_R2, lmf_offset);
+	ARM_ADD_REG_REG (code, ARMREG_V1, ARMREG_SP, ARMREG_R2);
 
 	/*
 	 * The stack now looks like:
 	 *       <saved regs>
 	 * v1 -> <rest of LMF>
-	 * sp -> <alignment>
+	 * sp -> <vfp regs>
 	 */
 
 	/* r0 is the result from mono_get_lmf_addr () */
@@ -243,7 +248,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, method));
 	}
 	/* save caller SP */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, cfa_offset);
+	code = mono_arm_emit_load_imm (code, ARMREG_R2, cfa_offset);
+	ARM_ADD_REG_REG (code, ARMREG_R2, ARMREG_SP, ARMREG_R2);
 	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, sp));
 	/* save caller FP */
 	ARM_LDR_IMM (code, ARMREG_R2, ARMREG_V1, (G_STRUCT_OFFSET (MonoLMF, iregs) + ARMREG_FP*4));
@@ -255,6 +261,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ARM_LDR_IMM (code, ARMREG_R2, ARMREG_V1, (G_STRUCT_OFFSET (MonoLMF, iregs) + 13*4));
 	}
 	ARM_STR_IMM (code, ARMREG_R2, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, ip));
+
+	/* Save VFP regs used to hold arguments */
+	if (mono_arm_hardfp_abi_supported ())
+		VSTMIA (code, ARMREG_SP, FALSE, 0, N_VFP_ARGREGS);
 
 	/*
 	 * Now we're ready to call xxx_trampoline ().
@@ -328,6 +338,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_V1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* *(lmf_addr) = previous_lmf */
 	ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+
+	/* Restore VFP regs used to hold arguments */
+	if (mono_arm_hardfp_abi_supported ())
+		VLDMIA (code, ARMREG_SP, FALSE, 0, N_VFP_ARGREGS);
 
 	/* Non-standard function epilogue. Instead of doing a proper
 	 * return, we just jump to the compiled code.

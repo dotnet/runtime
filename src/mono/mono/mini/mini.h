@@ -793,6 +793,9 @@ struct MonoCallInst {
 	LLVMCallInfo *cinfo;
 	int rgctx_arg_reg, imt_arg_reg;
 #endif
+#if defined(TARGET_ARM)
+	GSList *r4_args;
+#endif
 };
 
 struct MonoCallArgParm {
