@@ -271,6 +271,8 @@ static gboolean nursery_collection_is_parallel = FALSE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
 static gboolean do_pin_stats = FALSE;
+static gboolean do_verify_nursery = FALSE;
+static gboolean do_dump_nursery_content = FALSE;
 
 #ifdef HEAVY_STATISTICS
 static long long stat_objects_alloced = 0;
@@ -3017,6 +3019,57 @@ job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
 			job_gray_queue (worker_data));
 }
 
+static void
+verify_scan_starts (char *start, char *end)
+{
+	int i;
+
+	for (i = 0; i < nursery_section->num_scan_start; ++i) {
+		char *addr = nursery_section->scan_starts [i];
+		if (addr > start && addr < end)
+			fprintf (gc_debug_file, "NFC-BAD SCAN START [%d] %p for obj [%p %p]\n", i, addr, start, end);
+	}
+}
+
+static void
+verify_nursery (void)
+{
+	char *start, *end, *cur, *hole_start;
+
+	if (!do_verify_nursery)
+		return;
+
+	/*This cleans up unused fragments */
+	mono_sgen_nursery_allocator_prepare_for_pinning ();
+
+	hole_start = start = cur = nursery_start;
+	end = nursery_end;
+
+	while (cur < end) {
+		if (!*(void**)cur) {
+			cur += sizeof (void*);
+			continue;
+		}
+
+		if (object_is_forwarded (cur))
+			fprintf (gc_debug_file, "FORWARDED OBJ %p\n", cur);
+		else if (object_is_pinned (cur))
+			fprintf (gc_debug_file, "PINNED OBJ %p\n", cur);
+
+		size_t ss = safe_object_get_size ((MonoObject*)cur);
+		size_t size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
+		verify_scan_starts (cur, cur + size);
+		if (do_dump_nursery_content) {
+			if (cur > hole_start)
+				fprintf (gc_debug_file, "HOLE [%p %p %d]\n", hole_start, cur, cur - hole_start);
+			fprintf (gc_debug_file, "OBJ  [%p %p %d %d %s %d]\n", cur, cur + size, size, ss, mono_sgen_safe_name ((MonoObject*)cur), LOAD_VTABLE (cur) == mono_sgen_get_array_fill_vtable ());
+		}
+		cur += size;
+		hole_start = cur;
+	}
+	fflush (gc_debug_file);
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3038,6 +3091,8 @@ collect_nursery (size_t requested_size)
 
 	if (disable_minor_collections)
 		return TRUE;
+
+	verify_nursery ();
 
 	mono_perfcounters->gc_collections0++;
 
@@ -6882,6 +6937,10 @@ mono_gc_base_init (void)
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "check-scan-starts")) {
 				do_scan_starts_check = TRUE;
+			} else if (!strcmp (opt, "verify-nursery-at-minor-gc")) {
+				do_verify_nursery = TRUE;
+			} else if (!strcmp (opt, "dump-nursery-at-minor-gc")) {
+				do_dump_nursery_content = TRUE;
 			} else if (!strcmp (opt, "disable-minor")) {
 				disable_minor_collections = TRUE;
 			} else if (!strcmp (opt, "disable-major")) {
