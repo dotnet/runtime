@@ -3750,6 +3750,13 @@ report_internal_mem_usage (void)
  * *) allocation of pinned objects
  */
 
+static void
+set_nursery_scan_start (char *p)
+{
+	int idx = (p - (char*)nursery_section->data) / SCAN_START_SIZE;
+	nursery_section->scan_starts [idx] = p;
+}
+
 static void*
 alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 {
@@ -3962,14 +3969,13 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
 				TLAB_NEXT += size;
-
-				nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
+				set_nursery_scan_start (p);
 			}
 		} else {
 			/* Reached tlab_temp_end */
 
 			/* record the scan start so we can find pinned objects more easily */
-			nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
+			set_nursery_scan_start (p);
 			/* we just bump tlab_temp_end as well */
 			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
 			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));
@@ -4050,7 +4056,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 		/* Second case, we overflowed temp end */
 		if (G_UNLIKELY (new_next >= TLAB_TEMP_END)) {
-			nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
+			set_nursery_scan_start (p);
 			/* we just bump tlab_temp_end as well */
 			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
 			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));		
