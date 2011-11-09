@@ -277,7 +277,7 @@ typedef struct _LogBuffer LogBuffer;
  * 	[object: sleb128] the object as a difference from obj_base
  * 	[root_type: uleb128] the root_type: MonoProfileGCRootType (profiler.h)
  * 	[extra_info: uleb128] the extra_info value
- * 	object, root_type_extra_info are repeated num_roots times
+ * 	object, root_type and extra_info are repeated num_roots times
  *
  * type sample format
  * type: TYPE_SAMPLE

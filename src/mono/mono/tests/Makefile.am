@@ -435,6 +435,7 @@ endif
 # bug-459094.exe creates an extremely deep directory tree
 # delegate-invoke.exe depends on 929c6bc9b6d76a273f251e6f5dfacac36e9c38bd which was
 # reverted.
+# generic_type_definition.2.exe depends on COMPILER_ACCESS which is no longer supported.
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
@@ -443,6 +444,7 @@ DISABLED_TESTS=			\
 	gc-altstack.exe \
 	bug-459094.exe \
 	delegate-invoke.exe \
+	generic_type_definition.2.exe \
 	$(PLATFORM_DISABLED_TESTS)
 
 AOT_DISABLED_TESTS=constraints-load.exe

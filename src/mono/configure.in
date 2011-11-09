@@ -576,9 +576,6 @@ if test x$cross_compiling$host_win32 = xnoyes; then
   esac
 fi
 
-## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.
-AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno && test x$enable_mcs_build != xno])
-
 AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
 
@@ -2377,6 +2374,7 @@ esac
 
 if test "x$host" != "x$target"; then
    AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
+   enable_mcs_build=no
    case "$target" in
    powerpc64-ps3-linux-gnu)
 		TARGET=POWERPC64
@@ -2801,6 +2799,9 @@ else
    docs_dir=docs
 fi
 AC_SUBST(docs_dir)
+
+## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.
+AM_CONDITIONAL(BUILD_MCS, [test x$cross_compiling = xno && test x$enable_mcs_build != xno])
 
 AM_CONDITIONAL(HAVE_OPROFILE, test x$OPROFILE = xyes)
 AC_SUBST(OPROFILE_CFLAGS)
