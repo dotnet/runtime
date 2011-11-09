@@ -5,6 +5,9 @@
  * Copyright 2009-2010 Novell, Inc.
  *           2011 Rodrigo Kumpera
  * 
+ * Copyright 2011 Xamarin Inc  (http://www.xamarin.com)
+ *
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -210,7 +213,7 @@ dump_alloc_records (void)
 	printf ("------------------------------------DUMP RECORDS----------------------------\n");
 	for (i = 0; i < next_record; ++i) {
 		AllocRecord *rec = alloc_records + i;
-		printf ("obj [%p, %p] size %zd reason %s seq %d %zx\n", rec->address, rec_end (rec), rec->size, get_reason_name (rec), rec->seq, (gsize)rec->tid);
+		printf ("obj [%p, %p] size %zd reason %s seq %d tid %zx\n", rec->address, rec_end (rec), rec->size, get_reason_name (rec), rec->seq, (size_t)rec->tid);
 	}
 }
 
@@ -237,7 +240,7 @@ verify_alloc_records (void)
 			hole_size = rec->address - rec_end (prev);
 			max_hole = MAX (max_hole, hole_size);
 		}
-		printf ("obj [%p, %p] size %zd hole to prev %d\n", rec->address, rec_end (rec), rec->size, hole_size);
+		printf ("obj [%p, %p] size %zd hole to prev %d reason %s seq %d tid %zx\n", rec->address, rec_end (rec), rec->size, hole_size, get_reason_name (rec), rec->seq, (size_t)rec->tid);
 		prev = rec;
 	}
 	printf ("SUMMARY total alloc'd %d holes %d max_hole %d\n", total, holes, max_hole);
@@ -343,9 +346,9 @@ try_again:
 static gboolean
 claim_remaining_size (Fragment *frag, char *alloc_end)
 {
-	/* All space used, we have to race to remove. */
+	/* All space used, nothing to claim. */
 	if (frag->fragment_end <= alloc_end)
-		return TRUE;
+		return FALSE;
 
 	/* Try to alloc all the remaining space. */
 	return InterlockedCompareExchangePointer ((volatile gpointer*)&frag->fragment_next, frag->fragment_end, alloc_end) == alloc_end;
@@ -388,7 +391,7 @@ alloc_from_fragment (Fragment *frag, size_t size)
 
 		/*Use Michaels linked list remove*/
 
-		/*prev_ptr will be null is the fragment was removed concurrently */
+		/*prev_ptr will be null if the fragment was removed concurrently */
 		while (prev_ptr) {
 			next = frag->next;
 
