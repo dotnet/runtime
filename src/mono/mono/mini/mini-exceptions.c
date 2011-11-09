@@ -1963,7 +1963,7 @@ try_restore_stack_protection (MonoJitTlsData *jit_tls, int extra_bytes)
 	return unprotect_size == jit_tls->stack_ovf_guard_size;
 }
 
-static void
+static G_GNUC_UNUSED void
 try_more_restore (void)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
@@ -1971,7 +1971,7 @@ try_more_restore (void)
 		jit_tls->restore_stack_prot = NULL;
 }
 
-static void
+static G_GNUC_UNUSED void
 restore_stack_protection (void)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);

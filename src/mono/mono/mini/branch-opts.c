@@ -134,7 +134,7 @@ static const int long_cmov_opcodes [] = {
 	OP_CMOV_LGT_UN
 };
 
-static int
+static G_GNUC_UNUSED int
 br_to_br_un (int opcode)
 {
 	switch (opcode) {
