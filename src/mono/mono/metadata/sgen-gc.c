@@ -337,8 +337,6 @@ static long long time_major_los_sweep = 0;
 static long long time_major_sweep = 0;
 static long long time_major_fragment_creation = 0;
 
-#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a; fflush (gc_debug_file); } while (0)
-
 int gc_debug_level = 0;
 FILE* gc_debug_file;
 static gboolean debug_print_allowance = FALSE;
