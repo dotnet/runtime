@@ -1,3 +1,7 @@
+/*
+ * Copyright 2011 Xamarin Inc
+ */
+
 #ifndef __MONO_MINI_ARM_H__
 #define __MONO_MINI_ARM_H__
 

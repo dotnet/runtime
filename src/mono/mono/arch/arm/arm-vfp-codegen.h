@@ -1,3 +1,7 @@
+//
+// Copyright 2011 Xamarin Inc
+//
+
 #ifndef __MONO_ARM_VFP_CODEGEN_H__
 #define __MONO_ARM_VFP_CODEGEN_H__
 

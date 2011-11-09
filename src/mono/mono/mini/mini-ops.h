@@ -1,4 +1,8 @@
-
+/*
+ * Copyright 2003 Ximian, Inc
+ * Copyright 2003-2011 Novell Inc
+ * Copyright 2011 Xamarin Inc
+ */
 MINI_OP(OP_LOAD,	"load", NONE, NONE, NONE)
 MINI_OP(OP_LDADDR,	"ldaddr", IREG, NONE, NONE)
 MINI_OP(OP_STORE,	"store", NONE, NONE, NONE)

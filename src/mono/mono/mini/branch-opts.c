@@ -5,6 +5,7 @@
  *   Patrik Torstensson (Patrik.Torstesson at gmail.com)
  *
  * (C) 2005 Ximian, Inc.  http://www.ximian.com
+ * Copyright 2011 Xamarin Inc.  http://www.xamarin.com
  */
  #include "mini.h"
 

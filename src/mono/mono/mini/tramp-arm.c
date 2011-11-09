@@ -4,7 +4,9 @@
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001-2003 Ximian, Inc.
+ * Copyright 2003-2011 Novell Inc
+ * Copyright 2011 Xamarin Inc
  */
 
 #include <config.h>
