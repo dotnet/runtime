@@ -3750,7 +3750,7 @@ report_internal_mem_usage (void)
  * *) allocation of pinned objects
  */
 
-static void
+static inline void
 set_nursery_scan_start (char *p)
 {
 	int idx = (p - (char*)nursery_section->data) / SCAN_START_SIZE;
