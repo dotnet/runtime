@@ -3346,6 +3346,11 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	}
 
 	result = _wapi_stat (utf8_name, &buf);
+	if (result == -1 && errno == ENOENT) {
+		/* Might be a dangling symlink... */
+		result = _wapi_lstat (utf8_name, &buf);
+	}
+
 	if (result != 0) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
