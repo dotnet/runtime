@@ -1006,6 +1006,25 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 			return TRUE;
 		}
 		break;
+	case CATEGORY_JIT:
+		switch (id) {
+		case COUNTER_JIT_BYTES:
+			sample->rawValue = mono_perfcounters->jit_bytes;
+			return TRUE;
+		case COUNTER_JIT_METHODS:
+			sample->rawValue = mono_perfcounters->jit_methods;
+			return TRUE;
+		case COUNTER_JIT_TIME:
+			sample->rawValue = mono_perfcounters->jit_time;
+			return TRUE;
+		case COUNTER_JIT_BYTES_PSEC:
+			sample->rawValue = mono_perfcounters->jit_bytes;
+			return TRUE;
+		case COUNTER_JIT_FAILURES:
+			sample->rawValue = mono_perfcounters->jit_failures;
+			return TRUE;
+		}
+		break;
 	}
 	return FALSE;
 }
