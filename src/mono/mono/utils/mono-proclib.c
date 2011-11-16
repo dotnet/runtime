@@ -510,13 +510,19 @@ mono_cpu_count (void)
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
 	 * Instead we use /sys entries to query the actual hardware CPU count.
 	 */
-	char buffer[10] = {'\0'};
-	FILE* present = fopen ("/sys/devices/system/cpu/present", "r");
-	if (present != NULL && fread ((char*)buffer, 1, sizeof (buffer), present) > 3) {
-		count = atoi (((char*)buffer) + 2) + 1;
-		if (count > 0)
-			return count;
-	}
+	char buffer[8] = {'\0'};
+	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
+	/* Format of the /sys entry is a cpulist of indexes which in the case
+	 * of present is always of the form "0-(n-1)" when there is more than
+	 * 1 core, n being the number of CPU cores in the system. Otherwise
+	 * the value is simply 0
+	 */
+	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
+		count = strtol (((char*)buffer) + 2, NULL, 10);
+	if (present != -1)
+		close (present);
+	if (count > 0)
+		return count + 1;
 #endif
 #ifdef _SC_NPROCESSORS_ONLN
 	count = sysconf (_SC_NPROCESSORS_ONLN);
