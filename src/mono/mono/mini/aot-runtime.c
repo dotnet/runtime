@@ -3653,10 +3653,23 @@ mono_aot_get_plt_entry (guint8 *code)
 	g_assert_not_reached ();
 #endif
 
+#ifdef MONOTOUCH
+	while (target != NULL) {
+		if ((target >= (guint8*)(amodule->plt)) && (target < (guint8*)(amodule->plt_end)))
+			return target;
+		
+		// Add 4 since mono_arch_get_call_target assumes we're passing
+		// the instruction after the actual branch instruction.
+		target = mono_arch_get_call_target (target + 4);
+	}
+
+	return NULL;
+#else
 	if ((target >= (guint8*)(amodule->plt)) && (target < (guint8*)(amodule->plt_end)))
 		return target;
 	else
 		return NULL;
+#endif
 }
 
 /*
