@@ -9,7 +9,7 @@
 #include <mono/utils/mono-context.h>
 #include <glib.h>
 
-#if defined(ARM_FPU_NONE) || (defined(__ARM_EABI__) && !defined(ARM_FPU_VFP) && !defined(ARM_FPU_VFP_HARD))
+#if defined(ARM_FPU_NONE) || (defined(__ARM_EABI__) && !defined(ARM_FPU_VFP))
 #define MONO_ARCH_SOFT_FLOAT 1
 #endif
 
@@ -29,10 +29,8 @@
 #define ARM_FP_MODEL "vfp"
 #elif defined(ARM_FPU_NONE)
 #define ARM_FP_MODEL "soft-float"
-#elif defined(ARM_FPU_VFP_HARD)
-#define ARM_FP_MODEL "vfp(hardfp-abi)"
 #else
-#error "At least one of ARM_FPU_NONE, ARM_FPU_FPA, ARM_FPU_VFP or ARM_FPU_VFP_HARD must be defined."
+#error "At least one of ARM_FPU_NONE or ARM_FPU_FPA or ARM_FPU_VFP must be defined."
 #endif
 
 #define MONO_ARCH_ARCHITECTURE ARM_ARCHITECTURE "," ARM_FP_MODEL
@@ -63,7 +61,7 @@
 #define MONO_ARCH_CALLEE_REGS ((1<<ARMREG_R0) | (1<<ARMREG_R1) | (1<<ARMREG_R2) | (1<<ARMREG_R3) | (1<<ARMREG_IP))
 #define MONO_ARCH_CALLEE_SAVED_REGS ((1<<ARMREG_V1) | (1<<ARMREG_V2) | (1<<ARMREG_V3) | (1<<ARMREG_V4) | (1<<ARMREG_V5) | (1<<ARMREG_V6) | (1<<ARMREG_V7))
 
-#if defined(ARM_FPU_VFP) || defined(ARM_FPU_VFP_HARD)
+#ifdef ARM_FPU_VFP
 /* Every double precision vfp register, d0/d1 is reserved for a scratch reg */
 #define MONO_ARCH_CALLEE_FREGS 0x55555550
 #else
@@ -103,8 +101,7 @@ mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, m
 typedef enum {
 	MONO_ARM_FPU_NONE = 0,
 	MONO_ARM_FPU_FPA = 1,
-	MONO_ARM_FPU_VFP = 2,
-	MONO_ARM_FPU_VFP_HARD = 3
+	MONO_ARM_FPU_VFP = 2
 } MonoArmFPU;
 
 /* keep the size of the structure a multiple of 8 */
@@ -133,7 +130,6 @@ typedef struct MonoCompileArch {
 	gpointer seq_point_bp_method_var;
 	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
-	gpointer vret_addr_loc;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
@@ -212,9 +208,6 @@ mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_reg
 
 gboolean
 mono_arm_thumb_supported (void);
-
-gboolean
-mono_arm_hardfp_abi_supported (void);
 
 GSList*
 mono_arm_get_exception_trampolines (gboolean aot) MONO_INTERNAL;

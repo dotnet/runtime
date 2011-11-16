@@ -2661,19 +2661,12 @@ if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_bui
 	dnl ******************************************
 	AC_MSG_CHECKING(which FPU to use)
 
-	fpu=NONE
-	if gcc -v 2>&1 | grep -q -- '--with-float=hard'; then
-	   fpu=VFP_HARD
-	fi
-
-	if test x$fpu = xNONE; then
-	   ORIG_CFLAGS=$CFLAGS
-	   CFLAGS="$CFLAGS -mfpu=vfp -mfloat-abi=softfp"
-	   AC_TRY_RUN([
-				int main () { __asm__ ("faddd	d7, d6, d7"); return 0; }
-				], fpu=VFP, fpu=NONE)
-	   CFLAGS=$ORIG_CFLAGS
-	fi
+	ORIG_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -mfpu=vfp -mfloat-abi=softfp"
+	AC_TRY_RUN([
+		int main () { __asm__ ("faddd	d7, d6, d7"); return 0; }
+			], fpu=VFP, fpu=NONE)
+	CFLAGS=$ORIG_CFLAGS
 
 	if test x$fpu = xNONE; then
 		AC_TRY_COMPILE([], [
