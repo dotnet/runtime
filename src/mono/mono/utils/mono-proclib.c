@@ -504,7 +504,20 @@ mono_process_get_data (gpointer pid, MonoProcessData data)
 int
 mono_cpu_count (void)
 {
-	int count;
+	int count = 0;
+#ifdef PLATFORM_ANDROID
+	/* Android tries really hard to save power by powering off CPUs on SMP phones which
+	 * means the normal way to query cpu count returns a wrong value with userspace API.
+	 * Instead we use /sys entries to query the actual hardware CPU count.
+	 */
+	char buffer[10] = {'\0'};
+	FILE* present = fopen ("/sys/devices/system/cpu/present", "r");
+	if (present != NULL && fread ((char*)buffer, 1, sizeof (buffer), present) > 3) {
+		count = atoi (((char*)buffer) + 2) + 1;
+		if (count > 0)
+			return count;
+	}
+#endif
 #ifdef _SC_NPROCESSORS_ONLN
 	count = sysconf (_SC_NPROCESSORS_ONLN);
 	if (count > 0)
