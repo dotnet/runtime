@@ -177,7 +177,8 @@ typedef enum {
 typedef enum {
 	MONO_AOT_FILE_FLAG_WITH_LLVM = 1,
 	MONO_AOT_FILE_FLAG_FULL_AOT = 2,
-	MONO_AOT_FILE_FLAG_DEBUG = 4
+	MONO_AOT_FILE_FLAG_DEBUG = 4,
+	MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES = 8
 } MonoAotFileFlags;
 
 /* This structure is stored in the AOT file */
@@ -203,6 +204,7 @@ typedef struct MonoAotFileInfo
 	gpointer method_info_offsets;
 	gpointer ex_info_offsets;
 	gpointer code_offsets;
+	gpointer method_addresses;
 	gpointer extra_method_info_offsets;
 	gpointer extra_method_table;
 	gpointer got_info_offsets;

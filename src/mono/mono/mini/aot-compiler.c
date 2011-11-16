@@ -215,7 +215,7 @@ typedef struct MonoAotCompile {
 	GString *as_args;
 	char *assembly_name_sym;
 	GHashTable *plt_entry_debug_sym_cache;
-	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
+	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack, direct_method_addresses;
 	GHashTable *ginst_hash;
 } MonoAotCompile;
 
@@ -608,6 +608,10 @@ arch_init (MonoAotCompile *acfg)
 
 #if defined(__linux__) && !defined(TARGET_ARM)
 	acfg->need_pt_gnu_stack = TRUE;
+#endif
+
+#ifdef MONOTOUCH
+	acfg->direct_method_addresses = TRUE;
 #endif
 }
 
@@ -6080,21 +6084,45 @@ emit_code (MonoAotCompile *acfg)
 		}
 	}
 
-	sprintf (symbol, "code_offsets");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
+	if (acfg->direct_method_addresses) {
+		acfg->flags |= MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES;
 
-	acfg->stats.offsets_size += acfg->nmethods * 4;
+		sprintf (symbol, "method_addresses");
+		emit_section_change (acfg, RODATA_SECT, 1);
+		emit_alignment (acfg, 8);
+		emit_label (acfg, symbol);
 
-	sprintf (end_symbol, "methods");
-	for (i = 0; i < acfg->nmethods; ++i) {
-		if (acfg->cfgs [i]) {
-			emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, end_symbol, 0);
-		} else {
-			emit_int32 (acfg, 0xffffffff);
+		for (i = 0; i < acfg->nmethods; ++i) {
+			if (acfg->cfgs [i]) {
+				emit_pointer (acfg, acfg->cfgs [i]->asm_symbol);
+			} else {
+				emit_pointer (acfg, NULL);
+			}
+		}
+
+		/* Empty */
+		sprintf (symbol, "code_offsets");
+		emit_section_change (acfg, RODATA_SECT, 1);
+		emit_alignment (acfg, 8);
+		emit_label (acfg, symbol);
+	} else {
+		sprintf (symbol, "code_offsets");
+		emit_section_change (acfg, RODATA_SECT, 1);
+		emit_alignment (acfg, 8);
+		emit_label (acfg, symbol);
+
+		acfg->stats.offsets_size += acfg->nmethods * 4;
+
+		sprintf (end_symbol, "methods");
+		for (i = 0; i < acfg->nmethods; ++i) {
+			if (acfg->cfgs [i]) {
+				emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, end_symbol, 0);
+			} else {
+				emit_int32 (acfg, 0xffffffff);
+			}
 		}
 	}
+
 	emit_line (acfg);
 
 	/* Emit a sorted table mapping methods to their unbox trampolines */
@@ -7003,6 +7031,9 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_pointer (acfg, "method_info_offsets");
 	emit_pointer (acfg, "ex_info_offsets");
 	emit_pointer (acfg, "code_offsets");
+#ifdef MONOTOUCH
+	emit_pointer (acfg, "method_addresses");
+#endif
 	emit_pointer (acfg, "extra_method_info_offsets");
 	emit_pointer (acfg, "extra_method_table");
 	emit_pointer (acfg, "got_info_offsets");
