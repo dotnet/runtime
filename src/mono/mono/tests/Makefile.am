@@ -565,6 +565,9 @@ test_platform: test-eglib-remap
 endif
 endif
 
+# Target to precompile the test executables
+tests: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS) $(GSHARED_TESTS)
+
 #
 # Test that no symbols are missed in eglib-remap.h
 #
