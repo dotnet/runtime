@@ -3467,7 +3467,7 @@ method_nonpublic (MonoMethod* method, gboolean start_klass)
 }
 
 GPtrArray*
-mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bflags, gboolean ignore_case, MonoException **ex)
+mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bflags, gboolean ignore_case, gboolean allow_ctors, MonoException **ex)
 {
 	GPtrArray *array;
 	MonoClass *startklass;
@@ -3527,7 +3527,7 @@ handle_parent:
 				method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
 		}
 
-		if (method->name [0] == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
+		if (!allow_ctors && method->name [0] == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
 			continue;
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
@@ -3608,7 +3608,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	if (name)
 		mname = mono_string_to_utf8 (name);
 
-	method_array = mono_class_get_methods_by_name (klass, mname, bflags, ignore_case, &ex);
+	method_array = mono_class_get_methods_by_name (klass, mname, bflags, ignore_case, FALSE, &ex);
 	g_free ((char*)mname);
 	if (ex)
 		mono_raise_exception (ex);

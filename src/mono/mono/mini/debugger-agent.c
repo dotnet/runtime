@@ -7018,7 +7018,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		char *name = decode_string (p, &p, end);
 		int i, flags = decode_int (p, &p, end);
 		MonoException *ex = NULL;
-		GPtrArray *array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, (flags & BINDING_FLAGS_IGNORE_CASE) != 0, &ex);
+		GPtrArray *array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, (flags & BINDING_FLAGS_IGNORE_CASE) != 0, TRUE, &ex);
 
 		if (!array)
 			return ERR_LOADER_ERROR;
