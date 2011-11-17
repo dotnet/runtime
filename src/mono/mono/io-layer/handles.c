@@ -157,7 +157,6 @@ gboolean _wapi_has_shut_down = FALSE;
 static pid_t _wapi_pid;
 static mono_once_t pid_init_once = MONO_ONCE_INIT;
 
-static gpointer _wapi_handle_real_new (WapiHandleType type, gpointer handle_specific);
 static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
 
 static void pid_init (void)
@@ -234,19 +233,13 @@ static void handle_cleanup (void)
 		g_free (_wapi_private_handles [i]);
 }
 
-void _wapi_cleanup ()
-{
-	g_assert (_wapi_has_shut_down == FALSE);
-	
-	_wapi_has_shut_down = TRUE;
-
-	_wapi_critical_section_cleanup ();
-	_wapi_error_cleanup ();
-	_wapi_thread_cleanup ();
-}
-
-static mono_once_t shared_init_once = MONO_ONCE_INIT;
-static void shared_init (void)
+/*
+ * wapi_init:
+ *
+ *   Initialize the io-layer.
+ */
+void
+wapi_init (void)
 {
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == WAPI_HANDLE_COUNT);
@@ -286,8 +279,7 @@ static void shared_init (void)
 		_wapi_collection_init ();
 #endif
 
-	/* Can't call wapi_handle_new as it calls us recursively */
-	_wapi_global_signal_handle = _wapi_handle_real_new (WAPI_HANDLE_EVENT, NULL);
+	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
 
 	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_cond;
 	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_mutex;
@@ -298,6 +290,18 @@ static void shared_init (void)
 	 * server.)
 	 */
 	g_atexit (handle_cleanup);
+}
+
+void
+wapi_cleanup (void)
+{
+	g_assert (_wapi_has_shut_down == FALSE);
+	
+	_wapi_has_shut_down = TRUE;
+
+	_wapi_critical_section_cleanup ();
+	_wapi_error_cleanup ();
+	_wapi_thread_cleanup ();
 }
 
 static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
@@ -448,12 +452,15 @@ again:
 	return(0);
 }
 
-static gpointer _wapi_handle_real_new (WapiHandleType type, gpointer handle_specific)
+gpointer 
+_wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 {
 	guint32 handle_idx = 0;
 	gpointer handle;
 	int thr_ret;
-	
+
+	g_assert (_wapi_has_shut_down == FALSE);
+		
 	DEBUG ("%s: Creating new handle of type %s", __func__,
 		   _wapi_handle_typename[type]);
 
@@ -519,15 +526,6 @@ done:
 	return(handle);
 }
 
-gpointer _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
-{
-	g_assert (_wapi_has_shut_down == FALSE);
-	
-	mono_once (&shared_init_once, shared_init);
-
-	return _wapi_handle_real_new (type, handle_specific);
-}
-
 gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 				       gboolean timestamp)
 {
@@ -538,8 +536,6 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 	
 	g_assert (_wapi_has_shut_down == FALSE);
 	
-	mono_once (&shared_init_once, shared_init);
-
 	DEBUG ("%s: Creating new handle of type %s to offset %d", __func__,
 		   _wapi_handle_typename[type], offset);
 
@@ -667,8 +663,6 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	int thr_ret;
 	
 	g_assert (_wapi_has_shut_down == FALSE);
-	
-	mono_once (&shared_init_once, shared_init);
 	
 	DEBUG ("%s: Creating new handle of type %s", __func__,
 		   _wapi_handle_typename[type]);

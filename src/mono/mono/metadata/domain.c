@@ -1237,6 +1237,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 #endif
 
+#ifndef HOST_WIN32
+	wapi_init ();
+#endif
+
 	mono_perfcounters_init ();
 
 	mono_counters_register ("Max native code in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_size);
@@ -1715,7 +1719,7 @@ mono_cleanup (void)
 	DeleteCriticalSection (&appdomains_mutex);
 
 #ifndef HOST_WIN32
-	_wapi_cleanup ();
+	wapi_cleanup ();
 #endif
 }
 
