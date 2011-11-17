@@ -46,7 +46,12 @@
 #include <mono/io-layer/io-portability.h>
 #include <mono/utils/strenc.h>
 
-#undef DEBUG
+#if 0
+#define DEBUG(...) g_message(__VA_ARGS__)
+#define DEBUG_ENABLED 1
+#else
+#define DEBUG(...)
+#endif
 
 static void file_close (gpointer handle, gpointer data);
 static WapiFileType file_getfiletype(void);
@@ -325,10 +330,8 @@ static void file_close (gpointer handle, gpointer data)
 {
 	struct _WapiHandle_file *file_handle = (struct _WapiHandle_file *)data;
 	
-#ifdef DEBUG
-	g_message("%s: closing file handle %p [%s]", __func__, handle,
+	DEBUG("%s: closing file handle %p [%s]", __func__, handle,
 		  file_handle->filename);
-#endif
 
 	if (file_handle->attrs & FILE_FLAG_DELETE_ON_CLOSE)
 		_wapi_unlink (file_handle->filename);
@@ -370,10 +373,8 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_READ access: %u",
+		DEBUG("%s: handle %p doesn't have GENERIC_READ access: %u",
 			  __func__, handle, file_handle->fileaccess);
-#endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -387,10 +388,8 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	if(ret==-1) {
 		gint err = errno;
 
-#ifdef DEBUG
-		g_message("%s: read of handle %p error: %s", __func__,
+		DEBUG("%s: read of handle %p error: %s", __func__,
 			  handle, strerror(err));
-#endif
 		SetLastError (_wapi_get_win32_file_error (err));
 		return(FALSE);
 	}
@@ -427,9 +426,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -442,10 +439,8 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		 */
 		current_pos = lseek (fd, (off_t)0, SEEK_CUR);
 		if (current_pos == -1) {
-#ifdef DEBUG
-			g_message ("%s: handle %p lseek failed: %s", __func__,
+			DEBUG ("%s: handle %p lseek failed: %s", __func__,
 				   handle, strerror (errno));
-#endif
 			_wapi_set_last_error_from_errno ();
 			return(FALSE);
 		}
@@ -472,10 +467,8 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		} else {
 			_wapi_set_last_error_from_errno ();
 				
-#ifdef DEBUG
-			g_message("%s: write of handle %p error: %s",
+			DEBUG("%s: write of handle %p error: %s",
 				  __func__, handle, strerror(errno));
-#endif
 
 			return(FALSE);
 		}
@@ -504,9 +497,7 @@ static gboolean file_flush(gpointer handle)
 
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -514,10 +505,8 @@ static gboolean file_flush(gpointer handle)
 
 	ret=fsync(fd);
 	if (ret==-1) {
-#ifdef DEBUG
-		g_message("%s: fsync of handle %p error: %s", __func__, handle,
+		DEBUG("%s: fsync of handle %p error: %s", __func__, handle,
 			  strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
@@ -548,9 +537,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message ("%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
-#endif
+		DEBUG ("%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(INVALID_SET_FILE_POINTER);
@@ -567,9 +554,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 		whence=SEEK_END;
 		break;
 	default:
-#ifdef DEBUG
-		g_message("%s: invalid seek type %d", __func__, method);
-#endif
+		DEBUG("%s: invalid seek type %d", __func__, method);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(INVALID_SET_FILE_POINTER);
@@ -578,48 +563,38 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 #ifdef HAVE_LARGE_FILE_SUPPORT
 	if(highmovedistance==NULL) {
 		offset=movedistance;
-#ifdef DEBUG
-		g_message("%s: setting offset to %lld (low %d)", __func__,
+		DEBUG("%s: setting offset to %lld (low %d)", __func__,
 			  offset, movedistance);
-#endif
 	} else {
 		offset=((gint64) *highmovedistance << 32) | (guint32)movedistance;
 		
-#ifdef DEBUG
-		g_message("%s: setting offset to %lld 0x%llx (high %d 0x%x, low %d 0x%x)", __func__, offset, offset, *highmovedistance, *highmovedistance, movedistance, movedistance);
-#endif
+		DEBUG("%s: setting offset to %lld 0x%llx (high %d 0x%x, low %d 0x%x)", __func__, offset, offset, *highmovedistance, *highmovedistance, movedistance, movedistance);
 	}
 #else
 	offset=movedistance;
 #endif
 
-#ifdef DEBUG
 #ifdef HAVE_LARGE_FILE_SUPPORT
-	g_message("%s: moving handle %p by %lld bytes from %d", __func__,
+	DEBUG ("%s: moving handle %p by %lld bytes from %d", __func__,
 		  handle, offset, whence);
 #else
-	g_message("%s: moving handle %p fd %d by %ld bytes from %d", __func__,
+	DEBUG ("%s: moving handle %p fd %d by %ld bytes from %d", __func__,
 		  handle, offset, whence);
-#endif
 #endif
 
 	newpos=lseek(fd, offset, whence);
 	if(newpos==-1) {
-#ifdef DEBUG
-		g_message("%s: lseek on handle %p returned error %s",
+		DEBUG("%s: lseek on handle %p returned error %s",
 			  __func__, handle, strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(INVALID_SET_FILE_POINTER);
 	}
 
-#ifdef DEBUG
 #ifdef HAVE_LARGE_FILE_SUPPORT
-	g_message("%s: lseek returns %lld", __func__, newpos);
+	DEBUG ("%s: lseek returns %lld", __func__, newpos);
 #else
-	g_message ("%s: lseek returns %ld", __func__, newpos);
-#endif
+	DEBUG ("%s: lseek returns %ld", __func__, newpos);
 #endif
 
 #ifdef HAVE_LARGE_FILE_SUPPORT
@@ -635,10 +610,8 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 	}
 #endif
 
-#ifdef DEBUG
-	g_message ("%s: move of handle %p returning %d/%d", __func__,
+	DEBUG ("%s: move of handle %p returning %d/%d", __func__,
 		   handle, ret, highmovedistance==NULL?0:*highmovedistance);
-#endif
 
 	return(ret);
 }
@@ -663,9 +636,7 @@ static gboolean file_setendoffile(gpointer handle)
 	
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -679,10 +650,8 @@ static gboolean file_setendoffile(gpointer handle)
 	
 	ret=fstat(fd, &statbuf);
 	if(ret==-1) {
-#ifdef DEBUG
-		g_message ("%s: handle %p fstat failed: %s", __func__,
+		DEBUG ("%s: handle %p fstat failed: %s", __func__,
 			   handle, strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
@@ -691,10 +660,8 @@ static gboolean file_setendoffile(gpointer handle)
 
 	pos=lseek(fd, (off_t)0, SEEK_CUR);
 	if(pos==-1) {
-#ifdef DEBUG
-		g_message("%s: handle %p lseek failed: %s", __func__,
+		DEBUG("%s: handle %p lseek failed: %s", __func__,
 			  handle, strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
@@ -719,9 +686,7 @@ static gboolean file_setendoffile(gpointer handle)
 			 !_wapi_thread_cur_apc_pending());
 
 		if(ret==-1) {
-#ifdef DEBUG
-			g_message("%s: handle %p extend write failed: %s", __func__, handle, strerror(errno));
-#endif
+			DEBUG("%s: handle %p extend write failed: %s", __func__, handle, strerror(errno));
 
 			_wapi_set_last_error_from_errno ();
 			return(FALSE);
@@ -730,10 +695,8 @@ static gboolean file_setendoffile(gpointer handle)
 		/* And put the file position back after the write */
 		ret = lseek (fd, pos, SEEK_SET);
 		if (ret == -1) {
-#ifdef DEBUG
-			g_message ("%s: handle %p second lseek failed: %s",
+			DEBUG ("%s: handle %p second lseek failed: %s",
 				   __func__, handle, strerror(errno));
-#endif
 
 			_wapi_set_last_error_from_errno ();
 			return(FALSE);
@@ -749,10 +712,8 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending()); 
 	if(ret==-1) {
-#ifdef DEBUG
-		g_message("%s: handle %p ftruncate failed: %s", __func__,
+		DEBUG("%s: handle %p ftruncate failed: %s", __func__,
 			  handle, strerror(errno));
-#endif
 		
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
@@ -782,9 +743,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(INVALID_FILE_SIZE);
@@ -798,10 +757,8 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	
 	ret = fstat(fd, &statbuf);
 	if (ret == -1) {
-#ifdef DEBUG
-		g_message ("%s: handle %p fstat failed: %s", __func__,
+		DEBUG ("%s: handle %p fstat failed: %s", __func__,
 			   handle, strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(INVALID_FILE_SIZE);
@@ -812,10 +769,8 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	if (S_ISBLK(statbuf.st_mode)) {
 		guint64 bigsize;
 		if (ioctl(fd, BLKGETSIZE64, &bigsize) < 0) {
-#ifdef DEBUG
-			g_message ("%s: handle %p ioctl BLKGETSIZE64 failed: %s",
+			DEBUG ("%s: handle %p ioctl BLKGETSIZE64 failed: %s",
 				   __func__, handle, strerror(errno));
-#endif
 
 			_wapi_set_last_error_from_errno ();
 			return(INVALID_FILE_SIZE);
@@ -826,10 +781,8 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 			*highsize = bigsize>>32;
 		}
 
-#ifdef DEBUG
-		g_message ("%s: Returning block device size %d/%d",
+		DEBUG ("%s: Returning block device size %d/%d",
 			   __func__, size, *highsize);
-#endif
 	
 		return(size);
 	}
@@ -848,9 +801,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	size = statbuf.st_size;
 #endif
 
-#ifdef DEBUG
-	g_message ("%s: Returning size %d/%d", __func__, size, *highsize);
-#endif
+	DEBUG ("%s: Returning size %d/%d", __func__, size, *highsize);
 	
 	return(size);
 }
@@ -877,10 +828,8 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_READ access: %u",
+		DEBUG("%s: handle %p doesn't have GENERIC_READ access: %u",
 			  __func__, handle, file_handle->fileaccess);
-#endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -888,20 +837,16 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 	
 	ret=fstat(fd, &statbuf);
 	if(ret==-1) {
-#ifdef DEBUG
-		g_message("%s: handle %p fstat failed: %s", __func__, handle,
+		DEBUG("%s: handle %p fstat failed: %s", __func__, handle,
 			  strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 
-#ifdef DEBUG
-	g_message("%s: atime: %ld ctime: %ld mtime: %ld", __func__,
+	DEBUG("%s: atime: %ld ctime: %ld mtime: %ld", __func__,
 		  statbuf.st_atime, statbuf.st_ctime,
 		  statbuf.st_mtime);
-#endif
 
 	/* Try and guess a meaningful create time by using the older
 	 * of atime or ctime
@@ -920,10 +865,8 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 	access_ticks=((guint64)statbuf.st_atime*10000000)+116444736000000000ULL;
 	write_ticks=((guint64)statbuf.st_mtime*10000000)+116444736000000000ULL;
 	
-#ifdef DEBUG
-	g_message("%s: aticks: %llu cticks: %llu wticks: %llu", __func__,
+	DEBUG("%s: aticks: %llu cticks: %llu wticks: %llu", __func__,
 		  access_ticks, create_ticks, write_ticks);
-#endif
 
 	if(create_time!=NULL) {
 		create_time->dwLowDateTime = create_ticks & 0xFFFFFFFF;
@@ -967,18 +910,14 @@ static gboolean file_setfiletime(gpointer handle,
 	
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 
 	if(file_handle->filename == NULL) {
-#ifdef DEBUG
-		g_message("%s: handle %p unknown filename", __func__, handle);
-#endif
+		DEBUG("%s: handle %p unknown filename", __func__, handle);
 
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
@@ -989,10 +928,8 @@ static gboolean file_setfiletime(gpointer handle,
 	 */
 	ret=fstat (fd, &statbuf);
 	if(ret==-1) {
-#ifdef DEBUG
-		g_message("%s: handle %p fstat failed: %s", __func__, handle,
+		DEBUG("%s: handle %p fstat failed: %s", __func__, handle,
 			  strerror(errno));
-#endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
@@ -1005,10 +942,8 @@ static gboolean file_setfiletime(gpointer handle,
 		 * but this will do for now.
 		 */
 		if (access_ticks < 116444736000000000ULL) {
-#ifdef DEBUG
-			g_message ("%s: attempt to set access time too early",
+			DEBUG ("%s: attempt to set access time too early",
 				   __func__);
-#endif
 			SetLastError (ERROR_INVALID_PARAMETER);
 			return(FALSE);
 		}
@@ -1025,10 +960,8 @@ static gboolean file_setfiletime(gpointer handle,
 		 * but this will do for now.
 		 */
 		if (write_ticks < 116444736000000000ULL) {
-#ifdef DEBUG
-			g_message ("%s: attempt to set write time too early",
+			DEBUG ("%s: attempt to set write time too early",
 				   __func__);
-#endif
 			SetLastError (ERROR_INVALID_PARAMETER);
 			return(FALSE);
 		}
@@ -1038,18 +971,14 @@ static gboolean file_setfiletime(gpointer handle,
 		utbuf.modtime=statbuf.st_mtime;
 	}
 
-#ifdef DEBUG
-	g_message ("%s: setting handle %p access %ld write %ld", __func__,
+	DEBUG ("%s: setting handle %p access %ld write %ld", __func__,
 		   handle, utbuf.actime, utbuf.modtime);
-#endif
 
 	ret = _wapi_utime (file_handle->filename, &utbuf);
 	if (ret == -1) {
-#ifdef DEBUG
-		g_message ("%s: handle %p [%s] utime failed: %s", __func__,
+		DEBUG ("%s: handle %p [%s] utime failed: %s", __func__,
 			   handle, file_handle->filename, strerror(errno));
 
-#endif
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
 	}
@@ -1061,9 +990,7 @@ static void console_close (gpointer handle, gpointer data)
 {
 	struct _WapiHandle_file *console_handle = (struct _WapiHandle_file *)data;
 	
-#ifdef DEBUG
-	g_message("%s: closing console handle %p", __func__, handle);
-#endif
+	DEBUG("%s: closing console handle %p", __func__, handle);
 
 	g_free (console_handle->filename);
 	
@@ -1099,10 +1026,8 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	
 	if(!(console_handle->fileaccess & GENERIC_READ) &&
 	   !(console_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message ("%s: handle %p doesn't have GENERIC_READ access: %u",
+		DEBUG ("%s: handle %p doesn't have GENERIC_READ access: %u",
 			   __func__, handle, console_handle->fileaccess);
-#endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -1113,10 +1038,8 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
 	if(ret==-1) {
-#ifdef DEBUG
-		g_message("%s: read of handle %p error: %s", __func__, handle,
+		DEBUG("%s: read of handle %p error: %s", __func__, handle,
 			  strerror(errno));
-#endif
 
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
@@ -1153,9 +1076,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	
 	if(!(console_handle->fileaccess & GENERIC_WRITE) &&
 	   !(console_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, console_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, console_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
@@ -1172,10 +1093,8 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		} else {
 			_wapi_set_last_error_from_errno ();
 			
-#ifdef DEBUG
-			g_message ("%s: write of handle %p error: %s",
+			DEBUG ("%s: write of handle %p error: %s",
 				   __func__, handle, strerror(errno));
-#endif
 
 			return(FALSE);
 		}
@@ -1189,9 +1108,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 
 static void pipe_close (gpointer handle, gpointer data G_GNUC_UNUSED)
 {
-#ifdef DEBUG
-	g_message("%s: closing pipe handle %p", __func__, handle);
-#endif
+	DEBUG("%s: closing pipe handle %p", __func__, handle);
 
 	/* No filename with pipe handles */
 
@@ -1227,19 +1144,15 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	
 	if(!(pipe_handle->fileaccess & GENERIC_READ) &&
 	   !(pipe_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_READ access: %u",
+		DEBUG("%s: handle %p doesn't have GENERIC_READ access: %u",
 			  __func__, handle, pipe_handle->fileaccess);
-#endif
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: reading up to %d bytes from pipe %p", __func__,
+	DEBUG ("%s: reading up to %d bytes from pipe %p", __func__,
 		   numbytes, handle);
-#endif
 
 	do {
 		ret=read(fd, buffer, numbytes);
@@ -1251,18 +1164,14 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		} else {
 			_wapi_set_last_error_from_errno ();
 			
-#ifdef DEBUG
-			g_message("%s: read of handle %p error: %s", __func__,
+			DEBUG("%s: read of handle %p error: %s", __func__,
 				  handle, strerror(errno));
-#endif
 
 			return(FALSE);
 		}
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: read %d bytes from pipe", __func__, ret);
-#endif
+	DEBUG ("%s: read %d bytes from pipe", __func__, ret);
 
 	if(bytesread!=NULL) {
 		*bytesread=ret;
@@ -1295,18 +1204,14 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	
 	if(!(pipe_handle->fileaccess & GENERIC_WRITE) &&
 	   !(pipe_handle->fileaccess & GENERIC_ALL)) {
-#ifdef DEBUG
-		g_message("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, pipe_handle->fileaccess);
-#endif
+		DEBUG("%s: handle %p doesn't have GENERIC_WRITE access: %u", __func__, handle, pipe_handle->fileaccess);
 
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: writing up to %d bytes to pipe %p", __func__, numbytes,
+	DEBUG ("%s: writing up to %d bytes to pipe %p", __func__, numbytes,
 		   handle);
-#endif
 
 	do {
 		ret = write (fd, buffer, numbytes);
@@ -1319,10 +1224,8 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		} else {
 			_wapi_set_last_error_from_errno ();
 			
-#ifdef DEBUG
-			g_message("%s: write of handle %p error: %s", __func__,
+			DEBUG("%s: write of handle %p error: %s", __func__,
 				  handle, strerror(errno));
-#endif
 
 			return(FALSE);
 		}
@@ -1349,10 +1252,8 @@ static int convert_flags(guint32 fileaccess, guint32 createmode)
 		flags=O_RDWR;
 		break;
 	default:
-#ifdef DEBUG
-		g_message("%s: Unknown access type 0x%x", __func__,
+		DEBUG("%s: Unknown access type 0x%x", __func__,
 			  fileaccess);
-#endif
 		break;
 	}
 
@@ -1372,10 +1273,8 @@ static int convert_flags(guint32 fileaccess, guint32 createmode)
 		flags|=O_TRUNC;
 		break;
 	default:
-#ifdef DEBUG
-		g_message("%s: Unknown create mode 0x%x", __func__,
+		DEBUG("%s: Unknown create mode 0x%x", __func__,
 			  createmode);
-#endif
 		break;
 	}
 	
@@ -1414,9 +1313,7 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 		 */
 		if (file_existing_share == 0) {
 			/* Quick and easy, no possibility to share */
-#ifdef DEBUG
-			g_message ("%s: Share mode prevents open: requested access: 0x%x, file has sharing = NONE", __func__, fileaccess);
-#endif
+			DEBUG ("%s: Share mode prevents open: requested access: 0x%x, file has sharing = NONE", __func__, fileaccess);
 
 			_wapi_handle_share_release (*share_info);
 			
@@ -1428,9 +1325,7 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 		    ((file_existing_share == FILE_SHARE_WRITE) &&
 		     (fileaccess != GENERIC_WRITE))) {
 			/* New access mode doesn't match up */
-#ifdef DEBUG
-			g_message ("%s: Share mode prevents open: requested access: 0x%x, file has sharing: 0x%x", __func__, fileaccess, file_existing_share);
-#endif
+			DEBUG ("%s: Share mode prevents open: requested access: 0x%x, file has sharing: 0x%x", __func__, fileaccess, file_existing_share);
 
 			_wapi_handle_share_release (*share_info);
 		
@@ -1442,18 +1337,14 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 		    ((file_existing_access & GENERIC_WRITE) &&
 		     !(sharemode & FILE_SHARE_WRITE))) {
 			/* New share mode doesn't match up */
-#ifdef DEBUG
-			g_message ("%s: Access mode prevents open: requested share: 0x%x, file has access: 0x%x", __func__, sharemode, file_existing_access);
-#endif
+			DEBUG ("%s: Access mode prevents open: requested share: 0x%x, file has access: 0x%x", __func__, sharemode, file_existing_access);
 
 			_wapi_handle_share_release (*share_info);
 		
 			return(FALSE);
 		}
 	} else {
-#ifdef DEBUG
-		g_message ("%s: New file!", __func__);
-#endif
+		DEBUG ("%s: New file!", __func__);
 	}
 
 	return(TRUE);
@@ -1549,9 +1440,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 	
 	if (name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: name is NULL", __func__);
-#endif
+		DEBUG ("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(INVALID_HANDLE_VALUE);
@@ -1559,18 +1448,14 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 
 	filename = mono_unicode_to_external (name);
 	if (filename == NULL) {
-#ifdef DEBUG
-		g_message("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG("%s: unicode conversion returned NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(INVALID_HANDLE_VALUE);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: Opening %s with share 0x%x and access 0x%x", __func__,
+	DEBUG ("%s: Opening %s with share 0x%x and access 0x%x", __func__,
 		   filename, sharemode, fileaccess);
-#endif
 	
 	fd = _wapi_open (filename, flags, perms);
     
@@ -1589,10 +1474,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 	
 	if (fd == -1) {
-#ifdef DEBUG
-		g_message("%s: Error opening file %s: %s", __func__, filename,
+		DEBUG("%s: Error opening file %s: %s", __func__, filename,
 			  strerror(errno));
-#endif
 		_wapi_set_last_path_error_from_errno (NULL, filename);
 		g_free (filename);
 
@@ -1600,9 +1483,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 
 	if (fd >= _wapi_fd_reserve) {
-#ifdef DEBUG
-		g_message ("%s: File descriptor is too big", __func__);
-#endif
+		DEBUG ("%s: File descriptor is too big", __func__);
 
 		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
 		
@@ -1614,10 +1495,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 
 	ret = fstat (fd, &statbuf);
 	if (ret == -1) {
-#ifdef DEBUG
-		g_message ("%s: fstat error of file %s: %s", __func__,
+		DEBUG ("%s: fstat error of file %s: %s", __func__,
 			   filename, strerror (errno));
-#endif
 		_wapi_set_last_error_from_errno ();
 		g_free (filename);
 		close (fd);
@@ -1635,9 +1514,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 	if (file_handle.share_info == NULL) {
 		/* No space, so no more files can be opened */
-#ifdef DEBUG
-		g_message ("%s: No space in the share table", __func__);
-#endif
+		DEBUG ("%s: No space in the share table", __func__);
 
 		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
 		close (fd);
@@ -1685,9 +1562,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 	
-#ifdef DEBUG
-	g_message("%s: returning handle %p", __func__, handle);
-#endif
+	DEBUG("%s: returning handle %p", __func__, handle);
 	
 	return(handle);
 }
@@ -1713,9 +1588,7 @@ gboolean DeleteFile(const gunichar2 *name)
 #endif
 	
 	if(name==NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -1723,9 +1596,7 @@ gboolean DeleteFile(const gunichar2 *name)
 
 	filename=mono_unicode_to_external(name);
 	if(filename==NULL) {
-#ifdef DEBUG
-		g_message("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG("%s: unicode conversion returned NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -1733,9 +1604,7 @@ gboolean DeleteFile(const gunichar2 *name)
 
 	attrs = GetFileAttributes (name);
 	if (attrs == INVALID_FILE_ATTRIBUTES) {
-#ifdef DEBUG
-		g_message ("%s: file attributes error", __func__);
-#endif
+		DEBUG ("%s: file attributes error", __func__);
 		/* Error set by GetFileAttributes() */
 		g_free (filename);
 		return(FALSE);
@@ -1800,9 +1669,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	struct _WapiFileShare *shareinfo;
 	
 	if(name==NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -1810,18 +1677,14 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 		
 		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
 	}
 	
 	if(dest_name==NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		g_free (utf8_name);
 		SetLastError (ERROR_INVALID_NAME);
@@ -1830,9 +1693,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 
 	utf8_dest_name = mono_unicode_to_external (dest_name);
 	if (utf8_dest_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 
 		g_free (utf8_name);
 		SetLastError (ERROR_INVALID_NAME);
@@ -1954,9 +1815,7 @@ write_file (int src_fd, int dest_fd, struct stat *st_src, gboolean report_errors
 
 				if (report_errors)
 					_wapi_set_last_error_from_errno ();
-#ifdef DEBUG
-				g_message ("%s: write failed.", __func__);
-#endif
+				DEBUG ("%s: write failed.", __func__);
 				free (buf);
 				return FALSE;
 			}
@@ -1991,9 +1850,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	gboolean ret = TRUE;
 	
 	if(name==NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -2001,19 +1858,15 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	
 	utf8_src = mono_unicode_to_external (name);
 	if (utf8_src == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion of source returned NULL",
+		DEBUG ("%s: unicode conversion of source returned NULL",
 			   __func__);
-#endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
 	}
 	
 	if(dest_name==NULL) {
-#ifdef DEBUG
-		g_message("%s: dest is NULL", __func__);
-#endif
+		DEBUG("%s: dest is NULL", __func__);
 
 		g_free (utf8_src);
 		SetLastError (ERROR_INVALID_NAME);
@@ -2022,10 +1875,8 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	
 	utf8_dest = mono_unicode_to_external (dest_name);
 	if (utf8_dest == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion of dest returned NULL",
+		DEBUG ("%s: unicode conversion of dest returned NULL",
 			   __func__);
-#endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 
@@ -2112,19 +1963,15 @@ convert_arg_to_utf8 (const gunichar2 *arg, const gchar *arg_name)
 	gchar *utf8_ret;
 
 	if (arg == NULL) {
-#ifdef DEBUG
-		g_message ("%s: %s is NULL", __func__, arg_name);
-#endif
+		DEBUG ("%s: %s is NULL", __func__, arg_name);
 		SetLastError (ERROR_INVALID_NAME);
 		return NULL;
 	}
 
 	utf8_ret = mono_unicode_to_external (arg);
 	if (utf8_ret == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion of %s returned NULL",
+		DEBUG ("%s: unicode conversion of %s returned NULL",
 			   __func__, arg_name);
-#endif
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return NULL;
 	}
@@ -2228,9 +2075,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		break;
 
 	default:
-#ifdef DEBUG
-		g_message("%s: unknown standard handle type", __func__);
-#endif
+		DEBUG("%s: unknown standard handle type", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(INVALID_HANDLE_VALUE);
@@ -2619,9 +2464,7 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	const guint16 *ip;
 	
 	if(system_time==NULL) {
-#ifdef DEBUG
-		g_message("%s: system_time NULL", __func__);
-#endif
+		DEBUG("%s: system_time NULL", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
@@ -2635,9 +2478,7 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	 * year and day calculation to work later
 	 */
 	if(file_ticks<0) {
-#ifdef DEBUG
-		g_message("%s: file_time too big", __func__);
-#endif
+		DEBUG("%s: file_time too big", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
@@ -2645,41 +2486,29 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 
 	totaldays=(file_ticks / TICKS_PER_DAY);
 	rem = file_ticks % TICKS_PER_DAY;
-#ifdef DEBUG
-	g_message("%s: totaldays: %lld rem: %lld", __func__, totaldays, rem);
-#endif
+	DEBUG("%s: totaldays: %lld rem: %lld", __func__, totaldays, rem);
 
 	system_time->wHour=rem/TICKS_PER_HOUR;
 	rem %= TICKS_PER_HOUR;
-#ifdef DEBUG
-	g_message("%s: Hour: %d rem: %lld", __func__, system_time->wHour, rem);
-#endif
+	DEBUG("%s: Hour: %d rem: %lld", __func__, system_time->wHour, rem);
 	
 	system_time->wMinute = rem / TICKS_PER_MINUTE;
 	rem %= TICKS_PER_MINUTE;
-#ifdef DEBUG
-	g_message("%s: Minute: %d rem: %lld", __func__, system_time->wMinute,
+	DEBUG("%s: Minute: %d rem: %lld", __func__, system_time->wMinute,
 		  rem);
-#endif
 	
 	system_time->wSecond = rem / TICKS_PER_SECOND;
 	rem %= TICKS_PER_SECOND;
-#ifdef DEBUG
-	g_message("%s: Second: %d rem: %lld", __func__, system_time->wSecond,
+	DEBUG("%s: Second: %d rem: %lld", __func__, system_time->wSecond,
 		  rem);
-#endif
 	
 	system_time->wMilliseconds = rem / TICKS_PER_MILLISECOND;
-#ifdef DEBUG
-	g_message("%s: Milliseconds: %d", __func__,
+	DEBUG("%s: Milliseconds: %d", __func__,
 		  system_time->wMilliseconds);
-#endif
 
 	/* January 1, 1601 was a Monday, according to Emacs calendar */
 	system_time->wDayOfWeek = ((1 + totaldays) % 7) + 1;
-#ifdef DEBUG
-	g_message("%s: Day of week: %d", __func__, system_time->wDayOfWeek);
-#endif
+	DEBUG("%s: Day of week: %d", __func__, system_time->wDayOfWeek);
 	
 	/* This algorithm to find year and month given days from epoch
 	 * from glibc
@@ -2692,31 +2521,23 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 	while(totaldays < 0 || totaldays >= (isleap(y)?366:365)) {
 		/* Guess a corrected year, assuming 365 days per year */
 		gint64 yg = y + totaldays / 365 - (totaldays % 365 < 0);
-#ifdef DEBUG
-		g_message("%s: totaldays: %lld yg: %lld y: %lld", __func__,
+		DEBUG("%s: totaldays: %lld yg: %lld y: %lld", __func__,
 			  totaldays, yg,
 			  y);
 		g_message("%s: LEAPS(yg): %lld LEAPS(y): %lld", __func__,
 			  LEAPS_THRU_END_OF(yg-1), LEAPS_THRU_END_OF(y-1));
-#endif
 		
 		/* Adjust days and y to match the guessed year. */
 		totaldays -= ((yg - y) * 365
 			      + LEAPS_THRU_END_OF (yg - 1)
 			      - LEAPS_THRU_END_OF (y - 1));
-#ifdef DEBUG
-		g_message("%s: totaldays: %lld", __func__, totaldays);
-#endif
+		DEBUG("%s: totaldays: %lld", __func__, totaldays);
 		y = yg;
-#ifdef DEBUG
-		g_message("%s: y: %lld", __func__, y);
-#endif
+		DEBUG("%s: y: %lld", __func__, y);
 	}
 	
 	system_time->wYear = y;
-#ifdef DEBUG
-	g_message("%s: Year: %d", __func__, system_time->wYear);
-#endif
+	DEBUG("%s: Year: %d", __func__, system_time->wYear);
 
 	ip = mon_yday[isleap(y)];
 	
@@ -2724,19 +2545,13 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 		continue;
 	}
 	totaldays-=ip[y];
-#ifdef DEBUG
-	g_message("%s: totaldays: %lld", __func__, totaldays);
-#endif
+	DEBUG("%s: totaldays: %lld", __func__, totaldays);
 	
 	system_time->wMonth = y + 1;
-#ifdef DEBUG
-	g_message("%s: Month: %d", __func__, system_time->wMonth);
-#endif
+	DEBUG("%s: Month: %d", __func__, system_time->wMonth);
 
 	system_time->wDay = totaldays + 1;
-#ifdef DEBUG
-	g_message("%s: Day: %d", __func__, system_time->wDay);
-#endif
+	DEBUG("%s: Day: %d", __func__, system_time->wDay);
 	
 	return(TRUE);
 }
@@ -2749,9 +2564,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	int result;
 	
 	if (pattern == NULL) {
-#ifdef DEBUG
-		g_message ("%s: pattern is NULL", __func__);
-#endif
+		DEBUG ("%s: pattern is NULL", __func__);
 
 		SetLastError (ERROR_PATH_NOT_FOUND);
 		return(INVALID_HANDLE_VALUE);
@@ -2759,17 +2572,13 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 
 	utf8_pattern = mono_unicode_to_external (pattern);
 	if (utf8_pattern == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 		
 		SetLastError (ERROR_INVALID_NAME);
 		return(INVALID_HANDLE_VALUE);
 	}
 
-#ifdef DEBUG
-	g_message ("%s: looking for [%s]", __func__, utf8_pattern);
-#endif
+	DEBUG ("%s: looking for [%s]", __func__, utf8_pattern);
 	
 	/* Figure out which bit of the pattern is the directory */
 	dir_part = _wapi_dirname (utf8_pattern);
@@ -2825,14 +2634,12 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	}
 	
 	if (result < 0) {
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 		gint errnum = errno;
 #endif
 		_wapi_set_last_path_error_from_errno (dir_part, NULL);
-#ifdef DEBUG
-		g_message ("%s: scandir error: %s", __func__,
+		DEBUG ("%s: scandir error: %s", __func__,
 			   g_strerror (errnum));
-#endif
 		g_free (utf8_pattern);
 		g_free (entry_part);
 		g_free (dir_part);
@@ -2842,9 +2649,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	g_free (utf8_pattern);
 	g_free (entry_part);
 	
-#ifdef DEBUG
-	g_message ("%s: Got %d matches", __func__, result);
-#endif
+	DEBUG ("%s: Got %d matches", __func__, result);
 
 	find_handle.dir_part = dir_part;
 	find_handle.num = result;
@@ -2916,9 +2721,7 @@ retry:
 	}
 	
 	if (result != 0) {
-#ifdef DEBUG
-		g_message ("%s: stat failed: %s", __func__, filename);
-#endif
+		DEBUG ("%s: stat failed: %s", __func__, filename);
 
 		g_free (filename);
 		goto retry;
@@ -2926,9 +2729,7 @@ retry:
 
 	result = _wapi_lstat (filename, &linkbuf);
 	if (result != 0) {
-#ifdef DEBUG
-		g_message ("%s: lstat failed: %s", __func__, filename);
-#endif
+		DEBUG ("%s: lstat failed: %s", __func__, filename);
 
 		g_free (filename);
 		goto retry;
@@ -2947,9 +2748,7 @@ retry:
 	}
 	g_free (filename);
 	
-#ifdef DEBUG
-	g_message ("%s: Found [%s]", __func__, utf8_filename);
-#endif
+	DEBUG ("%s: Found [%s]", __func__, utf8_filename);
 	
 	/* fill data block */
 
@@ -3072,9 +2871,7 @@ gboolean CreateDirectory (const gunichar2 *name,
 	int result;
 	
 	if (name == NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -3082,9 +2879,7 @@ gboolean CreateDirectory (const gunichar2 *name,
 	
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 	
 		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
@@ -3117,9 +2912,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
 	int result;
 	
 	if (name == NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -3127,9 +2920,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
 
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 		
 		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
@@ -3163,9 +2954,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 	guint32 ret;
 	
 	if (name == NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -3173,9 +2962,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 	
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return (INVALID_FILE_ATTRIBUTES);
@@ -3227,19 +3014,15 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 	int result;
 	
 	if (level != GetFileExInfoStandard) {
-#ifdef DEBUG
-		g_message ("%s: info level %d not supported.", __func__,
+		DEBUG ("%s: info level %d not supported.", __func__,
 			   level);
-#endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return FALSE;
 	}
 	
 	if (name == NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -3247,9 +3030,7 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return FALSE;
@@ -3327,9 +3108,7 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	 */
 	
 	if (name == NULL) {
-#ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
-#endif
+		DEBUG("%s: name is NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
@@ -3337,9 +3116,7 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
-#ifdef DEBUG
-		g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+		DEBUG ("%s: unicode conversion returned NULL", __func__);
 
 		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
@@ -3476,16 +3253,12 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	
 	mono_once (&io_ops_once, io_ops_init);
 	
-#ifdef DEBUG
-	g_message ("%s: Creating pipe", __func__);
-#endif
+	DEBUG ("%s: Creating pipe", __func__);
 
 	ret=pipe (filedes);
 	if(ret==-1) {
-#ifdef DEBUG
-		g_message ("%s: Error creating pipe: %s", __func__,
+		DEBUG ("%s: Error creating pipe: %s", __func__,
 			   strerror (errno));
-#endif
 		
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
@@ -3493,9 +3266,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 
 	if (filedes[0] >= _wapi_fd_reserve ||
 	    filedes[1] >= _wapi_fd_reserve) {
-#ifdef DEBUG
-		g_message ("%s: File descriptor is too big", __func__);
-#endif
+		DEBUG ("%s: File descriptor is too big", __func__);
 
 		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
 		
@@ -3536,10 +3307,8 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	*readpipe = read_handle;
 	*writepipe = write_handle;
 
-#ifdef DEBUG
-	g_message ("%s: Returning pipe: read handle %p, write handle %p",
+	DEBUG ("%s: Returning pipe: read handle %p, write handle %p",
 		   __func__, read_handle, write_handle);
-#endif
 
 	return(TRUE);
 }
@@ -3565,10 +3334,8 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 		dirlen=(bytes/2);
 		
 		if(dirlen+1>len) {
-#ifdef DEBUG
-			g_message ("%s: Size %d smaller than needed (%ld)",
+			DEBUG ("%s: Size %d smaller than needed (%ld)",
 				   __func__, len, dirlen+1);
-#endif
 		
 			ret=dirlen+1;
 		} else {
@@ -4052,9 +3819,7 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 	else {
 		utf8_path_name = mono_unicode_to_external (path_name);
 		if (utf8_path_name == NULL) {
-#ifdef DEBUG
-			g_message("%s: unicode conversion returned NULL", __func__);
-#endif
+			DEBUG("%s: unicode conversion returned NULL", __func__);
 
 			SetLastError (ERROR_INVALID_NAME);
 			return(FALSE);
@@ -4077,9 +3842,7 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 
 	if (ret == -1) {
 		_wapi_set_last_error_from_errno ();
-#ifdef DEBUG
-		g_message ("%s: statvfs failed: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: statvfs failed: %s", __func__, strerror (errno));
 		return(FALSE);
 	}
 
@@ -4368,9 +4131,7 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	else {
 		utf8_root_path_name = mono_unicode_to_external (root_path_name);
 		if (utf8_root_path_name == NULL) {
-#ifdef DEBUG
-			g_message("%s: unicode conversion returned NULL", __func__);
-#endif
+			DEBUG("%s: unicode conversion returned NULL", __func__);
 			return(DRIVE_NO_ROOT_DIR);
 		}
 		

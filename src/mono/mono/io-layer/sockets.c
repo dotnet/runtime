@@ -51,7 +51,11 @@
 #include <sys/sendfile.h>
 #endif
 
-#undef DEBUG
+#if 0
+#define DEBUG(...) g_message(__VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
 
 static guint32 startup_count=0;
 static guint32 in_cleanup = 0;
@@ -79,9 +83,7 @@ static void socket_close (gpointer handle, gpointer data)
 	int ret;
 	struct _WapiHandle_socket *socket_handle = (struct _WapiHandle_socket *)data;
 
-#ifdef DEBUG
-	g_message ("%s: closing socket handle %p", __func__, handle);
-#endif
+	DEBUG ("%s: closing socket handle %p", __func__, handle);
 
 	if (startup_count == 0 && !in_cleanup) {
 		WSASetLastError (WSANOTINITIALISED);
@@ -100,9 +102,7 @@ static void socket_close (gpointer handle, gpointer data)
 	
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: close error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: close error: %s", __func__, strerror (errno));
 		errnum = errno_to_WSA (errnum, __func__);
 		if (!in_cleanup)
 			WSASetLastError (errnum);
@@ -131,9 +131,7 @@ int WSAStartup(guint32 requested, WapiWSAData *data)
 	data->wVersion = requested < data->wHighVersion? requested:
 		data->wHighVersion;
 
-#ifdef DEBUG
-	g_message ("%s: high version 0x%x", __func__, data->wHighVersion);
-#endif
+	DEBUG ("%s: high version 0x%x", __func__, data->wHighVersion);
 	
 	strncpy (data->szDescription, "WAPI", WSADESCRIPTION_LEN);
 	strncpy (data->szSystemStatus, "groovy", WSASYS_STATUS_LEN);
@@ -150,9 +148,7 @@ cleanup_close (gpointer handle, gpointer data)
 
 int WSACleanup(void)
 {
-#ifdef DEBUG
-	g_message ("%s: cleaning up", __func__);
-#endif
+	DEBUG ("%s: cleaning up", __func__);
 
 	if (--startup_count) {
 		/* Do nothing */
@@ -228,9 +224,7 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 
 	if (new_fd == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: accept error: %s", __func__, strerror(errno));
-#endif
+		DEBUG ("%s: accept error: %s", __func__, strerror(errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -239,9 +233,7 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	}
 
 	if (new_fd >= _wapi_fd_reserve) {
-#ifdef DEBUG
-		g_message ("%s: File descriptor is too big", __func__);
-#endif
+		DEBUG ("%s: File descriptor is too big", __func__);
 
 		WSASetLastError (WSASYSCALLFAILURE);
 		
@@ -263,10 +255,8 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 
-#ifdef DEBUG
-	g_message ("%s: returning newly accepted socket handle %p with",
+	DEBUG ("%s: returning newly accepted socket handle %p with",
 		   __func__, new_handle);
-#endif
 	
 	return(new_fd);
 }
@@ -289,9 +279,7 @@ int _wapi_bind(guint32 fd, struct sockaddr *my_addr, socklen_t addrlen)
 	ret = bind (fd, my_addr, addrlen);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: bind error: %s", __func__, strerror(errno));
-#endif
+		DEBUG ("%s: bind error: %s", __func__, strerror(errno));
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
 		
@@ -326,10 +314,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 		errnum = errno;
 		
 		if (errno != EINTR) {
-#ifdef DEBUG
-			g_message ("%s: connect error: %s", __func__,
+			DEBUG ("%s: connect error: %s", __func__,
 				   strerror (errnum));
-#endif
 
 			errnum = errno_to_WSA (errnum, __func__);
 			if (errnum == WSAEINPROGRESS)
@@ -365,10 +351,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 			if (errno != EINTR) {
 				errnum = errno_to_WSA (errno, __func__);
 
-#ifdef DEBUG
-				g_message ("%s: connect poll error: %s",
+				DEBUG ("%s: connect poll error: %s",
 					   __func__, strerror (errno));
-#endif
 
 				WSASetLastError (errnum);
 				return(SOCKET_ERROR);
@@ -380,10 +364,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 				&len) == -1) {
 			errnum = errno_to_WSA (errno, __func__);
 
-#ifdef DEBUG
-			g_message ("%s: connect getsockopt error: %s",
+			DEBUG ("%s: connect getsockopt error: %s",
 				   __func__, strerror (errno));
-#endif
 
 			WSASetLastError (errnum);
 			return(SOCKET_ERROR);
@@ -401,10 +383,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 				socket_handle->saved_error = errnum;
 			}
 			
-#ifdef DEBUG
-			g_message ("%s: connect getsockopt returned error: %s",
+			DEBUG ("%s: connect getsockopt returned error: %s",
 				   __func__, strerror (so_error));
-#endif
 
 			WSASetLastError (errnum);
 			return(SOCKET_ERROR);
@@ -432,10 +412,8 @@ int _wapi_getpeername(guint32 fd, struct sockaddr *name, socklen_t *namelen)
 	ret = getpeername (fd, name, namelen);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: getpeername error: %s", __func__,
+		DEBUG ("%s: getpeername error: %s", __func__,
 			   strerror (errno));
-#endif
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -464,10 +442,8 @@ int _wapi_getsockname(guint32 fd, struct sockaddr *name, socklen_t *namelen)
 	ret = getsockname (fd, name, namelen);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: getsockname error: %s", __func__,
+		DEBUG ("%s: getsockname error: %s", __func__,
 			   strerror (errno));
-#endif
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -508,10 +484,8 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	ret = getsockopt (fd, level, optname, tmp_val, optlen);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: getsockopt error: %s", __func__,
+		DEBUG ("%s: getsockopt error: %s", __func__,
 			   strerror (errno));
-#endif
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -567,9 +541,7 @@ int _wapi_listen(guint32 fd, int backlog)
 	ret = listen (fd, backlog);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: listen error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: listen error: %s", __func__, strerror (errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -637,9 +609,7 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: recv error: %s", __func__, strerror(errno));
-#endif
+		DEBUG ("%s: recv error: %s", __func__, strerror(errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -684,9 +654,7 @@ _wapi_recvmsg(guint32 fd, struct msghdr *msg, int recv_flags)
 	
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: recvmsg error: %s", __func__, strerror(errno));
-#endif
+		DEBUG ("%s: recvmsg error: %s", __func__, strerror(errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -718,9 +686,7 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: send error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: send error: %s", __func__, strerror (errno));
 
 #ifdef O_NONBLOCK
 		/* At least linux returns EAGAIN/EWOULDBLOCK when the timeout has been set on
@@ -762,9 +728,7 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: send error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: send error: %s", __func__, strerror (errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -797,9 +761,7 @@ _wapi_sendmsg(guint32 fd,  const struct msghdr *msg, int send_flags)
 
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: sendmsg error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: sendmsg error: %s", __func__, strerror (errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -852,10 +814,8 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 	ret = setsockopt (fd, level, optname, tmp_val, optlen);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: setsockopt error: %s", __func__,
+		DEBUG ("%s: setsockopt error: %s", __func__,
 			   strerror (errno));
-#endif
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -913,10 +873,8 @@ int _wapi_shutdown(guint32 fd, int how)
 	ret = shutdown (fd, how);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: shutdown error: %s", __func__,
+		DEBUG ("%s: shutdown error: %s", __func__,
 			   strerror (errno));
-#endif
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -949,9 +907,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	
 	if (fd == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: socket error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: socket error: %s", __func__, strerror (errno));
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
 
@@ -959,10 +915,8 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	}
 
 	if (fd >= _wapi_fd_reserve) {
-#ifdef DEBUG
-		g_message ("%s: File descriptor is too big (%d >= %d)",
+		DEBUG ("%s: File descriptor is too big (%d >= %d)",
 			   __func__, fd, _wapi_fd_reserve);
-#endif
 
 		WSASetLastError (WSASYSCALLFAILURE);
 		close (fd);
@@ -991,9 +945,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		if (ret == -1) {
 			int errnum = errno;
 
-#ifdef DEBUG
-			g_message ("%s: Error setting SO_REUSEADDR", __func__);
-#endif
+			DEBUG ("%s: Error setting SO_REUSEADDR", __func__);
 			
 			errnum = errno_to_WSA (errnum, __func__);
 			WSASetLastError (errnum);
@@ -1015,9 +967,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		return(INVALID_SOCKET);
 	}
 
-#ifdef DEBUG
-	g_message ("%s: returning socket handle %p", __func__, handle);
-#endif
+	DEBUG ("%s: returning socket handle %p", __func__, handle);
 
 	return(fd);
 }
@@ -1033,10 +983,8 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 
 	he = gethostbyname (hostname);
 	if (he == NULL) {
-#ifdef DEBUG
-		g_message ("%s: gethostbyname error: %s", __func__,
+		DEBUG ("%s: gethostbyname error: %s", __func__,
 			   strerror (h_errno));
-#endif
 
 		switch(h_errno) {
 		case HOST_NOT_FOUND:
@@ -1084,9 +1032,7 @@ static gboolean socket_disconnect (guint32 fd)
 	if (newsock == -1) {
 		gint errnum = errno;
 
-#ifdef DEBUG
-		g_message ("%s: socket error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: socket error: %s", __func__, strerror (errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -1106,9 +1052,7 @@ static gboolean socket_disconnect (guint32 fd)
 	if (ret == -1) {
 		gint errnum = errno;
 		
-#ifdef DEBUG
-		g_message ("%s: dup2 error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: dup2 error: %s", __func__, strerror (errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -1124,9 +1068,7 @@ static gboolean socket_disconnect (guint32 fd)
 static gboolean wapi_disconnectex (guint32 fd, WapiOverlapped *overlapped,
 				   guint32 flags, guint32 reserved)
 {
-#ifdef DEBUG
-	g_message ("%s: called on socket %d!", __func__, fd);
-#endif
+	DEBUG ("%s: called on socket %d!", __func__, fd);
 	
 	if (reserved != 0) {
 		WSASetLastError (WSAEINVAL);
@@ -1375,10 +1317,8 @@ WSAIoctl (guint32 fd, gint32 command,
 	ret = ioctl (fd, command, buffer);
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message("%s: WSAIoctl error: %s", __func__,
+		DEBUG("%s: WSAIoctl error: %s", __func__,
 			  strerror (errno));
-#endif
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -1475,9 +1415,7 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: ioctl error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: ioctl error: %s", __func__, strerror (errno));
 
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
@@ -1519,9 +1457,7 @@ int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 
 	if (ret == -1) {
 		gint errnum = errno;
-#ifdef DEBUG
-		g_message ("%s: select error: %s", __func__, strerror (errno));
-#endif
+		DEBUG ("%s: select error: %s", __func__, strerror (errno));
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
 		

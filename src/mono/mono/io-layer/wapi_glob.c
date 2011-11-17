@@ -96,7 +96,7 @@ static int	 glob3(GDir *dir, gchar *, gchar *, wapi_glob_t *, size_t *,
 		       gboolean, gboolean);
 static int	 globextend(const gchar *, wapi_glob_t *, size_t *);
 static int	 match(const gchar *, gchar *, gchar *, gboolean);
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 static void	 qprintf(const char *, Char *);
 #endif
 
@@ -176,7 +176,7 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
 		}
 	}
 	*bufnext = EOS;
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 	qprintf("glob0:", patbuf);
 #endif
 
@@ -378,7 +378,7 @@ g_Ctoc(const gchar *str, char *buf, u_int len)
 	return (1);
 }
 
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 static void
 qprintf(const char *str, Char *s)
 {

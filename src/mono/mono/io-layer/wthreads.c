@@ -37,7 +37,11 @@
 #include <valgrind/memcheck.h>
 #endif
 
-#undef DEBUG
+#if 0
+#define DEBUG(...) g_message(__VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
 
 #if 0
 #define WAIT_DEBUG(code) do { code } while (0)
@@ -96,9 +100,7 @@ static void _wapi_thread_abandon_mutexes (gpointer handle)
 	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
 	
-#ifdef DEBUG
-	g_message ("%s: Thread %p abandoning held mutexes", __func__, handle);
-#endif
+	DEBUG ("%s: Thread %p abandoning held mutexes", __func__, handle);
 
 	if (handle == NULL) {
 		handle = _wapi_thread_handle_from_id (pthread_self ());
@@ -143,9 +145,7 @@ void _wapi_thread_set_termination_details (gpointer handle,
 		return;
 	}
 
-#ifdef DEBUG
-	g_message ("%s: Thread %p terminating", __func__, handle);
-#endif
+	DEBUG ("%s: Thread %p terminating", __func__, handle);
 
 	_wapi_thread_abandon_mutexes (handle);
 	
@@ -174,10 +174,8 @@ void _wapi_thread_set_termination_details (gpointer handle,
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 	
-#ifdef DEBUG
-	g_message("%s: Recording thread handle %p id %ld status as %d",
+	DEBUG("%s: Recording thread handle %p id %ld status as %d",
 		  __func__, handle, thread_handle->id, exitstatus);
-#endif
 	
 	/* The thread is no longer active, so unref it */
 	_wapi_handle_unref (handle);
@@ -275,9 +273,7 @@ static void *thread_start_routine (gpointer args)
 		mono_gc_pthread_exit (NULL);
 	}
 
-#ifdef DEBUG
-	g_message ("%s: started thread id %ld", __func__, thread->id);
-#endif
+	DEBUG ("%s: started thread id %ld", __func__, thread->id);
 
 	/* We set it again here since passing &thread->id to pthread_create is racy
 	   as the thread can start running before the value is set.*/
@@ -413,10 +409,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 									   thread_start_routine, (void *)thread_handle_p);
 
 	if (ret != 0) {
-#ifdef DEBUG
-		g_message ("%s: Thread create error: %s", __func__,
+		DEBUG ("%s: Thread create error: %s", __func__,
 			   strerror(ret));
-#endif
 
 		/* Two, because of the reference we took above */
 		unrefs = 2;
@@ -425,10 +419,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	}
 	ct_ret = handle;
 	
-#ifdef DEBUG
-	g_message("%s: Started thread handle %p ID %ld", __func__, handle,
+	DEBUG("%s: Started thread handle %p ID %ld", __func__, handle,
 		  thread_handle_p->id);
-#endif
 	
 	if (tid != NULL) {
 #ifdef PTHREAD_POINTER_ID
@@ -470,18 +462,14 @@ gpointer _wapi_thread_handle_from_id (pthread_t tid)
 	    (ret = pthread_getspecific (thread_hash_key)) != NULL) {
 		/* We know the handle */
 
-#ifdef DEBUG
-		g_message ("%s: Returning %p for self thread %ld from TLS",
+		DEBUG ("%s: Returning %p for self thread %ld from TLS",
 			   __func__, ret, tid);
-#endif
 		
 		return(ret);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: Returning NULL for unknown or non-self thread %ld",
+	DEBUG ("%s: Returning NULL for unknown or non-self thread %ld",
 		   __func__, tid);
-#endif
 		
 
 	return(NULL);
@@ -506,22 +494,16 @@ static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
 			return(FALSE);
 		}
 		
-#ifdef DEBUG
-		g_message ("%s: looking at thread %ld from process %d", __func__, thread_handle->id, 0);
-#endif
+		DEBUG ("%s: looking at thread %ld from process %d", __func__, thread_handle->id, 0);
 
 		if (pthread_equal (thread_handle->id, tid)) {
-#ifdef DEBUG
-			g_message ("%s: found the thread we are looking for",
+			DEBUG ("%s: found the thread we are looking for",
 				   __func__);
-#endif
 			return(TRUE);
 		}
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: not found %ld, returning FALSE", __func__, tid);
-#endif
+	DEBUG ("%s: not found %ld, returning FALSE", __func__, tid);
 	
 	return(FALSE);
 }
@@ -536,9 +518,7 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	mono_once (&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 	
-#ifdef DEBUG
-	g_message ("%s: looking up thread %"G_GSIZE_FORMAT, __func__, tid);
-#endif
+	DEBUG ("%s: looking up thread %"G_GSIZE_FORMAT, __func__, tid);
 
 	ret = _wapi_thread_handle_from_id ((pthread_t)tid);
 	if (ret == NULL) {
@@ -551,9 +531,7 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 		_wapi_handle_ref (ret);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: returning thread handle %p", __func__, ret);
-#endif
+	DEBUG ("%s: returning thread handle %p", __func__, ret);
 	
 	return(ret);
 }
@@ -602,24 +580,18 @@ gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode)
 		return (FALSE);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: Finding exit status for thread handle %p id %ld",
+	DEBUG ("%s: Finding exit status for thread handle %p id %ld",
 		   __func__, handle, thread_handle->id);
-#endif
 
 	if (exitcode == NULL) {
-#ifdef DEBUG
-		g_message ("%s: Nowhere to store exit code", __func__);
-#endif
+		DEBUG ("%s: Nowhere to store exit code", __func__);
 		return(FALSE);
 	}
 	
 	if (thread_handle->state != THREAD_STATE_EXITED) {
-#ifdef DEBUG
-		g_message ("%s: Thread still active (state %d, exited is %d)",
+		DEBUG ("%s: Thread still active (state %d, exited is %d)",
 			   __func__, thread_handle->state,
 			   THREAD_STATE_EXITED);
-#endif
 		*exitcode = STILL_ACTIVE;
 		return(TRUE);
 	}
@@ -709,10 +681,8 @@ static gpointer thread_attach(gsize *tid)
 	thr_ret = pthread_setspecific (thread_attached_key, (void *)handle);
 	g_assert (thr_ret == 0);
 	
-#ifdef DEBUG
-	g_message("%s: Attached thread handle %p ID %ld", __func__, handle,
+	DEBUG("%s: Attached thread handle %p ID %ld", __func__, handle,
 		  thread_handle_p->id);
-#endif
 
 	if (tid != NULL) {
 #ifdef PTHREAD_POINTER_ID
@@ -831,9 +801,7 @@ guint32 SleepEx(guint32 ms, gboolean alertable)
 	int ret;
 	gpointer current_thread = NULL;
 	
-#ifdef DEBUG
-	g_message("%s: Sleeping for %d ms", __func__, ms);
-#endif
+	DEBUG("%s: Sleeping for %d ms", __func__, ms);
 
 	if (alertable) {
 		current_thread = _wapi_thread_handle_from_id (pthread_self ());
@@ -871,7 +839,7 @@ again:
 	
 	if(ret==-1) {
 		/* Sleep interrupted with rem time remaining */
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 		guint32 rems=rem.tv_sec*1000 + rem.tv_nsec/1000000;
 		
 		g_message("%s: Still got %d ms to go", __func__, rems);
@@ -908,16 +876,14 @@ gboolean _wapi_thread_apc_pending (gpointer handle)
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread);
 	if (ok == FALSE) {
-#ifdef DEBUG
 		/* This might happen at process shutdown, as all
 		 * thread handles are forcibly closed.  If a thread
 		 * still has an alertable wait the final
 		 * _wapi_thread_apc_pending check will probably fail
 		 * to find the handle
 		 */
-		g_warning ("%s: error looking up thread handle %p", __func__,
+		DEBUG ("%s: error looking up thread handle %p", __func__,
 			   handle);
-#endif
 		return (FALSE);
 	}
 	

@@ -34,9 +34,11 @@
 #include <mono/io-layer/daemon-private.h>
 #include <mono/io-layer/socket-wrappers.h>
 
-#define LOGDEBUG(...)
-#undef DEBUG
-// #define LOGDEBUG(...) g_message(__VA_ARGS__)
+#if 0
+// #define DEBUG(...) g_message(__VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
 
 /* The shared thread codepath doesn't seem to work yet... */
 #undef _POSIX_THREAD_PROCESS_SHARED
@@ -110,10 +112,10 @@ static void maybe_exit (void)
 {
 	guint32 i;
 
-	LOGDEBUG ("%s: Seeing if we should exit", __func__);
+	DEBUG ("%s: Seeing if we should exit", __func__);
 
 	if(nfds>1) {
-		LOGDEBUG ("%s: Still got clients", __func__);
+		DEBUG ("%s: Still got clients", __func__);
 		return;
 	}
 
@@ -124,7 +126,7 @@ static void maybe_exit (void)
 	    i<_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT;
 	    i++) {
 		if(daemon_channel_data->open_handles[i]>0) {
-			LOGDEBUG ("%s: Still got handle references", __func__);
+			DEBUG ("%s: Still got handle references", __func__);
 			_wapi_shared_data[0]->daemon_running=DAEMON_RUNNING;
 			return;
 		}
@@ -150,11 +152,11 @@ static void maybe_exit (void)
 		fds[0].events=POLLIN;
 		fds[0].revents=0;
 		
-		LOGDEBUG ("%s: Last connect check", __func__);
+		DEBUG ("%s: Last connect check", __func__);
 
 		if(poll (fds, 1, 0)>0) {
 			/* Someone did connect, so carry on running */
-			LOGDEBUG ("%s: Someone connected", __func__);
+			DEBUG ("%s: Someone connected", __func__);
 
 			_wapi_shared_data[0]->daemon_running=DAEMON_RUNNING;
 			return;
@@ -162,7 +164,7 @@ static void maybe_exit (void)
 	}
 #endif
 	
-	LOGDEBUG ("%s: Byebye", __func__);
+	DEBUG ("%s: Byebye", __func__);
 	
 	cleanup ();
 	exit (0);
@@ -176,7 +178,7 @@ static void maybe_exit (void)
  */
 static void signal_handler (int signo)
 {
-	LOGDEBUG ("%s: daemon received signal %d", __func__, signo);
+	DEBUG ("%s: daemon received signal %d", __func__, signo);
 
 	cleanup ();
 	exit (-1);
@@ -286,7 +288,7 @@ static void ref_handle (ChannelData *channel_data, guint32 handle)
 	_wapi_shared_data[segment]->handles[idx].ref++;
 	channel_data->open_handles[handle]++;
 	
-	LOGDEBUG ("%s: handle 0x%x ref now %d (%d this process)", __func__, handle,
+	DEBUG ("%s: handle 0x%x ref now %d (%d this process)", __func__, handle,
 		  _wapi_shared_data[segment]->handles[idx].ref,
 		  channel_data->open_handles[handle]);
 }
@@ -319,7 +321,7 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
 	_wapi_shared_data[segment]->handles[idx].ref--;
 	channel_data->open_handles[handle]--;
 	
-	LOGDEBUG ("%s: handle 0x%x ref now %d (%d this process)", __func__, handle,
+	DEBUG ("%s: handle 0x%x ref now %d (%d this process)", __func__, handle,
 		   _wapi_shared_data[segment]->handles[idx].ref,
 		   channel_data->open_handles[handle]);
 
@@ -335,7 +337,7 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
 			g_warning ("%s: per-process open_handles mismatch, set to %d, should be 0",__func__, channel_data->open_handles[handle]);
 		}
 		
-		LOGDEBUG ("%s: Destroying handle 0x%x", __func__, handle);
+		DEBUG ("%s: Destroying handle 0x%x", __func__, handle);
 
 		/* if this was a file handle, save the device and
 		 * inode numbers so we can scan the share info data
@@ -464,10 +466,10 @@ static void rem_fd(GIOChannel *channel, ChannelData *channel_data)
 		exit (-1);
 	}
 	
-	LOGDEBUG ("%s: Removing client fd %d", __func__, fd);
+	DEBUG ("%s: Removing client fd %d", __func__, fd);
 
 	if (channel_data->io_source == 0) {
-		LOGDEBUG ("%s: channel already closed for fd %d", __func__, fd);
+		DEBUG ("%s: channel already closed for fd %d", __func__, fd);
 		return;
 	}
 
@@ -482,7 +484,7 @@ static void rem_fd(GIOChannel *channel, ChannelData *channel_data)
 		handle_count=channel_data->open_handles[i];
 		
 		for(j=0; j<handle_count; j++) {
-			LOGDEBUG ("%s: closing handle 0x%x for client at index %d", __func__, i, g_io_channel_unix_get_fd (channel));
+			DEBUG ("%s: closing handle 0x%x for client at index %d", __func__, i, g_io_channel_unix_get_fd (channel));
 			/* Ignore the hint to the client to destroy
 			 * the handle private data
 			 */
@@ -563,7 +565,7 @@ static gboolean share_compare (gpointer handle, gpointer user_data)
 	
 	if (file_handle->device == sharekey->device &&
 	    file_handle->inode == sharekey->inode) {
-		LOGDEBUG ("%s: found one, handle %p", __func__, handle);
+		DEBUG ("%s: found one, handle %p", __func__, handle);
 		return(TRUE);
 	} else {
 		return(FALSE);
@@ -575,7 +577,7 @@ static void check_sharing (dev_t device, ino_t inode)
 	ShareKey sharekey;
 	gpointer file_handle;
 	
-	LOGDEBUG ("%s: Checking if anything has (dev 0x%llx, inode %lld) still open", __func__, device, inode);
+	DEBUG ("%s: Checking if anything has (dev 0x%llx, inode %lld) still open", __func__, device, inode);
 
 	sharekey.device = device;
 	sharekey.inode = inode;
@@ -587,7 +589,7 @@ static void check_sharing (dev_t device, ino_t inode)
 		/* Delete this share info, as the last handle to it
 		 * has been closed
 		 */
-		LOGDEBUG ("%s: Deleting share data for (dev 0x%llx inode %lld)", __func__, device, inode);
+		DEBUG ("%s: Deleting share data for (dev 0x%llx inode %lld)", __func__, device, inode);
 		
 		g_hash_table_remove (file_share_hash, &sharekey);
 	}
@@ -638,7 +640,7 @@ static gboolean process_thread_compare (gpointer handle, gpointer user_data)
 		 * _wapi_handle_set_signal_state() unless we have
 		 * process-shared pthread support.
 		 */
-		LOGDEBUG ("%s: Set thread handle %p signalled, because its process died", __func__, handle);
+		DEBUG ("%s: Set thread handle %p signalled, because its process died", __func__, handle);
 
 		thread_handle->exitstatus=0;
 
@@ -685,7 +687,7 @@ static void process_post_mortem (pid_t pid, int status)
 		 * This may happen if we use Process.EnableRaisingEvents +
 		 * process.Exited event and the parent has finished.
 		 */
-		LOGDEBUG ("%s: Couldn't find handle for process %d!", __func__, pid);
+		DEBUG ("%s: Couldn't find handle for process %d!", __func__, pid);
 	} else {
 		/* Signal the handle.  Don't use
 		 * _wapi_handle_set_signal_state() unless we have
@@ -693,7 +695,7 @@ static void process_post_mortem (pid_t pid, int status)
 		 */
 		struct timeval tv;
 		
-		LOGDEBUG ("%s: Set process %d exitstatus to %d", __func__, pid,
+		DEBUG ("%s: Set process %d exitstatus to %d", __func__, pid,
 			   WEXITSTATUS (status));
 		
 		/* If the child terminated due to the receipt of a signal,
@@ -746,7 +748,7 @@ static void process_died (void)
 	
 	check_processes=FALSE;
 
-	LOGDEBUG ("%s: Reaping processes", __func__);
+	DEBUG ("%s: Reaping processes", __func__);
 
 	while(TRUE) {
 		pid=waitpid (-1, &status, WNOHANG);
@@ -759,7 +761,7 @@ static void process_died (void)
 			return;
 		} else {
 			/* pid contains the ID of a dead process */
-			LOGDEBUG ( "%s: process %d reaped", __func__, pid);
+			DEBUG ( "%s: process %d reaped", __func__, pid);
 			process_post_mortem (pid, status);
 		}
 	}
@@ -842,7 +844,7 @@ static void process_new (GIOChannel *channel, ChannelData *channel_data,
 
 	ref_handle (channel_data, handle);
 
-	LOGDEBUG ("%s: returning new handle 0x%x", __func__, handle);
+	DEBUG ("%s: returning new handle 0x%x", __func__, handle);
 
 	resp.type=WapiHandleResponseType_New;
 	resp.u.new.type=type;
@@ -873,7 +875,7 @@ static void process_open (GIOChannel *channel, ChannelData *channel_data,
 	if(shared->type!=WAPI_HANDLE_UNUSED && handle!=0) {
 		ref_handle (channel_data, handle);
 
-		LOGDEBUG ("%s: returning new handle 0x%x", __func__, handle);
+		DEBUG ("%s: returning new handle 0x%x", __func__, handle);
 
 		resp.type=WapiHandleResponseType_Open;
 		resp.u.new.type=shared->type;
@@ -907,7 +909,7 @@ static void process_close (GIOChannel *channel, ChannelData *channel_data,
 	resp.type=WapiHandleResponseType_Close;
 	resp.u.close.destroy=unref_handle (channel_data, handle);
 
-	LOGDEBUG ("%s: unreffing handle 0x%x", __func__, handle);
+	DEBUG ("%s: unreffing handle 0x%x", __func__, handle);
 
 	send_reply (channel, &resp);
 }
@@ -926,7 +928,7 @@ static void process_scratch (GIOChannel *channel, guint32 length)
 	resp.type=WapiHandleResponseType_Scratch;
 	resp.u.scratch.idx=_wapi_handle_scratch_store_internal (length, &resp.u.scratch.remap);
 
-	LOGDEBUG ("%s: allocating scratch index 0x%x", __func__, resp.u.scratch.idx);
+	DEBUG ("%s: allocating scratch index 0x%x", __func__, resp.u.scratch.idx);
 			
 	send_reply (channel, &resp);
 }
@@ -945,7 +947,7 @@ static void process_scratch_free (GIOChannel *channel, guint32 scratch_idx)
 	resp.type=WapiHandleResponseType_ScratchFree;
 	_wapi_handle_scratch_delete_internal (scratch_idx);
 
-	LOGDEBUG ("%s: deleting scratch index 0x%x", __func__, scratch_idx);
+	DEBUG ("%s: deleting scratch index 0x%x", __func__, scratch_idx);
 			
 	send_reply (channel, &resp);
 }
@@ -965,11 +967,11 @@ process_process_kill (GIOChannel *channel,
 
 	resp.type = WapiHandleResponseType_ProcessKill;
 
-	LOGDEBUG ("%s: kill (%d, %d)", __func__, process_kill.pid, process_kill.signo);
+	DEBUG ("%s: kill (%d, %d)", __func__, process_kill.pid, process_kill.signo);
 
 	if (kill (process_kill.pid, process_kill.signo) == -1) {
 		resp.u.process_kill.err = errno;
-		LOGDEBUG ("%s: kill (%d, %d) failed: %d", __func__, process_kill.pid, process_kill.signo, resp.u.process_kill.err);
+		DEBUG ("%s: kill (%d, %d) failed: %d", __func__, process_kill.pid, process_kill.signo, resp.u.process_kill.err);
 	}
 
 	send_reply (channel, &resp);
@@ -1053,7 +1055,7 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 			 */
 			process_handle_data->exec_errno=gerr->code;
 		} else {
-			LOGDEBUG ("%s: forking", __func__);
+			DEBUG ("%s: forking", __func__);
 
 			/* Fork, exec cmd with args and optional env,
 			 * and return the handles with pid and blank
@@ -1104,18 +1106,18 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 					env[env_count+2]=NULL;
 				}
 
-#ifdef DEBUG
-				LOGDEBUG ("%s: exec()ing [%s] in dir [%s]", __func__, cmd, dir);
+#ifdef DEBUG_ENABLED
+				DEBUG ("%s: exec()ing [%s] in dir [%s]", __func__, cmd, dir);
 				{
 					i=0;
 					while(argv[i]!=NULL) {
-						LOGDEBUG ("arg %d: [%s]", i, argv[i]);
+						DEBUG ("arg %d: [%s]", i, argv[i]);
 						i++;
 					}
 
 					i=0;
 					while(env[i]!=NULL) {
-						LOGDEBUG ("env %d: [%s]", i, env[i]);
+						DEBUG ("env %d: [%s]", i, env[i]);
 						i++;
 					}
 				}
@@ -1208,7 +1210,7 @@ static void process_set_share (GIOChannel *channel, ChannelData *channel_data,
 
 	resp.type = WapiHandleResponseType_SetShare;
 	
-	LOGDEBUG ("%s: Setting share for file (dev:0x%llx, ino:%lld) mode 0x%x access 0x%x", __func__, set_share.device, set_share.inode, set_share.sharemode, set_share.access);
+	DEBUG ("%s: Setting share for file (dev:0x%llx, ino:%lld) mode 0x%x access 0x%x", __func__, set_share.device, set_share.inode, set_share.sharemode, set_share.access);
 	
 	sharemode_set (set_share.device, set_share.inode, set_share.sharemode,
 		       set_share.access);
@@ -1233,14 +1235,14 @@ static void process_get_or_set_share (GIOChannel *channel,
 	
 	resp.type = WapiHandleResponseType_GetOrSetShare;
 	
-	LOGDEBUG ("%s: Getting share status for file (dev:0x%llx, ino:%lld)", __func__, get_share.device, get_share.inode);
+	DEBUG ("%s: Getting share status for file (dev:0x%llx, ino:%lld)", __func__, get_share.device, get_share.inode);
 
 	resp.u.get_or_set_share.exists = sharemode_get (get_share.device, get_share.inode, &resp.u.get_or_set_share.sharemode, &resp.u.get_or_set_share.access);
 	
 	if (resp.u.get_or_set_share.exists) {
-		LOGDEBUG ("%s: Share mode: 0x%x", __func__, resp.u.get_or_set_share.sharemode);
+		DEBUG ("%s: Share mode: 0x%x", __func__, resp.u.get_or_set_share.sharemode);
 	} else {
-		LOGDEBUG ("%s: file share info not already known, setting", __func__);
+		DEBUG ("%s: file share info not already known, setting", __func__);
 		sharemode_set (get_share.device, get_share.inode,
 			       get_share.new_sharemode, get_share.new_access);
 	}
@@ -1269,25 +1271,25 @@ static gboolean read_message (GIOChannel *channel, ChannelData *channel_data)
 				  fds, &has_fds);
 	if(ret==0) {
 		/* Other end went away */
-		LOGDEBUG ("Read 0 bytes on fd %d, closing it",
+		DEBUG ("Read 0 bytes on fd %d, closing it",
 			   g_io_channel_unix_get_fd (channel));
 		rem_fd (channel, channel_data);
 		return(FALSE);
 	}
 	
-	LOGDEBUG ("Process request %d", req.type);
+	DEBUG ("Process request %d", req.type);
 	switch(req.type) {
 	case WapiHandleRequestType_New:
 		process_new (channel, channel_data, req.u.new.type);
 		break;
 	case WapiHandleRequestType_Open:
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 		g_assert(req.u.open.handle < _wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT);
 #endif
 		process_open (channel, channel_data, req.u.open.handle);
 		break;
 	case WapiHandleRequestType_Close:
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 		g_assert(req.u.close.handle < _wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT);
 #endif
 		process_close (channel, channel_data, req.u.close.handle);
@@ -1321,9 +1323,9 @@ static gboolean read_message (GIOChannel *channel, ChannelData *channel_data)
 	}
 
 	if(has_fds==TRUE) {
-		LOGDEBUG ("%s: closing %d", __func__, fds[0]);
-		LOGDEBUG ("%s: closing %d", __func__, fds[1]);
-		LOGDEBUG ("%s: closing %d", __func__, fds[2]);
+		DEBUG ("%s: closing %d", __func__, fds[0]);
+		DEBUG ("%s: closing %d", __func__, fds[1]);
+		DEBUG ("%s: closing %d", __func__, fds[2]);
 		
 		close (fds[0]);
 		close (fds[1]);
@@ -1350,7 +1352,7 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 	GMainContext *context=data;
 	
 	if(condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
-		LOGDEBUG ("fd %d error", fd);
+		DEBUG ("fd %d error", fd);
 		rem_fd (channel, channel_data);
 		return(FALSE);
 	}
@@ -1368,10 +1370,10 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 				exit (-1);
 			}
 
-			LOGDEBUG ("accept returning %d", newsock);
+			DEBUG ("accept returning %d", newsock);
 			add_fd (newsock, context);
 		} else {
-			LOGDEBUG ("reading data on fd %d", fd);
+			DEBUG ("reading data on fd %d", fd);
 
 			return(read_message (channel, channel_data));
 		}
@@ -1393,7 +1395,7 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 	int ret;
 	GMainContext *context;
 
-	LOGDEBUG ("Starting up...");
+	DEBUG ("Starting up...");
 
 	_wapi_shared_data[0]=data;
 	_wapi_shared_scratch=scratch;
@@ -1422,7 +1424,7 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 		exit(-1);
 	}
 
-	LOGDEBUG("bound");
+	DEBUG("bound");
 
 	ret=listen(main_sock, 5);
 	if(ret==-1) {
@@ -1430,7 +1432,7 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 		_wapi_shared_data[0]->daemon_running=DAEMON_DIED_AT_STARTUP;
 		exit(-1);
 	}
-	LOGDEBUG("listening");
+	DEBUG("listening");
 
 	context = g_main_context_new ();
 
@@ -1447,7 +1449,7 @@ void _wapi_daemon_main(gpointer data, gpointer scratch)
 			process_died ();
 		}
 		
-		LOGDEBUG ("polling");
+		DEBUG ("polling");
 
 		/* Block until something happens. We don't use
 		 * g_main_loop_run() because we rely on the SIGCHLD

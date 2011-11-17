@@ -83,7 +83,12 @@ gchar ***_NSGetEnviron(void);
 extern char **environ;
 #endif
 
-#undef DEBUG
+#if 0
+#define DEBUG(...) g_message(__VA_ARGS__)
+#define DEBUG_ENABLED 1
+#else
+#define DEBUG(...)
+#endif
 
 static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable);
 static void process_close (gpointer handle, gpointer data);
@@ -259,7 +264,7 @@ static const gunichar2 *utf16_space = utf16_space_bytes;
 static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
 static const gunichar2 *utf16_quote = utf16_quote_bytes;
 
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 /* Useful in gdb */
 void
 print_utf16 (gunichar2 *str)
@@ -586,10 +591,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (appname != NULL) {
 		cmd = mono_unicode_to_external (appname);
 		if (cmd == NULL) {
-#ifdef DEBUG
-			g_message ("%s: unicode conversion returned NULL",
+			DEBUG ("%s: unicode conversion returned NULL",
 				   __func__);
-#endif
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -601,9 +604,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (cmdline != NULL) {
 		args = mono_unicode_to_external (cmdline);
 		if (args == NULL) {
-#ifdef DEBUG
-			g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+			DEBUG ("%s: unicode conversion returned NULL", __func__);
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -613,9 +614,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (cwd != NULL) {
 		dir = mono_unicode_to_external (cwd);
 		if (dir == NULL) {
-#ifdef DEBUG
-			g_message ("%s: unicode conversion returned NULL", __func__);
-#endif
+			DEBUG ("%s: unicode conversion returned NULL", __func__);
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -645,10 +644,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 			/* Executable existing ? */
 			if (!is_executable (prog)) {
-#ifdef DEBUG
-				g_message ("%s: Couldn't find executable %s",
+				DEBUG ("%s: Couldn't find executable %s",
 					   __func__, prog);
-#endif
 				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto free_strings;
@@ -664,10 +661,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 			/* And make sure it's executable */
 			if (!is_executable (prog)) {
-#ifdef DEBUG
-				g_message ("%s: Couldn't find executable %s",
+				DEBUG ("%s: Couldn't find executable %s",
 					   __func__, prog);
-#endif
 				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto free_strings;
@@ -731,9 +726,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		
 		if (token == NULL) {
 			/* Give up */
-#ifdef DEBUG
-			g_message ("%s: Couldn't find what to exec", __func__);
-#endif
+			DEBUG ("%s: Couldn't find what to exec", __func__);
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
@@ -759,10 +752,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			
 			/* Executable existing ? */
 			if (!is_executable (prog)) {
-#ifdef DEBUG
-				g_message ("%s: Couldn't find executable %s",
+				DEBUG ("%s: Couldn't find executable %s",
 					   __func__, token);
-#endif
 				g_free (token);
 				SetLastError (ERROR_FILE_NOT_FOUND);
 				goto free_strings;
@@ -787,9 +778,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 				g_free (prog);
 				prog = g_find_program_in_path (token);
 				if (prog == NULL) {
-#ifdef DEBUG
-					g_message ("%s: Couldn't find executable %s", __func__, token);
-#endif
+					DEBUG ("%s: Couldn't find executable %s", __func__, token);
 
 					g_free (token);
 					SetLastError (ERROR_FILE_NOT_FOUND);
@@ -801,10 +790,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		g_free (token);
 	}
 
-#ifdef DEBUG
-	g_message ("%s: Exec prog [%s] args [%s]", __func__, prog,
+	DEBUG ("%s: Exec prog [%s] args [%s]", __func__, prog,
 		   args_after_prog);
-#endif
 	
 	/* Check for CLR binaries; if found, we will try to invoke
 	 * them using the same mono binary that started us.
@@ -962,9 +949,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Could not create the pipe to synchroniz process startup. We'll just not synchronize.
 		 * This is just for a very hard to hit race condition in the first place */
 		startup_pipe [0] = startup_pipe [1] = -1;
-#if DEBUG
-		g_warning ("%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
-#endif
+		DEBUG ("%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
 	}
 
 	thr_ret = _wapi_handle_lock_shared_handles ();
@@ -982,9 +967,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		if (startup_pipe [0] != -1) {
 			/* Wait until the parent has updated it's internal data */
 			read (startup_pipe [0], &dummy, 1);
-#if DEBUG
-			g_warning ("%s: child: parent has completed its setup", __func__);
-#endif
+			DEBUG ("%s: child: parent has completed its setup", __func__);
 			close (startup_pipe [0]);
 			close (startup_pipe [1]);
 		}
@@ -1005,8 +988,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			close (i);
 		}
 
-#ifdef DEBUG
-		g_message ("%s: exec()ing [%s] in dir [%s]", __func__, cmd,
+		DEBUG ("%s: exec()ing [%s] in dir [%s]", __func__, cmd,
 			   dir==NULL?".":dir);
 		for (i = 0; argv[i] != NULL; i++) {
 			g_message ("arg %d: [%s]", i, argv[i]);
@@ -1015,7 +997,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		for (i = 0; env_strings[i] != NULL; i++) {
 			g_message ("env %d: [%s]", i, env_strings[i]);
 		}
-#endif
 
 		/* set cwd */
 		if (dir != NULL && chdir (dir) == -1) {
@@ -1111,10 +1092,8 @@ free_strings:
 		g_strfreev (argv);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: returning handle %p for pid %d", __func__, handle,
+	DEBUG ("%s: returning handle %p for pid %d", __func__, handle,
 		   pid);
-#endif
 
 	/* Check if something needs to be cleaned up. */
 	mono_processes_cleanup ();
@@ -1129,9 +1108,7 @@ static void process_set_name (struct _WapiHandle_process *process_handle)
 	progname=g_get_prgname ();
 	utf8_progname=mono_utf8_from_external (progname);
 
-#ifdef DEBUG
-	g_message ("%s: using [%s] as prog name", __func__, progname);
-#endif
+	DEBUG ("%s: using [%s] as prog name", __func__, progname);
 
 	if(utf8_progname!=NULL) {
 		slash=strrchr (utf8_progname, '/');
@@ -1172,11 +1149,9 @@ static void process_set_current (void)
 		
 		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env), TRUE);
 		
-#ifdef DEBUG
-		g_message ("%s: Found my process handle: %p (offset %d 0x%x)",
+		DEBUG ("%s: Found my process handle: %p (offset %d 0x%x)",
 			   __func__, current_process, atoi (handle_env),
 			   atoi (handle_env));
-#endif
 
 		ok = _wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
 					  (gpointer *)&process_handlep);
@@ -1189,15 +1164,11 @@ static void process_set_current (void)
 				procname = process_handlep->proc_name;
 				if (!strcmp (procname, "mono")) {
 					/* Set a better process name */
-#ifdef DEBUG
-					g_message ("%s: Setting better process name", __func__);
-#endif
+					DEBUG ("%s: Setting better process name", __func__);
 					
 					process_set_name (process_handlep);
 				} else {
-#ifdef DEBUG
-					g_message ("%s: Leaving process name: %s", __func__, procname);
-#endif
+					DEBUG ("%s: Leaving process name: %s", __func__, procname);
 				}
 
 				return;
@@ -1217,9 +1188,7 @@ static void process_set_current (void)
 	 * child got a chance to attach it.)
 	 */
 
-#ifdef DEBUG
-	g_message ("%s: Need to create my own process handle", __func__);
-#endif
+	DEBUG ("%s: Need to create my own process handle", __func__);
 
 	process_handle.id = pid;
 
@@ -1302,9 +1271,7 @@ static pid_t signal_process_if_gone (gpointer handle)
 		return (0);
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: looking at process %d", __func__, process_handle->id);
-#endif
+	DEBUG ("%s: looking at process %d", __func__, process_handle->id);
 
 	if (kill (process_handle->id, 0) == -1 &&
 	    (errno == ESRCH ||
@@ -1332,9 +1299,7 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 	
 	/* Ignore processes that have already exited (ie they are signalled) */
 	if (_wapi_handle_issignalled (handle) == FALSE) {
-#ifdef DEBUG
-		g_message ("%s: process %d added to array", __func__, pid);
-#endif
+		DEBUG ("%s: process %d added to array", __func__, pid);
 
 		/* This ensures that duplicates aren't returned (see
 		 * the comment above _wapi_search_handle () for why
@@ -1539,9 +1504,7 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 	
 	mono_once (&process_current_once, process_set_current);
 
-#ifdef DEBUG
-	g_message ("%s: looking for process %d", __func__, pid);
-#endif
+	DEBUG ("%s: looking for process %d", __func__, pid);
 
 	handle = _wapi_search_handle (WAPI_HANDLE_PROCESS,
 				      process_open_compare,
@@ -1553,9 +1516,7 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 			 */
 			return GINT_TO_POINTER (_WAPI_PROCESS_UNHANDLED + pid);
 		} else {
-#ifdef DEBUG
-			g_message ("%s: Can't find pid %d", __func__, pid);
-#endif
+			DEBUG ("%s: Can't find pid %d", __func__, pid);
 
 			SetLastError (ERROR_PROC_NOT_FOUND);
 	
@@ -1595,9 +1556,7 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle);
 	if(ok==FALSE) {
-#ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
-#endif
+		DEBUG ("%s: Can't find process %p", __func__, process);
 		
 		return(FALSE);
 	}
@@ -1644,9 +1603,7 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle);
 	if(ok==FALSE) {
-#ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
-#endif
+		DEBUG ("%s: Can't find process %p", __func__, process);
 		
 		return(FALSE);
 	}
@@ -1816,10 +1773,8 @@ static GSList *load_modules (void)
 		mod->inode = (ino_t) i;
 		mod->filename = g_strdup (info->dlpi_name); 
 
-#ifdef DEBUG
-		g_message ("%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
+		DEBUG ("%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
 				   mod->inode, mod->filename, mod->address_start, mod->address_end);
-#endif
 
 		free(info);
 
@@ -2075,9 +2030,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 					  (gpointer *)&process_handle);
 		if (ok == FALSE) {
-#ifdef DEBUG
-			g_message ("%s: Can't find process %p", __func__, process);
-#endif
+			DEBUG ("%s: Can't find process %p", __func__, process);
 		
 			return(FALSE);
 		}
@@ -2179,9 +2132,7 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
 		if (errno == ENOMEM) {
 			free(pi);
-#ifdef DEBUG
-			g_message ("%s: Didn't allocate enough memory for kproc info", __func__);
-#endif
+			DEBUG ("%s: Didn't allocate enough memory for kproc info", __func__);
 		}
 		return(ret);
 	}
@@ -2300,10 +2251,8 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	
 	mono_once (&process_current_once, process_set_current);
 
-#ifdef DEBUG
-	g_message ("%s: Getting module base name, process handle %p module %p",
+	DEBUG ("%s: Getting module base name, process handle %p module %p",
 		   __func__, process, module);
-#endif
 
 	size = size*sizeof(gunichar2); /* adjust for unicode characters */
 
@@ -2319,10 +2268,8 @@ static guint32 get_module_name (gpointer process, gpointer module,
 		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 					  (gpointer *)&process_handle);
 		if (ok == FALSE) {
-#ifdef DEBUG
-			g_message ("%s: Can't find process %p", __func__,
+			DEBUG ("%s: Can't find process %p", __func__,
 				   process);
-#endif
 			
 			return(0);
 		}
@@ -2384,10 +2331,8 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	}
 
 	if (procname_ext != NULL) {
-#ifdef DEBUG
-		g_message ("%s: Process name is [%s]", __func__,
+		DEBUG ("%s: Process name is [%s]", __func__,
 			   procname_ext);
-#endif
 
 		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
@@ -2402,16 +2347,12 @@ static guint32 get_module_name (gpointer process, gpointer module,
 		bytes += 2;
 		
 		if (size < bytes) {
-#ifdef DEBUG
-			g_message ("%s: Size %d smaller than needed (%ld); truncating", __func__, size, bytes);
-#endif
+			DEBUG ("%s: Size %d smaller than needed (%ld); truncating", __func__, size, bytes);
 
 			memcpy (basename, procname, size);
 		} else {
-#ifdef DEBUG
-			g_message ("%s: Size %d larger than needed (%ld)",
+			DEBUG ("%s: Size %d larger than needed (%ld)",
 				   __func__, size, bytes);
-#endif
 
 			memcpy (basename, procname, bytes);
 		}
@@ -2455,10 +2396,8 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	
 	mono_once (&process_current_once, process_set_current);
 	
-#ifdef DEBUG
-	g_message ("%s: Getting module info, process handle %p module %p",
+	DEBUG ("%s: Getting module info, process handle %p module %p",
 		   __func__, process, module);
-#endif
 
 	if (modinfo == NULL || size < sizeof(WapiModuleInfo)) {
 		return(FALSE);
@@ -2472,10 +2411,8 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 					  (gpointer *)&process_handle);
 		if (ok == FALSE) {
-#ifdef DEBUG
-			g_message ("%s: Can't find process %p", __func__,
+			DEBUG ("%s: Can't find process %p", __func__,
 				   process);
-#endif
 			
 			return(FALSE);
 		}
@@ -2546,9 +2483,7 @@ gboolean GetProcessWorkingSetSize (gpointer process, size_t *min, size_t *max)
 	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle);
 	if(ok==FALSE) {
-#ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
-#endif
+		DEBUG ("%s: Can't find process %p", __func__, process);
 		
 		return(FALSE);
 	}
@@ -2575,9 +2510,7 @@ gboolean SetProcessWorkingSetSize (gpointer process, size_t min, size_t max)
 	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle);
 	if(ok==FALSE) {
-#ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
-#endif
+		DEBUG ("%s: Can't find process %p", __func__, process);
 		
 		return(FALSE);
 	}
@@ -2606,10 +2539,8 @@ TerminateProcess (gpointer process, gint32 exitCode)
 					  (gpointer *) &process_handle);
 
 		if (ok == FALSE) {
-#ifdef DEBUG
-			g_message ("%s: Can't find process %p", __func__,
+			DEBUG ("%s: Can't find process %p", __func__,
 				   process);
-#endif
 			SetLastError (ERROR_INVALID_HANDLE);
 			return FALSE;
 		}
@@ -2776,9 +2707,7 @@ mono_processes_cleanup (void)
 	gpointer unref_handle;
 	int spin;
 
-#if DEBUG
-	g_warning ("%s", __func__);
-#endif
+	DEBUG ("%s", __func__);
 
 	/* Ensure we're not in here in multiple threads at once, nor recursive. */
 	if (InterlockedCompareExchange (&mono_processes_cleaning_up, 1, 0) != 0)
@@ -2837,9 +2766,7 @@ mono_processes_cleanup (void)
 				/* We've modified the list of processes, and we know the sigchld handler
 				 * isn't executing, so even if it executes at any moment, it'll see the
 				 * new version of the list. So now we can free the candidate. */
-#if DEBUG
-				g_warning ("%s: freeing candidate %p", __func__, candidate);
-#endif
+				DEBUG ("%s: freeing candidate %p", __func__, candidate);
 				mp = candidate->next;
 				MONO_SEM_DESTROY (&candidate->exit_sem);
 				g_free (candidate);
@@ -2855,9 +2782,7 @@ mono_processes_cleanup (void)
 		mp = mp->next;
 	}
 
-#if DEBUG
-	g_warning ("%s done", __func__);
-#endif
+	DEBUG ("%s done", __func__);
 
 	InterlockedDecrement (&mono_processes_cleaning_up);
 }
@@ -2867,9 +2792,7 @@ process_close (gpointer handle, gpointer data)
 {
 	struct _WapiHandle_process *process_handle;
 
-#if DEBUG
-	g_warning ("%s", __func__);
-#endif
+	DEBUG ("%s", __func__);
 
 	process_handle = (struct _WapiHandle_process *) data;
 	if (process_handle->mono_process && process_handle->self == _wapi_getpid ())
@@ -2931,9 +2854,7 @@ static void process_add_sigchld_handler (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
 	g_assert (sigaction (SIGCHLD, &sa, &previous_chld_sa) != -1);
-#if DEBUG
-	g_warning ("Added SIGCHLD handler");
-#endif
+	DEBUG ("Added SIGCHLD handler");
 #endif
 }
 
@@ -2959,9 +2880,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 	 * but WaitFor*Object won't call us for pseudo handles. */
 	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
 
-#if DEBUG
-	g_warning ("%s (%p, %u)", __func__, handle, timeout);
-#endif
+	DEBUG ("%s (%p, %u)", __func__, handle, timeout);
 
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS, (gpointer *)&process_handle);
 	if (ok == FALSE) {
@@ -2971,17 +2890,13 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 
 	if (process_handle->exited) {
 		/* We've already done this one */
-#if DEBUG
-		g_warning ("%s (%p, %u): Process already exited", __func__, handle, timeout);
-#endif
+		DEBUG ("%s (%p, %u): Process already exited", __func__, handle, timeout);
 		return WAIT_OBJECT_0;
 	}
 
 	pid = process_handle->id;
 
-#if DEBUG
-	g_warning ("%s (%p, %u): PID: %d", __func__, handle, timeout, pid);
-#endif
+	DEBUG ("%s (%p, %u): PID: %d", __func__, handle, timeout, pid);
 
 	/* We don't need to lock mono_processes here, the entry
 	 * has a handle_count > 0 which means it will not be freed. */
@@ -2999,25 +2914,19 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 		if (mp != NULL) {
 			/* We have a semaphore we can wait on */
 			if (timeout != INFINITE) {
-#if DEBUG
-				g_warning ("%s (%p, %u): waiting on semaphore for %li ms...", 
+				DEBUG ("%s (%p, %u): waiting on semaphore for %li ms...", 
 					__func__, handle, timeout, (timeout - (now - start)));
-#endif
 
 				ret = MONO_SEM_TIMEDWAIT_ALERTABLE (&mp->exit_sem, (timeout - (now - start)), alertable);
 			} else {
-#if DEBUG
-				g_warning ("%s (%p, %u): waiting on semaphore forever...", 
+				DEBUG ("%s (%p, %u): waiting on semaphore forever...", 
 					__func__, handle, timeout);
-#endif
 				ret = MONO_SEM_WAIT_ALERTABLE (&mp->exit_sem, alertable);
 			}
 
 			if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
-#if DEBUG
-				g_warning ("%s (%p, %u): sem_timedwait failure: %s", 
+				DEBUG ("%s (%p, %u): sem_timedwait failure: %s", 
 					__func__, handle, timeout, g_strerror (errno));
-#endif
 				/* Should we return a failure here? */
 			}
 
@@ -3029,9 +2938,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 		} else {
 			/* We did not create this process, so we can't waidpid / sem_wait it.
 			 * We need to poll for the pid existence */
-#if DEBUG
-			g_warning ("%s (%p, %u): polling on pid...", __func__, handle, timeout);
-#endif
+			DEBUG ("%s (%p, %u): polling on pid...", __func__, handle, timeout);
 			if (!is_pid_valid (pid)) {
 				/* Success, process has exited */
 				break;
@@ -3039,17 +2946,13 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 		}
 
 		if (timeout == 0) {
-#if DEBUG
-			g_warning ("%s (%p, %u): WAIT_TIMEOUT (timeout = 0)", __func__, handle, timeout);
-#endif
+			DEBUG ("%s (%p, %u): WAIT_TIMEOUT (timeout = 0)", __func__, handle, timeout);
 			return WAIT_TIMEOUT;
 		}
 
 		now = mono_msec_ticks ();
 		if (now - start >= timeout) {
-#if DEBUG
-			g_warning ("%s (%p, %u): WAIT_TIMEOUT", __func__, handle, timeout);
-#endif
+			DEBUG ("%s (%p, %u): WAIT_TIMEOUT", __func__, handle, timeout);
 			return WAIT_TIMEOUT;
 		}
 
@@ -3060,17 +2963,13 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 		}
 		
 		if (alertable && _wapi_thread_apc_pending (current_thread)) {
-#if DEBUG
-			g_warning ("%s (%p, %u): WAIT_IO_COMPLETION", __func__, handle, timeout);
-#endif
+			DEBUG ("%s (%p, %u): WAIT_IO_COMPLETION", __func__, handle, timeout);
 			return WAIT_IO_COMPLETION;
 		}
 	}
 
 	/* Process must have exited */
-#if DEBUG
-	g_warning ("%s (%p, %u): Waited successfully", __func__, handle, timeout);
-#endif
+	DEBUG ("%s (%p, %u): Waited successfully", __func__, handle, timeout);
 
 	ret = _wapi_handle_lock_shared_handles ();
 	g_assert (ret == 0);
@@ -3085,10 +2984,8 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 
 	process_handle->exited = TRUE;
 
-#if DEBUG
-	g_warning ("%s (%p, %u): Setting pid %d signalled, exit status %d",
+	DEBUG ("%s (%p, %u): Setting pid %d signalled, exit status %d",
 		   __func__, handle, timeout, process_handle->id, process_handle->exitstatus);
-#endif
 
 	_wapi_shared_handle_set_signal_state (handle, TRUE);
 

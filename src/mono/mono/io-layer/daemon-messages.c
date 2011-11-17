@@ -34,8 +34,11 @@
 #define CMSG_SPACE(size)  (sizeof (struct cmsghdr) + (size))
 #endif
 
-#define LOGDEBUG(...)
-// #define LOGDEBUG(...) g_message(__VA_ARGS__)
+#if 0
+// #define DEBUG(...) g_message(__VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
 
 static mono_mutex_t req_mutex;
 static mono_once_t attr_key_once = MONO_ONCE_INIT;
@@ -230,7 +233,7 @@ int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 		/* The next loop around poll() should tidy up */
 	}
 
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 	if(msg.msg_flags & MSG_OOB) {
 		g_message ("%s: OOB data received", __func__);
 	}
@@ -243,15 +246,15 @@ int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 	cmsg=CMSG_FIRSTHDR (&msg);
 	if(cmsg!=NULL && cmsg->cmsg_level==SOL_SOCKET &&
 	   cmsg->cmsg_type==SCM_RIGHTS) {
-		LOGDEBUG ("%s: cmsg->cmsg_len=%d", __func__, cmsg->cmsg_len);
-		LOGDEBUG ("%s: cmsg->level=%d cmsg->type=%d", __func__, cmsg->cmsg_level, cmsg->cmsg_type);
+		DEBUG ("%s: cmsg->cmsg_len=%d", __func__, cmsg->cmsg_len);
+		DEBUG ("%s: cmsg->level=%d cmsg->type=%d", __func__, cmsg->cmsg_level, cmsg->cmsg_type);
 
 		memcpy (fds, (int *)CMSG_DATA (cmsg), sizeof(int)*3);
 		*has_fds=TRUE;
 
-		LOGDEBUG ("%s: fd[0]=%d, fd[1]=%d, fd[2]=%d", __func__, fds[0], fds[1], fds[2]);
+		DEBUG ("%s: fd[0]=%d, fd[1]=%d, fd[2]=%d", __func__, fds[0], fds[1], fds[2]);
 	} else {
-		LOGDEBUG ("%s: no ancillary data", __func__);
+		DEBUG ("%s: no ancillary data", __func__);
 		*has_fds=FALSE;
 	}
 
@@ -272,7 +275,7 @@ int _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 	}
 	while (ret==-1 && errno==EINTR);
 
-#ifdef DEBUG
+#ifdef DEBUG_ENABLED
 	if(ret==-1 || ret != sizeof(WapiHandleResponse)) {
 		g_warning ("%s: Send error: %s", __func__, strerror (errno));
 		/* The next loop around poll() should tidy up */
