@@ -329,6 +329,7 @@ static void _wapi_set_last_path_error_from_errno (const gchar *dir,
 static void file_close (gpointer handle, gpointer data)
 {
 	struct _WapiHandle_file *file_handle = (struct _WapiHandle_file *)data;
+	int fd = file_handle->fd;
 	
 	DEBUG("%s: closing file handle %p [%s]", __func__, handle,
 		  file_handle->filename);
@@ -341,7 +342,7 @@ static void file_close (gpointer handle, gpointer data)
 	if (file_handle->share_info)
 		_wapi_handle_share_release (file_handle->share_info);
 	
-	close (GPOINTER_TO_UINT(handle));
+	close (fd);
 }
 
 static WapiFileType file_getfiletype(void)
@@ -355,8 +356,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 {
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
-	int fd = GPOINTER_TO_UINT(handle);
-	int ret;
+	int fd, ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -367,6 +367,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 		return(FALSE);
 	}
 
+	fd = file_handle->fd;
 	if(bytesread!=NULL) {
 		*bytesread=0;
 	}
@@ -407,9 +408,8 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 {
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
-	int ret;
+	int ret, fd;
 	off_t current_pos = 0;
-	int fd = GPOINTER_TO_UINT(handle);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -419,6 +419,8 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	fd = file_handle->fd;
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -483,8 +485,7 @@ static gboolean file_flush(gpointer handle)
 {
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int ret, fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -494,6 +495,8 @@ static gboolean file_flush(gpointer handle)
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	fd = file_handle->fd;
 
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
@@ -521,9 +524,8 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
 	off_t offset, newpos;
-	int whence;
+	int whence, fd;
 	guint32 ret;
-	int fd = GPOINTER_TO_UINT(handle);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -534,6 +536,8 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 		return(INVALID_SET_FILE_POINTER);
 	}
 	
+	fd = file_handle->fd;
+
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
@@ -622,8 +626,7 @@ static gboolean file_setendoffile(gpointer handle)
 	gboolean ok;
 	struct stat statbuf;
 	off_t size, pos;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int ret, fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -633,6 +636,7 @@ static gboolean file_setendoffile(gpointer handle)
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = file_handle->fd;
 	
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
@@ -729,7 +733,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	struct stat statbuf;
 	guint32 size;
 	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -739,6 +743,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(INVALID_FILE_SIZE);
 	}
+	fd = file_handle->fd;
 	
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_WRITE) &&
@@ -814,8 +819,7 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 	gboolean ok;
 	struct stat statbuf;
 	guint64 create_ticks, access_ticks, write_ticks;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int ret, fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -825,6 +829,7 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = file_handle->fd;
 
 	if(!(file_handle->fileaccess & GENERIC_READ) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
@@ -896,8 +901,7 @@ static gboolean file_setfiletime(gpointer handle,
 	struct utimbuf utbuf;
 	struct stat statbuf;
 	guint64 access_ticks, write_ticks;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int ret, fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle);
@@ -907,6 +911,7 @@ static gboolean file_setfiletime(gpointer handle,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = file_handle->fd;
 	
 	if(!(file_handle->fileaccess & GENERIC_WRITE) &&
 	   !(file_handle->fileaccess & GENERIC_ALL)) {
@@ -989,12 +994,13 @@ static gboolean file_setfiletime(gpointer handle,
 static void console_close (gpointer handle, gpointer data)
 {
 	struct _WapiHandle_file *console_handle = (struct _WapiHandle_file *)data;
+	int fd = console_handle->fd;
 	
 	DEBUG("%s: closing console handle %p", __func__, handle);
 
 	g_free (console_handle->filename);
 	
-	close (GPOINTER_TO_UINT(handle));
+	close (fd);
 }
 
 static WapiFileType console_getfiletype(void)
@@ -1008,9 +1014,8 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 {
 	struct _WapiHandle_file *console_handle;
 	gboolean ok;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
-	
+	int ret, fd;
+
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
 				(gpointer *)&console_handle);
 	if(ok==FALSE) {
@@ -1019,6 +1024,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = console_handle->fd;
 	
 	if(bytesread!=NULL) {
 		*bytesread=0;
@@ -1058,8 +1064,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 {
 	struct _WapiHandle_file *console_handle;
 	gboolean ok;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int ret, fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
 				(gpointer *)&console_handle);
@@ -1069,6 +1074,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = console_handle->fd;
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -1106,13 +1112,16 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	return(TRUE);
 }
 
-static void pipe_close (gpointer handle, gpointer data G_GNUC_UNUSED)
+static void pipe_close (gpointer handle, gpointer data)
 {
+	struct _WapiHandle_file *pipe_handle = (struct _WapiHandle_file*)data;
+	int fd = pipe_handle->fd;
+
 	DEBUG("%s: closing pipe handle %p", __func__, handle);
 
 	/* No filename with pipe handles */
 
-	close(GPOINTER_TO_UINT(handle));
+	close (fd);
 }
 
 static WapiFileType pipe_getfiletype(void)
@@ -1126,9 +1135,8 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 {
 	struct _WapiHandle_file *pipe_handle;
 	gboolean ok;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
-	
+	int ret, fd;
+
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
 				(gpointer *)&pipe_handle);
 	if(ok==FALSE) {
@@ -1137,6 +1145,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = pipe_handle->fd;
 
 	if(bytesread!=NULL) {
 		*bytesread=0;
@@ -1186,8 +1195,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 {
 	struct _WapiHandle_file *pipe_handle;
 	gboolean ok;
-	int ret;
-	int fd = GPOINTER_TO_UINT(handle);
+	int ret, fd;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
 				(gpointer *)&pipe_handle);
@@ -1197,6 +1205,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+	fd = pipe_handle->fd;
 	
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
@@ -1530,6 +1539,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		//security, sizeof(WapiSecurityAttributes));
 	}
 	
+	file_handle.fd = fd;
 	file_handle.fileaccess=fileaccess;
 	file_handle.sharemode=sharemode;
 	file_handle.attrs=attrs;
@@ -3278,6 +3288,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	
 	/* filedes[0] is open for reading, filedes[1] for writing */
 
+	pipe_read_handle.fd = filedes [0];
 	pipe_read_handle.fileaccess = GENERIC_READ;
 	read_handle = _wapi_handle_new_fd (WAPI_HANDLE_PIPE, filedes[0],
 					   &pipe_read_handle);
@@ -3290,6 +3301,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 		return(FALSE);
 	}
 	
+	pipe_write_handle.fd = filedes [1];
 	pipe_write_handle.fileaccess = GENERIC_WRITE;
 	write_handle = _wapi_handle_new_fd (WAPI_HANDLE_PIPE, filedes[1],
 					    &pipe_write_handle);

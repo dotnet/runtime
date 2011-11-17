@@ -88,6 +88,7 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 	file_handle.fileaccess = (fd == STDIN_FILENO) ? GENERIC_READ : GENERIC_WRITE;
 #endif
 
+	file_handle.fd = fd;
 	file_handle.filename = g_strdup(name);
 	/* some default security attributes might be needed */
 	file_handle.security_attributes=0;
