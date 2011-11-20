@@ -988,6 +988,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			close (i);
 		}
 
+#ifdef DEBUG_ENABLED
 		DEBUG ("%s: exec()ing [%s] in dir [%s]", __func__, cmd,
 			   dir==NULL?".":dir);
 		for (i = 0; argv[i] != NULL; i++) {
@@ -997,6 +998,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		for (i = 0; env_strings[i] != NULL; i++) {
 			g_message ("env %d: [%s]", i, env_strings[i]);
 		}
+#endif
 
 		/* set cwd */
 		if (dir != NULL && chdir (dir) == -1) {
