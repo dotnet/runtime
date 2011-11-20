@@ -157,6 +157,9 @@ mono_bool mono_debug_using_mono_debugger (void);
 MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);
 
+void
+mono_debug_remove_method (MonoMethod *method, MonoDomain *domain);
+
 MonoDebugMethodInfo *
 mono_debug_lookup_method (MonoMethod *method);
 

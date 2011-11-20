@@ -5456,6 +5456,8 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	if (!ji)
 		return;
 
+	mono_debug_remove_method (method, domain);
+
 	mono_domain_lock (domain);
 	g_hash_table_remove (domain_jit_info (domain)->dynamic_code_hash, method);
 	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
