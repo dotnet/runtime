@@ -182,6 +182,8 @@ mono_counters_dump (int section_mask, FILE *outfile)
 			mono_counters_dump_section (i, outfile);
 		}
 	}
+
+	fflush (outfile);
 }
 
 /**
