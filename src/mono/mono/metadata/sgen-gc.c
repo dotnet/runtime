@@ -4409,9 +4409,15 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 		char *object = current->array;
 		DEBUG (5, fprintf (gc_debug_file, "Ephemeron array at %p\n", object));
 
-		/*We ignore arrays in old gen during minor collections since all objects are promoted by the remset machinery.*/
-		if (object < start || object >= end)
-			continue;
+		/*
+		For now we process all ephemerons during all collections.
+		Ideally we should use remset information to partially scan those
+		arrays.
+		We already emit write barriers for Ephemeron fields, it's
+		just that we don't process them.
+		*/
+		/*if (object < start || object >= end)
+			continue;*/
 
 		/*It has to be alive*/
 		if (!object_is_reachable (object, start, end)) {
