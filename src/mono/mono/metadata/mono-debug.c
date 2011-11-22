@@ -711,6 +711,9 @@ mono_debug_remove_method (MonoMethod *method, MonoDomain *domain)
 	MonoDebugMethodHeader *header;
 	MonoDebugMethodAddress *address;
 
+	if (!mono_debug_initialized)
+		return;
+
 	g_assert (method->dynamic);
 
 	mono_debugger_lock ();
