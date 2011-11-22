@@ -98,7 +98,9 @@ typedef struct MonoAotModule {
 	guint8 *plt_end;
 	guint8 *blob;
 	gint32 *code_offsets;
+#ifdef MONOTOUCH
 	gpointer *method_addresses;
+#endif
 	/* This contains <offset, index> pairs sorted by offset */
 	/* This is needed because LLVM emitted methods can be in any order */
 	gint32 *sorted_code_offsets;
@@ -1569,7 +1571,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	amodule->code_offsets = info->code_offsets;
+#ifdef MONOTOUCH
 	amodule->method_addresses = info->method_addresses;
+#endif
 	amodule->code = info->methods;
 #ifdef TARGET_ARM
 	/* Mask out thumb interop bit */
@@ -1596,6 +1600,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = info->imt_thunks;
 	amodule->thumb_end = info->thumb_end;
 
+#ifdef MONOTOUCH
 	if (info->flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES) {
 		/* Compute code_offsets from the method addresses */
 		amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
@@ -1606,6 +1611,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 				amodule->code_offsets [i] = (char*)amodule->method_addresses [i] - (char*)amodule->code;
 		}
 	}
+#endif
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32

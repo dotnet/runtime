@@ -204,7 +204,9 @@ typedef struct MonoAotFileInfo
 	gpointer method_info_offsets;
 	gpointer ex_info_offsets;
 	gpointer code_offsets;
+#ifdef MONOTOUCH
 	gpointer method_addresses;
+#endif
 	gpointer extra_method_info_offsets;
 	gpointer extra_method_table;
 	gpointer got_info_offsets;
