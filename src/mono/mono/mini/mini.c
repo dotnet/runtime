@@ -5397,6 +5397,8 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	p = mono_create_ftnptr (target_domain, code);
 
 	if (callinfo) {
+		/*mono_register_jit_icall_wrapper takes the loader lock, so we take it on the outside. */
+		mono_loader_lock ();
 		mono_jit_lock ();
 		if (!callinfo->wrapper) {
 			callinfo->wrapper = p;
@@ -5404,6 +5406,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 			mono_debug_add_icall_wrapper (method, callinfo);
 		}
 		mono_jit_unlock ();
+		mono_loader_unlock ();
 	}
 
 	return p;
