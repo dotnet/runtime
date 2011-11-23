@@ -346,6 +346,8 @@ struct _MonoDomain {
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
 	GHashTable *ftnptrs_hash;
+
+	guint32 execution_context_field_offset;
 };
 
 typedef struct  {
