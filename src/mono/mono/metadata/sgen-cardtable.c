@@ -8,6 +8,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.
+ * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -153,11 +154,7 @@ sgen_card_table_align_pointer (void *ptr)
 void
 sgen_card_table_mark_range (mword address, mword size)
 {
-	mword end = address + size;
-	do {
-		sgen_card_table_mark_address (address);
-		address += CARD_SIZE_IN_BYTES;
-	} while (address < end);
+	memset (sgen_card_table_get_card_address (address), 1, cards_in_range (address, size));
 }
 
 static gboolean
@@ -314,6 +311,24 @@ collect_faulted_cards (void)
 	}
 
 	printf ("TOTAL card pages %d faulted %d\n", CARD_PAGES, count);
+}
+
+void
+sgen_card_table_dump_obj_card (char *object, size_t size, void *dummy)
+{
+	guint8 *start = sgen_card_table_get_card_scan_address (object);
+	guint8 *end = start + cards_in_range (object, size);
+	int cnt = 0;
+	printf ("--obj %p %d cards [%p %p]--", object, size, start, end);
+	for (; start < end; ++start) {
+		if (cnt == 0)
+			printf ("\n\t[%p] ", start);
+		printf ("%x ", *start);
+		++cnt;
+		if (cnt == 8)
+			cnt = 0;
+	}
+	printf ("\n");
 }
 #endif
 
