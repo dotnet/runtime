@@ -1,3 +1,8 @@
+/*
+ * Copyright 2006-2010 Novell
+ * Copyright 2011 Xamarin Inc
+ */
+
 #include <stdlib.h>
 #include <glib.h>
 #include "mono-counters.h"
