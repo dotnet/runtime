@@ -39,7 +39,7 @@
 /* Emit a call sequence to 'v', using 'D' as a scratch register if necessary */
 #define mips_call(c,D,v) do {	\
 		guint32 _target = (guint32)(v); \
-		if (1 || !(v) || ((_target & 0xfc000000) != (((guint32)(c)) & 0xfc000000))) { \
+		if (1 || ((v) == NULL) || ((_target & 0xfc000000) != (((guint32)(c)) & 0xfc000000))) { \
 			mips_load_const (c, D, _target); \
 			mips_jalr (c, D, mips_ra); \
 		} \
@@ -66,6 +66,13 @@ static int tls_mode = TLS_MODE_DETECT;
 static int lmf_pthread_key = -1;
 static int monothread_key = -1;
 static int monodomain_key = -1;
+
+/* Whenever the host is little-endian */
+static int little_endian;
+/* Index of ms word/register */
+static int ls_word_idx;
+/* Index of ls word/register */
+static int ms_word_idx;
 
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
@@ -176,11 +183,14 @@ void mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int th
 MonoInst *mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 
 
+/* Not defined in asm/cachectl.h */
+int cacheflush(char *addr, int nbytes, int cache);
+
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
 	/* Linux/MIPS specific */
-	cacheflush (code, size, BCACHE);
+	cacheflush ((char*)code, size, BCACHE);
 }
 
 void
@@ -197,14 +207,14 @@ mono_arch_is_inst_imm (gint64 imm)
 static guint8 *
 mips_emit_exc_by_name(guint8 *code, const char *name)
 {
-	guint32 addr;
+	gpointer addr;
 	MonoClass *exc_class;
 
 	exc_class = mono_class_from_name (mono_defaults.corlib, "System", name);
 	g_assert (exc_class);
 
 	mips_load_const (code, mips_a0, exc_class->type_token);
-	addr = (guint32) mono_get_throw_corlib_exception ();
+	addr = mono_get_throw_corlib_exception ();
 	mips_call (code, mips_t9, addr);
 	return code;
 }
@@ -530,6 +540,14 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 void
 mono_arch_cpu_init (void)
 {
+#if TARGET_BYTE_ORDER == G_LITTLE_ENDIAN
+	little_endian = 1;
+	ls_word_idx = 0;
+	ms_word_idx = 1;
+#else
+	ls_word_idx = 1;
+	ms_word_idx = 0;
+#endif
 }
 
 /*
@@ -1518,13 +1536,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = in->dreg + 1;
 				MONO_ADD_INS (cfg->cbb, ins);
-				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + 1, FALSE);
+				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ls_word_idx, FALSE);
 
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = in->dreg + 2;
 				MONO_ADD_INS (cfg->cbb, ins);
-				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
+				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ms_word_idx, FALSE);
 			} else
 #endif
 			if (!t->byref && (t->type == MONO_TYPE_R4)) {
@@ -3638,23 +3656,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_dsra (code, ins->dreg, ins->dreg, 32);
 			break;
 #endif
-		case OP_SETLRET:
-			/* Get sreg1 into v1, sreg2 into v0 */
+		case OP_SETLRET: {
+			int lsreg = mips_v0 + ls_word_idx;
+			int msreg = mips_v0 + ms_word_idx;
 
-			if (ins->sreg1 == mips_v0) {
+			/* Get sreg1 into lsreg, sreg2 into msreg */
+
+			if (ins->sreg1 == msreg) {
 				if (ins->sreg1 != mips_at)
 					MIPS_MOVE (code, mips_at, ins->sreg1);
-				if (ins->sreg2 != mips_v0)
-					MIPS_MOVE (code, mips_v0, ins->sreg2);
-				MIPS_MOVE (code, mips_v1, mips_at);
+				if (ins->sreg2 != msreg)
+					MIPS_MOVE (code, msreg, ins->sreg2);
+				MIPS_MOVE (code, lsreg, mips_at);
 			}
 			else {
-				if (ins->sreg2 != mips_v0)
-					MIPS_MOVE (code, mips_v0, ins->sreg2);
-				if (ins->sreg1 != mips_v1)
-					MIPS_MOVE (code, mips_v1, ins->sreg1);
+				if (ins->sreg2 != msreg)
+					MIPS_MOVE (code, msreg, ins->sreg2);
+				if (ins->sreg1 != lsreg)
+					MIPS_MOVE (code, lsreg, ins->sreg1);
 			}
 			break;
+		}
 		case OP_FMOVE:
 			if (ins->dreg != ins->sreg1) {
 				mips_fmovd (code, ins->dreg, ins->sreg1);
