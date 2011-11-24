@@ -3807,8 +3807,9 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	MonoMethodHeader *header;
 	MonoJitInfo *jinfo;
 	int num_clauses;
-	int generic_info_size;
+	int generic_info_size, arch_eh_info_size = 0;
 	int holes_size = 0, num_holes = 0;
+	guint32 stack_size = 0;
 
 	g_assert (method_to_compile == cfg->method);
 	header = cfg->header;
@@ -3818,6 +3819,21 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	else
 		generic_info_size = 0;
 
+	if (cfg->arch_eh_jit_info) {
+		MonoJitArgumentInfo *arg_info;
+		MonoMethodSignature *sig = mono_method_signature (cfg->method_to_register);
+
+		/*
+		 * This cannot be computed during stack walking, as
+		 * mono_arch_get_argument_info () is not signal safe.
+		 */
+		arg_info = g_newa (MonoJitArgumentInfo, sig->param_count + 1);
+		stack_size = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
+
+		if (stack_size)
+			arch_eh_info_size = sizeof (MonoArchEHJitInfo);
+	}
+		
 	if (cfg->try_block_holes) {
 		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
 			TryBlockHole *hole = tmp->data;
@@ -3843,11 +3859,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->method->dynamic) {
 		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size + holes_size);
+				generic_info_size + holes_size + arch_eh_info_size);
 	} else {
 		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
 				(num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size + holes_size);
+				generic_info_size + holes_size + arch_eh_info_size);
 	}
 
 	jinfo->method = cfg->method_to_register;
@@ -3943,6 +3959,15 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				printf ("\tTry block hole at eh clause %d offset %x length %x\n", hole->clause, hole->offset, hole->length);
 		}
 		g_assert (i == num_holes);
+	}
+
+	if (arch_eh_info_size) {
+		MonoArchEHJitInfo *info;
+
+		jinfo->has_arch_eh_info = 1;
+		info = mono_jit_info_get_arch_eh_info (jinfo);
+
+		info->stack_size = stack_size;
 	}
 
 	if (COMPILE_LLVM (cfg)) {

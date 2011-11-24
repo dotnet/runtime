@@ -142,6 +142,11 @@ typedef struct
 	MonoTryBlockHoleJitInfo holes [MONO_ZERO_LEN_ARRAY];
 } MonoTryBlockHoleTableJitInfo;
 
+typedef struct
+{
+	guint32 stack_size;
+} MonoArchEHJitInfo;
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
@@ -165,6 +170,7 @@ struct _MonoJitInfo {
 	gboolean    cas_method_permitonly:1;
 	gboolean    has_generic_jit_info:1;
 	gboolean    has_try_block_holes:1;
+	gboolean    has_arch_eh_info:1;
 	gboolean    from_aot:1;
 	gboolean    from_llvm:1;
 
@@ -174,6 +180,7 @@ struct _MonoJitInfo {
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
 	/* There is an optional MonoTryBlockHoleTableJitInfo after MonoGenericJitInfo clauses*/
+	/* There is an optional MonoArchEHJitInfo after MonoTryBlockHoleTableJitInfo */
 };
 
 #define MONO_SIZEOF_JIT_INFO (offsetof (struct _MonoJitInfo, clauses))
@@ -454,6 +461,9 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 
 MonoTryBlockHoleTableJitInfo*
 mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji) MONO_INTERNAL;
+
+MonoArchEHJitInfo*
+mono_jit_info_get_arch_eh_info (MonoJitInfo *ji) MONO_INTERNAL;
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside

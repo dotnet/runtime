@@ -2031,10 +2031,11 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	int i, buf_len, num_clauses;
 	MonoJitInfo *jinfo;
 	guint used_int_regs, flags;
-	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes;
+	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes, has_arch_eh_jit_info;
 	gboolean from_llvm, has_gc_map;
 	guint8 *p;
-	int generic_info_size, try_holes_info_size, num_holes, this_reg = 0, this_offset = 0;
+	int generic_info_size, try_holes_info_size, num_holes, arch_eh_jit_info_size;
+	int this_reg = 0, this_offset = 0;
 
 	/* Load the method info from the AOT file */
 
@@ -2047,6 +2048,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	from_llvm = (flags & 16) != 0;
 	has_try_block_holes = (flags & 32) != 0;
 	has_gc_map = (flags & 64) != 0;
+	has_arch_eh_jit_info = (flags & 128) != 0;
 
 	if (has_dwarf_unwind_info) {
 		guint32 offset;
@@ -2073,6 +2075,10 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		num_clauses = decode_value (p, &p);
 	else
 		num_clauses = 0;
+	if (has_arch_eh_jit_info)
+		arch_eh_jit_info_size = sizeof (MonoArchEHJitInfo);
+	else
+		arch_eh_jit_info_size = 0;
 
 	if (from_llvm) {
 		MonoJitExceptionInfo *clauses;
@@ -2102,7 +2108,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			}
 		}
 
- 		jinfo = decode_llvm_mono_eh_frame (amodule, domain, method, code, clauses, num_clauses, generic_info_size + try_holes_info_size, nesting, &this_reg, &this_offset);
+		jinfo = decode_llvm_mono_eh_frame (amodule, domain, method, code, clauses, num_clauses, generic_info_size + try_holes_info_size + arch_eh_jit_info_size, nesting, &this_reg, &this_offset);
 		jinfo->from_llvm = 1;
 
 		g_free (clauses);
@@ -2111,7 +2117,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		g_free (nesting);
 	} else {
 		jinfo = 
-			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * num_clauses) + generic_info_size + try_holes_info_size);
+			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * num_clauses) + generic_info_size + try_holes_info_size + arch_eh_jit_info_size);
 		jinfo->num_clauses = num_clauses;
 
 		for (i = 0; i < jinfo->num_clauses; ++i) {
@@ -2180,6 +2186,15 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			hole->length = decode_value (p, &p);
 			hole->offset = decode_value (p, &p);
 		}
+	}
+
+	if (has_arch_eh_jit_info) {
+		MonoArchEHJitInfo *eh_info;
+
+		jinfo->has_arch_eh_info = 1;
+
+		eh_info = mono_jit_info_get_arch_eh_info (jinfo);
+		eh_info->stack_size = decode_value (p, &p);
 	}
 
 	if (has_seq_points) {

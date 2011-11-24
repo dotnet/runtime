@@ -995,6 +995,22 @@ mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji)
 		return NULL;
 	}
 }
+
+MonoArchEHJitInfo*
+mono_jit_info_get_arch_eh_info (MonoJitInfo *ji)
+{
+	if (ji->has_arch_eh_info) {
+		char *ptr = (char*)&ji->clauses [ji->num_clauses];
+		if (ji->has_generic_jit_info)
+			ptr += sizeof (MonoGenericJitInfo);
+		if (ji->has_try_block_holes)
+			ptr += sizeof (MonoTryBlockHoleTableJitInfo);
+		return (MonoArchEHJitInfo*)ptr;
+	} else {
+		return NULL;
+	}
+}
+
 void
 mono_install_create_domain_hook (MonoCreateDomainFunc func)
 {

@@ -2054,6 +2054,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 		lmf_var->flags |= MONO_INST_LMF;
 		cfg->arch.lmf_var = lmf_var;
 	}
+
+#ifndef MONO_AMD64_NO_PUSHES
+	cfg->arch_eh_jit_info = 1;
+#endif
 }
 
 static void

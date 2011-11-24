@@ -118,7 +118,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 79
+#define MONO_AOT_FILE_VERSION 80
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1313,6 +1313,7 @@ typedef struct {
 	guint            explicit_null_checks : 1;
 	guint            compute_gc_maps : 1;
 	guint            soft_breakpoints : 1;
+	guint            arch_eh_jit_info : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;

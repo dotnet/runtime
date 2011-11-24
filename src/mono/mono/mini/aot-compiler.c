@@ -4214,7 +4214,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	use_unwind_ops = cfg->unwind_ops != NULL;
 #endif
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0);
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0) | (jinfo->has_arch_eh_info ? 128 : 0);
 
 	encode_value (flags, p, &p);
 
@@ -4326,6 +4326,13 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			encode_value (hole->length, p, &p);
 			encode_value (hole->offset, p, &p);
 		}
+	}
+
+	if (jinfo->has_arch_eh_info) {
+		MonoArchEHJitInfo *eh_info;
+
+		eh_info = mono_jit_info_get_arch_eh_info (jinfo);
+		encode_value (eh_info->stack_size, p, &p);
 	}
 
 	if (seq_points) {
