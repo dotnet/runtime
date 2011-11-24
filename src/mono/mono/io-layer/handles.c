@@ -4,7 +4,8 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002-2006 Novell, Inc.
+ * (C) 2002-2011 Novell, Inc.
+ * Copyright 2011 Xamarin Inc
  */
 
 #include <config.h>
