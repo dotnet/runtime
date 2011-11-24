@@ -573,6 +573,9 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 		/* Happens during startup */
 		return;
 
+	// FIXME: This isn't true on osx, and we depend on it for mono_get_lmf ().
+	g_assert (tls->tid == GetCurrentThreadId ());
+
 	tls->lmf = mono_get_lmf ();
 	if (sigctx) {
 		mono_arch_sigctx_to_monoctx (sigctx, &tls->ctx);
