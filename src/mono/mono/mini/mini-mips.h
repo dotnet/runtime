@@ -273,6 +273,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
+#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 
 /* XXX - a mystery, but it works */
 #define MONO_GET_CONTEXT \
@@ -280,7 +281,6 @@ typedef struct MonoCompileArch {
 
 /* set the next to 0 once inssel-mips.brg is updated */
 #define MIPS_PASS_STRUCTS_BY_VALUE 1
-#define MIPS_SMALL_RET_STRUCT_IN_REG 0
 
 #define MONO_ARCH_USE_SIGACTION
 #define MONO_ARCH_NEED_DIV_CHECK 1

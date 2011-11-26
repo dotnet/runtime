@@ -111,69 +111,6 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 #define STACK (4*IREG_SIZE + 8 + sizeof(MonoLMF) + 32)
 
-
-gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
-{
-	char *o = NULL;
-	char *vtable = NULL;
-	int reg, offset = 0;
-	guint32 base = 0;
-	guint32 *code = (guint32*)code_ptr;
-	char *sp;
-
-	/* On MIPS, we are passed sp instead of the register array */
-	sp = (char*)regs;
-
-	//printf ("mips_magic_trampoline: 0x%08x @ 0x%0x\n", *(code-2), code-2);
-	
-	/* The jal case */
-	if ((code[-2] >> 26) == 0x03)
-		return NULL;
-
-	/* Sanity check: look for the jalr */
-	g_assert((code[-2] & 0xfc1f003f) == 0x00000009);
-
-	reg = (code[-2] >> 21) & 0x1f;
-
-	//printf ("mips_magic_trampoline: jalr @ 0x%0x, w/ reg %d\n", code-2, reg);
-
-	/* The lui / addiu / jalr case */
-	if ((code [-4] >> 26) == 0x0f && (code [-3] >> 26) == 0x09 && (code [-2] >> 26) == 0) {
-		return NULL;
-	}
-
-	/* Probably a vtable lookup */
-
-	/* Walk backwards to find 'lw reg,XX(base)' */
-	for(; --code;) {
-		guint32 mask = (0x3f << 26) | (0x1f << 16);
-		guint32 match = (0x23 << 26) | (reg << 16);
-		if((*code & mask) == match) {
-			gint16 soff;
-			gint reg_offset;
-
-			/* lw reg,XX(base) */
-			base = (*code >> 21) & 0x1f;
-			soff = (*code & 0xffff);
-			if (soff & 0x8000)
-				soff |= 0xffff0000;
-			offset = soff;
-			if (1) {
-				MonoLMF *lmf = (MonoLMF*)((char *)regs + 12*IREG_SIZE);
-				g_assert (lmf->magic == MIPS_LMF_MAGIC2);
-				o = (gpointer)lmf->iregs [base];
-			}
-			else {
-				o = (gpointer) regs [base];
-			}
-			break;
-		}
-	}
-	*displacement = offset;
-	return o;
-}
-
 void
 mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
