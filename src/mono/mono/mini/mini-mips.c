@@ -17,6 +17,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/mono-mmap.h>
 
 #include <mono/arch/mips/mips-codegen.h>
 
@@ -73,6 +74,15 @@ static int little_endian;
 static int ls_word_idx;
 /* Index of ls word/register */
 static int ms_word_idx;
+
+/*
+ * The code generated for sequence points reads from this location, which is
+ * made read-only when single stepping is enabled.
+ */
+static gpointer ss_trigger_page;
+
+/* Enabled breakpoints read from this trigger page */
+static gpointer bp_trigger_page;
 
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
@@ -556,7 +566,11 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	InitializeCriticalSection (&mini_arch_mutex);	
+	InitializeCriticalSection (&mini_arch_mutex);
+
+	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
 }
 
 /*
@@ -3193,6 +3207,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_REACHED:
 		case OP_NOT_NULL:
 			break;
+		case OP_SEQ_POINT: {
+			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
+				guint32 addr = (guint32)ss_trigger_page;
+
+				mips_load_const (code, mips_t9, addr);
+				mips_lw (code, mips_t9, mips_t9, 0);
+			}
+
+			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
+
+			/*
+			 * A placeholder for a possible breakpoint inserted by
+			 * mono_arch_set_breakpoint ().
+			 */
+			/* mips_load_const () + mips_lw */
+			mips_nop (code);
+			mips_nop (code);
+			mips_nop (code);
+			break;
+		}
 		case OP_TLS_GET:
 			g_assert_not_reached();
 #if 0
@@ -5594,8 +5628,7 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	/* FIXME: implement */
-	g_assert_not_reached ();
+	return ctx->sc_regs [reg];
 }
 
 #ifdef MONO_ARCH_HAVE_IMT
@@ -5774,3 +5807,130 @@ mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 	NOT_IMPLEMENTED;
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
+
+/* Soft Debug support */
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+
+/*
+ * mono_arch_set_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	guint32 addr = (guint32)bp_trigger_page;
+
+	mips_load_const (code, mips_t9, addr);
+	mips_lw (code, mips_t9, mips_t9, 0);
+
+	mono_arch_flush_icache (ip, code - ip);
+}
+
+/*
+ * mono_arch_clear_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+
+	mips_nop (code);
+	mips_nop (code);
+	mips_nop (code);
+
+	mono_arch_flush_icache (ip, code - ip);
+}
+	
+/*
+ * mono_arch_start_single_stepping:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_start_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
+}
+	
+/*
+ * mono_arch_stop_single_stepping:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_stop_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
+}
+
+/*
+ * mono_arch_is_single_step_event:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gboolean
+mono_arch_is_single_step_event (void *info, void *sigctx)
+{
+	siginfo_t* sinfo = (siginfo_t*) info;
+	/* Sometimes the address is off by 4 */
+	if (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mono_arch_is_breakpoint_event:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gboolean
+mono_arch_is_breakpoint_event (void *info, void *sigctx)
+{
+	siginfo_t* sinfo = (siginfo_t*) info;
+	/* Sometimes the address is off by 4 */
+	if (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mono_arch_skip_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_breakpoint (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
+}
+
+/*
+ * mono_arch_skip_single_step:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_single_step (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
+}
+
+/*
+ * mono_arch_get_seq_point_info:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gpointer
+mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
+#endif /* MONO_ARCH_SOFT_DEBUG_SUPPORTED */

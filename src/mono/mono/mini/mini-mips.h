@@ -272,6 +272,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
+#define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 
 /* XXX - a mystery, but it works */
 #define MONO_GET_CONTEXT \

@@ -59,6 +59,7 @@ jmp: len:92
 call: dest:v clob:c len:20
 br: len:16
 switch: src1:i len:40
+seq_point: len:24
 
 callvirt: dest:v clob:c len:20
 int_conv_to_r_un: dest:f src1:i len:32

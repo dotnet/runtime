@@ -362,7 +362,7 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 	return fp;
 }
 
-#elif defined(__mips__) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
+#elif ((defined(__mips__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_MIPS))) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
 
 /* we define our own structure and we'll copy the data
  * from sigcontext/ucontext/mach when we need it.
@@ -371,15 +371,15 @@ mono_ia64_context_get_fp (MonoContext *ctx)
  * the original context from the signal handler.
  */
 typedef struct {
-	gpointer	sc_pc;
-	guint32		sc_regs [32];
+	mgreg_t	    sc_pc;
+	mgreg_t		sc_regs [32];
 	gfloat		sc_fpregs [32];
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (int)(ip); } while (0);
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (int)(bp); } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (int)(sp); } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (mgreg_t)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (mgreg_t)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (mgreg_t)(sp); } while (0);
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_pc))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_regs[mips_fp]))
