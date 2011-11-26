@@ -3782,7 +3782,24 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	}
 
 	if (i == seq_points->len) {
+		/*
+		 * The set of IL offsets with seq points doesn't completely match the
+		 * info returned by CMD_METHOD_GET_DEBUG_INFO (#407).
+		 */
+		for (i = 0; i < seq_points->len; ++i) {
+			sp = &seq_points->seq_points [i];
+
+			if (sp->il_offset != METHOD_ENTRY_IL_OFFSET && sp->il_offset != METHOD_EXIT_IL_OFFSET && sp->il_offset + 1 == bp->il_offset)
+				break;
+		}
+	}
+
+	if (i == seq_points->len) {
 		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (ji->method, TRUE), bp->il_offset, seq_points->len);
+
+		for (i = 0; i < seq_points->len; ++i)
+			printf ("%d\n", seq_points->seq_points [i].il_offset);
+
 		if (error) {
 			mono_error_set_error (error, MONO_ERROR_GENERIC, "%s", s);
 			g_free (s);
