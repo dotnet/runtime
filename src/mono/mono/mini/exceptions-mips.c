@@ -419,17 +419,42 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		gint32 address;
+		int i;
 		gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-		gpointer fp = MONO_CONTEXT_GET_BP (ctx);
-		guint32 sp;
+		mgreg_t regs [MONO_MAX_IREGS + 1];
+		guint8 *cfa;
+		guint32 unwind_info_len;
+		guint8 *unwind_info;
 
 		frame->type = FRAME_TYPE_MANAGED;
 
-		if (*lmf && (fp >= (gpointer)(*lmf)->ebp)) {
+		if (ji->from_aot)
+			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
+		else
+			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
+
+		for (i = 0; i < MONO_MAX_IREGS; ++i)
+			regs [i] = new_ctx->sc_regs [i];
+
+		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+						   (guint8*)ji->code_start + ji->code_size,
+						   ip, regs, MONO_MAX_IREGS,
+						   save_locations, MONO_MAX_IREGS, &cfa);
+
+		for (i = 0; i < MONO_MAX_IREGS; ++i)
+			new_ctx->sc_regs [i] = regs [i];
+		new_ctx->sc_pc = regs [mips_ra];
+		new_ctx->sc_regs [mips_sp] = (mgreg_t)cfa;
+
+		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
 			*lmf = (*lmf)->previous_lmf;
 		}
+
+		/* we substract 8, so that the IP points into the call instruction */
+		MONO_CONTEXT_SET_IP (new_ctx, new_ctx->sc_pc - 8);
+
+#if 0
 
 		address = (char *)ip - (char *)ji->code_start;
 
@@ -482,6 +507,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 		/* we substract 8, so that the IP points into the call instruction */
 		MONO_CONTEXT_SET_IP (new_ctx, new_ctx->sc_regs[mips_ra] - 8);
+#endif
 
 		/* Sanity check -- we should have made progress here */
 		g_assert (MONO_CONTEXT_GET_BP (new_ctx) != MONO_CONTEXT_GET_BP (ctx));

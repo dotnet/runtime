@@ -2474,6 +2474,9 @@ POWERPC64)
 S390x)
 	AC_DEFINE(TARGET_S390X, 1, [...])
 	;;
+MIPS)
+	AC_DEFINE(TARGET_MIPS, 1, [...])
+	;;
 esac
 
 if test "x$sizeof_register" = "x4"; then

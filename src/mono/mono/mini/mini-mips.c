@@ -4765,6 +4765,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* lmf_offset is the offset of the LMF from our stack pointer. */
 	guint32 lmf_offset = cfg->arch.lmf_offset;
 #endif
+	int cfa_offset = 0;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -4788,6 +4789,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* adjust stackframe assignments for spillvars if needed */
 	mips_adjust_stackframe (cfg);
+
+	/* Offset between current sp and the CFA */
+	cfa_offset = 0;
+	mono_emit_unwind_op_def_cfa (cfg, code, mips_sp, cfa_offset);
 
 	/* stack_offset should not be changed here. */
 	alloc_size = cfg->stack_offset;
@@ -4817,6 +4822,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (alloc_size) {
 		g_assert (mips_is_imm16 (-alloc_size));
 		mips_addiu (code, mips_sp, mips_sp, -alloc_size);
+		cfa_offset = alloc_size;
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 	}
 
 	if ((cfg->flags & MONO_CFG_HAS_CALLS) || ALWAYS_SAVE_RA) {
@@ -4826,6 +4833,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		else {
 			g_assert_not_reached ();
 		}
+		/* sp = cfa - cfa_offset, so sp + offset = cfa - cfa_offset + offset */
+		mono_emit_unwind_op_offset (cfg, code, mips_ra, offset - cfa_offset);
 	}
 
 	/* XXX - optimize this later to not save all regs if LMF constructed */
@@ -4838,6 +4847,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert (pos < (int)(cfg->stack_usage - sizeof(gpointer)));
 				g_assert (mips_is_imm16(pos));
 				MIPS_SW (code, i, mips_sp, pos);
+				mono_emit_unwind_op_offset (cfg, code, i, pos - cfa_offset);
 				pos += SIZEOF_REGISTER;
 			}
 		}
@@ -4876,6 +4886,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 	if (cfg->frame_reg != mips_sp) {
 		MIPS_MOVE (code, cfg->frame_reg, mips_sp);
+		mono_emit_unwind_op_def_cfa (cfg, code, cfg->frame_reg, cfa_offset);
 #if SAVE_LMF
 		if (method->save_lmf) {
 			int offset = lmf_offset + G_STRUCT_OFFSET(MonoLMF, iregs[cfg->frame_reg]);
@@ -5083,6 +5094,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 #endif
 	if (alloc2_size) {
+		/* The CFA is fp now, so this doesn't need unwind info */
 		if (mips_is_imm16 (-alloc2_size)) {
 			mips_addu (code, mips_sp, mips_sp, -alloc2_size);
 		}

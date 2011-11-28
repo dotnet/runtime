@@ -16,10 +16,16 @@
  * This is a platform-independent interface for unwinding through stack frames 
  * based on the Dwarf unwinding interface.
  * See http://dwarfstd.org/Dwarf3.pdf, section "Call Frame Information".
- * Currently, this is only used for emitting unwind info in AOT files.
  */
 
-/* CFA = Canonical Frame Address */
+/*
+ * CFA = Canonical Frame Address. By convention, this is the value of the stack pointer
+ * prior to the execution of the call instruction in the caller. I.e. on x86, it is
+ * esp + 4 on entry to a function. The value of the CFA does not change during execution
+ * of a function. There are two kinds of unwind directives:
+ * - those that describe how to compute the CFA at a given pc offset inside a function
+ * - those that describe where a given register is saved relative to the CFA.
+ */
 
 /* Unwind ops */
 
