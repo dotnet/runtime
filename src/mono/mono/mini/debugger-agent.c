@@ -7130,9 +7130,9 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_int (buf, header->code_size);
 		buffer_add_string (buf, source_file);
 		buffer_add_int (buf, n_il_offsets);
-		//printf ("Line number table for method %s:\n", mono_method_full_name (method,  TRUE));
+		DEBUG (10, printf ("Line number table for method %s:\n", mono_method_full_name (method,  TRUE)));
 		for (i = 0; i < n_il_offsets; ++i) {
-			//printf ("IL%d -> %d\n", il_offsets [i], line_numbers [i]);
+			DEBUG (10, printf ("IL%x -> %d\n", il_offsets [i], line_numbers [i]));
 			buffer_add_int (buf, il_offsets [i]);
 			buffer_add_int (buf, line_numbers [i]);
 		}
