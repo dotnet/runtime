@@ -46,17 +46,23 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+#ifdef HAVE_SEMAPHORE_H
+#include <semaphore.h>
+#endif
 #include <stdio.h>
 #include <string.h>
-#include <semaphore.h>
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
 #ifdef __MACH__
 #undef _XOPEN_SOURCE
 #endif
-#include <pthread.h>
 #ifdef __MACH__
 #define _XOPEN_SOURCE
 #endif

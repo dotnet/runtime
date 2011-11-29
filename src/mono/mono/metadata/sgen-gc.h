@@ -34,7 +34,9 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #define THREAD_INFO_TYPE SgenThreadInfo
 
 #include <glib.h>
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <signal.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
