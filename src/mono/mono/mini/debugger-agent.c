@@ -2787,6 +2787,25 @@ is_suspended (void)
 	return count_threads_to_wait_for () == 0;
 }
 
+static MonoSeqPointInfo*
+find_seq_points (MonoDomain *domain, MonoMethod *method)
+{
+	MonoSeqPointInfo *seq_points;
+
+	mono_domain_lock (domain);
+	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
+	if (!seq_points && method->is_inflated) {
+		/* generic sharing + aot */
+		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (method));
+	}
+	mono_domain_unlock (domain);
+	if (!seq_points)
+		printf ("Unable to find seq points for method '%s'.\n", mono_method_full_name (method, TRUE));
+	g_assert (seq_points);
+
+	return seq_points;
+}
+
 /*
  * find_next_seq_point_for_native_offset:
  *
@@ -2798,11 +2817,7 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	MonoSeqPointInfo *seq_points;
 	int i;
 
-	mono_domain_lock (domain);
-	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-	mono_domain_unlock (domain);
-	g_assert (seq_points);
-
+	seq_points = find_seq_points (domain, method);
 	if (info)
 		*info = seq_points;
 
@@ -2825,11 +2840,7 @@ find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	MonoSeqPointInfo *seq_points;
 	int i;
 
-	mono_domain_lock (domain);
-	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-	mono_domain_unlock (domain);
-	g_assert (seq_points);
-
+	seq_points = find_seq_points (domain, method);
 	if (info)
 		*info = seq_points;
 
@@ -2853,11 +2864,7 @@ find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSe
 	MonoSeqPointInfo *seq_points;
 	int i;
 
-	mono_domain_lock (domain);
-	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-	mono_domain_unlock (domain);
-	g_assert (seq_points);
-
+	seq_points = find_seq_points (domain, method);
 	*info = seq_points;
 
 	for (i = 0; i < seq_points->len; ++i) {
@@ -3901,6 +3908,8 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 		if (!found) {
 			mono_domain_lock (domain);
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, ji->method);
+			if (!seq_points && ji->method->is_inflated)
+				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (ji->method));
 			mono_domain_unlock (domain);
 			if (!seq_points)
 				/* Could be AOT code */
@@ -7458,6 +7467,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->method, frame->domain);
+		if (!frame->jit && frame->method->is_inflated)
+			frame->jit = mono_debug_find_method (mono_method_get_declaring_generic_method (frame->method), frame->domain);
 		if (!frame->jit) {
 			char *s;
 
