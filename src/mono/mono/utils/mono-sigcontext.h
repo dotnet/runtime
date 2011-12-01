@@ -354,6 +354,15 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R12(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_ip)
 	#define UCONTEXT_REG_CPSR(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_cpsr)
 #endif
+#elif defined(__mips__)
+
+# if HAVE_UCONTEXT_H
+#  include <ucontext.h>
+# endif
+
+# define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
+# define UCONTEXT_REG_PC(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.pc)
+
 #elif defined(__s390x__)
 
 # if HAVE_UCONTEXT_H

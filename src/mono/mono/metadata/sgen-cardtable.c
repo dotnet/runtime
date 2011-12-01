@@ -345,16 +345,12 @@ find_card_offset (mword card)
 #elif defined(__s390x__)
 	return (__builtin_ffsll (GUINT64_TO_LE(card)) - 1) / 8;
 #else
-	// FIXME:
-	g_assert_not_reached ();
-	/*
 	int i;
 	guint8 *ptr = (guint *) &card;
 	for (i = 0; i < sizeof (mword); ++i) {
 		if (ptr[i])
 			return i;
 	}
-	*/
 	return 0;
 #endif
 }

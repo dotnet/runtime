@@ -2173,6 +2173,7 @@ case "$host" in
 	mips*)
 		TARGET=MIPS;
 		arch_target=mips;
+		sgen_supported=true
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 
