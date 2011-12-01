@@ -4137,7 +4137,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	/* 
 	 * Skip the instruction causing the breakpoint signal.
 	 */
-	mono_arch_skip_breakpoint (ctx);
+	mono_arch_skip_breakpoint (ctx, ji);
 
 	if (ji->method->wrapper_type || tls->disable_breakpoints)
 		return;

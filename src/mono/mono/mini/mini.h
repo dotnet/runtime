@@ -2086,7 +2086,7 @@ void      mono_arch_start_single_stepping       (void) MONO_INTERNAL;
 void      mono_arch_stop_single_stepping        (void) MONO_INTERNAL;
 gboolean  mono_arch_is_single_step_event        (void *info, void *sigctx) MONO_INTERNAL;
 gboolean  mono_arch_is_breakpoint_event         (void *info, void *sigctx) MONO_INTERNAL;
-void     mono_arch_skip_breakpoint              (MonoContext *ctx) MONO_INTERNAL;
+void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *ji) MONO_INTERNAL;
 void     mono_arch_skip_single_step             (MonoContext *ctx) MONO_INTERNAL;
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code) MONO_INTERNAL;
 void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func) MONO_INTERNAL;

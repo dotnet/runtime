@@ -195,6 +195,7 @@ typedef struct MonoCompileArch {
 #ifdef HOST_WIN32
 	gpointer	unwindinfo;
 #endif
+	gpointer seq_point_info_var;
 	gpointer ss_trigger_page_var;
 	gpointer lmf_var;
 } MonoCompileArch;
