@@ -6310,7 +6310,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_skip_breakpoint (MonoContext *ctx)
+mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 {
 	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
 }
