@@ -28,6 +28,7 @@
 
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
+#define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
 
 #define SAVE_LMF		1
 #define ALWAYS_USE_FP		1
@@ -1372,6 +1373,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 #endif
 
+	/*
+	 * FIXME: - Saved S-regs seem to be getting clobbered by some calls with struct
+	 * args or return vals.  Extra stack space avoids this in a lot of cases.
+	 */
+	offset += EXTRA_STACK_SPACE;
+	offset += SIZEOF_REGISTER - 1;
+	offset &= ~(SIZEOF_REGISTER - 1);
+
 	/* Space for saved registers */
 	cfg->arch.iregs_offset = offset;
 #if SAVE_ALL_REGS
@@ -1428,7 +1437,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR) {
 			MonoType *arg_type;
-			ArgInfo *ainfo = &cinfo->args [i];
 		 
 			if (sig->hasthis && (i == 0))
 				arg_type = &mono_defaults.object_class->byval_arg;
@@ -1448,7 +1456,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += size;
 			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
 				cfg->sig_cookie += size;
-			// g_print ("allocating param %d to %d\n", i, inst->inst_offset);
+			if (cfg->verbose_level > 1)
+				printf ("allocating param %d to fp[%d]\n", i, inst->inst_offset);
 		}
 		else {
 #if _MIPS_SIM == _ABIO32
@@ -1461,7 +1470,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += size;
 			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
 				cfg->sig_cookie += size;
-			// g_print ("allocating param %d to %d\n", i, inst->inst_offset);
+			if (cfg->verbose_level > 1)
+				printf ("allocating param %d to fp[%d]\n", i, inst->inst_offset);
 #endif
 		}
 	}
@@ -3683,8 +3693,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #if 0
 			mips_dmfc1 (code, ins->dreg, ins->sreg1);
 #else
-			mips_mfc1 (code, ins->dreg+1, ins->sreg1);
-			mips_mfc1 (code, ins->dreg, ins->sreg1+1);
+			mips_mfc1 (code, ins->dreg, ins->sreg1 + ls_word_idx);
+			mips_mfc1 (code, ins->dreg+1, ins->sreg1 + ms_word_idx);
 #endif
 			break;
 
@@ -3755,9 +3765,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code,
 					     MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			if (cfg->arch.long_branch) {
-				mips_lui (code, mips_t9, mips_zero, 0);
-				mips_addiu (code, mips_t9, mips_t9, 0);
+			if (TRUE || cfg->arch.long_branch) {
+				mips_load (code, mips_t9, 0);
 				mips_jr (code, mips_t9);
 				mips_nop (code);
 			}
@@ -4786,7 +4795,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 	}
 
-	/* adjust stackframe assignments for spillvars if needed */
+	/*
+	 * Currently, fp points to the bottom of the frame on MIPS, unlike other platforms.
+	 * This means that we have to adjust the offsets inside instructions which reference
+	 * arguments received on the stack, since the initial offset doesn't take into
+	 * account spill slots.
+	 */
 	mips_adjust_stackframe (cfg);
 
 	/* Offset between current sp and the CFA */

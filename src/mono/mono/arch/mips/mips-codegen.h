@@ -197,17 +197,13 @@ enum {
 
 /* Load always using lui/addiu pair (for later patching) */
 #define mips_load(c,D,v) do {	\
-		if (!mips_is_imm16 ((v)))	{	\
-			if (((guint32)(v)) & (1 << 15)) {		\
-				mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)+1); \
-			} \
-			else {			\
-				mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)); \
-			}						\
-			mips_addiu ((c), (D), (D), ((guint32)(v)) & 0xffff); \
-		}							\
-		else							\
-			mips_addiu ((c), (D), mips_zero, ((guint32)(v)) & 0xffff); \
+		if (((guint32)(v)) & (1 << 15)) {								\
+			mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16)+1);		\
+		}																\
+		else {															\
+			mips_lui ((c), (D), mips_zero, (((guint32)(v))>>16));		\
+		}																\
+		mips_addiu ((c), (D), (D), ((guint32)(v)) & 0xffff);			\
 	} while (0)
 
 /* load constant - no patch-up */
