@@ -598,3 +598,20 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 
 	// FIXME: thumb/arm
 }
+
+/*
+ * mono_arch_setup_resume_sighandler_ctx:
+ *
+ *   Setup CTX so execution continues at FUNC.
+ */
+void
+mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
+{
+	MONO_CONTEXT_SET_IP (ctx,func);
+	if ((mgreg_t)MONO_CONTEXT_GET_IP (ctx) & 1)
+		/* Transition to thumb */
+		ctx->cpsr |= (1 << 5);
+	else
+		/* Transition to ARM */
+		ctx->cpsr &= ~(1 << 5);
+}
