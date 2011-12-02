@@ -394,7 +394,8 @@ mips_patch (guint32 *code, guint32 target)
 		g_assert (((diff & 0x0003ffff) == diff) || ((diff | 0xfffc0000) == diff));
 		g_assert (!(diff & 0x03));
 		offset = ((gint32)diff) >> 2;
-		g_assert (((int)offset) == ((int)(short)offset));
+		if (((int)offset) != ((int)(short)offset))
+			g_assert (((int)offset) == ((int)(short)offset));
 		ins = (ins & 0xffff0000) | (offset & 0x0000ffff);
 		*code = ins;
 		mono_arch_flush_icache ((guint8 *)code, 4);
@@ -539,6 +540,130 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
+#define MAX_ARCH_DELEGATE_PARAMS 4
+
+static gpointer
+get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *code_size)
+{
+	guint8 *code, *start;
+
+	if (has_target) {
+		start = code = mono_global_codeman_reserve (16);
+
+		/* Replace the this argument with the target */
+		mips_lw (code, mips_temp, mips_a0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mips_lw (code, mips_a0, mips_a0, G_STRUCT_OFFSET (MonoDelegate, target));
+		mips_jr (code, mips_temp);
+		mips_nop (code);
+
+		g_assert ((code - start) <= 16);
+
+		mono_arch_flush_icache (start, 16);
+	} else {
+		int size, i;
+
+		size = 16 + param_count * 4;
+		start = code = mono_global_codeman_reserve (size);
+
+		mips_lw (code, mips_temp, mips_a0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		/* slide down the arguments */
+		for (i = 0; i < param_count; ++i) {
+			mips_move (code, mips_a0 + i, mips_a0 + i + 1);
+		}
+		mips_jr (code, mips_temp);
+		mips_nop (code);
+
+		g_assert ((code - start) <= size);
+
+		mono_arch_flush_icache (start, size);
+	}
+
+	if (code_size)
+		*code_size = code - start;
+
+	return start;
+}
+
+/*
+ * mono_arch_get_delegate_invoke_impls:
+ *
+ *   Return a list of MonoAotTrampInfo structures for the delegate invoke impl
+ * trampolines.
+ */
+GSList*
+mono_arch_get_delegate_invoke_impls (void)
+{
+	GSList *res = NULL;
+	guint8 *code;
+	guint32 code_len;
+	int i;
+
+	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
+	res = g_slist_prepend (res, mono_tramp_info_create (g_strdup ("delegate_invoke_impl_has_target"), code, code_len, NULL, NULL));
+
+	for (i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
+		code = get_delegate_invoke_impl (FALSE, i, &code_len);
+		res = g_slist_prepend (res, mono_tramp_info_create (g_strdup_printf ("delegate_invoke_impl_target_%d", i), code, code_len, NULL, NULL));
+	}
+
+	return res;
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	guint8 *code, *start;
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
+	if (has_target) {
+		static guint8* cached = NULL;
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
+			return cached;
+		}
+
+		if (mono_aot_only)
+			start = mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
+		else
+			start = get_delegate_invoke_impl (TRUE, 0, NULL);
+		cached = start;
+		mono_mini_arch_unlock ();
+		return cached;
+	} else {
+		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
+		int i;
+
+		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+			return NULL;
+		for (i = 0; i < sig->param_count; ++i)
+			if (!mono_is_regsize_var (sig->params [i]))
+				return NULL;
+
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
+		}
+
+		if (mono_aot_only) {
+			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
+			start = mono_aot_get_trampoline (name);
+			g_free (name);
+		} else {
+			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
+		}
+		cache [sig->param_count] = start;
+		mono_mini_arch_unlock ();
+		return start;
+	}
+
+	return NULL;
+}
 
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
@@ -601,39 +726,6 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	return opts;
 }
 
-static gboolean
-is_regsize_var (MonoType *t) {
-	if (t->byref)
-		return TRUE;
-	t = mono_type_get_underlying_type (t);
-	switch (t->type) {
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-#if (SIZEOF_REGISTER == 8)
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-#endif
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-		return TRUE;
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:
-		return TRUE;
-	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (t))
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return FALSE;
-	}
-	return FALSE;
-}
-
 GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
@@ -652,7 +744,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 			continue;
 
 		/* we can only allocate 32 bit values */
-		if (is_regsize_var (ins->inst_vtype)) {
+		if (mono_is_regsize_var (ins->inst_vtype)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
 			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
@@ -1009,25 +1101,19 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
         DEBUG(printf("params: %d\n", sig->param_count));
 	for (i = pstart; i < sig->param_count; ++i) {
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-                        /* Prevent implicit arguments and sig_cookie from
+			/* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */
 			args_onto_stack (cinfo);
-                        /* Emit the signature cookie just before the implicit arguments */
+			/* Emit the signature cookie just before the implicit arguments */
 			add_int32_arg (cinfo, &cinfo->sig_cookie);
-                }
-                DEBUG(printf("param %d: ", i));
-		if (sig->params [i]->byref) {
-			DEBUG(printf("byref\n"));
-			add_int32_arg (cinfo, &cinfo->args[n]);
-			n++;
-			continue;
 		}
-		simpletype = mono_type_get_underlying_type (sig->params [i]);
+		DEBUG(printf("param %d: ", i));
+		simpletype = mini_type_get_underlying_type (NULL, sig->params [i]);
 		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-                        DEBUG(printf("1 byte\n"));
+			DEBUG(printf("1 byte\n"));
 			cinfo->args [n].size = 1;
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			n++;
@@ -1035,14 +1121,14 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-                        DEBUG(printf("2 bytes\n"));
+			DEBUG(printf("2 bytes\n"));
 			cinfo->args [n].size = 2;
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
-                        DEBUG(printf("4 bytes\n"));
+			DEBUG(printf("4 bytes\n"));
 			cinfo->args [n].size = 4;
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			n++;
@@ -1068,6 +1154,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 				break;
 			}
 			/* Fall through */
+		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VALUETYPE: {
 			int j;
 			int nwords = 0;
@@ -1076,12 +1163,17 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			gint size, alignment;
 			MonoClass *klass;
 
-			klass = mono_class_from_mono_type (sig->params [i]);
-			if (is_pinvoke)
-			    size = mono_class_native_size (klass, NULL);
-			else
-			    size = mono_class_value_size (klass, NULL);
-			alignment = mono_class_min_align (klass);
+			if (simpletype->type == MONO_TYPE_TYPEDBYREF) {
+				size = sizeof (MonoTypedRef);
+				alignment = sizeof (gpointer);
+			} else {
+				klass = mono_class_from_mono_type (sig->params [i]);
+				if (is_pinvoke)
+					size = mono_class_native_size (klass, NULL);
+				else
+					size = mono_class_value_size (klass, NULL);
+				alignment = mono_class_min_align (klass);
+			}
 #if MIPS_PASS_STRUCTS_BY_VALUE
 			/* Need to do alignment if struct contains long or double */
 			if (alignment > 4) {
@@ -1129,56 +1221,21 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			n++;
 			break;
 		}
-		case MONO_TYPE_TYPEDBYREF: {
-			/* keep in sync or merge with the valuetype case */
-#if MIPS_PASS_STRUCTS_BY_VALUE
-			{
-				int size = sizeof (MonoTypedRef);
-				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-				cinfo->args [n].storage = ArgStructByVal;
-				if (!cinfo->on_stack && cinfo->gr <= MIPS_LAST_ARG_REG) {
-					int rest = MIPS_LAST_ARG_REG - cinfo->gr + 1;
-					int n_in_regs = rest >= nwords? nwords: rest;
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nwords - n_in_regs;
-					cinfo->args [n].reg = cinfo->gr;
-					cinfo->gr += n_in_regs;
-					cinfo->gr_passed = TRUE;
-				} else {
-					cinfo->args [n].size = 0;
-					cinfo->args [n].vtsize = nwords;
-				}
-				if (cinfo->args [n].vtsize > 0) {
-					if (!cinfo->on_stack)
-						args_onto_stack (cinfo);
-					g_assert(cinfo->on_stack);
-					cinfo->args [n].offset = cinfo->stack_size;
-					g_print ("offset for arg %d at %d\n", n, cinfo->args [n].offset);
-					cinfo->stack_size += cinfo->args [n].vtsize * sizeof (gpointer);
-				}
-			}
-#else
-			add_int32_arg (cinfo, &cinfo->args[n]);
-			cinfo->args [n].storage = ArgStructByAddr;
-#endif
-			n++;
-			break;
-		}
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-                        DEBUG(printf("8 bytes\n"));
+			DEBUG(printf("8 bytes\n"));
 			cinfo->args [n].size = 8;
 			add_int64_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
 		case MONO_TYPE_R4:
-                        DEBUG(printf("R4\n"));
+			DEBUG(printf("R4\n"));
 			cinfo->args [n].size = 4;
 			add_float32_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
 		case MONO_TYPE_R8:
-                        DEBUG(printf("R8\n"));
+			DEBUG(printf("R8\n"));
 			cinfo->args [n].size = 8;
 			add_float64_arg (cinfo, &cinfo->args[n]);
 			n++;
@@ -1186,6 +1243,15 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		default:
 			g_error ("Can't trampoline 0x%x", sig->params [i]->type);
 		}
+	}
+
+	/* Handle the case where there are no implicit arguments */
+	if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+		/* Prevent implicit arguments and sig_cookie from
+		   being passed in registers */
+		args_onto_stack (cinfo);
+		/* Emit the signature cookie just before the implicit arguments */
+		add_int32_arg (cinfo, &cinfo->sig_cookie);
 	}
 
 	{
@@ -1226,8 +1292,8 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			}
 			break;
 		case MONO_TYPE_VALUETYPE:
-			break;
 		case MONO_TYPE_TYPEDBYREF:
+			break;
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -1334,9 +1400,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
 		offset += 8;
 
-	if (sig->call_convention == MONO_CALL_VARARG) {
-                cfg->sig_cookie = MIPS_STACK_PARAM_OFFSET;
-        }
+	if (sig->call_convention == MONO_CALL_VARARG)
+		cfg->sig_cookie = MIPS_STACK_PARAM_OFFSET;
 
 	/* Now handle the local variables */
 
@@ -1372,6 +1437,17 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += sizeof (MonoLMF);
 	}
 #endif
+
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		size = 4;
+		align = 4;
+
+		/* Allocate a local slot to hold the sig cookie address */
+		offset += align - 1;
+		offset &= ~(align - 1);
+		cfg->sig_cookie = offset;
+		offset += size;
+	}			
 
 	/*
 	 * FIXME: - Saved S-regs seem to be getting clobbered by some calls with struct
@@ -1454,8 +1530,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset = (offset + align - 1) & ~(align - 1);
 			inst->inst_offset = offset;
 			offset += size;
-			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
-				cfg->sig_cookie += size;
 			if (cfg->verbose_level > 1)
 				printf ("allocating param %d to fp[%d]\n", i, inst->inst_offset);
 		}
@@ -1468,8 +1542,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset = (offset + align - 1) & ~(align - 1);
 			inst->inst_offset = offset;
 			offset += size;
-			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
-				cfg->sig_cookie += size;
 			if (cfg->verbose_level > 1)
 				printf ("allocating param %d to fp[%d]\n", i, inst->inst_offset);
 #endif
@@ -1516,11 +1588,32 @@ mono_arch_create_vars (MonoCompile *cfg)
 static void
 emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
-	int sig_reg = mono_alloc_ireg (cfg);
+	MonoMethodSignature *tmp_sig;
+	MonoInst *sig_arg;
 
-	MONO_EMIT_NEW_ICONST (cfg, sig_reg, (guint32)call->signature);
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG,
-			mips_sp, cinfo->sig_cookie.offset, sig_reg);
+	if (call->tail_call)
+		NOT_IMPLEMENTED;
+
+	/* FIXME: Add support for signature tokens to AOT */
+	cfg->disable_aot = TRUE;
+
+	/*
+	 * mono_ArgIterator_Setup assumes the signature cookie is 
+	 * passed first and all the arguments which were before it are
+	 * passed on the stack after the signature. So compensate by 
+	 * passing a different signature.
+	 */
+	tmp_sig = mono_metadata_signature_dup (call->signature);
+	tmp_sig->param_count -= call->signature->sentinelpos;
+	tmp_sig->sentinelpos = 0;
+	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+	MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+	sig_arg->dreg = mono_alloc_ireg (cfg);
+	sig_arg->inst_p0 = tmp_sig;
+	MONO_ADD_INS (cfg->cbb, sig_arg);
+
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, mips_sp, cinfo->sig_cookie.offset, sig_arg->dreg);
 }
 
 void
@@ -1549,8 +1642,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = &mono_defaults.int_class->byval_arg;
 		t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
 
-		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos))
+		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			/* Emit the signature cookie just before the implicit arguments */
 			emit_sig_cookie (cfg, call, cinfo);
+		}
+
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
 			in = call->args [i];
@@ -1670,8 +1766,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
-	/* Emit the signature cookie in the case that there is no
-	   additional argument */
+	/* Handle the case where there are no implicit arguments */
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos))
 		emit_sig_cookie (cfg, call, cinfo);
 
@@ -1724,7 +1819,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	int i, soffset, dreg;
 
 	if (ainfo->storage == ArgStructByVal) {
-#if 1
+#if 0
 		if (cfg->verbose_level > 0) {
 			char* nm = mono_method_full_name (cfg->method, TRUE);
 			g_print ("Method %s outarg_vt struct doffset=%d ainfo->size=%d ovf_size=%d\n", 
@@ -1741,7 +1836,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			soffset += SIZEOF_REGISTER;
 		}
 		if (ovf_size != 0) {
-			mini_emit_memcpy (cfg, mips_fp, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
+			mini_emit_memcpy (cfg, mips_sp, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
 		}
 	} else if (ainfo->storage == ArgInFReg) {
 		int tmpr = mono_alloc_freg (cfg);
@@ -3765,27 +3860,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code,
 					     MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			if (TRUE || cfg->arch.long_branch) {
-				mips_load (code, mips_t9, 0);
-				mips_jr (code, mips_t9);
-				mips_nop (code);
-			}
-			else {
-				mips_beq (code, mips_zero, mips_zero, 0);
-				mips_nop (code);
-			}
+			mips_load (code, mips_t9, 0);
+			mips_jr (code, mips_t9);
+			mips_nop (code);
 			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			mips_lw (code, mips_zero, ins->sreg1, 0);
 			break;
 		case OP_ARGLIST: {
-			if (mips_is_imm16 (cfg->sig_cookie + cfg->stack_usage)) {
-				mips_addiu (code, mips_at, cfg->frame_reg, cfg->sig_cookie + cfg->stack_usage);
-			} else {
-				mips_load_const (code, mips_at, cfg->sig_cookie + cfg->stack_usage);
-				mips_addu (code, mips_at, cfg->frame_reg, mips_at);
-			}
+			g_assert (mips_is_imm16 (cfg->sig_cookie));
+			mips_lw (code, mips_at, cfg->frame_reg, cfg->sig_cookie);
 			mips_sw (code, mips_at, ins->sreg1, 0);
 			break;
 		}
@@ -3849,10 +3934,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 #if PROMOTE_R4_TO_R8
 			/* returned an FP R4 (single), promote to R8 (double) in place */
-			if ((ins->opcode == OP_FCALL ||
-			     ins->opcode == OP_FCALL_REG) &&
-			    call->signature->ret->type == MONO_TYPE_R4) {
-				mips_cvtds (code, mips_f0, mips_f0);
+			switch (ins->opcode) {
+			case OP_FCALL:
+			case OP_FCALL_REG:
+			case OP_FCALL_MEMBASE:
+			    if (call->signature->ret->type == MONO_TYPE_R4)
+					mips_cvtds (code, mips_f0, mips_f0);
+				break;
+			default:
+				break;
 			}
 #endif
 			break;
@@ -4760,7 +4850,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, i;
+	int alloc_size, pos, i, max_offset;
 	int alloc2_size = 0;
 	guint8 *code;
 	CallInfo *cinfo;
@@ -4774,6 +4864,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint32 lmf_offset = cfg->arch.lmf_offset;
 #endif
 	int cfa_offset = 0;
+	MonoBasicBlock *bb;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -4784,6 +4875,23 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	cfg->code_size = 768 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
+
+	/* 
+	 * compute max_offset in order to use short forward jumps.
+	 */
+	max_offset = 0;
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *ins = bb->code;
+		bb->max_offset = max_offset;
+
+		if (cfg->prof_options & MONO_PROFILE_COVERAGE)
+			max_offset += 6; 
+
+		MONO_BB_FOR_EACH_INS (bb, ins)
+			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+	}
+	if (max_offset > 0xffff)
+		cfg->arch.long_branch = TRUE;
 
 	if (tracing) {
 #if _MIPS_SIM == _ABIO32
@@ -4937,6 +5045,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mips_sw (code, ainfo->reg, mips_at, 0);
 		}
 	}
+
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		ArgInfo *cookie = &cinfo->sig_cookie;
+		int offset = alloc_size + cookie->offset;
+
+		/* Save the sig cookie address */
+		g_assert (cookie->storage == ArgOnStack);
+
+		g_assert (mips_is_imm16(offset));
+		mips_addi (code, mips_at, cfg->frame_reg, offset);
+		mips_sw (code, mips_at, cfg->frame_reg, cfg->sig_cookie - alloc2_size);
+	}
+
 	/* Keep this in sync with emit_load_volatile_arguments */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -5749,18 +5870,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	}
 	start = code;
 
-#if 0
-	/*
-	 * We need to save and restore r11 because it might be
-	 * used by the caller as the vtable register, so
-	 * clobbering it will trip up the magic trampoline.
-	 *
-	 * FIXME: Get rid of this by making sure that r11 is
-	 * not used as the vtable register in interface calls.
-	 */
-	ppc_stptr (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
-	ppc_load (code, ppc_r11, (gsize)(& (vtable->vtable [0])));
-#endif
 	/* t7 points to the vtable */
 	mips_load_const (code, mips_t7, (gsize)(& (vtable->vtable [0])));
 
@@ -5802,8 +5911,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					mips_jr (code, mips_t9);
 					mips_nop (code);
 					mips_patch ((guint32 *)(void *)patch, (guint32)code);
-					mips_load_const (code, mips_at, fail_tramp);
-					mips_lw (code, mips_t9, mips_at, 0);
+					mips_load_const (code, mips_t9, fail_tramp);
 					mips_jr (code, mips_t9);
 					mips_nop (code);
 				} else {
