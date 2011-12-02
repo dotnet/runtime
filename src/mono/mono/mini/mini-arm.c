@@ -29,6 +29,10 @@
 #define HAVE_AEABI_READ_TP 1
 #endif
 
+#ifdef ARM_FPU_VFP_HARD
+#define ARM_FPU_VFP 1
+#endif
+
 #ifdef ARM_FPU_FPA
 #define IS_FPA 1
 #else
@@ -675,6 +679,8 @@ mono_arch_init (void)
 
 #ifdef ARM_FPU_FPA
 	arm_fpu = MONO_ARM_FPU_FPA;
+#elif defined(ARM_FPU_VFP_HARD)
+	arm_fpu = MONO_ARM_FPU_VFP_HARD;
 #elif defined(ARM_FPU_VFP)
 	arm_fpu = MONO_ARM_FPU_VFP;
 #else
