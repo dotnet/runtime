@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 9
+#define MINOR_VERSION 10
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -477,6 +477,8 @@ typedef enum {
 
 typedef enum {
 	CMD_STRING_REF_GET_VALUE = 1,
+	CMD_STRING_REF_GET_LENGTH = 2,
+	CMD_STRING_REF_GET_CHARS = 3
 } CmdString;
 
 typedef enum {
@@ -1584,6 +1586,15 @@ buffer_add_byte (Buffer *buf, guint8 val)
 	buffer_make_room (buf, 1);
 	buf->p [0] = val;
 	buf->p++;
+}
+
+static inline void
+buffer_add_short (Buffer *buf, guint32 val)
+{
+	buffer_make_room (buf, 2);
+	buf->p [0] = (val >> 8) & 0xff;
+	buf->p [1] = (val >> 0) & 0xff;
+	buf->p += 2;
 }
 
 static inline void
@@ -7640,6 +7651,8 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	int objid, err;
 	MonoString *str;
 	char *s;
+	int i, index, length;
+	gunichar2 *c;
 
 	objid = decode_objid (p, &p, end);
 	err = get_object (objid, (MonoObject**)&str);
@@ -7651,6 +7664,18 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		s = mono_string_to_utf8 (str);
 		buffer_add_string (buf, s);
 		g_free (s);
+		break;
+	case CMD_STRING_REF_GET_LENGTH:
+		buffer_add_long (buf, mono_string_length (str));
+		break;
+	case CMD_STRING_REF_GET_CHARS:
+		index = decode_long (p, &p, end);
+		length = decode_long (p, &p, end);
+		if (index > mono_string_length (str) - length)
+			return ERR_INVALID_ARGUMENT;
+		c = mono_string_chars (str) + index;
+		for (i = 0; i < length; ++i)
+			buffer_add_short (buf, c [i]);
 		break;
 	default:
 		return ERR_NOT_IMPLEMENTED;
