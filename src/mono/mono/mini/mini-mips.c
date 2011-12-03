@@ -540,7 +540,8 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
-#define MAX_ARCH_DELEGATE_PARAMS 4
+/* The delegate object plus 3 params */
+#define MAX_ARCH_DELEGATE_PARAMS (4 - 1)
 
 static gpointer
 get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *code_size)
@@ -1399,9 +1400,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* allow room to save the return value (if it's a struct) */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
 		offset += 8;
-
-	if (sig->call_convention == MONO_CALL_VARARG)
-		cfg->sig_cookie = MIPS_STACK_PARAM_OFFSET;
 
 	/* Now handle the local variables */
 

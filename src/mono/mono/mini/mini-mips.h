@@ -28,27 +28,17 @@
 
 #if SIZEOF_REGISTER == 4
 #define IREG_SIZE	4
-typedef guint32		mips_ireg;
 #define FREG_SIZE	4
 typedef gfloat		mips_freg;
 
 #elif SIZEOF_REGISTER == 8
 
 #define IREG_SIZE	8
-typedef guint64		mips_ireg;
 #define FREG_SIZE	8
 typedef gdouble		mips_freg;
 
 #else
 #error Unknown REGISTER_SIZE
-#endif
-
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#define MSW_OFFSET	sizeof(mips_ireg)
-#define LSW_OFFSET	0
-#else
-#define MSW_OFFSET	0
-#define LSW_OFFSET	sizeof(mips_ireg)
 #endif
 
 /*
@@ -213,9 +203,9 @@ struct MonoLMF {
 	gpointer	previous_lmf;
 	gpointer	lmf_addr;
 	MonoMethod	*method;
-	mips_ireg	ebp;
+	mgreg_t	ebp;
 	gpointer	eip;
-	mips_ireg	iregs [MONO_SAVED_GREGS];
+	mgreg_t	iregs [MONO_SAVED_GREGS];
 	mips_freg	fregs [MONO_SAVED_FREGS];
 	gulong		magic;
 };
@@ -248,7 +238,7 @@ typedef struct MonoCompileArch {
 #define MIPS_FP_ADDR_OFFSET	(-8)
 #define MIPS_STACK_ALIGNMENT	16
 #define MIPS_STACK_PARAM_OFFSET 16		/* from sp to first parameter */
-#define MIPS_MINIMAL_STACK_SIZE (4*sizeof(mips_ireg) + 4*sizeof(mips_ireg))
+#define MIPS_MINIMAL_STACK_SIZE (4*sizeof(mgreg_t) + 4*sizeof(mgreg_t))
 #define MIPS_EXTRA_STACK_SIZE	16		/* from last parameter to top of frame */
 
 #if _MIPS_SIM == _ABIO32
@@ -277,6 +267,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
+#define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 
 /* XXX - a mystery, but it works */
 #define MONO_GET_CONTEXT \
