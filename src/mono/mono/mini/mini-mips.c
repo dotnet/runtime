@@ -27,10 +27,8 @@
 #include "ir-emit.h"
 
 #define SAVE_FP_REGS		0
-#define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
 
-#define SAVE_LMF		1
 #define ALWAYS_USE_FP		1
 #define ALWAYS_SAVE_RA		1	/* call-handler & switch currently clobber ra */
 
@@ -1427,14 +1425,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Space for LMF (if needed) */
-#if SAVE_LMF
 	if (cfg->method->save_lmf) {
 		/* align the offset to 16 bytes */
 		offset = (offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
 		cfg->arch.lmf_offset = offset;
 		offset += sizeof (MonoLMF);
 	}
-#endif
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
 		size = 4;
@@ -1457,11 +1453,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/* Space for saved registers */
 	cfg->arch.iregs_offset = offset;
-#if SAVE_ALL_REGS
-	iregs_to_save = MONO_ARCH_CALLEE_SAVED_REGS;
-#else
 	iregs_to_save = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
-#endif
 	if (iregs_to_save) {
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
@@ -4857,10 +4849,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #if SAVE_FP_REGS
 	guint32 fregs_to_save = 0;
 #endif
-#if SAVE_LMF
 	/* lmf_offset is the offset of the LMF from our stack pointer. */
 	guint32 lmf_offset = cfg->arch.lmf_offset;
-#endif
 	int cfa_offset = 0;
 	MonoBasicBlock *bb;
 
@@ -4917,11 +4907,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size = cfg->stack_offset;
 	cfg->stack_usage = alloc_size;
 
-#if SAVE_ALL_REGS
-	iregs_to_save = MONO_ARCH_CALLEE_SAVED_REGS;
-#else
 	iregs_to_save = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
-#endif
 #if SAVE_FP_REGS
 #if 0
 	fregs_to_save = (cfg->used_float_regs & MONO_ARCH_CALLEE_SAVED_FREGS);
@@ -4971,15 +4957,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 		}
 	}
-#if SAVE_LMF
+
+	// FIXME: Don't save registers twice if there is an LMF
+	// s8 has to be special cased since it is overwritten with the updated value
+	// below
 	if (method->save_lmf) {
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			int offset = lmf_offset + G_STRUCT_OFFSET(MonoLMF, iregs[i]);
 			g_assert (mips_is_imm16(offset));
-			MIPS_SW (code, i, mips_sp, offset);
+			if (MIPS_LMF_IREGMASK & (1 << i))
+				MIPS_SW (code, i, mips_sp, offset);
 		}
 	}
-#endif
 
 #if SAVE_FP_REGS
 	/* Save float registers */
@@ -4993,7 +4982,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 		}
 	}
-#if SAVE_LMF
+
 	if (method->save_lmf) {
 		for (i = MONO_MAX_FREGS-1; i >= 0; --i) {
 			int offset = lmf_offset + G_STRUCT_OFFSET(MonoLMF, fregs[i]);
@@ -5001,18 +4990,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mips_swc1 (code, i, mips_sp, offset);
 		}
 	}
-#endif
+
 #endif
 	if (cfg->frame_reg != mips_sp) {
 		MIPS_MOVE (code, cfg->frame_reg, mips_sp);
 		mono_emit_unwind_op_def_cfa (cfg, code, cfg->frame_reg, cfa_offset);
-#if SAVE_LMF
+
 		if (method->save_lmf) {
 			int offset = lmf_offset + G_STRUCT_OFFSET(MonoLMF, iregs[cfg->frame_reg]);
 			g_assert (mips_is_imm16(offset));
 			MIPS_SW (code, cfg->frame_reg, mips_sp, offset);
 		}
-#endif
 	}
 
 	/* Do instrumentation before assigning regvars to registers.  Because they may be assigned
@@ -5182,7 +5170,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mips_call (code, mips_t9, (gpointer)mono_jit_thread_attach);
 	}
 
-#if SAVE_LMF
 	if (method->save_lmf) {
 		mips_load_const (code, mips_at, MIPS_LMF_MAGIC1);
 		mips_sw (code, mips_at, mips_sp, lmf_offset + G_STRUCT_OFFSET(MonoLMF, magic));
@@ -5226,7 +5213,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mips_load_const (code, mips_at, 0x01010101);
 		mips_sw (code, mips_at, mips_sp, lmf_offset + G_STRUCT_OFFSET(MonoLMF, eip));
 	}
-#endif
+
 	if (alloc2_size) {
 		/* The CFA is fp now, so this doesn't need unwind info */
 		if (mips_is_imm16 (-alloc2_size)) {
@@ -5372,10 +5359,8 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 	guint32 fregs_to_restore;
 #endif
 
-#if SAVE_LMF
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
-#endif
 	
 	if (mono_jit_trace_calls != NULL)
 		max_epilog_size += 50;
@@ -5413,11 +5398,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 		mips_addu (code, mips_sp, mips_sp, mips_at);
 	}
 	pos = cfg->arch.iregs_offset - alloc2_size;
-#if SAVE_ALL_REGS
-	iregs_to_restore = MONO_ARCH_CALLEE_SAVED_REGS;
-#else
 	iregs_to_restore = (cfg->used_int_regs & MONO_ARCH_CALLEE_SAVED_REGS);
-#endif
 	if (iregs_to_restore) {
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_restore & (1 << i)) {
@@ -5446,7 +5427,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 		}
 	}
 #endif
-#if SAVE_LMF
+
 	/* Unlink the LMF if necessary */
 	if (method->save_lmf) {
 		int lmf_offset = cfg->arch.lmf_offset;
@@ -5460,7 +5441,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 		/* (*lmf_addr) = previous_lmf */
 		mips_sw (code, mips_temp, mips_t1, 0);
 	}
-#endif
+
 #if 0
 	/* Restore the fp */
 	mips_lw (code, mips_fp, mips_sp, cfg->stack_usage + MIPS_FP_ADDR_OFFSET);

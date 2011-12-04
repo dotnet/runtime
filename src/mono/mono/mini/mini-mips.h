@@ -199,6 +199,9 @@ void mips_patch (guint32 *code, guint32 target);
 #define MIPS_LMF_MAGIC1	0xa5a5a5a5
 #define MIPS_LMF_MAGIC2	0xc3c3c3c3
 
+/* Registers saved in lmf->iregs */
+#define MIPS_LMF_IREGMASK (0xffffffff & ~((1 << mips_zero) | (1 << mips_at) | MONO_ARCH_CALLEE_REGS))
+
 struct MonoLMF {
 	gpointer	previous_lmf;
 	gpointer	lmf_addr;
