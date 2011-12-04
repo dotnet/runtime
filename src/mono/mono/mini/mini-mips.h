@@ -94,7 +94,7 @@ typedef gdouble		mips_freg;
 
 #define mips_temp mips_t8
 
-#define MONO_ARCH_CALLEE_REGS		(MIPS_T_REGS | MIPS_V_REGS)
+#define MONO_ARCH_CALLEE_REGS		(MIPS_T_REGS | MIPS_V_REGS | MIPS_A_REGS)
 #define MONO_ARCH_CALLEE_SAVED_REGS	MIPS_S_REGS
 #define MIPS_ARG_REGS			MIPS_A_REGS
 
@@ -206,9 +206,8 @@ struct MonoLMF {
 	gpointer	previous_lmf;
 	gpointer	lmf_addr;
 	MonoMethod	*method;
-	mgreg_t	ebp;
 	gpointer	eip;
-	mgreg_t	iregs [MONO_SAVED_GREGS];
+	mgreg_t     iregs [MONO_SAVED_GREGS];
 	mips_freg	fregs [MONO_SAVED_FREGS];
 	gulong		magic;
 };
@@ -222,6 +221,8 @@ typedef struct MonoCompileArch {
 	guint		spillvar_offset_float;
 	guint		tracing_offset;
 	guint		long_branch;
+	gboolean    omit_fp;
+	gboolean    omit_fp_computed;
 } MonoCompileArch;
 
 #if SIZEOF_REGISTER == 4
@@ -339,7 +340,7 @@ typedef struct {
 		MONO_CONTEXT_SET_SP ((ctx), MONO_CONTEXT_GET_BP (ctx));	\
 	} while (0)
 
-#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 /* re-attaches with gdb - sometimes causes executable to hang */
 #undef HAVE_BACKTRACE_SYMBOLS

@@ -205,11 +205,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mips_load_const (code, mips_at, MIPS_LMF_MAGIC2);
 	mips_sw (code, mips_at, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, magic));
 
+	/* Save caller sp */
+	mips_addiu (code, mips_at, mips_sp, STACK);
+	MIPS_SW (code, mips_at, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[mips_sp]));
+
 	/* save method info (it was in t8) */
 	mips_sw (code, mips_t8, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, method));
-
-	/* save frame pointer (caller fp) */
-	MIPS_SW (code, mips_fp, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, ebp));
 
 	/* save the IP (caller ip) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {

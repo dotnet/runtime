@@ -421,6 +421,8 @@ offsets_from_pthread_key (guint32 key, int *offset2)
 }
 #endif
 
+static void mono_arch_compute_omit_fp (MonoCompile *cfg);
+
 const char*
 mono_arch_regname (int reg) {
 #if _MIPS_SIM == _ABIO32
@@ -1307,6 +1309,105 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	return cinfo;
 }
 
+G_GNUC_UNUSED static void
+break_count (void)
+{
+}
+
+G_GNUC_UNUSED static gboolean
+debug_count (void)
+{
+	static int count = 0;
+	count ++;
+
+	if (!getenv ("COUNT"))
+		return TRUE;
+
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
+
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+debug_omit_fp (void)
+{
+#if 0
+	return debug_count ();
+#else
+	return TRUE;
+#endif
+}
+
+/**
+ * mono_arch_compute_omit_fp:
+ *
+ *   Determine whenever the frame pointer can be eliminated.
+ */
+static void
+mono_arch_compute_omit_fp (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+	MonoMethodHeader *header;
+	int i, locals_size;
+	CallInfo *cinfo;
+
+	if (cfg->arch.omit_fp_computed)
+		return;
+
+	header = cfg->header;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	cinfo = cfg->arch.cinfo;
+
+	/*
+	 * FIXME: Remove some of the restrictions.
+	 */
+	cfg->arch.omit_fp = TRUE;
+	cfg->arch.omit_fp_computed = TRUE;
+
+	if (cfg->disable_omit_fp)
+		cfg->arch.omit_fp = FALSE;
+	if (!debug_omit_fp ())
+		cfg->arch.omit_fp = FALSE;
+	if (cfg->method->save_lmf)
+		cfg->arch.omit_fp = FALSE;
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		cfg->arch.omit_fp = FALSE;
+	if (header->num_clauses)
+		cfg->arch.omit_fp = FALSE;
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
+		cfg->arch.omit_fp = FALSE;
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
+		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+		cfg->arch.omit_fp = FALSE;
+	/*
+	 * On MIPS, fp points to the bottom of the frame, so it can be eliminated even if
+	 * there are stack arguments.
+	 */
+	/*
+	if (cinfo->stack_usage)
+		cfg->arch.omit_fp = FALSE;
+	*/
+
+	locals_size = 0;
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+		MonoInst *ins = cfg->varinfo [i];
+		int ialign;
+
+		locals_size += mono_type_size (ins->inst_vtype, &ialign);
+	}
+
+	//printf ("D: %s %d\n", cfg->method->name, cfg->arch.omit_fp);
+}
 
 /*
  * Set var information according to the calling convention. mips version.
@@ -1331,6 +1432,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 	cinfo = cfg->arch.cinfo;
+
+	mono_arch_compute_omit_fp (cfg);
 
 	/* spill down, we'll fix it in a separate pass */
 	// cfg->flags |= MONO_CFG_HAS_SPILLUP;
@@ -1357,17 +1460,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	header = cfg->header;
 
-	/* 
-	 * We use the frame register also for any method that has
-	 * exception clauses. This way, when the handlers are called,
-	 * the code will reference local variables using the frame reg instead of
-	 * the stack pointer: if we had to restore the stack pointer, we'd
-	 * corrupt the method frames that are already on the stack (since
-	 * filters get called before stack unwinding happens) when the filter
-	 * code would call any method (this also applies to finally etc.).
-	 */ 
-
-	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses || ALWAYS_USE_FP)
+	if (cfg->arch.omit_fp)
+		frame_reg = mips_sp;
+	else
 		frame_reg = mips_fp;
 	cfg->frame_reg = frame_reg;
 	if (frame_reg != mips_sp) {
@@ -4773,7 +4868,7 @@ mips_adjust_stackframe(MonoCompile *cfg)
 					break;
 				}
 			}
-			if (((ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_IADD_IMM)) && (ins->sreg1 == mips_fp))
+			if (((ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_IADD_IMM)) && (ins->sreg1 == cfg->frame_reg))
 				adj_imm = 1;
 			if (adj_c0) {
 				if (ins->inst_c0 >= threshold) {
@@ -5079,7 +5174,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					g_print ("stack slot at %d of %d+%d\n",
 						 inst->inst_offset, alloc_size, alloc2_size);
 				/* g_assert (inst->inst_offset >= alloc_size); */
-				g_assert (inst->inst_basereg == mips_fp);
+				g_assert (inst->inst_basereg == cfg->frame_reg);
 				basereg_offset = inst->inst_offset - alloc2_size;
 				g_assert (mips_is_imm16 (basereg_offset));
 				switch (ainfo->size) {
@@ -5205,8 +5300,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mips_load_const (code, mips_at, method);
 		g_assert (mips_is_imm16(lmf_offset + G_STRUCT_OFFSET(MonoLMF, method)));
 		mips_sw (code, mips_at, mips_sp, lmf_offset + G_STRUCT_OFFSET(MonoLMF, method));
-		g_assert (mips_is_imm16(lmf_offset + G_STRUCT_OFFSET(MonoLMF, ebp)));
-		MIPS_SW (code, mips_sp, mips_sp, lmf_offset + G_STRUCT_OFFSET(MonoLMF, ebp));
 
 		/* save the current IP */
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
@@ -5215,7 +5308,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (alloc2_size) {
-		/* The CFA is fp now, so this doesn't need unwind info */
 		if (mips_is_imm16 (-alloc2_size)) {
 			mips_addu (code, mips_sp, mips_sp, -alloc2_size);
 		}
@@ -5223,9 +5315,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mips_load_const (code, mips_at, -alloc2_size);
 			mips_addu (code, mips_sp, mips_sp, mips_at);
 		}
+		alloc_size += alloc2_size;
+		cfa_offset += alloc2_size;
 		if (cfg->frame_reg != mips_sp)
 			MIPS_MOVE (code, cfg->frame_reg, mips_sp);
-		alloc_size += alloc2_size;
+		else
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 	}
 
 	cfg->code_len = code - cfg->native_code;

@@ -429,7 +429,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->sc_pc = regs [mips_ra];
 		new_ctx->sc_regs [mips_sp] = (mgreg_t)cfa;
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
+		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->iregs [mips_sp])) {
 			/* remove any unused lmf */
 			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
@@ -438,7 +438,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_IP (new_ctx, new_ctx->sc_pc - 8);
 
 		/* Sanity check -- we should have made progress here */
-		g_assert (MONO_CONTEXT_GET_BP (new_ctx) != MONO_CONTEXT_GET_BP (ctx));
+		g_assert (MONO_CONTEXT_GET_SP (new_ctx) != MONO_CONTEXT_GET_SP (ctx));
 		return TRUE;
 	} else if (*lmf) {
 

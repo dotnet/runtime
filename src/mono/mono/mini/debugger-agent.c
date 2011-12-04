@@ -5671,7 +5671,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		ext.lmf.previous_lmf = *(lmf_addr);
 		/* Mark that this is a MonoLMFExt */
 		ext.lmf.previous_lmf = (gpointer)(((gssize)ext.lmf.previous_lmf) | 2);
-		ext.lmf.ebp = (gssize)&ext;
+		ext.lmf.iregs [mips_sp] = (gssize)&ext;
 #else
 		g_assert_not_reached ();
 #endif
