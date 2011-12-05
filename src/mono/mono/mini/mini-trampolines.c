@@ -142,6 +142,16 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 
 	return res;
 }
+#else
+gpointer
+mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
+{
+       /* 
+        * This shouldn't happen as all arches which support generic sharing support
+        * static rgctx trampolines as well.
+        */
+       g_assert_not_reached ();
+}
 #endif
 
 #ifdef MONO_ARCH_HAVE_IMT
