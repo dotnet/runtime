@@ -212,6 +212,7 @@ typedef struct MonoAotCompile {
 	char *assembly_name_sym;
 	GHashTable *plt_entry_debug_sym_cache;
 	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
+	GHashTable *ginst_hash;
 } MonoAotCompile;
 
 typedef struct {
@@ -3235,8 +3236,16 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 	if (!klass->generic_class && !klass->rank)
 		return;
 
+	if (!acfg->ginst_hash)
+		acfg->ginst_hash = g_hash_table_new (NULL, NULL);
+
+	if (g_hash_table_lookup (acfg->ginst_hash, klass))
+		return;
+
 	if (check_type_depth (&klass->byval_arg, 0))
 		return;
+
+	g_hash_table_insert (acfg->ginst_hash, klass, klass);
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
