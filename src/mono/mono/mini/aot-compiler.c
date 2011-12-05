@@ -3263,6 +3263,10 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 		add_method (acfg, method);
 	}
 
+	/* Add superclasses */
+	if (klass->parent)
+		add_generic_class_with_depth (acfg, klass->parent, depth);
+
 	/* 
 	 * For ICollection<T>, add instances of the helper methods
 	 * in Array, since a T[] could be cast to ICollection<T>.
@@ -5387,6 +5391,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 				if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE))
 					add_generic_class_with_depth (acfg, klass, depth + 5);
+				break;
+			}
+			case MONO_PATCH_INFO_SFLDA: {
+				MonoClass *klass = patch_info->data.field->parent;
+
+				/* The .cctor needs to run at runtime. */
+				if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE) && mono_class_get_cctor (klass))
+					add_extra_method_with_depth (acfg, mono_class_get_cctor (klass), depth + 1);
 				break;
 			}
 			default:
