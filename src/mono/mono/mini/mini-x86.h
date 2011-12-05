@@ -218,7 +218,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_TLS_GET (mono_x86_have_tls_get ())
 #define MONO_ARCH_IMT_REG X86_EDX
 #define MONO_ARCH_VTABLE_REG X86_EDX
-#define MONO_ARCH_RGCTX_REG X86_EDX
+#define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
@@ -226,7 +226,6 @@ typedef struct {
 #if defined(__linux__) || defined (__APPLE__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
-#define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
 #if !defined (__APPLE__) || defined(__native_client_codegen__)
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 #endif

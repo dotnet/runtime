@@ -49,7 +49,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr, gboolean need_rgctx_tramp)
 	}
 }
 
-#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+#ifdef MONO_ARCH_GSHARED_SUPPORTED
 
 typedef struct {
 	MonoMethod *m;
@@ -141,16 +141,6 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	static_rgctx_trampolines ++;
 
 	return res;
-}
-#else
-gpointer
-mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
-{
-	/* 
-	 * This shouldn't happen as all arches which support generic sharing support
-	 * static rgctx trampolines as well.
-	 */
-	g_assert_not_reached ();
 }
 #endif
 

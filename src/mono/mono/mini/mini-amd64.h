@@ -345,7 +345,7 @@ typedef struct MonoCompileArch {
  * used by the trampoline as a scratch register and hence might be
  * clobbered across method call boundaries.
  */
-#define MONO_ARCH_RGCTX_REG AMD64_R10
+#define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 #define MONO_ARCH_HAVE_NOTIFY_PENDING_EXC 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
@@ -357,7 +357,6 @@ typedef struct MonoCompileArch {
 #if !defined(HOST_WIN32)
 #define MONO_ARCH_MONITOR_OBJECT_REG MONO_AMD64_ARG_REG1
 #endif
-#define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1

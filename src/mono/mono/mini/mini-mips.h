@@ -260,8 +260,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_IMT	1
 #define MONO_ARCH_IMT_REG	mips_t0
 
-#define MONO_ARCH_VTABLE_REG	mips_t0
-#define MONO_ARCH_RGCTX_REG	mips_t0
+#define MONO_ARCH_VTABLE_REG	mips_a0
+#define MONO_ARCH_RGCTX_REG	MONO_ARCH_IMT_REG
 
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
