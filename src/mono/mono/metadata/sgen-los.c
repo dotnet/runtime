@@ -246,6 +246,9 @@ get_los_section_memory (size_t size)
 
 	section = mono_sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
 
+	if (!section)
+		return NULL;
+
 	free_chunks = (LOSFreeChunks*)((char*)section + LOS_CHUNK_SIZE);
 	free_chunks->size = LOS_SECTION_SIZE - LOS_CHUNK_SIZE;
 	free_chunks->next_size = los_fast_free_lists [0];

@@ -122,7 +122,8 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags)
 	char *mem = VirtualAlloc (NULL, length + alignment, MEM_RESERVE, prot);
 	char *aligned;
 
-	g_assert (mem);
+	if (!mem)
+		return NULL;
 
 	aligned = aligned_address (mem, length, alignment);
 
@@ -662,7 +663,8 @@ mono_valloc_aligned (size_t size, size_t alignment, int flags)
 	char *mem = mono_valloc (NULL, size + alignment, flags);
 	char *aligned;
 
-	g_assert (mem);
+	if (!mem)
+		return NULL;
 
 	aligned = aligned_address (mem, size, alignment);
 
