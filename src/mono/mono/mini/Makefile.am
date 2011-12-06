@@ -45,7 +45,7 @@ sgenstatic_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 
-CLASS=$(mcs_topdir)/class/lib/net_4_0
+CLASS=$(mcs_topdir)/class/lib/net_4_5
 
 RUNTIME_EXECUTABLE = $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_builddir)/runtime/mono-wrapper)
 
