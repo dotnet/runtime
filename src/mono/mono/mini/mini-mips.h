@@ -272,6 +272,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
+#define MONO_ARCH_GSHARED_SUPPORTED 1
 
 /* XXX - a mystery, but it works */
 #define MONO_GET_CONTEXT \
