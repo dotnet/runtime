@@ -306,6 +306,8 @@ finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
 		return 0;
 	count = 0;
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+		object = tagget_object_get_object (object);
+
 		if (mono_object_domain (object) == domain) {
 			/* remove and put in out_array */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
