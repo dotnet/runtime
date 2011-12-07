@@ -25,12 +25,20 @@ gint64
 mono_100ns_ticks (void)
 {
 	static LARGE_INTEGER freq;
+	static UINT64 start_time;
+	UINT64 cur_time;
 	LARGE_INTEGER value;
 
-	if (!freq.QuadPart && !QueryPerformanceFrequency (&freq))
-		return mono_100ns_datetime ();
+	if (!freq.QuadPart) {
+		if (!QueryPerformanceFrequency (&freq))
+			return mono_100ns_datetime ();
+		QueryPerformanceCounter (&value);
+		start_time = value.QuadPart;
+	}
 	QueryPerformanceCounter (&value);
-	return value.QuadPart * MTICKS_PER_SEC / freq.QuadPart;
+	cur_time = value.QuadPart;
+	/* we use unsigned numbers and return the difference to avoid overflows */
+	return (cur_time - start_time) * MTICKS_PER_SEC / freq.QuadPart;
 }
 
 /*
