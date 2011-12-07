@@ -784,11 +784,16 @@ mono_debugger_agent_parse_options (char *options)
 	char **args, **ptr;
 	char *host;
 	int port;
+	char *extra;
 
 #ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	fprintf (stderr, "--debugger-agent is not supported on this platform.\n");
 	exit (1);
 #endif
+
+	extra = getenv ("MONO_SDB_ENV_OPTIONS");
+	if (extra)
+		options = g_strdup_printf ("%s,%s", options, extra);
 
 	agent_config.enabled = TRUE;
 	agent_config.suspend = TRUE;
