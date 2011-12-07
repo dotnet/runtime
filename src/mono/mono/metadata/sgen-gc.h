@@ -832,7 +832,7 @@ gboolean mono_sgen_need_bridge_processing (void) MONO_INTERNAL;
 void mono_sgen_bridge_processing_register_objects (int num_objs, MonoObject **objs) MONO_INTERNAL;
 void mono_sgen_bridge_processing_stw_step (void) MONO_INTERNAL;
 void mono_sgen_bridge_processing_finish (void) MONO_INTERNAL;
-void mono_sgen_register_test_bridge_callbacks (void) MONO_INTERNAL;
+void mono_sgen_register_test_bridge_callbacks (const char *bridge_class_name) MONO_INTERNAL;
 gboolean mono_sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void mono_sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 
@@ -933,32 +933,27 @@ void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
 #define SGEN_HASH_TABLE_FOREACH(h,k,v) do {				\
 		SgenHashTable *__hash_table = (h);			\
 		SgenHashTableEntry **__table = __hash_table->table;	\
-		SgenHashTableEntry *__entry, *__prev;			\
 		guint __i;						\
 		for (__i = 0; __i < (h)->size; ++__i) {			\
-			__prev = NULL;					\
-			for (__entry = __table [__i]; __entry; ) {	\
+			SgenHashTableEntry **__iter, **__next;			\
+			for (__iter = &__table [__i]; *__iter; __iter = __next) {	\
+				SgenHashTableEntry *__entry = *__iter;	\
+				__next = &__entry->next;	\
 				(k) = __entry->key;			\
 				(v) = (gpointer)__entry->data;
 
 /* The loop must be continue'd after using this! */
 #define SGEN_HASH_TABLE_FOREACH_REMOVE(free)	do {			\
-		SgenHashTableEntry *__next = __entry->next;		\
-		if (__prev)						\
-			__prev->next = __next;				\
-		else							\
-			__table [__i] = __next;				\
+		*__iter = *__next;	\
+		__next = __iter;	\
+		--__hash_table->num_entries;				\
 		if ((free))						\
 			mono_sgen_free_internal (__entry, __hash_table->entry_mem_type); \
-		__entry = __next;					\
-		--__hash_table->num_entries;				\
 	} while (0)
 
 #define SGEN_HASH_TABLE_FOREACH_SET_KEY(k)	((__entry)->key = (k))
 
 #define SGEN_HASH_TABLE_FOREACH_END					\
-				__prev = __entry;			\
-				__entry = __entry->next;		\
 			}						\
 		}							\
 	} while (0)
