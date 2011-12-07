@@ -6866,6 +6866,11 @@ mono_gc_base_init (void)
 				}
 				continue;
 			}
+			if (g_str_has_prefix (opt, "bridge=")) {
+				opt = strchr (opt, '=') + 1;
+				mono_sgen_register_test_bridge_callbacks (g_strdup (opt));
+				continue;
+			}
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;

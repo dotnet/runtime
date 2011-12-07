@@ -509,7 +509,6 @@ static int max_sccs_links = 0;
 void
 mono_sgen_bridge_processing_register_objects (int num_objs, MonoObject **objs)
 {
-	int j = 0;
 	int i;
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
@@ -759,10 +758,12 @@ mono_sgen_bridge_processing_finish (void)
 	step_1 = 0; /* We must cleanup since this value is used as an accumulator. */
 }
 
+static const char *bridge_class;
+
 static gboolean
 bridge_test_is_bridge_object (MonoObject *obj)
 {
-	return TRUE;
+	return !strcmp (bridge_class, obj->vtable->klass->name);
 }
 
 static void
@@ -771,25 +772,29 @@ bridge_test_cross_reference (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs
 	int i;
 	for (i = 0; i < num_sccs; ++i) {
 		int j;
-		g_print ("--- SCC %d\n", i);
-		for (j = 0; j < sccs [i]->num_objs; ++j)
-			g_print ("  %s\n", mono_sgen_safe_name (sccs [i]->objs [j]));
+	//	g_print ("--- SCC %d\n", i);
+		for (j = 0; j < sccs [i]->num_objs; ++j) {
+	//		g_print ("  %s\n", mono_sgen_safe_name (sccs [i]->objs [j]));
+			if (i & 1) /*retain half of the bridged objects */
+				sccs [i]->objs [0] = NULL;
+		}
 	}
 	for (i = 0; i < num_xrefs; ++i) {
 		g_assert (xrefs [i].src_scc_index >= 0 && xrefs [i].src_scc_index < num_sccs);
 		g_assert (xrefs [i].dst_scc_index >= 0 && xrefs [i].dst_scc_index < num_sccs);
-		g_print ("%d -> %d\n", xrefs [i].src_scc_index, xrefs [i].dst_scc_index);
+	//	g_print ("%d -> %d\n", xrefs [i].src_scc_index, xrefs [i].dst_scc_index);
 	}
 }
 
 
 void
-mono_sgen_register_test_bridge_callbacks (void)
+mono_sgen_register_test_bridge_callbacks (const char *bridge_class_name)
 {
 	MonoGCBridgeCallbacks callbacks;
 	callbacks.is_bridge_object = bridge_test_is_bridge_object;
 	callbacks.cross_references = bridge_test_cross_reference;
 	mono_gc_register_bridge_callbacks (&callbacks);
+	bridge_class = bridge_class_name;
 }
 
 #endif
