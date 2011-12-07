@@ -595,9 +595,21 @@ else
 test_2_1 :
 endif
 
+if AMD64
+test_sgen : sgen-tests
+else
+if X86
+test_sgen : sgen-tests
+else
+if ARM
+test_sgen : sgen-tests
+endif
+endif
+endif
+
 # test_messages fails on the buildbots
 #test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit
+test: assemblyresolve/test/asm.dll test_sgen testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -716,6 +728,14 @@ test-type-load: TestDriver.dll
 	@$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	@echo "Testing load-exception.exe..."
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
+
+
+EXTRA_DIST += sgen-bridge.cs
+
+sgen-tests: sgen-bridge.exe
+	echo "Testing sgen-bridge.exe ...";	\
+	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
+
 
 # Generated tests for runtime invoke
 EXTRA_DIST += gen-runtime-invoke.cs
