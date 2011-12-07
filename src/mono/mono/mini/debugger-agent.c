@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 10
+#define MINOR_VERSION 11
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -461,6 +461,8 @@ typedef enum {
 	CMD_TYPE_GET_SOURCE_FILES_2 = 13,
 	CMD_TYPE_GET_VALUES_2 = 14,
 	CMD_TYPE_GET_METHODS_BY_NAME_FLAGS = 15,
+	CMD_TYPE_GET_INTERFACES = 16,
+	CMD_TYPE_GET_INTERFACE_MAP = 17,
 } CmdType;
 
 typedef enum {
@@ -6759,6 +6761,27 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 	}
 }
 
+/* FIXME: Code duplication with icall.c */
+static void
+collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
+{
+	int i;
+	MonoClass *ic;
+
+	mono_class_setup_interfaces (klass, error);
+	if (!mono_error_ok (error))
+		return;
+
+	for (i = 0; i < klass->interface_count; i++) {
+		ic = klass->interfaces [i];
+		g_hash_table_insert (ifaces, ic, ic);
+
+		collect_interfaces (ic, ifaces, error);
+		if (!mono_error_ok (error))
+			return;
+	}
+}
+
 static ErrorCode
 type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7077,6 +7100,64 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		g_ptr_array_free (array, TRUE);
 		g_free (name);
+		break;
+	}
+	case CMD_TYPE_GET_INTERFACES: {
+		MonoClass *parent;
+		GHashTable *iface_hash = g_hash_table_new (NULL, NULL);
+		MonoError error;
+		MonoClass *tclass, *iface;
+		GHashTableIter iter;
+
+		tclass = klass;
+
+		for (parent = tclass; parent; parent = parent->parent) {
+			mono_class_setup_interfaces (parent, &error);
+			if (!mono_error_ok (&error))
+				return ERR_LOADER_ERROR;
+			collect_interfaces (parent, iface_hash, &error);
+			if (!mono_error_ok (&error))
+				return ERR_LOADER_ERROR;
+		}
+
+		buffer_add_int (buf, g_hash_table_size (iface_hash));
+
+		g_hash_table_iter_init (&iter, iface_hash);
+		while (g_hash_table_iter_next (&iter, NULL, (void**)&iface))
+			buffer_add_typeid (buf, domain, iface);
+		g_hash_table_destroy (iface_hash);
+		break;
+	}
+	case CMD_TYPE_GET_INTERFACE_MAP: {
+		int tindex, ioffset;
+		gboolean variance_used;
+		MonoClass *iclass;
+		int len, nmethods, i;
+		gpointer iter;
+		MonoMethod *method;
+
+		len = decode_int (p, &p, end);
+		mono_class_setup_vtable (klass);
+
+		for (tindex = 0; tindex < len; ++tindex) {
+			iclass = decode_typeid (p, &p, end, NULL, &err);
+			if (err)
+				return err;
+
+			ioffset = mono_class_interface_offset_with_variance (klass, iclass, &variance_used);
+			if (ioffset == -1)
+				return ERR_INVALID_ARGUMENT;
+
+			nmethods = mono_class_num_methods (iclass);
+			buffer_add_int (buf, nmethods);
+
+			iter = NULL;
+			while ((method = mono_class_get_methods (iclass, &iter))) {
+				buffer_add_methodid (buf, domain, method);
+			}
+			for (i = 0; i < nmethods; ++i)
+				buffer_add_methodid (buf, domain, klass->vtable [i + ioffset]);
+		}
 		break;
 	}
 	default:
