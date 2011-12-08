@@ -38,7 +38,7 @@ mono_100ns_ticks (void)
 	QueryPerformanceCounter (&value);
 	cur_time = value.QuadPart;
 	/* we use unsigned numbers and return the difference to avoid overflows */
-	return (cur_time - start_time) * MTICKS_PER_SEC / freq.QuadPart;
+	return (cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart;
 }
 
 /*
