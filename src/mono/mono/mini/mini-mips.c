@@ -27,9 +27,7 @@
 #include "ir-emit.h"
 
 #define SAVE_FP_REGS		0
-#define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
 
-#define ALWAYS_USE_FP		1
 #define ALWAYS_SAVE_RA		1	/* call-handler & switch currently clobber ra */
 
 #define PROMOTE_R4_TO_R8	1	/* promote single values in registers to doubles */
@@ -1538,11 +1536,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += size;
 	}			
 
-	/*
-	 * FIXME: - Saved S-regs seem to be getting clobbered by some calls with struct
-	 * args or return vals.  Extra stack space avoids this in a lot of cases.
-	 */
-	offset += EXTRA_STACK_SPACE;
 	offset += SIZEOF_REGISTER - 1;
 	offset &= ~(SIZEOF_REGISTER - 1);
 
