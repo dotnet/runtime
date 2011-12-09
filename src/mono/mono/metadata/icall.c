@@ -6076,8 +6076,19 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 				mono_array_set ((*data), gint64, 1, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
 				return 1;
 			} else {
+				struct tm end;
+				time_t te;
+				
+				memset (&end, 0, sizeof (end));
+				end.tm_year = year-1900 + 1;
+				end.tm_mday = 1;
+				
+				te = mktime (&end);
+				
 				mono_array_setref ((*names), 1, mono_string_new (domain, tzone));
 				mono_array_set ((*data), gint64, 0, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
+				mono_array_setref ((*names), 0, mono_string_new (domain, tzone));
+				mono_array_set ((*data), gint64, 1, ((gint64)te + EPOCH_ADJUST) * 10000000L);
 				is_daylight = 1;
 			}
 
