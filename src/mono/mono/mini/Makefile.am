@@ -395,7 +395,8 @@ test_sources = 			\
 	test.cs			\
 	generics.cs		\
 	generics-variant-types.il\
-	basic-simd.cs
+	basic-simd.cs \
+	aot-tests.cs
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
@@ -540,8 +541,6 @@ libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
 
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
 nodist_libmono_static_la_CFLAGS = $(mono_CFLAGS)
-
-BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
@@ -697,7 +696,7 @@ BUILT_SOURCES = version.h
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
-EXTRA_DIST = $(common_BURGSRC) TestDriver.cs ldscript ldscript.mono \
+EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	genmdesc.pl				\
 	$(test_sources) 			\
 	$(x86_sources) cpu-x86.md 		\
