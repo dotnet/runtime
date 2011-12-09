@@ -2904,6 +2904,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	ComputeFramesUserData *ud = user_data;
 	StackFrame *frame;
 	MonoMethod *method, *actual_method;
+	SeqPoint *sp;
 
 	if (info->type != FRAME_TYPE_MANAGED) {
 		if (info->type == FRAME_TYPE_DEBUGGER_INVOKE) {
@@ -2924,8 +2925,14 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		return FALSE;
 
 	if (info->il_offset == -1) {
-		/* Can't use compute_il_offset () since ip doesn't point precisely at at a seq point */
-		info->il_offset = mono_debug_il_offset_from_address (method, info->domain, info->native_offset);
+		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
+		if (ud->frames == NULL) {
+			sp = find_prev_seq_point_for_native_offset (info->domain, method, info->native_offset, NULL);
+			if (sp)
+				info->il_offset = sp->il_offset;
+		}
+		if (info->il_offset == -1)
+			info->il_offset = mono_debug_il_offset_from_address (method, info->domain, info->native_offset);
 	}
 
 	DEBUG (1, fprintf (log_file, "\tFrame: %s:%x(%x) %d\n", mono_method_full_name (method, TRUE), info->il_offset, info->native_offset, info->managed));
