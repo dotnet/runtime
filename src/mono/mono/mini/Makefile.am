@@ -547,17 +547,19 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
 libmonoinclude_HEADERS = jit.h
 
+CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649
+
 basic-simd.exe: basic-simd.cs
-	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:Mono.Simd.dll
 
 nacl.exe: nacl.cs
-	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:Mono.Simd.dll
 
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
-	$(MCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:generics-variant-types.dll
 
 %.exe: %.cs TestDriver.dll
-	$(MCS) -out:$@ -unsafe $< -r:TestDriver.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll
 
 iltests.il: iltests.il.in Makefile.am
 	echo '// DO NOT EDIT: This file has been generated from iltests.il.in' > iltests.il
@@ -645,15 +647,17 @@ aotcheck: mono $(regtests)
 llvmaotcheck:
 	$(MAKE) aotcheck LLVM=1
 
+fullaot_regtests = $(regtests) aot-tests.exe
+
 # This currently only works on amd64/arm
-fullaotcheck: mono $(regtests)
+fullaotcheck: mono $(fullaot_regtests)
 	rm -rf fullaot-tmp
 	mkdir fullaot-tmp
 	cp $(CLASS)/mscorlib.dll $(CLASS)/System.Core.dll $(CLASS)/System.dll $(CLASS)/Mono.Posix.dll $(CLASS)/System.Configuration.dll $(CLASS)/System.Security.dll $(CLASS)/System.Xml.dll $(CLASS)/Mono.Security.dll $(CLASS)/Mono.Simd.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
-	cp $(regtests) fullaot-tmp/
+	cp $(fullaot_regtests) fullaot-tmp/
 	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) --aot=full fullaot-tmp/* || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
-	for i in $(regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i --exclude '!FULLAOT' || exit 1; done
+	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i --exclude '!FULLAOT' || exit 1; done
 
 llvmfullaotcheck:
 	$(MAKE) fullaotcheck LLVM=1

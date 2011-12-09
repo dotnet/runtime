@@ -3046,6 +3046,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SIGNATURE:
 		target = patch_info->data.target;
 		break;
 	case MONO_PATCH_INFO_IID:

@@ -570,6 +570,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define	MONO_EMIT_NEW_CLASSCONST(cfg,dr,imm) MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,MONO_PATCH_INFO_CLASS)
 #define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), (cfg)->compile_aot ? (gpointer)((vtable)->klass) : (vtable), MONO_PATCH_INFO_VTABLE)
+#define MONO_EMIT_NEW_SIGNATURECONST(cfg,dr,sig) MONO_EMIT_NEW_AOTCONST ((cfg), (dr), (sig), MONO_PATCH_INFO_SIGNATURE)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do {	\
         MonoInst *inst; \

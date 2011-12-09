@@ -152,7 +152,9 @@ enum {
 	/* array */
 	MONO_AOT_TYPEREF_ARRAY = 6,
 	/* blob index of the type encoding */
-	MONO_AOT_TYPEREF_BLOB_INDEX = 7
+	MONO_AOT_TYPEREF_BLOB_INDEX = 7,
+	/* ptr */
+	MONO_AOT_TYPEREF_PTR = 8
 };
 
 /* Trampolines which we have a lot of */

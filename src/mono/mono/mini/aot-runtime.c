@@ -298,6 +298,9 @@ decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
 static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
 
+static MonoType*
+decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+
 static MonoGenericInst*
 decode_generic_inst (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
@@ -455,6 +458,16 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		eklass = decode_klass_ref (module, p, &p);
 		klass = mono_array_class_get (eklass, rank);
 		break;
+	case MONO_AOT_TYPEREF_PTR: {
+		MonoType *t;
+
+		t = decode_type (module, p, &p);
+		if (!t)
+			return NULL;
+		klass = mono_class_from_mono_type (t);
+		g_free (t);
+		break;
+	}
 	case MONO_AOT_TYPEREF_BLOB_INDEX: {
 		guint32 offset = decode_value (p, &p);
 		guint8 *p2;
@@ -569,6 +582,31 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		t->data.generic_class = klass->generic_class;
 		break;
 	}
+	case MONO_TYPE_ARRAY: {
+		MonoArrayType *array;
+		int i;
+
+		// FIXME: memory management
+		array = g_new0 (MonoArrayType, 1);
+		array->eklass = decode_klass_ref (module, p, &p);
+		if (!array->eklass)
+			return NULL;
+		array->rank = decode_value (p, &p);
+		array->numsizes = decode_value (p, &p);
+
+		if (array->numsizes)
+			array->sizes = g_malloc0 (sizeof (int) * array->numsizes);
+		for (i = 0; i < array->numsizes; ++i)
+			array->sizes [i] = decode_value (p, &p);
+
+		array->numlobounds = decode_value (p, &p);
+		if (array->numlobounds)
+			array->lobounds = g_malloc0 (sizeof (int) * array->numlobounds);
+		for (i = 0; i < array->numlobounds; ++i)
+			array->lobounds [i] = decode_value (p, &p);
+		t->data.array = array;
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -599,7 +637,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	g_assert (!has_gen_params);
 
 	param_count = decode_value (p, &p);
-	if (param_count != target->param_count)
+	if (target && param_count != target->param_count)
 		return NULL;
 	sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + param_count * sizeof (MonoType *));
 	sig->param_count = param_count;
@@ -609,12 +647,27 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->call_convention = call_conv;
 	sig->param_count = param_count;
 	sig->ret = decode_type (module, p, &p);
-	for (i = 0; i < param_count; ++i)
+	for (i = 0; i < param_count; ++i) {
+		if (*p == MONO_TYPE_SENTINEL) {
+			g_assert (sig->call_convention == MONO_CALL_VARARG);
+			sig->sentinelpos = i;
+			p ++;
+		}
 		sig->params [i] = decode_type (module, p, &p);
+	}
+
+	if (sig->call_convention == MONO_CALL_VARARG && sig->sentinelpos == -1)
+		sig->sentinelpos = sig->param_count;
 
 	*endbuf = p;
 
 	return sig;
+}
+
+static MonoMethodSignature*
+decode_signature (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+{
+	return decode_signature_with_target (module, NULL, buf, endbuf);
 }
 
 static gboolean
@@ -2667,6 +2720,9 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.imt_tramp = imt_tramp;
 		break;
 	}
+	case MONO_PATCH_INFO_SIGNATURE:
+		ji->data.target = decode_signature (aot_module, p, &p);
+		break;
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();

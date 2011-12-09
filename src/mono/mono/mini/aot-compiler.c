@@ -1871,6 +1871,9 @@ static void
 encode_ginst (MonoAotCompile *acfg, MonoGenericInst *inst, guint8 *buf, guint8 **endbuf);
 
 static void
+encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf);
+
+static void
 encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
@@ -1926,6 +1929,9 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 			encode_method_ref (acfg, container->owner.method, p, &p);
 		else
 			encode_klass_ref (acfg, container->owner.klass, p, &p);
+	} else if (klass->byval_arg.type == MONO_TYPE_PTR) {
+		encode_value (MONO_AOT_TYPEREF_PTR, p, &p);
+		encode_type (acfg, &klass->byval_arg, p, &p);
 	} else {
 		/* Array class */
 		g_assert (klass->rank > 0);
@@ -2044,7 +2050,8 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 	guint8 *p = buf;
 
 	g_assert (t->num_mods == 0);
-	g_assert (t->attrs == 0);
+	/* t->attrs can be ignored */
+	//g_assert (t->attrs == 0);
 
 	if (t->pinned) {
 		*p = MONO_TYPE_PINNED;
@@ -2096,6 +2103,20 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		encode_ginst (acfg, inst, p, &p);
 		break;
 	}
+	case MONO_TYPE_ARRAY: {
+		MonoArrayType *array = t->data.array;
+		int i;
+
+		encode_klass_ref (acfg, array->eklass, p, &p);
+		encode_value (array->rank, p, &p);
+		encode_value (array->numsizes, p, &p);
+		for (i = 0; i < array->numsizes; ++i)
+			encode_value (array->sizes [i], p, &p);
+		encode_value (array->numlobounds, p, &p);
+		for (i = 0; i < array->numlobounds; ++i)
+			encode_value (array->lobounds [i], p, &p);
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -2125,11 +2146,14 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 		encode_value (sig->generic_param_count, p, &p);
 	encode_value (sig->param_count, p, &p);
 
-	g_assert (sig->call_convention != MONO_CALL_VARARG);
-
 	encode_type (acfg, sig->ret, p, &p);
-	for (i = 0; i < sig->param_count; ++i)
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->sentinelpos == i) {
+			*p = MONO_TYPE_SENTINEL;
+			++p;
+		}
 		encode_type (acfg, sig->params [i], p, &p);
+	}
 
 	*endbuf = p;
 }
@@ -2975,10 +2999,12 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, m);
 
 			method = mono_class_get_method_from_name_flags (klass, "BeginInvoke", -1, 0);
-			add_method (acfg, mono_marshal_get_delegate_begin_invoke (method));
+			if (method)
+				add_method (acfg, mono_marshal_get_delegate_begin_invoke (method));
 
 			method = mono_class_get_method_from_name_flags (klass, "EndInvoke", -1, 0);
-			add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
+			if (method)
+				add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
 		}
 	}
 
@@ -4031,6 +4057,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
 		encode_method_ref (acfg, patch_info->data.imt_tramp->method, p, &p);
 		encode_value (patch_info->data.imt_tramp->vt_offset, p, &p);
+		break;
+	case MONO_PATCH_INFO_SIGNATURE:
+		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);
 		break;
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
@@ -5144,7 +5173,7 @@ can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
 {
 	if (klass->type_token)
 		return TRUE;
-	if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
+	if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR) || (klass->byval_arg.type == MONO_TYPE_PTR))
 		return TRUE;
 	if (klass->rank)
 		return can_encode_class (acfg, klass->element_class);
@@ -5266,6 +5295,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	wrapped = mono_marshal_method_from_wrapper (method);
 	if (wrapped && (wrapped->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && wrapped->is_generic)
 		// FIXME: The wrapper should be generic too, but it is not
+		return;
+
+	if (method->wrapper_type == MONO_WRAPPER_COMINTEROP)
 		return;
 
 	InterlockedIncrement (&acfg->stats.mcount);
