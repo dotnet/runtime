@@ -1543,8 +1543,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 	major_collector.iterate_objects (TRUE, FALSE, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
 	major_collector.iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
-	if (do_pin_stats && domain == mono_get_root_domain ())
-		mono_sgen_pin_stats_print_class_stats ();
+	if (G_UNLIKELY (do_pin_stats)) {
+		if (domain == mono_get_root_domain ())
+			mono_sgen_pin_stats_print_class_stats ();
+	}
 
 	UNLOCK_GC;
 }
@@ -1620,7 +1622,7 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 	if (!global_remset_location_was_not_added (ptr))
 		goto done;
 
-	if (do_pin_stats)
+	if (G_UNLIKELY (do_pin_stats))
 		mono_sgen_pin_stats_register_global_remset (obj);
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
@@ -1771,7 +1773,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 						binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
 						pin_object (search_start);
 						GRAY_OBJECT_ENQUEUE (queue, search_start);
-						if (do_pin_stats)
+						if (G_UNLIKELY (do_pin_stats))
 							mono_sgen_pin_stats_register_object (search_start, last_obj_size);
 						definitely_pinned [count] = search_start;
 						count++;
@@ -1829,7 +1831,7 @@ mono_sgen_pin_object (void *object, GrayQueue *queue)
 		SGEN_PIN_OBJECT (object);
 		pin_stage_ptr (object);
 		++objects_pinned;
-		if (do_pin_stats)
+		if (G_UNLIKELY (do_pin_stats))
 			mono_sgen_pin_stats_register_object (object, safe_object_get_size (object));
 	}
 	GRAY_OBJECT_ENQUEUE (queue, object);
@@ -1958,8 +1960,10 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			addr &= ~(ALLOC_ALIGN - 1);
 			if (addr >= (mword)start_nursery && addr < (mword)end_nursery)
 				pin_stage_ptr ((void*)addr);
-			if (do_pin_stats && ptr_in_nursery (addr))
-				pin_stats_register_address ((char*)addr, pin_type);
+			if (G_UNLIKELY (do_pin_stats)) { 
+				if (ptr_in_nursery (addr))
+					pin_stats_register_address ((char*)addr, pin_type);
+			}
 			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p from %p\n", (void*)addr, start));
 			count++;
 		}
@@ -3445,7 +3449,7 @@ major_do_collection (const char *reason)
 			pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
-			if (do_pin_stats)
+			if (G_UNLIKELY (do_pin_stats))
 				mono_sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %lu from roots\n", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size));
 		}
