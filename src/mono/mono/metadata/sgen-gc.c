@@ -3766,7 +3766,9 @@ static inline void
 set_nursery_scan_start (char *p)
 {
 	int idx = (p - (char*)nursery_section->data) / SCAN_START_SIZE;
-	nursery_section->scan_starts [idx] = p;
+	char *old = nursery_section->scan_starts [idx];
+	if (!old || old > p)
+		nursery_section->scan_starts [idx] = p;
 }
 
 static void*
@@ -4021,6 +4023,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		p = mono_sgen_nursery_alloc (size);
 		if (!p)
 			return NULL;
+		set_nursery_scan_start (p);
 
 		/*FIXME we should use weak memory ops here. Should help specially on x86. */
 		if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
@@ -4039,6 +4042,14 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 		if (G_LIKELY (new_next < real_end)) {
 			TLAB_NEXT = new_next;
+
+			/* Second case, we overflowed temp end */
+			if (G_UNLIKELY (new_next >= TLAB_TEMP_END)) {
+				set_nursery_scan_start (new_next);
+				/* we just bump tlab_temp_end as well */
+				TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
+				DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));		
+			}
 		} else if (available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
 			/* Allocate directly from the nursery */
 			p = mono_sgen_nursery_alloc (size);
@@ -4060,18 +4071,10 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			TLAB_NEXT = new_next + size;
 			TLAB_REAL_END = new_next + alloc_size;
 			TLAB_TEMP_END = new_next + MIN (SCAN_START_SIZE, alloc_size);
+			set_nursery_scan_start (p);
 
 			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 				memset (new_next, 0, alloc_size);
-			new_next += size;
-		}
-
-		/* Second case, we overflowed temp end */
-		if (G_UNLIKELY (new_next >= TLAB_TEMP_END)) {
-			set_nursery_scan_start (p);
-			/* we just bump tlab_temp_end as well */
-			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
-			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));		
 		}
 	}
 
