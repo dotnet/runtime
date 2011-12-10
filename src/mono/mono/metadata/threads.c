@@ -4489,6 +4489,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
 		mono_thread_info_resume (mono_thread_info_get_tid (info));
 	} else {
+		guint32 interrupt_handle;
 		/* 
 		 * This will cause waits to be broken.
 		 * It will also prevent the thread from entering a wait, so if the thread returns
@@ -4497,9 +4498,12 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		 * make it return.
 		 */
 		InterlockedIncrement (&thread_interruption_requested);
+#ifndef HOST_WIN32
+		interrupt_handle = wapi_prepare_interrupt_thread (thread->handle);
+#endif
 		mono_thread_info_resume (mono_thread_info_get_tid (info));
 #ifndef HOST_WIN32
-		wapi_interrupt_thread (thread->handle);
+		wapi_finish_interrupt_thread (interrupt_handle);
 #endif
 	}
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
@@ -4540,13 +4544,19 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		if (running_managed && !protected_wrapper) {
 			transition_to_suspended (thread);
 		} else {
+			guint32 interrupt_handle;
+
 			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
 				InterlockedIncrement (&thread_interruption_requested);
 #ifndef HOST_WIN32
 			if (interrupt)
-				wapi_interrupt_thread (thread->handle);
+				interrupt_handle = wapi_prepare_interrupt_thread (thread->handle);
 #endif
 			mono_thread_info_resume (mono_thread_info_get_tid (info));
+#ifndef HOST_WIN32
+			if (interrupt)
+				wapi_finish_interrupt_thread (interrupt_handle);
+#endif
 			LeaveCriticalSection (thread->synch_cs);
 		}
 	}

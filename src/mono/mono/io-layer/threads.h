@@ -71,6 +71,10 @@ gboolean wapi_thread_set_wait_handle (gpointer handle);
 void wapi_thread_clear_wait_handle (gpointer handle);
 void wapi_self_interrupt (void);
 
+guint32 wapi_prepare_interrupt_thread (gpointer thread_handle);
+void wapi_finish_interrupt_thread (guint32 wait_handle);
+
+
 char* wapi_current_thread_desc (void);
 
 G_END_DECLS
