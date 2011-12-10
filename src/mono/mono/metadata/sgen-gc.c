@@ -3983,13 +3983,13 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
 				TLAB_NEXT += size;
-				set_nursery_scan_start (p);
+				set_nursery_scan_start ((char*)p);
 			}
 		} else {
 			/* Reached tlab_temp_end */
 
 			/* record the scan start so we can find pinned objects more easily */
-			set_nursery_scan_start (p);
+			set_nursery_scan_start ((char*)p);
 			/* we just bump tlab_temp_end as well */
 			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
 			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));
