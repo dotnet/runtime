@@ -2021,8 +2021,6 @@ pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue)
 	 * *) pointers slots in managed frames
 	 */
 	scan_thread_data (start_nursery, end_nursery, FALSE, queue);
-
-	evacuate_pin_staging_area ();
 }
 
 typedef struct {
@@ -3265,7 +3263,6 @@ collect_nursery (size_t requested_size)
 		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
 
 	if (objects_pinned) {
-		evacuate_pin_staging_area ();
 		optimize_pin_queue (0);
 		nursery_section->pin_queue_start = pin_queue;
 		nursery_section->pin_queue_num_entries = next_pin_slot;
@@ -3554,7 +3551,6 @@ major_do_collection (const char *reason)
 	if (objects_pinned) {
 		/*This is slow, but we just OOM'd*/
 		mono_sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
-		evacuate_pin_staging_area ();
 		optimize_pin_queue (0);
 		mono_sgen_find_section_pin_queue_start_end (nursery_section);
 		objects_pinned = 0;
