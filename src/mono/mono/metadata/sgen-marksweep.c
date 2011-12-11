@@ -1771,7 +1771,7 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 extern long long marked_cards;
 extern long long scanned_cards;
 extern long long scanned_objects;
-
+extern long long remarked_cards;
 #endif
 
 #define CARD_WORDS_PER_BLOCK (CARDS_PER_BLOCK / SIZEOF_VOID_P)
@@ -1909,6 +1909,7 @@ major_scan_card_table (SgenGrayQueue *queue)
 					}
 					obj += block_obj_size;
 				}
+				HEAVY_STAT (if (*card_data) ++remarked_cards);
 			}
 		}
 	} END_FOREACH_BLOCK;

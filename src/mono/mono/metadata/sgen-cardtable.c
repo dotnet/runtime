@@ -47,6 +47,7 @@ guint8 *sgen_cardtable;
 long long marked_cards;
 long long scanned_cards;
 long long scanned_objects;
+long long remarked_cards;
 
 static long long los_marked_cards;
 static long long large_objects;
@@ -183,6 +184,8 @@ card_table_init (void)
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &marked_cards);
 	mono_counters_register ("scanned cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_cards);
+	mono_counters_register ("remarked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &remarked_cards);
+
 	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_marked_cards);
 	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_cards);
 	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_remsets);
