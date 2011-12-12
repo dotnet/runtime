@@ -123,6 +123,7 @@ typedef struct MonoAotOptions {
 	gboolean asm_writer;
 	gboolean nodebug;
 	gboolean soft_debug;
+	gboolean log_generics;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -2662,6 +2663,9 @@ add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
 static void
 add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
 {
+	if (acfg->aot_opts.log_generics)
+		printf ("%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
+
 	add_method_full (acfg, method, TRUE, depth);
 }
 
@@ -3200,16 +3204,16 @@ method_has_type_vars (MonoMethod *method)
 	return FALSE;
 }
 
-static void add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth);
+static void add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth, const char *ref);
 
 static void
-add_generic_class (MonoAotCompile *acfg, MonoClass *klass, gboolean force)
+add_generic_class (MonoAotCompile *acfg, MonoClass *klass, gboolean force, const char *ref)
 {
 	/* This might lead to a huge code blowup so only do it if neccesary */
 	if (!acfg->aot_opts.full_aot && !force)
 		return;
 
-	add_generic_class_with_depth (acfg, klass, 0);
+	add_generic_class_with_depth (acfg, klass, 0, ref);
 }
 
 static gboolean
@@ -3246,10 +3250,13 @@ check_type_depth (MonoType *t, int depth)
  *   Add all methods of a generic class.
  */
 static void
-add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
+add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth, const char *ref)
 {
 	MonoMethod *method;
 	gpointer iter;
+
+	if (!acfg->ginst_hash)
+		acfg->ginst_hash = g_hash_table_new (NULL, NULL);
 
 	mono_class_init (klass);
 
@@ -3270,6 +3277,9 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 
 	if (check_type_depth (&klass->byval_arg, 0))
 		return;
+
+	if (acfg->aot_opts.log_generics)
+		printf ("%*sAdding generic instance %s [%s].\n", depth, "", mono_type_full_name (&klass->byval_arg), ref);
 
 	g_hash_table_insert (acfg->ginst_hash, klass, klass);
 
@@ -3295,12 +3305,15 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 
 		method = mono_marshal_get_delegate_invoke (method, NULL);
 
+		if (acfg->aot_opts.log_generics)
+			printf ("%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
+
 		add_method (acfg, method);
 	}
 
 	/* Add superclasses */
 	if (klass->parent)
-		add_generic_class_with_depth (acfg, klass->parent, depth);
+		add_generic_class_with_depth (acfg, klass->parent, depth, "parent");
 
 	/* 
 	 * For ICollection<T>, add instances of the helper methods
@@ -3329,13 +3342,14 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 			}
 			g_assert (nclass);
 			nclass = mono_class_inflate_generic_class (nclass, mono_generic_class_get_context (klass->generic_class));
-			add_generic_class (acfg, nclass, FALSE);
+			add_generic_class (acfg, nclass, FALSE, "ICollection<T>");
 		}
 
 		iter = NULL;
 		while ((method = mono_class_get_methods (array_class, &iter))) {
 			if (strstr (method->name, name_prefix)) {
 				MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
+
 				add_extra_method_with_depth (acfg, m, depth);
 			}
 		}
@@ -3360,7 +3374,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 		if (mono_class_is_assignable_from (mono_class_inflate_generic_class (icomparable, &ctx), tclass)) {
 			gcomparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericComparer`1");
 			g_assert (gcomparer);
-			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE);
+			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE, "Comparer<T>");
 		}
 	}
 
@@ -3381,7 +3395,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 		if (mono_class_is_assignable_from (mono_class_inflate_generic_class (iface, &ctx), tclass)) {
 			gcomparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericEqualityComparer`1");
 			g_assert (gcomparer);
-			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE);
+			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE, "EqualityComparer<T>");
 		}
 	}
 }
@@ -3398,7 +3412,7 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 	for (i = 0; i < ninsts; ++i) {
 		args [0] = insts [i];
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-		add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx), force);
+		add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx), force, "");
 	}
 }
 
@@ -3530,7 +3544,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			continue;
 		}
 
-		add_generic_class (acfg, klass, FALSE);
+		add_generic_class (acfg, klass, FALSE, "typespec");
 	}
 
 	/* Add types of args/locals */
@@ -3546,7 +3560,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (sig) {
 			for (j = 0; j < sig->param_count; ++j)
 				if (sig->params [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class_with_depth (acfg, mono_class_from_mono_type (sig->params [j]), depth + 1);
+					add_generic_class_with_depth (acfg, mono_class_from_mono_type (sig->params [j]), depth + 1, "arg");
 		}
 
 		header = mono_method_get_header (method);
@@ -3554,7 +3568,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (header) {
 			for (j = 0; j < header->num_locals; ++j)
 				if (header->locals [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1);
+					add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1, "local");
 		}
 	}
 
@@ -5111,6 +5125,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->print_skipped_methods = TRUE;
 		} else if (str_begins_with (arg, "stats")) {
 			opts->stats = TRUE;
+		} else if (str_begins_with (arg, "log-generics")) {
+			opts->log_generics = TRUE;
 		} else if (str_begins_with (arg, "mtriple=")) {
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
@@ -5421,7 +5437,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 							add_extra_method_with_depth (acfg, m, depth + 1);
 						}
 					}
-					add_generic_class_with_depth (acfg, m->klass, depth + 5);
+					add_generic_class_with_depth (acfg, m->klass, depth + 5, "method");
 				}
 				if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && !strcmp (m->name, "ElementAddr"))
 					add_extra_method_with_depth (acfg, m, depth + 1);
@@ -5431,7 +5447,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				MonoClass *klass = patch_info->data.klass;
 
 				if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE))
-					add_generic_class_with_depth (acfg, klass, depth + 5);
+					add_generic_class_with_depth (acfg, klass, depth + 5, "vtable");
 				break;
 			}
 			case MONO_PATCH_INFO_SFLDA: {
