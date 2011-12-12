@@ -559,7 +559,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define	MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,type) do { \
         MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), OP_AOTCONST); \
+        MONO_INST_NEW ((cfg), (inst), cfg->compile_aot ? OP_AOTCONST : OP_PCONST); \
         inst->dreg = dr; \
         inst->inst_p0 = imm; \
         inst->inst_c1 = type; \
