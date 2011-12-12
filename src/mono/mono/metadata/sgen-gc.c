@@ -3056,6 +3056,8 @@ verify_nursery (void)
 	end = nursery_end;
 
 	while (cur < end) {
+		size_t ss, size;
+
 		if (!*(void**)cur) {
 			cur += sizeof (void*);
 			continue;
@@ -3066,13 +3068,13 @@ verify_nursery (void)
 		else if (object_is_pinned (cur))
 			fprintf (gc_debug_file, "PINNED OBJ %p\n", cur);
 
-		size_t ss = safe_object_get_size ((MonoObject*)cur);
-		size_t size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
+		ss = safe_object_get_size ((MonoObject*)cur);
+		size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
 		verify_scan_starts (cur, cur + size);
 		if (do_dump_nursery_content) {
 			if (cur > hole_start)
-				fprintf (gc_debug_file, "HOLE [%p %p %d]\n", hole_start, cur, cur - hole_start);
-			fprintf (gc_debug_file, "OBJ  [%p %p %d %d %s %d]\n", cur, cur + size, size, ss, mono_sgen_safe_name ((MonoObject*)cur), LOAD_VTABLE (cur) == mono_sgen_get_array_fill_vtable ());
+				fprintf (gc_debug_file, "HOLE [%p %p %d]\n", hole_start, cur, (int)(cur - hole_start));
+			fprintf (gc_debug_file, "OBJ  [%p %p %d %d %s %d]\n", cur, cur + size, (int)size, (int)ss, mono_sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == mono_sgen_get_array_fill_vtable ());
 		}
 		cur += size;
 		hole_start = cur;
@@ -4019,7 +4021,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		p = mono_sgen_nursery_alloc (size);
 		if (!p)
 			return NULL;
-		set_nursery_scan_start (p);
+		set_nursery_scan_start ((char*)p);
 
 		/*FIXME we should use weak memory ops here. Should help specially on x86. */
 		if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
@@ -4067,7 +4069,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			TLAB_NEXT = new_next + size;
 			TLAB_REAL_END = new_next + alloc_size;
 			TLAB_TEMP_END = new_next + MIN (SCAN_START_SIZE, alloc_size);
-			set_nursery_scan_start (p);
+			set_nursery_scan_start ((char*)p);
 
 			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 				memset (new_next, 0, alloc_size);

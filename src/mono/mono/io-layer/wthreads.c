@@ -1003,7 +1003,7 @@ void wapi_interrupt_thread (gpointer thread_handle)
 }
 
 
-guint32 wapi_prepare_interrupt_thread (gpointer thread_handle)
+gpointer wapi_prepare_interrupt_thread (gpointer thread_handle)
 {
 	struct _WapiHandle_thread *thread;
 	gboolean ok;
@@ -1036,7 +1036,7 @@ guint32 wapi_prepare_interrupt_thread (gpointer thread_handle)
 	return wait_handle;
 }
 
-void wapi_finish_interrupt_thread (guint32 wait_handle)
+void wapi_finish_interrupt_thread (gpointer wait_handle)
 {
 	pthread_cond_t *cond;
 	mono_mutex_t *mutex;

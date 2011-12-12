@@ -4489,7 +4489,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
 		mono_thread_info_resume (mono_thread_info_get_tid (info));
 	} else {
-		guint32 interrupt_handle;
+		gpointer interrupt_handle;
 		/* 
 		 * This will cause waits to be broken.
 		 * It will also prevent the thread from entering a wait, so if the thread returns
@@ -4544,7 +4544,7 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		if (running_managed && !protected_wrapper) {
 			transition_to_suspended (thread);
 		} else {
-			guint32 interrupt_handle;
+			gpointer interrupt_handle;
 
 			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
 				InterlockedIncrement (&thread_interruption_requested);
