@@ -1606,12 +1606,8 @@ mono_class_layout_fields (MonoClass *class)
 	 */
 	 /* corlib is missing [StructLayout] directives in many places */
 	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		if (class->image != mono_defaults.corlib &&
-			class->byval_arg.type != MONO_TYPE_VALUETYPE)
+		if (class->byval_arg.type != MONO_TYPE_VALUETYPE)
 			gc_aware_layout = TRUE;
-		/* from System.dll, used in metadata/process.h */
-		if (strcmp (class->name, "ProcessStartInfo") == 0)
-			gc_aware_layout = FALSE;
 	}
 
 	/* Compute klass->has_references */
