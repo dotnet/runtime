@@ -123,10 +123,7 @@ typedef struct {
  * only the collection thread is active.
  */
 typedef struct {
-	MonoLMF *lmf;
-	MonoContext ctx;
-	gboolean has_context;
-	MonoJitTlsData *jit_tls;
+	MonoThreadUnwindState unwind_state;
 	/* For debugging */
 	mgreg_t tid;
 	gpointer ref_to_track;
@@ -576,14 +573,15 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 	// FIXME: This isn't true on osx, and we depend on it for mono_get_lmf ().
 	//g_assert (tls->tid == GetCurrentThreadId ());
 
-	tls->lmf = mono_get_lmf ();
+	tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 	if (sigctx) {
-		mono_arch_sigctx_to_monoctx (sigctx, &tls->ctx);
-		tls->has_context = TRUE;
+		mono_arch_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
+		tls->unwind_state.valid = TRUE;
 	} else {
-		tls->has_context = FALSE;
+		tls->unwind_state.valid = FALSE;
 	}
-	tls->jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = mono_native_tls_get_value (mono_jit_tls_id);
+	tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 }
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
@@ -684,7 +682,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		return;
 	}
 
-	lmf = tls->lmf;
+	lmf = tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF];
 	frame.domain = NULL;
 
 	/* Number of bytes scanned based on GC map data */
@@ -699,10 +697,10 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	/* This is one past the last address which we have scanned */
 	stack_limit = stack_start;
 
-	if (!tls->has_context)
+	if (!tls->unwind_state.valid)
 		memset (&new_ctx, 0, sizeof (ctx));
 	else
-		memcpy (&new_ctx, &tls->ctx, sizeof (MonoContext));
+		memcpy (&new_ctx, &tls->unwind_state.ctx, sizeof (MonoContext));
 
 	memset (reg_locations, 0, sizeof (reg_locations));
 	memset (new_reg_locations, 0, sizeof (new_reg_locations));
@@ -731,7 +729,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 		g_assert ((mgreg_t)stack_limit % SIZEOF_SLOT == 0);
 
-		res = mono_find_jit_info_ext (frame.domain ? frame.domain : mono_domain_get (), tls->jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
+		res = mono_find_jit_info_ext (frame.domain ? frame.domain : tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS], NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
 		if (!res)
 			break;
 
