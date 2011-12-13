@@ -93,7 +93,7 @@ typedef enum {
 	FileAttributes_Encrypted=0x04000,
 	FileAttributes_MonoExecutable= (int) 0x80000000
 } MonoFileAttributes;
-
+/* This is not used anymore
 typedef struct _MonoFSAsyncResult {
 	MonoObject obj;
 	MonoObject *state;
@@ -110,7 +110,7 @@ typedef struct _MonoFSAsyncResult {
 	gint bytes_read;
 	MonoDelegate *real_cb;
 } MonoFSAsyncResult;
-
+*/
 /* System.IO.MonoIO */
 
 extern MonoBoolean

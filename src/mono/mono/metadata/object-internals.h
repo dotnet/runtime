@@ -424,12 +424,6 @@ struct _MonoThread {
 };
 
 typedef struct {
-	MonoString *name;
-	MonoReflectionType *type;
-	MonoObject *value;
-} MonoSerializationEntry;
-
-typedef struct {
 	guint32 state;
 	MonoObject *additional;
 } MonoStreamingContext;
