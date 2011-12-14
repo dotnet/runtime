@@ -51,6 +51,28 @@ typedef void* mono_native_thread_return_t;
 
 #endif /* #ifdef HOST_WIN32 */
 
+/*
+THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
+The GC using mono-threads might extend the MonoThreadInfo struct to add its own
+data, this avoid a pointer indirection on what is on a lot of hot paths.
+
+But extending MonoThreadInfo has de disavantage that all functions here return type
+would require a cast, something like the following:
+
+typedef struct {
+	MonoThreadInfo info;
+	int stuff;
+}  MyThreadInfo;
+
+...
+((MyThreadInfo*)mono_thread_info_current ())->stuff = 1;
+
+While porting sgen to use mono-threads, the number of casts required was too much and
+code ended up looking horrible. So we use this cute little hack. The idea is that
+whomever is including this header can set the expected type to be used by functions here
+and reduce the number of casts drastically.
+
+*/
 #ifndef THREAD_INFO_TYPE
 #define THREAD_INFO_TYPE MonoThreadInfo
 #endif
