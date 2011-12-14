@@ -1280,9 +1280,7 @@ static void
 emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	MonoMethodSignature *tmp_sig;
-
-	/* FIXME: Add support for signature tokens to AOT */
-	cfg->disable_aot = TRUE;
+	int sig_reg;
 
 	/*
 	 * mono_ArgIterator_Setup assumes the signature cookie is 
@@ -1295,7 +1293,13 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	tmp_sig->sentinelpos = 0;
 	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
 
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_X86_PUSH_IMM, -1, -1, tmp_sig);
+	if (cfg->compile_aot) {
+		sig_reg = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
+		MONO_EMIT_NEW_UNALU (cfg, OP_X86_PUSH, -1, sig_reg);
+	} else {
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_X86_PUSH_IMM, -1, -1, tmp_sig);
+	}
 }
 
 #ifdef ENABLE_LLVM

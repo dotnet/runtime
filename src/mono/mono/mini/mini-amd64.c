@@ -2139,9 +2139,6 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	if (call->tail_call)
 		NOT_IMPLEMENTED;
 
-	/* FIXME: Add support for signature tokens to AOT */
-	//cfg->disable_aot = TRUE;
-
 	g_assert (cinfo->sig_cookie.storage == ArgOnStack);
 			
 	/*
