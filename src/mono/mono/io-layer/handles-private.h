@@ -110,8 +110,8 @@ static inline WapiHandleType _wapi_handle_type (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
-		return(WAPI_HANDLE_COUNT);	/* An impossible type */
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx) || !_WAPI_PRIVATE_HAVE_SLOT (idx)) {
+		return(WAPI_HANDLE_UNUSED);	/* An impossible type */
 	}
 	
 	return(_WAPI_PRIVATE_HANDLES(idx).type);
