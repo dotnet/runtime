@@ -12566,6 +12566,6 @@ mono_reflection_type_get_type (MonoReflectionType *reftype)
 {
 	g_assert (reftype);
 
-	return reftype->type;
+	return mono_reflection_type_get_handle (reftype);
 }
 
