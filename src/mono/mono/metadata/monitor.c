@@ -876,6 +876,7 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	int thread_tls_offset;
 	gboolean is_v4 = mono_method_signature (monitor_enter_method)->param_count == 2;
 	int fast_path_idx = is_v4 ? FASTPATH_ENTERV4 : FASTPATH_ENTER;
+	WrapperInfo *info;
 
 	/* The !is_v4 version is not used/tested */
 	g_assert (is_v4);
@@ -1027,6 +1028,11 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = register_fastpath (mono_mb_create_method (mb, mono_signature_no_pinvoke (monitor_enter_method), 5), fast_path_idx);
+
+	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (WrapperInfo));
+	info->subtype = is_v4 ? WRAPPER_SUBTYPE_FAST_MONITOR_ENTER_V4 : WRAPPER_SUBTYPE_FAST_MONITOR_ENTER;
+	mono_marshal_set_wrapper_info (res, info);
+
 	mono_mb_free (mb);
 	return res;
 }
@@ -1039,6 +1045,7 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 	int obj_null_branch, has_waiting_branch, has_syncp_branch, owned_branch, nested_branch, thin_hash_branch;
 	int thread_tls_offset;
 	int syncp_loc;
+	WrapperInfo *info;
 
 	thread_tls_offset = mono_thread_get_tls_offset ();
 	if (thread_tls_offset == -1)
@@ -1182,6 +1189,10 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 
 	res = register_fastpath (mono_mb_create_method (mb, mono_signature_no_pinvoke (monitor_exit_method), 5), FASTPATH_EXIT);
 	mono_mb_free (mb);
+
+	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (WrapperInfo));
+	info->subtype = WRAPPER_SUBTYPE_FAST_MONITOR_EXIT;
+	mono_marshal_set_wrapper_info (res, info);
 
 	return res;
 }

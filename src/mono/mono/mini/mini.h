@@ -118,7 +118,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 80
+#define MONO_AOT_FILE_VERSION 81
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -2495,30 +2495,5 @@ void SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)  MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
 gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
-
-/* Subtypes of some wrapper types */
-enum {
-	MONO_AOT_WRAPPER_MONITOR_ENTER,
-	MONO_AOT_WRAPPER_MONITOR_EXIT,
-	MONO_AOT_WRAPPER_ELEMENT_ADDR,
-	MONO_AOT_WRAPPER_PTR_TO_STRUCTURE,
-	MONO_AOT_WRAPPER_STRUCTURE_TO_PTR,
-	MONO_AOT_WRAPPER_CASTCLASS_WITH_CACHE,
-	MONO_AOT_WRAPPER_ISINST_WITH_CACHE,
-	MONO_AOT_WRAPPER_MONITOR_ENTER_V4,
-	MONO_AOT_WRAPPER_JIT_ICALL,
-	MONO_AOT_WRAPPER_RUNTIME_INVOKE_DYNAMIC,
-	MONO_AOT_WRAPPER_RUNTIME_INVOKE_DIRECT,
-	MONO_AOT_WRAPPER_RUNTIME_INVOKE_VIRTUAL,
-	/*
-	 * We can't encode this wrapper directly, so we emit its name instead.
-	 * This means that its not possible to decode this into a method, only to check
-	 * that the method reference matches a given method. This is normally not a problem
-	 * as these wrappers only occur in the extra_methods table, where we already have
-	 * a method we want to lookup.
-	 */
-	MONO_AOT_WRAPPER_BY_NAME,
-	MONO_AOT_WRAPPER_LAST
-};
 
 #endif /* __MONO_MINI_H__ */

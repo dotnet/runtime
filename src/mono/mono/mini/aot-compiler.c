@@ -2225,54 +2225,35 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_WRITE_BARRIER:
 			break;
 		case MONO_WRAPPER_STELEMREF: {
-			MonoClass *klass = mono_marshal_get_wrapper_info (method);
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-			if (!klass) {
-				/* Normal wrapper */
-				encode_value (0, p, &p);
-			} else {
-				char *name;
-
-				/* virtual wrapper */
-				name = mono_aot_wrapper_name (method);
-				encode_value (MONO_AOT_WRAPPER_BY_NAME, p, &p);
-				strcpy ((char*)p, name);
-				p += strlen (name) + 1;
-				g_free (name);
-			}
+			g_assert (info);
+			encode_value (info->subtype, p, &p);
+			if (info->subtype == WRAPPER_SUBTYPE_VIRTUAL_STELEMREF)
+				encode_value (info->d.virtual_stelemref.kind, p, &p);
 			break;
 		}
-		case MONO_WRAPPER_UNKNOWN:
-			if (strcmp (method->name, "FastMonitorEnter") == 0) {
-				encode_value (MONO_AOT_WRAPPER_MONITOR_ENTER, p, &p);
-			} else if (strcmp (method->name, "FastMonitorExit") == 0) {
-				encode_value (MONO_AOT_WRAPPER_MONITOR_EXIT, p, &p);
-			} else if (strcmp (method->name, "FastMonitorEnterV4") == 0) {
-				encode_value (MONO_AOT_WRAPPER_MONITOR_ENTER_V4, p, &p);
-			} else if (strcmp (method->name, "PtrToStructure") == 0) {
-				encode_value (MONO_AOT_WRAPPER_PTR_TO_STRUCTURE, p, &p);
+		case MONO_WRAPPER_UNKNOWN: {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			g_assert (info);
+			encode_value (info->subtype, p, &p);
+			if (info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE ||
+				info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR)
 				encode_klass_ref (acfg, method->klass, p, &p);
-			} else if (strcmp (method->name, "StructureToPtr") == 0) {
-				encode_value (MONO_AOT_WRAPPER_STRUCTURE_TO_PTR, p, &p);
-				encode_klass_ref (acfg, method->klass, p, &p);
-			} else {
-				g_assert_not_reached ();
-			}
 			break;
+		}
 		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
-			MonoMethod *m;
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-			if (strstr (method->name, "__icall_wrapper")) {
-				encode_value (MONO_AOT_WRAPPER_JIT_ICALL, p, &p);
-
+			g_assert (info);
+			encode_value (info->subtype, p, &p);
+			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
 				strcpy ((char*)p, method->name);
 				p += strlen (method->name) + 1;
 			} else {
-				encode_value (0, p, &p);
-				m = mono_marshal_method_from_wrapper (method);
-				g_assert (m);
-				g_assert (m != method);
-				encode_method_ref (acfg, m, p, &p);
+				g_assert (info->subtype == WRAPPER_SUBTYPE_NONE);
+				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			}
 			break;
 		}
@@ -2285,50 +2266,36 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_method_ref (acfg, m, p, &p);
 			break;
 		}
-		case MONO_WRAPPER_MANAGED_TO_MANAGED:
-			if (!strcmp (method->name, "ElementAddr")) {
-				ElementAddrWrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		case MONO_WRAPPER_MANAGED_TO_MANAGED: {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-				printf ("X: %d\n", info->rank);
-				g_assert (info);
-				encode_value (MONO_AOT_WRAPPER_ELEMENT_ADDR, p, &p);
-				encode_value (info->rank, p, &p);
-				encode_value (info->elem_size, p, &p);
-			} else {
-				char *name;
+			g_assert (info);
+			encode_value (info->subtype, p, &p);
 
-				name = mono_aot_wrapper_name (method);
-				encode_value (MONO_AOT_WRAPPER_BY_NAME, p, &p);
-				strcpy ((char*)p, name);
-				p += strlen (name) + 1;
-				g_free (name);
-			}
-			break;
-		case MONO_WRAPPER_CASTCLASS:
-			if (!strcmp (method->name, "__castclass_with_cache")) {
-				encode_value (MONO_AOT_WRAPPER_CASTCLASS_WITH_CACHE, p, &p);
-			} else if (!strcmp (method->name, "__isinst_with_cache")) {
-				encode_value (MONO_AOT_WRAPPER_ISINST_WITH_CACHE, p, &p);
+			if (info->subtype == WRAPPER_SUBTYPE_ELEMENT_ADDR) {
+				encode_value (info->d.element_addr.rank, p, &p);
+				encode_value (info->d.element_addr.elem_size, p, &p);
+			} else if (info->subtype == WRAPPER_SUBTYPE_STRING_CTOR) {
+				encode_method_ref (acfg, info->d.string_ctor.method, p, &p);
 			} else {
 				g_assert_not_reached ();
 			}
 			break;
+		}
+		case MONO_WRAPPER_CASTCLASS: {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			g_assert (info);
+			encode_value (info->subtype, p, &p);
+			break;
+		}
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
-			if (!strcmp (method->name, "runtime_invoke_dynamic")) {
-				encode_value (MONO_AOT_WRAPPER_RUNTIME_INVOKE_DYNAMIC, p, &p);
-			} else if (mono_marshal_method_from_wrapper (method) != method) {
-				MonoMethod *m;
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-				/* Direct wrapper, encode it normally */
-				if (!strstr (method->name, "virtual"))
-					encode_value (MONO_AOT_WRAPPER_RUNTIME_INVOKE_DIRECT, p, &p);
-				else
-					encode_value (MONO_AOT_WRAPPER_RUNTIME_INVOKE_VIRTUAL, p, &p);
-
-				m = mono_marshal_method_from_wrapper (method);
-				g_assert (m);
-				g_assert (m != method);
-				encode_method_ref (acfg, m, p, &p);
+			if (info) {
+				encode_value (info->subtype, p, &p);
+				if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
+					encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
 			} else {
 				MonoMethodSignature *sig;
 
@@ -2347,10 +2314,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_NATIVE_TO_MANAGED: {
-			NativeToManagedWrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-			encode_method_ref (acfg, info->method, p, &p);
-			encode_klass_ref (acfg, info->klass, p, &p);
+			g_assert (info);
+			encode_method_ref (acfg, info->d.native_to_managed.method, p, &p);
+			encode_klass_ref (acfg, info->d.native_to_managed.klass, p, &p);
 			break;
 		}
 		default:
@@ -5223,17 +5191,15 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			case MONO_WRAPPER_WRITE_BARRIER:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
-				if (!strcmp (method->name, "ElementAddr"))
+			case MONO_WRAPPER_CASTCLASS: {
+				WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+				if (info)
 					return TRUE;
 				else
 					return FALSE;
-			case MONO_WRAPPER_CASTCLASS:
-				if (!strcmp (method->name, "__castclass_with_cache"))
-					return TRUE;
-				else if (!strcmp (method->name, "__isinst_with_cache"))
-					return TRUE;
-				else
-					return FALSE;
+				break;
+			}
 			default:
 				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
 				return FALSE;
