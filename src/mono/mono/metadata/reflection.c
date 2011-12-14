@@ -12554,3 +12554,18 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass)
 	else
 		return *(MonoBoolean*)mono_object_unbox (res);
 }
+
+/**
+ * mono_reflection_type_get_type:
+ * @reftype: the System.Type object
+ *
+ * Returns the MonoType* associated with the C# System.Type object @reftype.
+ */
+MonoType*
+mono_reflection_type_get_type (MonoReflectionType *reftype)
+{
+	g_assert (reftype);
+
+	return reftype->type;
+}
+

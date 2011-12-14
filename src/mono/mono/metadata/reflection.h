@@ -132,6 +132,8 @@ MonoBoolean mono_declsec_get_method_action (MonoMethod *method, uint32_t action,
 MonoBoolean mono_declsec_get_class_action (MonoClass *klass, uint32_t action, MonoDeclSecurityEntry *entry);
 MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, uint32_t action, MonoDeclSecurityEntry *entry);
 
+MonoType* mono_reflection_type_get_type (MonoReflectionType *reftype);
+
 MONO_END_DECLS
 
 #endif /* __METADATA_REFLECTION_H__ */
