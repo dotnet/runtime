@@ -3780,7 +3780,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	MonoMethodHeader *header;
 	gboolean skip, direct_call;
 	guint32 got_slot;
-	char direct_call_target [1024];
+	const char *direct_call_target;
 	const char *direct_pinvoke;
 
 	if (method) {
@@ -3833,8 +3833,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
 						//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 						direct_call = TRUE;
-						g_assert (strlen (callee_cfg->asm_symbol) < 1000);
-						sprintf (direct_call_target, "%s", callee_cfg->asm_symbol);
+						direct_call_target = callee_cfg->asm_symbol;
+						patch_info->type = MONO_PATCH_INFO_NONE;
+						acfg->stats.direct_calls ++;
 					}
 
 					acfg->stats.all_calls ++;
@@ -3853,7 +3854,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 #endif
 							direct_call = TRUE;
 							g_assert (strlen (direct_pinvoke) < 1000);
-							sprintf (direct_call_target, "%s%s", prefix, direct_pinvoke);
+							direct_call_target = g_strdup_printf ("%s%s", prefix, direct_pinvoke);
 						}
 					}
 				}
@@ -3868,7 +3869,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					if (plt_entry) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
 						direct_call = TRUE;
-						sprintf (direct_call_target, "%s", plt_entry->symbol);
+						direct_call_target = plt_entry->symbol;
 		
 						/* Nullify the patch */
 						patch_info->type = MONO_PATCH_INFO_NONE;
@@ -3976,7 +3977,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	int method_index;
 	guint8 *code;
 	char *debug_sym = NULL;
-	char symbol [128];
+	char *symbol = NULL;
 	int func_alignment = AOT_FUNC_ALIGNMENT;
 	MonoMethodHeader *header;
 	char *export_name;
@@ -3986,13 +3987,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	header = cfg->header;
 
 	method_index = get_method_index (acfg, method);
+	symbol = g_strdup_printf ("%sme_%x", acfg->temp_prefix, method_index);
+
 
 	/* Make the labels local */
-	sprintf (symbol, "%s", cfg->asm_symbol);
-
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment (acfg, func_alignment);
-	emit_label (acfg, symbol);
+	emit_label (acfg, cfg->asm_symbol);
 
 	if (acfg->aot_opts.write_symbols) {
 		/* 
@@ -4003,7 +4004,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		 */
 		debug_sym = get_debug_sym (method, "", acfg->method_label_hash);
 
-		sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
 		if (acfg->need_no_dead_strip)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 		emit_local_symbol (acfg, debug_sym, symbol, TRUE);
@@ -4018,7 +4018,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	if (cfg->verbose_level > 0)
-		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), symbol);
+		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), cfg->asm_symbol);
 
 	acfg->stats.code_size += cfg->code_len;
 
@@ -4033,8 +4033,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_free (debug_sym);
 	}
 
-	sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
 	emit_label (acfg, symbol);
+	g_free (symbol);
 }
 
 /**
@@ -7169,7 +7169,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 {
 #ifdef EMIT_DWARF_INFO
 	int i;
-	char symbol [128], symbol2 [128];
+	char symbol2 [128];
 
 	/* DIEs for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {
@@ -7182,10 +7182,9 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		if (cfg->compile_llvm)
 			continue;
 
-		sprintf (symbol, "%s", cfg->asm_symbol);
 		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
-		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 	}
 #endif
 }
