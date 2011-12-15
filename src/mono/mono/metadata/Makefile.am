@@ -205,6 +205,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-toggleref.c		\
 	sgen-toggleref.h		\
 	sgen-gc.h		\
+	sgen-conf.h		\
 	sgen-archdep.h		\
 	sgen-cardtable.h	\
 	sgen-major-copy-object.h \

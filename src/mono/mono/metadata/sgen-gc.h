@@ -43,30 +43,11 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/sgen-archdep.h>
 #if defined(__MACH__)
 	#include <mach/mach_port.h>
 #endif
-
-/*
- * Turning on heavy statistics will turn off the managed allocator and
- * the managed write barrier.
- */
-//#define HEAVY_STATISTICS
-
-/*
- * If this is set, the nursery is aligned to an address aligned to its size, ie.
- * a 1MB nursery will be aligned to an address divisible by 1MB. This allows us to
- * speed up ptr_in_nursery () checks which are very frequent. This requires the
- * nursery size to be a compile time constant.
- */
-#define SGEN_ALIGN_NURSERY 1
-
-//#define SGEN_BINARY_PROTOCOL
-
-#define SGEN_MAX_DEBUG_LEVEL 2
-
-#define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -79,13 +60,6 @@ typedef enum {
 } NurseryClearPolicy;
 
 NurseryClearPolicy mono_sgen_get_nursery_clear_policy (void) MONO_INTERNAL;
-
-
-#if SIZEOF_VOID_P == 4
-typedef guint32 mword;
-#else
-typedef guint64 mword;
-#endif
 
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
@@ -187,46 +161,6 @@ struct _GCMemSection {
 	unsigned short num_scan_start;
 	gboolean is_to_space;
 };
-
-#define SGEN_SIZEOF_GC_MEM_SECTION	((sizeof (GCMemSection) + 7) & ~7)
-
-/*
- * to quickly find the head of an object pinned by a conservative
- * address we keep track of the objects allocated for each
- * SGEN_SCAN_START_SIZE memory chunk in the nursery or other memory
- * sections. Larger values have less memory overhead and bigger
- * runtime cost. 4-8 KB are reasonable values.
- */
-#define SGEN_SCAN_START_SIZE (4096*2)
-
-/*
- * Objects bigger then this go into the large object space.  This size
- * has a few constraints.  It must fit into the major heap, which in
- * the case of the copying collector means that it must fit into a
- * pinned chunk.  It must also play well with the GC descriptors, some
- * of which (DESC_TYPE_RUN_LENGTH, DESC_TYPE_SMALL_BITMAP) encode the
- * object size.
- */
-#define SGEN_MAX_SMALL_OBJ_SIZE 8000
-
-/*
- * This is the maximum ammount of memory we're willing to waste in order to speed up allocation.
- * Wastage comes in thre forms:
- *
- * -when building the nursery fragment list, small regions are discarded;
- * -when allocating memory from a fragment if it ends up below the threshold, we remove it from the fragment list; and
- * -when allocating a new tlab, we discard the remaining space of the old one
- *
- * Increasing this value speeds up allocation but will cause more frequent nursery collections as less space will be used.
- * Descreasing this value will cause allocation to be slower since we'll have to cycle thru more fragments.
- * 512 annedoctally keeps wastage under control and doesn't impact allocation performance too much. 
-*/
-#define SGEN_MAX_NURSERY_WASTE 512
-
-
-/* This is also the MAJOR_SECTION_SIZE for the copying major
-   collector */
-#define SGEN_PINNED_CHUNK_SIZE	(128 * 1024)
 
 #define SGEN_PINNED_CHUNK_FOR_PTR(o)	((SgenBlock*)(((mword)(o)) & ~(SGEN_PINNED_CHUNK_SIZE - 1)))
 
