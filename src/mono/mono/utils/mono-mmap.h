@@ -35,6 +35,10 @@ void* mono_valloc_aligned (size_t length, size_t alignment, int flags);
 int   mono_vfree      (void *addr, size_t length);
 void* mono_file_map   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
 int   mono_file_unmap (void *addr, void *handle);
+#ifndef HOST_WIN32
+void* mono_file_map_fileio   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
+int   mono_file_unmap_fileio (void *addr, void *handle);
+#endif
 int   mono_mprotect   (void *addr, size_t length, int flags);
 
 void* mono_shared_area         (void);
