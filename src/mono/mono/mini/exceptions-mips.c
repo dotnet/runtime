@@ -16,7 +16,6 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
-#include <ucontext.h>
 
 #include <mono/arch/mips/mips-codegen.h>
 #include <mono/metadata/appdomain.h>
