@@ -1020,6 +1020,12 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->raw_buffer_used = TRUE;
 	image->raw_data_len = mono_file_map_size (filed);
 	image->raw_data = mono_file_map (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
+#if defined(HAVE_MMAP) && !defined (HOST_WIN32)
+	if (!image->raw_data) {
+		image->fileio_used = TRUE;
+		image->raw_data = mono_file_map_fileio (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
+	}
+#endif
 	if (!image->raw_data) {
 		mono_file_map_close (filed);
 		g_free (image);
@@ -1553,8 +1559,14 @@ mono_image_close_except_pools (MonoImage *image)
 #endif
 
 	if (image->raw_buffer_used) {
-		if (image->raw_data != NULL)
-			mono_file_unmap (image->raw_data, image->raw_data_handle);
+		if (image->raw_data != NULL) {
+#ifndef HOST_WIN32
+			if (image->fileio_used)
+				mono_file_unmap_fileio (image->raw_data, image->raw_data_handle);
+			else
+#endif
+				mono_file_unmap (image->raw_data, image->raw_data_handle);
+		}
 	}
 	
 	if (image->raw_data_allocated) {

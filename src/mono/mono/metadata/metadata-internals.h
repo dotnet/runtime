@@ -138,6 +138,7 @@ struct _MonoImage {
 	guint32 raw_data_len;
 	guint8 raw_buffer_used    : 1;
 	guint8 raw_data_allocated : 1;
+	guint8 fileio_used : 1;
 
 #ifdef HOST_WIN32
 	/* Module was loaded using LoadLibrary. */
