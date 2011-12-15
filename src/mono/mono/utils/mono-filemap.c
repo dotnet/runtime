@@ -82,7 +82,7 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		return NULL;
 	cur_offset = lseek (fd, 0, SEEK_CUR);
 	if (lseek (fd, offset, SEEK_SET) != offset) {
-		free (ptr);
+		(*release_fn) (ptr);
 		return NULL;
 	}
 	bytes_read = read (fd, ptr, length);
