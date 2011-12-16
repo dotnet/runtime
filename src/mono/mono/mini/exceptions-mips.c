@@ -494,12 +494,11 @@ void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
 	int i;
-	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
-	mctx->sc_pc = ctx->sc_pc;
+	mctx->sc_pc = UCONTEXT_REG_PC (sigctx);
 	for (i = 0; i < 32; ++i) {
-		mctx->sc_regs[i] = ctx->sc_regs[i];
-		mctx->sc_fpregs[i] = ctx->sc_fpregs[i];
+		mctx->sc_regs[i] = UCONTEXT_GREGS (sigctx) [i];
+		mctx->sc_fpregs[i] = UCONTEXT_FPREGS (sigctx) [i];
 	}
 }
 
@@ -507,20 +506,18 @@ void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
 	int i;
-	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
-	ctx->sc_pc = mctx->sc_pc;
+	UCONTEXT_REG_PC (sigctx) = mctx->sc_pc;
 	for (i = 0; i < 32; ++i) {
-		ctx->sc_regs[i] = mctx->sc_regs[i];
-		ctx->sc_fpregs[i] = mctx->sc_fpregs[i];
+		UCONTEXT_GREGS (sigctx) [i] = mctx->sc_regs[i];
+		UCONTEXT_FPREGS (sigctx) [i] = mctx->sc_fpregs[i];
 	}
 }	
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	struct sigcontext *ctx = (struct sigcontext *)sigctx;
-	return (gpointer)(guint32)ctx->sc_pc;
+	return (gpointer)UCONTEXT_REG_PC (sigctx);
 }
 
 /*

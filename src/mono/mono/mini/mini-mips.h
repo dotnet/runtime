@@ -274,10 +274,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 
-/* XXX - a mystery, but it works */
-#define MONO_GET_CONTEXT \
-	void *ctx = (void *)(((int)context)+24);
-
 /* set the next to 0 once inssel-mips.brg is updated */
 #define MIPS_PASS_STRUCTS_BY_VALUE 1
 

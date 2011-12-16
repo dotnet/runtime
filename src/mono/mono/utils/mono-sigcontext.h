@@ -360,8 +360,9 @@ typedef struct ucontext {
 #  include <ucontext.h>
 # endif
 
-# define UCONTEXT_GREGS(ctx)	(((struct sigcontext *)(ctx))->sc_regs)
-# define UCONTEXT_REG_PC(ctx)	(((struct sigcontext *)(ctx))->sc_pc)
+# define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
+# define UCONTEXT_FPREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.fpregs.fp_r.fp_dregs)
+# define UCONTEXT_REG_PC(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.pc)
 
 #elif defined(__s390x__)
 
