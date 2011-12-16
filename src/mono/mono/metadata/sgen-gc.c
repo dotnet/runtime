@@ -7211,7 +7211,7 @@ create_allocator (int atype)
 	if (atype != ATYPE_SMALL) {
 		mono_mb_emit_ldloc (mb, size_var);
 		mono_mb_emit_icon (mb, MAX_SMALL_OBJ_SIZE);
-		max_size_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BGT_S);
+		max_size_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BGT_UN_S);
 	}
 
 	/*
