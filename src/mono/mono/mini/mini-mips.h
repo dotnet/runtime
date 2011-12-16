@@ -322,19 +322,9 @@ typedef struct {
 } MonoMipsStackFrame;
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {	\
-		guint32 sp, ra;					\
-		guint32 *code = (guint32 *)(void *)func;	\
-		short imm;					\
-		memset ((ctx), 0, sizeof (*(ctx)));		\
-		__asm__ volatile("addu %0,$0,$29" : "=r" (sp));	\
-		/* Look for adjustment of sp */			\
-		while ((*code & 0xffff0000) != 0x27bd0000)	\
-			++code;					\
-		imm = (short) (*code & 0xffff);			\
-		MONO_CONTEXT_SET_BP ((ctx), sp + (-imm));	\
-		ra = *(guint32 *)(sp + (-imm) + MIPS_RET_ADDR_OFFSET);	\
-		MONO_CONTEXT_SET_IP ((ctx),ra);	\
-		MONO_CONTEXT_SET_SP ((ctx), MONO_CONTEXT_GET_BP (ctx));	\
+	MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));			\
+	MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));			\
+	MONO_CONTEXT_SET_IP ((ctx), (func));								\
 	} while (0)
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
