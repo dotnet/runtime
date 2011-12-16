@@ -4703,20 +4703,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
-#if 0
-static
-void
-mono_trace_lmf_prolog (MonoLMF *new_lmf)
-{
-}
-
-static
-void
-mono_trace_lmf_epilog (MonoLMF *old_lmf)
-{
-}
-#endif
-
 /*
  * Allow tracing to work with this interface (with an optional argument)
  *
@@ -4735,33 +4721,37 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	mips_nop (code);
 	mips_nop (code);
 
-	/* For N32, need to know for each stack slot if it's an integer
-	 * or float argument, and save/restore the appropriate register
-	 */
 	MIPS_SW (code, mips_a0, mips_sp, offset + 0*SIZEOF_REGISTER);
 	MIPS_SW (code, mips_a1, mips_sp, offset + 1*SIZEOF_REGISTER);
 	MIPS_SW (code, mips_a2, mips_sp, offset + 2*SIZEOF_REGISTER);
 	MIPS_SW (code, mips_a3, mips_sp, offset + 3*SIZEOF_REGISTER);
 #if _MIPS_SIM == _ABIN32
+	NOT_IMPLEMENTED;
+	/* FIXME: Need a separate region for these */
 	MIPS_SW (code, mips_a4, mips_sp, offset + 4*SIZEOF_REGISTER);
 	MIPS_SW (code, mips_a5, mips_sp, offset + 5*SIZEOF_REGISTER);
 	MIPS_SW (code, mips_a6, mips_sp, offset + 6*SIZEOF_REGISTER);
 	MIPS_SW (code, mips_a7, mips_sp, offset + 7*SIZEOF_REGISTER);
+	*/
 #endif
 
 	mips_load_const (code, mips_a0, cfg->method);
 	mips_addiu (code, mips_a1, mips_sp, offset);
 	mips_call (code, mips_t9, func);
+	mips_nop (code);
 
 	MIPS_LW (code, mips_a0, mips_sp, offset + 0*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a1, mips_sp, offset + 1*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a2, mips_sp, offset + 2*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a3, mips_sp, offset + 3*SIZEOF_REGISTER);
 #if _MIPS_SIM == _ABIN32
+	NOT_IMPLEMENTED;
+	/*
 	MIPS_LW (code, mips_a4, mips_sp, offset + 4*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a5, mips_sp, offset + 5*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a6, mips_sp, offset + 6*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a7, mips_sp, offset + 7*SIZEOF_REGISTER);
+	*/
 #endif
 
 	mips_nop (code);
@@ -4969,16 +4959,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (max_offset > 0xffff)
 		cfg->arch.long_branch = TRUE;
 
-	if (tracing) {
-#if _MIPS_SIM == _ABIO32
-		cfg->arch.tracing_offset = cfg->stack_offset;
-#elif _MIPS_SIM == _ABIN32
-		/* no stack slots by default for argument regs, reserve a special block */
-		cfg->arch.tracing_offset = cfg->stack_offset;
-		cfg->stack_offset += 8 * SIZEOF_REGISTER;
-#endif
-	}
-
 	/*
 	 * Currently, fp points to the bottom of the frame on MIPS, unlike other platforms.
 	 * This means that we have to adjust the offsets inside instructions which reference
@@ -5089,13 +5069,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			g_assert (mips_is_imm16(offset));
 			MIPS_SW (code, cfg->frame_reg, mips_sp, offset);
 		}
-	}
-
-	/* Do instrumentation before assigning regvars to registers.  Because they may be assigned
-	 * to the t* registers, which would be clobbered by the instrumentation calls.
-	 */
-	if (tracing) {
-		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 	}
 
 	/* store runtime generic context */
@@ -5323,6 +5296,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			MIPS_MOVE (code, cfg->frame_reg, mips_sp);
 		else
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+	}
+
+	if (tracing) {
+#if _MIPS_SIM == _ABIO32
+		cfg->arch.tracing_offset = cfg->stack_offset;
+#elif _MIPS_SIM == _ABIN32
+		/* no stack slots by default for argument regs, reserve a special block */
+		g_assert_not_reached ();
+#endif
+		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 	}
 
 	cfg->code_len = code - cfg->native_code;
