@@ -1506,7 +1506,9 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
 			trace_options = &argv [i][8];
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
-			mono_break_on_exc = TRUE;
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+			opt->break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--break") == 0) {
 			if (i+1 >= argc){
 				fprintf (stderr, "Missing method name in --break command line option\n");

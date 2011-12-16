@@ -1652,6 +1652,10 @@ typedef struct {
 	 * is hit.
 	 */
 	gboolean soft_breakpoints;
+	/*
+	 * Whenever to break in the debugger using G_BREAKPOINT on unhandled exceptions.
+	 */
+	gboolean break_on_exc;
 } MonoDebugOptions;
 
 enum {

@@ -88,7 +88,6 @@ MONO_FAST_TLS_DECLARE(mono_jit_tls);
 #endif
 
 MonoTraceSpec *mono_jit_trace_calls = NULL;
-gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;

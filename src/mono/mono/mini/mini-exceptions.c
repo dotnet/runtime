@@ -1509,7 +1509,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 		res = mono_handle_exception_internal_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, non_exception);
 
 		if (!res) {
-			if (mono_break_on_exc)
+			if (mini_get_debug_options ()->break_on_exc)
 				G_BREAKPOINT ();
 			mono_debugger_agent_handle_exception (obj, ctx, NULL);
 
