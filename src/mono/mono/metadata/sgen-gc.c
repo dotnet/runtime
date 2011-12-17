@@ -1795,7 +1795,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 		GCRootReport report;
 		report.count = 0;
 		for (idx = 0; idx < count; ++idx)
-			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING, 0);
+			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
 		notify_gc_roots (&report);
 	}
 	stat_pinned_objects += count;
