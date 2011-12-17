@@ -6803,6 +6803,19 @@ mono_disable_optimizations (guint32 opts)
 	default_opt &= ~opts;
 }
 
+void
+mono_set_optimizations (guint32 opts)
+{
+	default_opt = opts;
+	default_opt_set = TRUE;
+}
+
+void
+mono_set_verbose_level (guint32 level)
+{
+	mini_verbose = level;
+}
+
 /*
  * mono_get_runtime_build_info:
  *

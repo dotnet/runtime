@@ -1739,6 +1739,8 @@ char*       mono_get_runtime_build_info    (void) MONO_INTERNAL;
 
 /* helper methods */
 void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;
+void      mono_set_optimizations           (guint32 opts) MONO_INTERNAL;
+void      mono_set_verbose_level           (guint32 level) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context) MONO_INTERNAL;
 MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region) MONO_INTERNAL;

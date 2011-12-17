@@ -1281,6 +1281,8 @@ void
 mono_jit_parse_options (int argc, char * argv[])
 {
 	int i;
+	char *trace_options = NULL;
+	int mini_verbose = 0;
 
 	/* 
 	 * Some options have no effect here, since they influence the behavior of 
@@ -1302,11 +1304,44 @@ mono_jit_parse_options (int argc, char * argv[])
 
 			opt->soft_breakpoints = TRUE;
 			opt->explicit_null_checks = TRUE;
+		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
+			guint32 opt = parse_optimizations (argv [i] + 11);
+			mono_set_optimizations (opt);
+		} else if (strncmp (argv [i], "-O=", 3) == 0) {
+			guint32 opt = parse_optimizations (argv [i] + 3);
+			mono_set_optimizations (opt);
+		} else if (strcmp (argv [i], "--trace") == 0) {
+			trace_options = (char*)"";
+		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
+			trace_options = &argv [i][8];
+		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
+			mini_verbose++;
+		} else if (strcmp (argv [i], "--breakonex") == 0) {
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+			opt->break_on_exc = TRUE;
+		} else if (strcmp (argv [i], "--stats") == 0) {
+			mono_counters_enable (-1);
+			mono_stats.enabled = TRUE;
+			mono_jit_stats.enabled = TRUE;
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);
 		}
 	}
+
+	if (trace_options != NULL) {
+		/* 
+		 * Need to call this before mini_init () so we can trace methods 
+		 * compiled there too.
+		 */
+		mono_jit_trace_calls = mono_trace_parse_options (trace_options);
+		if (mono_jit_trace_calls == NULL)
+			exit (1);
+	}
+
+	if (mini_verbose)
+		mono_set_verbose_level (mini_verbose);
 }
 
 static void
