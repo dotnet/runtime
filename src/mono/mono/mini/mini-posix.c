@@ -651,7 +651,7 @@ mono_runtime_syscall_fork ()
 #endif
 }
 
-gboolean
+void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
 	const char *argv [9];
@@ -659,7 +659,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 	argv [0] = g_find_program_in_path ("gdb");
 	if (argv [0] == NULL) {
-		return FALSE;
+		return;
 	}
 
 	argv [1] = "-ex";
@@ -673,8 +673,6 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	argv [8] = 0;
 
 	execv (argv [0], (char**)argv);
-
-	return TRUE;
 }
 #endif
 #endif /* __native_client__ */

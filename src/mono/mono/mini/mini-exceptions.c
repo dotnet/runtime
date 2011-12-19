@@ -2219,16 +2219,10 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && defined(SYS_fork)
 	if (!mini_get_debug_options ()->no_gdb_backtrace && !mono_debug_using_mono_debugger ()) {
 		/* From g_spawn_command_line_sync () in eglib */
-		int res;
-		int stdout_pipe [2] = { -1, -1 };
 		pid_t pid;
 		int status;
-		char buffer [1024];
 		pid_t crashed_pid = getpid ();
 
-		res = pipe (stdout_pipe);
-		g_assert (res != -1);
-			
 		//pid = fork ();
 		/*
 		 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
@@ -2237,31 +2231,14 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		pid = mono_runtime_syscall_fork ();
 
 		if (pid == 0) {
-			close (stdout_pipe [0]);
-			dup2 (stdout_pipe [1], STDOUT_FILENO);
+			dup2 (STDERR_FILENO, STDOUT_FILENO);
 
-			for (i = getdtablesize () - 1; i >= 3; i--)
-				close (i);
-
-			if (!mono_gdb_render_native_backtraces (crashed_pid))
-				close (STDOUT_FILENO);
-
+			mono_gdb_render_native_backtraces (crashed_pid);
 			exit (1);
 		}
 
-		close (stdout_pipe [1]);
-
 		fprintf (stderr, "\nDebug info from gdb:\n\n");
-
-		while (1) {
-			int nread = read (stdout_pipe [0], buffer, 1024);
-
-			if (nread <= 0)
-				break;
-			write (STDERR_FILENO, buffer, nread);
-		}		
-
-		waitpid (pid, &status, WNOHANG);
+		waitpid (pid, &status, 0);
 	}
 #endif
 	/*
