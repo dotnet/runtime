@@ -7501,9 +7501,11 @@ mono_sgen_get_array_fill_vtable (void)
 		klass.rank = 1;
 		klass.instance_size = sizeof (MonoArray);
 		klass.sizes.element_size = 1;
+		klass.name = "array_filler_type";
 
 		vtable.klass = &klass;
 		vtable.gc_descr = NULL;
+		vtable.size_descr = mono_gc_compute_size_descr (&klass);
 		vtable.rank = 1;
 
 		array_fill_vtable = &vtable;

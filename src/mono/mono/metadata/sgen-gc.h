@@ -508,25 +508,26 @@ void mono_sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
 static inline guint
 mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
-	MonoClass *klass = vtable->klass;
-	/*
-	 * We depend on mono_string_length_fast and
-	 * mono_array_length_fast not using the object's vtable.
-	 */
-	if (klass == mono_defaults.string_class) {
+	mword descr = (mword)vtable->size_descr;
+	mword type = descr & SIZE_DESC_TYPE_MASK;
+
+	DEBUG (9, g_assert (type >= SIZE_DESC_FIXED_SIZE && type <= SIZE_DESC_ARRAY));
+
+	if (G_LIKELY (type == SIZE_DESC_FIXED_SIZE))
+		return descr >> SIZE_DESC_TYPE_SHIFT;
+	else if (type == SIZE_DESC_STRING)
 		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	} else if (klass->rank) {
+	else {
+		/*The only option left is array*/
 		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
+		size_t 	size = sizeof (MonoArray) + (descr >> SIZE_DESC_TYPE_SHIFT) * mono_array_length_fast (array);
 		if (G_UNLIKELY (array->bounds)) {
 			size += sizeof (mono_array_size_t) - 1;
 			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * klass->rank;
+			/* FIXME encoding the rank on the size descr is possible, but might not be worth it as it would slow the regular case. */
+			size += sizeof (MonoArrayBounds) * vtable->klass->rank;
 		}
 		return size;
-	} else {
-		/* from a created object: the class must be inited already */
-		return klass->instance_size;
 	}
 }
 

@@ -369,6 +369,7 @@ BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reser
 
 void mono_gc_bzero (void *dest, size_t size) MONO_INTERNAL;
 void mono_gc_memmove (void *dest, const void *src, size_t size) MONO_INTERNAL;
+void *mono_gc_compute_size_descr (MonoClass *class) MONO_INTERNAL;
 
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */

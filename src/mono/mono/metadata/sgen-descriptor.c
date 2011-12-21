@@ -316,5 +316,14 @@ mono_sgen_get_user_descriptor_func (mword desc)
 	return user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
 }
 
+void*
+mono_gc_compute_size_descr (MonoClass *class)
+{
+	if (class == mono_defaults.string_class)
+		return (void*)SIZE_DESC_STRING;
+	if (class->rank)
+		return (void*)((class->sizes.element_size << SIZE_DESC_TYPE_SHIFT) | SIZE_DESC_ARRAY);
+	return (void*)((class->instance_size << SIZE_DESC_TYPE_SHIFT) | SIZE_DESC_FIXED_SIZE);
+}
 
 #endif
