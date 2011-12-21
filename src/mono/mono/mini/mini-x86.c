@@ -5053,6 +5053,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 		}
 		else {
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 			if (cfg->compile_aot) {
 				/* 
 				 * This goes before the saving of callee saved regs, so save the got reg
@@ -5065,7 +5066,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				x86_push_imm (code, cfg->domain);
 			}
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 			if (cfg->compile_aot)
 				x86_pop_reg (code, MONO_ARCH_GOT_REG);
 		}
