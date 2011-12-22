@@ -6170,6 +6170,11 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
 
+		if (t->byref) {
+			if (t->attrs & PARAM_ATTRIBUTE_OUT)
+				break;
+		}
+
 		conv = mono_marshal_get_ptr_to_string_conv (m->piinfo, spec, &need_free);
 		if (conv == -1) {
 			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
