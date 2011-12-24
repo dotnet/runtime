@@ -1324,6 +1324,14 @@ mono_jit_parse_options (int argc, char * argv[])
 			mono_counters_enable (-1);
 			mono_stats.enabled = TRUE;
 			mono_jit_stats.enabled = TRUE;
+		} else if (strcmp (argv [i], "--break") == 0) {
+			if (i+1 >= argc){
+				fprintf (stderr, "Missing method name in --break command line option\n");
+				exit (1);
+			}
+			
+			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
+				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);
