@@ -4037,11 +4037,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_addiu (code, ins->dreg, mips_sp, area_offset);
 
 			if (ins->flags & MONO_INST_INIT) {
+				guint32 *buf;
+
+				buf = (guint32*)(void*)code;
+				mips_beq (code, mips_at, mips_zero, 0);
+				mips_nop (code);
+
 				mips_move (code, mips_temp, ins->dreg);
 				mips_sb (code, mips_zero, mips_temp, 0);
 				mips_addiu (code, mips_at, mips_at, -1);
 				mips_bne (code, mips_at, mips_zero, -3);
 				mips_addiu (code, mips_temp, mips_temp, 1);
+
+				mips_patch (buf, (guint32)code);
 			}
 			break;
 		}
