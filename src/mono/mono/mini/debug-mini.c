@@ -775,10 +775,6 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 	if (!breakpoints)
 		return 0;
 
-	if ((method->wrapper_type != MONO_WRAPPER_NONE) &&
-		(method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD))
-		return 0;
-
 	for (i = 0; i < breakpoints->len; i++) {
 		MiniDebugBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 
