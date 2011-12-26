@@ -57,6 +57,9 @@ mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMVal
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);
 
+LLVMValueRef
+mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef addr, LLVMValueRef comparand, LLVMValueRef value);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

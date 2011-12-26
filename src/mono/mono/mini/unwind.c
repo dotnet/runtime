@@ -757,6 +757,9 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 		p += sizeof (gint32);
 		action_offset = decode_uleb128 (p, &p);
 
+		if (!action_offset)
+			continue;
+
 		action = action_table + action_offset - 1;
 
 		type_offset = decode_sleb128 (action, &action);

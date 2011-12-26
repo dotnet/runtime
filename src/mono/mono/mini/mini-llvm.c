@@ -2187,6 +2187,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVM_FAILURE (ctx, "handler without invokes");
 		}
 
+		// <resultval> = landingpad <somety> personality <type> <pers_fn> <clause>+
+
+		/*
+LandingPadInst *LPadInst =
+  Builder.CreateLandingPad(StructType::get(Int8PtrTy, Int32Ty, NULL),
+                           Personality, 0);
+
+Value *LPadExn = Builder.CreateExtractValue(LPadInst, 0);
+Builder.CreateStore(LPadExn, getExceptionSlot());
+
+Value *LPadSel = Builder.CreateExtractValue(LPadInst, 1);
+Builder.CreateStore(LPadSel, getEHSelectorSlot());
+		*/
+
 		eh_selector = LLVMGetNamedFunction (module, eh_selector_name);
 
 		if (cfg->compile_aot) {
@@ -2236,6 +2250,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMAddGlobalMapping (ee, type_info, ti);
 		}
 
+		{
+			LLVMTypeRef members [2], ret_type;
+			LLVMValueRef landing_pad;
+
+			members [0] = i8ptr;
+			members [1] = LLVMInt32Type ();
+			ret_type = LLVMStructType (members, 2, FALSE);
+
+			landing_pad = LLVMBuildLandingPad (builder, ret_type, personality, 1, "");
+			LLVMAddClause (landing_pad, type_info);
+		}
+
+#if 0
 		args [0] = LLVMConstNull (i8ptr);
 		args [1] = LLVMConstBitCast (personality, i8ptr);
 		args [2] = type_info;
@@ -2253,6 +2280,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [exvar->dreg] = LLVMBuildCall (builder, eh_exception, NULL, 0, "");
 			emit_volatile_store (ctx, exvar->dreg);
 		}
+#endif
 
 		/* Start a new bblock which CALL_HANDLER can branch to */
 		target_bb = bblocks [bb->block_num].call_handler_target_bb;
@@ -3291,14 +3319,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_CAS_I8: {
 			LLVMValueRef args [3];
 			LLVMTypeRef t;
-			const char *intrins;
 				
 			if (ins->opcode == OP_ATOMIC_CAS_I4) {
 				t = LLVMInt32Type ();
-				intrins = "llvm.atomic.cmp.swap.i32.p0i32";
 			} else {
 				t = LLVMInt64Type ();
-				intrins = "llvm.atomic.cmp.swap.i64.p0i64";
 			}
 
 			args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
@@ -3306,7 +3331,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [1] = convert (ctx, values [ins->sreg3], t);
 			/* new value */
 			args [2] = convert (ctx, values [ins->sreg2], t);
-			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, intrins), args, 3, dname);
+			values [ins->dreg] = mono_llvm_build_cmpxchg (builder, args [0], args [1], args [2]);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -4186,6 +4211,13 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->disable_llvm = TRUE;
 	}
 
+
+	// FIXME: Doesn't work yet with the new LLVM EH Model
+	if (cfg->header->num_clauses) {
+		cfg->exception_message = g_strdup ("clauses");
+		cfg->disable_llvm = TRUE;
+	}
+
 #if 0
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
@@ -4329,7 +4361,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 #endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
-	LLVMAddFunctionAttr (method, LLVMUWTableAttribute);
+	LLVMAddFunctionAttr (method, LLVMUWTable);
 
 	if (cfg->compile_aot) {
 		LLVMSetLinkage (method, LLVMInternalLinkage);
