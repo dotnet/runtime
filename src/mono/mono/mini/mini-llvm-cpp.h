@@ -17,6 +17,11 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+	LLVM_ATOMICRMW_OP_XCHG = 0,
+	LLVM_ATOMICRMW_OP_ADD = 1,
+} AtomicRMWOp;
+
 typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
 typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
 typedef void (ExceptionTableCb) (void *data);
@@ -53,6 +58,12 @@ mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef Po
 LLVMValueRef 
 mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
 							   gboolean is_volatile, int alignment);
+
+LLVMValueRef
+mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef ptr, LLVMValueRef val);
+
+LLVMValueRef
+mono_llvm_build_fence (LLVMBuilderRef builder);
 
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);

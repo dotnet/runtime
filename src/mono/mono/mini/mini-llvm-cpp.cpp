@@ -302,6 +302,37 @@ mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef ptr, LLVMValueRef 
 	return wrap (ins);
 }
 
+LLVMValueRef
+mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef ptr, LLVMValueRef val)
+{
+	AtomicRMWInst::BinOp aop = AtomicRMWInst::Xchg;
+	AtomicRMWInst *ins;
+
+	switch (op) {
+	case LLVM_ATOMICRMW_OP_XCHG:
+		aop = AtomicRMWInst::Xchg;
+		break;
+	case LLVM_ATOMICRMW_OP_ADD:
+		aop = AtomicRMWInst::Add;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), AcquireRelease);
+	return wrap (ins);
+}
+
+LLVMValueRef
+mono_llvm_build_fence (LLVMBuilderRef builder)
+{
+	FenceInst *ins;
+
+	ins = unwrap (builder)->CreateFence (AcquireRelease);
+	return wrap (ins);
+}
+
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 {

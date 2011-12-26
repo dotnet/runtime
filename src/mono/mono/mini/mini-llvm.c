@@ -1176,7 +1176,7 @@ LLVMFunctionType1(LLVMTypeRef ReturnType,
  *
  *   Create an LLVM function type from the arguments.
  */
-static LLVMTypeRef 
+static G_GNUC_UNUSED LLVMTypeRef
 LLVMFunctionType2(LLVMTypeRef ReturnType,
 				  LLVMTypeRef ParamType1,
 				  LLVMTypeRef ParamType2,
@@ -1195,7 +1195,7 @@ LLVMFunctionType2(LLVMTypeRef ReturnType,
  *
  *   Create an LLVM function type from the arguments.
  */
-static LLVMTypeRef 
+static G_GNUC_UNUSED LLVMTypeRef
 LLVMFunctionType3(LLVMTypeRef ReturnType,
 				  LLVMTypeRef ParamType1,
 				  LLVMTypeRef ParamType2,
@@ -3282,7 +3282,8 @@ Builder.CreateStore(LPadSel, getEHSelectorSlot());
 
 			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
 			args [1] = rhs;
-			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.swap.i32.p0i32"), args, 2, dname);
+
+			values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_XCHG, args [0], args [1]);
 			break;
 		}
 		case OP_ATOMIC_EXCHANGE_I8: {
@@ -3292,7 +3293,7 @@ Builder.CreateStore(LPadSel, getEHSelectorSlot());
 
 			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
 			args [1] = convert (ctx, rhs, LLVMInt64Type ());
-			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.swap.i64.p0i64"), args, 2, dname);
+			values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_XCHG, args [0], args [1]);
 			break;
 		}
 		case OP_ATOMIC_ADD_NEW_I4: {
@@ -3302,7 +3303,7 @@ Builder.CreateStore(LPadSel, getEHSelectorSlot());
 
 			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
 			args [1] = rhs;
-			values [ins->dreg] = LLVMBuildAdd (builder, LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.load.add.i32.p0i32"), args, 2, ""), args [1], dname);
+			values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
 			break;
 		}
 		case OP_ATOMIC_ADD_NEW_I8: {
@@ -3312,7 +3313,7 @@ Builder.CreateStore(LPadSel, getEHSelectorSlot());
 
 			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
 			args [1] = convert (ctx, rhs, LLVMInt64Type ());
-			values [ins->dreg] = LLVMBuildAdd (builder, LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.load.add.i64.p0i64"), args, 2, ""), args [1], dname);
+			values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
 			break;
 		}
 		case OP_ATOMIC_CAS_I4:
@@ -3335,17 +3336,11 @@ Builder.CreateStore(LPadSel, getEHSelectorSlot());
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			LLVMValueRef args [5];
-
 #ifdef TARGET_ARM
 			/* Not yet supported by llc on arm */
 			LLVM_FAILURE (ctx, "memory-barrier+arm");
 #endif
-
-			for (i = 0; i < 5; ++i)
-				args [i] = LLVMConstInt (LLVMInt1Type (), TRUE, TRUE);
-
-			LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memory.barrier"), args, 5, "");
+			mono_llvm_build_fence (builder);
 			break;
 		}
 		case OP_RELAXED_NOP: {
@@ -4885,18 +4880,6 @@ add_intrinsics (LLVMModuleRef module)
 
 		/* This isn't an intrinsic, instead llvm seems to special case it by name */
 		LLVMAddFunction (module, "fabs", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
-	}
-
-	{
-		LLVMTypeRef membar_params [] = { LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type (), LLVMInt1Type () };
-
-		LLVMAddFunction (module, "llvm.atomic.swap.i32.p0i32", LLVMFunctionType2 (LLVMInt32Type (), LLVMPointerType (LLVMInt32Type (), 0), LLVMInt32Type (), FALSE));
-		LLVMAddFunction (module, "llvm.atomic.swap.i64.p0i64", LLVMFunctionType2 (LLVMInt64Type (), LLVMPointerType (LLVMInt64Type (), 0), LLVMInt64Type (), FALSE));
-		LLVMAddFunction (module, "llvm.atomic.load.add.i32.p0i32", LLVMFunctionType2 (LLVMInt32Type (), LLVMPointerType (LLVMInt32Type (), 0), LLVMInt32Type (), FALSE));
-		LLVMAddFunction (module, "llvm.atomic.load.add.i64.p0i64", LLVMFunctionType2 (LLVMInt64Type (), LLVMPointerType (LLVMInt64Type (), 0), LLVMInt64Type (), FALSE));
-		LLVMAddFunction (module, "llvm.atomic.cmp.swap.i32.p0i32", LLVMFunctionType3 (LLVMInt32Type (), LLVMPointerType (LLVMInt32Type (), 0), LLVMInt32Type (), LLVMInt32Type (), FALSE));
-		LLVMAddFunction (module, "llvm.atomic.cmp.swap.i64.p0i64", LLVMFunctionType3 (LLVMInt64Type (), LLVMPointerType (LLVMInt64Type (), 0), LLVMInt64Type (), LLVMInt64Type (), FALSE));
-		LLVMAddFunction (module, "llvm.memory.barrier", LLVMFunctionType (LLVMVoidType (), membar_params, 5, FALSE));
 	}
 
 	{
