@@ -190,7 +190,6 @@ static gboolean jit_module_inited;
 static int memset_param_count, memcpy_param_count;
 static const char *memset_func_name;
 static const char *memcpy_func_name;
-static const char *eh_selector_name;
 
 static void init_jit_module (void);
 
@@ -846,7 +845,12 @@ get_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	char bb_name [128];
 
 	if (ctx->bblocks [bb->block_num].bblock == NULL) {
-		sprintf (bb_name, "BB%d", bb->block_num);
+		if (bb->flags & BB_EXCEPTION_HANDLER) {
+			int clause_index = (mono_get_block_region_notry (ctx->cfg, bb->region) >> 8) - 1;
+			sprintf (bb_name, "EH_CLAUSE%d_BB%d", clause_index, bb->block_num);
+		} else {
+			sprintf (bb_name, "BB%d", bb->block_num);
+		}
 
 		ctx->bblocks [bb->block_num].bblock = LLVMAppendBasicBlock (ctx->lmethod, bb_name);
 		ctx->bblocks [bb->block_num].end_bblock = ctx->bblocks [bb->block_num].bblock;
@@ -2168,7 +2172,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 	if (bb->flags & BB_EXCEPTION_HANDLER) {
 		LLVMTypeRef i8ptr;
-		LLVMValueRef eh_selector, eh_exception, personality, args [4];
+		LLVMValueRef personality;
 		LLVMBasicBlockRef target_bb;
 		MonoInst *exvar;
 		static gint32 mapping_inited;
@@ -2188,20 +2192,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		// <resultval> = landingpad <somety> personality <type> <pers_fn> <clause>+
-
-		/*
-LandingPadInst *LPadInst =
-  Builder.CreateLandingPad(StructType::get(Int8PtrTy, Int32Ty, NULL),
-                           Personality, 0);
-
-Value *LPadExn = Builder.CreateExtractValue(LPadInst, 0);
-Builder.CreateStore(LPadExn, getExceptionSlot());
-
-Value *LPadSel = Builder.CreateExtractValue(LPadInst, 1);
-Builder.CreateStore(LPadSel, getEHSelectorSlot());
-		*/
-
-		eh_selector = LLVMGetNamedFunction (module, eh_selector_name);
 
 		if (cfg->compile_aot) {
 			/* Use a dummy personality function */
@@ -2260,27 +2250,19 @@ Builder.CreateStore(LPadSel, getEHSelectorSlot());
 
 			landing_pad = LLVMBuildLandingPad (builder, ret_type, personality, 1, "");
 			LLVMAddClause (landing_pad, type_info);
+
+			/* Store the exception into the exvar */
+			if (bb->in_scount == 1) {
+				g_assert (bb->in_scount == 1);
+				exvar = bb->in_stack [0];
+
+				// FIXME: This is shared with filter clauses ?
+				g_assert (!values [exvar->dreg]);
+
+				values [exvar->dreg] = LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj");
+				emit_volatile_store (ctx, exvar->dreg);
+			}
 		}
-
-#if 0
-		args [0] = LLVMConstNull (i8ptr);
-		args [1] = LLVMConstBitCast (personality, i8ptr);
-		args [2] = type_info;
-		LLVMBuildCall (builder, eh_selector, args, 3, "");
-
-		/* Store the exception into the exvar */
-		if (bb->in_scount == 1) {
-			g_assert (bb->in_scount == 1);
-			exvar = bb->in_stack [0];
-
-			eh_exception = LLVMGetNamedFunction (module, "llvm.eh.exception");
-
-			// FIXME: This is shared with filter clauses ?
-			g_assert (!values [exvar->dreg]);
-			values [exvar->dreg] = LLVMBuildCall (builder, eh_exception, NULL, 0, "");
-			emit_volatile_store (ctx, exvar->dreg);
-		}
-#endif
 
 		/* Start a new bblock which CALL_HANDLER can branch to */
 		target_bb = bblocks [bb->block_num].call_handler_target_bb;
@@ -4206,13 +4188,6 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->disable_llvm = TRUE;
 	}
 
-
-	// FIXME: Doesn't work yet with the new LLVM EH Model
-	if (cfg->header->num_clauses) {
-		cfg->exception_message = g_strdup ("clauses");
-		cfg->disable_llvm = TRUE;
-	}
-
 #if 0
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
@@ -4923,12 +4898,7 @@ add_intrinsics (LLVMModuleRef module)
 
 		arg_types [0] = LLVMPointerType (LLVMInt8Type (), 0);
 		arg_types [1] = LLVMPointerType (LLVMInt8Type (), 0);
-		eh_selector_name = "llvm.eh.selector";
 		ret_type = LLVMInt32Type ();
-
-		LLVMAddFunction (module, eh_selector_name, LLVMFunctionType (ret_type, arg_types, 2, TRUE));
-
-		LLVMAddFunction (module, "llvm.eh.exception", LLVMFunctionType (LLVMPointerType (LLVMInt8Type (), 0), NULL, 0, FALSE));
 
 		LLVMAddFunction (module, "mono_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 
