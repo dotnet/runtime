@@ -364,19 +364,12 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 
 #elif ((defined(__mips__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_MIPS))) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
 
-/* we define our own structure and we'll copy the data
- * from sigcontext/ucontext/mach when we need it.
- * This also makes us save stack space and time when copying
- * We might also want to add an additional field to propagate
- * the original context from the signal handler.
- */
 typedef struct {
 	mgreg_t	    sc_pc;
 	mgreg_t		sc_regs [32];
 	gfloat		sc_fpregs [32];
 } MonoContext;
 
-/* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (mgreg_t)(ip); } while (0);
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (mgreg_t)(bp); } while (0);
 #define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (mgreg_t)(sp); } while (0);
@@ -384,6 +377,44 @@ typedef struct {
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_pc))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_regs[mips_fp]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_regs[mips_sp]))
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"sw $0,0(%0)\n\t"	\
+		"sw $1,4(%0)\n\t"	\
+		"sw $2,8(%0)\n\t"	\
+		"sw $3,12(%0)\n\t"	\
+		"sw $4,16(%0)\n\t"	\
+		"sw $5,20(%0)\n\t"	\
+		"sw $6,24(%0)\n\t"	\
+		"sw $7,28(%0)\n\t"	\
+		"sw $8,32(%0)\n\t"	\
+		"sw $9,36(%0)\n\t"	\
+		"sw $10,40(%0)\n\t"	\
+		"sw $11,44(%0)\n\t"	\
+		"sw $12,48(%0)\n\t"	\
+		"sw $13,52(%0)\n\t"	\
+		"sw $14,56(%0)\n\t"	\
+		"sw $15,60(%0)\n\t"	\
+		"sw $16,64(%0)\n\t"	\
+		"sw $17,68(%0)\n\t"	\
+		"sw $18,72(%0)\n\t"	\
+		"sw $19,76(%0)\n\t"	\
+		"sw $20,80(%0)\n\t"	\
+		"sw $21,84(%0)\n\t"	\
+		"sw $22,88(%0)\n\t"	\
+		"sw $23,92(%0)\n\t"	\
+		"sw $24,96(%0)\n\t"	\
+		"sw $25,100(%0)\n\t"	\
+		"sw $26,104(%0)\n\t"	\
+		"sw $27,108(%0)\n\t"	\
+		"sw $28,112(%0)\n\t"	\
+		"sw $29,116(%0)\n\t"	\
+		"sw $30,120(%0)\n\t"	\
+		"sw $31,124(%0)\n\t"	\
+		: : "r" (&(ctx).sc_regs [0])	\
+		: "memory"			\
+	)
 
 #elif defined(__s390x__)
 

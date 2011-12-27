@@ -493,26 +493,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-	int i;
-
-	mctx->sc_pc = UCONTEXT_REG_PC (sigctx);
-	for (i = 0; i < 32; ++i) {
-		mctx->sc_regs[i] = UCONTEXT_GREGS (sigctx) [i];
-		mctx->sc_fpregs[i] = UCONTEXT_FPREGS (sigctx) [i];
-	}
+	mono_sigctx_to_monoctx (sigctx, mctx);
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
-	int i;
-
-	UCONTEXT_REG_PC (sigctx) = mctx->sc_pc;
-	for (i = 0; i < 32; ++i) {
-		UCONTEXT_GREGS (sigctx) [i] = mctx->sc_regs[i];
-		UCONTEXT_FPREGS (sigctx) [i] = mctx->sc_fpregs[i];
-	}
-}	
+	mono_monoctx_to_sigctx (mctx, sigctx);
+}
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)

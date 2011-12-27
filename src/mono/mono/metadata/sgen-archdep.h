@@ -138,53 +138,11 @@
 
 #define REDZONE_SIZE	0
 
+#define USE_MONO_CTX
 #define ARCH_NUM_REGS 32
-#define ARCH_STORE_REGS(ptr)		\
-	__asm__ __volatile__(	\
-		"sw $0,0(%0)\n\t"	\
-		"sw $1,4(%0)\n\t"	\
-		"sw $2,8(%0)\n\t"	\
-		"sw $3,12(%0)\n\t"	\
-		"sw $4,16(%0)\n\t"	\
-		"sw $5,20(%0)\n\t"	\
-		"sw $6,24(%0)\n\t"	\
-		"sw $7,28(%0)\n\t"	\
-		"sw $8,32(%0)\n\t"	\
-		"sw $9,36(%0)\n\t"	\
-		"sw $10,40(%0)\n\t"	\
-		"sw $11,44(%0)\n\t"	\
-		"sw $12,48(%0)\n\t"	\
-		"sw $13,52(%0)\n\t"	\
-		"sw $14,56(%0)\n\t"	\
-		"sw $15,60(%0)\n\t"	\
-		"sw $16,64(%0)\n\t"	\
-		"sw $17,68(%0)\n\t"	\
-		"sw $18,72(%0)\n\t"	\
-		"sw $19,76(%0)\n\t"	\
-		"sw $20,80(%0)\n\t"	\
-		"sw $21,84(%0)\n\t"	\
-		"sw $22,88(%0)\n\t"	\
-		"sw $23,92(%0)\n\t"	\
-		"sw $24,96(%0)\n\t"	\
-		"sw $25,100(%0)\n\t"	\
-		"sw $26,104(%0)\n\t"	\
-		"sw $27,108(%0)\n\t"	\
-		"sw $28,112(%0)\n\t"	\
-		"sw $29,116(%0)\n\t"	\
-		"sw $30,120(%0)\n\t"	\
-		"sw $31,124(%0)\n\t"	\
-		: 			\
-		: "r" (ptr)		\
-		: "memory"			\
-	)
 
 #define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_GREGS((ctx))[29])
 #define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_PC((ctx)))
-#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {			\
-	int __regnum;	\
-	for (__regnum = 0; __regnum < 32; ++__regnum)	\
-		((a)[__regnum]) = (gpointer) (UCONTEXT_GREGS((ctx))[__regnum]);		\
-	} while (0)
 
 #elif defined(__s390x__)
 
