@@ -968,13 +968,13 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		mono_class_compute_gc_descriptor (class->element_class);
 		if (!class->element_class->valuetype) {
 			gsize abm = 1;
-			class->gc_descr = mono_gc_make_descr_for_array (TRUE, &abm, 1, sizeof (gpointer));
+			class->gc_descr = mono_gc_make_descr_for_array (class->byval_arg.type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
 			/*printf ("new array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
 			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
-			class->gc_descr = mono_gc_make_descr_for_array (TRUE, bitmap, mono_array_element_size (class) / sizeof (gpointer), mono_array_element_size (class));
+			class->gc_descr = mono_gc_make_descr_for_array (class->byval_arg.type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (class) / sizeof (gpointer), mono_array_element_size (class));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 			if (bitmap != default_bitmap)
