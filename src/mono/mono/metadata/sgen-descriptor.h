@@ -80,6 +80,7 @@ enum {
 	 * object's class.
 	 */
 	DESC_TYPE_RUN_LENGTH = 1, /* 15 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
+	DESC_TYPE_SMALL_BITMAP,   /* 15 bits aligned byte size | 16-48 bit bitmap */
 	DESC_TYPE_COMPLEX,      /* index for bitmap into complex_descriptors */
 	DESC_TYPE_VECTOR,       /* 10 bits element size | 1 bit array | 2 bits desc | element desc */
 	DESC_TYPE_ARRAY,        /* 10 bits element size | 1 bit array | 2 bits desc | element desc */
@@ -128,7 +129,7 @@ MonoGCRootMarkFunc mono_sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL
     } while (0)
 
 #define OBJ_BITMAP_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8) >> 1;	\
+		(size) = ((desc) & 0xfff8 >> 1);	\
     } while (0)
 
 #ifdef __GNUC__
@@ -150,6 +151,20 @@ MonoGCRootMarkFunc mono_sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL
 				_objptr++;	\
 			}	\
 		}	\
+	} while (0)
+
+#define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
+		/* there are pointers */        \
+		void **_objptr = (void**)(obj); \
+		gsize _bmap = (desc) >> 16;     \
+		_objptr += OBJECT_HEADER_WORDS; \
+		while (_bmap) { \
+			if ((_bmap & 1)) {      \
+				HANDLE_PTR (_objptr, (obj));    \
+			}       \
+			_bmap >>= 1;    \
+			++_objptr;      \
+			}       \
 	} while (0)
 
 /* a bitmap desc means that there are pointer references or we'd have
