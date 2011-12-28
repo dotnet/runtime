@@ -730,9 +730,20 @@ test-type-load: TestDriver.dll
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
 
 
-EXTRA_DIST += sgen-bridge.cs
+EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs
 
-sgen-tests: sgen-bridge.exe
+SGEN_TESTS =	\
+	sgen-descriptors.exe
+	
+sgen-regular-tests: $(SGEN_TESTS)
+	@for fn in $+ ; do	\
+		echo "Testing $$fn ...";	\
+		MONO_GC_PARAMS=major=marksweep-par MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+		MONO_ENV_OPTIONS="--gc=sgen"                                    $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+	done
+
+
+sgen-tests: sgen-regular-tests sgen-bridge.exe
 	echo "Testing sgen-bridge.exe ...";	\
 	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
 
