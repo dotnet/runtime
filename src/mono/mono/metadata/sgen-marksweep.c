@@ -1026,6 +1026,7 @@ pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
 {
 	for (;;) {
 		mword vtable_word;
+		gboolean major_pinned = FALSE;
 
 		if (ptr_in_nursery (obj)) {
 			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
@@ -1034,6 +1035,7 @@ pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
 			}
 		} else {
 			pin_major_object (obj, queue);
+			major_pinned = TRUE;
 		}
 
 		vtable_word = *(mword*)obj;
@@ -1044,7 +1046,7 @@ pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
 		}
 
 		/*someone pinned it, nothing to do.*/
-		if (vtable_word & SGEN_PINNED_BIT)
+		if (vtable_word & SGEN_PINNED_BIT || major_pinned)
 			break;
 	}
 }
