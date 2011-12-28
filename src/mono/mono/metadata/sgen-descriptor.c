@@ -157,7 +157,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		 * It may be better to use nibbles.
 		 */
 		if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
-			desc = DESC_TYPE_RUN_LENGTH | (stored_size << 1) | (first_set << 16) | (num_set << 24);
+			desc = DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24);
 			DEBUG (6, fprintf (gc_debug_file, "Runlen descriptor %p, size: %zd, first set: %d, num set: %d\n", (void*)desc, stored_size, first_set, num_set));
 			return (void*) desc;
 		}
@@ -165,7 +165,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 
 	/* we know the 2-word header is ptr-free */
 	if (last_set < SMALL_BITMAP_SIZE + OBJECT_HEADER_WORDS) {
-		desc = DESC_TYPE_SMALL_BITMAP | (stored_size << 1) | ((*bitmap >> OBJECT_HEADER_WORDS) << SMALL_BITMAP_SHIFT);
+		desc = DESC_TYPE_SMALL_BITMAP | stored_size | ((*bitmap >> OBJECT_HEADER_WORDS) << SMALL_BITMAP_SHIFT);
 		DEBUG (6, fprintf (gc_debug_file, "Smallbitmap descriptor %p, size: %zd, last set: %d\n", (void*)desc, stored_size, last_set));
 		return (void*) desc;
 	}

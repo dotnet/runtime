@@ -500,6 +500,32 @@ void mono_sgen_marksweep_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void mono_sgen_marksweep_fixed_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void mono_sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
 
+static guint /*__attribute__((noinline)) not sure if this hint is a good idea*/
+slow_object_get_size (MonoVTable *vtable, MonoObject* o)
+{
+	MonoClass *klass = vtable->klass;
+
+	/*
+	 * We depend on mono_string_length_fast and
+	 * mono_array_length_fast not using the object's vtable.
+	 */
+	if (klass == mono_defaults.string_class) {
+		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+	} else if (klass->rank) {
+		MonoArray *array = (MonoArray*)o;
+		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
+		if (G_UNLIKELY (array->bounds)) {
+			size += sizeof (mono_array_size_t) - 1;
+			size &= ~(sizeof (mono_array_size_t) - 1);
+			size += sizeof (MonoArrayBounds) * klass->rank;
+		}
+		return size;
+	} else {
+		/* from a created object: the class must be inited already */
+		return klass->instance_size;
+	}
+}
+
 /*
  * This function can be called on an object whose first word, the
  * vtable field, is not intact.  This is necessary for the parallel
@@ -508,27 +534,28 @@ void mono_sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
 static inline guint
 mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
-	mword descr = (mword)vtable->size_descr;
-	mword type = descr & SIZE_DESC_TYPE_MASK;
+	mword descr = (mword)vtable->gc_descr;
+	mword type = descr & 0x7;
 
-	DEBUG (9, g_assert (type >= SIZE_DESC_FIXED_SIZE && type <= SIZE_DESC_ARRAY));
-
-	if (G_LIKELY (type == SIZE_DESC_FIXED_SIZE))
-		return descr >> SIZE_DESC_TYPE_SHIFT;
-	else if (type == SIZE_DESC_STRING)
-		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	else {
-		/*The only option left is array*/
+	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_BITMAP) {
+		mword size = descr & 0xfff8;
+		if (size == 0) /* This is used to encode a string */
+			return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+		return size;
+	} else if (type == DESC_TYPE_VECTOR) {
+		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;
 		MonoArray *array = (MonoArray*)o;
-		size_t 	size = sizeof (MonoArray) + (descr >> SIZE_DESC_TYPE_SHIFT) * mono_array_length_fast (array);
-		if (G_UNLIKELY (array->bounds)) {
+		size_t size = sizeof (MonoArray) + element_size * mono_array_length_fast (array);
+
+		if (descr & VECTOR_KIND_ARRAY) {
 			size += sizeof (mono_array_size_t) - 1;
 			size &= ~(sizeof (mono_array_size_t) - 1);
-			/* FIXME encoding the rank on the size descr is possible, but might not be worth it as it would slow the regular case. */
 			size += sizeof (MonoArrayBounds) * vtable->klass->rank;
 		}
 		return size;
 	}
+
+	return slow_object_get_size (vtable, o);
 }
 
 static inline guint
