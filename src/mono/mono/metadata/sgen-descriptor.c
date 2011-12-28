@@ -129,6 +129,10 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	int first_set = -1, num_set = 0, last_set = -1, i;
 	mword desc = 0;
 	size_t stored_size = obj_size;
+
+	stored_size += SGEN_ALLOC_ALIGN - 1;
+	stored_size &= ~(SGEN_ALLOC_ALIGN - 1);
+
 	for (i = 0; i < numbits; ++i) {
 		if (bitmap [i / GC_BITS_PER_WORD] & ((gsize)1 << (i % GC_BITS_PER_WORD))) {
 			if (first_set < 0)
@@ -137,28 +141,22 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 			num_set++;
 		}
 	}
-	/*
-	 * We don't encode the size of types that don't contain
-	 * references because they might not be aligned, i.e. the
-	 * bottom two bits might be set, which would clash with the
-	 * bits we need to encode the descriptor type.  Since we don't
-	 * use the encoded size to skip objects, other than for
-	 * processing remsets, in which case only the positions of
-	 * references are relevant, this is not a problem.
-	 */
-	if (first_set < 0)
-		return (void*)DESC_TYPE_RUN_LENGTH;
-	g_assert (!(stored_size & 0x3));
-	if (stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
+
+	if (first_set < 0) {
+		DEBUG (6, fprintf (gc_debug_file, "Ptrfree descriptor %p, size: %zd\n", (void*)desc, stored_size));
+		if (stored_size <= MAX_RUNLEN_OBJECT_SIZE)
+			return (void*)(DESC_TYPE_RUN_LENGTH | stored_size);
+		return (void*)DESC_TYPE_COMPLEX_PTRFREE;
+	}
+
+	g_assert (!(stored_size & 0x7));
+
+	if (stored_size <= MAX_RUNLEN_OBJECT_SIZE) {
 		/* check run-length encoding first: one byte offset, one byte number of pointers
 		 * on 64 bit archs, we can have 3 runs, just one on 32.
 		 * It may be better to use nibbles.
 		 */
-		if (first_set < 0) {
-			desc = DESC_TYPE_RUN_LENGTH | (stored_size << 1);
-			DEBUG (6, fprintf (gc_debug_file, "Ptrfree descriptor %p, size: %zd\n", (void*)desc, stored_size));
-			return (void*) desc;
-		} else if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
+		if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
 			desc = DESC_TYPE_RUN_LENGTH | (stored_size << 1) | (first_set << 16) | (num_set << 24);
 			DEBUG (6, fprintf (gc_debug_file, "Runlen descriptor %p, size: %zd, first set: %d, num set: %d\n", (void*)desc, stored_size, first_set, num_set));
 			return (void*) desc;
@@ -188,7 +186,7 @@ void*
 mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
 {
 	int first_set = -1, num_set = 0, last_set = -1, i;
-	mword desc = vector? DESC_TYPE_VECTOR: DESC_TYPE_ARRAY;
+	mword desc = DESC_TYPE_VECTOR | (vector ? VECTOR_KIND_SZARRAY : VECTOR_KIND_ARRAY);
 	for (i = 0; i < numbits; ++i) {
 		if (elem_bitmap [i / GC_BITS_PER_WORD] & ((gsize)1 << (i % GC_BITS_PER_WORD))) {
 			if (first_set < 0)
@@ -197,9 +195,13 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 			num_set++;
 		}
 	}
-	/* See comment at the definition of DESC_TYPE_RUN_LENGTH. */
-	if (first_set < 0)
-		return (void*)DESC_TYPE_RUN_LENGTH;
+
+	if (first_set < 0) {
+		if (elem_size <= MAX_ELEMENT_SIZE)
+			return (void*)(desc | VECTOR_SUBTYPE_PTRFREE | (elem_size << VECTOR_ELSIZE_SHIFT));
+		return (void*)DESC_TYPE_COMPLEX_PTRFREE;
+	}
+
 	if (elem_size <= MAX_ELEMENT_SIZE) {
 		desc |= elem_size << VECTOR_ELSIZE_SHIFT;
 		if (!num_set) {

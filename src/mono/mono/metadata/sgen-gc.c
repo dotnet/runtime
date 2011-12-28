@@ -7493,6 +7493,7 @@ mono_sgen_get_array_fill_vtable (void)
 	if (!array_fill_vtable) {
 		static MonoClass klass;
 		static MonoVTable vtable;
+		gsize bmap;
 
 		MonoDomain *domain = mono_get_root_domain ();
 		g_assert (domain);
@@ -7504,7 +7505,8 @@ mono_sgen_get_array_fill_vtable (void)
 		klass.name = "array_filler_type";
 
 		vtable.klass = &klass;
-		vtable.gc_descr = NULL;
+		bmap = 0;
+		vtable.gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 1);
 		vtable.size_descr = mono_gc_compute_size_descr (&klass);
 		vtable.rank = 1;
 

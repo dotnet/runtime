@@ -38,9 +38,11 @@
  */
 #define OBJECT_HEADER_WORDS (sizeof(MonoObject)/sizeof(gpointer))
 #define LOW_TYPE_BITS 3
+#define MAX_RUNLEN_OBJECT_SIZE 0xFFFF
 #define SMALL_BITMAP_SHIFT 16
 #define SMALL_BITMAP_SIZE (GC_BITS_PER_WORD - SMALL_BITMAP_SHIFT)
 #define VECTOR_INFO_SHIFT 14
+#define VECTOR_KIND_SHIFT 13
 #define VECTOR_ELSIZE_SHIFT 3
 #define LARGE_BITMAP_SIZE (GC_BITS_PER_WORD - LOW_TYPE_BITS)
 #define MAX_ELEMENT_SIZE 0x3ff
@@ -48,6 +50,9 @@
 #define VECTOR_SUBTYPE_REFS    (DESC_TYPE_V_REFS << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_RUN_LEN (DESC_TYPE_V_RUN_LEN << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_BITMAP  (DESC_TYPE_V_BITMAP << VECTOR_INFO_SHIFT)
+
+#define VECTOR_KIND_SZARRAY  (DESC_TYPE_V_SZARRAY << VECTOR_KIND_SHIFT)
+#define VECTOR_KIND_ARRAY  (DESC_TYPE_V_ARRAY << VECTOR_KIND_SHIFT)
 
 /* objects are aligned to 8 bytes boundaries
  * A descriptor is a pointer in MonoVTable, so 32 or 64 bits of size.
@@ -79,13 +84,16 @@ enum {
 	 * copy_object_no_checks(), without having to fetch the
 	 * object's class.
 	 */
-	DESC_TYPE_RUN_LENGTH = 1, /* 15 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
-	DESC_TYPE_SMALL_BITMAP,   /* 15 bits aligned byte size | 16-48 bit bitmap */
+	DESC_TYPE_RUN_LENGTH = 1, /* 16 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
+	DESC_TYPE_SMALL_BITMAP,   /* 16 bits aligned byte size | 16-48 bit bitmap */
 	DESC_TYPE_COMPLEX,      /* index for bitmap into complex_descriptors */
-	DESC_TYPE_VECTOR,       /* 10 bits element size | 1 bit array | 2 bits desc | element desc */
-	DESC_TYPE_ARRAY,        /* 10 bits element size | 1 bit array | 2 bits desc | element desc */
+	DESC_TYPE_VECTOR,       /* 10 bits element size | 1 bit kind | 2 bits desc | element desc */
 	DESC_TYPE_LARGE_BITMAP, /* | 29-61 bitmap bits */
 	DESC_TYPE_COMPLEX_ARR,  /* index for bitmap into complex_descriptors */
+	DESC_TYPE_COMPLEX_PTRFREE, /*Nothing, used to encode large ptr objects. */
+	/* values for array kind */
+	DESC_TYPE_V_SZARRAY = 0, /*vector with no bounds data */
+	DESC_TYPE_V_ARRAY = 1, /* array with bounds data */
 	/* subtypes for arrays and vectors */
 	DESC_TYPE_V_PTRFREE = 0,/* there are no refs: keep first so it has a zero value  */
 	DESC_TYPE_V_REFS,       /* all the array elements are refs */
@@ -120,16 +128,33 @@ void* mono_sgen_get_complex_descriptor_bitmap (mword desc) MONO_INTERNAL;
 MonoGCRootMarkFunc mono_sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL;
 
 
-#define SGEN_VTABLE_HAS_REFERENCES(vt)	(((MonoVTable*)(vt))->gc_descr != (void*)DESC_TYPE_RUN_LENGTH)
-#define SGEN_CLASS_HAS_REFERENCES(c)	((c)->gc_descr != (void*)DESC_TYPE_RUN_LENGTH)
+static inline gboolean
+mono_sgen_gc_descr_has_references (mword desc)
+{
+	/*Both string and fixed size objects are encoded using a zero run RUN_LEN*/
+	if ((desc & 0xffff0007) == DESC_TYPE_RUN_LENGTH)
+		return FALSE;
+
+	/*The array is ptr-free*/
+	if ((desc & 0xC007) == (DESC_TYPE_VECTOR | VECTOR_SUBTYPE_PTRFREE))
+		return FALSE;
+
+	if ((desc & 0x7) == DESC_TYPE_COMPLEX_PTRFREE)
+		return FALSE;
+
+	return TRUE;
+}
+
+#define SGEN_VTABLE_HAS_REFERENCES(vt)	(mono_sgen_gc_descr_has_references ((mword)((MonoVTable*)(vt))->gc_descr))
+#define SGEN_CLASS_HAS_REFERENCES(c)	(mono_sgen_gc_descr_has_references ((mword)(c)->gc_descr))
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8) >> 1;	\
+		(size) = ((desc) & 0xfff8);	\
     } while (0)
 
 #define OBJ_BITMAP_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8 >> 1);	\
+		(size) = ((desc) & 0xfff8);	\
     } while (0)
 
 #ifdef __GNUC__
