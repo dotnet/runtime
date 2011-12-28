@@ -415,7 +415,6 @@ struct MonoVTable {
 	 * the vtable.
 	 */
 	void *gc_descr; 	
-	void *size_descr;
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
         gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;

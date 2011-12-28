@@ -1954,10 +1954,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 #endif
 		vt->gc_descr = class->gc_descr;
 
-#ifdef HAVE_SGEN_GC
-	vt->size_descr = mono_gc_compute_size_descr (class);
-#endif
-
 	if (class_size) {
 		/* we store the static field pointer at the end of the vtable: vt->vtable [class->vtable_size] */
 		if (class->has_static_refs) {
@@ -2239,9 +2235,6 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	pvt->klass = mono_defaults.transparent_proxy_class;
 	/* we need to keep the GC descriptor for a transparent proxy or we confuse the precise GC */
 	pvt->gc_descr = mono_defaults.transparent_proxy_class->gc_descr;
-#ifdef HAVE_SGEN_GC
-	pvt->size_descr = mono_gc_compute_size_descr (mono_defaults.transparent_proxy_class);
-#endif
 
 	/* initialize vtable */
 	mono_class_setup_vtable (class);

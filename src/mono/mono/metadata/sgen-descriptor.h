@@ -115,14 +115,6 @@ enum {
 	ROOT_DESC_TYPE_SHIFT = 3,
 };
 
-enum {
-	SIZE_DESC_FIXED_SIZE = 1, /* 30 bits size */
-	SIZE_DESC_STRING = 2, /* nothing */
-	SIZE_DESC_ARRAY = 3, /* 30 bits element size */
-	SIZE_DESC_TYPE_SHIFT = 2,
-	SIZE_DESC_TYPE_MASK = 0x3,
-};
-
 gsize* mono_sgen_get_complex_descriptor (mword desc) MONO_INTERNAL;
 void* mono_sgen_get_complex_descriptor_bitmap (mword desc) MONO_INTERNAL;
 MonoGCRootMarkFunc mono_sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL;
