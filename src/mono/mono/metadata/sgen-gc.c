@@ -223,6 +223,7 @@
 #include "metadata/mempool-internals.h"
 #include "metadata/marshal.h"
 #include "metadata/runtime.h"
+#include "metadata/sgen-cardtable.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -839,7 +840,6 @@ SgenMajorCollector major_collector;
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
 #include "sgen-workers.c"
-#include "sgen-cardtable.c"
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -2984,8 +2984,8 @@ collect_nursery (size_t requested_size)
 
 	if (use_cardtable) {
 		atv = btv;
-		card_tables_collect_stats (TRUE);
-		scan_from_card_tables (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+		sgen_card_tables_collect_stats (TRUE);
+		sgen_scan_from_card_tables (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 		TV_GETTIME (btv);
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 	}
@@ -3096,7 +3096,7 @@ collect_nursery (size_t requested_size)
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	if (use_cardtable)
-		card_tables_collect_stats (FALSE);
+		sgen_card_tables_collect_stats (FALSE);
 
 	check_scan_starts ();
 
@@ -3198,7 +3198,7 @@ major_do_collection (const char *reason)
 	clear_remsets ();
 	global_remset_cache_clear ();
 	if (use_cardtable)
-		card_table_clear ();
+		sgen_card_table_clear ();
 
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
@@ -6760,7 +6760,7 @@ mono_gc_base_init (void)
 	global_remset->next = NULL;
 
 	if (use_cardtable)
-		card_table_init ();
+		sgen_card_table_init ();
 
 	gc_initialized = 1;
 }
@@ -7524,6 +7524,24 @@ void
 mono_sgen_gc_unlock (void)
 {
 	UNLOCK_GC;
+}
+
+void
+sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
+{
+	major_collector.iterate_live_block_ranges (callback);
+}
+
+void
+sgen_major_collector_scan_card_table (SgenGrayQueue *queue)
+{
+	major_collector.scan_card_table (queue);
+}
+
+gboolean
+sgen_ptr_in_nursery (void *p)
+{
+	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_end);
 }
 
 #endif /* HAVE_SGEN_GC */

@@ -438,6 +438,7 @@ ScanObjectFunc mono_sgen_get_minor_scan_object (void) MONO_INTERNAL;
 ScanVTypeFunc mono_sgen_get_minor_scan_vtype (void) MONO_INTERNAL;
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
+void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
@@ -624,6 +625,7 @@ gboolean mono_sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
 void mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
 void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 FILE *mono_sgen_get_logfile (void) MONO_INTERNAL;
 
 /* nursery allocator */
