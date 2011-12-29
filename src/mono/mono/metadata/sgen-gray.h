@@ -54,10 +54,14 @@ GrayQueueSection* mono_sgen_gray_object_dequeue_section (SgenGrayQueue *queue) M
 void mono_sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
 void mono_sgen_gray_object_queue_init (SgenGrayQueue *queue) MONO_INTERNAL;
 void mono_sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
-gboolean mono_sgen_gray_object_queue_is_empty (SgenGrayQueue *queue) MONO_INTERNAL;
 void mono_sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void mono_sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
 gboolean mono_sgen_drain_gray_stack (SgenGrayQueue *queue, int max_objs) MONO_INTERNAL;
 
+static inline gboolean
+mono_sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
+{
+	return queue->first == NULL;
+}
 
 #endif

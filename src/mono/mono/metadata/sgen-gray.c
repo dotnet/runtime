@@ -59,12 +59,6 @@ mono_sgen_gray_object_free_queue_section (GrayQueueSection *section)
 	mono_sgen_free_internal (section, INTERNAL_MEM_GRAY_QUEUE);
 }
 
-gboolean
-mono_sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
-{
-	return queue->first == NULL;
-}
-
 /*
  * The following two functions are called in the inner loops of the
  * collector, so they need to be as fast as possible.  We have macros
