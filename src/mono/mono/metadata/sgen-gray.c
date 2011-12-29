@@ -21,12 +21,16 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "config.h"
+#ifdef HAVE_SGEN_GC
+
+#include "metadata/sgen-gc.h"
+#include "utils/mono-counters.h"
+
 #define GRAY_QUEUE_LENGTH_LIMIT	64
 
-static GrayQueue gray_queue;
-
 void
-mono_sgen_gray_object_alloc_queue_section (GrayQueue *queue)
+mono_sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
 
@@ -56,7 +60,7 @@ mono_sgen_gray_object_free_queue_section (GrayQueueSection *section)
 }
 
 gboolean
-mono_sgen_gray_object_queue_is_empty (GrayQueue *queue)
+mono_sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
 {
 	return queue->first == NULL;
 }
@@ -68,7 +72,7 @@ mono_sgen_gray_object_queue_is_empty (GrayQueue *queue)
  */
 
 void
-mono_sgen_gray_object_enqueue (GrayQueue *queue, char *obj)
+mono_sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 {
 	DEBUG (9, g_assert (obj));
 	if (G_UNLIKELY (!queue->first || queue->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE))
@@ -80,7 +84,7 @@ mono_sgen_gray_object_enqueue (GrayQueue *queue, char *obj)
 }
 
 char*
-mono_sgen_gray_object_dequeue (GrayQueue *queue)
+mono_sgen_gray_object_dequeue (SgenGrayQueue *queue)
 {
 	char *obj;
 
@@ -104,7 +108,7 @@ mono_sgen_gray_object_dequeue (GrayQueue *queue)
 }
 
 GrayQueueSection*
-mono_sgen_gray_object_dequeue_section (GrayQueue *queue)
+mono_sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
 
@@ -120,14 +124,14 @@ mono_sgen_gray_object_dequeue_section (GrayQueue *queue)
 }
 
 void
-mono_sgen_gray_object_enqueue_section (GrayQueue *queue, GrayQueueSection *section)
+mono_sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section)
 {
 	section->next = queue->first;
 	queue->first = section;
 }
 
 void
-mono_sgen_gray_object_queue_init (GrayQueue *queue)
+mono_sgen_gray_object_queue_init (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section, *next;
 	int i;
@@ -149,9 +153,11 @@ mono_sgen_gray_object_queue_init (GrayQueue *queue)
 }
 
 void
-mono_sgen_gray_object_queue_init_with_alloc_prepare (GrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data)
+mono_sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data)
 {
 	mono_sgen_gray_object_queue_init (queue);
 	queue->alloc_prepare_func = func;
 	queue->alloc_prepare_data = data;
 }
+
+#endif

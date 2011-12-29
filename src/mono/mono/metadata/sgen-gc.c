@@ -831,9 +831,10 @@ static int mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start
 static void clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
-SgenMajorCollector major_collector;
+static SgenMajorCollector major_collector;
+static GrayQueue gray_queue;
 
-#include "sgen-gray.c"
+
 
 #define WORKERS_DISTRIBUTE_GRAY_QUEUE (mono_sgen_collection_is_parallel () ? mono_sgen_workers_get_distribute_gray_queue () : &gray_queue)
 

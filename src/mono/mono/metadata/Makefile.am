@@ -81,7 +81,6 @@ null_sources = \
 	console-null.c
 
 sgen_sources = \
-	sgen-gray.c		\
 	sgen-fin-weak-hash.c
 
 libmonoruntime_la_SOURCES = \
@@ -210,6 +209,8 @@ libmonoruntime_la_SOURCES = \
 	sgen-pinning-stats.c	\
 	sgen-workers.c	\
 	sgen-workers.h	\
+	sgen-gray.c	\
+	sgen-gray.h	\
 	sgen-major-copy-object.h \
 	sgen-major-scan-object.h \
 	sgen-protocol.h		\

@@ -46,6 +46,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/sgen-archdep.h>
 #include <mono/metadata/sgen-descriptor.h>
+#include <mono/metadata/sgen-gray.h>
 
 #if defined(__MACH__)
 	#include <mach/mach_port.h>
@@ -267,32 +268,6 @@ typedef struct {
  */
 #define SGEN_LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~SGEN_VTABLE_BITS_MASK)
 
-
-#define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
-
-/*
- * This is a stack now instead of a queue, so the most recently added items are removed
- * first, improving cache locality, and keeping the stack size manageable.
- */
-typedef struct _GrayQueueSection GrayQueueSection;
-struct _GrayQueueSection {
-	int end;
-	GrayQueueSection *next;
-	char *objects [SGEN_GRAY_QUEUE_SECTION_SIZE];
-};
-
-typedef struct _SgenGrayQueue SgenGrayQueue;
-
-typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
-
-struct _SgenGrayQueue {
-	GrayQueueSection *first;
-	GrayQueueSection *free_list;
-	int balance;
-	GrayQueueAllocPrepareFunc alloc_prepare_func;
-	void *alloc_prepare_data;
-};
-
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
@@ -317,18 +292,6 @@ typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 			(o) = (queue)->first->objects [--(queue)->first->end]; \
 	} while (0)
 #endif
-
-void mono_sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
-char* mono_sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
-GrayQueueSection* mono_sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
-void mono_sgen_gray_object_queue_init (SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
-gboolean mono_sgen_gray_object_queue_is_empty (SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
-gboolean mono_sgen_drain_gray_stack (SgenGrayQueue *queue, int max_objs) MONO_INTERNAL;
-
 
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 
