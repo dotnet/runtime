@@ -11,19 +11,19 @@
 #define TAG_MASK ((mword)0x1)
 
 static inline MonoObject*
-tagget_object_get_object (MonoObject *object)
+tagged_object_get_object (MonoObject *object)
 {
 	return (MonoObject*)(((mword)object) & ~TAG_MASK);
 }
 
 static inline int
-tagget_object_get_tag (MonoObject *object)
+tagged_object_get_tag (MonoObject *object)
 {
 	return ((mword)object) & TAG_MASK;
 }
 
 static inline MonoObject*
-tagget_object_apply (void *object, int tag_bits)
+tagged_object_apply (void *object, int tag_bits)
 {
        return (MonoObject*)((mword)object | (mword)tag_bits);
 }
@@ -31,17 +31,17 @@ tagget_object_apply (void *object, int tag_bits)
 static int
 tagged_object_hash (MonoObject *o)
 {
-	return mono_object_hash (tagget_object_get_object (o));
+	return mono_object_hash (tagged_object_get_object (o));
 }
 
 static gboolean
-tagget_object_equals (MonoObject *a, MonoObject *b)
+tagged_object_equals (MonoObject *a, MonoObject *b)
 {
-	return tagget_object_get_object (a) == tagget_object_get_object (b);
+	return tagged_object_get_object (a) == tagged_object_get_object (b);
 }
 
-static SgenHashTable minor_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (GHashFunc)tagged_object_hash, (GEqualFunc)tagget_object_equals);
-static SgenHashTable major_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (GHashFunc)tagged_object_hash, (GEqualFunc)tagget_object_equals);
+static SgenHashTable minor_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (GHashFunc)tagged_object_hash, (GEqualFunc)tagged_object_equals);
+static SgenHashTable major_finalizable_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_FIN_TABLE, INTERNAL_MEM_FINALIZE_ENTRY, 0, (GHashFunc)tagged_object_hash, (GEqualFunc)tagged_object_equals);
 
 static SgenHashTable*
 get_finalize_entry_hash_table (int generation)
@@ -61,7 +61,7 @@ mono_sgen_mark_bridge_object (MonoObject *obj)
 {
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD);
 
-	mono_sgen_hash_table_set_key (hash_table, obj, tagget_object_apply (obj, BRIDGE_OBJECT_MARKED));
+	mono_sgen_hash_table_set_key (hash_table, obj, tagged_object_apply (obj, BRIDGE_OBJECT_MARKED));
 }
 
 /* LOCKING: requires that the GC lock is held */
@@ -77,8 +77,8 @@ collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, 
 		return;
 
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
-		int tag = tagget_object_get_tag (object);
-		object = tagget_object_get_object (object);
+		int tag = tagged_object_get_tag (object);
+		object = tagged_object_get_object (object);
 
 		/* Bridge code told us to ignore this one */
 		if (tag == BRIDGE_OBJECT_MARKED)
@@ -105,7 +105,7 @@ collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, 
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 
 			/* insert it into the major hash */
-			mono_sgen_hash_table_replace (&major_finalizable_hash, tagget_object_apply (copy, tag), NULL);
+			mono_sgen_hash_table_replace (&major_finalizable_hash, tagged_object_apply (copy, tag), NULL);
 
 			DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), object));
 
@@ -113,7 +113,7 @@ collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, 
 		} else {
 			/* update pointer */
 			DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", copy, safe_name (copy), object));
-			SGEN_HASH_TABLE_FOREACH_SET_KEY (tagget_object_apply (copy, tag));
+			SGEN_HASH_TABLE_FOREACH_SET_KEY (tagged_object_apply (copy, tag));
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
@@ -130,8 +130,8 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 	if (no_finalize)
 		return;
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
-		int tag = tagget_object_get_tag (object);
-		object = tagget_object_get_object (object);
+		int tag = tagged_object_get_tag (object);
+		object = tagged_object_get_object (object);
 		if ((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)) {
 			gboolean is_fin_ready = object_is_fin_ready (object);
 			MonoObject *copy = object;
@@ -150,7 +150,7 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 
 					/* insert it into the major hash */
-					mono_sgen_hash_table_replace (&major_finalizable_hash, tagget_object_apply (copy, tag), NULL);
+					mono_sgen_hash_table_replace (&major_finalizable_hash, tagged_object_apply (copy, tag), NULL);
 
 					DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), object));
 
@@ -158,7 +158,7 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 				} else {
 					/* update pointer */
 					DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", copy, safe_name (copy), object));
-					SGEN_HASH_TABLE_FOREACH_SET_KEY (tagget_object_apply (copy, tag));
+					SGEN_HASH_TABLE_FOREACH_SET_KEY (tagged_object_apply (copy, tag));
 				}
 			}
 		}
@@ -306,7 +306,7 @@ finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
 		return 0;
 	count = 0;
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
-		object = tagget_object_get_object (object);
+		object = tagged_object_get_object (object);
 
 		if (mono_object_domain (object) == domain) {
 			/* remove and put in out_array */
