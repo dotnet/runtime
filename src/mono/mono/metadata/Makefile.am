@@ -209,6 +209,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-cardtable.h	\
 	sgen-pinning.c	\
 	sgen-pinning.h	\
+	sgen-pinning-stats.c	\
 	sgen-major-copy-object.h \
 	sgen-major-scan-object.h \
 	sgen-protocol.h		\

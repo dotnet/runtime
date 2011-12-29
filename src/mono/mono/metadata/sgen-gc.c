@@ -835,7 +835,6 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenMajorCollector major_collector;
 
-#include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
 #include "sgen-workers.c"
 
@@ -1707,7 +1706,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 				mono_sgen_pin_stage_ptr ((void*)addr);
 			if (G_UNLIKELY (do_pin_stats)) { 
 				if (ptr_in_nursery (addr))
-					pin_stats_register_address ((char*)addr, pin_type);
+					mono_sgen_pin_stats_register_address ((char*)addr, pin_type);
 			}
 			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p from %p\n", (void*)addr, start));
 			count++;
@@ -2469,12 +2468,12 @@ dump_heap (const char *type, int num, const char *reason)
 	fprintf (heap_dump_file, ">\n");
 	fprintf (heap_dump_file, "<other-mem-usage type=\"mempools\" size=\"%ld\"/>\n", mono_mempool_get_bytes_allocated ());
 	mono_sgen_dump_internal_mem_usage (heap_dump_file);
-	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_STACK]);
+	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%zu\"/>\n", mono_sgen_pin_stats_get_pinned_byte_count (PIN_TYPE_STACK));
 	/* fprintf (heap_dump_file, "<pinned type=\"static-data\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STATIC_DATA]); */
-	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_OTHER]);
+	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", mono_sgen_pin_stats_get_pinned_byte_count (PIN_TYPE_OTHER));
 
 	fprintf (heap_dump_file, "<pinned-objects>\n");
-	for (list = pinned_objects; list; list = list->next)
+	for (list = mono_sgen_pin_stats_get_object_list (); list; list = list->next)
 		dump_object (list->obj, TRUE);
 	fprintf (heap_dump_file, "</pinned-objects>\n");
 
@@ -3046,7 +3045,7 @@ collect_nursery (size_t requested_size)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
-	pin_stats_reset ();
+	mono_sgen_pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 
@@ -3363,7 +3362,7 @@ major_do_collection (const char *reason)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
-	pin_stats_reset ();
+	mono_sgen_pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 

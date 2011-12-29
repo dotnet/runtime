@@ -392,6 +392,12 @@ enum {
 void mono_sgen_init_internal_allocator (void) MONO_INTERNAL;
 void mono_sgen_init_pinned_allocator (void) MONO_INTERNAL;
 
+typedef struct _ObjectList ObjectList;
+struct _ObjectList {
+	MonoObject *obj;
+	ObjectList *next;
+};
+
 void mono_sgen_report_internal_mem_usage (void) MONO_INTERNAL;
 void mono_sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc) MONO_INTERNAL;
 void mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;

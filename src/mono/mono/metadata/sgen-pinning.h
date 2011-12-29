@@ -23,6 +23,13 @@
 #ifndef __MONO_SGEN_PINNING_H__
 #define __MONO_SGEN_PINNING_H__
 
+enum {
+	PIN_TYPE_STACK,
+	PIN_TYPE_STATIC_DATA,
+	PIN_TYPE_OTHER,
+	PIN_TYPE_MAX
+};
+
 void mono_sgen_pin_stage_ptr (void *ptr) MONO_INTERNAL;
 void mono_sgen_optimize_pin_queue (int start_slot) MONO_INTERNAL;
 void mono_sgen_init_pinning (void) MONO_INTERNAL;
@@ -32,5 +39,12 @@ int mono_sgen_get_pinned_count (void) MONO_INTERNAL;
 void mono_sgen_pinning_setup_section (GCMemSection *section);
 
 void mono_sgen_dump_pin_queue (void) MONO_INTERNAL;
+
+/* Pinning stats */
+
+void mono_sgen_pin_stats_register_address (char *addr, int pin_type) MONO_INTERNAL;
+size_t mono_sgen_pin_stats_get_pinned_byte_count (int pin_type) MONO_INTERNAL;
+ObjectList *mono_sgen_pin_stats_get_object_list (void) MONO_INTERNAL;
+void mono_sgen_pin_stats_reset (void) MONO_INTERNAL;
 
 #endif
