@@ -98,7 +98,7 @@ collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, 
 		copy = (char*)object;
 		copy_func ((void**)&copy, queue);
 
-		bridge_register_finalized_object ((MonoObject*)copy);
+		mono_sgen_bridge_register_finalized_object ((MonoObject*)copy);
 		
 		if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
 			/* remove from the list */

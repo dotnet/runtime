@@ -507,29 +507,12 @@ static int fist_pass_links, second_pass_links, sccs_links;
 static int max_sccs_links = 0;
 
 void
-mono_sgen_bridge_processing_register_objects (int num_objs, MonoObject **objs)
+mono_sgen_bridge_register_finalized_object (MonoObject *obj)
 {
-	int i;
-	SGEN_TV_DECLARE (atv);
-	SGEN_TV_DECLARE (btv);
-
-	fist_pass_links = second_pass_links = sccs_links = 0;
-	dsf1_passes = dsf2_passes = 0;
-	SGEN_TV_GETTIME (atv);
-
 	g_assert (mono_sgen_need_bridge_processing ());
 
-	//g_print ("%d finalized objects\n", num_objs);
-
-	/* The collector step checks for bridge objects already, so we don't need to do it again. */
-	for (i = 0; i < num_objs; ++i) {
-		MonoObject *obj = objs [i];
-		if (register_bridge_object (obj))
-			dyn_array_ptr_push (&registered_bridges, obj);
-	}
-
-	SGEN_TV_GETTIME (btv);
-	step_1 += SGEN_TV_ELAPSED (atv, btv);
+	if (register_bridge_object (obj))
+		dyn_array_ptr_push (&registered_bridges, obj);
 }
 
 void

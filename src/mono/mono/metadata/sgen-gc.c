@@ -2134,27 +2134,6 @@ generation_name (int generation)
 	}
 }
 
-static MonoObject **finalized_array = NULL;
-static int finalized_array_capacity = 0;
-static int finalized_array_entries = 0;
-
-static void
-bridge_register_finalized_object (MonoObject *object)
-{
-	if (!finalized_array)
-		return;
-
-	if (finalized_array_entries >= finalized_array_capacity) {
-		MonoObject **new_array;
-		g_assert (finalized_array_entries == finalized_array_capacity);
-		finalized_array_capacity *= 2;
-		new_array = mono_sgen_alloc_internal_dynamic (sizeof (MonoObject*) * finalized_array_capacity, INTERNAL_MEM_BRIDGE_DATA);
-		memcpy (new_array, finalized_array, sizeof (MonoObject*) * finalized_array_entries);
-		mono_sgen_free_internal_dynamic (finalized_array, sizeof (MonoObject*) * finalized_array_entries, INTERNAL_MEM_BRIDGE_DATA);
-		finalized_array = new_array;
-	}
-	finalized_array [finalized_array_entries++] = object;
-}
 
 static void
 stw_bridge_process (void)
@@ -2247,20 +2226,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		mono_sgen_scan_togglerefs (copy_func, nursery_start, nursery_end, queue);
 
 	if (mono_sgen_need_bridge_processing ()) {
-		if (finalized_array == NULL) {
-			finalized_array_capacity = 32;
-			finalized_array = mono_sgen_alloc_internal_dynamic (sizeof (MonoObject*) * finalized_array_capacity, INTERNAL_MEM_BRIDGE_DATA);
-		}
-		finalized_array_entries = 0;		
-
 		collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
 			collect_bridge_objects (copy_func, nursery_start, nursery_end, GENERATION_NURSERY, queue);
-
-		if (finalized_array_entries > 0) {
-			mono_sgen_bridge_processing_register_objects (finalized_array_entries, finalized_array);
-			finalized_array_entries = 0;
-		}
 		mono_sgen_drain_gray_stack (queue, -1);
 	}
 
