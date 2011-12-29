@@ -224,6 +224,7 @@
 #include "metadata/marshal.h"
 #include "metadata/runtime.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-pinning.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -803,10 +804,8 @@ static void process_dislink_stage_entries (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
-static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
 static void clear_tlabs (void);
-static void sort_addresses (void **array, int size);
 static gboolean drain_gray_stack (GrayQueue *queue, int max_objs);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (mword space_needed);
@@ -836,7 +835,6 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenMajorCollector major_collector;
 
-#include "sgen-pinning.c"
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
 #include "sgen-workers.c"
@@ -1610,12 +1608,12 @@ mono_sgen_pin_object (void *object, GrayQueue *queue)
 	if (collection_is_parallel ()) {
 		LOCK_PIN_QUEUE;
 		/*object arrives pinned*/
-		pin_stage_ptr (object);
+		mono_sgen_pin_stage_ptr (object);
 		++objects_pinned ;
 		UNLOCK_PIN_QUEUE;
 	} else {
 		SGEN_PIN_OBJECT (object);
-		pin_stage_ptr (object);
+		mono_sgen_pin_stage_ptr (object);
 		++objects_pinned;
 		if (G_UNLIKELY (do_pin_stats))
 			mono_sgen_pin_stats_register_object (object, safe_object_get_size (object));
@@ -1627,8 +1625,8 @@ mono_sgen_pin_object (void *object, GrayQueue *queue)
 /* Sort the addresses in array in increasing order.
  * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
  */
-static void
-sort_addresses (void **array, int size)
+void
+mono_sgen_sort_addresses (void **array, int size)
 {
 	int i;
 	void *tmp;
@@ -1675,45 +1673,6 @@ sort_addresses (void **array, int size)
 	}
 }
 
-static G_GNUC_UNUSED void
-print_nursery_gaps (void* start_nursery, void *end_nursery)
-{
-	int i;
-	gpointer first = start_nursery;
-	gpointer next;
-	for (i = 0; i < next_pin_slot; ++i) {
-		next = pin_queue [i];
-		fprintf (gc_debug_file, "Nursery range: %p-%p, size: %td\n", first, next, (char*)next-(char*)first);
-		first = next;
-	}
-	next = end_nursery;
-	fprintf (gc_debug_file, "Nursery range: %p-%p, size: %td\n", first, next, (char*)next-(char*)first);
-}
-
-/* reduce the info in the pin queue, removing duplicate pointers and sorting them */
-static void
-optimize_pin_queue (int start_slot)
-{
-	void **start, **cur, **end;
-	/* sort and uniq pin_queue: we just sort and we let the rest discard multiple values */
-	/* it may be better to keep ranges of pinned memory instead of individually pinning objects */
-	DEBUG (5, fprintf (gc_debug_file, "Sorting pin queue, size: %d\n", next_pin_slot));
-	if ((next_pin_slot - start_slot) > 1)
-		sort_addresses (pin_queue + start_slot, next_pin_slot - start_slot);
-	start = cur = pin_queue + start_slot;
-	end = pin_queue + next_pin_slot;
-	while (cur < end) {
-		*start = *cur++;
-		while (*start == *cur && cur < end)
-			cur++;
-		start++;
-	};
-	next_pin_slot = start - pin_queue;
-	DEBUG (5, fprintf (gc_debug_file, "Pin queue reduced to size: %d\n", next_pin_slot));
-	//DEBUG (6, print_nursery_gaps (start_nursery, end_nursery));
-	
-}
-
 /* 
  * Scan the memory between start and end and queue values which could be pointers
  * to the area between start_nursery and end_nursery for later consideration.
@@ -1745,7 +1704,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			mword addr = (mword)*start;
 			addr &= ~(ALLOC_ALIGN - 1);
 			if (addr >= (mword)start_nursery && addr < (mword)end_nursery)
-				pin_stage_ptr ((void*)addr);
+				mono_sgen_pin_stage_ptr ((void*)addr);
 			if (G_UNLIKELY (do_pin_stats)) { 
 				if (ptr_in_nursery (addr))
 					pin_stats_register_address ((char*)addr, pin_type);
@@ -2395,8 +2354,6 @@ check_scan_starts (void)
 	major_collector.check_scan_starts ();
 }
 
-static int last_num_pinned = 0;
-
 static void
 scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue)
 {
@@ -2944,18 +2901,18 @@ collect_nursery (size_t requested_size)
 	process_dislink_stage_entries ();
 
 	/* pin from pinned handles */
-	init_pinning ();
+	mono_sgen_init_pinning ();
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
 	pin_from_roots (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* identify pinned objects */
-	optimize_pin_queue (0);
-	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	nursery_section->pin_queue_start = pin_queue;
-	nursery_section->pin_queue_num_entries = next_pin_slot;
+	mono_sgen_optimize_pin_queue (0);
+	mono_sgen_pinning_setup_section (nursery_section);
+	mono_sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);	
+
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED_MS (btv, atv);
-	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (btv, atv)));
-	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
+	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", mono_sgen_get_pinned_count (), TV_ELAPSED (btv, atv)));
+	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", mono_sgen_get_pinned_count ()));
 
 	if (consistency_check_at_minor_collection)
 		check_consistency ();
@@ -3051,9 +3008,8 @@ collect_nursery (size_t requested_size)
 		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
 
 	if (objects_pinned) {
-		optimize_pin_queue (0);
-		nursery_section->pin_queue_start = pin_queue;
-		nursery_section->pin_queue_num_entries = next_pin_slot;
+		mono_sgen_optimize_pin_queue (0);
+		mono_sgen_pinning_setup_section (nursery_section);
 	}
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
@@ -3061,7 +3017,7 @@ collect_nursery (size_t requested_size)
 	 * next allocations.
 	 */
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
-	fragment_total = mono_sgen_build_nursery_fragments (nursery_section, pin_queue, next_pin_slot);
+	fragment_total = mono_sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries);
 	if (!fragment_total)
 		degraded_mode = 1;
 
@@ -3085,8 +3041,7 @@ collect_nursery (size_t requested_size)
 		dump_heap ("minor", num_minor_gcs - 1, NULL);
 
 	/* prepare the pin queue for the next collection */
-	last_num_pinned = next_pin_slot;
-	next_pin_slot = 0;
+	mono_sgen_finish_pinning ();
 	if (fin_ready_list || critical_fin_list) {
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
@@ -3204,10 +3159,10 @@ major_do_collection (const char *reason)
 	process_dislink_stage_entries ();
 
 	TV_GETTIME (atv);
-	init_pinning ();
+	mono_sgen_init_pinning ();
 	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	optimize_pin_queue (0);
+	mono_sgen_optimize_pin_queue (0);
 
 	/*
 	 * pin_queue now contains all candidate pointers, sorted and
@@ -3242,12 +3197,12 @@ major_do_collection (const char *reason)
 	/* second pass for the sections */
 	mono_sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	old_next_pin_slot = next_pin_slot;
+	old_next_pin_slot = mono_sgen_get_pinned_count ();
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED_MS (atv, btv);
-	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
-	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
+	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", mono_sgen_get_pinned_count (), TV_ELAPSED (atv, btv)));
+	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", mono_sgen_get_pinned_count ()));
 
 	major_collector.init_to_space ();
 
@@ -3339,7 +3294,7 @@ major_do_collection (const char *reason)
 	if (objects_pinned) {
 		/*This is slow, but we just OOM'd*/
 		mono_sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
-		optimize_pin_queue (0);
+		mono_sgen_optimize_pin_queue (0);
 		mono_sgen_find_section_pin_queue_start_end (nursery_section);
 		objects_pinned = 0;
 	}
@@ -3402,7 +3357,8 @@ major_do_collection (const char *reason)
 		dump_heap ("major", num_major_gcs - 1, reason);
 
 	/* prepare the pin queue for the next collection */
-	next_pin_slot = 0;
+	mono_sgen_finish_pinning ();
+
 	if (fin_ready_list || critical_fin_list) {
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
@@ -3500,12 +3456,9 @@ minor_collect_or_expand_inner (size_t size)
 		
 		/* this also sets the proper pointers for the next allocation */
 		if (!mono_sgen_can_alloc_size (size)) {
-			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, last_num_pinned));
-			for (i = 0; i < last_num_pinned; ++i) {
-				DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
-			}
+			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, mono_sgen_get_pinned_count ()));
+			mono_sgen_dump_pin_queue ();
 			degraded_mode = 1;
 		}
 		mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
@@ -4723,7 +4676,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 			continue;
 		}
-		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %ld, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
+		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %ld, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, mono_sgen_get_pinned_count ()));
 		if (!info->thread_is_dying) {
 			if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 				UserCopyOrMarkData data = { NULL, queue };
@@ -4939,7 +4892,7 @@ remset_stats (void)
 
 	stat_store_remsets += bumper - addresses;
 
-	sort_addresses ((void**)addresses, bumper - addresses);
+	mono_sgen_sort_addresses ((void**)addresses, bumper - addresses);
 	p = addresses;
 	r = addresses + 1;
 	while (r < bumper) {

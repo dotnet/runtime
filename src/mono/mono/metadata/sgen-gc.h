@@ -429,6 +429,7 @@ void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 void mono_sgen_pin_stats_register_global_remset (char *obj);
 void mono_sgen_pin_stats_print_class_stats (void);
 
+void mono_sgen_sort_addresses (void **array, int size) MONO_INTERNAL;
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
