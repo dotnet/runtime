@@ -320,6 +320,15 @@ typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 
 void mono_sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
 char* mono_sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
+GrayQueueSection* mono_sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
+void mono_sgen_gray_object_queue_init (SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
+gboolean mono_sgen_gray_object_queue_is_empty (SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
+gboolean mono_sgen_drain_gray_stack (SgenGrayQueue *queue, int max_objs) MONO_INTERNAL;
+
 
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 
@@ -443,6 +452,8 @@ gboolean mono_sgen_nursery_collection_is_parallel (void) MONO_INTERNAL;
 CopyOrMarkObjectFunc mono_sgen_get_copy_object (void) MONO_INTERNAL;
 ScanObjectFunc mono_sgen_get_minor_scan_object (void) MONO_INTERNAL;
 ScanVTypeFunc mono_sgen_get_minor_scan_vtype (void) MONO_INTERNAL;
+gboolean mono_sgen_collection_is_parallel (void) MONO_INTERNAL;
+
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
@@ -507,6 +518,7 @@ void mono_sgen_marksweep_fixed_init (SgenMajorCollector *collector) MONO_INTERNA
 void mono_sgen_marksweep_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void mono_sgen_marksweep_fixed_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void mono_sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
+SgenMajorCollector* mono_sgen_get_major_collector (void) MONO_INTERNAL;
 
 static guint /*__attribute__((noinline)) not sure if this hint is a good idea*/
 slow_object_get_size (MonoVTable *vtable, MonoObject* o)

@@ -225,6 +225,7 @@
 #include "metadata/runtime.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-workers.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -806,12 +807,9 @@ static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *q
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void clear_remsets (void);
 static void clear_tlabs (void);
-static gboolean drain_gray_stack (GrayQueue *queue, int max_objs);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
-
-static gboolean collection_is_parallel (void);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
 static gboolean mono_gc_is_critical_method (MonoMethod *method);
@@ -836,7 +834,14 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 SgenMajorCollector major_collector;
 
 #include "sgen-gray.c"
-#include "sgen-workers.c"
+
+#define WORKERS_DISTRIBUTE_GRAY_QUEUE (mono_sgen_collection_is_parallel () ? mono_sgen_workers_get_distribute_gray_queue () : &gray_queue)
+
+static SgenGrayQueue*
+mono_sgen_workers_get_job_gray_queue (WorkerData *worker_data)
+{
+	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
+}
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -1389,7 +1394,7 @@ void
 mono_sgen_add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
-	gboolean lock = collection_is_parallel ();
+	gboolean lock = mono_sgen_collection_is_parallel ();
 	gpointer obj = *(gpointer*)ptr;
 
 	if (use_cardtable) {
@@ -1441,14 +1446,14 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 }
 
 /*
- * drain_gray_stack:
+ * mono_sgen_drain_gray_stack:
  *
  *   Scan objects in the gray stack until the stack is empty. This should be called
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
  */
-static gboolean
-drain_gray_stack (GrayQueue *queue, int max_objs)
+gboolean
+mono_sgen_drain_gray_stack (GrayQueue *queue, int max_objs)
 {
 	char *obj;
 
@@ -1465,7 +1470,7 @@ drain_gray_stack (GrayQueue *queue, int max_objs)
 	} else {
 		int i;
 
-		if (collection_is_parallel () && queue == &workers_distribute_gray_queue)
+		if (mono_sgen_collection_is_parallel () && mono_sgen_workers_is_distributed_queue (queue))
 			return TRUE;
 
 		do {
@@ -1604,7 +1609,7 @@ mono_sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue)
 void
 mono_sgen_pin_object (void *object, GrayQueue *queue)
 {
-	if (collection_is_parallel ()) {
+	if (mono_sgen_collection_is_parallel ()) {
 		LOCK_PIN_QUEUE;
 		/*object arrives pinned*/
 		mono_sgen_pin_stage_ptr (object);
@@ -1812,7 +1817,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 			if ((desc & 1) && *start_root) {
 				copy_func (start_root, queue);
 				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
-				drain_gray_stack (queue, -1);
+				mono_sgen_drain_gray_stack (queue, -1);
 			}
 			desc >>= 1;
 			start_root++;
@@ -1830,7 +1835,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 				if ((bmap & 1) && *objptr) {
 					copy_func (objptr, queue);
 					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
-					drain_gray_stack (queue, -1);
+					mono_sgen_drain_gray_stack (queue, -1);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -2166,7 +2171,7 @@ CopyOrMarkObjectFunc
 mono_sgen_get_copy_object (void)
 {
 	if (current_collection_generation == GENERATION_NURSERY) {
-		if (collection_is_parallel ())
+		if (mono_sgen_collection_is_parallel ())
 			return major_collector.copy_object;
 		else
 			return major_collector.nopar_copy_object;
@@ -2180,7 +2185,7 @@ mono_sgen_get_minor_scan_object (void)
 {
 	g_assert (current_collection_generation == GENERATION_NURSERY);
 
-	if (collection_is_parallel ())
+	if (mono_sgen_collection_is_parallel ())
 		return major_collector.minor_scan_object;
 	else
 		return major_collector.nopar_minor_scan_object;
@@ -2191,7 +2196,7 @@ mono_sgen_get_minor_scan_vtype (void)
 {
 	g_assert (current_collection_generation == GENERATION_NURSERY);
 
-	if (collection_is_parallel ())
+	if (mono_sgen_collection_is_parallel ())
 		return major_collector.minor_scan_vtype;
 	else
 		return major_collector.nopar_minor_scan_vtype;
@@ -2220,7 +2225,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	drain_gray_stack (queue, -1);
+	mono_sgen_drain_gray_stack (queue, -1);
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 
@@ -2232,7 +2237,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr, queue);
-		drain_gray_stack (queue, -1);
+		mono_sgen_drain_gray_stack (queue, -1);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -2255,7 +2260,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 			mono_sgen_bridge_processing_register_objects (finalized_array_entries, finalized_array);
 			finalized_array_entries = 0;
 		}
-		drain_gray_stack (queue, -1);
+		mono_sgen_drain_gray_stack (queue, -1);
 	}
 
 	/*
@@ -2286,7 +2291,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
-		drain_gray_stack (queue, -1);
+		mono_sgen_drain_gray_stack (queue, -1);
 	} while (fin_ready != num_ready_finalizers);
 
 	if (mono_sgen_need_bridge_processing ())
@@ -2298,7 +2303,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr, queue);
-		drain_gray_stack (queue, -1);
+		mono_sgen_drain_gray_stack (queue, -1);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -2319,17 +2324,17 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	g_assert (gray_object_queue_is_empty (queue));
+	g_assert (mono_sgen_gray_object_queue_is_empty (queue));
 	for (;;) {
 		null_link_in_range (copy_func, start_addr, end_addr, generation, FALSE, queue);
 		if (generation == GENERATION_OLD)
 			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, FALSE, queue);
-		if (gray_object_queue_is_empty (queue))
+		if (mono_sgen_gray_object_queue_is_empty (queue))
 			break;
-		drain_gray_stack (queue, -1);
+		mono_sgen_drain_gray_stack (queue, -1);
 	}
 
-	g_assert (gray_object_queue_is_empty (queue));
+	g_assert (mono_sgen_gray_object_queue_is_empty (queue));
 }
 
 void
@@ -2495,7 +2500,7 @@ mono_sgen_register_moved_object (void *obj, void *destination)
 	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
 
 	/* FIXME: handle this for parallel collector */
-	g_assert (!collection_is_parallel ());
+	g_assert (!mono_sgen_collection_is_parallel ());
 
 	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
@@ -2698,8 +2703,8 @@ mono_sgen_set_pinned_from_failed_allocation (mword objsize)
 	bytes_pinned_from_failed_allocation += objsize;
 }
 
-static gboolean
-collection_is_parallel (void)
+gboolean
+mono_sgen_collection_is_parallel (void)
 {
 	switch (current_collection_generation) {
 	case GENERATION_NURSERY:
@@ -2717,12 +2722,6 @@ mono_sgen_nursery_collection_is_parallel (void)
 	return nursery_collection_is_parallel;
 }
 
-static GrayQueue*
-job_gray_queue (WorkerData *worker_data)
-{
-	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
-}
-
 typedef struct
 {
 	char *heap_start;
@@ -2734,7 +2733,7 @@ job_scan_from_remsets (WorkerData *worker_data, void *job_data_untyped)
 {
 	ScanFromRemsetsJobData *job_data = job_data_untyped;
 
-	scan_from_remsets (job_data->heap_start, job_data->heap_end, job_gray_queue (worker_data));
+	scan_from_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 typedef struct
@@ -2753,7 +2752,7 @@ job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
 	scan_from_registered_roots (job_data->func,
 			job_data->heap_start, job_data->heap_end,
 			job_data->root_type,
-			job_gray_queue (worker_data));
+			mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 typedef struct
@@ -2768,7 +2767,7 @@ job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
 	ScanThreadDataJobData *job_data = job_data_untyped;
 
 	scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE,
-			job_gray_queue (worker_data));
+			mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 static void
@@ -2888,8 +2887,8 @@ collect_nursery (size_t requested_size)
 
 	try_calculate_minor_collection_allowance (FALSE);
 
-	gray_object_queue_init (&gray_queue);
-	workers_init_distribute_gray_queue ();
+	mono_sgen_gray_object_queue_init (&gray_queue);
+	mono_sgen_workers_init_distribute_gray_queue ();
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
@@ -2916,7 +2915,7 @@ collect_nursery (size_t requested_size)
 	if (consistency_check_at_minor_collection)
 		check_consistency ();
 
-	workers_start_all_workers ();
+	mono_sgen_workers_start_all_workers ();
 
 	/*
 	 * Walk all the roots and copy the young objects to the old
@@ -2927,11 +2926,11 @@ collect_nursery (size_t requested_size)
 	 */
 	scan_from_global_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
-	workers_start_marking ();
+	mono_sgen_workers_start_marking ();
 
 	sfrjd.heap_start = nursery_start;
 	sfrjd.heap_end = nursery_next;
-	workers_enqueue_job (job_scan_from_remsets, &sfrjd);
+	mono_sgen_workers_enqueue_job (job_scan_from_remsets, &sfrjd);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -2946,8 +2945,8 @@ collect_nursery (size_t requested_size)
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 	}
 
-	if (!collection_is_parallel ())
-		drain_gray_stack (&gray_queue, -1);
+	if (!mono_sgen_collection_is_parallel ())
+		mono_sgen_drain_gray_stack (&gray_queue, -1);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -2957,17 +2956,17 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scrrjd_normal.func = collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
+	scrrjd_normal.func = mono_sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
 	scrrjd_normal.heap_start = nursery_start;
 	scrrjd_normal.heap_end = nursery_next;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
+	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
-	scrrjd_wbarrier.func = collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
+	scrrjd_wbarrier.func = mono_sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
 	scrrjd_wbarrier.heap_start = nursery_start;
 	scrrjd_wbarrier.heap_end = nursery_next;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
+	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
@@ -2975,22 +2974,22 @@ collect_nursery (size_t requested_size)
 	/* thread data */
 	stdjd.heap_start = nursery_start;
 	stdjd.heap_end = nursery_next;
-	workers_enqueue_job (job_scan_thread_data, &stdjd);
+	mono_sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
 
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	btv = atv;
 
-	if (collection_is_parallel ()) {
-		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
-			workers_distribute_gray_queue_sections ();
+	if (mono_sgen_collection_is_parallel ()) {
+		while (!mono_sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
+			mono_sgen_workers_distribute_gray_queue_sections ();
 			g_usleep (1000);
 		}
 	}
-	workers_join ();
+	mono_sgen_workers_join ();
 
-	if (collection_is_parallel ())
-		g_assert (gray_object_queue_is_empty (&gray_queue));
+	if (mono_sgen_collection_is_parallel ())
+		g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
@@ -3003,8 +3002,7 @@ collect_nursery (size_t requested_size)
 	 * worker data here instead of earlier when we joined the
 	 * workers.
 	 */
-	if (major_collector.reset_worker_data)
-		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
+	mono_sgen_workers_reset_data ();
 
 	if (objects_pinned) {
 		mono_sgen_optimize_pin_queue (0);
@@ -3047,7 +3045,7 @@ collect_nursery (size_t requested_size)
 	}
 	mono_sgen_pin_stats_reset ();
 
-	g_assert (gray_object_queue_is_empty (&gray_queue));
+	g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
 	if (use_cardtable)
 		sgen_card_tables_collect_stats (FALSE);
@@ -3076,7 +3074,7 @@ job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 
 	scan_finalizer_entries (major_collector.copy_or_mark_object,
 			job_data->list,
-			job_gray_queue (worker_data));
+			mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 static gboolean
@@ -3116,8 +3114,8 @@ major_do_collection (const char *reason)
 
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
-	gray_object_queue_init (&gray_queue);
-	workers_init_distribute_gray_queue ();
+	mono_sgen_gray_object_queue_init (&gray_queue);
+	mono_sgen_workers_init_distribute_gray_queue ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -3209,8 +3207,8 @@ major_do_collection (const char *reason)
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	workers_start_all_workers ();
-	workers_start_marking ();
+	mono_sgen_workers_start_all_workers ();
+	mono_sgen_workers_start_marking ();
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -3222,13 +3220,13 @@ major_do_collection (const char *reason)
 	scrrjd_normal.heap_start = heap_start;
 	scrrjd_normal.heap_end = heap_end;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
+	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
 	scrrjd_wbarrier.func = major_collector.copy_or_mark_object;
 	scrrjd_wbarrier.heap_start = heap_start;
 	scrrjd_wbarrier.heap_end = heap_end;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
+	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
@@ -3236,7 +3234,7 @@ major_do_collection (const char *reason)
 	/* Threads */
 	stdjd.heap_start = heap_start;
 	stdjd.heap_end = heap_end;
-	workers_enqueue_job (job_scan_thread_data, &stdjd);
+	mono_sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
 
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
@@ -3249,10 +3247,10 @@ major_do_collection (const char *reason)
 
 	/* scan the list of objects ready for finalization */
 	sfejd_fin_ready.list = fin_ready_list;
-	workers_enqueue_job (job_scan_finalizer_entries, &sfejd_fin_ready);
+	mono_sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_fin_ready);
 
 	sfejd_critical_fin.list = critical_fin_list;
-	workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
+	mono_sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
 
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
@@ -3262,19 +3260,19 @@ major_do_collection (const char *reason)
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
 	if (major_collector.is_parallel) {
-		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
-			workers_distribute_gray_queue_sections ();
+		while (!mono_sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
+			mono_sgen_workers_distribute_gray_queue_sections ();
 			g_usleep (1000);
 		}
 	}
-	workers_join ();
+	mono_sgen_workers_join ();
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 	main_gc_thread = NULL;
 #endif
 
 	if (major_collector.is_parallel)
-		g_assert (gray_object_queue_is_empty (&gray_queue));
+		g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
@@ -3287,8 +3285,7 @@ major_do_collection (const char *reason)
 	 * worker data here instead of earlier when we joined the
 	 * workers.
 	 */
-	if (major_collector.reset_worker_data)
-		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
+	mono_sgen_workers_reset_data ();
 
 	if (objects_pinned) {
 		/*This is slow, but we just OOM'd*/
@@ -3364,7 +3361,7 @@ major_do_collection (const char *reason)
 	}
 	mono_sgen_pin_stats_reset ();
 
-	g_assert (gray_object_queue_is_empty (&gray_queue));
+	g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
 	try_calculate_minor_collection_allowance (TRUE);
 
@@ -4649,7 +4646,7 @@ mono_gc_scan_object (void *obj)
 	UserCopyOrMarkData *data = mono_native_tls_get_value (user_copy_or_mark_key);
 
 	if (current_collection_generation == GENERATION_NURSERY) {
-		if (collection_is_parallel ())
+		if (mono_sgen_collection_is_parallel ())
 			major_collector.copy_object (&obj, data->queue);
 		else
 			major_collector.nopar_copy_object (&obj, data->queue);
@@ -6606,7 +6603,7 @@ mono_gc_base_init (void)
 	}
 
 	if (major_collector.is_parallel)
-		workers_init (num_workers);
+		mono_sgen_workers_init (num_workers);
 
 	if (major_collector_opt)
 		g_free (major_collector_opt);
@@ -7494,6 +7491,12 @@ gboolean
 sgen_ptr_in_nursery (void *p)
 {
 	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_end);
+}
+
+SgenMajorCollector*
+mono_sgen_get_major_collector (void)
+{
+	return &major_collector;
 }
 
 #endif /* HAVE_SGEN_GC */
