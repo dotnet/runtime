@@ -7489,7 +7489,7 @@ sgen_major_collector_scan_card_table (SgenGrayQueue *queue)
 }
 
 gboolean
-sgen_ptr_in_nursery (void *p)
+mono_sgen_ptr_in_nursery (void *p)
 {
 	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_end);
 }

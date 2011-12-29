@@ -625,6 +625,7 @@ void* mono_sgen_nursery_alloc_range (size_t size, size_t min_size, int *out_allo
 MonoVTable* mono_sgen_get_array_fill_vtable (void) MONO_INTERNAL;
 gboolean mono_sgen_can_alloc_size (size_t size) MONO_INTERNAL;
 void mono_sgen_nursery_retire_region (void *address, ptrdiff_t size) MONO_INTERNAL;
+gboolean mono_sgen_ptr_in_nursery (void *p) MONO_INTERNAL; /*FIXME make this inline*/
 
 /* hash tables */
 

@@ -463,11 +463,11 @@ LOOP_HEAD:
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
-					if (G_UNLIKELY (sgen_ptr_in_nursery (old))) {
+					if (G_UNLIKELY (mono_sgen_ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
 						copy_func ((void**)elem, queue);
 						new = *(gpointer*)elem;
-						if (G_UNLIKELY (sgen_ptr_in_nursery (new)))
+						if (G_UNLIKELY (mono_sgen_ptr_in_nursery (new)))
 							mono_sgen_add_to_global_remset (elem);
 					}
 				}
