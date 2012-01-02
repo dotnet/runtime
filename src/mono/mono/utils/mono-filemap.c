@@ -60,7 +60,7 @@ mono_file_map_close (MonoFileMap *fmap)
 	return fclose ((FILE*)fmap);
 }
 
-#if !defined(HAVE_MMAP) && !defined (HOST_WIN32)
+#if !defined (HOST_WIN32)
 
 static mono_file_map_alloc_fn alloc_fn = (mono_file_map_alloc_fn) malloc;
 static mono_file_map_release_fn release_fn = (mono_file_map_release_fn) free;
@@ -73,7 +73,7 @@ mono_file_map_set_allocator (mono_file_map_alloc_fn alloc, mono_file_map_release
 }
 
 void *
-mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
+mono_file_map_fileio (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
 	guint64 cur_offset;
 	size_t bytes_read;
@@ -82,7 +82,7 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		return NULL;
 	cur_offset = lseek (fd, 0, SEEK_CUR);
 	if (lseek (fd, offset, SEEK_SET) != offset) {
-		free (ptr);
+		(*release_fn) (ptr);
 		return NULL;
 	}
 	bytes_read = read (fd, ptr, length);
@@ -92,9 +92,22 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 }
 
 int
-mono_file_unmap (void *addr, void *handle)
+mono_file_unmap_fileio (void *addr, void *handle)
 {
 	(*release_fn) (addr);
 	return 0;
 }
+#if !defined(HAVE_MMAP)
+void *
+mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
+{
+	return mono_file_map_fileio (length, flags, fd, offset, ret_handle);
+}
+
+int
+mono_file_unmap (void *addr, void *handle)
+{
+	return mono_file_unmap_fileio(addr, handle);
+}
+#endif
 #endif
