@@ -1920,6 +1920,8 @@ typedef struct {
 	GHashTable *source_files;
 	/* Maps source file basename -> GSList of classes */
 	GHashTable *source_file_to_class;
+	/* Same with ignore-case */
+	GHashTable *source_file_to_class_ignorecase;
 } AgentDomainInfo;
 
 /* Maps id -> Id */
@@ -1978,6 +1980,12 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain)
 			g_slist_free (l);
 		}
 
+		g_hash_table_iter_init (&iter, info->source_file_to_class_ignorecase);
+		while (g_hash_table_iter_next (&iter, (void**)&basename, (void**)&l)) {
+			g_free (basename);
+			g_slist_free (l);
+		}
+
 		g_free (info);
 	}
 
@@ -2012,6 +2020,7 @@ get_agent_domain_info (MonoDomain *domain)
 		info->loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		info->source_files = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		info->source_file_to_class = g_hash_table_new (g_str_hash, g_str_equal);
+		info->source_file_to_class_ignorecase = g_hash_table_new (g_str_hash, g_str_equal);
 	}
 
 	mono_domain_unlock (domain);
@@ -3107,6 +3116,16 @@ emit_type_load (gpointer key, gpointer value, gpointer user_data)
 	process_profiler_event (EVENT_KIND_TYPE_LOAD, value);
 }
 
+static char*
+strdup_tolower (char *s)
+{
+	char *s2, *p;
+
+	s2 = g_strdup (s);
+	for (p = s2; *p; ++p)
+		*p = tolower (*p);
+	return s2;
+}
 
 /*
  * EVENT HANDLING
@@ -3179,7 +3198,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 				} else if (mod->kind == MOD_KIND_SOURCE_FILE_ONLY && ei && ei->klass) {
 					gpointer iter = NULL;
 					MonoMethod *method;
-					char *source_file;
+					char *source_file, *s;
 					gboolean found = FALSE;
 
 					while ((method = mono_class_get_methods (ei->klass, &iter))) {
@@ -3190,8 +3209,14 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 							if (!source_file)
 								continue;
 							// FIXME: flags
-							if (g_hash_table_lookup (mod->data.source_files, source_file))
+							/*
+							 * Do a case-insesitive match by converting the file name to
+							 * lowercase.
+							 */
+							s = strdup_tolower (source_file);
+							if (g_hash_table_lookup (mod->data.source_files, s))
 								found = TRUE;
+							g_free (s);
 							g_free (source_file);
 						}
 					}
@@ -6178,6 +6203,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 					for (i = 0; i < files->len; ++i) {
 						char *s = g_ptr_array_index (files, i);
 						char *s2 = g_path_get_basename (s);
+						char *s3;
 
 						class_list = g_hash_table_lookup (info->source_file_to_class, s2);
 						if (!class_list) {
@@ -6188,15 +6214,33 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 							g_hash_table_insert (info->source_file_to_class, s2, class_list);
 						}
 
+						/* The _ignorecase hash contains the lowercase path */
+						s3 = strdup_tolower (s2);
+						class_list = g_hash_table_lookup (info->source_file_to_class_ignorecase, s3);
+						if (!class_list) {
+							class_list = g_slist_prepend (class_list, klass);
+							g_hash_table_insert (info->source_file_to_class_ignorecase, g_strdup (s3), class_list);
+						} else {
+							class_list = g_slist_prepend (class_list, klass);
+							g_hash_table_insert (info->source_file_to_class_ignorecase, s3, class_list);
+						}
+
 						g_free (s2);
+						g_free (s3);
 					}
 				}
 			}
 
-			if (ignore_case)
-				NOT_IMPLEMENTED;
-			
-			class_list = g_hash_table_lookup (info->source_file_to_class, basename);
+			if (ignore_case) {
+				char *s;
+
+				s = strdup_tolower (basename);
+				class_list = g_hash_table_lookup (info->source_file_to_class_ignorecase, s);
+				g_free (s);
+			} else {
+				class_list = g_hash_table_lookup (info->source_file_to_class, basename);
+			}
+
 			for (l = class_list; l; l = l->next) {
 				klass = l->data;
 
@@ -6367,9 +6411,13 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				modifier->data.source_files = g_hash_table_new (g_str_hash, g_str_equal);
 				for (j = 0; j < n; ++j) {
 					char *s = decode_string (p, &p, end);
+					char *s2;
 
-					if (s)
-						g_hash_table_insert (modifier->data.source_files, s, s);
+					if (s) {
+						s2 = strdup_tolower (s);
+						g_hash_table_insert (modifier->data.source_files, s2, s2);
+						g_free (s);
+					}
 				}
 			} else if (mod == MOD_KIND_TYPE_NAME_ONLY) {
 				int n = decode_int (p, &p, end);
