@@ -1285,6 +1285,11 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
+	if (exc_class) {
+		*exc_class = NULL;
+		*exc_arg = NULL;
+	}
+
 	if (piinfo->addr)
 		return piinfo->addr;
 
@@ -1317,11 +1322,6 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 			"DllImport attempting to load: '%s'.", new_scope);
-
-	if (exc_class) {
-		*exc_class = NULL;
-		*exc_arg = NULL;
-	}
 
 	/* we allow a special name to dlopen from the running process namespace */
 	if (strcmp (new_scope, "__Internal") == 0)
