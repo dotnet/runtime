@@ -3165,6 +3165,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			x86_jump32 (code, 0);
 
+			ins->flags |= MONO_INST_GC_CALLSITE;
 			cfg->disable_aot = TRUE;
 			break;
 		}
