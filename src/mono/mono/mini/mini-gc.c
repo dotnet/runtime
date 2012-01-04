@@ -124,6 +124,7 @@ typedef struct {
  */
 typedef struct {
 	MonoThreadUnwindState unwind_state;
+	MonoThreadInfo *info;
 	/* For debugging */
 	mgreg_t tid;
 	gpointer ref_to_track;
@@ -548,6 +549,7 @@ thread_attach_func (void)
 
 	tls = g_new0 (TlsData, 1);
 	tls->tid = GetCurrentThreadId ();
+	tls->info = mono_thread_info_current ();
 	stats.tlsdata_size += sizeof (TlsData);
 
 	return tls;
@@ -570,18 +572,24 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 		/* Happens during startup */
 		return;
 
-	// FIXME: This isn't true on osx, and we depend on it for mono_get_lmf ().
-	//g_assert (tls->tid == GetCurrentThreadId ());
+	if (tls->tid != GetCurrentThreadId ()) {
+		/* Happens on osx because threads are not suspended using signals */
+		gboolean res;
 
-	tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
-	if (sigctx) {
-		mono_arch_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
-		tls->unwind_state.valid = TRUE;
+		g_assert (tls->info);
+		res = mono_thread_state_init_from_handle (&tls->unwind_state, (MonoNativeThreadId)tls->tid, tls->info->native_handle);
+		g_assert (res);
 	} else {
-		tls->unwind_state.valid = FALSE;
+		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
+		if (sigctx) {
+			mono_arch_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
+			tls->unwind_state.valid = TRUE;
+		} else {
+			tls->unwind_state.valid = FALSE;
+		}
+		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = mono_native_tls_get_value (mono_jit_tls_id);
+		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 	}
-	tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = mono_native_tls_get_value (mono_jit_tls_id);
-	tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 }
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
