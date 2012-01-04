@@ -730,10 +730,11 @@ test-type-load: TestDriver.dll
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
 
 
-EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs
+EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs
 
 SGEN_TESTS =	\
-	sgen-descriptors.exe
+	sgen-descriptors.exe	\
+	sgen-gshared-vtype.exe
 	
 sgen-regular-tests: $(SGEN_TESTS)
 	@for fn in $+ ; do	\
