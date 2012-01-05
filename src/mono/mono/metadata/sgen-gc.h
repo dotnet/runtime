@@ -476,6 +476,8 @@ struct _SgenMajorCollector {
 	void (*reset_worker_data) (void *data);
 };
 
+extern SgenMajorCollector major_collector;
+
 void mono_sgen_marksweep_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void mono_sgen_marksweep_fixed_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void mono_sgen_marksweep_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
@@ -581,6 +583,8 @@ gboolean mono_sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_release_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;
+void mono_sgen_collect_nursery_no_lock (size_t requested_size) MONO_INTERNAL;
+void mono_sgen_minor_collect_or_expand_inner (size_t size) MONO_INTERNAL;
 gboolean mono_sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
 void mono_sgen_set_pinned_from_failed_allocation (mword objsize) MONO_INTERNAL;
 
@@ -687,6 +691,102 @@ void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
 			}						\
 		}							\
 	} while (0)
+
+/* TLS Data */
+
+extern MonoNativeTlsKey thread_info_key;
+
+#ifdef HAVE_KW_THREAD
+extern __thread SgenThreadInfo *thread_info;
+extern __thread gpointer *store_remset_buffer;
+extern __thread long store_remset_buffer_index;
+extern __thread char *stack_end;
+extern __thread long *store_remset_buffer_index_addr;
+#endif
+
+#ifdef HAVE_KW_THREAD
+#define TLAB_ACCESS_INIT
+#define REMEMBERED_SET	remembered_set
+#define STORE_REMSET_BUFFER	store_remset_buffer
+#define STORE_REMSET_BUFFER_INDEX	store_remset_buffer_index
+#define IN_CRITICAL_REGION thread_info->in_critical_region
+#else
+#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
+#define REMEMBERED_SET	(__thread_info__->remset)
+#define STORE_REMSET_BUFFER	(__thread_info__->store_remset_buffer)
+#define STORE_REMSET_BUFFER_INDEX	(__thread_info__->store_remset_buffer_index)
+#define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
+#endif
+
+#ifndef DISABLE_CRITICAL_REGION
+
+#ifdef HAVE_KW_THREAD
+#define IN_CRITICAL_REGION thread_info->in_critical_region
+#else
+#define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
+#endif
+
+/* Enter must be visible before anything is done in the critical region. */
+#define ENTER_CRITICAL_REGION do { mono_atomic_store_acquire (&IN_CRITICAL_REGION, 1); } while (0)
+
+/* Exit must make sure all critical regions stores are visible before it signal the end of the region. 
+ * We don't need to emit a full barrier since we
+ */
+#define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)
+
+#endif
+
+#ifdef HAVE_KW_THREAD
+#define EMIT_TLS_ACCESS(mb,dummy,offset)	do {	\
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
+	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
+	mono_mb_emit_i4 ((mb), (offset));		\
+	} while (0)
+#else
+
+/* 
+ * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
+ * where the two are the same.
+ */
+#if defined(__APPLE__) || defined (HOST_WIN32)
+#define EMIT_TLS_ACCESS(mb,member,dummy)	do {	\
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
+	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
+	mono_mb_emit_i4 ((mb), thread_info_key);	\
+	mono_mb_emit_icon ((mb), G_STRUCT_OFFSET (SgenThreadInfo, member));	\
+	mono_mb_emit_byte ((mb), CEE_ADD);		\
+	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
+	} while (0)
+#else
+#define EMIT_TLS_ACCESS(mb,member,dummy)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#endif
+
+#endif
+
+/* Other globals */
+
+extern GCMemSection *nursery_section;
+extern int stat_major_gcs;
+extern guint32 collect_before_allocs;
+extern int degraded_mode;
+extern int default_nursery_size;
+extern guint32 tlab_size;
+extern NurseryClearPolicy nursery_clear_policy;
+
+extern LOCK_DECLARE (gc_mutex);
+
+/* Object Allocation */
+
+typedef enum {
+	ATYPE_NORMAL,
+	ATYPE_VECTOR,
+	ATYPE_SMALL,
+	ATYPE_NUM
+} SgenAllocatorType;
+
+void mono_sgen_init_tlab_info (SgenThreadInfo* info);
+void mono_sgen_clear_tlabs (void);
+gboolean mono_sgen_is_managed_allocator (MonoMethod *method);
 
 #endif /* HAVE_SGEN_GC */
 
