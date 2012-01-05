@@ -3192,6 +3192,7 @@ static dis_map_t managed_impl_flags [] = {
 	{ METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED,    "synchronized " },
 	{ METHOD_IMPL_ATTRIBUTE_NOINLINING,      "noinlining " },
 	{ METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION,  "nooptimization " },
+	{ METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING,  "agressive-inlining" },
 	{ 0, NULL }
 };
 
