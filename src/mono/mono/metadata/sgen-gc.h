@@ -78,6 +78,30 @@ struct _RememberedSet {
 	mword data [MONO_ZERO_LEN_ARRAY];
 };
 
+/*
+ * We're never actually using the first element.  It's always set to
+ * NULL to simplify the elimination of consecutive duplicate
+ * entries.
+ */
+#define STORE_REMSET_BUFFER_SIZE	1023
+
+typedef struct _GenericStoreRememberedSet GenericStoreRememberedSet;
+struct _GenericStoreRememberedSet {
+	GenericStoreRememberedSet *next;
+	/* We need one entry less because the first entry of store
+	   remset buffers is always a dummy and we don't copy it. */
+	gpointer data [STORE_REMSET_BUFFER_SIZE - 1];
+};
+
+/* we have 4 possible values in the low 2 bits */
+enum {
+	REMSET_LOCATION, /* just a pointer to the exact location */
+	REMSET_RANGE,    /* range of pointer fields */
+	REMSET_OBJECT,   /* mark all the object for scanning */
+	REMSET_VTYPE,    /* a valuetype array described by a gc descriptor, a count and a size */
+	REMSET_TYPE_MASK = 0x3
+};
+
 /* eventually share with MonoThread? */
 struct _SgenThreadInfo {
 	MonoThreadInfo info;
@@ -775,6 +799,12 @@ extern NurseryClearPolicy nursery_clear_policy;
 
 extern LOCK_DECLARE (gc_mutex);
 
+extern RememberedSet *global_remset;
+extern RememberedSet *freed_thread_remsets;
+extern GenericStoreRememberedSet *generic_store_remsets;
+
+extern gboolean use_cardtable;
+
 /* Object Allocation */
 
 typedef enum {
@@ -787,6 +817,11 @@ typedef enum {
 void mono_sgen_init_tlab_info (SgenThreadInfo* info);
 void mono_sgen_clear_tlabs (void);
 gboolean mono_sgen_is_managed_allocator (MonoMethod *method);
+
+/* Debug support */
+
+void mono_sgen_check_consistency (void);
+void mono_sgen_check_major_refs (void);
 
 #endif /* HAVE_SGEN_GC */
 

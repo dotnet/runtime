@@ -220,6 +220,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-descriptor.c		\
 	sgen-descriptor.h		\
 	sgen-alloc.c		\
+	sgen-debug.c		\
 	string-icalls.c 	\
 	string-icalls.h 	\
 	sysmath.h		\

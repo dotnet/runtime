@@ -389,37 +389,13 @@ struct _RootRecord {
 	mword root_desc;
 };
 
-/*
- * We're never actually using the first element.  It's always set to
- * NULL to simplify the elimination of consecutive duplicate
- * entries.
- */
-#define STORE_REMSET_BUFFER_SIZE	1023
-
-typedef struct _GenericStoreRememberedSet GenericStoreRememberedSet;
-struct _GenericStoreRememberedSet {
-	GenericStoreRememberedSet *next;
-	/* We need one entry less because the first entry of store
-	   remset buffers is always a dummy and we don't copy it. */
-	gpointer data [STORE_REMSET_BUFFER_SIZE - 1];
-};
-
-/* we have 4 possible values in the low 2 bits */
-enum {
-	REMSET_LOCATION, /* just a pointer to the exact location */
-	REMSET_RANGE,    /* range of pointer fields */
-	REMSET_OBJECT,   /* mark all the object for scanning */
-	REMSET_VTYPE,    /* a valuetype array described by a gc descriptor, a count and a size */
-	REMSET_TYPE_MASK = 0x3
-};
-
 #ifdef HAVE_KW_THREAD
 static __thread RememberedSet *remembered_set MONO_TLS_FAST;
 #endif
 static MonoNativeTlsKey remembered_set_key;
-static RememberedSet *global_remset;
-static RememberedSet *freed_thread_remsets;
-static GenericStoreRememberedSet *generic_store_remsets = NULL;
+RememberedSet *global_remset;
+RememberedSet *freed_thread_remsets;
+GenericStoreRememberedSet *generic_store_remsets = NULL;
 
 /*A two slots cache for recently inserted remsets */
 static gpointer global_remset_cache [2];
@@ -462,7 +438,7 @@ mono_sgen_safe_name (void* obj)
 LOCK_DECLARE (gc_mutex);
 static int gc_disabled = 0;
 
-static gboolean use_cardtable;
+gboolean use_cardtable;
 
 #ifdef USER_CONFIG
 
@@ -610,8 +586,6 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
  * The current allocation cursors
  * We allocate objects in the nursery.
  * The nursery is the area between nursery_start and nursery_end.
- * Allocation is done from a Thread Local Allocation Buffer (TLAB). TLABs are allocated
- * from nursery fragments.
  * nursery_frag_real_end points to the end of the currently used nursery fragment.
  * nursery_first_pinned_start points to the start of the first pinned object in the nursery
  * nursery_last_pinned_end points to the end of the last pinned object in the nursery
@@ -764,15 +738,6 @@ static void major_collection (const char *reason);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
 static gboolean mono_gc_is_critical_method (MonoMethod *method);
-
-void describe_ptr (char *ptr);
-void check_object (char *start);
-
-static void check_consistency (void);
-static void check_major_refs (void);
-static void check_scan_starts (void);
-static void check_for_xdomain_refs (void);
-static void dump_heap (const char *type, int num, const char *reason);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
@@ -2833,7 +2798,7 @@ collect_nursery (size_t requested_size)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", mono_sgen_get_pinned_count ()));
 
 	if (consistency_check_at_minor_collection)
-		check_consistency ();
+		mono_sgen_check_consistency ();
 
 	mono_sgen_workers_start_all_workers ();
 
@@ -2947,7 +2912,7 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %lu bytes available\n", TV_ELAPSED (atv, btv), (unsigned long)fragment_total));
 
 	if (consistency_check_at_minor_collection)
-		check_major_refs ();
+		mono_sgen_check_major_refs ();
 
 	major_collector.finish_nursery_collection ();
 
@@ -5237,286 +5202,6 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 #endif
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 	UNLOCK_GC;
-}
-
-/*
- * ######################################################################
- * ########  Collector debugging
- * ######################################################################
- */
-
-const char*descriptor_types [] = {
-	"run_length",
-	"small_bitmap",
-	"string",
-	"complex",
-	"vector",
-	"array",
-	"large_bitmap",
-	"complex_arr"
-};
-
-void
-describe_ptr (char *ptr)
-{
-	MonoVTable *vtable;
-	mword desc;
-	int type;
-	char *start;
-
-	if (ptr_in_nursery (ptr)) {
-		printf ("Pointer inside nursery.\n");
-	} else {
-		if (mono_sgen_ptr_is_in_los (ptr, &start)) {
-			if (ptr == start)
-				printf ("Pointer is the start of object %p in LOS space.\n", start);
-			else
-				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
-			ptr = start;
-		} else if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
-			printf ("Pointer inside oldspace.\n");
-		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
-			printf ("Pointer is inside a pinned chunk.\n");
-		} else {
-			printf ("Pointer unknown.\n");
-			return;
-		}
-	}
-
-	if (object_is_pinned (ptr))
-		printf ("Object is pinned.\n");
-
-	if (object_is_forwarded (ptr))
-		printf ("Object is forwared.\n");
-
-	// FIXME: Handle pointers to the inside of objects
-	vtable = (MonoVTable*)LOAD_VTABLE (ptr);
-
-	printf ("VTable: %p\n", vtable);
-	if (vtable == NULL) {
-		printf ("VTable is invalid (empty).\n");
-		return;
-	}
-	if (ptr_in_nursery (vtable)) {
-		printf ("VTable is invalid (points inside nursery).\n");
-		return;
-	}
-	printf ("Class: %s\n", vtable->klass->name);
-
-	desc = ((GCVTable*)vtable)->desc;
-	printf ("Descriptor: %lx\n", (long)desc);
-
-	type = desc & 0x7;
-	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
-}
-
-static mword*
-find_in_remset_loc (mword *p, char *addr, gboolean *found)
-{
-	void **ptr;
-	mword count, desc;
-	size_t skip_size;
-
-	switch ((*p) & REMSET_TYPE_MASK) {
-	case REMSET_LOCATION:
-		if (*p == (mword)addr)
-			*found = TRUE;
-		return p + 1;
-	case REMSET_RANGE:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		count = p [1];
-		if ((void**)addr >= ptr && (void**)addr < ptr + count)
-			*found = TRUE;
-		return p + 2;
-	case REMSET_OBJECT:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		count = safe_object_get_size ((MonoObject*)ptr); 
-		count = ALIGN_UP (count);
-		count /= sizeof (mword);
-		if ((void**)addr >= ptr && (void**)addr < ptr + count)
-			*found = TRUE;
-		return p + 1;
-	case REMSET_VTYPE:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		desc = p [1];
-		count = p [2];
-		skip_size = p [3];
-
-		/* The descriptor includes the size of MonoObject */
-		skip_size -= sizeof (MonoObject);
-		skip_size *= count;
-		if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
-			*found = TRUE;
-
-		return p + 4;
-	default:
-		g_assert_not_reached ();
-	}
-	return NULL;
-}
-
-/*
- * Return whenever ADDR occurs in the remembered sets
- */
-static gboolean
-find_in_remsets (char *addr)
-{
-	int i;
-	SgenThreadInfo *info;
-	RememberedSet *remset;
-	GenericStoreRememberedSet *store_remset;
-	mword *p;
-	gboolean found = FALSE;
-
-	/* the global one */
-	for (remset = global_remset; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;) {
-			p = find_in_remset_loc (p, addr, &found);
-			if (found)
-				return TRUE;
-		}
-	}
-
-	/* the generic store ones */
-	for (store_remset = generic_store_remsets; store_remset; store_remset = store_remset->next) {
-		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
-			if (store_remset->data [i] == addr)
-				return TRUE;
-		}
-	}
-
-	/* the per-thread ones */
-	FOREACH_THREAD (info) {
-		int j;
-		for (remset = info->remset; remset; remset = remset->next) {
-			DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
-			for (p = remset->data; p < remset->store_next;) {
-				p = find_in_remset_loc (p, addr, &found);
-				if (found)
-					return TRUE;
-			}
-		}
-		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j) {
-			if ((*info->store_remset_buffer_addr) [j + 1] == addr)
-				return TRUE;
-		}
-	} END_FOREACH_THREAD
-
-	/* the freed thread ones */
-	for (remset = freed_thread_remsets; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;) {
-			p = find_in_remset_loc (p, addr, &found);
-			if (found)
-				return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
-static gboolean missing_remsets;
-
-/*
- * We let a missing remset slide if the target object is pinned,
- * because the store might have happened but the remset not yet added,
- * but in that case the target must be pinned.  We might theoretically
- * miss some missing remsets this way, but it's very unlikely.
- */
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_end) {	\
-		if (!find_in_remsets ((char*)(ptr)) && (!use_cardtable || !sgen_card_table_address_is_marked ((mword)ptr))) { \
-                fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-		binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
-		if (!object_is_pinned (*(ptr)))				\
-			missing_remsets = TRUE;				\
-            } \
-        } \
-	} while (0)
-
-/*
- * Check that each object reference which points into the nursery can
- * be found in the remembered sets.
- */
-static void
-check_consistency_callback (char *start, size_t size, void *dummy)
-{
-	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
-	DEBUG (8, fprintf (gc_debug_file, "Scanning object %p, vtable: %p (%s)\n", start, vt, vt->klass->name));
-
-#define SCAN_OBJECT_ACTION
-#include "sgen-scan-object.h"
-}
-
-/*
- * Perform consistency check of the heap.
- *
- * Assumes the world is stopped.
- */
-static void
-check_consistency (void)
-{
-	// Need to add more checks
-
-	missing_remsets = FALSE;
-
-	DEBUG (1, fprintf (gc_debug_file, "Begin heap consistency check...\n"));
-
-	// Check that oldspace->newspace pointers are registered with the collector
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
-
-	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
-
-	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
-
-	if (!binary_protocol_is_enabled ())
-		g_assert (!missing_remsets);
-}
-
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {					\
-		if (*(ptr) && !LOAD_VTABLE (*(ptr)))						\
-			g_error ("Could not load vtable for obj %p slot %d (size %d)", obj, (char*)ptr - (char*)obj, safe_object_get_size ((MonoObject*)obj));		\
-	} while (0)
-
-static void
-check_major_refs_callback (char *start, size_t size, void *dummy)
-{
-#define SCAN_OBJECT_ACTION
-#include "sgen-scan-object.h"
-}
-
-static void
-check_major_refs (void)
-{
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
-	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
-}
-
-/* Check that the reference is valid */
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr)) {	\
-			g_assert (safe_name (*(ptr)) != NULL);	\
-		}	\
-	} while (0)
-
-/*
- * check_object:
- *
- *   Perform consistency check on an object. Currently we only check that the
- * reference fields are valid.
- */
-void
-check_object (char *start)
-{
-	if (!start)
-		return;
-
-#include "sgen-scan-object.h"
 }
 
 /*
