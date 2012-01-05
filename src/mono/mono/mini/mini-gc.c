@@ -568,9 +568,11 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 {
 	TlsData *tls = user_data;
 
-	if (!tls)
+	if (!tls) {
 		/* Happens during startup */
+		tls->unwind_state.valid = FALSE;
 		return;
+	}
 
 	if (tls->tid != GetCurrentThreadId ()) {
 		/* Happens on osx because threads are not suspended using signals */
@@ -589,6 +591,12 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 		}
 		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = mono_native_tls_get_value (mono_jit_tls_id);
 		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+	}
+
+	if (!tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN]) {
+		/* Happens during startup */
+		tls->unwind_state.valid = FALSE;
+		return;
 	}
 }
 
@@ -714,6 +722,9 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	memset (new_reg_locations, 0, sizeof (new_reg_locations));
 
 	while (TRUE) {
+		if (!tls->unwind_state.valid)
+			break;
+
 		memcpy (&ctx, &new_ctx, sizeof (ctx));
 
 		for (i = 0; i < MONO_MAX_IREGS; ++i) {
@@ -1040,6 +1051,9 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	guint8 *frame_start;
 
 	if (!tls)
+		return;
+
+	if (!tls->unwind_state.valid)
 		return;
 
 	for (findex = 0; findex < tls->nframes; findex ++) {
