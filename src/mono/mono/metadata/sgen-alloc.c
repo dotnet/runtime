@@ -570,6 +570,10 @@ mono_gc_free_fixed (void* addr)
 void
 mono_sgen_init_tlab_info (SgenThreadInfo* info)
 {
+#ifndef HAVE_KW_THREAD
+	SgenThreadInfo *__thread_info__ = info;
+#endif
+
 	info->tlab_start_addr = &TLAB_START;
 	info->tlab_next_addr = &TLAB_NEXT;
 	info->tlab_temp_end_addr = &TLAB_TEMP_END;
