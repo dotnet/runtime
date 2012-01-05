@@ -383,6 +383,11 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 {
 }
 
+void
+mono_gc_set_stack_end (void *stack_end)
+{
+}
+
 #ifndef HOST_WIN32
 
 int

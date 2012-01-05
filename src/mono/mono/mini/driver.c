@@ -1811,9 +1811,7 @@ mono_main (int argc, char* argv[])
 	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i], forced_version);
 
-#ifdef HAVE_SGEN_GC
 	mono_gc_set_stack_end (&domain);
-#endif
 
 	if (agents) {
 		int i;
