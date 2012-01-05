@@ -377,7 +377,8 @@ BASE_TEST_CS_SRC=		\
 	sgen-long-vtype.cs	\
 	delegate-invoke.cs	\
 	bug-696593.cs	\
-	bug-705140.cs
+	bug-705140.cs	\
+	bug-1147.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -902,7 +903,8 @@ GSHARED_TESTS = \
 		generic-stack-traces.2.exe generic-stack-traces2.2.exe		\
 		bug-472600.2.exe bug-473482.2.exe bug-473999.2.exe		\
 		bug-479763.2.exe generic-xdomain.2.exe				\
-		generic-type-load-exception.2.exe bug-616463.exe
+		generic-type-load-exception.2.exe bug-616463.exe	\
+		bug-1147.exe
 
 test-generic-sharing-normal: $(GSHARED_TESTS)
 	@for fn in $+ ; do	\
