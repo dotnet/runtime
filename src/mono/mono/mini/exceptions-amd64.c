@@ -746,7 +746,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	/* Allocate a stack frame below the red zone */
 	sp -= 128;
 	/* The stack should be unaligned */
-	if (sp % 8 == 0)
+	if ((sp % 16) == 0)
 		sp -= 8;
 	ctx->rsp = sp;
 	ctx->rip = (guint64)async_cb;
