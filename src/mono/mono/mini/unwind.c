@@ -35,6 +35,7 @@ static CRITICAL_SECTION unwind_mutex;
 
 static MonoUnwindInfo **cached_info;
 static int cached_info_next, cached_info_size;
+static GSList *cached_info_list;
 /* Statistics */
 static int unwind_info_size;
 
@@ -493,8 +494,8 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 		MonoUnwindInfo **old_table, **new_table;
 
 		/*
-		 * Have to resize the table, while synchronizing with 
-		 * mono_get_cached_unwind_info () using hazard pointers.
+		 * Avoid freeing the old table so mono_get_cached_unwind_info ()
+		 * doesn't need locks/hazard pointers.
 		 */
 
 		old_table = cached_info;
@@ -506,9 +507,7 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 
 		cached_info = new_table;
 
-		mono_memory_barrier ();
-
-		mono_thread_hazardous_free_or_queue (old_table, g_free);
+		cached_info_list = g_slist_prepend (cached_info_list, cached_info);
 
 		cached_info_size *= 2;
 	}
@@ -530,16 +529,17 @@ mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len)
 	MonoUnwindInfo **table;
 	MonoUnwindInfo *info;
 	guint8 *data;
-	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	table = get_hazardous_pointer ((gpointer volatile*)&cached_info, hp, 0);
+	/*
+	 * This doesn't need any locks/hazard pointers,
+	 * since new tables are copies of the old ones.
+	 */
+	table = cached_info;
 
 	info = table [index];
 
 	*unwind_info_len = info->len;
 	data = info->info;
-
-	mono_hazard_pointer_clear (hp, 0);
 
 	return data;
 }
