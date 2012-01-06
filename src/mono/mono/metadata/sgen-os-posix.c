@@ -132,7 +132,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 		suspend_thread (info, context);
 	} else {
 		/* This can happen while a thread is dying */
-		g_print ("no thread info in suspend\n");
+		//g_print ("no thread info in suspend\n");
 	}
 
 	errno = old_errno;
