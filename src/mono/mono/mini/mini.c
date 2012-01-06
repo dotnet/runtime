@@ -2997,7 +2997,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = code;
 		} else {
 			/* get the trampoline to the method from the domain */
-			target = mono_create_jit_trampoline (patch_info->data.method);
+			target = mono_create_jit_trampoline_in_domain (domain, patch_info->data.method);
 		}
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
