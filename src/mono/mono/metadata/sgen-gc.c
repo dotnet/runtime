@@ -2126,6 +2126,15 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 
 	/*
+	Reset bridge data, we might have lingering data from a previous collection if this is a major
+	collection trigged by minor overflow.
+
+	We must reset the gathered bridges since their original block might be evacuated due to major
+	fragmentation in the meanwhile and the bridge code should not have to deal with that.
+	*/
+	mono_sgen_bridge_reset_data ();
+
+	/*
 	 * Walk the ephemeron tables marking all values with reachable keys. This must be completely done
 	 * before processing finalizable objects or non-tracking weak hamdle to avoid finalizing/clearing
 	 * objects that are in fact reachable.

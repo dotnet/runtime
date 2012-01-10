@@ -347,13 +347,12 @@ free_data (void)
 	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
 
-static gboolean
+static HashEntry*
 register_bridge_object (MonoObject *obj)
 {
-	gboolean existing;
-	HashEntry *entry = get_hash_entry (obj, &existing);
+	HashEntry *entry = get_hash_entry (obj, NULL);
 	entry->is_bridge = TRUE;
-	return !existing;
+	return entry;
 }
 
 static void
@@ -510,9 +509,13 @@ void
 mono_sgen_bridge_register_finalized_object (MonoObject *obj)
 {
 	g_assert (mono_sgen_need_bridge_processing ());
+	dyn_array_ptr_push (&registered_bridges, obj);
+}
 
-	if (register_bridge_object (obj))
-		dyn_array_ptr_push (&registered_bridges, obj);
+void
+mono_sgen_bridge_reset_data (void)
+{
+	registered_bridges.size = 0;
 }
 
 void
@@ -534,7 +537,7 @@ mono_sgen_bridge_processing_stw_step (void)
 
 	current_time = 0;
 	for (i = 0; i < registered_bridges.size; ++i)
-		dfs1 (get_hash_entry (DYN_ARRAY_PTR_REF (&registered_bridges, i), NULL), NULL);
+		dfs1 (register_bridge_object (DYN_ARRAY_PTR_REF (&registered_bridges, i)), NULL);
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
