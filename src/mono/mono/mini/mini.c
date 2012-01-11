@@ -5394,6 +5394,10 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	if (method->dynamic)
 		opt &= ~MONO_OPT_SHARED;
 
+	/* These methods can become invalid when a domain is unloaded */
+	if (method->klass->image != mono_get_corlib () || method->is_inflated)
+		opt &= ~MONO_OPT_SHARED;
+
 	if (opt & MONO_OPT_SHARED)
 		target_domain = mono_get_root_domain ();
 	else 
