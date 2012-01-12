@@ -398,8 +398,14 @@ threadpool_jobs_inc (MonoObject *obj)
 static gboolean
 threadpool_jobs_dec (MonoObject *obj)
 {
-	MonoDomain *domain = obj->vtable->domain;
-	int remaining_jobs = InterlockedDecrement (&domain->threadpool_jobs);
+	MonoDomain *domain;
+	int remaining_jobs;
+
+	if (obj == NULL)
+		return FALSE;
+
+	domain = obj->vtable->domain;
+	remaining_jobs = InterlockedDecrement (&domain->threadpool_jobs);
 	if (remaining_jobs == 0 && domain->cleanup_semaphore) {
 		ReleaseSemaphore (domain->cleanup_semaphore, 1, NULL);
 		return TRUE;
