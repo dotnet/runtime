@@ -93,6 +93,8 @@ mono_sgen_thread_handshake (BOOL suspend)
 	FOREACH_THREAD_SAFE (info) {
 		if (info == current)
 			continue;
+		if (info->gc_disabled)
+			continue;
 		if (suspend) {
 			g_assert (!info->doing_handshake);
 			info->doing_handshake = TRUE;

@@ -414,6 +414,9 @@ mono_gc_pthread_exit (void *retval)
 	pthread_exit (retval);
 }
 
+void mono_gc_set_skip_thread (gboolean value)
+{
+}
 #endif
 
 #ifdef HOST_WIN32

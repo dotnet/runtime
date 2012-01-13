@@ -208,6 +208,8 @@ mono_sgen_thread_handshake (BOOL suspend)
 		if (mono_native_thread_id_equals (mono_thread_info_get_tid (info), me)) {
 			continue;
 		}
+		if (info->gc_disabled)
+			continue;
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/
 		if (suspend) {

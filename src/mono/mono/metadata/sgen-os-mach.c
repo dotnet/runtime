@@ -119,6 +119,8 @@ mono_sgen_thread_handshake (BOOL suspend)
 	FOREACH_THREAD_SAFE (info) {
 		if (info == cur_thread || mono_sgen_is_worker_thread (mono_thread_info_get_tid (info)))
 			continue;
+		if (info->gc_disabled)
+			continue;
 
 		if (suspend) {
 			g_assert (!info->doing_handshake);

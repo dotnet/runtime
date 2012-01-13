@@ -1225,6 +1225,10 @@ mono_gc_set_stack_end (void *stack_end)
 {
 }
 
+void mono_gc_set_skip_thread (gboolean value)
+{
+}
+
 /*
  * These will call the redefined versions in libgc.
  */
