@@ -1485,6 +1485,8 @@ async_invoke_thread (gpointer data)
 		while (!must_die && !data && n_naps < 4) {
 			gboolean res;
 
+			mono_gc_set_skip_thread (TRUE);
+
 			InterlockedIncrement (&tp->waiting);
 #if defined(__OpenBSD__)
 			while (mono_cq_count (tp->queue) == 0 && (res = mono_sem_wait (&tp->new_job, TRUE)) == -1) {// && errno == EINTR) {
@@ -1497,6 +1499,9 @@ async_invoke_thread (gpointer data)
 					mono_thread_interruption_checkpoint ();
 			}
 			InterlockedDecrement (&tp->waiting);
+
+			mono_gc_set_skip_thread (FALSE);
+
 			if (mono_runtime_is_shutting_down ())
 				break;
 			must_die = should_i_die (tp);

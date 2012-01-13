@@ -87,6 +87,9 @@ tp_kqueue_wait (gpointer p)
 	events = g_new0 (struct kevent, KQUEUE_NEVENTS);
 
 	while (1) {
+	
+		mono_gc_set_skip_thread (TRUE);
+
 		do {
 			if (ready == -1) {
 				if (THREAD_WANTS_A_BREAK (thread))
@@ -94,6 +97,8 @@ tp_kqueue_wait (gpointer p)
 			}
 			ready = kevent (kfd, NULL, 0, events, KQUEUE_NEVENTS, NULL);
 		} while (ready == -1 && errno == EINTR);
+
+		mono_gc_set_skip_thread (FALSE);
 
 		if (ready == -1) {
 			int err = errno;

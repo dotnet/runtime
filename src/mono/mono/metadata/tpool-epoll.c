@@ -105,6 +105,8 @@ tp_epoll_wait (gpointer p)
 	events = g_new0 (struct epoll_event, EPOLL_NEVENTS);
 
 	while (1) {
+		mono_gc_set_skip_thread (TRUE);
+
 		do {
 			if (ready == -1) {
 				if (THREAD_WANTS_A_BREAK (thread))
@@ -112,6 +114,8 @@ tp_epoll_wait (gpointer p)
 			}
 			ready = epoll_wait (epollfd, events, EPOLL_NEVENTS, -1);
 		} while (ready == -1 && errno == EINTR);
+
+		mono_gc_set_skip_thread (FALSE);
 
 		if (ready == -1) {
 			int err = errno;
