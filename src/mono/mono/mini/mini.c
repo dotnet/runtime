@@ -3068,7 +3068,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		target = mono_create_delegate_trampoline (patch_info->data.klass);
+		target = mono_create_delegate_trampoline (domain, patch_info->data.klass);
 		break;
 	case MONO_PATCH_INFO_SFLDA: {
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
@@ -5141,7 +5141,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper_full (mi, TRUE));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-				return mono_create_delegate_trampoline (method->klass);
+				return mono_create_delegate_trampoline (target_domain, method->klass);
 #else
 				nm = mono_marshal_get_delegate_invoke (method, NULL);
 				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
