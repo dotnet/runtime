@@ -33,6 +33,7 @@ kern_return_t mono_mach_free_threads (thread_act_array_t threads, guint32 count)
 kern_return_t mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count) MONO_INTERNAL;
 kern_return_t mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count) MONO_INTERNAL;
 void *mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key) MONO_INTERNAL;
+void *mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key) MONO_INTERNAL;
 
 #endif
 #endif /* __MONO_MACH_SUPPORT_H__ */

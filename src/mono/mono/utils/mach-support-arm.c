@@ -84,7 +84,7 @@ mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mac
 }
 
 void *
-mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
+mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key)
 {
 	/* OSX stores TLS values in a hidden array inside the pthread_t structure
 	 * They are keyed off a giant array offset 0x48 into the pointer.  This value
@@ -93,6 +93,13 @@ mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
 	intptr_t *p = (intptr_t *) thread;
 	intptr_t **tsd = (intptr_t **) ((char*)p + 0x48 + (key << 2));
 
-	return (void *) *tsd;
+	return (void *)tsd;
 }
+
+void *
+mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
+{
+	return *(void**)mono_mach_get_tls_address_from_thread (thread, key);
+}
+
 #endif
