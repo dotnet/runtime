@@ -66,6 +66,13 @@ opnames[] = {
 #define emit_debug_info  FALSE
 #endif
 
+/*This enables us to use the right tooling when building the cross compiler for iOS.*/
+#if defined (__APPLE__) && defined (TARGET_ARM) && (defined(__i386__) || defined(__x86_64__))
+
+#define ARCH_PREFIX "/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/"
+
+#endif
+
 #define ARCH_PREFIX ""
 //#define ARCH_PREFIX "powerpc64-linux-gnu-"
 
@@ -204,12 +211,24 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 
 #if defined(sparc)
 #define AS_CMD "as -xarch=v9"
-#elif defined(__i386__) || defined(__x86_64__)
+#elif defined (TARGET_X86)
 #  if defined(__APPLE__)
-#    define AS_CMD "as"
+#    define AS_CMD "as -arch i386"
 #  else
 #    define AS_CMD "as -gstabs"
-#endif
+#  endif
+#elif defined (TARGET_AMD64)
+#  if defined (__APPLE__)
+#    define AS_CMD "as -arch x86_64"
+#  else
+#    define AS_CMD "as -gstabs"
+#  endif
+#elif defined (TARGET_ARM)
+#  if defined (__APPLE__)
+#    define AS_CMD "as -arch arm"
+#  else
+#    define AS_CMD "as -gstabs"
+#  endif
 #elif defined(__mips__) && (_MIPS_SIM == _ABIO32)
 #define AS_CMD "as -mips32"
 #elif defined(__ppc64__)
