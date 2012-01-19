@@ -2654,7 +2654,7 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 #if defined(MONO_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	/* jit_tls->lmf is unused */
 	MONO_FAST_TLS_SET (mono_lmf, lmf);
-	mono_set_lmf_addr (&mono_lmf);
+	mono_set_lmf_addr (MONO_FAST_TLS_ADDR (mono_lmf));
 #else
 	mono_set_lmf_addr (&jit_tls->lmf);
 
