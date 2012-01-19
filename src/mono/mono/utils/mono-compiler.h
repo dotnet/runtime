@@ -162,6 +162,7 @@
 #define MONO_HAVE_FAST_TLS
 #define MONO_FAST_TLS_SET(x,y) pthread_setspecific(x, y)
 #define MONO_FAST_TLS_GET(x) pthread_getspecific(x)
+#define MONO_FAST_TLS_ADDR(x) (mono_mach_get_tls_address_from_thread (pthread_self (), x))
 #define MONO_FAST_TLS_INIT(x) pthread_key_create(&x, NULL)
 #define MONO_FAST_TLS_DECLARE(x) static pthread_key_t x;
 
@@ -177,6 +178,11 @@
 /*Macros to facilitate user code*/
 #define MONO_FAST_TLS_INIT(x)
 #endif
+
+#if defined(MONO_HAVE_FAST_TLS) && !defined(MONO_FAST_TLS_ADDR)
+#define MONO_FAST_TLS_ADDR(x) (&(x))
+#endif
+
 
 /* Deal with Microsoft C compiler differences */
 #ifdef _MSC_VER
