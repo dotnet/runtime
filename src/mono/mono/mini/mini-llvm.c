@@ -4907,7 +4907,7 @@ add_intrinsics (LLVMModuleRef module)
 
 	/* SSE intrinsics */
 	{
-		LLVMTypeRef ret_type, arg_types [2];
+		LLVMTypeRef ret_type, arg_types [16];
 
 		/* Binary ops */
 		ret_type = type_to_simd_type (MONO_TYPE_I4);
