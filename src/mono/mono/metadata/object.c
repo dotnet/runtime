@@ -6081,7 +6081,11 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 
 	g_assert (addr);
 
-	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
+	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr));
+	/* Shared code */
+	if (!ji && domain != mono_get_root_domain ())
+		ji = mono_jit_info_table_find (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr));
+	if (ji) {
 		method = ji->method;
 		g_assert (!method->klass->generic_container);
 	}
