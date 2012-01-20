@@ -4751,6 +4751,11 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 			/* Enable global stepping so we stop at method entry too */
 			enable_global = TRUE;
 		}
+
+		/*
+		 * The frame info will become invalid when we continue.
+		 */
+		invalidate_frames (tls);
 	}
 
 	if (enable_global) {
