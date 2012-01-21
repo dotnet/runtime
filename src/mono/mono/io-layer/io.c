@@ -4167,7 +4167,7 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
-static const gchar*
+static gchar*
 get_fstypename (gchar *utfpath)
 {
 #if defined (PLATFORM_MACOSX) || defined (__linux__)
@@ -4178,12 +4178,12 @@ get_fstypename (gchar *utfpath)
 	if (statfs (utfpath, &stat) == -1)
 		return NULL;
 #if PLATFORM_MACOSX
-	return stat.f_fstypename;
+	return g_strdup (stat.f_fstypename);
 #else
 	current = &_wapi_drive_types[0];
 	while (current->drive_type != DRIVE_UNKNOWN) {
 		if (stat.f_type == current->fstypeid)
-			return current->fstype;
+			return g_strdup (current->fstype);
 		current++;
 	}
 	return NULL;
@@ -4199,7 +4199,7 @@ gboolean
 GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
 {
 	gchar *utfpath;
-	const gchar *fstypename;
+	gchar *fstypename;
 	gboolean status = FALSE;
 	glong len;
 	
@@ -4217,6 +4217,7 @@ GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesi
 		}
 		if (ret != NULL)
 			g_free (ret);
+		g_free (fstypename);
 	}
 	g_free (utfpath);
 	return status;
