@@ -270,6 +270,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 	guint32 domain_key, jit_key;
 	MonoJitTlsData *jit_tls;
 	void *domain;
+#if defined (MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	guint32 lmf_key;
+#endif
 
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
@@ -285,6 +288,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 
 	domain_key = mono_domain_get_tls_offset ();
 	jit_key = mono_get_jit_tls_key ();
+
 	jit_tls = mono_mach_arch_get_tls_value_from_thread (thread_id, jit_key);
 	domain = mono_mach_arch_get_tls_value_from_thread (thread_id, domain_key);
 
@@ -293,8 +297,14 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 		return FALSE;
 	g_assert (domain);
 
-	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
+#if defined (MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	lmf_key =  mono_get_lmf_tls_offset ();
+	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_mach_arch_get_tls_value_from_thread (thread_id, lmf_key);;
+#else
 	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = jit_tls ? jit_tls->lmf : NULL;
+#endif
+
+	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
 	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
 	tctx->valid = TRUE;
 
