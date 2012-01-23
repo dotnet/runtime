@@ -2305,6 +2305,21 @@ mono_x86_have_tls_get (void)
 #endif
 }
 
+static guint8*
+mono_x86_emit_tls_set (guint8* code, int sreg, int tls_offset)
+{
+#if defined(__APPLE__)
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_mem_reg (code, tls_gs_offset + (tls_offset * 4), sreg, 4);
+#elif defined(TARGET_WIN32)
+	g_assert_not_reached ();
+#else
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_mem_reg (code, tls_offset, sreg, 4);
+#endif
+	return code;
+}
+
 /*
  * mono_x86_emit_tls_get:
  * @code: buffer to store code to
@@ -5112,8 +5127,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			 * through the mono_lmf_addr TLS variable.
 			 */
 			/* %eax = previous_lmf */
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
+			code = mono_x86_emit_tls_get (code, X86_EAX, lmf_tls_offset);
 			/* skip esp + method_info + lmf */
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 12);
 			cfa_offset += 12;
@@ -5125,8 +5139,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			cfa_offset += 4;
 			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 			/* new lmf = ESP */
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_mem_reg (code, lmf_tls_offset, X86_ESP, 4);
+			code = mono_x86_emit_tls_set (code, X86_ESP, lmf_tls_offset);
 		} else {
 			/* get the address of lmf for the current thread */
 			/* 
@@ -5372,8 +5385,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
 
 			/* lmf = previous_lmf */
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_mem_reg (code, lmf_tls_offset, X86_ECX, 4);
+			code = mono_x86_emit_tls_set (code, X86_ECX, lmf_tls_offset);
 		} else {
 			/* Find a spare register */
 			switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
