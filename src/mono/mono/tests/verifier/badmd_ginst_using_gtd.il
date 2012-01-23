@@ -75,6 +75,8 @@
 	.entrypoint
 	// Code size 1 (0x1)
 	.maxstack 8
+	newobj instance void class Bar`1<string>::'.ctor' ()
+	pop
 	IL_0000:  ret 
     } // end of method Bla::Main
 
