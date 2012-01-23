@@ -1439,7 +1439,9 @@ reference_queue_clear_for_domain (MonoDomain *domain)
  * @callback callback used when processing dead entries.
  *
  * Create a new reference queue used to process collected objects.
- * A reference queue let you queue the pair (managed object, user data).
+ * A reference queue let you queue a pair (managed object, user data)
+ * using the mono_gc_reference_queue_add method.
+ *
  * Once the managed object is collected @callback will be called
  * in the finalizer thread with 'user data' as argument.
  *
@@ -1465,7 +1467,9 @@ mono_gc_reference_queue_new (mono_reference_queue_callback callback)
  * @obj the object to be watched for collection
  * @user_data parameter to be passed to the queue callback
  *
- * Queue an object to be watched for collection.
+ * Queue an object to be watched for collection, when the @obj is
+ * collected, the callback that was registered for the @queue will
+ * be invoked with the @obj and @user_data arguments.
  *
  * @returns false if the queue is scheduled to be freed.
  */
@@ -1513,6 +1517,10 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 #define align_up(ptr) ((void*) ((_toi(ptr) + ptr_mask) & ~ptr_mask))
 
 /**
+ * mono_gc_bzero:
+ * @dest: address to start to clear
+ * @size: size of the region to clear
+ *
  * Zero @size bytes starting at @dest.
  *
  * Use this to zero memory that can hold managed pointers.
@@ -1542,6 +1550,11 @@ mono_gc_bzero (void *dest, size_t size)
 
 
 /**
+ * mono_gc_memmove:
+ * @dest: destination of the move
+ * @src: source
+ * @size: size of the block to move
+ *
  * Move @size bytes from @src to @dest.
  * size MUST be a multiple of sizeof (gpointer)
  *
