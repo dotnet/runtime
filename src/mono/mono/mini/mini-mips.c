@@ -5796,7 +5796,7 @@ setup_tls_access (void)
 }
 
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
 	setup_tls_access ();
 }

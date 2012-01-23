@@ -72,8 +72,6 @@ static int indent_level = 0;
 int mini_alpha_verbose_level = 0;
 static int bwx_supported = 0;
 
-static gboolean tls_offset_inited = FALSE;
-
 static int appdomain_tls_offset = -1,
   lmf_tls_offset = -1,
   thread_tls_offset = -1;
@@ -4285,20 +4283,16 @@ mono_arch_is_inst_imm (gint64 imm)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name         - mono_arch_setup_jit_tls_data                      */
+/* Name         - mono_arch_finish_init                             */
 /*                                                                  */
 /* Function     - Setup the JIT's Thread Level Specific Data.       */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
-   ALPHA_DEBUG("mono_arch_setup_jit_tls_data");
-   
-   if (!tls_offset_inited) {
-	  tls_offset_inited = TRUE;
-   }
+   ALPHA_DEBUG("mono_arch_finish_init");
    
    if (!lmf_addr_key_inited) {
 	  lmf_addr_key_inited = TRUE;

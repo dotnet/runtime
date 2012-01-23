@@ -2834,7 +2834,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 #endif
 
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
 }
 

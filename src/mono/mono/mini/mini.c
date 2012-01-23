@@ -6410,7 +6410,7 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 #endif
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
-	mono_arch_setup_jit_tls_data (NULL);
+	mono_arch_finish_init ();
 	
 
 	/* This must come after mono_init () in the aot-only case */

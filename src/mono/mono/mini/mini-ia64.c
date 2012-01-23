@@ -4525,7 +4525,7 @@ mono_arch_get_delegate_method_ptr_addr (guint8* code, mgreg_t *regs)
 }
 
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
 }
 

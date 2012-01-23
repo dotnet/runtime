@@ -8027,42 +8027,31 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 	return start;
 }
-
-/*
- * Support for fast access to the thread-local lmf structure using the GS
- * segment register on NPTL + kernel 2.6.x.
- */
-
-static gboolean tls_offset_inited = FALSE;
-
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
-	if (!tls_offset_inited) {
 #ifdef HOST_WIN32
-		/* 
-		 * We need to init this multiple times, since when we are first called, the key might not
-		 * be initialized yet.
-		 */
-		appdomain_tls_offset = mono_domain_get_tls_key ();
-		lmf_tls_offset = mono_get_jit_tls_key ();
-		lmf_addr_tls_offset = mono_get_jit_tls_key ();
+	/* 
+	 * We need to init this multiple times, since when we are first called, the key might not
+	 * be initialized yet.
+	 */
+	appdomain_tls_offset = mono_domain_get_tls_key ();
+	lmf_tls_offset = mono_get_jit_tls_key ();
+	lmf_addr_tls_offset = mono_get_jit_tls_key ();
 
-		/* Only 64 tls entries can be accessed using inline code */
-		if (appdomain_tls_offset >= 64)
-			appdomain_tls_offset = -1;
-		if (lmf_tls_offset >= 64)
-			lmf_tls_offset = -1;
+	/* Only 64 tls entries can be accessed using inline code */
+	if (appdomain_tls_offset >= 64)
+		appdomain_tls_offset = -1;
+	if (lmf_tls_offset >= 64)
+		lmf_tls_offset = -1;
 #else
-		tls_offset_inited = TRUE;
 #ifdef MONO_XEN_OPT
-		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
+	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
-		appdomain_tls_offset = mono_domain_get_tls_offset ();
-  		lmf_tls_offset = mono_get_lmf_tls_offset ();
-		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
+	appdomain_tls_offset = mono_domain_get_tls_offset ();
+ 	lmf_tls_offset = mono_get_lmf_tls_offset ();
+	lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 #endif
-	}		
 }
 
 void

@@ -4348,7 +4348,7 @@ mono_arch_get_lmf_addr (void)
 #endif
 
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
 	if (!lmf_addr_key_inited) {
 		int res;

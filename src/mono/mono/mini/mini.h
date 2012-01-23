@@ -2028,6 +2028,7 @@ void              mono_if_conversion (MonoCompile *cfg) MONO_INTERNAL;
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_init                        (void) MONO_INTERNAL;
+void      mono_arch_finish_init                 (void) MONO_INTERNAL;
 void      mono_arch_cleanup                     (void) MONO_INTERNAL;
 void      mono_arch_cpu_init                    (void) MONO_INTERNAL;
 guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask) MONO_INTERNAL;
@@ -2063,7 +2064,6 @@ void      mono_arch_lowering_pass               (MonoCompile *cfg, MonoBasicBloc
 void      mono_arch_peephole_pass_1             (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
 void      mono_arch_peephole_pass_2             (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
 void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
-void      mono_arch_setup_jit_tls_data          (MonoJitTlsData *tls) MONO_INTERNAL;
 void      mono_arch_free_jit_tls_data           (MonoJitTlsData *tls) MONO_INTERNAL;
 void      mono_arch_fill_argument_info          (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_arch_allocate_vars               (MonoCompile *m) MONO_INTERNAL;

@@ -335,8 +335,6 @@ int mono_exc_esp_offset = 0;
 
 static int indent_level = 0;
 
-static gboolean tls_offset_inited = FALSE;
-
 static int appdomain_tls_offset = -1,
            thread_tls_offset = -1;
 
@@ -4921,19 +4919,15 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_setup_jit_tls_data                      */
+/* Name		- mono_arch_finish_init                                 */
 /*                                                                  */
 /* Function	- Setup the JIT's Thread Level Specific Data.       */
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
-
-	if (!tls_offset_inited) {
-		tls_offset_inited = TRUE;
-
 #if HAVE_KW_THREAD
 # if 0
 	__asm__ ("\tear\t%r1,0\n"
@@ -4952,7 +4946,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 		 : "1", "cc");
 # endif
 #endif
-	}		
 
 	if (!lmf_addr_key_inited) {
 		lmf_addr_key_inited = TRUE;

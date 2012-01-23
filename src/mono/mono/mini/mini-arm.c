@@ -5600,17 +5600,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 #endif /* #ifndef DISABLE_JIT */
 
-static gboolean tls_offset_inited = FALSE;
-
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
-	if (!tls_offset_inited) {
-		tls_offset_inited = TRUE;
-
-  		lmf_tls_offset = mono_get_lmf_tls_offset ();
-		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
-	}
+	lmf_tls_offset = mono_get_lmf_tls_offset ();
+	lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 }
 
 void
