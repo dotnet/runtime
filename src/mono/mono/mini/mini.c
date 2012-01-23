@@ -293,7 +293,10 @@ get_method_from_ip (void *ip)
 	MonoDomain *domain = mono_domain_get ();
 	MonoDebugSourceLocation *location;
 	FindTrampUserData user_data;
-	
+
+	if (!domain)
+		domain = mono_get_root_domain ();
+
 	ji = mono_jit_info_table_find (domain, ip);
 	if (!ji) {
 		user_data.ip = ip;
