@@ -157,7 +157,7 @@
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif
 
-#elif defined(__APPLE__) && defined(__i386__) 
+#elif defined(__APPLE__) && (defined(__i386__) || defined(__x86_64__))
 
 #define MONO_HAVE_FAST_TLS
 #define MONO_FAST_TLS_SET(x,y) pthread_setspecific(x, y)
