@@ -274,6 +274,12 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 	guint32 lmf_key;
 #endif
 
+	/*Zero enough state to make sure the caller doesn't confuse itself*/
+	tctx->valid = FALSE;
+	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = NULL;
+	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = NULL;
+	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = NULL;
+
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
