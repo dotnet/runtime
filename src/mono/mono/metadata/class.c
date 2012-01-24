@@ -42,6 +42,7 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-memory-model.h>
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -5262,6 +5263,7 @@ void
 mono_class_setup_supertypes (MonoClass *class)
 {
 	int ms;
+	MonoClass **supertypes;
 
 	if (class->supertypes)
 		return;
@@ -5274,14 +5276,16 @@ mono_class_setup_supertypes (MonoClass *class)
 		class->idepth = 1;
 
 	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
-	class->supertypes = mono_class_alloc0 (class, sizeof (MonoClass *) * ms);
+	supertypes = mono_class_alloc0 (class, sizeof (MonoClass *) * ms);
 
 	if (class->parent) {
-		class->supertypes [class->idepth - 1] = class;
-		memcpy (class->supertypes, class->parent->supertypes, class->parent->idepth * sizeof (gpointer));
+		supertypes [class->idepth - 1] = class;
+		memcpy (supertypes, class->parent->supertypes, class->parent->idepth * sizeof (gpointer));
 	} else {
-		class->supertypes [0] = class;
+		supertypes [0] = class;
 	}
+
+	mono_atomic_store_release (&class->supertypes, supertypes);
 }
 
 /**
