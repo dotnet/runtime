@@ -2720,15 +2720,15 @@ case "x$gc" in
 		# The problem with this approach, is that during a reconfigure, the main
 		# configure scripts gets invoked with these arguments, so we use separate
 		# variables understood by libgc's configure to pass CPPFLAGS and CFLAGS.
-		LIBGC_CPPFLAGS="$CPPFLAGS $NESTED_LIBGC_FLAGS"
+		TMP_CPPFLAGS="$CPPFLAGS $NESTED_LIBGC_FLAGS"
 		if test x$TARGET = xSPARC -o x$TARGET = xSPARC64; then
-			LIBGC_CPPFLAGS=`echo $LIBGC_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
+			TMP_CPPFLAGS=`echo $TMP_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
 		fi
 		# Don't pass -finstrument-for-thread-suspension in, 
 		# if these are instrumented it will be very bad news 
 		# (infinite recursion, undefined parking behavior, etc)
-		LIBGC_CPPFLAGS=`echo $LIBGC_CPPFLAGS | sed -e 's/-finstrument-for-thread-suspension//g'`
-		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS_FOR_LIBGC=$LIBGC_CPPFLAGS\" \"CFLAGS_FOR_LIBGC=$CFLAGS_FOR_LIBGC\""
+		TMP_CPPFLAGS=`echo $TMP_CPPFLAGS | sed -e 's/-finstrument-for-thread-suspension//g'`
+		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS_FOR_LIBGC=$TMP_CPPFLAGS\" \"CFLAGS_FOR_LIBGC=$CFLAGS_FOR_LIBGC\""
 		AC_CONFIG_SUBDIRS(libgc)
 		;;
 esac
