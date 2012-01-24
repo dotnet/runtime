@@ -1422,7 +1422,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	if (!sofile && !globals) {
-		if (mono_aot_only) {
+		if (mono_aot_only && assembly->image->tables [MONO_TABLE_METHOD].rows) {
 			fprintf (stderr, "Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
 			exit (1);
 		}
