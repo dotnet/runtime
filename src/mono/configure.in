@@ -879,7 +879,7 @@ AM_CONDITIONAL(SUPPORT_BOEHM, test x$support_boehm = xyes)
 dnl
 dnl Boehm GC configuration
 dnl
-LIBGC_INCLUDES=
+LIBGC_CPPFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=
 libgc_dir=
@@ -928,7 +928,7 @@ case "x$gc" in
 		use_included_gc=yes
 		libgc_dir=libgc
 
-		LIBGC_INCLUDES='-I$(top_srcdir)/libgc/include'
+		LIBGC_CPPFLAGS='-I$(top_srcdir)/libgc/include'
 		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
 		LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
 
@@ -963,7 +963,7 @@ if test "x$large_heap" = "xyes"; then
 fi
 
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
-AC_SUBST(LIBGC_INCLUDES)
+AC_SUBST(LIBGC_CPPFLAGS)
 AC_SUBST(LIBGC_LIBS)
 AC_SUBST(LIBGC_STATIC_LIBS)
 AC_SUBST(libgc_dir)

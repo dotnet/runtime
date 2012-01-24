@@ -1,6 +1,6 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
-	$(LIBGC_INCLUDES)		\
+	$(LIBGC_CPPFLAGS)		\
 	$(GLIB_CFLAGS)
 
 if HOST_WIN32
