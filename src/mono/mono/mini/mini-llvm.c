@@ -3318,10 +3318,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-#ifdef TARGET_ARM
-			/* Not yet supported by llc on arm */
-			LLVM_FAILURE (ctx, "memory-barrier+arm");
-#endif
 			mono_llvm_build_fence (builder);
 			break;
 		}
