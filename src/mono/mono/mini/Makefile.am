@@ -139,7 +139,9 @@ endif
 mono_SOURCES = \
 	main.c
 
-mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES)
+
+INCLUDES = $(LIBGC_CPPFLAGS)
 
 mono_sgen_SOURCES = $(mono_SOURCES)
 mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)

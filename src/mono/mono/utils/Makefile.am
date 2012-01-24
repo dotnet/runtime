@@ -1,6 +1,6 @@
 noinst_LTLIBRARIES = libmonoutils.la
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS)
 
 if ENABLE_DTRACE
 
