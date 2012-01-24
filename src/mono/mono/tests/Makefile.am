@@ -598,20 +598,20 @@ test_2_1 :
 endif
 
 if AMD64
-test_sgen : sgen-tests
+test-sgen : sgen-tests
 else
 if X86
-test_sgen : sgen-tests
+test-sgen : sgen-tests
 else
 if ARM
-test_sgen : sgen-tests
+test-sgen : sgen-tests
 endif
 endif
 endif
 
 # test_messages fails on the buildbots
 #test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test_sgen
+test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -737,7 +737,7 @@ EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-brid
 SGEN_TESTS =	\
 	sgen-descriptors.exe	\
 	sgen-gshared-vtype.exe
-	
+
 sgen-regular-tests: $(SGEN_TESTS)
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
