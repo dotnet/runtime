@@ -8870,7 +8870,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		attr = NULL;
 		if (cinfo) {
 			for (i = 0; i < cinfo->num_attrs; ++i) {
-				if (mono_class_has_parent (cinfo->attrs [i].ctor->klass, UnmanagedFunctionPointerAttribute)) {
+				MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
+				if (mono_class_has_parent (ctor_class, UnmanagedFunctionPointerAttribute)) {
 					attr = &cinfo->attrs [i];
 					break;
 				}

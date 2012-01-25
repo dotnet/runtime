@@ -771,7 +771,7 @@ is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
 		return TRUE;
 	if (o->vtable->klass == mono_defaults.internal_thread_class && offset == G_STRUCT_OFFSET (MonoInternalThread, current_appcontext))
 		return TRUE;
-	if (mono_class_has_parent (o->vtable->klass, mono_defaults.real_proxy_class) &&
+	if (mono_class_has_parent_fast (o->vtable->klass, mono_defaults.real_proxy_class) &&
 			offset == G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server))
 		return TRUE;
 	/* Thread.cached_culture_info */
@@ -1043,7 +1043,7 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 		g_assert (mono_object_domain (start) == mono_get_root_domain ());
 	/* The object could be a proxy for an object in the domain
 	   we're deleting. */
-	if (mono_class_has_parent (vt->klass, mono_defaults.real_proxy_class)) {
+	if (mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
 		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
 
 		/* The server could already have been zeroed out, so
@@ -3437,7 +3437,7 @@ has_critical_finalizer (MonoObject *obj)
 
 	class = ((MonoVTable*)LOAD_VTABLE (obj))->klass;
 
-	return mono_class_has_parent (class, mono_defaults.critical_finalizer_object);
+	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
 
 static void

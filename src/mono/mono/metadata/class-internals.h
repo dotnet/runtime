@@ -627,7 +627,32 @@ typedef struct {
 	char *msg; /* If kind == BAD_IMAGE */
 } MonoLoaderError;
 
-#define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
+void
+mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
+
+/* WARNING
+ * Only call this function if you can ensure both @klass and @parent
+ * have supertype information initialized.
+ * This can be accomplished by mono_class_setup_supertypes or mono_class_init.
+ * If unsure, use mono_class_has_parent.
+ */
+static inline gboolean
+mono_class_has_parent_fast (MonoClass *klass, MonoClass *parent)
+{
+	return (klass->idepth >= parent->idepth) && (klass->supertypes [parent->idepth - 1] == parent);
+}
+
+static inline gboolean
+mono_class_has_parent (MonoClass *klass, MonoClass *parent)
+{
+	if (G_UNLIKELY (!klass->supertypes))
+		mono_class_setup_supertypes (klass);
+
+	if (G_UNLIKELY (!parent->supertypes))
+		mono_class_setup_supertypes (parent);
+
+	return mono_class_has_parent_fast (klass, parent);
+}
 
 typedef struct {
 	MonoVTable *default_vtable;
@@ -843,9 +868,6 @@ mono_class_setup_mono_type (MonoClass *klass) MONO_INTERNAL;
 
 void
 mono_class_setup_parent    (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
-
-void
-mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod*
 mono_class_get_method_by_index (MonoClass *class, int index) MONO_INTERNAL;

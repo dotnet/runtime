@@ -7264,10 +7264,6 @@ gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
 			   gboolean check_interfaces)
 {
-	/*setup_supertypes don't mono_class_init anything */
-	mono_class_setup_supertypes (klass);
-	mono_class_setup_supertypes (klassc);
-
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && !MONO_CLASS_IS_INTERFACE (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, klassc->interface_id))
 			return TRUE;
@@ -7508,12 +7504,6 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	if (!oklass->inited)
 		mono_class_init (oklass);
 
-	if (!klass->supertypes)
-		mono_class_setup_supertypes (klass);
-
-	if (!oklass->supertypes)
-		mono_class_setup_supertypes (oklass);
-
 	if (klass->exception_type || oklass->exception_type)
 		return FALSE;
 
@@ -7724,10 +7714,6 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 	if (target == mono_defaults.object_class)
 		return TRUE;
-
-	/*setup_supertypes don't mono_class_init anything */
-	mono_class_setup_supertypes (candidate);
-	mono_class_setup_supertypes (target);
 
 	if (mono_class_has_parent (candidate, target))
 		return TRUE;
