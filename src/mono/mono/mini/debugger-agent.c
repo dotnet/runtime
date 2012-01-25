@@ -6833,6 +6833,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 						buffer_add_propertyid (buf, domain, arginfo [j].prop);
 					} else if (arginfo [j].field) {
 						buffer_add_byte (buf, 0x53);
+						buffer_add_fieldid (buf, domain, arginfo [j].field);
 					} else {
 						g_assert_not_reached ();
 					}
