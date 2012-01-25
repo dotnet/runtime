@@ -2900,7 +2900,11 @@ find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSe
 	MonoSeqPointInfo *seq_points;
 	int i;
 
-	seq_points = find_seq_points (domain, method);
+	*info = NULL;
+
+	seq_points = get_seq_points (domain, method);
+	if (!seq_points)
+		return NULL;
 	*info = seq_points;
 
 	for (i = 0; i < seq_points->len; ++i) {
