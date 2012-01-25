@@ -212,6 +212,7 @@
 #include "metadata/object-internals.h"
 #include "metadata/threads.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-ssb.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
