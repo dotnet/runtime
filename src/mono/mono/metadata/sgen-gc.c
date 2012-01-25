@@ -5190,39 +5190,61 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
-	RememberedSet *rs;
 	int size;
-
 	TLAB_ACCESS_INIT;
-	HEAVY_STAT (++stat_wbarrier_object_copy);
-	rs = REMEMBERED_SET;
-	DEBUG (6, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
-	size = mono_object_class (obj)->instance_size;
-	LOCK_GC;
-#ifdef SGEN_BINARY_PROTOCOL
-	scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
-#endif
-	/* do not copy the sync state */
-	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-			size - sizeof (MonoObject));
-	if (ptr_in_nursery (obj) || ptr_on_stack (obj)) {
-		UNLOCK_GC;
-		return;
-	}
-	if (rs->store_next < rs->end_set) {
-		*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
-		UNLOCK_GC;
-		return;
-	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
 
-#ifdef HAVE_KW_THREAD
-	mono_thread_info_current ()->remset = rs;
+	size = mono_object_class (obj)->instance_size;
+
+	if (ptr_in_nursery (obj) || ptr_on_stack (obj)) {
+		mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+				size - sizeof (MonoObject));
+		return;	
+	}
+
+	if (use_cardtable) {
+#ifdef DISABLE_CRITICAL_REGION
+		LOCK_GC;
+#else
+		ENTER_CRITICAL_REGION;
 #endif
-	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
-	UNLOCK_GC;
+		mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+				size - sizeof (MonoObject));
+		sgen_card_table_mark_range ((mword)obj, size);
+#ifdef DISABLE_CRITICAL_REGION
+		UNLOCK_GC;
+#else
+		EXIT_CRITICAL_REGION;
+#endif
+	} else {
+		RememberedSet *rs;
+
+		HEAVY_STAT (++stat_wbarrier_object_copy);
+		rs = REMEMBERED_SET;
+		DEBUG (6, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
+
+		LOCK_GC;
+	#ifdef SGEN_BINARY_PROTOCOL
+		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
+	#endif
+		/* do not copy the sync state */
+		mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+				size - sizeof (MonoObject));
+
+		if (rs->store_next < rs->end_set) {
+			*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
+
+	#ifdef HAVE_KW_THREAD
+		mono_thread_info_current ()->remset = rs;
+	#endif
+		*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
+		UNLOCK_GC;	
+	}
 }
 
 /*
