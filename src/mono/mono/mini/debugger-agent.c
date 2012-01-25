@@ -2815,7 +2815,7 @@ is_suspended (void)
 }
 
 static MonoSeqPointInfo*
-find_seq_points (MonoDomain *domain, MonoMethod *method)
+get_seq_points (MonoDomain *domain, MonoMethod *method)
 {
 	MonoSeqPointInfo *seq_points;
 
@@ -2826,6 +2826,15 @@ find_seq_points (MonoDomain *domain, MonoMethod *method)
 		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (method));
 	}
 	mono_domain_unlock (domain);
+
+	return seq_points;
+}
+
+static MonoSeqPointInfo*
+find_seq_points (MonoDomain *domain, MonoMethod *method)
+{
+	MonoSeqPointInfo *seq_points = get_seq_points (domain, method);
+
 	if (!seq_points)
 		printf ("Unable to find seq points for method '%s'.\n", mono_method_full_name (method, TRUE));
 	g_assert (seq_points);
@@ -7677,6 +7686,12 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	jit = frame->jit;
 
 	sig = mono_method_signature (frame->actual_method);
+
+	if (!get_seq_points (frame->domain, frame->actual_method))
+		/*
+		 * The method is probably from an aot image compiled without soft-debug, variables might be dead, etc.
+		 */
+		return ERR_ABSENT_INFORMATION;
 
 	switch (command) {
 	case CMD_STACK_FRAME_GET_VALUES: {
