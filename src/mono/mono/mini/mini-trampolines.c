@@ -1255,8 +1255,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	 * We cannot recover the correct type of a shared generic
 	 * method from its native code address, so we use the
 	 * trampoline instead.
+	 * For synchronized methods, the trampoline adds the wrapper.
 	 */
-	if (code && !ji->has_generic_jit_info)
+	if (code && !ji->has_generic_jit_info && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
 		return code;
 
 	mono_domain_lock (domain);
