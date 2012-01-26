@@ -1543,6 +1543,8 @@ mini_emit_isninst_cast_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, 
 	int stypes_reg = alloc_preg (cfg);
 	int stype = alloc_preg (cfg);
 
+	mono_class_setup_supertypes (klass);
+
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, idepth_reg, klass->idepth);
@@ -1677,6 +1679,8 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 		int idepth_reg = alloc_preg (cfg);
 		int stypes_reg = alloc_preg (cfg);
 		int stype = alloc_preg (cfg);
+
+		mono_class_setup_supertypes (klass);
 
 		if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
