@@ -79,21 +79,13 @@ cards_in_range (mword address, mword size)
 	return (end >> CARD_BITS) - (address >> CARD_BITS) + 1;
 }
 
-/*
- * This causes the compile to extend the liveness of 'v' till the call to dummy_use
- */
-static void
-dummy_use (gpointer v) {
-	__asm__ volatile ("" : "=r"(v) : "r"(v));
-}
-
 void
 mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	*(void**)field_ptr = value;
 	if (mono_sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)field_ptr);
-	dummy_use (value);
+	mono_sgen_dummy_use (value);
 }
 
 void
@@ -102,7 +94,7 @@ mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, M
 	*(void**)slot_ptr = value;
 	if (mono_sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)slot_ptr);
-	dummy_use (value);	
+	mono_sgen_dummy_use (value);	
 }
 
 void
@@ -122,7 +114,7 @@ mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr
 			*dest = value;
 			if (mono_sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
-			dummy_use (value);
+			mono_sgen_dummy_use (value);
 		}
 	} else {
 		gpointer *end = dest + count;
@@ -131,7 +123,7 @@ mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr
 			*dest = value;
 			if (mono_sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
-			dummy_use (value);
+			mono_sgen_dummy_use (value);
 		}
 	}	
 }

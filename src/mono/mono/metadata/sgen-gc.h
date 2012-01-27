@@ -826,6 +826,26 @@ gboolean mono_sgen_is_managed_allocator (MonoMethod *method);
 void mono_sgen_check_consistency (void);
 void mono_sgen_check_major_refs (void);
 
+
+/* Write barrier support */
+
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static inline void
+mono_sgen_dummy_use (gpointer v) {
+#if defined(__GNUC__)
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+#elif defined(_MSC_VER)
+	__asm {
+		mov eax, v;
+		and eax, eax;
+	};
+#else
+#error "Implement mono_sgen_dummy_use for your compiler"
+#endif
+}
+
 #endif /* HAVE_SGEN_GC */
 
 #endif /* __MONO_SGENGC_H__ */

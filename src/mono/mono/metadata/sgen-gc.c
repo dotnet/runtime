@@ -4770,14 +4770,6 @@ mono_gc_pthread_exit (void *retval)
  * ######################################################################
  */
 
-/*
- * This causes the compile to extend the liveness of 'v' till the call to dummy_use
- */
-static void
-dummy_use (gpointer v) {
-	__asm__ volatile ("" : "=r"(v) : "r"(v));
-}
-
 
 RememberedSet*
 mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
@@ -4950,7 +4942,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 	*(void**)ptr = value;
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
-	dummy_use (value);
+	mono_sgen_dummy_use (value);
 }
 
 void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
