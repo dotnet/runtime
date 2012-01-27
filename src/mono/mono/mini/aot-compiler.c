@@ -122,6 +122,7 @@ typedef struct MonoAotOptions {
 	gboolean nodebug;
 	gboolean soft_debug;
 	gboolean log_generics;
+	gboolean direct_pinvoke;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -159,6 +160,7 @@ typedef struct MonoAotCompile {
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
 	GHashTable *token_info_hash;
+	GHashTable *method_to_pinvoke_import;
 	GPtrArray *extra_methods;
 	GPtrArray *image_table;
 	GPtrArray *globals;
@@ -3639,9 +3641,49 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 			if (direct_callable)
 				return TRUE;
 		}
+	} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR && patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+		if (acfg->aot_opts.direct_pinvoke)
+			return TRUE;
 	}
 
 	return FALSE;
+}
+
+static const char *
+get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
+{
+	MonoImage *image = method->klass->image;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
+	MonoTableInfo *tables = image->tables;
+	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
+	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
+	guint32 im_cols [MONO_IMPLMAP_SIZE];
+	char *import;
+	const char *prefix;
+
+	import = g_hash_table_lookup (acfg->method_to_pinvoke_import, method);
+	if (import != NULL)
+		return import;
+
+	if (!piinfo->implmap_idx || piinfo->implmap_idx > im->rows)
+		return NULL;
+
+	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
+
+	if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
+		return NULL;
+
+#if defined(__APPLE__)
+	prefix = "_";
+#else
+	prefix = "";
+#endif
+
+	import = g_strdup_printf ("%s%s", prefix, mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+
+	g_hash_table_insert (acfg->method_to_pinvoke_import, method, import);
+	
+	return import;
 }
 
 /*
@@ -3662,6 +3704,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	gboolean skip, direct_call;
 	guint32 got_slot;
 	char direct_call_target [1024];
+	const char *direct_pinvoke;
 
 	if (method) {
 		header = mono_method_get_header (method);
@@ -3720,6 +3763,15 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					}
 
 					acfg->stats.all_calls ++;
+				} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR) && (patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+					if (!got_only && is_direct_callable (acfg, method, patch_info)) {
+						direct_call = TRUE;
+						direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
+						g_assert (strlen (direct_pinvoke) < 1000);
+						sprintf (direct_call_target, "%s", direct_pinvoke);
+						patch_info->type = MONO_PATCH_INFO_NONE;
+						acfg->stats.direct_calls ++;
+					}
 				}
 
 				if (!got_only && !direct_call) {
@@ -5106,6 +5158,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
+		} else if (str_begins_with (arg, "direct-pinvoke")) {
+			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "print-skipped")) {
 			opts->print_skipped_methods = TRUE;
 		} else if (str_begins_with (arg, "stats")) {
@@ -7255,6 +7309,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->got_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+	acfg->method_to_pinvoke_import = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
 	acfg->globals = g_ptr_array_new ();
@@ -7300,6 +7355,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->patch_to_got_offset);
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);
+	g_hash_table_destroy (acfg->method_to_pinvoke_import);
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
 	g_hash_table_destroy (acfg->method_label_hash);
@@ -7348,6 +7404,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		return 1;
 	}
 #endif
+
+	if (acfg->aot_opts.direct_pinvoke && !acfg->aot_opts.static_link) {
+		fprintf (stderr, "The 'direct-pinvoke' AOT option also requires the 'static' AOT option.\n");
+		exit (1);
+	}
 
 	if (acfg->aot_opts.static_link)
 		acfg->aot_opts.asm_writer = TRUE;
