@@ -37,6 +37,7 @@
 #include "metadata/sgen-cardtable.h"
 #include "utils/mono-counters.h"
 #include "utils/mono-time.h"
+#include "utils/mono-memory-model.h"
 
 #ifdef SGEN_HAVE_CARDTABLE
 
@@ -69,12 +70,120 @@ static long long los_card_scan_time;
 
 static long long last_major_scan_time;
 static long long last_los_scan_time;
+
 /*WARNING: This function returns the number of cards regardless of overflow in case of overlapping cards.*/
 static mword
 cards_in_range (mword address, mword size)
 {
 	mword end = address + MAX (1, size) - 1;
 	return (end >> CARD_BITS) - (address >> CARD_BITS) + 1;
+}
+
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static void
+dummy_use (gpointer v) {
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+}
+
+void
+mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+{
+	*(void**)field_ptr = value;
+	if (mono_sgen_ptr_in_nursery (value))
+		sgen_card_table_mark_address ((mword)field_ptr);
+	dummy_use (value);
+}
+
+void
+mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
+{
+	*(void**)slot_ptr = value;
+	if (mono_sgen_ptr_in_nursery (value))
+		sgen_card_table_mark_address ((mword)slot_ptr);
+	dummy_use (value);	
+}
+
+void
+mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
+{
+	gpointer *dest = dest_ptr;
+	gpointer *src = src_ptr;
+
+	/*overlapping that required backward copying*/
+	if (src < dest && (src + count) > dest) {
+		gpointer *start = dest;
+		dest += count - 1;
+		src += count - 1;
+
+		for (; dest >= start; --src, --dest) {
+			gpointer value = *src;
+			*dest = value;
+			if (mono_sgen_ptr_in_nursery (value))
+				sgen_card_table_mark_address ((mword)dest);
+			dummy_use (value);
+		}
+	} else {
+		gpointer *end = dest + count;
+		for (; dest < end; ++src, ++dest) {
+			gpointer value = *src;
+			*dest = value;
+			if (mono_sgen_ptr_in_nursery (value))
+				sgen_card_table_mark_address ((mword)dest);
+			dummy_use (value);
+		}
+	}	
+}
+
+void
+mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
+{
+	size_t element_size = mono_class_value_size (klass, NULL);
+	size_t size = count * element_size;
+
+#ifdef DISABLE_CRITICAL_REGION
+	LOCK_GC;
+#else
+	TLAB_ACCESS_INIT;
+	ENTER_CRITICAL_REGION;
+#endif
+	mono_gc_memmove (dest, src, size);
+	sgen_card_table_mark_range ((mword)dest, size);
+#ifdef DISABLE_CRITICAL_REGION
+	UNLOCK_GC;
+#else
+	EXIT_CRITICAL_REGION;
+#endif
+}
+
+void
+mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
+{
+	int size;
+	TLAB_ACCESS_INIT;
+
+	size = mono_object_class (obj)->instance_size;
+
+#ifdef DISABLE_CRITICAL_REGION
+	LOCK_GC;
+#else
+	ENTER_CRITICAL_REGION;
+#endif
+	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+			size - sizeof (MonoObject));
+	sgen_card_table_mark_range ((mword)obj, size);
+#ifdef DISABLE_CRITICAL_REGION
+	UNLOCK_GC;
+#else
+	EXIT_CRITICAL_REGION;
+#endif	
+}
+
+void
+mono_sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
+{
+	sgen_card_table_mark_address ((mword)ptr);	
 }
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS

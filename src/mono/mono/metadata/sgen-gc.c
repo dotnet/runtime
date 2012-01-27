@@ -4779,6 +4779,12 @@ dummy_use (gpointer v) {
 }
 
 
+RememberedSet*
+mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
+{
+	return alloc_remset (size, id, global);
+}
+
 static RememberedSet*
 alloc_remset (int size, gpointer id, gboolean global)
 {
@@ -4807,33 +4813,11 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
 	if (value)
 		binary_protocol_wbarrier (field_ptr, value, value->vtable);
-	if (use_cardtable) {
-		*(void**)field_ptr = value;
-		if (ptr_in_nursery (value))
-			sgen_card_table_mark_address ((mword)field_ptr);
-		dummy_use (value);
-	} else {
-		RememberedSet *rs;
-		TLAB_ACCESS_INIT;
 
-		LOCK_GC;
-		rs = REMEMBERED_SET;
-		if (rs->store_next < rs->end_set) {
-			*(rs->store_next++) = (mword)field_ptr;
-			*(void**)field_ptr = value;
-			UNLOCK_GC;
-			return;
-		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
-		rs->next = REMEMBERED_SET;
-		REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-		mono_thread_info_current ()->remset = rs;
-#endif
-		*(rs->store_next++) = (mword)field_ptr;
-		*(void**)field_ptr = value;
-		UNLOCK_GC;
-	}
+	if (use_cardtable)
+		mono_sgen_card_table_wbarrier_set_field (obj, field_ptr, value);
+	else
+		mono_sgen_ssb_wbarrier_set_field (obj, field_ptr, value);
 }
 
 void
@@ -4847,33 +4831,11 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
 	if (value)
 		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
-	if (use_cardtable) {
-		*(void**)slot_ptr = value;
-		if (ptr_in_nursery (value))
-			sgen_card_table_mark_address ((mword)slot_ptr);
-		dummy_use (value);
-	} else {
-		RememberedSet *rs;
-		TLAB_ACCESS_INIT;
 
-		LOCK_GC;
-		rs = REMEMBERED_SET;
-		if (rs->store_next < rs->end_set) {
-			*(rs->store_next++) = (mword)slot_ptr;
-			*(void**)slot_ptr = value;
-			UNLOCK_GC;
-			return;
-		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
-		rs->next = REMEMBERED_SET;
-		REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-		mono_thread_info_current ()->remset = rs;
-#endif
-		*(rs->store_next++) = (mword)slot_ptr;
-		*(void**)slot_ptr = value;
-		UNLOCK_GC;
-	}
+	if (use_cardtable)
+		mono_sgen_card_table_wbarrier_set_arrayref (arr, slot_ptr, value);
+	else
+		mono_sgen_ssb_wbarrier_set_arrayref (arr, slot_ptr, value);
 }
 
 void
@@ -4898,58 +4860,10 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 	}
 #endif
 
-	if (use_cardtable) {
-		gpointer *dest = dest_ptr;
-		gpointer *src = src_ptr;
-
-		/*overlapping that required backward copying*/
-		if (src < dest && (src + count) > dest) {
-			gpointer *start = dest;
-			dest += count - 1;
-			src += count - 1;
-
-			for (; dest >= start; --src, --dest) {
-				gpointer value = *src;
-				*dest = value;
-				if (ptr_in_nursery (value))
-					sgen_card_table_mark_address ((mword)dest);
-				dummy_use (value);
-			}
-		} else {
-			gpointer *end = dest + count;
-			for (; dest < end; ++src, ++dest) {
-				gpointer value = *src;
-				*dest = value;
-				if (ptr_in_nursery (value))
-					sgen_card_table_mark_address ((mword)dest);
-				dummy_use (value);
-			}
-		}
-	} else {
-		RememberedSet *rs;
-		TLAB_ACCESS_INIT;
-		LOCK_GC;
-		mono_gc_memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
-
-		rs = REMEMBERED_SET;
-		DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
-		if (rs->store_next + 1 < rs->end_set) {
-			*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
-			*(rs->store_next++) = count;
-			UNLOCK_GC;
-			return;
-		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
-		rs->next = REMEMBERED_SET;
-		REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-		mono_thread_info_current ()->remset = rs;
-#endif
-		*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
-		*(rs->store_next++) = count;
-
-		UNLOCK_GC;
-	}
+	if (use_cardtable)
+		mono_sgen_card_table_wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
+	else
+		mono_sgen_ssb_wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
 }
 
 static char *found_obj;
@@ -4992,27 +4906,9 @@ find_object_for_ptr (char *ptr)
 	return found_obj;
 }
 
-static void
-evacuate_remset_buffer (void)
-{
-	gpointer *buffer;
-	TLAB_ACCESS_INIT;
-
-	buffer = STORE_REMSET_BUFFER;
-
-	add_generic_store_remset_from_buffer (buffer);
-	memset (buffer, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
-
-	STORE_REMSET_BUFFER_INDEX = 0;
-}
-
 void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
-	gpointer *buffer;
-	int index;
-	TLAB_ACCESS_INIT;
-
 	HEAVY_STAT (++stat_wbarrier_generic_store);
 
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
@@ -5039,38 +4935,12 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 		return;
 	}
 
-	if (use_cardtable) {
-		if (ptr_in_nursery(*(gpointer*)ptr))
-			sgen_card_table_mark_address ((mword)ptr);
-		return;
-	}
-
-	LOCK_GC;
-
-	buffer = STORE_REMSET_BUFFER;
-	index = STORE_REMSET_BUFFER_INDEX;
-	/* This simple optimization eliminates a sizable portion of
-	   entries.  Comparing it to the last but one entry as well
-	   doesn't eliminate significantly more entries. */
-	if (buffer [index] == ptr) {
-		UNLOCK_GC;
-		return;
-	}
-
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
-	HEAVY_STAT (++stat_wbarrier_generic_store_remset);
 
-	++index;
-	if (index >= STORE_REMSET_BUFFER_SIZE) {
-		evacuate_remset_buffer ();
-		index = STORE_REMSET_BUFFER_INDEX;
-		g_assert (index == 0);
-		++index;
-	}
-	buffer [index] = ptr;
-	STORE_REMSET_BUFFER_INDEX = index;
-
-	UNLOCK_GC;
+	if (use_cardtable)
+		mono_sgen_card_table_wbarrier_generic_nostore (ptr);
+	else
+		mono_sgen_ssb_wbarrier_generic_nostore (ptr);
 }
 
 void
@@ -5121,12 +4991,18 @@ scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	RememberedSet *rs;
-	size_t element_size = mono_class_value_size (klass, NULL);
-	size_t size = count * element_size;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
+
+	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
+
+	if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
+		size_t element_size = mono_class_value_size (klass, NULL);
+		size_t size = count * element_size;
+		mono_gc_memmove (dest, src, size);		
+		return;
+	}
+
 #ifdef SGEN_BINARY_PROTOCOL
 	{
 		int i;
@@ -5137,50 +5013,11 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		}
 	}
 #endif
-	if (use_cardtable) {
-#ifdef DISABLE_CRITICAL_REGION
-		LOCK_GC;
-#else
-		ENTER_CRITICAL_REGION;
-#endif
-		mono_gc_memmove (dest, src, size);
-		sgen_card_table_mark_range ((mword)dest, size);
-#ifdef DISABLE_CRITICAL_REGION
-		UNLOCK_GC;
-#else
-		EXIT_CRITICAL_REGION;
-#endif
-	} else {
-		LOCK_GC;
-		mono_gc_memmove (dest, src, size);
-		rs = REMEMBERED_SET;
-		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
-			UNLOCK_GC;
-			return;
-		}
-		g_assert (klass->gc_descr_inited);
-		DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
-		if (rs->store_next + 4 < rs->end_set) {
-			*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
-			*(rs->store_next++) = (mword)klass->gc_descr;
-			*(rs->store_next++) = (mword)count;
-			*(rs->store_next++) = (mword)element_size;
-			UNLOCK_GC;
-			return;
-		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
-		rs->next = REMEMBERED_SET;
-		REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-		mono_thread_info_current ()->remset = rs;
-#endif
-		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
-		*(rs->store_next++) = (mword)klass->gc_descr;
-		*(rs->store_next++) = (mword)count;
-		*(rs->store_next++) = (mword)element_size;
-		UNLOCK_GC;
-	}
+	if (use_cardtable)
+		mono_sgen_card_table_wbarrier_value_copy (dest, src, count, klass);
+	else
+		mono_sgen_ssb_wbarrier_value_copy (dest, src, count, klass);
 }
 
 /**
@@ -5192,60 +5029,22 @@ void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	int size;
-	TLAB_ACCESS_INIT;
-
-	size = mono_object_class (obj)->instance_size;
 
 	if (ptr_in_nursery (obj) || ptr_on_stack (obj)) {
+		size = mono_object_class (obj)->instance_size;
 		mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 				size - sizeof (MonoObject));
 		return;	
 	}
 
-	if (use_cardtable) {
-#ifdef DISABLE_CRITICAL_REGION
-		LOCK_GC;
-#else
-		ENTER_CRITICAL_REGION;
+#ifdef SGEN_BINARY_PROTOCOL
+	scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
 #endif
-		mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-				size - sizeof (MonoObject));
-		sgen_card_table_mark_range ((mword)obj, size);
-#ifdef DISABLE_CRITICAL_REGION
-		UNLOCK_GC;
-#else
-		EXIT_CRITICAL_REGION;
-#endif
-	} else {
-		RememberedSet *rs;
 
-		HEAVY_STAT (++stat_wbarrier_object_copy);
-		rs = REMEMBERED_SET;
-		DEBUG (6, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
-
-		LOCK_GC;
-	#ifdef SGEN_BINARY_PROTOCOL
-		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
-	#endif
-		/* do not copy the sync state */
-		mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-				size - sizeof (MonoObject));
-
-		if (rs->store_next < rs->end_set) {
-			*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
-			UNLOCK_GC;
-			return;
-		}
-		rs = alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
-		rs->next = REMEMBERED_SET;
-		REMEMBERED_SET = rs;
-
-	#ifdef HAVE_KW_THREAD
-		mono_thread_info_current ()->remset = rs;
-	#endif
-		*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
-		UNLOCK_GC;	
-	}
+	if (use_cardtable)
+		mono_sgen_card_table_wbarrier_object_copy (obj, src);
+	else
+		mono_sgen_ssb_wbarrier_object_copy (obj, src);
 }
 
 /*

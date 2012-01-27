@@ -38,8 +38,13 @@ void sgen_scan_from_card_tables (void *start_nursery, void *end_nursery, SgenGra
 void sgen_card_tables_collect_stats (gboolean begin) MONO_INTERNAL;
 void sgen_card_table_clear (void) MONO_INTERNAL;
 void sgen_card_table_init (void) MONO_INTERNAL;
-gboolean sgen_ptr_in_nursery (void *p) MONO_INTERNAL;
 
+void mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value) MONO_INTERNAL;
+void mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value) MONO_INTERNAL;
+void mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count) MONO_INTERNAL;
+void mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass) MONO_INTERNAL;
+void mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src) MONO_INTERNAL;
+void mono_sgen_card_table_wbarrier_generic_nostore (gpointer ptr) MONO_INTERNAL;
 
 /*How many bytes a single card covers*/
 #define CARD_BITS 9

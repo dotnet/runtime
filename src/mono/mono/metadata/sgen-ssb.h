@@ -24,4 +24,12 @@
 #ifndef __MONO_SGEN_SSB_H__
 #define __MONO_SGEN_SSB_H__
 
+
+void mono_sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value) MONO_INTERNAL;
+void mono_sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value) MONO_INTERNAL;
+void mono_sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count) MONO_INTERNAL;
+void mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass) MONO_INTERNAL;
+void mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src) MONO_INTERNAL;
+void mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr) MONO_INTERNAL;
+
 #endif

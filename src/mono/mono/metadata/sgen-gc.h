@@ -434,6 +434,7 @@ void mono_sgen_pin_stats_print_class_stats (void);
 
 void mono_sgen_sort_addresses (void **array, int size) MONO_INTERNAL;
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
+RememberedSet* mono_sgen_alloc_remset (int size, gpointer id, gboolean global) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
 gboolean mono_sgen_nursery_collection_is_parallel (void) MONO_INTERNAL;
