@@ -242,4 +242,37 @@ mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr)
 	UNLOCK_GC;
 }
 
+
+void
+mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
+{
+	RememberedSet *rset;
+
+	if (p->remset) {
+		if (freed_thread_remsets) {
+			for (rset = p->remset; rset->next; rset = rset->next)
+				;
+			rset->next = freed_thread_remsets;
+			freed_thread_remsets = p->remset;
+		} else {
+			freed_thread_remsets = p->remset;
+		}
+	}
+
+	if (*p->store_remset_buffer_index_addr)
+		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
+	mono_sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
+
+	/*
+	 * This is currently not strictly required, but we do it
+	 * anyway in case we change thread unregistering:
+
+	 * If the thread is removed from the thread list after
+	 * unregistering (this is currently not the case), and a
+	 * collection occurs, clear_remsets() would want to memset
+	 * this buffer, which would either clobber memory or crash.
+	 */
+	*p->store_remset_buffer_addr = NULL;
+}
+
 #endif

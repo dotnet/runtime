@@ -4604,19 +4604,15 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 }
 
 static void
-add_generic_store_remset_from_buffer (gpointer *buffer)
+mono_sgen_wbarrier_cleanup_thread (SgenThreadInfo *p)
 {
-	GenericStoreRememberedSet *remset = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
-	memcpy (remset->data, buffer + 1, sizeof (gpointer) * (STORE_REMSET_BUFFER_SIZE - 1));
-	remset->next = generic_store_remsets;
-	generic_store_remsets = remset;
+	if (!use_cardtable)
+		mono_sgen_ssb_cleanup_thread (p);
 }
 
 static void
 sgen_thread_unregister (SgenThreadInfo *p)
 {
-	RememberedSet *rset;
-
 	/* If a delegate is passed to native code and invoked on a thread we dont
 	 * know about, the jit will register it with mono_jit_thread_attach, but
 	 * we have no way of knowing when that thread goes away.  SGen has a TSD
@@ -4668,30 +4664,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 		gc_callbacks.thread_detach_func (p->runtime_data);
 		p->runtime_data = NULL;
 	}
-
-	if (p->remset) {
-		if (freed_thread_remsets) {
-			for (rset = p->remset; rset->next; rset = rset->next)
-				;
-			rset->next = freed_thread_remsets;
-			freed_thread_remsets = p->remset;
-		} else {
-			freed_thread_remsets = p->remset;
-		}
-	}
-	if (*p->store_remset_buffer_index_addr)
-		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
-	mono_sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
-	/*
-	 * This is currently not strictly required, but we do it
-	 * anyway in case we change thread unregistering:
-
-	 * If the thread is removed from the thread list after
-	 * unregistering (this is currently not the case), and a
-	 * collection occurs, clear_remsets() would want to memset
-	 * this buffer, which would either clobber memory or crash.
-	 */
-	*p->store_remset_buffer_addr = NULL;
+	mono_sgen_wbarrier_cleanup_thread (p);
 
 	mono_threads_unregister_current_thread (p);
 	UNLOCK_GC;
