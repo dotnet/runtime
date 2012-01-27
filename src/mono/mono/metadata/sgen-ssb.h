@@ -33,6 +33,10 @@ void mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src) MONO_
 void mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr) MONO_INTERNAL;
 
 void mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p) MONO_INTERNAL;
+void mono_sgen_ssb_prepare_for_minor_collection (void) MONO_INTERNAL;
+
+/*TEMP HACK remove me later*/
+gboolean global_remset_location_was_not_added (gpointer ptr) MONO_INTERNAL;
 
 #endif
 

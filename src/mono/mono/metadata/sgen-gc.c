@@ -398,9 +398,6 @@ RememberedSet *global_remset;
 RememberedSet *freed_thread_remsets;
 GenericStoreRememberedSet *generic_store_remsets = NULL;
 
-/*A two slots cache for recently inserted remsets */
-static gpointer global_remset_cache [2];
-
 /* FIXME: later choose a size that takes into account the RememberedSet struct
  * and doesn't waste any alloc paddin space.
  */
@@ -1255,48 +1252,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	}
 
 	UNLOCK_GC;
-}
-
-static void
-global_remset_cache_clear (void)
-{
-	memset (global_remset_cache, 0, sizeof (global_remset_cache));
-}
-
-/*
- * Tries to check if a given remset location was already added to the global remset.
- * It can
- *
- * A 2 entry, LRU cache of recently saw location remsets.
- *
- * It's hand-coded instead of done using loops to reduce the number of memory references on cache hit.
- *
- * Returns TRUE is the element was added..
- */
-static gboolean
-global_remset_location_was_not_added (gpointer ptr)
-{
-
-	gpointer first = global_remset_cache [0], second;
-	if (first == ptr) {
-		HEAVY_STAT (++stat_global_remsets_discarded);
-		return FALSE;
-	}
-
-	second = global_remset_cache [1];
-
-	if (second == ptr) {
-		/*Move the second to the front*/
-		global_remset_cache [0] = second;
-		global_remset_cache [1] = first;
-
-		HEAVY_STAT (++stat_global_remsets_discarded);
-		return FALSE;
-	}
-
-	global_remset_cache [0] = second;
-	global_remset_cache [1] = ptr;
-	return TRUE;
 }
 
 /*
@@ -2788,7 +2743,8 @@ collect_nursery (size_t requested_size)
 	stat_minor_gcs++;
 	mono_stats.minor_gc_count ++;
 
-	global_remset_cache_clear ();
+	if (!use_cardtable)
+		mono_sgen_ssb_prepare_for_minor_collection ();
 
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
@@ -3057,11 +3013,13 @@ major_do_collection (const char *reason)
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
 
-	/* The remsets are not useful for a major collection */
-	clear_remsets ();
-	global_remset_cache_clear ();
-	if (use_cardtable)
+	/* Remsets are not useful for a major collection */
+	if (use_cardtable) {
 		sgen_card_table_clear ();
+	} else {
+		clear_remsets ();
+		mono_sgen_ssb_prepare_for_minor_collection ();
+	}
 
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();

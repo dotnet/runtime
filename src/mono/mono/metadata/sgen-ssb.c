@@ -37,6 +37,10 @@
 #include "metadata/sgen-ssb.h"
 #include "utils/mono-counters.h"
 
+/*A two slots cache for recently inserted remsets */
+static gpointer global_remset_cache [2];
+
+
 static void
 add_generic_store_remset_from_buffer (gpointer *buffer)
 {
@@ -274,5 +278,49 @@ mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 	 */
 	*p->store_remset_buffer_addr = NULL;
 }
+
+
+void
+mono_sgen_ssb_prepare_for_minor_collection (void)
+{
+	memset (global_remset_cache, 0, sizeof (global_remset_cache));
+}
+
+/*
+ * Tries to check if a given remset location was already added to the global remset.
+ * It can
+ *
+ * A 2 entry, LRU cache of recently saw location remsets.
+ *
+ * It's hand-coded instead of done using loops to reduce the number of memory references on cache hit.
+ *
+ * Returns TRUE is the element was added..
+ */
+gboolean
+global_remset_location_was_not_added (gpointer ptr)
+{
+
+	gpointer first = global_remset_cache [0], second;
+	if (first == ptr) {
+		HEAVY_STAT (++stat_global_remsets_discarded);
+		return FALSE;
+	}
+
+	second = global_remset_cache [1];
+
+	if (second == ptr) {
+		/*Move the second to the front*/
+		global_remset_cache [0] = second;
+		global_remset_cache [1] = first;
+
+		HEAVY_STAT (++stat_global_remsets_discarded);
+		return FALSE;
+	}
+
+	global_remset_cache [0] = second;
+	global_remset_cache [1] = ptr;
+	return TRUE;
+}
+
 
 #endif
