@@ -40,6 +40,7 @@ public class TestDriver {
 					j += 2;
 				} else if ((args [j] == "-v") || (args [j] == "--verbose")) {
 					verbose = true;
+					j += 1;
 				} else if (args [j] == "--exclude") {
 					exclude [args [j + 1]] = args [j + 1];
 					j += 2;
