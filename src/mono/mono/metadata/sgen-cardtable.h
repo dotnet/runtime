@@ -76,7 +76,7 @@ sgen_card_table_get_card_address (mword address)
 
 extern guint8 *sgen_shadow_cardtable MONO_INTERNAL;
 
-static inline  guint8*
+static inline guint8*
 sgen_card_table_get_shadow_card_address (mword address)
 {
 	return sgen_shadow_cardtable + ((address >> CARD_BITS) & CARD_MASK);
@@ -137,13 +137,13 @@ sgen_card_table_mark_address (mword address)
 
 #else /*if SGEN_HAVE_CARDTABLE */
 
-void
+static inline void
 sgen_card_table_mark_address (mword address)
 {
 	g_assert_not_reached ();
 }
 
-void
+static inline void
 sgen_card_table_mark_range (mword address, mword size)
 {
 	g_assert_not_reached ();
