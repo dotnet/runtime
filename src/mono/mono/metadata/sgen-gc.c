@@ -391,7 +391,7 @@ struct _RootRecord {
 };
 
 #ifdef HAVE_KW_THREAD
-static __thread RememberedSet *remembered_set MONO_TLS_FAST;
+__thread RememberedSet *remembered_set MONO_TLS_FAST;
 #endif
 static MonoNativeTlsKey remembered_set_key;
 RememberedSet *global_remset;

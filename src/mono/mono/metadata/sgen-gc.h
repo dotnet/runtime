@@ -724,6 +724,7 @@ void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
 extern MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
+extern __thread RememberedSet *remembered_set MONO_TLS_FAST;
 extern __thread SgenThreadInfo *thread_info;
 extern __thread gpointer *store_remset_buffer;
 extern __thread long store_remset_buffer_index;
