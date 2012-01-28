@@ -35,10 +35,17 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-ssb.h"
+#include "metadata/sgen-protocol.h"
 #include "utils/mono-counters.h"
 
 /*A two slots cache for recently inserted remsets */
 static gpointer global_remset_cache [2];
+
+static LOCK_DECLARE (global_remset_mutex);
+
+#define LOCK_GLOBAL_REMSET mono_mutex_lock (&global_remset_mutex)
+#define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
+
 
 
 static void
@@ -322,5 +329,60 @@ global_remset_location_was_not_added (gpointer ptr)
 	return TRUE;
 }
 
+void
+mono_sgen_ssb_record_pointer (gpointer ptr)
+{
+	RememberedSet *rs;
+	gboolean lock = mono_sgen_collection_is_parallel ();
+	gpointer obj = *(gpointer*)ptr;
+
+	g_assert (!mono_sgen_ptr_in_nursery (ptr) && mono_sgen_ptr_in_nursery (obj));
+
+	if (lock)
+		LOCK_GLOBAL_REMSET;
+
+	if (!global_remset_location_was_not_added (ptr))
+		goto done;
+
+	if (G_UNLIKELY (do_pin_stats))
+		mono_sgen_pin_stats_register_global_remset (obj);
+
+	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
+	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (obj));
+
+	HEAVY_STAT (++stat_global_remsets_added);
+
+	/* 
+	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
+	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
+	 */
+	if (global_remset->store_next + 3 < global_remset->end_set) {
+		*(global_remset->store_next++) = (mword)ptr;
+		goto done;
+	}
+	rs = mono_sgen_alloc_remset (global_remset->end_set - global_remset->data, NULL, TRUE);
+	rs->next = global_remset;
+	global_remset = rs;
+	*(global_remset->store_next++) = (mword)ptr;
+
+	{
+		int global_rs_size = 0;
+
+		for (rs = global_remset; rs; rs = rs->next) {
+			global_rs_size += rs->store_next - rs->data;
+		}
+		DEBUG (4, fprintf (gc_debug_file, "Global remset now has size %d\n", global_rs_size));
+	}
+
+ done:
+	if (lock)
+		UNLOCK_GLOBAL_REMSET;
+}
+
+void
+mono_sgen_ssb_init (void)
+{
+	LOCK_INIT (global_remset_mutex);
+}
 
 #endif

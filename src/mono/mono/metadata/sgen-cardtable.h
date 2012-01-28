@@ -134,6 +134,11 @@ sgen_card_table_mark_address (mword address)
 	*sgen_card_table_get_card_address (address) = 1;
 }
 
+static inline void
+mono_sgen_card_table_record_pointer (gpointer address)
+{
+	*sgen_card_table_get_card_address ((mword)address) = 1;
+}
 
 #else /*if SGEN_HAVE_CARDTABLE */
 
@@ -159,6 +164,12 @@ guint8*
 mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 {
 	return NULL;
+}
+
+static void
+mono_sgen_card_table_record_pointer (gpointer address)
+{
+	g_assert_not_reached ();
 }
 
 #endif

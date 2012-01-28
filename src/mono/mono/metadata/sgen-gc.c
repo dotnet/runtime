@@ -280,7 +280,7 @@ static gboolean do_scan_starts_check = FALSE;
 static gboolean nursery_collection_is_parallel = FALSE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
-static gboolean do_pin_stats = FALSE;
+gboolean do_pin_stats = FALSE;
 static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
 
@@ -489,11 +489,7 @@ static mword lowest_heap_address = ~(mword)0;
 static mword highest_heap_address = 0;
 
 static LOCK_DECLARE (interruption_mutex);
-static LOCK_DECLARE (global_remset_mutex);
 static LOCK_DECLARE (pin_queue_mutex);
-
-#define LOCK_GLOBAL_REMSET mono_mutex_lock (&global_remset_mutex)
-#define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
 
 #define LOCK_PIN_QUEUE mono_mutex_lock (&pin_queue_mutex)
 #define UNLOCK_PIN_QUEUE mono_mutex_unlock (&pin_queue_mutex)
@@ -1266,56 +1262,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 void
 mono_sgen_add_to_global_remset (gpointer ptr)
 {
-	RememberedSet *rs;
-	gboolean lock = mono_sgen_collection_is_parallel ();
-	gpointer obj = *(gpointer*)ptr;
-
-	if (use_cardtable) {
-		sgen_card_table_mark_address ((mword)ptr);
-		return;
-	}
-
-	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (obj));
-
-	if (lock)
-		LOCK_GLOBAL_REMSET;
-
-	if (!global_remset_location_was_not_added (ptr))
-		goto done;
-
-	if (G_UNLIKELY (do_pin_stats))
-		mono_sgen_pin_stats_register_global_remset (obj);
-
-	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
-	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (obj));
-
-	HEAVY_STAT (++stat_global_remsets_added);
-
-	/* 
-	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
-	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
-	 */
-	if (global_remset->store_next + 3 < global_remset->end_set) {
-		*(global_remset->store_next++) = (mword)ptr;
-		goto done;
-	}
-	rs = alloc_remset (global_remset->end_set - global_remset->data, NULL, TRUE);
-	rs->next = global_remset;
-	global_remset = rs;
-	*(global_remset->store_next++) = (mword)ptr;
-
-	{
-		int global_rs_size = 0;
-
-		for (rs = global_remset; rs; rs = rs->next) {
-			global_rs_size += rs->store_next - rs->data;
-		}
-		DEBUG (4, fprintf (gc_debug_file, "Global remset now has size %d\n", global_rs_size));
-	}
-
- done:
-	if (lock)
-		UNLOCK_GLOBAL_REMSET;
+	if (use_cardtable)
+		mono_sgen_card_table_record_pointer (ptr);
+	else
+		mono_sgen_ssb_record_pointer (ptr);
 }
 
 /*
@@ -5261,7 +5211,6 @@ mono_gc_base_init (void)
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
 	LOCK_INIT (interruption_mutex);
-	LOCK_INIT (global_remset_mutex);
 	LOCK_INIT (pin_queue_mutex);
 
 	init_user_copy_or_mark_key ();
@@ -5569,6 +5518,8 @@ mono_gc_base_init (void)
 
 	if (use_cardtable)
 		sgen_card_table_init ();
+	else
+		mono_sgen_ssb_init ();
 
 	gc_initialized = 1;
 }
