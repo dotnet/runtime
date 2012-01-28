@@ -47,6 +47,20 @@ static LOCK_DECLARE (global_remset_mutex);
 #define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
 
 
+static void
+clear_thread_store_remset_buffer (SgenThreadInfo *info)
+{
+	*info->store_remset_buffer_index_addr = 0;
+	/* See the comment at the end of sgen_thread_unregister() */
+	if (*info->store_remset_buffer_addr)
+		memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+}
+
+static size_t
+remset_byte_size (RememberedSet *remset)
+{
+	return sizeof (RememberedSet) + (remset->end_set - remset->data) * sizeof (gpointer);
+}
 
 static void
 add_generic_store_remset_from_buffer (gpointer *buffer)
@@ -292,6 +306,59 @@ mono_sgen_ssb_prepare_for_minor_collection (void)
 {
 	memset (global_remset_cache, 0, sizeof (global_remset_cache));
 }
+
+/*
+ * Clear the info in the remembered sets: we're doing a major collection, so
+ * the per-thread ones are not needed and the global ones will be reconstructed
+ * during the copy.
+ */
+void
+mono_sgen_ssb_prepare_for_major_collection (void)
+{
+	SgenThreadInfo *info;
+	RememberedSet *remset, *next;
+	
+	mono_sgen_ssb_prepare_for_minor_collection ();
+
+	/* the global list */
+	for (remset = global_remset; remset; remset = next) {
+		remset->store_next = remset->data;
+		next = remset->next;
+		remset->next = NULL;
+		if (remset != global_remset) {
+			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
+			mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+		}
+	}
+	/* the generic store ones */
+	while (generic_store_remsets) {
+		GenericStoreRememberedSet *gs_next = generic_store_remsets->next;
+		mono_sgen_free_internal (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
+		generic_store_remsets = gs_next;
+	}
+	/* the per-thread ones */
+	FOREACH_THREAD (info) {
+		for (remset = info->remset; remset; remset = next) {
+			remset->store_next = remset->data;
+			next = remset->next;
+			remset->next = NULL;
+			if (remset != info->remset) {
+				DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
+				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+			}
+		}
+		clear_thread_store_remset_buffer (info);
+	} END_FOREACH_THREAD
+
+	/* the freed thread ones */
+	while (freed_thread_remsets) {
+		next = freed_thread_remsets->next;
+		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
+		mono_sgen_free_internal_dynamic (freed_thread_remsets, remset_byte_size (freed_thread_remsets), INTERNAL_MEM_REMSET);
+		freed_thread_remsets = next;
+	}
+}
+
 
 /*
  * Tries to check if a given remset location was already added to the global remset.

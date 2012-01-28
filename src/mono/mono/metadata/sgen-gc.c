@@ -725,7 +725,6 @@ static void process_dislink_stage_entries (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
-static void clear_remsets (void);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
@@ -2964,12 +2963,10 @@ major_do_collection (const char *reason)
 		check_for_xdomain_refs ();
 
 	/* Remsets are not useful for a major collection */
-	if (use_cardtable) {
-		sgen_card_table_clear ();
-	} else {
-		clear_remsets ();
-		mono_sgen_ssb_prepare_for_minor_collection ();
-	}
+	if (use_cardtable)
+		mono_sgen_card_table_prepare_for_major_collection ();
+	else
+		mono_sgen_ssb_prepare_for_major_collection ();
 
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
@@ -4363,56 +4360,6 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
 		mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-		freed_thread_remsets = next;
-	}
-}
-
-/*
- * Clear the info in the remembered sets: we're doing a major collection, so
- * the per-thread ones are not needed and the global ones will be reconstructed
- * during the copy.
- */
-static void
-clear_remsets (void)
-{
-	SgenThreadInfo *info;
-	RememberedSet *remset, *next;
-
-	/* the global list */
-	for (remset = global_remset; remset; remset = next) {
-		remset->store_next = remset->data;
-		next = remset->next;
-		remset->next = NULL;
-		if (remset != global_remset) {
-			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-		}
-	}
-	/* the generic store ones */
-	while (generic_store_remsets) {
-		GenericStoreRememberedSet *gs_next = generic_store_remsets->next;
-		mono_sgen_free_internal (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
-		generic_store_remsets = gs_next;
-	}
-	/* the per-thread ones */
-	FOREACH_THREAD (info) {
-		for (remset = info->remset; remset; remset = next) {
-			remset->store_next = remset->data;
-			next = remset->next;
-			remset->next = NULL;
-			if (remset != info->remset) {
-				DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-			}
-		}
-		clear_thread_store_remset_buffer (info);
-	} END_FOREACH_THREAD
-
-	/* the freed thread ones */
-	while (freed_thread_remsets) {
-		next = freed_thread_remsets->next;
-		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
-		mono_sgen_free_internal_dynamic (freed_thread_remsets, remset_byte_size (freed_thread_remsets), INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }

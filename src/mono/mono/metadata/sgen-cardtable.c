@@ -343,7 +343,7 @@ clear_cards (mword start, mword size)
 #endif
 
 void
-sgen_card_table_clear (void)
+mono_sgen_card_table_prepare_for_major_collection (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	sgen_major_collector_iterate_live_block_ranges (clear_cards);
@@ -363,7 +363,7 @@ sgen_scan_from_card_tables (void *start_nursery, void *end_nursery, SgenGrayQueu
 	mono_sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
-	sgen_card_table_clear ();
+	mono_sgen_card_table_prepare_for_major_collection ();
 #endif
 	SGEN_TV_GETTIME (atv);
 	sgen_major_collector_scan_card_table (queue);
