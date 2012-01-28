@@ -433,11 +433,36 @@ get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 	if (!gi->has_this)
 		return NULL;
 
-	if (gi->this_in_reg)
-		info = (gpointer)mono_arch_context_get_int_reg (ctx, gi->this_reg);
-	else
-		info = *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
-									  gi->this_offset);
+	info = NULL;
+	/*
+	 * Search location list if available, it contains the precise location of the
+	 * argument for every pc offset, even if the method was interrupted while it was in
+	 * its prolog.
+	 */
+	if (gi->nlocs) {
+		int offset = (mgreg_t)MONO_CONTEXT_GET_IP (ctx) - (mgreg_t)ji->code_start;
+		int i;
+
+		for (i = 0; i < gi->nlocs; ++i) {
+			MonoDwarfLocListEntry *entry = &gi->locations [i];
+
+			if (offset >= entry->from && (offset < entry->to || entry->to == 0)) {
+				if (entry->is_reg)
+					info = (gpointer)mono_arch_context_get_int_reg (ctx, entry->reg);
+				else
+					info = *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, entry->reg) + entry->offset);
+				break;
+			}
+		}
+		g_assert (i < gi->nlocs);
+	} else {
+		if (gi->this_in_reg)
+			info = (gpointer)mono_arch_context_get_int_reg (ctx, gi->this_reg);
+		else
+			info = *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
+										  gi->this_offset);
+	}
+
 	if (mono_method_get_context (ji->method)->method_inst) {
 		return info;
 	} else if ((ji->method->flags & METHOD_ATTRIBUTE_STATIC) || ji->method->klass->valuetype) {

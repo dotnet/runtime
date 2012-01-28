@@ -97,9 +97,31 @@ typedef struct {
 	int dummy;
 } MonoGenericSharingContext;
 
+/* Simplified DWARF location list entry */
+typedef struct {
+	/* Whenever the value is in a register */
+	gboolean is_reg;
+	/*
+	 * If is_reg is TRUE, the register which contains the value. Otherwise
+	 * the base register.
+	 */
+	int reg;
+	/*
+	 * If is_reg is FALSE, the offset of the stack location relative to 'reg'.
+	 * Otherwise, 0.
+	 */
+	int offset;
+	/*
+	 * Offsets of the PC interval where the value is in this location.
+	 */
+	int from, to;
+} MonoDwarfLocListEntry;
+
 typedef struct
 {
 	MonoGenericSharingContext *generic_sharing_context;
+	int nlocs;
+	MonoDwarfLocListEntry *locations;
 	gint32 this_offset;
 	guint8 this_reg;
 	gboolean has_this:1;

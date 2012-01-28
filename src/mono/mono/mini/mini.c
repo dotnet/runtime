@@ -3261,6 +3261,26 @@ mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int nat
 	bb->last_seq_point = ins;
 }
 
+void
+mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to)
+{
+	MonoDwarfLocListEntry *entry = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDwarfLocListEntry));
+
+	if (is_reg)
+		g_assert (offset == 0);
+
+	entry->is_reg = is_reg;
+	entry->reg = reg;
+	entry->offset = offset;
+	entry->from = from;
+	entry->to = to;
+
+	if (var == cfg->args [0])
+		cfg->this_loclist = g_slist_append_mempool (cfg->mempool, cfg->this_loclist, entry);
+	else if (var == cfg->rgctx_var)
+		cfg->rgctx_loclist = g_slist_append_mempool (cfg->mempool, cfg->rgctx_loclist, entry);
+}
+
 #ifndef DISABLE_JIT
 
 static void
@@ -3881,6 +3901,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (cfg->generic_sharing_context) {
 		MonoInst *inst;
 		MonoGenericJitInfo *gi;
+		GSList *loclist = NULL;
 
 		jinfo->has_generic_jit_info = 1;
 
@@ -3903,8 +3924,27 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			inst = cfg->rgctx_var;
 			if (!COMPILE_LLVM (cfg))
 				g_assert (inst->opcode == OP_REGOFFSET);
+			loclist = cfg->rgctx_loclist;
 		} else {
 			inst = cfg->args [0];
+			loclist = cfg->this_loclist;
+		}
+
+		if (loclist) {
+			/* Needed to handle async exceptions */
+			GSList *l;
+			int i;
+
+			gi->nlocs = g_slist_length (loclist);
+			if (cfg->method->dynamic)
+				gi->locations = g_malloc0 (gi->nlocs * sizeof (MonoDwarfLocListEntry));
+			else
+				gi->locations = mono_domain_alloc0 (cfg->domain, gi->nlocs * sizeof (MonoDwarfLocListEntry));
+			i = 0;
+			for (l = loclist; l; l = l->next) {
+				memcpy (&(gi->locations [i]), l->data, sizeof (MonoDwarfLocListEntry));
+				i ++;
+			}
 		}
 
 		if (COMPILE_LLVM (cfg)) {

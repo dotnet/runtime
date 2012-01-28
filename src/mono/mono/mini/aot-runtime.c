@@ -2223,14 +2223,30 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);
 
-		if (from_llvm) {
-			gi->has_this = this_reg != -1;
-			gi->this_reg = this_reg;
-			gi->this_offset = this_offset;
+		gi->nlocs = decode_value (p, &p);
+		if (gi->nlocs) {
+			gi->locations = mono_domain_alloc0 (domain, gi->nlocs * sizeof (MonoDwarfLocListEntry));
+			for (i = 0; i < gi->nlocs; ++i) {
+				MonoDwarfLocListEntry *entry = &gi->locations [i];
+
+				entry->is_reg = decode_value (p, &p);
+				entry->reg = decode_value (p, &p);
+				if (!entry->is_reg)
+					entry->offset = decode_value (p, &p);
+				if (i > 0)
+					entry->from = decode_value (p, &p);
+				entry->to = decode_value (p, &p);
+			}
 		} else {
-			gi->has_this = decode_value (p, &p);
-			gi->this_reg = decode_value (p, &p);
-			gi->this_offset = decode_value (p, &p);
+			if (from_llvm) {
+				gi->has_this = this_reg != -1;
+				gi->this_reg = this_reg;
+				gi->this_offset = this_offset;
+			} else {
+				gi->has_this = decode_value (p, &p);
+				gi->this_reg = decode_value (p, &p);
+				gi->this_offset = decode_value (p, &p);
+			}
 		}
 
 		/* This currently contains no data */

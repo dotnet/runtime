@@ -118,7 +118,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 81
+#define MONO_AOT_FILE_VERSION 82
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1413,6 +1413,12 @@ typedef struct {
 
 	GSList *try_block_holes;
 
+	/* DWARF location list for 'this' */
+	GSList *this_loclist;
+
+	/* DWARF location list for 'rgctx_var' */
+	GSList *rgctx_loclist;
+
 	/* GC Maps */
    
 	/* The offsets of the locals area relative to the frame pointer */
@@ -1838,6 +1844,7 @@ gboolean  mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *m
 gboolean mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile) MONO_INTERNAL;
 MonoInst *mono_get_got_var (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset) MONO_INTERNAL;
+void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to) MONO_INTERNAL;
 MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args) MONO_INTERNAL;
 MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this) MONO_INTERNAL;
 void      mono_create_helper_signatures (void) MONO_INTERNAL;

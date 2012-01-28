@@ -20,8 +20,6 @@
  *   - the trampoline code calls mono_jit_info_table_find () to find the rgctx, 
  *     which loads the debugging+exception handling info for the method. This is a 
  *     huge waste of time and code, since the rgctx structure is currently empty.
- *   - every shared method has a MonoGenericJitInfo structure which is only really
- *     used for handling catch clauses with open types, not a very common use case.
  */
 #include "config.h"
 #include <sys/types.h>
@@ -4328,11 +4326,30 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	if (jinfo->has_generic_jit_info) {
 		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (jinfo);
+		guint8 *p1;
 
-		if (!cfg->compile_llvm) {
-			encode_value (gi->has_this ? 1 : 0, p, &p);
-			encode_value (gi->this_reg, p, &p);
-			encode_value (gi->this_offset, p, &p);
+		p1 = p;
+		encode_value (gi->nlocs, p, &p);
+		if (gi->nlocs) {
+			for (i = 0; i < gi->nlocs; ++i) {
+				MonoDwarfLocListEntry *entry = &gi->locations [i];
+
+				encode_value (entry->is_reg ? 1 : 0, p, &p);
+				encode_value (entry->reg, p, &p);
+				if (!entry->is_reg)
+					encode_value (entry->offset, p, &p);
+				if (i == 0)
+					g_assert (entry->from == 0);
+				else
+					encode_value (entry->from, p, &p);
+				encode_value (entry->to, p, &p);
+			}
+		} else {
+			if (!cfg->compile_llvm) {
+				encode_value (gi->has_this ? 1 : 0, p, &p);
+				encode_value (gi->this_reg, p, &p);
+				encode_value (gi->this_offset, p, &p);
+			}
 		}
 
 		/* 

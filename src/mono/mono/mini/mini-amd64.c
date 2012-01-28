@@ -6813,6 +6813,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				(cfg->rgctx_var->inst_basereg == AMD64_RBP || cfg->rgctx_var->inst_basereg == AMD64_RSP));
 
 		amd64_mov_membase_reg (code, cfg->rgctx_var->inst_basereg, cfg->rgctx_var->inst_offset, MONO_ARCH_RGCTX_REG, sizeof(gpointer));
+
+		mono_add_var_location (cfg, cfg->rgctx_var, TRUE, MONO_ARCH_RGCTX_REG, 0, 0, code - cfg->native_code);
+		mono_add_var_location (cfg, cfg->rgctx_var, FALSE, cfg->rgctx_var->inst_basereg, cfg->rgctx_var->inst_offset, code - cfg->native_code, 0);
 	}
 
 	/* compute max_length in order to use short forward jumps */
@@ -6934,6 +6937,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					size = 8;
 				*/
 				amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg, size);
+
+				/*
+				 * Save the original location of 'this',
+				 * get_generic_info_from_stack_frame () needs this to properly look up
+				 * the argument value during the handling of async exceptions.
+				 */
+				if (ins == cfg->args [0]) {
+					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+					mono_add_var_location (cfg, ins, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
+				}
 				break;
 			}
 			case ArgInFloatSSEReg:
@@ -6979,6 +6992,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				break;
 			default:
 				g_assert_not_reached ();
+			}
+
+			if (ins == cfg->args [0]) {
+				mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+				mono_add_var_location (cfg, ins, TRUE, ins->dreg, 0, code - cfg->native_code, 0);
 			}
 		}
 	}
