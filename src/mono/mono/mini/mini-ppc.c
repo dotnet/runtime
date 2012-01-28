@@ -5569,6 +5569,8 @@ setup_tls_access (void)
 	if ((lmf_pthread_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
 		lmf_pthread_key = mono_get_lmf_addr_tls_offset();
 	}
+
+#if 0
 	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
 	   mono_get_lmf_addr_tls_offset returning -1) then use keyed access. */
 	if (lmf_pthread_key == -1) {
@@ -5582,6 +5584,8 @@ setup_tls_access (void)
 			lmf_pthread_key = ptk;
 		}
 	}
+#endif
+
 #endif
 }
 
