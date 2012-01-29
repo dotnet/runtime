@@ -2824,6 +2824,8 @@ get_seq_points (MonoDomain *domain, MonoMethod *method)
 	if (!seq_points && method->is_inflated) {
 		/* generic sharing + aot */
 		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (method));
+		if (!seq_points)
+			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mini_get_shared_method (method));
 	}
 	mono_domain_unlock (domain);
 
