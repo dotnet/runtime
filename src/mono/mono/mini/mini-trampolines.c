@@ -419,8 +419,10 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			g_assert (this_argument->vtable->klass->inited);
 			//mono_class_init (this_argument->vtable->klass);
 
-			if (!vtable_slot)
+			if (!vtable_slot) {
+				mono_class_setup_supertypes (this_argument->vtable->klass);
 				klass = this_argument->vtable->klass->supertypes [m->klass->idepth - 1];
+			}
 #else
 			NOT_IMPLEMENTED;
 #endif

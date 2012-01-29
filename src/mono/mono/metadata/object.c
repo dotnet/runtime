@@ -5187,7 +5187,8 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		MonoClass *oklass = vt->klass;
 		if ((oklass == mono_defaults.transparent_proxy_class))
 			oklass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-	
+
+		mono_class_setup_supertypes (klass);	
 		if ((oklass->idepth >= klass->idepth) && (oklass->supertypes [klass->idepth - 1] == klass))
 			return obj;
 	}

@@ -9138,7 +9138,8 @@ mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent)
 	int i;
 	klass = mono_class_get_generic_type_definition (klass);
 	parent = mono_class_get_generic_type_definition (parent);
-	
+	mono_class_setup_supertypes (klass);
+
 	for (i = 0; i < klass->idepth; ++i) {
 		if (parent == mono_class_get_generic_type_definition (klass->supertypes [i]))
 			return TRUE;
