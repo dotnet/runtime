@@ -4558,7 +4558,10 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 			&& !mono_class_from_mono_type (new_type)->valuetype
 			&& !stack_slot_is_managed_pointer (old_slot)
 			&& !stack_slot_is_managed_pointer (new_slot)) {
-			
+
+			mono_class_setup_supertypes (old_class);
+			mono_class_setup_supertypes (new_class);
+
 			for (j = MIN (old_class->idepth, new_class->idepth) - 1; j > 0; --j) {
 				if (mono_metadata_type_equal (&old_class->supertypes [j]->byval_arg, &new_class->supertypes [j]->byval_arg)) {
 					match_class = old_class->supertypes [j];
