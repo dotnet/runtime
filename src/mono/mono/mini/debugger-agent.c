@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 11
+#define MINOR_VERSION 12
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -564,6 +564,9 @@ typedef struct {
 #define MONO_EWOULDBLOCK EWOULDBLOCK
 #define MONO_EINTR EINTR
 #endif
+
+#define CHECK_PROTOCOL_VERSION(major,minor) \
+	(protocol_version_set && (major_version > (major) || (major_version == (major) && minor_version >= (minor))))
 
 /*
  * Globals
@@ -6924,6 +6927,10 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			b |= (1 << 3);
 		if (klass->enumtype)
 			b |= (1 << 4);
+		if (klass->generic_container)
+			b |= (1 << 5);
+		if (klass->generic_container || klass->generic_class)
+			b |= (1 << 6);
 		buffer_add_byte (buf, b);
 		nnested = 0;
 		iter = NULL;
@@ -6933,6 +6940,14 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		iter = NULL;
 		while ((nested = mono_class_get_nested_types (klass, &iter)))
 			buffer_add_typeid (buf, domain, nested);
+		if (CHECK_PROTOCOL_VERSION (2, 12)) {
+			if (klass->generic_container)
+				buffer_add_typeid (buf, domain, klass);
+			else if (klass->generic_class)
+				buffer_add_typeid (buf, domain, klass->generic_class->container_class);
+			else
+				buffer_add_id (buf, 0);
+		}			
 		break;
 	}
 	case CMD_TYPE_GET_METHODS: {
@@ -7424,6 +7439,35 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_int (buf, method->flags);
 		buffer_add_int (buf, method->iflags);
 		buffer_add_int (buf, method->token);
+		if (CHECK_PROTOCOL_VERSION (2, 12)) {
+			guint8 attrs = 0;
+			if (method->is_generic)
+				attrs |= (1 << 0);
+			if (mono_method_signature (method)->generic_param_count)
+				attrs |= (1 << 1);
+			buffer_add_byte (buf, attrs);
+			if (method->is_generic || method->is_inflated) {
+				MonoMethod *result;
+
+				if (method->is_generic) {
+					result = method;
+				} else {
+					MonoMethodInflated *imethod = (MonoMethodInflated *)method;
+					
+					result = imethod->declaring;
+					if (imethod->context.class_inst) {
+						MonoClass *klass = ((MonoMethod *) imethod)->klass;
+						/*Generic methods gets the context of the GTD.*/
+						if (mono_class_get_context (klass))
+							result = mono_class_inflate_generic_method_full (result, klass, mono_class_get_context (klass));
+					}
+				}
+
+				buffer_add_methodid (buf, domain, result);
+			} else {
+				buffer_add_id (buf, 0);
+			}
+		}
 		break;
 	case CMD_METHOD_GET_BODY: {
 		int i;
