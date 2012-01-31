@@ -165,6 +165,7 @@ relaxed_nop: len:4
 oparglist: src1:i len:28
 bigmul: len:2 dest:i src1:a src2:i
 bigmul_un: len:2 dest:i src1:a src2:i
+tls_get: len:40 dest:i
 endfilter: src1:i len:28
 rethrow: src1:i len:26
 or_imm: dest:i src1:i len:24

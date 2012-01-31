@@ -367,7 +367,6 @@ static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *);
 static CallInfo * get_call_info (MonoCompile *, MonoMemPool *, MonoMethodSignature *, gboolean);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
-gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_arguments (guint8 *, MonoCompile *);
 static void catch_SIGILL(int, siginfo_t *, void *);
 static __inline__ void emit_unwind_regs(MonoCompile *, guint8 *, int, int, long);
@@ -384,8 +383,9 @@ static int indent_level = 0;
 
 int has_ld = 0;
 
-static int appdomain_tls_offset = -1,
-           thread_tls_offset = -1;
+static gint appdomain_tls_offset = -1,
+	    lmf_tls_offset = -1,
+	    lmf_addr_tls_offset = -1;
 
 pthread_key_t lmf_addr_key;
 
@@ -4095,6 +4095,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
+		case OP_TLS_GET: {
+			if (s390_is_imm16 (ins->inst_offset)) {
+				s390_lghi (code, s390_r13, ins->inst_offset);
+			} else {
+				s390_bras (code, s390_r13, 0);
+				s390_j	  (code, 4);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+			}
+			s390_ear (code, s390_r1, 0);
+			s390_sllg(code, s390_r1, s390_r1, 0, 32);
+			s390_ear (code, s390_r1, 1);
+			s390_lg  (code, ins->dreg, s390_r13, s390_r1, 0);
+		}
+			break;
 		case OP_JMP: {
 			if (cfg->method->save_lmf)
 				restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
@@ -4888,7 +4903,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
-	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
 }
 
 /*========================= End of Function ========================*/
@@ -5566,31 +5580,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 void
 mono_arch_finish_init (void)
 {
-#if HAVE_KW_THREAD
-# if 0
-	__asm__ ("\tear\t%r1,0\n"
-		 "\tlr\t%0,%3\n"
-		 "\tsr\t%0,%r1\n"
-		 "\tlr\t%1,%4\n"
-		 "\tsr\t%1,%r1\n"
-		 "\tlr\t%2,%5\n"
-		 "\tsr\t%2,%r1\n"
-		 : "=r" (appdomain_tls_offset),
-		   "=r" (thread_tls_offset),
-		   "=r" (lmf_tls_offset)
-		 : "r" (&tls_appdomain),
-		   "r" (&tls_current_object),
-		   "r" (&mono_lmf_addr)
-		 : "1", "cc");
-# endif
-#endif		
-
-	if (!lmf_addr_key_inited) {
-		lmf_addr_key_inited = TRUE;
-		pthread_key_create (&lmf_addr_key, NULL);
-	}
-	pthread_setspecific (lmf_addr_key, &tls->lmf);
-
+	appdomain_tls_offset = mono_domain_get_tls_offset();
+	lmf_tls_offset = mono_get_jit_tls_offset();
+	lmf_addr_tls_offset = mono_get_jit_tls_offset();
 }
 
 /*========================= End of Function ========================*/
@@ -5792,24 +5784,6 @@ mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 void 
 mono_arch_flush_register_windows (void)
 {
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_get_lmf_addr                            */
-/*                                                                  */
-/* Function	- 						    */
-/*		                               			    */
-/* Returns	-     						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_get_lmf_addr (void)
-{
-        return pthread_getspecific (lmf_addr_key);
 }
 
 /*========================= End of Function ========================*/
