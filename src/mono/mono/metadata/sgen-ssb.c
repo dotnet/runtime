@@ -46,6 +46,20 @@ static LOCK_DECLARE (global_remset_mutex);
 #define LOCK_GLOBAL_REMSET mono_mutex_lock (&global_remset_mutex)
 #define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
 
+#ifdef HEAVY_STATISTICS
+static int stat_wbarrier_generic_store_remset = 0;
+
+static long long stat_store_remsets = 0;
+static long long stat_store_remsets_unique = 0;
+static long long stat_saved_remsets_1 = 0;
+static long long stat_saved_remsets_2 = 0;
+static long long stat_local_remsets_processed = 0;
+static long long stat_global_remsets_added = 0;
+static long long stat_global_remsets_readded = 0;
+static long long stat_global_remsets_processed = 0;
+static long long stat_global_remsets_discarded = 0;
+
+#endif
 
 static void
 clear_thread_store_remset_buffer (SgenThreadInfo *info)
@@ -208,7 +222,6 @@ mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 
 	size = mono_object_class (obj)->instance_size;
 
-	HEAVY_STAT (++stat_wbarrier_object_copy);
 	rs = REMEMBERED_SET;
 	DEBUG (6, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
 
@@ -315,7 +328,6 @@ remset_stats (void)
 	RememberedSet *remset;
 	int size = 0;
 	SgenThreadInfo *info;
-	int i;
 	mword *addresses, *bumper, *p, *r;
 
 	FOREACH_THREAD (info) {
@@ -721,6 +733,20 @@ void
 mono_sgen_ssb_init (void)
 {
 	LOCK_INIT (global_remset_mutex);
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("WBarrier generic store stored", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_remset);
+
+	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
+	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
+	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
+	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
+	mono_counters_register ("Non-global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_local_remsets_processed);
+	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
+	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
+	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
+	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
+#endif
 }
 
 #endif

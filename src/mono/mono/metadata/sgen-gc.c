@@ -285,11 +285,8 @@ static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
 
 #ifdef HEAVY_STATISTICS
-static long long stat_objects_alloced = 0;
-static long long stat_bytes_alloced = 0;
 long long stat_objects_alloced_degraded = 0;
 long long stat_bytes_alloced_degraded = 0;
-static long long stat_bytes_alloced_los = 0;
 
 long long stat_copy_object_called_nursery = 0;
 long long stat_objects_copied_nursery = 0;
@@ -303,21 +300,10 @@ long long stat_nursery_copy_object_failed_from_space = 0;
 long long stat_nursery_copy_object_failed_forwarded = 0;
 long long stat_nursery_copy_object_failed_pinned = 0;
 
-static long long stat_store_remsets = 0;
-static long long stat_store_remsets_unique = 0;
-static long long stat_saved_remsets_1 = 0;
-static long long stat_saved_remsets_2 = 0;
-static long long stat_local_remsets_processed = 0;
-static long long stat_global_remsets_added = 0;
-static long long stat_global_remsets_readded = 0;
-static long long stat_global_remsets_processed = 0;
-static long long stat_global_remsets_discarded = 0;
-
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
 static int stat_wbarrier_arrayref_copy = 0;
 static int stat_wbarrier_generic_store = 0;
-static int stat_wbarrier_generic_store_remset = 0;
 static int stat_wbarrier_set_root = 0;
 static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
@@ -2346,16 +2332,12 @@ init_stats (void)
 	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_arrayref);
 	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_arrayref_copy);
 	mono_counters_register ("WBarrier generic store called", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store);
-	mono_counters_register ("WBarrier generic store stored", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_remset);
 	mono_counters_register ("WBarrier set root", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_root);
 	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_value_copy);
 	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_object_copy);
 
-	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced);
-	mono_counters_register ("bytes allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced);
 	mono_counters_register ("# objects allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced_degraded);
 	mono_counters_register ("bytes allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_degraded);
-	mono_counters_register ("bytes allocated in LOS", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_los);
 
 	mono_counters_register ("# copy_object() called (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_nursery);
 	mono_counters_register ("# objects copied (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_copied_nursery);
@@ -2370,16 +2352,7 @@ init_stats (void)
 	mono_counters_register ("# nursery copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_pinned);
 
 	mono_sgen_nursery_allocator_init_heavy_stats ();
-
-	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
-	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
-	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
-	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
-	mono_counters_register ("Non-global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_local_remsets_processed);
-	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
-	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
-	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
-	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
+	mono_sgen_alloc_init_heavy_stats ();
 #endif
 
 	inited = TRUE;
@@ -4563,6 +4536,8 @@ void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	int size;
+
+	HEAVY_STAT (++stat_wbarrier_object_copy);
 
 	if (ptr_in_nursery (obj) || ptr_on_stack (obj)) {
 		size = mono_object_class (obj)->instance_size;

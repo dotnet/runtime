@@ -48,8 +48,16 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/profiler-private.h"
 #include "utils/mono-memory-model.h"
+#include "utils/mono-counters.h"
 
 #define ALIGN_UP		SGEN_ALIGN_UP
+
+#ifdef HEAVY_STATISTICS
+static long long stat_objects_alloced = 0;
+static long long stat_bytes_alloced = 0;
+static long long stat_bytes_alloced_los = 0;
+
+#endif
 
 /*
  * Allocation is done from a Thread Local Allocation Buffer (TLAB). TLABs are allocated
@@ -961,5 +969,15 @@ mono_sgen_is_managed_allocator (MonoMethod *method)
 			return TRUE;
 	return FALSE;
 }
+
+#ifdef HEAVY_STATISTICS
+void
+mono_sgen_alloc_init_heavy_stats (void)
+{
+	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced);	
+	mono_counters_register ("bytes allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced);
+	mono_counters_register ("bytes allocated in LOS", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_los);
+}
+#endif
 
 #endif /*HAVE_SGEN_GC*/
