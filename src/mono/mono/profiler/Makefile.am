@@ -40,7 +40,7 @@ libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_log_la_SOURCES = proflog.c
 libmono_profiler_log_la_LIBADD = $(LIBMONO) $(Z_LIBS)
 libmono_profiler_gchandle_profiler_la_SOURCES = gchandle-profiler.h gchandle-profiler.c
-#libmono_profiler_gchandle_profiler_la_LIBADD = $(LIBMONO) $(GLIB_LIBS)
+libmono_profiler_gchandle_profiler_la_LIBADD = $(LIBMONO) $(GLIB_LIBS)
 
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS)

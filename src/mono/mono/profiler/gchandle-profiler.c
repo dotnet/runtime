@@ -20,6 +20,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_gc_roots (gchandle_profiler_track_gchandle, NULL);
 	mono_profiler_install_jit_end (gchandle_profiler_method_jitted);
 	mono_profiler_set_events (MONO_PROFILE_GC_ROOTS | MONO_PROFILE_JIT_COMPILATION);
+	mono_profiler_set_events (MONO_PROFILE_GC_ROOTS);
 }
 
 void gchandle_profiler_shutdown (MonoProfiler *prof)
