@@ -267,6 +267,97 @@ mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr)
 	UNLOCK_GC;
 }
 
+
+#ifdef HEAVY_STATISTICS
+static mword*
+collect_store_remsets (RememberedSet *remset, mword *bumper)
+{
+	mword *p = remset->data;
+	mword last = 0;
+	mword last1 = 0;
+	mword last2 = 0;
+
+	while (p < remset->store_next) {
+		switch ((*p) & REMSET_TYPE_MASK) {
+		case REMSET_LOCATION:
+			*bumper++ = *p;
+			if (*p == last)
+				++stat_saved_remsets_1;
+			last = *p;
+			if (*p == last1 || *p == last2) {
+				++stat_saved_remsets_2;
+			} else {
+				last2 = last1;
+				last1 = *p;
+			}
+			p += 1;
+			break;
+		case REMSET_RANGE:
+			p += 2;
+			break;
+		case REMSET_OBJECT:
+			p += 1;
+			break;
+		case REMSET_VTYPE:
+			p += 4;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	return bumper;
+}
+
+static void
+remset_stats (void)
+{
+	RememberedSet *remset;
+	int size = 0;
+	SgenThreadInfo *info;
+	int i;
+	mword *addresses, *bumper, *p, *r;
+
+	FOREACH_THREAD (info) {
+		for (remset = info->remset; remset; remset = remset->next)
+			size += remset->store_next - remset->data;
+	} END_FOREACH_THREAD
+	for (remset = freed_thread_remsets; remset; remset = remset->next)
+		size += remset->store_next - remset->data;
+	for (remset = global_remset; remset; remset = remset->next)
+		size += remset->store_next - remset->data;
+
+	bumper = addresses = mono_sgen_alloc_internal_dynamic (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+
+	FOREACH_THREAD (info) {
+		for (remset = info->remset; remset; remset = remset->next)
+			bumper = collect_store_remsets (remset, bumper);
+	} END_FOREACH_THREAD
+	for (remset = global_remset; remset; remset = remset->next)
+		bumper = collect_store_remsets (remset, bumper);
+	for (remset = freed_thread_remsets; remset; remset = remset->next)
+		bumper = collect_store_remsets (remset, bumper);
+
+	g_assert (bumper <= addresses + size);
+
+	stat_store_remsets += bumper - addresses;
+
+	mono_sgen_sort_addresses ((void**)addresses, bumper - addresses);
+	p = addresses;
+	r = addresses + 1;
+	while (r < bumper) {
+		if (*r != *p)
+			*++p = *r;
+		++r;
+	}
+
+	stat_store_remsets_unique += p - addresses;
+
+	mono_sgen_free_internal_dynamic (addresses, sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+}
+#endif
+
+
 static mword*
 handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global, SgenGrayQueue *queue)
 {
