@@ -36,6 +36,7 @@ void mono_sgen_ssb_scan_from_global_remsets (void *start_nursery, void *end_nurs
 void mono_sgen_ssb_scan_from_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
 
 void mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p) MONO_INTERNAL;
+void mono_sgen_ssb_register_thread (SgenThreadInfo *p) MONO_INTERNAL;
 void mono_sgen_ssb_prepare_for_minor_collection (void) MONO_INTERNAL;
 void mono_sgen_ssb_prepare_for_major_collection (void) MONO_INTERNAL;
 void mono_sgen_ssb_init (void) MONO_INTERNAL;

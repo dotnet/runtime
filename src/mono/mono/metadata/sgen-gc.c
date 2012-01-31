@@ -376,20 +376,6 @@ struct _RootRecord {
 	mword root_desc;
 };
 
-#ifdef HAVE_KW_THREAD
-__thread RememberedSet *remembered_set MONO_TLS_FAST;
-#endif
-static MonoNativeTlsKey remembered_set_key;
-RememberedSet *global_remset;
-RememberedSet *freed_thread_remsets;
-GenericStoreRememberedSet *generic_store_remsets = NULL;
-
-/* FIXME: later choose a size that takes into account the RememberedSet struct
- * and doesn't waste any alloc paddin space.
- */
-#define DEFAULT_REMSET_SIZE 1024
-static RememberedSet* alloc_remset (int size, gpointer id, gboolean global);
-
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
 #define pin_object		SGEN_PIN_OBJECT
@@ -4127,14 +4113,8 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	stack_end = info->stack_end;
 #endif
 
-	info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info, FALSE);
-	mono_native_tls_set_value (remembered_set_key, info->remset);
-#ifdef HAVE_KW_THREAD
-	remembered_set = info->remset;
-#endif
-
-	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
-	STORE_REMSET_BUFFER_INDEX = 0;
+	if (!use_cardtable)
+		mono_sgen_ssb_register_thread (info);
 
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) stack end %p\n", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end));
 
@@ -4284,24 +4264,6 @@ mono_gc_pthread_exit (void *retval)
  * ########  Write barriers
  * ######################################################################
  */
-
-
-RememberedSet*
-mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
-{
-	return alloc_remset (size, id, global);
-}
-
-static RememberedSet*
-alloc_remset (int size, gpointer id, gboolean global)
-{
-	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
-	res->store_next = res->data;
-	res->end_set = res->data + size;
-	res->next = NULL;
-	DEBUG (4, fprintf (gc_debug_file, "Allocated%s remset size %d at %p for %p\n", global ? " global" : "", size, res->data, id));
-	return res;
-}
 
 /*
  * Note: the write barriers first do the needed GC work and then do the actual store:
@@ -4875,8 +4837,6 @@ mono_gc_base_init (void)
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
-	mono_native_tls_alloc (&remembered_set_key, NULL);
-
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_alloc (&thread_info_key, NULL);
 #endif
@@ -5148,9 +5108,6 @@ mono_gc_base_init (void)
 
 	if (major_collector.post_param_init)
 		major_collector.post_param_init ();
-
-	global_remset = alloc_remset (1024, NULL, FALSE);
-	global_remset->next = NULL;
 
 	if (use_cardtable)
 		sgen_card_table_init ();

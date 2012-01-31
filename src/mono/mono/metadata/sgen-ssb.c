@@ -46,6 +46,14 @@ static LOCK_DECLARE (global_remset_mutex);
 #define LOCK_GLOBAL_REMSET mono_mutex_lock (&global_remset_mutex)
 #define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
 
+#ifdef HAVE_KW_THREAD
+__thread RememberedSet *remembered_set MONO_TLS_FAST;
+#endif
+static MonoNativeTlsKey remembered_set_key;
+RememberedSet *global_remset;
+RememberedSet *freed_thread_remsets;
+GenericStoreRememberedSet *generic_store_remsets = NULL;
+
 #ifdef HEAVY_STATISTICS
 static int stat_wbarrier_generic_store_remset = 0;
 
@@ -98,6 +106,21 @@ evacuate_remset_buffer (void)
 
 	STORE_REMSET_BUFFER_INDEX = 0;
 }
+
+/* FIXME: later choose a size that takes into account the RememberedSet struct
+ * and doesn't waste any alloc paddin space.
+ */
+static RememberedSet*
+mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
+{
+	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
+	res->store_next = res->data;
+	res->end_set = res->data + size;
+	res->next = NULL;
+	DEBUG (4, fprintf (gc_debug_file, "Allocated%s remset size %d at %p for %p\n", global ? " global" : "", size, res->data, id));
+	return res;
+}
+
 
 
 void
@@ -583,6 +606,22 @@ mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 	*p->store_remset_buffer_addr = NULL;
 }
 
+void
+mono_sgen_ssb_register_thread (SgenThreadInfo *info)
+{
+#ifndef HAVE_KW_THREAD
+	SgenThreadInfo *__thread_info__ = info;
+#endif
+
+	info->remset = mono_sgen_alloc_remset (DEFAULT_REMSET_SIZE, info, FALSE);
+	mono_native_tls_set_value (remembered_set_key, info->remset);
+#ifdef HAVE_KW_THREAD
+	remembered_set = info->remset;
+#endif
+
+	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
+	STORE_REMSET_BUFFER_INDEX = 0;
+}
 
 void
 mono_sgen_ssb_prepare_for_minor_collection (void)
@@ -733,6 +772,11 @@ void
 mono_sgen_ssb_init (void)
 {
 	LOCK_INIT (global_remset_mutex);
+
+	global_remset = mono_sgen_alloc_remset (1024, NULL, FALSE);
+	global_remset->next = NULL;
+
+	mono_native_tls_alloc (&remembered_set_key, NULL);
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier generic store stored", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_remset);
