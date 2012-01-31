@@ -12,7 +12,7 @@ INCLUDES = \
 if !DISABLE_PROFILER
 if JIT_SUPPORTED
 bin_PROGRAMS = mprof-report
-lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la libmono-profiler-gchandle-profiler.la
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la
 if PLATFORM_DARWIN
 libmono_profiler_log_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
@@ -39,8 +39,6 @@ libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_log_la_SOURCES = proflog.c
 libmono_profiler_log_la_LIBADD = $(LIBMONO) $(Z_LIBS)
-libmono_profiler_gchandle_profiler_la_SOURCES = gchandle-profiler.h gchandle-profiler.c
-libmono_profiler_gchandle_profiler_la_LIBADD = $(LIBMONO) $(GLIB_LIBS)
 
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS)
