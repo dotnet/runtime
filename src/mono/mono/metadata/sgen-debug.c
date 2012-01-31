@@ -34,10 +34,10 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-ssb.h"
 #include "metadata/sgen-protocol.h"
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
-#define ALIGN_UP		SGEN_ALIGN_UP
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
@@ -117,112 +117,6 @@ describe_ptr (char *ptr)
 	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
 }
 
-static mword*
-find_in_remset_loc (mword *p, char *addr, gboolean *found)
-{
-	void **ptr;
-	mword count, desc;
-	size_t skip_size;
-
-	switch ((*p) & REMSET_TYPE_MASK) {
-	case REMSET_LOCATION:
-		if (*p == (mword)addr)
-			*found = TRUE;
-		return p + 1;
-	case REMSET_RANGE:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		count = p [1];
-		if ((void**)addr >= ptr && (void**)addr < ptr + count)
-			*found = TRUE;
-		return p + 2;
-	case REMSET_OBJECT:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		count = safe_object_get_size ((MonoObject*)ptr); 
-		count = ALIGN_UP (count);
-		count /= sizeof (mword);
-		if ((void**)addr >= ptr && (void**)addr < ptr + count)
-			*found = TRUE;
-		return p + 1;
-	case REMSET_VTYPE:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		desc = p [1];
-		count = p [2];
-		skip_size = p [3];
-
-		/* The descriptor includes the size of MonoObject */
-		skip_size -= sizeof (MonoObject);
-		skip_size *= count;
-		if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
-			*found = TRUE;
-
-		return p + 4;
-	default:
-		g_assert_not_reached ();
-	}
-	return NULL;
-}
-
-/*
- * Return whenever ADDR occurs in the remembered sets
- */
-static gboolean
-find_in_remsets (char *addr)
-{
-	int i;
-	SgenThreadInfo *info;
-	RememberedSet *remset;
-	GenericStoreRememberedSet *store_remset;
-	mword *p;
-	gboolean found = FALSE;
-
-	/* the global one */
-	for (remset = global_remset; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;) {
-			p = find_in_remset_loc (p, addr, &found);
-			if (found)
-				return TRUE;
-		}
-	}
-
-	/* the generic store ones */
-	for (store_remset = generic_store_remsets; store_remset; store_remset = store_remset->next) {
-		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
-			if (store_remset->data [i] == addr)
-				return TRUE;
-		}
-	}
-
-	/* the per-thread ones */
-	FOREACH_THREAD (info) {
-		int j;
-		for (remset = info->remset; remset; remset = remset->next) {
-			DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
-			for (p = remset->data; p < remset->store_next;) {
-				p = find_in_remset_loc (p, addr, &found);
-				if (found)
-					return TRUE;
-			}
-		}
-		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j) {
-			if ((*info->store_remset_buffer_addr) [j + 1] == addr)
-				return TRUE;
-		}
-	} END_FOREACH_THREAD
-
-	/* the freed thread ones */
-	for (remset = freed_thread_remsets; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;) {
-			p = find_in_remset_loc (p, addr, &found);
-			if (found)
-				return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
 static gboolean missing_remsets;
 
 /*
@@ -234,7 +128,7 @@ static gboolean missing_remsets;
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && mono_sgen_ptr_in_nursery ((char*)*(ptr))) { \
-		if (!find_in_remsets ((char*)(ptr)) && (!use_cardtable || !sgen_card_table_address_is_marked ((mword)ptr))) { \
+		if (!mono_sgen_ssb_find_address ((char*)(ptr)) && (!use_cardtable || !sgen_card_table_address_is_marked ((mword)ptr))) { \
 			fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			if (!object_is_pinned (*(ptr)))								\

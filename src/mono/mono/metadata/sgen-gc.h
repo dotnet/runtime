@@ -803,9 +803,6 @@ extern NurseryClearPolicy nursery_clear_policy;
 
 extern LOCK_DECLARE (gc_mutex);
 
-extern RememberedSet *global_remset;
-extern RememberedSet *freed_thread_remsets;
-extern GenericStoreRememberedSet *generic_store_remsets;
 extern int do_pin_stats;
 extern gboolean use_cardtable;
 

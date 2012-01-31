@@ -47,12 +47,12 @@ static LOCK_DECLARE (global_remset_mutex);
 #define UNLOCK_GLOBAL_REMSET mono_mutex_unlock (&global_remset_mutex)
 
 #ifdef HAVE_KW_THREAD
-__thread RememberedSet *remembered_set MONO_TLS_FAST;
+static __thread RememberedSet *remembered_set MONO_TLS_FAST;
 #endif
 static MonoNativeTlsKey remembered_set_key;
-RememberedSet *global_remset;
-RememberedSet *freed_thread_remsets;
-GenericStoreRememberedSet *generic_store_remsets = NULL;
+static RememberedSet *global_remset;
+static RememberedSet *freed_thread_remsets;
+static GenericStoreRememberedSet *generic_store_remsets = NULL;
 
 #ifdef HEAVY_STATISTICS
 static int stat_wbarrier_generic_store_remset = 0;
@@ -68,6 +68,9 @@ static long long stat_global_remsets_processed = 0;
 static long long stat_global_remsets_discarded = 0;
 
 #endif
+
+static gboolean global_remset_location_was_not_added (gpointer ptr);
+
 
 static void
 clear_thread_store_remset_buffer (SgenThreadInfo *info)
@@ -415,7 +418,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
-				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
+				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), mono_sgen_safe_object_get_size (*ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
 				/*
 				 * If the object is pinned, each reference to it from nonpinned objects
@@ -692,7 +695,7 @@ mono_sgen_ssb_prepare_for_major_collection (void)
  *
  * Returns TRUE is the element was added..
  */
-gboolean
+static gboolean
 global_remset_location_was_not_added (gpointer ptr)
 {
 
@@ -791,6 +794,117 @@ mono_sgen_ssb_init (void)
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
 	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
 #endif
+}
+
+/*
+ * ######################################################################
+ * ########  Debug support
+ * ######################################################################
+ */
+
+static mword*
+find_in_remset_loc (mword *p, char *addr, gboolean *found)
+{
+	void **ptr;
+	mword count, desc;
+	size_t skip_size;
+
+	switch ((*p) & REMSET_TYPE_MASK) {
+	case REMSET_LOCATION:
+		if (*p == (mword)addr)
+			*found = TRUE;
+		return p + 1;
+	case REMSET_RANGE:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		count = p [1];
+		if ((void**)addr >= ptr && (void**)addr < ptr + count)
+			*found = TRUE;
+		return p + 2;
+	case REMSET_OBJECT:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		count = mono_sgen_safe_object_get_size ((MonoObject*)ptr); 
+		count = SGEN_ALIGN_UP (count);
+		count /= sizeof (mword);
+		if ((void**)addr >= ptr && (void**)addr < ptr + count)
+			*found = TRUE;
+		return p + 1;
+	case REMSET_VTYPE:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		desc = p [1];
+		count = p [2];
+		skip_size = p [3];
+
+		/* The descriptor includes the size of MonoObject */
+		skip_size -= sizeof (MonoObject);
+		skip_size *= count;
+		if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
+			*found = TRUE;
+
+		return p + 4;
+	default:
+		g_assert_not_reached ();
+	}
+	return NULL;
+}
+/*
+ * Return whenever ADDR occurs in the remembered sets
+ */
+gboolean
+mono_sgen_ssb_find_address (char *addr)
+{
+	int i;
+	SgenThreadInfo *info;
+	RememberedSet *remset;
+	GenericStoreRememberedSet *store_remset;
+	mword *p;
+	gboolean found = FALSE;
+
+	/* the global one */
+	for (remset = global_remset; remset; remset = remset->next) {
+		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		for (p = remset->data; p < remset->store_next;) {
+			p = find_in_remset_loc (p, addr, &found);
+			if (found)
+				return TRUE;
+		}
+	}
+
+	/* the generic store ones */
+	for (store_remset = generic_store_remsets; store_remset; store_remset = store_remset->next) {
+		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
+			if (store_remset->data [i] == addr)
+				return TRUE;
+		}
+	}
+
+	/* the per-thread ones */
+	FOREACH_THREAD (info) {
+		int j;
+		for (remset = info->remset; remset; remset = remset->next) {
+			DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+			for (p = remset->data; p < remset->store_next;) {
+				p = find_in_remset_loc (p, addr, &found);
+				if (found)
+					return TRUE;
+			}
+		}
+		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j) {
+			if ((*info->store_remset_buffer_addr) [j + 1] == addr)
+				return TRUE;
+		}
+	} END_FOREACH_THREAD
+
+	/* the freed thread ones */
+	for (remset = freed_thread_remsets; remset; remset = remset->next) {
+		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		for (p = remset->data; p < remset->store_next;) {
+			p = find_in_remset_loc (p, addr, &found);
+			if (found)
+				return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 #endif
