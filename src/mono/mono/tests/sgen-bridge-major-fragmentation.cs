@@ -58,5 +58,8 @@ class Driver {
 			Console.WriteLine ("CrashLoop {0}/{1}", i + 1, loops);
 			CrashMainLoop ();
 		}
+		Console.WriteLine ("done");
+		GC.Collect ();
+		GC.WaitForPendingFinalizers ();
 	}
 }
