@@ -708,8 +708,6 @@ typedef SgenGrayQueue GrayQueue;
 static int stop_world (int generation);
 static int restart_world (int generation);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue);
-static void scan_from_global_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
-static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
 static void report_finalizer_roots (void);
@@ -2532,7 +2530,7 @@ job_scan_from_remsets (WorkerData *worker_data, void *job_data_untyped)
 {
 	ScanFromRemsetsJobData *job_data = job_data_untyped;
 
-	scan_from_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
+	mono_sgen_ssb_scan_from_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 typedef struct
@@ -2724,7 +2722,7 @@ collect_nursery (size_t requested_size)
 	 * The global remsets must be processed before the workers start
 	 * marking because they might add global remsets.
 	 */
-	scan_from_global_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	mono_sgen_ssb_scan_from_global_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 	mono_sgen_workers_start_marking ();
 
@@ -4080,81 +4078,6 @@ ptr_on_stack (void *ptr)
 	return FALSE;
 }
 
-static mword*
-handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global, GrayQueue *queue)
-{
-	void **ptr;
-	mword count;
-	mword desc;
-
-	if (global)
-		HEAVY_STAT (++stat_global_remsets_processed);
-	else
-		HEAVY_STAT (++stat_local_remsets_processed);
-
-	/* FIXME: exclude stack locations */
-	switch ((*p) & REMSET_TYPE_MASK) {
-	case REMSET_LOCATION:
-		ptr = (void**)(*p);
-		//__builtin_prefetch (ptr);
-		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
-			gpointer old = *ptr;
-			major_collector.copy_object (ptr, queue);
-			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
-			if (old)
-				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
-			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
-				/*
-				 * If the object is pinned, each reference to it from nonpinned objects
-				 * becomes part of the global remset, which can grow very large.
-				 */
-				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				mono_sgen_add_to_global_remset (ptr);
-			}
-		} else {
-			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
-		}
-		return p + 1;
-	case REMSET_RANGE:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
-			return p + 2;
-		count = p [1];
-		while (count-- > 0) {
-			major_collector.copy_object (ptr, queue);
-			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
-			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				mono_sgen_add_to_global_remset (ptr);
-			++ptr;
-		}
-		return p + 2;
-	case REMSET_OBJECT:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
-			return p + 1;
-		mono_sgen_get_minor_scan_object () ((char*)ptr, queue);
-		return p + 1;
-	case REMSET_VTYPE: {
-		ScanVTypeFunc scan_vtype = mono_sgen_get_minor_scan_vtype ();
-		size_t skip_size;
-
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
-			return p + 4;
-		desc = p [1];
-		count = p [2];
-		skip_size = p [3];
-		while (count-- > 0) {
-			scan_vtype ((char*)ptr, desc, queue);
-			ptr = (void**)((char*)ptr + skip_size);
-		}
-		return p + 4;
-	}
-	default:
-		g_assert_not_reached ();
-	}
-	return NULL;
-}
 
 #ifdef HEAVY_STATISTICS
 static mword*
@@ -4244,125 +4167,6 @@ remset_stats (void)
 	mono_sgen_free_internal_dynamic (addresses, sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 }
 #endif
-
-static void
-clear_thread_store_remset_buffer (SgenThreadInfo *info)
-{
-	*info->store_remset_buffer_index_addr = 0;
-	/* See the comment at the end of sgen_thread_unregister() */
-	if (*info->store_remset_buffer_addr)
-		memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
-}
-
-static size_t
-remset_byte_size (RememberedSet *remset)
-{
-	return sizeof (RememberedSet) + (remset->end_set - remset->data) * sizeof (gpointer);
-}
-
-static void
-scan_from_global_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
-{
-	RememberedSet *remset;
-	mword *p, *next_p, *store_pos;
-
-	/* the global one */
-	for (remset = global_remset; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		store_pos = remset->data;
-		for (p = remset->data; p < remset->store_next; p = next_p) {
-			void **ptr = (void**)p [0];
-
-			/*Ignore previously processed remset.*/
-			if (!global_remset_location_was_not_added (ptr)) {
-				next_p = p + 1;
-				continue;
-			}
-
-			next_p = handle_remset (p, start_nursery, end_nursery, TRUE, queue);
-
-			/* 
-			 * Clear global remsets of locations which no longer point to the 
-			 * nursery. Otherwise, they could grow indefinitely between major 
-			 * collections.
-			 *
-			 * Since all global remsets are location remsets, we don't need to unmask the pointer.
-			 */
-			if (ptr_in_nursery (*ptr)) {
-				*store_pos ++ = p [0];
-				HEAVY_STAT (++stat_global_remsets_readded);
-			}
-		}
-
-		/* Truncate the remset */
-		remset->store_next = store_pos;
-	}
-}
-
-static void
-scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
-{
-	int i;
-	SgenThreadInfo *info;
-	RememberedSet *remset;
-	GenericStoreRememberedSet *store_remset;
-	mword *p;
-
-#ifdef HEAVY_STATISTICS
-	remset_stats ();
-#endif
-
-	/* the generic store ones */
-	store_remset = generic_store_remsets;
-	while (store_remset) {
-		GenericStoreRememberedSet *next = store_remset->next;
-
-		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
-			gpointer addr = store_remset->data [i];
-			if (addr)
-				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE, queue);
-		}
-
-		mono_sgen_free_internal (store_remset, INTERNAL_MEM_STORE_REMSET);
-
-		store_remset = next;
-	}
-	generic_store_remsets = NULL;
-
-	/* the per-thread ones */
-	FOREACH_THREAD (info) {
-		RememberedSet *next;
-		int j;
-		for (remset = info->remset; remset; remset = next) {
-			DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
-			for (p = remset->data; p < remset->store_next;)
-				p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
-			remset->store_next = remset->data;
-			next = remset->next;
-			remset->next = NULL;
-			if (remset != info->remset) {
-				DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-			}
-		}
-		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
-			handle_remset ((mword*)*info->store_remset_buffer_addr + j + 1, start_nursery, end_nursery, FALSE, queue);
-		clear_thread_store_remset_buffer (info);
-	} END_FOREACH_THREAD
-
-	/* the freed thread ones */
-	while (freed_thread_remsets) {
-		RememberedSet *next;
-		remset = freed_thread_remsets;
-		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;)
-			p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
-		next = remset->next;
-		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-		mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-		freed_thread_remsets = next;
-	}
-}
 
 static void*
 sgen_thread_register (SgenThreadInfo* info, void *addr)
