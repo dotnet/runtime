@@ -4363,7 +4363,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		/* Temporarily disable this when running in the debugger until we have support
 		 * for this in the debugger. */
-		cfg->disable_omit_fp = TRUE;
+		/* This is no longer needed with sdb */
+		//cfg->disable_omit_fp = TRUE;
 
 		/* The debugger needs all locals to be on the stack or in a global register */
 		cfg->disable_vreg_to_lvreg = TRUE;
@@ -4377,7 +4378,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->opt &= ~MONO_OPT_INLINE;
 		cfg->opt &= ~MONO_OPT_COPYPROP;
 		cfg->opt &= ~MONO_OPT_CONSPROP;
-		cfg->opt &= ~MONO_OPT_GSHARED;
+		/* This is no longer needed with sdb */
+		//cfg->opt &= ~MONO_OPT_GSHARED;
 
 		/* This is needed for the soft debugger, which doesn't like code after the epilog */
 		cfg->disable_out_of_line_bblocks = TRUE;
