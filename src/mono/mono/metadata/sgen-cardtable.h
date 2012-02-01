@@ -34,7 +34,7 @@ void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
 void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue) MONO_INTERNAL;
 
 gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
-void sgen_scan_from_card_tables (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_card_tables_collect_stats (gboolean begin) MONO_INTERNAL;
 void mono_sgen_card_table_prepare_for_major_collection (void) MONO_INTERNAL;
 void sgen_card_table_init (void) MONO_INTERNAL;
@@ -155,7 +155,7 @@ sgen_card_table_mark_range (mword address, mword size)
 }
 
 #define sgen_card_table_address_is_marked(p)	FALSE
-#define sgen_scan_from_card_tables(start,end,queue)
+#define mono_sgen_card_table_scan_from_remsets(start,end,queue)
 #define mono_sgen_card_table_prepare_for_major_collection()
 #define sgen_card_table_init()
 #define sgen_card_tables_collect_stats(begin)

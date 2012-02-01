@@ -32,8 +32,8 @@ void mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, 
 void mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src) MONO_INTERNAL;
 void mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr) MONO_INTERNAL;
 
-void mono_sgen_ssb_scan_from_global_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_ssb_scan_from_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
+void mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
 
 void mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p) MONO_INTERNAL;
 void mono_sgen_ssb_register_thread (SgenThreadInfo *p) MONO_INTERNAL;

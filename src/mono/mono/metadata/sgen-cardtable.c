@@ -351,10 +351,12 @@ mono_sgen_card_table_prepare_for_major_collection (void)
 }
 
 void
-sgen_scan_from_card_tables (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
+
+	sgen_card_tables_collect_stats (TRUE);
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	/*FIXME we should have a bit on each block/los object telling if the object have marked cards.*/

@@ -473,7 +473,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 }
 
 void
-mono_sgen_ssb_scan_from_global_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	RememberedSet *remset;
 	mword *p, *next_p, *store_pos;
@@ -512,7 +512,7 @@ mono_sgen_ssb_scan_from_global_remsets (void *start_nursery, void *end_nursery, 
 }
 
 void
-mono_sgen_ssb_scan_from_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	int i;
 	SgenThreadInfo *info;

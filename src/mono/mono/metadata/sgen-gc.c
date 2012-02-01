@@ -317,7 +317,6 @@ static long long stat_pinned_objects = 0;
 static long long time_minor_pre_collection_fragment_clear = 0;
 static long long time_minor_pinning = 0;
 static long long time_minor_scan_remsets = 0;
-static long long time_minor_scan_card_table = 0;
 static long long time_minor_scan_pinned = 0;
 static long long time_minor_scan_registered_roots = 0;
 static long long time_minor_scan_thread_data = 0;
@@ -2289,8 +2288,7 @@ init_stats (void)
 
 	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pre_collection_fragment_clear);
 	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pinning);
-	mono_counters_register ("Minor scan remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_remsets);
-	mono_counters_register ("Minor scan cardtables", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_card_table);
+	mono_counters_register ("Minor scan remembered set", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_remsets);
 	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_pinned);
 	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_registered_roots);
 	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_thread_data);
@@ -2482,14 +2480,17 @@ typedef struct
 {
 	char *heap_start;
 	char *heap_end;
-} ScanFromRemsetsJobData;
+} FinishRememberedSetScanJobData;
 
 static void
-job_scan_from_remsets (WorkerData *worker_data, void *job_data_untyped)
+job_finish_remembered_set_scan (WorkerData *worker_data, void *job_data_untyped)
 {
-	ScanFromRemsetsJobData *job_data = job_data_untyped;
+	FinishRememberedSetScanJobData *job_data = job_data_untyped;
 
-	mono_sgen_ssb_scan_from_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
+	if (use_cardtable)
+		mono_sgen_card_table_finish_scan_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
+	else
+		mono_sgen_ssb_finish_scan_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 typedef struct
@@ -2589,7 +2590,7 @@ collect_nursery (size_t requested_size)
 	gboolean needs_major;
 	size_t max_garbage_amount;
 	char *nursery_next;
-	ScanFromRemsetsJobData sfrjd;
+	FinishRememberedSetScanJobData frssjd;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
 	mword fragment_total;
@@ -2675,32 +2676,22 @@ collect_nursery (size_t requested_size)
 	mono_sgen_workers_start_all_workers ();
 
 	/*
-	 * Walk all the roots and copy the young objects to the old
-	 * generation, starting from to_space.
-	 *
-	 * The global remsets must be processed before the workers start
-	 * marking because they might add global remsets.
+	 * Perform the sequential part of remembered set scanning.
+	 * This usually involves scanning global information that might later be produced by evacuation.
 	 */
-	mono_sgen_ssb_scan_from_global_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	if (!use_cardtable)
+		mono_sgen_ssb_begin_scan_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 	mono_sgen_workers_start_marking ();
 
-	sfrjd.heap_start = nursery_start;
-	sfrjd.heap_end = nursery_next;
-	mono_sgen_workers_enqueue_job (job_scan_from_remsets, &sfrjd);
+	frssjd.heap_start = nursery_start;
+	frssjd.heap_end = nursery_next;
+	mono_sgen_workers_enqueue_job (job_finish_remembered_set_scan, &frssjd);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
-
-	if (use_cardtable) {
-		atv = btv;
-		sgen_card_tables_collect_stats (TRUE);
-		sgen_scan_from_card_tables (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-		TV_GETTIME (btv);
-		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
-	}
 
 	if (!mono_sgen_collection_is_parallel ())
 		mono_sgen_drain_gray_stack (&gray_queue, -1);
