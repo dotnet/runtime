@@ -351,6 +351,12 @@ mono_sgen_card_table_prepare_for_major_collection (void)
 }
 
 void
+mono_sgen_card_table_finish_minor_collection (void)
+{
+	sgen_card_tables_collect_stats (FALSE);
+}
+
+void
 mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	SGEN_TV_DECLARE (atv);

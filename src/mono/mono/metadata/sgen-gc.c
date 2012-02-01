@@ -2796,7 +2796,7 @@ collect_nursery (size_t requested_size)
 	g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
 	if (use_cardtable)
-		sgen_card_tables_collect_stats (FALSE);
+		mono_sgen_card_table_finish_minor_collection ();
 
 	check_scan_starts ();
 
