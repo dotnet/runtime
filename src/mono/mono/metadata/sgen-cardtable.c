@@ -366,11 +366,11 @@ mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery
 	SGEN_TV_GETTIME (atv);
 	sgen_major_collector_scan_card_table (queue);
 	SGEN_TV_GETTIME (btv);
-	last_major_scan_time = SGEN_TV_ELAPSED_MS (atv, btv); 
+	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;
 	mono_sgen_los_scan_card_table (queue);
 	SGEN_TV_GETTIME (atv);
-	last_los_scan_time = SGEN_TV_ELAPSED_MS (btv, atv);
+	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;
 }
 
@@ -644,10 +644,10 @@ sgen_card_tables_collect_stats (gboolean begin)
 		sgen_major_collector_iterate_live_block_ranges (count_marked_cards);
 		cur_stats = &los_stats;
 		mono_sgen_los_iterate_live_block_ranges (count_remarked_cards);
-		printf ("cards major (t %d m %d r %d)  los (t %d m %d r %d) major_scan %lld los_scan %lld\n", 
+		printf ("cards major (t %d m %d r %d)  los (t %d m %d r %d) major_scan %.2fms los_scan %.2fms\n", 
 			major_stats.total, major_stats.marked, major_stats.remarked,
 			los_stats.total, los_stats.marked, los_stats.remarked,
-			last_major_scan_time, last_los_scan_time);
+			last_major_scan_time / 1000.0, last_los_scan_time / 1000.0);
 	}
 #endif
 }
@@ -673,8 +673,8 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &large_objects);
 	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &bloby_objects);
 #endif
-	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &major_card_scan_time);
-	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_card_scan_time);
+	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &major_card_scan_time);
+	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &los_card_scan_time);
 
 
 	remset->wbarrier_set_field = mono_sgen_card_table_wbarrier_set_field;

@@ -2284,28 +2284,28 @@ init_stats (void)
 	if (inited)
 		return;
 
-	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pre_collection_fragment_clear);
-	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pinning);
-	mono_counters_register ("Minor scan remembered set", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_remsets);
-	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_pinned);
-	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_registered_roots);
-	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_thread_data);
-	mono_counters_register ("Minor finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_finish_gray_stack);
-	mono_counters_register ("Minor fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_fragment_creation);
+	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_pre_collection_fragment_clear);
+	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_pinning);
+	mono_counters_register ("Minor scan remembered set", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_remsets);
+	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_pinned);
+	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_registered_roots);
+	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_thread_data);
+	mono_counters_register ("Minor finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_finish_gray_stack);
+	mono_counters_register ("Minor fragment creation", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_fragment_creation);
 
-	mono_counters_register ("Major fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_pre_collection_fragment_clear);
-	mono_counters_register ("Major pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_pinning);
-	mono_counters_register ("Major scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_pinned);
-	mono_counters_register ("Major scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_registered_roots);
-	mono_counters_register ("Major scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_thread_data);
-	mono_counters_register ("Major scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_alloc_pinned);
-	mono_counters_register ("Major scan finalized", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_finalized);
-	mono_counters_register ("Major scan big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_big_objects);
-	mono_counters_register ("Major finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_finish_gray_stack);
-	mono_counters_register ("Major free big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_free_bigobjs);
-	mono_counters_register ("Major LOS sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_los_sweep);
-	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_sweep);
-	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_fragment_creation);
+	mono_counters_register ("Major fragment clear", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_pre_collection_fragment_clear);
+	mono_counters_register ("Major pinning", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_pinning);
+	mono_counters_register ("Major scan pinned", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_pinned);
+	mono_counters_register ("Major scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_registered_roots);
+	mono_counters_register ("Major scan thread data", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_thread_data);
+	mono_counters_register ("Major scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_alloc_pinned);
+	mono_counters_register ("Major scan finalized", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_finalized);
+	mono_counters_register ("Major scan big objects", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_big_objects);
+	mono_counters_register ("Major finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_finish_gray_stack);
+	mono_counters_register ("Major free big objects", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_free_bigobjs);
+	mono_counters_register ("Major LOS sweep", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_los_sweep);
+	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_sweep);
+	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_fragment_creation);
 
 	mono_counters_register ("Number of pinned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_pinned_objects);
 
@@ -2628,7 +2628,7 @@ collect_nursery (size_t requested_size)
 	mono_sgen_clear_current_nursery_fragment ();
 
 	TV_GETTIME (btv);
-	time_minor_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
+	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
@@ -2661,7 +2661,7 @@ collect_nursery (size_t requested_size)
 	mono_sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);	
 
 	TV_GETTIME (atv);
-	time_minor_pinning += TV_ELAPSED_MS (btv, atv);
+	time_minor_pinning += TV_ELAPSED (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", mono_sgen_get_pinned_count (), TV_ELAPSED (btv, atv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", mono_sgen_get_pinned_count ()));
 
@@ -2685,7 +2685,7 @@ collect_nursery (size_t requested_size)
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
-	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
+	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	if (!mono_sgen_collection_is_parallel ())
@@ -2696,7 +2696,7 @@ collect_nursery (size_t requested_size)
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_finalizer_roots ();
 	TV_GETTIME (atv);
-	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
+	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
 	scrrjd_normal.func = mono_sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
@@ -2712,7 +2712,7 @@ collect_nursery (size_t requested_size)
 	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
-	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
+	time_minor_scan_registered_roots += TV_ELAPSED (atv, btv);
 
 	/* thread data */
 	stdjd.heap_start = nursery_start;
@@ -2720,7 +2720,7 @@ collect_nursery (size_t requested_size)
 	mono_sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
 
 	TV_GETTIME (atv);
-	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
+	time_minor_scan_thread_data += TV_ELAPSED (btv, atv);
 	btv = atv;
 
 	if (mono_sgen_collection_is_parallel ()) {
@@ -2736,7 +2736,7 @@ collect_nursery (size_t requested_size)
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
-	time_minor_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
+	time_minor_finish_gray_stack += TV_ELAPSED (btv, atv);
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
 
 	/*
@@ -2766,7 +2766,7 @@ collect_nursery (size_t requested_size)
 
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_END, 0);
 	TV_GETTIME (btv);
-	time_minor_fragment_creation += TV_ELAPSED_MS (atv, btv);
+	time_minor_fragment_creation += TV_ELAPSED (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %lu bytes available\n", TV_ELAPSED (atv, btv), (unsigned long)fragment_total));
 
 	if (consistency_check_at_minor_collection)
@@ -2889,7 +2889,7 @@ major_do_collection (const char *reason)
 	mono_sgen_clear_nursery_fragments ();
 
 	TV_GETTIME (btv);
-	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
+	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
 	nursery_section->next_data = nursery_end;
 	/* we should also coalesce scanning from sections close to each other
@@ -2961,7 +2961,7 @@ major_do_collection (const char *reason)
 	old_next_pin_slot = mono_sgen_get_pinned_count ();
 
 	TV_GETTIME (btv);
-	time_major_pinning += TV_ELAPSED_MS (atv, btv);
+	time_major_pinning += TV_ELAPSED (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", mono_sgen_get_pinned_count (), TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", mono_sgen_get_pinned_count ()));
 
@@ -2977,7 +2977,7 @@ major_do_collection (const char *reason)
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
 	TV_GETTIME (atv);
-	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
+	time_major_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
 	scrrjd_normal.func = major_collector.copy_or_mark_object;
@@ -2993,7 +2993,7 @@ major_do_collection (const char *reason)
 	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
-	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
+	time_major_scan_registered_roots += TV_ELAPSED (atv, btv);
 
 	/* Threads */
 	stdjd.heap_start = heap_start;
@@ -3001,10 +3001,10 @@ major_do_collection (const char *reason)
 	mono_sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
 
 	TV_GETTIME (atv);
-	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
+	time_major_scan_thread_data += TV_ELAPSED (btv, atv);
 
 	TV_GETTIME (btv);
-	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
+	time_major_scan_alloc_pinned += TV_ELAPSED (atv, btv);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_finalizer_roots ();
@@ -3017,11 +3017,11 @@ major_do_collection (const char *reason)
 	mono_sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
 
 	TV_GETTIME (atv);
-	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
+	time_major_scan_finalized += TV_ELAPSED (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
 	TV_GETTIME (btv);
-	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
+	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
 
 	if (major_collector.is_parallel) {
 		while (!mono_sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
@@ -3041,7 +3041,7 @@ major_do_collection (const char *reason)
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
 	TV_GETTIME (atv);
-	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
+	time_major_finish_gray_stack += TV_ELAPSED (btv, atv);
 
 	/*
 	 * The (single-threaded) finalization code might have done
@@ -3085,17 +3085,17 @@ major_do_collection (const char *reason)
 	}
 
 	TV_GETTIME (btv);
-	time_major_free_bigobjs += TV_ELAPSED_MS (atv, btv);
+	time_major_free_bigobjs += TV_ELAPSED (atv, btv);
 
 	mono_sgen_los_sweep ();
 
 	TV_GETTIME (atv);
-	time_major_los_sweep += TV_ELAPSED_MS (btv, atv);
+	time_major_los_sweep += TV_ELAPSED (btv, atv);
 
 	major_collector.sweep ();
 
 	TV_GETTIME (btv);
-	time_major_sweep += TV_ELAPSED_MS (atv, btv);
+	time_major_sweep += TV_ELAPSED (atv, btv);
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
@@ -3108,7 +3108,7 @@ major_do_collection (const char *reason)
 	mono_sgen_clear_tlabs ();
 
 	TV_GETTIME (atv);
-	time_major_fragment_creation += TV_ELAPSED_MS (btv, atv);
+	time_major_fragment_creation += TV_ELAPSED (btv, atv);
 
 	TV_GETTIME (all_btv);
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);

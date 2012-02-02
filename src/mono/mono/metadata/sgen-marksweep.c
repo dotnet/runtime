@@ -272,7 +272,7 @@ ms_wait_for_sweep_done (void)
 			g_error ("MONO_SEM_WAIT");
 	}
 	SGEN_TV_GETTIME (btv);
-	stat_time_wait_for_sweep += SGEN_TV_ELAPSED_MS (atv, btv);
+	stat_time_wait_for_sweep += SGEN_TV_ELAPSED (atv, btv);
 
 	g_assert (ms_sweep_in_progress);
 	ms_sweep_in_progress = FALSE;
@@ -2044,7 +2044,7 @@ mono_sgen_marksweep_init
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
-	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_time_wait_for_sweep);
+	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &stat_time_wait_for_sweep);
 #ifdef SGEN_PARALLEL_MARK
 	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
 
