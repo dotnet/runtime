@@ -12,6 +12,7 @@ enum {
 	MONO_COUNTER_ULONG,   /* 64 bit uint */
 	MONO_COUNTER_DOUBLE,
 	MONO_COUNTER_STRING, /* char* */
+	MONO_COUNTER_TIME_INTERVAL, /* 64 bits signed int holding usecs. */
 	MONO_COUNTER_TYPE_MASK = 0xf,
 	MONO_COUNTER_CALLBACK = 128, /* ORed with the other values */
 	MONO_COUNTER_SECTION_MASK = 0xffffff00,
