@@ -34,17 +34,8 @@ void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
 void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue) MONO_INTERNAL;
 
 gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
-void mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_card_table_prepare_for_major_collection (void) MONO_INTERNAL;
-void mono_sgen_card_table_finish_minor_collection (void) MONO_INTERNAL;
-void sgen_card_table_init (void) MONO_INTERNAL;
 
-void mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value) MONO_INTERNAL;
-void mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value) MONO_INTERNAL;
-void mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count) MONO_INTERNAL;
-void mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass) MONO_INTERNAL;
-void mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src) MONO_INTERNAL;
-void mono_sgen_card_table_wbarrier_generic_nostore (gpointer ptr) MONO_INTERNAL;
+void sgen_card_table_init (SgenRemeberedSet *remset) MONO_INTERNAL;
 
 /*How many bytes a single card covers*/
 #define CARD_BITS 9
@@ -134,12 +125,6 @@ sgen_card_table_mark_address (mword address)
 	*sgen_card_table_get_card_address (address) = 1;
 }
 
-static inline void
-mono_sgen_card_table_record_pointer (gpointer address)
-{
-	*sgen_card_table_get_card_address ((mword)address) = 1;
-}
-
 #else /*if SGEN_HAVE_CARDTABLE */
 
 static inline void
@@ -155,9 +140,7 @@ sgen_card_table_mark_range (mword address, mword size)
 }
 
 #define sgen_card_table_address_is_marked(p)	FALSE
-#define mono_sgen_card_table_scan_from_remsets(start,end,queue)
-#define mono_sgen_card_table_prepare_for_major_collection()
-#define sgen_card_table_init()
+#define sgen_card_table_init(p)
 
 guint8*
 mono_gc_get_card_table (int *shift_bits, gpointer *mask)
@@ -165,14 +148,6 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 	return NULL;
 }
 
-static void
-mono_sgen_card_table_record_pointer (gpointer address)
-{
-	g_assert_not_reached ();
-}
-
 #endif
-
-
 
 #endif

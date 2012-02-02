@@ -407,7 +407,7 @@ mono_sgen_safe_name (void* obj)
 LOCK_DECLARE (gc_mutex);
 static int gc_disabled = 0;
 
-gboolean use_cardtable;
+static gboolean use_cardtable;
 
 #ifdef USER_CONFIG
 
@@ -712,6 +712,7 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 SgenMajorCollector major_collector;
 static GrayQueue gray_queue;
 
+static SgenRemeberedSet remset;
 
 
 #define WORKERS_DISTRIBUTE_GRAY_QUEUE (mono_sgen_collection_is_parallel () ? mono_sgen_workers_get_distribute_gray_queue () : &gray_queue)
@@ -1230,10 +1231,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 void
 mono_sgen_add_to_global_remset (gpointer ptr)
 {
-	if (use_cardtable)
-		mono_sgen_card_table_record_pointer (ptr);
-	else
-		mono_sgen_ssb_record_pointer (ptr);
+	remset.record_pointer (ptr);
 }
 
 /*
@@ -2487,10 +2485,7 @@ job_finish_remembered_set_scan (WorkerData *worker_data, void *job_data_untyped)
 {
 	FinishRememberedSetScanJobData *job_data = job_data_untyped;
 
-	if (use_cardtable)
-		mono_sgen_card_table_finish_scan_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
-	else
-		mono_sgen_ssb_finish_scan_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
+	remset.finish_scan_remsets (job_data->heap_start, job_data->heap_end, mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 typedef struct
@@ -2650,8 +2645,8 @@ collect_nursery (size_t requested_size)
 	stat_minor_gcs++;
 	mono_stats.minor_gc_count ++;
 
-	if (!use_cardtable)
-		mono_sgen_ssb_prepare_for_minor_collection ();
+	if (remset.prepare_for_minor_collection)
+		remset.prepare_for_minor_collection ();
 
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
@@ -2679,8 +2674,8 @@ collect_nursery (size_t requested_size)
 	 * Perform the sequential part of remembered set scanning.
 	 * This usually involves scanning global information that might later be produced by evacuation.
 	 */
-	if (!use_cardtable)
-		mono_sgen_ssb_begin_scan_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	if (remset.begin_scan_remsets)
+		remset.begin_scan_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 	mono_sgen_workers_start_marking ();
 
@@ -2795,8 +2790,8 @@ collect_nursery (size_t requested_size)
 
 	g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
-	if (use_cardtable)
-		mono_sgen_card_table_finish_minor_collection ();
+	if (remset.finish_minor_collection)
+		remset.finish_minor_collection ();
 
 	check_scan_starts ();
 
@@ -2911,10 +2906,7 @@ major_do_collection (const char *reason)
 		check_for_xdomain_refs ();
 
 	/* Remsets are not useful for a major collection */
-	if (use_cardtable)
-		mono_sgen_card_table_prepare_for_major_collection ();
-	else
-		mono_sgen_ssb_prepare_for_major_collection ();
+	remset.prepare_for_major_collection ();
 
 	process_fin_stage_entries ();
 	process_dislink_stage_entries ();
@@ -4104,8 +4096,8 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	stack_end = info->stack_end;
 #endif
 
-	if (!use_cardtable)
-		mono_sgen_ssb_register_thread (info);
+	if (remset.register_thread)
+		remset.register_thread (info);
 
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) stack end %p\n", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end));
 
@@ -4119,8 +4111,8 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 static void
 mono_sgen_wbarrier_cleanup_thread (SgenThreadInfo *p)
 {
-	if (!use_cardtable)
-		mono_sgen_ssb_cleanup_thread (p);
+	if (remset.cleanup_thread)
+		remset.cleanup_thread (p);
 }
 
 static void
@@ -4274,10 +4266,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	if (value)
 		binary_protocol_wbarrier (field_ptr, value, value->vtable);
 
-	if (use_cardtable)
-		mono_sgen_card_table_wbarrier_set_field (obj, field_ptr, value);
-	else
-		mono_sgen_ssb_wbarrier_set_field (obj, field_ptr, value);
+	remset.wbarrier_set_field (obj, field_ptr, value);
 }
 
 void
@@ -4292,10 +4281,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	if (value)
 		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
 
-	if (use_cardtable)
-		mono_sgen_card_table_wbarrier_set_arrayref (arr, slot_ptr, value);
-	else
-		mono_sgen_ssb_wbarrier_set_arrayref (arr, slot_ptr, value);
+	remset.wbarrier_set_arrayref (arr, slot_ptr, value);
 }
 
 void
@@ -4320,10 +4306,7 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 	}
 #endif
 
-	if (use_cardtable)
-		mono_sgen_card_table_wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
-	else
-		mono_sgen_ssb_wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
+	remset.wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
 }
 
 static char *found_obj;
@@ -4397,10 +4380,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
 
-	if (use_cardtable)
-		mono_sgen_card_table_wbarrier_generic_nostore (ptr);
-	else
-		mono_sgen_ssb_wbarrier_generic_nostore (ptr);
+	remset.wbarrier_generic_nostore (ptr);
 }
 
 void
@@ -4474,10 +4454,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	}
 #endif
 
-	if (use_cardtable)
-		mono_sgen_card_table_wbarrier_value_copy (dest, src, count, klass);
-	else
-		mono_sgen_ssb_wbarrier_value_copy (dest, src, count, klass);
+	remset.wbarrier_value_copy (dest, src, count, klass);
 }
 
 /**
@@ -4503,10 +4480,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
 #endif
 
-	if (use_cardtable)
-		mono_sgen_card_table_wbarrier_object_copy (obj, src);
-	else
-		mono_sgen_ssb_wbarrier_object_copy (obj, src);
+	remset.wbarrier_object_copy (obj, src);
 }
 
 /*
@@ -4752,7 +4726,7 @@ is_critical_method (MonoMethod *method)
 {
 	return mono_runtime_is_critical_method (method) || mono_gc_is_critical_method (method);
 }
-
+	
 void
 mono_gc_base_init (void)
 {
@@ -5100,10 +5074,17 @@ mono_gc_base_init (void)
 	if (major_collector.post_param_init)
 		major_collector.post_param_init ();
 
+	memset (&remset, 0, sizeof (remset));
+
+#ifdef SGEN_HAVE_CARDTABLE
 	if (use_cardtable)
-		sgen_card_table_init ();
+		sgen_card_table_init (&remset);
 	else
-		mono_sgen_ssb_init ();
+#endif
+		mono_sgen_ssb_init (&remset);
+
+	if (remset.register_thread)
+		remset.register_thread (mono_thread_info_current ());
 
 	gc_initialized = 1;
 }
@@ -5509,6 +5490,12 @@ void mono_gc_set_skip_thread (gboolean skip)
 	LOCK_GC;
 	info->gc_disabled = skip;
 	UNLOCK_GC;
+}
+
+SgenRemeberedSet*
+mono_sgen_get_remset (void)
+{
+	return &remset;
 }
 
 #endif /* HAVE_SGEN_GC */

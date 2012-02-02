@@ -71,6 +71,9 @@ static long long los_card_scan_time;
 static long long last_major_scan_time;
 static long long last_los_scan_time;
 
+static void sgen_card_tables_collect_stats (gboolean begin);
+
+
 /*WARNING: This function returns the number of cards regardless of overflow in case of overlapping cards.*/
 static mword
 cards_in_range (mword address, mword size)
@@ -79,7 +82,7 @@ cards_in_range (mword address, mword size)
 	return (end >> CARD_BITS) - (address >> CARD_BITS) + 1;
 }
 
-void
+static void
 mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	*(void**)field_ptr = value;
@@ -88,7 +91,7 @@ mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, Mo
 	mono_sgen_dummy_use (value);
 }
 
-void
+static void
 mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	*(void**)slot_ptr = value;
@@ -97,7 +100,7 @@ mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, M
 	mono_sgen_dummy_use (value);	
 }
 
-void
+static void
 mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	gpointer *dest = dest_ptr;
@@ -128,7 +131,7 @@ mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr
 	}	
 }
 
-void
+static void
 mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	size_t element_size = mono_class_value_size (klass, NULL);
@@ -149,7 +152,7 @@ mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count
 #endif
 }
 
-void
+static void
 mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	int size;
@@ -172,7 +175,7 @@ mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 #endif	
 }
 
-void
+static void
 mono_sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 {
 	sgen_card_table_mark_address ((mword)ptr);	
@@ -269,29 +272,16 @@ sgen_card_table_is_range_marked (guint8 *cards, mword address, mword size)
 
 }
 
-void
-sgen_card_table_init (void)
+static void
+mono_sgen_card_table_record_pointer (gpointer address)
 {
-	sgen_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+	*sgen_card_table_get_card_address ((mword)address) = 1;
+}
 
-#ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	sgen_shadow_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
-#endif
-
-#ifdef HEAVY_STATISTICS
-	mono_counters_register ("marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &marked_cards);
-	mono_counters_register ("scanned cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_cards);
-	mono_counters_register ("remarked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &remarked_cards);
-
-	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_marked_cards);
-	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_cards);
-	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_remsets);
-	mono_counters_register ("cardtable scanned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_objects);
-	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &large_objects);
-	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &bloby_objects);
-#endif
-	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &major_card_scan_time);
-	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_card_scan_time);
+static gboolean
+mono_sgen_card_table_find_address (char *addr)
+{
+	return sgen_card_table_address_is_marked ((mword)addr);
 }
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -342,7 +332,7 @@ clear_cards (mword start, mword size)
 
 #endif
 
-void
+static void
 mono_sgen_card_table_prepare_for_major_collection (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
@@ -350,13 +340,13 @@ mono_sgen_card_table_prepare_for_major_collection (void)
 	mono_sgen_los_iterate_live_block_ranges (clear_cards);
 }
 
-void
+static void
 mono_sgen_card_table_finish_minor_collection (void)
 {
 	sgen_card_tables_collect_stats (FALSE);
 }
 
-void
+static void
 mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	SGEN_TV_DECLARE (atv);
@@ -638,7 +628,7 @@ count_remarked_cards (mword start, mword size)
 
 #endif
 
-void
+static void
 sgen_card_tables_collect_stats (gboolean begin)
 {
 #ifdef CARDTABLE_STATS
@@ -660,6 +650,47 @@ sgen_card_tables_collect_stats (gboolean begin)
 			last_major_scan_time, last_los_scan_time);
 	}
 #endif
+}
+
+void
+sgen_card_table_init (SgenRemeberedSet *remset)
+{
+	sgen_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	sgen_shadow_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+#endif
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &marked_cards);
+	mono_counters_register ("scanned cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_cards);
+	mono_counters_register ("remarked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &remarked_cards);
+
+	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_marked_cards);
+	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_cards);
+	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_remsets);
+	mono_counters_register ("cardtable scanned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_objects);
+	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &large_objects);
+	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &bloby_objects);
+#endif
+	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &major_card_scan_time);
+	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_card_scan_time);
+
+
+	remset->wbarrier_set_field = mono_sgen_card_table_wbarrier_set_field;
+	remset->wbarrier_set_arrayref = mono_sgen_card_table_wbarrier_set_arrayref;
+	remset->wbarrier_arrayref_copy = mono_sgen_card_table_wbarrier_arrayref_copy;
+	remset->wbarrier_value_copy = mono_sgen_card_table_wbarrier_value_copy;
+	remset->wbarrier_object_copy = mono_sgen_card_table_wbarrier_object_copy;
+	remset->wbarrier_generic_nostore = mono_sgen_card_table_wbarrier_generic_nostore;
+	remset->record_pointer = mono_sgen_card_table_record_pointer;
+
+	remset->finish_scan_remsets = mono_sgen_card_table_finish_scan_remsets;
+
+	remset->finish_minor_collection = mono_sgen_card_table_finish_minor_collection;
+	remset->prepare_for_major_collection = mono_sgen_card_table_prepare_for_major_collection;
+
+	remset->find_address = mono_sgen_card_table_find_address;
 }
 
 #else

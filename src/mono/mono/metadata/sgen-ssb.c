@@ -126,7 +126,7 @@ mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
 
 
 
-void
+static void
 mono_sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
@@ -151,7 +151,7 @@ mono_sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObjec
 	UNLOCK_GC;
 }
 
-void
+static void
 mono_sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
@@ -176,7 +176,7 @@ mono_sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObje
 	UNLOCK_GC;
 }
 
-void
+static void
 mono_sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	RememberedSet *rs;
@@ -204,7 +204,7 @@ mono_sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int c
 	UNLOCK_GC;
 }
 
-void
+static void
 mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs;
@@ -239,7 +239,7 @@ mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoC
 	UNLOCK_GC;
 }	
 
-void
+static void
 mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	int size;
@@ -272,7 +272,7 @@ mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	UNLOCK_GC;
 }
 
-void
+static void
 mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr)
 {
 	gpointer *buffer;
@@ -472,7 +472,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	return NULL;
 }
 
-void
+static void
 mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	RememberedSet *remset;
@@ -511,7 +511,7 @@ mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGr
 	}
 }
 
-void
+static void
 mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	int i;
@@ -577,7 +577,7 @@ mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenG
 }
 
 
-void
+static void
 mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 {
 	RememberedSet *rset;
@@ -609,7 +609,7 @@ mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 	*p->store_remset_buffer_addr = NULL;
 }
 
-void
+static void
 mono_sgen_ssb_register_thread (SgenThreadInfo *info)
 {
 #ifndef HAVE_KW_THREAD
@@ -626,7 +626,7 @@ mono_sgen_ssb_register_thread (SgenThreadInfo *info)
 	STORE_REMSET_BUFFER_INDEX = 0;
 }
 
-void
+static void
 mono_sgen_ssb_prepare_for_minor_collection (void)
 {
 	memset (global_remset_cache, 0, sizeof (global_remset_cache));
@@ -637,7 +637,7 @@ mono_sgen_ssb_prepare_for_minor_collection (void)
  * the per-thread ones are not needed and the global ones will be reconstructed
  * during the copy.
  */
-void
+static void
 mono_sgen_ssb_prepare_for_major_collection (void)
 {
 	SgenThreadInfo *info;
@@ -721,7 +721,7 @@ global_remset_location_was_not_added (gpointer ptr)
 	return TRUE;
 }
 
-void
+static void
 mono_sgen_ssb_record_pointer (gpointer ptr)
 {
 	RememberedSet *rs;
@@ -769,31 +769,6 @@ mono_sgen_ssb_record_pointer (gpointer ptr)
  done:
 	if (lock)
 		UNLOCK_GLOBAL_REMSET;
-}
-
-void
-mono_sgen_ssb_init (void)
-{
-	LOCK_INIT (global_remset_mutex);
-
-	global_remset = mono_sgen_alloc_remset (1024, NULL, FALSE);
-	global_remset->next = NULL;
-
-	mono_native_tls_alloc (&remembered_set_key, NULL);
-
-#ifdef HEAVY_STATISTICS
-	mono_counters_register ("WBarrier generic store stored", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_remset);
-
-	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
-	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
-	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
-	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
-	mono_counters_register ("Non-global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_local_remsets_processed);
-	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
-	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
-	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
-	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
-#endif
 }
 
 /*
@@ -849,7 +824,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 /*
  * Return whenever ADDR occurs in the remembered sets
  */
-gboolean
+static gboolean
 mono_sgen_ssb_find_address (char *addr)
 {
 	int i;
@@ -907,4 +882,47 @@ mono_sgen_ssb_find_address (char *addr)
 	return FALSE;
 }
 
+
+void
+mono_sgen_ssb_init (SgenRemeberedSet *remset)
+{
+	LOCK_INIT (global_remset_mutex);
+
+	global_remset = mono_sgen_alloc_remset (1024, NULL, FALSE);
+	global_remset->next = NULL;
+
+	mono_native_tls_alloc (&remembered_set_key, NULL);
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("WBarrier generic store stored", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_remset);
+
+	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
+	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
+	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
+	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
+	mono_counters_register ("Non-global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_local_remsets_processed);
+	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
+	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
+	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
+	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
+#endif
+
+	remset->wbarrier_set_field = mono_sgen_ssb_wbarrier_set_field;
+	remset->wbarrier_set_arrayref = mono_sgen_ssb_wbarrier_set_arrayref;
+	remset->wbarrier_arrayref_copy = mono_sgen_ssb_wbarrier_arrayref_copy;
+	remset->wbarrier_value_copy = mono_sgen_ssb_wbarrier_value_copy;
+	remset->wbarrier_object_copy = mono_sgen_ssb_wbarrier_object_copy;
+	remset->wbarrier_generic_nostore = mono_sgen_ssb_wbarrier_generic_nostore;
+	remset->record_pointer = mono_sgen_ssb_record_pointer;
+
+	remset->begin_scan_remsets = mono_sgen_ssb_begin_scan_remsets;
+	remset->finish_scan_remsets = mono_sgen_ssb_finish_scan_remsets;
+
+	remset->register_thread = mono_sgen_ssb_register_thread;
+	remset->cleanup_thread = mono_sgen_ssb_cleanup_thread;
+	remset->prepare_for_minor_collection = mono_sgen_ssb_prepare_for_minor_collection;
+	remset->prepare_for_major_collection = mono_sgen_ssb_prepare_for_major_collection;
+
+	remset->find_address = mono_sgen_ssb_find_address;
+}
 #endif

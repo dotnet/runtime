@@ -510,6 +510,30 @@ void mono_sgen_marksweep_fixed_par_init (SgenMajorCollector *collector) MONO_INT
 void mono_sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
 SgenMajorCollector* mono_sgen_get_major_collector (void) MONO_INTERNAL;
 
+
+typedef struct {
+	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
+	void (*wbarrier_set_arrayref) (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
+	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
+	void (*wbarrier_value_copy) (gpointer dest, gpointer src, int count, MonoClass *klass);
+	void (*wbarrier_object_copy) (MonoObject* obj, MonoObject *src);
+	void (*wbarrier_generic_nostore) (gpointer ptr);
+	void (*record_pointer) (gpointer ptr);
+
+	void (*begin_scan_remsets) (void *start_nursery, void *end_nursery, SgenGrayQueue *queue); /* OPTIONAL */
+	void (*finish_scan_remsets) (void *start_nursery, void *end_nursery, SgenGrayQueue *queue);
+
+	void (*register_thread) (SgenThreadInfo *p); /* OPTIONAL */
+	void (*cleanup_thread) (SgenThreadInfo *p); /* OPTIONAL */
+	void (*prepare_for_minor_collection) (void); /* OPTIONAL */
+	void (*prepare_for_major_collection) (void);
+
+	void (*finish_minor_collection) (void); /* OPTIONAL */
+	gboolean (*find_address) (char *addr);
+} SgenRemeberedSet;
+
+SgenRemeberedSet *mono_sgen_get_remset (void) MONO_INTERNAL;
+
 static guint /*__attribute__((noinline)) not sure if this hint is a good idea*/
 slow_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
@@ -804,7 +828,6 @@ extern NurseryClearPolicy nursery_clear_policy;
 extern LOCK_DECLARE (gc_mutex);
 
 extern int do_pin_stats;
-extern gboolean use_cardtable;
 
 /* Object Allocation */
 
