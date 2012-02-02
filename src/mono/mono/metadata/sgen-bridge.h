@@ -28,6 +28,10 @@
 
 MONO_BEGIN_DECLS
 
+enum {
+	MONO_SGEN_BRIDGE_VERSION = 1
+};
+	
 typedef struct {
 	int num_objs;
 	MonoObject *objs [MONO_ZERO_LEN_ARRAY];
@@ -39,7 +43,8 @@ typedef struct {
 } MonoGCBridgeXRef;
 
 typedef struct {
-	mono_bool (*is_bridge_object) (MonoObject *obj);
+	int bridge_version;
+	mono_bool (*is_bridge_class) (MonoClass *class);
 	void (*cross_references) (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs);
 } MonoGCBridgeCallbacks;
 

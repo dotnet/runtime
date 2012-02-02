@@ -279,13 +279,23 @@ static int current_time;
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 {
+	if (callbacks->bridge_version != MONO_SGEN_BRIDGE_VERSION) {
+		fprintf (stderr, "Invalid bridge callback version. Expected %d but got %d\n", MONO_SGEN_BRIDGE_VERSION, callbacks->bridge_version);
+		exit (1);
+	}
 	bridge_callbacks = *callbacks;
 }
 
 gboolean
 mono_sgen_is_bridge_object (MonoObject *obj)
 {
-	return bridge_callbacks.is_bridge_object (obj);
+	return bridge_callbacks.is_bridge_class (mono_object_class (obj));
+}
+
+gboolean
+mono_sgen_is_bridge_class (MonoClass *class)
+{
+	return bridge_callbacks.is_bridge_class (class);
 }
 
 gboolean
@@ -747,9 +757,9 @@ mono_sgen_bridge_processing_finish (void)
 static const char *bridge_class;
 
 static gboolean
-bridge_test_is_bridge_object (MonoObject *obj)
+bridge_test_is_bridge_class (MonoClass *class)
 {
-	return !strcmp (bridge_class, obj->vtable->klass->name);
+	return !strcmp (bridge_class, class->name);
 }
 
 static void
@@ -777,7 +787,8 @@ void
 mono_sgen_register_test_bridge_callbacks (const char *bridge_class_name)
 {
 	MonoGCBridgeCallbacks callbacks;
-	callbacks.is_bridge_object = bridge_test_is_bridge_object;
+	callbacks.bridge_version = MONO_SGEN_BRIDGE_VERSION;
+	callbacks.is_bridge_class = bridge_test_is_bridge_class;
 	callbacks.cross_references = bridge_test_cross_reference;
 	mono_gc_register_bridge_callbacks (&callbacks);
 	bridge_class = bridge_class_name;
