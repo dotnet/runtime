@@ -1837,6 +1837,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	char *t;
 	int i, vtable_slots;
 	int imt_table_bytes = 0;
+	int gc_bits;
 	guint32 vtable_size, class_size;
 	guint32 cindex;
 	gpointer iter;
@@ -1953,6 +1954,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	else
 #endif
 		vt->gc_descr = class->gc_descr;
+
+	gc_bits = mono_gc_get_vtable_bits (class);
+	g_assert (!(gc_bits & ~((1 << MONO_VTABLE_AVAILABLE_GC_BITS) - 1)));
+
+	vt->gc_bits = gc_bits;
 
 	if (class_size) {
 		/* we store the static field pointer at the end of the vtable: vt->vtable [class->vtable_size] */

@@ -1272,4 +1272,10 @@ BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reser
 }
 #endif
 
+guint
+mono_gc_get_vtable_bits (MonoClass *class)
+{
+	return 0;
+}
+
 #endif /* no Boehm GC */

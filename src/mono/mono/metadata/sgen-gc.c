@@ -5483,4 +5483,10 @@ mono_sgen_get_remset (void)
 	return &remset;
 }
 
+guint
+mono_gc_get_vtable_bits (MonoClass *class)
+{
+	return 0;
+}
+
 #endif /* HAVE_SGEN_GC */
