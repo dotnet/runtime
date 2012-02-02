@@ -47,10 +47,26 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/profiler-private.h"
+#include "metadata/marshal.h"
+#include "metadata/method-builder.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-counters.h"
 
 #define ALIGN_UP		SGEN_ALIGN_UP
+#define ALLOC_ALIGN		SGEN_ALLOC_ALIGN
+#define ALLOC_ALIGN_BITS	SGEN_ALLOC_ALIGN_BITS
+#define MAX_SMALL_OBJ_SIZE	SGEN_MAX_SMALL_OBJ_SIZE
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
+	a = i,
+
+enum {
+#include "mono/cil/opcode.def"
+	CEE_LAST
+};
+
+#undef OPDEF
 
 #ifdef HEAVY_STATISTICS
 static long long stat_objects_alloced = 0;

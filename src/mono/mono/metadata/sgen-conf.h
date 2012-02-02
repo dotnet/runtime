@@ -56,6 +56,21 @@ typedef guint64 mword;
 //#define SGEN_BINARY_PROTOCOL
 
 /*
+ * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
+ * have cross-domain checks in the write barrier.
+ */
+//#define XDOMAIN_CHECKS_IN_WBARRIER
+
+#ifndef SGEN_BINARY_PROTOCOL
+#ifndef HEAVY_STATISTICS
+#define MANAGED_ALLOCATION
+#ifndef XDOMAIN_CHECKS_IN_WBARRIER
+#define MANAGED_WBARRIER
+#endif
+#endif
+#endif
+
+/*
  * Maximum level of debug to enable on this build.
  * Making this a static variable enables us to put logging in a lot of places.
  * FIXME decouple logging from assertions
