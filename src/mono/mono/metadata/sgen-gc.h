@@ -318,6 +318,13 @@ typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 	} while (0)
 #endif
 
+/*
+List of what each bit on of the vtable gc bits means. 
+*/
+enum {
+	SGEN_GC_BIT_BRIDGE_OBJECT = 1,
+};
+
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 
 void* mono_sgen_alloc_os_memory (size_t size, int activate) MONO_INTERNAL;

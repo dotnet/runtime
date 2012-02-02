@@ -289,7 +289,7 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 gboolean
 mono_sgen_is_bridge_object (MonoObject *obj)
 {
-	return bridge_callbacks.is_bridge_class (mono_object_class (obj));
+	return (obj->vtable->gc_bits & SGEN_GC_BIT_BRIDGE_OBJECT) == SGEN_GC_BIT_BRIDGE_OBJECT;
 }
 
 gboolean
