@@ -4882,7 +4882,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		}
 	}
 
-	if (!step_to_catch && ss_req->depth == STEP_DEPTH_OVER) {
+	if (!step_to_catch) {
 		StackFrame *frame;
 
 		compute_frame_info (thread, tls);
