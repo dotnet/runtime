@@ -532,6 +532,7 @@ typedef struct {
 
 	void (*register_thread) (SgenThreadInfo *p); /* OPTIONAL */
 	void (*cleanup_thread) (SgenThreadInfo *p); /* OPTIONAL */
+	void (*fill_thread_info_for_suspend) (SgenThreadInfo *info); /* OPTIONAL */
 	void (*prepare_for_minor_collection) (void); /* OPTIONAL */
 	void (*prepare_for_major_collection) (void);
 
@@ -756,7 +757,6 @@ void mono_sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
 extern MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
-extern __thread RememberedSet *remembered_set MONO_TLS_FAST;
 extern __thread SgenThreadInfo *thread_info;
 extern __thread gpointer *store_remset_buffer;
 extern __thread long store_remset_buffer_index;

@@ -626,6 +626,15 @@ mono_sgen_ssb_register_thread (SgenThreadInfo *info)
 	STORE_REMSET_BUFFER_INDEX = 0;
 }
 
+#ifdef HAVE_KW_THREAD
+static void
+mono_sgen_ssb_fill_thread_info_for_suspend (SgenThreadInfo *info)
+{
+	/* update the remset info in the thread data structure */
+	info->remset = remembered_set;
+}
+#endif
+
 static void
 mono_sgen_ssb_prepare_for_minor_collection (void)
 {
@@ -920,6 +929,10 @@ mono_sgen_ssb_init (SgenRemeberedSet *remset)
 
 	remset->register_thread = mono_sgen_ssb_register_thread;
 	remset->cleanup_thread = mono_sgen_ssb_cleanup_thread;
+#ifdef HAVE_KW_THREAD
+	remset->fill_thread_info_for_suspend = mono_sgen_ssb_fill_thread_info_for_suspend;
+#endif
+
 	remset->prepare_for_minor_collection = mono_sgen_ssb_prepare_for_minor_collection;
 	remset->prepare_for_major_collection = mono_sgen_ssb_prepare_for_major_collection;
 

@@ -3684,10 +3684,8 @@ update_current_thread_stack (void *start)
 void
 mono_sgen_fill_thread_info_for_suspend (SgenThreadInfo *info)
 {
-#ifdef HAVE_KW_THREAD
-	/* update the remset info in the thread data structure */
-	info->remset = remembered_set;
-#endif
+	if (remset.fill_thread_info_for_suspend)
+		remset.fill_thread_info_for_suspend (info);
 }
 
 static gboolean
