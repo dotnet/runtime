@@ -59,6 +59,7 @@ class Program {
 					break;
 				GC.Collect ();
 				GC.WaitForPendingFinalizers ();
+				Thread.Sleep (10);
 			} while (cnt-- > 0);
 			GC.Collect ();
 			GC.WaitForPendingFinalizers ();
