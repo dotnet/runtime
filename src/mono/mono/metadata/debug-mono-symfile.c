@@ -468,6 +468,9 @@ mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_f
 			opcode = *ptr++;
 
 			if (opcode == DW_LNE_end_sequence) {
+				if (il_offset_array->len == 0)
+					/* Empty table */
+					break;
 				add_line (&stm, il_offset_array, line_number_array);
 				break;
 			} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
