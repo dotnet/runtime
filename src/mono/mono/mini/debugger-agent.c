@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 12
+#define MINOR_VERSION 13
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -3218,24 +3218,27 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 					MonoMethod *method;
 					char *source_file, *s;
 					gboolean found = FALSE;
+					int i;
+					GPtrArray *source_file_list;
 
 					while ((method = mono_class_get_methods (ei->klass, &iter))) {
 						MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
 
 						if (minfo) {
-							mono_debug_symfile_get_line_numbers (minfo, &source_file, NULL, NULL, NULL);
-							if (!source_file)
-								continue;
-							// FIXME: flags
-							/*
-							 * Do a case-insesitive match by converting the file name to
-							 * lowercase.
-							 */
-							s = strdup_tolower (source_file);
-							if (g_hash_table_lookup (mod->data.source_files, s))
-								found = TRUE;
-							g_free (s);
-							g_free (source_file);
+							mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, NULL, NULL, NULL, NULL);
+							for (i = 0; i < source_file_list->len; ++i) {
+								source_file = g_ptr_array_index (source_file_list, i);
+								/*
+								 * Do a case-insesitive match by converting the file name to
+								 * lowercase.
+								 */
+								s = strdup_tolower (source_file);
+								if (g_hash_table_lookup (mod->data.source_files, s))
+									found = TRUE;
+								g_free (s);
+								g_free (source_file);
+							}
+							g_ptr_array_free (source_file_list, TRUE);
 						}
 					}
 					if (!found)
@@ -5930,24 +5933,26 @@ get_source_files_for_type (MonoClass *klass)
 	MonoMethod *method;
 	char *source_file;
 	GPtrArray *files;
-	int i;
+	int i, j;
 
 	files = g_ptr_array_new ();
 
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
+		GPtrArray *source_file_list;
 
 		if (minfo) {
-			mono_debug_symfile_get_line_numbers (minfo, &source_file, NULL, NULL, NULL);
-			if (!source_file)
-				continue;
-
-			for (i = 0; i < files->len; ++i)
-				if (!strcmp (g_ptr_array_index (files, i), source_file))
-					break;
-			if (i == files->len)
-				g_ptr_array_add (files, g_strdup (source_file));
-			g_free (source_file);
+			mono_debug_symfile_get_line_numbers_full (minfo, NULL, &source_file_list, NULL, NULL, NULL, NULL);
+			for (j = 0; j < source_file_list->len; ++j) {
+				source_file = g_ptr_array_index (source_file_list, j);
+				for (i = 0; i < files->len; ++i)
+					if (!strcmp (g_ptr_array_index (files, i), source_file))
+						break;
+				if (i == files->len)
+					g_ptr_array_add (files, g_strdup (source_file));
+				g_free (source_file);
+			}
+			g_ptr_array_free (source_file_list, TRUE);
 		}
 	}
 
@@ -7326,6 +7331,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		int i, n_il_offsets;
 		int *il_offsets;
 		int *line_numbers;
+		int *source_files;
+		GPtrArray *source_file_list;
 
 		header = mono_method_get_header (method);
 		if (!header) {
@@ -7344,19 +7351,32 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 
-		mono_debug_symfile_get_line_numbers (minfo, &source_file, &n_il_offsets, &il_offsets, &line_numbers);
+		mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, &n_il_offsets, &il_offsets, &line_numbers, &source_files);
 		buffer_add_int (buf, header->code_size);
-		buffer_add_string (buf, source_file);
+		if (CHECK_PROTOCOL_VERSION (2, 13)) {
+			buffer_add_int (buf, source_file_list->len);
+			for (i = 0; i < source_file_list->len; ++i)
+				buffer_add_string (buf, g_ptr_array_index (source_file_list, i));
+		} else {
+			buffer_add_string (buf, source_file);
+		}
 		buffer_add_int (buf, n_il_offsets);
 		DEBUG (10, printf ("Line number table for method %s:\n", mono_method_full_name (method,  TRUE)));
 		for (i = 0; i < n_il_offsets; ++i) {
-			DEBUG (10, printf ("IL%x -> %d\n", il_offsets [i], line_numbers [i]));
+			const char *srcfile = source_files [i] != -1 ? g_ptr_array_index (source_file_list, source_files [i]) : "";
+			DEBUG (10, printf ("IL%x -> %s:%d\n", il_offsets [i], srcfile, line_numbers [i]));
 			buffer_add_int (buf, il_offsets [i]);
 			buffer_add_int (buf, line_numbers [i]);
+			if (CHECK_PROTOCOL_VERSION (2, 13))
+				buffer_add_int (buf, source_files [i]);
 		}
 		g_free (source_file);
 		g_free (il_offsets);
 		g_free (line_numbers);
+		g_free (source_files);
+		for (i = 0; i < source_file_list->len; ++i)
+			g_free (g_ptr_array_index (source_file_list, i));
+		g_ptr_array_free (source_file_list, TRUE);
 		mono_metadata_free_mh (header);
 		break;
 	}

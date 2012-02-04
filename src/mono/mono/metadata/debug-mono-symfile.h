@@ -6,6 +6,7 @@
 #ifndef __MONO_DEBUG_MONO_SYMFILE_H__
 #define __MONO_DEBUG_MONO_SYMFILE_H__
 
+#include <glib.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mono-debug.h>
@@ -146,6 +147,9 @@ mono_debug_symfile_free_locals (MonoDebugLocalsInfo *info);
 
 void
 mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_file, int *n_il_offsets, int **il_offsets, int **line_numbers);
+
+void
+mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int *n_il_offsets, int **il_offsets, int **line_numbers, int **source_files);
 
 MONO_END_DECLS
 
