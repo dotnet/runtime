@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 13
+#define MINOR_VERSION 14
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -7327,7 +7327,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	case CMD_METHOD_GET_DEBUG_INFO: {
 		MonoDebugMethodInfo *minfo;
 		char *source_file;
-		int i, n_il_offsets;
+		int i, j, n_il_offsets;
 		int *il_offsets;
 		int *line_numbers;
 		int *source_files;
@@ -7357,6 +7357,10 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			for (i = 0; i < source_file_list->len; ++i) {
 				MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, i);
 				buffer_add_string (buf, sinfo->source_file);
+				if (CHECK_PROTOCOL_VERSION (2, 14)) {
+					for (j = 0; j < 16; ++j)
+						buffer_add_byte (buf, sinfo->hash [j]);
+				}
 			}
 		} else {
 			buffer_add_string (buf, source_file);
