@@ -106,6 +106,15 @@ struct _MonoDebugLineNumberEntry {
 	uint32_t native_offset;
 };
 
+/*
+ * Information about a source file retrieved from a symbol file.
+ */
+typedef struct {
+	char *source_file;
+	/* 16 byte long */
+	guint8 *guid, *hash;
+} MonoDebugSourceInfo;
+
 #define MONO_SYMBOL_FILE_MAJOR_VERSION		50
 #define MONO_SYMBOL_FILE_MINOR_VERSION		0
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614ULL

@@ -3216,6 +3216,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 				} else if (mod->kind == MOD_KIND_SOURCE_FILE_ONLY && ei && ei->klass) {
 					gpointer iter = NULL;
 					MonoMethod *method;
+					MonoDebugSourceInfo *sinfo;
 					char *source_file, *s;
 					gboolean found = FALSE;
 					int i;
@@ -3227,16 +3228,15 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 						if (minfo) {
 							mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, NULL, NULL, NULL, NULL);
 							for (i = 0; i < source_file_list->len; ++i) {
-								source_file = g_ptr_array_index (source_file_list, i);
+								sinfo = g_ptr_array_index (source_file_list, i);
 								/*
 								 * Do a case-insesitive match by converting the file name to
 								 * lowercase.
 								 */
-								s = strdup_tolower (source_file);
+								s = strdup_tolower (sinfo->source_file);
 								if (g_hash_table_lookup (mod->data.source_files, s))
 									found = TRUE;
 								g_free (s);
-								g_free (source_file);
 							}
 							g_ptr_array_free (source_file_list, TRUE);
 						}
@@ -5931,7 +5931,7 @@ get_source_files_for_type (MonoClass *klass)
 {
 	gpointer iter = NULL;
 	MonoMethod *method;
-	char *source_file;
+	MonoDebugSourceInfo *sinfo;
 	GPtrArray *files;
 	int i, j;
 
@@ -5944,13 +5944,12 @@ get_source_files_for_type (MonoClass *klass)
 		if (minfo) {
 			mono_debug_symfile_get_line_numbers_full (minfo, NULL, &source_file_list, NULL, NULL, NULL, NULL);
 			for (j = 0; j < source_file_list->len; ++j) {
-				source_file = g_ptr_array_index (source_file_list, j);
+				sinfo = g_ptr_array_index (source_file_list, j);
 				for (i = 0; i < files->len; ++i)
-					if (!strcmp (g_ptr_array_index (files, i), source_file))
+					if (!strcmp (g_ptr_array_index (files, i), sinfo->source_file))
 						break;
 				if (i == files->len)
-					g_ptr_array_add (files, g_strdup (source_file));
-				g_free (source_file);
+					g_ptr_array_add (files, g_strdup (sinfo->source_file));
 			}
 			g_ptr_array_free (source_file_list, TRUE);
 		}
@@ -7355,8 +7354,10 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_int (buf, header->code_size);
 		if (CHECK_PROTOCOL_VERSION (2, 13)) {
 			buffer_add_int (buf, source_file_list->len);
-			for (i = 0; i < source_file_list->len; ++i)
-				buffer_add_string (buf, g_ptr_array_index (source_file_list, i));
+			for (i = 0; i < source_file_list->len; ++i) {
+				MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, i);
+				buffer_add_string (buf, sinfo->source_file);
+			}
 		} else {
 			buffer_add_string (buf, source_file);
 		}
@@ -7374,8 +7375,6 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		g_free (il_offsets);
 		g_free (line_numbers);
 		g_free (source_files);
-		for (i = 0; i < source_file_list->len; ++i)
-			g_free (g_ptr_array_index (source_file_list, i));
 		g_ptr_array_free (source_file_list, TRUE);
 		mono_metadata_free_mh (header);
 		break;
