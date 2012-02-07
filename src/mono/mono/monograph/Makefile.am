@@ -4,7 +4,7 @@ export HOST_CC
 endif
 
 if JIT_SUPPORTED
-runtime_lib=../mini/libmono-$(API_VER).la
+runtime_lib=../mini/$(LIBMONO_LA)
 else
 runtime_lib=../interpreter/libmint.la
 endif
@@ -21,6 +21,10 @@ monograph_LDADD = \
 	$(LLVM_LIBS)			\
 	$(LIBICONV)			\
 	-lm
+
+if PLATFORM_DARWIN
+monograph_LDFLAGS=-framework CoreFoundation
+endif
 
 GRAPHS=System.Object System.Enum System.Attribute System.ValueType System.Reflection.MemberInfo
 OUT=$(GRAPHS:=.jpeg)
