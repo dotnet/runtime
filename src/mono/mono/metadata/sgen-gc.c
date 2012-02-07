@@ -4825,7 +4825,9 @@ mono_gc_base_init (void)
 		num_workers = 16;
 
 	///* Keep this the default for now */
-	//conservative_stack_mark = TRUE;
+#ifdef __APPLE
+	conservative_stack_mark = TRUE;
+#endif
 
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
