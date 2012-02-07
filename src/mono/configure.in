@@ -2228,6 +2228,10 @@ case "$host" in
 			sgen_supported=true
 			AOT_SUPPORTED="yes"
 			;;
+		  darwin*)
+			sgen_supported=true
+			AOT_SUPPORTED="yes"
+			;;
 		  darwin*|openbsd*|freebsd*)
 			sgen_supported=true
 		        ;;
@@ -3156,7 +3160,7 @@ fi
 	   enable_system_aot=no
 	fi
 
-    if test x$host_win32 = xno -a x$platform_darwin != xyes -a x$enable_system_aot = xyes; then
+    if test x$host_win32 = xno -a x$enable_system_aot = xyes; then
       echo "ENABLE_AOT = 1" >> $mcs_topdir/build/config.make
     fi
 
