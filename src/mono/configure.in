@@ -2797,7 +2797,7 @@ AC_CHECK_HEADER([malloc.h],
 # When --disable-shared is used, libtool transforms libmono-2.0.la into libmono-2.0.so
 # instead of libmono-static.a
 if test "x$enable_shared" = "xno"; then
-   LIBMONO_LA=.libs/libmono-static.a
+   LIBMONO_LA=.libs/libmono-2.0.a
 else
    LIBMONO_LA=libmono-$API_VER.la
 fi

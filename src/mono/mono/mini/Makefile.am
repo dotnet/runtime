@@ -5,10 +5,8 @@ monodir=$(top_builddir)
 # This is needed for automake dependency generation
 if INCLUDED_LIBGC
 libgc_libs=$(monodir)/libgc/libmonogc.la
-libgc_static_libs=$(monodir)/libgc/libmonogc-static.la
 else
 libgc_libs=$(LIBGC_LIBS)
-libgc_static_libs=$(LIBGC_STATIC_LIBS)
 endif
 
 libs=	\
@@ -31,19 +29,6 @@ moon_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 endif
-
-static_libs=	\
-	$(monodir)/mono/metadata/libmonoruntime-static.la	\
-	$(monodir)/mono/io-layer/libwapi.la	\
-	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV) \
-	$(libgc_static_libs)
-
-sgenstatic_libs = \
-	$(monodir)/mono/metadata/libmonoruntimesgen-static.la	\
-	$(monodir)/mono/io-layer/libwapi.la	\
-	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV)
 
 CLASS=$(mcs_topdir)/class/lib/net_4_5
 
@@ -92,13 +77,11 @@ if JIT_SUPPORTED
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmonosgen-static.la
 endif
 
 if SUPPORT_BOEHM
-boehm_libraries = libmono-2.0.la
-boehm_static_libraries = libmono-static.la
 boehm_binaries  = mono
+boehm_libraries = libmono-2.0.la
 endif
 
 if HOST_WIN32
@@ -114,7 +97,7 @@ shared_libraries = $(boehm_libraries) $(sgen_libraries)
 endif
 
 lib_LTLIBRARIES = $(shared_libraries)
-noinst_LTLIBRARIES = $(boehm_static_libraries) $(sgen_static_libraries)
+noinst_LTLIBRARIES =
 
 if MOONLIGHT
 noinst_LTLIBRARIES += libmono-moon.la
@@ -150,12 +133,12 @@ mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
-buildver.h: libmono-static.la
+buildver.h: libmono-2.0.la
 	@echo "const char *build_date = \"`date`\";" > buildver.h
 mono-main.$(OBJEXT): buildver.h
 endif
 
-buildver-sgen.h: libmonosgen-static.la
+buildver-sgen.h: libmonosgen-2.0.la
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main.$(OBJEXT): buildver-sgen.h
 
@@ -174,12 +157,11 @@ endif
 if STATIC_MONO
 # Link libmono into mono statically
 # This leads to higher performance, especially with TLS
-MONO_LIB=libmono-static.la
-MONO_SGEN_LIB=libmonosgen-static.la
-else 
+static_flags=-static
+endif
+
 MONO_LIB=libmono-2.0.la
 MONO_SGEN_LIB=libmonosgen-2.0.la
-endif
 
 if LOADED_LLVM
 LLVMMONOF=
@@ -535,19 +517,6 @@ libmono_moon_la_CFLAGS = $(mono_sgen_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
 endif
 endif
-
-libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_static_la_CFLAGS = $(mono_CFLAGS)
-libmono_static_la_LDFLAGS = -static
-libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
-
-libmonosgen_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_static_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_static_la_LDFLAGS = -static
-libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
-
-nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
-nodist_libmono_static_la_CFLAGS = $(mono_CFLAGS)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
