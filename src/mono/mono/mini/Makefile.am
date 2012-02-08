@@ -97,6 +97,7 @@ endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmono-2.0.la
+boehm_static_libraries = libmono-static.la
 boehm_binaries  = mono
 endif
 
@@ -113,7 +114,7 @@ shared_libraries = $(boehm_libraries) $(sgen_libraries)
 endif
 
 lib_LTLIBRARIES = $(shared_libraries)
-noinst_LTLIBRARIES = libmono-static.la $(sgen_static_libraries)
+noinst_LTLIBRARIES = $(boehm_static_libraries) $(sgen_static_libraries)
 
 if MOONLIGHT
 noinst_LTLIBRARIES += libmono-moon.la
@@ -148,11 +149,16 @@ mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
+if SUPPORT_BOEHM
 buildver.h: libmono-static.la
+	echo FOO
 	@echo "const char *build_date = \"`date`\";" > buildver.h
-
 mono-main.$(OBJEXT): buildver.h
-mono_sgen-main.$(OBJEXT): buildver.h
+endif
+
+buildver-sgen.h: libmonosgen-static.la
+	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
+mono_sgen-main.$(OBJEXT): buildver-sgen.h
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
@@ -687,7 +693,7 @@ docu: mini.sgm
 check-local: rcheck
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver.h test.exe
+	rm -f mono a.out gmon.out *.o buildver.h buildver-sgen.h test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
 

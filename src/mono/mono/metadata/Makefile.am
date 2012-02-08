@@ -45,6 +45,13 @@ endif
 sgen_libraries = $(shared_sgen_libraries) libmonoruntimesgen-static.la 
 endif
 
+if SUPPORT_BOEHM
+if SHARED_MONO
+shared_boehm_libraries = libmonoruntime.la
+endif
+boehm_libraries = $(shared_boehm_libraries) libmonoruntime-static.la
+endif
+
 if MOONLIGHT
 moonlight_libraries = libmonoruntimemoon.la
 moon-do-build: libmonoruntime-static.la libmonoruntimemoon.la
@@ -53,12 +60,7 @@ moon-do-clean:
 	-test -z "libmonoruntimemoon.la" || rm -f libmonoruntimemoon.la
 endif
 
-if SHARED_MONO
-if SUPPORT_BOEHM
-shared_libraries = libmonoruntime.la
-endif
-endif
-noinst_LTLIBRARIES =  $(shared_libraries) libmonoruntime-static.la $(sgen_libraries) $(moonlight_libraries)
+noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries) $(moonlight_libraries)
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
