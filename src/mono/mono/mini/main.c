@@ -1,7 +1,11 @@
 #include <config.h>
 #include "mini.h"
 #ifndef HOST_WIN32
+#ifdef HAVE_SGEN_GC
+#include "buildver-sgen.h"
+#else
 #include "buildver.h"
+#endif
 #endif
 
 /*

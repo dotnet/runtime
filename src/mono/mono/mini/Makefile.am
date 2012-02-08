@@ -151,7 +151,6 @@ mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
 # link was done
 if SUPPORT_BOEHM
 buildver.h: libmono-static.la
-	echo FOO
 	@echo "const char *build_date = \"`date`\";" > buildver.h
 mono-main.$(OBJEXT): buildver.h
 endif
