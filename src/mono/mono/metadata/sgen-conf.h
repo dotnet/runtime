@@ -41,6 +41,14 @@ typedef guint64 mword;
 //#define HEAVY_STATISTICS
 
 /*
+ * Define this to allow the user to change the nursery size by
+ * specifying its value in the MONO_GC_PARAMS environmental
+ * variable. See mono_gc_base_init for details.
+ */
+#define USER_CONFIG 1
+
+
+/*
  * If this is set, the nursery is aligned to an address aligned to its size, ie.
  * a 1MB nursery will be aligned to an address divisible by 1MB. This allows us to
  * speed up ptr_in_nursery () checks which are very frequent. This requires the

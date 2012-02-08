@@ -120,9 +120,16 @@ static Fragment *fragment_freelist = NULL;
 /* Allocator cursors */
 static char *nursery_last_pinned_end = NULL;
 
-/* XXX Storing this here again is a bit silly, but makes things easier*/
-static char *nursery_start = NULL;
-static char *nursery_end = NULL;
+char *mono_sgen_nursery_start;
+char *mono_sgen_nursery_end;
+
+#ifdef USER_CONFIG
+int mono_sgen_nursery_size = (1 << 22);
+#ifdef SGEN_ALIGN_NURSERY
+int mono_sgen_nursery_bits = 22;
+#endif
+#endif
+
 
 #ifdef HEAVY_STATISTICS
 
@@ -537,7 +544,7 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 		fragment_freelist = nf;
 		nursery_fragments = next;
 	}
-	frag_start = nursery_start;
+	frag_start = mono_sgen_nursery_start;
 	fragment_total = 0;
 	/* clear scan starts */
 	memset (nursery_section->scan_starts, 0, nursery_section->num_scan_start * sizeof (gpointer));
@@ -556,7 +563,7 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 		frag_start = (char*)start [i] + frag_size;
 	}
 	nursery_last_pinned_end = frag_start;
-	frag_end = nursery_end;
+	frag_end = mono_sgen_nursery_end;
 	frag_size = frag_end - frag_start;
 	if (frag_size)
 		add_nursery_frag (frag_size, frag_start, frag_end);
@@ -739,8 +746,8 @@ mono_sgen_nursery_allocator_set_nursery_bounds (char *start, char *end)
 {
 	/* Setup the single first large fragment */
 	add_fragment (start, end);
-	nursery_start = start;
-	nursery_end = end;
+	mono_sgen_nursery_start = start;
+	mono_sgen_nursery_end = end;
 }
 
 #endif

@@ -251,6 +251,52 @@ extern unsigned int mono_sgen_global_stop_count;
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	((char*)(p) >= (start) && (char*)(p) < (end))
 #endif
 
+#ifdef USER_CONFIG
+
+/* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
+#define DEFAULT_NURSERY_SIZE (mono_sgen_nursery_size)
+extern int mono_sgen_nursery_size MONO_INTERNAL;
+#ifdef SGEN_ALIGN_NURSERY
+/* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
+#define DEFAULT_NURSERY_BITS (mono_sgen_nursery_bits)
+extern int mono_sgen_nursery_bits MONO_INTERNAL;
+#endif
+
+#else
+
+#define DEFAULT_NURSERY_SIZE (4*1024*1024)
+#ifdef SGEN_ALIGN_NURSERY
+#define DEFAULT_NURSERY_BITS 22
+#endif
+
+#endif
+
+#ifndef SGEN_ALIGN_NURSERY
+#define DEFAULT_NURSERY_BITS -1
+#endif
+
+extern char *mono_sgen_nursery_start MONO_INTERNAL;
+extern char *mono_sgen_nursery_end MONO_INTERNAL;
+
+static inline gboolean
+mono_sgen_ptr_in_nursery (void *p)
+{
+	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, mono_sgen_nursery_start, mono_sgen_nursery_end);
+}
+
+static inline char*
+mono_sgen_get_nursery_start (void)
+{
+	return mono_sgen_nursery_start;
+}
+
+static inline char*
+mono_sgen_get_nursery_end (void)
+{
+	return mono_sgen_nursery_end;
+}
+
+
 /* Structure that corresponds to a MonoVTable: desc is a mword so requires
  * no cast from a pointer to an integer
  */
@@ -689,7 +735,6 @@ void* mono_sgen_nursery_alloc_range (size_t size, size_t min_size, int *out_allo
 MonoVTable* mono_sgen_get_array_fill_vtable (void) MONO_INTERNAL;
 gboolean mono_sgen_can_alloc_size (size_t size) MONO_INTERNAL;
 void mono_sgen_nursery_retire_region (void *address, ptrdiff_t size) MONO_INTERNAL;
-gboolean mono_sgen_ptr_in_nursery (void *p) MONO_INTERNAL; /*FIXME make this inline*/
 
 /* hash tables */
 

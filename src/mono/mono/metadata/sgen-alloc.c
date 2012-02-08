@@ -243,7 +243,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			/* when running in degraded mode, we continue allocing that way
 			 * for a while, to decrease the number of useless nursery collections.
 			 */
-			if (degraded_mode && degraded_mode < default_nursery_size) {
+			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
 				p = alloc_degraded (vtable, size, FALSE);
 				binary_protocol_alloc_degraded (p, vtable, size);
 				return p;

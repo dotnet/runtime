@@ -32,7 +32,7 @@ extern long long stat_scan_object_called_major;
 			copy_object ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (mono_sgen_ptr_in_nursery (__copy) && !mono_sgen_ptr_in_nursery ((ptr)))) \
 				mono_sgen_add_to_global_remset ((ptr));	\
 		}	\
 	} while (0)
@@ -75,7 +75,7 @@ minor_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 			nopar_copy_object ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (mono_sgen_ptr_in_nursery (__copy) && !mono_sgen_ptr_in_nursery ((ptr)))) \
 				mono_sgen_add_to_global_remset ((ptr));	\
 		}	\
 	} while (0)
@@ -113,7 +113,7 @@ nopar_minor_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 			major_copy_or_mark_object ((ptr), queue);	\
 			__copy = *(ptr);				\
 			DEBUG (9, if (__old != __copy) mono_sgen_debug_printf (9, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old)); \
-			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (mono_sgen_ptr_in_nursery (__copy) && !mono_sgen_ptr_in_nursery ((ptr)))) \
 				mono_sgen_add_to_global_remset ((ptr));	\
 		}							\
 	} while (0)

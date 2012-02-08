@@ -91,7 +91,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	char *destination = major_alloc_object (objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
-		if (ptr_in_nursery (obj)) {
+		if (mono_sgen_ptr_in_nursery (obj)) {
 			mono_sgen_pin_object (obj, queue);
 		} else {
 			g_assert (objsize <= SGEN_MAX_SMALL_OBJ_SIZE);
@@ -140,7 +140,7 @@ nopar_copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
-	if (!ptr_in_nursery (obj)) {
+	if (!mono_sgen_ptr_in_nursery (obj)) {
 		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
 		return;
 	}
@@ -186,7 +186,7 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
-	if (!ptr_in_nursery (obj)) {
+	if (!mono_sgen_ptr_in_nursery (obj)) {
 		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
 		return;
 	}

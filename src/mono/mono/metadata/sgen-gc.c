@@ -349,13 +349,6 @@ mono_gc_flush_info (void)
 }
 */
 
-/*
- * Define this to allow the user to change the nursery size by
- * specifying its value in the MONO_GC_PARAMS environmental
- * variable. See mono_gc_base_init for details.
- */
-#define USER_CONFIG 1
-
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
@@ -380,7 +373,7 @@ struct _RootRecord {
 #define pin_object		SGEN_PIN_OBJECT
 #define unpin_object		SGEN_UNPIN_OBJECT
 
-#define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_end))
+#define ptr_in_nursery mono_sgen_ptr_in_nursery
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
@@ -408,30 +401,6 @@ LOCK_DECLARE (gc_mutex);
 static int gc_disabled = 0;
 
 static gboolean use_cardtable;
-
-#ifdef USER_CONFIG
-
-/* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
-#define DEFAULT_NURSERY_SIZE (default_nursery_size)
-int default_nursery_size = (1 << 22);
-#ifdef SGEN_ALIGN_NURSERY
-/* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
-#define DEFAULT_NURSERY_BITS (default_nursery_bits)
-static int default_nursery_bits = 22;
-#endif
-
-#else
-
-#define DEFAULT_NURSERY_SIZE (4*1024*1024)
-#ifdef SGEN_ALIGN_NURSERY
-#define DEFAULT_NURSERY_BITS 22
-#endif
-
-#endif
-
-#ifndef SGEN_ALIGN_NURSERY
-#define DEFAULT_NURSERY_BITS -1
-#endif
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 4)
 
@@ -546,21 +515,6 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
 	report->root_types [report->count] = rtype;
 	report->extra_info [report->count++] = (uintptr_t)((MonoVTable*)LOAD_VTABLE (object))->klass;
 }
-
-/* 
- * The current allocation cursors
- * We allocate objects in the nursery.
- * The nursery is the area between nursery_start and nursery_end.
- * nursery_frag_real_end points to the end of the currently used nursery fragment.
- * nursery_first_pinned_start points to the start of the first pinned object in the nursery
- * nursery_last_pinned_end points to the end of the last pinned object in the nursery
- * At the next allocation, the area of the nursery where objects can be present is
- * between MIN(nursery_first_pinned_start, first_fragment_start) and
- * MAX(nursery_last_pinned_end, nursery_frag_real_end)
- */
-static char *nursery_start = NULL;
-static char *nursery_end = NULL;
-static char *nursery_alloc_bound = NULL;
 
 MonoNativeTlsKey thread_info_key;
 
@@ -1499,7 +1453,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			if (addr >= (mword)start_nursery && addr < (mword)end_nursery)
 				mono_sgen_pin_stage_ptr ((void*)addr);
 			if (G_UNLIKELY (do_pin_stats)) { 
-				if (ptr_in_nursery (addr))
+				if (ptr_in_nursery ((void*)addr))
 					mono_sgen_pin_stats_register_address ((char*)addr, pin_type);
 			}
 			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p from %p\n", (void*)addr, start));
@@ -1747,13 +1701,11 @@ alloc_nursery (void)
 #else
 	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
-	nursery_start = data;
-	nursery_end = nursery_start + nursery_size;
-	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_end);
+	mono_sgen_update_heap_boundaries ((mword)data, (mword)(data + nursery_size));
 	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
-	section->end_data = nursery_end;
+	section->end_data = mono_sgen_get_nursery_end ();
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
@@ -1762,7 +1714,7 @@ alloc_nursery (void)
 
 	nursery_section = section;
 
-	mono_sgen_nursery_allocator_set_nursery_bounds (nursery_start, nursery_end);
+	mono_sgen_nursery_allocator_set_nursery_bounds (data, data + nursery_size);
 }
 
 void*
@@ -1774,7 +1726,7 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 #else
 	*shift_bits = -1;
 #endif
-	return nursery_start;
+	return mono_sgen_get_nursery_start ();
 }
 
 void
@@ -2020,12 +1972,12 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 
 	mono_sgen_scan_togglerefs (copy_func, start_addr, end_addr, queue);
 	if (generation == GENERATION_OLD)
-		mono_sgen_scan_togglerefs (copy_func, nursery_start, nursery_end, queue);
+		mono_sgen_scan_togglerefs (copy_func, mono_sgen_get_nursery_start (), mono_sgen_get_nursery_end (), queue);
 
 	if (mono_sgen_need_bridge_processing ()) {
 		collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
-			collect_bridge_objects (copy_func, nursery_start, nursery_end, GENERATION_NURSERY, queue);
+			collect_bridge_objects (copy_func, mono_sgen_get_nursery_start (), mono_sgen_get_nursery_end (), GENERATION_NURSERY, queue);
 		mono_sgen_drain_gray_stack (queue, -1);
 	}
 
@@ -2050,7 +2002,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		fin_ready = num_ready_finalizers;
 		finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
-			finalize_in_range (copy_func, nursery_start, nursery_end, GENERATION_NURSERY, queue);
+			finalize_in_range (copy_func, mono_sgen_get_nursery_start (), mono_sgen_get_nursery_end (), GENERATION_NURSERY, queue);
 
 		if (fin_ready != num_ready_finalizers)
 			++num_loops;
@@ -2545,8 +2497,8 @@ verify_nursery (void)
 	/*This cleans up unused fragments */
 	mono_sgen_nursery_allocator_prepare_for_pinning ();
 
-	hole_start = start = cur = nursery_start;
-	end = nursery_end;
+	hole_start = start = cur = mono_sgen_get_nursery_start ();
+	end = mono_sgen_get_nursery_end ();
 
 	while (cur < end) {
 		size_t ss, size;
@@ -2612,12 +2564,10 @@ collect_nursery (size_t requested_size)
 	objects_pinned = 0;
 	nursery_next = mono_sgen_nursery_alloc_get_upper_alloc_bound ();
 	/* FIXME: optimize later to use the higher address where an object can be present */
-	nursery_next = MAX (nursery_next, nursery_end);
+	nursery_next = MAX (nursery_next, mono_sgen_get_nursery_end ());
 
-	nursery_alloc_bound = nursery_next;
-
-	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", stat_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
-	max_garbage_amount = nursery_next - nursery_start;
+	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", stat_minor_gcs, mono_sgen_get_nursery_start (), nursery_next, (int)(nursery_next - mono_sgen_get_nursery_start ())));
+	max_garbage_amount = nursery_next - mono_sgen_get_nursery_start ();
 	g_assert (nursery_section->size >= max_garbage_amount);
 
 	/* world must be stopped already */
@@ -2654,7 +2604,7 @@ collect_nursery (size_t requested_size)
 	/* pin from pinned handles */
 	mono_sgen_init_pinning ();
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
-	pin_from_roots (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	pin_from_roots (mono_sgen_get_nursery_start (), nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* identify pinned objects */
 	mono_sgen_optimize_pin_queue (0);
 	mono_sgen_pinning_setup_section (nursery_section);
@@ -2675,11 +2625,11 @@ collect_nursery (size_t requested_size)
 	 * This usually involves scanning global information that might later be produced by evacuation.
 	 */
 	if (remset.begin_scan_remsets)
-		remset.begin_scan_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+		remset.begin_scan_remsets (mono_sgen_get_nursery_start (), nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 	mono_sgen_workers_start_marking ();
 
-	frssjd.heap_start = nursery_start;
+	frssjd.heap_start = mono_sgen_get_nursery_start ();
 	frssjd.heap_end = nursery_next;
 	mono_sgen_workers_enqueue_job (job_finish_remembered_set_scan, &frssjd);
 
@@ -2700,13 +2650,13 @@ collect_nursery (size_t requested_size)
 
 	/* registered roots, this includes static fields */
 	scrrjd_normal.func = mono_sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
-	scrrjd_normal.heap_start = nursery_start;
+	scrrjd_normal.heap_start = mono_sgen_get_nursery_start ();
 	scrrjd_normal.heap_end = nursery_next;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
 	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
 	scrrjd_wbarrier.func = mono_sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
-	scrrjd_wbarrier.heap_start = nursery_start;
+	scrrjd_wbarrier.heap_start = mono_sgen_get_nursery_start ();
 	scrrjd_wbarrier.heap_end = nursery_next;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
 	mono_sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
@@ -2715,7 +2665,7 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_registered_roots += TV_ELAPSED (atv, btv);
 
 	/* thread data */
-	stdjd.heap_start = nursery_start;
+	stdjd.heap_start = mono_sgen_get_nursery_start ();
 	stdjd.heap_end = nursery_next;
 	mono_sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
 
@@ -2734,7 +2684,7 @@ collect_nursery (size_t requested_size)
 	if (mono_sgen_collection_is_parallel ())
 		g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
-	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
+	finish_gray_stack (mono_sgen_get_nursery_start (), nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED (btv, atv);
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
@@ -2891,7 +2841,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	nursery_section->next_data = nursery_end;
+	nursery_section->next_data = mono_sgen_get_nursery_end ();
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
 	 */
@@ -3060,7 +3010,7 @@ major_do_collection (const char *reason)
 	}
 
 	reset_heap_boundaries ();
-	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_end);
+	mono_sgen_update_heap_boundaries ((mword)mono_sgen_get_nursery_start (), (mword)mono_sgen_get_nursery_end ());
 
 	/* sweep the big objects list */
 	prevbo = NULL;
@@ -4917,7 +4867,7 @@ mono_gc_base_init (void)
 				long val;
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &val)) {
-					default_nursery_size = val;
+					mono_sgen_nursery_size = val;
 #ifdef SGEN_ALIGN_NURSERY
 					if ((val & (val - 1))) {
 						fprintf (stderr, "The nursery size must be a power of two.\n");
@@ -4929,8 +4879,8 @@ mono_gc_base_init (void)
 						exit (1);
 					}
 
-					default_nursery_bits = 0;
-					while (1 << (++ default_nursery_bits) != default_nursery_size)
+					mono_sgen_nursery_bits = 0;
+					while (1 << (++ mono_sgen_nursery_bits) != mono_sgen_nursery_size)
 						;
 #endif
 				} else {
@@ -5119,7 +5069,7 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
+	mono_mb_emit_icon (mb, (mword)mono_sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS);
 	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
 
 	// if (!ptr_in_nursery (*ptr)) return;
@@ -5127,20 +5077,20 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
+	mono_mb_emit_icon (mb, (mword)mono_sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS);
 	nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
 #else
 	int label_continue1, label_continue2;
 	int dereferenced_var;
 
-	// if (ptr < (nursery_start)) goto continue;
+	// if (ptr < (mono_sgen_get_nursery_start ())) goto continue;
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ptr (mb, (gpointer) nursery_start);
+	mono_mb_emit_ptr (mb, (gpointer) mono_sgen_get_nursery_start ());
 	label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
 
-	// if (ptr >= nursery_end)) goto continue;
+	// if (ptr >= mono_sgen_get_nursery_end ())) goto continue;
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ptr (mb, (gpointer) nursery_end);
+	mono_mb_emit_ptr (mb, (gpointer) mono_sgen_get_nursery_end ());
 	label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
 
 	// Otherwise return
@@ -5156,14 +5106,14 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, dereferenced_var);
 
-	// if (*ptr < nursery_start) return;
+	// if (*ptr < mono_sgen_get_nursery_start ()) return;
 	mono_mb_emit_ldloc (mb, dereferenced_var);
-	mono_mb_emit_ptr (mb, (gpointer) nursery_start);
+	mono_mb_emit_ptr (mb, (gpointer) mono_sgen_get_nursery_start ());
 	nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BLT);
 
-	// if (*ptr >= nursery_end) return;
+	// if (*ptr >= mono_sgen_get_nursery_end ()) return;
 	mono_mb_emit_ldloc (mb, dereferenced_var);
-	mono_mb_emit_ptr (mb, (gpointer) nursery_end);
+	mono_mb_emit_ptr (mb, (gpointer) mono_sgen_get_nursery_end ());
 	nursery_check_return_labels [2] = mono_mb_emit_branch (mb, CEE_BGE);
 #endif	
 }
@@ -5454,12 +5404,6 @@ void
 sgen_major_collector_scan_card_table (SgenGrayQueue *queue)
 {
 	major_collector.scan_card_table (queue);
-}
-
-gboolean
-mono_sgen_ptr_in_nursery (void *p)
-{
-	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_end);
 }
 
 SgenMajorCollector*

@@ -102,7 +102,7 @@ struct _MSBlockInfo {
 #ifdef FIXED_HEAP
 static int ms_heap_num_blocks = MS_DEFAULT_HEAP_NUM_BLOCKS;
 
-#define ms_heap_start	nursery_end
+static char *ms_heap_start;
 static char *ms_heap_end;
 
 #define MS_PTR_IN_SMALL_MAJOR_HEAP(p)	((char*)(p) >= ms_heap_start && (char*)(p) < ms_heap_end)
@@ -180,18 +180,11 @@ static LOCK_DECLARE (ms_block_list_mutex);
 #define UNLOCK_MS_BLOCK_LIST mono_mutex_unlock (&ms_block_list_mutex)
 #endif
 
-/* we get this at init */
-static int nursery_bits;
-static char *nursery_start;
-static char *nursery_end;
-
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666;
 
 static gboolean concurrent_sweep = FALSE;
 static gboolean have_swept;
-
-#define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
 /* all allocated blocks in the system */
 static MSBlockInfo *all_blocks;
@@ -310,7 +303,7 @@ ms_find_block_obj_size_index (int size)
 static void*
 major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
-	char *heap_start;
+	char *nursery_start;
 	mword major_heap_size = ms_heap_num_blocks * MS_BLOCK_SIZE;
 	mword alloc_size = nursery_size + major_heap_size;
 	int i;
@@ -321,15 +314,13 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
 
 	nursery_start = mono_sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE);
-	nursery_end = heap_start = nursery_start + nursery_size;
-	nursery_bits = the_nursery_bits;
-
-	ms_heap_end = heap_start + major_heap_size;
+	ms_heap_start = nursery_start + nursery_size;
+	ms_heap_end = ms_heap_start + major_heap_size;
 
 	block_infos = mono_sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
 
 	for (i = 0; i < ms_heap_num_blocks; ++i) {
-		block_infos [i].block = heap_start + i * MS_BLOCK_SIZE;
+		block_infos [i].block = ms_heap_start + i * MS_BLOCK_SIZE;
 		if (i < ms_heap_num_blocks - 1)
 			block_infos [i].next_free = &block_infos [i + 1];
 		else
@@ -345,15 +336,13 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 static void*
 major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
+	char *start;
 	if (nursery_align)
-		nursery_start = mono_sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+		start = mono_sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
 	else
-		nursery_start = mono_sgen_alloc_os_memory (nursery_size, TRUE);
+		start = mono_sgen_alloc_os_memory (nursery_size, TRUE);
 
-	nursery_end = nursery_start + nursery_size;
-	nursery_bits = the_nursery_bits;
-
-	return nursery_start;
+	return start;
 }
 #endif
 
@@ -861,7 +850,7 @@ major_is_object_live (char *obj)
 	mword objsize;
 #endif
 
-	if (ptr_in_nursery (obj))
+	if (mono_sgen_ptr_in_nursery (obj))
 		return FALSE;
 
 #ifdef FIXED_HEAP
@@ -1028,7 +1017,7 @@ pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
 		mword vtable_word;
 		gboolean major_pinned = FALSE;
 
-		if (ptr_in_nursery (obj)) {
+		if (mono_sgen_ptr_in_nursery (obj)) {
 			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
 				mono_sgen_pin_object (obj, queue);
 				break;
@@ -1068,7 +1057,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	DEBUG (9, g_assert (obj));
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
-	if (ptr_in_nursery (obj)) {
+	if (mono_sgen_ptr_in_nursery (obj)) {
 		int word, bit;
 		gboolean has_references;
 		void *destination;
@@ -1091,7 +1080,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 		destination = alloc_obj_par (objsize, FALSE, has_references);
 		if (G_UNLIKELY (!destination)) {
-			if (!ptr_in_nursery (obj)) {
+			if (!mono_sgen_ptr_in_nursery (obj)) {
 				int size_index;
 				block = MS_BLOCK_FOR_OBJ (obj);
 				size_index = block->obj_size_index;
@@ -1217,7 +1206,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	DEBUG (9, g_assert (obj));
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
-	if (ptr_in_nursery (obj)) {
+	if (mono_sgen_ptr_in_nursery (obj)) {
 		int word, bit;
 		char *forwarded, *old_obj;
 
@@ -1235,7 +1224,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		obj = copy_object_no_checks (obj, queue);
 		if (G_UNLIKELY (old_obj == obj)) {
 			/*If we fail to evacuate an object we just stop doing it for a given block size as all other will surely fail too.*/
-			if (!ptr_in_nursery (obj)) {
+			if (!mono_sgen_ptr_in_nursery (obj)) {
 				int size_index;
 				block = MS_BLOCK_FOR_OBJ (obj);
 				size_index = block->obj_size_index;
