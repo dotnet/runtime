@@ -2798,10 +2798,8 @@ AC_CHECK_HEADER([malloc.h],
 # instead of libmono-static.a
 if test "x$enable_shared" = "xno"; then
    LIBMONO_LA=.libs/libmono-static.a
-   PROFILER_LIBS=
 else
    LIBMONO_LA=libmono-$API_VER.la
-   PROFILER_LIBS=libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la
 fi
 AC_SUBST(LIBMONO_LA)
 

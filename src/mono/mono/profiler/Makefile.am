@@ -12,7 +12,7 @@ INCLUDES = \
 if !DISABLE_PROFILER
 if JIT_SUPPORTED
 bin_PROGRAMS = mprof-report
-lib_LTLIBRARIES = $(PROFILER_LIBS)
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la
 if PLATFORM_DARWIN
 libmono_profiler_log_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
