@@ -7368,7 +7368,12 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_int (buf, n_il_offsets);
 		DEBUG (10, printf ("Line number table for method %s:\n", mono_method_full_name (method,  TRUE)));
 		for (i = 0; i < n_il_offsets; ++i) {
-			const char *srcfile = source_files [i] != -1 ? g_ptr_array_index (source_file_list, source_files [i]) : "";
+			const char *srcfile = "";
+
+			if (source_files [i] != -1) {
+				MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, source_files [i]);
+				srcfile = sinfo->source_file;
+			}
 			DEBUG (10, printf ("IL%x -> %s:%d\n", il_offsets [i], srcfile, line_numbers [i]));
 			buffer_add_int (buf, il_offsets [i]);
 			buffer_add_int (buf, line_numbers [i]);
