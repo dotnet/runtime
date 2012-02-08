@@ -24,7 +24,7 @@ if HAVE_OPROFILE
 endif
 
 if SUPPORT_BOEHM
-LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
+LIBMONO=$(top_builddir)/mono/mini/libmono-$(API_VER).la
 else
 LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
 endif
