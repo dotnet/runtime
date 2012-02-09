@@ -4774,8 +4774,10 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 		}
 
 		/*
-		 * The frame info will become invalid when we continue.
+		 * The ctx/frame info computed above will become invalid when we continue.
 		 */
+		tls->context.valid = FALSE;
+		tls->async_state.valid = FALSE;
 		invalidate_frames (tls);
 	}
 
