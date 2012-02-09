@@ -2975,7 +2975,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	info = &amodule->blob [mono_aot_get_offset (amodule->method_info_offsets, method_index)];
 
-	if (amodule->thumb_end && code < amodule->thumb_end) {
+	if (amodule->thumb_end && code < amodule->thumb_end && ((amodule->info.flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES) == 0)) {
 		/* Convert this into a thumb address */
 		g_assert ((amodule->code_offsets [method_index] & 0x1) == 0);
 		code = &amodule->code [amodule->code_offsets [method_index] + 1];
