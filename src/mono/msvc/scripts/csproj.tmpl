@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -9,23 +9,20 @@
     <OutputType>Library</OutputType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <OutputPath>@OUTPUTDIR@</OutputPath>
-    <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     @NOSTDLIB@
     @ALLOWUNSAFE@
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>mscorlib</RootNamespace>
+    <RootNamespace></RootNamespace>
     <AssemblyName>@ASSEMBLYNAME@</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v@FX_VERSION</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <StartupObject>
-    </StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>@DEBUG@</DebugSymbols>
-    <DebugType>@DEBUGTYPE@</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
-    <Optimize>@OPTIMIZE@</Optimize>
-    <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE;@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     @ADDITIONALLIBPATHS@
@@ -33,7 +30,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
-    <Optimize>@OPTIMIZE@</Optimize>
+    <Optimize>true</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -53,7 +50,9 @@
   <PropertyGroup>
     <PreBuildEvent>@PREBUILD@</PreBuildEvent>
   </PropertyGroup>
-  @REFERENCES@
+  <ItemGroup>
+@REFERENCES@
+  </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>

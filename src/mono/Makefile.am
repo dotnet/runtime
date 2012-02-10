@@ -139,6 +139,7 @@ package-inputs:
 		 read output; echo "      <output>$$output</output>"; \
 		 read built;  echo "      <built_sources>$$built</built_sources>"; \
 		 read libou;  echo "      <library_output>$$libou</library_output>"; \
+		 read fx_ver; echo "      <fx_version>$$fx_ver</fx_version>"; \
 		 read resp;   echo "      <response>$$resp</response>"; \
 		echo "    </project>") >> msvc/scripts/order.xml; \
 	done

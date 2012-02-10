@@ -113,11 +113,11 @@ class MsbuildGenerator {
 			
 			foreach (char c in dir){
 				if (c == '/')
-					mcs_topdir = "..\\" + mcs_topdir;
+					mcs_topdir = "..//" + mcs_topdir;
 			}
 			class_dir = mcs_topdir.Substring (3);
 			
-			base_dir = "..\\..\\mcs\\" + dir;
+			base_dir = Path.Combine ("..", "..", "mcs", dir);
 		}
 	}
 	
@@ -547,7 +547,7 @@ class MsbuildGenerator {
 	public string Generate (XElement xproject)
 	{
 		string library = xproject.Attribute ("library").Value;
-		string boot, mcs, flags, output_name, built_sources, library_output, response;
+		string boot, mcs, flags, output_name, built_sources, library_output, response, fx_version;
 
 		boot  = xproject.Element ("boot").Value;
 		mcs   = xproject.Element ("mcs").Value;
@@ -556,6 +556,7 @@ class MsbuildGenerator {
 		built_sources = xproject.Element ("built_sources").Value;
 		library_output = xproject.Element ("library_output").Value;
 		response = xproject.Element ("response").Value;
+		fx_version = xproject.Element ("fx_version").Value;
 
 		//
 		// Prebuild code, might be in inputs, check:
@@ -581,9 +582,10 @@ class MsbuildGenerator {
 					string [] extra_args;
 					string response_file = f [i].Substring (1);
 					
-					extra_args = LoadArgs (base_dir + "\\" + response_file);
+					var resp_file_full = Path.Combine (base_dir, response_file);
+					extra_args = LoadArgs (resp_file_full);
 					if (extra_args == null) {
-						Console.WriteLine ("Unable to open response file: " + response_file);
+						Console.WriteLine ("Unable to open response file: " + resp_file_full);
 						Environment.Exit (1);
 					}
 
@@ -607,13 +609,22 @@ class MsbuildGenerator {
 		foreach (string s in source_files){
 			if (s.Length == 0)
 				continue;
-			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s.Replace ("/", "\\")));
+			
+			string src = s.Replace ("/", "\\");
+			if (src.StartsWith (@"Test\..\"))
+				src = src.Substring (8, src.Length - 8);
+			
+			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", src));
 		}
 		foreach (string s in built_sources.Split ()){
 			if (s.Length == 0)
 				continue;
 			
-			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s.Replace ("/", "\\")));
+			string src = s.Replace ("/", "\\");
+			if (src.StartsWith (@"Test\..\"))
+				src = src.Substring (8, src.Length - 8);
+
+			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", src));
 		}
 		
 		var mono_paths = mcs.Substring (0, mcs.IndexOf (' ')).Split (new char [] {':'});
@@ -626,16 +637,8 @@ class MsbuildGenerator {
 		var encoded_mono_paths = string.Join ("-", mono_paths).Replace ("--", "-");
 		
 		var refs = new StringBuilder ();
-		//
-		// mcs is different that csc in this regard, somehow with -noconfig we still import System and System.XML
-		//
-		if (dir == "mcs" && !load_default_config){
-			references.Add ("System.dll");
-			references.Add ("System.Xml.dll");
-		}
 		
 		if (references.Count > 0 || reference_aliases.Count > 0){
-			refs.Append ("<ItemGroup>\n");
 			string last = mono_paths [0].Substring (mono_paths [0].LastIndexOf ('/') + 1);
 			
 			string hint_path = class_dir + "\\lib\\" + last;
@@ -643,7 +646,7 @@ class MsbuildGenerator {
 			foreach (string r in references){
 				refs.Append ("    <Reference Include=\"" + r + "\">\n");
 				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
-				refs.Append ("      <HintPath>" + hint_path + "\\" + r + "</HintPath>\n");
+				refs.Append ("      <HintPath>" + r + "</HintPath>\n");
 				refs.Append ("    </Reference>\n");
 			}
 
@@ -654,12 +657,15 @@ class MsbuildGenerator {
 
 				refs.Append ("    <Reference Include=\"" + assembly + "\">\n");
 				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
-				refs.Append ("      <HintPath>" + hint_path + "\\" + r + "</HintPath>\n");
+				refs.Append ("      <HintPath>" + r + "</HintPath>\n");
 				refs.Append ("      <Aliases>" + alias + "</Aliases>\n");
 				refs.Append ("    </Reference>\n");
 			}
-			
-			refs.Append ("  </ItemGroup>\n");
+		}
+		
+		bool is_test = response.Contains ("_test_");
+		if (is_test) {
+				refs.Append ("    <Reference Include=\"nunit.framework\" />\n");
 		}
 
 		var resources = new StringBuilder ();
@@ -674,7 +680,9 @@ class MsbuildGenerator {
 		}
 		
 		try {
-			Path.GetDirectoryName (library_output);
+			library_output = Path.GetDirectoryName (library_output);
+			if (string.IsNullOrEmpty (library_output))
+				library_output = @".\";
 		} catch {
 			Console.WriteLine ("Error in path: {0} while processing {1}", library_output, library);
 		}
@@ -687,8 +695,9 @@ class MsbuildGenerator {
 			Replace ("@DISABLEDWARNINGS@", string.Join (",", (from i in ignore_warning select i.ToString ()).ToArray ())).
 			Replace ("@NOSTDLIB@", StdLib ? "" : "<NoStdLib>true</NoStdLib>").
 			Replace ("@ALLOWUNSAFE@", Unsafe ? "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>" : "").
+			Replace ("@FX_VERSION", fx_version).
 			Replace ("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension (output_name)).
-			Replace ("@OUTPUTDIR@", Path.GetDirectoryName (library_output)).
+			Replace ("@OUTPUTDIR@", library_output).
 			Replace ("@DEFINECONSTANTS@", defines.ToString ()).
 			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
