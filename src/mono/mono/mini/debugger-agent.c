@@ -3944,7 +3944,33 @@ remove_breakpoint (BreakpointInstance *inst)
 static inline gboolean
 bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 {
-	return (!bp->method || method == bp->method || (method->is_inflated && ((MonoMethodInflated*)method)->declaring == bp->method));
+	int i;
+
+	if (!bp->method)
+		return TRUE;
+	if (method == bp->method)
+		return TRUE;
+	if (method->is_inflated && ((MonoMethodInflated*)method)->declaring == bp->method)
+		return TRUE;
+
+	if (bp->method->is_inflated && method->is_inflated) {
+		MonoMethodInflated *bpimethod = (MonoMethodInflated*)bp->method;
+		MonoMethodInflated *imethod = (MonoMethodInflated*)method;
+
+		/* Open generic methods should match closed generic methods of the same class */
+		if (bpimethod->declaring == imethod->declaring && bpimethod->context.class_inst == imethod->context.class_inst && bpimethod->context.method_inst && bpimethod->context.method_inst->is_open) {
+			for (i = 0; i < bpimethod->context.method_inst->type_argc; ++i) {
+				MonoType *t1 = bpimethod->context.method_inst->type_argv [i];
+
+				/* FIXME: Handle !mvar */
+				if (t1->type != MONO_TYPE_MVAR)
+					return FALSE;
+			}
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 /*
