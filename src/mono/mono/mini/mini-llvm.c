@@ -1068,7 +1068,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		param_types [pindex] = IntPtrType ();
 		pindex ++;
 	}
-	if (cinfo && cinfo->imt_arg && IS_LLVM_MONO_BRANCH) {
+	if (cinfo && cinfo->imt_arg) {
 		if (sinfo)
 			sinfo->imt_arg_pindex = pindex;
 		param_types [pindex] = IntPtrType ();
@@ -1284,9 +1284,6 @@ set_metadata_flag (LLVMValueRef v, const char *flag_name)
 	LLVMValueRef md_arg;
 	int md_kind;
 	
-	if (!IS_LLVM_MONO_BRANCH)
-		return;
-
 	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
 	md_arg = LLVMMDString ("mono", 4);
 	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
@@ -1354,7 +1351,7 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 	LLVMValueRef args [16], res;
 	LLVMTypeRef addr_type;
 
-	if (is_faulting && bb->region != -1 && IS_LLVM_MONO_BRANCH) {
+	if (is_faulting && bb->region != -1) {
 		/*
 		 * We handle loads which can fault by calling a mono specific intrinsic
 		 * using an invoke, so they are handled properly inside try blocks.
@@ -1419,7 +1416,7 @@ emit_store (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, i
 	const char *intrins_name;
 	LLVMValueRef args [16];
 
-	if (is_faulting && bb->region != -1 && IS_LLVM_MONO_BRANCH) {
+	if (is_faulting && bb->region != -1) {
 		switch (size) {
 		case 1:
 			intrins_name = "llvm.mono.store.i8.p0i8";
@@ -1486,13 +1483,8 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		MonoMethodSignature *throw_sig = mono_metadata_signature_alloc (mono_get_corlib (), 2);
 		throw_sig->ret = &mono_get_void_class ()->byval_arg;
 		throw_sig->params [0] = &mono_get_int32_class ()->byval_arg;
-		if (IS_LLVM_MONO_BRANCH) {
-			icall_name = "llvm_throw_corlib_exception_abs_trampoline";
-			throw_sig->params [1] = &mono_get_intptr_class ()->byval_arg;
-		} else {
-			icall_name = "llvm_throw_corlib_exception_trampoline";
-			throw_sig->params [1] = &mono_get_int32_class ()->byval_arg;
-		}
+		icall_name = "llvm_throw_corlib_exception_abs_trampoline";
+		throw_sig->params [1] = &mono_get_intptr_class ()->byval_arg;
 		sig = sig_to_llvm_sig (ctx, throw_sig);
 
 		if (ctx->cfg->compile_aot) {
@@ -1518,24 +1510,12 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	else
 		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
 
-	if (IS_LLVM_MONO_BRANCH) {
-		/*
-		 * The LLVM mono branch contains changes so a block address can be passed as an
-		 * argument to a call.
-		 */
-		args [1] = LLVMBuildPtrToInt (builder, LLVMBlockAddress (ctx->lmethod, ex_bb), IntPtrType (), "");
-		emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
-	} else {
-		/*
-		 * FIXME: The offset is 0, this is only a problem if the code is inside a clause,
-		 * otherwise only the line numbers in stack traces are incorrect.
-		 */
-		if (bb->region != -1 && !IS_LLVM_MONO_BRANCH)
-			LLVM_FAILURE (ctx, "system-ex-in-region");
-
-		args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-		emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
-	}
+	/*
+	 * The LLVM mono branch contains changes so a block address can be passed as an
+	 * argument to a call.
+	 */
+	args [1] = LLVMBuildPtrToInt (builder, LLVMBlockAddress (ctx->lmethod, ex_bb), IntPtrType (), "");
+	emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
 
 	LLVMBuildUnreachable (builder);
 
@@ -1864,18 +1844,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->signature->call_convention != MONO_CALL_DEFAULT)
 		LLVM_FAILURE (ctx, "non-default callconv");
 
-	if (call->rgctx_arg_reg && !IS_LLVM_MONO_BRANCH)
-		LLVM_FAILURE (ctx, "rgctx reg in call");
-
-	if (call->rgctx_reg && !IS_LLVM_MONO_BRANCH) {
-		/*
-		 * It might be possible to support this by creating a static rgctx trampoline, but
-		 * common_call_trampoline () would patch callsites to call the trampoline, which
-		 * would be incorrect if the rgctx arg is computed dynamically.
-		 */
-		LLVM_FAILURE (ctx, "rgctx reg");
-	}
-
 	cinfo = call->cinfo;
 	if (call->rgctx_arg_reg)
 		cinfo->rgctx_arg = TRUE;
@@ -1976,30 +1944,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		g_assert (ins->inst_offset % size == 0);
 		index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);
 
-		/*
-		 * When using the llvm mono branch, we can support IMT directly, otherwise
-		 * we need to call a trampoline.
-		 */
-		if (call->method && call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE && !IS_LLVM_MONO_BRANCH) {
-#ifdef MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE
-			if (cfg->compile_aot) {
-				MonoJumpInfoImtTramp *imt_tramp = g_new0 (MonoJumpInfoImtTramp, 1);
-				imt_tramp->method = call->method;
-				imt_tramp->vt_offset = call->inst.inst_offset;
-
-				callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE, imt_tramp);
-			} else {
-				callee = LLVMAddFunction (module, "", llvm_sig);
-				target = mono_create_llvm_imt_trampoline (cfg->domain, call->method, call->inst.inst_offset);
-				LLVMAddGlobalMapping (ee, callee, target);
-			}
-#else
-			/* No support for passing the IMT argument */
-			LLVM_FAILURE (ctx, "imt");
-#endif
-		} else {
-			callee = convert (ctx, LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (LLVMPointerType (IntPtrType (), 0), 0)), &index, 1, ""), ""), LLVMPointerType (llvm_sig, 0));
-		}
+		callee = convert (ctx, LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (LLVMPointerType (IntPtrType (), 0), 0)), &index, 1, ""), ""), LLVMPointerType (llvm_sig, 0));
 	} else if (calli) {
 		callee = convert (ctx, values [ins->sreg1], LLVMPointerType (llvm_sig, 0));
 	} else {
@@ -2015,15 +1960,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	memset (args, 0, len);
 	l = call->out_ireg_args;
 
-	if (IS_LLVM_MONO_BRANCH) {
-		if (call->rgctx_arg_reg) {
-			g_assert (values [call->rgctx_arg_reg]);
-			args [sinfo.rgctx_arg_pindex] = values [call->rgctx_arg_reg];
-		}
-		if (call->imt_arg_reg) {
-			g_assert (values [call->imt_arg_reg]);
-			args [sinfo.imt_arg_pindex] = values [call->imt_arg_reg];
-		}
+	if (call->rgctx_arg_reg) {
+		g_assert (values [call->rgctx_arg_reg]);
+		args [sinfo.rgctx_arg_pindex] = values [call->rgctx_arg_reg];
+	}
+	if (call->imt_arg_reg) {
+		g_assert (values [call->imt_arg_reg]);
+		args [sinfo.imt_arg_pindex] = values [call->imt_arg_reg];
 	}
 
 	if (vretaddr) {
@@ -3323,11 +3266,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_RELAXED_NOP: {
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-			if (IS_LLVM_MONO_BRANCH)
-				emit_call (ctx, bb, &builder, LLVMGetNamedFunction (ctx->module, "llvm.x86.sse2.pause"), NULL, 0);
-			else
-				/* No way to get LLVM to emit this */
-				LLVM_FAILURE (ctx, "relaxed_nop");
+			emit_call (ctx, bb, &builder, LLVMGetNamedFunction (ctx->module, "llvm.x86.sse2.pause"), NULL, 0);
 			break;
 #else
 			break;
@@ -4173,12 +4112,6 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 	int i;
 	*/
 
-	if (cfg->generic_sharing_context && !IS_LLVM_MONO_BRANCH) {
-		/* No way to obtain location info for this/rgctx */
-		cfg->exception_message = g_strdup ("gshared");
-		cfg->disable_llvm = TRUE;
-	}
-
 	if (cfg->method->save_lmf) {
 		cfg->exception_message = g_strdup ("lmf");
 		cfg->disable_llvm = TRUE;
@@ -4304,12 +4237,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	ctx->linfo = linfo;
 	CHECK_FAILURE (ctx);
 
-	if (cfg->rgctx_var) {
-		if (IS_LLVM_MONO_BRANCH)
-			linfo->rgctx_arg = TRUE;
-		else
-			LLVM_FAILURE (ctx, "rgctx arg");
-	}
+	if (cfg->rgctx_var)
+		linfo->rgctx_arg = TRUE;
 	method_type = sig_to_llvm_sig_full (ctx, sig, linfo, &sinfo);
 	CHECK_FAILURE (ctx);
 
@@ -5054,12 +4983,10 @@ add_intrinsics (LLVMModuleRef module)
 		AddFunc (module, "llvm.x86.sse2.pmovmskb.128", ret_type, arg_types, 1);
 	}
 
-	if (IS_LLVM_MONO_BRANCH) {
-		AddFunc (module, "llvm.x86.sse2.pause", LLVMVoidType (), NULL, 0);
-	}
+	AddFunc (module, "llvm.x86.sse2.pause", LLVMVoidType (), NULL, 0);
 
 	/* Load/Store intrinsics */
-	if (IS_LLVM_MONO_BRANCH) {
+	{
 		LLVMTypeRef arg_types [5];
 		int i;
 		char name [128];
