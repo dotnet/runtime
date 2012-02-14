@@ -637,6 +637,9 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_GC_LIVENESS_USE:
 		printf (" R%d", (int)ins->inst_c1);
 		break;
+	case OP_SEQ_POINT:
+		printf (" il: %x", (int)ins->inst_imm);
+		break;
 	default:
 		break;
 	}

@@ -6305,7 +6305,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		switch (*ip) {
 		case CEE_NOP:
-			if (seq_points) {
+			if (seq_points && sp != stack_start) {
 				/*
 				 * The C# compiler uses these nops to notify the JIT that it should
 				 * insert seq points.
