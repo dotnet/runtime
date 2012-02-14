@@ -4039,7 +4039,11 @@ static MonoException* mono_thread_execute_interruption (MonoInternalThread *thre
 		mono_thread_exit ();
 		return NULL;
 	} else if (thread->pending_exception) {
-        MonoException * exc = mono_thread_get_and_clear_pending_exception();
+		MonoException *exc;
+
+		exc = thread->pending_exception;
+		thread->pending_exception = NULL;
+
         LeaveCriticalSection (thread->synch_cs);
         return exc;
 	} else if (thread->thread_interrupt_requested) {
