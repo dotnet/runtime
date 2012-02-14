@@ -4038,6 +4038,10 @@ static MonoException* mono_thread_execute_interruption (MonoInternalThread *thre
 		
 		mono_thread_exit ();
 		return NULL;
+	} else if (thread->pending_exception) {
+        MonoException * exc = mono_thread_get_and_clear_pending_exception();
+        LeaveCriticalSection (thread->synch_cs);
+        return exc;
 	} else if (thread->thread_interrupt_requested) {
 
 		thread->thread_interrupt_requested = FALSE;
@@ -4207,12 +4211,8 @@ mono_thread_get_and_clear_pending_exception (void)
 /*
  * mono_set_pending_exception:
  *
- *   Set the pending exception of the current thread to EXC. On platforms which 
- * support it, the exception will be thrown when execution returns to managed code. 
- * On other platforms, this function is equivalent to mono_raise_exception (). 
- * Internal calls which report exceptions using this function instead of 
- * raise_exception () might be called by JITted code using a more efficient calling 
- * convention.
+ *   Set the pending exception of the current thread to EXC.
+ * The exception will be thrown when execution returns to managed code.
  */
 void
 mono_set_pending_exception (MonoException *exc)
@@ -4223,14 +4223,9 @@ mono_set_pending_exception (MonoException *exc)
 	if (thread == NULL)
 		return;
 
-	if (mono_thread_notify_pending_exc_fn) {
-		MONO_OBJECT_SETREF (thread, pending_exception, exc);
+	MONO_OBJECT_SETREF (thread, pending_exception, exc);
 
-		mono_thread_notify_pending_exc_fn ();
-	} else {
-		/* No way to notify the JIT about the exception, have to throw it now */
-		mono_raise_exception (exc);
-	}
+    mono_thread_request_interruption (FALSE);
 }
 
 /**
