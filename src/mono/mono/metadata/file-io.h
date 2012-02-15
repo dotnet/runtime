@@ -67,7 +67,6 @@ typedef enum {
 
 /* This is a copy of System.IO.MonoIOStat */
 typedef struct _MonoIOStat {
-	MonoString *name;
 	gint32 attributes;
 	gint64 length;
 	gint64 creation_time;

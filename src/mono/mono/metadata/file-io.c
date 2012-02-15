@@ -174,21 +174,13 @@ static gint64 convert_filetime (const FILETIME *filetime)
 	return (gint64)ticks;
 }
 
-static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *data, const gunichar2 *name, MonoIOStat *stat)
+static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *data, MonoIOStat *stat)
 {
-	int len;
-	
 	stat->attributes = data->dwFileAttributes;
 	stat->creation_time = convert_filetime (&data->ftCreationTime);
 	stat->last_access_time = convert_filetime (&data->ftLastAccessTime);
 	stat->last_write_time = convert_filetime (&data->ftLastWriteTime);
 	stat->length = ((gint64)data->nFileSizeHigh << 32) | data->nFileSizeLow;
-
-	len = 0;
-	while (name [len])
-		++ len;
-
-	MONO_STRUCT_SETREF (stat, name, mono_string_new_utf16 (mono_domain_get (), name, len));
 }
 
 /* Managed file attributes have nearly but not quite the same values
@@ -733,9 +725,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 	result = get_file_attributes_ex (mono_string_chars (path), &data);
 
 	if (result) {
-		convert_win32_file_attribute_data (&data,
-						   mono_string_chars (path),
-						   stat);
+		convert_win32_file_attribute_data (&data, stat);
 	} else {
 		*error=GetLastError ();
 		memset (stat, 0, sizeof (MonoIOStat));
