@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 14
+#define MINOR_VERSION 15
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -6979,7 +6979,31 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				buffer_add_typeid (buf, domain, klass->generic_class->container_class);
 			else
 				buffer_add_id (buf, 0);
-		}			
+		}
+		if (CHECK_PROTOCOL_VERSION (2, 15)) {
+			int count, i;
+
+			if (klass->generic_class) {
+				MonoGenericInst *inst = klass->generic_class->context.class_inst;
+
+				count = inst->type_argc;
+				buffer_add_int (buf, count);
+				for (i = 0; i < count; i++)
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type (inst->type_argv [i]));
+			} else if (klass->generic_container) {
+				MonoGenericContainer *container = klass->generic_container;
+				MonoClass *pklass;
+
+				count = container->type_argc;
+				buffer_add_int (buf, count);
+				for (i = 0; i < count; i++) {
+					pklass = mono_class_from_generic_parameter (mono_generic_container_get_param (container, i), klass->image, FALSE);
+					buffer_add_typeid (buf, domain, pklass);
+				}
+			} else {
+				buffer_add_int (buf, 0);
+			}
+		}
 		break;
 	}
 	case CMD_TYPE_GET_METHODS: {
@@ -7522,6 +7546,38 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 				buffer_add_methodid (buf, domain, result);
 			} else {
 				buffer_add_id (buf, 0);
+			}
+			if (CHECK_PROTOCOL_VERSION (2, 15)) {
+				if (mono_method_signature (method)->generic_param_count) {
+					int count, i;
+
+					if (method->is_inflated) {
+						MonoGenericInst *inst = mono_method_get_context (method)->method_inst;
+						if (inst) {
+							count = inst->type_argc;
+							buffer_add_int (buf, count);
+
+							for (i = 0; i < count; i++)
+								buffer_add_typeid (buf, domain, mono_class_from_mono_type (inst->type_argv [i]));
+						} else {
+							buffer_add_int (buf, 0);
+						}
+					} else if (method->is_generic) {
+						MonoGenericContainer *container = mono_method_get_generic_container (method);
+
+						count = mono_method_signature (method)->generic_param_count;
+						buffer_add_int (buf, count);
+						for (i = 0; i < count; i++) {
+							MonoGenericParam *param = mono_generic_container_get_param (container, i);
+							MonoClass *pklass = mono_class_from_generic_parameter (param, method->klass->image, TRUE);
+							buffer_add_typeid (buf, domain, pklass);
+						}
+					} else {
+						buffer_add_int (buf, 0);
+					}
+				} else {
+					buffer_add_int (buf, 0);
+				}
 			}
 		}
 		break;
