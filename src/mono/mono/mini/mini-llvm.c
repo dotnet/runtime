@@ -4591,15 +4591,19 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		/* Simply remember the arguments */
 		switch (ainfo->storage) {
 		case LLVMArgInIReg:
-			MONO_INST_NEW (cfg, ins, OP_MOVE);
-			ins->dreg = mono_alloc_ireg (cfg);
+		case LLVMArgInFPReg: {
+			MonoType *t = (sig->hasthis && i == 0) ? &mono_defaults.int_class->byval_arg : sig->params [i - sig->hasthis];
+
+			if (!t->byref && (t->type == MONO_TYPE_R8 || t->type == MONO_TYPE_R4)) {
+				MONO_INST_NEW (cfg, ins, OP_FMOVE);
+				ins->dreg = mono_alloc_freg (cfg);
+			} else {
+				MONO_INST_NEW (cfg, ins, OP_MOVE);
+				ins->dreg = mono_alloc_ireg (cfg);
+			}
 			ins->sreg1 = in->dreg;
 			break;
-		case LLVMArgInFPReg:
-			MONO_INST_NEW (cfg, ins, OP_FMOVE);
-			ins->dreg = mono_alloc_freg (cfg);
-			ins->sreg1 = in->dreg;
-			break;
+		}
 		case LLVMArgVtypeByVal:
 		case LLVMArgVtypeInReg:
 			MONO_INST_NEW (cfg, ins, OP_LLVM_OUTARG_VT);
