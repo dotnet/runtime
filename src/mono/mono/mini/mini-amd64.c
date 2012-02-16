@@ -4321,6 +4321,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				for (i = 0; i < breakpoint_size; ++i)
 					x86_nop (code);
 			}
+			/*
+			 * Add an additional nop so skipping the bp doesn't cause the ip to point
+			 * to another IL offset.
+			 */
+			x86_nop (code);
 			break;
 		}
 		case OP_ADDCC:
