@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="mscorlib">
-	
+
 		<type fullname="System.AppDomain" preserve="fields">
 			<method name="DoDomainUnload" />
 			<method name="DoTypeResolve" />
@@ -84,7 +84,7 @@
 		<type fullname="System.MonoAsyncCall" preserve="fields" />
 		<type fullname="System.MonoCustomAttrs" preserve="fields" />
 		<type fullname="System.MonoCustomAttrs/AttributeInfo" preserve="fields" />
-		<type fullname="System.MonoCQItem" preserve="fields" />
+		<type fullname="System.MonoCQItem" preserve="all" />
 		<type fullname="System.MonoEnumInfo" preserve="fields" />
 		<type fullname="System.MonoListItem" preserve="fields" />
 		<type fullname="System.MonoType" preserve="fields" />
@@ -161,6 +161,13 @@
 		<type fullname="System.IO.Path" />
 		<type fullname="System.IO.StreamReader" />
 		-->
+
+		<type fullname="System.Reflection.MonoAssembly">
+			<method name=".ctor" />
+		</type>
+		<type fullname="System.Reflection.MonoModule">
+			<method name=".ctor" />
+		</type>
 
 		<type fullname="System.Reflection.Assembly" preserve="fields">
 			<method name="MonoDebugger_GetMethodToken" feature="sre" />
@@ -244,7 +251,7 @@
 			<method name="DefineCustom" />
 			<method name="DefineLPArrayInternal" />
 		</type>
--
+
 		<!--
 		<type fullname="System.Runtime.CompilerServices.CallConvCdecl" />
 		<type fullname="System.Runtime.CompilerServices.CallConvStdcall" />
@@ -277,7 +284,7 @@
 		<type fullname="System.Runtime.Remoting.IRemotingTypeInfo">
 			<method name="CanCastTo" />
 		</type>
-		<type fullname="System.Runtime.Remoting.Messaging.AsyncResult" />
+		<type fullname="System.Runtime.Remoting.Messaging.AsyncResult" preserve="fields" />
 		<type fullname="System.Runtime.Remoting.Messaging.CallContext">
 			<method name="SetCurrentCallContext" />
 		</type>
