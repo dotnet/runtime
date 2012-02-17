@@ -71,8 +71,11 @@ namespace Mono.Linker.Steps {
 			case AssemblyAction.Delete:
 				CloseSymbols (assembly);
 				var target = GetAssemblyFileName (assembly, directory);
-				if (File.Exists (target))
+				if (File.Exists (target)) {
 					File.Delete (target);
+					File.Delete (target + ".mdb");
+					File.Delete (GetConfigFile (target));
+				}
 				break;
 			default:
 				CloseSymbols (assembly);
