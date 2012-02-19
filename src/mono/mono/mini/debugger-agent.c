@@ -270,7 +270,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 15
+#define MINOR_VERSION 16
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -350,6 +350,11 @@ typedef enum {
 	STEP_SIZE_MIN = 0,
 	STEP_SIZE_LINE = 1
 } StepSize;
+
+typedef enum {
+	STEP_FILTER_NONE = 0,
+	STEP_FILTER_STATIC_CTOR = 1
+} StepFilter;
 
 typedef enum {
 	TOKEN_TYPE_STRING = 0,
@@ -502,6 +507,7 @@ typedef struct {
 		MonoAssembly **assemblies; /* For kind == MONO_KIND_ASSEMBLY_ONLY */
 		GHashTable *source_files; /* For kind == MONO_KIND_SOURCE_FILE_ONLY */
 		GHashTable *type_names; /* For kind == MONO_KIND_TYPE_NAME_ONLY */
+		StepFilter filter; /* For kind == MOD_KIND_STEP */
 	} data;
 	gboolean caught, uncaught; /* For kind == MOD_KIND_EXCEPTION_ONLY */
 } Modifier;
@@ -523,6 +529,7 @@ typedef struct {
 	MonoInternalThread *thread;
 	StepDepth depth;
 	StepSize size;
+	StepFilter filter;
 	gpointer last_sp;
 	gpointer start_sp;
 	MonoMethod *last_method;
@@ -3250,6 +3257,11 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 					if (!g_hash_table_lookup (mod->data.type_names, s))
 						filtered = TRUE;
 					g_free (s);
+				} else if (mod->kind == MOD_KIND_STEP) {
+					if ((mod->data.filter & STEP_FILTER_STATIC_CTOR) && ji &&
+						(ji->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
+						!strcmp (ji->method->name, ".cctor"))
+						filtered = TRUE;
 				}
 			}
 
@@ -4565,6 +4577,11 @@ process_single_step_inner (DebuggerTlsData *tls)
 
 	/* Start single stepping again from the current sequence point */
 	ss_start (ss_req, ji->method, sp, info, ctx, tls, FALSE);
+
+	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR) &&
+		(ji->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
+		!strcmp (ji->method->name, ".cctor"))
+		return;
 
 	// FIXME: Has to lock earlier
 
@@ -6392,7 +6409,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoMethod *method;
 		long location = 0;
 		MonoThread *step_thread;
-		int size = 0, depth = 0, step_thread_id = 0;
+		int size = 0, depth = 0, filter = 0, step_thread_id = 0;
 		MonoDomain *domain;
 		Modifier *modifier;
 
@@ -6422,6 +6439,9 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				step_thread_id = decode_id (p, &p, end);
 				size = decode_int (p, &p, end);
 				depth = decode_int (p, &p, end);
+				if (CHECK_PROTOCOL_VERSION (2, 16))
+					filter = decode_int (p, &p, end);
+				req->modifiers [i].data.filter = filter;
 			} else if (mod == MOD_KIND_THREAD_ONLY) {
 				int id = decode_id (p, &p, end);
 
