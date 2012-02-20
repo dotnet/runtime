@@ -3901,9 +3901,16 @@ get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotM
 
 	*out_amodule = amodule;
 
-	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type])
-		g_error ("Ran out of trampolines of type %d in '%s' (%d)\n", tramp_type, image->name, amodule->info.num_trampolines [tramp_type]);
-
+	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type]) {
+		g_error ("Ran out of trampolines of type %d in '%s' (%d)%s\n", 
+			 tramp_type, image->name, amodule->info.num_trampolines [tramp_type],
+#ifdef MONOTOUCH
+			 ". See http://docs.xamarin.com/ios/troubleshooting for instruction on how to fix this condition"
+#else
+			 ""
+#endif
+			 );
+	}
 	index = amodule->trampoline_index [tramp_type] ++;
 
 	mono_aot_unlock ();
