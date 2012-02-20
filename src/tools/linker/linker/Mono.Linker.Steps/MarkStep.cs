@@ -38,9 +38,9 @@ namespace Mono.Linker.Steps {
 
 	public class MarkStep : IStep {
 
-		LinkContext _context;
-		Queue _methods;
-		ArrayList _virtual_methods;
+		protected LinkContext _context;
+		protected Queue _methods;
+		protected ArrayList _virtual_methods;
 
 		public AnnotationStore Annotations {
 			get { return _context.Annotations; }
@@ -52,7 +52,7 @@ namespace Mono.Linker.Steps {
 			_virtual_methods = new ArrayList ();
 		}
 
-		public void Process (LinkContext context)
+		public virtual void Process (LinkContext context)
 		{
 			_context = context;
 
@@ -438,7 +438,7 @@ namespace Mono.Linker.Steps {
 			return argument != null;
 		}
 
-		void MarkNamedMethod (TypeDefinition type, string method_name)
+		protected void MarkNamedMethod (TypeDefinition type, string method_name)
 		{
 			if (!type.HasMethods)
 				return;
@@ -577,7 +577,7 @@ namespace Mono.Linker.Steps {
 			return td.BaseType != null && td.BaseType.FullName == "System.MulticastDelegate";
 		}
 
-		TypeDefinition ResolveTypeDefinition (TypeReference type)
+		protected TypeDefinition ResolveTypeDefinition (TypeReference type)
 		{
 			TypeDefinition td = type as TypeDefinition;
 			if (td == null)
@@ -696,7 +696,7 @@ namespace Mono.Linker.Steps {
 			MarkMethodCollection (list);
 		}
 
-		void MarkFields (TypeDefinition type, bool includeStatic)
+		protected void MarkFields (TypeDefinition type, bool includeStatic)
 		{
 			if (!type.HasFields)
 				return;
@@ -773,7 +773,7 @@ namespace Mono.Linker.Steps {
 			return md;
 		}
 
-		void ProcessMethod (MethodDefinition method)
+		protected virtual void ProcessMethod (MethodDefinition method)
 		{
 			if (CheckProcessed (method))
 				return;
@@ -909,7 +909,7 @@ namespace Mono.Linker.Steps {
 				MarkInstruction (instruction);
 		}
 
-		void MarkInstruction (Instruction instruction)
+		protected virtual void MarkInstruction (Instruction instruction)
 		{
 			switch (instruction.OpCode.OperandType) {
 			case OperandType.InlineField:
