@@ -2960,7 +2960,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	if (!method)
 		return FALSE;
 
-	if (!method || !info->managed || (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE))
+	if (!method || (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE))
 		return FALSE;
 
 	if (info->il_offset == -1) {
@@ -2979,6 +2979,9 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		if (!CHECK_PROTOCOL_VERSION (2, 17))
 			/* Older clients can't handle this flag */
+			return FALSE;
+		method = mono_marshal_method_from_wrapper (method);
+		if (!method)
 			return FALSE;
 		flags |= FRAME_FLAG_NATIVE_TRANSITION;
 	}
