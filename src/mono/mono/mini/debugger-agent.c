@@ -2992,7 +2992,8 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame->il_offset = info->il_offset;
 	frame->native_offset = info->native_offset;
 	frame->flags = flags;
-	memcpy (frame->reg_locations, info->reg_locations, MONO_MAX_IREGS * sizeof (mgreg_t*));
+	if (info->reg_locations)
+		memcpy (frame->reg_locations, info->reg_locations, MONO_MAX_IREGS * sizeof (mgreg_t*));
 	if (ctx) {
 		frame->ctx = *ctx;
 		frame->has_ctx = TRUE;
