@@ -2983,6 +2983,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		method = mono_marshal_method_from_wrapper (method);
 		if (!method)
 			return FALSE;
+		actual_method = method;
 		flags |= FRAME_FLAG_NATIVE_TRANSITION;
 	}
 
@@ -7498,7 +7499,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		MonoDebugLocalsInfo *locals;
 
 		header = mono_method_get_header (method);
-		g_assert (header);
+		if (!header)
+			return ERR_INVALID_ARGUMENT;
 
 		buffer_add_int (buf, header->num_locals);
 
