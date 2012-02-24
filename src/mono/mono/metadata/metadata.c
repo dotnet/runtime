@@ -4290,7 +4290,12 @@ mono_type_size (MonoType *t, int *align)
 		return 4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+#if defined(__APPLE__) && SIZEOF_VOID_P==4
+		/* xcode 4.3 llvm-gcc bug */
+		*align = 4;
+#else		
 		*align = __alignof__(gint64);
+#endif
 		return 8;		
 	case MONO_TYPE_R8:
 		*align = __alignof__(double);
