@@ -1662,6 +1662,10 @@ typedef struct {
 	 * Whenever to break in the debugger using G_BREAKPOINT on unhandled exceptions.
 	 */
 	gboolean break_on_exc;
+	/*
+	 * Load AOT JIT info eagerly.
+	 */
+	gboolean load_aot_jit_info_eagerly;
 } MonoDebugOptions;
 
 enum {

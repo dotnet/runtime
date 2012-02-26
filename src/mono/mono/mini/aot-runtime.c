@@ -251,7 +251,7 @@ decode_value (guint8 *ptr, guint8 **rptr)
 }
 
 /*
- * mono_aot_get_method:
+ * mono_aot_get_offset:
  *
  *   Decode an offset table emitted by emit_offset_table (), returning the INDEXth
  * entry.
@@ -2970,6 +2970,9 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		if (!keep_patches)
 			mono_mempool_destroy (mp);
 	}
+
+	if (mini_get_debug_options ()->load_aot_jit_info_eagerly)
+		jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		char *full_name;

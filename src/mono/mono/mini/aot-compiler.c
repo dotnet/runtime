@@ -3638,6 +3638,14 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 				// FIXME: Maybe call the wrapper directly ?
 				direct_callable = FALSE;
 
+			if (acfg->aot_opts.soft_debug) {
+				/* Disable this so all calls go through load_method (), see the
+				 * mini_get_debug_options ()->load_aot_jit_info_eagerly = TRUE; line in
+				 * mono_debugger_agent_init ().
+				 */
+				direct_callable = FALSE;
+			}
+
 			if (direct_callable)
 				return TRUE;
 		}
