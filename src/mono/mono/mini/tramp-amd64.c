@@ -382,6 +382,13 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 	mono_arch_patch_plt_entry (code, NULL, regs, nullified_class_init_trampoline);
 }
 
+static void
+stack_unaligned (MonoTrampolineType tramp_type)
+{
+	printf ("%d\n", tramp_type);
+	g_assert_not_reached ();
+}
+
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
@@ -397,7 +404,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	const guint kNaClTrampOffset = 17;
 #endif
 
-	if (tramp_type == MONO_TRAMPOLINE_JUMP)
+	if (tramp_type == MONO_TRAMPOLINE_JUMP || tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
 		has_caller = FALSE;
 	else
 		has_caller = TRUE;
@@ -492,9 +499,29 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_membase_reg (code, AMD64_RBP, saved_fpregs_offset + (i * sizeof(mgreg_t)), i);
 
+	/* Check that the stack is aligned */
+#if defined(__default_codegen__)
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, sizeof (mgreg_t));
+	amd64_alu_reg_imm (code, X86_AND, AMD64_R11, 15);
+	amd64_alu_reg_imm (code, X86_CMP, AMD64_R11, 0);
+	br [0] = code;
+	amd64_branch_disp (code, X86_CC_Z, 0, FALSE);
+	if (aot) {
+		amd64_mov_reg_imm (code, AMD64_R11, 0);
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_RDI, tramp_type);
+		amd64_mov_reg_imm (code, AMD64_R11, stack_unaligned);
+		amd64_call_reg (code, AMD64_R11);
+	}
+	mono_amd64_patch (br [0], code);
+	//amd64_breakpoint (code);
+#endif
+
 	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT &&
-			tramp_type != MONO_TRAMPOLINE_MONITOR_ENTER &&
-			tramp_type != MONO_TRAMPOLINE_MONITOR_EXIT) {
+		tramp_type != MONO_TRAMPOLINE_MONITOR_ENTER &&
+		tramp_type != MONO_TRAMPOLINE_MONITOR_EXIT &&
+		tramp_type != MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD) {
 		/* Obtain the trampoline argument which is encoded in the instruction stream */
 		if (aot) {
 			/* Load the GOT offset */
@@ -1199,8 +1226,9 @@ mono_arch_create_handler_block_trampoline (void)
 
 	if (mono_get_jit_tls_offset () != -1) {
 		code = mono_amd64_emit_tls_get (code, AMD64_RDI, mono_get_jit_tls_offset ());
-		/*simulate a call*/
 		amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RDI, G_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 8);
+		/* Simulate a call */
+		amd64_push_reg (code, AMD64_RAX);
 		amd64_jump_code (code, tramp);
 	} else {
 		/*Slow path uses a c helper*/
