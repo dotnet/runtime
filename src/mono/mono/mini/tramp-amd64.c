@@ -398,7 +398,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	gboolean has_caller;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
-	const guint kMaxCodeSize = NACL_SIZE (548, 548*2);
+	const guint kMaxCodeSize = NACL_SIZE (600, 600*2);
 
 #if defined(__native_client_codegen__)
 	const guint kNaClTrampOffset = 17;
