@@ -2074,7 +2074,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	mono_perfcounters->loader_appdomains--;
 
-	if ((domain == mono_root_domain))
+	if (domain == mono_root_domain)
 		mono_root_domain = NULL;
 }
 

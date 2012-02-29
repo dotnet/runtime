@@ -648,8 +648,6 @@ _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo *jit, uint32_t il_off
 	for (i = jit->num_line_numbers - 1; i >= 0; i--) {
 		MonoDebugLineNumberEntry lne = jit->line_numbers [i];
 
-		if (lne.il_offset < 0)
-			continue;
 		if (lne.il_offset <= il_offset)
 			return lne.native_offset;
 	}

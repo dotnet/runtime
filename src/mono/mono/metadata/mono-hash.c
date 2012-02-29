@@ -137,7 +137,7 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 	hash->gc_type = type;
 
 #ifdef HAVE_SGEN_GC
-	if (type < 0 || type > MONO_HASH_KEY_VALUE_GC)
+	if (type > MONO_HASH_KEY_VALUE_GC)
 		g_error ("wrong type for gc hashtable");
 	/*
 	 * We use a user defined marking function to avoid having to register a GC root for

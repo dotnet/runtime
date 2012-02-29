@@ -4930,7 +4930,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		if (tb->generic_params) {
 			token = mono_image_get_generic_field_token (assembly, fb);
 		} else {
-			if ((tb->module->dynamic_image == assembly)) {
+			if (tb->module->dynamic_image == assembly) {
 				token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
 			} else {
 				token = mono_image_get_fieldref_token (assembly, (MonoObject*)fb, fb->handle);

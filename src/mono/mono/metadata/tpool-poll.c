@@ -83,7 +83,7 @@ tp_poll_modify (gpointer event_data, int fd, int operation, int events, gboolean
 	INIT_POLLFD (&data->newpfd, GPOINTER_TO_INT (fd), events);
 	*msg = (char) operation;
 #ifndef HOST_WIN32
-	if (write (data->pipe [1], msg, 1));
+	write (data->pipe [1], msg, 1);
 #else
 	send ((SOCKET) data->pipe [1], msg, 1, 0);
 #endif

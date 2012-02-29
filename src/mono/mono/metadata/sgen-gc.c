@@ -830,7 +830,7 @@ mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallback
 
 		size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
-		if (SGEN_LOAD_VTABLE (obj) != array_fill_vtable)
+		if ((MonoVTable*)SGEN_LOAD_VTABLE (obj) != array_fill_vtable)
 			callback (obj, size, data);
 
 		start += size;
