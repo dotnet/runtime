@@ -492,8 +492,8 @@ if test x"$GCC" = xyes; then
 		ORIG_CFLAGS=$CFLAGS
 		CFLAGS="$CFLAGS -Wdeclaration-after-statement"
 		AC_MSG_CHECKING(for -Wdeclaration-after-statement option to gcc)
-		AC_TRY_COMPILE([], [
-						   void main () { }
+		AC_TRY_COMPILE([],[
+				return 0;
 		], [
 		   AC_MSG_RESULT(yes)
 		], [
@@ -505,8 +505,8 @@ if test x"$GCC" = xyes; then
 		# Check for the normal version, since gcc ignores unknown -Wno options
 		CFLAGS="$CFLAGS -Wunused-but-set-variable"
 		AC_MSG_CHECKING(for -Wno-unused-but-set-variable option to gcc)
-		AC_TRY_COMPILE([], [
-						   void main () { }
+		AC_TRY_COMPILE([],[
+				return 0;
 		], [
 		   AC_MSG_RESULT(yes)
 		   CFLAGS="$ORIG_CFLAGS -Wno-unused-but-set-variable"
@@ -525,6 +525,23 @@ else
 fi
 CFLAGS="$CFLAGS -g $WARN"
 CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
+
+AC_MSG_CHECKING(for clang)
+AC_TRY_RUN([
+		int main () {
+		#ifdef __clang__
+			return 0;
+		#else
+			return 1;
+		#endif
+		}
+], [
+   AC_MSG_RESULT(yes)
+   CLANG=yes
+], [
+   AC_MSG_RESULT(no)
+   CLANG=no
+])
 
 # Where's the 'mcs' source tree?
 if test -d $srcdir/mcs; then
@@ -681,13 +698,13 @@ AM_CONDITIONAL(SHARED_MONO, test x$with_shared_mono != xno)
 AC_ARG_ENABLE(mcs-build, [  --disable-mcs-build disable the build of the mcs directory], try_mcs_build=$enableval, enable_mcs_build=yes)
 
 AC_ARG_WITH(xen_opt,   [  --with-xen_opt=yes,no          Enable Xen-specific behaviour (defaults to yes)],[],[with_xen_opt=yes])
-if test "x$with_xen_opt" = "xyes"; then
+if test "x$with_xen_opt" = "xyes" -a "x$CLANG" = "xno"; then
 	AC_DEFINE(MONO_XEN_OPT, 1, [Xen-specific behaviour])
 	ORIG_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS -mno-tls-direct-seg-refs"
 	AC_MSG_CHECKING(for -mno-tls-direct-seg-refs option to gcc)
 	AC_TRY_COMPILE([], [
-					   void main () { }
+		return 0;
 	], [
 	   AC_MSG_RESULT(yes)
 	   # Pass it to libgc as well
@@ -843,9 +860,11 @@ if test "x$mono_feature_disable_shared_perfcounters" = "xyes"; then
 fi
 
 AC_MSG_CHECKING(for visibility __attribute__)
-AC_TRY_COMPILE([], [
-   void __attribute__ ((visibility ("hidden"))) doit (void) {}
-   void main () { doit (); }
+AC_COMPILE_IFELSE([
+	AC_LANG_SOURCE([[
+		void __attribute__ ((visibility ("hidden"))) doit (void) {}
+   		int main () { doit (); return 0; }
+   	]])
 ], [
    have_visibility_hidden=yes
    AC_MSG_RESULT(yes)
@@ -1077,10 +1096,9 @@ if test x$target_win32 = xno; then
 	dnl ****************************************************************
 	AC_MSG_CHECKING(for sched_setaffinity from glibc < 2.3.4)
 	AC_TRY_COMPILE([#include <sched.h>], [
-		int main() {
             int mask = 1; 
             sched_setaffinity(0, &mask);
-        }
+			return 0;
 	], [
 		# Yes, we have it...
 		AC_MSG_RESULT(yes)
@@ -2178,12 +2196,11 @@ case "$host" in
 		JIT_SUPPORTED=yes
 
 		AC_MSG_CHECKING(for mips n32)
-		AC_TRY_COMPILE([], [
-		void main () {
+		AC_TRY_COMPILE([],[
 		#if _MIPS_SIM != _ABIN32
 		#error Not mips n32
 		#endif
-   		}
+		return 0;
 		],[
 		AC_MSG_RESULT(yes)
 		sizeof_register=8
@@ -2608,7 +2625,7 @@ if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 		# undefined reference to `__tls_get_addr'
 		#
 		rm -f conftest.c conftest.so conftest
-		echo "static __thread int foo; void main () { foo = 5; }" > conftest.c
+		echo "static __thread int foo; int main () { foo = 5; return 0; }" > conftest.c
 		$CC -fPIC --shared -o conftest.so conftest.c > /dev/null 2>&1
 		$CC -o conftest conftest.so > /dev/null 2>&1
 		if test ! -f conftest; then
@@ -2657,7 +2674,10 @@ if test "x$with_tls" = "x__thread"; then
 	AC_TRY_COMPILE([static __thread int foo __attribute__((tls_model("initial-exec")));], [
 		], [
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_TLS_MODEL_ATTR, 1, [tld_model available])
+			# CLANG doesn't support this yet, and it prints warnings about it
+			if test "x$CLANG" = "xno"; then
+				AC_DEFINE(HAVE_TLS_MODEL_ATTR, 1, [tld_model available])
+			fi
 		], [
 			AC_MSG_RESULT(no)
 	])
