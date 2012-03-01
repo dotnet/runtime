@@ -499,7 +499,11 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   opts.JITExceptionHandling = 1;
 
   EngineBuilder b (unwrap (MP));
+#ifdef TARGET_AMD64
   ExecutionEngine *EE = b.setJITMemoryManager (mono_mm).setTargetOptions (opts).setCodeModel (CodeModel::Large).setAllocateGVsWithCode (true).create ();
+#else
+  ExecutionEngine *EE = b.setJITMemoryManager (mono_mm).setTargetOptions (opts).setAllocateGVsWithCode (true).create ();
+#endif
   g_assert (EE);
 
 #if 0
