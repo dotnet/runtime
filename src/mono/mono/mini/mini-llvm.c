@@ -1526,9 +1526,6 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 
 	ctx->ex_index ++;
 	return;
-
- FAILURE:
-	return;
 }
 
 /*
