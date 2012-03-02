@@ -149,7 +149,11 @@ mach_exception_thread (void *arg)
 				   MACH_MSG_TIMEOUT_NONE,
 				   MACH_PORT_NULL);
 
-		g_assert (result == MACH_MSG_SUCCESS);
+		/*
+		If we try to abort the thread while delivering an exception. The port will be gone since the kernel
+		setup a send once port to deliver the resume message and thread_abort will consume it.
+		*/
+		g_assert (result == MACH_MSG_SUCCESS || result == MACH_SEND_INVALID_DEST);
 	}
 	return NULL;
 }
