@@ -2922,7 +2922,8 @@ add_wrappers (MonoAotCompile *acfg)
 			mono_method_desc_free (desc);
 			if (m) {
 				m = mono_monitor_get_fast_path (m);
-				add_method (acfg, m);
+				if (m)
+					add_method (acfg, m);
 			}
 		}
 #endif
