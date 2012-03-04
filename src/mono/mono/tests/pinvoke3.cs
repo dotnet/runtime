@@ -1050,4 +1050,32 @@ public class Tests {
 		return res;
 	}
 
+	/*
+	 * Appdomain save/restore
+	 */
+    static Action callback;
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_set_callback")]
+	public static extern int mono_test_marshal_set_callback (Action a);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_call_callback")]
+	public static extern int mono_test_marshal_call_callback ();
+
+	public static int test_0_appdomain_swich () {
+        callback = () => { };
+        mono_test_marshal_set_callback (callback);
+
+        AppDomain ad = AppDomain.CreateDomain ("foo");
+		var c = (CallbackClass)ad.CreateInstanceAndUnwrap (
+				typeof (CallbackClass).Assembly.FullName, "Tests/CallbackClass");
+		return c.OtherDomainTest ();
+    }
+
+	class CallbackClass : MarshalByRefObject {
+		public int OtherDomainTest () {
+			int appDomainId = AppDomain.CurrentDomain.Id;
+			mono_test_marshal_call_callback ();
+			return appDomainId == AppDomain.CurrentDomain.Id ? 0 : 1;
+		}
+    }
 }

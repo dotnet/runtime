@@ -2370,17 +2370,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
 		hppa_copy (code, hppa_r30, hppa_r4);
 
-	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		hppa_set (code, cfg->domain, hppa_r26);
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
-		hppa_ldil (code, 0, hppa_r1);
-		hppa_ldo (code, 0, hppa_r1, hppa_r1);
-		hppa_depi (code, 0, 31, 2, hppa_r1);
-		hppa_ldw (code, 0, hppa_r1, hppa_r1);
-		hppa_ble (code, 0, hppa_r1);
-		hppa_copy (code, hppa_r31, hppa_r2);
-	}
-
 	if (method->save_lmf) {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");

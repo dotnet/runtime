@@ -2575,9 +2575,11 @@ mono_set_lmf_addr (gpointer lmf_addr)
 }
 
 /* Called by native->managed wrappers */
-void
+MonoDomain*
 mono_jit_thread_attach (MonoDomain *domain)
 {
+	MonoDomain *orig;
+
 	if (!domain)
 		/* 
 		 * Happens when called from AOTed code which is only used in the root
@@ -2597,9 +2599,20 @@ mono_jit_thread_attach (MonoDomain *domain)
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
 #endif
-	if (mono_domain_get () != domain)
+	orig = mono_domain_get ();
+	if (orig != domain)
 		mono_domain_set (domain, TRUE);
+
+	return orig != domain ? orig : NULL;
 }	
+
+/* Called by native->managed wrappers */
+void
+mono_jit_set_domain (MonoDomain *domain)
+{
+	if (domain)
+		mono_domain_set (domain, TRUE);
+}
 
 /**
  * mono_thread_abort:
@@ -2782,6 +2795,12 @@ MonoInst*
 mono_get_thread_intrinsic (MonoCompile* cfg)
 {
 	return mono_create_tls_get (cfg, mono_thread_get_tls_offset ());
+}
+
+MonoInst*
+mono_get_lmf_intrinsic (MonoCompile* cfg)
+{
+	return mono_create_tls_get (cfg, mono_get_lmf_tls_offset ());
 }
 
 void
@@ -6491,7 +6510,8 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
-	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "void", TRUE);
+	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr", TRUE);
+	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 	register_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
