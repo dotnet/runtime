@@ -5309,6 +5309,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		pos++;
 	}
 
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		if (cfg->compile_aot)
+			/* AOT code is only used in the root domain */
+			code = mono_arm_emit_load_imm (code, ARMREG_R0, 0);
+		else
+			code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->domain);
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+			     (gpointer)"mono_jit_thread_attach");
+		code = emit_call_seq (cfg, code);
+	}
+
 	if (method->save_lmf)
 		code = emit_save_lmf (cfg, code, alloc_size - lmf_offset);
 

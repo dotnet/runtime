@@ -1257,9 +1257,6 @@ typedef struct {
 
 	MonoGenericSharingContext *generic_sharing_context;
 
-	/* For native-to-managed wrappers, the saved old domain */
-	MonoInst *orig_domain_var;
-
 	unsigned char   *cil_start;
 #ifdef __native_client_codegen__
 	/* this alloc is not aligned, native_code */
@@ -1826,8 +1823,7 @@ gpointer  mono_jit_compile_method           (MonoMethod *method) MONO_INTERNAL;
 MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
 void      mono_set_lmf                      (MonoLMF *lmf) MONO_INTERNAL;
-MonoDomain *mono_jit_thread_attach          (MonoDomain *domain);
-void      mono_jit_set_domain               (MonoDomain *domain);
+void      mono_jit_thread_attach            (MonoDomain *domain);
 MonoNativeTlsKey mono_get_jit_tls_key       (void) MONO_INTERNAL;
 gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
@@ -1835,7 +1831,6 @@ gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
 MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
 MonoInst* mono_get_thread_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
-MonoInst* mono_get_lmf_intrinsic            (MonoCompile* cfg) MONO_INTERNAL;
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type) MONO_INTERNAL;
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type) MONO_INTERNAL;
 void      mono_analyze_liveness             (MonoCompile *cfg) MONO_INTERNAL;

@@ -5243,6 +5243,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		pos++;
 	}
 
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		mips_load_const (code, mips_a0, cfg->domain);
+		mips_call (code, mips_t9, (gpointer)mono_jit_thread_attach);
+	}
+
 	if (method->save_lmf) {
 		mips_load_const (code, mips_at, MIPS_LMF_MAGIC1);
 		mips_sw (code, mips_at, mips_sp, lmf_offset + G_STRUCT_OFFSET(MonoLMF, magic));

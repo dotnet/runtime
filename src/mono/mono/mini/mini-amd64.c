@@ -7006,6 +7006,61 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
+	/* Might need to attach the thread to the JIT  or change the domain for the callback */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		guint64 domain = (guint64)cfg->domain;
+
+		args_clobbered = TRUE;
+
+		/* 
+		 * The call might clobber argument registers, but they are already
+		 * saved to the stack/global regs.
+		 */
+		if (appdomain_tls_offset != -1 && lmf_tls_offset != -1) {
+			guint8 *buf, *no_domain_branch;
+
+			code = mono_amd64_emit_tls_get (code, AMD64_RAX, appdomain_tls_offset);
+			if (cfg->compile_aot) {
+				/* AOT code is only used in the root domain */
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, 0);
+			} else {
+				if ((domain >> 32) == 0)
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
+				else
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			}
+			amd64_alu_reg_reg (code, X86_CMP, AMD64_RAX, AMD64_ARG_REG1);
+			no_domain_branch = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
+			code = mono_amd64_emit_tls_get ( code, AMD64_RAX, lmf_addr_tls_offset);
+			amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+			buf = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
+			amd64_patch (no_domain_branch, code);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					  (gpointer)"mono_jit_thread_attach", TRUE);
+			amd64_patch (buf, code);
+#ifdef HOST_WIN32
+			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+			/* FIXME: Add a separate key for LMF to avoid this */
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
+		} else {
+			g_assert (!cfg->compile_aot);
+			if (cfg->compile_aot) {
+				/* AOT code is only used in the root domain */
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, 0);
+			} else {
+				if ((domain >> 32) == 0)
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
+				else
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			}
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
+					  (gpointer)"mono_jit_thread_attach", TRUE);
+		}
+	}
+
 	if (method->save_lmf) {
 		code = emit_save_lmf (cfg, code, lmf_var->inst_offset, &args_clobbered);
 	}

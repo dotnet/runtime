@@ -5059,20 +5059,3 @@ mono_test_marshal_thread_attach (SimpleDelegate del)
 	return call_managed_res;
 #endif
 }
-
-typedef void (STDCALL *Callback) (void);
-
-static Callback callback;
-
-LIBTEST_API void STDCALL 
-mono_test_marshal_set_callback (Callback cb)
-{
-	callback = cb;
-}
-
-LIBTEST_API void STDCALL 
-mono_test_marshal_call_callback (void)
-{
-	callback ();
-}
-
