@@ -708,7 +708,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void MarkMethods (TypeDefinition type)
+		protected void MarkMethods (TypeDefinition type)
 		{
 			if (type.HasMethods)
 				MarkMethodCollection (type.Methods);
