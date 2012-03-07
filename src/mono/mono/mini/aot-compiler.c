@@ -123,6 +123,7 @@ typedef struct MonoAotOptions {
 	gboolean soft_debug;
 	gboolean log_generics;
 	gboolean direct_pinvoke;
+	gboolean direct_icalls;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -619,8 +620,13 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
-	emit_byte (acfg, '\xe8');
-	emit_symbol_diff (acfg, target, ".", -4);
+	if (FALSE && !acfg->use_bin_writer) {
+		img_writer_emit_unset_mode (acfg->w);
+		fprintf (acfg->fp, "call %s\n", target);
+	} else {
+		emit_byte (acfg, '\xe8');
+		emit_symbol_diff (acfg, target, ".", -4);
+	}
 	*call_size = 5;
 #elif defined(TARGET_ARM)
 	if (acfg->use_bin_writer) {
@@ -3653,6 +3659,10 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 	} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR && patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		if (acfg->aot_opts.direct_pinvoke)
 			return TRUE;
+	} else if (patch_info->type == MONO_PATCH_INFO_ICALL_ADDR) {
+		if (acfg->aot_opts.direct_icalls)
+			return TRUE;
+		return FALSE;
 	}
 
 	return FALSE;
@@ -3668,7 +3678,6 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [MONO_IMPLMAP_SIZE];
 	char *import;
-	const char *prefix;
 
 	import = g_hash_table_lookup (acfg->method_to_pinvoke_import, method);
 	if (import != NULL)
@@ -3682,13 +3691,7 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 	if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
 		return NULL;
 
-#if defined(__APPLE__)
-	prefix = "_";
-#else
-	prefix = "";
-#endif
-
-	import = g_strdup_printf ("%s%s", prefix, mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+	import = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
 
 	g_hash_table_insert (acfg->method_to_pinvoke_import, method, import);
 	
@@ -3767,20 +3770,32 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call = TRUE;
 						g_assert (strlen (callee_cfg->asm_symbol) < 1000);
 						sprintf (direct_call_target, "%s", callee_cfg->asm_symbol);
-						patch_info->type = MONO_PATCH_INFO_NONE;
-						acfg->stats.direct_calls ++;
 					}
 
 					acfg->stats.all_calls ++;
-				} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR) && (patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+				} else if (patch_info->type == MONO_PATCH_INFO_ICALL_ADDR) {
 					if (!got_only && is_direct_callable (acfg, method, patch_info)) {
-						direct_call = TRUE;
-						direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
-						g_assert (strlen (direct_pinvoke) < 1000);
-						sprintf (direct_call_target, "%s", direct_pinvoke);
-						patch_info->type = MONO_PATCH_INFO_NONE;
-						acfg->stats.direct_calls ++;
+						if (!(patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+							direct_pinvoke = mono_lookup_icall_symbol (patch_info->data.method);
+						else
+							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
+						if (direct_pinvoke) {
+							const char*prefix;
+#if defined(__APPLE__)
+							prefix = "_";
+#else
+							prefix = "";
+#endif
+							direct_call = TRUE;
+							g_assert (strlen (direct_pinvoke) < 1000);
+							sprintf (direct_call_target, "%s%s", prefix, direct_pinvoke);
+						}
 					}
+				}
+
+				if (direct_call) {
+					patch_info->type = MONO_PATCH_INFO_NONE;
+					acfg->stats.direct_calls ++;
 				}
 
 				if (!got_only && !direct_call) {
@@ -5169,6 +5184,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->soft_debug = TRUE;
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
+		} else if (str_begins_with (arg, "direct-icalls")) {
+			opts->direct_icalls = TRUE;
 		} else if (str_begins_with (arg, "print-skipped")) {
 			opts->print_skipped_methods = TRUE;
 		} else if (str_begins_with (arg, "stats")) {

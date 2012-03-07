@@ -7881,6 +7881,18 @@ icall_functions [] = {
 	NULL
 };
 
+#ifdef ENABLE_ICALL_SYMBOL_MAP
+#undef ICALL_TYPE
+#undef ICALL
+#define ICALL_TYPE(id,name,first)
+#define ICALL(id,name,func) #func,
+static const gconstpointer
+icall_symbols [] = {
+#include "metadata/icall-def.h"
+	NULL
+};
+#endif
+
 static GHashTable *icall_hash = NULL;
 static GHashTable *jit_icall_hash_name = NULL;
 static GHashTable *jit_icall_hash_addr = NULL;
@@ -8123,6 +8135,70 @@ mono_lookup_internal_call (MonoMethod *method)
 	mono_loader_unlock ();
 
 	return NULL;
+}
+
+static int
+func_cmp (gconstpointer key, gconstpointer p)
+{
+	return (gsize)key - (gsize)*(gsize*)p;
+}
+
+/*
+ * mono_lookup_icall_symbol:
+ *
+ *   Given the icall METHOD, returns its C symbol.
+ */
+const char*
+mono_lookup_icall_symbol (MonoMethod *m)
+{
+#ifdef ENABLE_ICALL_SYMBOL_MAP
+	gpointer func;
+	int i;
+	gpointer slot;
+	static gconstpointer *functions_sorted;
+	static const char**symbols_sorted;
+	static gboolean inited;
+
+	if (!inited) {
+		gboolean changed;
+
+		functions_sorted = g_malloc (G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
+		memcpy (functions_sorted, icall_functions, G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
+		symbols_sorted = g_malloc (G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
+		memcpy (symbols_sorted, icall_symbols, G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
+		/* Bubble sort the two arrays */
+		changed = TRUE;
+		while (changed) {
+			changed = FALSE;
+			for (i = 0; i < G_N_ELEMENTS (icall_functions) - 1; ++i) {
+				if (functions_sorted [i] > functions_sorted [i + 1]) {
+					gconstpointer tmp;
+
+					tmp = functions_sorted [i];
+					functions_sorted [i] = functions_sorted [i + 1];
+					functions_sorted [i + 1] = tmp;
+					tmp = symbols_sorted [i];
+					symbols_sorted [i] = symbols_sorted [i + 1];
+					symbols_sorted [i + 1] = tmp;
+					changed = TRUE;
+				}
+			}
+		}
+	}
+
+	func = mono_lookup_internal_call (m);
+	if (!func)
+		return NULL;
+	slot = bsearch (func, functions_sorted, G_N_ELEMENTS (icall_functions), sizeof (gpointer), func_cmp);
+	if (!slot)
+		return NULL;
+	g_assert (slot);
+	return symbols_sorted [(gpointer*)slot - (gpointer*)functions_sorted];
+#else
+	fprintf (stderr, "icall symbol maps not enabled, pass --enable-icall-symbol-map to configure.\n");
+	g_assert_not_reached ();
+	return 0;
+#endif
 }
 
 static MonoType*

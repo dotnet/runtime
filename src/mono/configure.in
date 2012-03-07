@@ -2666,6 +2666,11 @@ fi
 AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 AC_MSG_RESULT($mono_debugger_supported)
 
+AC_ARG_ENABLE(icall-symbol-map,[ --enable-icall-symbol-map Generate tables which map icall functions to their C symbols], icall_symbol_map=$enableval, icall_symbol_map=no)
+if test "x$icall_symbol_map" = "xyes"; then
+   AC_DEFINE(ENABLE_ICALL_SYMBOL_MAP, 1, [Icall symbol map enabled])
+fi
+
 if test "x$with_tls" = "x__thread"; then
 	AC_DEFINE(HAVE_KW_THREAD, 1, [Have __thread keyword])
 	# Pass the information to libgc

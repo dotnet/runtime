@@ -224,7 +224,7 @@ typedef struct {
 #if defined(__linux__) || defined (__APPLE__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
-#if !defined (__APPLE__) || defined(__native_client_codegen__)
+#if !defined(__native_client_codegen__)
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 #endif
 #define MONO_ARCH_GOT_REG X86_EBX
