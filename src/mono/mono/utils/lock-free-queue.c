@@ -47,7 +47,9 @@
  */
 
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/hazard-pointer.h>
