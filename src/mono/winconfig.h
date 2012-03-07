@@ -81,9 +81,7 @@
 /* #undef HAVE_BLKSIZE_T */
 
 /* Have Boehm GC */
-#define HAVE_BOEHM_GC 1
-
-#define DEFAULT_GC_NAME "Boehm"
+/* #define HAVE_BOEHM_GC 1 */
 
 /* Define to 1 if you have the <checklist.h> header file. */
 /* #undef HAVE_CHECKLIST_H */
@@ -134,16 +132,16 @@
 /* #undef HAVE_FSTATVFS */
 
 /* Have GC_enable */
-#define HAVE_GC_ENABLE 1
+/* #define HAVE_GC_ENABLE 1 */
 
 /* Have GC_gcj_malloc */
-#define HAVE_GC_GCJ_MALLOC 1
+/* #define HAVE_GC_GCJ_MALLOC 1 */
 
 /* Define to 1 if you have the <gc/gc.h> header file. */
 /* #undef HAVE_GC_GC_H */
 
 /* Have gc.h */
-#define HAVE_GC_H 1
+/* #define HAVE_GC_H 1 */
 
 /* Define to 1 if you have the `getdomainname' function. */
 /* #undef HAVE_GETDOMAINNAME */
@@ -571,6 +569,12 @@
 #define HOST_WIN32 1
 #define TARGET_WIN32 1
 
+#ifdef _WIN64
+#define TARGET_AMD64 1
+#else
+#define TARGET_X86 1
+#endif
+
 /* pthread_t is a pointer */
 /* #undef PTHREAD_POINTER_ID */
 
@@ -589,11 +593,10 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
-/* GC description */
-#define USED_GC_NAME "Included Boehm (with typed GC)"
-
 /* Use included libgc */
-#define USE_INCLUDED_LIBGC 1
+/* #define USE_INCLUDED_LIBGC 1 */
+
+#define DEFAULT_GC_NAME "Included Boehm (with typed GC)"
 
 /* ... */
 /* #undef USE_MACH_SEMA */

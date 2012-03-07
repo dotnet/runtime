@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="MonoDefines">
+    <top_srcdir>$(MSBuildProjectDirectory)/..</top_srcdir>
+    <LIBGC_CPPFLAGS_INCLUDE>$(top_srcdir)/libgc/include</LIBGC_CPPFLAGS_INCLUDE>
+    <GLIB_CFLAGS_INCLUDE>$(top_srcdir)/eglib/src</GLIB_CFLAGS_INCLUDE>
+    <BOEHM_DEFINES>HAVE_BOEHM_GC;HAVE_GC_H;USE_INCLUDED_LIBGC;HAVE_GC_GCJ_MALLOC;HAVE_GC_ENABLE</BOEHM_DEFINES>
+    <SGEN_DEFINES>HAVE_SGEN_GC;HAVE_MOVING_COLLECTOR;HAVE_WRITE_BARRIERS</SGEN_DEFINES>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0500;_WIN32_WINNT=0x0500;_WIN32_IE=0x0501;_UNICODE;UNICODE;WIN32_THREADS;FD_SETSIZE=1024;$(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;$(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    </ItemDefinitionGroup>
+</Project>

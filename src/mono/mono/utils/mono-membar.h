@@ -14,7 +14,7 @@
 
 #include <glib.h>
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(TARGET_AMD64)
 #ifndef _MSC_VER
 static inline void mono_memory_barrier (void)
 {
@@ -48,7 +48,7 @@ static inline void mono_memory_write_barrier (void)
 	_WriteBarrier ();
 }
 #endif
-#elif defined(__i386__)
+#elif defined(__i386__) || defined(TARGET_X86)
 #ifndef _MSC_VER
 static inline void mono_memory_barrier (void)
 {

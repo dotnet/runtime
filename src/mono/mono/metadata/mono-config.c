@@ -33,7 +33,7 @@
 #define CONFIG_OS "netbsd"
 #elif defined(__OpenBSD__)
 #define CONFIG_OS "openbsd"
-#elif defined(__WIN32__)
+#elif defined(__WIN32__) || defined(TARGET_WIN32)
 #define CONFIG_OS "windows"
 #elif defined(_IBMR2)
 #define CONFIG_OS "aix"
@@ -47,10 +47,10 @@
 #endif
 
 #ifndef CONFIG_CPU
-#if defined(__i386__)
+#if defined(__i386__) || defined(TARGET_X86)
 #define CONFIG_CPU "x86"
 #define CONFIG_WORDSIZE "32"
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(TARGET_AMD64)
 #define CONFIG_CPU "x86-64"
 #define CONFIG_WORDSIZE "64"
 #elif defined(sparc) || defined(__sparc__)
