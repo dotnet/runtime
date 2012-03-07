@@ -571,6 +571,12 @@
 #define HOST_WIN32 1
 #define TARGET_WIN32 1
 
+#ifdef _WIN64
+#define TARGET_AMD64 1
+#else
+#define TARGET_X86 1
+#endif
+
 /* pthread_t is a pointer */
 /* #undef PTHREAD_POINTER_ID */
 
