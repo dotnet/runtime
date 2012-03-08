@@ -28,6 +28,13 @@ typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
  */
 #define MONO_PROP_DYNAMIC_CATTR 0x1000
 
+#ifdef ENABLE_ICALL_EXPORT
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#define ICALL_EXPORT
+#else
+#define ICALL_EXPORT static
+#endif
+
 typedef enum {
 #define WRAPPER(e,n) MONO_WRAPPER_ ## e,
 #include "wrapper-types.h"

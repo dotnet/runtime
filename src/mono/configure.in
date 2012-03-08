@@ -2671,6 +2671,16 @@ if test "x$icall_symbol_map" = "xyes"; then
    AC_DEFINE(ENABLE_ICALL_SYMBOL_MAP, 1, [Icall symbol map enabled])
 fi
 
+AC_ARG_ENABLE(icall-export,[ --enable-icall-export Export icall functions], icall_export=$enableval, icall_export=no)
+if test "x$icall_export" = "xyes"; then
+   AC_DEFINE(ENABLE_ICALL_EXPORT, 1, [Icall export enabled])
+fi
+
+AC_ARG_ENABLE(icall-tables,[ --disable-icall-tables Disable the runtime lookup of icalls], icall_tables=$enableval, icall_tables=yes)
+if test "x$icall_tables" = "xno"; then
+   AC_DEFINE(DISABLE_ICALL_TABLES, 1, [Icall tables disabled])
+fi
+
 if test "x$with_tls" = "x__thread"; then
 	AC_DEFINE(HAVE_KW_THREAD, 1, [Have __thread keyword])
 	# Pass the information to libgc
