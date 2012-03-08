@@ -3391,6 +3391,32 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 	}
 }
 
+static void
+add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
+{
+	MonoMethodHeader *header;
+	MonoMethodSignature *sig;
+	int j, depth;
+
+	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
+
+	sig = mono_method_signature (method);
+
+	if (sig) {
+		for (j = 0; j < sig->param_count; ++j)
+			if (sig->params [j]->type == MONO_TYPE_GENERICINST)
+				add_generic_class_with_depth (acfg, mono_class_from_mono_type (sig->params [j]), depth + 1, "arg");
+	}
+
+	header = mono_method_get_header (method);
+
+	if (header) {
+		for (j = 0; j < header->num_locals; ++j)
+			if (header->locals [j]->type == MONO_TYPE_GENERICINST)
+				add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1, "local");
+	}
+}
+
 /*
  * add_generic_instances:
  *
@@ -3402,8 +3428,6 @@ add_generic_instances (MonoAotCompile *acfg)
 	int i;
 	guint32 token;
 	MonoMethod *method;
-	MonoMethodHeader *header;
-	MonoMethodSignature *sig;
 	MonoGenericContext *context;
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
@@ -3524,27 +3548,8 @@ add_generic_instances (MonoAotCompile *acfg)
 
 	/* Add types of args/locals */
 	for (i = 0; i < acfg->methods->len; ++i) {
-		int j, depth;
-
 		method = g_ptr_array_index (acfg->methods, i);
-
-		depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
-
-		sig = mono_method_signature (method);
-
-		if (sig) {
-			for (j = 0; j < sig->param_count; ++j)
-				if (sig->params [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class_with_depth (acfg, mono_class_from_mono_type (sig->params [j]), depth + 1, "arg");
-		}
-
-		header = mono_method_get_header (method);
-
-		if (header) {
-			for (j = 0; j < header->num_locals; ++j)
-				if (header->locals [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1, "local");
-		}
+		add_types_from_method_header (acfg, method);
 	}
 
 	if (acfg->image == mono_defaults.corlib) {
@@ -5498,6 +5503,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 								add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
 						} else {
 							add_extra_method_with_depth (acfg, m, depth + 1);
+							add_types_from_method_header (acfg, m);
 						}
 					}
 					add_generic_class_with_depth (acfg, m->klass, depth + 5, "method");
