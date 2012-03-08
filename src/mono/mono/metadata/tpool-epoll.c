@@ -57,6 +57,7 @@ tp_epoll_modify (gpointer event_data, int fd, int operation, int events, gboolea
 	struct epoll_event evt;
 	int epoll_op;
 
+	memset (&evt, 0, sizeof (evt));
 	evt.data.fd = fd;
 	if ((events & MONO_POLLIN) != 0)
 		evt.events |= EPOLLIN;
