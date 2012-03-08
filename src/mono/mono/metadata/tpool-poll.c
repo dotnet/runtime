@@ -78,14 +78,15 @@ tp_poll_modify (gpointer event_data, int fd, int operation, int events, gboolean
 {
 	tp_poll_data *data = event_data;
 	char msg [1];
+	int unused;
 
 	MONO_SEM_WAIT (&data->new_sem);
 	INIT_POLLFD (&data->newpfd, GPOINTER_TO_INT (fd), events);
 	*msg = (char) operation;
 #ifndef HOST_WIN32
-	write (data->pipe [1], msg, 1);
+	unused = write (data->pipe [1], msg, 1);
 #else
-	send ((SOCKET) data->pipe [1], msg, 1, 0);
+	unused = send ((SOCKET) data->pipe [1], msg, 1, 0);
 #endif
 }
 
