@@ -8048,11 +8048,13 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	return nspacelen + cnamelen;
 }
 
+#ifdef DISABLE_ICALL_TABLES
 static void
 no_icall_table (void)
 {
 	g_assert_not_reached ();
 }
+#endif
 
 gpointer
 mono_lookup_internal_call (MonoMethod *method)
@@ -8063,7 +8065,7 @@ mono_lookup_internal_call (MonoMethod *method)
 	int typelen = 0, mlen, siglen;
 	gpointer res;
 #ifndef DISABLE_ICALL_TABLES
-	const IcallTypeDesc *imap;
+	const IcallTypeDesc *imap = NULL;
 #endif
 
 	g_assert (method != NULL);
@@ -8089,6 +8091,10 @@ mono_lookup_internal_call (MonoMethod *method)
 		if (!typelen)
 			return NULL;
 	}
+
+#ifndef DISABLE_ICALL_TABLES
+	imap = find_class_icalls (mname);
+#endif
 
 	mname [typelen] = ':';
 	mname [typelen + 1] = ':';
@@ -8128,8 +8134,6 @@ mono_lookup_internal_call (MonoMethod *method)
 	/* Fail only when the result is actually used */
 	return no_icall_table;
 #else
-	imap = find_class_icalls (mname);
-
 	/* it wasn't found in the static call tables */
 	if (!imap) {
 		mono_loader_unlock ();
@@ -8162,11 +8166,13 @@ mono_lookup_internal_call (MonoMethod *method)
 #endif
 }
 
+#ifdef ENABLE_ICALL_SYMBOL_MAP
 static int
 func_cmp (gconstpointer key, gconstpointer p)
 {
 	return (gsize)key - (gsize)*(gsize*)p;
 }
+#endif
 
 /*
  * mono_lookup_icall_symbol:
