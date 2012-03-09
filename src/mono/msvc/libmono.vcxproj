@@ -222,14 +222,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">monosgen-2.0</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mono-2.0</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">monosgen-2.0</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mono-2.0</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">mono-2.0</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">monosgen-2.0</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">monosgen-2.0</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mono-2.0</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|x64'">monosgen-2.0</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mono-2.0</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">mono-2.0</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">monosgen-2.0</TargetName>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">$(Platform)\bin\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\bin\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">$(Platform)\bin\</OutDir>
