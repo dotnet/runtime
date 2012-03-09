@@ -8025,6 +8025,8 @@ find_class_icalls (const char *name)
 
 #endif /* HAVE_ARRAY_ELEM_INIT */
 
+#endif /* DISABLE_ICALL_TABLES */
+
 /* 
  * we should probably export this as an helper (handle nested types).
  * Returns the number of chars written in buf.
@@ -8046,6 +8048,12 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	return nspacelen + cnamelen;
 }
 
+static void
+no_icall_table (void)
+{
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_lookup_internal_call (MonoMethod *method)
 {
@@ -8054,7 +8062,9 @@ mono_lookup_internal_call (MonoMethod *method)
 	char mname [2048];
 	int typelen = 0, mlen, siglen;
 	gpointer res;
+#ifndef DISABLE_ICALL_TABLES
 	const IcallTypeDesc *imap;
+#endif
 
 	g_assert (method != NULL);
 
@@ -8079,8 +8089,6 @@ mono_lookup_internal_call (MonoMethod *method)
 		if (!typelen)
 			return NULL;
 	}
-
-	imap = find_class_icalls (mname);
 
 	mname [typelen] = ':';
 	mname [typelen + 1] = ':';
@@ -8115,6 +8123,13 @@ mono_lookup_internal_call (MonoMethod *method)
 		return res;
 	}
 
+#ifdef DISABLE_ICALL_TABLES
+	mono_loader_unlock ();
+	/* Fail only when the result is actually used */
+	return no_icall_table;
+#else
+	imap = find_class_icalls (mname);
+
 	/* it wasn't found in the static call tables */
 	if (!imap) {
 		mono_loader_unlock ();
@@ -8144,6 +8159,7 @@ mono_lookup_internal_call (MonoMethod *method)
 	mono_loader_unlock ();
 
 	return NULL;
+#endif
 }
 
 static int
@@ -8160,6 +8176,10 @@ func_cmp (gconstpointer key, gconstpointer p)
 const char*
 mono_lookup_icall_symbol (MonoMethod *m)
 {
+#ifdef DISABLE_ICALL_TABLES
+	g_assert_not_reached ();
+	return NULL;
+#else
 #ifdef ENABLE_ICALL_SYMBOL_MAP
 	gpointer func;
 	int i;
@@ -8208,31 +8228,8 @@ mono_lookup_icall_symbol (MonoMethod *m)
 	g_assert_not_reached ();
 	return 0;
 #endif
+#endif
 }
-
-#else /* DISABLE_ICALL_TABLES */
-
-static void
-no_icall_table (void)
-{
-	g_assert_not_reached ();
-}
-
-gpointer
-mono_lookup_internal_call (MonoMethod *method)
-{
-	/* Fail only when the result is actually used */
-	return no_icall_table;
-}
-
-const char*
-mono_lookup_icall_symbol (MonoMethod *m)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-#endif /* DISABLE_ICALL_TABLES */
 
 static MonoType*
 type_from_typename (char *typename)
