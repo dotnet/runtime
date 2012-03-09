@@ -17,9 +17,6 @@
 void
 ves_icall_System_String_ctor_RedirectToCreateString (void) MONO_INTERNAL;
 
-MonoArray * 
-ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count, gint32 options) MONO_INTERNAL;
-
 MonoString *
 ves_icall_System_String_InternalAllocateStr (gint32 length) MONO_INTERNAL;
 
