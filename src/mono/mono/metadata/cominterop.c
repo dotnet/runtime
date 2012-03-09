@@ -3208,6 +3208,27 @@ mono_free_bstr (gpointer bstr)
 #endif
 }
 
+int
+ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gpointer riid, gpointer* ppv)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
 #endif /* DISABLE_COM */
 
 MonoString *
