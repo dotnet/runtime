@@ -22,13 +22,19 @@ mono_main_with_options (int argc, char *argv [])
 		GString *buffer = g_string_new ("");
 		const char *p;
 		int i;
+		gboolean in_quotes = FALSE;
+		char quote_char = '\0';
 
 		for (p = env_options; *p; p++){
 			switch (*p){
 			case ' ': case '\t':
-				if (buffer->len != 0){
-					g_ptr_array_add (array, g_strdup (buffer->str));
-					g_string_truncate (buffer, 0);
+				if (!in_quotes) {
+					if (buffer->len != 0){
+						g_ptr_array_add (array, g_strdup (buffer->str));
+						g_string_truncate (buffer, 0);
+					}
+				} else {
+					g_string_append_c (buffer, *p);
 				}
 				break;
 			case '\\':
@@ -37,11 +43,28 @@ mono_main_with_options (int argc, char *argv [])
 					p++;
 				}
 				break;
+			case '\'':
+			case '"':
+				if (in_quotes) {
+					if (quote_char == *p)
+						in_quotes = FALSE;
+					else
+						g_string_append_c (buffer, *p);
+				} else {
+					in_quotes = TRUE;
+					quote_char = *p;
+				}
+				break;
 			default:
 				g_string_append_c (buffer, *p);
 				break;
 			}
 		}
+		if (in_quotes) {
+			fprintf (stderr, "Unmatched quotes in value of MONO_ENV_OPTIONS: [%s]\n", env_options);
+			exit (1);
+		}
+			
 		if (buffer->len != 0)
 			g_ptr_array_add (array, g_strdup (buffer->str));
 		g_string_free (buffer, TRUE);
