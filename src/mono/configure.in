@@ -3174,7 +3174,6 @@ fi
     echo "exec_prefix=$exec_prefix" >> $mcs_topdir/build/config.make
     echo "sysconfdir=$sysconfdir" >> $mcs_topdir/build/config.make
     echo 'mono_libdir=${exec_prefix}/lib' >> $mcs_topdir/build/config.make
-    echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $mcs_topdir/build/config.make
     echo 'IL_FLAGS = /debug' >> $mcs_topdir/build/config.make
     echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $mcs_topdir/build/config.make
     echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $mcs_topdir/build/config.make
