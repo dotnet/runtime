@@ -614,8 +614,8 @@ Extra packages.
 %_prefix/lib/mono/4.0/System.Runtime.Caching.dll
 %_prefix/lib/mono/4.0/System.ServiceProcess.dll
 %_prefix/lib/mono/4.0/System.Xaml.dll
-%_prefix/lib/mono/4.0/installutil.exe*
-%_prefix/lib/mono/4.0/mono-service.exe*
+%_prefix/lib/mono/4.5/installutil.exe*
+%_prefix/lib/mono/4.5/mono-service.exe*
 %_prefix/lib/mono/gac/Mono.Messaging
 %_prefix/lib/mono/gac/Mono.Messaging.RabbitMQ
 %_prefix/lib/mono/gac/RabbitMQ.Client
@@ -682,7 +682,7 @@ Mono implementation of WCF, Windows Communication Foundation
 %_prefix/lib/mono/4.0/System.ServiceModel.Routing.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Web.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.dll
-%_prefix/lib/mono/4.0/svcutil.exe*
+%_prefix/lib/mono/4.5/svcutil.exe*
 %_prefix/lib/mono/gac/System.Data.Services
 %_prefix/lib/mono/gac/System.IdentityModel
 %_prefix/lib/mono/gac/System.IdentityModel.Selectors
