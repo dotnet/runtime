@@ -10097,6 +10097,60 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
+			case CEE_MONO_JIT_ATTACH: {
+				MonoInst *args [16];
+				MonoInst *ad_ins, *lmf_ins;
+				MonoBasicBlock *next_bb = NULL;
+
+				cfg->orig_domain_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+
+				EMIT_NEW_PCONST (cfg, ins, NULL);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
+
+#if TARGET_WIN32
+				ad_ins = NULL;
+				lmf_ins = NULL;
+#else
+				ad_ins = mono_get_domain_intrinsic (cfg);
+				lmf_ins = mono_get_lmf_intrinsic (cfg);
+#endif
+
+				if (MONO_ARCH_HAVE_TLS_GET && ad_ins && lmf_ins) {
+					NEW_BBLOCK (cfg, next_bb);
+
+					MONO_ADD_INS (cfg->cbb, ad_ins);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, ad_ins->dreg, 0);
+					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, next_bb);
+
+					MONO_ADD_INS (cfg->cbb, lmf_ins);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, lmf_ins->dreg, 0);
+					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, next_bb);
+
+					if (cfg->compile_aot) {
+						/* AOT code is only used in the root domain */
+						EMIT_NEW_PCONST (cfg, args [0], NULL);
+					} else {
+						EMIT_NEW_PCONST (cfg, args [0], cfg->domain);
+					}
+					ins = mono_emit_jit_icall (cfg, mono_jit_thread_attach, args);
+					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
+				}
+
+				if (next_bb)
+					MONO_START_BB (cfg, next_bb);
+				ip += 2;
+				break;
+			}
+			case CEE_MONO_JIT_DETACH: {
+				MonoInst *args [16];
+
+				/* Restore the original domain */
+				dreg = alloc_ireg (cfg);
+				EMIT_NEW_UNALU (cfg, args [0], OP_MOVE, dreg, cfg->orig_domain_var->dreg);
+				mono_emit_jit_icall (cfg, mono_jit_set_domain, args);
+				ip += 2;
+				break;
+			}
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;

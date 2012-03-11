@@ -8614,6 +8614,13 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
+	/*
+	 * Might need to attach the thread to the JIT or change the
+	 * domain for the callback.
+	 */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_JIT_ATTACH);
+
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
@@ -8739,6 +8746,9 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			}
 		}
 	}
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
 
 	if (m->retobj_var) {
 		mono_mb_emit_ldloc (mb, m->retobj_var);
