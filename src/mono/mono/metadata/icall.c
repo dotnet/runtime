@@ -8132,7 +8132,11 @@ mono_lookup_internal_call (MonoMethod *method)
 #ifdef DISABLE_ICALL_TABLES
 	mono_loader_unlock ();
 	/* Fail only when the result is actually used */
-	return no_icall_table;
+	/* mono_marshal_get_native_wrapper () depends on this */
+	if (method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor"))
+		return ves_icall_System_String_ctor_RedirectToCreateString;
+	else
+		return no_icall_table;
 #else
 	/* it wasn't found in the static call tables */
 	if (!imap) {
