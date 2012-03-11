@@ -10136,8 +10136,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 				}
 
-				if (next_bb)
+				if (next_bb) {
 					MONO_START_BB (cfg, next_bb);
+					bblock = cfg->cbb;
+				}
 				ip += 2;
 				break;
 			}
