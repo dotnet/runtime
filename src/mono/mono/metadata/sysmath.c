@@ -66,8 +66,6 @@ gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean awa
 		return HUGE_VAL;
 	if (value == -HUGE_VAL)
 		return -HUGE_VAL;
-	if (digits == 0)
-		return ves_icall_System_Math_Round(value);
 	p = pow(10, digits);
 #if defined (HAVE_ROUND) && defined (HAVE_RINT)
 	if (away_from_zero)
