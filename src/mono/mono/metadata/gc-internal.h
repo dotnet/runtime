@@ -4,6 +4,7 @@
  * Author: Paolo Molaro <lupus@ximian.com>
  *
  * (C) 2002 Ximian, Inc.
+ * Copyright 2012 Xamarin Inc (http://www.xamarin.com)
  */
 
 #ifndef __MONO_METADATA_GC_INTERNAL_H__

@@ -1,3 +1,6 @@
+/* 
+ * Copyright 2012 Xamarin Inc
+ */
 #ifndef __MONO_METADATA_CLASS_INTERBALS_H__
 #define __MONO_METADATA_CLASS_INTERBALS_H__
 

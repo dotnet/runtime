@@ -5,6 +5,7 @@
  *	Dick Porter (dick@ximian.com)
  *
  * (C) 2002 Ximian, Inc.
+ * Copyright 2012 Xamarin Inc
  */
 
 #ifndef _WAPI_ATOMIC_H_

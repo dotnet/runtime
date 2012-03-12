@@ -6,6 +6,7 @@
  *	Dan Lewis (dihlewis@yahoo.co.uk)
  *
  * (C) 2001 Ximian, Inc.
+ * Copyright 2012 Xamarin Inc (http://www.xamarin.com)
  */
 
 #ifndef _MONO_METADATA_FILEIO_H_

@@ -5,6 +5,7 @@
  *   Miguel de Icaza (miguel@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
+ * Copyright 2012 Xamarin Inc
  */
 #include <config.h>
 #include <stdio.h>

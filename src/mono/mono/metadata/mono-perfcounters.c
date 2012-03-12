@@ -6,6 +6,7 @@
  * Author: Paolo Molaro (lupus@ximian.com)
  *
  * Copyright 2008-2009 Novell, Inc (http://www.novell.com)
+ * 2011 Xamarin, Inc
  */
 
 #include "config.h"

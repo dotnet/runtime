@@ -1,3 +1,6 @@
+#
+# Copyright 2012 Xamarin Inc
+#
 AC_INIT(eglib, [0.3],
         [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 

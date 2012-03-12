@@ -1,5 +1,6 @@
 /*
  * Appdomain-related internal data structures and functions.
+ * Copyright 2012 Xamarin Inc (http://www.xamarin.com)
  */
 #ifndef __MONO_METADATA_DOMAIN_INTERNALS_H__
 #define __MONO_METADATA_DOMAIN_INTERNALS_H__

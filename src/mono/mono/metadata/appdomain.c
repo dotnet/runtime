@@ -8,6 +8,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2012 Xamarin Inc
  */
 #undef ASSEMBLY_LOAD_DEBUG
 #include <config.h>

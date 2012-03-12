@@ -1,3 +1,8 @@
+/*
+ * Copyright 2005 Novell Inc
+ * Copyright 2011 Xamarin Inc
+ */
+
 #ifndef __MONO_ARM_FPA_CODEGEN_H__
 #define __MONO_ARM_FPA_CODEGEN_H__
 
