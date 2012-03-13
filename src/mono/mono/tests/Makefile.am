@@ -605,6 +605,10 @@ test-sgen : sgen-tests
 else
 if ARM
 test-sgen : sgen-tests
+else
+if S390x
+test-sgen : sgen-tests
+endif
 endif
 endif
 endif

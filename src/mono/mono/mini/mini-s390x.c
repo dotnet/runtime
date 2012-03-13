@@ -929,7 +929,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 		switch(method->klass->this_arg.type) {
 		case MONO_TYPE_VALUETYPE:
 			if (obj) {
-				guint64 *value = ((void *)this + sizeof(MonoObject));
+				guint64 *value = (guint64 *) ((uintptr_t)this + sizeof(MonoObject));
 				printf("this:[value:%p:%016lx], ", this, *value);
 			} else 
 				printf ("this:[NULL], ");
@@ -5299,14 +5299,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* On return from this call r2 have the address of the &lmf	 */
 		/*---------------------------------------------------------------*/
-		s390_basr(code, s390_r14, 0);
-		s390_j   (code, 6);
-		mono_add_patch_info (cfg, code - cfg->native_code, 
-				     MONO_PATCH_INFO_INTERNAL_METHOD, 
-				     (gpointer)"mono_get_lmf_addr");
-		s390_llong(code, 0);
-		s390_lg   (code, s390_r1, 0, s390_r14, 4);
-		s390_basr (code, s390_r14, s390_r1);
+		if (lmf_addr_tls_offset == -1) {
+			s390_basr(code, s390_r14, 0);
+			s390_j   (code, 6);
+			mono_add_patch_info (cfg, code - cfg->native_code, 
+					     MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_get_lmf_addr");
+			s390_llong(code, 0);
+			s390_lg   (code, s390_r1, 0, s390_r14, 4);
+			s390_basr (code, s390_r14, s390_r1);
+		} else {
+			/*-------------------------------------------------------*/
+			/* Get LMF by getting value from thread level storage    */
+			/*-------------------------------------------------------*/
+			s390_ear (code, s390_r1, 0);
+			s390_sllg(code, s390_r1, s390_r1, 0, 32);
+			s390_ear (code, s390_r1, 1);
+			s390_lg  (code, s390_r2, 0, s390_r1, lmf_addr_tls_offset);
+		}
 
 		/*---------------------------------------------------------------*/	
 		/* Set lmf.lmf_addr = jit_tls->lmf				 */	
@@ -5560,8 +5570,8 @@ void
 mono_arch_finish_init (void)
 {
 	appdomain_tls_offset = mono_domain_get_tls_offset();
-	lmf_tls_offset = mono_get_jit_tls_offset();
-	lmf_addr_tls_offset = mono_get_jit_tls_offset();
+	lmf_tls_offset = mono_get_lmf_tls_offset();
+	lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset();
 }
 
 /*========================= End of Function ========================*/
