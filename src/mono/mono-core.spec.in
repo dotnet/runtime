@@ -142,6 +142,8 @@ rm -rf %buildroot
 %config %_sysconfdir/mono/2.0/settings.map
 %config %_sysconfdir/mono/4.0/machine.config
 %config %_sysconfdir/mono/4.0/settings.map
+%config %_sysconfdir/mono/4.5/machine.config
+%config %_sysconfdir/mono/4.5/settings.map
 %config %_sysconfdir/mono/config
 %dir %_prefix/lib/mono
 %dir %_prefix/lib/mono/2.0
@@ -217,10 +219,56 @@ rm -rf %buildroot
 %_prefix/lib/mono/2.0/cscompmgd.dll
 %_prefix/lib/mono/2.0/gacutil.exe*
 %_prefix/lib/mono/2.0/mscorlib.dll*
+%_prefix/lib/mono/4.0/Commons.Xml.Relaxng.dll
+%_prefix/lib/mono/4.0/CustomMarshalers.dll
+%_prefix/lib/mono/4.0/I18N.West.dll
+%_prefix/lib/mono/4.0/I18N.dll
+%_prefix/lib/mono/4.0/ICSharpCode.SharpZipLib.dll
+%_prefix/lib/mono/4.0/Microsoft.CSharp.dll
+%_prefix/lib/mono/4.0/Microsoft.VisualC.dll
+%_prefix/lib/mono/4.0/Mono.C5.dll
+%_prefix/lib/mono/4.0/Mono.CSharp.dll
+%_prefix/lib/mono/4.0/Mono.Cairo.dll
+%_prefix/lib/mono/4.0/Mono.CompilerServices.SymbolWriter.dll
+%_prefix/lib/mono/4.0/Mono.Management.dll
+%_prefix/lib/mono/4.0/Mono.Parallel.dll
+%_prefix/lib/mono/4.0/Mono.Posix.dll
+%_prefix/lib/mono/4.0/Mono.Security.dll
+%_prefix/lib/mono/4.0/Mono.Simd.dll
+%_prefix/lib/mono/4.0/Mono.Tasklets.dll
+%_prefix/lib/mono/4.0/OpenSystem.C.dll
+%_prefix/lib/mono/4.0/System.Configuration.dll
+%_prefix/lib/mono/4.0/System.Core.dll
+%_prefix/lib/mono/4.0/System.Drawing.dll
+%_prefix/lib/mono/4.0/System.Dynamic.dll
+%_prefix/lib/mono/4.0/System.Json.dll
+%_prefix/lib/mono/4.0/System.Net.dll
+%_prefix/lib/mono/4.0/System.Numerics.dll
+%_prefix/lib/mono/4.0/System.Security.dll
+%_prefix/lib/mono/4.0/System.Xml.Linq.dll
+%_prefix/lib/mono/4.0/System.Xml.dll
+%_prefix/lib/mono/4.0/System.dll
+%_prefix/lib/mono/4.5/al.exe*
+%_prefix/lib/mono/4.5/certmgr.exe*
+%_prefix/lib/mono/4.5/chktrust.exe*
+%_prefix/lib/mono/4.5/crlupdate.exe*
+%_prefix/lib/mono/4.0/cscompmgd.dll
+%_prefix/lib/mono/4.5/csharp.exe*
+%_prefix/lib/mono/4.5/gacutil.exe*
+%_prefix/lib/mono/4.5/mcs.exe*
+%_prefix/lib/mono/4.5/mozroots.exe*
+%_prefix/lib/mono/4.0/mscorlib.dll*
+%_prefix/lib/mono/4.5/setreg.exe*
+%_prefix/lib/mono/4.5/sn.exe*
 %_prefix/lib/mono/4.5/Commons.Xml.Relaxng.dll
 %_prefix/lib/mono/4.5/CustomMarshalers.dll
+%_prefix/lib/mono/4.5/I18N.CJK.dll
+%_prefix/lib/mono/4.5/I18N.MidEast.dll
+%_prefix/lib/mono/4.5/I18N.Other.dll
+%_prefix/lib/mono/4.5/I18N.Rare.dll
 %_prefix/lib/mono/4.5/I18N.West.dll
 %_prefix/lib/mono/4.5/I18N.dll
+%_prefix/lib/mono/4.5/IBM.Data.DB2.dll
 %_prefix/lib/mono/4.5/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/4.5/Microsoft.CSharp.dll
 %_prefix/lib/mono/4.5/Microsoft.VisualC.dll
@@ -239,25 +287,17 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.Core.dll
 %_prefix/lib/mono/4.5/System.Drawing.dll
 %_prefix/lib/mono/4.5/System.Dynamic.dll
+%_prefix/lib/mono/4.5/System.Json.dll
 %_prefix/lib/mono/4.5/System.Net.dll
+%_prefix/lib/mono/4.5/System.Net.Http.dll
 %_prefix/lib/mono/4.5/System.Numerics.dll
 %_prefix/lib/mono/4.5/System.Security.dll
+%_prefix/lib/mono/4.5/System.Threading.Tasks.Dataflow.dll
 %_prefix/lib/mono/4.5/System.Xml.Linq.dll
 %_prefix/lib/mono/4.5/System.Xml.dll
 %_prefix/lib/mono/4.5/System.dll
-%_prefix/lib/mono/4.5/System.Threading.Tasks.Dataflow.dll
-%_prefix/lib/mono/4.5/al.exe*
-%_prefix/lib/mono/4.5/certmgr.exe*
-%_prefix/lib/mono/4.5/chktrust.exe*
-%_prefix/lib/mono/4.5/crlupdate.exe*
 %_prefix/lib/mono/4.5/cscompmgd.dll
-%_prefix/lib/mono/4.5/csharp.exe*
-%_prefix/lib/mono/4.5/gacutil.exe*
-%_prefix/lib/mono/4.5/mcs.exe*
-%_prefix/lib/mono/4.5/mozroots.exe*
 %_prefix/lib/mono/4.5/mscorlib.dll*
-%_prefix/lib/mono/4.5/setreg.exe*
-%_prefix/lib/mono/4.5/sn.exe*
 %_prefix/lib/mono/compat-2.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/gac/Commons.Xml.Relaxng
 %_prefix/lib/mono/gac/CustomMarshalers
@@ -285,11 +325,13 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/System.Drawing
 %_prefix/lib/mono/gac/System.Dynamic
 %_prefix/lib/mono/gac/System.Net
+%_prefix/lib/mono/gac/System.Net.Http
 %_prefix/lib/mono/gac/System.Numerics
 %_prefix/lib/mono/gac/System.Security
+%_prefix/lib/mono/gac/System.Threading.Tasks.Dataflow
 %_prefix/lib/mono/gac/System.Xml
 %_prefix/lib/mono/gac/System.Xml.Linq
-%_prefix/lib/mono/gac/System.Threading.Tasks.Dataflow
+%_prefix/lib/mono/gac/System.Json
 %_prefix/lib/mono/gac/cscompmgd
 %_prefix/lib/mono/mono-configuration-crypto
 
@@ -434,6 +476,10 @@ Extra locale information.
 %_prefix/lib/mono/2.0/I18N.MidEast.dll
 %_prefix/lib/mono/2.0/I18N.Other.dll
 %_prefix/lib/mono/2.0/I18N.Rare.dll
+%_prefix/lib/mono/4.0/I18N.CJK.dll
+%_prefix/lib/mono/4.0/I18N.MidEast.dll
+%_prefix/lib/mono/4.0/I18N.Other.dll
+%_prefix/lib/mono/4.0/I18N.Rare.dll
 %_prefix/lib/mono/4.5/I18N.CJK.dll
 %_prefix/lib/mono/4.5/I18N.MidEast.dll
 %_prefix/lib/mono/4.5/I18N.Other.dll
@@ -483,6 +529,16 @@ Database connectivity for Mono.
 %_prefix/lib/mono/2.0/System.EnterpriseServices.dll
 %_prefix/lib/mono/2.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/2.0/System.Transactions.dll
+%_prefix/lib/mono/4.0/Mono.Data.Tds.dll
+%_prefix/lib/mono/4.0/Novell.Directory.Ldap.dll
+%_prefix/lib/mono/4.0/System.Data.DataSetExtensions.dll
+%_prefix/lib/mono/4.0/System.Data.Linq.dll
+%_prefix/lib/mono/4.0/System.Data.dll
+%_prefix/lib/mono/4.0/System.DirectoryServices.dll
+%_prefix/lib/mono/4.0/System.EnterpriseServices.dll
+%_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
+%_prefix/lib/mono/4.0/System.Transactions.dll
+%_prefix/lib/mono/4.0/WebMatrix.Data.dll
 %_prefix/lib/mono/4.5/Mono.Data.Tds.dll
 %_prefix/lib/mono/4.5/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/4.5/System.Data.DataSetExtensions.dll
@@ -535,6 +591,12 @@ Mono's Windows Forms implementation.
 %_prefix/lib/mono/2.0/System.Design.dll
 %_prefix/lib/mono/2.0/System.Drawing.Design.dll
 %_prefix/lib/mono/2.0/System.Windows.Forms.dll
+%_prefix/lib/mono/4.0/Accessibility.dll
+%_prefix/lib/mono/4.0/Mono.WebBrowser.dll
+%_prefix/lib/mono/4.0/System.Design.dll
+%_prefix/lib/mono/4.0/System.Drawing.Design.dll
+%_prefix/lib/mono/4.0/System.Windows.Forms.DataVisualization.dll
+%_prefix/lib/mono/4.0/System.Windows.Forms.dll
 %_prefix/lib/mono/4.5/Accessibility.dll
 %_prefix/lib/mono/4.5/Mono.WebBrowser.dll
 %_prefix/lib/mono/4.5/System.Design.dll
@@ -566,6 +628,7 @@ Database connectivity for DB2.
 %files -n ibm-data-db2
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/IBM.Data.DB2.dll
+%_prefix/lib/mono/4.0/IBM.Data.DB2.dll
 %_prefix/lib/mono/4.5/IBM.Data.DB2.dll
 %_prefix/lib/mono/gac/IBM.Data.DB2
 
@@ -608,6 +671,18 @@ Extra packages.
 %_prefix/lib/mono/2.0/System.Messaging.dll
 %_prefix/lib/mono/2.0/System.ServiceProcess.dll
 %_prefix/lib/mono/2.0/mono-service.exe*
+%_prefix/lib/mono/4.0/Mono.Messaging.RabbitMQ.dll
+%_prefix/lib/mono/4.0/Mono.Messaging.dll
+%_prefix/lib/mono/4.0/RabbitMQ.Client.Apigen.exe*
+%_prefix/lib/mono/4.0/RabbitMQ.Client.dll
+%_prefix/lib/mono/4.0/System.Configuration.Install.dll
+%_prefix/lib/mono/4.0/System.Management.dll
+%_prefix/lib/mono/4.0/System.Messaging.dll
+%_prefix/lib/mono/4.0/System.Runtime.Caching.dll
+%_prefix/lib/mono/4.0/System.ServiceProcess.dll
+%_prefix/lib/mono/4.0/System.Xaml.dll
+%_prefix/lib/mono/4.5/installutil.exe*
+%_prefix/lib/mono/4.5/mono-service.exe*
 %_prefix/lib/mono/4.5/Mono.Messaging.RabbitMQ.dll
 %_prefix/lib/mono/4.5/Mono.Messaging.dll
 %_prefix/lib/mono/4.5/RabbitMQ.Client.Apigen.exe*
@@ -618,8 +693,6 @@ Extra packages.
 %_prefix/lib/mono/4.5/System.Runtime.Caching.dll
 %_prefix/lib/mono/4.5/System.ServiceProcess.dll
 %_prefix/lib/mono/4.5/System.Xaml.dll
-%_prefix/lib/mono/4.5/installutil.exe*
-%_prefix/lib/mono/4.5/mono-service.exe*
 %_prefix/lib/mono/gac/Mono.Messaging
 %_prefix/lib/mono/gac/Mono.Messaging.RabbitMQ
 %_prefix/lib/mono/gac/RabbitMQ.Client
@@ -651,6 +724,7 @@ Database connectivity for Mono.
 %files -n mono-data-sqlite
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/Mono.Data.Sqlite.dll
+%_prefix/lib/mono/4.0/Mono.Data.Sqlite.dll
 %_prefix/lib/mono/4.5/Mono.Data.Sqlite.dll
 %_prefix/lib/mono/gac/Mono.Data.Sqlite
 
@@ -678,6 +752,14 @@ Mono implementation of WCF, Windows Communication Foundation
 %_prefix/lib/mono/2.0/System.IdentityModel.dll
 %_prefix/lib/mono/2.0/System.ServiceModel.Web.dll
 %_prefix/lib/mono/2.0/System.ServiceModel.dll
+%_prefix/lib/mono/4.0/System.Data.Services.dll
+%_prefix/lib/mono/4.0/System.IdentityModel.Selectors.dll
+%_prefix/lib/mono/4.0/System.IdentityModel.dll
+%_prefix/lib/mono/4.0/System.Runtime.DurableInstancing.dll
+%_prefix/lib/mono/4.0/System.ServiceModel.Discovery.dll
+%_prefix/lib/mono/4.0/System.ServiceModel.Routing.dll
+%_prefix/lib/mono/4.0/System.ServiceModel.Web.dll
+%_prefix/lib/mono/4.0/System.ServiceModel.dll
 %_prefix/lib/mono/4.5/System.Data.Services.dll
 %_prefix/lib/mono/4.5/System.IdentityModel.Selectors.dll
 %_prefix/lib/mono/4.5/System.IdentityModel.dll
@@ -715,6 +797,8 @@ Mono implementation of core WinFX APIs
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/System.Data.Services.Client.dll*
 %_prefix/lib/mono/2.0/WindowsBase.dll*
+%_prefix/lib/mono/4.0/System.Data.Services.Client.dll*
+%_prefix/lib/mono/4.0/WindowsBase.dll*
 %_prefix/lib/mono/4.5/System.Data.Services.Client.dll*
 %_prefix/lib/mono/4.5/WindowsBase.dll*
 %_prefix/lib/mono/gac/System.Data.Services.Client
@@ -753,6 +837,8 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %config %_sysconfdir/mono/2.0/web.config
 %config %_sysconfdir/mono/4.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/4.0/web.config
+%config %_sysconfdir/mono/4.5/DefaultWsdlHelpGenerator.aspx
+%config %_sysconfdir/mono/4.5/web.config
 %config %_sysconfdir/mono/browscap.ini
 %config %_sysconfdir/mono/mconfig/config.xml
 %dir %_sysconfdir/mono/mconfig
@@ -779,7 +865,18 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/2.0/System.Web.dll
 %_prefix/lib/mono/2.0/wsdl.exe*
 %_prefix/lib/mono/2.0/xsd.exe*
-%_prefix/lib/mono/4.5/Microsoft.Web.Infrastructure.dll
+%_prefix/lib/mono/4.0/Microsoft.Web.Infrastructure.dll
+%_prefix/lib/mono/4.0/Mono.Http.dll
+%_prefix/lib/mono/4.0/Mono.Web.dll
+%_prefix/lib/mono/4.0/System.ComponentModel.Composition.dll
+%_prefix/lib/mono/4.0/System.ComponentModel.DataAnnotations.dll
+%_prefix/lib/mono/4.0/System.Runtime.Remoting.dll
+%_prefix/lib/mono/4.0/System.Runtime.Serialization.Formatters.Soap.dll
+%_prefix/lib/mono/4.0/System.Web.Abstractions.dll
+%_prefix/lib/mono/4.0/System.Web.ApplicationServices.dll
+%_prefix/lib/mono/4.0/System.Web.Routing.dll
+%_prefix/lib/mono/4.0/System.Web.Services.dll
+%_prefix/lib/mono/4.0/System.Web.dll
 %_prefix/lib/mono/4.5/Mono.Http.dll
 %_prefix/lib/mono/4.5/Mono.Web.dll
 %_prefix/lib/mono/4.5/System.ComponentModel.Composition.dll
@@ -796,6 +893,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.5/soapsuds.exe*
 %_prefix/lib/mono/4.5/wsdl.exe*
 %_prefix/lib/mono/4.5/xsd.exe*
+%_prefix/lib/mono/4.5/Microsoft.Web.Infrastructure.dll
 %_prefix/lib/mono/gac/Microsoft.Web.Infrastructure
 %_prefix/lib/mono/gac/Mono.Http
 %_prefix/lib/mono/gac/Mono.Web
@@ -834,6 +932,9 @@ Mono implementation of ASP.NET MVC.
 %_prefix/lib/mono/2.0/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/2.0/System.Web.Extensions.dll
 %_prefix/lib/mono/2.0/System.Web.Mvc.dll
+%_prefix/lib/mono/4.0/System.Web.DynamicData.dll
+%_prefix/lib/mono/4.0/System.Web.Extensions.Design.dll
+%_prefix/lib/mono/4.0/System.Web.Extensions.dll
 %_prefix/lib/mono/4.5/System.Web.DynamicData.dll
 %_prefix/lib/mono/4.5/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/4.5/System.Web.Extensions.dll
@@ -865,6 +966,7 @@ Database connectivity for Mono.
 %files -n mono-data-oracle
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/System.Data.OracleClient.dll
+%_prefix/lib/mono/4.0/System.Data.OracleClient.dll
 %_prefix/lib/mono/4.5/System.Data.OracleClient.dll
 %_prefix/lib/mono/gac/System.Data.OracleClient
 
@@ -888,6 +990,7 @@ Database connectivity for Mono.
 %files -n mono-data-postgresql
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/Npgsql.dll
+%_prefix/lib/mono/4.0/Npgsql.dll
 %_prefix/lib/mono/4.5/Npgsql.dll
 %_prefix/lib/mono/gac/Npgsql
 
@@ -911,6 +1014,7 @@ brings xUnit to all .NET languages.
 %_libdir/pkgconfig/mono-nunit.pc
 %_prefix/bin/nunit-console
 %_prefix/bin/nunit-console2
+%_prefix/bin/nunit-console4
 %_prefix/lib/mono/2.0/nunit-console-runner.dll
 %_prefix/lib/mono/2.0/nunit-console.exe*
 %_prefix/lib/mono/2.0/nunit.core.dll
@@ -977,6 +1081,7 @@ Mono development tools.
 %defattr(-, root, root)
 %_bindir/caspol
 %_bindir/ccrewrite
+%_bindir/cccheck
 %_bindir/cert2spc
 %_bindir/dtd2rng
 %_bindir/dtd2xsd
@@ -1025,6 +1130,7 @@ Mono development tools.
 %_libdir/pkgconfig/mono.pc
 %_mandir/man1/al.1%ext_man
 %_mandir/man1/ccrewrite.1%ext_man
+%_mandir/man1/cccheck.1%ext_man
 %_mandir/man1/cert2spc.1%ext_man
 %_mandir/man1/dtd2xsd.1%ext_man
 %_mandir/man1/genxs.1%ext_man
@@ -1084,19 +1190,29 @@ Mono development tools.
 %_prefix/lib/mono/3.5/xbuild.exe*
 %_prefix/lib/mono/3.5/xbuild.rsp
 %_prefix/lib/mono/4.0/MSBuild
-%_prefix/lib/mono/4.5/Microsoft.Build.Engine.dll
-%_prefix/lib/mono/4.5/Microsoft.Build.Framework.dll
-%_prefix/lib/mono/4.5/Microsoft.Build.Tasks.v4.0.dll
-%_prefix/lib/mono/4.5/Microsoft.Build.Utilities.v4.0.dll
+%_prefix/lib/mono/4.0/Microsoft.Build.dll
+%_prefix/lib/mono/4.0/Microsoft.Build.Engine.dll
+%_prefix/lib/mono/4.0/Microsoft.Build.Framework.dll
+%_prefix/lib/mono/4.0/Microsoft.Build.Tasks.v4.0.dll
+%_prefix/lib/mono/4.0/Microsoft.Build.Utilities.v4.0.dll
 %_prefix/lib/mono/4.0/Microsoft.Build.xsd
 %_prefix/lib/mono/4.0/Microsoft.CSharp.targets
 %_prefix/lib/mono/4.0/Microsoft.Common.targets
 %_prefix/lib/mono/4.0/Microsoft.Common.tasks
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
+%_prefix/lib/mono/4.0/Mono.Debugger.Soft.dll
+%_prefix/lib/mono/4.0/Mono.CodeContracts.dll
+%_prefix/lib/mono/4.0/PEAPI.dll
+%_prefix/lib/mono/4.5/Microsoft.Build.dll
+%_prefix/lib/mono/4.5/Microsoft.Build.Engine.dll
+%_prefix/lib/mono/4.5/Microsoft.Build.Framework.dll
+%_prefix/lib/mono/4.5/Microsoft.Build.Tasks.v4.0.dll
+%_prefix/lib/mono/4.5/Microsoft.Build.Utilities.v4.0.dll
 %_prefix/lib/mono/4.5/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/4.5/Mono.CodeContracts.dll
 %_prefix/lib/mono/4.5/PEAPI.dll
 %_prefix/lib/mono/4.5/caspol.exe*
+%_prefix/lib/mono/4.5/cccheck.exe*
 %_prefix/lib/mono/4.5/ccrewrite.exe*
 %_prefix/lib/mono/4.5/cert2spc.exe*
 %_prefix/lib/mono/4.5/dtd2rng.exe*
@@ -1124,6 +1240,7 @@ Mono development tools.
 %_prefix/lib/mono/4.5/signcode.exe*
 %_prefix/lib/mono/4.5/xbuild.exe*
 %_prefix/lib/mono/4.5/xbuild.rsp
+%_prefix/lib/mono/gac/Microsoft.Build
 %_prefix/lib/mono/gac/Microsoft.Build.Engine
 %_prefix/lib/mono/gac/Microsoft.Build.Framework
 %_prefix/lib/mono/gac/Microsoft.Build.Tasks
@@ -1177,7 +1294,7 @@ Monodoc-core contains documentation tools for C#.
 %_mandir/man1/monodocer.1%ext_man
 %_mandir/man1/monodocs2html.1%ext_man
 %_mandir/man5/mdoc.5%ext_man
-%_prefix/lib/mono/2.0/mdoc.exe*
+%_prefix/lib/mono/4.5/mdoc.exe*
 %_prefix/lib/mono/4.5/mod.exe*
 %_prefix/lib/mono/gac/monodoc
 %_prefix/lib/mono/monodoc
