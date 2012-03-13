@@ -318,6 +318,12 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 		value->value.variable.delta = 0;
 		area->defs [ins->dreg] = ins;
 		break;
+	case OP_LDADDR:
+		/* The result is non-null */
+		result->relation = MONO_GT_RELATION;
+		value->type = MONO_CONSTANT_SUMMARIZED_VALUE;
+		value->value.constant.value = 0;
+		break;
 
 		/* FIXME: Add more opcodes */
 	default:
