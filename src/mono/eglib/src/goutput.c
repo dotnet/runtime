@@ -58,6 +58,30 @@ out_vfprintf (FILE *ignore, const gchar *format, va_list args)
 	/* TODO: provide a proper app name */
 	__android_log_vprint (ANDROID_LOG_ERROR, "mono", format, args);
 }
+#elif MONOTOUCH && defined(__arm__)
+#include <asl.h>
+
+static int
+to_asl_priority (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK)
+	{
+		case G_LOG_LEVEL_ERROR:     return ASL_LEVEL_CRIT;
+		case G_LOG_LEVEL_CRITICAL:  return ASL_LEVEL_ERR;
+		case G_LOG_LEVEL_WARNING:   return ASL_LEVEL_WARNING;
+		case G_LOG_LEVEL_MESSAGE:   return ASL_LEVEL_NOTICE;
+		case G_LOG_LEVEL_INFO:      return ASL_LEVEL_INFO;
+		case G_LOG_LEVEL_DEBUG:     return ASL_LEVEL_DEBUG;
+	}
+	return ASL_LEVEL_ERR;
+}
+
+static void
+out_vfprintf (FILE *ignore, const gchar *format, va_list args)
+{
+	asl_vlog (NULL, NULL, ASL_LEVEL_WARNING, format, args);
+}
+
 #else
 static void 
 out_vfprintf (FILE *file, const gchar *format, va_list args)
@@ -116,6 +140,8 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 {
 #if PLATFORM_ANDROID
 	__android_log_vprint (to_android_priority (log_level), log_domain, format, args);
+#elif MONOTOUCH && defined(__arm__)
+	asl_vlog (NULL, NULL, to_asl_priority (log_level), format, args);
 #else
 	char *msg;
 	
