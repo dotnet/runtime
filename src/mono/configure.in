@@ -225,6 +225,7 @@ case "$host" in
 
 		# to bypass the underscore linker check, can't work when cross-compiling
 		mono_cv_uscore=yes
+		mono_cv_clang=no
 		;;
 	*-*-linux*)
 		host_win32=no
@@ -526,21 +527,20 @@ fi
 CFLAGS="$CFLAGS -g $WARN"
 CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
 
-AC_MSG_CHECKING(for clang)
-AC_TRY_RUN([
+AC_CACHE_CHECK([for clang],
+	mono_cv_clang,[
+	AC_TRY_RUN([
 		int main () {
-		#ifdef __clang__
-			return 0;
-		#else
-			return 1;
-		#endif
+			#ifdef __clang__
+				return 0;
+			#else
+				return 1;
+			#endif
 		}
-], [
-   AC_MSG_RESULT(yes)
-   CLANG=yes
-], [
-   AC_MSG_RESULT(no)
-   CLANG=no
+	],
+	[mono_cv_clang=yes],
+	[mono_cv_clang=no],
+	[])
 ])
 
 # Where's the 'mcs' source tree?
@@ -698,7 +698,7 @@ AM_CONDITIONAL(SHARED_MONO, test x$with_shared_mono != xno)
 AC_ARG_ENABLE(mcs-build, [  --disable-mcs-build disable the build of the mcs directory], try_mcs_build=$enableval, enable_mcs_build=yes)
 
 AC_ARG_WITH(xen_opt,   [  --with-xen_opt=yes,no          Enable Xen-specific behaviour (defaults to yes)],[],[with_xen_opt=yes])
-if test "x$with_xen_opt" = "xyes" -a "x$CLANG" = "xno"; then
+if test "x$with_xen_opt" = "xyes" -a "x$mono_cv_clang" = "xno"; then
 	AC_DEFINE(MONO_XEN_OPT, 1, [Xen-specific behaviour])
 	ORIG_CFLAGS=$CFLAGS
 	CFLAGS="$CFLAGS -mno-tls-direct-seg-refs"
@@ -2690,7 +2690,7 @@ if test "x$with_tls" = "x__thread"; then
 		], [
 			AC_MSG_RESULT(yes)
 			# CLANG doesn't support this yet, and it prints warnings about it
-			if test "x$CLANG" = "xno"; then
+			if test "x$mono_cv_clang" = "xno"; then
 				AC_DEFINE(HAVE_TLS_MODEL_ATTR, 1, [tld_model available])
 			fi
 		], [
