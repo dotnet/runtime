@@ -10126,17 +10126,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_ADD_INS (cfg->cbb, lmf_ins);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, lmf_ins->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, next_bb);
-
-					if (cfg->compile_aot) {
-						/* AOT code is only used in the root domain */
-						EMIT_NEW_PCONST (cfg, args [0], NULL);
-					} else {
-						EMIT_NEW_PCONST (cfg, args [0], cfg->domain);
-					}
-					ins = mono_emit_jit_icall (cfg, mono_jit_thread_attach, args);
-					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 				}
 #endif
+
+				if (cfg->compile_aot) {
+					/* AOT code is only used in the root domain */
+					EMIT_NEW_PCONST (cfg, args [0], NULL);
+				} else {
+					EMIT_NEW_PCONST (cfg, args [0], cfg->domain);
+				}
+				ins = mono_emit_jit_icall (cfg, mono_jit_thread_attach, args);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 
 				if (next_bb) {
 					MONO_START_BB (cfg, next_bb);
