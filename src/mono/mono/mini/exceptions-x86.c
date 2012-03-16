@@ -867,6 +867,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* Pop arguments off the stack */
 			/* FIXME: Handle the delegate case too ((*lmf)->method == NULL) */
 			/* FIXME: Handle the IMT/vtable case too */
+#if 0
 #ifndef ENABLE_LLVM
 			if ((*lmf)->method) {
 				MonoMethod *method = (*lmf)->method;
@@ -875,6 +876,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				guint32 stack_to_pop = mono_arch_get_argument_info (NULL, mono_method_signature (method), mono_method_signature (method)->param_count, arg_info);
 				new_ctx->esp += stack_to_pop;
 			}
+#endif
 #endif
 		}
 		else
