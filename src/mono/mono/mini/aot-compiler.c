@@ -4679,18 +4679,20 @@ emit_plt (MonoAotCompile *acfg)
 			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer) {
 				MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, ji->data.method);
 
-				if (acfg->thumb_mixed && !callee_cfg->compile_llvm) {
-					/* LLVM calls the PLT entries using bl, so emit a stub */
-					fprintf (acfg->fp, "\n.thumb_func\n");
-					emit_label (acfg, plt_entry->llvm_symbol);
-					fprintf (acfg->fp, "bx pc\n");
-					fprintf (acfg->fp, "nop\n");
-					fprintf (acfg->fp, ".arm\n");
-					fprintf (acfg->fp, "b %s\n", callee_cfg->asm_symbol);
-				} else {
-					fprintf (acfg->fp, "\n.set %s, %s\n", plt_entry->llvm_symbol, callee_cfg->asm_symbol);
+				if (callee_cfg) {
+					if (acfg->thumb_mixed && !callee_cfg->compile_llvm) {
+						/* LLVM calls the PLT entries using bl, so emit a stub */
+						fprintf (acfg->fp, "\n.thumb_func\n");
+						emit_label (acfg, plt_entry->llvm_symbol);
+						fprintf (acfg->fp, "bx pc\n");
+						fprintf (acfg->fp, "nop\n");
+						fprintf (acfg->fp, ".arm\n");
+						fprintf (acfg->fp, "b %s\n", callee_cfg->asm_symbol);
+					} else {
+						fprintf (acfg->fp, "\n.set %s, %s\n", plt_entry->llvm_symbol, callee_cfg->asm_symbol);
+					}
+					continue;
 				}
-				continue;
 			}
 		}
 
