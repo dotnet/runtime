@@ -1646,5 +1646,55 @@ public class Tests {
 		else
 			return 2;
 	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_lpstr")]
+	public static extern int mono_test_marshal_lpstr ([MarshalAs(UnmanagedType.LPStr)] string str);
+
+	public static int test_0_mono_test_marshal_lpstr () {
+		string str = "ABC";
+
+		if (mono_test_marshal_lpstr (str) != 0)
+			return 1;
+
+		return 0;
+	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_lpwstr")]
+	public static extern int mono_test_marshal_lpwstr ([MarshalAs(UnmanagedType.LPWStr)] string str);
+
+	public static int test_0_mono_test_marshal_lpwstr () {
+		string str = "ABC";
+
+		if (mono_test_marshal_lpwstr (str) != 0)
+			return 1;
+
+		return 0;
+	}
+
+
+	[method: DllImport ("libtest", EntryPoint="mono_test_marshal_return_lpstr")]
+	[return: MarshalAs(UnmanagedType.LPStr)]
+	public static extern string mono_test_marshal_return_lpstr ();
+
+	public static int test_0_mono_test_marshal_return_lpstr () {
+		string str = mono_test_marshal_return_lpstr ();
+		if ("XYZ" == str)
+			return 0;
+
+		return 1;
+	}
+
+	[method: DllImport ("libtest", EntryPoint="mono_test_marshal_return_lpwstr")]
+	[return: MarshalAs(UnmanagedType.LPWStr)]
+	public static extern string mono_test_marshal_return_lpwstr ();
+
+	public static int test_0_mono_test_marshal_return_lpwstr () {
+		string str = mono_test_marshal_return_lpwstr ();
+		if ("XYZ" == str)
+			return 0;
+
+		return 1;
+	}
+
 }
 

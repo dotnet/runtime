@@ -5076,3 +5076,42 @@ mono_test_marshal_call_callback (void)
 	return callback ();
 }
 
+LIBTEST_API int STDCALL
+mono_test_marshal_lpstr (char *str)
+{
+	return strcmp ("ABC", str);
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_lpwstr (gunichar2 *str)
+{
+	char *s;
+	int res;
+
+	s = g_utf16_to_utf8 (str, -1, NULL, NULL, NULL);
+	res = strcmp ("ABC", s);
+	g_free (s);
+
+	return res;
+}
+
+LIBTEST_API char* STDCALL
+mono_test_marshal_return_lpstr (void)
+{
+	char *res = marshal_alloc (4);
+	strcpy (res, "XYZ");
+	return res;
+}
+
+
+LIBTEST_API gunichar2* STDCALL
+mono_test_marshal_return_lpwstr (void)
+{
+	gunichar2 *res = marshal_alloc (8);
+	gunichar2* tmp = g_utf8_to_utf16 ("XYZ", -1, NULL, NULL, NULL);
+
+	memcpy (res, tmp, 8);
+	g_free (tmp);
+
+	return res;
+}
