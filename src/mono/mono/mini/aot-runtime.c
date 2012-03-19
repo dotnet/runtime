@@ -853,6 +853,12 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 						return FALSE;
 					ref->method = mono_marshal_get_struct_to_ptr (klass);
 				}
+			} else if (subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+
+				if (!m)
+					return FALSE;
+				ref->method = mono_marshal_get_synchronized_inner_wrapper (m);
 			} else {
 				if (subtype == WRAPPER_SUBTYPE_FAST_MONITOR_ENTER)
 					desc = mono_method_desc_new ("Monitor:Enter", FALSE);

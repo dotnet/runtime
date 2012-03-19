@@ -9653,6 +9653,33 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 }
 
 /*
+ * Return a dummy wrapper for METHOD which is called by synchronized wrappers.
+ * This is used to avoid infinite recursion since it is hard to determine where to
+ * replace a method with its synchronized wrapper, and where not.
+ * The runtime should execute METHOD instead of the wrapper.
+ * The wrapper info for the wrapper is a WrapperInfo structure.
+ */
+MonoMethod *
+mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
+{
+	MonoMethodBuilder *mb;
+	WrapperInfo *info;
+	MonoMethodSignature *sig;
+	MonoMethod *res;
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
+	mono_mb_emit_exception_full (mb, "System", "ExecutionEngineException", "Shouldn't be called.");
+	mono_mb_emit_byte (mb, CEE_RET);
+	sig = signature_dup (method->klass->image, mono_method_signature (method));
+	res = mono_mb_create_method (mb, sig, 0);
+	mono_mb_free (mb);
+	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
+	info->d.synchronized_inner.method = method;
+	mono_marshal_set_wrapper_info (res, info);
+	return res;
+}
+
+/*
  * generates IL code for the synchronized wrapper: the generated method
  * calls METHOD while locking 'this' or the parent type.
  */

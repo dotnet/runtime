@@ -101,7 +101,9 @@ typedef enum {
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT,
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
-	WRAPPER_SUBTYPE_ICALL_WRAPPER
+	WRAPPER_SUBTYPE_ICALL_WRAPPER,
+	/* Subtypes of MONO_WRAPPER_UNKNOWN */
+	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER
 } WrapperSubtype;
 
 typedef struct {
@@ -129,6 +131,10 @@ typedef struct {
 	MonoMethod *method;
 } ManagedToNativeWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+} SynchronizedInnerWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -149,6 +155,8 @@ typedef struct {
 		NativeToManagedWrapperInfo native_to_managed;
 		/* MONO_WRAPPER_MANAGED_TO_NATIVE */
 		ManagedToNativeWrapperInfo managed_to_native;
+		/* SYNCHRONIZED_INNER */
+		SynchronizedInnerWrapperInfo synchronized_inner;
 	} d;
 } WrapperInfo;
 
@@ -315,6 +323,9 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_unbox_wrapper (MonoMethod *method) MONO_INTERNAL;

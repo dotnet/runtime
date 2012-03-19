@@ -5471,6 +5471,14 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	else 
 		target_domain = domain;
 
+	if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+		g_assert (info);
+		if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER)
+			method = info->d.synchronized_inner.method;
+	}
+
 	info = lookup_method (target_domain, method);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
