@@ -1995,26 +1995,13 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * finalized: use the finalized objects as new roots so the objects they depend
 	 * on are also not reclaimed. As with the roots above, only objects in the nursery
 	 * are marked/copied.
-	 * We need a loop here, since objects ready for finalizers may reference other objects
-	 * that are fin-ready. Speedup with a flag?
 	 */
-	num_loops = 0;
-	do {		
-		fin_ready = num_ready_finalizers;
-		finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
-		if (generation == GENERATION_OLD)
-			finalize_in_range (copy_func, mono_sgen_get_nursery_start (), mono_sgen_get_nursery_end (), GENERATION_NURSERY, queue);
-
-		if (fin_ready != num_ready_finalizers)
-			++num_loops;
-
-		/* drain the new stack that might have been created */
-		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
-		mono_sgen_drain_gray_stack (queue, -1);
-	} while (fin_ready != num_ready_finalizers);
-
-	if (mono_sgen_need_bridge_processing ())
-		g_assert (num_loops <= 1);
+	finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
+	if (generation == GENERATION_OLD)
+		finalize_in_range (copy_func, mono_sgen_get_nursery_start (), mono_sgen_get_nursery_end (), GENERATION_NURSERY, queue);
+	/* drain the new stack that might have been created */
+	DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
+	mono_sgen_drain_gray_stack (queue, -1);
 
 	/*
 	 * This must be done again after processing finalizable objects since CWL slots are cleared only after the key is finalized.
