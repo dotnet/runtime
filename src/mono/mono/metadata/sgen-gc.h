@@ -882,6 +882,18 @@ extern LOCK_DECLARE (gc_mutex);
 
 extern int do_pin_stats;
 
+/* Nursery helpers. */
+
+static inline void
+mono_sgen_set_nursery_scan_start (char *p)
+{
+	int idx = (p - (char*)nursery_section->data) / SGEN_SCAN_START_SIZE;
+	char *old = nursery_section->scan_starts [idx];
+	if (!old || old > p)
+		nursery_section->scan_starts [idx] = p;
+}
+
+
 /* Object Allocation */
 
 typedef enum {
