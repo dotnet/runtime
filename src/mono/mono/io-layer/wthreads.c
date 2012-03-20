@@ -409,8 +409,9 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 									   thread_start_routine, (void *)thread_handle_p);
 
 	if (ret != 0) {
-		DEBUG ("%s: Thread create error: %s", __func__,
-			   strerror(ret));
+		g_warning ("%s: Error creating native thread handle %s (%d)", __func__,
+			   strerror (ret), ret);
+		SetLastError (ERROR_GEN_FAILURE);
 
 		/* Two, because of the reference we took above */
 		unrefs = 2;
