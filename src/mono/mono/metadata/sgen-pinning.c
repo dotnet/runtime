@@ -120,6 +120,11 @@ mono_sgen_pinning_setup_section (GCMemSection *section)
 	section->pin_queue_num_entries = next_pin_slot;
 }
 
+void
+mono_sgen_pinning_trim_queue_to_section (GCMemSection *section)
+{
+	next_pin_slot = section->pin_queue_num_entries;
+}
 
 void
 mono_sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot)
@@ -127,6 +132,9 @@ mono_sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_
 	void **start = section->pin_queue_start + section->pin_queue_num_entries;
 	void **end = pin_queue + max_pin_slot;
 	void *addr;
+
+	if (!start)
+		return;
 
 	for (; start < end; ++start) {
 		addr = *start;

@@ -1,4 +1,6 @@
 /*
+void
+mono_sgen_pinning_trim_queue_to_section (GCMemSection *section)
  * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -36,7 +38,8 @@ void mono_sgen_init_pinning (void) MONO_INTERNAL;
 void mono_sgen_finish_pinning (void) MONO_INTERNAL;
 void mono_sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot) MONO_INTERNAL;
 int mono_sgen_get_pinned_count (void) MONO_INTERNAL;
-void mono_sgen_pinning_setup_section (GCMemSection *section);
+void mono_sgen_pinning_setup_section (GCMemSection *section) MONO_INTERNAL;
+void mono_sgen_pinning_trim_queue_to_section (GCMemSection *section) MONO_INTERNAL;
 
 void mono_sgen_dump_pin_queue (void) MONO_INTERNAL;
 

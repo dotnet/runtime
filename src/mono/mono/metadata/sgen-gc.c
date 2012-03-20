@@ -2610,6 +2610,7 @@ collect_nursery (size_t requested_size)
 	mono_sgen_optimize_pin_queue (0);
 	mono_sgen_pinning_setup_section (nursery_section);
 	mono_sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);	
+	mono_sgen_pinning_trim_queue_to_section (nursery_section);
 
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED (btv, atv);
