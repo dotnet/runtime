@@ -2475,6 +2475,21 @@ job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
 			mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
+typedef struct
+{
+	FinalizeReadyEntry *list;
+} ScanFinalizerEntriesJobData;
+
+static void
+job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanFinalizerEntriesJobData *job_data = job_data_untyped;
+
+	scan_finalizer_entries (mono_sgen_get_copy_object (),
+			job_data->list,
+			mono_sgen_workers_get_job_gray_queue (worker_data));
+}
+
 static void
 verify_scan_starts (char *start, char *end)
 {
@@ -2540,6 +2555,7 @@ collect_nursery (size_t requested_size)
 	char *nursery_next;
 	FinishRememberedSetScanJobData frssjd;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
+	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
 	ScanThreadDataJobData stdjd;
 	mword fragment_total;
 	TV_DECLARE (all_atv);
@@ -2686,6 +2702,13 @@ collect_nursery (size_t requested_size)
 	if (mono_sgen_collection_is_parallel ())
 		g_assert (mono_sgen_gray_object_queue_is_empty (&gray_queue));
 
+	/* Scan the list of objects ready for finalization. If */
+	sfejd_fin_ready.list = fin_ready_list;
+	mono_sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_fin_ready);
+
+	sfejd_critical_fin.list = critical_fin_list;
+	mono_sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
+
 	finish_gray_stack (mono_sgen_get_nursery_start (), nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED (btv, atv);
@@ -2771,21 +2794,6 @@ mono_sgen_collect_nursery_no_lock (size_t requested_size)
 
 	mono_trace_message (MONO_TRACE_GC, "minor gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 	mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
-}
-
-typedef struct
-{
-	FinalizeReadyEntry *list;
-} ScanFinalizerEntriesJobData;
-
-static void
-job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
-{
-	ScanFinalizerEntriesJobData *job_data = job_data_untyped;
-
-	scan_finalizer_entries (major_collector.copy_or_mark_object,
-			job_data->list,
-			mono_sgen_workers_get_job_gray_queue (worker_data));
 }
 
 static gboolean
