@@ -529,8 +529,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 		fragment_total += frag_size;
 	} else {
 		/* Clear unused fragments, pinning depends on this */
-		/*TODO place an int[] here instead of the memset if size justify it*/
-		memset (frag_start, 0, frag_size);
+		mono_sgen_clear_range (frag_start, frag_end);
 		HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_small_areas, frag_size));
 	}
 }
