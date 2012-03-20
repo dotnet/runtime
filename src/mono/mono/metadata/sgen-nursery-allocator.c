@@ -464,6 +464,26 @@ mono_sgen_clear_nursery_fragments (void)
 	}
 }
 
+static void
+mono_sgen_clear_range (char *start, char *end)
+{
+	MonoArray *o;
+	size_t size = end - start;
+
+	if (size < sizeof (MonoArray)) {
+		memset (start, 0, size);
+		return;
+	}
+
+	o = (MonoArray*)start;
+	o->obj.vtable = mono_sgen_get_array_fill_vtable ();
+	/* Mark this as not a real object */
+	o->obj.synchronisation = GINT_TO_POINTER (-1);
+	o->bounds = NULL;
+	o->max_length = size - sizeof (MonoArray);
+	g_assert (start + mono_sgen_safe_object_get_size ((MonoObject*)o) == end);
+}
+
 void
 mono_sgen_nursery_allocator_prepare_for_pinning (void)
 {
@@ -478,19 +498,8 @@ mono_sgen_nursery_allocator_prepare_for_pinning (void)
 	 * - the start of each fragment (the last_obj + last_obj case)
 	 * The third encompasses the first two, since scan_locations [i] can't point inside a nursery fragment.
 	 */
-	for (frag = unmask (nursery_fragments); frag; frag = unmask (frag->next)) {
-		MonoArray *o;
-
-		g_assert (frag->fragment_end - frag->fragment_next >= sizeof (MonoArray));
-		o = (MonoArray*)frag->fragment_next;
-		memset (o, 0, sizeof (MonoArray));
-		g_assert (mono_sgen_get_array_fill_vtable ());
-		o->obj.vtable = mono_sgen_get_array_fill_vtable ();
-		/* Mark this as not a real object */
-		o->obj.synchronisation = GINT_TO_POINTER (-1);
-		o->max_length = (frag->fragment_end - frag->fragment_next) - sizeof (MonoArray);
-		g_assert (frag->fragment_next + mono_sgen_safe_object_get_size ((MonoObject*)o) == frag->fragment_end);
-	}
+	for (frag = unmask (nursery_fragments); frag; frag = unmask (frag->next))
+		mono_sgen_clear_range (frag->fragment_next, frag->fragment_end);
 }
 
 static mword fragment_total = 0;
