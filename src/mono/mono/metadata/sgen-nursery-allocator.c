@@ -481,6 +481,7 @@ mono_sgen_clear_range (char *start, char *end)
 	o->obj.synchronisation = GINT_TO_POINTER (-1);
 	o->bounds = NULL;
 	o->max_length = size - sizeof (MonoArray);
+	mono_sgen_set_nursery_scan_start (start);
 	g_assert (start + mono_sgen_safe_object_get_size ((MonoObject*)o) == end);
 }
 
@@ -561,7 +562,7 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 		frag_end = start [i];
 		/* remove the pin bit from pinned objects */
 		SGEN_UNPIN_OBJECT (frag_end);
-		nursery_section->scan_starts [((char*)frag_end - (char*)nursery_section->data)/SGEN_SCAN_START_SIZE] = frag_end;
+		mono_sgen_set_nursery_scan_start (frag_end);
 		frag_size = frag_end - frag_start;
 		if (frag_size)
 			add_nursery_frag (frag_size, frag_start, frag_end);
