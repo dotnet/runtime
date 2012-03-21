@@ -131,6 +131,8 @@ int mono_sgen_nursery_bits = 22;
 #endif
 
 
+static void mono_sgen_clear_range (char *start, char *end);
+
 #ifdef HEAVY_STATISTICS
 
 static gint32 stat_wasted_bytes_trailer = 0;
@@ -392,8 +394,7 @@ alloc_from_fragment (Fragment *frag, size_t size)
 		 * when doing second chance allocation.
 		 */
 		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION && claim_remaining_size (frag, end)) {
-			/* Clear the remaining space, pinning depends on this. FIXME move this to use phony arrays */
-			memset (end, 0, frag->fragment_end - end);
+			mono_sgen_clear_range (end, frag->fragment_end);
 			HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_trailer, frag->fragment_end - end));
 #ifdef NALLOC_DEBUG
 			add_alloc_record (end, frag->fragment_end - end, BLOCK_ZEROING);
@@ -456,7 +457,7 @@ mono_sgen_clear_nursery_fragments (void)
 
 		for (frag = unmask (nursery_fragments); frag; frag = unmask (frag->next)) {
 			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_next, frag->fragment_end));
-			memset (frag->fragment_next, 0, frag->fragment_end - frag->fragment_next);
+			mono_sgen_clear_range (frag->fragment_next, frag->fragment_end);
 #ifdef NALLOC_DEBUG
 			add_alloc_record (frag->fragment_next, frag->fragment_end - frag->fragment_next, CLEAR_NURSERY_FRAGS);
 #endif
