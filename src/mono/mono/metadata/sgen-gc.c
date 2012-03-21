@@ -1928,9 +1928,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
-	int fin_ready;
 	int done_with_ephemerons, ephemeron_rounds = 0;
-	int num_loops;
 	CopyOrMarkObjectFunc copy_func = mono_sgen_get_copy_object ();
 
 	/*
