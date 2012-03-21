@@ -106,7 +106,7 @@ struct _Fragment {
 	char *fragment_start;
 	char *fragment_next; /* the current soft limit for allocation */
 	char *fragment_end;
-	Fragment *next_free; /* We use a different entry for the free list so we can avoid SMR */
+	Fragment *next_in_order; /* We use a different entry for all active fragments so we can avoid SMR. */
 };
 
 /* Enable it so nursery allocation diagnostic data is collected */
@@ -114,6 +114,7 @@ struct _Fragment {
 
 /* fragments that are free and ready to be used for allocation */
 static Fragment *nursery_fragments = NULL;
+static Fragment *nursery_fragments_start = NULL;
 /* freeelist of fragment structures */
 static Fragment *fragment_freelist = NULL;
 
@@ -290,12 +291,12 @@ alloc_fragment (void)
 {
 	Fragment *frag = fragment_freelist;
 	if (frag) {
-		fragment_freelist = frag->next_free;
-		frag->next_free = NULL;
+		fragment_freelist = frag->next_in_order;
+		frag->next = frag->next_in_order = NULL;
 		return frag;
 	}
 	frag = mono_sgen_alloc_internal (INTERNAL_MEM_FRAGMENT);
-	frag->next_free = NULL;
+	frag->next = frag->next_in_order = NULL;
 	return frag;
 }
 
@@ -308,8 +309,24 @@ add_fragment (char *start, char *end)
 	fragment->fragment_start = start;
 	fragment->fragment_next = start;
 	fragment->fragment_end = end;
-	fragment->next = unmask (nursery_fragments);
-	nursery_fragments = fragment;
+	fragment->next_in_order = fragment->next = unmask (nursery_fragments);
+
+	nursery_fragments_start = nursery_fragments = fragment;
+}
+
+static void
+release_fragment_list (Fragment **root)
+{
+	Fragment *last = *root;
+	if (!last)
+		return;
+
+	/* Find the last fragment in insert order */
+	for (; last->next_in_order; last = last->next_in_order) ;
+
+	last->next_in_order = fragment_freelist;
+	fragment_freelist = *root;
+	*root = NULL;
 }
 
 static Fragment**
@@ -321,7 +338,7 @@ find_previous_pointer_fragment (Fragment *frag)
 
 try_again:
 	prev = &nursery_fragments;
-	if (count > 5)
+	if (count++ > 5)
 		printf ("retry count for fppf is %d\n", count);
 
 	cur = unmask (*prev);
@@ -428,12 +445,6 @@ alloc_from_fragment (Fragment *frag, size_t size)
 				prev_ptr = find_previous_pointer_fragment (frag);
 				continue;
 			}
-
-			/* No need to membar here since the worst that can happen is a CAS failure. */
-			do {
-				frag->next_free = fragment_freelist;
-			} while (InterlockedCompareExchangePointer ((volatile gpointer*)&fragment_freelist, frag, frag->next_free) != frag->next_free);
-
 			break;
 		}
 	}
@@ -546,14 +557,9 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 	reset_alloc_records ();
 #endif
 
-	while (unmask (nursery_fragments)) {
-		Fragment *nf = unmask (nursery_fragments);
-		Fragment *next = unmask (nf->next);
+	release_fragment_list (&nursery_fragments_start);
+	nursery_fragments = NULL;
 
-		nf->next_free = fragment_freelist;
-		fragment_freelist = nf;
-		nursery_fragments = next;
-	}
 	frag_start = mono_sgen_nursery_start;
 	fragment_total = 0;
 	/* clear scan starts */
@@ -582,9 +588,7 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 		for (i = 0; i < num_entries; ++i) {
 			DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", start [i], mono_sgen_safe_name (start [i]), mono_sgen_safe_object_get_size (start [i])));
 		}
-		
 	}
-
 	return fragment_total;
 }
 
