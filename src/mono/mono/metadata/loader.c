@@ -330,19 +330,18 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 	}
 		
 	case MONO_EXCEPTION_MISSING_FIELD: {
-		char *cnspace = g_strdup ((error->klass && *error->klass->name_space) ? error->klass->name_space : "");
-		char *cname = g_strdup (error->klass ? error->klass->name : "");
+		char *class_name;
 		char *cmembername = g_strdup (error->member_name);
-                char *class_name;
+		if (error->klass)
+			class_name = mono_type_get_full_name (error->klass);
+		else
+			class_name = g_strdup ("");
 
 		mono_loader_clear_error ();
-		class_name = g_strdup_printf ("%s%s%s", cnspace, cnspace ? "." : "", cname);
 		
 		ex = mono_get_exception_missing_field (class_name, cmembername);
 		g_free (class_name);
-		g_free (cname);
 		g_free (cmembername);
-		g_free (cnspace);
 		break;
         }
 	
