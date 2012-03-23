@@ -32,4 +32,5 @@
 /buildver.h
 /TAGS
 /mono-sgen
+/buildver-sgen.h
 
