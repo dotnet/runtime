@@ -29,7 +29,7 @@
 MONO_BEGIN_DECLS
 
 enum {
-	MONO_SGEN_BRIDGE_VERSION = 1
+	MONO_SGEN_BRIDGE_VERSION = 2
 };
 	
 typedef struct {
@@ -45,6 +45,7 @@ typedef struct {
 typedef struct {
 	int bridge_version;
 	mono_bool (*is_bridge_class) (MonoClass *class);
+	mono_bool (*is_bridge_object) (MonoObject *object);
 	void (*cross_references) (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs);
 } MonoGCBridgeCallbacks;
 
