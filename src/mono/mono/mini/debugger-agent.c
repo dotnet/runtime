@@ -862,6 +862,8 @@ mono_debugger_agent_parse_options (char *options)
 		}
 	}
 
+	//agent_config.log_level = 0;
+
 	if (agent_config.transport == NULL) {
 		fprintf (stderr, "debugger-agent: The 'transport' option is mandatory.\n");
 		exit (1);
@@ -2616,7 +2618,7 @@ resume_vm (void)
 	g_assert (suspend_count > 0);
 	suspend_count --;
 
-	DEBUG(1, fprintf (log_file, "[%p] Resuming vm...\n", (gpointer)GetCurrentThreadId ()));
+	DEBUG(1, fprintf (log_file, "[%p] Resuming vm, suspend count=%d...\n", (gpointer)GetCurrentThreadId (), suspend_count));
 
 	if (suspend_count == 0) {
 		// FIXME: Is it safe to call this inside the lock ?
@@ -4275,7 +4277,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	ss_reqs = g_ptr_array_new ();
 	ss_reqs_orig = g_ptr_array_new ();
 
-	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, native_offset));
+	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, orig_ip, native_offset));
 
 	mono_loader_lock ();
 
@@ -5892,7 +5894,7 @@ invoke_method (void)
 	DebuggerTlsData *tls;
 	InvokeData *invoke;
 	int id;
-	int err;
+	int i, err;
 	Buffer buf;
 	static void (*restore_context) (void *);
 	MonoContext restore_ctx;
@@ -5928,8 +5930,10 @@ invoke_method (void)
 	err = do_invoke_method (tls, &buf, invoke);
 
 	/* Start suspending before sending the reply */
-	if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED))
-		suspend_vm ();
+	if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED)) {
+		for (i = 0; i < invoke->suspend_count; ++i)
+			suspend_vm ();
+	}
 
 	send_reply_packet (id, err, &buf);
 	
@@ -6160,7 +6164,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		int objid = decode_objid (p, &p, end);
 		MonoThread *thread;
 		DebuggerTlsData *tls;
-		int err, flags;
+		int i, count, err, flags;
 
 		err = get_object (objid, (MonoObject**)&thread);
 		if (err)
@@ -6197,10 +6201,14 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
 
-		if (flags & INVOKE_FLAG_SINGLE_THREADED)
+		if (flags & INVOKE_FLAG_SINGLE_THREADED) {
 			resume_thread (THREAD_TO_INTERNAL (thread));
-		else
-			resume_vm ();
+		}
+		else {
+			count = suspend_count;
+			for (i = 0; i < count; ++i)
+				resume_vm ();
+		}
 		break;
 	}
 	case CMD_VM_ABORT_INVOKE: {
