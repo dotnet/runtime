@@ -4277,7 +4277,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	ss_reqs = g_ptr_array_new ();
 	ss_reqs_orig = g_ptr_array_new ();
 
-	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, orig_ip, native_offset));
+	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, ip, native_offset));
 
 	mono_loader_lock ();
 
