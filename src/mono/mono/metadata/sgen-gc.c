@@ -3205,17 +3205,23 @@ report_internal_mem_usage (void)
  */
 
 /*
- * this is valid for the nursery: if the object has been forwarded it means it's
- * still refrenced from a root. If it is pinned it's still alive as well.
+ * If the object has been forwarded it means it's still referenced from a root. 
+ * If it is pinned it's still alive as well.
+ * A LOS object is only alive if we have pinned it.
  * Return TRUE if @obj is ready to be finalized.
  */
-#define object_is_fin_ready(obj) (!object_is_pinned (obj) && !object_is_forwarded (obj))
-
+static inline gboolean
+mono_sgen_nursery_is_object_alive (void *object)
+{
+	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
+		return TRUE;
+	return major_collector.is_object_live (object);
+}
 
 gboolean
 mono_sgen_gc_is_object_ready_for_finalization (void *object)
 {
-	return !major_collector.is_object_live (object) && object_is_fin_ready (object);
+	return !mono_sgen_nursery_is_object_alive (object);
 }
 
 static gboolean
@@ -3250,7 +3256,8 @@ object_is_reachable (char *object, char *start, char *end)
 	/*This happens for non nursery objects during minor collections. We just treat all objects as alive.*/
 	if (object < start || object >= end)
 		return TRUE;
-	return !object_is_fin_ready (object) || major_collector.is_object_live (object);
+
+	return mono_sgen_nursery_is_object_alive (object);
 }
 
 #include "sgen-fin-weak-hash.c"

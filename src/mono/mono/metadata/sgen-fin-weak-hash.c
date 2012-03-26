@@ -89,7 +89,7 @@ collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, 
 			continue;
 
 		/* Nursery says the object is dead. */
-		if (!object_is_fin_ready (object))
+		if (!mono_sgen_gc_is_object_ready_for_finalization (object))
 			continue;
 
 		if (!mono_sgen_is_bridge_object (object))
@@ -133,7 +133,7 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 		int tag = tagged_object_get_tag (object);
 		object = tagged_object_get_object (object);
 		if ((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)) {
-			gboolean is_fin_ready = object_is_fin_ready (object);
+			gboolean is_fin_ready = mono_sgen_gc_is_object_ready_for_finalization (object);
 			MonoObject *copy = object;
 			copy_func ((void**)&copy, queue);
 			if (is_fin_ready) {
@@ -408,7 +408,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 			object = DISLINK_OBJECT (link);
 
 			if (object >= start && object < end && !major_collector.is_object_live (object)) {
-				if (object_is_fin_ready (object)) {
+				if (mono_sgen_gc_is_object_ready_for_finalization (object)) {
 					*link = NULL;
 					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", link, object));
 					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
