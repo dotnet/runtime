@@ -376,6 +376,11 @@ encode_frame_reg (int frame_reg)
 		return 0;
 	else if (frame_reg == ARMREG_FP)
 		return 1;
+#elif defined(TARGET_S390X)
+	if (frame_reg == S390_SP)
+		return 0;
+	else if (frame_reg == S390_FP)
+		return 1;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -401,6 +406,11 @@ decode_frame_reg (int encoded)
 		return ARMREG_SP;
 	else if (encoded == 1)
 		return ARMREG_FP;
+#elif defined(TARGET_S390X)
+	if (encoded == 0)
+		return S390_SP;
+	else if (encoded == 1)
+		return S390_FP;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -418,6 +428,8 @@ static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, 
 static int callee_saved_regs [] = { X86_EBX, X86_ESI, X86_EDI };
 #elif defined(TARGET_ARM)
 static int callee_saved_regs [] = { ARMREG_V1, ARMREG_V2, ARMREG_V3, ARMREG_V4, ARMREG_V5, ARMREG_V7, ARMREG_FP };
+#elif defined(TARGET_S390X)
+static int callee_saved_regs [] = { s390_r6, s390_r7, s390_r8, s390_r9, s390_r10, s390_r11, s390_r12, s390_r13, s390_r14 };
 #endif
 
 static guint32
@@ -652,6 +664,11 @@ get_frame_pointer (MonoContext *ctx, int frame_reg)
 		if (frame_reg == ARMREG_SP)
 			return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 		else if (frame_reg == ARMREG_FP)
+			return (mgreg_t)MONO_CONTEXT_GET_BP (ctx);
+#elif defined(TARGET_S390X)
+		if (frame_reg == S390_SP)
+			return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
+		else if (frame_reg == S390_FP)
 			return (mgreg_t)MONO_CONTEXT_GET_BP (ctx);
 #endif
 		g_assert_not_reached ();
@@ -1981,7 +1998,7 @@ compute_frame_size (MonoCompile *cfg)
 	/* Compute min/max offsets from the fp */
 
 	/* Locals */
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_S390X)
 	locals_min_offset = ALIGN_TO (cfg->locals_min_stack_offset, SIZEOF_SLOT);
 	locals_max_offset = cfg->locals_max_stack_offset;
 #else
@@ -2032,6 +2049,8 @@ compute_frame_size (MonoCompile *cfg)
 #elif defined(TARGET_X86)
 	min_offset = MIN (min_offset, - (cfg->arch.sp_fp_offset + cfg->arch.param_area_size));
 #elif defined(TARGET_ARM)
+	// FIXME:
+#elif defined(TARGET_s390X)
 	// FIXME:
 #else
 	NOT_IMPLEMENTED;

@@ -840,7 +840,11 @@ create_allocator (int atype)
 		mono_mb_emit_ldloc (mb, p_var);
 		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, max_length));
 		mono_mb_emit_ldarg (mb, 1);
+#ifdef MONO_BIG_ARRAYS
 		mono_mb_emit_byte (mb, CEE_STIND_I);
+#else
+		mono_mb_emit_byte (mb, CEE_STIND_I4);
+#endif
 	}
 
 	/*
