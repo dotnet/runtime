@@ -60,7 +60,11 @@ moon-do-clean:
 	-test -z "libmonoruntimemoon.la" || rm -f libmonoruntimemoon.la
 endif
 
+if DISABLE_EXECUTABLES
+noinst_LTLIBRARIES =
+else
 noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries) $(moonlight_libraries)
+endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 

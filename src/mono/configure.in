@@ -859,6 +859,9 @@ if test "x$mono_feature_disable_shared_perfcounters" = "xyes"; then
 	AC_MSG_NOTICE([Disabled Shared perfcounters.])
 fi
 
+AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
+AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)
+
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_COMPILE_IFELSE([
 	AC_LANG_SOURCE([[

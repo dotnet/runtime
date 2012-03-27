@@ -101,10 +101,13 @@ boehm_static_libraries = libmono-static.la
 boehm_binaries  = mono
 endif
 
+if DISABLE_EXECUTABLES
+else
 if HOST_WIN32
 bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries) monow
 else
 bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries)
+endif
 endif
 
 noinst_PROGRAMS = genmdesc
@@ -114,7 +117,12 @@ shared_libraries = $(boehm_libraries) $(sgen_libraries)
 endif
 
 lib_LTLIBRARIES = $(shared_libraries)
+
+if DISABLE_EXECUTABLES
+noinst_LTLIBRARIES =
+else
 noinst_LTLIBRARIES = $(boehm_static_libraries) $(sgen_static_libraries)
+endif
 
 if MOONLIGHT
 noinst_LTLIBRARIES += libmono-moon.la
