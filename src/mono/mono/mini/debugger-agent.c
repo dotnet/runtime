@@ -3623,13 +3623,15 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	mono_loader_lock ();
 	thread = mono_g_hash_table_lookup (tid_to_thread, (gpointer)tid);
 	if (thread) {
-		tls = mono_g_hash_table_lookup (thread_to_tls, thread);
-		/* FIXME: Maybe we need to free this instead, but some code can't handle that */
-		tls->terminated = TRUE;
 		mono_g_hash_table_remove (tid_to_thread_obj, (gpointer)tid);
-		/* Can't remove from tid_to_thread, as that would defeat the check in thread_start () */
-		MONO_GC_UNREGISTER_ROOT (tls->thread);
-		tls->thread = NULL;
+		tls = mono_g_hash_table_lookup (thread_to_tls, thread);
+		if (tls) {
+			/* FIXME: Maybe we need to free this instead, but some code can't handle that */
+			tls->terminated = TRUE;
+			/* Can't remove from tid_to_thread, as that would defeat the check in thread_start () */
+			MONO_GC_UNREGISTER_ROOT (tls->thread);
+			tls->thread = NULL;
+		}
 	}
 	mono_loader_unlock ();
 
