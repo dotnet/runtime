@@ -279,10 +279,9 @@ static int current_time;
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 {
-	if (callbacks->bridge_version != MONO_SGEN_BRIDGE_VERSION) {
-		fprintf (stderr, "Invalid bridge callback version. Expected %d but got %d\n", MONO_SGEN_BRIDGE_VERSION, callbacks->bridge_version);
-		exit (1);
-	}
+	if (callbacks->bridge_version != MONO_SGEN_BRIDGE_VERSION)
+		g_error ("Invalid bridge callback version. Expected %d but got %d\n", MONO_SGEN_BRIDGE_VERSION, callbacks->bridge_version);
+
 	bridge_callbacks = *callbacks;
 }
 
