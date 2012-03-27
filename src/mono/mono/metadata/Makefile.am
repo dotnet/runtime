@@ -61,7 +61,7 @@ moon-do-clean:
 endif
 
 if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES =
+noinst_LTLIBRARIES = $(shared_sgen_libraries) $(shared_boehm_libraries)
 else
 noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries) $(moonlight_libraries)
 endif
