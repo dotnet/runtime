@@ -8012,6 +8012,8 @@ mono_arch_finish_init (void)
 		appdomain_tls_offset = -1;
 	if (lmf_tls_offset >= 64)
 		lmf_tls_offset = -1;
+	if (lmf_addr_tls_offset >= 64)
+		lmf_addr_tls_offset = -1;
 #else
 #ifdef MONO_XEN_OPT
 	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
