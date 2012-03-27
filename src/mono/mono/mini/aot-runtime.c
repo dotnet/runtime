@@ -1939,7 +1939,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint8 *fde, *cie, *code_start, *code_end;
 	int version, fde_count;
 	gint32 *table;
-	int i, j, pos, left, right, offset, offset1, offset2, code_len;
+	int i, j, pos, left, right, offset, offset1, offset2, code_len, func_encoding;
 	MonoJitExceptionInfo *ei;
 	guint32 fde_len, ei_len, nested_len, nindex;
 	gpointer *type_info;
@@ -1954,8 +1954,14 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	/* Header */
 	version = *p;
-	g_assert (version == 1);
+	g_assert (version == 1 || version == 2);
 	p ++;
+	if (version == 2) {
+		func_encoding = *p;
+		p ++;
+	} else {
+		func_encoding = DW_EH_PE_pcrel;
+	}
 	p = ALIGN_PTR_TO (p, 4);
 
 	fde_count = *(guint32*)p;
@@ -1974,11 +1980,23 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		pos = (left + right) / 2;
 
 		offset1 = table [(pos * 2)];
-		if (pos + 1 == fde_count)
+		if (pos + 1 == fde_count) {
 			/* FIXME: */
 			offset2 = amodule->code_end - amodule->code;
-		else
+		} else {
+			/* Encoded as DW_EH_PE_pcrel, but relative to mono_eh_frame */
 			offset2 = table [(pos + 1) * 2];
+		}
+
+		if (func_encoding == DW_EH_PE_absptr) {
+			/*
+			 * Encoded as DW_EH_PE_absptr, because the ios linker can move functions inside object files to make thumb work,
+			 * so the offsets between two symbols in the text segment are not assembler constant.
+			 */
+			g_assert (sizeof(gpointer) == 4);
+			offset1 -= (gint32)(gsize)amodule->mono_eh_frame;
+			offset2 -= (gint32)(gsize)amodule->mono_eh_frame;
+		}
 
 		if (offset < offset1)
 			right = pos;
@@ -1988,9 +2006,14 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 			break;
 	}
 
-	code_start = amodule->mono_eh_frame + table [(pos * 2)];
-	/* This won't overflow because there is +1 entry in the table */
-	code_end = amodule->mono_eh_frame + table [(pos * 2) + 2];
+	if (func_encoding == DW_EH_PE_absptr) {
+		code_start = (gpointer)(gsize)table [(pos * 2)];
+		code_end = (gpointer)(gsize)table [(pos * 2) + 2];
+	} else {
+		code_start = amodule->mono_eh_frame + table [(pos * 2)];
+		/* This won't overflow because there is +1 entry in the table */
+		code_end = amodule->mono_eh_frame + table [(pos * 2) + 2];
+	}
 	code_len = code_end - code_start;
 
 	g_assert (code >= code_start && code < code_end);

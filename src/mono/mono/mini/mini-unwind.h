@@ -92,6 +92,24 @@ typedef struct {
 #define mono_add_unwind_op_same_value(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_same_value, (reg), 0)); } while (0)
 #define mono_add_unwind_op_offset(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_offset, (reg), (offset))); } while (0)
 
+/* Pointer Encoding in the .eh_frame */
+enum {
+	DW_EH_PE_absptr = 0x00,
+	DW_EH_PE_omit = 0xff,
+
+	DW_EH_PE_udata4 = 0x03,
+	DW_EH_PE_sdata4 = 0x0b,
+	DW_EH_PE_sdata8 = 0x0c,
+
+	DW_EH_PE_pcrel = 0x10,
+	DW_EH_PE_textrel = 0x20,
+	DW_EH_PE_datarel = 0x30,
+	DW_EH_PE_funcrel = 0x40,
+	DW_EH_PE_aligned = 0x50,
+
+	DW_EH_PE_indirect = 0x80
+};
+
 int
 mono_hw_reg_to_dwarf_reg (int reg) MONO_INTERNAL;
 
