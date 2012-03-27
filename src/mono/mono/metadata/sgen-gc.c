@@ -3267,6 +3267,7 @@ mono_sgen_object_is_live (void *obj)
 {
 	if (ptr_in_nursery (obj))
 		return object_is_pinned (obj);
+	/* FIXME This is semantically wrong! All tenured object are considered alive during a nursery collection. */
 	if (current_collection_generation == GENERATION_NURSERY)
 		return FALSE;
 	return major_collector.is_object_live (obj);
