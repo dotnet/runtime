@@ -8,6 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+
 public class Tests
 {
 
@@ -653,6 +654,13 @@ public class Tests
 				}
 			}
 			#endregion // SafeArray Tests
+
+			#region COM Visible Test
+			TestVisible test_vis = new TestVisible();
+			IntPtr pDisp = Marshal.GetIDispatchForObject(test_vis);
+			if (pDisp == IntPtr.Zero)
+				return 200;
+			#endregion 
 		}
 
         return 0;
@@ -1213,4 +1221,8 @@ public class Tests
 		}
 		return 0;
 	}
+}
+
+public class TestVisible
+{
 }

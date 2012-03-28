@@ -392,7 +392,7 @@ cominterop_com_visible (MonoClass* klass)
 	MonoError error;
 	MonoCustomAttrInfo *cinfo;
 	GPtrArray *ifaces;
-	MonoBoolean visible = 0;
+	MonoBoolean visible = 1;
 
 	/* Handle the ComVisibleAttribute */
 	if (!ComVisibleAttribute)
