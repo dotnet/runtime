@@ -3147,6 +3147,11 @@ msvc/Makefile
 po/Makefile
 ])
 
+if ! test -f external/aspnetwebstack/README.md; then
+	git submodule init
+	git submodule update
+fi
+
 if test x$host_win32 = xyes; then
    # Get rid of 'cyg' prefixes in library names
    sed -e "s/\/cyg\//\/\//" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
