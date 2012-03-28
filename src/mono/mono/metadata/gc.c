@@ -1533,7 +1533,7 @@ mono_gc_bzero (void *dest, size_t size)
 {
 	char *p = (char*)dest;
 	char *end = p + size;
-	char *align_end = p + unaligned_bytes (p);
+	char *align_end = align_up (p);
 	char *word_end;
 
 	while (p < align_end)
