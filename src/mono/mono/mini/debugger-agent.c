@@ -6194,7 +6194,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		 * resumed.
 		 */
 		if (tls->pending_invoke)
-			NOT_IMPLEMENTED;
+			return ERR_NOT_SUSPENDED;
 		tls->pending_invoke = g_new0 (InvokeData, 1);
 		tls->pending_invoke->id = id;
 		tls->pending_invoke->flags = flags;
