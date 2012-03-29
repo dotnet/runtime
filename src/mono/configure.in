@@ -3147,7 +3147,7 @@ msvc/Makefile
 po/Makefile
 ])
 
-# Update all submodules recursively to ensure everything is checked out
+# Update all sub-modules recursively to ensure everything is checked out
 if test -d .git; then
 	git submodule update --init --recursive
 fi
