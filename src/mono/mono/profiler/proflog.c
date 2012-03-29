@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <glib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -1858,6 +1859,15 @@ helper_thread (void* arg)
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
+		
+		if (len < 0) {
+			if (errno == EINTR)
+				continue;
+			
+			g_warning ("Error in proflog server: %s", strerror (errno));
+			return NULL;
+		}
+		
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
 			char c;
 			int r = read (prof->pipes [0], &c, 1);
