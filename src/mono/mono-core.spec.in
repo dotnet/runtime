@@ -875,19 +875,25 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.0/System.Web.Abstractions.dll
 %_prefix/lib/mono/4.0/System.Web.ApplicationServices.dll
 %_prefix/lib/mono/4.0/System.Web.Routing.dll
-%_prefix/lib/mono/4.0/System.Web.Razor.dll
 %_prefix/lib/mono/4.0/System.Web.Services.dll
 %_prefix/lib/mono/4.0/System.Web.dll
 %_prefix/lib/mono/4.5/Mono.Http.dll
 %_prefix/lib/mono/4.5/Mono.Web.dll
+%_prefix/lib/mono/4.5/Newtonsoft.Json.dll
 %_prefix/lib/mono/4.5/System.ComponentModel.Composition.dll
 %_prefix/lib/mono/4.5/System.ComponentModel.DataAnnotations.dll
+%_prefix/lib/mono/4.5/System.Net.Http.Formatting.dll
 %_prefix/lib/mono/4.5/System.Runtime.Remoting.dll
 %_prefix/lib/mono/4.5/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/4.5/System.Web.Abstractions.dll
 %_prefix/lib/mono/4.5/System.Web.ApplicationServices.dll
+%_prefix/lib/mono/4.5/System.Web.Http.dll
 %_prefix/lib/mono/4.5/System.Web.Routing.dll
+%_prefix/lib/mono/4.5/System.Web.Razor.dll
 %_prefix/lib/mono/4.5/System.Web.Services.dll
+%_prefix/lib/mono/4.5/System.Web.WebPages.Deployment.dll
+%_prefix/lib/mono/4.5/System.Web.WebPages.Razor.dll
+%_prefix/lib/mono/4.5/System.Web.WebPages.dll
 %_prefix/lib/mono/4.5/System.Web.dll
 %_prefix/lib/mono/4.5/disco.exe*
 %_prefix/lib/mono/4.5/mconfig.exe*
@@ -898,15 +904,22 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/Microsoft.Web.Infrastructure
 %_prefix/lib/mono/gac/Mono.Http
 %_prefix/lib/mono/gac/Mono.Web
+%_prefix/lib/mono/gac/Newtonsoft.Json
 %_prefix/lib/mono/gac/System.ComponentModel.Composition
 %_prefix/lib/mono/gac/System.ComponentModel.DataAnnotations
+%_prefix/lib/mono/gac/System.Net.Http.Formatting
 %_prefix/lib/mono/gac/System.Runtime.Remoting
 %_prefix/lib/mono/gac/System.Runtime.Serialization.Formatters.Soap
 %_prefix/lib/mono/gac/System.Web
 %_prefix/lib/mono/gac/System.Web.Abstractions
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
+%_prefix/lib/mono/gac/System.Web.Http
 %_prefix/lib/mono/gac/System.Web.Routing
+%_prefix/lib/mono/gac/System.Web.Razor
 %_prefix/lib/mono/gac/System.Web.Services
+%_prefix/lib/mono/gac/System.Web.WebPages.Deployment
+%_prefix/lib/mono/gac/System.Web.WebPages.Razor
+%_prefix/lib/mono/gac/System.Web.WebPages
 
 %package -n mono-mvc
 License:        MIT License (or similar) ; Ms-Pl
@@ -939,6 +952,7 @@ Mono implementation of ASP.NET MVC.
 %_prefix/lib/mono/4.5/System.Web.DynamicData.dll
 %_prefix/lib/mono/4.5/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/4.5/System.Web.Extensions.dll
+%_prefix/lib/mono/4.5/System.Web.Mvc.dll
 %_prefix/lib/mono/compat-2.0/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/compat-2.0/System.Web.Extensions.dll
 %_prefix/lib/mono/compat-2.0/System.Web.Mvc.dll
@@ -1202,7 +1216,6 @@ Mono development tools.
 %_prefix/lib/mono/4.0/Microsoft.Common.tasks
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
 %_prefix/lib/mono/4.0/Mono.Debugger.Soft.dll
-%_prefix/lib/mono/4.0/Mono.CodeContracts.dll
 %_prefix/lib/mono/4.0/PEAPI.dll
 %_prefix/lib/mono/4.5/Microsoft.Build.dll
 %_prefix/lib/mono/4.5/Microsoft.Build.Engine.dll
