@@ -3211,7 +3211,7 @@ report_internal_mem_usage (void)
  * Return TRUE if @obj is ready to be finalized.
  */
 static inline gboolean
-mono_sgen_nursery_is_object_alive (void *object)
+mono_sgen_is_object_alive (void *object)
 {
 	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
 		return TRUE;
@@ -3221,7 +3221,7 @@ mono_sgen_nursery_is_object_alive (void *object)
 gboolean
 mono_sgen_gc_is_object_ready_for_finalization (void *object)
 {
-	return !mono_sgen_nursery_is_object_alive (object);
+	return !mono_sgen_is_object_alive (object);
 }
 
 static gboolean
@@ -3257,7 +3257,7 @@ object_is_reachable (char *object, char *start, char *end)
 	if (object < start || object >= end)
 		return TRUE;
 
-	return mono_sgen_nursery_is_object_alive (object);
+	return mono_sgen_is_object_alive (object);
 }
 
 #include "sgen-fin-weak-hash.c"
