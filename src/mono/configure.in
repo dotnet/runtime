@@ -3147,9 +3147,9 @@ msvc/Makefile
 po/Makefile
 ])
 
-if ! test -f external/aspnetwebstack/README.md; then
-	git submodule init
-	git submodule update
+# Update all submodules recursively to ensure everything is checked out
+if test -d .git; then
+	git submodule update --init --recursive
 fi
 
 if test x$host_win32 = xyes; then
