@@ -714,6 +714,12 @@ alloc_obj_par (int size, gboolean pinned, gboolean has_references)
 
 	return obj;
 }
+
+static void*
+major_par_alloc_object (int size, gboolean has_references)
+{
+	return alloc_obj_par (size, FALSE, has_references);
+}
 #endif
 
 static void*
@@ -2068,6 +2074,9 @@ mono_sgen_marksweep_init
 	collector->alloc_degraded = major_alloc_degraded;
 	collector->copy_or_mark_object = major_copy_or_mark_object;
 	collector->alloc_object = major_alloc_object;
+#ifdef SGEN_PARALLEL_MARK
+	collector->par_alloc_object = major_par_alloc_object;
+#endif
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;

@@ -524,6 +524,7 @@ struct _SgenMajorCollector {
 	void (*copy_object) (void **obj_slot, SgenGrayQueue *queue);
 	void (*nopar_copy_object) (void **obj_slot, SgenGrayQueue *queue);
 	void* (*alloc_object) (int size, gboolean has_references);
+	void* (*par_alloc_object) (int size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);
