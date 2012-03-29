@@ -3276,7 +3276,7 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
 /* thunks.cs:TestStruct */
 typedef struct _TestStruct {
 	int A;
-	double B ALIGN(8);  /* align according to  mono's struct layout */
+	double B;
 } TestStruct;
 
 /* Searches for mono symbols in all loaded modules */
