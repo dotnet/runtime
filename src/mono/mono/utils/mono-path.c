@@ -33,6 +33,8 @@
 
 /* For Native Client, the above is not true.  Since there is no getcwd we fill */
 /* in the file being passed in relative to '.' and don't resolve it            */
+
+/* There are a couple of tests for this method in mono/test/mono-path.cs */
 gchar *
 mono_path_canonicalize (const char *path)
 {
@@ -90,7 +92,20 @@ mono_path_canonicalize (const char *path)
 #endif
 	
 	if (dest != lastpos) strcpy (dest, lastpos);
-	return g_strreverse (abspath);
+	
+	g_strreverse (abspath);
+
+	/* We strip away all trailing dir separators. This is not correct for the root directory,
+	 * since we'll return an empty string, so re-append a dir separator if there is none in the
+	 * result */
+	if (strchr (abspath, G_DIR_SEPARATOR) == NULL) {
+		int len = strlen (abspath);
+		abspath = g_realloc (abspath, len + 2);
+		abspath [len] = G_DIR_SEPARATOR;
+		abspath [len+1] = 0;
+	}
+
+	return abspath;
 }
 
 /*
