@@ -396,7 +396,7 @@ claim_remaining_size (Fragment *frag, char *alloc_end)
 }
 
 static void*
-alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t size)
+par_alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t size)
 {
 	char *p = frag->fragment_next;
 	char *end = p + size;
@@ -460,6 +460,147 @@ alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t size)
 
 	return p;
 }
+
+static void*
+serial_alloc_from_fragment (Fragment **previous, Fragment *frag, size_t size)
+{
+	char *p = frag->fragment_next;
+	char *end = p + size;
+
+	if (end > frag->fragment_end)
+		return NULL;
+
+	frag->fragment_next = end;
+
+	if (frag->fragment_end - end < SGEN_MAX_NURSERY_WASTE) {
+		*previous = frag->next;
+		
+		/* Clear the remaining space, pinning depends on this. FIXME move this to use phony arrays */
+		memset (end, 0, frag->fragment_end - end);
+
+		*previous = frag->next;
+	}
+
+	return p;
+}
+
+static void*
+par_alloc (FragmentAllocator *allocator, size_t size)
+{
+	Fragment *frag;
+
+#ifdef NALLOC_DEBUG
+	InterlockedIncrement (&alloc_count);
+#endif
+
+restart:
+	for (frag = unmask (allocator->alloc_head); unmask (frag); frag = unmask (frag->next)) {
+		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
+
+		if (size <= (frag->fragment_end - frag->fragment_next)) {
+			void *p = par_alloc_from_fragment (allocator, frag, size);
+			if (!p) {
+				HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
+				goto restart;
+			}
+#ifdef NALLOC_DEBUG
+			add_alloc_record (p, size, FIXED_ALLOC);
+#endif
+			return p;
+		}
+	}
+	return NULL;
+}
+
+static void*
+serial_alloc (FragmentAllocator *allocator, size_t size)
+{
+	Fragment *frag;
+	Fragment **previous;
+#ifdef NALLOC_DEBUG
+	InterlockedIncrement (&alloc_count);
+#endif
+
+	previous = &allocator->alloc_head;
+
+	for (frag = *previous; frag; frag = *previous) {
+		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
+		char *p = serial_alloc_from_fragment (previous, frag, size);
+		if (p) {
+#ifdef NALLOC_DEBUG
+			add_alloc_record (p, size, FIXED_ALLOC);
+#endif
+			return p;
+		}
+		previous = &frag->next;
+	}
+	return NULL;
+}
+
+static void*
+par_range_alloc (FragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size)
+{
+	Fragment *frag, *min_frag;
+restart:
+	min_frag = NULL;
+
+#ifdef NALLOC_DEBUG
+	InterlockedIncrement (&alloc_count);
+#endif
+
+	for (frag = unmask (allocator->alloc_head); frag; frag = unmask (frag->next)) {
+		int frag_size = frag->fragment_end - frag->fragment_next;
+
+		HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_iterations));
+
+		if (desired_size <= frag_size) {
+			void *p;
+			*out_alloc_size = desired_size;
+
+			p = par_alloc_from_fragment (allocator, frag, desired_size);
+			if (!p) {
+				HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_retries));
+				goto restart;
+			}
+#ifdef NALLOC_DEBUG
+			add_alloc_record (p, desired_size, RANGE_ALLOC);
+#endif
+			return p;
+		}
+		if (minimum_size <= frag_size)
+			min_frag = frag;
+	}
+
+	/* The second fragment_next read should be ordered in respect to the first code block */
+	mono_memory_barrier ();
+
+	if (min_frag) {
+		void *p;
+		int frag_size;
+
+		frag_size = min_frag->fragment_end - min_frag->fragment_next;
+		if (frag_size < minimum_size)
+			goto restart;
+
+		*out_alloc_size = frag_size;
+
+		mono_memory_barrier ();
+		p = par_alloc_from_fragment (allocator, min_frag, frag_size);
+
+		/*XXX restarting here is quite dubious given this is already second chance allocation. */
+		if (!p) {
+			HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
+			goto restart;
+		}
+#ifdef NALLOC_DEBUG
+		add_alloc_record (p, frag_size, RANGE_ALLOC);
+#endif
+		return p;
+	}
+
+	return NULL;
+}
+
 
 void
 mono_sgen_clear_current_nursery_fragment (void)
@@ -629,101 +770,22 @@ mono_sgen_can_alloc_size (size_t size)
 void*
 mono_sgen_nursery_alloc (size_t size)
 {
-	Fragment *frag;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery for size: %zd\n", size));
 	size = SGEN_ALIGN_UP (size);
 
 	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_requests));
 
-#ifdef NALLOC_DEBUG
-	InterlockedIncrement (&alloc_count);
-#endif
-
-restart:
-	for (frag = unmask (nursery_allocator.alloc_head); frag; frag = unmask (frag->next)) {
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
-
-		if (size <= (frag->fragment_end - frag->fragment_next)) {
-			void *p = alloc_from_fragment (&nursery_allocator, frag, size);
-			if (!p) {
-				HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
-				goto restart;
-			}
-#ifdef NALLOC_DEBUG
-			add_alloc_record (p, size, FIXED_ALLOC);
-#endif
-			return p;
-		}
-	}
-	return NULL;
+	return par_alloc (&nursery_allocator, size);
 }
 
 void*
 mono_sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *out_alloc_size)
 {
-	Fragment *frag, *min_frag;
 	DEBUG (4, fprintf (gc_debug_file, "Searching for byte range desired size: %zd minimum size %zd\n", desired_size, minimum_size));
 
 	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_range_requests));
 
-restart:
-	min_frag = NULL;
-
-#ifdef NALLOC_DEBUG
-	InterlockedIncrement (&alloc_count);
-#endif
-
-	for (frag = unmask (nursery_allocator.alloc_head); frag; frag = unmask (frag->next)) {
-		int frag_size = frag->fragment_end - frag->fragment_next;
-
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_iterations));
-
-		if (desired_size <= frag_size) {
-			void *p;
-			*out_alloc_size = desired_size;
-
-			p = alloc_from_fragment (&nursery_allocator, frag, desired_size);
-			if (!p) {
-				HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_retries));
-				goto restart;
-			}
-#ifdef NALLOC_DEBUG
-			add_alloc_record (p, desired_size, RANGE_ALLOC);
-#endif
-			return p;
-		}
-		if (minimum_size <= frag_size)
-			min_frag = frag;
-	}
-
-	/* The second fragment_next read should be ordered in respect to the first code block */
-	mono_memory_barrier ();
-
-	if (min_frag) {
-		void *p;
-		int frag_size;
-
-		frag_size = min_frag->fragment_end - min_frag->fragment_next;
-		if (frag_size < minimum_size)
-			goto restart;
-
-		*out_alloc_size = frag_size;
-
-		mono_memory_barrier ();
-		p = alloc_from_fragment (&nursery_allocator, min_frag, frag_size);
-
-		/*XXX restarting here is quite dubious given this is already second chance allocation. */
-		if (!p) {
-			HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
-			goto restart;
-		}
-#ifdef NALLOC_DEBUG
-		add_alloc_record (p, frag_size, RANGE_ALLOC);
-#endif
-		return p;
-	}
-
-	return NULL;
+	return par_range_alloc (&nursery_allocator, desired_size, minimum_size, out_alloc_size);
 }
 
 /*** Initialization ***/
