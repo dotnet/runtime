@@ -724,7 +724,6 @@ FILE *mono_sgen_get_logfile (void) MONO_INTERNAL;
 
 void mono_sgen_clear_nursery_fragments (void) MONO_INTERNAL;
 void mono_sgen_nursery_allocator_prepare_for_pinning (void) MONO_INTERNAL;
-void mono_sgen_clear_current_nursery_fragment (void) MONO_INTERNAL;
 void mono_sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nursery_end) MONO_INTERNAL;
 mword mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries) MONO_INTERNAL;
 void mono_sgen_init_nursery_allocator (void) MONO_INTERNAL;

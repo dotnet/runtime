@@ -601,12 +601,6 @@ restart:
 	return NULL;
 }
 
-
-void
-mono_sgen_clear_current_nursery_fragment (void)
-{
-}
-
 static void
 clear_allocator_fragments (FragmentAllocator *allocator)
 {
@@ -626,8 +620,6 @@ void
 mono_sgen_clear_nursery_fragments (void)
 {
 	if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
-		mono_sgen_clear_current_nursery_fragment ();
-
 		clear_allocator_fragments (&nursery_allocator);
 	}
 }

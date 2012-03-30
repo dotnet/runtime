@@ -2576,9 +2576,6 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (all_atv);
 	atv = all_atv;
 
-	/* Pinning no longer depends on clearing all nursery fragments */
-	mono_sgen_clear_current_nursery_fragment ();
-
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
