@@ -357,6 +357,9 @@ g_strreverse (gchar *str)
 	if (str == NULL)
 		return NULL;
 
+	if (*str == 0)
+		return str;
+
 	for (i = 0, j = strlen (str) - 1; i < j; i++, j--) {
 		c = str [i];
 		str [i] = str [j];
