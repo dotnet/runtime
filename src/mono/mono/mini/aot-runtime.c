@@ -2018,6 +2018,10 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	g_assert (code >= code_start && code < code_end);
 
+	if (amodule->thumb_end && (guint8*)code_start < amodule->thumb_end)
+		/* Clear thumb flag */
+		code_start = (char*)(((mgreg_t)code_start) & ~1);
+
 	fde = amodule->mono_eh_frame + table [(pos * 2) + 1];	
 	/* This won't overflow because there is +1 entry in the table */
 	fde_len = table [(pos * 2) + 2 + 1] - table [(pos * 2) + 1];
