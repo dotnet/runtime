@@ -88,7 +88,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 	mword objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
-	char *destination = major_alloc_object (objsize, has_references);
+	char *destination = sgen_alloc_for_promotion (obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
 		if (sgen_ptr_in_nursery (obj)) {
@@ -167,12 +167,20 @@ nopar_copy_object (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 
+	if (sgen_nursery_is_to_space (obj)) {
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (tospace, no change)\n"));
+		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
+		return;
+	}
+
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
 	*obj_slot = copy_object_no_checks (obj, queue);
 }
 
 #ifdef SGEN_PARALLEL_MARK
+
 static void
 copy_object (void **obj_slot, SgenGrayQueue *queue)
 {
@@ -210,12 +218,17 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 
+	if (sgen_nursery_is_to_space (obj)) {
+		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
+		return;
+	}
+
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
 	objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 	has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-	destination = alloc_obj_par (objsize, FALSE, has_references);
+	destination = sgen_par_alloc_for_promotion (obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
 		pin_or_update_par (obj_slot, obj, vt, queue);

@@ -279,7 +279,7 @@ ms_find_block_obj_size_index (int size)
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		if (block_obj_sizes [i] >= size)
 			return i;
-	g_assert_not_reached ();
+	g_error ("no object of size %d\n", size);
 }
 
 #define FREE_BLOCKS_FROM(lists,p,r)	(lists [((p) ? MS_BLOCK_FLAG_PINNED : 0) | ((r) ? MS_BLOCK_FLAG_REFS : 0)])
@@ -1078,13 +1078,16 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		if (vtable_word & SGEN_PINNED_BIT)
 			return;
 
+		if (sgen_nursery_is_to_space (obj))
+			return;
+
 		HEAVY_STAT (++stat_objects_copied_major);
 
 	do_copy_object:
 		objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-		destination = alloc_obj_par (objsize, FALSE, has_references);
+		destination = sgen_par_alloc_for_promotion (obj, objsize, has_references);
 		if (G_UNLIKELY (!destination)) {
 			if (!sgen_ptr_in_nursery (obj)) {
 				int size_index;
@@ -1117,11 +1120,15 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			 * FIXME: If we make major_alloc_object() give
 			 * us the block info, too, we won't have to
 			 * re-fetch it here.
+			 *
+			 * FIXME (2): We should rework this to avoid all those nursery checks.
 			 */
-			block = MS_BLOCK_FOR_OBJ (obj);
-			MS_CALC_MARK_BIT (word, bit, obj);
-			DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
-			MS_PAR_SET_MARK_BIT (was_marked, block, word, bit);
+			if (!sgen_ptr_in_nursery (obj)) { /*marking a nursery object is pretty stupid.*/
+				block = MS_BLOCK_FOR_OBJ (obj);
+				MS_CALC_MARK_BIT (word, bit, obj);
+				DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
+				MS_PAR_SET_MARK_BIT (was_marked, block, word, bit);
+			}
 		} else {
 			/*
 			 * FIXME: We have allocated destination, but
@@ -1223,6 +1230,9 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		if (SGEN_OBJECT_IS_PINNED (obj))
 			return;
 
+		if (sgen_nursery_is_to_space (obj))
+			return;
+
 		HEAVY_STAT (++stat_objects_copied_major);
 
 	do_copy_object:
@@ -1246,11 +1256,15 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		 * we have that, we can let the allocation function
 		 * give us the block info, too, and we won't have to
 		 * re-fetch it.
+		 *
+		 * FIXME (2): We should rework this to avoid all those nursery checks.
 		 */
-		block = MS_BLOCK_FOR_OBJ (obj);
-		MS_CALC_MARK_BIT (word, bit, obj);
-		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
-		MS_SET_MARK_BIT (block, word, bit);
+		if (!sgen_ptr_in_nursery (obj)) { /*marking a nursery object is pretty stupid.*/
+			block = MS_BLOCK_FOR_OBJ (obj);
+			MS_CALC_MARK_BIT (word, bit, obj);
+			DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
+			MS_SET_MARK_BIT (block, word, bit);
+		}
 	} else {
 		char *forwarded;
 #ifdef FIXED_HEAP

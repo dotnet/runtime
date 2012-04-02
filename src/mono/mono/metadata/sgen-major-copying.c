@@ -335,8 +335,11 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 
-	if (ptr_in_nursery (obj))
+	if (ptr_in_nursery (obj)) {
+		if (sgen_nursery_is_to_space (obj))
+			return;
 		goto copy;
+	}
 
 	/*
 	 * At this point we know obj is not pinned, not forwarded and

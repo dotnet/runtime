@@ -299,6 +299,7 @@ long long stat_scan_object_called_major = 0;
 long long stat_nursery_copy_object_failed_from_space = 0;
 long long stat_nursery_copy_object_failed_forwarded = 0;
 long long stat_nursery_copy_object_failed_pinned = 0;
+long long stat_nursery_copy_object_failed_to_space = 0;
 
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
@@ -2238,6 +2239,7 @@ init_stats (void)
 	mono_counters_register ("# nursery copy_object() failed from space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_from_space);
 	mono_counters_register ("# nursery copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_forwarded);
 	mono_counters_register ("# nursery copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_pinned);
+	mono_counters_register ("# nursery copy_object() failed to space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_to_space);
 
 	sgen_nursery_allocator_init_heavy_stats ();
 	sgen_alloc_init_heavy_stats ();
@@ -2528,6 +2530,8 @@ collect_nursery (size_t requested_size)
 	binary_protocol_collection (GENERATION_NURSERY);
 	check_scan_starts ();
 
+	sgen_nursery_alloc_prepare_for_minor ();
+
 	degraded_mode = 0;
 	objects_pinned = 0;
 	nursery_next = sgen_nursery_alloc_get_upper_alloc_bound ();
@@ -2783,8 +2787,10 @@ major_do_collection (const char *reason)
 
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
+
 	sgen_gray_object_queue_init (&gray_queue);
 	sgen_workers_init_distribute_gray_queue ();
+	sgen_nursery_alloc_prepare_for_major (reason);
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", stat_major_gcs));
@@ -3178,6 +3184,9 @@ report_internal_mem_usage (void)
 static inline gboolean
 sgen_is_object_alive (void *object)
 {
+	if (ptr_in_nursery (object))
+		return sgen_nursery_is_object_alive (object);
+	/* Oldgen objects can be pinned and forwarded too */
 	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
 		return TRUE;
 	return major_collector.is_object_live (object);
@@ -3215,7 +3224,7 @@ queue_finalization_entry (MonoObject *obj) {
 	}
 }
 
-static int
+static inline int
 object_is_reachable (char *object, char *start, char *end)
 {
 	/*This happens for non nursery objects during minor collections. We just treat all objects as alive.*/

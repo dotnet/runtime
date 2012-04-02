@@ -296,6 +296,10 @@ sgen_get_nursery_end (void)
 	return sgen_nursery_end;
 }
 
+gboolean sgen_nursery_is_from_space (char *pos) MONO_INTERNAL;
+gboolean sgen_nursery_is_to_space (char *pos) MONO_INTERNAL;
+gboolean sgen_nursery_is_object_alive (char *obj) MONO_INTERNAL;
+
 
 /* Structure that corresponds to a MonoVTable: desc is a mword so requires
  * no cast from a pointer to an integer
@@ -736,6 +740,12 @@ void* sgen_nursery_alloc_range (size_t size, size_t min_size, int *out_alloc_siz
 MonoVTable* sgen_get_array_fill_vtable (void) MONO_INTERNAL;
 gboolean sgen_can_alloc_size (size_t size) MONO_INTERNAL;
 void sgen_nursery_retire_region (void *address, ptrdiff_t size) MONO_INTERNAL;
+
+void sgen_nursery_alloc_prepare_for_minor (void) MONO_INTERNAL;
+void sgen_nursery_alloc_prepare_for_major (const char *reason) MONO_INTERNAL;
+
+char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references) MONO_INTERNAL;
+char* sgen_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references) MONO_INTERNAL;
 
 /* hash tables */
 
