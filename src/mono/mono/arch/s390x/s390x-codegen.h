@@ -146,6 +146,8 @@ typedef enum {
 #define s390_is_uimm12(val)		((glong)val >= 0 && (glong)val <= 4095)
 
 #define STK_BASE			s390_r15
+#define S390_SP				s390_r15
+#define S390_FP				s390_r11
 #define S390_MINIMAL_STACK_SIZE		160
 #define S390_REG_SAVE_OFFSET 		48
 #define S390_PARM_SAVE_OFFSET 		16

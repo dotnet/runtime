@@ -154,7 +154,7 @@ nopar_copy_object (void **obj_slot, SgenGrayQueue *queue)
 	 */
 
 	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, g_assert ((*(MonoVTable**)SGEN_LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
 		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
