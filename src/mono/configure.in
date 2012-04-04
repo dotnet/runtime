@@ -3267,7 +3267,6 @@ echo "
 	oprofile:      $OPROFILE
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
-	Parallel Mark: $enable_parallel_mark
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
 
     Libraries:
