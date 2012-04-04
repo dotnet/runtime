@@ -403,6 +403,8 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	mword count;
 	mword desc;
 
+	ScanVTypeFunc scan_vtype = sgen_get_current_object_ops ()->scan_vtype;
+
 	if (global)
 		HEAVY_STAT (++stat_global_remsets_processed);
 	else
@@ -415,7 +417,8 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
-			major_collector.copy_object (ptr, queue);
+
+			sgen_get_current_object_ops ()->copy_or_mark_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
 				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), sgen_safe_object_get_size (*ptr));
@@ -431,27 +434,29 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
 		}
 		return p + 1;
-	case REMSET_RANGE:
+	case REMSET_RANGE: {
+		CopyOrMarkObjectFunc copy_func = sgen_get_current_object_ops ()->copy_or_mark_object;
+
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
-			major_collector.copy_object (ptr, queue);
+			copy_func (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
 				sgen_add_to_global_remset (ptr);
 			++ptr;
 		}
 		return p + 2;
+	}
 	case REMSET_OBJECT:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		sgen_get_minor_scan_object () ((char*)ptr, queue);
+		sgen_get_current_object_ops ()->scan_object ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
-		ScanVTypeFunc scan_vtype = sgen_get_minor_scan_vtype ();
 		size_t skip_size;
 
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -461,7 +466,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		count = p [2];
 		skip_size = p [3];
 		while (count-- > 0) {
-			scan_vtype ((char*)ptr, desc, queue);
+			sgen_get_current_object_ops ()->scan_vtype ((char*)ptr, desc, queue);
 			ptr = (void**)((char*)ptr + skip_size);
 		}
 		return p + 4;

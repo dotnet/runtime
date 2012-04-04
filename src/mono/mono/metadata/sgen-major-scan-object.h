@@ -127,9 +127,9 @@ major_scan_object (char *start, SgenGrayQueue *queue)
 }
 
 #define FILL_COLLECTOR_SCAN_OBJECT(collector)	do {			\
-		(collector)->major_scan_object = major_scan_object;	\
-		(collector)->minor_scan_object = minor_scan_object;	\
-		(collector)->nopar_minor_scan_object = nopar_minor_scan_object;	\
-		(collector)->minor_scan_vtype = minor_scan_vtype;	\
-		(collector)->nopar_minor_scan_vtype = nopar_minor_scan_vtype; \
+		(collector)->major_ops.scan_object = major_scan_object;	\
+		(collector)->par_minor_ops.scan_object = minor_scan_object;	\
+		(collector)->minor_ops.scan_object = nopar_minor_scan_object;	\
+		(collector)->par_minor_ops.scan_vtype = minor_scan_vtype;	\
+		(collector)->minor_ops.scan_vtype = nopar_minor_scan_vtype; \
 	} while (0)

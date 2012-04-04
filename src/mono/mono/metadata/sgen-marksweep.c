@@ -567,7 +567,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->pinned = pinned;
 	info->has_references = has_references;
 	info->has_pinned = pinned;
-	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
+	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD); /*FIXME WHY??? */
 #ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
 
@@ -1824,6 +1824,7 @@ static void
 major_scan_card_table (SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
+	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
 
 	FOREACH_BLOCK (block) {
 		int block_obj_size;
@@ -1863,7 +1864,6 @@ major_scan_card_table (SgenGrayQueue *queue)
 				obj += block_obj_size;
 			}
 		} else {
-			ScanObjectFunc scan_func = sgen_get_minor_scan_object ();
 			guint8 *card_data, *card_base;
 			guint8 *card_data_end;
 
@@ -2072,7 +2072,7 @@ sgen_marksweep_init
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
-	collector->copy_or_mark_object = major_copy_or_mark_object;
+
 	collector->alloc_object = major_alloc_object;
 #ifdef SGEN_PARALLEL_MARK
 	collector->par_alloc_object = major_par_alloc_object;
@@ -2105,6 +2105,8 @@ sgen_marksweep_init
 	collector->is_worker_thread = major_is_worker_thread;
 	collector->post_param_init = post_param_init;
 
+	/* FIXME this macro mess */
+	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
 

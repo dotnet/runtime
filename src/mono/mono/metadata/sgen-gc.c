@@ -663,6 +663,7 @@ static int mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start
 static void clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
+SgenObjectOperations current_object_ops;
 SgenMajorCollector major_collector;
 static GrayQueue gray_queue;
 
@@ -1200,10 +1201,9 @@ gboolean
 sgen_drain_gray_stack (GrayQueue *queue, int max_objs)
 {
 	char *obj;
+	ScanObjectFunc scan_func = current_object_ops.scan_object;
 
-	if (current_collection_generation == GENERATION_NURSERY) {
-		ScanObjectFunc scan_func = sgen_get_minor_scan_object ();
-
+	if (max_objs == -1) {
 		for (;;) {
 			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
@@ -1214,16 +1214,13 @@ sgen_drain_gray_stack (GrayQueue *queue, int max_objs)
 	} else {
 		int i;
 
-		if (sgen_collection_is_parallel () && sgen_workers_is_distributed_queue (queue))
-			return TRUE;
-
 		do {
 			for (i = 0; i != max_objs; ++i) {
 				GRAY_OBJECT_DEQUEUE (queue, obj);
 				if (!obj)
 					return TRUE;
 				DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-				major_collector.major_scan_object (obj, queue);
+				scan_func (obj, queue);
 			}
 		} while (max_objs < 0);
 		return FALSE;
@@ -1888,40 +1885,11 @@ bridge_process (void)
 	sgen_bridge_processing_finish ();
 }
 
-CopyOrMarkObjectFunc
-sgen_get_copy_object (void)
-{
-	if (current_collection_generation == GENERATION_NURSERY) {
-		if (sgen_collection_is_parallel ())
-			return major_collector.copy_object;
-		else
-			return major_collector.nopar_copy_object;
-	} else {
-		return major_collector.copy_or_mark_object;
-	}
+SgenObjectOperations *
+sgen_get_current_object_ops (void){
+	return &current_object_ops;
 }
 
-ScanObjectFunc
-sgen_get_minor_scan_object (void)
-{
-	g_assert (current_collection_generation == GENERATION_NURSERY);
-
-	if (sgen_collection_is_parallel ())
-		return major_collector.minor_scan_object;
-	else
-		return major_collector.nopar_minor_scan_object;
-}
-
-ScanVTypeFunc
-sgen_get_minor_scan_vtype (void)
-{
-	g_assert (current_collection_generation == GENERATION_NURSERY);
-
-	if (sgen_collection_is_parallel ())
-		return major_collector.minor_scan_vtype;
-	else
-		return major_collector.nopar_minor_scan_vtype;
-}
 
 static void
 finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue)
@@ -1929,7 +1897,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	int done_with_ephemerons, ephemeron_rounds = 0;
-	CopyOrMarkObjectFunc copy_func = sgen_get_copy_object ();
+	CopyOrMarkObjectFunc copy_func = current_object_ops.copy_or_mark_object;
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2406,12 +2374,6 @@ sgen_collection_is_parallel (void)
 	}
 }
 
-gboolean
-sgen_nursery_collection_is_parallel (void)
-{
-	return nursery_collection_is_parallel;
-}
-
 typedef struct
 {
 	char *heap_start;
@@ -2470,7 +2432,7 @@ job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 {
 	ScanFinalizerEntriesJobData *job_data = job_data_untyped;
 
-	scan_finalizer_entries (sgen_get_copy_object (),
+	scan_finalizer_entries (current_object_ops.copy_or_mark_object,
 			job_data->list,
 			sgen_workers_get_job_gray_queue (worker_data));
 }
@@ -2556,7 +2518,11 @@ collect_nursery (size_t requested_size)
 	mono_perfcounters->gc_collections0++;
 
 	current_collection_generation = GENERATION_NURSERY;
-
+	if (sgen_collection_is_parallel ())
+		current_object_ops = major_collector.par_minor_ops;
+	else
+		current_object_ops = major_collector.minor_ops;
+	
 	reset_pinned_from_failed_allocation ();
 
 	binary_protocol_collection (GENERATION_NURSERY);
@@ -2649,13 +2615,13 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scrrjd_normal.func = sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
+	scrrjd_normal.func = current_object_ops.copy_or_mark_object;
 	scrrjd_normal.heap_start = sgen_get_nursery_start ();
 	scrrjd_normal.heap_end = nursery_next;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
 	sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
-	scrrjd_wbarrier.func = sgen_collection_is_parallel () ? major_collector.copy_object : major_collector.nopar_copy_object;
+	scrrjd_wbarrier.func = current_object_ops.copy_or_mark_object;
 	scrrjd_wbarrier.heap_start = sgen_get_nursery_start ();
 	scrrjd_wbarrier.heap_end = nursery_next;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
@@ -2798,6 +2764,8 @@ major_do_collection (const char *reason)
 
 	mono_perfcounters->gc_collections1++;
 
+	current_object_ops = major_collector.major_ops;
+
 	reset_pinned_from_failed_allocation ();
 
 	last_collection_old_num_major_sections = major_collector.get_num_major_sections ();
@@ -2922,13 +2890,13 @@ major_do_collection (const char *reason)
 	time_major_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scrrjd_normal.func = major_collector.copy_or_mark_object;
+	scrrjd_normal.func = current_object_ops.copy_or_mark_object;
 	scrrjd_normal.heap_start = heap_start;
 	scrrjd_normal.heap_end = heap_end;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
 	sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
 
-	scrrjd_wbarrier.func = major_collector.copy_or_mark_object;
+	scrrjd_wbarrier.func = current_object_ops.copy_or_mark_object;
 	scrrjd_wbarrier.heap_start = heap_start;
 	scrrjd_wbarrier.heap_end = heap_end;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
@@ -3855,15 +3823,7 @@ void*
 mono_gc_scan_object (void *obj)
 {
 	UserCopyOrMarkData *data = mono_native_tls_get_value (user_copy_or_mark_key);
-
-	if (current_collection_generation == GENERATION_NURSERY) {
-		if (sgen_collection_is_parallel ())
-			major_collector.copy_object (&obj, data->queue);
-		else
-			major_collector.nopar_copy_object (&obj, data->queue);
-	} else {
-		major_collector.copy_or_mark_object (&obj, data->queue);
-	}
+	current_object_ops.copy_or_mark_object (&obj, data->queue);
 	return obj;
 }
 

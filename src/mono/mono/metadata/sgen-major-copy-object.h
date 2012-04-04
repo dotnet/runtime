@@ -253,6 +253,6 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 #endif
 
 #define FILL_COLLECTOR_COPY_OBJECT(collector)	do {			\
-		(collector)->copy_object = copy_object;			\
-		(collector)->nopar_copy_object = nopar_copy_object;	\
+		(collector)->minor_ops.copy_or_mark_object = nopar_copy_object;			\
+		(collector)->par_minor_ops.copy_or_mark_object = copy_object;	\
 	} while (0)

@@ -664,7 +664,6 @@ sgen_copying_init (SgenMajorCollector *collector)
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
-	collector->copy_or_mark_object = major_copy_or_mark_object;
 	collector->alloc_object = major_alloc_object;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
@@ -686,6 +685,7 @@ sgen_copying_init (SgenMajorCollector *collector)
 	collector->handle_gc_param = NULL;
 	collector->print_gc_param_usage = NULL;
 
+	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
 }
