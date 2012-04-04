@@ -92,17 +92,38 @@
 #include "utils/mono-threads.h"
 
 /*
-We split the nursery into a pair of regions: alloc and promote.
+The nursery is logically divided into 3 spaces: Allocator space and two Survivor spaces.
 
-The alloc region is consumed by the mutator for new objects, objects from this region
-are evacuated to the promote regions.
+Objects are born (allocated by the mutator) in the Allocator Space.
 
-The promote region is where objects from the alloc region are evacuated to. Its objects
-are evacuated the old generation.
+The Survivor spaces are divided in a copying collector style From and To spaces.
+The hole of each space switch on each collection.
 
-The use buckets to segregate the nursery in from and to spaces. The from space is the alloc
-region and objects from the previous collection in the promote region, and the to space is
-all non allocated space at the start of the collection. 
+On each collection we process objects from the nursery this way:
+Objects from the Allocator Space are evacuated into the To Space.
+Objects from the Survivor From Space are evacuated into the old generation.
+
+
+The nursery is physically divided in two parts, set by the promotion barrier.
+
+The Allocator Space takes the botton part of the nursery.
+
+The Survivor spaces are intermingled in the top part of the nursery. It's done
+this way since the required size for the To Space depends on the survivor rate
+of objects from the Allocator Space. 
+
+During a collection when the object scan function see a nursery object it must
+determine if the object needs to be evacuated or left in place. Originally, this
+check was done by checking is a forwarding pointer is installed, but now an object
+can be in the To Space, it won't have a forwarding pointer and it must be left in place.
+
+In order to solve that we classify nursery memory been either in the From Space or in
+the To Space. Since the Allocator Space has the same behavior as the Survivor From Space
+they are unified for this purpoise - a bit confusing at first.
+
+This from/to classification is done on a larger granule than object to make the check efficient
+and, due to that, we must make sure that all fragemnts used to allocate memory from the To Space
+are naturally aligned in both ends to that granule to avoid wronly classifying a From Space object.
 
 TODO:
 -The promotion barrier is statically defined to 50% of the nursery, it should be dinamically adjusted based
@@ -970,10 +991,6 @@ sgen_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references
 }
 
 /*
-Make a to space fragment aligned on both ends to this size. Fragments must be aligned due to
-pinned objects in the previous collection. They belong to the 'from space' so we can't use memory
-adjacent to them to the 'to space'.
-
 This is a space/speed compromise as we need to make sure the from/to space check is both O(1)
 and only hit cache hot memory. On a 4Mb nursery it requires 1024 bytes, or 3% of your average
 L1 cache. On small configs with a 512kb nursery, this goes to 0.4%.
