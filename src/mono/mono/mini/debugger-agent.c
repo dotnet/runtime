@@ -5858,7 +5858,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 				buffer_add_value (buf, &mono_defaults.void_class->byval_arg, NULL, domain);
 		} else if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
 			buffer_add_value (buf, sig->ret, &res, domain);
-		} else if (mono_class_from_mono_type (sig->ret)->valuetype) {
+		} else if (mono_class_from_mono_type (sig->ret)->valuetype || sig->ret->type == MONO_TYPE_PTR || sig->ret->type == MONO_TYPE_FNPTR) {
 			if (mono_class_is_nullable (mono_class_from_mono_type (sig->ret))) {
 				if (!res)
 					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &res, domain);
