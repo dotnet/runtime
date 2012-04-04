@@ -48,7 +48,7 @@ static int toogleref_array_size;
 static int toogleref_array_capacity;
 
 void
-mono_sgen_process_togglerefs (void)
+sgen_process_togglerefs (void)
 {
 	int i, w;
 	int toggle_ref_counts [3] = { 0 };
@@ -98,7 +98,7 @@ mono_sgen_process_togglerefs (void)
 }
 
 void
-mono_sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue)
+sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue)
 {
 	int i;
 
@@ -115,7 +115,7 @@ mono_sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *en
 			char *object = toggleref_array [i].weak_ref;
 
 			if (object >= start && object < end) {
-				if (mono_sgen_gc_is_object_ready_for_finalization (object)) {
+				if (sgen_gc_is_object_ready_for_finalization (object)) {
 					DEBUG (6, fprintf (gc_debug_file, "\tcleaning weak slot %d\n", i));
 					toggleref_array [i].weak_ref = NULL; /* We defer compaction to only happen on the callback step. */
 				} else {
@@ -132,7 +132,7 @@ ensure_toggleref_capacity (int capacity)
 {
 	if (!toggleref_array) {
 		toogleref_array_capacity = 32;
-		toggleref_array = mono_sgen_alloc_internal_dynamic (
+		toggleref_array = sgen_alloc_internal_dynamic (
 			toogleref_array_capacity * sizeof (MonoGCToggleRef),
 			INTERNAL_MEM_TOGGLEREF_DATA);	
 	}
@@ -142,13 +142,13 @@ ensure_toggleref_capacity (int capacity)
 		while (toogleref_array_capacity < toogleref_array_size + capacity)
 			toogleref_array_size *= 2;
 		
-		tmp = mono_sgen_alloc_internal_dynamic (
+		tmp = sgen_alloc_internal_dynamic (
 			toogleref_array_capacity * sizeof (MonoGCToggleRef),
 			INTERNAL_MEM_TOGGLEREF_DATA);
 
 		memcpy (tmp, toggleref_array, toogleref_array_size * sizeof (MonoGCToggleRef));
 
-		mono_sgen_free_internal_dynamic (toggleref_array, old_capacity * sizeof (MonoGCToggleRef), INTERNAL_MEM_TOGGLEREF_DATA);
+		sgen_free_internal_dynamic (toggleref_array, old_capacity * sizeof (MonoGCToggleRef), INTERNAL_MEM_TOGGLEREF_DATA);
 		toggleref_array = tmp;
 	}
 }
@@ -169,7 +169,7 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 
 	DEBUG (4, fprintf (gc_debug_file, "Adding toggleref %p %d\n", object, strong_ref));
 
-	mono_sgen_gc_lock ();
+	sgen_gc_lock ();
 
 	ensure_toggleref_capacity (1);
 	if (strong_ref)
@@ -177,7 +177,7 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	else
 		toggleref_array [toogleref_array_size++].weak_ref = object;
 
-	mono_sgen_gc_unlock ();
+	sgen_gc_unlock ();
 }
 
 /**

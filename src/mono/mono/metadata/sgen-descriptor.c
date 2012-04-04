@@ -70,7 +70,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 	numbits = ALIGN_TO (numbits, GC_BITS_PER_WORD);
 	nwords = numbits / GC_BITS_PER_WORD + 1;
 
-	mono_sgen_gc_lock ();
+	sgen_gc_lock ();
 	res = complex_descriptors_next;
 	/* linear search, so we don't have duplicates with domain load/unload
 	 * this should not be performance critical or we'd have bigger issues
@@ -86,7 +86,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 				}
 			}
 			if (found) {
-				mono_sgen_gc_unlock ();
+				sgen_gc_unlock ();
 				return i;
 			}
 		}
@@ -104,12 +104,12 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 		complex_descriptors [res + 1 + i] = bitmap [i];
 		DEBUG (6, fprintf (gc_debug_file, "\tvalue: %p\n", (void*)complex_descriptors [res + 1 + i]));
 	}
-	mono_sgen_gc_unlock ();
+	sgen_gc_unlock ();
 	return res;
 }
 
 gsize*
-mono_sgen_get_complex_descriptor (mword desc)
+sgen_get_complex_descriptor (mword desc)
 {
 	return complex_descriptors + (desc >> LOW_TYPE_BITS);
 }
@@ -324,13 +324,13 @@ mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 }
 
 void*
-mono_sgen_get_complex_descriptor_bitmap (mword desc)
+sgen_get_complex_descriptor_bitmap (mword desc)
 {
 	return complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
 }
 
 MonoGCRootMarkFunc
-mono_sgen_get_user_descriptor_func (mword desc)
+sgen_get_user_descriptor_func (mword desc)
 {
 	return user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
 }

@@ -97,9 +97,9 @@ static void*
 major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	if (nursery_align)
-		nursery_start = mono_sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+		nursery_start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
 	else
-		nursery_start = mono_sgen_alloc_os_memory (nursery_size, TRUE);
+		nursery_start = sgen_alloc_os_memory (nursery_size, TRUE);
 
 	nursery_end = nursery_start + nursery_size;
 	nursery_bits = the_nursery_bits;
@@ -116,7 +116,7 @@ obj_is_from_pinned_alloc (char *p)
 static void
 free_pinned_object (char *obj, size_t size)
 {
-	mono_sgen_free_pinned (&pinned_allocator, obj, size);
+	sgen_free_pinned (&pinned_allocator, obj, size);
 }
 
 /*
@@ -128,15 +128,15 @@ alloc_major_section (void)
 	GCMemSection *section;
 	int scan_starts;
 
-	section = mono_sgen_alloc_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE);
+	section = sgen_alloc_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE);
 	section->next_data = section->data = (char*)section + SGEN_SIZEOF_GC_MEM_SECTION;
 	g_assert (!((mword)section->data & 7));
 	section->size = MAJOR_SECTION_SIZE - SGEN_SIZEOF_GC_MEM_SECTION;
 	section->end_data = section->data + section->size;
-	mono_sgen_update_heap_boundaries ((mword)section->data, (mword)section->end_data);
+	sgen_update_heap_boundaries ((mword)section->data, (mword)section->end_data);
 	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %ld\n", section->data, section->end_data, mono_gc_get_heap_size ()));
 	scan_starts = (section->size + SGEN_SCAN_START_SIZE - 1) / SGEN_SCAN_START_SIZE;
-	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN1;
 	section->is_to_space = TRUE;
@@ -154,9 +154,9 @@ static void
 free_major_section (GCMemSection *section)
 {
 	DEBUG (3, fprintf (gc_debug_file, "Freed major section %p (%p-%p)\n", section, section->data, section->end_data));
-	mono_sgen_free_internal_dynamic (section->scan_starts,
+	sgen_free_internal_dynamic (section->scan_starts,
 			(section->size + SGEN_SCAN_START_SIZE - 1) / SGEN_SCAN_START_SIZE * sizeof (char*), INTERNAL_MEM_SCAN_STARTS);
-	mono_sgen_free_os_memory (section, MAJOR_SECTION_SIZE);
+	sgen_free_os_memory (section, MAJOR_SECTION_SIZE);
 
 	--num_major_sections;
 }
@@ -228,7 +228,7 @@ major_is_object_live (char *obj)
 	if (ptr_in_nursery (obj))
 		return FALSE;
 
-	objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj));
 
 	/* LOS */
 	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
@@ -246,7 +246,7 @@ major_is_object_live (char *obj)
 static void*
 major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
-	return mono_sgen_alloc_pinned (&pinned_allocator, size);
+	return sgen_alloc_pinned (&pinned_allocator, size);
 }
 
 /*
@@ -271,7 +271,7 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 		section->is_to_space = FALSE;
 		/* FIXME: handle OOM */
 		p = (void**)section->next_data;
-		mono_sgen_register_major_sections_alloced (1);
+		sgen_register_major_sections_alloced (1);
 	}
 	section->next_data += size;
 	DEBUG (3, fprintf (gc_debug_file, "Allocated (degraded) object %p, vtable: %p (%s), size: %zd in section %p\n", p, vtable, vtable->klass->name, size, section));
@@ -279,7 +279,7 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	return p;
 }
 
-#define pin_major_object	mono_sgen_pin_object
+#define pin_major_object	sgen_pin_object
 
 #include "sgen-major-copy-object.h"
 
@@ -354,13 +354,13 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	 * see whether it's a pinned chunk or a major heap section.
 	 */
 
-	objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj));
 
 	if (G_UNLIKELY (objsize > SGEN_MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		if (SGEN_OBJECT_IS_PINNED (obj))
 			return;
-		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, mono_sgen_safe_name (obj), objsize));
-		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
+		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, sgen_safe_name (obj), objsize));
+		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
 		SGEN_PIN_OBJECT (obj);
 		GRAY_OBJECT_ENQUEUE (queue, obj);
 		HEAVY_STAT (++stat_major_copy_object_failed_large_pinned);
@@ -416,7 +416,7 @@ build_section_fragments (GCMemSection *section)
 			binary_protocol_empty (frag_start, frag_size);
 			memset (frag_start, 0, frag_size);
 		}
-		frag_size = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)section->pin_queue_start [i]));
+		frag_size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)section->pin_queue_start [i]));
 		frag_start = (char*)section->pin_queue_start [i] + frag_size;
 		section->next_data = MAX (section->next_data, frag_start);
 	}
@@ -433,9 +433,9 @@ sweep_pinned_objects_callback (char *ptr, size_t size, void *data)
 {
 	if (SGEN_OBJECT_IS_PINNED (ptr)) {
 		SGEN_UNPIN_OBJECT (ptr);
-		DEBUG (6, fprintf (gc_debug_file, "Unmarked pinned object %p (%s)\n", ptr, mono_sgen_safe_name (ptr)));
+		DEBUG (6, fprintf (gc_debug_file, "Unmarked pinned object %p (%s)\n", ptr, sgen_safe_name (ptr)));
 	} else {
-		DEBUG (6, fprintf (gc_debug_file, "Freeing unmarked pinned object %p (%s)\n", ptr, mono_sgen_safe_name (ptr)));
+		DEBUG (6, fprintf (gc_debug_file, "Freeing unmarked pinned object %p (%s)\n", ptr, sgen_safe_name (ptr)));
 		free_pinned_object (ptr, size);
 	}
 }
@@ -443,7 +443,7 @@ sweep_pinned_objects_callback (char *ptr, size_t size, void *data)
 static void
 sweep_pinned_objects (void)
 {
-	mono_sgen_pinned_scan_objects (&pinned_allocator, sweep_pinned_objects_callback, NULL);
+	sgen_pinned_scan_objects (&pinned_allocator, sweep_pinned_objects_callback, NULL);
 }
 
 static void
@@ -452,10 +452,10 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 	if (non_pinned) {
 		GCMemSection *section;
 		for (section = section_list; section; section = section->block.next)
-			mono_sgen_scan_area_with_callback (section->data, section->end_data, callback, data, FALSE);
+			sgen_scan_area_with_callback (section->data, section->end_data, callback, data, FALSE);
 	}
 	if (pinned)
-		mono_sgen_pinned_scan_objects (&pinned_allocator, callback, data);
+		sgen_pinned_scan_objects (&pinned_allocator, callback, data);
 }
 
 static void
@@ -467,12 +467,12 @@ major_free_non_pinned_object (char *obj, size_t size)
 static void
 pin_pinned_object_callback (void *addr, size_t slot_size, SgenGrayQueue *queue)
 {
-	binary_protocol_pin (addr, (gpointer)SGEN_LOAD_VTABLE (addr), mono_sgen_safe_object_get_size ((MonoObject*)addr));
+	binary_protocol_pin (addr, (gpointer)SGEN_LOAD_VTABLE (addr), sgen_safe_object_get_size ((MonoObject*)addr));
 	if (!SGEN_OBJECT_IS_PINNED (addr))
-		mono_sgen_pin_stats_register_object ((char*) addr, mono_sgen_safe_object_get_size ((MonoObject*) addr));
+		sgen_pin_stats_register_object ((char*) addr, sgen_safe_object_get_size ((MonoObject*) addr));
 	SGEN_PIN_OBJECT (addr);
 	GRAY_OBJECT_ENQUEUE (queue, addr);
-	DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, mono_sgen_safe_name (addr)));
+	DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, sgen_safe_name (addr)));
 }
 
 static void
@@ -481,8 +481,8 @@ major_find_pin_queue_start_ends (SgenGrayQueue *queue)
 	GCMemSection *section;
 
 	for (section = section_list; section; section = section->block.next)
-		mono_sgen_find_section_pin_queue_start_end (section);
-	mono_sgen_pinned_scan_pinned_objects (&pinned_allocator, (IterateObjectCallbackFunc)pin_pinned_object_callback, queue);
+		sgen_find_section_pin_queue_start_end (section);
+	sgen_pinned_scan_pinned_objects (&pinned_allocator, (IterateObjectCallbackFunc)pin_pinned_object_callback, queue);
 }
 
 static void
@@ -491,7 +491,7 @@ major_pin_objects (SgenGrayQueue *queue)
 	GCMemSection *section;
 
 	for (section = section_list; section; section = section->block.next)
-		mono_sgen_pin_objects_in_section (section, queue);
+		sgen_pin_objects_in_section (section, queue);
 }
 
 static void
@@ -511,7 +511,7 @@ major_sweep (void)
 	/* unpin objects from the pinned chunks and free the unmarked ones */
 	sweep_pinned_objects ();
 
-	mono_sgen_pinned_update_heap_boundaries (&pinned_allocator);
+	sgen_pinned_update_heap_boundaries (&pinned_allocator);
 
 	/* free the unused sections */
 	prev_section = NULL;
@@ -545,7 +545,7 @@ major_sweep (void)
 		section = section->block.next;
 
 	update:
-		mono_sgen_update_heap_boundaries ((mword)this_section->data, (mword)this_section->data + this_section->size);
+		sgen_update_heap_boundaries ((mword)this_section->data, (mword)this_section->data + this_section->size);
 	}
 
 	have_swept = TRUE;
@@ -556,7 +556,7 @@ major_check_scan_starts (void)
 {
 	GCMemSection *section;
 	for (section = section_list; section; section = section->block.next)
-		mono_sgen_check_section_scan_starts (section);
+		sgen_check_section_scan_starts (section);
 }
 
 static void
@@ -564,7 +564,7 @@ major_dump_heap (FILE *heap_dump_file)
 {
 	GCMemSection *section;
 	for (section = section_list; section; section = section->block.next)
-		mono_sgen_dump_section (section, "old");
+		sgen_dump_section (section, "old");
 	/* FIXME: dump pinned sections, too */
 }
 
@@ -612,7 +612,7 @@ major_finish_nursery_collection (void)
 		section->is_to_space = FALSE;
 
 	sections_alloced = num_major_sections - old_num_major_sections;
-	mono_sgen_register_major_sections_alloced (sections_alloced);
+	sgen_register_major_sections_alloced (sections_alloced);
 }
 
 static void
@@ -635,7 +635,7 @@ major_ptr_is_in_non_pinned_space (char *ptr)
 static void
 major_report_pinned_memory_usage (void)
 {
-	mono_sgen_report_pinned_mem_usage (&pinned_allocator);
+	sgen_report_pinned_mem_usage (&pinned_allocator);
 }
 
 static int
@@ -645,7 +645,7 @@ get_num_major_sections (void)
 }
 
 void
-mono_sgen_copying_init (SgenMajorCollector *collector)
+sgen_copying_init (SgenMajorCollector *collector)
 {
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("# major copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_forwarded);

@@ -157,7 +157,7 @@ report_pinned_chunk (SgenPinnedChunk *chunk, int seq) {
  * Debug reporting.
  */
 void
-mono_sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc)
+sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc)
 {
 	SgenPinnedChunk *chunk;
 	int i = 0;
@@ -216,10 +216,10 @@ alloc_pinned_chunk (SgenPinnedAllocator *alc)
 	int offset;
 	int size = SGEN_PINNED_CHUNK_SIZE;
 
-	chunk = mono_sgen_alloc_os_memory_aligned (size, size, TRUE);
+	chunk = sgen_alloc_os_memory_aligned (size, size, TRUE);
 	chunk->block.role = MEMORY_ROLE_PINNED;
 
-	mono_sgen_update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
+	sgen_update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
 
 	pinned_chunk_bytes_alloced += size;
 
@@ -238,7 +238,7 @@ alloc_pinned_chunk (SgenPinnedAllocator *alc)
 	chunk->page_sizes [0] = PINNED_FIRST_SLOT_SIZE;
 	build_freelist (alc, chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE,
 			chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
-	mono_sgen_debug_printf (4, "Allocated pinned chunk %p, size: %d\n", chunk, size);
+	sgen_debug_printf (4, "Allocated pinned chunk %p, size: %d\n", chunk, size);
 
 	chunk->block.next = alc->chunk_list;
 	alc->chunk_list = chunk;
@@ -317,7 +317,7 @@ alloc_from_slot (SgenPinnedAllocator *alc, int slot)
 
 /* used for the GC-internal data structures */
 void*
-mono_sgen_alloc_pinned (SgenPinnedAllocator *alc, size_t size)
+sgen_alloc_pinned (SgenPinnedAllocator *alc, size_t size)
 {
 	int slot;
 	void *res = NULL;
@@ -328,7 +328,7 @@ mono_sgen_alloc_pinned (SgenPinnedAllocator *alc, size_t size)
 		LargePinnedMemHeader *mh;
 
 		size += sizeof (LargePinnedMemHeader);
-		mh = mono_sgen_alloc_os_memory (size, TRUE);
+		mh = sgen_alloc_os_memory (size, TRUE);
 		mh->magic = LARGE_PINNED_MEM_HEADER_MAGIC;
 		mh->size = size;
 		/* FIXME: do a CAS here */
@@ -364,7 +364,7 @@ free_from_slot (SgenPinnedAllocator *alc, void *addr, int slot)
 }
 
 void
-mono_sgen_free_pinned (SgenPinnedAllocator *alc, void *addr, size_t size)
+sgen_free_pinned (SgenPinnedAllocator *alc, void *addr, size_t size)
 {
 	LargePinnedMemHeader *mh;
 
@@ -382,11 +382,11 @@ mono_sgen_free_pinned (SgenPinnedAllocator *alc, void *addr, size_t size)
 	g_assert (mh->size == size + sizeof (LargePinnedMemHeader));
 	/* FIXME: do a CAS */
 	large_pinned_bytes_alloced -= mh->size;
-	mono_sgen_free_os_memory (mh, mh->size);
+	sgen_free_os_memory (mh, mh->size);
 }
 
 void
-mono_sgen_init_pinned_allocator (void)
+sgen_init_pinned_allocator (void)
 {
 	g_assert (SGEN_PINNED_FREELIST_NUM_SLOTS == sizeof (freelist_sizes) / sizeof (freelist_sizes [0]));
 
@@ -396,7 +396,7 @@ mono_sgen_init_pinned_allocator (void)
 }
 
 void
-mono_sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data)
+sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data)
 {
 	SgenPinnedChunk *chunk;
 	int i, obj_size;
@@ -405,14 +405,14 @@ mono_sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFu
 	void *end_chunk;
 	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
 		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
-		mono_sgen_debug_printf (6, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk);
+		sgen_debug_printf (6, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk);
 		for (i = 0; i < chunk->num_pages; ++i) {
 			obj_size = chunk->page_sizes [i];
 			if (!obj_size)
 				continue;
 			p = i? (char*)chunk + i * FREELIST_PAGESIZE: chunk->start_data;
 			endp = i? p + FREELIST_PAGESIZE: (char*)chunk + FREELIST_PAGESIZE;
-			mono_sgen_debug_printf (6, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp);
+			sgen_debug_printf (6, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp);
 			while (p + obj_size <= endp) {
 				ptr = (void**)p;
 				/* if the first word (the vtable) is outside the chunk we have an object */
@@ -425,12 +425,12 @@ mono_sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFu
 }
 
 void
-mono_sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc)
+sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc)
 {
 	SgenPinnedChunk *chunk;
 	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
 		char *end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
-		mono_sgen_update_heap_boundaries ((mword)chunk, (mword)end_chunk);
+		sgen_update_heap_boundaries ((mword)chunk, (mword)end_chunk);
 	}
 }
 
@@ -477,15 +477,15 @@ mark_pinned_from_addresses (SgenPinnedChunk *chunk, void **start, void **end, It
 }
 
 void
-mono_sgen_pinned_scan_pinned_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data)
+sgen_pinned_scan_pinned_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data)
 {
 	SgenPinnedChunk *chunk;
 
 	/* look for pinned addresses for pinned-alloc objects */
-	mono_sgen_debug_printf (6, "Pinning from pinned-alloc objects\n");
+	sgen_debug_printf (6, "Pinning from pinned-alloc objects\n");
 	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
 		int num_pinned;
-		void **pinned = mono_sgen_find_optimized_pin_queue_area (chunk->start_data,
+		void **pinned = sgen_find_optimized_pin_queue_area (chunk->start_data,
 				(char*)chunk + chunk->num_pages * FREELIST_PAGESIZE, &num_pinned);
 		if (num_pinned)
 			mark_pinned_from_addresses (chunk, pinned, pinned + num_pinned, callback, callback_data);

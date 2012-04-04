@@ -8,7 +8,7 @@
 #include "metadata/gc-internal.h"
 
 gboolean
-mono_sgen_resume_thread (SgenThreadInfo *info)
+sgen_resume_thread (SgenThreadInfo *info)
 {
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
@@ -25,7 +25,7 @@ mono_sgen_resume_thread (SgenThreadInfo *info)
 }
 
 gboolean
-mono_sgen_suspend_thread (SgenThreadInfo *info)
+sgen_suspend_thread (SgenThreadInfo *info)
 {
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
@@ -78,13 +78,13 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 }
 
 void
-mono_sgen_wait_for_suspend_ack (int count)
+sgen_wait_for_suspend_ack (int count)
 {
 	/* Win32 suspend/resume is synchronous, so we don't need to wait for anything */
 }
 
 int
-mono_sgen_thread_handshake (BOOL suspend)
+sgen_thread_handshake (BOOL suspend)
 {
 	SgenThreadInfo *info;
 	SgenThreadInfo *current = mono_thread_info_current ();
@@ -99,13 +99,13 @@ mono_sgen_thread_handshake (BOOL suspend)
 			g_assert (!info->doing_handshake);
 			info->doing_handshake = TRUE;
 
-			if (!mono_sgen_suspend_thread (info))
+			if (!sgen_suspend_thread (info))
 				continue;
 		} else {
 			g_assert (info->doing_handshake);
 			info->doing_handshake = FALSE;
 
-			if (!mono_sgen_resume_thread (info))
+			if (!sgen_resume_thread (info))
 				continue;
 		}
 
@@ -115,7 +115,7 @@ mono_sgen_thread_handshake (BOOL suspend)
 }
 
 void
-mono_sgen_os_init (void)
+sgen_os_init (void)
 {
 }
 

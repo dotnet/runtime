@@ -241,10 +241,10 @@ get_los_section_memory (size_t size)
 	if (free_chunks)
 		return (LOSObject*)free_chunks;
 
-	if (!mono_sgen_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
+	if (!sgen_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
 		return NULL;
 
-	section = mono_sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
+	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
 
 	if (!section)
 		return NULL;
@@ -304,7 +304,7 @@ free_los_section_memory (LOSObject *obj, size_t size)
 static int pagesize;
 
 void
-mono_sgen_los_free_object (LOSObject *obj)
+sgen_los_free_object (LOSObject *obj)
 {
 #ifndef LOS_DUMMY
 	size_t size = obj->size;
@@ -323,8 +323,8 @@ mono_sgen_los_free_object (LOSObject *obj)
 		size += sizeof (LOSObject);
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
-		mono_sgen_free_os_memory (obj, size);
-		mono_sgen_release_space (size, SPACE_LOS);
+		sgen_free_os_memory (obj, size);
+		sgen_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
 #ifdef LOS_CONSISTENCY_CHECKS
@@ -342,7 +342,7 @@ mono_sgen_los_free_object (LOSObject *obj)
  * and we avoid the memcpy overhead.
  */
 void*
-mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
+sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 {
 	LOSObject *obj = NULL;
 	void **vtslot;
@@ -351,14 +351,14 @@ mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 
 #ifdef LOS_DUMMY
 	if (!los_segment)
-		los_segment = mono_sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE);
+		los_segment = sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE);
 	los_segment_index = ALIGN_UP (los_segment_index);
 
 	obj = (LOSObject*)(los_segment + los_segment_index);
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	if (mono_sgen_need_major_collection (size)) {
+	if (sgen_need_major_collection (size)) {
 		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
 		sgen_collect_major_no_lock ("LOS overflow");
 	}
@@ -374,8 +374,8 @@ mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size += sizeof (LOSObject);
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
-		if (mono_sgen_try_alloc_space (alloc_size, SPACE_LOS)) {
-			obj = mono_sgen_alloc_os_memory (alloc_size, TRUE);
+		if (sgen_try_alloc_space (alloc_size, SPACE_LOS)) {
+			obj = sgen_alloc_os_memory (alloc_size, TRUE);
 			if (obj)
 				obj->huge_object = TRUE;
 		}
@@ -392,7 +392,7 @@ mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	obj->size = size;
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;
-	mono_sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
+	sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
 	obj->next = los_object_list;
 	los_object_list = obj;
 	los_memory_usage += size;
@@ -408,7 +408,7 @@ mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 }
 
 void
-mono_sgen_los_sweep (void)
+sgen_los_sweep (void)
 {
 	LOSSection *section, *prev;
 	int i;
@@ -426,8 +426,8 @@ mono_sgen_los_sweep (void)
 				prev->next = next;
 			else
 				los_sections = next;
-			mono_sgen_free_os_memory (section, LOS_SECTION_SIZE);
-			mono_sgen_release_space (LOS_SECTION_SIZE, SPACE_LOS);
+			sgen_free_os_memory (section, LOS_SECTION_SIZE);
+			sgen_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
 			continue;
@@ -468,7 +468,7 @@ mono_sgen_los_sweep (void)
 }
 
 gboolean
-mono_sgen_ptr_is_in_los (char *ptr, char **start)
+sgen_ptr_is_in_los (char *ptr, char **start)
 {
 	LOSObject *obj;
 
@@ -485,7 +485,7 @@ mono_sgen_ptr_is_in_los (char *ptr, char **start)
 }
 
 void
-mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
+sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
 {
 	LOSObject *obj;
 
@@ -494,7 +494,7 @@ mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
 }
 
 void
-mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
+sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
@@ -506,7 +506,7 @@ mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 
 #ifdef SGEN_HAVE_CARDTABLE
 void
-mono_sgen_los_scan_card_table (SgenGrayQueue *queue)
+sgen_los_scan_card_table (SgenGrayQueue *queue)
 {
 	LOSObject *obj;
 

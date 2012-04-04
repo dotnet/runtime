@@ -74,10 +74,10 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 		DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %lu, rank: %d, length: %lu\n", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array)));
 	}
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
-		mono_sgen_register_moved_object (obj, destination);
+		sgen_register_moved_object (obj, destination);
 	obj = destination;
 	if (queue) {
-		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, mono_sgen_safe_name (obj)));
+		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, sgen_safe_name (obj)));
 		GRAY_OBJECT_ENQUEUE (queue, obj);
 	}
 }
@@ -87,17 +87,17 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
-	mword objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
+	mword objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 	char *destination = major_alloc_object (objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
-		if (mono_sgen_ptr_in_nursery (obj)) {
-			mono_sgen_pin_object (obj, queue);
+		if (sgen_ptr_in_nursery (obj)) {
+			sgen_pin_object (obj, queue);
 		} else {
 			g_assert (objsize <= SGEN_MAX_SMALL_OBJ_SIZE);
 			pin_major_object (obj, queue);
 		}
-		mono_sgen_set_pinned_from_failed_allocation (objsize);
+		sgen_set_pinned_from_failed_allocation (objsize);
 		return obj;
 	}
 
@@ -140,7 +140,7 @@ nopar_copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
-	if (!mono_sgen_ptr_in_nursery (obj)) {
+	if (!sgen_ptr_in_nursery (obj)) {
 		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
 		return;
 	}
@@ -186,7 +186,7 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
-	if (!mono_sgen_ptr_in_nursery (obj)) {
+	if (!sgen_ptr_in_nursery (obj)) {
 		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
 		return;
 	}
@@ -212,7 +212,7 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
-	objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
+	objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 	has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
 	destination = alloc_obj_par (objsize, FALSE, has_references);

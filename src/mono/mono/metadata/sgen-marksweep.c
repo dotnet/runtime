@@ -313,11 +313,11 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 	if (nursery_align)
 		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
 
-	nursery_start = mono_sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE);
+	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE);
 	ms_heap_start = nursery_start + nursery_size;
 	ms_heap_end = ms_heap_start + major_heap_size;
 
-	block_infos = mono_sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
+	block_infos = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
 
 	for (i = 0; i < ms_heap_num_blocks; ++i) {
 		block_infos [i].block = ms_heap_start + i * MS_BLOCK_SIZE;
@@ -338,9 +338,9 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	char *start;
 	if (nursery_align)
-		start = mono_sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
 	else
-		start = mono_sgen_alloc_os_memory (nursery_size, TRUE);
+		start = sgen_alloc_os_memory (nursery_size, TRUE);
 
 	return start;
 }
@@ -349,7 +349,7 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 static void
 update_heap_boundaries_for_block (MSBlockInfo *block)
 {
-	mono_sgen_update_heap_boundaries ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
+	sgen_update_heap_boundaries ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
 }
 
 #ifdef FIXED_HEAP
@@ -379,7 +379,7 @@ ms_free_block (MSBlockInfo *block)
 	empty_blocks = block;
 	block->used = FALSE;
 	block->zeroed = FALSE;
-	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
+	sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 }
 #else
 static void*
@@ -391,7 +391,7 @@ ms_get_empty_block (void)
 
  retry:
 	if (!empty_blocks) {
-		p = mono_sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE);
+		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE);
 
 		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
 			block = p;
@@ -434,7 +434,7 @@ ms_free_block (void *block)
 {
 	void *empty;
 
-	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
+	sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 	memset (block, 0, MS_BLOCK_SIZE);
 
 	do {
@@ -551,13 +551,13 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	char *obj_start;
 	int i;
 
-	if (!mono_sgen_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
+	if (!sgen_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
 		return FALSE;
 
 #ifdef FIXED_HEAP
 	info = ms_get_empty_block ();
 #else
-	info = mono_sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
+	info = sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
 #endif
 
 	DEBUG (9, g_assert (count >= 2));
@@ -567,7 +567,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->pinned = pinned;
 	info->has_references = has_references;
 	info->has_pinned = pinned;
-	info->is_to_space = (mono_sgen_get_current_collection_generation () == GENERATION_OLD);
+	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
 #ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
 
@@ -835,7 +835,7 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 		HEAVY_STAT (++stat_objects_alloced_degraded);
 		HEAVY_STAT (stat_bytes_alloced_degraded += size);
 		g_assert (num_major_sections >= old_num_sections);
-		mono_sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
+		sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
 	}
 	return obj;
 }
@@ -856,7 +856,7 @@ major_is_object_live (char *obj)
 	mword objsize;
 #endif
 
-	if (mono_sgen_ptr_in_nursery (obj))
+	if (sgen_ptr_in_nursery (obj))
 		return FALSE;
 
 #ifdef FIXED_HEAP
@@ -864,7 +864,7 @@ major_is_object_live (char *obj)
 	if (!MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
 		return FALSE;
 #else
-	objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj));
 
 	/* LOS */
 	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
@@ -961,7 +961,7 @@ major_dump_heap (FILE *heap_dump_file)
 					start = i;
 			} else {
 				if (start >= 0) {
-					mono_sgen_dump_occupied (MS_BLOCK_OBJ (block, start), MS_BLOCK_OBJ (block, i), block->block);
+					sgen_dump_occupied (MS_BLOCK_OBJ (block, start), MS_BLOCK_OBJ (block, i), block->block);
 					start = -1;
 				}
 			}
@@ -980,7 +980,7 @@ major_dump_heap (FILE *heap_dump_file)
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), mono_sgen_safe_object_get_size ((MonoObject*)(obj))); \
+			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
@@ -991,7 +991,7 @@ major_dump_heap (FILE *heap_dump_file)
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), mono_sgen_safe_object_get_size ((MonoObject*)(obj))); \
+			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
 #define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
@@ -1003,7 +1003,7 @@ major_dump_heap (FILE *heap_dump_file)
 		if (!__was_marked) {					\
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), mono_sgen_safe_object_get_size ((MonoObject*)(obj))); \
+			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
 
@@ -1023,9 +1023,9 @@ pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
 		mword vtable_word;
 		gboolean major_pinned = FALSE;
 
-		if (mono_sgen_ptr_in_nursery (obj)) {
+		if (sgen_ptr_in_nursery (obj)) {
 			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
-				mono_sgen_pin_object (obj, queue);
+				sgen_pin_object (obj, queue);
 				break;
 			}
 		} else {
@@ -1063,7 +1063,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	DEBUG (9, g_assert (obj));
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
-	if (mono_sgen_ptr_in_nursery (obj)) {
+	if (sgen_ptr_in_nursery (obj)) {
 		int word, bit;
 		gboolean has_references;
 		void *destination;
@@ -1081,12 +1081,12 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		HEAVY_STAT (++stat_objects_copied_major);
 
 	do_copy_object:
-		objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
+		objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
 		destination = alloc_obj_par (objsize, FALSE, has_references);
 		if (G_UNLIKELY (!destination)) {
-			if (!mono_sgen_ptr_in_nursery (obj)) {
+			if (!sgen_ptr_in_nursery (obj)) {
 				int size_index;
 				block = MS_BLOCK_FOR_OBJ (obj);
 				size_index = block->obj_size_index;
@@ -1094,7 +1094,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			}
 
 			pin_or_update_par (ptr, obj, vt, queue);
-			mono_sgen_set_pinned_from_failed_allocation (objsize);
+			sgen_set_pinned_from_failed_allocation (objsize);
 			return;
 		}
 
@@ -1151,7 +1151,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			*ptr = (void*)vt;
 			return;
 		}
-		objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
+		objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
 #endif
@@ -1190,7 +1190,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 			if (vtable_word & SGEN_PINNED_BIT)
 				return;
-			binary_protocol_pin (obj, vt, mono_sgen_safe_object_get_size ((MonoObject*)obj));
+			binary_protocol_pin (obj, vt, sgen_safe_object_get_size ((MonoObject*)obj));
 			if (SGEN_CAS_PTR (obj, (void*)(vtable_word | SGEN_PINNED_BIT), (void*)vtable_word) == (void*)vtable_word) {
 				if (SGEN_VTABLE_HAS_REFERENCES (vt))
 					GRAY_OBJECT_ENQUEUE (queue, obj);
@@ -1212,7 +1212,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	DEBUG (9, g_assert (obj));
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
-	if (mono_sgen_ptr_in_nursery (obj)) {
+	if (sgen_ptr_in_nursery (obj)) {
 		int word, bit;
 		char *forwarded, *old_obj;
 
@@ -1230,7 +1230,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		obj = copy_object_no_checks (obj, queue);
 		if (G_UNLIKELY (old_obj == obj)) {
 			/*If we fail to evacuate an object we just stop doing it for a given block size as all other will surely fail too.*/
-			if (!mono_sgen_ptr_in_nursery (obj)) {
+			if (!sgen_ptr_in_nursery (obj)) {
 				int size_index;
 				block = MS_BLOCK_FOR_OBJ (obj);
 				size_index = block->obj_size_index;
@@ -1271,7 +1271,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			return;
 		}
 
-		objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
+		objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj));
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
 #endif
@@ -1309,7 +1309,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		} else {
 			if (SGEN_OBJECT_IS_PINNED (obj))
 				return;
-			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
+			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
 			SGEN_PIN_OBJECT (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
@@ -1444,7 +1444,7 @@ ms_sweep (void)
 #else
 			ms_free_block (block->block);
 
-			mono_sgen_free_internal (block, INTERNAL_MEM_MS_BLOCK_INFO);
+			sgen_free_internal (block, INTERNAL_MEM_MS_BLOCK_INFO);
 #endif
 
 			--num_major_sections;
@@ -1592,7 +1592,7 @@ major_finish_nursery_collection (void)
 #ifdef MARKSWEEP_CONSISTENCY_CHECK
 	consistency_check ();
 #endif
-	mono_sgen_register_major_sections_alloced (num_major_sections - old_num_major_sections);
+	sgen_register_major_sections_alloced (num_major_sections - old_num_major_sections);
 }
 
 static void
@@ -1621,7 +1621,7 @@ static void
 major_have_computer_minor_collection_allowance (void)
 {
 #ifndef FIXED_HEAP
-	int section_reserve = mono_sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
+	int section_reserve = sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
 
 	g_assert (have_swept);
 	ms_wait_for_sweep_done ();
@@ -1637,7 +1637,7 @@ major_have_computer_minor_collection_allowance (void)
 
 	while (num_empty_blocks > section_reserve) {
 		void *next = *(void**)empty_blocks;
-		mono_sgen_free_os_memory (empty_blocks, MS_BLOCK_SIZE);
+		sgen_free_os_memory (empty_blocks, MS_BLOCK_SIZE);
 		empty_blocks = next;
 		/*
 		 * Needs not be atomic because this is running
@@ -1656,7 +1656,7 @@ major_find_pin_queue_start_ends (SgenGrayQueue *queue)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		block->pin_queue_start = mono_sgen_find_optimized_pin_queue_area (block->block + MS_BLOCK_SKIP, block->block + MS_BLOCK_SIZE,
+		block->pin_queue_start = sgen_find_optimized_pin_queue_area (block->block + MS_BLOCK_SKIP, block->block + MS_BLOCK_SIZE,
 				&block->pin_queue_num_entries);
 	} END_FOREACH_BLOCK;
 }
@@ -1863,7 +1863,7 @@ major_scan_card_table (SgenGrayQueue *queue)
 				obj += block_obj_size;
 			}
 		} else {
-			ScanObjectFunc scan_func = mono_sgen_get_minor_scan_object ();
+			ScanObjectFunc scan_func = sgen_get_minor_scan_object ();
 			guint8 *card_data, *card_base;
 			guint8 *card_data_end;
 
@@ -1927,7 +1927,7 @@ alloc_free_block_lists (MSBlockInfo ***lists)
 {
 	int i;
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i)
-		lists [i] = mono_sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+		lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
 }
 
 #ifdef SGEN_PARALLEL_MARK
@@ -1989,15 +1989,15 @@ post_param_init (void)
 void
 #ifdef SGEN_PARALLEL_MARK
 #ifdef FIXED_HEAP
-mono_sgen_marksweep_fixed_par_init
+sgen_marksweep_fixed_par_init
 #else
-mono_sgen_marksweep_par_init
+sgen_marksweep_par_init
 #endif
 #else
 #ifdef FIXED_HEAP
-mono_sgen_marksweep_fixed_init
+sgen_marksweep_fixed_init
 #else
-mono_sgen_marksweep_init
+sgen_marksweep_init
 #endif
 #endif
 	(SgenMajorCollector *collector)
@@ -2005,14 +2005,14 @@ mono_sgen_marksweep_init
 	int i;
 
 #ifndef FIXED_HEAP
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_MS_BLOCK_INFO, sizeof (MSBlockInfo));
+	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_MS_BLOCK_INFO, sizeof (MSBlockInfo));
 #endif
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
-	block_obj_sizes = mono_sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
 	ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, block_obj_sizes);
 
-	evacuate_block_obj_sizes = mono_sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	evacuate_block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		evacuate_block_obj_sizes [i] = FALSE;
 

@@ -29,7 +29,7 @@
 MONO_BEGIN_DECLS
 
 enum {
-	MONO_SGEN_BRIDGE_VERSION = 2
+	SGEN_BRIDGE_VERSION = 2
 };
 	
 typedef struct {

@@ -90,7 +90,7 @@ remset_byte_size (RememberedSet *remset)
 static void
 add_generic_store_remset_from_buffer (gpointer *buffer)
 {
-	GenericStoreRememberedSet *remset = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
+	GenericStoreRememberedSet *remset = sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
 	memcpy (remset->data, buffer + 1, sizeof (gpointer) * (STORE_REMSET_BUFFER_SIZE - 1));
 	remset->next = generic_store_remsets;
 	generic_store_remsets = remset;
@@ -114,9 +114,9 @@ evacuate_remset_buffer (void)
  * and doesn't waste any alloc paddin space.
  */
 static RememberedSet*
-mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
+sgen_alloc_remset (int size, gpointer id, gboolean global)
 {
-	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
+	RememberedSet* res = sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
 	res->store_next = res->data;
 	res->end_set = res->data + size;
 	res->next = NULL;
@@ -127,7 +127,7 @@ mono_sgen_alloc_remset (int size, gpointer id, gboolean global)
 
 
 static void
-mono_sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
@@ -140,7 +140,7 @@ mono_sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObjec
 		UNLOCK_GC;
 		return;
 	}
-	rs = mono_sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
+	rs = sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -152,7 +152,7 @@ mono_sgen_ssb_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObjec
 }
 
 static void
-mono_sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
+sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
@@ -165,7 +165,7 @@ mono_sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObje
 		UNLOCK_GC;
 		return;
 	}
-	rs = mono_sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
+	rs = sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -177,7 +177,7 @@ mono_sgen_ssb_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObje
 }
 
 static void
-mono_sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
+sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
@@ -192,7 +192,7 @@ mono_sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int c
 		UNLOCK_GC;
 		return;
 	}
-	rs = mono_sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
+	rs = sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -205,7 +205,7 @@ mono_sgen_ssb_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int c
 }
 
 static void
-mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
+sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs;
 	size_t element_size = mono_class_value_size (klass, NULL);
@@ -226,7 +226,7 @@ mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoC
 		UNLOCK_GC;
 		return;
 	}
-	rs = mono_sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
+	rs = sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
@@ -240,7 +240,7 @@ mono_sgen_ssb_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoC
 }	
 
 static void
-mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
+sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	int size;
 	RememberedSet *rs;
@@ -261,7 +261,7 @@ mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 		UNLOCK_GC;
 		return;
 	}
-	rs = mono_sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
+	rs = sgen_alloc_remset (rs->end_set - rs->data, (void*)1, FALSE);
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 
@@ -273,7 +273,7 @@ mono_sgen_ssb_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 }
 
 static void
-mono_sgen_ssb_wbarrier_generic_nostore (gpointer ptr)
+sgen_ssb_wbarrier_generic_nostore (gpointer ptr)
 {
 	gpointer *buffer;
 	int index;
@@ -365,7 +365,7 @@ remset_stats (void)
 	for (remset = global_remset; remset; remset = remset->next)
 		size += remset->store_next - remset->data;
 
-	bumper = addresses = mono_sgen_alloc_internal_dynamic (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+	bumper = addresses = sgen_alloc_internal_dynamic (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 
 	FOREACH_THREAD (info) {
 		for (remset = info->remset; remset; remset = remset->next)
@@ -380,7 +380,7 @@ remset_stats (void)
 
 	stat_store_remsets += bumper - addresses;
 
-	mono_sgen_sort_addresses ((void**)addresses, bumper - addresses);
+	sgen_sort_addresses ((void**)addresses, bumper - addresses);
 	p = addresses;
 	r = addresses + 1;
 	while (r < bumper) {
@@ -391,7 +391,7 @@ remset_stats (void)
 
 	stat_store_remsets_unique += p - addresses;
 
-	mono_sgen_free_internal_dynamic (addresses, sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+	sgen_free_internal_dynamic (addresses, sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 }
 #endif
 
@@ -418,14 +418,14 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
-				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), mono_sgen_safe_object_get_size (*ptr));
+				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), sgen_safe_object_get_size (*ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
 				/*
 				 * If the object is pinned, each reference to it from nonpinned objects
 				 * becomes part of the global remset, which can grow very large.
 				 */
-				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, mono_sgen_safe_name (*ptr)));
-				mono_sgen_add_to_global_remset (ptr);
+				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, sgen_safe_name (*ptr)));
+				sgen_add_to_global_remset (ptr);
 			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
@@ -440,7 +440,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				mono_sgen_add_to_global_remset (ptr);
+				sgen_add_to_global_remset (ptr);
 			++ptr;
 		}
 		return p + 2;
@@ -448,10 +448,10 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		mono_sgen_get_minor_scan_object () ((char*)ptr, queue);
+		sgen_get_minor_scan_object () ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
-		ScanVTypeFunc scan_vtype = mono_sgen_get_minor_scan_vtype ();
+		ScanVTypeFunc scan_vtype = sgen_get_minor_scan_vtype ();
 		size_t skip_size;
 
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -473,7 +473,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 }
 
 static void
-mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	RememberedSet *remset;
 	mword *p, *next_p, *store_pos;
@@ -500,7 +500,7 @@ mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGr
 			 *
 			 * Since all global remsets are location remsets, we don't need to unmask the pointer.
 			 */
-			if (mono_sgen_ptr_in_nursery (*ptr)) {
+			if (sgen_ptr_in_nursery (*ptr)) {
 				*store_pos ++ = p [0];
 				HEAVY_STAT (++stat_global_remsets_readded);
 			}
@@ -512,7 +512,7 @@ mono_sgen_ssb_begin_scan_remsets (void *start_nursery, void *end_nursery, SgenGr
 }
 
 static void
-mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	int i;
 	SgenThreadInfo *info;
@@ -535,7 +535,7 @@ mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenG
 				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE, queue);
 		}
 
-		mono_sgen_free_internal (store_remset, INTERNAL_MEM_STORE_REMSET);
+		sgen_free_internal (store_remset, INTERNAL_MEM_STORE_REMSET);
 
 		store_remset = next;
 	}
@@ -554,7 +554,7 @@ mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenG
 			remset->next = NULL;
 			if (remset != info->remset) {
 				DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+				sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 			}
 		}
 		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
@@ -571,14 +571,14 @@ mono_sgen_ssb_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenG
 			p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-		mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+		sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
 
 
 static void
-mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
+sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 {
 	RememberedSet *rset;
 
@@ -595,7 +595,7 @@ mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 
 	if (*p->store_remset_buffer_index_addr)
 		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
-	mono_sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
+	sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
 
 	/*
 	 * This is currently not strictly required, but we do it
@@ -610,25 +610,25 @@ mono_sgen_ssb_cleanup_thread (SgenThreadInfo *p)
 }
 
 static void
-mono_sgen_ssb_register_thread (SgenThreadInfo *info)
+sgen_ssb_register_thread (SgenThreadInfo *info)
 {
 #ifndef HAVE_KW_THREAD
 	SgenThreadInfo *__thread_info__ = info;
 #endif
 
-	info->remset = mono_sgen_alloc_remset (DEFAULT_REMSET_SIZE, info, FALSE);
+	info->remset = sgen_alloc_remset (DEFAULT_REMSET_SIZE, info, FALSE);
 	mono_native_tls_set_value (remembered_set_key, info->remset);
 #ifdef HAVE_KW_THREAD
 	remembered_set = info->remset;
 #endif
 
-	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
+	STORE_REMSET_BUFFER = sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
 	STORE_REMSET_BUFFER_INDEX = 0;
 }
 
 #ifdef HAVE_KW_THREAD
 static void
-mono_sgen_ssb_fill_thread_info_for_suspend (SgenThreadInfo *info)
+sgen_ssb_fill_thread_info_for_suspend (SgenThreadInfo *info)
 {
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
@@ -636,7 +636,7 @@ mono_sgen_ssb_fill_thread_info_for_suspend (SgenThreadInfo *info)
 #endif
 
 static void
-mono_sgen_ssb_prepare_for_minor_collection (void)
+sgen_ssb_prepare_for_minor_collection (void)
 {
 	memset (global_remset_cache, 0, sizeof (global_remset_cache));
 }
@@ -647,12 +647,12 @@ mono_sgen_ssb_prepare_for_minor_collection (void)
  * during the copy.
  */
 static void
-mono_sgen_ssb_prepare_for_major_collection (void)
+sgen_ssb_prepare_for_major_collection (void)
 {
 	SgenThreadInfo *info;
 	RememberedSet *remset, *next;
 	
-	mono_sgen_ssb_prepare_for_minor_collection ();
+	sgen_ssb_prepare_for_minor_collection ();
 
 	/* the global list */
 	for (remset = global_remset; remset; remset = next) {
@@ -661,13 +661,13 @@ mono_sgen_ssb_prepare_for_major_collection (void)
 		remset->next = NULL;
 		if (remset != global_remset) {
 			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+			sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 		}
 	}
 	/* the generic store ones */
 	while (generic_store_remsets) {
 		GenericStoreRememberedSet *gs_next = generic_store_remsets->next;
-		mono_sgen_free_internal (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
+		sgen_free_internal (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
 		generic_store_remsets = gs_next;
 	}
 	/* the per-thread ones */
@@ -678,7 +678,7 @@ mono_sgen_ssb_prepare_for_major_collection (void)
 			remset->next = NULL;
 			if (remset != info->remset) {
 				DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+				sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 			}
 		}
 		clear_thread_store_remset_buffer (info);
@@ -688,7 +688,7 @@ mono_sgen_ssb_prepare_for_major_collection (void)
 	while (freed_thread_remsets) {
 		next = freed_thread_remsets->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
-		mono_sgen_free_internal_dynamic (freed_thread_remsets, remset_byte_size (freed_thread_remsets), INTERNAL_MEM_REMSET);
+		sgen_free_internal_dynamic (freed_thread_remsets, remset_byte_size (freed_thread_remsets), INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -731,13 +731,13 @@ global_remset_location_was_not_added (gpointer ptr)
 }
 
 static void
-mono_sgen_ssb_record_pointer (gpointer ptr)
+sgen_ssb_record_pointer (gpointer ptr)
 {
 	RememberedSet *rs;
-	gboolean lock = mono_sgen_collection_is_parallel ();
+	gboolean lock = sgen_collection_is_parallel ();
 	gpointer obj = *(gpointer*)ptr;
 
-	g_assert (!mono_sgen_ptr_in_nursery (ptr) && mono_sgen_ptr_in_nursery (obj));
+	g_assert (!sgen_ptr_in_nursery (ptr) && sgen_ptr_in_nursery (obj));
 
 	if (lock)
 		LOCK_GLOBAL_REMSET;
@@ -746,7 +746,7 @@ mono_sgen_ssb_record_pointer (gpointer ptr)
 		goto done;
 
 	if (G_UNLIKELY (do_pin_stats))
-		mono_sgen_pin_stats_register_global_remset (obj);
+		sgen_pin_stats_register_global_remset (obj);
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
 	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (obj));
@@ -761,7 +761,7 @@ mono_sgen_ssb_record_pointer (gpointer ptr)
 		*(global_remset->store_next++) = (mword)ptr;
 		goto done;
 	}
-	rs = mono_sgen_alloc_remset (global_remset->end_set - global_remset->data, NULL, TRUE);
+	rs = sgen_alloc_remset (global_remset->end_set - global_remset->data, NULL, TRUE);
 	rs->next = global_remset;
 	global_remset = rs;
 	*(global_remset->store_next++) = (mword)ptr;
@@ -806,7 +806,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		return p + 2;
 	case REMSET_OBJECT:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		count = mono_sgen_safe_object_get_size ((MonoObject*)ptr); 
+		count = sgen_safe_object_get_size ((MonoObject*)ptr); 
 		count = SGEN_ALIGN_UP (count);
 		count /= sizeof (mword);
 		if ((void**)addr >= ptr && (void**)addr < ptr + count)
@@ -834,7 +834,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
  * Return whenever ADDR occurs in the remembered sets
  */
 static gboolean
-mono_sgen_ssb_find_address (char *addr)
+sgen_ssb_find_address (char *addr)
 {
 	int i;
 	SgenThreadInfo *info;
@@ -893,11 +893,11 @@ mono_sgen_ssb_find_address (char *addr)
 
 
 void
-mono_sgen_ssb_init (SgenRemeberedSet *remset)
+sgen_ssb_init (SgenRemeberedSet *remset)
 {
 	LOCK_INIT (global_remset_mutex);
 
-	global_remset = mono_sgen_alloc_remset (1024, NULL, FALSE);
+	global_remset = sgen_alloc_remset (1024, NULL, FALSE);
 	global_remset->next = NULL;
 
 	mono_native_tls_alloc (&remembered_set_key, NULL);
@@ -916,26 +916,26 @@ mono_sgen_ssb_init (SgenRemeberedSet *remset)
 	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
 #endif
 
-	remset->wbarrier_set_field = mono_sgen_ssb_wbarrier_set_field;
-	remset->wbarrier_set_arrayref = mono_sgen_ssb_wbarrier_set_arrayref;
-	remset->wbarrier_arrayref_copy = mono_sgen_ssb_wbarrier_arrayref_copy;
-	remset->wbarrier_value_copy = mono_sgen_ssb_wbarrier_value_copy;
-	remset->wbarrier_object_copy = mono_sgen_ssb_wbarrier_object_copy;
-	remset->wbarrier_generic_nostore = mono_sgen_ssb_wbarrier_generic_nostore;
-	remset->record_pointer = mono_sgen_ssb_record_pointer;
+	remset->wbarrier_set_field = sgen_ssb_wbarrier_set_field;
+	remset->wbarrier_set_arrayref = sgen_ssb_wbarrier_set_arrayref;
+	remset->wbarrier_arrayref_copy = sgen_ssb_wbarrier_arrayref_copy;
+	remset->wbarrier_value_copy = sgen_ssb_wbarrier_value_copy;
+	remset->wbarrier_object_copy = sgen_ssb_wbarrier_object_copy;
+	remset->wbarrier_generic_nostore = sgen_ssb_wbarrier_generic_nostore;
+	remset->record_pointer = sgen_ssb_record_pointer;
 
-	remset->begin_scan_remsets = mono_sgen_ssb_begin_scan_remsets;
-	remset->finish_scan_remsets = mono_sgen_ssb_finish_scan_remsets;
+	remset->begin_scan_remsets = sgen_ssb_begin_scan_remsets;
+	remset->finish_scan_remsets = sgen_ssb_finish_scan_remsets;
 
-	remset->register_thread = mono_sgen_ssb_register_thread;
-	remset->cleanup_thread = mono_sgen_ssb_cleanup_thread;
+	remset->register_thread = sgen_ssb_register_thread;
+	remset->cleanup_thread = sgen_ssb_cleanup_thread;
 #ifdef HAVE_KW_THREAD
-	remset->fill_thread_info_for_suspend = mono_sgen_ssb_fill_thread_info_for_suspend;
+	remset->fill_thread_info_for_suspend = sgen_ssb_fill_thread_info_for_suspend;
 #endif
 
-	remset->prepare_for_minor_collection = mono_sgen_ssb_prepare_for_minor_collection;
-	remset->prepare_for_major_collection = mono_sgen_ssb_prepare_for_major_collection;
+	remset->prepare_for_minor_collection = sgen_ssb_prepare_for_minor_collection;
+	remset->prepare_for_major_collection = sgen_ssb_prepare_for_major_collection;
 
-	remset->find_address = mono_sgen_ssb_find_address;
+	remset->find_address = sgen_ssb_find_address;
 }
 #endif

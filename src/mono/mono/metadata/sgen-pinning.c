@@ -37,13 +37,13 @@ static int last_num_pinned = 0;
 static void *pin_hash_filter [PIN_HASH_SIZE];
 
 void
-mono_sgen_init_pinning (void)
+sgen_init_pinning (void)
 {
 	memset (pin_hash_filter, 0, sizeof (pin_hash_filter));
 }
 
 void
-mono_sgen_finish_pinning (void)
+sgen_finish_pinning (void)
 {
 	last_num_pinned = next_pin_slot;
 	next_pin_slot = 0;
@@ -53,16 +53,16 @@ static void
 realloc_pin_queue (void)
 {
 	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
-	void **new_pin = mono_sgen_alloc_internal_dynamic (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
+	void **new_pin = sgen_alloc_internal_dynamic (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
 	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
-	mono_sgen_free_internal_dynamic (pin_queue, sizeof (void*) * pin_queue_size, INTERNAL_MEM_PIN_QUEUE);
+	sgen_free_internal_dynamic (pin_queue, sizeof (void*) * pin_queue_size, INTERNAL_MEM_PIN_QUEUE);
 	pin_queue = new_pin;
 	pin_queue_size = new_size;
 	DEBUG (4, fprintf (gc_debug_file, "Reallocated pin queue to size: %d\n", new_size));
 }
 
 void
-mono_sgen_pin_stage_ptr (void *ptr)
+sgen_pin_stage_ptr (void *ptr)
 {
 	/*very simple multiplicative hash function, tons better than simple and'ng */ 
 	int hash_idx = ((mword)ptr * 1737350767) & (PIN_HASH_SIZE - 1);
@@ -93,7 +93,7 @@ optimized_pin_queue_search (void *addr)
 }
 
 void**
-mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
+sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
 {
 	int first, last;
 	first = optimized_pin_queue_search (start);
@@ -105,29 +105,29 @@ mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
 }
 
 void
-mono_sgen_find_section_pin_queue_start_end (GCMemSection *section)
+sgen_find_section_pin_queue_start_end (GCMemSection *section)
 {
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from section %p (%p-%p)\n", section, section->data, section->end_data));
-	section->pin_queue_start = mono_sgen_find_optimized_pin_queue_area (section->data, section->end_data, &section->pin_queue_num_entries);
+	section->pin_queue_start = sgen_find_optimized_pin_queue_area (section->data, section->end_data, &section->pin_queue_num_entries);
 	DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p\n", section->pin_queue_num_entries, section));
 }
 
 /*This will setup the given section for the while pin queue. */
 void
-mono_sgen_pinning_setup_section (GCMemSection *section)
+sgen_pinning_setup_section (GCMemSection *section)
 {
 	section->pin_queue_start = pin_queue;
 	section->pin_queue_num_entries = next_pin_slot;
 }
 
 void
-mono_sgen_pinning_trim_queue_to_section (GCMemSection *section)
+sgen_pinning_trim_queue_to_section (GCMemSection *section)
 {
 	next_pin_slot = section->pin_queue_num_entries;
 }
 
 void
-mono_sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot)
+sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot)
 {
 	void **start = section->pin_queue_start + section->pin_queue_num_entries;
 	void **end = pin_queue + max_pin_slot;
@@ -161,14 +161,14 @@ print_nursery_gaps (void* start_nursery, void *end_nursery)
 
 /* reduce the info in the pin queue, removing duplicate pointers and sorting them */
 void
-mono_sgen_optimize_pin_queue (int start_slot)
+sgen_optimize_pin_queue (int start_slot)
 {
 	void **start, **cur, **end;
 	/* sort and uniq pin_queue: we just sort and we let the rest discard multiple values */
 	/* it may be better to keep ranges of pinned memory instead of individually pinning objects */
 	DEBUG (5, fprintf (gc_debug_file, "Sorting pin queue, size: %d\n", next_pin_slot));
 	if ((next_pin_slot - start_slot) > 1)
-		mono_sgen_sort_addresses (pin_queue + start_slot, next_pin_slot - start_slot);
+		sgen_sort_addresses (pin_queue + start_slot, next_pin_slot - start_slot);
 	start = cur = pin_queue + start_slot;
 	end = pin_queue + next_pin_slot;
 	while (cur < end) {
@@ -183,18 +183,18 @@ mono_sgen_optimize_pin_queue (int start_slot)
 }
 
 int
-mono_sgen_get_pinned_count (void)
+sgen_get_pinned_count (void)
 {
 	return next_pin_slot;
 }
 
 void
-mono_sgen_dump_pin_queue (void)
+sgen_dump_pin_queue (void)
 {
 	int i;
 
 	for (i = 0; i < last_num_pinned; ++i) {
-		DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], mono_sgen_safe_name (pin_queue [i]), mono_sgen_safe_object_get_size (pin_queue [i])));
+		DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], sgen_safe_name (pin_queue [i]), sgen_safe_object_get_size (pin_queue [i])));
 	}	
 }
 

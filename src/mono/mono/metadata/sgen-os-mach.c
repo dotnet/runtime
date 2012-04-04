@@ -44,13 +44,13 @@
 
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
 gboolean
-mono_sgen_resume_thread (SgenThreadInfo *info)
+sgen_resume_thread (SgenThreadInfo *info)
 {
 	return thread_resume (info->mach_port) == KERN_SUCCESS;
 }
 
 gboolean
-mono_sgen_suspend_thread (SgenThreadInfo *info)
+sgen_suspend_thread (SgenThreadInfo *info)
 {
 	mach_msg_type_number_t num_state;
 	thread_state_t state;
@@ -101,14 +101,14 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 }
 
 void
-mono_sgen_wait_for_suspend_ack (int count)
+sgen_wait_for_suspend_ack (int count)
 {
     /* mach thread_resume is synchronous so we dont need to wait for them */
 }
 
 /* LOCKING: assumes the GC lock is held */
 int
-mono_sgen_thread_handshake (BOOL suspend)
+sgen_thread_handshake (BOOL suspend)
 {
 	SgenThreadInfo *cur_thread = mono_thread_info_current ();
 	kern_return_t ret;
@@ -117,7 +117,7 @@ mono_sgen_thread_handshake (BOOL suspend)
 	int count = 0;
 
 	FOREACH_THREAD_SAFE (info) {
-		if (info == cur_thread || mono_sgen_is_worker_thread (mono_thread_info_get_tid (info)))
+		if (info == cur_thread || sgen_is_worker_thread (mono_thread_info_get_tid (info)))
 			continue;
 		if (info->gc_disabled)
 			continue;
@@ -126,7 +126,7 @@ mono_sgen_thread_handshake (BOOL suspend)
 			g_assert (!info->doing_handshake);
 			info->doing_handshake = TRUE;
 
-			if (!mono_sgen_suspend_thread (info))
+			if (!sgen_suspend_thread (info))
 				continue;
 		} else {
 			g_assert (info->doing_handshake);
@@ -142,7 +142,7 @@ mono_sgen_thread_handshake (BOOL suspend)
 }
 
 void
-mono_sgen_os_init (void)
+sgen_os_init (void)
 {
 }
 

@@ -83,25 +83,25 @@ cards_in_range (mword address, mword size)
 }
 
 static void
-mono_sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	*(void**)field_ptr = value;
-	if (mono_sgen_ptr_in_nursery (value))
+	if (sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)field_ptr);
-	mono_sgen_dummy_use (value);
+	sgen_dummy_use (value);
 }
 
 static void
-mono_sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
+sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	*(void**)slot_ptr = value;
-	if (mono_sgen_ptr_in_nursery (value))
+	if (sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)slot_ptr);
-	mono_sgen_dummy_use (value);	
+	sgen_dummy_use (value);	
 }
 
 static void
-mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
+sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	gpointer *dest = dest_ptr;
 	gpointer *src = src_ptr;
@@ -115,24 +115,24 @@ mono_sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr
 		for (; dest >= start; --src, --dest) {
 			gpointer value = *src;
 			*dest = value;
-			if (mono_sgen_ptr_in_nursery (value))
+			if (sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
-			mono_sgen_dummy_use (value);
+			sgen_dummy_use (value);
 		}
 	} else {
 		gpointer *end = dest + count;
 		for (; dest < end; ++src, ++dest) {
 			gpointer value = *src;
 			*dest = value;
-			if (mono_sgen_ptr_in_nursery (value))
+			if (sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
-			mono_sgen_dummy_use (value);
+			sgen_dummy_use (value);
 		}
 	}	
 }
 
 static void
-mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
+sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	size_t element_size = mono_class_value_size (klass, NULL);
 	size_t size = count * element_size;
@@ -153,7 +153,7 @@ mono_sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count
 }
 
 static void
-mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
+sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	int size;
 	TLAB_ACCESS_INIT;
@@ -176,7 +176,7 @@ mono_sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 }
 
 static void
-mono_sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
+sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 {
 	sgen_card_table_mark_address ((mword)ptr);	
 }
@@ -273,13 +273,13 @@ sgen_card_table_is_range_marked (guint8 *cards, mword address, mword size)
 }
 
 static void
-mono_sgen_card_table_record_pointer (gpointer address)
+sgen_card_table_record_pointer (gpointer address)
 {
 	*sgen_card_table_get_card_address ((mword)address) = 1;
 }
 
 static gboolean
-mono_sgen_card_table_find_address (char *addr)
+sgen_card_table_find_address (char *addr)
 {
 	return sgen_card_table_address_is_marked ((mword)addr);
 }
@@ -333,21 +333,21 @@ clear_cards (mword start, mword size)
 #endif
 
 static void
-mono_sgen_card_table_prepare_for_major_collection (void)
+sgen_card_table_prepare_for_major_collection (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	sgen_major_collector_iterate_live_block_ranges (clear_cards);
-	mono_sgen_los_iterate_live_block_ranges (clear_cards);
+	sgen_los_iterate_live_block_ranges (clear_cards);
 }
 
 static void
-mono_sgen_card_table_finish_minor_collection (void)
+sgen_card_table_finish_minor_collection (void)
 {
 	sgen_card_tables_collect_stats (FALSE);
 }
 
 static void
-mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
 {
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
@@ -358,17 +358,17 @@ mono_sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery
 	/*FIXME we should have a bit on each block/los object telling if the object have marked cards.*/
 	/*First we copy*/
 	sgen_major_collector_iterate_live_block_ranges (move_cards_to_shadow_table);
-	mono_sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
+	sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
-	mono_sgen_card_table_prepare_for_major_collection ();
+	sgen_card_table_prepare_for_major_collection ();
 #endif
 	SGEN_TV_GETTIME (atv);
 	sgen_major_collector_scan_card_table (queue);
 	SGEN_TV_GETTIME (btv);
 	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;
-	mono_sgen_los_scan_card_table (queue);
+	sgen_los_scan_card_table (queue);
 	SGEN_TV_GETTIME (atv);
 	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;
@@ -488,9 +488,9 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, Sgen
 {
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
-	CopyOrMarkObjectFunc copy_func = mono_sgen_get_copy_object ();
-	ScanObjectFunc scan_object_func = mono_sgen_get_minor_scan_object ();
-	ScanVTypeFunc scan_vtype_func = mono_sgen_get_minor_scan_vtype ();
+	CopyOrMarkObjectFunc copy_func = sgen_get_copy_object ();
+	ScanObjectFunc scan_object_func = sgen_get_minor_scan_object ();
+	ScanVTypeFunc scan_vtype_func = sgen_get_minor_scan_vtype ();
 
 	HEAVY_STAT (++large_objects);
 
@@ -501,7 +501,7 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, Sgen
 		guint8 *card_data, *card_base;
 		guint8 *card_data_end;
 		char *obj_start = sgen_card_table_align_pointer (obj);
-		mword obj_size = mono_sgen_par_object_get_size (vt, (MonoObject*)obj);
+		mword obj_size = sgen_par_object_get_size (vt, (MonoObject*)obj);
 		char *obj_end = obj + obj_size;
 		size_t card_count;
 		int extra_idx = 0;
@@ -562,12 +562,12 @@ LOOP_HEAD:
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
-					if (G_UNLIKELY (mono_sgen_ptr_in_nursery (old))) {
+					if (G_UNLIKELY (sgen_ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
 						copy_func ((void**)elem, queue);
 						new = *(gpointer*)elem;
-						if (G_UNLIKELY (mono_sgen_ptr_in_nursery (new)))
-							mono_sgen_add_to_global_remset (elem);
+						if (G_UNLIKELY (sgen_ptr_in_nursery (new)))
+							sgen_add_to_global_remset (elem);
 					}
 				}
 			}
@@ -638,12 +638,12 @@ sgen_card_tables_collect_stats (gboolean begin)
 		cur_stats = &major_stats;
 		sgen_major_collector_iterate_live_block_ranges (count_marked_cards);
 		cur_stats = &los_stats;
-		mono_sgen_los_iterate_live_block_ranges (count_marked_cards);
+		sgen_los_iterate_live_block_ranges (count_marked_cards);
 	} else {
 		cur_stats = &major_stats;
 		sgen_major_collector_iterate_live_block_ranges (count_marked_cards);
 		cur_stats = &los_stats;
-		mono_sgen_los_iterate_live_block_ranges (count_remarked_cards);
+		sgen_los_iterate_live_block_ranges (count_remarked_cards);
 		printf ("cards major (t %d m %d r %d)  los (t %d m %d r %d) major_scan %.2fms los_scan %.2fms\n", 
 			major_stats.total, major_stats.marked, major_stats.remarked,
 			los_stats.total, los_stats.marked, los_stats.remarked,
@@ -655,10 +655,10 @@ sgen_card_tables_collect_stats (gboolean begin)
 void
 sgen_card_table_init (SgenRemeberedSet *remset)
 {
-	sgen_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+	sgen_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	sgen_shadow_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+	sgen_shadow_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
 #endif
 
 #ifdef HEAVY_STATISTICS
@@ -677,20 +677,20 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &los_card_scan_time);
 
 
-	remset->wbarrier_set_field = mono_sgen_card_table_wbarrier_set_field;
-	remset->wbarrier_set_arrayref = mono_sgen_card_table_wbarrier_set_arrayref;
-	remset->wbarrier_arrayref_copy = mono_sgen_card_table_wbarrier_arrayref_copy;
-	remset->wbarrier_value_copy = mono_sgen_card_table_wbarrier_value_copy;
-	remset->wbarrier_object_copy = mono_sgen_card_table_wbarrier_object_copy;
-	remset->wbarrier_generic_nostore = mono_sgen_card_table_wbarrier_generic_nostore;
-	remset->record_pointer = mono_sgen_card_table_record_pointer;
+	remset->wbarrier_set_field = sgen_card_table_wbarrier_set_field;
+	remset->wbarrier_set_arrayref = sgen_card_table_wbarrier_set_arrayref;
+	remset->wbarrier_arrayref_copy = sgen_card_table_wbarrier_arrayref_copy;
+	remset->wbarrier_value_copy = sgen_card_table_wbarrier_value_copy;
+	remset->wbarrier_object_copy = sgen_card_table_wbarrier_object_copy;
+	remset->wbarrier_generic_nostore = sgen_card_table_wbarrier_generic_nostore;
+	remset->record_pointer = sgen_card_table_record_pointer;
 
-	remset->finish_scan_remsets = mono_sgen_card_table_finish_scan_remsets;
+	remset->finish_scan_remsets = sgen_card_table_finish_scan_remsets;
 
-	remset->finish_minor_collection = mono_sgen_card_table_finish_minor_collection;
-	remset->prepare_for_major_collection = mono_sgen_card_table_prepare_for_major_collection;
+	remset->finish_minor_collection = sgen_card_table_finish_minor_collection;
+	remset->prepare_for_major_collection = sgen_card_table_prepare_for_major_collection;
 
-	remset->find_address = mono_sgen_card_table_find_address;
+	remset->find_address = sgen_card_table_find_address;
 }
 
 #else

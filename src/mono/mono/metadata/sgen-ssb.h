@@ -24,7 +24,7 @@
 #ifndef __MONO_SGEN_SSB_H__
 #define __MONO_SGEN_SSB_H__
 
-void mono_sgen_ssb_init (SgenRemeberedSet *remset) MONO_INTERNAL;
+void sgen_ssb_init (SgenRemeberedSet *remset) MONO_INTERNAL;
 
 #endif
 

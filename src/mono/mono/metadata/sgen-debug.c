@@ -41,7 +41,7 @@
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
-#define safe_object_get_size	mono_sgen_safe_object_get_size
+#define safe_object_get_size	sgen_safe_object_get_size
 
 void describe_ptr (char *ptr);
 void check_object (char *start);
@@ -71,10 +71,10 @@ describe_ptr (char *ptr)
 	int type;
 	char *start;
 
-	if (mono_sgen_ptr_in_nursery (ptr)) {
+	if (sgen_ptr_in_nursery (ptr)) {
 		printf ("Pointer inside nursery.\n");
 	} else {
-		if (mono_sgen_ptr_is_in_los (ptr, &start)) {
+		if (sgen_ptr_is_in_los (ptr, &start)) {
 			if (ptr == start)
 				printf ("Pointer is the start of object %p in LOS space.\n", start);
 			else
@@ -104,7 +104,7 @@ describe_ptr (char *ptr)
 		printf ("VTable is invalid (empty).\n");
 		return;
 	}
-	if (mono_sgen_ptr_in_nursery (vtable)) {
+	if (sgen_ptr_in_nursery (vtable)) {
 		printf ("VTable is invalid (points inside nursery).\n");
 		return;
 	}
@@ -127,8 +127,8 @@ static gboolean missing_remsets;
  */
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
-	if (*(ptr) && mono_sgen_ptr_in_nursery ((char*)*(ptr))) { \
-		if (!mono_sgen_get_remset ()->find_address ((char*)(ptr))) { \
+	if (*(ptr) && sgen_ptr_in_nursery ((char*)*(ptr))) { \
+		if (!sgen_get_remset ()->find_address ((char*)(ptr))) { \
 			fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			if (!object_is_pinned (*(ptr)))								\
@@ -157,7 +157,7 @@ check_consistency_callback (char *start, size_t size, void *dummy)
  * Assumes the world is stopped.
  */
 void
-mono_sgen_check_consistency (void)
+sgen_check_consistency (void)
 {
 	// Need to add more checks
 
@@ -168,7 +168,7 @@ mono_sgen_check_consistency (void)
 	// Check that oldspace->newspace pointers are registered with the collector
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
-	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
+	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
@@ -191,17 +191,17 @@ check_major_refs_callback (char *start, size_t size, void *dummy)
 }
 
 void
-mono_sgen_check_major_refs (void)
+sgen_check_major_refs (void)
 {
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
-	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
+	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 }
 
 /* Check that the reference is valid */
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr)) {	\
-			g_assert (mono_sgen_safe_name (*(ptr)) != NULL);	\
+			g_assert (sgen_safe_name (*(ptr)) != NULL);	\
 		}	\
 	} while (0)
 

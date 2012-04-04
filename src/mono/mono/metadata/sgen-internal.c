@@ -65,7 +65,7 @@ index_for_size (size_t size)
 static int fixed_type_allocator_indexes [INTERNAL_MEM_MAX];
 
 void
-mono_sgen_register_fixed_internal_mem_type (int type, size_t size)
+sgen_register_fixed_internal_mem_type (int type, size_t size)
 {
 	int slot;
 
@@ -81,13 +81,13 @@ mono_sgen_register_fixed_internal_mem_type (int type, size_t size)
 }
 
 void*
-mono_sgen_alloc_internal_dynamic (size_t size, int type)
+sgen_alloc_internal_dynamic (size_t size, int type)
 {
 	int index;
 	void *p;
 
 	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
-		return mono_sgen_alloc_os_memory (size, TRUE);
+		return sgen_alloc_os_memory (size, TRUE);
 
 	index = index_for_size (size);
 
@@ -97,7 +97,7 @@ mono_sgen_alloc_internal_dynamic (size_t size, int type)
 }
 
 void
-mono_sgen_free_internal_dynamic (void *addr, size_t size, int type)
+sgen_free_internal_dynamic (void *addr, size_t size, int type)
 {
 	int index;
 
@@ -105,7 +105,7 @@ mono_sgen_free_internal_dynamic (void *addr, size_t size, int type)
 		return;
 
 	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
-		return mono_sgen_free_os_memory (addr, size);
+		return sgen_free_os_memory (addr, size);
 
 	index = index_for_size (size);
 
@@ -113,7 +113,7 @@ mono_sgen_free_internal_dynamic (void *addr, size_t size, int type)
 }
 
 void*
-mono_sgen_alloc_internal (int type)
+sgen_alloc_internal (int type)
 {
 	int index = fixed_type_allocator_indexes [type];
 	void *p;
@@ -124,7 +124,7 @@ mono_sgen_alloc_internal (int type)
 }
 
 void
-mono_sgen_free_internal (void *addr, int type)
+sgen_free_internal (void *addr, int type)
 {
 	int index;
 
@@ -138,7 +138,7 @@ mono_sgen_free_internal (void *addr, int type)
 }
 
 void
-mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file)
+sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 {
 	/*
 	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
@@ -160,14 +160,14 @@ mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 }
 
 void
-mono_sgen_report_internal_mem_usage (void)
+sgen_report_internal_mem_usage (void)
 {
 	/* FIXME: implement */
 	printf ("not implemented yet\n");
 }
 
 void
-mono_sgen_init_internal_allocator (void)
+sgen_init_internal_allocator (void)
 {
 	int i;
 

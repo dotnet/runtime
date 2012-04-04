@@ -68,12 +68,12 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 	info->stopped_domain = mono_domain_get ();
 	info->stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
-	stop_count = mono_sgen_global_stop_count;
+	stop_count = sgen_global_stop_count;
 	/* duplicate signal */
 	if (0 && info->stop_count == stop_count)
 		return;
 
-	mono_sgen_fill_thread_info_for_suspend (info);
+	sgen_fill_thread_info_for_suspend (info);
 
 	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
 	/* If stack_start is not within the limits, then don't set it
@@ -179,19 +179,19 @@ restart_handler (int sig)
 }
 
 gboolean
-mono_sgen_resume_thread (SgenThreadInfo *info)
+sgen_resume_thread (SgenThreadInfo *info)
 {
 	return mono_threads_pthread_kill (info, restart_signal_num) == 0;
 }
 
 gboolean
-mono_sgen_suspend_thread (SgenThreadInfo *info)
+sgen_suspend_thread (SgenThreadInfo *info)
 {
 	return mono_threads_pthread_kill (info, suspend_signal_num) == 0;
 }
 
 void
-mono_sgen_wait_for_suspend_ack (int count)
+sgen_wait_for_suspend_ack (int count)
 {
 	int i, result;
 
@@ -205,7 +205,7 @@ mono_sgen_wait_for_suspend_ack (int count)
 }
 
 gboolean
-mono_sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p)
+sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p)
 {
     if (!p->doing_handshake)
 	    return FALSE;
@@ -215,7 +215,7 @@ mono_sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p)
 }
 
 int
-mono_sgen_thread_handshake (BOOL suspend)
+sgen_thread_handshake (BOOL suspend)
 {
 	int count, result;
 	SgenThreadInfo *info;
@@ -247,13 +247,13 @@ mono_sgen_thread_handshake (BOOL suspend)
 		}
 	} END_FOREACH_THREAD_SAFE
 
-	mono_sgen_wait_for_suspend_ack (count);
+	sgen_wait_for_suspend_ack (count);
 
 	return count;
 }
 
 void
-mono_sgen_os_init (void)
+sgen_os_init (void)
 {
 	struct sigaction sinfo;
 

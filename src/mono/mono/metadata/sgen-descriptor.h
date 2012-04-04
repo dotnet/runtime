@@ -115,13 +115,13 @@ enum {
 	ROOT_DESC_TYPE_SHIFT = 3,
 };
 
-gsize* mono_sgen_get_complex_descriptor (mword desc) MONO_INTERNAL;
-void* mono_sgen_get_complex_descriptor_bitmap (mword desc) MONO_INTERNAL;
-MonoGCRootMarkFunc mono_sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL;
+gsize* sgen_get_complex_descriptor (mword desc) MONO_INTERNAL;
+void* sgen_get_complex_descriptor_bitmap (mword desc) MONO_INTERNAL;
+MonoGCRootMarkFunc sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL;
 
 
 static inline gboolean
-mono_sgen_gc_descr_has_references (mword desc)
+sgen_gc_descr_has_references (mword desc)
 {
 	/*Both string and fixed size objects are encoded using a zero run RUN_LEN*/
 	if ((desc & 0xffff0007) == DESC_TYPE_RUN_LENGTH)
@@ -137,8 +137,8 @@ mono_sgen_gc_descr_has_references (mword desc)
 	return TRUE;
 }
 
-#define SGEN_VTABLE_HAS_REFERENCES(vt)	(mono_sgen_gc_descr_has_references ((mword)((MonoVTable*)(vt))->gc_descr))
-#define SGEN_CLASS_HAS_REFERENCES(c)	(mono_sgen_gc_descr_has_references ((mword)(c)->gc_descr))
+#define SGEN_VTABLE_HAS_REFERENCES(vt)	(sgen_gc_descr_has_references ((mword)((MonoVTable*)(vt))->gc_descr))
+#define SGEN_CLASS_HAS_REFERENCES(c)	(sgen_gc_descr_has_references ((mword)(c)->gc_descr))
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
@@ -204,7 +204,7 @@ mono_sgen_gc_descr_has_references (mword desc)
 #define OBJ_COMPLEX_FOREACH_PTR(vt,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
-		gsize *bitmap_data = mono_sgen_get_complex_descriptor ((desc)); \
+		gsize *bitmap_data = sgen_get_complex_descriptor ((desc)); \
 		int bwords = (*bitmap_data) - 1;	\
 		void **start_run = _objptr;	\
 		bitmap_data++;	\
@@ -230,7 +230,7 @@ mono_sgen_gc_descr_has_references (mword desc)
 /* this one is untested */
 #define OBJ_COMPLEX_ARR_FOREACH_PTR(vt,obj)	do {	\
 		/* there are pointers */	\
-		gsize *mbitmap_data = mono_sgen_get_complex_descriptor ((vt)->desc); \
+		gsize *mbitmap_data = sgen_get_complex_descriptor ((vt)->desc); \
 		int mbwords = (*mbitmap_data++) - 1;	\
 		int el_size = mono_array_element_size (vt->klass);	\
 		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\

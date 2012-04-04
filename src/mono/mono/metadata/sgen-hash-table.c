@@ -37,14 +37,14 @@ rehash (SgenHashTable *hash_table)
 	SgenHashTableEntry *entry, *next;
 
 	if (!old_hash) {
-		mono_sgen_register_fixed_internal_mem_type (hash_table->entry_mem_type,
+		sgen_register_fixed_internal_mem_type (hash_table->entry_mem_type,
 				sizeof (SgenHashTableEntry*) + sizeof (gpointer) + hash_table->data_size);
 		new_size = 13;
 	} else {
 		new_size = g_spaced_primes_closest (hash_table->num_entries);
 	}
 
-	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
+	new_hash = sgen_alloc_internal_dynamic (new_size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
 	for (i = 0; i < old_hash_size; ++i) {
 		for (entry = old_hash [i]; entry; entry = next) {
 			hash = hash_table->hash_func (entry->key) % new_size;
@@ -53,7 +53,7 @@ rehash (SgenHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	mono_sgen_free_internal_dynamic (old_hash, old_hash_size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
+	sgen_free_internal_dynamic (old_hash, old_hash_size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -87,7 +87,7 @@ lookup (SgenHashTable *hash_table, gpointer key, guint *_hash)
 }
 
 gpointer
-mono_sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
+sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
 {
 	SgenHashTableEntry *entry = lookup (hash_table, key, NULL);
 	if (!entry)
@@ -96,7 +96,7 @@ mono_sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
 }
 
 gboolean
-mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
+sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
 {
 	guint hash;
 	SgenHashTableEntry *entry;
@@ -109,7 +109,7 @@ mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer 
 		return FALSE;
 	}
 
-	entry = mono_sgen_alloc_internal (hash_table->entry_mem_type);
+	entry = sgen_alloc_internal (hash_table->entry_mem_type);
 	entry->key = key;
 	memcpy (entry->data, data, hash_table->data_size);
 
@@ -122,7 +122,7 @@ mono_sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer 
 }
 
 gboolean
-mono_sgen_hash_table_set_value (SgenHashTable *hash_table, gpointer key, gpointer data)
+sgen_hash_table_set_value (SgenHashTable *hash_table, gpointer key, gpointer data)
 {
 	guint hash;
 	SgenHashTableEntry *entry;
@@ -138,7 +138,7 @@ mono_sgen_hash_table_set_value (SgenHashTable *hash_table, gpointer key, gpointe
 }
 
 gboolean
-mono_sgen_hash_table_set_key (SgenHashTable *hash_table, gpointer old_key, gpointer new_key)
+sgen_hash_table_set_key (SgenHashTable *hash_table, gpointer old_key, gpointer new_key)
 {
 	guint hash;
 	SgenHashTableEntry *entry;
@@ -154,7 +154,7 @@ mono_sgen_hash_table_set_key (SgenHashTable *hash_table, gpointer old_key, gpoin
 }
 
 gboolean
-mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer data_return)
+sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer data_return)
 {
 	SgenHashTableEntry *entry, *prev;
 	guint hash;
@@ -176,7 +176,7 @@ mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer d
 			if (data_return)
 				memcpy (data_return, entry->data, hash_table->data_size);
 
-			mono_sgen_free_internal (entry, hash_table->entry_mem_type);
+			sgen_free_internal (entry, hash_table->entry_mem_type);
 
 			return TRUE;
 		}
@@ -187,7 +187,7 @@ mono_sgen_hash_table_remove (SgenHashTable *hash_table, gpointer key, gpointer d
 }
 
 void
-mono_sgen_hash_table_clean (SgenHashTable *hash_table)
+sgen_hash_table_clean (SgenHashTable *hash_table)
 {
 	guint i;
 
@@ -201,12 +201,12 @@ mono_sgen_hash_table_clean (SgenHashTable *hash_table)
 		SgenHashTableEntry *entry = hash_table->table [i];
 		while (entry) {
 			SgenHashTableEntry *next = entry->next;
-			mono_sgen_free_internal (entry, hash_table->entry_mem_type);
+			sgen_free_internal (entry, hash_table->entry_mem_type);
 			entry = next;
 		}
 	}
 
-	mono_sgen_free_internal_dynamic (hash_table->table, hash_table->size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
+	sgen_free_internal_dynamic (hash_table->table, hash_table->size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
 
 	hash_table->table = NULL;
 	hash_table->size = 0;

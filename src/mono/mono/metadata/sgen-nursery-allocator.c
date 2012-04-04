@@ -126,18 +126,18 @@ static Fragment *fragment_freelist = NULL;
 /* Allocator cursors */
 static char *nursery_last_pinned_end = NULL;
 
-char *mono_sgen_nursery_start;
-char *mono_sgen_nursery_end;
+char *sgen_nursery_start;
+char *sgen_nursery_end;
 
 #ifdef USER_CONFIG
-int mono_sgen_nursery_size = (1 << 22);
+int sgen_nursery_size = (1 << 22);
 #ifdef SGEN_ALIGN_NURSERY
-int mono_sgen_nursery_bits = 22;
+int sgen_nursery_bits = 22;
 #endif
 #endif
 
 
-static void mono_sgen_clear_range (char *start, char *end);
+static void sgen_clear_range (char *start, char *end);
 
 #ifdef HEAVY_STATISTICS
 
@@ -300,7 +300,7 @@ alloc_fragment (void)
 		frag->next = frag->next_in_order = NULL;
 		return frag;
 	}
-	frag = mono_sgen_alloc_internal (INTERNAL_MEM_FRAGMENT);
+	frag = sgen_alloc_internal (INTERNAL_MEM_FRAGMENT);
 	frag->next = frag->next_in_order = NULL;
 	return frag;
 }
@@ -419,8 +419,8 @@ par_alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t si
 		 * allocating from this dying fragment as it doesn't respect SGEN_MAX_NURSERY_WASTE
 		 * when doing second chance allocation.
 		 */
-		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION && claim_remaining_size (frag, end)) {
-			mono_sgen_clear_range (end, frag->fragment_end);
+		if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION && claim_remaining_size (frag, end)) {
+			sgen_clear_range (end, frag->fragment_end);
 			HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_trailer, frag->fragment_end - end));
 #ifdef NALLOC_DEBUG
 			add_alloc_record (end, frag->fragment_end - end, BLOCK_ZEROING);
@@ -524,8 +524,10 @@ serial_alloc (FragmentAllocator *allocator, size_t size)
 	previous = &allocator->alloc_head;
 
 	for (frag = *previous; frag; frag = *previous) {
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
 		char *p = serial_alloc_from_fragment (previous, frag, size);
+
+		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
+
 		if (p) {
 #ifdef NALLOC_DEBUG
 			add_alloc_record (p, size, FIXED_ALLOC);
@@ -608,7 +610,7 @@ clear_allocator_fragments (FragmentAllocator *allocator)
 
 	for (frag = unmask (allocator->alloc_head); frag; frag = unmask (frag->next)) {
 		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_next, frag->fragment_end));
-		mono_sgen_clear_range (frag->fragment_next, frag->fragment_end);
+		sgen_clear_range (frag->fragment_next, frag->fragment_end);
 #ifdef NALLOC_DEBUG
 		add_alloc_record (frag->fragment_next, frag->fragment_end - frag->fragment_next, CLEAR_NURSERY_FRAGS);
 #endif
@@ -617,15 +619,15 @@ clear_allocator_fragments (FragmentAllocator *allocator)
 
 /* Clear all remaining nursery fragments */
 void
-mono_sgen_clear_nursery_fragments (void)
+sgen_clear_nursery_fragments (void)
 {
-	if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
+	if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
 		clear_allocator_fragments (&nursery_allocator);
 	}
 }
 
 static void
-mono_sgen_clear_range (char *start, char *end)
+sgen_clear_range (char *start, char *end)
 {
 	MonoArray *o;
 	size_t size = end - start;
@@ -636,17 +638,17 @@ mono_sgen_clear_range (char *start, char *end)
 	}
 
 	o = (MonoArray*)start;
-	o->obj.vtable = mono_sgen_get_array_fill_vtable ();
+	o->obj.vtable = sgen_get_array_fill_vtable ();
 	/* Mark this as not a real object */
 	o->obj.synchronisation = GINT_TO_POINTER (-1);
 	o->bounds = NULL;
 	o->max_length = size - sizeof (MonoArray);
-	mono_sgen_set_nursery_scan_start (start);
-	g_assert (start + mono_sgen_safe_object_get_size ((MonoObject*)o) == end);
+	sgen_set_nursery_scan_start (start);
+	g_assert (start + sgen_safe_object_get_size ((MonoObject*)o) == end);
 }
 
 void
-mono_sgen_nursery_allocator_prepare_for_pinning (void)
+sgen_nursery_allocator_prepare_for_pinning (void)
 {
 	clear_allocator_fragments (&nursery_allocator);
 }
@@ -665,7 +667,7 @@ add_nursery_frag (FragmentAllocator *allocator, size_t frag_size, char* frag_sta
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= SGEN_MAX_NURSERY_WASTE) {
 		/* memsetting just the first chunk start is bound to provide better cache locality */
-		if (mono_sgen_get_nursery_clear_policy () == CLEAR_AT_GC)
+		if (sgen_get_nursery_clear_policy () == CLEAR_AT_GC)
 			memset (frag_start, 0, frag_size);
 
 #ifdef NALLOC_DEBUG
@@ -677,13 +679,13 @@ add_nursery_frag (FragmentAllocator *allocator, size_t frag_size, char* frag_sta
 		fragment_total += frag_size;
 	} else {
 		/* Clear unused fragments, pinning depends on this */
-		mono_sgen_clear_range (frag_start, frag_end);
+		sgen_clear_range (frag_start, frag_end);
 		HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_small_areas, frag_size));
 	}
 }
 
 mword
-mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries)
+sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
@@ -695,7 +697,7 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 
 	release_fragment_list (&nursery_allocator);
 
-	frag_start = mono_sgen_nursery_start;
+	frag_start = sgen_nursery_start;
 	fragment_total = 0;
 	/* clear scan starts */
 	memset (nursery_section->scan_starts, 0, nursery_section->num_scan_start * sizeof (gpointer));
@@ -703,32 +705,32 @@ mono_sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, 
 		frag_end = start [i];
 		/* remove the pin bit from pinned objects */
 		SGEN_UNPIN_OBJECT (frag_end);
-		mono_sgen_set_nursery_scan_start (frag_end);
+		sgen_set_nursery_scan_start (frag_end);
 		frag_size = frag_end - frag_start;
 		if (frag_size)
 			add_nursery_frag (&nursery_allocator, frag_size, frag_start, frag_end);
-		frag_size = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)start [i]));
+		frag_size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)start [i]));
 #ifdef NALLOC_DEBUG
 		add_alloc_record (start [i], frag_size, PINNING);
 #endif
 		frag_start = (char*)start [i] + frag_size;
 	}
 	nursery_last_pinned_end = frag_start;
-	frag_end = mono_sgen_nursery_end;
+	frag_end = sgen_nursery_end;
 	frag_size = frag_end - frag_start;
 	if (frag_size)
 		add_nursery_frag (&nursery_allocator, frag_size, frag_start, frag_end);
 	if (!unmask (nursery_allocator.alloc_head)) {
 		DEBUG (1, fprintf (gc_debug_file, "Nursery fully pinned (%d)\n", num_entries));
 		for (i = 0; i < num_entries; ++i) {
-			DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", start [i], mono_sgen_safe_name (start [i]), mono_sgen_safe_object_get_size (start [i])));
+			DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", start [i], sgen_safe_name (start [i]), sgen_safe_object_get_size (start [i])));
 		}
 	}
 	return fragment_total;
 }
 
 char *
-mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
+sgen_nursery_alloc_get_upper_alloc_bound (void)
 {
 	char *p = NULL;
 	Fragment *frag;
@@ -741,13 +743,13 @@ mono_sgen_nursery_alloc_get_upper_alloc_bound (void)
 
 /*** Nursery memory allocation ***/
 void
-mono_sgen_nursery_retire_region (void *address, ptrdiff_t size)
+sgen_nursery_retire_region (void *address, ptrdiff_t size)
 {
 	HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_discarded_fragments, size));
 }
 
 gboolean
-mono_sgen_can_alloc_size (size_t size)
+sgen_can_alloc_size (size_t size)
 {
 	Fragment *frag;
 	size = SGEN_ALIGN_UP (size);
@@ -760,7 +762,7 @@ mono_sgen_can_alloc_size (size_t size)
 }
 
 void*
-mono_sgen_nursery_alloc (size_t size)
+sgen_nursery_alloc (size_t size)
 {
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery for size: %zd\n", size));
 	size = SGEN_ALIGN_UP (size);
@@ -771,7 +773,7 @@ mono_sgen_nursery_alloc (size_t size)
 }
 
 void*
-mono_sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *out_alloc_size)
+sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *out_alloc_size)
 {
 	DEBUG (4, fprintf (gc_debug_file, "Searching for byte range desired size: %zd minimum size %zd\n", desired_size, minimum_size));
 
@@ -785,7 +787,7 @@ mono_sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *ou
 #ifdef HEAVY_STATISTICS
 
 void
-mono_sgen_nursery_allocator_init_heavy_stats (void)
+sgen_nursery_allocator_init_heavy_stats (void)
 {
 	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_trailer);
 	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_small_areas);
@@ -803,21 +805,21 @@ mono_sgen_nursery_allocator_init_heavy_stats (void)
 #endif
 
 void
-mono_sgen_init_nursery_allocator (void)
+sgen_init_nursery_allocator (void)
 {
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
+	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
 #ifdef NALLOC_DEBUG
-	alloc_records = mono_sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE);
+	alloc_records = sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE);
 #endif
 }
 
 void
-mono_sgen_nursery_allocator_set_nursery_bounds (char *start, char *end)
+sgen_nursery_allocator_set_nursery_bounds (char *start, char *end)
 {
 	/* Setup the single first large fragment */
 	add_fragment (&nursery_allocator, start, end);
-	mono_sgen_nursery_start = start;
-	mono_sgen_nursery_end = end;
+	sgen_nursery_start = start;
+	sgen_nursery_end = end;
 }
 
 #endif
