@@ -149,8 +149,8 @@ nopar_copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	/*
 	 * Before we can copy the object we must make sure that we are
-	 * allowed to, i.e. that the object not pinned or not already
-	 * forwarded.
+	 * allowed to, i.e. that the object not pinned, not already
+	 * forwarded or belongs to the nursery To Space.
 	 */
 
 	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
@@ -204,8 +204,8 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	/*
 	 * Before we can copy the object we must make sure that we are
-	 * allowed to, i.e. that the object not pinned or not already
-	 * forwarded.
+	 * allowed to, i.e. that the object not pinned, not already
+	 * forwarded and not in the nursery To Space.
 	 */
 
 	if (vtable_word & SGEN_FORWARDED_BIT) {

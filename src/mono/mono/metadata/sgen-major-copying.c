@@ -310,8 +310,8 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	 *
 	 * Before we can copy the object we must make sure that we are
 	 * allowed to, i.e. that the object not pinned, not already
-	 * forwarded and doesn't belong to the LOS, a pinned chunk, or
-	 * a to-space section.
+	 * forwarded, not in the nursery To Space and doesn't belong
+	 * to the LOS, a pinned chunk, or a to-space section.
 	 *
 	 * We are usually called for to-space objects (5) when we have
 	 * two remset entries for the same reference.  The first entry
@@ -336,6 +336,7 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	}
 
 	if (ptr_in_nursery (obj)) {
+		/* A To Space object is already on its final destination for the current collection. */
 		if (sgen_nursery_is_to_space (obj))
 			return;
 		goto copy;

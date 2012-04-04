@@ -1078,6 +1078,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		if (vtable_word & SGEN_PINNED_BIT)
 			return;
 
+		/* An object in the nursery To Space has already been copied and grayed. Nothing to do. */
 		if (sgen_nursery_is_to_space (obj))
 			return;
 
@@ -1230,6 +1231,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		if (SGEN_OBJECT_IS_PINNED (obj))
 			return;
 
+		/* An object in the nursery To Space has already been copied and grayed. Nothing to do. */
 		if (sgen_nursery_is_to_space (obj))
 			return;
 
