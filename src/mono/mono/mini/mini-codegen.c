@@ -2174,8 +2174,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 					fxch->inst_imm = sp - 1 - i;
 
-					prev->next = fxch;
-					fxch->next = ins;
+					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
 					tmp = fpstack [sp - 1];
@@ -2189,8 +2188,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 				fxch->inst_imm = 1;
 
-				prev->next = fxch;
-				fxch->next = ins;
+				mono_bblock_insert_after_ins (bb, prev, fxch);
 				prev = fxch;
 
 				tmp = fpstack [sp - 1];
@@ -2214,8 +2212,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 					fxch->inst_imm = sp - 1 - i;
 
-					prev->next = fxch;
-					fxch->next = ins;
+					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
 					tmp = fpstack [sp - 1];
@@ -2242,8 +2239,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 					fxch->inst_imm = sp - 1 - i;
 
-					prev->next = fxch;
-					fxch->next = ins;
+					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
 					tmp = fpstack [sp - 1];
