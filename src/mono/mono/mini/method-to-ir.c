@@ -9246,7 +9246,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->sreg1 = sp [0]->dreg;
 					ins->inst_newa_class = klass;
 					ins->type = STACK_OBJ;
-					ins->klass = klass;
+					ins->klass = array_type;
 					MONO_ADD_INS (cfg->cbb, ins);
 					cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
 					cfg->cbb->has_array_access = TRUE;
