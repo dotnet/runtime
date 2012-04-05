@@ -440,6 +440,7 @@ class MsbuildGenerator {
 			StrongNameKeyContainer = value;
 			return true;
 		case "/delaysign+":
+		case "/delaysign":
 			StrongNameDelaySign = true;
 			return true;
 		case "/delaysign-":
