@@ -3147,10 +3147,8 @@ msvc/Makefile
 po/Makefile
 ])
 
-# Update all sub-modules recursively to ensure everything is checked out
-if test -d .git; then
-	git submodule update --init --recursive
-fi
+# Update all submodules recursively to ensure everything is checked out
+./scripts/update_submodules
 
 if test x$host_win32 = xyes; then
    # Get rid of 'cyg' prefixes in library names

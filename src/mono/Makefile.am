@@ -18,6 +18,14 @@ DIST_SUBDIRS = m4 po libgc eglib mono ikvm-native support data runtime scripts m
 endif
 endif
 
+all: update_submodules
+
+SUBMODULE_ERROR='Could not recursively update all git submodules. You may experience compilation problems if some submodules are out of date'
+update_submodules:
+	@./scripts/update_submodules
+
+.PHONY: update_submodules
+
 EXTRA_DIST= \
 	    LICENSE \
 	    autogen.sh \
