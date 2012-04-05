@@ -296,11 +296,6 @@ sgen_get_nursery_end (void)
 	return sgen_nursery_end;
 }
 
-gboolean sgen_nursery_is_from_space (char *pos) MONO_INTERNAL;
-gboolean sgen_nursery_is_to_space (char *pos) MONO_INTERNAL;
-gboolean sgen_nursery_is_object_alive (char *obj) MONO_INTERNAL;
-
-
 /* Structure that corresponds to a MonoVTable: desc is a mword so requires
  * no cast from a pointer to an integer
  */
@@ -503,6 +498,105 @@ typedef struct {
 } SgenObjectOperations;
 
 SgenObjectOperations *sgen_get_current_object_ops (void) MONO_INTERNAL;
+
+typedef struct _SgenFragment SgenFragment;
+
+struct _SgenFragment {
+	SgenFragment *next;
+	char *fragment_start;
+	char *fragment_next; /* the current soft limit for allocation */
+	char *fragment_end;
+	SgenFragment *next_in_order; /* We use a different entry for all active fragments so we can avoid SMR. */
+};
+
+typedef struct {
+	SgenFragment *alloc_head; /* List head to be used when allocating memory. Walk with fragment_next. */
+	SgenFragment *region_head; /* List head of the region used by this allocator. Walk with next_in_order. */
+} SgenFragmentAllocator;
+
+void sgen_fragment_allocator_add (SgenFragmentAllocator *allocator, char *start, char *end) MONO_INTERNAL;
+void sgen_fragment_allocator_release (SgenFragmentAllocator *allocator) MONO_INTERNAL;
+void* sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t size) MONO_INTERNAL;
+void* sgen_fragment_allocator_par_alloc (SgenFragmentAllocator *allocator, size_t size) MONO_INTERNAL;
+SgenFragment* sgen_fragment_allocator_alloc (void) MONO_INTERNAL;
+void sgen_clear_allocator_fragments (SgenFragmentAllocator *allocator) MONO_INTERNAL;
+void sgen_clear_range (char *start, char *end) MONO_INTERNAL;
+
+
+/*
+This is a space/speed compromise as we need to make sure the from/to space check is both O(1)
+and only hit cache hot memory. On a 4Mb nursery it requires 1024 bytes, or 3% of your average
+L1 cache. On small configs with a 512kb nursery, this goes to 0.4%.
+
+Experimental results on how much space we waste with a 4Mb nursery:
+
+Note that the wastage applies to the half nursery, or 2Mb:
+
+Test 1 (compiling corlib):
+9: avg: 3.1k
+8: avg: 1.6k
+
+*/
+#define SGEN_TO_SPACE_GRANULE_BITS 9
+#define SGEN_TO_SPACE_GRANULE_IN_BYTES (1 << SGEN_TO_SPACE_GRANULE_BITS)
+
+extern char *sgen_space_bitmap MONO_INTERNAL;
+extern int sgen_space_bitmap_size MONO_INTERNAL;
+
+static inline gboolean
+sgen_nursery_is_to_space (char *object)
+{
+	int idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	int byte = idx / 8;
+	int bit = idx & 0x7;
+
+	/* FIXME put those asserts under a non default level */
+	g_assert (sgen_ptr_in_nursery (object));
+	g_assert (byte < sgen_space_bitmap_size);
+
+	return (sgen_space_bitmap [byte] & (1 << bit)) != 0;
+}
+
+static inline gboolean
+sgen_nursery_is_from_space (char *object)
+{
+	return !sgen_nursery_is_to_space (object);
+}
+
+static inline gboolean
+sgen_nursery_is_object_alive (char *obj)
+{
+	/* FIXME put this asserts under a non default level */
+	g_assert (sgen_ptr_in_nursery (obj));
+
+	if (sgen_nursery_is_to_space (obj))
+		return TRUE;
+
+	if (SGEN_OBJECT_IS_PINNED (obj) || SGEN_OBJECT_IS_FORWARDED (obj))
+		return TRUE;
+
+	return FALSE;
+}
+
+typedef struct {
+	char* (*alloc_for_promotion) (char *obj, size_t objsize, gboolean has_references);
+	char* (*par_alloc_for_promotion) (char *obj, size_t objsize, gboolean has_references);
+
+	void (*prepare_to_space) (char *to_space_bitmap, int space_bitmap_size);
+	void (*clear_fragments) (void);
+	SgenFragment* (*build_fragments_get_exclude_head) (void);
+	void (*build_fragments_release_exclude_head) (void);
+	void (*build_fragments_finish) (SgenFragmentAllocator *allocator);
+	void (*init_nursery) (SgenFragmentAllocator *allocator, char *start, char *end);
+
+	gboolean (*handle_gc_param) (const char *opt); /* Optional */
+	void (*print_gc_param_usage) (void); /* Optional */
+} SgenMinorCollector;
+
+extern SgenMinorCollector sgen_minor_collector;
+
+void sgen_simple_nursery_init (SgenMinorCollector *collector) MONO_INTERNAL;
+void sgen_split_nursery_init (SgenMinorCollector *collector) MONO_INTERNAL;
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;

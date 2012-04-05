@@ -1088,7 +1088,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-		destination = sgen_par_alloc_for_promotion (obj, objsize, has_references);
+		destination = sgen_minor_collector.par_alloc_for_promotion (obj, objsize, has_references);
 		if (G_UNLIKELY (!destination)) {
 			if (!sgen_ptr_in_nursery (obj)) {
 				int size_index;

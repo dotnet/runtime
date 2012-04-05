@@ -403,8 +403,6 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	mword count;
 	mword desc;
 
-	ScanVTypeFunc scan_vtype = sgen_get_current_object_ops ()->scan_vtype;
-
 	if (global)
 		HEAVY_STAT (++stat_global_remsets_processed);
 	else

@@ -666,6 +666,7 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenObjectOperations current_object_ops;
 SgenMajorCollector major_collector;
+SgenMinorCollector sgen_minor_collector;
 static GrayQueue gray_queue;
 
 static SgenRemeberedSet remset;
@@ -4636,6 +4637,7 @@ mono_gc_base_init (void)
 	char *env;
 	char **opts, **ptr;
 	char *major_collector_opt = NULL;
+	char *minor_collector_opt = NULL;
 	glong max_heap = 0;
 	glong soft_limit = 0;
 	int num_workers;
@@ -4687,6 +4689,9 @@ mono_gc_base_init (void)
 			if (g_str_has_prefix (opt, "major=")) {
 				opt = strchr (opt, '=') + 1;
 				major_collector_opt = g_strdup (opt);
+			} else if (g_str_has_prefix (opt, "minor=")) {
+				opt = strchr (opt, '=') + 1;
+				minor_collector_opt = g_strdup (opt);
 			}
 		}
 	} else {
@@ -4716,6 +4721,20 @@ mono_gc_base_init (void)
 	sgen_os_init ();
 
 	mono_thread_info_attach (&dummy);
+
+	if (!minor_collector_opt) {
+		sgen_simple_nursery_init (&sgen_minor_collector);
+	} else {
+		if (!strcmp (minor_collector_opt, "simple"))
+			sgen_simple_nursery_init (&sgen_minor_collector);
+		else if (!strcmp (minor_collector_opt, "split"))
+			sgen_split_nursery_init (&sgen_minor_collector);
+		else {
+			fprintf (stderr, "Unknown minor collector `%s'.\n", minor_collector_opt);
+			exit (1);
+			
+		}
+	}
 
 	if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep")) {
 		sgen_marksweep_init (&major_collector);
@@ -4752,6 +4771,8 @@ mono_gc_base_init (void)
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
 			if (g_str_has_prefix (opt, "major="))
+				continue;
+			if (g_str_has_prefix (opt, "minor="))
 				continue;
 			if (g_str_has_prefix (opt, "wbarrier=")) {
 				opt = strchr (opt, '=') + 1;
@@ -4859,18 +4880,25 @@ mono_gc_base_init (void)
 				continue;
 			}
 #endif
-			if (!(major_collector.handle_gc_param && major_collector.handle_gc_param (opt))) {
-				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
-				fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
-				fprintf (stderr, "  soft-heap-limit=n (where N is an integer, possibly with a k, m or a g suffix)\n");
-				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
-				fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
-				fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
-				fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
-				if (major_collector.print_gc_param_usage)
-					major_collector.print_gc_param_usage ();
-				exit (1);
-			}
+			if (major_collector.handle_gc_param && major_collector.handle_gc_param (opt))
+				continue;
+
+			if (sgen_minor_collector.handle_gc_param && sgen_minor_collector.handle_gc_param (opt))
+				continue;
+
+			fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
+			fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
+			fprintf (stderr, "  soft-heap-limit=n (where N is an integer, possibly with a k, m or a g suffix)\n");
+			fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
+			fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
+			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
+			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
+			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
+			if (major_collector.print_gc_param_usage)
+				major_collector.print_gc_param_usage ();
+			if (sgen_minor_collector.print_gc_param_usage)
+				sgen_minor_collector.print_gc_param_usage ();
+			exit (1);
 		}
 		g_strfreev (opts);
 	}

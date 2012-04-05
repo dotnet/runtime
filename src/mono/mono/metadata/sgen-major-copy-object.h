@@ -88,7 +88,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 	mword objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
-	char *destination = sgen_alloc_for_promotion (obj, objsize, has_references);
+	char *destination = sgen_minor_collector.alloc_for_promotion (obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
 		if (sgen_ptr_in_nursery (obj)) {
@@ -228,7 +228,7 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 	objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 	has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-	destination = sgen_par_alloc_for_promotion (obj, objsize, has_references);
+	destination = sgen_minor_collector.par_alloc_for_promotion (obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
 		pin_or_update_par (obj_slot, obj, vt, queue);

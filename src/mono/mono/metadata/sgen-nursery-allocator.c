@@ -91,82 +91,14 @@
 #include "utils/mono-proclib.h"
 #include "utils/mono-threads.h"
 
-/*
-The nursery is logically divided into 3 spaces: Allocator space and two Survivor spaces.
-
-Objects are born (allocated by the mutator) in the Allocator Space.
-
-The Survivor spaces are divided in a copying collector style From and To spaces.
-The hole of each space switch on each collection.
-
-On each collection we process objects from the nursery this way:
-Objects from the Allocator Space are evacuated into the To Space.
-Objects from the Survivor From Space are evacuated into the old generation.
-
-
-The nursery is physically divided in two parts, set by the promotion barrier.
-
-The Allocator Space takes the botton part of the nursery.
-
-The Survivor spaces are intermingled in the top part of the nursery. It's done
-this way since the required size for the To Space depends on the survivor rate
-of objects from the Allocator Space. 
-
-During a collection when the object scan function see a nursery object it must
-determine if the object needs to be evacuated or left in place. Originally, this
-check was done by checking is a forwarding pointer is installed, but now an object
-can be in the To Space, it won't have a forwarding pointer and it must be left in place.
-
-In order to solve that we classify nursery memory been either in the From Space or in
-the To Space. Since the Allocator Space has the same behavior as the Survivor From Space
-they are unified for this purpoise - a bit confusing at first.
-
-This from/to classification is done on a larger granule than object to make the check efficient
-and, due to that, we must make sure that all fragemnts used to allocate memory from the To Space
-are naturally aligned in both ends to that granule to avoid wronly classifying a From Space object.
-
-TODO:
--The promotion barrier is statically defined to 50% of the nursery, it should be dinamically adjusted based
-on survival rates;
--Objects are aged just one collection, we need to implement multiple cycle aging;
--We apply the same promotion policy to all objects, finalizable ones should age longer in the nursery;
--We apply the same promotion policy to all stages of a collection, maybe we should promote more aggressively
-objects from non-stack roots, specially those found in the remembered set;
--Make the new behavior runtime selectable;
--Make the new behavior have a low overhead when disabled;
--Make all new exported functions inlineable in other modules;
--Create specialized copy & scan functions for nursery collections;
--Decide if this is the right place for this code;
--Fix our major collection trigger to happen before we do a minor GC and collect the nursery only once.
-*/
-static char *promotion_barrier;
-
-typedef struct _Fragment Fragment;
-
-struct _Fragment {
-	Fragment *next;
-	char *fragment_start;
-	char *fragment_next; /* the current soft limit for allocation */
-	char *fragment_end;
-	Fragment *next_in_order; /* We use a different entry for all active fragments so we can avoid SMR. */
-};
-
-typedef struct {
-	Fragment *alloc_head; /* List head to be used when allocating memory. Walk with fragment_next. */
-	Fragment *region_head; /* List head of the region used by this allocator. Walk with next_in_order. */
-} FragmentAllocator;
-
 /* Enable it so nursery allocation diagnostic data is collected */
 //#define NALLOC_DEBUG 1
 
 /* The mutator allocs from here. */
-static FragmentAllocator mutator_allocator;
-
-/* The collector allocs from here. */
-static FragmentAllocator collector_allocator;
+SgenFragmentAllocator mutator_allocator;
 
 /* freeelist of fragment structures */
-static Fragment *fragment_freelist = NULL;
+static SgenFragment *fragment_freelist = NULL;
 
 /* Allocator cursors */
 static char *nursery_last_pinned_end = NULL;
@@ -181,8 +113,8 @@ int sgen_nursery_bits = 22;
 #endif
 #endif
 
-
-static void sgen_clear_range (char *start, char *end);
+char *sgen_space_bitmap MONO_INTERNAL;
+int sgen_space_bitmap_size MONO_INTERNAL;
 
 #ifdef HEAVY_STATISTICS
 
@@ -336,10 +268,10 @@ get_mark (gpointer n)
 }
 
 /*MUST be called with world stopped*/
-static Fragment*
-alloc_fragment (void)
+SgenFragment*
+sgen_fragment_allocator_alloc (void)
 {
-	Fragment *frag = fragment_freelist;
+	SgenFragment *frag = fragment_freelist;
 	if (frag) {
 		fragment_freelist = frag->next_in_order;
 		frag->next = frag->next_in_order = NULL;
@@ -350,12 +282,12 @@ alloc_fragment (void)
 	return frag;
 }
 
-static void
-add_fragment (FragmentAllocator *allocator, char *start, char *end)
+void
+sgen_fragment_allocator_add (SgenFragmentAllocator *allocator, char *start, char *end)
 {
-	Fragment *fragment;
+	SgenFragment *fragment;
 
-	fragment = alloc_fragment ();
+	fragment = sgen_fragment_allocator_alloc ();
 	fragment->fragment_start = start;
 	fragment->fragment_next = start;
 	fragment->fragment_end = end;
@@ -365,10 +297,10 @@ add_fragment (FragmentAllocator *allocator, char *start, char *end)
 	g_assert (fragment->fragment_end > fragment->fragment_start);
 }
 
-static void
-release_fragment_list (FragmentAllocator *allocator)
+void
+sgen_fragment_allocator_release (SgenFragmentAllocator *allocator)
 {
-	Fragment *last = allocator->region_head;
+	SgenFragment *last = allocator->region_head;
 	if (!last)
 		return;
 
@@ -380,11 +312,11 @@ release_fragment_list (FragmentAllocator *allocator)
 	allocator->alloc_head = allocator->region_head = NULL;
 }
 
-static Fragment**
-find_previous_pointer_fragment (FragmentAllocator *allocator, Fragment *frag)
+static SgenFragment**
+find_previous_pointer_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag)
 {
-	Fragment **prev;
-	Fragment *cur, *next;
+	SgenFragment **prev;
+	SgenFragment *cur, *next;
 #ifdef NALLOC_DEBUG
 	int count = 0;
 #endif
@@ -431,7 +363,7 @@ try_again:
 }
 
 static gboolean
-claim_remaining_size (Fragment *frag, char *alloc_end)
+claim_remaining_size (SgenFragment *frag, char *alloc_end)
 {
 	/* All space used, nothing to claim. */
 	if (frag->fragment_end <= alloc_end)
@@ -442,7 +374,7 @@ claim_remaining_size (Fragment *frag, char *alloc_end)
 }
 
 static void*
-par_alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t size)
+par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, size_t size)
 {
 	char *p = frag->fragment_next;
 	char *end = p + size;
@@ -457,7 +389,7 @@ par_alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t si
 		return NULL;
 
 	if (frag->fragment_end - end < SGEN_MAX_NURSERY_WASTE) {
-		Fragment *next, **prev_ptr;
+		SgenFragment *next, **prev_ptr;
 		
 		/*
 		 * Before we clean the remaining nursery, we must claim the remaining space
@@ -508,7 +440,7 @@ par_alloc_from_fragment (FragmentAllocator *allocator, Fragment *frag, size_t si
 }
 
 static void*
-serial_alloc_from_fragment (Fragment **previous, Fragment *frag, size_t size)
+serial_alloc_from_fragment (SgenFragment **previous, SgenFragment *frag, size_t size)
 {
 	char *p = frag->fragment_next;
 	char *end = p + size;
@@ -530,10 +462,10 @@ serial_alloc_from_fragment (Fragment **previous, Fragment *frag, size_t size)
 	return p;
 }
 
-static void*
-par_alloc (FragmentAllocator *allocator, size_t size)
+void*
+sgen_fragment_allocator_par_alloc (SgenFragmentAllocator *allocator, size_t size)
 {
-	Fragment *frag;
+	SgenFragment *frag;
 
 #ifdef NALLOC_DEBUG
 	InterlockedIncrement (&alloc_count);
@@ -558,11 +490,11 @@ restart:
 	return NULL;
 }
 
-static void*
-serial_alloc (FragmentAllocator *allocator, size_t size)
+void*
+sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t size)
 {
-	Fragment *frag;
-	Fragment **previous;
+	SgenFragment *frag;
+	SgenFragment **previous;
 #ifdef NALLOC_DEBUG
 	InterlockedIncrement (&alloc_count);
 #endif
@@ -586,9 +518,9 @@ serial_alloc (FragmentAllocator *allocator, size_t size)
 }
 
 static void*
-par_range_alloc (FragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size)
+par_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size)
 {
-	Fragment *frag, *min_frag;
+	SgenFragment *frag, *min_frag;
 restart:
 	min_frag = NULL;
 
@@ -649,10 +581,10 @@ restart:
 	return NULL;
 }
 
-static void
-clear_allocator_fragments (FragmentAllocator *allocator)
+void
+sgen_clear_allocator_fragments (SgenFragmentAllocator *allocator)
 {
-	Fragment *frag;
+	SgenFragment *frag;
 
 	for (frag = unmask (allocator->alloc_head); frag; frag = unmask (frag->next)) {
 		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_next, frag->fragment_end));
@@ -668,12 +600,12 @@ void
 sgen_clear_nursery_fragments (void)
 {
 	if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
-		clear_allocator_fragments (&mutator_allocator);
-		clear_allocator_fragments (&collector_allocator);
+		sgen_clear_allocator_fragments (&mutator_allocator);
+		sgen_minor_collector.clear_fragments ();
 	}
 }
 
-static void
+void
 sgen_clear_range (char *start, char *end)
 {
 	MonoArray *o;
@@ -697,8 +629,8 @@ sgen_clear_range (char *start, char *end)
 void
 sgen_nursery_allocator_prepare_for_pinning (void)
 {
-	clear_allocator_fragments (&mutator_allocator);
-	clear_allocator_fragments (&collector_allocator);
+	sgen_clear_allocator_fragments (&mutator_allocator);
+	sgen_minor_collector.clear_fragments ();
 }
 
 static mword fragment_total = 0;
@@ -708,7 +640,7 @@ static mword fragment_total = 0;
  * allocation.
  */
 static void
-add_nursery_frag (FragmentAllocator *allocator, size_t frag_size, char* frag_start, char* frag_end)
+add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag_start, char* frag_end)
 {
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	binary_protocol_empty (frag_start, frag_size);
@@ -723,7 +655,7 @@ add_nursery_frag (FragmentAllocator *allocator, size_t frag_size, char* frag_sta
 		printf ("\tfragment [%p %p] size %zd\n", frag_start, frag_end, frag_size);
 		*/
 #endif
-		add_fragment (allocator, frag_start, frag_end);
+		sgen_fragment_allocator_add (allocator, frag_start, frag_end);
 		fragment_total += frag_size;
 	} else {
 		/* Clear unused fragments, pinning depends on this */
@@ -733,11 +665,11 @@ add_nursery_frag (FragmentAllocator *allocator, size_t frag_size, char* frag_sta
 }
 
 static void
-fragment_list_reverse (FragmentAllocator *allocator)
+fragment_list_reverse (SgenFragmentAllocator *allocator)
 {
-	Fragment *prev = NULL, *list = allocator->region_head;
+	SgenFragment *prev = NULL, *list = allocator->region_head;
 	while (list) {
-		Fragment *next = list->next;
+		SgenFragment *next = list->next;
 		list->next = prev;
 		list->next_in_order = prev;
 		prev = list;
@@ -747,73 +679,39 @@ fragment_list_reverse (FragmentAllocator *allocator)
 	allocator->region_head = allocator->alloc_head = prev;
 }
 
-static void
-fragment_list_split (FragmentAllocator *allocator)
-{
-	Fragment *prev = NULL, *list = allocator->region_head;
-
-	while (list) {
-		if (list->fragment_end > promotion_barrier) {
-			if (list->fragment_start < promotion_barrier) {
-				Fragment *res = alloc_fragment ();
-
-				res->fragment_start = promotion_barrier;
-				res->fragment_next = promotion_barrier;
-				res->fragment_end = list->fragment_end;
-				res->next = list->next;
-				res->next_in_order = list->next_in_order;
-				g_assert (res->fragment_end > res->fragment_start);
-
-				list->fragment_end = promotion_barrier;
-				list->next = list->next_in_order = NULL;
-
-				allocator->region_head = allocator->alloc_head = res;
-				return;
-			} else {
-				if (prev)
-					prev->next = prev->next_in_order = NULL;
-				allocator->region_head = allocator->alloc_head = list;
-				return;
-			}
-		}
-		prev = list;
-		list = list->next;
-	}
-	allocator->region_head = allocator->alloc_head = NULL;
-}
-
-
 mword
 sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
 	int i = 0;
-	Fragment *frags_ranges;
+	SgenFragment *frags_ranges;
 
 #ifdef NALLOC_DEBUG
 	reset_alloc_records ();
 #endif
+	/*The mutator fragments are done. We no longer need them. */
+	sgen_fragment_allocator_release (&mutator_allocator);
 
-	release_fragment_list (&mutator_allocator);
-
-	frags_ranges = collector_allocator.region_head;
 	frag_start = sgen_nursery_start;
 	fragment_total = 0;
 
+	/* The current nursery might give us a fragment list to exclude [start, next[*/
+	frags_ranges = sgen_minor_collector.build_fragments_get_exclude_head ();
+
 	/* clear scan starts */
 	memset (nursery_section->scan_starts, 0, nursery_section->num_scan_start * sizeof (gpointer));
+
 	while (i < num_entries || frags_ranges) {
 		char *addr0, *addr1;
 		size_t size;
-		Fragment *last_frag = NULL;
+		SgenFragment *last_frag = NULL;
 
 		addr0 = addr1 = sgen_nursery_end;
 		if (i < num_entries)
 			addr0 = start [i];
-		if (frags_ranges) {
+		if (frags_ranges)
 			addr1 = frags_ranges->fragment_start;
-		}
 
 		if (addr0 < addr1) {
 			SGEN_UNPIN_OBJECT (addr0);
@@ -851,15 +749,14 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int n
 	if (frag_size)
 		add_nursery_frag (&mutator_allocator, frag_size, frag_start, frag_end);
 
-	/* Now it's safe to release collector fragments. */
-	release_fragment_list (&collector_allocator);
+	/* Now it's safe to release the fragments exclude list. */
+	sgen_minor_collector.build_fragments_release_exclude_head ();
 
-	/* First we reorder the fragment list to be in ascending address order. */
+	/* First we reorder the fragment list to be in ascending address order. This makes H/W prefetchers happier. */
 	fragment_list_reverse (&mutator_allocator);
 
-	/* We split the fragment list based on the promotion barrier. */
-	collector_allocator = mutator_allocator;
-	fragment_list_split (&collector_allocator);
+	/*The collector might want to do something with the final nursery fragment list.*/
+	sgen_minor_collector.build_fragments_finish (&mutator_allocator);
 
 	if (!unmask (mutator_allocator.alloc_head)) {
 		DEBUG (1, fprintf (gc_debug_file, "Nursery fully pinned (%d)\n", num_entries));
@@ -887,7 +784,7 @@ sgen_nursery_retire_region (void *address, ptrdiff_t size)
 gboolean
 sgen_can_alloc_size (size_t size)
 {
-	Fragment *frag;
+	SgenFragment *frag;
 	size = SGEN_ALIGN_UP (size);
 
 	for (frag = unmask (mutator_allocator.alloc_head); frag; frag = unmask (frag->next)) {
@@ -905,7 +802,7 @@ sgen_nursery_alloc (size_t size)
 
 	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_requests));
 
-	return par_alloc (&mutator_allocator, size);
+	return sgen_fragment_allocator_par_alloc (&mutator_allocator, size);
 }
 
 void*
@@ -943,194 +840,35 @@ sgen_nursery_allocator_init_heavy_stats (void)
 void
 sgen_init_nursery_allocator (void)
 {
-	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
+	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (SgenFragment));
 #ifdef NALLOC_DEBUG
 	alloc_records = sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE);
 #endif
 }
 
-char*
-sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
-{
-	char *p;
-
-	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
-		g_error ("asked to allocate object size %d\n", objsize);
-
-	/*This one will be internally promoted. */
-	if (obj >= sgen_nursery_start && obj < promotion_barrier) {
-		p = serial_alloc (&collector_allocator, objsize);
-
-		/* Have we failed to promote to the nursery, lets just evacuate it to old gen. */
-		if (!p)
-			p = sgen_get_major_collector()->alloc_object (objsize, has_references);
-	} else {
-		p = sgen_get_major_collector()->alloc_object (objsize, has_references);
-	}
-
-	return p;
-}
-
-char*
-sgen_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
-{
-	char *p;
-
-	/*This one will be internally promoted. */
-	if (obj >= sgen_nursery_start && obj < promotion_barrier) {
-		p = par_alloc (&collector_allocator, objsize);
-
-		/* Have we failed to promote to the nursery, lets just evacuate it to old gen. */
-		if (!p)
-			p = sgen_get_major_collector()->par_alloc_object (objsize, has_references);			
-	} else {
-		p = sgen_get_major_collector()->par_alloc_object (objsize, has_references);
-	}
-
-	return p;
-}
-
-/*
-This is a space/speed compromise as we need to make sure the from/to space check is both O(1)
-and only hit cache hot memory. On a 4Mb nursery it requires 1024 bytes, or 3% of your average
-L1 cache. On small configs with a 512kb nursery, this goes to 0.4%.
-
-Experimental results on how much space we waste with a 4Mb nursery:
-
-Note that the wastage applies to the half nursery, or 2Mb:
-
-Test 1 (compiling corlib):
-9: avg: 3.1k
-8: avg: 1.6k
-
-*/
-#define SPACE_GRANULE_BITS 9
-#define SPACE_GRANULE_IN_BYTES (1 << SPACE_GRANULE_BITS)
-
-static char *space_bitmap;
-static int space_bitmap_size;
-
-/*FIXME Move this to a separate header. */
-#define _toi(ptr) ((size_t)ptr)
-#define make_ptr_mask(bits) ((1 << bits) - 1)
-#define align_down(ptr, bits) ((void*)(_toi(ptr) & ~make_ptr_mask (bits)))
-#define align_up(ptr, bits) ((void*) ((_toi(ptr) + make_ptr_mask (bits)) & ~make_ptr_mask (bits)))
-
-gboolean
-sgen_nursery_is_object_alive (char *obj)
-{
-	g_assert (sgen_ptr_in_nursery (obj));
-
-	if (sgen_nursery_is_to_space (obj))
-		return TRUE;
-
-	if (SGEN_OBJECT_IS_PINNED (obj) || SGEN_OBJECT_IS_FORWARDED (obj))
-		return TRUE;
-
-	return FALSE;
-}
-
-gboolean
-sgen_nursery_is_from_space (char *pos)
-{
-	int idx = (pos - sgen_nursery_start) >> SPACE_GRANULE_BITS;
-	int byte = idx / 8;
-	int bit = idx & 0x7;
-	g_assert (sgen_ptr_in_nursery (pos));
-
-	return (space_bitmap [byte] & (1 << bit)) == 0;
-}
-
-gboolean
-sgen_nursery_is_to_space (char *pos)
-{
-	int idx = (pos - sgen_nursery_start) >> SPACE_GRANULE_BITS;
-	int byte = idx / 8;
-	int bit = idx & 0x7;
-	g_assert (sgen_ptr_in_nursery (pos));
-
-	return (space_bitmap [byte] & (1 << bit)) != 0;
-}
-
-static inline void
-mark_bit (char *pos)
-{
-	int idx = (pos - sgen_nursery_start) >> SPACE_GRANULE_BITS;
-	int byte = idx / 8;
-	int bit = idx & 0x7;
-
-	g_assert (byte < space_bitmap_size);
-	space_bitmap [byte] |= 1 << bit;
-}
-
-static void
-mark_bits_in_range (char *start, char *end)
-{
-	for (;start < end; start += SPACE_GRANULE_IN_BYTES) {
-		mark_bit (start);
-	}
-}
-
-static void
-flip_to_space_bit (void)
-{
-	Fragment **previous, *frag;
-
-	memset (space_bitmap, 0, space_bitmap_size);
-
-	previous = &collector_allocator.alloc_head;
-
-	for (frag = *previous; frag; frag = *previous) {
-		char *start = align_up (frag->fragment_next, SPACE_GRANULE_BITS);
-		char *end = align_down (frag->fragment_end, SPACE_GRANULE_BITS);
-
-		/* Fragment is too small to be usable. */
-		if ((end - start) < SGEN_MAX_NURSERY_WASTE) {
-			sgen_clear_range (frag->fragment_next, frag->fragment_end);
-			frag->fragment_next = frag->fragment_end = frag->fragment_start;
-			*previous = frag->next;
-			continue;
-		}
-
-		sgen_clear_range (frag->fragment_next, start);
-		sgen_clear_range (end, frag->fragment_end);
-
-		frag->fragment_start = frag->fragment_next = start;
-		frag->fragment_end = end;
-		mark_bits_in_range (start, end);
-		previous = &frag->next;
-	}
-	
-}
-
 void
 sgen_nursery_alloc_prepare_for_minor (void)
 {
-	flip_to_space_bit ();
+	sgen_minor_collector.prepare_to_space (sgen_space_bitmap, sgen_space_bitmap_size);
 }
 
 void
 sgen_nursery_alloc_prepare_for_major (const char *reason)
 {
-	flip_to_space_bit ();
+	sgen_minor_collector.prepare_to_space (sgen_space_bitmap, sgen_space_bitmap_size);
 }
 
 void
 sgen_nursery_allocator_set_nursery_bounds (char *start, char *end)
 {
-	char *middle;
-	/* Setup the single first large fragment */
 	sgen_nursery_start = start;
 	sgen_nursery_end = end;
 
-	middle = start + (end - start) / 2;
-	add_fragment (&mutator_allocator, start, middle);
-	add_fragment (&collector_allocator, middle, end);
+	sgen_space_bitmap_size = (end - start) / (SGEN_TO_SPACE_GRANULE_IN_BYTES * 8);
+	sgen_space_bitmap = g_malloc0 (sgen_space_bitmap_size);
 
-	promotion_barrier = middle;
-
-	space_bitmap_size = (end - start) / (SPACE_GRANULE_IN_BYTES * 8);
-	space_bitmap = calloc (1, space_bitmap_size);
+	/* Setup the single first large fragment */
+	sgen_minor_collector.init_nursery (&mutator_allocator, start, end);
 }
 
 #endif
