@@ -474,6 +474,11 @@ public class Tests
 			if (TestITest (itest) != 0)
 				return 175;
 
+			itest = (ITest)System.Activator.CreateInstance (typeof(TestActivatorClass));
+
+			if (TestITest (itest) != 0)
+				return 176;
+
 			#endregion // Runtime Callable Wrapper Tests
 
 			#region COM Callable Wrapper Tests
@@ -811,6 +816,20 @@ public class Tests
 		}
 	}
 
+	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000003")]
+	public class TestActivatorClass : _TestClass
+	{
+		static TestActivatorClass ()
+		{
+			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject)); ;
+		}
+		private static System.IntPtr CreateObject (System.IntPtr aggr)
+		{
+			IntPtr pUnk3;
+			mono_test_marshal_com_object_create (out pUnk3);
+			return pUnk3;
+		}
+	}
 
 	delegate void SByteInDelegate (sbyte val);
 	delegate void ByteInDelegate (byte val);
