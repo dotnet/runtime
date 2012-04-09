@@ -296,6 +296,8 @@ long long stat_objects_copied_major = 0;
 long long stat_scan_object_called_nursery = 0;
 long long stat_scan_object_called_major = 0;
 
+long long stat_slots_allocated_in_vain;
+
 long long stat_nursery_copy_object_failed_from_space = 0;
 long long stat_nursery_copy_object_failed_forwarded = 0;
 long long stat_nursery_copy_object_failed_pinned = 0;
@@ -1369,6 +1371,36 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 }
 
+void
+sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
+{
+	for (;;) {
+		mword vtable_word;
+		gboolean major_pinned = FALSE;
+
+		if (sgen_ptr_in_nursery (obj)) {
+			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+				sgen_pin_object (obj, queue);
+				break;
+			}
+		} else {
+			major_collector.pin_major_object (obj, queue);
+			major_pinned = TRUE;
+		}
+
+		vtable_word = *(mword*)obj;
+		/*someone else forwarded it, update the pointer and bail out*/
+		if (vtable_word & SGEN_FORWARDED_BIT) {
+			*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+			break;
+		}
+
+		/*someone pinned it, nothing to do.*/
+		if (vtable_word & SGEN_PINNED_BIT || major_pinned)
+			break;
+	}
+}
+
 /* Sort the addresses in array in increasing order.
  * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
  */
@@ -2237,6 +2269,8 @@ init_stats (void)
 	mono_counters_register ("# scan_object() called (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scan_object_called_nursery);
 	mono_counters_register ("# scan_object() called (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scan_object_called_major);
 
+	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
+
 	mono_counters_register ("# nursery copy_object() failed from space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_from_space);
 	mono_counters_register ("# nursery copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_forwarded);
 	mono_counters_register ("# nursery copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_pinned);
@@ -2522,9 +2556,9 @@ collect_nursery (size_t requested_size)
 
 	current_collection_generation = GENERATION_NURSERY;
 	if (sgen_collection_is_parallel ())
-		current_object_ops = major_collector.par_minor_ops;
+		current_object_ops = sgen_minor_collector.parallel_ops;
 	else
-		current_object_ops = major_collector.minor_ops;
+		current_object_ops = sgen_minor_collector.serial_ops;
 	
 	reset_pinned_from_failed_allocation ();
 

@@ -582,6 +582,9 @@ typedef struct {
 	char* (*alloc_for_promotion) (char *obj, size_t objsize, gboolean has_references);
 	char* (*par_alloc_for_promotion) (char *obj, size_t objsize, gboolean has_references);
 
+	SgenObjectOperations serial_ops;
+	SgenObjectOperations parallel_ops;
+
 	void (*prepare_to_space) (char *to_space_bitmap, int space_bitmap_size);
 	void (*clear_fragments) (void);
 	SgenFragment* (*build_fragments_get_exclude_head) (void);
@@ -619,8 +622,6 @@ struct _SgenMajorCollector {
 	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
 
 	SgenObjectOperations major_ops;
-	SgenObjectOperations minor_ops;
-	SgenObjectOperations par_minor_ops;
 
 	void* (*alloc_object) (int size, gboolean has_references);
 	void* (*par_alloc_object) (int size, gboolean has_references);
@@ -629,6 +630,7 @@ struct _SgenMajorCollector {
 	void (*free_non_pinned_object) (char *obj, size_t size);
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
+	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (SgenGrayQueue *queue);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*init_to_space) (void);
@@ -787,6 +789,7 @@ enum {
 gboolean sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
 void sgen_release_space (mword size, int space) MONO_INTERNAL;
 void sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;
 void sgen_collect_nursery_no_lock (size_t requested_size) MONO_INTERNAL;
 void sgen_minor_collect_or_expand_inner (size_t size) MONO_INTERNAL;

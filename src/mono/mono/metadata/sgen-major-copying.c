@@ -279,7 +279,11 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	return p;
 }
 
-#define pin_major_object	sgen_pin_object
+static inline void
+pin_major_object (char *obj, SgenGrayQueue *queue)
+{
+	sgen_pin_object (obj, queue);
+}
 
 #include "sgen-major-copy-object.h"
 
@@ -674,6 +678,7 @@ sgen_copying_init (SgenMajorCollector *collector)
 	collector->free_non_pinned_object = major_free_non_pinned_object;
 	collector->find_pin_queue_start_ends = major_find_pin_queue_start_ends;
 	collector->pin_objects = major_pin_objects;
+	collector->pin_major_object = pin_major_object;
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
 	collector->check_scan_starts = major_check_scan_starts;
@@ -690,8 +695,7 @@ sgen_copying_init (SgenMajorCollector *collector)
 	collector->print_gc_param_usage = NULL;
 
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
-	FILL_COLLECTOR_COPY_OBJECT (collector);
-	FILL_COLLECTOR_SCAN_OBJECT (collector);
+	collector->major_ops.scan_object = major_scan_object;
 }
 
 #endif

@@ -33,7 +33,10 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#include "metadata/profiler-private.h"
+
 #include "metadata/sgen-gc.h"
+#include "metadata/sgen-protocol.h"
 
 /*
 The nursery is logically divided into 3 spaces: Allocator space and two Survivor spaces.
@@ -76,12 +79,8 @@ on survival rates;
 -We apply the same promotion policy to all objects, finalizable ones should age longer in the nursery;
 -We apply the same promotion policy to all stages of a collection, maybe we should promote more aggressively
 objects from non-stack roots, specially those found in the remembered set;
--Make the new behavior runtime selectable;
--Make the new behavior have a low overhead when disabled;
--Make all new exported functions inlineable in other modules;
--Create specialized copy & scan functions for nursery collections;
--Decide if this is the right place for this code;
 -Fix our major collection trigger to happen before we do a minor GC and collect the nursery only once.
+-Make the serial fragment allocator fast path inlineable
 */
 
 /*FIXME Move this to a separate header. */
@@ -154,7 +153,7 @@ fragment_list_split (SgenFragmentAllocator *allocator)
 }
 
 /******************************************Minor Collector API ************************************************/
-static char*
+static inline char*
 alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 {
 	char *p;
@@ -176,7 +175,7 @@ alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 	return p;
 }
 
-static char*
+static inline char*
 par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 {
 	char *p;
@@ -262,6 +261,12 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 	promotion_barrier = middle;
 }
 
+/******************************************Copy/Scan functins ************************************************/
+
+#include "sgen-minor-copy-object.h"
+#include "sgen-minor-scan-object.h"
+
+
 void
 sgen_split_nursery_init (SgenMinorCollector *collector)
 {
@@ -274,6 +279,9 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 	collector->build_fragments_release_exclude_head = build_fragments_release_exclude_head;
 	collector->build_fragments_finish = build_fragments_finish;
 	collector->init_nursery = init_nursery;
+
+	FILL_MINOR_COLLECTOR_COPY_OBJECT (collector);
+	FILL_MINOR_COLLECTOR_SCAN_OBJECT (collector);
 }
 
 

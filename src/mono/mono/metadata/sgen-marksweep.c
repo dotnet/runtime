@@ -217,9 +217,6 @@ static long long stat_major_blocks_alloced = 0;
 static long long stat_major_blocks_freed = 0;
 static long long stat_major_objects_evacuated = 0;
 static long long stat_time_wait_for_sweep = 0;
-#ifdef SGEN_PARALLEL_MARK
-static long long stat_slots_allocated_in_vain = 0;
-#endif
 
 static gboolean ms_sweep_in_progress = FALSE;
 static MonoNativeThreadId ms_sweep_thread;
@@ -1008,44 +1005,12 @@ major_dump_heap (FILE *heap_dump_file)
 	} while (0)
 
 static void
-pin_major_object (void *obj, SgenGrayQueue *queue)
+pin_major_object (char *obj, SgenGrayQueue *queue)
 {
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
 	block->has_pinned = TRUE;
 	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 }
-
-#ifdef SGEN_PARALLEL_MARK
-static void
-pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
-{
-	for (;;) {
-		mword vtable_word;
-		gboolean major_pinned = FALSE;
-
-		if (sgen_ptr_in_nursery (obj)) {
-			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
-				sgen_pin_object (obj, queue);
-				break;
-			}
-		} else {
-			pin_major_object (obj, queue);
-			major_pinned = TRUE;
-		}
-
-		vtable_word = *(mword*)obj;
-		/*someone else forwarded it, update the pointer and bail out*/
-		if (vtable_word & SGEN_FORWARDED_BIT) {
-			*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
-			break;
-		}
-
-		/*someone pinned it, nothing to do.*/
-		if (vtable_word & SGEN_PINNED_BIT || major_pinned)
-			break;
-	}
-}
-#endif
 
 #include "sgen-major-copy-object.h"
 
@@ -1097,7 +1062,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 				evacuate_block_obj_sizes [size_index] = FALSE;
 			}
 
-			pin_or_update_par (ptr, obj, vt, queue);
+			sgen_parallel_pin_or_update (ptr, obj, vt, queue);
 			sgen_set_pinned_from_failed_allocation (objsize);
 			return;
 		}
@@ -1145,7 +1110,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 			*ptr = obj;
 
-			++stat_slots_allocated_in_vain;
+			HEAVY_STAT (++stat_slots_allocated_in_vain);
 		}
 	} else {
 #ifdef FIXED_HEAP
@@ -2057,8 +2022,6 @@ sgen_marksweep_init
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
 	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &stat_time_wait_for_sweep);
 #ifdef SGEN_PARALLEL_MARK
-	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
-
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_alloc (&workers_free_block_lists_key, NULL);
 #endif
@@ -2098,6 +2061,7 @@ sgen_marksweep_init
 	collector->free_non_pinned_object = major_free_non_pinned_object;
 	collector->find_pin_queue_start_ends = major_find_pin_queue_start_ends;
 	collector->pin_objects = major_pin_objects;
+	collector->pin_major_object = pin_major_object;
 #ifdef SGEN_HAVE_CARDTABLE
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
@@ -2123,8 +2087,7 @@ sgen_marksweep_init
 
 	/* FIXME this macro mess */
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
-	FILL_COLLECTOR_COPY_OBJECT (collector);
-	FILL_COLLECTOR_SCAN_OBJECT (collector);
+	collector->major_ops.scan_object = major_scan_object;
 
 #ifdef SGEN_HAVE_CARDTABLE
 	/*cardtable requires major pages to be 8 cards aligned*/

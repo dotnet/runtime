@@ -31,15 +31,18 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
+#include "metadata/profiler-private.h"
 
-static char*
+#include "metadata/sgen-gc.h"
+#include "metadata/sgen-protocol.h"
+
+static inline char*
 alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 {
 	return major_collector.alloc_object (objsize, has_references);
 }
 
-static char*
+static inline char*
 par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 {
 	return major_collector.par_alloc_object (objsize, has_references);
@@ -77,6 +80,12 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 	sgen_fragment_allocator_add (allocator, start, end);
 }
 
+
+/******************************************Copy/Scan functins ************************************************/
+
+#include "sgen-minor-copy-object.h"
+#include "sgen-minor-scan-object.h"
+
 void
 sgen_simple_nursery_init (SgenMinorCollector *collector)
 {
@@ -89,6 +98,9 @@ sgen_simple_nursery_init (SgenMinorCollector *collector)
 	collector->build_fragments_release_exclude_head = build_fragments_release_exclude_head;
 	collector->build_fragments_finish = build_fragments_finish;
 	collector->init_nursery = init_nursery;
+
+	FILL_MINOR_COLLECTOR_COPY_OBJECT (collector);
+	FILL_MINOR_COLLECTOR_SCAN_OBJECT (collector);
 }
 
 

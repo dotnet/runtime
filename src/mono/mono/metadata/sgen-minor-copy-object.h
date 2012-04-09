@@ -21,32 +21,17 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-extern long long stat_scan_object_called_major;
 
-#ifdef FIXED_HEAP
-#define PREFETCH_DYNAMIC_HEAP(addr)
-#else
-#define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH ((addr))
-#endif
+#define collector_pin_object(obj, queue) sgen_pin_object (obj, queue);
+#define collector_serial_alloc_for_promotion alloc_for_promotion
+#define collector_parallel_alloc_for_promotion par_alloc_for_promotion
 
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {					\
-		void *__old = *(ptr);					\
-		void *__copy;						\
-		if (__old) {						\
-			PREFETCH_DYNAMIC_HEAP (__old);			\
-			major_copy_or_mark_object ((ptr), queue);	\
-			__copy = *(ptr);				\
-			DEBUG (9, if (__old != __copy) sgen_debug_printf (9, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old)); \
-			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr));	\
-		}							\
+#define GENERATE_COPY_FUNCTIONS 1
+
+
+#include "sgen-copy-object.h"
+
+#define FILL_MINOR_COLLECTOR_COPY_OBJECT(collector)	do {			\
+		(collector)->serial_ops.copy_or_mark_object = serial_copy_object;			\
+		(collector)->parallel_ops.copy_or_mark_object = parallel_copy_object;	\
 	} while (0)
-
-static void
-major_scan_object (char *start, SgenGrayQueue *queue)
-{
-#include "sgen-scan-object.h"
-
-	HEAVY_STAT (++stat_scan_object_called_major);
-}
