@@ -189,6 +189,8 @@ MonoException* mono_thread_get_undeniable_exception (void);
 
 MonoException* mono_thread_get_and_clear_pending_exception (void) MONO_INTERNAL;
 
+void mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean managed) MONO_INTERNAL;
+
 void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc func) MONO_INTERNAL;
 
 MonoObject* mono_thread_get_execution_context (void) MONO_INTERNAL;

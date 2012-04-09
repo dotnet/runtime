@@ -1374,7 +1374,7 @@ async_invoke_thread (gpointer data)
 
 	mono_profiler_thread_start (thread->tid);
 	name = (tp->is_io) ? "IO Threadpool worker" : "Threadpool worker";
-	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), name));
+	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), name), FALSE);
 
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);

@@ -1208,13 +1208,13 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 }
 
 void 
-ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name)
+mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean managed)
 {
 	ensure_synch_cs_set (this_obj);
 	
 	EnterCriticalSection (this_obj->synch_cs);
-	
-	if (this_obj->name) {
+
+	if (this_obj->flags & MONO_THREAD_FLAG_NAME_SET) {
 		LeaveCriticalSection (this_obj->synch_cs);
 		
 		mono_raise_exception (mono_get_exception_invalid_operation ("Thread.Name can only be set once."));
@@ -1227,6 +1227,9 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 	}
 	else
 		this_obj->name = NULL;
+
+	if (managed)
+		this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
 	
 	LeaveCriticalSection (this_obj->synch_cs);
 	if (this_obj->name) {
@@ -1234,6 +1237,12 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 		mono_profiler_thread_name (this_obj->tid, tname);
 		mono_free (tname);
 	}
+}
+
+void 
+ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name)
+{
+	mono_thread_set_name_internal (this_obj, name, TRUE);
 }
 
 /* If the array is already in the requested domain, we just return it,
