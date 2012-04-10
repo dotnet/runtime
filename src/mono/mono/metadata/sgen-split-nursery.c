@@ -113,7 +113,7 @@ mark_bits_in_range (char *space_bitmap, char *start, char *end)
 	start = align_down (start, SGEN_TO_SPACE_GRANULE_BITS);
 	end = align_up (end, SGEN_TO_SPACE_GRANULE_BITS);
 
-	for (;start <= end; start += SGEN_TO_SPACE_GRANULE_IN_BYTES)
+	for (;start < end; start += SGEN_TO_SPACE_GRANULE_IN_BYTES)
 		mark_bit (space_bitmap, start);
 }
 
@@ -211,7 +211,7 @@ build_fragments_finish (SgenFragmentAllocator *allocator)
 {
 	/* We split the fragment list based on the promotion barrier. */
 	collector_allocator = *allocator;
-	fragment_list_split (allocator);
+	fragment_list_split (&collector_allocator);
 }
 
 static void
@@ -256,7 +256,7 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 {
 	char *middle = start + (end - start) / 2;
 	sgen_fragment_allocator_add (allocator, start, middle);
-	sgen_fragment_allocator_add (allocator, middle, end);
+	sgen_fragment_allocator_add (&collector_allocator, middle, end);
 
 	promotion_barrier = middle;
 }
