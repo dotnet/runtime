@@ -4589,7 +4589,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		switch (ainfo->storage) {
 		case LLVMArgInIReg:
 		case LLVMArgInFPReg: {
-			MonoType *t = (sig->hasthis && i == 0) ? &mono_defaults.int_class->byval_arg : sig->params [i - sig->hasthis];
+			MonoType *t = (sig->hasthis && i == 0) ? &mono_get_intptr_class ()->byval_arg : sig->params [i - sig->hasthis];
 
 			if (!t->byref && (t->type == MONO_TYPE_R8 || t->type == MONO_TYPE_R4)) {
 				MONO_INST_NEW (cfg, ins, OP_FMOVE);
