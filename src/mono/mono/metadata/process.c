@@ -747,7 +747,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	/* The default dir name is "".  Turn that into NULL to mean
 	 * "current directory"
 	 */
-	if(mono_string_length (proc_start_info->working_directory)==0) {
+	if(proc_start_info->working_directory == NULL || mono_string_length (proc_start_info->working_directory)==0) {
 		dir=NULL;
 	} else {
 		dir=mono_string_chars (proc_start_info->working_directory);
