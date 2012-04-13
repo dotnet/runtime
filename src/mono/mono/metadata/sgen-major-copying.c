@@ -134,7 +134,7 @@ alloc_major_section (void)
 	section->size = MAJOR_SECTION_SIZE - SGEN_SIZEOF_GC_MEM_SECTION;
 	section->end_data = section->data + section->size;
 	sgen_update_heap_boundaries ((mword)section->data, (mword)section->end_data);
-	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %ld\n", section->data, section->end_data, mono_gc_get_heap_size ()));
+	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %lld\n", section->data, section->end_data, mono_gc_get_heap_size ()));
 	scan_starts = (section->size + SGEN_SCAN_START_SIZE - 1) / SGEN_SCAN_START_SIZE;
 	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
@@ -367,7 +367,7 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	if (G_UNLIKELY (objsize > SGEN_MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		if (SGEN_OBJECT_IS_PINNED (obj))
 			return;
-		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, sgen_safe_name (obj), objsize));
+		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %td)\n", obj, sgen_safe_name (obj), objsize));
 		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
 		SGEN_PIN_OBJECT (obj);
 		GRAY_OBJECT_ENQUEUE (queue, obj);
