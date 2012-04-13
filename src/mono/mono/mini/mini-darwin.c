@@ -96,6 +96,15 @@ typedef struct {
 /* The exception port */
 static mach_port_t mach_exception_port = VM_MAP_NULL;
 
+kern_return_t
+catch_exception_raise (
+	mach_port_t exception_port,
+	mach_port_t thread,
+	mach_port_t task,
+	exception_type_t exception,
+	exception_data_t code,
+	mach_msg_type_number_t code_count);
+
 /*
  * Implicitly called by exc_server. Must be public.
  *
@@ -159,7 +168,7 @@ mach_exception_thread (void *arg)
 }
 
 static void
-macosx_register_exception_handler ()
+macosx_register_exception_handler (void)
 {
 	mach_port_t task;
 	pthread_attr_t attr;
@@ -200,6 +209,8 @@ macosx_register_exception_handler ()
 
 /* This is #define'd by Boehm GC to _GC_dlopen. */
 #undef dlopen
+
+void* dlopen(const char* path, int mode);
 
 void
 mono_runtime_install_handlers (void)

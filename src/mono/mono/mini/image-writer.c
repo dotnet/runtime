@@ -1758,7 +1758,7 @@ static void
 asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char* start, int offset)
 {
 #ifdef TARGET_ASM_APPLE
-	char symbol [128];
+	//char symbol [128];
 #endif
 
 	if (acfg->mode != EMIT_LONG) {

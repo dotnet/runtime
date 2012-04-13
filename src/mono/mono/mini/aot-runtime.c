@@ -2020,7 +2020,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	if (amodule->thumb_end && (guint8*)code_start < amodule->thumb_end)
 		/* Clear thumb flag */
-		code_start = (char*)(((mgreg_t)code_start) & ~1);
+		code_start = (guint8*)(((mgreg_t)code_start) & ~1);
 
 	fde = amodule->mono_eh_frame + table [(pos * 2) + 1];	
 	/* This won't overflow because there is +1 entry in the table */

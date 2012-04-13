@@ -1185,7 +1185,7 @@ socket_transport_connect (const char *address)
 
 			addrlen = sizeof (addr);
 			memset (&addr, 0, sizeof (addr));
-			res = getsockname (sfd, &addr, &addrlen);
+			res = getsockname (sfd, (struct sockaddr*)&addr, &addrlen);
 			g_assert (res == 0);
 
 			host = (char*)"127.0.0.1";
@@ -2342,7 +2342,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 	if (info)
 		tid = mono_thread_info_get_tid (info);
 	else
-		tid = GetCurrentThreadId ();
+		tid = (MonoNativeThreadId)GetCurrentThreadId ();
 
 	// FIXME: Races when the thread leaves managed code before hitting a single step
 	// event.
