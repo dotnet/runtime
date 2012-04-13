@@ -2359,11 +2359,11 @@ try_calculate_minor_collection_allowance (gboolean overwrite)
 	if (debug_print_allowance) {
 		mword old_major = last_collection_old_num_major_sections * major_collector.section_size;
 
-		fprintf (gc_debug_file, "Before collection: %ld bytes (%ld major, %ld LOS)\n",
+		fprintf (gc_debug_file, "Before collection: %td bytes (%td major, %td LOS)\n",
 				old_major + last_collection_old_los_memory_usage, old_major, last_collection_old_los_memory_usage);
-		fprintf (gc_debug_file, "After collection: %ld bytes (%ld major, %ld LOS)\n",
+		fprintf (gc_debug_file, "After collection: %td bytes (%td major, %td LOS)\n",
 				new_heap_size, new_major, last_collection_los_memory_usage);
-		fprintf (gc_debug_file, "Allowance: %ld bytes\n", minor_collection_allowance);
+		fprintf (gc_debug_file, "Allowance: %td bytes\n", minor_collection_allowance);
 	}
 
 	if (major_collector.have_computed_minor_collection_allowance)
@@ -3891,7 +3891,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			DEBUG (3, fprintf (gc_debug_file, "GC disabled for thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 			continue;
 		}
-		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %ld, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ()));
+		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ()));
 		if (!info->thread_is_dying) {
 			if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 				UserCopyOrMarkData data = { NULL, queue };
