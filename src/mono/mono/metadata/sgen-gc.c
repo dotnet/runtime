@@ -184,6 +184,12 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#ifdef __MACH__
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE
+#define _DARWIN_C_SOURCE
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -198,12 +204,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
-#ifdef __MACH__
-#undef _XOPEN_SOURCE
-#endif
-#ifdef __MACH__
-#define _XOPEN_SOURCE
-#endif
 
 #include "metadata/sgen-gc.h"
 #include "metadata/metadata-internals.h"
