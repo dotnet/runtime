@@ -4518,7 +4518,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* floating point opcodes */
 		case OP_R8CONST: {
-			if (*((float *) ins->inst_p0) == 0) {
+			if (*((double *) ins->inst_p0) == 0) {
 				s390_lzdr (code, ins->dreg);
 			} else {
 				s390_basr  (code, s390_r13, 0);
