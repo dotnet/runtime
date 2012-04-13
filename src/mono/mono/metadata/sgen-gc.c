@@ -410,7 +410,6 @@ static gboolean use_cardtable;
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
 static mword pagesize = 4096;
-static mword nursery_size;
 int degraded_mode = 0;
 
 static mword bytes_pinned_from_failed_allocation = 0;
@@ -608,11 +607,11 @@ init_heap_size_limits (glong max_heap, glong soft_limit)
 		exit (1);
 	}
 
-	if (max_heap < nursery_size * 4) {
+	if (max_heap < sgen_nursery_size * 4) {
 		fprintf (stderr, "max-heap-size must be at least 4 times larger than nursery size.\n");
 		exit (1);
 	}
-	max_heap_size = max_heap - nursery_size;
+	max_heap_size = max_heap - sgen_nursery_size;
 }
 
 /*
@@ -1718,7 +1717,7 @@ alloc_nursery (void)
 
 	if (nursery_section)
 		return;
-	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %lu\n", (unsigned long)nursery_size));
+	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %lu\n", (unsigned long)sgen_nursery_size));
 	/* later we will alloc a larger area for the nursery but only activate
 	 * what we need. The rest will be used as expansion if we have too many pinned
 	 * objects in the existing nursery.
@@ -1726,18 +1725,17 @@ alloc_nursery (void)
 	/* FIXME: handle OOM */
 	section = sgen_alloc_internal (INTERNAL_MEM_SECTION);
 
-	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
-	alloc_size = nursery_size;
+	alloc_size = sgen_nursery_size;
 #ifdef SGEN_ALIGN_NURSERY
 	data = major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
 #else
 	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
-	sgen_update_heap_boundaries ((mword)data, (mword)(data + nursery_size));
-	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
+	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
+	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
-	section->end_data = data + nursery_size;
+	section->end_data = data + sgen_nursery_size;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
@@ -1746,13 +1744,13 @@ alloc_nursery (void)
 
 	nursery_section = section;
 
-	sgen_nursery_allocator_set_nursery_bounds (data, data + nursery_size);
+	sgen_nursery_allocator_set_nursery_bounds (data, data + sgen_nursery_size);
 }
 
 void*
 mono_gc_get_nursery (int *shift_bits, size_t *size)
 {
-	*size = nursery_size;
+	*size = sgen_nursery_size;
 #ifdef SGEN_ALIGN_NURSERY
 	*shift_bits = DEFAULT_NURSERY_BITS;
 #else
@@ -4801,6 +4799,9 @@ mono_gc_base_init (void)
 	conservative_stack_mark = TRUE;
 #endif
 
+	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
+	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
@@ -4943,8 +4944,6 @@ mono_gc_base_init (void)
 	if (major_collector_opt)
 		g_free (major_collector_opt);
 
-	nursery_size = DEFAULT_NURSERY_SIZE;
-	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 	init_heap_size_limits (max_heap, soft_limit);
 
 	alloc_nursery ();
