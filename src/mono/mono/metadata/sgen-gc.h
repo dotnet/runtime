@@ -518,6 +518,8 @@ void sgen_fragment_allocator_add (SgenFragmentAllocator *allocator, char *start,
 void sgen_fragment_allocator_release (SgenFragmentAllocator *allocator) MONO_INTERNAL;
 void* sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t size) MONO_INTERNAL;
 void* sgen_fragment_allocator_par_alloc (SgenFragmentAllocator *allocator, size_t size) MONO_INTERNAL;
+void* sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size) MONO_INTERNAL;
+void* sgen_fragment_allocator_par_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size) MONO_INTERNAL;
 SgenFragment* sgen_fragment_allocator_alloc (void) MONO_INTERNAL;
 void sgen_clear_allocator_fragments (SgenFragmentAllocator *allocator) MONO_INTERNAL;
 void sgen_clear_range (char *start, char *end) MONO_INTERNAL;
