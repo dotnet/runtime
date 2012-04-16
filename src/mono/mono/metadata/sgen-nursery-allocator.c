@@ -518,7 +518,7 @@ sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t s
 }
 
 void*
-sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size)
+sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
 	SgenFragment *frag, **previous, *min_frag = NULL, **prev_min_frag = NULL;
 
@@ -566,7 +566,7 @@ sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, si
 }
 
 void*
-sgen_fragment_allocator_par_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, int *out_alloc_size)
+sgen_fragment_allocator_par_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
 	SgenFragment *frag, *min_frag;
 restart:
@@ -854,7 +854,7 @@ sgen_nursery_alloc (size_t size)
 }
 
 void*
-sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, int *out_alloc_size)
+sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
 	DEBUG (4, fprintf (gc_debug_file, "Searching for byte range desired size: %zd minimum size %zd\n", desired_size, minimum_size));
 
