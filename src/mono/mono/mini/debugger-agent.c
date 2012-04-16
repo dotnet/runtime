@@ -5565,7 +5565,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		}
 			
 		// FIXME: Write barriers
-		memcpy (addr, val, size);
+		mono_gc_memmove (addr, val, size);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		NOT_IMPLEMENTED;
