@@ -235,8 +235,19 @@ prepare_to_space (char *to_space_bitmap, int space_bitmap_size)
 			continue;
 		}
 
-		sgen_clear_range (frag->fragment_next, start);
-		sgen_clear_range (end, frag->fragment_end);
+		/*
+		We need to insert 3 phony objects so the fragments build step can correctly
+		walk the nursery.
+		*/
+
+		/* Clean the fragment range. */
+		sgen_clear_range (start, end);
+		/* We need a phony object in between the original fragment start and the effective one. */
+		if (start != frag->fragment_next)
+			sgen_clear_range (frag->fragment_next, start);
+		/* We need an phony object in between the new fragment end and the original fragment end. */
+		if (end != frag->fragment_end)
+			sgen_clear_range (end, frag->fragment_end);
 
 		frag->fragment_start = frag->fragment_next = start;
 		frag->fragment_end = end;
