@@ -8066,10 +8066,6 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type (t));
 
-#ifdef DISABLE_JIT
-	/* Not JIT support, no need to generate correct IL */
-	return conv_arg;
-#else
 	if (spec && spec->native == MONO_NATIVE_CUSTOM)
 		return emit_marshal_custom (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
@@ -8134,7 +8130,6 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			return emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	}
-#endif
 
 	return conv_arg;
 }
