@@ -521,6 +521,7 @@ void*
 sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
 	SgenFragment *frag, **previous, *min_frag = NULL, **prev_min_frag = NULL;
+	size_t current_minimum = minimum_size;
 
 #ifdef NALLOC_DEBUG
 	InterlockedIncrement (&alloc_count);
@@ -543,9 +544,10 @@ sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, si
 #endif
 			return p;
 		}
-		if (minimum_size <= frag_size) {
+		if (current_minimum <= frag_size) {
 			min_frag = frag;
 			prev_min_frag = previous;
+			current_minimum = frag_size;
 		}
 	}
 
@@ -569,8 +571,11 @@ void*
 sgen_fragment_allocator_par_range_alloc (SgenFragmentAllocator *allocator, size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
 	SgenFragment *frag, *min_frag;
+	size_t current_minimum;
+
 restart:
 	min_frag = NULL;
+	current_minimum = minimum_size;
 
 #ifdef NALLOC_DEBUG
 	InterlockedIncrement (&alloc_count);
@@ -595,8 +600,10 @@ restart:
 #endif
 			return p;
 		}
-		if (minimum_size <= frag_size)
+		if (current_minimum <= frag_size) {
 			min_frag = frag;
+			current_minimum = frag_size;
+		}
 	}
 
 	/* The second fragment_next read should be ordered in respect to the first code block */
