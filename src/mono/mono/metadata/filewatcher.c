@@ -117,35 +117,7 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 }
 #endif
 
-#if defined(__linux__) && defined(HAVE_SYS_SYSCALL_H) && !defined(__NR_inotify_init)
-#  if defined(__i386__)
-#     define __NR_inotify_init		291
-#  elif defined(__x86_64__)
-#     define __NR_inotify_init		253
-#  elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
-#     define __NR_inotify_init		275
-#  elif defined (__s390__) || defined (__s390x__)
-#     define __NR_inotify_init		284
-#  elif defined(__sparc__) || defined (__sparc64__)
-#     define __NR_inotify_init		151
-#  elif defined (__ia64__)
-#     define __NR_inotify_init		1277
-#  elif defined (__arm__)
-#     define __NR_inotify_init		316
-#  elif defined(__alpha__)
-#     define __NR_inotify_init		444
-#  endif
-#ifdef __NR_inotify_init
-#  ifndef __NR_inotify_add_watch
-#    define __NR_inotify_add_watch (__NR_inotify_init + 1)
-#  endif
-#  ifndef __NR_inotify_rm_watch
-#    define __NR_inotify_rm_watch (__NR_inotify_init + 2)
-#  endif
-#endif
-#endif
-
-#if !defined(__linux__) || !defined(__NR_inotify_init)
+#ifndef HAVE_SYS_INOTIFY_H
 int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 {
 	return -1;
@@ -161,12 +133,13 @@ int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descrip
 	return -1;
 }
 #else
+#include <sys/inotify.h>
 #include <errno.h>
 
 int
 ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 {
-	return syscall (__NR_inotify_init);
+	return inotify_init ();
 }
 
 int
@@ -185,7 +158,7 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 	if (!path)
 		path = str;
 
-	retval = syscall (__NR_inotify_add_watch, fd, path, mask);
+	retval = inotify_add_watch (fd, path, mask);
 	if (retval < 0) {
 		switch (errno) {
 		case EACCES:
@@ -221,7 +194,7 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 int
 ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
 {
-	return syscall (__NR_inotify_rm_watch, fd, watch_descriptor);
+	return inotify_rm_watch (fd, watch_descriptor);
 }
 #endif
 
