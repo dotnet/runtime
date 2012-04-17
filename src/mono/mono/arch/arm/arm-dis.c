@@ -95,7 +95,7 @@ void dump_reg(ARMDis* dis, int reg) {
 	if (!use_reg_alias || (reg > 3 && reg < 11)) {
 		fprintf(dis->dis_out, "r%d", reg);
 	} else {
-		fprintf(dis->dis_out, reg_alias[reg]);
+		fprintf(dis->dis_out, "%s", reg_alias[reg]);
 	}
 }
 
@@ -137,7 +137,7 @@ void dump_reglist(ARMDis* dis, int reg_list) {
 
 
 void dump_br(ARMDis* dis, ARMInstr i) {
-	fprintf(dis->dis_out, "b%s%s\t%x\t; %p -> %p",
+	fprintf(dis->dis_out, "b%s%s\t%x\t; %p -> %#x",
 	    (i.br.link == 1) ? "l" : "",
 	    cond[i.br.cond], i.br.offset, dis->pi, (int)dis->pi + 4*2 + ((int)(i.br.offset << 8) >> 6));
 }
@@ -376,7 +376,7 @@ void dump_swi(ARMDis* dis, ARMInstr i) {
 
 
 void dump_clz(ARMDis* dis, ARMInstr i) {
-	fprintf(dis->dis_out, "clz%s\t");
+	fprintf(dis->dis_out, "clz\t");
 	dump_reg(dis, i.clz.rd);
 	fprintf(dis->dis_out, ", ");
 	dump_reg(dis, i.clz.rm);
