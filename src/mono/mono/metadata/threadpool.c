@@ -1488,6 +1488,12 @@ async_invoke_thread (gpointer data)
 			mono_gc_set_skip_thread (TRUE);
 
 			InterlockedIncrement (&tp->waiting);
+
+			// Another thread may have added a job into its wsq since the last call to dequeue_or_steal
+			// Check all the queues again before entering the wait loop
+			dequeue_or_steal (tp, &data, wsq);
+			if (data)
+				break;
 #if defined(__OpenBSD__)
 			while (mono_cq_count (tp->queue) == 0 && (res = mono_sem_wait (&tp->new_job, TRUE)) == -1) {// && errno == EINTR) {
 #else
