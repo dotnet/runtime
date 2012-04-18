@@ -75,12 +75,14 @@ are naturally aligned in both ends to that granule to avoid wronly classifying a
 TODO:
 -The promotion barrier is statically defined to 50% of the nursery, it should be dinamically adjusted based
 on survival rates;
--Objects are aged just one collection, we need to implement multiple cycle aging;
 -We apply the same promotion policy to all objects, finalizable ones should age longer in the nursery;
 -We apply the same promotion policy to all stages of a collection, maybe we should promote more aggressively
 objects from non-stack roots, specially those found in the remembered set;
 -Fix our major collection trigger to happen before we do a minor GC and collect the nursery only once.
 -Make the serial fragment allocator fast path inlineable
+-Make aging threshold be based on survival rates and survivor occupancy;
+-Change promotion barrier to be size and not address based;
+-Pre allocate memory for young ages to make sure that on overflow only the older suffer;
 */
 
 /*FIXME Move this to a separate header. */
@@ -89,12 +91,72 @@ objects from non-stack roots, specially those found in the remembered set;
 #define align_down(ptr, bits) ((void*)(_toi(ptr) & ~make_ptr_mask (bits)))
 #define align_up(ptr, bits) ((void*) ((_toi(ptr) + make_ptr_mask (bits)) & ~make_ptr_mask (bits)))
 
+/*
+Even though the effective max age is 255, aging that much doesn't make sense.
+It might even make sense to use nimbles for age recording.
+*/
+#define MAX_AGE 15
+
+typedef struct {
+	char *next;
+	char *end;
+} AgeAllocationBuffer;
+
 /* Limits the ammount of memory the mutator can have. */
 static char *promotion_barrier;
+
+/*
+If we're evacuating an object with this age or more, promote it.
+Age is the number of surviving collections of an object.
+
+The default of one means that we'll avoid all temporal garbage due
+to a GC in the middle of a mutator action.
+*/
+static int promote_age = 1;
+
+/*
+Initial ratio of allocation and survivor spaces.
+This should be read as the fraction of the whole nursery dedicated
+for the allocator space.
+
+The default of 1/3 is the value needed to ensure that all objects,
+regardless of promotion rate, will at least age for one extra generation.
+*/
+static float alloc_ratio = 1.f/3.f;
+
+
+static char *region_age;
+static int region_age_size;
+static AgeAllocationBuffer age_alloc_buffers [MAX_AGE];
 
 /* The collector allocs from here. */
 static SgenFragmentAllocator collector_allocator;
 
+
+static inline int
+get_object_age (char *object)
+{
+	int idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	return region_age [idx];
+}
+
+static inline void
+set_object_age (char *object, int age)
+{
+	int idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	region_age [idx] = age;
+}
+
+static void
+set_age_in_range (char *start, char *end, int age)
+{
+	char *region_start;
+	int region_idx, length;
+	region_idx = (start - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	region_start = &region_age [region_idx];
+	length = (end - start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	memset (region_start, age, length);
+}
 
 static inline void
 mark_bit (char *space_bitmap, char *pos)
@@ -136,6 +198,7 @@ fragment_list_split (SgenFragmentAllocator *allocator)
 
 				list->fragment_end = promotion_barrier;
 				list->next = list->next_in_order = NULL;
+				set_age_in_range (list->fragment_start, list->fragment_end, 0);
 
 				allocator->region_head = allocator->alloc_head = res;
 				return;
@@ -146,6 +209,7 @@ fragment_list_split (SgenFragmentAllocator *allocator)
 				return;
 			}
 		}
+		set_age_in_range (list->fragment_start, list->fragment_end, 0);
 		prev = list;
 		list = list->next;
 	}
@@ -153,23 +217,55 @@ fragment_list_split (SgenFragmentAllocator *allocator)
 }
 
 /******************************************Minor Collector API ************************************************/
+
+#define AGE_ALLOC_BUFFER_MIN_SIZE SGEN_TO_SPACE_GRANULE_IN_BYTES
+#define AGE_ALLOC_BUFFER_DESIRED_SIZE (SGEN_TO_SPACE_GRANULE_IN_BYTES * 8)
+
+static char*
+alloc_for_promotion_slow_path (int age, size_t objsize)
+{
+	char *p;
+	size_t allocated_size;
+	size_t aligned_objsize = (size_t)align_up (objsize, SGEN_TO_SPACE_GRANULE_BITS);
+
+	p = sgen_fragment_allocator_serial_range_alloc (
+		&collector_allocator,
+		MAX (aligned_objsize, AGE_ALLOC_BUFFER_DESIRED_SIZE),
+		MAX (aligned_objsize, AGE_ALLOC_BUFFER_MIN_SIZE),
+		&allocated_size);
+	if (p) {
+		set_age_in_range (p, p + allocated_size, age);
+		sgen_clear_range (age_alloc_buffers [age].next, age_alloc_buffers [age].end);
+		age_alloc_buffers [age].next = p + objsize;
+		age_alloc_buffers [age].end = p + allocated_size;
+	}
+	return p;
+}
+
 static inline char*
 alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 {
-	char *p;
+	char *p = NULL;
+	int age;
 
-	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
-		g_error ("asked to allocate object size %d\n", objsize);
+	/* Must explicitly check for nursery objects as age checks won't work for objects in the major heap. */
+	if (!sgen_ptr_in_nursery (obj))
+		return major_collector.alloc_object (objsize, has_references);
 
-	/*This one will be internally promoted. */
-	if (obj >= sgen_nursery_start && obj < promotion_barrier) {
-		p = sgen_fragment_allocator_serial_alloc (&collector_allocator, objsize);
+	age = get_object_age (obj);
+	if (age >= promote_age)
+		return major_collector.alloc_object (objsize, has_references);
 
-		/* Have we failed to promote to the nursery, lets just evacuate it to old gen. */
+	/* Promote! */
+	++age;
+
+	p = age_alloc_buffers [age].next;
+	if (G_LIKELY (p + objsize <= age_alloc_buffers [age].end)) {
+        age_alloc_buffers [age].next += objsize;
+	} else {
+		p = alloc_for_promotion_slow_path (age, objsize);
 		if (!p)
 			p = major_collector.alloc_object (objsize, has_references);
-	} else {
-		p = major_collector.alloc_object (objsize, has_references);
 	}
 
 	return p;
@@ -197,6 +293,10 @@ par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 static SgenFragment*
 build_fragments_get_exclude_head (void)
 {
+	int i;
+	for (i = 0; i < MAX_AGE; ++i)
+		sgen_clear_range (age_alloc_buffers [i].next, age_alloc_buffers [i].end);
+
 	return collector_allocator.region_head;
 }
 
@@ -220,6 +320,7 @@ prepare_to_space (char *to_space_bitmap, int space_bitmap_size)
 	SgenFragment **previous, *frag;
 
 	memset (to_space_bitmap, 0, space_bitmap_size);
+	memset (age_alloc_buffers, 0, sizeof (age_alloc_buffers));
 
 	previous = &collector_allocator.alloc_head;
 
@@ -265,11 +366,13 @@ clear_fragments (void)
 static void
 init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 {
-	char *middle = start + (end - start) / 2;
-	sgen_fragment_allocator_add (allocator, start, middle);
-	sgen_fragment_allocator_add (&collector_allocator, middle, end);
+	int alloc_quote = (int)((end - start) * alloc_ratio);
+	promotion_barrier = align_down (start + alloc_quote, 3);
+	sgen_fragment_allocator_add (allocator, start, promotion_barrier);
+	sgen_fragment_allocator_add (&collector_allocator, promotion_barrier, end);
 
-	promotion_barrier = middle;
+	region_age_size = (end - start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	region_age = g_malloc0 (region_age_size);
 }
 
 /******************************************Copy/Scan functins ************************************************/
