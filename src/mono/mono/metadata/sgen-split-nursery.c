@@ -61,7 +61,7 @@ of objects from the Allocator Space.
 
 During a collection when the object scan function see a nursery object it must
 determine if the object needs to be evacuated or left in place. Originally, this
-check was done by checking is a forwarding pointer is installed, but now an object
+check was done by checking if a forwarding pointer is installed, but now an object
 can be in the To Space, it won't have a forwarding pointer and it must be left in place.
 
 In order to solve that we classify nursery memory been either in the From Space or in
