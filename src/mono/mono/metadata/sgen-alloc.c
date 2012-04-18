@@ -266,7 +266,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					memset (p, 0, size);
 				}
 			} else {
-				int alloc_size = 0;
+				size_t alloc_size = 0;
 				if (TLAB_START)
 					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
 				sgen_nursery_retire_region (p, available_in_tlab);
@@ -379,7 +379,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 				memset (p, 0, size);			
 		} else {
-			int alloc_size = 0;
+			size_t alloc_size = 0;
 
 			sgen_nursery_retire_region (p, available_in_tlab);
 			new_next = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
