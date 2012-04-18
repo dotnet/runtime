@@ -549,6 +549,7 @@ sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, si
 			prev_min_frag = previous;
 			current_minimum = frag_size;
 		}
+		previous = &frag->next;
 	}
 
 	if (min_frag) {
