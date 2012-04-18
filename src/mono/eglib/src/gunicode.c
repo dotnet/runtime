@@ -52,7 +52,7 @@
 #    endif
 #endif
 
-static char *my_charset;
+static const char *my_charset;
 static gboolean is_utf8;
 
 /*
