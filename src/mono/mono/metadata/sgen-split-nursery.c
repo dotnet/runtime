@@ -250,10 +250,6 @@ alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 	char *p = NULL;
 	int age;
 
-	/* Must explicitly check for nursery objects as age checks won't work for objects in the major heap. */
-	if (!sgen_ptr_in_nursery (obj))
-		return major_collector.alloc_object (objsize, has_references);
-
 	age = get_object_age (obj);
 	if (age >= promote_age)
 		return major_collector.alloc_object (objsize, has_references);
@@ -322,9 +318,6 @@ par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 	char *p;
 	int age;
 
-	if (!sgen_ptr_in_nursery (obj))
-		return major_collector.alloc_object (objsize, has_references);
-
 	age = get_object_age (obj);
 	if (age >= promote_age)
 		return major_collector.alloc_object (objsize, has_references);
@@ -343,6 +336,30 @@ restart:
 	}
 
 	return p;
+}
+
+static char*
+minor_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+{
+	/*
+	We only need to check for a non-nursery object if we're doing a major collection.
+	*/
+	if (!sgen_ptr_in_nursery (obj))
+		return major_collector.alloc_object (objsize, has_references);
+
+	return alloc_for_promotion (obj, objsize, has_references);
+}
+
+static char*
+minor_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+{
+	/*
+	We only need to check for a non-nursery object if we're doing a major collection.
+	*/
+	if (!sgen_ptr_in_nursery (obj))
+		return major_collector.par_alloc_object (objsize, has_references);
+
+	return par_alloc_for_promotion (obj, objsize, has_references);
 }
 
 static SgenFragment*
@@ -439,8 +456,8 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 void
 sgen_split_nursery_init (SgenMinorCollector *collector)
 {
-	collector->alloc_for_promotion = alloc_for_promotion;
-	collector->par_alloc_for_promotion = par_alloc_for_promotion;
+	collector->alloc_for_promotion = minor_alloc_for_promotion;
+	collector->par_alloc_for_promotion = minor_par_alloc_for_promotion;
 
 	collector->prepare_to_space = prepare_to_space;
 	collector->clear_fragments = clear_fragments;
