@@ -83,6 +83,7 @@ objects from non-stack roots, specially those found in the remembered set;
 -Make aging threshold be based on survival rates and survivor occupancy;
 -Change promotion barrier to be size and not address based;
 -Pre allocate memory for young ages to make sure that on overflow only the older suffer;
+-Get rid of par_alloc_buffer_refill_mutex so to the parallel collection of the nursery doesn't suck;
 */
 
 /*FIXME Move this to a separate header. */
@@ -132,6 +133,7 @@ static AgeAllocationBuffer age_alloc_buffers [MAX_AGE];
 /* The collector allocs from here. */
 static SgenFragmentAllocator collector_allocator;
 
+static LOCK_DECLARE (par_alloc_buffer_refill_mutex);
 
 static inline int
 get_object_age (char *object)
@@ -271,20 +273,73 @@ alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 	return p;
 }
 
+static char*
+par_alloc_for_promotion_slow_path (int age, size_t objsize)
+{
+	char *p;
+	size_t allocated_size;
+	size_t aligned_objsize = (size_t)align_up (objsize, SGEN_TO_SPACE_GRANULE_BITS);
+
+	mono_mutex_lock (&par_alloc_buffer_refill_mutex);
+
+restart:
+	p = age_alloc_buffers [age].next;
+	if (G_LIKELY (p + objsize <= age_alloc_buffers [age].end)) {
+		if (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, p + objsize, p) != p)
+			goto restart;
+	} else {
+		/*Reclaim remaining space*/
+		char *end = age_alloc_buffers [age].end;
+		do {
+			p = age_alloc_buffers [age].next;
+		} while (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, end, p) != p);
+		sgen_clear_range (p, end);
+
+		/* By setting end to NULL we make sure no other thread can advance while we're updating.*/
+		age_alloc_buffers [age].end = NULL;
+		mono_memory_barrier ();
+
+		p = sgen_fragment_allocator_par_range_alloc (
+			&collector_allocator,
+			MAX (aligned_objsize, AGE_ALLOC_BUFFER_DESIRED_SIZE),
+			MAX (aligned_objsize, AGE_ALLOC_BUFFER_MIN_SIZE),
+			&allocated_size);
+		if (p) {
+			set_age_in_range (p, p + allocated_size, age);
+			sgen_clear_range (age_alloc_buffers [age].next, age_alloc_buffers [age].end);
+			age_alloc_buffers [age].next = p + objsize;
+			age_alloc_buffers [age].end = p + allocated_size;
+		}
+	}
+
+	mono_mutex_unlock (&par_alloc_buffer_refill_mutex);
+	return p;
+}
+
 static inline char*
 par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 {
 	char *p;
+	int age;
 
-	/*This one will be internally promoted. */
-	if (obj >= sgen_nursery_start && obj < promotion_barrier) {
-		p = sgen_fragment_allocator_par_alloc (&collector_allocator, objsize);
+	if (!sgen_ptr_in_nursery (obj))
+		return major_collector.alloc_object (objsize, has_references);
+
+	age = get_object_age (obj);
+	if (age >= promote_age)
+		return major_collector.alloc_object (objsize, has_references);
+
+restart:
+	p = age_alloc_buffers [age].next;
+	if (G_LIKELY (p + objsize <= age_alloc_buffers [age].end)) {
+		if (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, p + objsize, p) != p)
+			goto restart;
+	} else {
+		p = par_alloc_for_promotion_slow_path (age, objsize);
 
 		/* Have we failed to promote to the nursery, lets just evacuate it to old gen. */
 		if (!p)
 			p = major_collector.par_alloc_object (objsize, has_references);			
-	} else {
-		p = major_collector.par_alloc_object (objsize, has_references);
 	}
 
 	return p;
@@ -396,6 +451,7 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 
 	FILL_MINOR_COLLECTOR_COPY_OBJECT (collector);
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (collector);
+	LOCK_INIT (par_alloc_buffer_refill_mutex);
 }
 
 

@@ -242,7 +242,11 @@ parallel_copy_object (void **obj_slot, SgenGrayQueue *queue)
 		/* FIXME: unify with code in major_copy_or_mark_object() */
 
 		/* FIXME: Give destination back to the allocator. */
-		*(void**)destination = NULL;
+		/*The major collector only needs the first word zeroed and nursery requires all bits to be. */
+		if (!sgen_ptr_in_nursery (destination))
+			*(void**)destination = NULL;
+		else
+			memset (destination, 0, objsize);
 
 		vtable_word = *(mword*)obj;
 		g_assert (vtable_word & SGEN_FORWARDED_BIT);
