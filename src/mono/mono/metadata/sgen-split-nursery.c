@@ -107,23 +107,32 @@ typedef struct {
 static char *promotion_barrier;
 
 /*
+Promotion age and alloc ratio are the two nursery knobs to control
+how much effort we want to spend on young objects.
+
+Allocation ratio should be the inverse of the expected survivor rate.
+The more objects surviver, the smaller the alloc ratio much be so we can
+age all objects.
+
+Promote age depends on how much effort we want to spend aging objects before
+we promote them to the old generation. If addional ages don't somewhat improve
+mortality, it's better avoid as they increase the cost of minor collections.
+
+*/
+
+
+/*
 If we're evacuating an object with this age or more, promote it.
 Age is the number of surviving collections of an object.
-
-The default of one means that we'll avoid all temporal garbage due
-to a GC in the middle of a mutator action.
 */
-static int promote_age = 1;
+static int promote_age = 2;
 
 /*
 Initial ratio of allocation and survivor spaces.
 This should be read as the fraction of the whole nursery dedicated
 for the allocator space.
-
-The default of 1/3 is the value needed to ensure that all objects,
-regardless of promotion rate, will at least age for one extra generation.
 */
-static float alloc_ratio = 1.f/3.f;
+static float alloc_ratio = 60.f/100.f;
 
 
 static char *region_age;
