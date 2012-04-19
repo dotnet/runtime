@@ -456,6 +456,43 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 	region_age = g_malloc0 (region_age_size);
 }
 
+static gboolean
+handle_gc_param (const char *opt)
+{
+	if (g_str_has_prefix (opt, "alloc-ratio=")) {
+		const char *arg = strchr (opt, '=') + 1;
+		int percentage = atoi (arg);
+		if (percentage < 1 || percentage > 100) {
+			fprintf (stderr, "alloc-ratio must be an integer in the range 1-100.\n");
+			exit (1);
+		}
+		alloc_ratio = (float)percentage / 100.0f;
+		return TRUE;
+	}
+
+	if (g_str_has_prefix (opt, "promotion-age=")) {
+		const char *arg = strchr (opt, '=') + 1;
+		promote_age = atoi (arg);
+		if (promote_age < 1 || promote_age >= MAX_AGE) {
+			fprintf (stderr, "promotion-age must be an integer in the range 1-%d.\n", MAX_AGE - 1);
+			exit (1);
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void
+print_gc_param_usage (void)
+{
+	fprintf (stderr,
+			""
+			"  alloc-ratio=P (where P is a percentage, an integer in 1-100)\n"
+			"  promotion-age=P (where P is a number, an integer in 1-%d)\n",
+			MAX_AGE - 1
+			);
+}
+
 /******************************************Copy/Scan functins ************************************************/
 
 #include "sgen-minor-copy-object.h"
@@ -474,6 +511,8 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 	collector->build_fragments_release_exclude_head = build_fragments_release_exclude_head;
 	collector->build_fragments_finish = build_fragments_finish;
 	collector->init_nursery = init_nursery;
+	collector->handle_gc_param = handle_gc_param;
+	collector->print_gc_param_usage = print_gc_param_usage;
 
 	FILL_MINOR_COLLECTOR_COPY_OBJECT (collector);
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (collector);
