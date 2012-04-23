@@ -5695,14 +5695,7 @@ mono_raise_exception (MonoException *ex)
 	 * that will cause gcc to omit the function epilog, causing problems when
 	 * the JIT tries to walk the stack, since the return address on the stack
 	 * will point into the next function in the executable, not this one.
-	 */
-
-	if (((MonoObject*)ex)->vtable->klass == mono_defaults.threadabortexception_class) {
-		MonoInternalThread *thread = mono_thread_internal_current ();
-		g_assert (ex->object.vtable->domain == mono_domain_get ());
-		MONO_OBJECT_SETREF (thread, abort_exc, ex);
-	}
-	
+	 */	
 	eh_callbacks.mono_raise_exception (ex);
 }
 

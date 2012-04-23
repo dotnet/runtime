@@ -198,6 +198,40 @@ public class Tests {
 		return success ? 0 : 1;
 	}
 
+	public static int test_0_regress_4413 () {
+		// Check that thread abort exceptions originating in another thread are not automatically rethrown
+		object o = new object ();
+		Thread t = null;
+		Action a = delegate () {
+			t = Thread.CurrentThread;
+			lock (o) {
+				Monitor.Pulse (o);
+			}
+			while (true) {
+				Thread.Sleep (1000);
+			}
+		};
+		var ar = a.BeginInvoke (null, null);
+		lock (o) {
+			Monitor.Wait (o);
+		}
+
+		t.Abort ();
+
+		try {
+			try {
+				a.EndInvoke (ar);
+			} catch (ThreadAbortException) {
+			}
+		} catch (ThreadAbortException) {
+			// This will fail
+			Thread.ResetAbort ();
+			return 1;
+		}
+
+		return 0;
+	}
+
 	public static void Run ()
 	{
 		try {
