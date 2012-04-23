@@ -750,6 +750,8 @@ sgen-regular-tests: $(SGEN_TESTS)
 		MONO_ENV_OPTIONS="--gc=sgen"                                    $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
 		MONO_GC_PARAMS=major=marksweep-par,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
 		MONO_GC_PARAMS=minor=split MONO_ENV_OPTIONS="--gc=sgen"                     $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+		MONO_GC_PARAMS=major=marksweep,concurrent-sweep MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+		MONO_GC_PARAMS=minor=split,major=marksweep,concurrent-sweep MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
 	done
 
 
