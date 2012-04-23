@@ -103,7 +103,9 @@ export PATH=/opt/novell/llvm-mono/bin:$PATH
 %endif
   --with-ikvm=yes \
   --with-moonlight=no
-make # We are not -jN safe! %{?jobs:-j%jobs}
+#make # We are not -jN safe! %{?jobs:-j%jobs}
+# We are now !
+make %{?_smp_mflags}
 
 %install
 make install DESTDIR=%buildroot
