@@ -1960,7 +1960,7 @@ static void
 post_param_init (void)
 {
 	if (concurrent_sweep) {
-		if (mono_native_thread_create (&ms_sweep_thread, ms_sweep_thread_func, NULL)) {
+		if (!mono_native_thread_create (&ms_sweep_thread, ms_sweep_thread_func, NULL)) {
 			fprintf (stderr, "Error: Could not create sweep thread.\n");
 			exit (1);
 		}
