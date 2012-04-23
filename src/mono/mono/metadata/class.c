@@ -3098,7 +3098,7 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
  * Return -1 on failure and set exception_type
  */
 static int
-setup_interface_offsets (MonoClass *class, int cur_slot)
+setup_interface_offsets (MonoClass *class, int cur_slot, gboolean overwrite)
 {
 	MonoError error;
 	MonoClass *k, *ic;
@@ -3265,10 +3265,14 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 
 	/*
-	 * We might get called twice: once from mono_class_init () then once from 
-	 * mono_class_setup_vtable ().
+	 * We might get called multiple times:
+	 * - mono_class_init ()
+	 * - mono_class_setup_vtable ().
+	 * - mono_class_setup_interface_offsets ().
+	 * mono_class_setup_interface_offsets () passes 0 as CUR_SLOT, so the computed interface offsets will be invalid. This
+	 * means we have to overwrite those when called from other places (#4440).
 	 */
-	if (class->interfaces_packed) {
+	if (class->interfaces_packed && !overwrite) {
 		g_assert (class->interface_offsets_count == interface_offsets_count);
 	} else {
 		uint8_t *bitmap;
@@ -3333,7 +3337,7 @@ mono_class_setup_interface_offsets (MonoClass *class)
 {
 	mono_loader_lock ();
 
-	setup_interface_offsets (class, 0);
+	setup_interface_offsets (class, 0, FALSE);
 
 	mono_loader_unlock ();
 }
@@ -3983,7 +3987,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	/* printf ("METAINIT %s.%s\n", class->name_space, class->name); */
 
-	cur_slot = setup_interface_offsets (class, cur_slot);
+	cur_slot = setup_interface_offsets (class, cur_slot, TRUE);
 	if (cur_slot == -1) /*setup_interface_offsets fails the type.*/
 		return;
 
@@ -4915,9 +4919,9 @@ mono_class_init (MonoClass *class)
 		first_iface_slot = class->parent->vtable_size;
 		if (mono_class_need_stelemref_method (class))
 			++first_iface_slot;
-		setup_interface_offsets (class, first_iface_slot);
+		setup_interface_offsets (class, first_iface_slot, TRUE);
 	} else {
-		setup_interface_offsets (class, 0);
+		setup_interface_offsets (class, 0, TRUE);
 	}
 
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
@@ -5719,7 +5723,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 		if (klass->parent->exception_type)
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to setup parent interfaces"));
 		else
-			setup_interface_offsets (klass, klass->parent->vtable_size);
+			setup_interface_offsets (klass, klass->parent->vtable_size, TRUE);
 	}
 
 	return klass;
