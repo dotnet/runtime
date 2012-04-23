@@ -5702,12 +5702,6 @@ mono_raise_exception (MonoException *ex)
 void
 mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx) 
 {
-	if (((MonoObject*)ex)->vtable->klass == mono_defaults.threadabortexception_class) {
-		MonoInternalThread *thread = mono_thread_internal_current ();
-		g_assert (ex->object.vtable->domain == mono_domain_get ());
-		MONO_OBJECT_SETREF (thread, abort_exc, ex);
-	}
-	
 	eh_callbacks.mono_raise_exception_with_ctx (ex, ctx);
 }
 
