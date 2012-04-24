@@ -128,6 +128,11 @@ typedef struct
 	 * method.
 	 */
 	MonoMethod *actual_method;
+	/*
+	 * This is the method which is visible to debugger clients. Same as method,
+	 * except for native-to-managed wrappers.
+	 */
+	MonoMethod *api_method;
 	MonoContext ctx;
 	MonoDebugMethodJitInfo *jit;
 	int flags;
@@ -2948,7 +2953,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 {
 	ComputeFramesUserData *ud = user_data;
 	StackFrame *frame;
-	MonoMethod *method, *actual_method;
+	MonoMethod *method, *actual_method, *api_method;
 	SeqPoint *sp;
 	int flags = 0;
 
@@ -2966,6 +2971,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	else
 		method = info->method;
 	actual_method = info->actual_method;
+	api_method = method;
 
 	if (!method)
 		return FALSE;
@@ -2990,16 +2996,17 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		if (!CHECK_PROTOCOL_VERSION (2, 17))
 			/* Older clients can't handle this flag */
 			return FALSE;
-		method = mono_marshal_method_from_wrapper (method);
-		if (!method)
+		api_method = mono_marshal_method_from_wrapper (method);
+		if (!api_method)
 			return FALSE;
-		actual_method = method;
+		actual_method = api_method;
 		flags |= FRAME_FLAG_NATIVE_TRANSITION;
 	}
 
 	frame = g_new0 (StackFrame, 1);
 	frame->method = method;
 	frame->actual_method = actual_method;
+	frame->api_method = api_method;
 	frame->il_offset = info->il_offset;
 	frame->native_offset = info->native_offset;
 	frame->flags = flags;
@@ -7889,14 +7896,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return ERR_INVALID_FRAMEID;
 
 	if (!frame->jit) {
-		frame->jit = mono_debug_find_method (frame->method, frame->domain);
-		if (!frame->jit && frame->method->is_inflated)
-			frame->jit = mono_debug_find_method (mono_method_get_declaring_generic_method (frame->method), frame->domain);
+		frame->jit = mono_debug_find_method (frame->api_method, frame->domain);
+		if (!frame->jit && frame->api_method->is_inflated)
+			frame->jit = mono_debug_find_method (mono_method_get_declaring_generic_method (frame->api_method), frame->domain);
 		if (!frame->jit) {
 			char *s;
 
 			/* This could happen for aot images with no jit debug info */
-			s = mono_method_full_name (frame->method, TRUE);
+			s = mono_method_full_name (frame->api_method, TRUE);
 			DEBUG (1, fprintf (log_file, "[dbg] No debug information found for '%s'.\n", s));
 			g_free (s);
 			return ERR_ABSENT_INFORMATION;
@@ -7940,7 +7947,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_STACK_FRAME_GET_THIS: {
-		if (frame->method->klass->valuetype) {
+		if (frame->api_method->klass->valuetype) {
 			if (!sig->hasthis) {
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &p, frame->domain);
@@ -7952,7 +7959,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &frame->actual_method->klass->byval_arg, &p, frame->domain);
 			} else {
-				add_var (buf, &frame->method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
+				add_var (buf, &frame->api_method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
 		}
 		break;
