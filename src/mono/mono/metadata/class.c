@@ -2722,7 +2722,8 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			 */
 			eclass = mono_class_from_mono_type (class->generic_class->context.class_inst->type_argv [0]);
 			original_rank = eclass->rank;
-			eclass = eclass->element_class;
+			if (!eclass->rank)
+				eclass = eclass->element_class;
 			internal_enumerator = TRUE;
 			*is_enumerator = TRUE;
 		} else {
