@@ -238,7 +238,9 @@ typedef struct {
 
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
+#ifndef TARGET_WIN32
 #define MONO_ARCH_AOT_SUPPORTED 1
+#endif
 
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 
