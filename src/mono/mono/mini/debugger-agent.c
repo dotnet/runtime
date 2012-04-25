@@ -4816,6 +4816,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 				if (sp && sp->next_len != 0)
 					break;
 			}
+			// There could be method calls before the next seq point in the caller when using nested calls
+			enable_global = TRUE;
 		} else {
 			while (sp && sp->next_len == 0) {
 				sp = NULL;
