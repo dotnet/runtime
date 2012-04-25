@@ -1977,8 +1977,13 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
 			collect_bridge_objects (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
-		sgen_drain_gray_stack (queue, -1);
 	}
+
+	/*
+	Make sure we drain the gray stack before processing disappearing links and finalizers.
+	If we don't make sure it is empty we might wrongly see a live object as dead.
+	*/
+	sgen_drain_gray_stack (queue, -1);
 
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for
