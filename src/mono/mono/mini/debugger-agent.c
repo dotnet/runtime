@@ -5324,10 +5324,12 @@ buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
 }
 
 static ErrorCode
-decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
+decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit);
+
+static ErrorCode
+decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	int err;
-	int type = decode_byte (buf, &buf, limit);
 
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
@@ -5460,6 +5462,37 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 	*endbuf = buf;
 
 	return 0;
+}
+
+static ErrorCode
+decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
+{
+	int err;
+	int type = decode_byte (buf, &buf, limit);
+
+	if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+		MonoType *targ = t->data.generic_class->context.class_inst->type_argv [0];
+		guint8 *nullable_buf;
+
+		if (targ->type == type) {
+			nullable_buf = g_malloc (mono_class_instance_size (mono_class_from_mono_type (targ)));
+			err = decode_value_internal (targ, type, domain, nullable_buf, buf, endbuf, limit);
+			if (err) {
+				g_free (nullable_buf);
+				return err;
+			}
+			mono_nullable_init (addr, mono_value_box (domain, mono_class_from_mono_type (targ), nullable_buf), mono_class_from_mono_type (t));
+			g_free (nullable_buf);
+			*endbuf = buf;
+			return ERR_NONE;
+		} else if (type == VALUE_TYPE_ID_NULL) {
+			mono_nullable_init (addr, NULL, mono_class_from_mono_type (t));
+			*endbuf = buf;
+			return ERR_NONE;
+		}
+	}
+
+	return decode_value_internal (t, type, domain, addr, buf, endbuf, limit);
 }
 
 static void
