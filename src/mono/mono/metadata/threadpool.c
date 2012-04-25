@@ -1440,20 +1440,8 @@ async_invoke_thread (gpointer data)
 					exc = mono_async_invoke (tp, ar);
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
-					if (exc && mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
-						gboolean unloaded;
-						MonoClass *klass;
-
-						klass = exc->vtable->klass;
-						unloaded = is_appdomainunloaded_exception (exc->vtable->domain, klass);
-						if (!unloaded && klass != mono_defaults.threadabortexception_class) {
-							mono_unhandled_exception (exc);
-							if (mono_environment_exitcode_get () == 1)
-								exit (255);
-						}
-						if (klass == mono_defaults.threadabortexception_class)
-							mono_thread_internal_reset_abort (thread);
-					}
+					if (exc)
+						mono_internal_thread_unhandled_exception (exc);
 					if (is_socket && tp->is_io) {
 						MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
 
@@ -1654,3 +1642,21 @@ mono_install_threadpool_item_hooks (MonoThreadPoolItemFunc begin_func, MonoThrea
 	tp_item_user_data = user_data;
 }
 
+void
+mono_internal_thread_unhandled_exception (MonoObject* exc)
+{
+	if (mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
+		gboolean unloaded;
+		MonoClass *klass;
+
+		klass = exc->vtable->klass;
+		unloaded = is_appdomainunloaded_exception (exc->vtable->domain, klass);
+		if (!unloaded && klass != mono_defaults.threadabortexception_class) {
+			mono_unhandled_exception (exc);
+			if (mono_environment_exitcode_get () == 1)
+				exit (255);
+		}
+		if (klass == mono_defaults.threadabortexception_class)
+		 mono_thread_internal_reset_abort (mono_thread_internal_current ());
+	}
+}
