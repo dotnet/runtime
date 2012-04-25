@@ -333,7 +333,11 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 	handle->ref = 1;
 	
 	if (!_WAPI_SHARED_HANDLE(type)) {
+		pthread_condattr_t attr;
+		pthread_condattr_init(&attr);
+		pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 		thr_ret = pthread_cond_init (&handle->signal_cond, NULL);
+		pthread_condattr_destroy(&attr);
 		g_assert (thr_ret == 0);
 				
 		thr_ret = mono_mutex_init (&handle->signal_mutex, NULL);
