@@ -238,6 +238,7 @@ BASE_TEST_CS_SRC=		\
 	finalizer-abort.cs	\
 	finalizer-exception.cs	\
 	finalizer-exit.cs	\
+	finalizer-thread.cs	\
 	main-exit.cs	\
 	main-returns-abort-resetabort.cs	\
 	main-returns-background-abort-resetabort.cs	\
