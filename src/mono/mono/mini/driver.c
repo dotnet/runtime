@@ -1433,22 +1433,6 @@ mono_main (int argc, char* argv[])
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
-	if (mono_running_on_valgrind () && getenv ("MONO_VALGRIND_LEAK_CHECK")) {
-		GMemVTable mem_vtable;
-
-		/* 
-		 * Instruct glib to use the system allocation functions so valgrind
-		 * can track the memory allocated by the g_... functions.
-		 */
-		memset (&mem_vtable, 0, sizeof (mem_vtable));
-		mem_vtable.malloc = malloc;
-		mem_vtable.realloc = realloc;
-		mem_vtable.free = free;
-		mem_vtable.calloc = calloc;
-
-		g_mem_set_vtable (&mem_vtable);
-	}
-
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
