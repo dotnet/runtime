@@ -4286,8 +4286,6 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	ss_reqs = g_ptr_array_new ();
 	ss_reqs_orig = g_ptr_array_new ();
 
-	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, ip, native_offset));
-
 	mono_loader_lock ();
 
 	/*
@@ -4295,6 +4293,8 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 * the offset recorded in the seq point map, so find the prev seq point before ip.
 	 */
 	sp = find_prev_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
+
+	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, ip, native_offset, sp ? sp->il_offset : -1));
 
 	bp = NULL;
 	for (i = 0; i < breakpoints->len; ++i) {
@@ -4338,9 +4338,11 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 			if (minfo)
 				loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
 
-			if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line))
+			if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line)) {
 				/* Have to continue single stepping */
+				DEBUG(1, fprintf (log_file, "[%p] Same source line, continuing single stepping.\n", (gpointer)GetCurrentThreadId ()));
 				hit = FALSE;
+			}
 				
 			if (loc) {
 				ss_req->last_method = ji->method;
@@ -4817,7 +4819,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 					break;
 			}
 			// There could be method calls before the next seq point in the caller when using nested calls
-			enable_global = TRUE;
+			//enable_global = TRUE;
 		} else {
 			while (sp && sp->next_len == 0) {
 				sp = NULL;
