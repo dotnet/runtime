@@ -1125,19 +1125,18 @@ if test x$target_win32 = xno; then
 	AC_DEFUN([LARGE_FILES], [
 		large_CPPFLAGS=$CPPFLAGS
 		CPPFLAGS="$CPPFLAGS $1"
-		AC_TRY_RUN([
+		AC_TRY_COMPILE([
 			#include <sys/types.h>
+			#include <limits.h>
+		], [
+			# Lifted this compile time assert method from: http://www.jaggersoft.com/pubs/CVu11_3.html
+			#define COMPILE_TIME_ASSERT(pred) \
+				switch(0){case 0:case pred:;}
 
-			#define BIG_OFF_T (((off_t)1<<62)-1+((off_t)1<<62))
-
-			int main(void) {
-				int big_off_t=((BIG_OFF_T%2147483629==721) &&
-					       (BIG_OFF_T%2147483647==1));
-				if(big_off_t) {
-					exit(0);
-				} else {
-					exit(1);
-				}
+			int main(void)
+			{
+				COMPILE_TIME_ASSERT(sizeof(off_t) * CHAR_BIT == 64);
+				return 0;
 			}
 		], [
 			AC_MSG_RESULT(ok)
@@ -1146,7 +1145,7 @@ if test x$target_win32 = xno; then
 			large_offt=yes
 		], [
 			AC_MSG_RESULT(no)
-		], "")
+		])
 		CPPFLAGS=$large_CPPFLAGS
 	])
 
