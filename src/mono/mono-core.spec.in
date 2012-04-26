@@ -850,6 +850,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_bindir/wsdl
 %_bindir/wsdl2
 %_bindir/xsd
+%_libdir/pkgconfig/aspnetwebstack.pc
 %_libdir/pkgconfig/mono.web.pc
 %_mandir/man1/disco.1%ext_man
 %_mandir/man1/mconfig.1%ext_man
@@ -942,6 +943,7 @@ Mono implementation of ASP.NET MVC.
 %_libdir/pkgconfig/system.web.extensions_1.0.pc
 %_libdir/pkgconfig/system.web.mvc.pc
 %_libdir/pkgconfig/system.web.mvc2.pc
+%_libdir/pkgconfig/system.web.mvc3.pc
 %_prefix/lib/mono/2.0/System.Web.DynamicData.dll
 %_prefix/lib/mono/2.0/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/2.0/System.Web.Extensions.dll
