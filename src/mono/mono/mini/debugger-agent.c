@@ -810,7 +810,6 @@ mono_debugger_agent_parse_options (char *options)
 #endif
 
 	extra = getenv ("MONO_SDB_ENV_OPTIONS");
-	extra = "loglevel=10";
 	if (extra)
 		options = g_strdup_printf ("%s,%s", options, extra);
 
