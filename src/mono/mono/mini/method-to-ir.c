@@ -52,6 +52,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/mono-basic-block.h>
@@ -5775,8 +5776,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
 	gboolean init_locals, seq_points, skip_dead_blocks;
-	gboolean disable_inline;
+	gboolean disable_inline, sym_seq_points = FALSE;
 	MonoInst *cached_tls_addr = NULL;
+	MonoDebugMethodInfo *minfo;
+	MonoBitSet *seq_point_locs = NULL;
 
 	disable_inline = is_jit_optimizer_disabled (method);
 
@@ -5819,6 +5822,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	init_locals = header->init_locals;
 
 	seq_points = cfg->gen_seq_points && cfg->method == method;
+
+	if (cfg->gen_seq_points && cfg->method == method) {
+		minfo = mono_debug_lookup_method (method);
+		if (minfo) {
+			int i, n_il_offsets;
+			int *il_offsets;
+			int *line_numbers;
+
+			mono_debug_symfile_get_line_numbers_full (minfo, NULL, NULL, &n_il_offsets, &il_offsets, &line_numbers, NULL);
+			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
+			sym_seq_points = TRUE;
+			for (i = 0; i < n_il_offsets; ++i) {
+				if (il_offsets [i] < header->code_size)
+					mono_bitset_set_fast (seq_point_locs, il_offsets [i]);
+			}
+		}
+	}
 
 	/* 
 	 * Methods without init_locals set could cause asserts in various passes
@@ -6275,7 +6295,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * Currently, we generate these automatically at points where the IL
 		 * stack is empty.
 		 */
-		if (seq_points && sp == stack_start) {
+		if (seq_points && ((sp == stack_start) || (sym_seq_points && mono_bitset_test_fast (seq_point_locs, ip - header->code)))) {
 			/*
 			 * Make methods interruptable at the beginning, and at the targets of
 			 * backward branches.
@@ -6316,7 +6336,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		switch (*ip) {
 		case CEE_NOP:
-			if (seq_points && sp != stack_start) {
+			if (seq_points && !sym_seq_points && sp != stack_start) {
 				/*
 				 * The C# compiler uses these nops to notify the JIT that it should
 				 * insert seq points.
@@ -6799,7 +6819,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				mono_save_token_info (cfg, image, token, cil_method);
 
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+				if (!MONO_TYPE_IS_VOID (fsig->ret) && !sym_seq_points) {
 					/*
 					 * Need to emit an implicit seq point after every non-void call so single stepping through nested calls like
 					 * foo (bar (), baz ())
@@ -7397,7 +7417,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->ret) {
 					MonoType *ret_type = mono_method_signature (method)->ret;
 
-					if (seq_points) {
+					if (seq_points && !sym_seq_points) {
 						/* 
 						 * Place a seq point here too even through the IL stack is not
 						 * empty, so a step over on
