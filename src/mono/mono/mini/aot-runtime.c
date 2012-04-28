@@ -804,7 +804,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				kind = decode_value (p, &p);
 
 				/* Can't decode this */
-				g_assert (target);
+				if (!target)
+					return FALSE;
 				if (target->wrapper_type == MONO_WRAPPER_STELEMREF) {
 					info = mono_marshal_get_wrapper_info (target);
 
@@ -840,7 +841,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!klass)
 					return FALSE;
 
-				g_assert (target);
+				if (!target)
+					return FALSE;
 				if (klass != target->klass)
 					return FALSE;
 
@@ -891,7 +893,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!m)
 					return FALSE;
 
-				g_assert (target);
+				if (!target)
+					return FALSE;
 				g_assert (target->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED);
 
 				info = mono_marshal_get_wrapper_info (target);
@@ -908,7 +911,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			char *name;
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				g_assert (target);
+				if (!target)
+					return FALSE;
 
 				name = (char*)p;
 				if (strcmp (target->name, name) != 0)
@@ -921,7 +925,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 
 				/* This should only happen when looking for an extra method */
-				g_assert (target);
+				if (!target)
+					return FALSE;
 				if (mono_marshal_method_from_wrapper (target) == m)
 					ref->method = target;
 				else
@@ -943,7 +948,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			int subtype = decode_value (p, &p);
 
-			g_assert (target);
+			if (!target)
+				return FALSE;
 
 			if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC) {
 				if (strcmp (target->name, "runtime_invoke_dynamic") != 0)
@@ -978,7 +984,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			 * These wrappers are associated with a signature, not with a method.
 			 * Since we can't decode them into methods, they need a target method.
 			 */
-			g_assert (target);
+			if (!target)
+				return FALSE;
 
 			if (sig_matches_target (module, target, p, &p))
 				ref->method = target;
@@ -2511,6 +2518,9 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	code_offsets = amodule->sorted_code_offsets;
 	offsets_len = amodule->sorted_code_offsets_len;
 
+	if (offsets_len > 0 && (offset < code_offsets [0] || offset >= (amodule->code_end - amodule->code)))
+		return NULL;
+
 	/* Binary search in the sorted_code_offsets table */
 	left = 0;
 	right = offsets_len;
@@ -2583,9 +2593,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 			p = amodule->blob + table [(pos * 2) + 1];
 			is_wrapper = decode_value (p, &p);
+			if (is_wrapper)
+				/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
+				return NULL;
 			g_assert (!is_wrapper);
 			method = decode_resolve_method_ref (amodule, p, &p);
-			g_assert (method);
+			if (!method)
+				/* Ditto */
+				return NULL;
 		} else {
 			token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
 			method = mono_get_method (image, token, NULL);
