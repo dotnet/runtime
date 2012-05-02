@@ -158,6 +158,11 @@ test_dirname ()
 		return FAILED ("Expected c:\\home, got %s", s);
 	g_free (s);
 
+	s = g_path_get_dirname ("c:/home/miguel");
+	if (strcmp (s, "c:/home") != 0)
+		return FAILED ("Expected c:/home, got %s", s);
+	g_free (s);
+
 	s = g_path_get_dirname ("c:\\home\\dingus\\");
 	if (strcmp (s, "c:\\home\\dingus") != 0)
 		return FAILED ("Expected c:\\home\\dingus, got %s", s);
@@ -210,7 +215,17 @@ test_basename ()
 		return FAILED ("1 Expected dingus, got %s", s);
 	g_free (s);
 
+	s = g_path_get_basename ("c:/home/dingus/");
+	if (strcmp (s, "dingus") != 0)
+		return FAILED ("1 Expected dingus, got %s", s);
+	g_free (s);
+
 	s = g_path_get_basename ("c:\\home\\dingus");
+	if (strcmp (s, "dingus") != 0)
+		return FAILED ("2 Expected dingus, got %s", s);
+	g_free (s);
+
+	s = g_path_get_basename ("c:/home/dingus");
 	if (strcmp (s, "dingus") != 0)
 		return FAILED ("2 Expected dingus, got %s", s);
 	g_free (s);
