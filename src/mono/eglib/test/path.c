@@ -129,15 +129,16 @@ test_buildfname ()
 		return FAILED ("1 Got wrong result, got: %s", s);
 	g_free (s);
 
-	s = g_build_filename ("/", "a", NULL);
 #ifdef G_OS_WIN32
-	if (strcmp (s, "\\a") != 0)
+	s = g_build_filename ("C:\\", "a", NULL);
+	if (strcmp (s, "C:\\a") != 0)
 #else
+	s = g_build_filename ("/", "a", NULL);
 	if (strcmp (s, "/a") != 0)
 #endif
 		return FAILED ("1 Got wrong result, got: %s", s);
 
-#ifndef OS_WIN32
+#ifndef G_OS_WIN32
 	s = g_build_filename ("/", "foo", "/bar", "tolo/", "/meo/", NULL);
 	if (strcmp (s, "/foo/bar/tolo/meo/") != 0)
 		return FAILED ("1 Got wrong result, got: %s", s);
@@ -155,6 +156,11 @@ test_dirname ()
 	s = g_path_get_dirname ("c:\\home\\miguel");
 	if (strcmp (s, "c:\\home") != 0)
 		return FAILED ("Expected c:\\home, got %s", s);
+	g_free (s);
+
+	s = g_path_get_dirname ("c:/home/miguel");
+	if (strcmp (s, "c:/home") != 0)
+		return FAILED ("Expected c:/home, got %s", s);
 	g_free (s);
 
 	s = g_path_get_dirname ("c:\\home\\dingus\\");
@@ -209,7 +215,17 @@ test_basename ()
 		return FAILED ("1 Expected dingus, got %s", s);
 	g_free (s);
 
+	s = g_path_get_basename ("c:/home/dingus/");
+	if (strcmp (s, "dingus") != 0)
+		return FAILED ("1 Expected dingus, got %s", s);
+	g_free (s);
+
 	s = g_path_get_basename ("c:\\home\\dingus");
+	if (strcmp (s, "dingus") != 0)
+		return FAILED ("2 Expected dingus, got %s", s);
+	g_free (s);
+
+	s = g_path_get_basename ("c:/home/dingus");
 	if (strcmp (s, "dingus") != 0)
 		return FAILED ("2 Expected dingus, got %s", s);
 	g_free (s);

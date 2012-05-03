@@ -88,6 +88,24 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 	return g_string_free (path, FALSE);
 }
 
+static gchar*
+strrchr_seperator (const gchar* filename)
+{
+#ifdef G_OS_WIN32
+	char *p2;
+#endif
+	char *p;
+
+	p = strrchr (filename, G_DIR_SEPARATOR);
+#ifdef G_OS_WIN32
+	p2 = strrchr (filename, '/');
+	if (p2 > p)
+		p = p2;
+#endif
+
+	return p;
+}
+
 gchar *
 g_path_get_dirname (const gchar *filename)
 {
@@ -95,7 +113,7 @@ g_path_get_dirname (const gchar *filename)
 	size_t count;
 	g_return_val_if_fail (filename != NULL, NULL);
 
-	p = strrchr (filename, G_DIR_SEPARATOR);
+	p = strrchr_seperator (filename);
 	if (p == NULL)
 		return g_strdup (".");
 	if (p == filename)
@@ -119,7 +137,7 @@ g_path_get_basename (const char *filename)
 		return g_strdup (".");
 
 	/* No separator -> filename */
-	r = strrchr (filename, G_DIR_SEPARATOR);
+	r = strrchr_seperator (filename);
 	if (r == NULL)
 		return g_strdup (filename);
 
@@ -127,7 +145,7 @@ g_path_get_basename (const char *filename)
 	if (r [1] == 0){
 		char *copy = g_strdup (filename);
 		copy [r-filename] = 0;
-		r = strrchr (copy, G_DIR_SEPARATOR);
+		r = strrchr_seperator (copy);
 
 		if (r == NULL){
 			g_free (copy);			

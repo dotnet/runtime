@@ -414,6 +414,8 @@ test_strstrip ()
 RESULT
 test_filename_to_uri ()
 {
+#ifdef G_OS_WIN32
+#else
 	char *s;
 
 	urit ("/a", "file:///a");
@@ -432,6 +434,7 @@ test_filename_to_uri ()
 	urit ("/@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "file:///@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 	errit ("a");
 	errit ("./hola");
+#endif
 	
 	return OK;
 }
@@ -443,6 +446,8 @@ test_filename_to_uri ()
 RESULT
 test_filename_from_uri ()
 {
+#ifdef G_OS_WIN32
+#else
 	char *s;
 
 	fileit ("file:///a", "/a");
@@ -456,6 +461,7 @@ test_filename_from_uri ()
 	ferrit ("file:///%");
 	ferrit ("file:///%0");
 	ferrit ("file:///%jj");
+#endif
 	
 	return OK;
 }
