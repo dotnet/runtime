@@ -5487,6 +5487,16 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 		MonoType *targ = t->data.generic_class->context.class_inst->type_argv [0];
 		guint8 *nullable_buf;
 
+		/*
+		 * First try decoding it as a Nullable`1
+		 */
+		err = decode_value_internal (t, type, domain, addr, buf, endbuf, limit);
+		if (!err)
+			return err;
+
+		/*
+		 * Then try decoding as a primitive value or null.
+		 */
 		if (targ->type == type) {
 			nullable_buf = g_malloc (mono_class_instance_size (mono_class_from_mono_type (targ)));
 			err = decode_value_internal (targ, type, domain, nullable_buf, buf, endbuf, limit);
@@ -5923,10 +5933,12 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 			buffer_add_value (buf, sig->ret, &res, domain);
 		} else if (mono_class_from_mono_type (sig->ret)->valuetype || sig->ret->type == MONO_TYPE_PTR || sig->ret->type == MONO_TYPE_FNPTR) {
 			if (mono_class_is_nullable (mono_class_from_mono_type (sig->ret))) {
-				if (!res)
-					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &res, domain);
-				else
-					buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+				MonoClass *k = mono_class_from_mono_type (sig->ret);
+				guint8 *nullable_buf = g_alloca (mono_class_value_size (k, NULL));
+
+				g_assert (nullable_buf);
+				mono_nullable_init (nullable_buf, res, k);
+				buffer_add_value (buf, sig->ret, nullable_buf, domain);
 			} else {
 				g_assert (res);
 				buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
