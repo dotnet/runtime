@@ -891,7 +891,7 @@ generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
 bug-3903.exe: bug-3903.cs
-	$(MCS) -sdk:2 bug-3903.cs -out:bug-3903.exe
+	$(MCS) -sdk:2 $(srcdir)/bug-3903.cs -out:$@
 
 gshared: test-generic-sharing
 
