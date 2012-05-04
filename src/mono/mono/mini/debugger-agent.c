@@ -275,7 +275,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 17
+#define MINOR_VERSION 18
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -7709,12 +7709,34 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		header = mono_method_get_header (method);
 		if (!header) {
 			buffer_add_int (buf, 0);
+
+			if (CHECK_PROTOCOL_VERSION (2, 18))
+				buffer_add_int (buf, 0);
 		} else {
 			buffer_add_int (buf, header->code_size);
 			for (i = 0; i < header->code_size; ++i)
 				buffer_add_byte (buf, header->code [i]);
+
+			if (CHECK_PROTOCOL_VERSION (2, 18)) {
+				buffer_add_int (buf, header->num_clauses);
+				for (i = 0; i < header->num_clauses; ++i) {
+					MonoExceptionClause *clause = &header->clauses [i];
+
+					buffer_add_int (buf, clause->flags);
+					buffer_add_int (buf, clause->try_offset);
+					buffer_add_int (buf, clause->try_len);
+					buffer_add_int (buf, clause->handler_offset);
+					buffer_add_int (buf, clause->handler_len);
+					if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
+						buffer_add_typeid (buf, domain, clause->data.catch_class);
+					else if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+						buffer_add_int (buf, clause->data.filter_offset);
+				}
+			}
+
+			mono_metadata_free_mh (header);
 		}
-		mono_metadata_free_mh (header);
+
 		break;
 	}
 	case CMD_METHOD_RESOLVE_TOKEN: {
