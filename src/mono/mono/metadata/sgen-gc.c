@@ -646,6 +646,7 @@ static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char
 static void process_fin_stage_entries (void);
 static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue);
 static void null_links_for_domain (MonoDomain *domain, int generation);
+static void remove_finalizers_for_domain (MonoDomain *domain, int generation);
 static void process_dislink_stage_entries (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
@@ -1129,15 +1130,18 @@ mono_gc_clear_domain (MonoDomain * domain)
 		check_for_xdomain_refs ();
 	}
 
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
-
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
 	to memory returned to the OS.*/
 	null_ephemerons_for_domain (domain);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
 		null_links_for_domain (domain, i);
+
+	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
+		remove_finalizers_for_domain (domain, i);
+
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
 
 	/* We need two passes over major and large objects because
 	   freeing such objects might give their memory back to the OS

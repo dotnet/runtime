@@ -474,6 +474,26 @@ null_links_for_domain (MonoDomain *domain, int generation)
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
+static void
+remove_finalizers_for_domain (MonoDomain *domain, int generation)
+{
+	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
+	MonoObject *object;
+	gpointer dummy;
+
+	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+		int tag = tagged_object_get_tag (object);
+		object = tagged_object_get_object (object);
+
+		if (mono_object_domain (object) == domain) {
+			DEBUG (5, fprintf (gc_debug_file, "Unregistering finalizer for object: %p (%s)\n", object, safe_name (object)));
+
+			SGEN_HASH_TABLE_FOREACH_REMOVE (free);
+			continue;
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;	
+}
+
 /* LOCKING: requires that the GC lock is held */
 static void
 process_dislink_stage_entry (MonoObject *obj, void *_link)
