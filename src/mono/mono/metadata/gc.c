@@ -1013,6 +1013,9 @@ finalize_domain_objects (DomainFinalizationReq *req)
 {
 	MonoDomain *domain = req->domain;
 
+	/* Process finalizers which are already in the queue */
+	mono_gc_invoke_finalizers ();
+
 #ifdef HAVE_BOEHM_GC
 	while (g_hash_table_size (domain->finalizable_objects_hash) > 0) {
 		int i;
@@ -1045,9 +1048,6 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		}
 	}
 #endif
-
-	/* Process finalizers which are already in the queue */
-	mono_gc_invoke_finalizers ();
 
 	/* cleanup the reference queue */
 	reference_queue_clear_for_domain (domain);
