@@ -58,6 +58,7 @@ typedef struct {
 	void *arg;
 	MonoSemType registered;
 	gboolean suspend;
+	HANDLE suspend_event;
 } ThreadStartInfo;
 
 static DWORD WINAPI
@@ -68,14 +69,19 @@ inner_start_thread (LPVOID arg)
 	int post_result;
 	LPTHREAD_START_ROUTINE start_func = start_info->start_routine;
 	DWORD result;
+	gboolean suspend = start_info->suspend;
+	HANDLE suspend_event = start_info->suspend_event;
 
 	mono_thread_info_attach (&result);
 
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
 
-	if (start_info->suspend)
-		SuspendThread (GetCurrentThread ());
+	if (suspend)
+	{
+		WaitForSingleObject (suspend_event, INFINITE); /* caller will suspend the thread before setting the event. */
+		CloseHandle (suspend_event);
+	}
 
 	result = start_func (t_arg);
 
@@ -99,6 +105,12 @@ mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, 
 	start_info->start_routine = start_routine;
 	start_info->suspend = creation_flags & CREATE_SUSPENDED;
 	creation_flags &= ~CREATE_SUSPENDED;
+	if (start_info->suspend)
+	{
+		start_info->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		if (!start_info->suspend_event)
+			return NULL;
+	}
 
 	result = CreateThread (attributes, stack_size, inner_start_thread, start_info, creation_flags, thread_id);
 
@@ -106,7 +118,14 @@ mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, 
 		while (MONO_SEM_WAIT (&(start_info->registered)) != 0) {
 			/*if (EINTR != errno) ABORT("sem_wait failed"); */
 		}
+		if (start_info->suspend)
+		{
+			g_assert (SuspendThread (result) != (DWORD)-1);
+			SetEvent (start_info->suspend_event);
+		}
 	}
+	else if (start_info->suspend)
+		CloseHandle (start_info->suspend_event);
 	MONO_SEM_DESTROY (&(start_info->registered));
 	g_free (start_info);
 	return result;
