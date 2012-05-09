@@ -135,6 +135,7 @@ typedef struct
 	MonoMethod *api_method;
 	MonoContext ctx;
 	MonoDebugMethodJitInfo *jit;
+	MonoJitInfo *ji;
 	int flags;
 	mgreg_t *reg_locations [MONO_MAX_IREGS];
 	/*
@@ -3019,6 +3020,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame->il_offset = info->il_offset;
 	frame->native_offset = info->native_offset;
 	frame->flags = flags;
+	frame->ji = info->ji;
 	if (info->reg_locations)
 		memcpy (frame->reg_locations, info->reg_locations, MONO_MAX_IREGS * sizeof (mgreg_t*));
 	if (ctx) {
@@ -4788,7 +4790,7 @@ ss_stop (SingleStepReq *ss_req)
 static void
 ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch)
 {
-	int i, frame_index;
+	int i, j, frame_index;
 	SeqPoint *next_sp;
 	MonoBreakpoint *bp;
 	gboolean enable_global = FALSE;
@@ -4805,7 +4807,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	} else {
 		frame_index = 1;
 
-		if ((!sp || sp->next_len == 0 || ss_req->depth == STEP_DEPTH_OUT) && ctx) {
+		if ((!sp || sp->next_len == 0 || ss_req->depth == STEP_DEPTH_OUT || ss_req->depth == STEP_DEPTH_OVER) && ctx) {
 			/* Need parent frames */
 			if (!tls->context.valid)
 				mono_thread_state_init_from_monoctx (&tls->context, ctx);
@@ -4850,6 +4852,27 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 				ss_req->bps = g_slist_append (ss_req->bps, bp);
 			}
 		}
+
+		if (ss_req->depth == STEP_DEPTH_OVER) {
+			/* Need to stop in catch clauses as well */
+			for (i = 0; i < tls->frame_count; ++i) {
+				StackFrame *frame = tls->frames [i];
+
+				if (frame->ji) {
+					MonoJitInfo *jinfo = frame->ji;
+					for (j = 0; j < jinfo->num_clauses; ++j) {
+						MonoJitExceptionInfo *ei = &jinfo->clauses [j];
+
+						sp = find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL);
+						if (sp) {
+							bp = set_breakpoint (frame->method, sp->il_offset, ss_req->req, NULL);
+							ss_req->bps = g_slist_append (ss_req->bps, bp);
+						}
+					}
+				}
+			}
+		}
+
 
 		if (ss_req->depth == STEP_DEPTH_INTO) {
 			/* Enable global stepping so we stop at method entry too */
