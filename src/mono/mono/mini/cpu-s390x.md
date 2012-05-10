@@ -178,6 +178,7 @@ s390_move: len:48 dest:b src1:b
 s390_setf4ret: dest:f src1:f len:4
 sbb: dest:i src1:i src2:i len:6
 sbb_imm: dest:i src1:i len:14
+seq_point: len:36
 sext_i4: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
 shl_imm: dest:i src1:i len:10
