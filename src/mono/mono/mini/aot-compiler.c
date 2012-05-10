@@ -125,6 +125,7 @@ typedef struct MonoAotOptions {
 	gboolean log_generics;
 	gboolean direct_pinvoke;
 	gboolean direct_icalls;
+	gboolean no_direct_calls;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -3712,7 +3713,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 				// FIXME: Maybe call the wrapper directly ?
 				direct_callable = FALSE;
 
-			if (acfg->aot_opts.soft_debug) {
+			if (acfg->aot_opts.soft_debug || acfg->aot_opts.no_direct_calls) {
 				/* Disable this so all calls go through load_method (), see the
 				 * mini_get_debug_options ()->load_aot_jit_info_eagerly = TRUE; line in
 				 * mono_debugger_agent_init ().
@@ -5263,6 +5264,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "iphone-abi")) {
 			// older full-aot users did depend on this.
 #endif
+		} else if (str_begins_with (arg, "no-direct-calls")) {
+			opts->no_direct_calls = TRUE;
 		} else if (str_begins_with (arg, "print-skipped")) {
 			opts->print_skipped_methods = TRUE;
 		} else if (str_begins_with (arg, "stats")) {
