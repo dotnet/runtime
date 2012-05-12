@@ -113,6 +113,7 @@ struct _SgenThreadInfo {
 #endif
 	int skip;
 	volatile int in_critical_region;
+	gboolean joined_stw;
 	gboolean doing_handshake;
 	gboolean thread_is_dying;
 	gboolean gc_disabled;

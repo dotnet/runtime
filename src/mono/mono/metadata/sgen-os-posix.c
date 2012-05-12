@@ -225,6 +225,7 @@ sgen_thread_handshake (BOOL suspend)
 
 	count = 0;
 	FOREACH_THREAD_SAFE (info) {
+		info->joined_stw = suspend;
 		if (mono_native_thread_id_equals (mono_thread_info_get_tid (info), me)) {
 			continue;
 		}

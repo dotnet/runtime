@@ -117,6 +117,8 @@ sgen_thread_handshake (BOOL suspend)
 	int count = 0;
 
 	FOREACH_THREAD_SAFE (info) {
+		info->joined_stw = suspend;
+
 		if (info == cur_thread || sgen_is_worker_thread (mono_thread_info_get_tid (info)))
 			continue;
 		if (info->gc_disabled)

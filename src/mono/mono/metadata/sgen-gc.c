@@ -3673,7 +3673,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		   allocator */
 		FOREACH_THREAD_SAFE (info) {
 			gboolean result;
-			if (info->skip || info->gc_disabled)
+			if (info->skip || info->gc_disabled || !info->joined_stw)
 				continue;
 			if (!info->thread_is_dying && (!info->stack_start || info->in_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
@@ -3901,6 +3901,12 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			DEBUG (3, fprintf (gc_debug_file, "GC disabled for thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 			continue;
 		}
+
+		if (!info->joined_stw) {
+			DEBUG (3, fprintf (gc_debug_file, "Skipping thread not seen in STW %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			continue;
+		}
+		
 		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ()));
 		if (!info->thread_is_dying) {
 			if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
@@ -3989,6 +3995,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	info->signal = 0;
 #endif
 	info->skip = 0;
+	info->joined_stw = FALSE;
 	info->doing_handshake = FALSE;
 	info->thread_is_dying = FALSE;
 	info->stack_start = NULL;
@@ -4776,7 +4783,6 @@ mono_gc_base_init (void)
 		else {
 			fprintf (stderr, "Unknown minor collector `%s'.\n", minor_collector_opt);
 			exit (1);
-			
 		}
 	}
 
