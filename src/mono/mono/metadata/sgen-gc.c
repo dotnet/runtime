@@ -3757,7 +3757,7 @@ static unsigned long max_pause_usec = 0;
 static int
 stop_world (int generation)
 {
-	int count;
+	int count, dead;
 
 	/*XXX this is the right stop, thought might not be the nicest place to put it*/
 	sgen_process_togglerefs ();
@@ -3771,8 +3771,11 @@ stop_world (int generation)
 	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", sgen_global_stop_count, mono_thread_info_current (), (gpointer)mono_native_thread_id_get ()));
 	TV_GETTIME (stop_world_time);
 	count = sgen_thread_handshake (TRUE);
-	count -= restart_threads_until_none_in_managed_allocator ();
-	g_assert (count >= 0);
+	dead = restart_threads_until_none_in_managed_allocator ();
+	if (count < dead)
+		g_error ("More threads have died (%d) that been initialy suspended %d", dead, count);
+	count -= dead;
+
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 
@@ -4952,6 +4955,9 @@ mono_gc_base_init (void)
 
 	if (major_collector_opt)
 		g_free (major_collector_opt);
+
+	if (minor_collector_opt)
+		g_free (minor_collector_opt);
 
 	init_heap_size_limits (max_heap, soft_limit);
 

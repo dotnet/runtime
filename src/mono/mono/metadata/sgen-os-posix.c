@@ -198,7 +198,7 @@ sgen_wait_for_suspend_ack (int count)
 	for (i = 0; i < count; ++i) {
 		while ((result = MONO_SEM_WAIT (suspend_ack_semaphore_ptr)) != 0) {
 			if (errno != EINTR) {
-				g_error ("sem_wait ()");
+				g_error ("MONO_SEM_WAIT FAILED with %d errno %d (%s)", result, errno, strerror (errno));
 			}
 		}
 	}

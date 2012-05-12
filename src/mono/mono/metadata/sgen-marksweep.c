@@ -1458,7 +1458,7 @@ ms_sweep_thread_func (void *dummy)
 
 		while ((result = MONO_SEM_WAIT (&ms_sweep_cmd_semaphore)) != 0) {
 			if (errno != EINTR)
-				g_error ("MONO_SEM_WAIT");
+				g_error ("MONO_SEM_WAIT FAILED with %d errno %d (%s)", result, errno, strerror (errno));
 		}
 
 		ms_sweep ();
@@ -2085,7 +2085,6 @@ sgen_marksweep_init
 	collector->is_worker_thread = major_is_worker_thread;
 	collector->post_param_init = post_param_init;
 
-	/* FIXME this macro mess */
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
 	collector->major_ops.scan_object = major_scan_object;
 
