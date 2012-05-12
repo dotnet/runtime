@@ -329,7 +329,7 @@ par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 
 	age = get_object_age (obj);
 	if (age >= promote_age)
-		return major_collector.alloc_object (objsize, has_references);
+		return major_collector.par_alloc_object (objsize, has_references);
 
 restart:
 	p = age_alloc_buffers [age].next;
