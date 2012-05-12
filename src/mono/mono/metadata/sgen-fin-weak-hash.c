@@ -488,7 +488,7 @@ remove_finalizers_for_domain (MonoDomain *domain, int generation)
 		if (mono_object_domain (object) == domain) {
 			DEBUG (5, fprintf (gc_debug_file, "Unregistering finalizer for object: %p (%s)\n", object, safe_name (object)));
 
-			SGEN_HASH_TABLE_FOREACH_REMOVE (free);
+			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;	
