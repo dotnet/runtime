@@ -6141,14 +6141,15 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_managed_call (mb, m, NULL);
 			mono_mb_emit_icall (mb, mono_string_new_len_wrapper);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
-		} else if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+		} else if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_icall (mb, conv_to_icall (conv));
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
+			need_free = TRUE;
 		}
 
-		if (need_free || (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+		if (need_free) {
 			mono_mb_emit_ldloc (mb, conv_arg);
 			if (conv == MONO_MARSHAL_CONV_BSTR_STR)
 				mono_mb_emit_icall (mb, mono_free_bstr);
@@ -6595,7 +6596,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			g_assert (encoding != -1);
 
 			if (t->byref) {
-				g_assert ((t->attrs & PARAM_ATTRIBUTE_OUT));
+				//g_assert (!(t->attrs & PARAM_ATTRIBUTE_OUT));
 
 				need_free = TRUE;
 

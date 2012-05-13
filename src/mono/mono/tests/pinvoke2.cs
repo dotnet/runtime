@@ -288,6 +288,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_out")]
 	public static extern void mono_test_marshal_stringbuilder_out (out StringBuilder sb);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_ref")]
+	public static extern void mono_test_marshal_stringbuilder_ref (ref StringBuilder sb);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_out_unicode", CharSet=CharSet.Unicode)]
 	public static extern void mono_test_marshal_stringbuilder_out_unicode (out StringBuilder sb);
 
@@ -816,6 +819,18 @@ public class Tests {
 		return 0;
 	}
 
+	/* 
+	 * Not yet supported
+	public static int test_0_marshal_stringbuilder_ref () {
+		StringBuilder sb = new StringBuilder ();
+		mono_test_marshal_stringbuilder_ref (ref sb);
+		
+		if (sb.ToString () != "This is my message.  Isn't it nice?")
+			return 1;  
+		return 0;
+	}
+	*/
+
 	public static int test_0_marshal_empty_string_array () {
 		return mono_test_marshal_empty_string_array (null);
 	}
@@ -1275,7 +1290,12 @@ public class Tests {
 	public static int test_0_marshal_byref_string () {
 		string res = "TEST1";
 
-		return string_marshal_test2 (ref res);
+		int r = string_marshal_test2 (ref res);
+		if (r != 0)
+			return 1;
+		if (res != "TEST2")
+			return 2;
+		return 0;
 	}
 
 	public static int test_0_marshal_null_string () {
