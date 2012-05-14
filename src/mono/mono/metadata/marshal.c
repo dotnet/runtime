@@ -6497,7 +6497,8 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		} else if (klass == mono_defaults.stringbuilder_class) {
 			MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 			MonoMarshalConv conv = mono_marshal_get_stringbuilder_to_ptr_conv (m->piinfo, spec);
-			
+
+#if 0			
 			if (t->byref) {
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 					char *msg = g_strdup_printf ("Byref marshalling of stringbuilders is not implemented.");
@@ -6505,8 +6506,14 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				}
 				break;
 			}
+#endif
+
+			if (t->byref && !t->attrs & PARAM_ATTRIBUTE_IN && t->attrs & PARAM_ATTRIBUTE_OUT)
+				break;
 
 			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref)
+				mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 			if (conv != -1)
 				mono_mb_emit_icall (mb, conv_to_icall (conv));

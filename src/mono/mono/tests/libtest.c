@@ -1096,16 +1096,20 @@ mono_test_marshal_stringbuilder_out_unicode (gunichar2 **s)
 	return 0;
 }
 
-LIBTEST_API void STDCALL
+LIBTEST_API int STDCALL
 mono_test_marshal_stringbuilder_ref (char **s)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
 	char *str;
 
+	if (strcmp (*s, "ABC"))
+		return 1;
+
 	str = marshal_alloc (strlen (m) + 1);
 	memcpy (str, m, strlen (m) + 1);
 	
 	*s = str;
+	return 0;
 }
 
 typedef struct {
