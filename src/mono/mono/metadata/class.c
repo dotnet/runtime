@@ -1403,6 +1403,8 @@ mono_class_setup_fields (MonoClass *class)
 		}
 		class->size_inited = 1;
 		class->blittable = blittable;
+		mono_memory_barrier ();
+		class->fields_inited = 1;
 		return;
 	}
 
@@ -1518,6 +1520,9 @@ mono_class_setup_fields (MonoClass *class)
 	/*valuetypes can't be neither bigger than 1Mb or empty. */
 	if (class->valuetype && (class->instance_size <= 0 || class->instance_size > (0x100000 + sizeof (MonoObject))))
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+
+	mono_memory_barrier ();
+	class->fields_inited = 1;
 }
 
 /** 
@@ -1527,9 +1532,12 @@ mono_class_setup_fields (MonoClass *class)
  * Initializes the class->fields array of fields.
  * Aquires the loader lock.
  */
-static void
+void
 mono_class_setup_fields_locking (MonoClass *class)
 {
+	/* This can be checked without locks */
+	if (class->fields_inited)
+		return;
 	mono_loader_lock ();
 	mono_class_setup_fields (class);
 	mono_loader_unlock ();

@@ -318,6 +318,7 @@ struct _MonoClass {
 	guint is_inflated : 1; /* class is a generic instance */
 	/* next byte */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
+	guint fields_inited : 1; /* fields is initialized */
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 
@@ -642,6 +643,9 @@ typedef struct {
 
 void
 mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
+
+void
+mono_class_setup_fields_locking (MonoClass *class) MONO_INTERNAL;
 
 /* WARNING
  * Only call this function if you can ensure both @klass and @parent

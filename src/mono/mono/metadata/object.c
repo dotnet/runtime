@@ -3395,6 +3395,9 @@ void
 mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
 {
 	MonoClass *param_class = klass->cast_class;
+
+	mono_class_setup_fields_locking (klass);
+	g_assert (klass->fields_inited);
 				
 	g_assert (mono_class_from_mono_type (klass->fields [0].type) == param_class);
 	g_assert (mono_class_from_mono_type (klass->fields [1].type) == mono_defaults.boolean_class);
@@ -3422,6 +3425,9 @@ MonoObject*
 mono_nullable_box (guint8 *buf, MonoClass *klass)
 {
 	MonoClass *param_class = klass->cast_class;
+
+	mono_class_setup_fields_locking (klass);
+	g_assert (klass->fields_inited);
 
 	g_assert (mono_class_from_mono_type (klass->fields [0].type) == param_class);
 	g_assert (mono_class_from_mono_type (klass->fields [1].type) == mono_defaults.boolean_class);
