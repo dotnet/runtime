@@ -442,24 +442,21 @@ typedef struct {
 	MonoString *LongTimePattern;
 	MonoString *MonthDayPattern;
 	MonoString *YearMonthPattern;
-	MonoString *FullDateTimePattern;
-	MonoString *RFC1123Pattern;
-	MonoString *SortableDateTimePattern;
-	MonoString *UniversalSortableDateTimePattern;
 	guint32 FirstDayOfWeek;
-	MonoObject *Calendar;
 	guint32 CalendarWeekRule;
 	MonoArray *AbbreviatedDayNames;
 	MonoArray *DayNames;
 	MonoArray *MonthNames;
+	MonoArray *GenitiveMonthNames;
 	MonoArray *AbbreviatedMonthNames;
+	MonoArray *GenitiveAbbreviatedMonthNames;
 	MonoArray *ShortDatePatterns;
 	MonoArray *LongDatePatterns;
 	MonoArray *ShortTimePatterns;
 	MonoArray *LongTimePatterns;
 	MonoArray *MonthDayPatterns;
 	MonoArray *YearMonthPatterns;
-	MonoArray *shortDayNames;
+	MonoArray *ShortestDayNames;
 } MonoDateTimeFormatInfo;
 
 typedef struct 
@@ -510,37 +507,37 @@ typedef struct {
 	MonoBoolean is_read_only;
 	gint32 lcid;
 	gint32 parent_lcid;
-	gint32 specific_lcid;
 	gint32 datetime_index;
 	gint32 number_index;
+	gint32 calendar_type;
 	MonoBoolean use_user_override;
 	MonoNumberFormatInfo *number_format;
 	MonoDateTimeFormatInfo *datetime_format;
 	MonoObject *textinfo;
 	MonoString *name;
-	MonoString *displayname;
 	MonoString *englishname;
 	MonoString *nativename;
 	MonoString *iso3lang;
 	MonoString *iso2lang;
-	MonoString *icu_name;
 	MonoString *win3lang;
 	MonoString *territory;
+	MonoArray *native_calendar_names;
 	MonoCompareInfo *compareinfo;
-	const gint32 *calendar_data;
 	const void* text_info_data;
 } MonoCultureInfo;
 
 typedef struct {
 	MonoObject obj;
-	gint32 region_id;
+	gint32 geo_id;
 	MonoString *iso2name;
 	MonoString *iso3name;
 	MonoString *win3name;
 	MonoString *english_name;
+	MonoString *native_name;
 	MonoString *currency_symbol;
 	MonoString *iso_currency_symbol;
 	MonoString *currency_english_name;
+	MonoString *currency_native_name;
 } MonoRegionInfo;
 
 typedef struct {

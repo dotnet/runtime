@@ -290,7 +290,7 @@ ICALL(CULINF_6, "construct_internal_locale_from_name", ves_icall_System_Globaliz
 ICALL(CULINF_7, "construct_internal_locale_from_specific_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name)
 ICALL(CULINF_8, "construct_number_format", ves_icall_System_Globalization_CultureInfo_construct_number_format)
 ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures)
-ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
+//ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
 
 ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_1)
 ICALL(REGINF_1, "construct_internal_region_from_lcid", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid)

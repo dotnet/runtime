@@ -32,7 +32,6 @@ extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal
 extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this, MonoString *name) MONO_INTERNAL;
 extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci, MonoString *name) MONO_INTERNAL;
 extern MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral, MonoBoolean specific, MonoBoolean installed) MONO_INTERNAL;
-extern MonoBoolean ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral (gint lcid, MonoBoolean *is_neutral) MONO_INTERNAL;
 extern void ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultureInfo *this) MONO_INTERNAL;
 extern void ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureInfo *this) MONO_INTERNAL;
 extern void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale) MONO_INTERNAL;
