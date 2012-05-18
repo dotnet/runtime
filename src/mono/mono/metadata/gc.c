@@ -485,6 +485,13 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 		/* Avoid deadlocks */
 		return;
 
+	/*
+	If the finalizer thread is not live, lets pretend no finalizers are pending since the current thread might
+	be the one responsible for starting it up.
+	*/
+	if (gc_thread == NULL)
+		return;
+
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
