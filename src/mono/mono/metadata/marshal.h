@@ -102,6 +102,7 @@ typedef enum {
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
 	WRAPPER_SUBTYPE_ICALL_WRAPPER,
+	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
 	/* Subtypes of MONO_WRAPPER_UNKNOWN */
 	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER
 } WrapperSubtype;
@@ -299,6 +300,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 MonoMethod *
 mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func) MONO_INTERNAL;
+
+MonoMethod*
+mono_marshal_get_native_func_wrapper_aot (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass) MONO_INTERNAL;
@@ -563,7 +567,7 @@ mono_signature_no_pinvoke (MonoMethod *method) MONO_INTERNAL;
 /* Called from cominterop.c */
 
 void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions) MONO_INTERNAL;
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param) MONO_INTERNAL;
 
 void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle) MONO_INTERNAL;
@@ -580,6 +584,9 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 						  int max_stack) MONO_INTERNAL;
 void
 mono_marshal_emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb) MONO_INTERNAL;
+
+void
+mono_marshal_use_aot_wrappers (gboolean use) MONO_INTERNAL;
 
 G_END_DECLS
 

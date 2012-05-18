@@ -6479,6 +6479,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
 		mono_code_manager_set_read_only (domain->code_mp);
+		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
 #ifdef MONO_ARCH_HAVE_IMT

@@ -831,7 +831,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		}
 	}
 
-	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE);
+	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE, FALSE);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 

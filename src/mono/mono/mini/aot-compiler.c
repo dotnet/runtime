@@ -2259,6 +2259,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
 				strcpy ((char*)p, method->name);
 				p += strlen (method->name) + 1;
+			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
+				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			} else {
 				g_assert (info->subtype == WRAPPER_SUBTYPE_NONE);
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
@@ -2963,6 +2965,7 @@ add_wrappers (MonoAotCompile *acfg)
 	/* delegate-invoke wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
 		MonoClass *klass;
+		MonoCustomAttrInfo *cattr;
 		
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
@@ -2986,6 +2989,18 @@ add_wrappers (MonoAotCompile *acfg)
 			method = mono_class_get_method_from_name_flags (klass, "EndInvoke", -1, 0);
 			if (method)
 				add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
+
+			cattr = mono_custom_attrs_from_class (klass);
+
+			if (cattr) {
+				int j;
+
+				for (j = 0; j < cattr->num_attrs; ++j)
+					if (cattr->attrs [j].ctor && !strcmp (cattr->attrs [j].ctor->klass->name, "MonoNativeFunctionWrapperAttribute"))
+						break;
+				if (j < cattr->num_attrs)
+					add_method (acfg, mono_marshal_get_native_func_wrapper_aot (klass));
+			}
 		}
 	}
 

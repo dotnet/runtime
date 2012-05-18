@@ -1640,6 +1640,7 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->var_cache_slow);
 	free_hash (image->mvar_cache_slow);
 	free_hash (image->wrapper_param_names);
+	free_hash (image->native_wrapper_aot_cache);
 
 	/* The ownership of signatures is not well defined */
 	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
