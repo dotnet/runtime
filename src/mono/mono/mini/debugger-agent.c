@@ -5359,6 +5359,22 @@ buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
 	buffer_add_value_full (buf, t, addr, domain, FALSE);
 }
 
+static gboolean
+obj_is_of_type (MonoObject *obj, MonoType *t)
+{
+	MonoClass *klass = obj->vtable->klass;
+	if (!mono_class_is_assignable_from (mono_class_from_mono_type (t), klass)) {
+		if (klass == mono_defaults.transparent_proxy_class) {
+			klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
+			if (mono_class_is_assignable_from (mono_class_from_mono_type (t), klass)) {
+				return TRUE;
+			}
+		}
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static ErrorCode
 decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit);
 
@@ -5478,8 +5494,12 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				if (err)
 					return err;
 
-				if (obj && !mono_class_is_assignable_from (mono_class_from_mono_type (t), obj->vtable->klass))
-					return ERR_INVALID_ARGUMENT;
+				if (obj) {
+					if (!obj_is_of_type (obj, t)) {
+						DEBUG (1, fprintf (log_file, "Expected type '%s', got '%s'\n", mono_type_full_name (t), obj->vtable->klass->name));
+						return ERR_INVALID_ARGUMENT;
+					}
+				}
 				if (obj && obj->vtable->domain != domain)
 					return ERR_INVALID_ARGUMENT;
 
@@ -5846,7 +5866,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		}
 	}
 
-	if (this && !mono_class_is_assignable_from (m->klass, this->vtable->klass))
+	if (this && !obj_is_of_type (this, &m->klass->byval_arg))
 		return ERR_INVALID_ARGUMENT;
 
 	nargs = decode_int (p, &p, end);
