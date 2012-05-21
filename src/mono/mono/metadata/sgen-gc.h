@@ -872,7 +872,7 @@ typedef struct {
 
 gpointer sgen_hash_table_lookup (SgenHashTable *table, gpointer key) MONO_INTERNAL;
 gboolean sgen_hash_table_replace (SgenHashTable *table, gpointer key, gpointer data) MONO_INTERNAL;
-gboolean sgen_hash_table_set_value (SgenHashTable *table, gpointer key, gpointer data) MONO_INTERNAL;
+gboolean sgen_hash_table_set_value (SgenHashTable *table, gpointer key, gpointer new_value, gpointer old_value) MONO_INTERNAL;
 gboolean sgen_hash_table_set_key (SgenHashTable *hash_table, gpointer old_key, gpointer new_key) MONO_INTERNAL;
 gboolean sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpointer data_return) MONO_INTERNAL;
 
