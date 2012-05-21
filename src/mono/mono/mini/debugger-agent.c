@@ -4461,7 +4461,7 @@ mono_debugger_agent_breakpoint_hit (void *sigctx)
 	 * problems, like the original signal is disabled, libgc can't handle altstack, etc.
 	 * So set up the signal context to return to the real breakpoint handler function.
 	 */
-
+	//printf ("HIT!\n");
 	resume_from_signal_handler (sigctx, process_breakpoint);
 }
 

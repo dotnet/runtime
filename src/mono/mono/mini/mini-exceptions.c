@@ -1937,6 +1937,8 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	sa.ss_flags = SS_ONSTACK;
 #endif
 	g_assert (sigaltstack (&sa, NULL) == 0);
+
+	mono_gc_register_altstack ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size, (char*)staddr + stsize - ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size), tls->signal_stack, tls->signal_stack_size);
 }
 
 void

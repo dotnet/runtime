@@ -5486,4 +5486,10 @@ mono_gc_get_vtable_bits (MonoClass *class)
 	return 0;
 }
 
+void
+mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
+{
+	// FIXME:
+}
+
 #endif /* HAVE_SGEN_GC */
