@@ -96,7 +96,7 @@ sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
 }
 
 gboolean
-sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
+sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer new_value, gpointer old_value)
 {
 	guint hash;
 	SgenHashTableEntry *entry;
@@ -105,13 +105,15 @@ sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer data)
 	entry = lookup (hash_table, key, &hash);
 
 	if (entry) {
-		memcpy (entry->data, data, hash_table->data_size);
+		if (old_value)
+			memcpy (old_value, entry->data, hash_table->data_size);	
+		memcpy (entry->data, new_value, hash_table->data_size);
 		return FALSE;
 	}
 
 	entry = sgen_alloc_internal (hash_table->entry_mem_type);
 	entry->key = key;
-	memcpy (entry->data, data, hash_table->data_size);
+	memcpy (entry->data, new_value, hash_table->data_size);
 
 	entry->next = hash_table->table [hash];
 	hash_table->table [hash] = entry;

@@ -136,7 +136,7 @@ lookup_class_entry (SgenHashTable *hash_table, MonoClass *class, gpointer empty_
 	if (entry) {
 		g_free (name);
 	} else {
-		sgen_hash_table_replace (hash_table, name, empty_entry);
+		sgen_hash_table_replace (hash_table, name, empty_entry, NULL);
 		entry = sgen_hash_table_lookup (hash_table, name);
 	}
 
