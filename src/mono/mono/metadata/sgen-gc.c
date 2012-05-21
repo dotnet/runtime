@@ -3730,7 +3730,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		num_threads_died += restart_count - restarted_count;
 		/* wait for the threads to signal their suspension
 		   again */
-		sgen_wait_for_suspend_ack (restart_count);
+		sgen_wait_for_suspend_ack (restarted_count);
 	}
 
 	return num_threads_died;
