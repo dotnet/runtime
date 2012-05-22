@@ -1483,12 +1483,11 @@ if test x$target_win32 = xno; then
 				exit (0);
 			}
 
+			volatile char*__ptr = NULL;
 			static void *
 			loop (void *ignored)
 			{
-				char *ptr = NULL;
-
-				*ptr = 0;
+				*__ptr = 0;
 				return NULL;
 			}
 
