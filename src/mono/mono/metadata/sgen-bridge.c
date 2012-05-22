@@ -326,7 +326,7 @@ get_hash_entry (MonoObject *obj, gboolean *existing)
 	new_entry.finishing_time = -1;
 	new_entry.scc_index = -1;
 
-	sgen_hash_table_replace (&hash_table, obj, &new_entry);
+	sgen_hash_table_replace (&hash_table, obj, &new_entry, NULL);
 
 	return sgen_hash_table_lookup (&hash_table, obj);
 }

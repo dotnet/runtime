@@ -100,7 +100,8 @@ mono_runtime_object_init (MonoObject *this)
 	MonoClass *klass = this->vtable->klass;
 
 	method = mono_class_get_method_from_name (klass, ".ctor", 0);
-	g_assert (method);
+	if (!method)
+		g_error ("Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
 
 	if (method->klass->valuetype)
 		this = mono_object_unbox (this);
@@ -223,8 +224,9 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	MonoException *ex;
 	gchar *full_name;
 
-	g_assert (vtable->init_failed);
-
+	if (!vtable->init_failed)
+		g_error ("Trying to get the init exception for a non-failed vtable of class %s", mono_type_get_full_name (klass));
+	
 	/* 
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
@@ -1083,9 +1085,8 @@ mono_method_get_imt_slot (MonoMethod *method)
 	hashes = hashes_start;
 
 	if (! MONO_CLASS_IS_INTERFACE (method->klass)) {
-		printf ("mono_method_get_imt_slot: %s.%s.%s is not an interface MonoMethod\n",
+		g_error ("mono_method_get_imt_slot: %s.%s.%s is not an interface MonoMethod",
 				method->klass->name_space, method->klass->name, method->name);
-		g_assert_not_reached ();
 	}
 	
 	/* Initialize hashes */
@@ -2959,8 +2960,7 @@ handle_enum:
 		t = type->data.generic_class->container_class->byval_arg.type;
 		goto handle_enum;
 	default:
-		g_warning ("got type %x", type->type);
-		g_assert_not_reached ();
+		g_error ("got type %x", type->type);
 	}
 }
 
@@ -3480,9 +3480,11 @@ MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
 {
 	MonoMethod *im;
+	MonoClass *klass = delegate->vtable->klass;
 
-	im = mono_get_delegate_invoke (delegate->vtable->klass);
-	g_assert (im);
+	im = mono_get_delegate_invoke (klass);
+	if (!im)
+		g_error ("Could not lookup delegate invoke method for delegate %s", mono_type_get_full_name (klass));
 
 	return mono_runtime_invoke (im, delegate, params, exc);
 }

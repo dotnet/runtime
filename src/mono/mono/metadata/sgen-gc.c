@@ -3579,7 +3579,7 @@ mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_typ
 	new_root.end_root = start + size;
 	new_root.root_desc = (mword)descr;
 
-	sgen_hash_table_replace (&roots_hash [root_type], start, &new_root);
+	sgen_hash_table_replace (&roots_hash [root_type], start, &new_root, NULL);
 	roots_size += size;
 
 	DEBUG (3, fprintf (gc_debug_file, "Added root for range: %p-%p, descr: %p  (%d/%d bytes)\n", start, new_root.end_root, descr, (int)size, (int)roots_size));
