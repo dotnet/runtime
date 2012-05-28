@@ -161,16 +161,21 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 	g_assert (vtable->gc_descr);
 
-	if (G_UNLIKELY (collect_before_allocs)) {
+	if (G_UNLIKELY (has_per_allocation_action)) {
 		static int alloc_count;
+		int current_alloc = InterlockedIncrement (&alloc_count);
 
-		InterlockedIncrement (&alloc_count);
-		if (((alloc_count % collect_before_allocs) == 0) && nursery_section) {
-			sgen_collect_nursery_no_lock (0);
-			if (!degraded_mode && !sgen_can_alloc_size (size) && size <= SGEN_MAX_SMALL_OBJ_SIZE) {
-				// FIXME:
-				g_assert_not_reached ();
+		if (collect_before_allocs) {
+			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
+				sgen_collect_nursery_no_lock (0);
+				if (!degraded_mode && sgen_can_alloc_size (size) && size <= SGEN_MAX_SMALL_OBJ_SIZE) {
+					// FIXME:
+					g_assert_not_reached ();
+				}
 			}
+		} else if (verify_before_allocs) {
+			if ((current_alloc % verify_before_allocs) == 0)
+				sgen_check_whole_heap_stw ();
 		}
 	}
 
@@ -935,7 +940,7 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 		return NULL;
 	if (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS)
 		return NULL;
-	if (collect_before_allocs)
+	if (has_per_allocation_action)
 		return NULL;
 	g_assert (!mono_class_has_finalizer (klass) && !klass->marshalbyref);
 

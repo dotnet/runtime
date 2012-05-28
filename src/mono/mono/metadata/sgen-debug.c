@@ -220,4 +220,94 @@ check_object (char *start)
 #include "sgen-scan-object.h"
 }
 
+
+static char **valid_nursery_objects;
+static int valid_nursery_object_count;
+static gboolean broken_heap;
+
+static void 
+setup_mono_sgen_scan_area_with_callback (char *object, size_t size, void *data)
+{
+	valid_nursery_objects [valid_nursery_object_count++] = object;
+}
+
+static gboolean
+find_object_in_nursery_dump (char *object)
+{
+	int first = 0, last = valid_nursery_object_count;
+	while (first < last) {
+		int middle = first + ((last - first) >> 1);
+		if (object == valid_nursery_objects [middle])
+			return TRUE;
+
+		if (object < valid_nursery_objects [middle])
+			last = middle;
+		else
+			first = middle + 1;
+	}
+	g_assert (first == last);
+	return FALSE;
+}
+
+static gboolean
+is_valid_object_pointer (char *object)
+{
+	if (sgen_ptr_in_nursery (object))
+		return find_object_in_nursery_dump (object);
+	
+	if (sgen_los_is_valid_object (object))
+		return TRUE;
+
+	if (major_collector.is_valid_object (object))
+		return TRUE;
+	return FALSE;
+}
+
+/*
+FIXME Flag missing remsets due to pinning as non fatal
+*/
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(char**)ptr) {	\
+			if (!is_valid_object_pointer (*(char**)ptr)) {	\
+				fprintf (gc_debug_file, "Invalid object pointer %p at offset %td in object %p (%s.%s).\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
+				broken_heap = TRUE;	\
+			} else if (!sgen_ptr_in_nursery (obj) && sgen_ptr_in_nursery ((char*)*ptr)) {	\
+				if (!sgen_get_remset ()->find_address ((char*)(ptr))) { \
+			        fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
+					binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+					broken_heap = TRUE;				\
+				}	\
+			}	\
+        } \
+	} while (0)
+
+static void
+verify_object_pointers_callback (char *start, size_t size, void *dummy)
+{
+#define SCAN_OBJECT_ACTION
+#include "sgen-scan-object.h"
+}
+
+/*
+FIXME:
+-This heap checker is racy regarding inlined write barriers and other JIT tricks that
+depend on OP_DUMMY_USE.
+*/
+void
+sgen_check_whole_heap (void)
+{
+	/*setup valid_nursery_objects*/
+	if (!valid_nursery_objects)
+		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, TRUE);
+	valid_nursery_object_count = 0;
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE);
+
+	broken_heap = FALSE;
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, NULL, FALSE);
+	major_collector.iterate_objects (TRUE, TRUE, verify_object_pointers_callback, NULL);
+	sgen_los_iterate_objects (verify_object_pointers_callback, NULL);	
+
+	g_assert (!broken_heap);
+}
 #endif /*HAVE_SGEN_GC*/

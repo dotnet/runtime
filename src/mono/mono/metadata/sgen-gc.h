@@ -657,6 +657,7 @@ struct _SgenMajorCollector {
 	void* (*alloc_worker_data) (void);
 	void (*init_worker_thread) (void *data);
 	void (*reset_worker_data) (void *data);
+	gboolean (*is_valid_object) (char *object);
 };
 
 extern SgenMajorCollector major_collector;
@@ -824,6 +825,7 @@ void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 void sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 FILE *sgen_get_logfile (void) MONO_INTERNAL;
+gboolean sgen_los_is_valid_object (char *object) MONO_INTERNAL;
 
 /* nursery allocator */
 
@@ -984,6 +986,8 @@ extern __thread long *store_remset_buffer_index_addr;
 extern GCMemSection *nursery_section;
 extern int stat_major_gcs;
 extern guint32 collect_before_allocs;
+extern guint32 verify_before_allocs;
+extern gboolean has_per_allocation_action;
 extern int degraded_mode;
 extern int default_nursery_size;
 extern guint32 tlab_size;
@@ -1022,7 +1026,8 @@ gboolean sgen_is_managed_allocator (MonoMethod *method);
 
 void sgen_check_consistency (void);
 void sgen_check_major_refs (void);
-
+void sgen_check_whole_heap (void);
+void sgen_check_whole_heap_stw (void) MONO_INTERNAL;
 
 /* Write barrier support */
 

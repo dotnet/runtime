@@ -263,9 +263,15 @@ enum {
  */
 
 /* 0 means not initialized, 1 is initialized, -1 means in progress */
-static gint32 gc_initialized = 0;
+static int gc_initialized = 0;
+/* If set, check if we need to do something every X allocations */
+gboolean has_per_allocation_action;
+/* If set, do a heap check every X allocation */
+guint32 verify_before_allocs = 0;
 /* If set, do a minor collection before every X allocation */
 guint32 collect_before_allocs = 0;
+/* If set, do a whole heap check before each collection */
+static gboolean whole_heap_check_before_collection = FALSE;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
@@ -659,6 +665,7 @@ static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gb
 static gboolean mono_gc_is_critical_method (MonoMethod *method);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
+
 
 static void init_stats (void);
 
@@ -2627,6 +2634,8 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", sgen_get_pinned_count (), TV_ELAPSED (btv, atv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", sgen_get_pinned_count ()));
 
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap_stw ();
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
 
@@ -2823,6 +2832,9 @@ major_do_collection (const char *reason)
 	last_collection_los_memory_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
 	last_collection_old_los_memory_usage = los_memory_usage;
 	objects_pinned = 0;
+
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap_stw ();
 
 	//count_ref_nonref_objs ();
 	//consistency_check ();
@@ -4437,6 +4449,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	remset.wbarrier_object_copy (obj, src);
 }
 
+
 /*
  * ######################################################################
  * ########  Other mono public interface functions.
@@ -4989,11 +5002,22 @@ mono_gc_base_init (void)
 				debug_print_allowance = TRUE;
 			} else if (!strcmp (opt, "print-pinning")) {
 				do_pin_stats = TRUE;
+			} else if (!strcmp (opt, "verify-before-allocs")) {
+				verify_before_allocs = 1;
+				has_per_allocation_action = TRUE;
+			} else if (g_str_has_prefix (opt, "verify-before-allocs=")) {
+				char *arg = strchr (opt, '=') + 1;
+				verify_before_allocs = atoi (arg);
+				has_per_allocation_action = TRUE;
 			} else if (!strcmp (opt, "collect-before-allocs")) {
 				collect_before_allocs = 1;
+				has_per_allocation_action = TRUE;
 			} else if (g_str_has_prefix (opt, "collect-before-allocs=")) {
 				char *arg = strchr (opt, '=') + 1;
+				has_per_allocation_action = TRUE;
 				collect_before_allocs = atoi (arg);
+			} else if (!strcmp (opt, "verify-before-collections")) {
+				whole_heap_check_before_collection = TRUE;
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
 				nursery_clear_policy = CLEAR_AT_GC;
@@ -5033,7 +5057,9 @@ mono_gc_base_init (void)
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
 				fprintf (stderr, "Valid options are:\n");
 				fprintf (stderr, "  collect-before-allocs[=<n>]\n");
+				fprintf (stderr, "  verify-before-allocs[=<n>]\n");
 				fprintf (stderr, "  check-at-minor-collections\n");
+				fprintf (stderr, "  verify-before-collections\n");
 				fprintf (stderr, "  disable-minor\n");
 				fprintf (stderr, "  disable-major\n");
 				fprintf (stderr, "  xdomain-checks\n");
@@ -5490,6 +5516,16 @@ void
 mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
 {
 	// FIXME:
+}
+
+
+void
+sgen_check_whole_heap_stw (void)
+{
+	stop_world (0);
+	sgen_clear_nursery_fragments ();
+	sgen_check_whole_heap ();
+	restart_world (0);
 }
 
 #endif /* HAVE_SGEN_GC */

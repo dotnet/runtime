@@ -493,6 +493,18 @@ sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
 		cb (obj->data, obj->size, user_data);
 }
 
+gboolean
+sgen_los_is_valid_object (char *object)
+{
+	LOSObject *obj;
+
+	for (obj = los_object_list; obj; obj = obj->next) {
+		if (obj->data == object)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 void
 sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
