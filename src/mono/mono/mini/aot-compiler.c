@@ -3245,6 +3245,7 @@ static void
 add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth, const char *ref)
 {
 	MonoMethod *method;
+	MonoClassField *field;
 	gpointer iter;
 
 	if (!acfg->ginst_hash)
@@ -3290,6 +3291,12 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		 * for example Array.Resize<int> for List<int>.Add ().
 		 */
 		add_extra_method_with_depth (acfg, method, depth + 1);
+	}
+
+	iter = NULL;
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if (field->type->type == MONO_TYPE_GENERICINST)
+			add_generic_class_with_depth (acfg, mono_class_from_mono_type (field->type), depth + 1, "field");
 	}
 
 	if (klass->delegate) {
