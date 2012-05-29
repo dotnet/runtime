@@ -2833,9 +2833,6 @@ major_do_collection (const char *reason)
 	last_collection_old_los_memory_usage = los_memory_usage;
 	objects_pinned = 0;
 
-	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
-
 	//count_ref_nonref_objs ();
 	//consistency_check ();
 
@@ -2857,6 +2854,9 @@ major_do_collection (const char *reason)
 
 	/* Pinning depends on this */
 	sgen_clear_nursery_fragments ();
+
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap_stw ();
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
