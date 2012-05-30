@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Embedded Samples", "Embedded Samples", "{5FE09AA5-C3C9-45EA-A323-36A11B653CEC}"
@@ -354,8 +354,8 @@ Global
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release_SGen|x64.Build.0 = Release_SGen|x64
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release|Win32.ActiveCfg = Release|Win32
 		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release|Win32.Build.0 = Release|Win32
-		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release|x64.ActiveCfg = Release_SGen|x64
-		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release|x64.Build.0 = Release_SGen|x64
+		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release|x64.ActiveCfg = Release|x64
+		{C36612BD-22D3-4B95-85E2-7FDC4FC5D739}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -383,9 +383,9 @@ Global
 		{F51017F9-B7FB-4F87-B7B5-12799D965783} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
-		AMDCaPersistentStartup = mono
 		AMDCaPersistentConfig = Debug|Win32
+		AMDCaPersistentStartup = mono
+		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}
