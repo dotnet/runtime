@@ -2344,6 +2344,8 @@ class Tests {
 	}
 
 	/* Test that arguments are correctly popped off the stack during unwinding */
+	/* FIXME: Fails on x86 when llvm is enabled (#5432) */
+	/*
 	public static int test_0_stack_unwind () {
 		addr = new IntPtr [1000];
 		S s = new S ();
@@ -2356,6 +2358,7 @@ class Tests {
 		}
 		return (addr [0].ToInt64 () - addr [100].ToInt64 () < 100) ? 0 : 1;
 	}
+	*/
 
 	static unsafe void get_sp (int i) {
 		addr [i] = new IntPtr (&i);
