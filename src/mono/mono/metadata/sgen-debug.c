@@ -249,6 +249,34 @@ find_object_in_nursery_dump (char *object)
 	return FALSE;
 }
 
+static void
+describe_nursery_ptr (char *ptr)
+{
+	int i;
+
+	fprintf (gc_debug_file, "nursery-ptr ");
+	for (i = 0; i < valid_nursery_object_count; ++i) {
+		if (valid_nursery_objects [i] >= ptr)
+			break;
+	}
+
+	if (i >= valid_nursery_object_count || valid_nursery_objects [i] + safe_object_get_size ((MonoObject *)valid_nursery_objects [i]) < ptr) {
+		fprintf (gc_debug_file, "(unalloc'd-memory)");
+	} else {
+		char *obj = valid_nursery_objects [i];
+		MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+		int size = safe_object_get_size ((MonoObject *)obj);
+
+		if (obj == ptr)
+			fprintf (gc_debug_file, "(object %s.%s size %d)", 
+				vtable->klass->name_space, vtable->klass->name, size);
+		else
+			fprintf (gc_debug_file, "(interior-ptr offset %td of %p (%s.%s) size %d)",
+				ptr - obj, obj,
+				vtable->klass->name_space, vtable->klass->name, size);
+	}
+}
+
 static gboolean
 is_valid_object_pointer (char *object)
 {
@@ -263,6 +291,46 @@ is_valid_object_pointer (char *object)
 	return FALSE;
 }
 
+
+static void
+describe_pointer (char *ptr)
+{
+	if (sgen_ptr_in_nursery (ptr)) {
+		describe_nursery_ptr (ptr);
+	} else if (major_collector.describe_pointer (ptr)) {
+		//Nothing really
+	} else if (!mono_sgen_los_describe_pointer (ptr)) {
+		fprintf (gc_debug_file, "non-heap-ptr");
+	}
+}
+
+static void
+bad_pointer_spew (char *obj, char **slot)
+{
+	char *ptr = *slot;
+	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+
+	fprintf (gc_debug_file, "Invalid object pointer %p [", ptr);
+	describe_pointer (ptr);
+	fprintf (gc_debug_file, "] at offset %td in object %p (%s.%s).\n",
+		(char*)slot - obj,
+		obj, vtable->klass->name_space, vtable->klass->name);
+	broken_heap = TRUE;
+}
+
+static void
+missing_remset_spew (char *obj, char **slot)
+{
+	char *ptr = *slot;
+	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+
+    fprintf (gc_debug_file,  "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n",
+ 		ptr, (char*)slot - obj, obj, 
+		vtable->klass->name_space, vtable->klass->name);
+
+	broken_heap = TRUE;
+}
+
 /*
 FIXME Flag missing remsets due to pinning as non fatal
 */
@@ -270,14 +338,10 @@ FIXME Flag missing remsets due to pinning as non fatal
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(char**)ptr) {	\
 			if (!is_valid_object_pointer (*(char**)ptr)) {	\
-				fprintf (gc_debug_file, "Invalid object pointer %p at offset %td in object %p (%s.%s).\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-				broken_heap = TRUE;	\
+				bad_pointer_spew ((char*)obj, (char**)ptr);	\
 			} else if (!sgen_ptr_in_nursery (obj) && sgen_ptr_in_nursery ((char*)*ptr)) {	\
-				if (!sgen_get_remset ()->find_address ((char*)(ptr))) { \
-			        fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-					binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
-					broken_heap = TRUE;				\
-				}	\
+				if (!sgen_get_remset ()->find_address ((char*)(ptr))) \
+			        missing_remset_spew ((char*)obj, (char**)ptr);	\
 			}	\
         } \
 	} while (0)

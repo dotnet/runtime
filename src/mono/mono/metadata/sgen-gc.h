@@ -658,6 +658,7 @@ struct _SgenMajorCollector {
 	void (*init_worker_thread) (void *data);
 	void (*reset_worker_data) (void *data);
 	gboolean (*is_valid_object) (char *object);
+	gboolean (*describe_pointer) (char *pointer);
 };
 
 extern SgenMajorCollector major_collector;
@@ -826,6 +827,7 @@ void sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 FILE *sgen_get_logfile (void) MONO_INTERNAL;
 gboolean sgen_los_is_valid_object (char *object) MONO_INTERNAL;
+gboolean mono_sgen_los_describe_pointer (char *ptr) MONO_INTERNAL;
 
 /* nursery allocator */
 

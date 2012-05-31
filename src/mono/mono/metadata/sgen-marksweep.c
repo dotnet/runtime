@@ -934,6 +934,50 @@ major_is_valid_object (char *object)
 	return FALSE;
 }
 
+
+static gboolean
+major_describe_pointer (char *ptr)
+{
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		int idx;
+		char *obj;
+		gboolean live;
+		MonoVTable *vtable;
+
+		if ((block->block > ptr) || ((block->block + MS_BLOCK_SIZE) <= ptr))
+			continue;
+
+		fprintf (gc_debug_file, "major-ptr (block %p sz %d pin %d ref %d) ",
+			block->block, block->obj_size, block->pinned, block->has_references);
+
+		idx = MS_BLOCK_OBJ_INDEX (ptr, block);
+		obj = (char*)MS_BLOCK_OBJ (block, idx);
+		live = MS_OBJ_ALLOCED (obj, block);
+		vtable = live ? (MonoVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
+		
+		if (obj == ptr) {
+			if (live)
+				fprintf (gc_debug_file, "(object %s.%s)", vtable->klass->name_space, vtable->klass->name);
+			else
+				fprintf (gc_debug_file, "(dead-object)");
+		} else {
+			if (live)
+				fprintf (gc_debug_file, "(interior-ptr offset %td of %p %s.%s)",
+					ptr - obj,
+					obj, vtable->klass->name_space, vtable->klass->name);
+			else
+				fprintf (gc_debug_file, "(dead-interior-ptr to %td to %p)",
+					ptr - obj, obj);
+		}
+
+		return TRUE;
+	} END_FOREACH_BLOCK;
+
+	return FALSE;
+}
+
 static void
 major_check_scan_starts (void)
 {
@@ -2108,6 +2152,7 @@ sgen_marksweep_init
 	collector->is_worker_thread = major_is_worker_thread;
 	collector->post_param_init = post_param_init;
 	collector->is_valid_object = major_is_valid_object;
+	collector->describe_pointer = major_describe_pointer;
 
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
 	collector->major_ops.scan_object = major_scan_object;

@@ -505,6 +505,36 @@ sgen_los_is_valid_object (char *object)
 	return FALSE;
 }
 
+gboolean
+mono_sgen_los_describe_pointer (char *ptr)
+{
+	LOSObject *obj;
+
+	for (obj = los_object_list; obj; obj = obj->next) {
+		MonoVTable *vtable;
+		if (obj->data > ptr || obj->data + obj->size <= ptr)
+			continue;
+
+		if (obj->size > LOS_SECTION_OBJECT_LIMIT)
+			fprintf (gc_debug_file, "huge-los-ptr ");
+		else
+			fprintf (gc_debug_file, "los-ptr ");
+
+		vtable = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
+
+		if (obj->data == ptr)
+			fprintf (gc_debug_file, "(object %s.%s size %d)", 
+				vtable->klass->name_space, vtable->klass->name, obj->size);
+		else
+			fprintf (gc_debug_file, "(interior-ptr offset %td of %p (%s.%s) size %d)",
+				ptr - obj->data, obj->data,
+				vtable->klass->name_space, vtable->klass->name, obj->size);
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
 void
 sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
