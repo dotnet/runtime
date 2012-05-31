@@ -3930,7 +3930,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (ji->method, TRUE), bp->il_offset, seq_points->len);
 
 		for (i = 0; i < seq_points->len; ++i)
-			printf ("%d\n", seq_points->seq_points [i].il_offset);
+			DEBUG (1, fprintf (log_file, "%d\n", seq_points->seq_points [i].il_offset));
 
 		if (error) {
 			mono_error_set_error (error, MONO_ERROR_GENERIC, "%s", s);
