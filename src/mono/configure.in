@@ -1129,7 +1129,7 @@ if test x$target_win32 = xno; then
 			#include <sys/types.h>
 			#include <limits.h>
 		], [
-			# Lifted this compile time assert method from: http://www.jaggersoft.com/pubs/CVu11_3.html
+			/* Lifted this compile time assert method from: http://www.jaggersoft.com/pubs/CVu11_3.html */
 			#define COMPILE_TIME_ASSERT(pred) \
 				switch(0){case 0:case pred:;}
 
