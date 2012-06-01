@@ -482,7 +482,6 @@ remove_finalizers_for_domain (MonoDomain *domain, int generation)
 	gpointer dummy;
 
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
-		int tag = tagged_object_get_tag (object);
 		object = tagged_object_get_object (object);
 
 		if (mono_object_domain (object) == domain) {

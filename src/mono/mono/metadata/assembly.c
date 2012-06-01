@@ -585,7 +585,7 @@ fallback (void)
 	mono_set_dirs (MONO_ASSEMBLIES, MONO_CFG_DIR);
 }
 
-static void
+static G_GNUC_UNUSED void
 set_dirs (char *exe)
 {
 	char *base;

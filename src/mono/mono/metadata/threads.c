@@ -3884,7 +3884,7 @@ mono_thread_alloc_tls (MonoReflectionType *type)
 	/* TlsDatum is a struct, so we subtract the object header size offset */
 	bitmap = mono_class_compute_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
 	size = mono_type_size (type->type, &align);
-	tls_offset = mono_alloc_special_static_data (SPECIAL_STATIC_THREAD, size, align, bitmap, max_set);
+	tls_offset = mono_alloc_special_static_data (SPECIAL_STATIC_THREAD, size, align, (uintptr_t*)bitmap, max_set);
 	if (bitmap != default_bitmap)
 		g_free (bitmap);
 	tlsrec = g_new0 (MonoTlsDataRecord, 1);
