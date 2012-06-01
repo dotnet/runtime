@@ -2833,9 +2833,11 @@ AC_CHECK_HEADER([malloc.h],
 			[Define to 1 if you have /usr/include/malloc.h.])],,)
 
 if test x"$GCC" = xyes; then
-		# Implicit function declarations are not 64 bit safe
-		# Do this late, since this causes lots of configure tests to fail
-		CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
+   	# Implicit function declarations are not 64 bit safe
+	# Do this late, since this causes lots of configure tests to fail
+	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
+	# jay has a lot of implicit declarations
+	JAY_CFLAGS="-Wno-implicit-function-declaration"
 fi
 
 # When --disable-shared is used, libtool transforms libmono-2.0.la into libmono-2.0.so
@@ -3191,6 +3193,7 @@ fi
     echo 'IL_FLAGS = /debug' >> $mcs_topdir/build/config.make
     echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $mcs_topdir/build/config.make
     echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $mcs_topdir/build/config.make
+    echo "JAY_CFLAGS = $JAY_CFLAGS" >> $mcs_topdir/build/config.make
 
     case $INSTALL in
     [[\\/$]]* | ?:[[\\/]]* ) mcs_INSTALL=$INSTALL ;;
