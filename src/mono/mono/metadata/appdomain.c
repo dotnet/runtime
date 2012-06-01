@@ -15,6 +15,7 @@
 #include <glib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_SYS_TIME_H
