@@ -36,6 +36,7 @@
 #include "regalloc.h"
 #include "declsec.h"
 #include "mini-unwind.h"
+#include "jit.h"
 
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
@@ -1748,7 +1749,6 @@ void        mono_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version) MONO_INTERNAL;
 void        mini_cleanup                   (MonoDomain *domain) MONO_INTERNAL;
 MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
-char*       mono_get_runtime_build_info    (void) MONO_INTERNAL;
 
 /* helper methods */
 void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;

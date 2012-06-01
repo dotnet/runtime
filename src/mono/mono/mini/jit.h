@@ -55,6 +55,8 @@ void mono_set_break_policy (MonoBreakPolicyFunc policy_callback);
 void
 mono_jit_parse_options     (int argc, char * argv[]);
 
+char*       mono_get_runtime_build_info    (void);
+
 MONO_END_DECLS
 
 #endif
