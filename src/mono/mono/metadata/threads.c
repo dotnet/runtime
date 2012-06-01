@@ -55,6 +55,11 @@
 extern int tkill (pid_t tid, int signal);
 #endif
 
+#if defined(PLATFORM_MACOSX) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+void *pthread_get_stackaddr_np(pthread_t);
+size_t pthread_get_stacksize_np(pthread_t);
+#endif
+
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
 #define THREAD_DEBUG(a)
 /*#define THREAD_WAIT_DEBUG(a) do { a; } while (0)*/

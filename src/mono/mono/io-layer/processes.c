@@ -34,6 +34,10 @@
 /* sys/resource.h (for rusage) is required when using osx 10.3 (but not 10.4) */
 #ifdef __APPLE__
 #include <sys/resource.h>
+#ifdef HAVE_LIBPROC_H
+/* proc_name */
+#include <libproc.h>
+#endif
 #endif
 
 #if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)

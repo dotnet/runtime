@@ -37,6 +37,10 @@
 #include "private/pthread_support.h"
 #endif
 
+#if defined(PLATFORM_MACOSX) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+void *pthread_get_stackaddr_np(pthread_t);
+#endif
+
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 /*Boehm max heap cannot be smaller than 16MB*/
 #define MIN_BOEHM_MAX_HEAP_SIZE_IN_MB 16
