@@ -129,9 +129,7 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 		InterlockedExchangeAdd (&degraded_mode, size);
 	}
 
-	if (sgen_need_major_collection (0)) {
-		sgen_collect_major_no_lock ("degraded overflow");
-	}
+	sgen_ensure_free_space (size);
 
 	return major_collector.alloc_degraded (vtable, size);
 }
@@ -168,7 +166,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 		if (collect_before_allocs) {
 			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
-				sgen_collect_nursery_no_lock (0);
+				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered");
 				if (!degraded_mode && sgen_can_alloc_size (size) && size <= SGEN_MAX_SMALL_OBJ_SIZE) {
 					// FIXME:
 					g_assert_not_reached ();
@@ -253,7 +251,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				do {
 					p = sgen_nursery_alloc (size);
 					if (!p) {
-						sgen_minor_collect_or_expand_inner (size);
+						sgen_ensure_free_space (size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size, FALSE);
 							binary_protocol_alloc_degraded (p, vtable, size);
@@ -280,7 +278,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				do {
 					p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 					if (!p) {
-						sgen_minor_collect_or_expand_inner (tlab_size);
+						sgen_ensure_free_space (tlab_size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size, FALSE);
 							binary_protocol_alloc_degraded (p, vtable, size);

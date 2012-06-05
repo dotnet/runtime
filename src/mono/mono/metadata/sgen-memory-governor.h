@@ -37,7 +37,7 @@ void sgen_memgov_major_collection_start (void) MONO_INTERNAL;
 void sgen_memgov_major_collection_end (void) MONO_INTERNAL;
 
 void sgen_memgov_collection_start (int generation) MONO_INTERNAL;
-void sgen_memgov_collection_end (int generation, unsigned long pause_time, unsigned long bridge_pause_time) MONO_INTERNAL;
+void sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count) MONO_INTERNAL;
 
 void sgen_register_major_sections_alloced (int num_sections) MONO_INTERNAL;
 mword sgen_get_minor_collection_allowance (void) MONO_INTERNAL;

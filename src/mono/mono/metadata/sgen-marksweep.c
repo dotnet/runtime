@@ -802,8 +802,8 @@ major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 	  *as pinned alloc is requested by the runtime.
 	  */
 	 if (!res) {
-		 sgen_collect_major_no_lock ("pinned alloc failure");
-		 res = alloc_obj (size, TRUE, has_references);
+		sgen_perform_collection (0, GENERATION_OLD, "pinned alloc failure");
+		res = alloc_obj (size, TRUE, has_references);
 	 }
 	 return res;
 }

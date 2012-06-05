@@ -66,7 +66,6 @@ static int minor_collection_sections_alloced = 0;
 
 static int last_major_num_sections = 0;
 static int last_los_memory_usage = 0;
-static gboolean major_collection_happened = FALSE;
 
 static gboolean need_calculate_minor_collection_allowance;
 
@@ -183,7 +182,6 @@ sgen_memgov_major_collection_start (void)
 	last_collection_old_los_memory_usage = los_memory_usage;
 
 	need_calculate_minor_collection_allowance = TRUE;
-	major_collection_happened = TRUE;
 }
 
 void
@@ -200,29 +198,49 @@ sgen_memgov_collection_start (int generation)
 {
 	last_major_num_sections = major_collector.get_num_major_sections ();
 	last_los_memory_usage = los_memory_usage;
-	major_collection_happened = FALSE;
+}
+
+static void
+log_timming (GGTimingInfo *info)
+{
+	//unsigned long stw_time, unsigned long bridge_time, gboolean is_overflow
+	int num_major_sections = major_collector.get_num_major_sections ();
+	char full_timing_buff [1024];
+	full_timing_buff [0] = '\0';
+
+	if (!info->is_overflow)
+	        sprintf (full_timing_buff, "total %.2fms, bridge %.2f", info->stw_time / 1000.0f, (int)info->bridge_time / 1000.0f);
+	if (info->generation == GENERATION_OLD)
+	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) pause %.2fms, %s major %dK/%dK los %dK/%dK",
+	                info->is_overflow ? "_OVERFLOW" : "",
+	                info->reason,
+	                (int)info->total_time / 1000.0f,
+	                full_timing_buff,
+	                major_collector.section_size * num_major_sections / 1024,
+	                major_collector.section_size * last_major_num_sections / 1024,
+	                los_memory_usage / 1024,
+	                last_los_memory_usage / 1024);
+	else
+	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) pause %.2fms, %s promoted %dK major %dK los %dK",
+	        		info->is_overflow ? "_OVERFLOW" : "",
+	                info->reason,
+	                (int)info->total_time / 1000.0f,
+	                full_timing_buff,
+	                (num_major_sections - last_major_num_sections) * major_collector.section_size / 1024,
+	                major_collector.section_size * num_major_sections / 1024,
+	                los_memory_usage / 1024);       
 }
 
 void
-sgen_memgov_collection_end (int generation, unsigned long pause_time, unsigned long bridge_pause_time)
+sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 {
-	int num_major_sections = major_collector.get_num_major_sections ();
-
-	if (major_collection_happened)
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR: %s pause %.2fms, bridge %.2fms major %dK/%dK los %dK/%dK",
-			generation ? "" : "(minor overflow)",
-			(int)pause_time / 1000.0f, (int)bridge_pause_time / 1000.0f,
-			major_collector.section_size * num_major_sections / 1024,
-			major_collector.section_size * last_major_num_sections / 1024,
-			los_memory_usage / 1024,
-			last_los_memory_usage / 1024);
-	else
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR: pause %.2fms, bridge %.2fms promoted %dK major %dK los %dK",
-			(int)pause_time / 1000.0f, (int)bridge_pause_time / 1000.0f,
-			(num_major_sections - last_major_num_sections) * major_collector.section_size / 1024,
-			major_collector.section_size * num_major_sections / 1024,
-			los_memory_usage / 1024);
+	int i;
+	for (i = 0; i < info_count; ++i) {
+		if (info->generation != -1)
+			log_timming (&info [i]);
+	}
 }
+
 void
 sgen_register_major_sections_alloced (int num_sections)
 {

@@ -359,10 +359,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	if (sgen_need_major_collection (size)) {
-		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
-		sgen_collect_major_no_lock ("LOS overflow");
-	}
+	sgen_ensure_free_space (size);
 
 #ifdef USE_MALLOC
 	obj = malloc (size + sizeof (LOSObject));
