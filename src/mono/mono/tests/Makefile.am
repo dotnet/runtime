@@ -382,7 +382,8 @@ BASE_TEST_CS_SRC=		\
 	bug-1147.cs	\
 	mono-path.cs	\
 	bug-bxc-795.cs	\
-	bug-3903.cs
+	bug-3903.cs	\
+	async-with-cb-throws.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\

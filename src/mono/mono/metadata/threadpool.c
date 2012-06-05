@@ -630,7 +630,7 @@ mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares)
 	if (ac == NULL) {
 		/* Fast path from ThreadPool.*QueueUserWorkItem */
 		void *pa = ares->async_state;
-		mono_runtime_delegate_invoke (ares->async_delegate, &pa, &exc);
+		res = mono_runtime_delegate_invoke (ares->async_delegate, &pa, &exc);
 	} else {
 		MonoObject *cb_exc = NULL;
 
@@ -654,7 +654,6 @@ mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares)
 			void *pa = &ares;
 			cb_exc = NULL;
 			mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &cb_exc);
-			MONO_OBJECT_SETREF (ac->msg, exc, cb_exc);
 			exc = cb_exc;
 		} else {
 			exc = NULL;
