@@ -553,9 +553,8 @@ sgen_nursery_is_to_space (char *object)
 	int byte = idx / 8;
 	int bit = idx & 0x7;
 
-	/* FIXME put those asserts under a non default level */
-	g_assert (sgen_ptr_in_nursery (object));
-	g_assert (byte < sgen_space_bitmap_size);
+	DEBUG (4, g_assert (sgen_ptr_in_nursery (object)));
+	DEBUG (4, g_assert (byte < sgen_space_bitmap_size));
 
 	return (sgen_space_bitmap [byte] & (1 << bit)) != 0;
 }
