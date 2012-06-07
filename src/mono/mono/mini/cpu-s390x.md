@@ -165,7 +165,6 @@ relaxed_nop: len:4
 oparglist: src1:i len:28
 bigmul: len:2 dest:i src1:a src2:i
 bigmul_un: len:2 dest:i src1:a src2:i
-tls_get: len:40 dest:i
 endfilter: src1:i len:28
 rethrow: src1:i len:26
 or_imm: dest:i src1:i len:24
@@ -203,6 +202,7 @@ sub_ovf_carry: dest:i src1:1 src2:i len:28
 sub_ovf_un_carry: dest:i src1:1 src2:i len:12
 subcc: dest:i src1:i src2:i len:12
 throw: src1:i len:26
+tls_get: len:40 dest:i
 vcall: len:22 clob:c
 vcall_membase: src1:b len:12 clob:c
 vcall_reg: src1:i len:8 clob:c
