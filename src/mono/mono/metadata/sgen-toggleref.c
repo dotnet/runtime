@@ -51,7 +51,7 @@ void
 sgen_process_togglerefs (void)
 {
 	int i, w;
-	int toggle_ref_counts [3] = { 0 };
+	int toggle_ref_counts [3] = { 0, 0, 0 };
 
 	DEBUG (4, fprintf (gc_debug_file, "Proccessing ToggleRefs %d\n", toggleref_array_size));
 
@@ -172,10 +172,9 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	sgen_gc_lock ();
 
 	ensure_toggleref_capacity (1);
-	if (strong_ref)
-		toggleref_array [toggleref_array_size++].strong_ref = object;
-	else
-		toggleref_array [toggleref_array_size++].weak_ref = object;
+	toggleref_array [toggleref_array_size].strong_ref = strong_ref ? object : NULL;
+	toggleref_array [toggleref_array_size].weak_ref = strong_ref ? NULL : object;
+	++toggleref_array_size;
 
 	sgen_gc_unlock ();
 }
