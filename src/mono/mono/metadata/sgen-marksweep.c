@@ -1156,7 +1156,13 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			 *
 			 * FIXME (2): We should rework this to avoid all those nursery checks.
 			 */
-			if (!sgen_ptr_in_nursery (obj)) { /*marking a nursery object is pretty stupid.*/
+			/*
+			 * For the split nursery allocator the object
+			 * might still be in the nursery despite
+			 * having being promoted, in which case we
+			 * can't mark it.
+			 */
+			if (!sgen_ptr_in_nursery (obj)) {
 				block = MS_BLOCK_FOR_OBJ (obj);
 				MS_CALC_MARK_BIT (word, bit, obj);
 				DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
@@ -1293,7 +1299,12 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		 *
 		 * FIXME (2): We should rework this to avoid all those nursery checks.
 		 */
-		if (!sgen_ptr_in_nursery (obj)) { /*marking a nursery object is pretty stupid.*/
+		/*
+		 * For the split nursery allocator the object might
+		 * still be in the nursery despite having being
+		 * promoted, in which case we can't mark it.
+		 */
+		if (!sgen_ptr_in_nursery (obj)) {
 			block = MS_BLOCK_FOR_OBJ (obj);
 			MS_CALC_MARK_BIT (word, bit, obj);
 			DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));

@@ -98,6 +98,14 @@ It might even make sense to use nimbles for age recording.
 */
 #define MAX_AGE 15
 
+/*
+ * Each age has its allocation buffer.  Whenever an object is to be
+ * aged we try to fit it into its new age's allocation buffer.  If
+ * that is not possible we get new space from the fragment allocator
+ * and set the allocation buffer to that space (minus the space
+ * required for the object).
+ */
+
 typedef struct {
 	char *next;
 	char *end;
@@ -190,6 +198,15 @@ mark_bits_in_range (char *space_bitmap, char *start, char *end)
 		mark_bit (space_bitmap, start);
 }
 
+/*
+ * This splits the fragments at the point of the promotion barrier.
+ * Two allocator are actually involved here: The mutator allocator and
+ * the collector allocator.  This function is called with the
+ * collector, but it's a copy of the mutator allocator and contains
+ * all the fragments in the nursery.  The fragments below the
+ * promotion barrier are left with the mutator allocator and the ones
+ * above are put into the collector allocator.
+ */
 static void
 fragment_list_split (SgenFragmentAllocator *allocator)
 {
