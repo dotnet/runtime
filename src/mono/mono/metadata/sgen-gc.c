@@ -2598,8 +2598,10 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	if (xdomain_checks)
+	if (xdomain_checks) {
+		sgen_clear_nursery_fragments ();
 		check_for_xdomain_refs ();
+	}
 
 	nursery_section->next_data = nursery_next;
 
@@ -2872,8 +2874,10 @@ major_do_collection (const char *reason)
 	*major_collector.have_swept = FALSE;
 	reset_minor_collection_allowance ();
 
-	if (xdomain_checks)
+	if (xdomain_checks) {
+		sgen_clear_nursery_fragments ();
 		check_for_xdomain_refs ();
+	}
 
 	/* Remsets are not useful for a major collection */
 	remset.prepare_for_major_collection ();
