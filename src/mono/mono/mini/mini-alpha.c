@@ -3919,21 +3919,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name         - mono_arch_cpu_optimizazions                       */
+/* Name         - mono_arch_cpu_optimizations                       */
 /*                                                                  */
 /* Function     - Returns the optimizations supported on this CPU   */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
    guint32 opts = 0;
 
    if (getenv("MONO_ALPHA_DEBUG"))
 	mini_alpha_verbose_level = 1;
    
-   ALPHA_DEBUG("mono_arch_cpu_optimizazions");
+   ALPHA_DEBUG("mono_arch_cpu_optimizations");
    
    /*----------------------------------------------------------*/
    /* no alpha-specific optimizations yet                       */
@@ -3944,6 +3944,23 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
    return opts;
 }
 /*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name         - mono_arch_cpu_enumerate_simd_versions             */
+/*                                                                  */
+/* Function     - Returns the SIMD instruction sets on this CPU     */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	/* SIMD is currently unimplemented */
+	return 0;
+}
+/*========================= End of Function ========================*/
+
+
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
