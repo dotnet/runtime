@@ -2891,6 +2891,21 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 	return mono_assembly_loaded_full (aname, FALSE);
 }
 
+void
+mono_assembly_release_gc_roots (MonoAssembly *assembly)
+{
+	if (assembly == NULL || assembly == REFERENCE_MISSING)
+		return;
+
+	if (assembly->dynamic) {
+		int i;
+		MonoDynamicImage *dynimg = (MonoDynamicImage *)assembly->image;
+		for (i = 0; i < dynimg->image.module_count; ++i)
+			mono_dynamic_image_release_gc_roots ((MonoDynamicImage *)dynimg->image.modules [i]);
+		mono_dynamic_image_release_gc_roots (dynimg);
+	}
+}
+
 /*
  * Returns whether mono_assembly_close_finish() must be called as
  * well.  See comment for mono_image_close_except_pools() for why we

@@ -1954,6 +1954,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 			unregister_vtable_reflection_type (g_ptr_array_index (domain->class_vtable_array, i));
 	}
 
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *ass = tmp->data;
+		mono_assembly_release_gc_roots (ass);
+	}
+
 	/* This needs to be done before closing assemblies */
 	mono_gc_clear_domain (domain);
 
