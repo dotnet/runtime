@@ -2635,7 +2635,7 @@ collect_nursery (size_t requested_size)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", sgen_get_pinned_count ()));
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
+		sgen_check_whole_heap ();
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
 
@@ -2856,7 +2856,7 @@ major_do_collection (const char *reason)
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
+		sgen_check_whole_heap ();
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
