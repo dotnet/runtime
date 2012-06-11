@@ -3574,6 +3574,29 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 			last = ins;
 		}
+
+		if (bb->last_ins && bb->last_ins->opcode == OP_ENDFINALLY) {
+			MonoBasicBlock *bb2;
+			MonoInst *endfinally_seq_point = NULL;
+
+			/*
+			 * The ENDFINALLY branches are not represented in the cfg, so link it with all seq points starting bbs.
+			 */
+			l = g_slist_last (bb->seq_points);
+			g_assert (l);
+			endfinally_seq_point = l->data;
+
+			for (bb2 = cfg->bb_entry; bb2; bb2 = bb2->next_bb) {
+				GSList *l = g_slist_last (bb2->seq_points);
+
+				if (l) {
+					MonoInst *ins = l->data;
+
+					if (!(ins->inst_imm == METHOD_ENTRY_IL_OFFSET || ins->inst_imm == METHOD_EXIT_IL_OFFSET) && ins != endfinally_seq_point)
+						next [endfinally_seq_point->backend.size] = g_slist_append (next [endfinally_seq_point->backend.size], GUINT_TO_POINTER (ins->backend.size));
+				}
+			}
+		}
 	}
 
 	if (cfg->verbose_level > 2) {
@@ -3589,10 +3612,10 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		sp->next = g_new (int, sp->next_len);
 		j = 0;
 		if (cfg->verbose_level > 2 && next [i]) {
-			printf ("\t0x%x ->", sp->il_offset);
+			printf ("\tIL0x%x ->", sp->il_offset);
 			for (l = next [i]; l; l = l->next) {
 				next_index = GPOINTER_TO_UINT (l->data);
-				printf (" 0x%x", info->seq_points [next_index].il_offset);
+				printf (" IL0x%x", info->seq_points [next_index].il_offset);
 			}
 			printf ("\n");
 		}
