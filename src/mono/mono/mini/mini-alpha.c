@@ -3947,6 +3947,23 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name         - mono_arch_cpu_enumerate_simd_versions             */
+/*                                                                  */
+/* Function     - Returns the SIMD instruction sets on this CPU     */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	/* SIMD is currently unimplemented */
+	return 0;
+}
+/*========================= End of Function ========================*/
+
+
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name         -  mono_arch_flush_icache                           */
 /*                                                                  */
 /* Function     -  Flush the CPU icache.                            */
