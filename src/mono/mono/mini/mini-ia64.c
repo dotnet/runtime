@@ -625,10 +625,23 @@ mono_arch_cleanup (void)
  * This function returns the optimizations supported on this cpu.
  */
 guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	*exclude_mask = 0;
 
+	return 0;
+}
+
+/*
+ * This function test for all SIMD functions supported.
+ *
+ * Returns a bitmask corresponding to all supported versions.
+ *
+ */
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	/* SIMD is currently unimplemented */
 	return 0;
 }
 

@@ -184,6 +184,7 @@ typedef struct MonoAotCompile {
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
+	guint32 simd_opts;
 	MonoMemPool *mempool;
 	MonoAotStats stats;
 	int method_index;
@@ -7005,6 +7006,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->nmethods);
 	emit_int32 (acfg, acfg->flags);
 	emit_int32 (acfg, acfg->opts);
+	emit_int32 (acfg, acfg->simd_opts);
 	emit_int32 (acfg, gc_name_offset);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
@@ -7373,6 +7375,8 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->globals = g_ptr_array_new ();
 	acfg->image = image;
 	acfg->opts = opts;
+	/* TODO: Write out set of SIMD instructions used, rather than just those available */
+	acfg->simd_opts = mono_arch_cpu_enumerate_simd_versions ();
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);

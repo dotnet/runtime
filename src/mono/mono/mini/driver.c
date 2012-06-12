@@ -150,7 +150,7 @@ parse_optimizations (const char* p)
 	int i, invert, len;
 
 	/* call out to cpu detection code here that sets the defaults ... */
-	opt |= mono_arch_cpu_optimizazions (&exclude);
+	opt |= mono_arch_cpu_optimizations (&exclude);
 	opt &= ~exclude;
 	if (!p)
 		return opt;
@@ -351,7 +351,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	MonoDomain *domain = mono_domain_get ();
 	guint32 exclude = 0;
 
-	mono_arch_cpu_optimizazions (&exclude);
+	mono_arch_cpu_optimizations (&exclude);
 
 	if (mini_stats_fd) {
 		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
