@@ -119,7 +119,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 83
+#define MONO_AOT_FILE_VERSION 82
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -242,8 +242,6 @@ typedef struct MonoAotFileInfo
 	guint32 flags;
 	/* Optimization flags used to compile the module */
 	guint32 opts;
-	/* SIMD flags used to compile the module */
-	guint32 simd_opts;
 	/* Index of the blob entry holding the GC used by this module */
 	gint32 gc_name_index;
 
@@ -2049,7 +2047,7 @@ void      mono_arch_init                        (void) MONO_INTERNAL;
 void      mono_arch_finish_init                 (void) MONO_INTERNAL;
 void      mono_arch_cleanup                     (void) MONO_INTERNAL;
 void      mono_arch_cpu_init                    (void) MONO_INTERNAL;
-guint32   mono_arch_cpu_optimizations           (guint32 *exclude_mask) MONO_INTERNAL;
+guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask) MONO_INTERNAL;
 void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack, int *code) MONO_INTERNAL;
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) MONO_INTERNAL;
 void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) MONO_INTERNAL;

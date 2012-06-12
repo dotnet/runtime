@@ -1319,7 +1319,6 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 	gboolean usable = TRUE;
 	gboolean full_aot;
 	guint8 *blob;
-	guint32 excluded_cpu_optimizations;
 
 	if (strcmp (assembly->image->guid, info->assembly_guid)) {
 		msg = g_strdup_printf ("doesn't match assembly");
@@ -1356,17 +1355,6 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 #endif
 	if (mini_get_debug_options ()->mdb_optimizations && !(info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
 		msg = g_strdup_printf ("not compiled for debugging");
-		usable = FALSE;
-	}
-
-	mono_arch_cpu_optimizations (&excluded_cpu_optimizations);
-	if (!(excluded_cpu_optimizations & info->opts)) {
-		msg = g_strdup_printf ("compiled with unsupported CPU optimizations");
-		usable = FALSE;
-	}
-
-	if (info->simd_opts & ~mono_arch_cpu_enumerate_simd_versions ()) {
-		msg = g_strdup_printf ("compiled with unsupported SIMD extensions");
 		usable = FALSE;
 	}
 
