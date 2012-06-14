@@ -1360,7 +1360,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 	}
 
 	mono_arch_cpu_optimizations (&excluded_cpu_optimizations);
-	if (!(excluded_cpu_optimizations & info->opts)) {
+	if (info->opts & excluded_cpu_optimizations) {
 		msg = g_strdup_printf ("compiled with unsupported CPU optimizations");
 		usable = FALSE;
 	}
