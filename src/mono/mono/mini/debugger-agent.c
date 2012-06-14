@@ -8418,6 +8418,8 @@ cmd_to_string (CommandSet set, int command)
 			return "SET_PROTOCOL_VERSION";
 		case CMD_VM_ABORT_INVOKE:
 			return "ABORT_INVOKE";
+		case CMD_VM_SET_KEEPALIVE:
+			return "SET_KEEPALIVE";
 		default:
 			break;
 		}
