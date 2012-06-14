@@ -8622,8 +8622,10 @@ debugger_thread (void *arg)
 		res = transport_recv (header, HEADER_LENGTH);
 
 		/* This will break if the socket is closed during shutdown too */
-		if (res != HEADER_LENGTH)
+		if (res != HEADER_LENGTH) {
+			DEBUG (1, fprintf (log_file, "[dbg] transport_recv () returned %d, expected %d.\n", res, HEADER_LENGTH));
 			break;
+		}
 
 		p = header;
 		end = header + HEADER_LENGTH;
@@ -8653,8 +8655,10 @@ debugger_thread (void *arg)
 		if (len - HEADER_LENGTH > 0)
 		{
 			res = transport_recv (data, len - HEADER_LENGTH);
-			if (res != len - HEADER_LENGTH)
+			if (res != len - HEADER_LENGTH) {
+				DEBUG (1, fprintf (log_file, "[dbg] transport_recv () returned %d, expected %d.\n", res, len - HEADER_LENGTH));
 				break;
+			}
 		}
 
 		p = data;
