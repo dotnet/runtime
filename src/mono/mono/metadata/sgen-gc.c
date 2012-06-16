@@ -4612,6 +4612,12 @@ mono_gc_get_los_limit (void)
 }
 
 gboolean
+mono_gc_user_markers_supported (void)
+{
+	return TRUE;
+}
+
+gboolean
 mono_object_is_alive (MonoObject* o)
 {
 	return TRUE;
