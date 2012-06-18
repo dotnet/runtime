@@ -17,7 +17,7 @@
 #include <signal.h>
 #include <string.h>
 
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
 #include <pthread.h>
 #include <pthread_np.h>
 #endif
@@ -614,12 +614,10 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 static guint32 WINAPI start_wrapper(void *data)
 {
-#ifdef HAVE_SGEN_GC
 	volatile int dummy;
 
 	/* Avoid scanning the frames above this frame during a GC */
 	mono_gc_set_stack_end ((void*)&dummy);
-#endif
 
 	return start_wrapper_internal (data);
 }
@@ -3516,7 +3514,6 @@ static const int static_data_size [NUM_STATIC_DATA_IDX] = {
 
 static uintptr_t* static_reference_bitmaps [NUM_STATIC_DATA_IDX];
 
-#ifdef HAVE_SGEN_GC
 static void
 mark_tls_slots (void *addr, MonoGCMarkFunc mark_func)
 {
@@ -3542,7 +3539,6 @@ mark_tls_slots (void *addr, MonoGCMarkFunc mark_func)
 		}
 	}
 }
-#endif
 
 /*
  *  mono_alloc_static_data
@@ -3558,10 +3554,8 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 	gpointer* static_data = *static_data_ptr;
 	if (!static_data) {
 		static void* tls_desc = NULL;
-#ifdef HAVE_SGEN_GC
-		if (!tls_desc)
+		if (mono_gc_user_markers_supported () && !tls_desc)
 			tls_desc = mono_gc_make_root_descr_user (mark_tls_slots);
-#endif
 		static_data = mono_gc_alloc_fixed (static_data_size [0], threadlocal?tls_desc:NULL);
 		*static_data_ptr = static_data;
 		static_data [0] = static_data;
@@ -3570,11 +3564,10 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 	for (i = 1; i <= idx; ++i) {
 		if (static_data [i])
 			continue;
-#ifdef HAVE_SGEN_GC
-		static_data [i] = threadlocal?g_malloc0 (static_data_size [i]):mono_gc_alloc_fixed (static_data_size [i], NULL);
-#else
-		static_data [i] = mono_gc_alloc_fixed (static_data_size [i], NULL);
-#endif
+		if (mono_gc_user_markers_supported () && threadlocal)
+			static_data [i] = g_malloc0 (static_data_size [i]);
+		else
+			static_data [i] = mono_gc_alloc_fixed (static_data_size [i], NULL);
 	}
 }
 
@@ -3585,14 +3578,10 @@ mono_free_static_data (gpointer* static_data, gboolean threadlocal)
 	for (i = 1; i < NUM_STATIC_DATA_IDX; ++i) {
 		if (!static_data [i])
 			continue;
-#ifdef HAVE_SGEN_GC
-		if (threadlocal)
+		if (mono_gc_user_markers_supported () && threadlocal)
 			g_free (static_data [i]);
 		else
 			mono_gc_free_fixed (static_data [i]);
-#else
-		mono_gc_free_fixed (static_data [i]);
-#endif
 	}
 	mono_gc_free_fixed (static_data);
 }

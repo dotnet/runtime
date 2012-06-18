@@ -2598,8 +2598,10 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	if (xdomain_checks)
+	if (xdomain_checks) {
+		sgen_clear_nursery_fragments ();
 		check_for_xdomain_refs ();
+	}
 
 	nursery_section->next_data = nursery_next;
 
@@ -2635,7 +2637,7 @@ collect_nursery (size_t requested_size)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", sgen_get_pinned_count ()));
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
+		sgen_check_whole_heap ();
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
 
@@ -2856,7 +2858,7 @@ major_do_collection (const char *reason)
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
+		sgen_check_whole_heap ();
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
@@ -2872,8 +2874,10 @@ major_do_collection (const char *reason)
 	*major_collector.have_swept = FALSE;
 	reset_minor_collection_allowance ();
 
-	if (xdomain_checks)
+	if (xdomain_checks) {
+		sgen_clear_nursery_fragments ();
 		check_for_xdomain_refs ();
+	}
 
 	/* Remsets are not useful for a major collection */
 	remset.prepare_for_major_collection ();
@@ -4605,6 +4609,12 @@ int
 mono_gc_get_los_limit (void)
 {
 	return MAX_SMALL_OBJ_SIZE;
+}
+
+gboolean
+mono_gc_user_markers_supported (void)
+{
+	return TRUE;
 }
 
 gboolean

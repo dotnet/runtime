@@ -63,11 +63,7 @@ ves_icall_System_String_InternalIsInterned (MonoString *str)
 int
 ves_icall_System_String_GetLOSLimit (void)
 {
-#ifdef HAVE_SGEN_GC
 	int limit = mono_gc_get_los_limit ();
 
 	return (limit - 2 - sizeof (MonoString)) / 2;
-#else
-	return G_MAXINT;
-#endif
 }

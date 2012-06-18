@@ -1296,4 +1296,23 @@ mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack,
 #endif
 }
 
+int
+mono_gc_get_los_limit (void)
+{
+	return G_MAXINT;
+}
+
+gboolean
+mono_gc_user_markers_supported (void)
+{
+	return FALSE;
+}
+
+void *
+mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 #endif /* no Boehm GC */

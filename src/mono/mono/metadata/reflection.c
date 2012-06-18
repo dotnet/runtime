@@ -5149,6 +5149,25 @@ free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
 	g_free (key);
 }
 
+static void
+release_hashtable (MonoGHashTable **hash)
+{
+	if (*hash) {
+		mono_g_hash_table_destroy (*hash);
+		*hash = NULL;
+	}
+}
+
+void
+mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
+{
+	release_hashtable (&image->token_fixups);
+	release_hashtable (&image->handleref_managed);
+	release_hashtable (&image->tokens);
+	release_hashtable (&image->generic_def_objects);
+	release_hashtable (&image->methodspec);
+}
+
 void
 mono_dynamic_image_free (MonoDynamicImage *image)
 {

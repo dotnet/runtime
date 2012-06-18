@@ -457,6 +457,9 @@ DISABLED_TESTS=			\
 	bug-459094.exe \
 	delegate-invoke.exe \
 	generic_type_definition.2.exe \
+	main-returns-background-resetabort.exe \
+	assemblyresolve_event3.exe \
+	delegate2.exe \
 	$(PLATFORM_DISABLED_TESTS)
 
 AOT_DISABLED_TESTS=constraints-load.exe
@@ -760,9 +763,9 @@ sgen-regular-tests: $(SGEN_TESTS)
 
 
 sgen-tests: sgen-regular-tests sgen-bridge.exe sgen-bridge-major-fragmentation.exe
-	@echo "Testing sgen-bridge.exe ...";	\
-	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
-	MONO_GC_PARAMS=bridge=Bridge,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
+#	@echo "Testing sgen-bridge.exe ...";	\
+#	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
+#	MONO_GC_PARAMS=bridge=Bridge,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
 	@echo "Testing sgen-bridge-major-fragmentation.exe ...";	\
 	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge-major-fragmentation.exe > sgen-bridge-major-fragmentation.exe.stdout 2> sgen-bridge-major-fragmentation.exe.stderr
 	MONO_GC_PARAMS=bridge=Bridge,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge-major-fragmentation.exe > sgen-bridge-major-fragmentation.exe.stdout 2> sgen-bridge-major-fragmentation.exe.stderr
