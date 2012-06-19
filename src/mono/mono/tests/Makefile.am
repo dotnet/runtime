@@ -402,6 +402,7 @@ TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs fi
 PLATFORM_DISABLED_TESTS = finally_guard.exe
 else
 if X86
+PLATFORM_DISABLED_TESTS = finally_guard.exe main-returns-background-abort-resetabort.exe main-returns-background.exe
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs
 else
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN)
