@@ -457,10 +457,21 @@ DISABLED_TESTS=			\
 	bug-459094.exe \
 	delegate-invoke.exe \
 	generic_type_definition.2.exe \
-	main-returns-background-resetabort.exe \
-	assemblyresolve_event3.exe \
-	delegate2.exe \
 	$(PLATFORM_DISABLED_TESTS)
+
+DISABLED_TESTS_WRENCH=	\
+	$(DISABLED_TESTS)	\
+	$(PLATFORM_DISABLED_TESTS_WRENCH)
+	main-returns-background-resetabort.exe \
+	main-returns-background-abort-resetabort.exe	\
+	main-returns-background.exe	\
+	thread6.exe	\
+	assemblyresolve_event3.exe \
+	delegate2.exe	\
+	finally_guard.exe  	\
+	finalizer-abort.exe	\
+	finalizer-exit.exe	\
+	finalizer-thread.exe
 
 AOT_DISABLED_TESTS=constraints-load.exe
 
@@ -621,9 +632,9 @@ endif
 endif
 endif
 
-# test_messages fails on the buildbots
-#test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen
+test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
+#test_messages fails on the buildbots
+test-wrench: assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -663,6 +674,32 @@ testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
 		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
 	done
+
+runtest-wrench: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
+		rm -f $${i}.so; \
+		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS_WRENCH)' $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			if [ $$? = 2 ]; then break; fi; \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+runtest-managed-wrench: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS_WRENCH)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
+
+testjit-wrench:
+	@if test x$(M) != x; then $(MAKE) runtest-managed-wrench; else $(MAKE) runtest-wrench; fi
 
 runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@failed=0; \
@@ -763,9 +800,9 @@ sgen-regular-tests: $(SGEN_TESTS)
 
 
 sgen-tests: sgen-regular-tests sgen-bridge.exe sgen-bridge-major-fragmentation.exe
-#	@echo "Testing sgen-bridge.exe ...";	\
-#	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
-#	MONO_GC_PARAMS=bridge=Bridge,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
+	@echo "Testing sgen-bridge.exe ...";	\
+	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
+	MONO_GC_PARAMS=bridge=Bridge,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge.exe > sgen-bridge.exe.stdout 2> sgen-bridge.exe.stderr
 	@echo "Testing sgen-bridge-major-fragmentation.exe ...";	\
 	MONO_GC_PARAMS=bridge=Bridge MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge-major-fragmentation.exe > sgen-bridge-major-fragmentation.exe.stdout 2> sgen-bridge-major-fragmentation.exe.stderr
 	MONO_GC_PARAMS=bridge=Bridge,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) sgen-bridge-major-fragmentation.exe > sgen-bridge-major-fragmentation.exe.stdout 2> sgen-bridge-major-fragmentation.exe.stderr

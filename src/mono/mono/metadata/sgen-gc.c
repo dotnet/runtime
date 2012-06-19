@@ -4836,9 +4836,8 @@ mono_gc_base_init (void)
 		num_workers = 16;
 
 	///* Keep this the default for now */
-#ifdef __APPLE__
+	/* Precise marking is broken on all supported targets. Disable until fixed. */
 	conservative_stack_mark = TRUE;
-#endif
 
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;

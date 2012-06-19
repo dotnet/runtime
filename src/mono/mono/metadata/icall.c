@@ -7674,6 +7674,7 @@ base64_to_byte_array (gunichar2 *start, gint ilength, MonoBoolean allowWhitespac
 	gint a [4], b [4];
 	MonoException *exc;
 
+	int havePadding = 0;
 	ignored = 0;
 	last = prev_last = 0, prev2_last = 0;
 	for (i = 0; i < ilength; i++) {
@@ -7685,7 +7686,13 @@ base64_to_byte_array (gunichar2 *start, gint ilength, MonoBoolean allowWhitespac
 			mono_raise_exception (exc);
 		} else if (isspace (c)) {
 			ignored++;
+		} else if (havePadding && c != '=') {
+			exc = mono_exception_from_name_msg (mono_get_corlib (),
+				"System", "FormatException",
+				"Invalid character found.");
+			mono_raise_exception (exc);
 		} else {
+			if (c == '=') havePadding = 1;
 			prev2_last = prev_last;
 			prev_last = last;
 			last = c;
