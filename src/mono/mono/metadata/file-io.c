@@ -328,6 +328,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	
 	MONO_ARCH_SAVE_REGS;
 
+	result = NULL;
 	*error = ERROR_SUCCESS;
 
 	domain = mono_domain_get ();
@@ -336,11 +337,11 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	if (attributes != -1) {
 		if ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
 			*error = ERROR_INVALID_NAME;
-			return (NULL);
+			goto leave;
 		}
 	} else {
 		*error = GetLastError ();
-		return (NULL);
+		goto leave;
 	}
 	
 	find_handle = FindFirstFile (mono_string_chars (path_with_pattern), &data);
@@ -349,15 +350,11 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 		
 		if (find_error == ERROR_FILE_NOT_FOUND || find_error == ERROR_NO_MORE_FILES) {
 			/* No files, so just return an empty array */
-			result = mono_array_new (domain,
-						 mono_defaults.string_class,
-						 0);
-
-			return(result);
+			goto leave;
 		}
 		
 		*error = find_error;
-		return(NULL);
+		goto leave;
 	}
 
 	utf8_path = get_search_dir (path_with_pattern);
@@ -397,7 +394,12 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	}
 	g_ptr_array_free (names, TRUE);
 	g_free (utf8_path);
-	
+
+leave:
+	// If there's no array and no error, then return an empty array.
+	if (result == NULL && *error == ERROR_SUCCESS)
+		result = mono_array_new (domain, mono_defaults.string_class, 0);
+
 	return result;
 }
 
