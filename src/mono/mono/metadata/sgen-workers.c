@@ -397,7 +397,8 @@ sgen_workers_start_all_workers (void)
 	workers_done_posted = 0;
 
 	if (workers_started) {
-		g_assert (workers_num_waiting == workers_num);
+		if (workers_num_waiting != workers_num)
+			g_error ("Expecting all %d sgen workers to be parked, but only %d are", workers_num, workers_num_waiting);
 		workers_wake_up_all ();
 		return;
 	}

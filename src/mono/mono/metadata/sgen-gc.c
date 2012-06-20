@@ -2421,7 +2421,7 @@ sgen_collection_is_parallel (void)
 	case GENERATION_OLD:
 		return major_collector.is_parallel;
 	default:
-		g_assert_not_reached ();
+		g_error ("Invalid current generation %d", current_collection_generation);
 	}
 }
 
