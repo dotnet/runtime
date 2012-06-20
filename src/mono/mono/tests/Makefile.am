@@ -461,7 +461,7 @@ DISABLED_TESTS=			\
 
 DISABLED_TESTS_WRENCH=	\
 	$(DISABLED_TESTS)	\
-	$(PLATFORM_DISABLED_TESTS_WRENCH)
+	$(PLATFORM_DISABLED_TESTS_WRENCH)	\
 	main-returns-background-resetabort.exe \
 	main-returns-background-abort-resetabort.exe	\
 	main-returns-background.exe	\
