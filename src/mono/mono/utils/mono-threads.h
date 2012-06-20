@@ -229,6 +229,12 @@ int
 mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum) MONO_INTERNAL;
 #endif
 
+#else  /* !defined(HOST_WIN32) */
+
+HANDLE
+	mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, LPTHREAD_START_ROUTINE start_routine, LPVOID arg, DWORD creation_flags, LPDWORD thread_id);
+
+
 #endif /* !defined(HOST_WIN32) */
 
 /* Plartform specific functions DON'T use them */

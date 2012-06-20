@@ -5001,7 +5001,11 @@ mono_gc_base_init (void)
 				if (opt [0] == ':')
 					opt++;
 				if (opt [0]) {
+#ifdef HOST_WIN32
+					char *rf = g_strdup_printf ("%s.%d", opt, GetCurrentProcessId ());
+#else
 					char *rf = g_strdup_printf ("%s.%d", opt, getpid ());
+#endif
 					gc_debug_file = fopen (rf, "wb");
 					if (!gc_debug_file)
 						gc_debug_file = stderr;

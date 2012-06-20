@@ -23,6 +23,10 @@
 #include <glib.h>
 #include <sys/stat.h>
 
+#ifdef HOST_WIN32
+#include <direct.h>
+#endif
+
 struct _MonoProfiler {
 	GHashTable *images;
 };
