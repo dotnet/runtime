@@ -140,4 +140,16 @@ typedef guint64 mword;
  */
 #define DEFAULT_REMSET_SIZE 1024
 
+
+/*
+ * Minimum allowance for nursery allocations, as a multiple of the size of nursery.
+ *
+ * We allow at least this much allocation to happen to the major heap from multiple
+ * minor collections before triggering a major collection.
+ *
+ * Bigger values increases throughput by allowing more garbage to sit in the major heap.
+ * Smaller values leads to better memory effiency but more frequent major collections.
+ */
+#define SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO 4
+
 #endif

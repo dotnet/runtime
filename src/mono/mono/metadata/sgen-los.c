@@ -52,6 +52,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-memory-governor.h"
 #include "utils/mono-mmap.h"
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
@@ -241,7 +242,7 @@ get_los_section_memory (size_t size)
 	if (free_chunks)
 		return (LOSObject*)free_chunks;
 
-	if (!sgen_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
+	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
 		return NULL;
 
 	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
@@ -324,7 +325,7 @@ sgen_los_free_object (LOSObject *obj)
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
 		sgen_free_os_memory (obj, size);
-		sgen_release_space (size, SPACE_LOS);
+		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
 #ifdef LOS_CONSISTENCY_CHECKS
@@ -374,7 +375,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size += sizeof (LOSObject);
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
-		if (sgen_try_alloc_space (alloc_size, SPACE_LOS)) {
+		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
 			obj = sgen_alloc_os_memory (alloc_size, TRUE);
 			if (obj)
 				obj->huge_object = TRUE;
@@ -427,7 +428,7 @@ sgen_los_sweep (void)
 			else
 				los_sections = next;
 			sgen_free_os_memory (section, LOS_SECTION_SIZE);
-			sgen_release_space (LOS_SECTION_SIZE, SPACE_LOS);
+			sgen_memgov_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
 			continue;

@@ -790,8 +790,6 @@ enum {
 	SPACE_LOS
 };
 
-gboolean sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
-void sgen_release_space (mword size, int space) MONO_INTERNAL;
 void sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;

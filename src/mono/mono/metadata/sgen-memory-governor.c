@@ -35,5 +35,76 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-memory-governor.h"
+#include "utils/mono-counters.h"
+
+#define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO))
+
+/*heap limits*/
+static mword max_heap_size = ((mword)0)- ((mword)1);
+static mword soft_heap_limit = ((mword)0) - ((mword)1);
+static mword allocated_heap;
+
+
+mword
+sgen_memgov_available_free_space (void)
+{
+	return max_heap_size - MIN (allocated_heap, max_heap_size);
+}
+
+mword
+sgen_memgov_min_allowance (void)
+{
+	return MIN_MINOR_COLLECTION_ALLOWANCE;
+}
+
+mword
+sgen_memgov_adjust_allowance (mword allowance_estimate, mword new_heap_size)
+{
+	if (new_heap_size + allowance_estimate > soft_heap_limit) {
+		if (new_heap_size > soft_heap_limit)
+			return MIN_MINOR_COLLECTION_ALLOWANCE;
+		else
+			return MAX (soft_heap_limit - new_heap_size, MIN_MINOR_COLLECTION_ALLOWANCE);
+	}
+	return allowance_estimate;
+}
+
+void
+sgen_memgov_release_space (mword size, int space)
+{
+	allocated_heap -= size;
+}
+
+gboolean
+sgen_memgov_try_alloc_space (mword size, int space)
+{
+	if (sgen_memgov_available_free_space () < size)
+		return FALSE;
+
+	allocated_heap += size;
+	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
+	return TRUE;
+}
+
+void
+sgen_memgov_init (glong max_heap, glong soft_limit)
+{
+	if (soft_limit)
+		soft_heap_limit = soft_limit;
+
+	if (max_heap == 0)
+		return;
+
+	if (max_heap < soft_limit) {
+		fprintf (stderr, "max-heap-size must be at least as large as soft-heap-limit.\n");
+		exit (1);
+	}
+
+	if (max_heap < sgen_nursery_size * 4) {
+		fprintf (stderr, "max-heap-size must be at least 4 times larger than nursery size.\n");
+		exit (1);
+	}
+	max_heap_size = max_heap - sgen_nursery_size;
+}
 
 #endif

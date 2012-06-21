@@ -216,6 +216,7 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
+#include "metadata/sgen-memory-governor.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
@@ -411,8 +412,6 @@ static int gc_disabled = 0;
 
 static gboolean use_cardtable;
 
-#define MIN_MINOR_COLLECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 4)
-
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
 static mword pagesize = 4096;
@@ -563,62 +562,8 @@ static MonoVTable *array_fill_vtable;
 MonoNativeThreadId main_gc_thread = NULL;
 #endif
 
-/*
- * ######################################################################
- * ########  Heap size accounting
- * ######################################################################
- */
-/*heap limits*/
-static mword max_heap_size = ((mword)0)- ((mword)1);
-static mword soft_heap_limit = ((mword)0) - ((mword)1);
-static mword allocated_heap;
-
 /*Object was pinned during the current collection*/
 static mword objects_pinned;
-
-void
-sgen_release_space (mword size, int space)
-{
-	allocated_heap -= size;
-}
-
-static size_t
-available_free_space (void)
-{
-	return max_heap_size - MIN (allocated_heap, max_heap_size);
-}
-
-gboolean
-sgen_try_alloc_space (mword size, int space)
-{
-	if (available_free_space () < size)
-		return FALSE;
-
-	allocated_heap += size;
-	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
-	return TRUE;
-}
-
-static void
-init_heap_size_limits (glong max_heap, glong soft_limit)
-{
-	if (soft_limit)
-		soft_heap_limit = soft_limit;
-
-	if (max_heap == 0)
-		return;
-
-	if (max_heap < soft_limit) {
-		fprintf (stderr, "max-heap-size must be at least as large as soft-heap-limit.\n");
-		exit (1);
-	}
-
-	if (max_heap < sgen_nursery_size * 4) {
-		fprintf (stderr, "max-heap-size must be at least 4 times larger than nursery size.\n");
-		exit (1);
-	}
-	max_heap_size = max_heap - sgen_nursery_size;
-}
 
 /*
  * ######################################################################
@@ -2324,7 +2269,7 @@ try_calculate_minor_collection_allowance (gboolean overwrite)
 
 	if (!*major_collector.have_swept) {
 		if (overwrite)
-			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+			minor_collection_allowance = sgen_memgov_min_allowance ();
 		return;
 	}
 
@@ -2361,14 +2306,9 @@ try_calculate_minor_collection_allowance (gboolean overwrite)
 	 */
 	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + last_collection_los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
 
-	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), sgen_memgov_min_allowance ());
 
-	if (new_heap_size + minor_collection_allowance > soft_heap_limit) {
-		if (new_heap_size > soft_heap_limit)
-			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
-		else
-			minor_collection_allowance = MAX (soft_heap_limit - new_heap_size, MIN_MINOR_COLLECTION_ALLOWANCE);
-	}
+	minor_collection_allowance = sgen_memgov_adjust_allowance (minor_collection_allowance, new_heap_size);
 
 	if (debug_print_allowance) {
 		mword old_major = last_collection_old_num_major_sections * major_collector.section_size;
@@ -2390,7 +2330,7 @@ static gboolean
 need_major_collection (mword space_needed)
 {
 	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
-	return (space_needed > available_free_space ()) ||
+	return (space_needed > sgen_memgov_available_free_space ()) ||
 		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }
 
@@ -4840,7 +4780,7 @@ mono_gc_base_init (void)
 	conservative_stack_mark = TRUE;
 
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
-	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+	minor_collection_allowance = sgen_memgov_min_allowance ();
 
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
@@ -4987,7 +4927,7 @@ mono_gc_base_init (void)
 	if (minor_collector_opt)
 		g_free (minor_collector_opt);
 
-	init_heap_size_limits (max_heap, soft_limit);
+	sgen_memgov_init (max_heap, soft_limit);
 
 	alloc_nursery ();
 
