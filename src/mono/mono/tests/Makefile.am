@@ -471,7 +471,8 @@ DISABLED_TESTS_WRENCH=	\
 	finally_guard.exe  	\
 	finalizer-abort.exe	\
 	finalizer-exit.exe	\
-	finalizer-thread.exe
+	finalizer-thread.exe \
+	appdomain-async-invoke.exe
 
 AOT_DISABLED_TESTS=constraints-load.exe
 
