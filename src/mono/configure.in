@@ -93,6 +93,7 @@ case "$host" in
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
 		host_win32=yes
+		mono_cv_clang=no
 		if test "x$cross_compiling" = "xno"; then
 			target_win32=yes
 			if test "x$host" == "x$build" -a "x$host" == "x$target"; then
