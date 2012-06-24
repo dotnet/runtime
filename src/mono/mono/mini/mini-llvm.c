@@ -2096,10 +2096,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	BBInfo *bblocks = ctx->bblocks;
 	MonoInst *ins;
 	LLVMBasicBlockRef cbb;
-	LLVMBuilderRef builder;
+	LLVMBuilderRef builder, starting_builder;
 	gboolean has_terminator;
 	LLVMValueRef v;
 	LLVMValueRef lhs, rhs;
+	int nins = 0;
 
 	cbb = get_bb (ctx, bb);
 	builder = create_builder (ctx);
@@ -2217,10 +2218,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	}
 
 	has_terminator = FALSE;
+	starting_builder = builder;
 	for (ins = bb->code; ins; ins = ins->next) {
 		const char *spec = LLVM_INS_INFO (ins->opcode);
 		char *dname = NULL;
 		char dname_buf [128];
+
+		nins ++;
+		if (nins > 5000 && builder == starting_builder) {
+			/* some steps in llc are non-linear in the size of basic blocks, see #5714 */
+			LLVM_FAILURE (ctx, "basic block too long");
+		}
 
 		if (has_terminator)
 			/* There could be instructions after a terminator, skip them */
