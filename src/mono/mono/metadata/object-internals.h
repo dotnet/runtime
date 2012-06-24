@@ -983,7 +983,7 @@ typedef struct {
 	MonoObject *type;
 	MonoArray *pinfo;
 	MonoArray *cattrs;
-	MonoReflectionMethod *override_method;
+	MonoArray *override_methods;
 	MonoString *dll;
 	MonoString *dllentry;
 	guint32 charset;
