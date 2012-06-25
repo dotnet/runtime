@@ -37,6 +37,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
+#include "utils/mono-memory-model.h"
 
 /*
 The nursery is logically divided into 3 spaces: Allocator space and two Survivor spaces.
@@ -310,16 +311,18 @@ restart:
 		if (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, p + objsize, p) != p)
 			goto restart;
 	} else {
-		/*Reclaim remaining space*/
+		/* Reclaim remaining space - if we OOMd the nursery nothing to see here. */
 		char *end = age_alloc_buffers [age].end;
-		do {
-			p = age_alloc_buffers [age].next;
-		} while (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, end, p) != p);
-		sgen_clear_range (p, end);
+		if (end) {
+			do {
+				p = age_alloc_buffers [age].next;
+			} while (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, end, p) != p);
+				sgen_clear_range (p, end);
+		}
 
 		/* By setting end to NULL we make sure no other thread can advance while we're updating.*/
 		age_alloc_buffers [age].end = NULL;
-		mono_memory_barrier ();
+		STORE_STORE_FENCE;
 
 		p = sgen_fragment_allocator_par_range_alloc (
 			&collector_allocator,
@@ -328,8 +331,8 @@ restart:
 			&allocated_size);
 		if (p) {
 			set_age_in_range (p, p + allocated_size, age);
-			sgen_clear_range (age_alloc_buffers [age].next, age_alloc_buffers [age].end);
 			age_alloc_buffers [age].next = p + objsize;
+			STORE_STORE_FENCE; /* Next must arrive before the new value for next. */
 			age_alloc_buffers [age].end = p + allocated_size;
 		}
 	}
@@ -350,6 +353,9 @@ par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 
 restart:
 	p = age_alloc_buffers [age].next;
+
+	LOAD_LOAD_FENCE; /* The read of ->next must happen before ->end */
+
 	if (G_LIKELY (p + objsize <= age_alloc_buffers [age].end)) {
 		if (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, p + objsize, p) != p)
 			goto restart;
