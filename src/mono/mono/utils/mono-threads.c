@@ -42,6 +42,7 @@ static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key, small_id_key;
 static MonoLinkedListSet thread_list;
 static gboolean disable_new_interrupt = FALSE;
+static gboolean mono_threads_inited = FALSE;
 
 static inline void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
@@ -219,7 +220,15 @@ mono_thread_info_list_head (void)
 MonoThreadInfo*
 mono_thread_info_attach (void *baseptr)
 {
-	MonoThreadInfo *info = mono_native_tls_get_value (thread_info_key);
+	MonoThreadInfo *info;
+	if (!mono_threads_inited)
+	{
+		/* This can happen from DllMain(DLL_THREAD_ATTACH) on Windows, if a
+		 * thread is created before an embedding API user initialized Mono. */
+		THREADS_DEBUG ("mono_thread_info_attach called before mono_threads_init\n");
+		return NULL;
+	}
+	info = mono_native_tls_get_value (thread_info_key);
 	if (!info) {
 		info = g_malloc0 (thread_info_size);
 		THREADS_DEBUG ("attaching %p\n", info);
@@ -234,7 +243,15 @@ mono_thread_info_attach (void *baseptr)
 void
 mono_thread_info_dettach (void)
 {
-	MonoThreadInfo *info = mono_native_tls_get_value (thread_info_key);
+	MonoThreadInfo *info;
+	if (!mono_threads_inited)
+	{
+		/* This can happen from DllMain(THREAD_DETACH) on Windows, if a thread
+		 * is created before an embedding API user initialized Mono. */
+		THREADS_DEBUG ("mono_thread_info_dettach called before mono_threads_init\n");
+		return;
+	}
+	info = mono_native_tls_get_value (thread_info_key);
 	if (info) {
 		THREADS_DEBUG ("detaching %p\n", info);
 		unregister_thread (info);
@@ -262,6 +279,8 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
 	mono_threads_init_platform ();
+
+	mono_threads_inited = TRUE;
 
 	g_assert (sizeof (MonoNativeThreadId) <= sizeof (uintptr_t));
 }
