@@ -398,8 +398,11 @@ static SgenFragment*
 build_fragments_get_exclude_head (void)
 {
 	int i;
-	for (i = 0; i < MAX_AGE; ++i)
-		sgen_clear_range (age_alloc_buffers [i].next, age_alloc_buffers [i].end);
+	for (i = 0; i < MAX_AGE; ++i) {
+		/*If we OOM'd on the last collection ->end might be null while ->next not.*/
+		if (age_alloc_buffers [i].end)
+			sgen_clear_range (age_alloc_buffers [i].next, age_alloc_buffers [i].end);
+	}
 
 	return collector_allocator.region_head;
 }
