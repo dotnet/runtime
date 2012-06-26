@@ -907,6 +907,27 @@ void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 	}
 }
 
+#ifdef AF_INET6
+// Check whether it's ::ffff::0:0.
+static gboolean
+is_ipv4_mapped_any (const struct in6_addr *addr)
+{
+	int i;
+	
+	for (i = 0; i < 10; i++) {
+		if (addr->s6_addr [i])
+			return FALSE;
+	}
+	if ((addr->s6_addr [10] != 0xff) || (addr->s6_addr [11] != 0xff))
+		return FALSE;
+	for (i = 12; i < 16; i++) {
+		if (addr->s6_addr [i])
+			return FALSE;
+	}
+	return TRUE;
+}
+#endif
+
 static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 					       int sa_size, gint32 *error)
 {
@@ -990,10 +1011,17 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 
 		mono_array_set(data, guint8, 2, (port>>8) & 0xff);
 		mono_array_set(data, guint8, 3, (port) & 0xff);
-
-		for(i=0; i<16; i++) {
-			mono_array_set(data, guint8, 8+i,
-				       sa_in->sin6_addr.s6_addr[i]);
+		
+		if (is_ipv4_mapped_any (&sa_in->sin6_addr)) {
+			// Map ::ffff:0:0 to :: (bug #5502)
+			for(i=0; i<16; i++) {
+				mono_array_set(data, guint8, 8+i, 0);
+			}
+		} else {
+			for(i=0; i<16; i++) {
+				mono_array_set(data, guint8, 8+i,
+					       sa_in->sin6_addr.s6_addr[i]);
+			}
 		}
 
 		mono_array_set(data, guint8, 24, sa_in->sin6_scope_id & 0xff);
