@@ -74,6 +74,11 @@
 #include <sys/un.h>
 #endif
 
+#ifdef HAVE_GETIFADDRS
+// <net/if.h> must be included before <ifaddrs.h>
+#include <ifaddrs.h>
+#endif
+
 #include "mono/io-layer/socket-wrappers.h"
 
 #if defined(HOST_WIN32)
@@ -2423,6 +2428,77 @@ get_local_ips (int family, int *nips)
 	}
 
 	g_free (ifc.ifc_buf);
+	return result;
+}
+#elif defined(HAVE_GETIFADDRS)
+static gboolean
+is_loopback (int family, void *ad)
+{
+	char *ptr = (char *) ad;
+
+	if (family == AF_INET) {
+		return (ptr [0] == 127);
+	}
+#ifdef AF_INET6
+	else {
+		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
+	}
+#endif
+	return FALSE;
+}
+
+static void *
+get_local_ips (int family, int *nips)
+{
+	struct ifaddrs *ifap = NULL, *ptr;
+	int addr_size, offset, count, i;
+	char *result, *tmp_ptr;
+
+	*nips = 0;
+	if (family == AF_INET) {
+		addr_size = sizeof (struct in_addr);
+		offset = G_STRUCT_OFFSET (struct sockaddr_in, sin_addr);
+#ifdef AF_INET6
+	} else if (family == AF_INET6) {
+		addr_size = sizeof (struct in6_addr);
+		offset = G_STRUCT_OFFSET (struct sockaddr_in6, sin6_addr);
+#endif
+	} else {
+		return NULL;
+	}
+	
+	if (getifaddrs (&ifap)) {
+		fprintf(stderr, "get_local_ips() error: %s\n", strerror (errno));
+		return NULL;
+	}
+	
+	count = 0;
+	for (ptr = ifap; ptr; ptr = ptr->ifa_next) {
+		if (!ptr->ifa_addr)
+			continue;
+		if (ptr->ifa_addr->sa_family != family)
+			continue;
+		if (is_loopback (family, ((char *) ptr->ifa_addr) + offset))
+			continue;
+		count++;
+	}
+		
+	result = g_malloc (addr_size * count);
+	tmp_ptr = result;
+	for (i = 0, ptr = ifap; ptr; ptr = ptr->ifa_next) {
+		if (!ptr->ifa_addr)
+			continue;
+		if (ptr->ifa_addr->sa_family != family)
+			continue;
+		if (is_loopback (family, ((char *) ptr->ifa_addr) + offset))
+			continue;
+			
+		memcpy (tmp_ptr, ((char *) ptr->ifa_addr) + offset, addr_size);
+		tmp_ptr += addr_size;
+	}
+	
+	freeifaddrs (ifap);
+	*nips = count;
 	return result;
 }
 #else

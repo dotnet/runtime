@@ -1720,7 +1720,27 @@ if test x$target_win32 = xno; then
 			AC_DEFINE(HAVE_SOCKADDR_IN6_SIN_LEN, 1, [sockaddr_in6 has sin6_len])
 		], [
 			AC_MSG_RESULT(no)
-		])	
+		])
+	dnl **********************************
+	dnl *** Check for getifaddrs       ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getifaddrs)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <sys/types.h>
+		#include <sys/socket.h>
+		#include <ifaddrs.h>
+	], [
+		getifaddrs(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETIFADDRS, 1, [Have getifaddrs])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+			
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
