@@ -540,6 +540,44 @@ mono_thread_info_disable_new_interrupt (gboolean disable)
 {
 	disable_new_interrupt = disable;
 }
+
+/*
+ * This is a very specific function whose only purpose is to
+ * break a given thread from socket syscalls.
+ *
+ * This only exists because linux won't fail a call to connect
+ * if the underlying is closed.
+ *
+ * TODO We should cleanup and unify this with the other syscall abort
+ * facility.
+ */
+void
+mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
+{
+	MonoThreadHazardPointers *hp;
+	MonoThreadInfo *info;
+	
+	if (tid == mono_native_thread_id_get () || !mono_threads_core_needs_abort_syscall ())
+		return;
+
+	hp = mono_hazard_pointer_get ();	
+	info = mono_thread_info_lookup (tid); /*info on HP1*/
+	if (!info)
+		return;
+
+	if (mono_thread_info_run_state (info) > STATE_RUNNING) {
+		mono_hazard_pointer_clear (hp, 1);
+		return;
+	}
+
+	mono_thread_info_suspend_lock ();
+
+	mono_threads_core_abort_syscall (info);
+
+	mono_hazard_pointer_clear (hp, 1);
+	mono_thread_info_suspend_unlock ();
+}
+
 /*
 Disabled by default for now.
 To enable this we need mini to implement the callbacks by MonoThreadInfoRuntimeCallbacks

@@ -108,6 +108,7 @@ typedef struct {
 	/* only needed by the posix backend */ 
 #if (defined(_POSIX_VERSION) || defined(__native_client__)) && !defined (__MACH__)
 	MonoSemType suspend_semaphore;
+	gboolean syscall_break_signal;
 #endif
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
@@ -217,6 +218,8 @@ mono_threads_unregister_current_thread (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 void
 mono_thread_info_disable_new_interrupt (gboolean disable) MONO_INTERNAL;
 
+void
+mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid) MONO_INTERNAL;
 
 #if !defined(HOST_WIN32)
 
@@ -244,6 +247,8 @@ gboolean mono_threads_core_resume (MonoThreadInfo *info) MONO_INTERNAL;
 void mono_threads_platform_register (MonoThreadInfo *info) MONO_INTERNAL; //ok
 void mono_threads_platform_free (MonoThreadInfo *info) MONO_INTERNAL;
 void mono_threads_core_interrupt (MonoThreadInfo *info) MONO_INTERNAL;
+void mono_threads_core_abort_syscall (MonoThreadInfo *info) MONO_INTERNAL;
+gboolean mono_threads_core_needs_abort_syscall (void) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

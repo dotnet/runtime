@@ -26,6 +26,17 @@ mono_threads_core_interrupt (MonoThreadInfo *info)
 }
 
 void
+mono_threads_core_abort_syscall (MonoThreadInfo *info)
+{
+}
+
+gboolean
+mono_threads_core_needs_abort_syscall (void)
+{
+	return FALSE;
+}
+
+void
 mono_threads_core_self_suspend (MonoThreadInfo *info)
 {
 	g_assert (0);
