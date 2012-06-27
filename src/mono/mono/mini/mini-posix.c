@@ -213,6 +213,11 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 		/* FIXME: Specify the synchronization with start_wrapper () in threads.c */
 		return;
 
+	if (thread->ignore_next_signal) {
+		thread->ignore_next_signal = FALSE;
+		return;
+	}
+
 	if (thread->thread_dump_requested) {
 		thread->thread_dump_requested = FALSE;
 
