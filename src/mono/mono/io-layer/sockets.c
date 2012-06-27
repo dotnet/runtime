@@ -335,7 +335,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 							  (gpointer *)&socket_handle);
 				if (ok == FALSE) {
 					/* ECONNRESET means the socket was closed by another thread */
-					if (errnum != WSAECONNRESET)
+					/* Async close on mac raises ECONNABORTED. */
+					if (errnum != WSAECONNRESET && errnum != WSAENETDOWN)
 						g_warning ("%s: error looking up socket handle %p (error %d)", __func__, handle, errnum);
 				} else {
 					socket_handle->saved_error = errnum;
