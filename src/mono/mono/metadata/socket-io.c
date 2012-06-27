@@ -49,6 +49,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/utils/mono-threads.h>
 
 #include <time.h>
 #ifdef HAVE_SYS_TIME_H
@@ -3266,5 +3267,19 @@ void mono_network_cleanup(void)
 	WSACleanup();
 }
 
+void
+icall_cancel_blocking_socket_operation (MonoThread *thread)
+{
+	MonoInternalThread *internal = thread->internal_thread;
+	
+	if (mono_thread_info_new_interrupt_enabled ()) {
+		mono_thread_info_abort_socket_syscall_for_close ((MonoNativeThreadId)(gsize)internal->tid);
+	} else {
+#ifndef HOST_WIN32
+		internal->ignore_next_signal = TRUE;
+		mono_thread_kill (internal, mono_thread_get_abort_signal ());		
+#endif
+	}
+}
 
 #endif /* #ifndef DISABLE_SOCKETS */
