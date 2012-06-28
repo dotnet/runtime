@@ -1739,7 +1739,24 @@ if test x$target_win32 = xno; then
 	], [
 		AC_MSG_RESULT(no)
 	])
-
+	dnl **********************************
+	dnl *** Check for if_nametoindex   ***
+	dnl **********************************
+	AC_MSG_CHECKING(for if_nametoindex)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <sys/types.h>
+		#include <sys/socket.h>
+		#include <net/if.h>
+	], [
+		if_nametoindex(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IF_NAMETOINDEX, 1, [Have if_nametoindex])
+	], [
+		AC_MSG_RESULT(no)
+	])
 			
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***

@@ -2079,6 +2079,42 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 #endif /* AF_INET6 */
 #endif
 
+#if defined(HAVE_GETIFADDRS) && defined(HAVE_IF_NAMETOINDEX)
+static int
+get_local_interface_id (int family)
+{
+	struct ifaddrs *ifap = NULL, *ptr;
+	int idx = 0;
+	
+	if (getifaddrs (&ifap)) {
+		return 0;
+	}
+	
+	for (ptr = ifap; ptr; ptr = ptr->ifa_next) {
+		if (!ptr->ifa_addr || !ptr->ifa_name)
+			continue;
+		if (ptr->ifa_addr->sa_family != family)
+			continue;
+		if ((ptr->ifa_flags & IFF_LOOPBACK) != 0)
+			continue;
+		if ((ptr->ifa_flags & IFF_MULTICAST) == 0)
+			continue;
+			
+		idx = if_nametoindex (ptr->ifa_name);
+		break;
+	}
+	
+	freeifaddrs (ifap);
+	return idx;
+}
+#else
+static int
+get_local_interface_id (int family)
+{
+	return 0;
+}
+#endif
+
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
 	struct linger linger;
@@ -2174,7 +2210,22 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 
 				field=mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
 				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
-
+				
+#if defined(__APPLE__)
+				/*
+				* Bug #5504:
+				*
+				* Mac OS Lion doesn't allow ipv6mr_interface = 0.
+				*
+				* Tests on Windows and Linux show that the multicast group is only
+				* joined on one NIC when interface = 0, so we simply use the interface
+				* id from the first non-loopback interface (this is also what
+				* Dns.GetHostName (string.Empty) would return).
+				*/
+				if (!mreq6.ipv6mr_interface)
+					mreq6.ipv6mr_interface = get_local_interface_id (AF_INET6);
+#endif
+					
 				ret = _wapi_setsockopt (sock, system_level,
 							system_name, &mreq6,
 							sizeof (mreq6));
@@ -2469,7 +2520,6 @@ get_local_ips (int family, int *nips)
 	}
 	
 	if (getifaddrs (&ifap)) {
-		fprintf(stderr, "get_local_ips() error: %s\n", strerror (errno));
 		return NULL;
 	}
 	
