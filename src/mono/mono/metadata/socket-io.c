@@ -2067,8 +2067,8 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 #ifndef s6_addr16
 	for(i=0; i<8; i++) {
 		guint16 s = mono_array_get (data, guint16, i);
-		in6addr.s6_addr[2 * i] = (s >> 8) & 0xff;
-		in6addr.s6_addr[2 * i + 1] = s & 0xff;
+		in6addr.s6_addr[2 * i + 1] = (s >> 8) & 0xff;
+		in6addr.s6_addr[2 * i] = s & 0xff;
 	}
 #else
 	for(i=0; i<8; i++)
