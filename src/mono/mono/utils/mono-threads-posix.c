@@ -86,8 +86,8 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	MonoThreadInfo *current = mono_thread_info_current ();
 	gboolean ret;
 	
-	if (current->syscall_signal) {
-		current->syscall_signal = FALSE;
+	if (current->syscall_break_signal) {
+		current->syscall_break_signal = FALSE;
 		return;
 	}
 
@@ -177,7 +177,7 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 	We signal a thread to break it from the urrent syscall.
 	This signal should not be interpreted as a suspend request.
 	*/
-	info->syscall_signal = TRUE;
+	info->syscall_break_signal = TRUE;
 	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
 }
 
