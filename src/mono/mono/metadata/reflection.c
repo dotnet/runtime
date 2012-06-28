@@ -10926,7 +10926,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 				for (j = 0; j < mono_array_length (mb->override_methods); ++j) {
 					m = mono_array_get (mb->override_methods, MonoReflectionMethod*, j);
 
-					(*overrides) [onum * 2] = mono_reflection_method_get_handle (m);
+					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m);
 					(*overrides) [onum * 2 + 1] = mb->mhandle;
 
 					g_assert (mb->mhandle);

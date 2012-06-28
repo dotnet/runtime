@@ -524,11 +524,11 @@ mono_sgen_los_describe_pointer (char *ptr)
 
 		if (obj->data == ptr)
 			fprintf (gc_debug_file, "(object %s.%s size %d)", 
-				vtable->klass->name_space, vtable->klass->name, obj->size);
+					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
 		else
 			fprintf (gc_debug_file, "(interior-ptr offset %td of %p (%s.%s) size %d)",
-				ptr - obj->data, obj->data,
-				vtable->klass->name_space, vtable->klass->name, obj->size);
+					 ptr - obj->data, obj->data,
+					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
 
 		return TRUE;
 	}

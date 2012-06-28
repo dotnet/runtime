@@ -165,7 +165,7 @@ restart_handler (int sig)
 	rely on pthread_self () and seatch over the thread list.
 	*/
 	if (!info)
-		info = mono_thread_info_lookup (pthread_self ());
+		info = (SgenThreadInfo*)mono_thread_info_lookup (pthread_self ());
 
 	/*
 	 * If a thread is dying there might be no thread info.  In
