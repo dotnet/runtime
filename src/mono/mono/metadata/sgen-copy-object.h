@@ -109,6 +109,8 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 
 #ifdef GENERATE_COPY_FUNCTIONS
 
+extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
+
 /*
  * This is how the copying happens from the nursery to the old generation.
  * We assume that at this time all the pinned objects have been identified and
