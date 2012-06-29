@@ -626,6 +626,16 @@ find_first_unset (guint32 bitmap)
 	return -1;
 }
 
+static void*
+make_root_descr_all_refs (int numbits, gboolean pinned)
+{
+#ifdef HAVE_SGEN_GC
+	if (pinned)
+		return NULL;
+#endif
+	return mono_gc_make_root_descr_all_refs (numbits);
+}
+
 static guint32
 alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 {
@@ -635,7 +645,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	if (!handles->size) {
 		handles->size = 32;
 		if (handles->type > HANDLE_WEAK_TRACK) {
-			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, mono_gc_make_root_descr_all_refs (handles->size));
+			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, make_root_descr_all_refs (handles->size, handles->type == HANDLE_PINNED));
 		} else {
 			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
 			handles->domain_ids = g_malloc0 (sizeof (guint16) * handles->size);
@@ -673,8 +683,8 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 		if (handles->type > HANDLE_WEAK_TRACK) {
 			gpointer *entries;
 
-			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, mono_gc_make_root_descr_all_refs (new_size));
-			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
+			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, make_root_descr_all_refs (new_size, handles->type == HANDLE_PINNED));
+			mono_gc_memmove (entries, handles->entries, sizeof (gpointer) * handles->size);
 
 			mono_gc_free_fixed (handles->entries);
 			handles->entries = entries;
@@ -685,8 +695,8 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 			entries = g_malloc (sizeof (gpointer) * new_size);
 			/* we disable GC because we could lose some disappearing link updates */
 			mono_gc_disable ();
-			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
-			memset (entries + handles->size, 0, sizeof (gpointer) * handles->size);
+			mono_gc_memmove (entries, handles->entries, sizeof (gpointer) * handles->size);
+			mono_gc_bzero (entries + handles->size, sizeof (gpointer) * handles->size);
 			memcpy (domain_ids, handles->domain_ids, sizeof (guint16) * handles->size);
 			for (i = 0; i < handles->size; ++i) {
 				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
