@@ -43,6 +43,7 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-memory-model.h>
 #include "cominterop.h"
 
 #ifdef HAVE_BOEHM_GC
@@ -5833,23 +5834,18 @@ mono_message_init (MonoDomain *domain,
 	if (!object_array_klass) {
 		MonoClass *klass;
 
-		klass = mono_array_class_get (mono_defaults.object_class, 1);
-		g_assert (klass);
-
-		mono_memory_barrier ();
-		object_array_klass = klass;
-
 		klass = mono_array_class_get (mono_defaults.byte_class, 1);
 		g_assert (klass);
-
-		mono_memory_barrier ();
 		byte_array_klass = klass;
 
 		klass = mono_array_class_get (mono_defaults.string_class, 1);
 		g_assert (klass);
-
-		mono_memory_barrier ();
 		string_array_klass = klass;
+
+		klass = mono_array_class_get (mono_defaults.object_class, 1);
+		g_assert (klass);
+
+		mono_atomic_store_release (&object_array_klass, klass);
 	}
 
 	MONO_OBJECT_SETREF (this, method, method);
