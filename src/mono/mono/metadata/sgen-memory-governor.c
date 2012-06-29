@@ -72,6 +72,7 @@ sgen_memgov_adjust_allowance (mword allowance_estimate, mword new_heap_size)
 void
 sgen_memgov_release_space (mword size, int space)
 {
+	/*FIXME CAS*/
 	allocated_heap -= size;
 }
 
@@ -81,6 +82,7 @@ sgen_memgov_try_alloc_space (mword size, int space)
 	if (sgen_memgov_available_free_space () < size)
 		return FALSE;
 
+	/*FIXME CAS*/
 	allocated_heap += size;
 	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
 	return TRUE;
