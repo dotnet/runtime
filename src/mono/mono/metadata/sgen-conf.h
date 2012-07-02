@@ -152,4 +152,16 @@ typedef guint64 mword;
  */
 #define SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO 4
 
+/*
+ * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
+ *
+ * A major collection target is to free a given amount of memory. This amount is a ratio of the major heap size.
+ *
+ * Values above 0.5 cause the heap to agressively grow when it's small and waste memory when it's big.
+ * Lower values will produce more reasonable sized heaps when it's small, but will be suboptimal at large
+ * sizes as they will use a small fraction only.
+ *
+ */
+#define SGEN_DEFAULT_SAVE_TARGET_RATIO 0.5f
+
 #endif

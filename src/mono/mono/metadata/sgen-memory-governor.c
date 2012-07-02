@@ -87,8 +87,8 @@ reset_minor_collection_allowance (void)
 static void
 sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 {
-	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
-	mword los_memory_saved, new_major, new_heap_size;
+	int num_major_sections, num_major_sections_saved;
+	mword los_memory_saved, new_major, new_heap_size, save_target, allowance_target;
 
 	if (overwrite)
 		g_assert (need_calculate_minor_collection_allowance);
@@ -110,13 +110,7 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 	new_major = num_major_sections * major_collector.section_size;
 	new_heap_size = new_major + last_collection_los_memory_usage;
 
-	/*
-	 * FIXME: Why is save_target half the major memory plus half the
-	 * LOS memory saved?  Shouldn't it be half the major memory
-	 * saved plus half the LOS memory saved?  Or half the whole heap
-	 * size?
-	 */
-	save_target = (new_major + los_memory_saved) / 2;
+	save_target = (mword)((new_major + last_collection_los_memory_usage) * SGEN_DEFAULT_SAVE_TARGET_RATIO);
 
 	/*
 	 * We aim to allow the allocation of as many sections as is
