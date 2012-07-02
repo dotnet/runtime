@@ -390,9 +390,6 @@ gboolean sgen_is_worker_thread (MonoNativeThreadId thread) MONO_INTERNAL;
 
 void sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
 
-void sgen_register_major_sections_alloced (int num_sections) MONO_INTERNAL;
-mword sgen_get_minor_collection_allowance (void) MONO_INTERNAL;
-
 void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags) MONO_INTERNAL;
 void sgen_check_section_scan_starts (GCMemSection *section) MONO_INTERNAL;
 
