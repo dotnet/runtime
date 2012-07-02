@@ -208,6 +208,7 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 #define LOCK_INTERRUPTION mono_mutex_lock (&interruption_mutex)
 #define UNLOCK_INTERRUPTION mono_mutex_unlock (&interruption_mutex)
 
+/* FIXME: Use InterlockedAdd & InterlockedAdd64 to reduce the CAS cost. */
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
 #define SGEN_ATOMIC_ADD(x,i)	do {					\
 		int __old_x;						\
@@ -215,6 +216,13 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 			__old_x = (x);					\
 		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
+#define SGEN_ATOMIC_ADD_P(x,i) do { \
+		size_t __old_x;                                            \
+		do {                                                    \
+			__old_x = (x);                                  \
+		} while (InterlockedCompareExchangePointer ((void**)&(x), (void*)(__old_x + (i)), (void*)__old_x) != (void*)__old_x); \
+	} while (0)
+
 
 #ifndef HOST_WIN32
 /* we intercept pthread_create calls to know which threads exist */
