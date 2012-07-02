@@ -876,6 +876,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (sigctx), NULL);
 	gpointer *sp;
 	int frame_size;
+	ucontext_t *copied_ctx;
 
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
@@ -891,18 +892,30 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	 * 128 is the size of the red zone
 	 */
 	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 4 + 128;
+#ifdef __APPLE__
+	frame_size += sizeof (*ctx->uc_mcontext);
+#endif
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (gpointer)(UCONTEXT_REG_RSP (sigctx) & ~15);
 	sp = (gpointer)((char*)sp - frame_size);
+	copied_ctx = (ucontext_t*)(sp + 4);
 	/* the arguments must be aligned */
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
 	/* may need to adjust pointers in the new struct copy, depending on the OS */
-	memcpy (sp + 4, ctx, sizeof (ucontext_t));
+	memcpy (copied_ctx, ctx, sizeof (ucontext_t));
+#ifdef __APPLE__
+	{
+		guint8 * copied_mcontext = (guint8*)copied_ctx + sizeof (ucontext_t);
+		/* uc_mcontext is a pointer, so make a copy which is stored after the ctx */
+		memcpy (copied_mcontext, ctx->uc_mcontext, sizeof (*ctx->uc_mcontext));
+		copied_ctx->uc_mcontext = (void*)copied_mcontext;
+	}
+#endif
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_RIP (sigctx) = (unsigned long)altstack_handle_and_restore;
 	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
-	UCONTEXT_REG_RDI (sigctx) = (unsigned long)(sp + 4);
+	UCONTEXT_REG_RDI (sigctx) = (unsigned long)(copied_ctx);
 	UCONTEXT_REG_RSI (sigctx) = (guint64)exc;
 	UCONTEXT_REG_RDX (sigctx) = stack_ovf;
 #endif
