@@ -377,10 +377,6 @@ enum {
 
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 
-void* sgen_alloc_os_memory (size_t size, int activate) MONO_INTERNAL;
-void* sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean activate) MONO_INTERNAL;
-void sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
-
 int sgen_thread_handshake (BOOL suspend) MONO_INTERNAL;
 gboolean sgen_suspend_thread (SgenThreadInfo *info) MONO_INTERNAL;
 gboolean sgen_resume_thread (SgenThreadInfo *info) MONO_INTERNAL;
@@ -794,6 +790,7 @@ void sgen_gc_lock (void) MONO_INTERNAL;
 void sgen_gc_unlock (void) MONO_INTERNAL;
 
 enum {
+	SPACE_NURSERY,
 	SPACE_MAJOR,
 	SPACE_LOS
 };

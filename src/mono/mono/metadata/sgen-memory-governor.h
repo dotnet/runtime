@@ -31,5 +31,10 @@ mword sgen_memgov_adjust_allowance (mword allowance_estimate, mword new_heap_siz
 mword sgen_memgov_min_allowance (void) MONO_INTERNAL;
 mword sgen_memgov_available_free_space (void) MONO_INTERNAL;
 
+/* OS memory allocation */
+void* sgen_alloc_os_memory (size_t size, int activate) MONO_INTERNAL;
+void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate) MONO_INTERNAL;
+void sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
+
 #endif
 

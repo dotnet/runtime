@@ -51,6 +51,7 @@
 
 #include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
+#include "metadata/sgen-memory-governor.h"
 
 /* Pinned objects are allocated in the LOS space if bigger than half a page
  * or from freelists otherwise. We assume that pinned objects are relatively few

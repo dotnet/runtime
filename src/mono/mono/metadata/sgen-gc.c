@@ -419,7 +419,6 @@ int degraded_mode = 0;
 
 static mword bytes_pinned_from_failed_allocation = 0;
 
-static mword total_alloc = 0;
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
 static mword minor_collection_allowance;
@@ -1614,51 +1613,6 @@ sgen_update_heap_boundaries (mword low, mword high)
 	} while (SGEN_CAS_PTR ((gpointer*)&highest_heap_address, (gpointer)high, (gpointer)old) != (gpointer)old);
 }
 
-static unsigned long
-prot_flags_for_activate (int activate)
-{
-	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
-	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
-}
-
-/*
- * Allocate a big chunk of memory from the OS (usually 64KB to several megabytes).
- * This must not require any lock.
- */
-void*
-sgen_alloc_os_memory (size_t size, int activate)
-{
-	void *ptr = mono_valloc (0, size, prot_flags_for_activate (activate));
-	if (ptr) {
-		/* FIXME: CAS */
-		total_alloc += size;
-	}
-	return ptr;
-}
-
-/* size must be a power of 2 */
-void*
-sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean activate)
-{
-	void *ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
-	if (ptr) {
-		/* FIXME: CAS */
-		total_alloc += size;
-	}
-	return ptr;
-}
-
-/*
- * Free the memory returned by sgen_alloc_os_memory (), returning it to the OS.
- */
-void
-sgen_free_os_memory (void *addr, size_t size)
-{
-	mono_vfree (addr, size);
-	/* FIXME: CAS */
-	total_alloc -= size;
-}
-
 /*
  * Allocate and setup the data structures needed to be able to allocate objects
  * in the nursery. The nursery is stored in nursery_section.
@@ -1682,13 +1636,17 @@ alloc_nursery (void)
 	section = sgen_alloc_internal (INTERNAL_MEM_SECTION);
 
 	alloc_size = sgen_nursery_size;
+
+	/* If there isn't enough space even for the nursery we should simply abort. */
+	g_assert (sgen_memgov_try_alloc_space (alloc_size, SPACE_NURSERY));
+
 #ifdef SGEN_ALIGN_NURSERY
 	data = major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
 #else
 	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
-	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)total_alloc));
+	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)mono_gc_get_heap_size ()));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = data + sgen_nursery_size;
@@ -3119,7 +3077,7 @@ minor_collect_or_expand_inner (size_t size)
 			major_gc_time = mono_100ns_ticks () - major_gc_time;
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 		}
-		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
+		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)mono_gc_get_heap_size (), (unsigned long)los_memory_usage));
 		restart_world (0);
 
 		total_gc_time = mono_100ns_ticks () - total_gc_time;
@@ -4521,12 +4479,6 @@ mono_gc_get_used_size (void)
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
 	return tot;
-}
-
-int64_t
-mono_gc_get_heap_size (void)
-{
-	return total_alloc;
 }
 
 void

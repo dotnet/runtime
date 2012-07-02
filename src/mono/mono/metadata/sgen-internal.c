@@ -28,6 +28,7 @@
 #include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
 #include "utils/lock-free-alloc.h"
+#include "metadata/sgen-memory-governor.h"
 
 /* keep each size a multiple of ALLOC_ALIGN */
 static const int allocator_sizes [] = {

@@ -35,7 +35,10 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/mono-gc.h"
+
 #include "utils/mono-counters.h"
+#include "utils/mono-mmap.h"
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO))
 
@@ -44,7 +47,68 @@ static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword soft_heap_limit = ((mword)0) - ((mword)1);
 static mword allocated_heap;
 
+/*Memory usage tracking */
+static mword total_alloc = 0;
 
+/*
+Global GC memory tracking.
+This tracks the total usage of memory by the GC. This includes
+managed and unmanaged memory.
+*/
+
+static unsigned long
+prot_flags_for_activate (int activate)
+{
+	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
+	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
+}
+
+/*
+ * Allocate a big chunk of memory from the OS (usually 64KB to several megabytes).
+ * This must not require any lock.
+ */
+void*
+sgen_alloc_os_memory (size_t size, int activate)
+{
+	void *ptr = mono_valloc (0, size, prot_flags_for_activate (activate));
+	if (ptr)
+		SGEN_ATOMIC_ADD_P (total_alloc, size);
+	return ptr;
+}
+
+/* size must be a power of 2 */
+void*
+sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate)
+{
+	void *ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
+	if (ptr)
+		SGEN_ATOMIC_ADD_P (total_alloc, size);
+	return ptr;
+}
+
+/*
+ * Free the memory returned by sgen_alloc_os_memory (), returning it to the OS.
+ */
+void
+sgen_free_os_memory (void *addr, size_t size)
+{
+	mono_vfree (addr, size);
+	SGEN_ATOMIC_ADD_P (total_alloc, -size);
+}
+
+int64_t
+mono_gc_get_heap_size (void)
+{
+	return total_alloc;
+}
+
+
+/*
+Heap Sizing limits.
+This limit the max size of the heap. It takes into account
+only memory actively in use to hold heap objects and not
+for other parts of the GC.
+ */
 mword
 sgen_memgov_available_free_space (void)
 {

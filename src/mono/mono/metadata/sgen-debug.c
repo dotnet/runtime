@@ -36,6 +36,7 @@
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-ssb.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-memory-governor.h"
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
