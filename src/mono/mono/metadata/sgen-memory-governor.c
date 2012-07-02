@@ -72,17 +72,10 @@ static mword last_collection_los_memory_usage = 0;
 static mword last_collection_old_los_memory_usage;
 static mword last_collection_los_memory_alloced;
 
-static mword sgen_memgov_adjust_allowance (mword allowance_estimate, mword new_heap_size);
 static mword sgen_memgov_available_free_space (void);
 
 
 /* GC trigger heuristics. */
-
-static void
-reset_minor_collection_allowance (void)
-{
-	need_calculate_minor_collection_allowance = TRUE;
-}
 
 static void
 sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
@@ -131,7 +124,12 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 
 	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
 
-	minor_collection_allowance = sgen_memgov_adjust_allowance (minor_collection_allowance, new_heap_size);
+	if (new_heap_size + minor_collection_allowance > soft_heap_limit) {
+		if (new_heap_size > soft_heap_limit)
+			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+		else
+			minor_collection_allowance = MAX (soft_heap_limit - new_heap_size, MIN_MINOR_COLLECTION_ALLOWANCE);
+	}
 
 	if (debug_print_allowance) {
 		mword old_major = last_collection_old_num_major_sections * major_collector.section_size;
@@ -149,18 +147,13 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 	need_calculate_minor_collection_allowance = FALSE;
 }
 
-static gboolean
-need_major_collection (mword space_needed)
-{
-	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
-	return (space_needed > sgen_memgov_available_free_space ()) ||
-		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
-}
 
 gboolean
 sgen_need_major_collection (mword space_needed)
 {
-	return need_major_collection (space_needed);
+	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
+	return (space_needed > sgen_memgov_available_free_space ()) ||
+		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }
 
 void
@@ -186,8 +179,7 @@ sgen_memgov_major_collection_start (void)
 	last_collection_los_memory_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
 	last_collection_old_los_memory_usage = los_memory_usage;
 
-	reset_minor_collection_allowance ();
-
+	need_calculate_minor_collection_allowance = TRUE;
 	major_collection_happened = TRUE;
 }
 
@@ -316,18 +308,6 @@ static mword
 sgen_memgov_available_free_space (void)
 {
 	return max_heap_size - MIN (allocated_heap, max_heap_size);
-}
-
-static mword
-sgen_memgov_adjust_allowance (mword allowance_estimate, mword new_heap_size)
-{
-	if (new_heap_size + allowance_estimate > soft_heap_limit) {
-		if (new_heap_size > soft_heap_limit)
-			return MIN_MINOR_COLLECTION_ALLOWANCE;
-		else
-			return MAX (soft_heap_limit - new_heap_size, MIN_MINOR_COLLECTION_ALLOWANCE);
-	}
-	return allowance_estimate;
 }
 
 void

@@ -797,7 +797,6 @@ void sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGra
 void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;
 void sgen_collect_nursery_no_lock (size_t requested_size) MONO_INTERNAL;
 void sgen_minor_collect_or_expand_inner (size_t size) MONO_INTERNAL;
-gboolean sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
 void sgen_set_pinned_from_failed_allocation (mword objsize) MONO_INTERNAL;
 
 /* LOS */
