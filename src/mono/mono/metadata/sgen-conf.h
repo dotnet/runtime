@@ -150,7 +150,10 @@ typedef guint64 mword;
  * Bigger values increases throughput by allowing more garbage to sit in the major heap.
  * Smaller values leads to better memory effiency but more frequent major collections.
  */
-#define SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO 4
+#define SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO 4.0
+
+#define SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO 1.0
+#define SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO 10.0
 
 /*
  * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
@@ -162,6 +165,9 @@ typedef guint64 mword;
  * sizes as they will use a small fraction only.
  *
  */
-#define SGEN_DEFAULT_SAVE_TARGET_RATIO 0.5f
+#define SGEN_DEFAULT_SAVE_TARGET_RATIO 0.5
+
+#define SGEN_MIN_SAVE_TARGET_RATIO 0.1
+#define SGEN_MAX_SAVE_TARGET_RATIO 2.0
 
 #endif

@@ -4453,6 +4453,7 @@ mono_gc_base_init (void)
 	int result;
 	int dummy;
 	gboolean debug_print_allowance = FALSE;
+	double allowance_ratio = 0, save_target = 0;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -4690,6 +4691,36 @@ mono_gc_base_init (void)
 				continue;
 			}
 #endif
+			if (g_str_has_prefix (opt, "save-target-ratio=")) {
+				char *endptr;
+				opt = strchr (opt, '=') + 1;
+				save_target = strtod (opt, &endptr);
+				if (endptr == opt) {
+					fprintf (stderr, "save-target-ratio must be a number.");
+					exit (1);
+				}
+				if (save_target < SGEN_MIN_SAVE_TARGET_RATIO || save_target > SGEN_MAX_SAVE_TARGET_RATIO) {
+					fprintf (stderr, "save-target-ratio must be between %.2f - %.2f.", SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO);
+					exit (1);
+				}
+				continue;
+			}
+			if (g_str_has_prefix (opt, "default-allowance-ratio=")) {
+				char *endptr;
+				opt = strchr (opt, '=') + 1;
+
+				allowance_ratio = strtod (opt, &endptr);
+				if (endptr == opt) {
+					fprintf (stderr, "save-target-ratio must be a number.");
+					exit (1);
+				}
+				if (allowance_ratio < SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO || allowance_ratio > SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO) {
+					fprintf (stderr, "default-allowance-ratio must be between %.2f - %.2f.", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO);
+					exit (1);
+				}
+				continue;
+			}
+
 			if (major_collector.handle_gc_param && major_collector.handle_gc_param (opt))
 				continue;
 
@@ -4708,6 +4739,9 @@ mono_gc_base_init (void)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
 				sgen_minor_collector.print_gc_param_usage ();
+			fprintf (stderr, " Experimental options:\n");
+			fprintf (stderr, "  save-target-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO);
+			fprintf (stderr, "  default-allowance-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO);
 			exit (1);
 		}
 		g_strfreev (opts);
@@ -4832,7 +4866,7 @@ mono_gc_base_init (void)
 	if (major_collector.post_param_init)
 		major_collector.post_param_init ();
 
-	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance);
+	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
 
 	memset (&remset, 0, sizeof (remset));
 

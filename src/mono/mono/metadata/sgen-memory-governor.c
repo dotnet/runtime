@@ -41,26 +41,29 @@
 #include "utils/mono-mmap.h"
 #include "utils/mono-logger-internal.h"
 
-#define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO))
+#define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
-/*heap limits*/
+/*Heap limits and allocation knobs*/
 static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword soft_heap_limit = ((mword)0) - ((mword)1);
-static mword allocated_heap;
 
-/*Memory usage tracking */
+static double default_allowance_nursery_size_ratio = SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO;
+static double save_target_ratio = SGEN_DEFAULT_SAVE_TARGET_RATIO;
+
+/**/
+static mword allocated_heap;
 static mword total_alloc = 0;
 
 /* GC triggers. */
+
+static gboolean debug_print_allowance = FALSE;
+
 
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
 static mword minor_collection_allowance;
 static int minor_collection_sections_alloced = 0;
 
-static gboolean debug_print_allowance = FALSE;
-
-/* GC stats */
 static int last_major_num_sections = 0;
 static int last_los_memory_usage = 0;
 static gboolean major_collection_happened = FALSE;
@@ -328,7 +331,7 @@ sgen_memgov_try_alloc_space (mword size, int space)
 }
 
 void
-sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance)
+sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance, double allowance_ratio, double save_target)
 {
 	if (soft_limit)
 		soft_heap_limit = soft_limit;
@@ -350,6 +353,12 @@ sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance)
 	max_heap_size = max_heap - sgen_nursery_size;
 
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+
+	if (allowance_ratio)
+		default_allowance_nursery_size_ratio = allowance_ratio;
+
+	if (save_target)
+		save_target_ratio = save_target;
 }
 
 #endif
