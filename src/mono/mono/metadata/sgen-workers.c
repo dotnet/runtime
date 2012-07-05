@@ -125,7 +125,13 @@ workers_dequeue_and_do_job (WorkerData *data)
 {
 	JobQueueEntry *entry;
 
-	g_assert (sgen_collection_is_parallel ());
+	/*
+	 * At this point the GC might not be running anymore.  We
+	 * could have been woken up by a job that was then taken by
+	 * another thread, after which the collection finished, so we
+	 * first have to successfully dequeue a job before doing
+	 * anything assuming that the collection is still ongoing.
+	 */
 
 	if (!workers_job_queue_num_entries)
 		return FALSE;
@@ -140,6 +146,8 @@ workers_dequeue_and_do_job (WorkerData *data)
 
 	if (!entry)
 		return FALSE;
+
+	g_assert (sgen_collection_is_parallel ());
 
 	entry->func (data, entry->data);
 	sgen_free_internal (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY);
