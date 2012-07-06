@@ -845,7 +845,7 @@ gboolean sgen_can_alloc_size (size_t size) MONO_INTERNAL;
 void sgen_nursery_retire_region (void *address, ptrdiff_t size) MONO_INTERNAL;
 
 void sgen_nursery_alloc_prepare_for_minor (void) MONO_INTERNAL;
-void sgen_nursery_alloc_prepare_for_major (const char *reason) MONO_INTERNAL;
+void sgen_nursery_alloc_prepare_for_major (void) MONO_INTERNAL;
 
 char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references) MONO_INTERNAL;
 char* sgen_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references) MONO_INTERNAL;

@@ -921,7 +921,7 @@ sgen_nursery_alloc_prepare_for_minor (void)
 }
 
 void
-sgen_nursery_alloc_prepare_for_major (const char *reason)
+sgen_nursery_alloc_prepare_for_major (void)
 {
 	sgen_minor_collector.prepare_to_space (sgen_space_bitmap, sgen_space_bitmap_size);
 }

@@ -2333,7 +2333,7 @@ verify_nursery (void)
  * collection.
  */
 static gboolean
-collect_nursery (size_t requested_size)
+collect_nursery (void)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
@@ -2609,7 +2609,7 @@ major_do_collection (const char *reason)
 
 	sgen_gray_object_queue_init (&gray_queue);
 	sgen_workers_init_distribute_gray_queue ();
-	sgen_nursery_alloc_prepare_for_major (reason);
+	sgen_nursery_alloc_prepare_for_major ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", stat_major_gcs));
@@ -2940,7 +2940,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	stop_world (generation_to_collect);
 	//FIXME extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
-		if (collect_nursery (requested_size)) {
+		if (collect_nursery ()) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
@@ -2963,7 +2963,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		infos [1].total_time = gc_end;
 
 		if (overflow_generation_to_collect == GENERATION_NURSERY)
-			collect_nursery (0);
+			collect_nursery ();
 		else
 			major_do_collection (overflow_reason);
 
