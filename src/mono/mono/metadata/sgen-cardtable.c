@@ -156,14 +156,12 @@ sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, Mon
 static void
 sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
-	int size;
-	TLAB_ACCESS_INIT;
-
-	size = mono_object_class (obj)->instance_size;
+	int size = mono_object_class (obj)->instance_size;
 
 #ifdef DISABLE_CRITICAL_REGION
 	LOCK_GC;
 #else
+	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
 #endif
 	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
