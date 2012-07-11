@@ -10616,9 +10616,7 @@ inflate_method (MonoReflectionType *type, MonoObject *obj)
 
 /*TODO avoid saving custom attrs for generic classes as it's enough to have them on the generic type definition.*/
 void
-mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, 
-					  MonoArray *ctors, MonoArray *fields, MonoArray *properties,
-					  MonoArray *events)
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields)
 {
 	MonoGenericClass *gclass;
 	MonoDynamicGenericClass *dgclass;
@@ -12056,9 +12054,7 @@ mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject
 }
 
 void
-mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, 
-					  MonoArray *ctors, MonoArray *fields, MonoArray *properties,
-					  MonoArray *events)
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields)
 {
 	g_assert_not_reached ();
 }
