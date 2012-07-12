@@ -8958,7 +8958,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			ftype = mono_field_get_type (field);
 
-			g_assert (!(ftype->attrs & FIELD_ATTRIBUTE_LITERAL));
+			if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL)
+				UNVERIFIED;
 
 			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
 			 * to be called here.
