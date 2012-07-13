@@ -1383,7 +1383,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types) MONO_INTERNAL;
 void
-mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events) MONO_INTERNAL;
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields) MONO_INTERNAL;
 MonoReflectionEvent *
 mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb) MONO_INTERNAL;
 
