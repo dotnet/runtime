@@ -921,4 +921,24 @@ class Tests {
 		}
 		return 0;
 	}
+
+	class A { }
+
+    static List<A> sources = new List<A>();
+
+	// #6112
+    public static int test_0_fullaot_imt () {
+        sources.Add(null);
+        sources.Add(null);
+
+        int a = sources.Count;
+        var enumerator = sources.GetEnumerator() as IEnumerator<object>;
+
+        while (enumerator.MoveNext())
+        {
+            object o = enumerator.Current;
+        }
+
+		return 0;
+	}
 }

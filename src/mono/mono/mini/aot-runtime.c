@@ -1365,7 +1365,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 		usable = FALSE;
 	}
 
-	if (info->simd_opts & ~mono_arch_cpu_enumerate_simd_versions ()) {
+	if (!mono_aot_only && (info->simd_opts & ~mono_arch_cpu_enumerate_simd_versions ())) {
 		msg = g_strdup_printf ("compiled with unsupported SIMD extensions");
 		usable = FALSE;
 	}
