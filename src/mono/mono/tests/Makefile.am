@@ -384,7 +384,8 @@ BASE_TEST_CS_SRC=		\
 	bug-bxc-795.cs	\
 	bug-3903.cs	\
 	async-with-cb-throws.cs	\
-	appdomain-unload-doesnot-raise-pending-events.cs
+	appdomain-unload-doesnot-raise-pending-events.cs	\
+	bug-6148.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
