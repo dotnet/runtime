@@ -521,6 +521,8 @@ print_gc_param_usage (void)
 
 /******************************************Copy/Scan functins ************************************************/
 
+#define SGEN_SPLIT_NURSERY
+
 #include "sgen-minor-copy-object.h"
 #include "sgen-minor-scan-object.h"
 
