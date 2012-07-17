@@ -29,8 +29,10 @@
 
 #if SIZEOF_VOID_P == 4
 typedef guint32 mword;
+#define MWORD_MAX_VALUE ((uint32_t) 0xffffffff)
 #else
 typedef guint64 mword;
+#define MWORD_MAX_VALUE (G_MAXUINT64)
 #endif
 
 
