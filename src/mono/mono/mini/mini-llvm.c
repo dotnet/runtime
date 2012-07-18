@@ -3156,14 +3156,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 */
 			LLVM_FAILURE (ctx, "sqrt");
 #endif
-			args [0] = lhs;
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
 			break;
 		}
 		case OP_ABS: {
 			LLVMValueRef args [1];
 
-			args [0] = lhs;
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "fabs"), args, 1, dname);
 			break;
 		}
