@@ -1145,7 +1145,8 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	threadpool_clear_queue (&async_io_tp, domain);
 
 	EnterCriticalSection (&socket_io_data.io_lock);
-	mono_g_hash_table_foreach_remove (socket_io_data.sock_to_state, remove_sockstate_for_domain, domain);
+	if (socket_io_data.sock_to_state)
+		mono_g_hash_table_foreach_remove (socket_io_data.sock_to_state, remove_sockstate_for_domain, domain);
 
 	LeaveCriticalSection (&socket_io_data.io_lock);
 	
