@@ -43,6 +43,7 @@ GIT_DIR ?= $(srcdir)/.git
 dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
 	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
+	rm -rf `find $(top_distdir)/external -path '*\.git' -and -type d`
 # Disable this for now because it is very slow and causes wrench to timeout:
 #	test ! -d $(GIT_DIR) || ./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
 
