@@ -1777,6 +1777,7 @@ mono_class_layout_fields (MonoClass *class)
 				continue;
 
 			size = mono_type_size (field->type, &align);
+			align = class->packing_size ? MIN (class->packing_size, align): align;
 			class->min_align = MAX (align, class->min_align);
 
 			/*
@@ -1800,6 +1801,10 @@ mono_class_layout_fields (MonoClass *class)
 			real_size = MAX (real_size, size + field->offset);
 		}
 		class->instance_size = MAX (real_size, class->instance_size);
+		if (class->instance_size & (class->min_align - 1)) {
+			class->instance_size += class->min_align - 1;
+			class->instance_size &= ~(class->min_align - 1);
+		}
 		break;
 	}
 
