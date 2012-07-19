@@ -246,6 +246,7 @@ struct _MonoException {
 	MonoString *source;
 	MonoObject *_data;
 	MonoObject *captured_traces;
+	MonoArray  *native_trace_ips;
 };
 
 typedef struct {
