@@ -1574,6 +1574,9 @@ mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s) MONO_INTERNAL;
 gboolean
 mono_monitor_is_il_fastpath_wrapper (MonoMethod *method) MONO_INTERNAL;
 
+char *
+mono_exception_get_native_backtrace (MonoException *exc) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
