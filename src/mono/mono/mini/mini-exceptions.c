@@ -1196,11 +1196,33 @@ wrap_non_exception_throws (MonoMethod *m)
 #define DOES_STACK_GROWS_UP 0
 #endif
 
+#define MAX_UNMANAGED_BACKTRACE 128
+static MonoArray*
+build_native_trace (void)
+{
+#ifdef HAVE_BACKTRACE_SYMBOLS
+	MonoArray *res;
+	void *native_trace [MAX_UNMANAGED_BACKTRACE];
+	int size = backtrace (native_trace, MAX_UNMANAGED_BACKTRACE);
+	int i;
+
+	if (!size)
+		return NULL;
+	res = mono_array_new (mono_domain_get (), mono_defaults.int_class, size);
+
+	for (i = 0; i < size; i++)
+		mono_array_set (res, gpointer, i, native_trace [i]);
+	return res;
+#else
+	return NULL;
+#endif
+}
 
 #define setup_managed_stacktrace_information() do {	\
 	if (mono_ex && !initial_trace_ips) {	\
 		trace_ips = g_list_reverse (trace_ips);	\
 		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));	\
+		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());	\
 		if (has_dynamic_methods)	\
 			/* These methods could go away anytime, so compute the stack trace now */	\
 			MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));	\
