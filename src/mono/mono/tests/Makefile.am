@@ -229,6 +229,7 @@ BASE_TEST_CS_SRC=		\
 	bug-78656.cs		\
 	bug-77127.cs		\
 	bug-323114.cs		\
+	bug-Xamarin-5278.cs	\
 	interlocked.cs		\
 	cross-domain.cs		\
 	appdomain-exit.cs	\

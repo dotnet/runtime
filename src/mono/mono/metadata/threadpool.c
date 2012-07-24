@@ -1117,7 +1117,6 @@ remove_sockstate_for_domain (gpointer key, gpointer value, gpointer user_data)
 	while (list) {
 		MonoObject *data = mono_mlist_get_data (list);
 		if (mono_object_domain (data) == user_data) {
-			MonoClass *class = mono_object_get_class (data);
 			remove = TRUE;
 			mono_mlist_set_data (list, NULL);
 		}

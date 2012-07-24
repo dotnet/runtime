@@ -15,7 +15,12 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-debug.h>
 #include <string.h>
+
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
 
 /**
  * mono_exception_from_name:
@@ -760,3 +765,54 @@ mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
    MONO_OBJECT_SETREF (ex, wrapped_exception, wrapped_exception);
    return (MonoException*)ex;
 }	
+
+char *
+mono_exception_get_native_backtrace (MonoException *exc)
+{
+#ifdef HAVE_BACKTRACE_SYMBOLS
+	MonoDomain *domain;
+	MonoArray *arr = exc->native_trace_ips;
+	int i, len;
+	GString *text;
+	char **messages;
+
+	if (!arr)
+		return g_strdup ("");
+	domain = mono_domain_get ();
+	len = mono_array_length (arr);
+	text = g_string_new_len (NULL, len * 20);
+	messages = backtrace_symbols (mono_array_addr (arr, gpointer, 0), len);
+
+
+	for (i = 0; i < len; ++i) {
+		gpointer ip = mono_array_get (arr, gpointer, i);
+		MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), ip);
+		if (ji) {
+			char *msg = mono_debug_print_stack_frame (ji->method, (char*)ip - (char*)ji->code_start, domain);
+			g_string_append_printf (text, "%s\n", msg);
+			g_free (msg);
+		} else {
+			g_string_append_printf (text, "%s\n", messages [i]);
+		}
+	}
+
+	free (messages);
+	return g_string_free (text, FALSE);
+#else
+	return g_strdup ("");
+#endif
+}
+
+MonoString *
+ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc)
+{
+	char *trace;
+	MonoString *res;
+	if (!exc)
+		mono_raise_exception (mono_get_exception_argument_null ("exception"));
+
+	trace = mono_exception_get_native_backtrace (exc);
+	res = mono_string_new (mono_domain_get (), trace);
+	g_free (trace);
+	return res;
+}

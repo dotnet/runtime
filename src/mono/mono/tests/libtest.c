@@ -3164,9 +3164,12 @@ ITestOut(MonoComObject* pUnk, MonoComObject* *ppUnk)
 	return S_OK;
 }
 
+static void create_com_object (MonoComObject** pOut);
+
 LIBTEST_API int STDCALL 
 get_ITest(MonoComObject* pUnk, MonoComObject* *ppUnk)
 {
+	create_com_object (ppUnk);
 	return S_OK;
 }
 
