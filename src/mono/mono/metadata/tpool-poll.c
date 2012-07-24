@@ -216,11 +216,22 @@ tp_poll_wait (gpointer p)
 		/* Got a new socket */
 		if ((pfds->revents & MONO_POLLIN) != 0) {
 			int nread;
+			gboolean found = FALSE;
 
 			for (i = 1; i < allocated; i++) {
 				pfd = &pfds [i];
-				if (pfd->fd == -1 || pfd->fd == data->newpfd.fd)
+				if (pfd->fd == data->newpfd.fd) {
+					found = TRUE;
 					break;
+				}
+			}
+
+			if (!found) {
+				for (i = 1; i < allocated; i++) {
+					pfd = &pfds [i];
+					if (pfd->fd == -1)
+						break;
+				}
 			}
 
 			if (i == allocated) {
