@@ -1953,6 +1953,7 @@ static GSList *load_modules (FILE *fp)
 static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename)
 {
 	char* lastsep = NULL;
+	char* lastsep2 = NULL;
 	char* pname = NULL;
 	char* mname = NULL;
 	gboolean result = FALSE;
@@ -1971,6 +1972,18 @@ static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename
 		if (lastsep)
 			if (!strcmp (lastsep+1, pname))
 				result = TRUE;
+		if (!result) {
+			lastsep2 = strrchr (pname, '/');
+			if (lastsep2){
+				if (lastsep) {
+					if (!strcmp (lastsep+1, lastsep2+1))
+						result = TRUE;
+				} else {
+					if (!strcmp (mname, lastsep2+1))
+						result = TRUE;
+				}
+			}
+		}
 	}
 
 	g_free (pname);
