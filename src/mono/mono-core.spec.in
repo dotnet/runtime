@@ -565,8 +565,8 @@ Database connectivity for Mono.
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.Transactions
 %_prefix/lib/mono/gac/WebMatrix.Data
-%_prefix/lib/mono/gac/EntityFramework.dll
-%_prefix/lib/mono/gac/EntityFramework.SqlServer.dll
+%_prefix/lib/mono/gac/EntityFramework
+%_prefix/lib/mono/gac/EntityFramework.SqlServer
 
 %package -n mono-winforms
 License:        LGPL v2.1 only
