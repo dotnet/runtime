@@ -1226,6 +1226,8 @@ Mono development tools.
 %_prefix/lib/mono/4.5/Microsoft.Build.Utilities.v4.0.dll
 %_prefix/lib/mono/4.5/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/4.5/Mono.CodeContracts.dll
+%_prefix/lib/mono/4.5/EntityFramework.dll
+%_prefix/lib/mono/4.5/EntityFramework.SqlServer.dll
 %_prefix/lib/mono/4.5/PEAPI.dll
 %_prefix/lib/mono/4.5/caspol.exe*
 %_prefix/lib/mono/4.5/cccheck.exe*
