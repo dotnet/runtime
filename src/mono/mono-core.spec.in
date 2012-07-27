@@ -551,6 +551,8 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.5/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.5/System.Transactions.dll
 %_prefix/lib/mono/4.5/WebMatrix.Data.dll
+%_prefix/lib/mono/4.5/EntityFramework.dll
+%_prefix/lib/mono/4.5/EntityFramework.SqlServer.dll
 %_prefix/lib/mono/4.5/sqlmetal.exe*
 %_prefix/lib/mono/4.5/sqlsharp.exe*
 %_prefix/lib/mono/gac/Mono.Data.Tds
@@ -563,6 +565,8 @@ Database connectivity for Mono.
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.Transactions
 %_prefix/lib/mono/gac/WebMatrix.Data
+%_prefix/lib/mono/gac/EntityFramework.dll
+%_prefix/lib/mono/gac/EntityFramework.SqlServer.dll
 
 %package -n mono-winforms
 License:        LGPL v2.1 only
@@ -1226,8 +1230,6 @@ Mono development tools.
 %_prefix/lib/mono/4.5/Microsoft.Build.Utilities.v4.0.dll
 %_prefix/lib/mono/4.5/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/4.5/Mono.CodeContracts.dll
-%_prefix/lib/mono/4.5/EntityFramework.dll
-%_prefix/lib/mono/4.5/EntityFramework.SqlServer.dll
 %_prefix/lib/mono/4.5/PEAPI.dll
 %_prefix/lib/mono/4.5/caspol.exe*
 %_prefix/lib/mono/4.5/cccheck.exe*
