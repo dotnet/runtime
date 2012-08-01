@@ -170,6 +170,16 @@ typedef struct
 	guint32 stack_size;
 } MonoArchEHJitInfo;
 
+typedef struct {
+	gboolean    cas_inited:1;
+	gboolean    cas_class_assert:1;
+	gboolean    cas_class_deny:1;
+	gboolean    cas_class_permitonly:1;
+	gboolean    cas_method_assert:1;
+	gboolean    cas_method_deny:1;
+	gboolean    cas_method_permitonly:1;
+} MonoMethodCasInfo;
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
@@ -184,13 +194,7 @@ struct _MonoJitInfo {
 	guint32     num_clauses:15;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
-	gboolean    cas_inited:1;
-	gboolean    cas_class_assert:1;
-	gboolean    cas_class_deny:1;
-	gboolean    cas_class_permitonly:1;
-	gboolean    cas_method_assert:1;
-	gboolean    cas_method_deny:1;
-	gboolean    cas_method_permitonly:1;
+	gboolean    has_cas_info:1;
 	gboolean    has_generic_jit_info:1;
 	gboolean    has_try_block_holes:1;
 	gboolean    has_arch_eh_info:1;
@@ -487,6 +491,9 @@ mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji) MONO_INTERNAL;
 
 MonoArchEHJitInfo*
 mono_jit_info_get_arch_eh_info (MonoJitInfo *ji) MONO_INTERNAL;
+
+MonoMethodCasInfo*
+mono_jit_info_get_cas_info (MonoJitInfo *ji) MONO_INTERNAL;
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside

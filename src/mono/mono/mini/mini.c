@@ -3883,7 +3883,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	MonoJitInfo *jinfo;
 	int num_clauses;
 	int generic_info_size, arch_eh_info_size = 0;
-	int holes_size = 0, num_holes = 0;
+	int holes_size = 0, num_holes = 0, cas_size = 0;
 	guint32 stack_size = 0;
 
 	g_assert (method_to_compile == cfg->method);
@@ -3927,6 +3927,10 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			printf ("Number of try block holes %d\n", num_holes);
 	}
 
+	if (mono_method_has_declsec (cfg->method_to_register)) {
+		cas_size = sizeof (MonoMethodCasInfo);
+	}
+
 	if (COMPILE_LLVM (cfg))
 		num_clauses = cfg->llvm_ex_info_len;
 	else
@@ -3934,11 +3938,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->method->dynamic) {
 		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size + holes_size + arch_eh_info_size);
+				generic_info_size + holes_size + arch_eh_info_size + cas_size);
 	} else {
 		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
 				(num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size + holes_size + arch_eh_info_size);
+				generic_info_size + holes_size + arch_eh_info_size + cas_size);
 	}
 
 	jinfo->method = cfg->method_to_register;
@@ -3946,8 +3950,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	jinfo->code_size = cfg->code_len;
 	jinfo->used_regs = cfg->used_int_regs;
 	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
-	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
 	jinfo->num_clauses = num_clauses;
+
 	if (COMPILE_LLVM (cfg))
 		jinfo->from_llvm = TRUE;
 
@@ -4063,6 +4067,10 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		info = mono_jit_info_get_arch_eh_info (jinfo);
 
 		info->stack_size = stack_size;
+	}
+
+	if (cas_size) {
+		jinfo->has_cas_info = 1;
 	}
 
 	if (COMPILE_LLVM (cfg)) {
