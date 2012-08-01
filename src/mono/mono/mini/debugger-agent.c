@@ -276,7 +276,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 19
+#define MINOR_VERSION 20
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -359,7 +359,8 @@ typedef enum {
 
 typedef enum {
 	STEP_FILTER_NONE = 0,
-	STEP_FILTER_STATIC_CTOR = 1
+	STEP_FILTER_STATIC_CTOR = 1,
+	STEP_FILTER_DEBUGGER_HIDDEN = 2
 } StepFilter;
 
 typedef enum {
@@ -3313,6 +3314,26 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 						(ji->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
 						!strcmp (ji->method->name, ".cctor"))
 						filtered = TRUE;
+					if ((mod->data.filter & STEP_FILTER_DEBUGGER_HIDDEN) && ji) {
+						MonoCustomAttrInfo *ainfo;
+						static MonoClass *klass;
+
+						if (!klass) {
+							klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
+							g_assert (klass);
+						}
+						if (!ji->dbg_hidden_inited) {
+							ainfo = mono_custom_attrs_from_method (ji->method);
+							if (ainfo) {
+								if (mono_custom_attrs_has_attr (ainfo, klass))
+									ji->dbg_hidden = TRUE;
+								mono_custom_attrs_free (ainfo);
+							}
+							ji->dbg_hidden_inited = TRUE;
+						}
+						if (ji->dbg_hidden)
+							filtered = TRUE;
+					}
 				}
 			}
 

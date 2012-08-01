@@ -200,6 +200,8 @@ struct _MonoJitInfo {
 	gboolean    has_arch_eh_info:1;
 	gboolean    from_aot:1;
 	gboolean    from_llvm:1;
+	gboolean    dbg_hidden_inited:1;
+	gboolean    dbg_hidden:1;
 
 	/* FIXME: Embed this after the structure later*/
 	gpointer    gc_info; /* Currently only used by SGen */
