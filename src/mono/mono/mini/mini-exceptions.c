@@ -1200,7 +1200,8 @@ wrap_non_exception_throws (MonoMethod *m)
 static MonoArray*
 build_native_trace (void)
 {
-#ifdef HAVE_BACKTRACE_SYMBOLS
+/* This puppy only makes sense on mobile, IOW, ARM. */
+#if defined (HAVE_BACKTRACE_SYMBOLS) && defined (TARGET_ARM)
 	MonoArray *res;
 	void *native_trace [MAX_UNMANAGED_BACKTRACE];
 	int size = backtrace (native_trace, MAX_UNMANAGED_BACKTRACE);
