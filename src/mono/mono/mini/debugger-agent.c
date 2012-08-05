@@ -276,7 +276,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 20
+#define MINOR_VERSION 21
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -456,6 +456,7 @@ typedef enum {
 	CMD_METHOD_GET_INFO = 6,
 	CMD_METHOD_GET_BODY = 7,
 	CMD_METHOD_RESOLVE_TOKEN = 8,
+	CMD_METHOD_GET_CATTRS = 9,
 } CmdMethod;
 
 typedef enum {
@@ -7565,6 +7566,7 @@ static ErrorCode
 method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
 {
 	MonoMethodHeader *header;
+	int err;
 
 	switch (command) {
 	case CMD_METHOD_GET_NAME: {
@@ -7882,6 +7884,20 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 		}
+		break;
+	}
+	case CMD_METHOD_GET_CATTRS: {
+		MonoClass *attr_klass;
+		MonoCustomAttrInfo *cinfo;
+
+		attr_klass = decode_typeid (p, &p, end, NULL, &err);
+		/* attr_klass can be NULL */
+		if (err)
+			return err;
+
+		cinfo = mono_custom_attrs_from_method (method);
+
+		buffer_add_cattrs (buf, domain, method->klass->image, attr_klass, cinfo);
 		break;
 	}
 	default:
