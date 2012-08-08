@@ -1079,6 +1079,10 @@ gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 de
         }
     }
 
+    // Set correct scale for zeros decimal (000 input is 0.00)
+    if (sigLen < 0 && len > decrDecimal)
+        sigLen = len;
+
     scale = sigLen - decrDecimal;
 
     if (i < len) { /* too much digits, we must round */
@@ -1104,8 +1108,7 @@ gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 de
         if (rc != DECIMAL_SUCCESS) return rc;
     }
 
-    if (alo == 0 && ahi == 0) {
-        DECINIT(pA);
+    if (alo == 0 && ahi == 0 && scale <= 0) {
         return DECIMAL_SUCCESS;
     } else {
         return pack128toDecimal(pA, alo, ahi, sigLen - decrDecimal, sign);
