@@ -44,6 +44,4 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA) MONO_INTERNAL;
 gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp) MONO_INTERNAL;
 
 gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, /*[In]*/MonoString* s, gint32 decrDecimal, gint32 sign) MONO_INTERNAL;
-gint32 mono_decimal2string(/*[In]*/decimal_repr* pA, gint32 digits, gint32 decimals,
-			 /*[Out]*/MonoArray* pArray, gint32 bufSize, gint32* pDecPos, gint32* pSign) MONO_INTERNAL;
 
