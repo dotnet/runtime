@@ -9,7 +9,7 @@ class Driver {
 	static void AppDomainMethod () {
 		Console.WriteLine ("two");
 		var socket = new Socket (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-		IPEndPoint ep = new IPEndPoint(IPAddress.Any, 9999);
+		IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
 		socket.Bind (ep);
 		socket.Listen (10);
 		socket.BeginAccept ( delegate {
