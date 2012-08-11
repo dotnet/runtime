@@ -94,7 +94,6 @@ static LOSSection *los_sections = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
 static mword los_num_objects = 0;
 static int los_num_sections = 0;
-static mword next_los_collection = 2*1024*1024; /* 2 MB, need to tune */
 
 //#define USE_MALLOC
 //#define LOS_CONSISTENCY_CHECK
