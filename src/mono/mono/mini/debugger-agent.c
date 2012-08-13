@@ -162,6 +162,7 @@ struct _InvokeData
 	MonoMethod *method;
 	gpointer *args;
 	guint32 suspend_count;
+	int nmethods;
 
 	InvokeData *last_invoke;
 };
@@ -276,7 +277,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 21
+#define MINOR_VERSION 22
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -402,7 +403,8 @@ typedef enum {
 	CMD_VM_ABORT_INVOKE = 9,
 	CMD_VM_SET_KEEPALIVE = 10,
 	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11,
-	CMD_VM_GET_TYPES = 12
+	CMD_VM_GET_TYPES = 12,
+	CMD_VM_INVOKE_METHODS = 13
 } CmdVM;
 
 typedef enum {
@@ -5833,9 +5835,8 @@ add_thread (gpointer key, gpointer value, gpointer user_data)
 }
 
 static ErrorCode
-do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
+do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 *p, guint8 **endp)
 {
-	guint8 *p = invoke->p;
 	guint8 *end = invoke->endp;
 	MonoMethod *m;
 	int i, err, nargs;
@@ -6034,6 +6035,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		mono_set_lmf ((gpointer)(((gssize)ext.lmf.previous_lmf) & ~3));
 #endif
 
+	*endp = p;
 	// FIXME: byref arguments
 	// FIXME: varargs
 	return ERR_NONE;
@@ -6050,10 +6052,11 @@ invoke_method (void)
 	DebuggerTlsData *tls;
 	InvokeData *invoke;
 	int id;
-	int i, err;
+	int i, err, mindex;
 	Buffer buf;
 	static void (*restore_context) (void *);
 	MonoContext restore_ctx;
+	guint8 *p;
 
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
@@ -6081,19 +6084,29 @@ invoke_method (void)
 
 	id = invoke->id;
 
-	buffer_init (&buf, 128);
+	p = invoke->p;
+	err = 0;
+	for (mindex = 0; mindex < invoke->nmethods; ++mindex) {
+		buffer_init (&buf, 128);
 
-	err = do_invoke_method (tls, &buf, invoke);
+		if (err) {
+			/* Fail the other invokes as well */
+		} else {
+			err = do_invoke_method (tls, &buf, invoke, p, &p);
+		}
 
-	/* Start suspending before sending the reply */
-	if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED)) {
-		for (i = 0; i < invoke->suspend_count; ++i)
-			suspend_vm ();
-	}
+		/* Start suspending before sending the reply */
+		if (mindex == invoke->nmethods - 1) {
+			if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED)) {
+				for (i = 0; i < invoke->suspend_count; ++i)
+					suspend_vm ();
+			}
+		}
 
-	send_reply_packet (id, err, &buf);
+		send_reply_packet (id, err, &buf);
 	
-	buffer_free (&buf);
+		buffer_free (&buf);
+	}
 
 	memcpy (&restore_ctx, &invoke->ctx, sizeof (MonoContext));
 
@@ -6289,6 +6302,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			tls->pending_invoke = g_new0 (InvokeData, 1);
 			tls->pending_invoke->method = exit_method;
 			tls->pending_invoke->args = args;
+			tls->pending_invoke->nmethods = 1;
 
 			while (suspend_count > 0)
 				resume_vm ();
@@ -6316,17 +6330,23 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		break;
 	}		
-	case CMD_VM_INVOKE_METHOD: {
+	case CMD_VM_INVOKE_METHOD:
+	case CMD_VM_INVOKE_METHODS: {
 		int objid = decode_objid (p, &p, end);
 		MonoThread *thread;
 		DebuggerTlsData *tls;
-		int i, count, err, flags;
+		int i, count, err, flags, nmethods;
 
 		err = get_object (objid, (MonoObject**)&thread);
 		if (err)
 			return err;
 
 		flags = decode_int (p, &p, end);
+
+		if (command == CMD_VM_INVOKE_METHODS)
+			nmethods = decode_int (p, &p, end);
+		else
+			nmethods = 1;
 
 		// Wait for suspending if it already started
 		if (suspend_count)
@@ -6356,6 +6376,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		memcpy (tls->pending_invoke->p, p, end - p);
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
+		tls->pending_invoke->nmethods = nmethods;
 
 		if (flags & INVOKE_FLAG_SINGLE_THREADED) {
 			resume_thread (THREAD_TO_INTERNAL (thread));
