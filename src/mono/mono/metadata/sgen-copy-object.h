@@ -111,6 +111,19 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 
 extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
 
+#if defined(SGEN_SIMPLE_NURSERY)
+#define serial_copy_object simple_nursery_serial_copy_object
+#define parallel_copy_object simple_nursery_parallel_copy_object
+
+#elif defined (SGEN_SPLIT_NURSERY)
+
+#define serial_copy_object split_nursery_serial_copy_object
+#define parallel_copy_object split_nursery_parallel_copy_object
+
+#else
+#error "Please define GC_CONF_NAME"
+#endif
+
 /*
  * This is how the copying happens from the nursery to the old generation.
  * We assume that at this time all the pinned objects have been identified and
