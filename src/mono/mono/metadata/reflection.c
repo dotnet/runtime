@@ -4332,7 +4332,7 @@ fixup_cattrs (MonoDynamicImage *assembly)
 			ctor = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 			g_assert (ctor);
 
-			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")|| !strcmp (ctor->vtable->klass->name, "ConstructorBuilder")) {
+			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
