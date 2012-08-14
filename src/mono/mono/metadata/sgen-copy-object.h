@@ -34,7 +34,7 @@ extern long long stat_slots_allocated_in_vain;
  * This function can be used even if the vtable of obj is not valid
  * anymore, which is the case in the parallel collector.
  */
-static void __attribute__((always_inline))
+static inline void
 par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue)
 {
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
