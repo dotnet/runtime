@@ -1784,7 +1784,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	} else {
 		if (cfg->arch.omit_fp)
 			cfg->arch.reg_save_area_offset = offset;
-		/* Reserve space for caller saved registers */
+		/* Reserve space for callee saved registers */
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				offset += sizeof(mgreg_t);
