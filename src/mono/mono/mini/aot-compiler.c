@@ -7334,7 +7334,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	g_free (command);
-	unlink (objfile);
+
 	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, SHARED_EXT);
 	printf ("Stripping the binary: %s\n", com);
 	system (com);
@@ -7357,6 +7357,17 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	rename (tmp_outfile_name, outfile_name);
+
+#if defined(__APPLE__)
+	command = g_strdup_printf ("dsymutil %s", outfile_name);
+	printf ("Generating debug symbols: %s\n", command);
+	if (system (command) != 0) {
+		return 1;
+	}
+#endif
+
+	if (!acfg->aot_opts.save_temps)
+		unlink (objfile);
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
