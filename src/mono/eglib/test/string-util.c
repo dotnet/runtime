@@ -174,6 +174,16 @@ test_split ()
 	
 	g_strfreev (v);
 
+	v = g_strsplit ("value=", "=", 2);
+	if (strcmp (v [0], "value") != 0)
+		return FAILED ("Invalid value 18; expected 'value', got '%s'", v [0]);
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 19; expected '', got '%s'", v [1]);
+	if (v [2] != NULL)
+		return FAILED ("Expected only 2 elements (6)");
+
+	g_strfreev (v);
+
 	return OK;
 }
 
