@@ -5204,6 +5204,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		mono_g_hash_table_destroy (di->handleref_managed);
 	if (di->tokens)
 		mono_g_hash_table_destroy (di->tokens);
+	if (di->remapped_tokens)
+		mono_g_hash_table_destroy (di->remapped_tokens);
 	if (di->generic_def_objects)
 		mono_g_hash_table_destroy (di->generic_def_objects);
 	if (di->blob_cache) {
