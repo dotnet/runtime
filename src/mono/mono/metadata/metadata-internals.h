@@ -424,6 +424,10 @@ struct _MonoDynamicImage {
 	GHashTable *vararg_aux_hash;
 	MonoGHashTable *generic_def_objects;
 	MonoGHashTable *methodspec;
+	/*
+	 * Maps final token values to the object they describe.
+	 */
+	MonoGHashTable *remapped_tokens;
 	gboolean run;
 	gboolean save;
 	gboolean initial_image;

@@ -1290,6 +1290,11 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 		switch (mono_metadata_token_table (token)) {
 		case MONO_TABLE_METHOD:
 			type |= MONO_CUSTOM_ATTR_TYPE_METHODDEF;
+			/*
+			 * fixup_cattrs () needs to fix this up. We can't use image->tokens, since it contains the old token for the
+			 * method, not the one returned by mono_image_create_token ().
+			 */
+			mono_g_hash_table_insert (assembly->remapped_tokens, GUINT_TO_POINTER (token), cattr->ctor);
 			break;
 		case MONO_TABLE_MEMBERREF:
 			type |= MONO_CUSTOM_ATTR_TYPE_MEMBERREF;
@@ -4329,11 +4334,15 @@ fixup_cattrs (MonoDynamicImage *assembly)
 		if ((type & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_METHODDEF) {
 			idx = type >> MONO_CUSTOM_ATTR_TYPE_BITS;
 			token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
-			ctor = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+			ctor = mono_g_hash_table_lookup (assembly->remapped_tokens, GUINT_TO_POINTER (token));
 			g_assert (ctor);
 
 			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
+				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
+				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
+			} else if (!strcmp (ctor->vtable->klass->name, "ConstructorBuilder")) {
+				MonoMethod *m = ((MonoReflectionCtorBuilder*)ctor)->mhandle;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
 			}
@@ -5115,6 +5124,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 	image->gen_params = g_ptr_array_new ();
+	image->remapped_tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 
 	/*g_print ("string heap create for image %p (%s)\n", image, module_name);*/
 	string_heap_init (&image->sheap);
