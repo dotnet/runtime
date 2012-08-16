@@ -5180,6 +5180,7 @@ mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
 	release_hashtable (&image->token_fixups);
 	release_hashtable (&image->handleref_managed);
 	release_hashtable (&image->tokens);
+	release_hashtable (&image->remapped_tokens);
 	release_hashtable (&image->generic_def_objects);
 	release_hashtable (&image->methodspec);
 }
