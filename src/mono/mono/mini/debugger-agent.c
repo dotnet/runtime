@@ -1097,7 +1097,7 @@ set_keepalive (void)
 	struct timeval tv;
 	int result;
 
-	if (!agent_config.keepalive)
+	if (!agent_config.keepalive || !conn_fd)
 		return;
 
 	tv.tv_sec = agent_config.keepalive / 1000;
