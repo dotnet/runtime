@@ -3285,10 +3285,18 @@ fi
     fi
 
 	default_profile=net_2_0
-    AM_COND_IF(INSTALL_4_0, default_profile=net_4_0)
-    AM_COND_IF(INSTALL_MONODROID, default_profile=monodroid)
-    AM_COND_IF(INSTALL_MONOTOUCH, default_profile=monotouch)
-    AM_COND_IF(INSTALL_4_5, default_profile=net_4_5)
+    if test -z "$INSTALL_4_0_TRUE"; then :
+  		default_profile=net_4_0
+    fi
+    if test -z "$INSTALL_MONODROID_TRUE"; then :
+  		default_profile=monodroid
+    fi
+    if test -z "$INSTALL_MONOTOUCH_TRUE"; then :
+  		default_profile=monotouch
+    fi
+    if test -z "$INSTALL_4_5_TRUE"; then :
+  		default_profile=net_4_5
+    fi
     
     echo "DEFAULT_PROFILE = $default_profile" >> $srcdir/$mcsdir/build/config.make
     
