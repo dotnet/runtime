@@ -2771,13 +2771,15 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
 	guint32 *table;
-	int nmethods = amodule->info.nmethods;
+	int nmethods;
 	gint32 *code_offsets;
 	int offsets_len, i;
 	gboolean async;
 
 	if (!amodule)
 		return NULL;
+
+	nmethods = amodule->info.nmethods;
 
 	if (domain != mono_get_root_domain ())
 		/* FIXME: */
