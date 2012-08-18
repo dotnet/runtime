@@ -2252,7 +2252,6 @@ cominterop_ccw_addref (MonoCCWInterface* ccwe)
 	MonoCCW* ccw = ccwe->ccw;
 	g_assert (ccw);
 	g_assert (ccw->gc_handle);
-	g_assert (ccw->ref_count >= 0);
 	ref_count = InterlockedIncrement ((gint32*)&ccw->ref_count);
 	if (ref_count == 1) {
 		guint32 oldhandle = ccw->gc_handle;
