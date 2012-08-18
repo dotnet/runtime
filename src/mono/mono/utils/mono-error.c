@@ -430,9 +430,10 @@ mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char
 	mono_error_prepare (error);
 
 	error->error_code = MONO_ERROR_NOT_VERIFIABLE;
-	mono_error_set_class (oerror, method->klass);
-	if (method)
+	if (method) {
+		mono_error_set_class (oerror, method->klass);
 		mono_error_set_member_name (oerror, mono_method_full_name (method, 1));
+	}
 
 	set_error_message ();
 }
