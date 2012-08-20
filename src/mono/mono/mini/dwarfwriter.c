@@ -723,6 +723,28 @@ emit_line_number_info_begin (MonoDwarfWriter *w)
 	emit_label (w, ".Ldebug_line_end");
 }
 
+static char *
+escape_path (char *name)
+{
+	if (strchr (name, '\\')) {
+		char *s = g_malloc (strlen (name) * 2);
+		int len, i, j;
+
+		len = strlen (name);
+		j = 0;
+		for (i = 0; i < len; ++i) {
+			if (name [i] == '\\') {
+				s [j ++] = '\\';
+				s [j ++] = '\\';
+			} else {
+				s [j ++] = name [i];
+			}
+		}
+		return s;
+	}
+	return name;
+}
+
 static void
 emit_all_line_number_info (MonoDwarfWriter *w)
 {
@@ -810,7 +832,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	for (i = 0; i < w->line_number_dir_index; ++i) {
 		char *dir = g_hash_table_lookup (index_to_dir, GUINT_TO_POINTER (i + 1));
 
-		emit_string (w, dir);
+		emit_string (w, escape_path (dir));
 	}
 	/* End of Includes */
 	emit_byte (w, 0);
@@ -831,7 +853,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 		if (basename)
 			emit_string (w, basename);
 		else
-			emit_string (w, name);
+			emit_string (w, escape_path (name));
 		emit_uleb128 (w, dir_index);
 		emit_byte (w, 0);
 		emit_byte (w, 0);
