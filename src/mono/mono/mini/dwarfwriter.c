@@ -435,6 +435,7 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 #define ABBREV_PARAM_LOCLIST 15
 #define ABBREV_INHERITANCE 16
 #define ABBREV_STRUCT_TYPE_NOCHILDREN 17
+#define ABBREV_TRAMP_SUBPROGRAM 18
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -452,6 +453,13 @@ static int subprogram_attr [] = {
     DW_AT_low_pc       , DW_FORM_addr,
     DW_AT_high_pc      , DW_FORM_addr,
 	DW_AT_frame_base   , DW_FORM_block1
+};
+
+static int tramp_subprogram_attr [] = {
+	DW_AT_name         , DW_FORM_string,
+	DW_AT_description  , DW_FORM_string,
+    DW_AT_low_pc       , DW_FORM_addr,
+    DW_AT_high_pc      , DW_FORM_addr,
 };
 
 static int param_attr [] = {
@@ -937,6 +945,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 					   reference_type_attr, G_N_ELEMENTS (reference_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_INHERITANCE, DW_TAG_inheritance, FALSE,
 					   inheritance_attr, G_N_ELEMENTS (inheritance_attr));
+	emit_dwarf_abbrev (w, ABBREV_TRAMP_SUBPROGRAM, DW_TAG_subprogram, FALSE,
+					   tramp_subprogram_attr, G_N_ELEMENTS (tramp_subprogram_attr));
 	emit_byte (w, 0);
 
 	emit_section_change (w, ".debug_info", 0);
@@ -2067,14 +2077,10 @@ mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_name, c
 	emit_section_change (w, ".debug_info", 0);
 
 	/* Subprogram */
-	emit_uleb128 (w, ABBREV_SUBPROGRAM);
+	emit_uleb128 (w, ABBREV_TRAMP_SUBPROGRAM);
 	emit_string (w, tramp_name);
 	emit_pointer_value (w, code);
 	emit_pointer_value (w, code + code_size);
-	/* frame_base */
-	emit_byte (w, 2);
-	emit_byte (w, DW_OP_breg6);
-	emit_byte (w, 16);
 
 	/* Subprogram end */
 	emit_uleb128 (w, 0x0);
