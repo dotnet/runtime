@@ -11995,6 +11995,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
+	WrapperInfo *info;
 	int i;
 
 	mb = mono_mb_new_no_dup_name (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
@@ -12017,6 +12018,10 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	mb->skip_visibility = TRUE;
 
 	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+
+	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER);
+	info->d.generic_array_helper.method = method;
+	mono_marshal_set_wrapper_info (res, info);
 
 	mono_mb_free (mb);
 
