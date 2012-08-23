@@ -1805,6 +1805,7 @@ void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg
 void      mono_print_code                   (MonoCompile *cfg, const char *msg) MONO_INTERNAL;
 void      mono_print_method_from_ip         (void *ip);
 char     *mono_pmip                         (void *ip);
+gboolean  mono_debug_count                  (void) MONO_INTERNAL;
 const char* mono_inst_name                  (int op);
 void      mono_inst_set_src_registers       (MonoInst *ins, int *regs) MONO_INTERNAL;
 int       mono_op_to_op_imm                 (int opcode) MONO_INTERNAL;

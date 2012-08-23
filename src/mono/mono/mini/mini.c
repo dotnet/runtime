@@ -601,6 +601,35 @@ mono_tramp_info_free (MonoTrampInfo *info)
 	g_free (info);
 }
 
+G_GNUC_UNUSED static void
+break_count (void)
+{
+}
+
+/*
+ * Runtime debugging tool, use if (debug_count ()) <x> else <y> to do <x> the first COUNT times, then do <y> afterwards.
+ * Set a breakpoint in break_count () to break the last time <x> is done.
+ */
+G_GNUC_UNUSED gboolean
+mono_debug_count (void)
+{
+	static int count = 0;
+	count ++;
+
+	if (!getenv ("COUNT"))
+		return TRUE;
+
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
+
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 #define MONO_INIT_VARINFO(vi,id) do { \
 	(vi)->range.first_use.pos.bid = 0xffff; \
 	(vi)->reg = -1; \
