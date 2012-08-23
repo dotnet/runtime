@@ -4599,6 +4599,8 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 		return TRUE;
 	if (mono_generic_param_num (p1) != mono_generic_param_num (p2))
 		return FALSE;
+	if (p1->serial != p2->serial)
+		return FALSE;
 
 	/*
 	 * We have to compare the image as well because if we didn't,

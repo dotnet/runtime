@@ -536,6 +536,8 @@ struct _MonoDynamicGenericClass {
 struct _MonoGenericParam {
 	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
 	guint16 num;
+	/* For internal runtime use, used to make different versions of the same param */
+	guint16 serial;
 	/* 
 	 * If owner is NULL, or owner is 'owned' by this gparam,
 	 * then this is the image whose mempool this struct was allocated from.

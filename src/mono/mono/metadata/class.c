@@ -5748,7 +5748,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 static MonoClass *
 get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar)
 {
-	int n = mono_generic_param_num (param);
+	int n = mono_generic_param_num (param) | ((guint32)param->serial << 16);
 	MonoImage *image = param->image;
 	GHashTable *ht;
 
@@ -5771,7 +5771,7 @@ get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar)
 static void
 set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *klass)
 {
-	int n = mono_generic_param_num (param);
+	int n = mono_generic_param_num (param) | ((guint32)param->serial << 16);
 	MonoImage *image = param->image;
 	GHashTable *ht;
 
