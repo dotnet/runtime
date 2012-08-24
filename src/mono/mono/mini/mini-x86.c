@@ -582,7 +582,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
  * FIXME: The metadata calls might not be signal safe.
  */
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int len, k, args_size = 0;
 	int size, pad;
@@ -595,7 +595,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	cinfo = (CallInfo*)g_newa (guint8*, len);
 	memset (cinfo, 0, len);
 
-	cinfo = get_call_info_internal (NULL, cinfo, csig);
+	cinfo = get_call_info_internal (gsctx, cinfo, csig);
 
 	arg_info [0].offset = offset;
 
@@ -5441,7 +5441,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (CALLCONV_IS_STDCALL (sig)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
+		stack_to_pop = mono_arch_get_argument_info (cfg->generic_sharing_context, sig, sig->param_count, arg_info);
 	} else if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret) && (cinfo->ret.storage == ArgOnStack))
 		stack_to_pop = 4;
 	else

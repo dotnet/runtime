@@ -485,7 +485,7 @@ mono_arch_fregname (int reg) {
 /*------------------------------------------------------------------*/
 
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, 
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, 
 			     int param_count, 
 			     MonoJitArgumentInfo *arg_info)
 {

@@ -1687,7 +1687,7 @@ emit_call(MonoCompile *cfg, unsigned int *code,
 /*------------------------------------------------------------------*/
 
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig,
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig,
                              int param_count,
                              MonoJitArgumentInfo *arg_info)
 {

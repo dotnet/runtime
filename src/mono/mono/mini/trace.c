@@ -392,7 +392,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-	mono_arch_get_argument_info (sig, sig->param_count, arg_info);
+	mono_arch_get_argument_info (NULL, sig, sig->param_count, arg_info);
 
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)) {
 		g_assert (!mono_method_signature (method)->ret->byref);
