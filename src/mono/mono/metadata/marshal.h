@@ -105,6 +105,8 @@ typedef enum {
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
 	/* Subtypes of MONO_WRAPPER_UNKNOWN */
 	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER,
+	WRAPPER_SUBTYPE_GSHAREDVT_IN,
+	WRAPPER_SUBTYPE_GSHAREDVT_OUT,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_MANAGED */
 	WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER
 } WrapperSubtype;
@@ -372,6 +374,12 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface,
 
 MonoMethod *
 mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method) MONO_INTERNAL;
+
+MonoMethod*
+mono_marshal_get_gsharedvt_in_wrapper (void) MONO_INTERNAL;
+
+MonoMethod*
+mono_marshal_get_gsharedvt_out_wrapper (void) MONO_INTERNAL;
 
 void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method) MONO_INTERNAL;
