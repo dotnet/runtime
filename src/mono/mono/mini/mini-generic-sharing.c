@@ -715,6 +715,8 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
 	MonoRuntimeGenericContextTemplate *parent_template, *template;
 	guint32 i;
 
+	class = get_shared_class (class);
+
 	mono_loader_lock ();
 	template = class_lookup_rgctx_template (class);
 	mono_loader_unlock ();
@@ -729,51 +731,24 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
 	mono_loader_lock ();
 
 	if (class->parent) {
-		if (class->parent->generic_class) {
-			guint32 num_entries;
-			int max_argc, type_argc;
+		guint32 num_entries;
+		int max_argc, type_argc;
 
-			parent_template = mono_class_get_runtime_generic_context_template
-				(class->parent->generic_class->container_class);
+		parent_template = mono_class_get_runtime_generic_context_template (class->parent);
+		max_argc = template_get_max_argc (parent_template);
 
-			max_argc = template_get_max_argc (parent_template);
+		for (type_argc = 0; type_argc <= max_argc; ++type_argc) {
+			num_entries = rgctx_template_num_infos (parent_template, type_argc);
 
-			for (type_argc = 0; type_argc <= max_argc; ++type_argc) {
-				num_entries = rgctx_template_num_infos (parent_template, type_argc);
+			/* FIXME: quadratic! */
+			for (i = 0; i < num_entries; ++i) {
+				MonoRuntimeGenericContextInfoTemplate oti;
 
-				/* FIXME: quadratic! */
-				for (i = 0; i < num_entries; ++i) {
-					MonoRuntimeGenericContextInfoTemplate oti;
-
-					oti = class_get_rgctx_template_oti (class->parent, type_argc, i, FALSE, FALSE, NULL);
-					if (oti.data && oti.data != MONO_RGCTX_SLOT_USED_MARKER) {
-						rgctx_template_set_slot (class->image, template, type_argc, i,
-							oti.data, oti.info_type);
-					}
+				oti = class_get_rgctx_template_oti (class->parent, type_argc, i, FALSE, FALSE, NULL);
+				if (oti.data && oti.data != MONO_RGCTX_SLOT_USED_MARKER) {
+					rgctx_template_set_slot (class->image, template, type_argc, i,
+											 oti.data, oti.info_type);
 				}
-			}
-		} else {
-			guint32 num_entries;
-			int max_argc, type_argc;
-
-			parent_template = mono_class_get_runtime_generic_context_template (class->parent);
-
-			max_argc = template_get_max_argc (parent_template);
-
-			for (type_argc = 0; type_argc <= max_argc; ++type_argc) {
-				num_entries = rgctx_template_num_infos (parent_template, type_argc);
-
-				/* FIXME: quadratic! */
-				for (i = 0; i < num_entries; ++i) {
-					MonoRuntimeGenericContextInfoTemplate oti;
-
-					oti = class_get_rgctx_template_oti (class->parent, type_argc, i, FALSE, FALSE, NULL);
-					if (oti.data && oti.data != MONO_RGCTX_SLOT_USED_MARKER) {
-						rgctx_template_set_slot (class->image, template, type_argc, i,
-							oti.data, oti.info_type);
-					}
-				}
-
 			}
 		}
 	}
@@ -1109,6 +1084,8 @@ lookup_or_register_info (MonoClass *class, int type_argc, gpointer data, MonoRgc
 		mono_class_get_runtime_generic_context_template (class);
 	MonoRuntimeGenericContextInfoTemplate *oti_list, *oti;
 	int i;
+
+	class = get_shared_class (class);
 
 	mono_loader_lock ();
 
