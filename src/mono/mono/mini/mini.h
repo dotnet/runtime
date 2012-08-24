@@ -1031,15 +1031,15 @@ typedef enum {
 	MONO_RGCTX_INFO_CAST_CACHE
 } MonoRgctxInfoType;
 
-typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
+typedef struct _MonoRuntimeGenericContextInfoTemplate {
 	MonoRgctxInfoType info_type;
 	gpointer data;
-	struct _MonoRuntimeGenericContextOtherInfoTemplate *next;
-} MonoRuntimeGenericContextOtherInfoTemplate;
+	struct _MonoRuntimeGenericContextInfoTemplate *next;
+} MonoRuntimeGenericContextInfoTemplate;
 
 typedef struct {
 	MonoClass *next_subclass;
-	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
+	MonoRuntimeGenericContextInfoTemplate *infos;
 	GSList *method_templates;
 } MonoRuntimeGenericContextTemplate;
 
@@ -2326,7 +2326,7 @@ int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
 
 guint32
-mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
+mono_method_lookup_or_register_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
 	MonoRgctxInfoType info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
 
 MonoGenericContext
