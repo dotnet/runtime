@@ -4643,6 +4643,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	if (jinfo->has_generic_jit_info) {
 		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (jinfo);
+		MonoGenericSharingContext* gsctx = gi->generic_sharing_context;
 		guint8 *p1;
 
 		p1 = p;
@@ -4674,6 +4675,38 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * when using generic sharing.
 		 */
 		encode_method_ref (acfg, jinfo->method, p, &p);
+
+		if (gsctx && (gsctx->var_is_vt || gsctx->mvar_is_vt)) {
+			MonoMethodInflated *inflated;
+			MonoGenericContext *context;
+			MonoGenericInst *inst;
+
+			g_assert (jinfo->method->is_inflated);
+			inflated = (MonoMethodInflated*)jinfo->method;
+			context = &inflated->context;
+
+			encode_value (1, p, &p);
+			if (context->class_inst) {
+				inst = context->class_inst;
+
+				encode_value (inst->type_argc, p, &p);
+				for (i = 0; i < inst->type_argc; ++i)
+					encode_value (gsctx->var_is_vt [i], p, &p);
+			} else {
+				encode_value (0, p, &p);
+			}
+			if (context->method_inst) {
+				inst = context->method_inst;
+
+				encode_value (inst->type_argc, p, &p);
+				for (i = 0; i < inst->type_argc; ++i)
+					encode_value (gsctx->mvar_is_vt [i], p, &p);
+			} else {
+				encode_value (0, p, &p);
+			}
+		} else {
+			encode_value (0, p, &p);
+		}
 	}
 
 	if (jinfo->has_try_block_holes) {

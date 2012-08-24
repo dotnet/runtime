@@ -91,11 +91,16 @@ typedef struct {
 } MonoJitExceptionInfo;
 
 /*
- * Will contain information on the generic type arguments in the
- * future.  For now, all arguments are always reference types.
+ * Contains information about the type arguments for generic shared methods.
  */
 typedef struct {
-	int dummy;
+	/*
+	 * If not NULL, determines whenever the class type arguments of the gshared method are references or vtypes.
+	 * The array length is equal to class_inst->type_argv.
+	 */
+	gboolean *var_is_vt;
+	/* Same for method type parameters */
+	gboolean *mvar_is_vt;
 } MonoGenericSharingContext;
 
 /* Simplified DWARF location list entry */
