@@ -515,7 +515,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
-	case MONO_RGCTX_INFO_CAST_CACHE: {
+	case MONO_RGCTX_INFO_CAST_CACHE:
+	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+	case MONO_RGCTX_INFO_VALUE_SIZE: {
 		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
 			data, context, &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
@@ -551,7 +553,8 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		return inflated_method;
 	}
 
-	case MONO_RGCTX_INFO_CLASS_FIELD: {
+	case MONO_RGCTX_INFO_CLASS_FIELD:
+	case MONO_RGCTX_INFO_FIELD_OFFSET: {
 		MonoClassField *field = data;
 		MonoType *inflated_type = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
@@ -842,6 +845,10 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 		cache_data [1] = (gpointer)class;
 		return cache_data;
 	}
+	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+		return GUINT_TO_POINTER (mono_class_array_element_size (class));
+	case MONO_RGCTX_INFO_VALUE_SIZE:
+		return GUINT_TO_POINTER (mono_class_value_size (class, NULL));
 	default:
 		g_assert_not_reached ();
 	}
@@ -876,7 +883,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
-	case MONO_RGCTX_INFO_CAST_CACHE: {
+	case MONO_RGCTX_INFO_CAST_CACHE:
+	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+	case MONO_RGCTX_INFO_VALUE_SIZE: {
 		MonoClass *arg_class = mono_class_from_mono_type (data);
 
 		free_inflated_info (oti->info_type, data);
@@ -907,6 +916,14 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		return mono_domain_alloc0 (domain, sizeof (gpointer));
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 		return data;
+	case MONO_RGCTX_INFO_FIELD_OFFSET: {
+		MonoClassField *field = data;
+
+		if (field->parent->valuetype && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			return GUINT_TO_POINTER (field->offset - sizeof (MonoObject));
+		else
+			return GUINT_TO_POINTER (field->offset);
+	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = data;
 		MonoVTable *vtable;
@@ -984,6 +1001,9 @@ info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK: return "REMOTING_INVOKE_WITH_CHECK";
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE: return "METHOD_DELEGATE_CODE";
 	case MONO_RGCTX_INFO_CAST_CACHE: return "CAST_CACHE";
+	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE: return "ARRAY_ELEMENT_SIZE";
+	case MONO_RGCTX_INFO_VALUE_SIZE: return "VALUE_SIZE";
+	case MONO_RGCTX_INFO_FIELD_OFFSET: return "FIELD_OFFSET";
 	default:
 		return "<>";
 	}
@@ -1057,10 +1077,13 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
 	case MONO_RGCTX_INFO_CAST_CACHE:
+	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+	case MONO_RGCTX_INFO_VALUE_SIZE:
 		return mono_class_from_mono_type (data1) == mono_class_from_mono_type (data2);
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_CLASS_FIELD:
+	case MONO_RGCTX_INFO_FIELD_OFFSET:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
 	case MONO_RGCTX_INFO_METHOD_CONTEXT:
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
