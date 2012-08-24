@@ -138,7 +138,7 @@ extern char *nacl_mono_path;
 	MONO_OPT_SIMD |	\
 	MONO_OPT_AOT)
 
-#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE)
+#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
 static guint32
 parse_optimizations (const char* p)
