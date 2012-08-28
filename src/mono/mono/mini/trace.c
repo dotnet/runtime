@@ -390,6 +390,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 	MonoJitArgumentInfo *arg_info;
 	MonoMethodSignature *sig;
 	char *fname;
+	MonoGenericSharingContext *gsctx = NULL;
 
 	if (!trace_spec.enabled)
 		return;
@@ -408,7 +409,20 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-	mono_arch_get_argument_info (NULL, sig, sig->param_count, arg_info);
+	if (method->is_inflated) {
+		/* FIXME: Might be better to pass the ji itself */
+		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), __builtin_return_address (0), NULL);
+		if (ji) {
+			gsctx = mono_jit_info_get_generic_sharing_context (ji);
+			if (gsctx && (gsctx->var_is_vt || gsctx->mvar_is_vt)) {
+				/* Needs a ctx to get precise method */
+				printf (") <gsharedvt>\n");
+				return;
+			}
+		}
+	}
+
+	mono_arch_get_argument_info (gsctx, sig, sig->param_count, arg_info);
 
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)) {
 		g_assert (!mono_method_signature (method)->ret->byref);
@@ -541,6 +555,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 	MonoType *type;
 	char *fname;
 	va_list ap;
+	MonoGenericSharingContext *gsctx;
 
 	if (!trace_spec.enabled)
 		return;
@@ -551,6 +566,19 @@ mono_trace_leave_method (MonoMethod *method, ...)
 	indent (-1);
 	printf ("LEAVE: %s", fname);
 	g_free (fname);
+
+	if (method->is_inflated) {
+		/* FIXME: Might be better to pass the ji itself */
+		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), __builtin_return_address (0), NULL);
+		if (ji) {
+			gsctx = mono_jit_info_get_generic_sharing_context (ji);
+			if (gsctx && (gsctx->var_is_vt || gsctx->mvar_is_vt)) {
+				/* Needs a ctx to get precise method */
+				printf (") <gsharedvt>\n");
+				return;
+			}
+		}
+	}
 
 	type = mono_method_signature (method)->ret;
 
