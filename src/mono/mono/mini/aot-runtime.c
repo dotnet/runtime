@@ -459,7 +459,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				class_def = decode_klass_ref (module, p, &p);
 				if (!class_def)
 					return NULL;
- 
+
 				container = class_def->generic_container;
 			}
 		} else {
@@ -469,7 +469,6 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		// FIXME: Memory management
 		t = g_new0 (MonoType, 1);
 		t->type = type;
-
 		if (container) {
 			t->data.generic_param = mono_generic_container_get_param (container, num);
 			g_assert (serial == 0);
@@ -899,6 +898,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_synchronized_inner_wrapper (m);
+			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
+				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
+			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
+				ref->method = mono_marshal_get_gsharedvt_out_wrapper ();
 			} else {
 				if (subtype == WRAPPER_SUBTYPE_FAST_MONITOR_ENTER)
 					desc = mono_method_desc_new ("Monitor:Enter", FALSE);
@@ -1620,6 +1623,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampolines [MONO_AOT_TRAMP_SPECIFIC] = info->specific_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = info->static_rgctx_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = info->imt_thunks;
+	amodule->trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = info->gsharedvt_arg_trampolines;
 	amodule->thumb_end = info->thumb_end;
 
 #ifdef MONOTOUCH
@@ -3447,9 +3451,10 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 				return code;
 		}
 
-		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE, FALSE)) {
-			/* Partial sharing */
-			method_index = find_extra_method (mini_get_shared_method (method), &amodule);
+		if (method_index == 0xffffff && method->is_inflated && mini_is_gsharedvt_sharable_method (method)) {
+			/* gsharedvt */
+			/* Use the all-vt shared method since this is what was AOTed */
+			method_index = find_extra_method (mini_get_shared_method_full (method, TRUE, FALSE), &amodule);
 		}
 
 		if (method_index == 0xffffff) {
@@ -4211,7 +4216,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index;
 
-	if (method->is_inflated && !mono_method_is_generic_sharable_impl (method, FALSE)) {
+	if (method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_extra_method (method, &amodule);
 		g_assert (method_index != 0xffffff);
 	} else {
@@ -4307,6 +4312,22 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	}
 
 	return code;
+}
+
+gpointer
+mono_aot_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
+{
+	MonoAotModule *amodule;
+	guint8 *code;
+	guint32 got_offset;
+
+	code = get_numerous_trampoline (MONO_AOT_TRAMP_GSHAREDVT_ARG, 2, &amodule, &got_offset, NULL);
+
+	amodule->got [got_offset] = arg;
+	amodule->got [got_offset + 1] = addr; 
+
+	/* The caller expects an ftnptr */
+	return mono_create_ftnptr (mono_domain_get (), code);
 }
  
 /*

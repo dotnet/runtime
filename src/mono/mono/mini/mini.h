@@ -127,7 +127,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 84
+#define MONO_AOT_FILE_VERSION 85
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -173,7 +173,8 @@ typedef enum {
 	MONO_AOT_TRAMP_SPECIFIC = 0,
 	MONO_AOT_TRAMP_STATIC_RGCTX = 1,
 	MONO_AOT_TRAMP_IMT_THUNK = 2,
-	MONO_AOT_TRAMP_NUM = 3
+	MONO_AOT_TRAMP_GSHAREDVT_ARG = 3,
+	MONO_AOT_TRAMP_NUM = 4
 } MonoAotTrampoline;
 
 typedef enum {
@@ -231,6 +232,7 @@ typedef struct MonoAotFileInfo
 	gpointer specific_trampolines;
 	gpointer static_rgctx_trampolines;
 	gpointer imt_thunks;
+	gpointer gsharedvt_arg_trampolines;
 	/*
 	 * The end of LLVM generated thumb code, or NULL.
 	 */
@@ -1949,6 +1951,7 @@ gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
 gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr) MONO_INTERNAL;
 gpointer mono_aot_get_imt_thunk             (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp) MONO_INTERNAL;
+gpointer mono_aot_get_gsharedvt_arg_trampoline(gpointer arg, gpointer addr) MONO_INTERNAL;
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;

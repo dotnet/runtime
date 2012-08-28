@@ -362,8 +362,10 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		}
 		addr = tramp_addr;
 
-		g_assert (!mono_aot_only);
-		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+		if (mono_aot_only)
+			addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
+		else
+			addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
 
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}

@@ -1021,8 +1021,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			}
 			addr = tramp_addr;
 
-			g_assert (!mono_aot_only);
-			addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+			if (mono_aot_only)
+				addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
+			else
+				addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
 
 #if 0
 			if (virtual)
@@ -1058,8 +1060,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				}
 				addr = tramp_addr;
 
-				g_assert (!mono_aot_only);
-				addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+				if (mono_aot_only)
+					addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
+				else
+					addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
 
 				//printf ("IN-RGCTX: %s\n", mono_method_full_name (method, TRUE));
 			}
