@@ -422,7 +422,8 @@ test_sources = 			\
 	generics-variant-types.il\
 	basic-simd.cs \
 	aot-tests.cs \
-	gc-test.cs
+	gc-test.cs \
+	gshared.cs
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
@@ -668,6 +669,7 @@ gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
+GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)
 	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
@@ -678,7 +680,10 @@ aotcheck: mono $(regtests)
 llvmaotcheck:
 	$(MAKE) aotcheck LLVM=1
 
-fullaot_regtests = $(regtests) aot-tests.exe
+gsharedvtcheck:
+	$(MAKE) fullaotcheck GSHAREDVT=1
+
+fullaot_regtests = $(regtests) aot-tests.exe $(if $(GSHAREDVT),gshared.exe)
 
 # This currently only works on amd64/arm
 fullaotcheck: mono $(fullaot_regtests)
@@ -686,7 +691,7 @@ fullaotcheck: mono $(fullaot_regtests)
 	mkdir fullaot-tmp
 	cp $(CLASS)/mscorlib.dll $(CLASS)/System.Core.dll $(CLASS)/System.dll $(CLASS)/Mono.Posix.dll $(CLASS)/System.Configuration.dll $(CLASS)/System.Security.dll $(CLASS)/System.Xml.dll $(CLASS)/Mono.Security.dll $(CLASS)/Mono.Simd.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
 	cp $(fullaot_regtests) fullaot-tmp/
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) --aot=full fullaot-tmp/* || exit 1
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot=full fullaot-tmp/* || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
 	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i --exclude '!FULLAOT' || exit 1; done
 
