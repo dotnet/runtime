@@ -1048,7 +1048,11 @@ typedef enum {
 	MONO_RGCTX_INFO_CAST_CACHE,
 	MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE,
 	MONO_RGCTX_INFO_VALUE_SIZE,
-	MONO_RGCTX_INFO_FIELD_OFFSET
+	MONO_RGCTX_INFO_FIELD_OFFSET,
+	/* Either the code for a gsharedvt method, or the address for a gsharedvt-out trampoline for the method */
+	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE,
+	/* Same for virtual calls */
+	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -1279,6 +1283,10 @@ typedef struct {
 	guint32 next_vreg;
 
 	MonoGenericSharingContext *generic_sharing_context;
+
+	MonoGenericSharingContext gsctx;
+
+	gboolean gsharedvt;
 
 	/* For native-to-managed wrappers, the saved old domain */
 	MonoInst *orig_domain_var;
@@ -2024,6 +2032,7 @@ gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (int slot_index) MONO_INTERNAL;
 char*             mono_get_generic_trampoline_name (MonoTrampolineType tramp_type) MONO_INTERNAL;
 char*             mono_get_rgctx_fetch_trampoline_name (int slot) MONO_INTERNAL;
+gpointer          mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, MonoJitInfo *caller_ji, gboolean add_static_rgctx_tramp) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;
@@ -2037,6 +2046,8 @@ MonoInst         *mono_branch_optimize_exception_target (MonoCompile *cfg, MonoB
 void              mono_remove_critical_edges (MonoCompile *cfg) MONO_INTERNAL;
 gboolean          mono_is_regsize_var (MonoType *t) MONO_INTERNAL;
 void              mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align) MONO_INTERNAL;
+void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native) MONO_INTERNAL;
+void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass) MONO_INTERNAL;
 CompRelation      mono_opcode_to_cond (int opcode) MONO_LLVM_INTERNAL;
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode) MONO_INTERNAL;
 CompRelation      mono_negate_cond (CompRelation cond) MONO_INTERNAL;
@@ -2125,6 +2136,9 @@ guint8*   mono_arch_emit_load_got_addr          (guint8 *start, guint8 *code, Mo
 guint8*   mono_arch_emit_load_aotconst          (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target) MONO_INTERNAL;
 GSList*   mono_arch_get_cie_program             (void) MONO_INTERNAL;
 void      mono_arch_set_target                  (char *mtriple) MONO_INTERNAL;
+gboolean  mono_arch_gsharedvt_sig_supported     (MonoMethodSignature *sig) MONO_INTERNAL;
+gpointer  mono_arch_get_gsharedvt_trampoline    (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
+gpointer  mono_arch_get_gsharedvt_call_info     (gpointer addr, MonoMethod *m, MonoMethod *gsharedvt_method, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gboolean virtual) MONO_INTERNAL;
 
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
@@ -2175,6 +2189,7 @@ void     mono_arch_register_lowlevel_calls      (void) MONO_INTERNAL;
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr) MONO_INTERNAL;
 gpointer mono_arch_get_static_rgctx_trampoline  (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr) MONO_INTERNAL;
 gpointer  mono_arch_get_llvm_imt_trampoline     (MonoDomain *domain, MonoMethod *method, int vt_offset) MONO_INTERNAL;
+gpointer mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr) MONO_INTERNAL;
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, mgreg_t *regs) MONO_INTERNAL;
@@ -2415,6 +2430,7 @@ MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, Mo
 MonoType* mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
 MonoMethod* mini_get_shared_method (MonoMethod *method) MONO_INTERNAL;
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method) MONO_INTERNAL;
+MonoMethod* mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt) MONO_INTERNAL;
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
 int mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke) MONO_INTERNAL;
@@ -2425,6 +2441,7 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type) MONO_INTERNAL;
 gboolean mini_type_is_reference (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
+gboolean mini_type_is_vtype (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
 gboolean mini_type_var_is_vt (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;

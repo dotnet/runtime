@@ -1138,6 +1138,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					g_assert (ins->klass);
 
 					dest_var = get_vreg_to_inst (cfg, ins->dreg);
+					// FIXME-VT:
 					// FIXME:
 					if (!dest_var)
 						dest_var = mono_compile_create_var_for_vreg (cfg, &ins->klass->byval_arg, OP_LOCAL, ins->dreg);

@@ -367,6 +367,8 @@ mono_print_method_from_ip (void *ip)
 	MonoDomain *domain = mono_domain_get ();
 	MonoDomain *target_domain = mono_domain_get ();
 	FindTrampUserData user_data;
+	MonoGenericSharingContext*gsctx;
+	const char *shared_type;
 	
 	ji = mini_jit_info_table_find (domain, ip, &target_domain);
 	if (!ji) {
@@ -388,7 +390,16 @@ mono_print_method_from_ip (void *ip)
 	method = mono_method_full_name (ji->method, TRUE);
 	source = mono_debug_lookup_source_location (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), target_domain);
 
-	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), method, ji->code_start, (char*)ji->code_start + ji->code_size, target_domain, target_domain->friendly_name);
+	gsctx = mono_jit_info_get_generic_sharing_context (ji);
+	shared_type = "";
+	if (gsctx) {
+		if (gsctx->var_is_vt || gsctx->mvar_is_vt)
+			shared_type = "gsharedvt ";
+		else
+			shared_type = "gshared ";
+	}
+
+	g_print ("IP %p at offset 0x%x of %smethod %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), shared_type, method, ji->code_start, (char*)ji->code_start + ji->code_size, target_domain, target_domain->friendly_name);
 
 	if (source)
 		g_print ("%s:%d\n", source->source_file, source->row);
@@ -862,12 +873,10 @@ handle_enum:
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		/* FIXME: all the arguments must be references for now,
-		 * later look inside cfg and see if the arg num is
-		 * really a reference
-		 */
-		g_assert (cfg->generic_sharing_context);
-		return OP_STORE_MEMBASE_REG;
+		if (mini_type_var_is_vt (cfg, type))
+			return OP_STOREV_MEMBASE;
+		else
+			return OP_STORE_MEMBASE_REG;
 	default:
 		g_error ("unknown type 0x%02x in type_to_store_membase", type->type);
 	}
@@ -928,12 +937,11 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		/* FIXME: all the arguments must be references for now,
-		 * later look inside cfg and see if the arg num is
-		 * really a reference
-		 */
 		g_assert (cfg->generic_sharing_context);
-		return OP_LOAD_MEMBASE;
+		if (mini_type_var_is_vt (cfg, type))
+			return OP_LOADV_MEMBASE;
+		else
+			return OP_LOAD_MEMBASE;
 	default:
 		g_error ("unknown type 0x%02x in type_to_load_membase", type->type);
 	}
@@ -944,12 +952,12 @@ static guint
 mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 {
 	if (cfg->generic_sharing_context && !type->byref) {
-		/* FIXME: all the arguments must be references for now,
-		 * later look inside cfg and see if the arg num is
-		 * really a reference
-		 */
-		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)
-			return CEE_LDIND_REF;
+		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
+			if (mini_type_var_is_vt (cfg, type))
+				return CEE_LDOBJ;
+			else
+				return CEE_LDIND_REF;
+		}
 	}
 	return mono_type_to_ldind (type);
 }
@@ -958,12 +966,12 @@ guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
 	if (cfg->generic_sharing_context && !type->byref) {
-		/* FIXME: all the arguments must be references for now,
-		 * later look inside cfg and see if the arg num is
-		 * really a reference
-		 */
-		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)
-			return CEE_STIND_REF;
+		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
+			if (mini_type_var_is_vt (cfg, type))
+				return CEE_STOBJ;
+			else
+				return CEE_STIND_REF;
+		}
 	}
 	return mono_type_to_stind (type);
 }
@@ -1152,6 +1160,9 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	/* if set to 1 the variable is native */
 	inst->backend.is_pinvoke = 0;
 	inst->dreg = vreg;
+
+	if (inst->klass->exception_type)
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 	if (cfg->compute_gc_maps) {
 		if (type->byref) {
@@ -1746,18 +1757,22 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		vmv = current;
 		inst = cfg->varinfo [vmv->idx];
 
+		t = mono_type_get_underlying_type (inst->inst_vtype);
+		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (cfg, t))
+			t = mini_get_gsharedvt_alloc_type_for_type (cfg, t);
+
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
-		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF) {
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
+			size = mono_class_native_size (mono_class_from_mono_type (t), &align);
 		}
 		else {
 			int ialign;
 
-			size = mono_type_size (inst->inst_vtype, &ialign);
+			size = mono_type_size (t, &ialign);
 			align = ialign;
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (inst->inst_vtype)))
+			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (t)))
 				align = 16;
 		}
 
@@ -1765,7 +1780,6 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
-		t = mono_type_get_underlying_type (inst->inst_vtype);
 		switch (t->type) {
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (t)) {
@@ -2039,17 +2053,24 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		vmv = l->data;
 		inst = cfg->varinfo [vmv->idx];
 
+		t = mono_type_get_underlying_type (inst->inst_vtype);
+		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (cfg, t))
+			t = mini_get_gsharedvt_alloc_type_for_type (cfg, t);
+
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
-		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF) {
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
+			size = mono_class_native_size (mono_class_from_mono_type (t), &align);
 		} else {
 			int ialign;
 
-			size = mono_type_size (inst->inst_vtype, &ialign);
+			size = mono_type_size (t, &ialign);
 			align = ialign;
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (inst->inst_vtype)))
+			if (mono_class_from_mono_type (t)->exception_type)
+				mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
+
+			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (t)))
 				align = 16;
 		}
 
@@ -2057,7 +2078,6 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
-		t = mono_type_get_underlying_type (inst->inst_vtype);
 		if (t->byref) {
 			slot_info = &scalar_stack_slots [MONO_TYPE_I];
 		} else {
@@ -2110,9 +2130,13 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 				if (cfg->disable_reuse_ref_stack_slots)
 					reuse_slot = FALSE;
 				break;
-
+			case MONO_TYPE_VAR:
+			case MONO_TYPE_MVAR:
+				slot_info = &scalar_stack_slots [t->type];
+				break;
 			default:
 				slot_info = &scalar_stack_slots [t->type];
+				break;
 			}
 		}
 
@@ -3896,6 +3920,25 @@ mono_handle_out_of_line_bblock (MonoCompile *cfg)
 }
 
 static MonoJitInfo*
+create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
+{
+	MonoDomain *domain = mono_get_root_domain ();
+	MonoJitInfo *jinfo;
+	guint8 *uw_info;
+	guint32 info_len;
+
+	uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
+
+	jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
+	jinfo->method = wrapper;
+	jinfo->code_start = info->code;
+	jinfo->code_size = info->code_size;
+	jinfo->used_regs = mono_cache_unwind_info (uw_info, info_len);
+
+	return jinfo;
+}
+
+static MonoJitInfo*
 create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 {
 	GSList *tmp;
@@ -3985,7 +4028,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);
 
-		gi->generic_sharing_context = cfg->generic_sharing_context;
+		if (cfg->method->dynamic)
+			gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
+		else
+			gi->generic_sharing_context = mono_domain_alloc0 (cfg->domain, sizeof (MonoGenericSharingContext));
+		memcpy (gi->generic_sharing_context, cfg->generic_sharing_context, sizeof (MonoGenericSharingContext));
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method_to_compile)->method_inst ||
@@ -4206,18 +4253,75 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 }
 #endif
 
+static MonoType*
+get_gsharedvt_type (MonoType *t)
+{
+	MonoGenericParam *par = t->data.generic_param;
+	MonoType *res;
+
+	/* 
+	 * Create an anonymous gparam with a different serial so normal gshared and gsharedvt methods have
+	 * a different instantiation.
+	 */
+	g_assert (mono_generic_param_info (par));
+	par = g_memdup (par, sizeof (MonoGenericParamFull));
+	par->owner = NULL;
+	// FIXME:
+	par->image = mono_defaults.corlib;
+	par->serial = 1;
+	res = mono_metadata_type_dup (NULL, t);
+	res->data.generic_param = par;
+
+	return res;
+}
+
+static gboolean
+is_gsharedvt_type (MonoType *t)
+{
+	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->serial == 1;
+}
+
+/* Return whenever METHOD is a gsharedvt method */
+static gboolean
+is_gsharedvt_method (MonoMethod *method)
+{
+	MonoGenericContext *context;
+	MonoGenericInst *inst;
+	int i;
+
+	if (!method->is_inflated)
+		return FALSE;
+	context = mono_method_get_context (method);
+	inst = context->class_inst;
+	if (inst) {
+		for (i = 0; i < inst->type_argc; ++i)
+			if (is_gsharedvt_type (inst->type_argv [i]))
+				return TRUE;
+	}
+	inst = context->method_inst;
+	if (inst) {
+		for (i = 0; i < inst->type_argc; ++i)
+			if (is_gsharedvt_type (inst->type_argv [i]))
+				return TRUE;
+	}
+	return FALSE;
+}
+
 /*
- * mini_get_shared_method:
+ * mini_get_shared_method_full:
  *
  *   Return the method which is actually compiled/registered when doing generic sharing.
+ * If ALL_VT is true, return the shared method belonging to an all-vtype instantiation.
+ * If IS_GSHAREDVT is true, treat METHOD as a gsharedvt method even if it fails some constraints.
  */
 MonoMethod*
-mini_get_shared_method (MonoMethod *method)
+mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt)
 {
 	MonoGenericContext shared_context;
 	MonoMethod *declaring_method, *res;
 	int i;
 	gboolean partial = FALSE;
+	gboolean gsharedvt = FALSE;
 
 	if (method->is_generic || method->klass->generic_container)
 		declaring_method = method;
@@ -4229,11 +4333,14 @@ mini_get_shared_method (MonoMethod *method)
 	else
 		shared_context = declaring_method->klass->generic_container->context;
 
-	/* Handle partial sharing */
-	if (method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE)) {
+	/* Handle gsharedvt/partial sharing */
+	if ((method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE)) ||
+		is_gsharedvt || mini_is_gsharedvt_sharable_method (method)) {
 		MonoGenericContext *context = mono_method_get_context (method);
 		MonoGenericInst *inst;
 		MonoType **type_argv;
+
+		gsharedvt = is_gsharedvt || mini_is_gsharedvt_sharable_method (method);
 
 		/* 
 		 * Create the shared context by replacing the ref type arguments with
@@ -4244,8 +4351,10 @@ mini_get_shared_method (MonoMethod *method)
 		if (inst) {
 			type_argv = g_new0 (MonoType*, inst->type_argc);
 			for (i = 0; i < inst->type_argc; ++i) {
-				if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+				if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR))
 					type_argv [i] = shared_context.class_inst->type_argv [i];
+				else if (gsharedvt)
+					type_argv [i] = get_gsharedvt_type (shared_context.class_inst->type_argv [i]);
 				else
 					type_argv [i] = inst->type_argv [i];
 			}
@@ -4258,8 +4367,10 @@ mini_get_shared_method (MonoMethod *method)
 		if (inst) {
 			type_argv = g_new0 (MonoType*, inst->type_argc);
 			for (i = 0; i < inst->type_argc; ++i) {
-				if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+				if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR))
 					type_argv [i] = shared_context.method_inst->type_argv [i];
+				else if (gsharedvt)
+					type_argv [i] = get_gsharedvt_type (shared_context.method_inst->type_argv [i]);
 				else
 					type_argv [i] = inst->type_argv [i];
 			}
@@ -4275,6 +4386,54 @@ mini_get_shared_method (MonoMethod *method)
 		g_assert (!res->klass->is_inflated);
 	}
 	return res;
+}
+
+MonoMethod*
+mini_get_shared_method (MonoMethod *method)
+{
+	return mini_get_shared_method_full (method, FALSE, FALSE);
+}
+
+static void
+mini_init_gsctx_full (MonoGenericContext *context, MonoGenericSharingContext *gsctx, gboolean all_vt)
+{
+	MonoGenericInst *inst;
+	int i;
+
+	memset (gsctx, 0, sizeof (MonoGenericSharingContext));
+
+	if (context->class_inst) {
+		inst = context->class_inst;
+		gsctx->var_is_vt = g_new0 (gboolean, inst->type_argc);
+
+		for (i = 0; i < inst->type_argc; ++i) {
+			MonoType *type = inst->type_argv [i];
+
+			if (!all_vt && (MONO_TYPE_IS_REFERENCE (type) || (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))) {
+			} else {
+				gsctx->var_is_vt [i] = TRUE;
+			}
+		}
+	}
+	if (context->method_inst) {
+		inst = context->method_inst;
+		gsctx->mvar_is_vt = g_new0 (gboolean, inst->type_argc);
+
+		for (i = 0; i < inst->type_argc; ++i) {
+			MonoType *type = inst->type_argv [i];
+
+			if (!all_vt && (MONO_TYPE_IS_REFERENCE (type) || (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))) {
+			} else {
+				gsctx->mvar_is_vt [i] = TRUE;
+			}
+		}
+	}
+}
+
+void
+mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
+{
+	mini_init_gsctx_full (context, gsctx, FALSE);
 }
 
 #ifndef DISABLE_JIT
@@ -4302,6 +4461,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	gboolean deadce_has_run = FALSE;
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
+	gboolean method_is_gshared = FALSE;
 
 	InterlockedIncrement (&mono_jit_stats.methods_compiled);
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
@@ -4316,10 +4476,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 * FIXME: Remove the method->klass->generic_class limitation.
 		 */
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_impl (method, TRUE)));
+			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_impl_full (method, TRUE, FALSE, FALSE)));
 	else
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method, FALSE);
+			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE);
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
@@ -4328,16 +4488,34 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_stats.generics_unsharable_methods++;
 	}
 
+	if (mini_is_gsharedvt_sharable_method (method)) {
+		if (!mono_debug_count ())
+			try_generic_shared = FALSE;
+		if (compile_aot)
+			try_generic_shared = FALSE;
+	}
+
+	if (is_gsharedvt_method (method)) {
+		/* We are AOTing a gshared method directly */
+		method_is_gshared = TRUE;
+		g_assert (compile_aot);
+		try_generic_shared = TRUE;
+	}
+
 #ifdef ENABLE_LLVM
 	try_llvm = mono_use_llvm;
 #endif
 
  restart_compile:
-	if (try_generic_shared) {
-		method_to_compile = mini_get_shared_method (method);
-		g_assert (method_to_compile);
-	} else {
+	if (method_is_gshared) {
 		method_to_compile = method;
+	} else {
+		if (try_generic_shared) {
+			method_to_compile = mini_get_shared_method (method);
+			g_assert (method_to_compile);
+		} else {
+			method_to_compile = method;
+		}
 	}
 
 	cfg = g_new0 (MonoCompile, 1);
@@ -4356,16 +4534,36 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->explicit_null_checks = debug_options.explicit_null_checks;
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	if (try_generic_shared)
-		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
+		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->gsctx;
 	cfg->compile_llvm = try_llvm;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 
 	if (cfg->gen_seq_points)
 		cfg->seq_points = g_ptr_array_new ();
 
-	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || method->klass->generic_container)) {
+	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || method->klass->generic_container || method_is_gshared)) {
 		cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;
 		return cfg;
+	}
+
+	if (cfg->generic_sharing_context && (mini_is_gsharedvt_sharable_method (method) || method_is_gshared)) {
+		MonoMethodInflated *inflated;
+		MonoGenericContext *context;
+
+		g_assert (method->is_inflated);
+		inflated = (MonoMethodInflated*)method;
+		context = &inflated->context;
+
+		// FIXME: Free the contents of gsctx if compilation fails
+		if (method_is_gshared) {
+			/* We are compiling a gsharedvt method directly */
+			g_assert (compile_aot);
+			mini_init_gsctx_full (context, &cfg->gsctx, TRUE);
+		} else {
+			mini_init_gsctx (context, &cfg->gsctx);
+		}
+
+		cfg->gsharedvt = TRUE;
 	}
 
 	if (cfg->generic_sharing_context) {
@@ -4509,6 +4707,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		char *method_name;
 		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", method_name = mono_method_full_name (method, TRUE));
+		else if (cfg->gsharedvt)
+			g_print ("converting gsharedvt method %s\n", method_name = mono_method_full_name (method_to_compile, TRUE));
 		else if (cfg->generic_sharing_context)
 			g_print ("converting shared method %s\n", method_name = mono_method_full_name (method_to_compile, TRUE));
 		else
@@ -5059,6 +5259,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_domain_unlock (cfg->domain);
 	}
 
+#if 0
+	if (cfg->gsharedvt)
+		printf ("GSHAREDVT: %s\n", mono_method_full_name (cfg->method, TRUE));
+#endif
+
 	/* collect statistics */
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->jit_methods++;
@@ -5132,7 +5337,7 @@ lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (ji)
 		return ji;
 
-	if (!mono_method_is_generic_sharable_impl (method, FALSE))
+	if (!mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE))
 		return NULL;
 	return mono_domain_lookup_shared_generic (domain, method);
 }
@@ -5290,6 +5495,33 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		return NULL;
 	}
 
+	if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
+			static MonoTrampInfo *tinfo;
+			MonoJitInfo *jinfo;
+
+			if (tinfo)
+				return tinfo->code;
+
+			/*
+			 * This is a special wrapper whose body is implemented in assembly, like a trampoline. We use a wrapper so EH
+			 * works.
+			 * FIXME: The caller signature doesn't match the callee, which might cause problems on some platforms
+			 */
+			if (mono_aot_only) {
+				// FIXME: No EH
+				return mono_aot_get_trampoline ("gsharedvt_trampoline");
+			} else {
+				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);
+				jinfo = create_jit_info_for_trampoline (method, tinfo);
+				mono_jit_info_table_add (mono_get_root_domain (), jinfo);
+				return tinfo->code;
+			}
+		}
+	}
+
 	if (mono_aot_only) {
 		char *fullname = mono_method_full_name (method, TRUE);
 		char *msg = g_strdup_printf ("Attempting to JIT compile method '%s' while running with --aot-only. See http://docs.xamarin.com/ios/about/limitations for more information.\n", fullname);
@@ -5414,8 +5646,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_jit_code_hash_unlock (target_domain);
 		code = cfg->native_code;
 
-		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE))
+		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE))
 			mono_stats.generics_shared_methods++;
+		if (cfg->gsharedvt)
+			mono_stats.gsharedvt_methods++;
 	} else {
 		mono_domain_jit_code_hash_unlock (target_domain);
 	}
@@ -5794,8 +6028,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				}
 			}
 
-			if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-				info->compiled_method = mono_create_static_rgctx_trampoline (method, info->compiled_method);
+			info->compiled_method = mini_add_method_trampoline (NULL, method, info->compiled_method, NULL, mono_method_needs_static_rgctx_invoke (method, FALSE));
 		}
 
 		/*
@@ -6824,6 +7057,7 @@ print_jit_stats (void)
 		g_print ("Sharable generic methods: %ld\n", mono_stats.generics_sharable_methods);
 		g_print ("Unsharable generic methods: %ld\n", mono_stats.generics_unsharable_methods);
 		g_print ("Shared generic methods: %ld\n", mono_stats.generics_shared_methods);
+		g_print ("Shared vtype generic methods: %ld\n", mono_stats.gsharedvt_methods);
 
 		g_print ("Dynamic code allocs:    %ld\n", mono_stats.dynamic_code_alloc_count);
 		g_print ("Dynamic code bytes:     %ld\n", mono_stats.dynamic_code_bytes_count);
@@ -6940,8 +7174,7 @@ void
 mono_set_defaults (int verbose_level, guint32 opts)
 {
 	mini_verbose = verbose_level;
-	default_opt = opts;
-	default_opt_set = TRUE;
+	mono_set_optimizations (opts);
 }
 
 void
@@ -6955,6 +7188,9 @@ mono_set_optimizations (guint32 opts)
 {
 	default_opt = opts;
 	default_opt_set = TRUE;
+#ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
+	mono_set_generic_sharing_vt_supported (mono_aot_only || ((default_opt & MONO_OPT_GSHAREDVT) != 0));
+#endif
 }
 
 void
@@ -7059,3 +7295,36 @@ mono_cfg_set_exception (MonoCompile *cfg, int type)
 }
 
 #endif
+
+/* Dummy versions of some arch specific functions to avoid ifdefs at call sites */
+
+#ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
+
+gboolean
+mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
+{
+	return FALSE;
+}
+
+gpointer
+mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethod *normal_method, MonoMethod *gsharedvt_method, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gboolean virtual)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif	

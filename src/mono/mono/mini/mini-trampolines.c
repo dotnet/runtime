@@ -103,10 +103,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	g_assert (((gpointer*)addr) [2] == 0);
 #endif
 
-	if (mini_method_get_context (m)->method_inst)
-		ctx = mono_method_lookup_rgctx (mono_class_vtable (mono_domain_get (), m->klass), mini_method_get_context (m)->method_inst);
-	else
-		ctx = mono_class_vtable (mono_domain_get (), m->klass);
+	ctx = mini_method_get_rgctx (m);
 
 	domain = mono_domain_get ();
 
@@ -223,6 +220,16 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 
 		if (impl && mono_method_needs_static_rgctx_invoke (impl, FALSE))
 			*need_rgctx_tramp = TRUE;
+		if (impl && impl->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (impl);
+
+			if (info && info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+				// FIXME: This needs a gsharedvt-out trampoline, since the caller uses the gsharedvt calling conv, but the
+				// wrapper is a normal non-generic method.
+				*need_rgctx_tramp = TRUE;
+				//g_assert_not_reached ();
+			}
+		}
 
 		*impl_method = impl;
 #if DEBUG_IMT
@@ -277,6 +284,95 @@ is_generic_method_definition (MonoMethod *m)
 		return TRUE;
 	return FALSE;
 }
+static gboolean
+ji_is_gsharedvt (MonoJitInfo *ji)
+{
+	if (ji && ji->has_generic_jit_info && (mono_jit_info_get_generic_sharing_context (ji)->var_is_vt ||
+										   mono_jit_info_get_generic_sharing_context (ji)->mvar_is_vt))
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mini_add_method_trampoline:
+ *
+ *   Add static rgctx/gsharedvt_in trampoline to M/COMPILED_METHOD if needed. Return the trampoline address, or
+ * COMPILED_METHOD if no trampoline is needed.
+ * ORIG_METHOD is the method the caller originally called i.e. an iface method, or NULL.
+ */
+gpointer
+mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, MonoJitInfo *caller_ji, gboolean add_static_rgctx_tramp)
+{
+	gpointer addr = compiled_method;
+	gboolean callee_gsharedvt, callee_array_helper;
+	MonoJitInfo *ji = 
+		mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
+
+	// FIXME: This loads information from AOT
+	callee_gsharedvt = ji_is_gsharedvt (ji);
+
+	callee_array_helper = FALSE;
+	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
+
+		/*
+		 * generic array helpers.
+		 * Have to replace the wrappers with the original generic instances.
+		 */
+		if (info && info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+			callee_array_helper = TRUE;
+			m = info->d.generic_array_helper.method;
+		}
+	} else if (m->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
+
+		/* Same for synchronized inner wrappers */
+		if (info && info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+			m = info->d.synchronized_inner.method;
+		}
+	}
+
+	if (!orig_method)
+		orig_method = m;
+
+	if (callee_gsharedvt)
+		g_assert (m->is_inflated);
+
+	addr = compiled_method;
+
+	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (ji->method))) {
+		static gpointer tramp_addr;
+		gpointer info;
+		MonoMethod *wrapper;
+		MonoGenericSharingContext *gsctx;
+
+		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
+
+		/* Call from normal/gshared code to gsharedvt code with variable signature */
+		gsctx = mono_jit_info_get_generic_sharing_context (ji);
+
+		info = mono_arch_get_gsharedvt_call_info (compiled_method, m, ji->method, gsctx, TRUE, FALSE);
+
+		if (!tramp_addr) {
+			wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
+			addr = mono_compile_method (wrapper);
+			mono_memory_barrier ();
+			tramp_addr = addr;
+		}
+		addr = tramp_addr;
+
+		g_assert (!mono_aot_only);
+		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+
+		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
+	}
+
+	if (add_static_rgctx_tramp && !callee_array_helper)
+		addr = mono_create_static_rgctx_trampoline (m, addr);
+
+	return addr;
+}
 
 /**
  * common_call_trampoline:
@@ -290,7 +386,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	gpointer addr, compiled_method;
 	gboolean generic_shared = FALSE;
 	MonoMethod *declaring = NULL;
-	MonoMethod *generic_virtual = NULL, *variant_iface = NULL;
+	MonoMethod *generic_virtual = NULL, *variant_iface = NULL, *orig_method = NULL;
 	int context_used;
 	gboolean virtual, variance_used = FALSE;
 	gpointer *orig_vtable_slot, *vtable_slot_to_patch = NULL;
@@ -313,6 +409,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		m = mono_arch_find_imt_method (regs, code);
 		vtable_slot = orig_vtable_slot;
 		g_assert (vtable_slot);
+
+		orig_method = m;
 
 		this_arg = mono_arch_get_this_arg_from_call (regs, code);
 
@@ -485,8 +583,10 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 
 	mono_debugger_trampoline_compiled (code, m, addr);
 
-	if (need_rgctx_tramp)
-		addr = mono_create_static_rgctx_trampoline (m, addr);
+	// FIXME: Is this needed ?
+	if (!ji)
+		ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
+	addr = mini_add_method_trampoline (orig_method, m, compiled_method, ji, need_rgctx_tramp);
 
 	if (generic_virtual || variant_iface) {
 		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
@@ -545,31 +645,46 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	}
 	else {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
+		gboolean no_patch = FALSE;
+		MonoJitInfo *target_ji;
 
 		if (plt_entry) {
+			if (generic_shared) {
+				target_ji =
+					mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
+				if (!ji)
+					ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
+
+				if (ji && target_ji && generic_shared && ji->has_generic_jit_info && !target_ji->has_generic_jit_info) {
+					no_patch = TRUE;
+				}
+			}
+			if (!no_patch)
 				mono_aot_patch_plt_entry (plt_entry, NULL, regs, addr);
 		} else {
 			if (generic_shared) {
 				if (m->wrapper_type != MONO_WRAPPER_NONE)
 					m = mono_marshal_method_from_wrapper (m);
-				g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
+				//g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
 			}
 
 			/* Patch calling code */
-			{
-				MonoJitInfo *target_ji = 
-					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method));
-				if (!target_ji)
-					target_ji = mono_jit_info_table_find (mono_get_root_domain (), mono_get_addr_from_ftnptr (compiled_method));
+			target_ji =
+				mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
+			if (!ji)
+				ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
 
-				if (!ji)
-					ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-				if (!ji)
-					ji = mono_jit_info_table_find (mono_get_root_domain (), (char*)code);
-
-				if (mono_method_same_domain (ji, target_ji))
-					mono_arch_patch_callsite (ji->code_start, code, addr);
+			if (ji && target_ji && generic_shared && ji->has_generic_jit_info && !target_ji->has_generic_jit_info) {
+				/* 
+				 * Can't patch the call as the caller is gshared, but the callee is not. Happens when
+				 * generic sharing fails.
+				 * FIXME: Performance problem.
+				 */
+				no_patch = TRUE;
 			}
+
+			if (!no_patch && mono_method_same_domain (ji, target_ji))
+				mono_arch_patch_callsite (ji->code_start, code, addr);
 		}
 	}
 
@@ -875,6 +990,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	guint8 *impl_nothis = tramp_data [2];
 	MonoError err;
 	MonoMethodSignature *sig;
+	gpointer addr, compiled_method;
 
 	trampoline_calls ++;
 
@@ -948,12 +1064,13 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 		if (enable_caching && delegate->method_code && *delegate->method_code) {
 			delegate->method_ptr = *delegate->method_code;
 		} else {
-			delegate->method_ptr = mono_compile_method (method);
+			compiled_method = addr = mono_compile_method (method);
 			if (need_unbox_tramp)
-				delegate->method_ptr = get_unbox_trampoline (method, delegate->method_ptr, need_rgctx_tramp);
+				// FIXME: GSHAREDVT
+				addr = get_unbox_trampoline (method, addr, need_rgctx_tramp);
 			else
-				if (need_rgctx_tramp)
-					delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
+				addr = mini_add_method_trampoline (NULL, method, compiled_method, NULL, need_rgctx_tramp);
+			delegate->method_ptr = addr;
 			if (enable_caching && delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
 			mono_debugger_trampoline_compiled (NULL, method, delegate->method_ptr);
