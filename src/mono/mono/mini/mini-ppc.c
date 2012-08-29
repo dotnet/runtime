@@ -1277,31 +1277,6 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
 	return cinfo;
 }
 
-G_GNUC_UNUSED static void
-break_count (void)
-{
-}
-
-G_GNUC_UNUSED static gboolean
-debug_count (void)
-{
-	static int count = 0;
-	count ++;
-
-	if (!getenv ("COUNT"))
-		return TRUE;
-
-	if (count == atoi (getenv ("COUNT"))) {
-		break_count ();
-	}
-
-	if (count > atoi (getenv ("COUNT"))) {
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 gboolean
 mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
@@ -1322,7 +1297,7 @@ mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignatu
 	}
 
 	/*
-	if (!debug_count ())
+	if (!mono_debug_count ())
 		res = FALSE;
 	*/
 
