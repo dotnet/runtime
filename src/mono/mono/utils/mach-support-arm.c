@@ -72,7 +72,7 @@ mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mac
 
 	*count = ARM_THREAD_STATE_COUNT;
 
-	ret = thread_get_state (thread, ARM_THREAD_STATE_COUNT, (thread_state_t) arch_state, count);
+	ret = thread_get_state (thread, ARM_THREAD_STATE, (thread_state_t) arch_state, count);
 
 	return ret;
 }
