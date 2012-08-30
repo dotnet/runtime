@@ -103,6 +103,8 @@ monoutils_sources = \
 
 arch_sources = 
 
+if !CROSS_COMPILE
+
 if X86
 arch_sources += mach-support-x86.c
 endif
@@ -113,6 +115,12 @@ endif
 
 if ARM
 arch_sources += mach-support-arm.c
+endif
+
+else
+
+arch_sources += mach-support-unknown.c
+
 endif
 
 libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
