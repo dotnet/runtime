@@ -28,7 +28,7 @@
 
 #include <mono/utils/mono-sigcontext.h>
 
-#ifdef __i386__
+#if defined(__i386__) || defined(TARGET_X86)
 
 #include <mono/utils/mono-context.h>
 
@@ -58,7 +58,7 @@
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_ESP ((ctx)))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_EIP ((ctx)))
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(TARGET_AMD64)
 
 #include <mono/utils/mono-context.h>
 
