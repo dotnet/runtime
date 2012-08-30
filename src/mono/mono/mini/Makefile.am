@@ -411,7 +411,8 @@ test_sources = 			\
 	generics.cs		\
 	generics-variant-types.il\
 	basic-simd.cs \
-	aot-tests.cs
+	aot-tests.cs \
+	gc-test.cs
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
@@ -649,6 +650,9 @@ checktests: $(regtests)
 
 rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
+
+gctest: mono gc-test.exe
+	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
 
