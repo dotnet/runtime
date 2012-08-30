@@ -3699,7 +3699,7 @@ update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int max_set)
 	offset &= 0xffffff;
 	offset /= sizeof (gpointer);
 	/* offset is now the bitmap offset */
-	for (i = 0; i < max_set; ++i) {
+	for (i = 0; i <= max_set; ++i) {
 		if (bitmap [i / sizeof (uintptr_t)] & (1L << (i & (sizeof (uintptr_t) * 8 -1))))
 			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (1L << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
 	}
