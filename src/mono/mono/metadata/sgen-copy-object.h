@@ -90,7 +90,11 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 }
 
+#ifdef _MSC_VER
+static __declspec(noinline) void*
+#else
 static G_GNUC_UNUSED void* __attribute__((noinline))
+#endif
 copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
@@ -150,7 +154,11 @@ extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
  * copy_object could be made into a macro once debugged (use inline for now).
  */
 
+#ifdef _MSC_VER
+static __forceinline void
+#else
 static inline void __attribute__((always_inline))
+#endif
 serial_copy_object (void **obj_slot, SgenGrayQueue *queue) 
 {
 	char *forwarded;
