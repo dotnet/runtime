@@ -809,7 +809,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Pop arguments off the stack */
 		/* 
 		 * FIXME: LLVM doesn't push these, we can't use ji->from_llvm as it describes
-		 * the caller.
+		 * the callee.
 		 */
 #ifndef ENABLE_LLVM
 		if (ji->has_arch_eh_info)
