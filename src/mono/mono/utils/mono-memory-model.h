@@ -163,9 +163,9 @@ Acquire/release semantics macros.
 	LOAD_ACQUIRE_FENCE;	\
 	__tmp; })
 
-#define mono_atomic_store_acquire(target,value) ({	\
+#define mono_atomic_store_acquire(target,value) {	\
 	*target = value;	\
 	STORE_ACQUIRE_FENCE;	\
-	})
+	}
 
 #endif /* _MONO_UTILS_MONO_MEMMODEL_H_ */
