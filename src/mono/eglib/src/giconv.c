@@ -887,7 +887,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 gunichar2 *
-g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+g_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, GError **err)
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -898,8 +898,13 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	
 	g_return_val_if_fail (str != NULL, NULL);
 	
-	if (len < 0)
+	if (len < 0) {
+		if (include_nuls) {
+			g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED, "Conversions with embedded nulls must pass the string length");
+			return NULL;
+		}
 		len = strlen (str);
+	}
 	
 	inptr = (char *) str;
 	inleft = len;
@@ -924,7 +929,7 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 				*items_written = 0;
 			
 			return NULL;
-		} else if (c == 0)
+		} else if (c == 0 && !include_nuls)
 			break;
 		
 		outlen += g_unichar_to_utf16 (c, NULL);
@@ -945,7 +950,7 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	while (inleft > 0) {
 		if ((n = decode_utf8 (inptr, inleft, &c)) < 0)
 			break;
-		else if (c == 0)
+		else if (c == 0 && !include_nuls)
 			break;
 		
 		outptr += g_unichar_to_utf16 (c, outptr);
@@ -956,6 +961,18 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	*outptr = '\0';
 	
 	return outbuf;
+}
+
+gunichar2 *
+g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return g_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, err);
+}
+
+gunichar2 *
+g_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return g_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, err);
 }
 
 gunichar *
