@@ -136,11 +136,15 @@ compare_strings_utf16_RESULT (const gunichar2 *expected, const gunichar2 *actual
 	ret = compare_strings_utf16_pos (expected, actual, size);
 	if (ret < 0)
 		return OK;
-	return FAILED ("Incorrect output: expected '%s' but was '%s'\n", expected, actual);
+	return FAILED ("Incorrect output: expected '%s' but was '%s', differ at %d ('%c' x '%c')\n", expected, actual, ret, expected [ret], actual [ret]);
 }
 
+#if !defined(EGLIB_TESTS)
+#define g_utf8_to_utf16_with_nuls g_utf8_to_utf16
+#endif
+
 RESULT
-compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out, glong size_spec)
+compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out, glong size_spec, gboolean include_nuls)
 {
 	GError *error;
 	gunichar2* ret;
@@ -150,7 +154,11 @@ compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, gl
 	result = NULL;
 
 	error = NULL;
-	ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &error);
+	if (include_nuls)
+		ret = g_utf8_to_utf16_with_nuls (utf8, size_spec, &in_read, &out_read, &error);
+	else
+		ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &error);
+
 	if (error) {
 		result = FAILED ("The error is %d %s\n", (error)->code, (error)->message);
 		g_error_free (error);
@@ -172,17 +180,29 @@ compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, gl
 	return OK;
 }
 
+RESULT
+compare_utf8_to_utf16_general (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out, gboolean include_nuls)
+{
+	RESULT result;
+
+	result = compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, -1, include_nuls);
+	if (result != OK)
+		return result;
+	return compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, len_in, include_nuls);
+}
 
 RESULT
 compare_utf8_to_utf16 (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out)
 {
-	RESULT result;
-
-	result = compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, -1);
-	if (result != OK)
-		return result;
-	return compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, len_in);
+	return compare_utf8_to_utf16_general (expected, utf8, len_in, len_out, FALSE);
 }
+
+RESULT
+compare_utf8_to_utf16_with_nuls (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out)
+{
+	return compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, len_in, TRUE);
+}
+
 
 RESULT
 test_utf8_seq ()
@@ -234,6 +254,42 @@ test_utf8_to_utf16 ()
 	if (result != OK)
 		return result;
 	result = compare_utf8_to_utf16 (str4, src4, 3, 1);
+	if (result != OK)
+		return result;
+
+	return OK;
+}
+
+RESULT
+test_utf8_to_utf16_with_nuls ()
+{
+	const gchar *src0 = "", *src1 = "AB\0DE", *src2 = "\xE5\xB9\xB4\x27", *src3 = "\xEF\xBC\xA1", *src4 = "\xEF\xBD\x81";
+	gunichar2 str0 [] = {0}, str1 [] = {'A', 'B', 0, 'D', 'E', 0}, str2 [] = {0x5E74, 39, 0}, str3 [] = {0xFF21, 0}, str4 [] = {0xFF41, 0};
+	RESULT result;
+
+#if !defined(EGLIB_TESTS)
+	return OK;
+#endif
+
+	/* implicit length is forbidden */
+		if (g_utf8_to_utf16_with_nuls (src1, -1, NULL, NULL, NULL) != NULL)
+		return FAILED ("explicit nulls must fail with -1 length\n");
+
+	/* empty string */
+	result = compare_utf8_to_utf16_with_nuls (str0, src0, 0, 0);
+	if (result != OK)
+		return result;
+
+	result = compare_utf8_to_utf16_with_nuls  (str1, src1, 5, 5);
+	if (result != OK)
+		return result;
+	result = compare_utf8_to_utf16_with_nuls  (str2, src2, 4, 2);
+	if (result != OK)
+		return result;
+	result = compare_utf8_to_utf16_with_nuls  (str3, src3, 3, 1);
+	if (result != OK)
+		return result;
+	result = compare_utf8_to_utf16_with_nuls  (str4, src4, 3, 1);
 	if (result != OK)
 		return result;
 
@@ -859,6 +915,7 @@ test_utf8_strdown ()
 static Test utf8_tests [] = {
 	{"g_utf16_to_utf8", test_utf16_to_utf8},
 	{"g_utf8_to_utf16", test_utf8_to_utf16},
+	{"g_utf8_to_utf16_with_nuls", test_utf8_to_utf16_with_nuls},
 	{"g_utf8_seq", test_utf8_seq},
 	{"g_convert", test_convert },
 	{"g_unichar_xdigit_value", test_xdigit },
