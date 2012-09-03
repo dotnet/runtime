@@ -158,12 +158,12 @@ mono_sgen_CFLAGS = $(AM_CFLAGS)
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
-buildver.h: libmono-static.la
+buildver.h: libmini-static.la
 	@echo "const char *build_date = \"`date`\";" > buildver.h
 mono-main.$(OBJEXT): buildver.h
 endif
 
-buildver-sgen.h: libmonosgen-static.la
+buildver-sgen.h: libmini-static.la
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main.$(OBJEXT): buildver-sgen.h
 
