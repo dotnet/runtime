@@ -119,9 +119,9 @@ endif
 lib_LTLIBRARIES = $(shared_libraries)
 
 if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES =
+noinst_LTLIBRARIES = libmini.la
 else
-noinst_LTLIBRARIES = libmini-static.la
+noinst_LTLIBRARIES = libmini.la libmini-static.la
 endif
 
 if MOONLIGHT
@@ -526,16 +526,19 @@ os_sources = $(darwin_sources) $(posix_sources)
 monobin_platform_ldflags=-framework CoreFoundation
 endif
 
-libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
-libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
-libmono_2_0_la_LIBADD = $(libs) $(LIBMONO_DTRACE_OBJECT)
+libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
+libmini_la_CFLAGS = $(mono_CFLAGS)
 
-libmonosgen_2_0_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmono_2_0_la_SOURCES =
+libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
+libmono_2_0_la_LIBADD = libmini.la $(libs) $(LIBMONO_DTRACE_OBJECT)
+
+libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_2_0_la_LIBADD = $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
+libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
-libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmono_moon_la_SOURCES = $(libmini_la_SOURCES)
 if MOONLIGHT_BOEHM
 libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
@@ -549,7 +552,7 @@ endif
 # This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
 # compile time dependencies on boehm/sgen.
 #
-libmini_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmini_static_la_SOURCES = $(libmini_la_SOURCES)
 libmini_static_la_CFLAGS = $(AM_CFLAGS)
 libmini_static_la_LDFLAGS = -static
 libmini_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
