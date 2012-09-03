@@ -92,12 +92,12 @@ if JIT_SUPPORTED
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmonosgen-static.la
+sgen_static_libraries = libmini-static.la $(sgenstatic_libs)
 endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmono-2.0.la
-boehm_static_libraries = libmono-static.la
+boehm_static_libraries = libmini-static.la $(static_libs)
 boehm_binaries  = mono
 endif
 
@@ -121,7 +121,7 @@ lib_LTLIBRARIES = $(shared_libraries)
 if DISABLE_EXECUTABLES
 noinst_LTLIBRARIES =
 else
-noinst_LTLIBRARIES = $(boehm_static_libraries) $(sgen_static_libraries)
+noinst_LTLIBRARIES = libmini-static.la
 endif
 
 if MOONLIGHT
@@ -148,12 +148,12 @@ endif
 mono_SOURCES = \
 	main.c
 
-mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES)
+mono_CFLAGS = $(AM_CFLAGS)
 
 INCLUDES = $(LIBGC_CPPFLAGS)
 
 mono_sgen_SOURCES = $(mono_SOURCES)
-mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
+mono_sgen_CFLAGS = $(AM_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
@@ -182,8 +182,8 @@ endif
 if STATIC_MONO
 # Link libmono into mono statically
 # This leads to higher performance, especially with TLS
-MONO_LIB=libmono-static.la
-MONO_SGEN_LIB=libmonosgen-static.la
+MONO_LIB=$(boehm_static_libraries)
+MONO_SGEN_LIB=$(sgen_static_libraries)
 else 
 MONO_LIB=libmono-2.0.la
 MONO_SGEN_LIB=libmonosgen-2.0.la
@@ -545,18 +545,14 @@ libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
 endif
 endif
 
-libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_static_la_CFLAGS = $(mono_CFLAGS)
-libmono_static_la_LDFLAGS = -static
-libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
-
-libmonosgen_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_static_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_static_la_LDFLAGS = -static
-libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
-
-nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
-nodist_libmono_static_la_CFLAGS = $(mono_CFLAGS)
+#
+# This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
+# compile time dependencies on boehm/sgen.
+#
+libmini_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmini_static_la_CFLAGS = $(AM_CFLAGS)
+libmini_static_la_LDFLAGS = -static
+libmini_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 

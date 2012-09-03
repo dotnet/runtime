@@ -38,6 +38,14 @@
 #include "mini-unwind.h"
 #include "jit.h"
 
+/*
+ * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
+ * can be linked into both mono and mono-sgen.
+ */
+#if defined(HAVE_BOEHM_GC) || defined(HAVE_SGEN_GC)
+#error "The code in mini/ should not depend on these defines."
+#endif
+
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
 #define G_UNLIKELY(a) (a)
