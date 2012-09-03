@@ -4946,7 +4946,7 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 	guint16 *ut;
 	glong items_written;
 
-	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &error);
+	ut = g_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &error);
 
 	if (!error)
 		o = mono_string_new_utf16 (domain, ut, items_written);

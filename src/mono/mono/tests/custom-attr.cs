@@ -49,6 +49,10 @@ namespace Test {
 	[X, Z, Serializable]
 	class Y {
 	}
+
+	[My("arg\0string\0with\0nuls")]
+	class NulTests {
+	}
 			
 	[My("testclass")]
 	[My2("testclass", 22)]
@@ -105,6 +109,10 @@ namespace Test {
 			// Test that synthetic methods have no attributes
 			if (typeof(int[,]).GetConstructor (new Type [] { typeof (int), typeof (int) }).GetCustomAttributes (true).Length != 0)
 				return 7;
+
+			// Test that nuls are preserved (see Xamarin bug 5732)
+			if (((MyAttribute)typeof (NulTests).GetCustomAttributes (true)[0]).val != "arg\0string\0with\0nuls")
+				return 8;
 
 			return 0;
 		}
