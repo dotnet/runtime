@@ -1171,6 +1171,7 @@ mini_trace_usage (void)
 		 "    none                 No assemblies\n"
 		 "    program              Entry point assembly\n"
 		 "    assembly             Specifies an assembly\n"
+		 "    wrapper              All wrappers bridging native and managed code\n"
 		 "    M:Type:Method        Specifies a method\n"
 		 "    N:Namespace          Specifies a namespace\n"
 		 "    T:Type               Specifies a type\n"
