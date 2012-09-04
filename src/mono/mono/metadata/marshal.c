@@ -6153,6 +6153,12 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 				g_assert (m);
 			}
 
+			if (!t->byref) {
+				char *msg = g_strdup_printf ("VBByRefStr marshalling requires a ref parameter.", encoding);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+				break;
+			}
+
 			/* 
 			 * Have to allocate a new string with the same length as the original, and
 			 * copy the contents of the buffer pointed to by CONV_ARG into it.
