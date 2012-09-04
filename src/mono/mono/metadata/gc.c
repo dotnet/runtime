@@ -33,6 +33,7 @@
 #include <mono/metadata/console-io.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-counters.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -75,6 +76,8 @@ static void reference_queue_clear_for_domain (MonoDomain *domain);
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;
 #endif
+
+GCStats gc_stats;
 
 static void
 add_thread_to_finalize (MonoInternalThread *thread)
@@ -1142,6 +1145,11 @@ mono_gc_init (void)
 
 	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_NORMAL].entries);
 	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_PINNED].entries);
+
+	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_stats.minor_gc_count);
+	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_stats.major_gc_count);
+	mono_counters_register ("Minor GC time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &gc_stats.minor_gc_time_usecs);
+	mono_counters_register ("Major GC time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &gc_stats.major_gc_time_usecs);
 
 	mono_gc_base_init ();
 

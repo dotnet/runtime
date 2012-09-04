@@ -6846,10 +6846,6 @@ print_jit_stats (void)
 		g_print ("JIT info table lookups: %ld\n", mono_stats.jit_info_table_lookup_count);
 
 		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
-		g_print ("Minor GC collections:   %ld\n", mono_stats.minor_gc_count);
-		g_print ("Major GC collections:   %ld\n", mono_stats.major_gc_count);
-		g_print ("Minor GC time in msecs: %lf\n", (double)mono_stats.minor_gc_time_usecs / 1000.0);
-		g_print ("Major GC time in msecs: %lf\n", (double)mono_stats.major_gc_time_usecs / 1000.0);
 		if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);

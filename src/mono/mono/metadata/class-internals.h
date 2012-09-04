@@ -720,10 +720,6 @@ typedef struct {
 	gulong generics_sharable_methods;
 	gulong generics_unsharable_methods;
 	gulong generics_shared_methods;
-	gulong minor_gc_count;
-	gulong major_gc_count;
-	gulong minor_gc_time_usecs;
-	gulong major_gc_time_usecs;
 	gboolean enabled;
 } MonoStats;
 

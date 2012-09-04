@@ -15,6 +15,13 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/gc_wrapper.h>
 
+typedef struct {
+	int minor_gc_count;
+	int major_gc_count;
+	long long minor_gc_time_usecs;
+	long long major_gc_time_usecs;
+} GCStats;
+
 #define mono_domain_finalizers_lock(domain) EnterCriticalSection (&(domain)->finalizable_objects_hash_lock);
 #define mono_domain_finalizers_unlock(domain) LeaveCriticalSection (&(domain)->finalizable_objects_hash_lock);
 
@@ -75,6 +82,8 @@
 #else
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib)
 #endif
+
+extern GCStats gc_stats MONO_INTERNAL;
 
 void   mono_object_register_finalizer               (MonoObject  *obj) MONO_INTERNAL;
 void   ves_icall_System_GC_InternalCollect          (int          generation) MONO_INTERNAL;
