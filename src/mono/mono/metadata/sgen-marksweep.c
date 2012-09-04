@@ -101,7 +101,7 @@ struct _MSBlockInfo {
 };
 
 #ifdef FIXED_HEAP
-static int ms_heap_num_blocks = MS_DEFAULT_HEAP_NUM_BLOCKS;
+static mword ms_heap_num_blocks = MS_DEFAULT_HEAP_NUM_BLOCKS;
 
 static char *ms_heap_start;
 static char *ms_heap_end;
@@ -304,7 +304,7 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 	char *nursery_start;
 	mword major_heap_size = ms_heap_num_blocks * MS_BLOCK_SIZE;
 	mword alloc_size = nursery_size + major_heap_size;
-	int i;
+	mword i;
 
 	g_assert (ms_heap_num_blocks > 0);
 	g_assert (nursery_size % MS_BLOCK_SIZE == 0);
