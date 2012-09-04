@@ -76,6 +76,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-threads.h>
 #include "debugger-agent.h"
 #include "mini.h"
 
@@ -85,10 +86,6 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 
 #ifdef DISABLE_SOFT_DEBUG
 #define DISABLE_DEBUGGER_AGENT 1
-#endif
-
-#if defined(__MACH__)
-#include <mono/utils/mono-threads.h>
 #endif
 
 #ifndef DISABLE_DEBUGGER_AGENT
@@ -975,11 +972,6 @@ mono_debugger_agent_init (void)
 
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
-
-	/* FIXME: Is this still needed ? */
-#if defined(__MACH__)
-	mono_thread_info_disable_new_interrupt (TRUE);
-#endif
 }
 
 /*
