@@ -4599,6 +4599,9 @@ mono_gc_base_init (void)
 							fprintf (stderr, "The major collector does not support the cardtable write barrier.\n");
 						exit (1);
 					}
+				} else {
+					fprintf (stderr, "wbarrier must either be `remset' or `cardtable'.");
+					exit (1);
 				}
 				continue;
 			}
