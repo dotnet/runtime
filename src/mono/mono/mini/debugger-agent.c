@@ -5119,6 +5119,28 @@ mono_debugger_agent_debug_log_is_enabled (void)
 	return agent_config.enabled;
 }
 
+#ifdef PLATFORM_ANDROID
+void
+mono_debugger_agent_unhandled_exception (MonoException *exc)
+{
+	int suspend_policy;
+	GSList *events;
+	EventInfo ei;
+
+	if (!inited)
+		return;
+
+	memset (&ei, 0, sizeof (EventInfo));
+	ei.exc = (MonoObject*)exc;
+
+	mono_loader_lock ();
+	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, NULL, &ei, &suspend_policy);
+	mono_loader_unlock ();
+
+	process_event (EVENT_KIND_EXCEPTION, &ei, 0, NULL, events, suspend_policy);
+}
+#endif
+
 void
 mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx, 
 				      MonoContext *catch_ctx)

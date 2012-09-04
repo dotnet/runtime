@@ -30,6 +30,11 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain) MONO_INTERNAL;
 
 gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji) MONO_INTERNAL;
 
+#ifdef PLATFORM_ANDROID
+void
+mono_debugger_agent_unhandled_exception (MonoException *exc);
+#endif
+
 void
 mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *throw_ctx, MonoContext *catch_ctx) MONO_INTERNAL;
 
