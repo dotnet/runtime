@@ -555,7 +555,7 @@ endif
 libmini_static_la_SOURCES = $(libmini_la_SOURCES)
 libmini_static_la_CFLAGS = $(AM_CFLAGS)
 libmini_static_la_LDFLAGS = -static
-libmini_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
+libmini_static_la_LIBADD = $(MONO_DTRACE_OBJECT)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
