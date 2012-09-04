@@ -34,24 +34,18 @@ typedef struct {
  * Register a memory location as a root pointing to memory allocated using
  * mono_gc_alloc_fixed (). This includes MonoGHashTable.
  */
-#ifdef HAVE_SGEN_GC
 /* The result of alloc_fixed () is not GC tracked memory */
-#define MONO_GC_REGISTER_ROOT_FIXED(x)
-#else
-#define MONO_GC_REGISTER_ROOT_FIXED(x) MONO_GC_REGISTER_ROOT ((x))
-#endif
+#define MONO_GC_REGISTER_ROOT_FIXED(x) do { \
+	if (!mono_gc_is_moving ())				\
+		MONO_GC_REGISTER_ROOT ((x)); \
+	} while (0)
 
 /*
  * Return a GC descriptor for an array containing N pointers to memory allocated
  * by mono_gc_alloc_fixed ().
  */
-#ifdef HAVE_SGEN_GC
-/* The result of alloc_fixed () is not GC tracked memory */
-#define MONO_GC_ROOT_DESCR_FOR_FIXED(n) mono_gc_make_root_descr_all_refs (0)
-#else
-/* The result of alloc_fixed () is GC tracked memory */
-#define MONO_GC_ROOT_DESCR_FOR_FIXED(n) NULL
-#endif
+/* For SGEN, the result of alloc_fixed () is not GC tracked memory */
+#define MONO_GC_ROOT_DESCR_FOR_FIXED(n) (mono_gc_is_moving () ? mono_gc_make_root_descr_all_refs (0) : NULL)
 
 /* Register a memory location holding a single object reference as a GC root */
 #define MONO_GC_REGISTER_ROOT_SINGLE(x) do { \
@@ -63,18 +57,15 @@ typedef struct {
  * This is used for fields which point to objects which are kept alive by other references
  * when using Boehm.
  */
-#ifdef HAVE_SGEN_GC
 #define MONO_GC_REGISTER_ROOT_IF_MOVING(x) do { \
+	if (mono_gc_is_moving ()) \
 		MONO_GC_REGISTER_ROOT_SINGLE(x);		\
 } while (0)
 
 #define MONO_GC_UNREGISTER_ROOT_IF_MOVING(x) do { \
-	MONO_GC_UNREGISTER_ROOT (x); \
+	if (mono_gc_is_moving ()) \
+		MONO_GC_UNREGISTER_ROOT (x);			\
 } while (0)
-#else
-#define MONO_GC_REGISTER_ROOT_IF_MOVING(x)
-#define MONO_GC_UNREGISTER_ROOT_IF_MOVING(x)
-#endif
 
 /* useful until we keep track of gc-references in corlib etc. */
 #ifdef HAVE_SGEN_GC
