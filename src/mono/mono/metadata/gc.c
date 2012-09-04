@@ -1337,9 +1337,19 @@ mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
 		return FALSE;
 
 	if (is_suffix) {
+		gulong unshifted;
+
+		if (val < 0)	/* negative numbers cannot be suffixed */
+			return FALSE;
 		if (*(endptr + 1)) /* Invalid string. */
 			return FALSE;
+
+		unshifted = (gulong)val;
 		val <<= shift;
+		if (val < 0)	/* overflow */
+			return FALSE;
+		if (((gulong)val >> shift) != unshifted) /* value too large */
+			return FALSE;
 	}
 
 	*out = val;
