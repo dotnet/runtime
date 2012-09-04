@@ -910,7 +910,7 @@ sgen_init_nursery_allocator (void)
 {
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (SgenFragment));
 #ifdef NALLOC_DEBUG
-	alloc_records = sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE);
+	alloc_records = sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE, "debugging memory");
 #endif
 }
 

@@ -45,9 +45,12 @@ gboolean sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
 
 
 /* OS memory allocation */
-void* sgen_alloc_os_memory (size_t size, int activate) MONO_INTERNAL;
-void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate) MONO_INTERNAL;
+void* sgen_alloc_os_memory (size_t size, int activate, const char *assert_description) MONO_INTERNAL;
+void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, const char *assert_description) MONO_INTERNAL;
 void sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
+
+/* Error handling */
+void sgen_assert_memory_alloc (void *ptr, const char *assert_description) MONO_INTERNAL;
 
 #endif
 

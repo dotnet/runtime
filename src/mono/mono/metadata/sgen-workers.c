@@ -344,7 +344,7 @@ sgen_workers_init (int num_workers)
 
 	workers_num = num_workers;
 
-	workers_data = sgen_alloc_internal_dynamic (sizeof (WorkerData) * num_workers, INTERNAL_MEM_WORKER_DATA);
+	workers_data = sgen_alloc_internal_dynamic (sizeof (WorkerData) * num_workers, INTERNAL_MEM_WORKER_DATA, TRUE);
 	memset (workers_data, 0, sizeof (WorkerData) * num_workers);
 
 	MONO_SEM_INIT (&workers_waiting_sem, 0);

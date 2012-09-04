@@ -134,7 +134,8 @@ ensure_toggleref_capacity (int capacity)
 		toggleref_array_capacity = 32;
 		toggleref_array = sgen_alloc_internal_dynamic (
 			toggleref_array_capacity * sizeof (MonoGCToggleRef),
-			INTERNAL_MEM_TOGGLEREF_DATA);	
+			INTERNAL_MEM_TOGGLEREF_DATA,
+			TRUE);
 	}
 	if (toggleref_array_size + capacity >= toggleref_array_capacity) {
 		MonoGCToggleRef *tmp;
@@ -144,7 +145,8 @@ ensure_toggleref_capacity (int capacity)
 
 		tmp = sgen_alloc_internal_dynamic (
 			toggleref_array_capacity * sizeof (MonoGCToggleRef),
-			INTERNAL_MEM_TOGGLEREF_DATA);
+			INTERNAL_MEM_TOGGLEREF_DATA,
+			TRUE);
 
 		memcpy (tmp, toggleref_array, toggleref_array_size * sizeof (MonoGCToggleRef));
 

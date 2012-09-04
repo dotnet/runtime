@@ -1637,7 +1637,7 @@ alloc_nursery (void)
 	section->size = alloc_size;
 	section->end_data = data + sgen_nursery_size;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS, TRUE);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN0;
 	section->block.next = NULL;

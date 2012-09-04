@@ -53,7 +53,7 @@ static void
 realloc_pin_queue (void)
 {
 	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
-	void **new_pin = sgen_alloc_internal_dynamic (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
+	void **new_pin = sgen_alloc_internal_dynamic (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE, TRUE);
 	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
 	sgen_free_internal_dynamic (pin_queue, sizeof (void*) * pin_queue_size, INTERNAL_MEM_PIN_QUEUE);
 	pin_queue = new_pin;

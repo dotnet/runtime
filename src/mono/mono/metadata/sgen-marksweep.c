@@ -311,11 +311,11 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 	if (nursery_align)
 		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
 
-	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE);
+	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE, "heap");
 	ms_heap_start = nursery_start + nursery_size;
 	ms_heap_end = ms_heap_start + major_heap_size;
 
-	block_infos = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
+	block_infos = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO, TRUE);
 
 	for (i = 0; i < ms_heap_num_blocks; ++i) {
 		block_infos [i].block = ms_heap_start + i * MS_BLOCK_SIZE;
@@ -336,9 +336,9 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	char *start;
 	if (nursery_align)
-		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, "nursery");
 	else
-		start = sgen_alloc_os_memory (nursery_size, TRUE);
+		start = sgen_alloc_os_memory (nursery_size, TRUE, "nursery");
 
 	return start;
 }
@@ -389,7 +389,7 @@ ms_get_empty_block (void)
 
  retry:
 	if (!empty_blocks) {
-		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE);
+		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE, "major heap section");
 
 		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
 			block = p;
@@ -1987,7 +1987,7 @@ alloc_free_block_lists (MSBlockInfo ***lists)
 {
 	int i;
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i)
-		lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+		lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 }
 
 #ifdef SGEN_PARALLEL_MARK
@@ -2069,10 +2069,10 @@ sgen_marksweep_init
 #endif
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
-	block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 	ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, block_obj_sizes);
 
-	evacuate_block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	evacuate_block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		evacuate_block_obj_sizes [i] = FALSE;
 

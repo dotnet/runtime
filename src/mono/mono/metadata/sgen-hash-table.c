@@ -44,7 +44,7 @@ rehash (SgenHashTable *hash_table)
 		new_size = g_spaced_primes_closest (hash_table->num_entries);
 	}
 
-	new_hash = sgen_alloc_internal_dynamic (new_size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type);
+	new_hash = sgen_alloc_internal_dynamic (new_size * sizeof (SgenHashTableEntry*), hash_table->table_mem_type, TRUE);
 	for (i = 0; i < old_hash_size; ++i) {
 		for (entry = old_hash [i]; entry; entry = next) {
 			hash = hash_table->hash_func (entry->key) % new_size;

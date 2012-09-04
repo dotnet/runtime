@@ -393,7 +393,7 @@ void sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
 void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags) MONO_INTERNAL;
 void sgen_check_section_scan_starts (GCMemSection *section) MONO_INTERNAL;
 
-/* Keep in sync with sgen_dump_internal_mem_usage() in dump_heap()! */
+/* Keep in sync with description_for_type() in sgen-internal.c! */
 enum {
 	INTERNAL_MEM_PIN_QUEUE,
 	INTERNAL_MEM_FRAGMENT,
@@ -458,7 +458,7 @@ void sgen_register_fixed_internal_mem_type (int type, size_t size) MONO_INTERNAL
 void* sgen_alloc_internal (int type) MONO_INTERNAL;
 void sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 
-void* sgen_alloc_internal_dynamic (size_t size, int type) MONO_INTERNAL;
+void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure) MONO_INTERNAL;
 void sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
 
 void* sgen_alloc_pinned (SgenPinnedAllocator *allocator, size_t size) MONO_INTERNAL;
