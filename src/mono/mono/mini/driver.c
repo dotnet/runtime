@@ -1174,6 +1174,7 @@ mini_trace_usage (void)
 		 "    M:Type:Method        Specifies a method\n"
 		 "    N:Namespace          Specifies a namespace\n"
 		 "    T:Type               Specifies a type\n"
+		 "    E:Type               Specifies stack traces for an exception type\n"
 		 "    EXPR                 Includes expression\n"
 		 "    -EXPR                Excludes expression\n"
 		 "    EXPR,EXPR            Multiple expressions\n"
