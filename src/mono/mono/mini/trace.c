@@ -76,6 +76,10 @@ mono_trace_eval (MonoMethod *method)
 		case MONO_TRACEOP_PROGRAM:
 			if (trace_spec.assembly && (method->klass->image == mono_assembly_get_image (trace_spec.assembly)))
 				inc = 1; break;
+		case MONO_TRACEOP_WRAPPER:
+			if ((method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) ||
+				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE))
+				inc = 1; break;
 		case MONO_TRACEOP_METHOD:
 			if (mono_method_desc_full_match ((MonoMethodDesc *) op->data, method))
 				inc = 1; break;
@@ -138,6 +142,7 @@ enum Token {
 	TOKEN_PROGRAM,
 	TOKEN_EXCEPTION,
 	TOKEN_NAMESPACE,
+	TOKEN_WRAPPER,
 	TOKEN_STRING,
 	TOKEN_EXCLUDE,
 	TOKEN_DISABLED,
@@ -185,6 +190,8 @@ get_token (void)
 			return TOKEN_ALL;
 		if (strcmp (value, "program") == 0)
 			return TOKEN_PROGRAM;
+		if (strcmp (value, "wrapper") == 0)
+			return TOKEN_WRAPPER;
 		if (strcmp (value, "disabled") == 0)
 			return TOKEN_DISABLED;
 		return TOKEN_STRING;
@@ -235,6 +242,8 @@ get_spec (int *last)
 		trace_spec.ops [*last].op = MONO_TRACEOP_ALL;
 	else if (token == TOKEN_PROGRAM)
 		trace_spec.ops [*last].op = MONO_TRACEOP_PROGRAM;
+	else if (token == TOKEN_WRAPPER)
+		trace_spec.ops [*last].op = MONO_TRACEOP_WRAPPER;
 	else if (token == TOKEN_NAMESPACE){
 		trace_spec.ops [*last].op = MONO_TRACEOP_NAMESPACE;
 		trace_spec.ops [*last].data = g_strdup (value);
