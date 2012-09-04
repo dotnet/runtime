@@ -57,7 +57,12 @@ static const char suffixes [][4] = {
 #endif  /* RTLD_LAZY */
 
 #define SO_HANDLE_TYPE void*
-#define LL_SO_OPEN(file,flags) dlopen ((file), (flags))
+#ifdef PLATFORM_ANDROID
+/* Bionic doesn't support NULL filenames */
+#  define LL_SO_OPEN(file,flags) ((file) ? dlopen ((file), (flags)) : NULL)
+#else
+#  define LL_SO_OPEN(file,flags) dlopen ((file), (flags))
+#endif
 #define LL_SO_CLOSE(module) dlclose ((module)->handle)
 #define LL_SO_SYMBOL(module, name) dlsym ((module)->handle, (name))
 #define LL_SO_TRFLAGS(flags) convert_flags ((flags))
