@@ -894,6 +894,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.5/System.Web.Abstractions.dll
 %_prefix/lib/mono/4.5/System.Web.ApplicationServices.dll
 %_prefix/lib/mono/4.5/System.Web.Http.dll
+%_prefix/lib/mono/4.5/System.Web.Http.SelfHost.dll
 %_prefix/lib/mono/4.5/System.Web.Routing.dll
 %_prefix/lib/mono/4.5/System.Web.Razor.dll
 %_prefix/lib/mono/4.5/System.Web.Services.dll
@@ -919,6 +920,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/System.Web.Abstractions
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
 %_prefix/lib/mono/gac/System.Web.Http
+%_prefix/lib/mono/gac/System.Web.Http.SelfHost
 %_prefix/lib/mono/gac/System.Web.Routing
 %_prefix/lib/mono/gac/System.Web.Razor
 %_prefix/lib/mono/gac/System.Web.Services
