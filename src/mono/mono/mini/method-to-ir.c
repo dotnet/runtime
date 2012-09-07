@@ -9772,6 +9772,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 1;
 			break;
 		case CEE_ENDFINALLY:
+			/* mono_save_seq_point_info () depends on this */
+			if (sp != stack_start)
+				emit_seq_point (cfg, method, ip, FALSE);
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (bblock, ins);
 			ip++;
