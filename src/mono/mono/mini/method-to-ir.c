@@ -7817,7 +7817,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Use the immediate opcodes if possible */
 			if ((sp [1]->opcode == OP_ICONST) && mono_arch_is_inst_imm (sp [1]->inst_c0)) {
-				int imm_opcode = mono_op_to_op_imm (ins->opcode);
+				int imm_opcode = mono_op_to_op_imm_noemul (ins->opcode);
 				if (imm_opcode != -1) {
 					ins->opcode = imm_opcode;
 					ins->inst_p1 = (gpointer)(gssize)(sp [1]->inst_c0);
@@ -11359,6 +11359,10 @@ mono_op_to_op_imm_noemul (int opcode)
 	case OP_IDIV_UN:
 	case OP_IREM:
 	case OP_IREM_UN:
+		return -1;
+#endif
+#if defined(MONO_ARCH_EMULATE_MUL_DIV)
+	case OP_IMUL:
 		return -1;
 #endif
 	default:
