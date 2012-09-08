@@ -314,9 +314,8 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 	domain = mono_mach_arch_get_tls_value_from_thread (thread_id, domain_key);
 
 	/*Thread already started to cleanup, can no longer capture unwind state*/
-	if (!jit_tls)
+	if (!jit_tls || !domain)
 		return FALSE;
-	g_assert (domain);
 
 #if defined (MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	lmf_key =  mono_get_lmf_tls_offset ();
