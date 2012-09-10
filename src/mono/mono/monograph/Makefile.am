@@ -4,7 +4,18 @@ export HOST_CC
 endif
 
 if JIT_SUPPORTED
+if !SHARED_MONO
+static_libs=	\
+	$(top_builddir)/mono/metadata/libmonoruntime-static.la	\
+	$(top_builddir)/mono/io-layer/libwapi.la	\
+	$(top_builddir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS) $(LIBICONV) \
+	$(LIBGC_STATIC_LIBS)
+
+runtime_lib=../mini/$(LIBMONO_LA) $(static_libs)
+else
 runtime_lib=../mini/$(LIBMONO_LA)
+endif
 else
 runtime_lib=../interpreter/libmint.la
 endif
