@@ -68,11 +68,7 @@ typedef struct {
 } while (0)
 
 /* useful until we keep track of gc-references in corlib etc. */
-#ifdef HAVE_SGEN_GC
-#define IS_GC_REFERENCE(t) FALSE
-#else
-#define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib)
-#endif
+#define IS_GC_REFERENCE(t) (mono_gc_is_moving () ? FALSE : ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib))
 
 extern GCStats gc_stats MONO_INTERNAL;
 
