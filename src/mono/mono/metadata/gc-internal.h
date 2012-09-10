@@ -26,7 +26,7 @@ typedef struct {
 #define mono_domain_finalizers_unlock(domain) LeaveCriticalSection (&(domain)->finalizable_objects_hash_lock);
 
 /* Register a memory area as a conservatively scanned GC root */
-#define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
+#define MONO_GC_REGISTER_ROOT_PINNING(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
 
 #define MONO_GC_UNREGISTER_ROOT(x) mono_gc_deregister_root ((char*)&(x))
 
@@ -37,7 +37,7 @@ typedef struct {
 /* The result of alloc_fixed () is not GC tracked memory */
 #define MONO_GC_REGISTER_ROOT_FIXED(x) do { \
 	if (!mono_gc_is_moving ())				\
-		MONO_GC_REGISTER_ROOT ((x)); \
+		MONO_GC_REGISTER_ROOT_PINNING ((x)); \
 	} while (0)
 
 /*

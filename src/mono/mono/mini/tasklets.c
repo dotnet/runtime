@@ -19,7 +19,7 @@ internal_init (void)
 {
 	if (keepalive_stacks)
 		return;
-	MONO_GC_REGISTER_ROOT (keepalive_stacks);
+	MONO_GC_REGISTER_ROOT_PINNING (keepalive_stacks);
 	keepalive_stacks = mono_g_hash_table_new (NULL, NULL);
 }
 
