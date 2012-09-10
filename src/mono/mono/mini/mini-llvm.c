@@ -4112,18 +4112,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 void
 mono_llvm_check_method_supported (MonoCompile *cfg)
 {
-	/*
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	int i;
-	*/
 
 	if (cfg->method->save_lmf) {
 		cfg->exception_message = g_strdup ("lmf");
 		cfg->disable_llvm = TRUE;
 	}
 
-#if 0
+#if 1
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		
