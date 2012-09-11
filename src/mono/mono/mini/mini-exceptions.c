@@ -855,15 +855,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		ji = frame.ji;
 		*native_offset = frame.native_offset;
 
-		/* skip all wrappers ??*/
-		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
-			ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		/* The skip count passed by the caller depends on us not filtering out MANAGED_TO_NATIVE */
+		if (ji->method->wrapper_type != MONO_WRAPPER_NONE && ji->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && ji->method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
 			continue;
-
 		skip--;
 	} while (skip >= 0);
 
