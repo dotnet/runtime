@@ -276,6 +276,20 @@ static MonoGCBridgeCallbacks bridge_callbacks;
 
 static int current_time;
 
+static gboolean bridge_processing_in_progress = FALSE;
+
+void
+mono_gc_wait_for_bridge_processing (void)
+{
+	if (!bridge_processing_in_progress)
+		return;
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE waiting for bridge processing to finish");
+
+	sgen_gc_lock ();
+	sgen_gc_unlock ();
+}
+
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 {
@@ -539,6 +553,9 @@ sgen_bridge_processing_stw_step (void)
 	if (!registered_bridges.size)
 		return;
 
+	g_assert (!bridge_processing_in_progress);
+	bridge_processing_in_progress = TRUE;
+
 	SGEN_TV_GETTIME (btv);
 
 	/* first DFS pass */
@@ -572,6 +589,8 @@ sgen_bridge_processing_finish (void)
 
 	if (!registered_bridges.size)
 		return;
+
+	g_assert (bridge_processing_in_progress);
 
 	SGEN_TV_GETTIME (atv);
 
@@ -753,6 +772,8 @@ sgen_bridge_processing_finish (void)
 		dsf1_passes, dsf2_passes);
 
 	step_1 = 0; /* We must cleanup since this value is used as an accumulator. */
+
+	bridge_processing_in_progress = FALSE;
 }
 
 static const char *bridge_class;
