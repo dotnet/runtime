@@ -762,7 +762,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 
 	g_assert (w->collect_line_info);
 
-	add_line_number_file_name (w, "xdb.il", 0, 0);
+	add_line_number_file_name (w, "<unknown>", 0, 0);
 
 	/* Collect files */
 	// FIXME: Revert list
