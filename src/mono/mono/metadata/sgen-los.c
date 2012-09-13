@@ -52,6 +52,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-memory-governor.h"
 #include "utils/mono-mmap.h"
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
@@ -93,7 +94,6 @@ static LOSSection *los_sections = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
 static mword los_num_objects = 0;
 static int los_num_sections = 0;
-static mword next_los_collection = 2*1024*1024; /* 2 MB, need to tune */
 
 //#define USE_MALLOC
 //#define LOS_CONSISTENCY_CHECK
@@ -241,10 +241,10 @@ get_los_section_memory (size_t size)
 	if (free_chunks)
 		return (LOSObject*)free_chunks;
 
-	if (!sgen_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
+	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
 		return NULL;
 
-	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
+	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE, NULL);
 
 	if (!section)
 		return NULL;
@@ -324,7 +324,7 @@ sgen_los_free_object (LOSObject *obj)
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
 		sgen_free_os_memory (obj, size);
-		sgen_release_space (size, SPACE_LOS);
+		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
 #ifdef LOS_CONSISTENCY_CHECKS
@@ -351,17 +351,14 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 
 #ifdef LOS_DUMMY
 	if (!los_segment)
-		los_segment = sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE);
+		los_segment = sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE, NULL);
 	los_segment_index = ALIGN_UP (los_segment_index);
 
 	obj = (LOSObject*)(los_segment + los_segment_index);
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	if (sgen_need_major_collection (size)) {
-		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
-		sgen_collect_major_no_lock ("LOS overflow");
-	}
+	sgen_ensure_free_space (size);
 
 #ifdef USE_MALLOC
 	obj = malloc (size + sizeof (LOSObject));
@@ -374,8 +371,8 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size += sizeof (LOSObject);
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
-		if (sgen_try_alloc_space (alloc_size, SPACE_LOS)) {
-			obj = sgen_alloc_os_memory (alloc_size, TRUE);
+		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
+			obj = sgen_alloc_os_memory (alloc_size, TRUE, NULL);
 			if (obj)
 				obj->huge_object = TRUE;
 		}
@@ -427,7 +424,7 @@ sgen_los_sweep (void)
 			else
 				los_sections = next;
 			sgen_free_os_memory (section, LOS_SECTION_SIZE);
-			sgen_release_space (LOS_SECTION_SIZE, SPACE_LOS);
+			sgen_memgov_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
 			continue;
@@ -524,11 +521,11 @@ mono_sgen_los_describe_pointer (char *ptr)
 
 		if (obj->data == ptr)
 			fprintf (gc_debug_file, "(object %s.%s size %d)", 
-				vtable->klass->name_space, vtable->klass->name, obj->size);
+					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
 		else
 			fprintf (gc_debug_file, "(interior-ptr offset %td of %p (%s.%s) size %d)",
-				ptr - obj->data, obj->data,
-				vtable->klass->name_space, vtable->klass->name, obj->size);
+					 ptr - obj->data, obj->data,
+					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
 
 		return TRUE;
 	}

@@ -51,6 +51,7 @@
 
 #include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
+#include "metadata/sgen-memory-governor.h"
 
 /* Pinned objects are allocated in the LOS space if bigger than half a page
  * or from freelists otherwise. We assume that pinned objects are relatively few
@@ -216,7 +217,7 @@ alloc_pinned_chunk (SgenPinnedAllocator *alc)
 	int offset;
 	int size = SGEN_PINNED_CHUNK_SIZE;
 
-	chunk = sgen_alloc_os_memory_aligned (size, size, TRUE);
+	chunk = sgen_alloc_os_memory_aligned (size, size, TRUE, "pinned chunk");
 	chunk->block.role = MEMORY_ROLE_PINNED;
 
 	sgen_update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
@@ -328,7 +329,7 @@ sgen_alloc_pinned (SgenPinnedAllocator *alc, size_t size)
 		LargePinnedMemHeader *mh;
 
 		size += sizeof (LargePinnedMemHeader);
-		mh = sgen_alloc_os_memory (size, TRUE);
+		mh = sgen_alloc_os_memory (size, TRUE, "large pinned object");
 		mh->magic = LARGE_PINNED_MEM_HEADER_MAGIC;
 		mh->size = size;
 		/* FIXME: do a CAS here */

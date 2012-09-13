@@ -38,6 +38,14 @@
 #include "mini-unwind.h"
 #include "jit.h"
 
+/*
+ * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
+ * can be linked into both mono and mono-sgen.
+ */
+#if defined(HAVE_BOEHM_GC) || defined(HAVE_SGEN_GC)
+#error "The code in mini/ should not depend on these defines."
+#endif
+
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
 #define G_UNLIKELY(a) (a)
@@ -119,7 +127,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 82
+#define MONO_AOT_FILE_VERSION 84
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -242,6 +250,8 @@ typedef struct MonoAotFileInfo
 	guint32 flags;
 	/* Optimization flags used to compile the module */
 	guint32 opts;
+	/* SIMD flags used to compile the module */
+	guint32 simd_opts;
 	/* Index of the blob entry holding the GC used by this module */
 	gint32 gc_name_index;
 
@@ -1029,15 +1039,15 @@ typedef enum {
 	MONO_RGCTX_INFO_CAST_CACHE
 } MonoRgctxInfoType;
 
-typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
+typedef struct _MonoRuntimeGenericContextInfoTemplate {
 	MonoRgctxInfoType info_type;
 	gpointer data;
-	struct _MonoRuntimeGenericContextOtherInfoTemplate *next;
-} MonoRuntimeGenericContextOtherInfoTemplate;
+	struct _MonoRuntimeGenericContextInfoTemplate *next;
+} MonoRuntimeGenericContextInfoTemplate;
 
 typedef struct {
 	MonoClass *next_subclass;
-	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
+	MonoRuntimeGenericContextInfoTemplate *infos;
 	GSList *method_templates;
 } MonoRuntimeGenericContextTemplate;
 
@@ -1803,6 +1813,7 @@ void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg
 void      mono_print_code                   (MonoCompile *cfg, const char *msg) MONO_INTERNAL;
 void      mono_print_method_from_ip         (void *ip);
 char     *mono_pmip                         (void *ip);
+gboolean  mono_debug_count                  (void) MONO_INTERNAL;
 const char* mono_inst_name                  (int op);
 void      mono_inst_set_src_registers       (MonoInst *ins, int *regs) MONO_INTERNAL;
 int       mono_op_to_op_imm                 (int opcode) MONO_INTERNAL;
@@ -2047,7 +2058,7 @@ void      mono_arch_init                        (void) MONO_INTERNAL;
 void      mono_arch_finish_init                 (void) MONO_INTERNAL;
 void      mono_arch_cleanup                     (void) MONO_INTERNAL;
 void      mono_arch_cpu_init                    (void) MONO_INTERNAL;
-guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask) MONO_INTERNAL;
+guint32   mono_arch_cpu_optimizations           (guint32 *exclude_mask) MONO_INTERNAL;
 void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack, int *code) MONO_INTERNAL;
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) MONO_INTERNAL;
 void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) MONO_INTERNAL;
@@ -2083,7 +2094,7 @@ void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBloc
 void      mono_arch_free_jit_tls_data           (MonoJitTlsData *tls) MONO_INTERNAL;
 void      mono_arch_fill_argument_info          (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_arch_allocate_vars               (MonoCompile *m) MONO_INTERNAL;
-int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info) MONO_INTERNAL;
+int       mono_arch_get_argument_info           (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info) MONO_INTERNAL;
 gboolean  mono_arch_print_tree			(MonoInst *tree, int arity) MONO_INTERNAL;
 void      mono_arch_emit_call                   (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 void      mono_arch_emit_outarg_vt              (MonoCompile *cfg, MonoInst *ins, MonoInst *src) MONO_INTERNAL;
@@ -2230,6 +2241,14 @@ MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_f
 MonoString *ves_icall_System_Exception_get_trace (MonoException *exc) MONO_INTERNAL;
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to) MONO_INTERNAL;
 
+/* Installs a function which is called when the runtime encounters an unhandled exception.
+ * This hook isn't expected to return.
+ * If no hook has been installed, the runtime will print a message before aborting.
+ */
+typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer user_data);
+void          mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
+void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
+
 /* Dominator/SSA methods */
 void        mono_compile_dominator_info         (MonoCompile *cfg, int dom_flags) MONO_INTERNAL;
 void        mono_compute_natural_loops          (MonoCompile *cfg) MONO_INTERNAL;
@@ -2323,7 +2342,7 @@ int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
 
 guint32
-mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
+mono_method_lookup_or_register_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
 	MonoRgctxInfoType info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
 
 MonoGenericContext

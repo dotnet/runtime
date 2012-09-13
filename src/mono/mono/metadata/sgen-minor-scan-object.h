@@ -23,6 +23,22 @@
  */
 extern long long stat_scan_object_called_nursery;
 
+#if defined(SGEN_SIMPLE_NURSERY)
+#define serial_scan_object simple_nursery_serial_scan_object
+#define serial_scan_vtype simple_nursery_serial_scan_vtype
+#define parallel_scan_object simple_nursery_parallel_scan_object
+#define parallel_scan_vtype simple_nursery_parallel_scan_vtype
+
+#elif defined (SGEN_SPLIT_NURSERY)
+#define serial_scan_object split_nursery_serial_scan_object
+#define serial_scan_vtype split_nursery_serial_scan_vtype
+#define parallel_scan_object split_nursery_parallel_scan_object
+#define parallel_scan_vtype split_nursery_parallel_scan_vtype
+
+#else
+#error "Please define GC_CONF_NAME"
+#endif
+
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		void *__old = *(ptr);	\

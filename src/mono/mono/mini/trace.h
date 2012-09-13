@@ -11,6 +11,7 @@ typedef enum {
 	MONO_TRACEOP_CLASS,
 	MONO_TRACEOP_NAMESPACE,
 	MONO_TRACEOP_EXCEPTION,
+	MONO_TRACEOP_WRAPPER,
 } MonoTraceOpcode;
 
 typedef struct {

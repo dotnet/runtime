@@ -410,7 +410,7 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
  * Returns the size of the activation frame.
  */
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
 	guint32 size, align, pad;
@@ -700,7 +700,7 @@ mono_arch_cleanup (void)
  * This function returns the optimizations supported on this cpu.
  */
 guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
 	const char *cpu_arch = getenv ("MONO_CPU_ARCH");
@@ -753,6 +753,20 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	*exclude_mask = 0;
 	return opts;
 }
+
+/*
+ * This function test for all SIMD functions supported.
+ *
+ * Returns a bitmask corresponding to all supported versions.
+ *
+ */
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	/* SIMD is currently unimplemented */
+	return 0;
+}
+
 
 #ifndef DISABLE_JIT
 
@@ -1245,36 +1259,11 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 
 #ifndef DISABLE_JIT
 
-G_GNUC_UNUSED static void
-break_count (void)
-{
-}
-
-G_GNUC_UNUSED static gboolean
-debug_count (void)
-{
-	static int count = 0;
-	count ++;
-
-	if (!getenv ("COUNT"))
-		return TRUE;
-
-	if (count == atoi (getenv ("COUNT"))) {
-		break_count ();
-	}
-
-	if (count > atoi (getenv ("COUNT"))) {
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 static gboolean
 debug_omit_fp (void)
 {
 #if 0
-	return debug_count ();
+	return mono_debug_count ();
 #else
 	return TRUE;
 #endif
@@ -5223,10 +5212,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				case 8:
-					g_assert (arm_is_imm12 (inst->inst_offset));
-					ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
-					g_assert (arm_is_imm12 (inst->inst_offset + 4));
-					ARM_STR_IMM (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
+					if (arm_is_imm12 (inst->inst_offset)) {
+						ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_STR_REG_REG (code, ainfo->reg, inst->inst_basereg, ARMREG_IP);
+					}
+					if (arm_is_imm12 (inst->inst_offset + 4)) {
+						ARM_STR_IMM (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset + 4);
+						ARM_STR_REG_REG (code, ainfo->reg + 1, inst->inst_basereg, ARMREG_IP);
+					}
 					break;
 				default:
 					if (arm_is_imm12 (inst->inst_offset)) {

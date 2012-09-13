@@ -16,8 +16,11 @@
     <AssemblyName>@ASSEMBLYNAME@</AssemblyName>
     <TargetFrameworkVersion>v@FX_VERSION</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <!-- Filter out System.Core added by: Microsoft.NETFramework.props  -->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
@@ -28,6 +31,7 @@
     @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>  
     <DebugType>pdbonly</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <Optimize>true</Optimize>

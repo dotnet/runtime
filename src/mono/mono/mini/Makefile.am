@@ -92,12 +92,12 @@ if JIT_SUPPORTED
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmonosgen-static.la
+sgen_static_libraries = libmini-static.la $(sgenstatic_libs)
 endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmono-2.0.la
-boehm_static_libraries = libmono-static.la
+boehm_static_libraries = libmini-static.la $(static_libs)
 boehm_binaries  = mono
 endif
 
@@ -119,9 +119,9 @@ endif
 lib_LTLIBRARIES = $(shared_libraries)
 
 if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES =
+noinst_LTLIBRARIES = libmini.la
 else
-noinst_LTLIBRARIES = $(boehm_static_libraries) $(sgen_static_libraries)
+noinst_LTLIBRARIES = libmini.la libmini-static.la
 endif
 
 if MOONLIGHT
@@ -148,22 +148,22 @@ endif
 mono_SOURCES = \
 	main.c
 
-mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES)
+mono_CFLAGS = $(AM_CFLAGS)
 
 INCLUDES = $(LIBGC_CPPFLAGS)
 
 mono_sgen_SOURCES = $(mono_SOURCES)
-mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
+mono_sgen_CFLAGS = $(AM_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
-buildver.h: libmono-static.la
+buildver.h: libmini-static.la
 	@echo "const char *build_date = \"`date`\";" > buildver.h
 mono-main.$(OBJEXT): buildver.h
 endif
 
-buildver-sgen.h: libmonosgen-static.la
+buildver-sgen.h: libmini-static.la
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main.$(OBJEXT): buildver-sgen.h
 
@@ -182,8 +182,8 @@ endif
 if STATIC_MONO
 # Link libmono into mono statically
 # This leads to higher performance, especially with TLS
-MONO_LIB=libmono-static.la
-MONO_SGEN_LIB=libmonosgen-static.la
+MONO_LIB=$(boehm_static_libraries)
+MONO_SGEN_LIB=$(sgen_static_libraries)
 else 
 MONO_LIB=libmono-2.0.la
 MONO_SGEN_LIB=libmonosgen-2.0.la
@@ -411,7 +411,8 @@ test_sources = 			\
 	generics.cs		\
 	generics-variant-types.il\
 	basic-simd.cs \
-	aot-tests.cs
+	aot-tests.cs \
+	gc-test.cs
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
@@ -525,16 +526,19 @@ os_sources = $(darwin_sources) $(posix_sources)
 monobin_platform_ldflags=-framework CoreFoundation
 endif
 
-libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
-libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
-libmono_2_0_la_LIBADD = $(libs) $(LIBMONO_DTRACE_OBJECT)
+libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
+libmini_la_CFLAGS = $(mono_CFLAGS)
 
-libmonosgen_2_0_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmono_2_0_la_SOURCES =
+libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
+libmono_2_0_la_LIBADD = libmini.la $(libs) $(LIBMONO_DTRACE_OBJECT)
+
+libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_2_0_la_LIBADD = $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
+libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
-libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmono_moon_la_SOURCES = $(libmini_la_SOURCES)
 if MOONLIGHT_BOEHM
 libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
@@ -544,18 +548,14 @@ libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
 endif
 endif
 
-libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_static_la_CFLAGS = $(mono_CFLAGS)
-libmono_static_la_LDFLAGS = -static
-libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
-
-libmonosgen_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_static_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_static_la_LDFLAGS = -static
-libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
-
-nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
-nodist_libmono_static_la_CFLAGS = $(mono_CFLAGS)
+#
+# This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
+# compile time dependencies on boehm/sgen.
+#
+libmini_static_la_SOURCES = $(libmini_la_SOURCES)
+libmini_static_la_CFLAGS = $(AM_CFLAGS)
+libmini_static_la_LDFLAGS = -static
+libmini_static_la_LIBADD = $(MONO_DTRACE_OBJECT)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
@@ -650,13 +650,16 @@ checktests: $(regtests)
 rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
 
+gctest: mono gc-test.exe
+	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
+
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
 
 aotcheck: mono $(regtests)
-	rm -f *.exe.so
+	rm -f *.exe.so *.exe.dylib *.exe.dylib.dSYM
 	$(RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
-	rm -f *.exe.so
+	rm -f *.exe.so *.exe.dylib *.exe.dylib.dSYM
 
 llvmaotcheck:
 	$(MAKE) aotcheck LLVM=1

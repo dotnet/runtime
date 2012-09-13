@@ -98,7 +98,7 @@ sgen_pin_stats_register_address (char *addr, int pin_type)
 			node_ptr = &node->right;
 	}
 
-	node = sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS);
+	node = sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS, TRUE);
 	node->addr = addr;
 	node->pin_types = pin_type_bit;
 	node->left = node->right = NULL;
@@ -165,7 +165,7 @@ sgen_pin_stats_register_object (char *obj, size_t size)
 	int pin_types = 0;
 	ObjectList *list;
 
-	list = sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
+	list = sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS, TRUE);
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
 	list->obj = (MonoObject*)obj;
 	list->next = pinned_objects;

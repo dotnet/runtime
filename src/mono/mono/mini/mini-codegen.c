@@ -410,6 +410,53 @@ typedef struct {
 } RegTrack;
 
 #ifndef DISABLE_LOGGING
+
+static const char*
+info_type_to_str (MonoRgctxInfoType type)
+{
+	switch (type) {
+	case MONO_RGCTX_INFO_STATIC_DATA: return "STATIC_DATA";
+	case MONO_RGCTX_INFO_KLASS: return "KLASS";
+	case MONO_RGCTX_INFO_VTABLE: return "VTABLE";
+	case MONO_RGCTX_INFO_TYPE: return "TYPE";
+	case MONO_RGCTX_INFO_REFLECTION_TYPE: return "REFLECTION_TYPE";
+	case MONO_RGCTX_INFO_METHOD: return "METHOD";
+	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: return "GENERIC_METHOD_CODE";
+	case MONO_RGCTX_INFO_CLASS_FIELD: return "CLASS_FIELD";
+	case MONO_RGCTX_INFO_METHOD_RGCTX: return "METHOD_RGCTX";
+	case MONO_RGCTX_INFO_METHOD_CONTEXT: return "METHOD_CONTEXT";
+	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK: return "REMOTING_INVOKE_WITH_CHECK";
+	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE: return "METHOD_DELEGATE_CODE";
+	case MONO_RGCTX_INFO_CAST_CACHE: return "CAST_CACHE";
+	default:
+		return "<UNKNOWN RGCTX INFO TYPE>";
+	}
+}
+
+static void
+print_ji (MonoJumpInfo *ji)
+{
+	switch (ji->type) {
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *entry = ji->data.rgctx_entry;
+
+		printf ("[RGCTX_FETCH ");
+		print_ji (entry->data);
+		printf (" - %s]", info_type_to_str (entry->info_type));
+		break;
+	}
+	case MONO_PATCH_INFO_METHODCONST: {
+		char *s = mono_method_full_name (ji->data.method, TRUE);
+		printf ("[METHODCONST - %s]", s);
+		g_free (s);
+		break;
+	}
+	default:
+		printf ("[%d]", ji->type);
+		break;
+	}
+}
+
 void
 mono_print_ins_index (int i, MonoInst *ins)
 {
@@ -532,6 +579,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_IAND_IMM:
 	case OP_IOR_IMM:
 	case OP_IXOR_IMM:
+	case OP_SUB_IMM:
 		printf (" [%d]", (int)ins->inst_imm);
 		break;
 	case OP_ADD_IMM:
@@ -581,6 +629,11 @@ mono_print_ins_index (int i, MonoInst *ins)
 			char *full_name = mono_method_full_name (call->method, TRUE);
 			printf (" [%s]", full_name);
 			g_free (full_name);
+		} else if (call->fptr_is_patch) {
+			MonoJumpInfo *ji = (MonoJumpInfo*)call->fptr;
+
+			printf (" ");
+			print_ji (ji);
 		} else if (call->fptr) {
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
 			if (info)

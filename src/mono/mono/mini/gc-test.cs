@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Collections;
+using System.Threading;
 
 /*
  * Regression tests for the GC support in the JIT
@@ -563,5 +564,23 @@ class Tests {
 		var arr = new ArrayList ();
 		liveness_13_inner (ref arr);
 		return 0;
+	}
+
+	static ThreadLocal<object> tls;
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void alloc_tls_obj () {
+		tls = new ThreadLocal<object> ();
+		tls.Value = new object ();
+	}
+
+	public static int test_0_thread_local () {
+		alloc_tls_obj ();
+		GC.Collect ();
+		Type t = tls.Value.GetType ();
+		if (t == typeof (object))
+			return 0;
+		else
+			return 1;
 	}
 }

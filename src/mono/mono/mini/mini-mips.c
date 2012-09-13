@@ -495,7 +495,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
  * Returns the size of the activation frame.
  */
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
 	guint32 size, align, pad;
@@ -716,13 +716,26 @@ mono_arch_cleanup (void)
  * This function returns the optimizations supported on this cpu.
  */
 guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
 
 	/* no mips-specific optimizations yet */
 	*exclude_mask = 0;
 	return opts;
+}
+
+/*
+ * This function test for all SIMD functions supported.
+ *
+ * Returns a bitmask corresponding to all supported versions.
+ *
+ */
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	/* SIMD is currently unimplemented */
+	return 0;
 }
 
 GList *
@@ -1307,36 +1320,11 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	return cinfo;
 }
 
-G_GNUC_UNUSED static void
-break_count (void)
-{
-}
-
-G_GNUC_UNUSED static gboolean
-debug_count (void)
-{
-	static int count = 0;
-	count ++;
-
-	if (!getenv ("COUNT"))
-		return TRUE;
-
-	if (count == atoi (getenv ("COUNT"))) {
-		break_count ();
-	}
-
-	if (count > atoi (getenv ("COUNT"))) {
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 static gboolean
 debug_omit_fp (void)
 {
 #if 0
-	return debug_count ();
+	return mono_debug_count ();
 #else
 	return TRUE;
 #endif

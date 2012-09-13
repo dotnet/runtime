@@ -216,6 +216,7 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
+#include "metadata/sgen-memory-governor.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
@@ -348,7 +349,6 @@ static long long time_major_fragment_creation = 0;
 
 int gc_debug_level = 0;
 FILE* gc_debug_file;
-static gboolean debug_print_allowance = FALSE;
 
 /*
 void
@@ -411,26 +411,12 @@ static int gc_disabled = 0;
 
 static gboolean use_cardtable;
 
-#define MIN_MINOR_COLLECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 4)
-
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
 static mword pagesize = 4096;
 int degraded_mode = 0;
 
 static mword bytes_pinned_from_failed_allocation = 0;
-
-static mword total_alloc = 0;
-/* use this to tune when to do a major/minor collection */
-static mword memory_pressure = 0;
-static mword minor_collection_allowance;
-static int minor_collection_sections_alloced = 0;
-
-
-/* GC Logging stats */
-static int last_major_num_sections = 0;
-static int last_los_memory_usage = 0;
-static gboolean major_collection_happened = FALSE;
 
 GCMemSection *nursery_section = NULL;
 static mword lowest_heap_address = ~(mword)0;
@@ -563,62 +549,8 @@ static MonoVTable *array_fill_vtable;
 MonoNativeThreadId main_gc_thread = NULL;
 #endif
 
-/*
- * ######################################################################
- * ########  Heap size accounting
- * ######################################################################
- */
-/*heap limits*/
-static mword max_heap_size = ((mword)0)- ((mword)1);
-static mword soft_heap_limit = ((mword)0) - ((mword)1);
-static mword allocated_heap;
-
 /*Object was pinned during the current collection*/
 static mword objects_pinned;
-
-void
-sgen_release_space (mword size, int space)
-{
-	allocated_heap -= size;
-}
-
-static size_t
-available_free_space (void)
-{
-	return max_heap_size - MIN (allocated_heap, max_heap_size);
-}
-
-gboolean
-sgen_try_alloc_space (mword size, int space)
-{
-	if (available_free_space () < size)
-		return FALSE;
-
-	allocated_heap += size;
-	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
-	return TRUE;
-}
-
-static void
-init_heap_size_limits (glong max_heap, glong soft_limit)
-{
-	if (soft_limit)
-		soft_heap_limit = soft_limit;
-
-	if (max_heap == 0)
-		return;
-
-	if (max_heap < soft_limit) {
-		fprintf (stderr, "max-heap-size must be at least as large as soft-heap-limit.\n");
-		exit (1);
-	}
-
-	if (max_heap < sgen_nursery_size * 4) {
-		fprintf (stderr, "max-heap-size must be at least 4 times larger than nursery size.\n");
-		exit (1);
-	}
-	max_heap_size = max_heap - sgen_nursery_size;
-}
 
 /*
  * ######################################################################
@@ -639,7 +571,7 @@ typedef SgenGrayQueue GrayQueue;
 
 /* forward declarations */
 static int stop_world (int generation);
-static int restart_world (int generation);
+static int restart_world (int generation, GGTimingInfo *timing);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
@@ -658,8 +590,6 @@ static void process_dislink_stage_entries (void);
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
-static gboolean need_major_collection (mword space_needed);
-static void major_collection (const char *reason);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
 static gboolean mono_gc_is_critical_method (MonoMethod *method);
@@ -1669,51 +1599,6 @@ sgen_update_heap_boundaries (mword low, mword high)
 	} while (SGEN_CAS_PTR ((gpointer*)&highest_heap_address, (gpointer)high, (gpointer)old) != (gpointer)old);
 }
 
-static unsigned long
-prot_flags_for_activate (int activate)
-{
-	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
-	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
-}
-
-/*
- * Allocate a big chunk of memory from the OS (usually 64KB to several megabytes).
- * This must not require any lock.
- */
-void*
-sgen_alloc_os_memory (size_t size, int activate)
-{
-	void *ptr = mono_valloc (0, size, prot_flags_for_activate (activate));
-	if (ptr) {
-		/* FIXME: CAS */
-		total_alloc += size;
-	}
-	return ptr;
-}
-
-/* size must be a power of 2 */
-void*
-sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean activate)
-{
-	void *ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
-	if (ptr) {
-		/* FIXME: CAS */
-		total_alloc += size;
-	}
-	return ptr;
-}
-
-/*
- * Free the memory returned by sgen_alloc_os_memory (), returning it to the OS.
- */
-void
-sgen_free_os_memory (void *addr, size_t size)
-{
-	mono_vfree (addr, size);
-	/* FIXME: CAS */
-	total_alloc -= size;
-}
-
 /*
  * Allocate and setup the data structures needed to be able to allocate objects
  * in the nursery. The nursery is stored in nursery_section.
@@ -1737,18 +1622,22 @@ alloc_nursery (void)
 	section = sgen_alloc_internal (INTERNAL_MEM_SECTION);
 
 	alloc_size = sgen_nursery_size;
+
+	/* If there isn't enough space even for the nursery we should simply abort. */
+	g_assert (sgen_memgov_try_alloc_space (alloc_size, SPACE_NURSERY));
+
 #ifdef SGEN_ALIGN_NURSERY
 	data = major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
 #else
 	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
-	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)total_alloc));
+	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)mono_gc_get_heap_size ()));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = data + sgen_nursery_size;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS, TRUE);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN0;
 	section->block.next = NULL;
@@ -2297,108 +2186,6 @@ init_stats (void)
 	inited = TRUE;
 }
 
-static gboolean need_calculate_minor_collection_allowance;
-
-static int last_collection_old_num_major_sections;
-static mword last_collection_los_memory_usage = 0;
-static mword last_collection_old_los_memory_usage;
-static mword last_collection_los_memory_alloced;
-
-static void
-reset_minor_collection_allowance (void)
-{
-	need_calculate_minor_collection_allowance = TRUE;
-}
-
-static void
-try_calculate_minor_collection_allowance (gboolean overwrite)
-{
-	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
-	mword los_memory_saved, new_major, new_heap_size;
-
-	if (overwrite)
-		g_assert (need_calculate_minor_collection_allowance);
-
-	if (!need_calculate_minor_collection_allowance)
-		return;
-
-	if (!*major_collector.have_swept) {
-		if (overwrite)
-			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
-		return;
-	}
-
-	num_major_sections = major_collector.get_num_major_sections ();
-
-	num_major_sections_saved = MAX (last_collection_old_num_major_sections - num_major_sections, 0);
-	los_memory_saved = MAX (last_collection_old_los_memory_usage - last_collection_los_memory_usage, 1);
-
-	new_major = num_major_sections * major_collector.section_size;
-	new_heap_size = new_major + last_collection_los_memory_usage;
-
-	/*
-	 * FIXME: Why is save_target half the major memory plus half the
-	 * LOS memory saved?  Shouldn't it be half the major memory
-	 * saved plus half the LOS memory saved?  Or half the whole heap
-	 * size?
-	 */
-	save_target = (new_major + los_memory_saved) / 2;
-
-	/*
-	 * We aim to allow the allocation of as many sections as is
-	 * necessary to reclaim save_target sections in the next
-	 * collection.  We assume the collection pattern won't change.
-	 * In the last cycle, we had num_major_sections_saved for
-	 * minor_collection_sections_alloced.  Assuming things won't
-	 * change, this must be the same ratio as save_target for
-	 * allowance_target, i.e.
-	 *
-	 *    num_major_sections_saved            save_target
-	 * --------------------------------- == ----------------
-	 * minor_collection_sections_alloced    allowance_target
-	 *
-	 * hence:
-	 */
-	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + last_collection_los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
-
-	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
-
-	if (new_heap_size + minor_collection_allowance > soft_heap_limit) {
-		if (new_heap_size > soft_heap_limit)
-			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
-		else
-			minor_collection_allowance = MAX (soft_heap_limit - new_heap_size, MIN_MINOR_COLLECTION_ALLOWANCE);
-	}
-
-	if (debug_print_allowance) {
-		mword old_major = last_collection_old_num_major_sections * major_collector.section_size;
-
-		fprintf (gc_debug_file, "Before collection: %td bytes (%td major, %td LOS)\n",
-				old_major + last_collection_old_los_memory_usage, old_major, last_collection_old_los_memory_usage);
-		fprintf (gc_debug_file, "After collection: %td bytes (%td major, %td LOS)\n",
-				new_heap_size, new_major, last_collection_los_memory_usage);
-		fprintf (gc_debug_file, "Allowance: %td bytes\n", minor_collection_allowance);
-	}
-
-	if (major_collector.have_computed_minor_collection_allowance)
-		major_collector.have_computed_minor_collection_allowance ();
-
-	need_calculate_minor_collection_allowance = FALSE;
-}
-
-static gboolean
-need_major_collection (mword space_needed)
-{
-	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
-	return (space_needed > available_free_space ()) ||
-		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
-}
-
-gboolean
-sgen_need_major_collection (mword space_needed)
-{
-	return need_major_collection (space_needed);
-}
 
 static void
 reset_pinned_from_failed_allocation (void)
@@ -2421,7 +2208,7 @@ sgen_collection_is_parallel (void)
 	case GENERATION_OLD:
 		return major_collector.is_parallel;
 	default:
-		g_assert_not_reached ();
+		g_error ("Invalid current generation %d", current_collection_generation);
 	}
 }
 
@@ -2546,7 +2333,7 @@ verify_nursery (void)
  * collection.
  */
 static gboolean
-collect_nursery (size_t requested_size)
+collect_nursery (void)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
@@ -2598,20 +2385,22 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	if (xdomain_checks)
+	if (xdomain_checks) {
+		sgen_clear_nursery_fragments ();
 		check_for_xdomain_refs ();
+	}
 
 	nursery_section->next_data = nursery_next;
 
 	major_collector.start_nursery_collection ();
 
-	try_calculate_minor_collection_allowance (FALSE);
+	sgen_memgov_minor_collection_start ();
 
 	sgen_gray_object_queue_init (&gray_queue);
 	sgen_workers_init_distribute_gray_queue ();
 
 	stat_minor_gcs++;
-	mono_stats.minor_gc_count ++;
+	gc_stats.minor_gc_count ++;
 
 	if (remset.prepare_for_minor_collection)
 		remset.prepare_for_minor_collection ();
@@ -2635,7 +2424,7 @@ collect_nursery (size_t requested_size)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", sgen_get_pinned_count ()));
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
+		sgen_check_whole_heap ();
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
 
@@ -2753,7 +2542,7 @@ collect_nursery (size_t requested_size)
 	major_collector.finish_nursery_collection ();
 
 	TV_GETTIME (all_btv);
-	mono_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+	gc_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	if (heap_dump_file)
 		dump_heap ("minor", stat_minor_gcs - 1, NULL);
@@ -2775,28 +2564,14 @@ collect_nursery (size_t requested_size)
 
 	binary_protocol_flush_buffers (FALSE);
 
+	sgen_memgov_minor_collection_end ();
+
 	/*objects are late pinned because of lack of memory, so a major is a good call*/
-	needs_major = need_major_collection (0) || objects_pinned;
+	needs_major = objects_pinned > 0;
 	current_collection_generation = -1;
 	objects_pinned = 0;
 
 	return needs_major;
-}
-
-void
-sgen_collect_nursery_no_lock (size_t requested_size)
-{
-	gint64 gc_start_time;
-
-	mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
-	gc_start_time = mono_100ns_ticks ();
-
-	stop_world (0);
-	collect_nursery (requested_size);
-	restart_world (0);
-
-	mono_trace_message (MONO_TRACE_GC, "minor gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
-	mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
 }
 
 static gboolean
@@ -2817,21 +2592,14 @@ major_do_collection (const char *reason)
 	ScanThreadDataJobData stdjd;
 	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
 
+	current_collection_generation = GENERATION_OLD;
 	mono_perfcounters->gc_collections1++;
 
 	current_object_ops = major_collector.major_ops;
 
 	reset_pinned_from_failed_allocation ();
 
-	last_collection_old_num_major_sections = major_collector.get_num_major_sections ();
-
-	/*
-	 * A domain could have been freed, resulting in
-	 * los_memory_usage being less than last_collection_los_memory_usage.
-	 */
-	last_collection_los_memory_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
-	last_collection_old_los_memory_usage = los_memory_usage;
-	objects_pinned = 0;
+	sgen_memgov_major_collection_start ();
 
 	//count_ref_nonref_objs ();
 	//consistency_check ();
@@ -2841,12 +2609,12 @@ major_do_collection (const char *reason)
 
 	sgen_gray_object_queue_init (&gray_queue);
 	sgen_workers_init_distribute_gray_queue ();
-	sgen_nursery_alloc_prepare_for_major (reason);
+	sgen_nursery_alloc_prepare_for_major ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", stat_major_gcs));
 	stat_major_gcs++;
-	mono_stats.major_gc_count ++;
+	gc_stats.major_gc_count ++;
 
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
@@ -2856,7 +2624,7 @@ major_do_collection (const char *reason)
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap_stw ();
+		sgen_check_whole_heap ();
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
@@ -2869,11 +2637,13 @@ major_do_collection (const char *reason)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
+	objects_pinned = 0;
 	*major_collector.have_swept = FALSE;
-	reset_minor_collection_allowance ();
 
-	if (xdomain_checks)
+	if (xdomain_checks) {
+		sgen_clear_nursery_fragments ();
 		check_for_xdomain_refs ();
+	}
 
 	/* Remsets are not useful for a major collection */
 	remset.prepare_for_major_collection ();
@@ -3081,7 +2851,7 @@ major_do_collection (const char *reason)
 	time_major_fragment_creation += TV_ELAPSED (btv, atv);
 
 	TV_GETTIME (all_btv);
-	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+	gc_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	if (heap_dump_file)
 		dump_heap ("major", stat_major_gcs - 1, reason);
@@ -3097,10 +2867,8 @@ major_do_collection (const char *reason)
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
-	try_calculate_minor_collection_allowance (TRUE);
-
-	minor_collection_sections_alloced = 0;
-	last_collection_los_memory_usage = los_memory_usage;
+	sgen_memgov_major_collection_end ();
+	current_collection_generation = -1;
 
 	major_collector.finish_major_collection ();
 
@@ -3113,93 +2881,112 @@ major_do_collection (const char *reason)
 	return bytes_pinned_from_failed_allocation > 0;
 }
 
-static void
-major_collection (const char *reason)
-{
-	gboolean need_minor_collection;
-
-	if (disable_major_collections) {
-		collect_nursery (0);
-		return;
-	}
-
-	major_collection_happened = TRUE;
-	current_collection_generation = GENERATION_OLD;
-	need_minor_collection = major_do_collection (reason);
-	current_collection_generation = -1;
-
-	if (need_minor_collection)
-		collect_nursery (0);
-}
-
-void
-sgen_collect_major_no_lock (const char *reason)
-{
-	gint64 gc_start_time;
-
-	mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
-	gc_start_time = mono_100ns_ticks ();
-	stop_world (1);
-	major_collection (reason);
-	restart_world (1);
-	mono_trace_message (MONO_TRACE_GC, "major gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
-	mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
-}
+static gboolean major_do_collection (const char *reason);
 
 /*
- * When deciding if it's better to collect or to expand, keep track
- * of how much garbage was reclaimed with the last collection: if it's too
- * little, expand.
- * This is called when we could not allocate a small object.
+ * Ensure an allocation request for @size will succeed by freeing enough memory.
+ *
+ * LOCKING: The GC lock MUST be held.
  */
-static void __attribute__((noinline))
-minor_collect_or_expand_inner (size_t size)
+void
+sgen_ensure_free_space (size_t size)
 {
-	int do_minor_collection = 1;
+	int generation_to_collect = -1;
+	const char *reason = NULL;
 
-	g_assert (nursery_section);
-	if (do_minor_collection) {
-		gint64 total_gc_time, major_gc_time = 0;
 
-		mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
-		total_gc_time = mono_100ns_ticks ();
-
-		stop_world (0);
-		if (collect_nursery (size)) {
-			mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
-			major_gc_time = mono_100ns_ticks ();
-
-			major_collection ("minor overflow");
-
-			/* keep events symmetric */
-			major_gc_time = mono_100ns_ticks () - major_gc_time;
-			mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
+	if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
+		if (sgen_need_major_collection (size)) {
+			reason = "LOS overflow";
+			generation_to_collect = GENERATION_OLD;
 		}
-		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
-		restart_world (0);
-
-		total_gc_time = mono_100ns_ticks () - total_gc_time;
-		if (major_gc_time)
-			mono_trace_message (MONO_TRACE_GC, "overflow major gc took %d usecs minor gc took %d usecs", total_gc_time / 10, (total_gc_time - major_gc_time) / 10);
-		else
-			mono_trace_message (MONO_TRACE_GC, "minor gc took %d usecs", total_gc_time / 10);
-		
-		/* this also sets the proper pointers for the next allocation */
-		if (!sgen_can_alloc_size (size)) {
-			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, sgen_get_pinned_count ()));
-			sgen_dump_pin_queue ();
-			degraded_mode = 1;
+	} else {
+		if (degraded_mode) {
+			if (sgen_need_major_collection (size)) {
+				reason = "Degraded mode overflow";
+				generation_to_collect = GENERATION_OLD;
+			}
+		} else if (sgen_need_major_collection (size)) {
+			reason = "Minor allowance";
+			generation_to_collect = GENERATION_OLD;
+		} else {
+			generation_to_collect = GENERATION_NURSERY;
+			reason = "Nursery full";                        
 		}
-		mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
 	}
-	//report_internal_mem_usage ();
+
+	if (generation_to_collect == -1)
+		return;
+	sgen_perform_collection (size, generation_to_collect, reason);
 }
 
 void
-sgen_minor_collect_or_expand_inner (size_t size)
+sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason)
 {
-	minor_collect_or_expand_inner (size);
+	TV_DECLARE (gc_end);
+	GGTimingInfo infos [2];
+	int overflow_generation_to_collect = -1;
+	const char *overflow_reason = NULL;
+
+	memset (infos, 0, sizeof (infos));
+	mono_profiler_gc_event (MONO_GC_EVENT_START, generation_to_collect);
+
+	infos [0].generation = generation_to_collect;
+	infos [0].reason = reason;
+	infos [0].is_overflow = FALSE;
+	TV_GETTIME (infos [0].total_time);
+	infos [1].generation = -1;
+
+	stop_world (generation_to_collect);
+	//FIXME extract overflow reason
+	if (generation_to_collect == GENERATION_NURSERY) {
+		if (collect_nursery ()) {
+			overflow_generation_to_collect = GENERATION_OLD;
+			overflow_reason = "Minor overflow";
+		}
+	} else {
+		if (major_do_collection (reason)) {
+			overflow_generation_to_collect = GENERATION_NURSERY;
+			overflow_reason = "Excessive pinning";
+		}
+	}
+
+	TV_GETTIME (gc_end);
+	infos [0].total_time = SGEN_TV_ELAPSED (infos [0].total_time, gc_end);
+
+
+	if (overflow_generation_to_collect != -1) {
+		mono_profiler_gc_event (MONO_GC_EVENT_START, overflow_generation_to_collect);
+		infos [1].generation = overflow_generation_to_collect;
+		infos [1].reason = overflow_reason;
+		infos [1].is_overflow = TRUE;
+		infos [1].total_time = gc_end;
+
+		if (overflow_generation_to_collect == GENERATION_NURSERY)
+			collect_nursery ();
+		else
+			major_do_collection (overflow_reason);
+
+		TV_GETTIME (gc_end);
+		infos [1].total_time = SGEN_TV_ELAPSED (infos [1].total_time, gc_end);
+
+		/* keep events symmetric */
+		mono_profiler_gc_event (MONO_GC_EVENT_END, overflow_generation_to_collect);
+	}
+
+	DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)mono_gc_get_heap_size (), (unsigned long)los_memory_usage));
+
+	/* this also sets the proper pointers for the next allocation */
+	if (generation_to_collect == GENERATION_NURSERY && !sgen_can_alloc_size (requested_size)) {
+		/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
+		DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", requested_size, sgen_get_pinned_count ()));
+		sgen_dump_pin_queue ();
+		degraded_mode = 1;
+	}
+
+	restart_world (generation_to_collect, infos);
+
+	mono_profiler_gc_event (MONO_GC_EVENT_END, generation_to_collect);
 }
 
 /*
@@ -3535,28 +3322,6 @@ mono_gc_pending_finalizers (void)
 	return fin_ready_list || critical_fin_list;
 }
 
-/* Negative value to remove */
-void
-mono_gc_add_memory_pressure (gint64 value)
-{
-	/* FIXME: Use interlocked functions */
-	LOCK_GC;
-	memory_pressure += value;
-	UNLOCK_GC;
-}
-
-void
-sgen_register_major_sections_alloced (int num_sections)
-{
-	minor_collection_sections_alloced += num_sections;
-}
-
-mword
-sgen_get_minor_collection_allowance (void)
-{
-	return minor_collection_allowance;
-}
-
 /*
  * ######################################################################
  * ########  registered roots support
@@ -3791,17 +3556,16 @@ stop_world (int generation)
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 
-	last_major_num_sections = major_collector.get_num_major_sections ();
-	last_los_memory_usage = los_memory_usage;
-	major_collection_happened = FALSE;
+	sgen_memgov_collection_start (generation);
+
 	return count;
 }
 
 /* LOCKING: assumes the GC lock is held */
 static int
-restart_world (int generation)
+restart_world (int generation, GGTimingInfo *timing)
 {
-	int count, num_major_sections;
+	int count;
 	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
 	TV_DECLARE (end_bridge);
@@ -3839,21 +3603,12 @@ restart_world (int generation)
 	TV_GETTIME (end_bridge);
 	bridge_usec = TV_ELAPSED (end_sw, end_bridge);
 
-	num_major_sections = major_collector.get_num_major_sections ();
-	if (major_collection_happened)
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR: %s pause %.2fms, bridge %.2fms major %dK/%dK los %dK/%dK",
-			generation ? "" : "(minor overflow)",
-			(int)usec / 1000.0f, (int)bridge_usec / 1000.0f,
-			major_collector.section_size * num_major_sections / 1024,
-			major_collector.section_size * last_major_num_sections / 1024,
-			los_memory_usage / 1024,
-			last_los_memory_usage / 1024);
-	else
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR: pause %.2fms, bridge %.2fms promoted %dK major %dK los %dK",
-			(int)usec / 1000.0f, (int)bridge_usec / 1000.0f,
-			(num_major_sections - last_major_num_sections) * major_collector.section_size / 1024,
-			major_collector.section_size * num_major_sections / 1024,
-			los_memory_usage / 1024);
+	if (timing) {
+		timing [0].stw_time = usec;
+		timing [0].bridge_time = bridge_usec;
+	}
+	
+	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
 
 	return count;
 }
@@ -4540,15 +4295,7 @@ mono_gc_collect (int generation)
 	LOCK_GC;
 	if (generation > 1)
 		generation = 1;
-	mono_profiler_gc_event (MONO_GC_EVENT_START, generation);
-	stop_world (generation);
-	if (generation == 0) {
-		collect_nursery (0);
-	} else {
-		major_collection ("user request");
-	}
-	restart_world (generation);
-	mono_profiler_gc_event (MONO_GC_EVENT_END, generation);
+	sgen_perform_collection (0, generation, "user request");
 	UNLOCK_GC;
 }
 
@@ -4579,12 +4326,6 @@ mono_gc_get_used_size (void)
 	return tot;
 }
 
-int64_t
-mono_gc_get_heap_size (void)
-{
-	return total_alloc;
-}
-
 void
 mono_gc_disable (void)
 {
@@ -4605,6 +4346,12 @@ int
 mono_gc_get_los_limit (void)
 {
 	return MAX_SMALL_OBJ_SIZE;
+}
+
+gboolean
+mono_gc_user_markers_supported (void)
+{
+	return TRUE;
 }
 
 gboolean
@@ -4707,6 +4454,8 @@ mono_gc_base_init (void)
 	int num_workers;
 	int result;
 	int dummy;
+	gboolean debug_print_allowance = FALSE;
+	double allowance_ratio = 0, save_target = 0;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -4826,12 +4575,10 @@ mono_gc_base_init (void)
 		num_workers = 16;
 
 	///* Keep this the default for now */
-#ifdef __APPLE__
+	/* Precise marking is broken on all supported targets. Disable until fixed. */
 	conservative_stack_mark = TRUE;
-#endif
 
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
-	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
@@ -4852,6 +4599,9 @@ mono_gc_base_init (void)
 							fprintf (stderr, "The major collector does not support the cardtable write barrier.\n");
 						exit (1);
 					}
+				} else {
+					fprintf (stderr, "wbarrier must either be `remset' or `cardtable'.");
+					exit (1);
 				}
 				continue;
 			}
@@ -4946,6 +4696,36 @@ mono_gc_base_init (void)
 				continue;
 			}
 #endif
+			if (g_str_has_prefix (opt, "save-target-ratio=")) {
+				char *endptr;
+				opt = strchr (opt, '=') + 1;
+				save_target = strtod (opt, &endptr);
+				if (endptr == opt) {
+					fprintf (stderr, "save-target-ratio must be a number.");
+					exit (1);
+				}
+				if (save_target < SGEN_MIN_SAVE_TARGET_RATIO || save_target > SGEN_MAX_SAVE_TARGET_RATIO) {
+					fprintf (stderr, "save-target-ratio must be between %.2f - %.2f.", SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO);
+					exit (1);
+				}
+				continue;
+			}
+			if (g_str_has_prefix (opt, "default-allowance-ratio=")) {
+				char *endptr;
+				opt = strchr (opt, '=') + 1;
+
+				allowance_ratio = strtod (opt, &endptr);
+				if (endptr == opt) {
+					fprintf (stderr, "save-target-ratio must be a number.");
+					exit (1);
+				}
+				if (allowance_ratio < SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO || allowance_ratio > SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO) {
+					fprintf (stderr, "default-allowance-ratio must be between %.2f - %.2f.", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO);
+					exit (1);
+				}
+				continue;
+			}
+
 			if (major_collector.handle_gc_param && major_collector.handle_gc_param (opt))
 				continue;
 
@@ -4964,6 +4744,9 @@ mono_gc_base_init (void)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
 				sgen_minor_collector.print_gc_param_usage ();
+			fprintf (stderr, " Experimental options:\n");
+			fprintf (stderr, "  save-target-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO);
+			fprintf (stderr, "  default-allowance-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO);
 			exit (1);
 		}
 		g_strfreev (opts);
@@ -4978,8 +4761,6 @@ mono_gc_base_init (void)
 	if (minor_collector_opt)
 		g_free (minor_collector_opt);
 
-	init_heap_size_limits (max_heap, soft_limit);
-
 	alloc_nursery ();
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
@@ -4992,7 +4773,11 @@ mono_gc_base_init (void)
 				if (opt [0] == ':')
 					opt++;
 				if (opt [0]) {
+#ifdef HOST_WIN32
+					char *rf = g_strdup_printf ("%s.%d", opt, GetCurrentProcessId ());
+#else
 					char *rf = g_strdup_printf ("%s.%d", opt, getpid ());
+#endif
 					gc_debug_file = fopen (rf, "wb");
 					if (!gc_debug_file)
 						gc_debug_file = stderr;
@@ -5085,6 +4870,8 @@ mono_gc_base_init (void)
 
 	if (major_collector.post_param_init)
 		major_collector.post_param_init ();
+
+	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
 
 	memset (&remset, 0, sizeof (remset));
 
@@ -5525,7 +5312,7 @@ sgen_check_whole_heap_stw (void)
 	stop_world (0);
 	sgen_clear_nursery_fragments ();
 	sgen_check_whole_heap ();
-	restart_world (0);
+	restart_world (0, NULL);
 }
 
 #endif /* HAVE_SGEN_GC */

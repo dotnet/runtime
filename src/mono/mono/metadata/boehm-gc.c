@@ -412,7 +412,7 @@ on_gc_notification (GCEventType event)
 	if (e == MONO_GC_EVENT_START) {
 		if (mono_perfcounters)
 			mono_perfcounters->gc_collections0++;
-		mono_stats.major_gc_count ++;
+		gc_stats.major_gc_count ++;
 		gc_start_time = mono_100ns_ticks ();
 	} else if (e == MONO_GC_EVENT_END) {
 		if (mono_perfcounters) {
@@ -423,7 +423,7 @@ on_gc_notification (GCEventType event)
 			mono_perfcounters->gc_reserved_bytes = heap_size;
 			mono_perfcounters->gc_gen0size = heap_size;
 		}
-		mono_stats.major_gc_time_usecs += (mono_100ns_ticks () - gc_start_time) / 10;
+		gc_stats.major_gc_time_usecs += (mono_100ns_ticks () - gc_start_time) / 10;
 		mono_trace_message (MONO_TRACE_GC, "gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 	}
 	mono_profiler_gc_event (e, 0);
@@ -1294,6 +1294,25 @@ mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack,
 #ifdef USE_INCLUDED_LIBGC
 	GC_register_altstack (stack, stack_size, altstack, altstack_size);
 #endif
+}
+
+int
+mono_gc_get_los_limit (void)
+{
+	return G_MAXINT;
+}
+
+gboolean
+mono_gc_user_markers_supported (void)
+{
+	return FALSE;
+}
+
+void *
+mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
+{
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #endif /* no Boehm GC */

@@ -415,35 +415,52 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	}
 	case MONO_AOT_TYPEREF_VAR: {
 		MonoType *t;
-		MonoGenericContainer *container;
+		MonoGenericContainer *container = NULL;
 		int type = decode_value (p, &p);
 		int num = decode_value (p, &p);
-		gboolean is_method = decode_value (p, &p);
+		gboolean has_container = decode_value (p, &p);
+		int serial = 0;
 
-		if (is_method) {
-			MonoMethod *method_def;
-			g_assert (type == MONO_TYPE_MVAR);
-			method_def = decode_resolve_method_ref (module, p, &p);
-			if (!method_def)
-				return NULL;
+		if (has_container) {
+			gboolean is_method = decode_value (p, &p);
+			
+			if (is_method) {
+				MonoMethod *method_def;
+				g_assert (type == MONO_TYPE_MVAR);
+				method_def = decode_resolve_method_ref (module, p, &p);
+				if (!method_def)
+					return NULL;
 
-			container = mono_method_get_generic_container (method_def);
+				container = mono_method_get_generic_container (method_def);
+			} else {
+				MonoClass *class_def;
+				g_assert (type == MONO_TYPE_VAR);
+				class_def = decode_klass_ref (module, p, &p);
+				if (!class_def)
+					return NULL;
+ 
+				container = class_def->generic_container;
+			}
 		} else {
-			MonoClass *class_def;
-			g_assert (type == MONO_TYPE_VAR);
-			class_def = decode_klass_ref (module, p, &p);
-			if (!class_def)
-				return NULL;
-
-			container = class_def->generic_container;
+			serial = decode_value (p, &p);
 		}
-
-		g_assert (container);
 
 		// FIXME: Memory management
 		t = g_new0 (MonoType, 1);
 		t->type = type;
-		t->data.generic_param = mono_generic_container_get_param (container, num);
+
+		if (container) {
+			t->data.generic_param = mono_generic_container_get_param (container, num);
+			g_assert (serial == 0);
+		} else {
+			/* Anonymous */
+			MonoGenericParam *par = (MonoGenericParam*)g_new0 (MonoGenericParamFull, 1);
+			par->num = num;
+			par->serial = serial;
+			// FIXME:
+			par->image = mono_defaults.corlib;
+			t->data.generic_param = par;
+		}
 
 		// FIXME: Maybe use types directly to avoid
 		// the overhead of creating MonoClass-es
@@ -1319,6 +1336,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 	gboolean usable = TRUE;
 	gboolean full_aot;
 	guint8 *blob;
+	guint32 excluded_cpu_optimizations;
 
 	if (strcmp (assembly->image->guid, info->assembly_guid)) {
 		msg = g_strdup_printf ("doesn't match assembly");
@@ -1355,6 +1373,17 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 #endif
 	if (mini_get_debug_options ()->mdb_optimizations && !(info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
 		msg = g_strdup_printf ("not compiled for debugging");
+		usable = FALSE;
+	}
+
+	mono_arch_cpu_optimizations (&excluded_cpu_optimizations);
+	if (info->opts & excluded_cpu_optimizations) {
+		msg = g_strdup_printf ("compiled with unsupported CPU optimizations");
+		usable = FALSE;
+	}
+
+	if (!mono_aot_only && (info->simd_opts & ~mono_arch_cpu_enumerate_simd_versions ())) {
+		msg = g_strdup_printf ("compiled with unsupported SIMD extensions");
 		usable = FALSE;
 	}
 
@@ -2471,7 +2500,7 @@ MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
 	int pos, left, right, offset, offset1, offset2, code_len;
-	int method_index, table_len, is_wrapper;
+	int method_index, table_len;
 	guint32 token;
 	MonoAotModule *amodule = image->aot_module;
 	MonoMethod *method;
@@ -2593,14 +2622,9 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 			}
 
 			p = amodule->blob + table [(pos * 2) + 1];
-			is_wrapper = decode_value (p, &p);
-			if (is_wrapper)
-				/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
-				return NULL;
-			g_assert (!is_wrapper);
 			method = decode_resolve_method_ref (amodule, p, &p);
 			if (!method)
-				/* Ditto */
+				/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
 				return NULL;
 		} else {
 			token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);

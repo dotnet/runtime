@@ -234,6 +234,103 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	return 0;
 }
 
+gint64 
+mono_lldiv (gint64 a, gint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
+	return a / b;
+}
+
+gint64 
+mono_llrem (gint64 a, gint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
+	return a % b;
+}
+
+guint64 
+mono_lldiv_un (guint64 a, guint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
+	return a / b;
+}
+
+guint64 
+mono_llrem_un (guint64 a, guint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
+	return a % b;
+}
+
+#endif
+
+#ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+
+guint64 
+mono_lshl (guint64 a, gint32 shamt)
+{
+	guint64 res;
+
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	res = a << shamt;
+
+	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
+
+	return res;
+}
+
+guint64 
+mono_lshr_un (guint64 a, gint32 shamt)
+{
+	guint64 res;
+
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	res = a >> shamt;
+
+	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
+
+	return res;
+}
+
+gint64 
+mono_lshr (gint64 a, gint32 shamt)
+{
+	gint64 res;
+
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	res = a >> shamt;
+
+	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
+
+	return res;
+}
+
+#endif
+
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
 
 gint32
@@ -340,103 +437,6 @@ mono_fdiv (double a, double b)
 
 	return a / b;
 }
-#endif
-
-gint64 
-mono_lldiv (gint64 a, gint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
-		mono_raise_exception (mono_get_exception_arithmetic ());
-#endif
-	return a / b;
-}
-
-gint64 
-mono_llrem (gint64 a, gint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
-		mono_raise_exception (mono_get_exception_arithmetic ());
-#endif
-	return a % b;
-}
-
-guint64 
-mono_lldiv_un (guint64 a, guint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-#endif
-	return a / b;
-}
-
-guint64 
-mono_llrem_un (guint64 a, guint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-#endif
-	return a % b;
-}
-
-#endif
-
-#ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
-
-guint64 
-mono_lshl (guint64 a, gint32 shamt)
-{
-	guint64 res;
-
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-	res = a << shamt;
-
-	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
-
-	return res;
-}
-
-guint64 
-mono_lshr_un (guint64 a, gint32 shamt)
-{
-	guint64 res;
-
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-	res = a >> shamt;
-
-	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
-
-	return res;
-}
-
-gint64 
-mono_lshr (gint64 a, gint32 shamt)
-{
-	gint64 res;
-
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-	res = a >> shamt;
-
-	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
-
-	return res;
-}
-
 #endif
 
 #ifdef MONO_ARCH_SOFT_FLOAT

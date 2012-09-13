@@ -661,11 +661,23 @@ sgen_clear_nursery_fragments (void)
 	}
 }
 
+/*
+ * Mark a given range of memory as invalid.
+ *
+ * This can be done either by zeroing memory or by placing
+ * a phony byte[] array. This keeps the heap forward walkable.
+ *
+ * This function ignores calls with a zero range, even if
+ * both start and end are NULL.
+ */
 void
 sgen_clear_range (char *start, char *end)
 {
 	MonoArray *o;
 	size_t size = end - start;
+
+	if ((start && !end) || (start > end))
+		g_error ("Invalid range [%p %p]", start, end);
 
 	if (size < sizeof (MonoArray)) {
 		memset (start, 0, size);
@@ -898,7 +910,7 @@ sgen_init_nursery_allocator (void)
 {
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (SgenFragment));
 #ifdef NALLOC_DEBUG
-	alloc_records = sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE);
+	alloc_records = sgen_alloc_os_memory (sizeof (AllocRecord) * ALLOC_RECORD_COUNT, TRUE, "debugging memory");
 #endif
 }
 
@@ -909,7 +921,7 @@ sgen_nursery_alloc_prepare_for_minor (void)
 }
 
 void
-sgen_nursery_alloc_prepare_for_major (const char *reason)
+sgen_nursery_alloc_prepare_for_major (void)
 {
 	sgen_minor_collector.prepare_to_space (sgen_space_bitmap, sgen_space_bitmap_size);
 }

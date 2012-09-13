@@ -150,7 +150,7 @@ parse_optimizations (const char* p)
 	int i, invert, len;
 
 	/* call out to cpu detection code here that sets the defaults ... */
-	opt |= mono_arch_cpu_optimizazions (&exclude);
+	opt |= mono_arch_cpu_optimizations (&exclude);
 	opt &= ~exclude;
 	if (!p)
 		return opt;
@@ -351,7 +351,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	MonoDomain *domain = mono_domain_get ();
 	guint32 exclude = 0;
 
-	mono_arch_cpu_optimizazions (&exclude);
+	mono_arch_cpu_optimizations (&exclude);
 
 	if (mini_stats_fd) {
 		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
@@ -1171,9 +1171,11 @@ mini_trace_usage (void)
 		 "    none                 No assemblies\n"
 		 "    program              Entry point assembly\n"
 		 "    assembly             Specifies an assembly\n"
+		 "    wrapper              All wrappers bridging native and managed code\n"
 		 "    M:Type:Method        Specifies a method\n"
 		 "    N:Namespace          Specifies a namespace\n"
 		 "    T:Type               Specifies a type\n"
+		 "    E:Type               Specifies stack traces for an exception type\n"
 		 "    EXPR                 Includes expression\n"
 		 "    -EXPR                Excludes expression\n"
 		 "    EXPR,EXPR            Multiple expressions\n"

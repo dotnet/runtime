@@ -424,6 +424,10 @@ struct _MonoDynamicImage {
 	GHashTable *vararg_aux_hash;
 	MonoGHashTable *generic_def_objects;
 	MonoGHashTable *methodspec;
+	/*
+	 * Maps final token values to the object they describe.
+	 */
+	MonoGHashTable *remapped_tokens;
 	gboolean run;
 	gboolean save;
 	gboolean initial_image;
@@ -661,6 +665,7 @@ void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;
 void mono_assembly_load_friends (MonoAssembly* ass) MONO_INTERNAL;
 gboolean mono_assembly_has_skip_verification (MonoAssembly* ass) MONO_INTERNAL;
 
+void mono_assembly_release_gc_roots (MonoAssembly *assembly) MONO_INTERNAL;
 gboolean mono_assembly_close_except_image_pools (MonoAssembly *assembly) MONO_INTERNAL;
 void mono_assembly_close_finish (MonoAssembly *assembly) MONO_INTERNAL;
 

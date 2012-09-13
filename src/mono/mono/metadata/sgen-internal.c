@@ -28,6 +28,7 @@
 #include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
 #include "utils/lock-free-alloc.h"
+#include "metadata/sgen-memory-governor.h"
 
 /* keep each size a multiple of ALLOC_ALIGN */
 static const int allocator_sizes [] = {
@@ -80,18 +81,57 @@ sgen_register_fixed_internal_mem_type (int type, size_t size)
 		g_assert (fixed_type_allocator_indexes [type] == slot);
 }
 
+static const char*
+description_for_type (int type)
+{
+	switch (type) {
+	case INTERNAL_MEM_PIN_QUEUE: return "pin-queue";
+	case INTERNAL_MEM_FRAGMENT: return "fragment";
+	case INTERNAL_MEM_SECTION: return "section";
+	case INTERNAL_MEM_SCAN_STARTS: return "scan-starts";
+	case INTERNAL_MEM_FIN_TABLE: return "fin-table";
+	case INTERNAL_MEM_FINALIZE_ENTRY: return "finalize-entry";
+	case INTERNAL_MEM_FINALIZE_READY_ENTRY: return "finalize-ready-entry";
+	case INTERNAL_MEM_DISLINK_TABLE: return "dislink-table";
+	case INTERNAL_MEM_DISLINK: return "dislink";
+	case INTERNAL_MEM_ROOTS_TABLE: return "roots-table";
+	case INTERNAL_MEM_ROOT_RECORD: return "root-record";
+	case INTERNAL_MEM_STATISTICS: return "statistics";
+	case INTERNAL_MEM_STAT_PINNED_CLASS: return "pinned-class";
+	case INTERNAL_MEM_STAT_REMSET_CLASS: return "remset-class";
+	case INTERNAL_MEM_REMSET: return "remset";
+	case INTERNAL_MEM_GRAY_QUEUE: return "gray-queue";
+	case INTERNAL_MEM_STORE_REMSET: return "store-remset";
+	case INTERNAL_MEM_MS_TABLES: return "marksweep-tables";
+	case INTERNAL_MEM_MS_BLOCK_INFO: return "marksweep-block-info";
+	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
+	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
+	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
+	case INTERNAL_MEM_JOB_QUEUE_ENTRY: return "job-queue-entry";
+	case INTERNAL_MEM_TOGGLEREF_DATA: return "toggleref-data";
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 void*
-sgen_alloc_internal_dynamic (size_t size, int type)
+sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 {
 	int index;
 	void *p;
 
-	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
-		return sgen_alloc_os_memory (size, TRUE);
+	if (size > allocator_sizes [NUM_ALLOCATORS - 1]) {
+		p = sgen_alloc_os_memory (size, TRUE, NULL);
+		if (!p)
+			sgen_assert_memory_alloc (NULL, description_for_type (type));
+		return p;
+	}
 
 	index = index_for_size (size);
 
 	p = mono_lock_free_alloc (&allocators [index]);
+	if (!p)
+		sgen_assert_memory_alloc (NULL, description_for_type (type));
 	memset (p, 0, size);
 	return p;
 }
@@ -141,20 +181,13 @@ void
 sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 {
 	/*
-	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
-						     "fin-table", "finalize-entry", "finalize-ready-entry", "dislink-table",
-						     "dislink", "roots-table", "root-record", "statistics",
-						     "remset", "gray-queue", "store-remset", "marksweep-tables",
-						     "marksweep-block-info", "ephemeron-link", "worker-data",
-						     "bridge-data", "job-queue-entry", "toggleref-data" };
-
 	int i;
 
 	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%lld\"/>\n", large_internal_bytes_alloced);
 	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%lld\"/>\n", pinned_chunk_bytes_alloced);
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i) {
 		fprintf (heap_dump_file, "<other-mem-usage type=\"%s\" size=\"%ld\"/>\n",
-				internal_mem_names [i], unmanaged_allocator.small_internal_mem_bytes [i]);
+				description_for_type (i), unmanaged_allocator.small_internal_mem_bytes [i]);
 	}
 	*/
 }

@@ -53,12 +53,14 @@ class Driver {
 	
 
 	static void Main () {
-		const int loops = 5;
+		const int loops = 4;
 		for (int i = 0; i < loops; ++i) {
 			Console.WriteLine ("CrashLoop {0}/{1}", i + 1, loops);
 			CrashMainLoop ();
 		}
 		Console.WriteLine ("done");
+		GC.Collect ();
+		GC.WaitForPendingFinalizers ();
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();
 	}

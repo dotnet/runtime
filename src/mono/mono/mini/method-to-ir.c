@@ -5647,14 +5647,8 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 	/* Debugging support */
 #if 0
 	if (supported_tail_call) {
-		static int count = 0;
-		count ++;
-		if (getenv ("COUNT")) {
-			if (count == atoi (getenv ("COUNT")))
-				printf ("LAST: %s\n", mono_method_full_name (cmethod, TRUE));
-			if (count > atoi (getenv ("COUNT")))
-				supported_tail_call = FALSE;
-		}
+		if (!mono_debug_count ())
+			supported_tail_call = FALSE;
 	}
 #endif
 
@@ -5832,7 +5826,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int *il_offsets;
 			int *line_numbers;
 
-			mono_debug_symfile_get_line_numbers_full (minfo, NULL, NULL, &n_il_offsets, &il_offsets, &line_numbers, NULL);
+			mono_debug_symfile_get_line_numbers_full (minfo, NULL, NULL, &n_il_offsets, &il_offsets, &line_numbers, NULL, NULL);
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
 			for (i = 0; i < n_il_offsets; ++i) {
@@ -7823,7 +7817,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Use the immediate opcodes if possible */
 			if ((sp [1]->opcode == OP_ICONST) && mono_arch_is_inst_imm (sp [1]->inst_c0)) {
-				int imm_opcode = mono_op_to_op_imm (ins->opcode);
+				int imm_opcode = mono_op_to_op_imm_noemul (ins->opcode);
 				if (imm_opcode != -1) {
 					ins->opcode = imm_opcode;
 					ins->inst_p1 = (gpointer)(gssize)(sp [1]->inst_c0);
@@ -8958,7 +8952,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			ftype = mono_field_get_type (field);
 
-			g_assert (!(ftype->attrs & FIELD_ATTRIBUTE_LITERAL));
+			if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL)
+				UNVERIFIED;
 
 			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
 			 * to be called here.
@@ -9777,6 +9772,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 1;
 			break;
 		case CEE_ENDFINALLY:
+			/* mono_save_seq_point_info () depends on this */
+			if (sp != stack_start)
+				emit_seq_point (cfg, method, ip, FALSE);
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (bblock, ins);
 			ip++;
@@ -11361,6 +11359,10 @@ mono_op_to_op_imm_noemul (int opcode)
 	case OP_IDIV_UN:
 	case OP_IREM:
 	case OP_IREM_UN:
+		return -1;
+#endif
+#if defined(MONO_ARCH_EMULATE_MUL_DIV)
+	case OP_IMUL:
 		return -1;
 #endif
 	default:

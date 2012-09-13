@@ -2096,10 +2096,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	BBInfo *bblocks = ctx->bblocks;
 	MonoInst *ins;
 	LLVMBasicBlockRef cbb;
-	LLVMBuilderRef builder;
+	LLVMBuilderRef builder, starting_builder;
 	gboolean has_terminator;
 	LLVMValueRef v;
 	LLVMValueRef lhs, rhs;
+	int nins = 0;
 
 	cbb = get_bb (ctx, bb);
 	builder = create_builder (ctx);
@@ -2217,10 +2218,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	}
 
 	has_terminator = FALSE;
+	starting_builder = builder;
 	for (ins = bb->code; ins; ins = ins->next) {
 		const char *spec = LLVM_INS_INFO (ins->opcode);
 		char *dname = NULL;
 		char dname_buf [128];
+
+		nins ++;
+		if (nins > 5000 && builder == starting_builder) {
+			/* some steps in llc are non-linear in the size of basic blocks, see #5714 */
+			LLVM_FAILURE (ctx, "basic block too long");
+		}
 
 		if (has_terminator)
 			/* There could be instructions after a terminator, skip them */
@@ -2767,7 +2775,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		case OP_INOT: {
 			guint32 v = 0xffffffff;
-			values [ins->dreg] = LLVMBuildXor (builder, LLVMConstInt (LLVMInt32Type (), v, FALSE), lhs, dname);
+			values [ins->dreg] = LLVMBuildXor (builder, LLVMConstInt (LLVMInt32Type (), v, FALSE), convert (ctx, lhs, LLVMInt32Type ()), dname);
 			break;
 		}
 		case OP_LNOT: {
@@ -3148,14 +3156,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 */
 			LLVM_FAILURE (ctx, "sqrt");
 #endif
-			args [0] = lhs;
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
 			break;
 		}
 		case OP_ABS: {
 			LLVMValueRef args [1];
 
-			args [0] = lhs;
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "fabs"), args, 1, dname);
 			break;
 		}

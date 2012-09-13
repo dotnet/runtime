@@ -220,6 +220,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 extern MonoBoolean ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode, gint timeout, gint32 *error) MONO_INTERNAL;
 extern void ves_icall_System_Net_Sockets_Socket_Disconnect_internal(SOCKET sock, MonoBoolean reuse, gint32 *error) MONO_INTERNAL;
 extern gboolean ves_icall_System_Net_Sockets_Socket_SendFile (SOCKET sock, MonoString *filename, MonoArray *pre_buffer, MonoArray *post_buffer, gint flags) MONO_INTERNAL;
+void icall_cancel_blocking_socket_operation (MonoThread *thread) MONO_INTERNAL;
 
 extern void mono_network_init(void) MONO_INTERNAL;
 extern void mono_network_cleanup(void) MONO_INTERNAL;

@@ -12,8 +12,9 @@
 #include <mach/thread_act.h>
 #include <mach/thread_status.h>
 
-#if defined(__i386__) || defined (__x86_64__)
 #define MONO_MACH_ARCH_SUPPORTED 1
+#if defined(__arm__)
+typedef _STRUCT_MCONTEXT *mcontext_t;
 #endif
 
 // We need to define this here since we need _XOPEN_SOURCE for mono

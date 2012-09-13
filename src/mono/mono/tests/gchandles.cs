@@ -1,5 +1,29 @@
 using System;
+using System.Threading;
 using System.Runtime.InteropServices;
+
+[StructLayout(LayoutKind.Explicit)]
+internal struct ObjectWrapper {
+	[FieldOffset(0)] object obj;
+	[FieldOffset(0)] IntPtr handle;
+
+	internal static IntPtr Convert (object obj) {
+		ObjectWrapper wrapper = new ObjectWrapper ();
+
+		wrapper.obj = obj;
+
+		return wrapper.handle;
+	}
+	
+	internal static object Convert (IntPtr ptr) 
+	{
+		ObjectWrapper wrapper = new ObjectWrapper ();
+		
+		wrapper.handle = ptr;
+			
+		return wrapper.obj;
+	}
+}
 
 public class Test1
 {
@@ -65,5 +89,25 @@ public class Tests
 
 		System.Threading.Thread.Sleep (100);
 		return Test2.fail ? 1 : 0;
+	}
+
+	static GCHandle handle;
+	static IntPtr original_addr;
+	
+	static void alloc_handle () {
+		var obj = new object ();
+		handle = GCHandle.Alloc (obj, GCHandleType.Pinned);
+		original_addr =  ObjectWrapper.Convert (obj);
+	}
+
+	public static int test_0_pinned_handle_pins_target () {
+		var t = new Thread (alloc_handle);
+		t.Start ();
+		t.Join ();
+		GC.Collect ();
+
+		var newAddr = ObjectWrapper.Convert (handle.Target);
+
+		return original_addr == newAddr ? 0 : 1;
 	}
 }

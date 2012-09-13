@@ -16,7 +16,6 @@
 #include <mach/thread_act.h>
 #include <mach/thread_status.h>
 
-#include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-debug.h>

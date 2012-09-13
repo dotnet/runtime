@@ -49,7 +49,9 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/utils/mono-threads.h>
 
+#include <time.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -73,6 +75,11 @@
 #include <sys/un.h>
 #endif
 
+#ifdef HAVE_GETIFADDRS
+// <net/if.h> must be included before <ifaddrs.h>
+#include <ifaddrs.h>
+#endif
+
 #include "mono/io-layer/socket-wrappers.h"
 
 #if defined(HOST_WIN32)
@@ -82,11 +89,6 @@
  * inet_ntop() is missing), but the libws2_32 library is missing the
  * actual implementations of these functions.
  */
-#undef AF_INET6
-#endif
-
-#ifdef PLATFORM_ANDROID
-// not yet actually implemented...
 #undef AF_INET6
 #endif
 
@@ -906,6 +908,27 @@ void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 	}
 }
 
+#ifdef AF_INET6
+// Check whether it's ::ffff::0:0.
+static gboolean
+is_ipv4_mapped_any (const struct in6_addr *addr)
+{
+	int i;
+	
+	for (i = 0; i < 10; i++) {
+		if (addr->s6_addr [i])
+			return FALSE;
+	}
+	if ((addr->s6_addr [10] != 0xff) || (addr->s6_addr [11] != 0xff))
+		return FALSE;
+	for (i = 12; i < 16; i++) {
+		if (addr->s6_addr [i])
+			return FALSE;
+	}
+	return TRUE;
+}
+#endif
+
 static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 					       int sa_size, gint32 *error)
 {
@@ -989,10 +1012,17 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 
 		mono_array_set(data, guint8, 2, (port>>8) & 0xff);
 		mono_array_set(data, guint8, 3, (port) & 0xff);
-
-		for(i=0; i<16; i++) {
-			mono_array_set(data, guint8, 8+i,
-				       sa_in->sin6_addr.s6_addr[i]);
+		
+		if (is_ipv4_mapped_any (&sa_in->sin6_addr)) {
+			// Map ::ffff:0:0 to :: (bug #5502)
+			for(i=0; i<16; i++) {
+				mono_array_set(data, guint8, 8+i, 0);
+			}
+		} else {
+			for(i=0; i<16; i++) {
+				mono_array_set(data, guint8, 8+i,
+					       sa_in->sin6_addr.s6_addr[i]);
+			}
 		}
 
 		mono_array_set(data, guint8, 24, sa_in->sin6_scope_id & 0xff);
@@ -2032,8 +2062,8 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 #ifndef s6_addr16
 	for(i=0; i<8; i++) {
 		guint16 s = mono_array_get (data, guint16, i);
-		in6addr.s6_addr[2 * i] = (s >> 8) & 0xff;
-		in6addr.s6_addr[2 * i + 1] = s & 0xff;
+		in6addr.s6_addr[2 * i + 1] = (s >> 8) & 0xff;
+		in6addr.s6_addr[2 * i] = s & 0xff;
 	}
 #else
 	for(i=0; i<8; i++)
@@ -2042,6 +2072,42 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 	return(in6addr);
 }
 #endif /* AF_INET6 */
+#endif
+
+#if defined(HAVE_GETIFADDRS) && defined(HAVE_IF_NAMETOINDEX)
+static int
+get_local_interface_id (int family)
+{
+	struct ifaddrs *ifap = NULL, *ptr;
+	int idx = 0;
+	
+	if (getifaddrs (&ifap)) {
+		return 0;
+	}
+	
+	for (ptr = ifap; ptr; ptr = ptr->ifa_next) {
+		if (!ptr->ifa_addr || !ptr->ifa_name)
+			continue;
+		if (ptr->ifa_addr->sa_family != family)
+			continue;
+		if ((ptr->ifa_flags & IFF_LOOPBACK) != 0)
+			continue;
+		if ((ptr->ifa_flags & IFF_MULTICAST) == 0)
+			continue;
+			
+		idx = if_nametoindex (ptr->ifa_name);
+		break;
+	}
+	
+	freeifaddrs (ifap);
+	return idx;
+}
+#else
+static int
+get_local_interface_id (int family)
+{
+	return 0;
+}
 #endif
 
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
@@ -2139,7 +2205,22 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 
 				field=mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
 				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
-
+				
+#if defined(__APPLE__)
+				/*
+				* Bug #5504:
+				*
+				* Mac OS Lion doesn't allow ipv6mr_interface = 0.
+				*
+				* Tests on Windows and Linux show that the multicast group is only
+				* joined on one NIC when interface = 0, so we simply use the interface
+				* id from the first non-loopback interface (this is also what
+				* Dns.GetHostName (string.Empty) would return).
+				*/
+				if (!mreq6.ipv6mr_interface)
+					mreq6.ipv6mr_interface = get_local_interface_id (AF_INET6);
+#endif
+					
 				ret = _wapi_setsockopt (sock, system_level,
 							system_name, &mreq6,
 							sizeof (mreq6));
@@ -2394,6 +2475,76 @@ get_local_ips (int family, int *nips)
 	}
 
 	g_free (ifc.ifc_buf);
+	return result;
+}
+#elif defined(HAVE_GETIFADDRS)
+static gboolean
+is_loopback (int family, void *ad)
+{
+	char *ptr = (char *) ad;
+
+	if (family == AF_INET) {
+		return (ptr [0] == 127);
+	}
+#ifdef AF_INET6
+	else {
+		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
+	}
+#endif
+	return FALSE;
+}
+
+static void *
+get_local_ips (int family, int *nips)
+{
+	struct ifaddrs *ifap = NULL, *ptr;
+	int addr_size, offset, count, i;
+	char *result, *tmp_ptr;
+
+	*nips = 0;
+	if (family == AF_INET) {
+		addr_size = sizeof (struct in_addr);
+		offset = G_STRUCT_OFFSET (struct sockaddr_in, sin_addr);
+#ifdef AF_INET6
+	} else if (family == AF_INET6) {
+		addr_size = sizeof (struct in6_addr);
+		offset = G_STRUCT_OFFSET (struct sockaddr_in6, sin6_addr);
+#endif
+	} else {
+		return NULL;
+	}
+	
+	if (getifaddrs (&ifap)) {
+		return NULL;
+	}
+	
+	count = 0;
+	for (ptr = ifap; ptr; ptr = ptr->ifa_next) {
+		if (!ptr->ifa_addr)
+			continue;
+		if (ptr->ifa_addr->sa_family != family)
+			continue;
+		if (is_loopback (family, ((char *) ptr->ifa_addr) + offset))
+			continue;
+		count++;
+	}
+		
+	result = g_malloc (addr_size * count);
+	tmp_ptr = result;
+	for (i = 0, ptr = ifap; ptr; ptr = ptr->ifa_next) {
+		if (!ptr->ifa_addr)
+			continue;
+		if (ptr->ifa_addr->sa_family != family)
+			continue;
+		if (is_loopback (family, ((char *) ptr->ifa_addr) + offset))
+			continue;
+			
+		memcpy (tmp_ptr, ((char *) ptr->ifa_addr) + offset, addr_size);
+		tmp_ptr += addr_size;
+	}
+	
+	freeifaddrs (ifap);
+	*nips = count;
 	return result;
 }
 #else
@@ -3161,5 +3312,19 @@ void mono_network_cleanup(void)
 	WSACleanup();
 }
 
+void
+icall_cancel_blocking_socket_operation (MonoThread *thread)
+{
+	MonoInternalThread *internal = thread->internal_thread;
+	
+	if (mono_thread_info_new_interrupt_enabled ()) {
+		mono_thread_info_abort_socket_syscall_for_close ((MonoNativeThreadId)(gsize)internal->tid);
+	} else {
+#ifndef HOST_WIN32
+		internal->ignore_next_signal = TRUE;
+		mono_thread_kill (internal, mono_thread_get_abort_signal ());		
+#endif
+	}
+}
 
 #endif /* #ifndef DISABLE_SOCKETS */

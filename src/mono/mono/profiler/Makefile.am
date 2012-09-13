@@ -24,7 +24,18 @@ if HAVE_OPROFILE
 endif
 
 if SUPPORT_BOEHM
-LIBMONO=$(top_builddir)/mono/mini/libmono-$(API_VER).la
+if !SHARED_MONO
+static_libs=	\
+	$(top_builddir)/mono/metadata/libmonoruntime-static.la	\
+	$(top_builddir)/mono/io-layer/libwapi.la	\
+	$(top_builddir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS) $(LIBICONV) \
+	$(LIBGC_STATIC_LIBS)
+
+LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA) $(static_libs)
+else
+LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
+endif
 else
 LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
 endif

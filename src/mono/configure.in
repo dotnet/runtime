@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 #AC_PREREQ([2.62])
 
-AC_INIT(mono, [2.11.2],
+AC_INIT(mono, [2.11.5],
         [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 
 AC_CONFIG_SRCDIR([README])
@@ -93,6 +93,7 @@ case "$host" in
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
 		host_win32=yes
+		mono_cv_clang=no
 		if test "x$cross_compiling" = "xno"; then
 			target_win32=yes
 			if test "x$host" == "x$build" -a "x$host" == "x$target"; then
@@ -1124,19 +1125,18 @@ if test x$target_win32 = xno; then
 	AC_DEFUN([LARGE_FILES], [
 		large_CPPFLAGS=$CPPFLAGS
 		CPPFLAGS="$CPPFLAGS $1"
-		AC_TRY_RUN([
+		AC_TRY_COMPILE([
 			#include <sys/types.h>
+			#include <limits.h>
+		], [
+			/* Lifted this compile time assert method from: http://www.jaggersoft.com/pubs/CVu11_3.html */
+			#define COMPILE_TIME_ASSERT(pred) \
+				switch(0){case 0:case pred:;}
 
-			#define BIG_OFF_T (((off_t)1<<62)-1+((off_t)1<<62))
-
-			int main(void) {
-				int big_off_t=((BIG_OFF_T%2147483629==721) &&
-					       (BIG_OFF_T%2147483647==1));
-				if(big_off_t) {
-					exit(0);
-				} else {
-					exit(1);
-				}
+			int main(void)
+			{
+				COMPILE_TIME_ASSERT(sizeof(off_t) * CHAR_BIT == 64);
+				return 0;
 			}
 		], [
 			AC_MSG_RESULT(ok)
@@ -1145,7 +1145,7 @@ if test x$target_win32 = xno; then
 			large_offt=yes
 		], [
 			AC_MSG_RESULT(no)
-		], "")
+		])
 		CPPFLAGS=$large_CPPFLAGS
 	])
 
@@ -1719,7 +1719,44 @@ if test x$target_win32 = xno; then
 			AC_DEFINE(HAVE_SOCKADDR_IN6_SIN_LEN, 1, [sockaddr_in6 has sin6_len])
 		], [
 			AC_MSG_RESULT(no)
-		])	
+		])
+	dnl **********************************
+	dnl *** Check for getifaddrs       ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getifaddrs)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <sys/types.h>
+		#include <sys/socket.h>
+		#include <ifaddrs.h>
+	], [
+		getifaddrs(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETIFADDRS, 1, [Have getifaddrs])
+	], [
+		AC_MSG_RESULT(no)
+	])
+	dnl **********************************
+	dnl *** Check for if_nametoindex   ***
+	dnl **********************************
+	AC_MSG_CHECKING(for if_nametoindex)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <sys/types.h>
+		#include <sys/socket.h>
+		#include <net/if.h>
+	], [
+		if_nametoindex(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IF_NAMETOINDEX, 1, [Have if_nametoindex])
+	], [
+		AC_MSG_RESULT(no)
+	])
+			
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
@@ -2017,6 +2054,8 @@ if test "x$try_shared_handles" != "xyes"; then
 	AC_DEFINE(DISABLE_SHARED_HANDLES, 1, [Disable inter-process shared handles])
 	AC_SUBST(DISABLE_SHARED_HANDLES)
 fi
+
+AC_ARG_ENABLE(bcl-opt, [  --disable-bcl-opt	BCL is compiled with no optimizations (allows accurate BCL debugging)], test_bcl_opt=$enableval, test_bcl_opt=yes)
 
 AC_ARG_ENABLE(nunit-tests, [  --enable-nunit-tests	Run the nunit tests of the class library on 'make check'])
 AM_CONDITIONAL(ENABLE_NUNIT_TESTS, [test x$enable_nunit_tests = xyes])
@@ -2661,6 +2700,9 @@ if test "x$with_moonlight" != "xno"; then
 	mono_debugger_supported=no
 fi
 
+# mdb support for sgen is broken, disable it until further notice.
+mono_debugger_supported=no
+
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
 if test "x$mono_debugger_supported" = "xyes"; then
 	BOEHM_DEFINES="$BOEHM_DEFINES -DMONO_DEBUGGER_SUPPORTED"
@@ -2669,17 +2711,17 @@ fi
 AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 AC_MSG_RESULT($mono_debugger_supported)
 
-AC_ARG_ENABLE(icall-symbol-map,[ --enable-icall-symbol-map Generate tables which map icall functions to their C symbols], icall_symbol_map=$enableval, icall_symbol_map=no)
+AC_ARG_ENABLE(icall-symbol-map,[  --enable-icall-symbol-map Generate tables which map icall functions to their C symbols], icall_symbol_map=$enableval, icall_symbol_map=no)
 if test "x$icall_symbol_map" = "xyes"; then
    AC_DEFINE(ENABLE_ICALL_SYMBOL_MAP, 1, [Icall symbol map enabled])
 fi
 
-AC_ARG_ENABLE(icall-export,[ --enable-icall-export Export icall functions], icall_export=$enableval, icall_export=no)
+AC_ARG_ENABLE(icall-export,[  --enable-icall-export Export icall functions], icall_export=$enableval, icall_export=no)
 if test "x$icall_export" = "xyes"; then
    AC_DEFINE(ENABLE_ICALL_EXPORT, 1, [Icall export enabled])
 fi
 
-AC_ARG_ENABLE(icall-tables,[ --disable-icall-tables Disable the runtime lookup of icalls], icall_tables=$enableval, icall_tables=yes)
+AC_ARG_ENABLE(icall-tables,[  --disable-icall-tables Disable the runtime lookup of icalls], icall_tables=$enableval, icall_tables=yes)
 if test "x$icall_tables" = "xno"; then
    AC_DEFINE(DISABLE_ICALL_TABLES, 1, [Icall tables disabled])
 fi
@@ -2775,11 +2817,12 @@ case "x$gc" in
 		;;
 esac
 
-#AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0 FX (defaults to yes)],                 [], [with_profile2=yes])
-AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.x FX (defaults to yes)],                  [], [with_profile4=yes])
-AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid 2.1 assemblies (defaults to no)], [], [with_monodroid=no])
-AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the MonoTouch 2.1 assemblies (defaults to no)], [], [with_monotouch=no])
-AC_ARG_WITH(mobile,    [  --with-mobile=yes,no            If you want to build the Mobile 2.1 assemblies (defaults to no)], [], [with_mobile=no])
+AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0/3.5 FX (defaults to yes)],            [], [with_profile2=yes])
+AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],                [], [with_profile4=yes])
+AC_ARG_WITH(profile4_5,[  --with-profile4_5=yes,no        If you want to install the 4.5 FX (defaults to yes)],                [], [with_profile4_5=yes])
+AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],     [], [with_monodroid=no])
+AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the MonoTouch assemblies (defaults to no)],     [], [with_monotouch=no])
+AC_ARG_WITH(mobile,    [  --with-mobile=yes,no            If you want to build the Mobile assemblies (defaults to no)],        [], [with_mobile=no])
 
 OPROFILE=no
 AC_ARG_WITH(oprofile,[  --with-oprofile=no,<oprofile install dir>   Enable oprofile support (defaults to no)],[
@@ -2843,7 +2886,7 @@ fi
 # When --disable-shared is used, libtool transforms libmono-2.0.la into libmono-2.0.so
 # instead of libmono-static.a
 if test "x$enable_shared" = "xno"; then
-   LIBMONO_LA=.libs/libmono-static.a
+   LIBMONO_LA=libmini-static.la
 else
    LIBMONO_LA=libmono-$API_VER.la
 fi
@@ -2877,7 +2920,9 @@ AM_CONDITIONAL(ONLY_MOONLIGHT, [test "x$with_moonlight" = "xonly"])
 AM_CONDITIONAL(MOONLIGHT_BOEHM, [test "x$with_moon_gc" = "xboehm"])
 AM_CONDITIONAL(MOONLIGHT_SGEN, [test "x$with_moon_gc" = "xsgen"])
 
+AM_CONDITIONAL(INSTALL_2_0, [test "x$with_profile2" = xyes])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
+AM_CONDITIONAL(INSTALL_4_5, [test "x$with_profile4_5" = xyes])
 AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" = xyes])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" = xyes])
 AM_CONDITIONAL(INSTALL_MOBILE, [test "x$with_mobile" = xyes])
@@ -3237,9 +3282,25 @@ fi
     if test x$with_moonlight != xno; then
       echo "MOONLIGHT = 1" >> $srcdir/$mcsdir/build/config.make
     fi
+
+	default_profile=net_2_0
+    if test -z "$INSTALL_4_0_TRUE"; then :
+  		default_profile=net_4_0
+    fi
+    if test -z "$INSTALL_MONODROID_TRUE"; then :
+  		default_profile=monodroid
+    fi
+    if test -z "$INSTALL_MONOTOUCH_TRUE"; then :
+  		default_profile=monotouch
+    fi
+    if test -z "$INSTALL_4_5_TRUE"; then :
+  		default_profile=net_4_5
+    fi
     
-    if test x$with_profile4 != xyes; then
-      echo "DEFAULT_PROFILE = net_2_0" >> $srcdir/$mcsdir/build/config.make
+    echo "DEFAULT_PROFILE = $default_profile" >> $srcdir/$mcsdir/build/config.make
+    
+    if test "x$test_bcl_opt" = "xyes"; then    
+      echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
   fi
@@ -3266,7 +3327,6 @@ libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}
 
 echo "
         mcs source:    $mcsdir
-        olive source:  $olive_topdir
 
    Engine:
 	GC:	       $gc_msg 
@@ -3278,8 +3338,10 @@ echo "
 	DTrace:        $enable_dtrace
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
 
-    Libraries:
-	Moon Profile:  $with_moonlight ($with_moon_gc)
+   Libraries:
+	.NET 2.0/3.5:  $with_profile2
+	.NET 4.0:      $with_profile4
+	.NET 4.5:      $with_profile4_5
 	MonoDroid:     $with_monodroid
 	MonoTouch:     $with_monotouch
 	Mobile:        $with_mobile

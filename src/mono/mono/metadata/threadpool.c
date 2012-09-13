@@ -1109,6 +1109,23 @@ threadpool_clear_queue (ThreadPool *tp, MonoDomain *domain)
 	}
 }
 
+static gboolean
+remove_sockstate_for_domain (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoMList *list = value;
+	gboolean remove = FALSE;
+	while (list) {
+		MonoObject *data = mono_mlist_get_data (list);
+		if (mono_object_domain (data) == user_data) {
+			remove = TRUE;
+			mono_mlist_set_data (list, NULL);
+		}
+		list = mono_mlist_next (list);
+	}
+	//FIXME is there some sort of additional unregistration we need to perform here?
+	return remove;
+}
+
 /*
  * Clean up the threadpool of all domain jobs.
  * Can only be called as part of the domain unloading process as
@@ -1126,6 +1143,12 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	threadpool_clear_queue (&async_tp, domain);
 	threadpool_clear_queue (&async_io_tp, domain);
 
+	EnterCriticalSection (&socket_io_data.io_lock);
+	if (socket_io_data.sock_to_state)
+		mono_g_hash_table_foreach_remove (socket_io_data.sock_to_state, remove_sockstate_for_domain, domain);
+
+	LeaveCriticalSection (&socket_io_data.io_lock);
+	
 	/*
 	 * There might be some threads out that could be about to execute stuff from the given domain.
 	 * We avoid that by setting up a semaphore to be pulsed by the thread that reaches zero.

@@ -45,6 +45,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/environment.h>
 #include <mono/utils/mono-mmap.h>
 
 #include "mini.h"
@@ -62,6 +63,9 @@ static gpointer throw_corlib_exception_func;
 
 static gpointer try_more_restore_tramp = NULL;
 static gpointer restore_stack_protection_tramp = NULL;
+
+static MonoUnhandledExceptionFunc unhandled_exception_hook = NULL;
+static gpointer unhandled_exception_hook_data = NULL;
 
 static void try_more_restore (void);
 static void restore_stack_protection (void);
@@ -851,15 +855,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		ji = frame.ji;
 		*native_offset = frame.native_offset;
 
-		/* skip all wrappers ??*/
-		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
-			ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		/* The skip count passed by the caller depends on us not filtering out MANAGED_TO_NATIVE */
+		if (ji->method->wrapper_type != MONO_WRAPPER_NONE && ji->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD && ji->method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
 			continue;
-
 		skip--;
 	} while (skip >= 0);
 
@@ -1196,11 +1194,34 @@ wrap_non_exception_throws (MonoMethod *m)
 #define DOES_STACK_GROWS_UP 0
 #endif
 
+#define MAX_UNMANAGED_BACKTRACE 128
+static MonoArray*
+build_native_trace (void)
+{
+/* This puppy only makes sense on mobile, IOW, ARM. */
+#if defined (HAVE_BACKTRACE_SYMBOLS) && defined (TARGET_ARM)
+	MonoArray *res;
+	void *native_trace [MAX_UNMANAGED_BACKTRACE];
+	int size = backtrace (native_trace, MAX_UNMANAGED_BACKTRACE);
+	int i;
+
+	if (!size)
+		return NULL;
+	res = mono_array_new (mono_domain_get (), mono_defaults.int_class, size);
+
+	for (i = 0; i < size; i++)
+		mono_array_set (res, gpointer, i, native_trace [i]);
+	return res;
+#else
+	return NULL;
+#endif
+}
 
 #define setup_managed_stacktrace_information() do {	\
 	if (mono_ex && !initial_trace_ips) {	\
 		trace_ips = g_list_reverse (trace_ips);	\
 		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));	\
+		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());	\
 		if (has_dynamic_methods)	\
 			/* These methods could go away anytime, so compute the stack trace now */	\
 			MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));	\
@@ -2618,4 +2639,32 @@ mono_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpoint
 #else
 	g_error ("This target doesn't support mono_arch_setup_async_callback");
 #endif
+}
+
+void
+mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data)
+{
+	unhandled_exception_hook = func;
+	unhandled_exception_hook_data = user_data;
+}
+
+void
+mono_invoke_unhandled_exception_hook (MonoObject *exc)
+{
+	if (unhandled_exception_hook) {
+		unhandled_exception_hook (exc, unhandled_exception_hook_data);
+	} else {
+		MonoObject *other = NULL;
+		MonoString *str = mono_object_to_string (exc, &other);
+		if (str) {
+			char *msg = mono_string_to_utf8 (str);
+			fprintf (stderr, "[ERROR] FATAL UNHANDLED EXCEPTION: %s\n", msg);
+			fflush (stderr);
+			g_free (msg);
+		}
+
+		exit (mono_environment_exitcode_get ());
+	}
+
+	g_assert_not_reached ();
 }

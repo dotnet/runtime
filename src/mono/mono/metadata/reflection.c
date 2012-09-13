@@ -1290,6 +1290,11 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 		switch (mono_metadata_token_table (token)) {
 		case MONO_TABLE_METHOD:
 			type |= MONO_CUSTOM_ATTR_TYPE_METHODDEF;
+			/*
+			 * fixup_cattrs () needs to fix this up. We can't use image->tokens, since it contains the old token for the
+			 * method, not the one returned by mono_image_create_token ().
+			 */
+			mono_g_hash_table_insert (assembly->remapped_tokens, GUINT_TO_POINTER (token), cattr->ctor);
 			break;
 		case MONO_TABLE_MEMBERREF:
 			type |= MONO_CUSTOM_ATTR_TYPE_MEMBERREF;
@@ -1543,29 +1548,35 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 tok;
+	MonoReflectionMethod *m;
+	int i;
 
-	if (!mb->override_method)
+	if (!mb->override_methods)
 		return;
 
-	table = &assembly->tables [MONO_TABLE_METHODIMPL];
-	table->rows ++;
-	alloc_table (table, table->rows);
-	values = table->values + table->rows * MONO_METHODIMPL_SIZE;
-	values [MONO_METHODIMPL_CLASS] = tb->table_idx;
-	values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
+	for (i = 0; i < mono_array_length (mb->override_methods); ++i) {
+		m = mono_array_get (mb->override_methods, MonoReflectionMethod*, i);
 
-	tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method, FALSE, FALSE);
-	switch (mono_metadata_token_table (tok)) {
-	case MONO_TABLE_MEMBERREF:
-		tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODREF;
-		break;
-	case MONO_TABLE_METHOD:
-		tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODDEF;
-		break;
-	default:
-		g_assert_not_reached ();
+		table = &assembly->tables [MONO_TABLE_METHODIMPL];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_METHODIMPL_SIZE;
+		values [MONO_METHODIMPL_CLASS] = tb->table_idx;
+		values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
+
+		tok = mono_image_create_token (assembly, (MonoObject*)m, FALSE, FALSE);
+		switch (mono_metadata_token_table (tok)) {
+		case MONO_TABLE_MEMBERREF:
+			tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODREF;
+			break;
+		case MONO_TABLE_METHOD:
+			tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODDEF;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		values [MONO_METHODIMPL_DECLARATION] = tok;
 	}
-	values [MONO_METHODIMPL_DECLARATION] = tok;
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
@@ -4323,11 +4334,15 @@ fixup_cattrs (MonoDynamicImage *assembly)
 		if ((type & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_METHODDEF) {
 			idx = type >> MONO_CUSTOM_ATTR_TYPE_BITS;
 			token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
-			ctor = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+			ctor = mono_g_hash_table_lookup (assembly->remapped_tokens, GUINT_TO_POINTER (token));
 			g_assert (ctor);
 
-			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")|| !strcmp (ctor->vtable->klass->name, "ConstructorBuilder")) {
+			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
+				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
+				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
+			} else if (!strcmp (ctor->vtable->klass->name, "ConstructorBuilder")) {
+				MonoMethod *m = ((MonoReflectionCtorBuilder*)ctor)->mhandle;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
 			}
@@ -5109,6 +5124,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 	image->gen_params = g_ptr_array_new ();
+	image->remapped_tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 
 	/*g_print ("string heap create for image %p (%s)\n", image, module_name);*/
 	string_heap_init (&image->sheap);
@@ -5149,6 +5165,26 @@ free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
 	g_free (key);
 }
 
+static void
+release_hashtable (MonoGHashTable **hash)
+{
+	if (*hash) {
+		mono_g_hash_table_destroy (*hash);
+		*hash = NULL;
+	}
+}
+
+void
+mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
+{
+	release_hashtable (&image->token_fixups);
+	release_hashtable (&image->handleref_managed);
+	release_hashtable (&image->tokens);
+	release_hashtable (&image->remapped_tokens);
+	release_hashtable (&image->generic_def_objects);
+	release_hashtable (&image->methodspec);
+}
+
 void
 mono_dynamic_image_free (MonoDynamicImage *image)
 {
@@ -5168,6 +5204,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		mono_g_hash_table_destroy (di->handleref_managed);
 	if (di->tokens)
 		mono_g_hash_table_destroy (di->tokens);
+	if (di->remapped_tokens)
+		mono_g_hash_table_destroy (di->remapped_tokens);
 	if (di->generic_def_objects)
 		mono_g_hash_table_destroy (di->generic_def_objects);
 	if (di->blob_cache) {
@@ -10591,9 +10629,7 @@ inflate_method (MonoReflectionType *type, MonoObject *obj)
 
 /*TODO avoid saving custom attrs for generic classes as it's enough to have them on the generic type definition.*/
 void
-mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, 
-					  MonoArray *ctors, MonoArray *fields, MonoArray *properties,
-					  MonoArray *events)
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields)
 {
 	MonoGenericClass *gclass;
 	MonoDynamicGenericClass *dgclass;
@@ -10865,7 +10901,8 @@ void
 mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides)
 {
 	MonoReflectionTypeBuilder *tb;
-	int i, onum;
+	int i, j, onum;
+	MonoReflectionMethod *m;
 
 	*overrides = NULL;
 	*num_overrides = 0;
@@ -10884,8 +10921,8 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
-			if (mb->override_method)
-				onum ++;
+			if (mb->override_methods)
+				onum += mono_array_length (mb->override_methods);
 		}
 	}
 
@@ -10896,13 +10933,17 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
-			if (mb->override_method) {
-				(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject *)mb->override_method);
-				(*overrides) [onum * 2 + 1] = mb->mhandle;
+			if (mb->override_methods) {
+				for (j = 0; j < mono_array_length (mb->override_methods); ++j) {
+					m = mono_array_get (mb->override_methods, MonoReflectionMethod*, j);
 
-				g_assert (mb->mhandle);
+					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m);
+					(*overrides) [onum * 2 + 1] = mb->mhandle;
 
-				onum ++;
+					g_assert (mb->mhandle);
+
+					onum ++;
+				}
 			}
 		}
 	}
@@ -12026,9 +12067,7 @@ mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject
 }
 
 void
-mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, 
-					  MonoArray *ctors, MonoArray *fields, MonoArray *properties,
-					  MonoArray *events)
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *fields)
 {
 	g_assert_not_reached ();
 }

@@ -43,6 +43,7 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-memory-model.h>
 #include "cominterop.h"
 
 #ifdef HAVE_BOEHM_GC
@@ -5833,23 +5834,18 @@ mono_message_init (MonoDomain *domain,
 	if (!object_array_klass) {
 		MonoClass *klass;
 
-		klass = mono_array_class_get (mono_defaults.object_class, 1);
-		g_assert (klass);
-
-		mono_memory_barrier ();
-		object_array_klass = klass;
-
 		klass = mono_array_class_get (mono_defaults.byte_class, 1);
 		g_assert (klass);
-
-		mono_memory_barrier ();
 		byte_array_klass = klass;
 
 		klass = mono_array_class_get (mono_defaults.string_class, 1);
 		g_assert (klass);
-
-		mono_memory_barrier ();
 		string_array_klass = klass;
+
+		klass = mono_array_class_get (mono_defaults.object_class, 1);
+		g_assert (klass);
+
+		mono_atomic_store_release (&object_array_klass, klass);
 	}
 
 	MONO_OBJECT_SETREF (this, method, method);
@@ -6022,15 +6018,22 @@ mono_print_unhandled_exception (MonoObject *exc)
 
 	if (exc == (MonoObject*)mono_object_domain (exc)->out_of_memory_ex) {
 		message = g_strdup ("OutOfMemoryException");
+		free_message = TRUE;
 	} else {
-		str = mono_object_to_string (exc, NULL);
-		if (str) {
-			message = mono_string_to_utf8_checked (str, &error);
-			if (!mono_error_ok (&error)) {
-				mono_error_cleanup (&error);
-				message = (char *) "";
-			} else {
-				free_message = TRUE;
+		
+		if (((MonoException*)exc)->native_trace_ips) {
+			message = mono_exception_get_native_backtrace ((MonoException*)exc);
+			free_message = TRUE;
+		} else {
+			str = mono_object_to_string (exc, NULL);
+			if (str) {
+				message = mono_string_to_utf8_checked (str, &error);
+				if (!mono_error_ok (&error)) {
+					mono_error_cleanup (&error);
+					message = (char *) "";
+				} else {
+					free_message = TRUE;
+				}
 			}
 		}
 	}
@@ -6039,7 +6042,7 @@ mono_print_unhandled_exception (MonoObject *exc)
 	 * g_printerr ("\nUnhandled Exception: %s.%s: %s\n", exc->vtable->klass->name_space, 
 	 *	   exc->vtable->klass->name, message);
 	 */
-	g_printerr ("\nUnhandled Exception: %s\n", message);
+	g_printerr ("\nUnhandled Exception:\n%s\n", message);
 	
 	if (free_message)
 		g_free (message);

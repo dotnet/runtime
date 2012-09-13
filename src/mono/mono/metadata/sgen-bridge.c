@@ -107,7 +107,7 @@ dyn_array_ensure_capacity (DynArray *da, int capacity)
 	while (capacity > da->capacity)
 		da->capacity *= 2;
 
-	new_data = sgen_alloc_internal_dynamic (da->elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA);
+	new_data = sgen_alloc_internal_dynamic (da->elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	memcpy (new_data, da->data, da->elem_size * da->size);
 	sgen_free_internal_dynamic (da->data, da->elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = new_data;
@@ -275,6 +275,20 @@ static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DATA
 static MonoGCBridgeCallbacks bridge_callbacks;
 
 static int current_time;
+
+static gboolean bridge_processing_in_progress = FALSE;
+
+void
+mono_gc_wait_for_bridge_processing (void)
+{
+	if (!bridge_processing_in_progress)
+		return;
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE waiting for bridge processing to finish");
+
+	sgen_gc_lock ();
+	sgen_gc_unlock ();
+}
 
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
@@ -539,6 +553,9 @@ sgen_bridge_processing_stw_step (void)
 	if (!registered_bridges.size)
 		return;
 
+	g_assert (!bridge_processing_in_progress);
+	bridge_processing_in_progress = TRUE;
+
 	SGEN_TV_GETTIME (btv);
 
 	/* first DFS pass */
@@ -573,11 +590,13 @@ sgen_bridge_processing_finish (void)
 	if (!registered_bridges.size)
 		return;
 
+	g_assert (bridge_processing_in_progress);
+
 	SGEN_TV_GETTIME (atv);
 
 	/* alloc and fill array of all entries */
 
-	all_entries = sgen_alloc_internal_dynamic (sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA);
+	all_entries = sgen_alloc_internal_dynamic (sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 
 	j = 0;
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
@@ -638,7 +657,7 @@ sgen_bridge_processing_finish (void)
 		max_sccs_links = MAX (max_sccs_links, scc->xrefs.size);
 	}
 
-	api_sccs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA);
+	api_sccs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	num_xrefs = 0;
 	j = 0;
 	for (i = 0; i < sccs.size; ++i) {
@@ -646,7 +665,7 @@ sgen_bridge_processing_finish (void)
 		if (!scc->num_bridge_entries)
 			continue;
 
-		api_sccs [j] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * scc->num_bridge_entries, INTERNAL_MEM_BRIDGE_DATA);
+		api_sccs [j] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * scc->num_bridge_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 		api_sccs [j]->num_objs = scc->num_bridge_entries;
 		scc->num_bridge_entries = 0;
 		scc->api_index = j++;
@@ -661,7 +680,7 @@ sgen_bridge_processing_finish (void)
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 
-	api_xrefs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA);
+	api_xrefs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	j = 0;
 	for (i = 0; i < sccs.size; ++i) {
 		int k;
@@ -753,6 +772,8 @@ sgen_bridge_processing_finish (void)
 		dsf1_passes, dsf2_passes);
 
 	step_1 = 0; /* We must cleanup since this value is used as an accumulator. */
+
+	bridge_processing_in_progress = FALSE;
 }
 
 static const char *bridge_class;

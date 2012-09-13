@@ -104,7 +104,9 @@ typedef enum {
 	WRAPPER_SUBTYPE_ICALL_WRAPPER,
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
 	/* Subtypes of MONO_WRAPPER_UNKNOWN */
-	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER
+	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER,
+	/* Subtypes of MONO_WRAPPER_MANAGED_TO_MANAGED */
+	WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER
 } WrapperSubtype;
 
 typedef struct {
@@ -136,6 +138,10 @@ typedef struct {
 	MonoMethod *method;
 } SynchronizedInnerWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+} GenericArrayHelperWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -158,6 +164,8 @@ typedef struct {
 		ManagedToNativeWrapperInfo managed_to_native;
 		/* SYNCHRONIZED_INNER */
 		SynchronizedInnerWrapperInfo synchronized_inner;
+		/* GENERIC_ARRAY_HELPER */
+		GenericArrayHelperWrapperInfo generic_array_helper;
 	} d;
 } WrapperInfo;
 

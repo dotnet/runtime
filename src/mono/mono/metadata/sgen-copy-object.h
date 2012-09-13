@@ -34,7 +34,7 @@ extern long long stat_slots_allocated_in_vain;
  * This function can be used even if the vtable of obj is not valid
  * anymore, which is the case in the parallel collector.
  */
-static void
+static inline void
 par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue)
 {
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
@@ -84,7 +84,7 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 }
 
-static G_GNUC_UNUSED void*
+static G_GNUC_UNUSED void* __attribute__((noinline))
 copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
@@ -109,6 +109,21 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 
 #ifdef GENERATE_COPY_FUNCTIONS
 
+extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
+
+#if defined(SGEN_SIMPLE_NURSERY)
+#define serial_copy_object simple_nursery_serial_copy_object
+#define parallel_copy_object simple_nursery_parallel_copy_object
+
+#elif defined (SGEN_SPLIT_NURSERY)
+
+#define serial_copy_object split_nursery_serial_copy_object
+#define parallel_copy_object split_nursery_parallel_copy_object
+
+#else
+#error "Please define GC_CONF_NAME"
+#endif
+
 /*
  * This is how the copying happens from the nursery to the old generation.
  * We assume that at this time all the pinned objects have been identified and
@@ -129,8 +144,8 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
  * copy_object could be made into a macro once debugged (use inline for now).
  */
 
-static void
-serial_copy_object (void **obj_slot, SgenGrayQueue *queue)
+static inline void __attribute__((always_inline))
+serial_copy_object (void **obj_slot, SgenGrayQueue *queue) 
 {
 	char *forwarded;
 	char *obj = *obj_slot;

@@ -6129,15 +6129,12 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (conv == -1) {
 			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
-			MonoException *exc = mono_get_exception_not_implemented (msg);
-			g_warning ("%s", msg);
-			g_free (msg);
-			mono_raise_exception (exc);
-		}
-		else
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+		} else {
 			mono_mb_emit_icall (mb, conv_to_icall (conv));
 
-		mono_mb_emit_stloc (mb, conv_arg);
+			mono_mb_emit_stloc (mb, conv_arg);
+		}
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
@@ -6154,6 +6151,12 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (!m) {
 				m = mono_class_get_method_from_name_flags (mono_defaults.string_class, "get_Length", -1, 0);
 				g_assert (m);
+			}
+
+			if (!t->byref) {
+				char *msg = g_strdup_printf ("VBByRefStr marshalling requires a ref parameter.", encoding);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+				break;
 			}
 
 			/* 
@@ -6538,20 +6541,17 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			if (t->byref && !t->attrs & PARAM_ATTRIBUTE_IN && t->attrs & PARAM_ATTRIBUTE_OUT)
 				break;
 
+			if (conv == -1) {
+				char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+				break;
+			}
+
 			mono_mb_emit_ldarg (mb, argnum);
 			if (t->byref)
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 
-			if (conv != -1)
-				mono_mb_emit_icall (mb, conv_to_icall (conv));
-			else {
-				char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
-				MonoException *exc = mono_get_exception_not_implemented (msg);
-				g_warning ("%s", msg);
-				g_free (msg);
-				mono_raise_exception (exc);
-			}
-
+			mono_mb_emit_icall (mb, conv_to_icall (conv));
 			mono_mb_emit_stloc (mb, conv_arg);
 		} else if (klass->blittable) {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -7150,6 +7150,12 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			else
 				conv = -1;
 
+			if (is_string && conv == -1) {
+				char *msg = g_strdup_printf ("string/stringbuilder marshalling conversion %d not implemented", encoding);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+				break;
+			}
+
 			src_var = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			if (t->byref)
@@ -7161,16 +7167,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_stloc (mb, conv_arg);
 			mono_mb_emit_ldloc (mb, src_var);
 			label1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-			if (is_string) {
-				if (conv == -1) {
-					char *msg = g_strdup_printf ("string/stringbuilder marshalling conversion %d not implemented", encoding);
-					MonoException *exc = mono_get_exception_not_implemented (msg);
-					g_warning ("%s", msg);
-					g_free (msg);
-					mono_raise_exception (exc);
-				}
-			}
 
 			if (is_string)
 				esize = sizeof (gpointer);
@@ -11995,6 +11991,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
+	WrapperInfo *info;
 	int i;
 
 	mb = mono_mb_new_no_dup_name (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
@@ -12017,6 +12014,10 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	mb->skip_visibility = TRUE;
 
 	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+
+	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER);
+	info->d.generic_array_helper.method = method;
+	mono_marshal_set_wrapper_info (res, info);
 
 	mono_mb_free (mb);
 

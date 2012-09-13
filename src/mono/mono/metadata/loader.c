@@ -1285,6 +1285,8 @@ cached_module_load (const char *name, int flags, char **err)
 	return res;
 }
 
+static MonoDl *internal_module;
+
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
 {
@@ -1361,8 +1363,11 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 					"DllImport attempting to load: '%s'.", new_scope);
 
 		/* we allow a special name to dlopen from the running process namespace */
-		if (strcmp (new_scope, "__Internal") == 0)
-			module = mono_dl_open (NULL, MONO_DL_LAZY, &error_msg);
+		if (strcmp (new_scope, "__Internal") == 0){
+			if (internal_module == NULL)
+				internal_module = mono_dl_open (NULL, MONO_DL_LAZY, &error_msg);
+			module = internal_module;
+		}
 	}
 
 	/*

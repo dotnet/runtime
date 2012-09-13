@@ -202,10 +202,18 @@ public class Tests {
 		// Check that thread abort exceptions originating in another thread are not automatically rethrown
 		object o = new object ();
 		Thread t = null;
+		bool waiting = false;
 		Action a = delegate () {
 			t = Thread.CurrentThread;
-			lock (o) {
-				Monitor.Pulse (o);
+			while (true) {
+				lock (o) {
+					if (waiting) {
+						Monitor.Pulse (o);
+						break;
+					}
+				}
+
+				Thread.Sleep (10);
 			}
 			while (true) {
 				Thread.Sleep (1000);
@@ -213,6 +221,7 @@ public class Tests {
 		};
 		var ar = a.BeginInvoke (null, null);
 		lock (o) {
+			waiting = true;
 			Monitor.Wait (o);
 		}
 

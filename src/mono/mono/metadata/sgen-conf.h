@@ -29,8 +29,10 @@
 
 #if SIZEOF_VOID_P == 4
 typedef guint32 mword;
+#define MWORD_MAX_VALUE ((uint32_t) 0xffffffff)
 #else
 typedef guint64 mword;
+#define MWORD_MAX_VALUE (G_MAXUINT64)
 #endif
 
 
@@ -139,5 +141,35 @@ typedef guint64 mword;
  * There's no history on the why's of this value besides this.
  */
 #define DEFAULT_REMSET_SIZE 1024
+
+
+/*
+ * Minimum allowance for nursery allocations, as a multiple of the size of nursery.
+ *
+ * We allow at least this much allocation to happen to the major heap from multiple
+ * minor collections before triggering a major collection.
+ *
+ * Bigger values increases throughput by allowing more garbage to sit in the major heap.
+ * Smaller values leads to better memory effiency but more frequent major collections.
+ */
+#define SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO 4.0
+
+#define SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO 1.0
+#define SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO 10.0
+
+/*
+ * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
+ *
+ * A major collection target is to free a given amount of memory. This amount is a ratio of the major heap size.
+ *
+ * Values above 0.5 cause the heap to agressively grow when it's small and waste memory when it's big.
+ * Lower values will produce more reasonable sized heaps when it's small, but will be suboptimal at large
+ * sizes as they will use a small fraction only.
+ *
+ */
+#define SGEN_DEFAULT_SAVE_TARGET_RATIO 0.5
+
+#define SGEN_MIN_SAVE_TARGET_RATIO 0.1
+#define SGEN_MAX_SAVE_TARGET_RATIO 2.0
 
 #endif

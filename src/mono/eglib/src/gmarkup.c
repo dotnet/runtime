@@ -276,7 +276,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 
 		switch (context->state){
 		case START:
-			if (c == ' ' || c == '\t' || c == '\f' || c == '\n')
+			if (c == ' ' || c == '\t' || c == '\f' || c == '\n' || (c & 0x80))
 				continue;
 			if (c == '<'){
 				if (p+1 < end && p [1] == '?'){

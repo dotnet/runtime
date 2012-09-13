@@ -551,6 +551,8 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.5/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.5/System.Transactions.dll
 %_prefix/lib/mono/4.5/WebMatrix.Data.dll
+%_prefix/lib/mono/4.5/EntityFramework.dll
+%_prefix/lib/mono/4.5/EntityFramework.SqlServer.dll
 %_prefix/lib/mono/4.5/sqlmetal.exe*
 %_prefix/lib/mono/4.5/sqlsharp.exe*
 %_prefix/lib/mono/gac/Mono.Data.Tds
@@ -563,6 +565,8 @@ Database connectivity for Mono.
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.Transactions
 %_prefix/lib/mono/gac/WebMatrix.Data
+%_prefix/lib/mono/gac/EntityFramework
+%_prefix/lib/mono/gac/EntityFramework.SqlServer
 
 %package -n mono-winforms
 License:        LGPL v2.1 only
@@ -890,6 +894,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.5/System.Web.Abstractions.dll
 %_prefix/lib/mono/4.5/System.Web.ApplicationServices.dll
 %_prefix/lib/mono/4.5/System.Web.Http.dll
+%_prefix/lib/mono/4.5/System.Web.Http.SelfHost.dll
 %_prefix/lib/mono/4.5/System.Web.Routing.dll
 %_prefix/lib/mono/4.5/System.Web.Razor.dll
 %_prefix/lib/mono/4.5/System.Web.Services.dll
@@ -915,6 +920,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/System.Web.Abstractions
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
 %_prefix/lib/mono/gac/System.Web.Http
+%_prefix/lib/mono/gac/System.Web.Http.SelfHost
 %_prefix/lib/mono/gac/System.Web.Routing
 %_prefix/lib/mono/gac/System.Web.Razor
 %_prefix/lib/mono/gac/System.Web.Services

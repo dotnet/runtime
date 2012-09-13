@@ -51,6 +51,8 @@ typedef struct {
 
 void mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks);
 
+void mono_gc_wait_for_bridge_processing (void);
+
 MONO_END_DECLS
 
 #endif

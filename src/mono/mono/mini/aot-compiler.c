@@ -184,6 +184,7 @@ typedef struct MonoAotCompile {
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
+	guint32 simd_opts;
 	MonoMemPool *mempool;
 	MonoAotStats stats;
 	int method_index;
@@ -1329,7 +1330,7 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 #if defined(__native_client_codegen__)
 	guint8 *buf_alloc;
 #endif
-	guint8 *labels [3];
+	guint8 *labels [16];
 	guint8 mov_buf[3];
 	guint8 *mov_buf_ptr = mov_buf;
 
@@ -1369,8 +1370,18 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	amd64_jump_membase (code, MONO_ARCH_IMT_SCRATCH_REG, 0);
 
 	/* No match */
-	/* FIXME: */
 	mono_amd64_patch (labels [1], code);
+	/* Load fail tramp */
+	amd64_alu_reg_imm (code, X86_ADD, MONO_ARCH_IMT_SCRATCH_REG, sizeof (gpointer));
+	/* Check if there is a fail tramp */
+	amd64_alu_membase_imm (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, 0);
+	labels [3] = code;
+	amd64_branch8 (code, X86_CC_Z, 0, FALSE);
+	/* Jump to fail tramp */
+	amd64_jump_membase (code, MONO_ARCH_IMT_SCRATCH_REG, 0);
+
+	/* Fail */
+	mono_amd64_patch (labels [3], code);
 	x86_breakpoint (code);
 
 	/* mov <OFFSET>(%rip), MONO_ARCH_IMT_SCRATCH_REG */
@@ -1399,7 +1410,7 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 #ifdef __native_client_codegen__
 	guint8 *buf_alloc;
 #endif
-	guint8 *labels [3];
+	guint8 *labels [16];
 
 #if defined(__default_codegen__)
 	code = buf = g_malloc (256);
@@ -1444,8 +1455,19 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	x86_ret (code);
 
 	/* No match */
-	/* FIXME: */
 	mono_x86_patch (labels [1], code);
+	/* Load fail tramp */
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (gpointer), 4);
+	x86_alu_membase_imm (code, X86_CMP, X86_EAX, 0, 0);
+	labels [3] = code;
+	x86_branch8 (code, X86_CC_Z, FALSE, 0);
+	/* Jump to fail tramp */
+	x86_mov_membase_reg (code, X86_ESP, 4, X86_EAX, 4);
+	x86_pop_reg (code, X86_EAX);
+	x86_ret (code);
+
+	/* Fail */
+	mono_x86_patch (labels [3], code);
 	x86_breakpoint (code);
 
 #ifdef __native_client_codegen__
@@ -1925,17 +1947,23 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		}
 	} else if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR)) {
 		MonoGenericContainer *container = mono_type_get_generic_param_owner (&klass->byval_arg);
-		g_assert (container);
+		MonoGenericParam *par = klass->byval_arg.data.generic_param;
 
 		encode_value (MONO_AOT_TYPEREF_VAR, p, &p);
 		encode_value (klass->byval_arg.type, p, &p);
 		encode_value (mono_type_get_generic_param_num (&klass->byval_arg), p, &p);
-		
-		encode_value (container->is_method, p, &p);
-		if (container->is_method)
-			encode_method_ref (acfg, container->owner.method, p, &p);
-		else
-			encode_klass_ref (acfg, container->owner.klass, p, &p);
+
+		encode_value (container ? 1 : 0, p, &p);
+		if (container) {
+			encode_value (container->is_method, p, &p);
+			g_assert (par->serial == 0);
+			if (container->is_method)
+				encode_method_ref (acfg, container->owner.method, p, &p);
+			else
+				encode_klass_ref (acfg, container->owner.klass, p, &p);
+		} else {
+			encode_value (par->serial, p, &p);
+		}
 	} else if (klass->byval_arg.type == MONO_TYPE_PTR) {
 		encode_value (MONO_AOT_TYPEREF_PTR, p, &p);
 		encode_type (acfg, &klass->byval_arg, p, &p);
@@ -7005,6 +7033,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->nmethods);
 	emit_int32 (acfg, acfg->flags);
 	emit_int32 (acfg, acfg->opts);
+	emit_int32 (acfg, acfg->simd_opts);
 	emit_int32 (acfg, gc_name_offset);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
@@ -7311,7 +7340,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	g_free (command);
-	unlink (objfile);
+
 	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, SHARED_EXT);
 	printf ("Stripping the binary: %s\n", com);
 	system (com);
@@ -7334,6 +7363,17 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	rename (tmp_outfile_name, outfile_name);
+
+#if defined(__APPLE__)
+	command = g_strdup_printf ("dsymutil %s", outfile_name);
+	printf ("Generating debug symbols: %s\n", command);
+	if (system (command) != 0) {
+		return 1;
+	}
+#endif
+
+	if (!acfg->aot_opts.save_temps)
+		unlink (objfile);
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
@@ -7373,6 +7413,8 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->globals = g_ptr_array_new ();
 	acfg->image = image;
 	acfg->opts = opts;
+	/* TODO: Write out set of SIMD instructions used, rather than just those available */
+	acfg->simd_opts = mono_arch_cpu_enumerate_simd_versions ();
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);

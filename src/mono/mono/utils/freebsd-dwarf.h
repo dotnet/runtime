@@ -158,6 +158,7 @@
 #define DW_AT_variable_parameter	0x4b
 #define DW_AT_virtuality		0x4c
 #define DW_AT_vtable_elem_location	0x4d
+#define DW_AT_description       0x5a
 
 #define DW_AT_lo_user			0x2000
 

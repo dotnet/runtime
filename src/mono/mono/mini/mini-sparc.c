@@ -204,7 +204,7 @@ mono_arch_cpu_init (void)
 {
 	guint32 dummy;
 	/* make sure sparcv9 is initialized for embedded use */
-	mono_arch_cpu_optimizazions(&dummy);
+	mono_arch_cpu_optimizations(&dummy);
 }
 
 /*
@@ -227,7 +227,7 @@ mono_arch_cleanup (void)
  * This function returns the optimizations supported on this cpu.
  */
 guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	char buf [1024];
 	guint32 opts = 0;
@@ -262,6 +262,19 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		*exclude_mask |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
 
 	return opts;
+}
+
+/*
+ * This function test for all SIMD functions supported.
+ *
+ * Returns a bitmask corresponding to all supported versions.
+ *
+ */
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	/* SIMD is currently unimplemented */
+	return 0;
 }
 
 #ifdef __GNUC__
@@ -4396,7 +4409,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
  * Returns the size of the activation frame.
  */
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, align;
 	CallInfo *cinfo;

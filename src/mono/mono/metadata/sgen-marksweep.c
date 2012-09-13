@@ -42,6 +42,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-memory-governor.h"
 #include "metadata/gc-internal.h"
 
 #define MS_BLOCK_SIZE	(16*1024)
@@ -100,7 +101,7 @@ struct _MSBlockInfo {
 };
 
 #ifdef FIXED_HEAP
-static int ms_heap_num_blocks = MS_DEFAULT_HEAP_NUM_BLOCKS;
+static mword ms_heap_num_blocks = MS_DEFAULT_HEAP_NUM_BLOCKS;
 
 static char *ms_heap_start;
 static char *ms_heap_end;
@@ -303,18 +304,18 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 	char *nursery_start;
 	mword major_heap_size = ms_heap_num_blocks * MS_BLOCK_SIZE;
 	mword alloc_size = nursery_size + major_heap_size;
-	int i;
+	mword i;
 
 	g_assert (ms_heap_num_blocks > 0);
 	g_assert (nursery_size % MS_BLOCK_SIZE == 0);
 	if (nursery_align)
 		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
 
-	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE);
+	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE, "heap");
 	ms_heap_start = nursery_start + nursery_size;
 	ms_heap_end = ms_heap_start + major_heap_size;
 
-	block_infos = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
+	block_infos = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO, TRUE);
 
 	for (i = 0; i < ms_heap_num_blocks; ++i) {
 		block_infos [i].block = ms_heap_start + i * MS_BLOCK_SIZE;
@@ -335,9 +336,9 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	char *start;
 	if (nursery_align)
-		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, "nursery");
 	else
-		start = sgen_alloc_os_memory (nursery_size, TRUE);
+		start = sgen_alloc_os_memory (nursery_size, TRUE, "nursery");
 
 	return start;
 }
@@ -376,7 +377,7 @@ ms_free_block (MSBlockInfo *block)
 	empty_blocks = block;
 	block->used = FALSE;
 	block->zeroed = FALSE;
-	sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
+	sgen_memgov_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 }
 #else
 static void*
@@ -388,7 +389,7 @@ ms_get_empty_block (void)
 
  retry:
 	if (!empty_blocks) {
-		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE);
+		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE, "major heap section");
 
 		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
 			block = p;
@@ -431,7 +432,7 @@ ms_free_block (void *block)
 {
 	void *empty;
 
-	sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
+	sgen_memgov_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 	memset (block, 0, MS_BLOCK_SIZE);
 
 	do {
@@ -548,7 +549,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	char *obj_start;
 	int i;
 
-	if (!sgen_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
+	if (!sgen_memgov_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
 		return FALSE;
 
 #ifdef FIXED_HEAP
@@ -801,8 +802,8 @@ major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 	  *as pinned alloc is requested by the runtime.
 	  */
 	 if (!res) {
-		 sgen_collect_major_no_lock ("pinned alloc failure");
-		 res = alloc_obj (size, TRUE, has_references);
+		sgen_perform_collection (0, GENERATION_OLD, "pinned alloc failure");
+		res = alloc_obj (size, TRUE, has_references);
 	 }
 	 return res;
 }
@@ -1156,7 +1157,13 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			 *
 			 * FIXME (2): We should rework this to avoid all those nursery checks.
 			 */
-			if (!sgen_ptr_in_nursery (obj)) { /*marking a nursery object is pretty stupid.*/
+			/*
+			 * For the split nursery allocator the object
+			 * might still be in the nursery despite
+			 * having being promoted, in which case we
+			 * can't mark it.
+			 */
+			if (!sgen_ptr_in_nursery (obj)) {
 				block = MS_BLOCK_FOR_OBJ (obj);
 				MS_CALC_MARK_BIT (word, bit, obj);
 				DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
@@ -1293,7 +1300,12 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		 *
 		 * FIXME (2): We should rework this to avoid all those nursery checks.
 		 */
-		if (!sgen_ptr_in_nursery (obj)) { /*marking a nursery object is pretty stupid.*/
+		/*
+		 * For the split nursery allocator the object might
+		 * still be in the nursery despite having being
+		 * promoted, in which case we can't mark it.
+		 */
+		if (!sgen_ptr_in_nursery (obj)) {
 			block = MS_BLOCK_FOR_OBJ (obj);
 			MS_CALC_MARK_BIT (word, bit, obj);
 			DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
@@ -1975,7 +1987,7 @@ alloc_free_block_lists (MSBlockInfo ***lists)
 {
 	int i;
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i)
-		lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+		lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 }
 
 #ifdef SGEN_PARALLEL_MARK
@@ -2057,10 +2069,10 @@ sgen_marksweep_init
 #endif
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
-	block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 	ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, block_obj_sizes);
 
-	evacuate_block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	evacuate_block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		evacuate_block_obj_sizes [i] = FALSE;
 
