@@ -208,10 +208,12 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	
 	GET_CONTEXT;
 
-	if (!thread || !domain)
+	if (!thread || !domain) {
 		/* The thread might not have started up yet */
 		/* FIXME: Specify the synchronization with start_wrapper () in threads.c */
+		mono_debugger_agent_thread_interrupt (ctx, NULL);
 		return;
+	}
 
 	if (thread->ignore_next_signal) {
 		thread->ignore_next_signal = FALSE;

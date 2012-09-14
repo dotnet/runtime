@@ -2452,8 +2452,10 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 		return FALSE;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
-	if (!tls)
-		return FALSE;
+	if (!tls) {
+		DEBUG (1, fprintf (log_file, "[%p] Received interrupt with no TLS, continuing.\n", (gpointer)GetCurrentThreadId ()));
+ 		return FALSE;
+	}
 
 	return thread_interrupt (tls, NULL, sigctx, ji);
 }
@@ -2542,11 +2544,13 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		mono_thread_info_resume (mono_thread_info_get_tid (info));
 	} else {
 		res = mono_thread_kill (thread, mono_thread_get_abort_signal ());
-		if (res)
+		if (res) {
+			DEBUG(1, fprintf (log_file, "[%p] mono_thread_kill () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res));
 			/* 
 			 * Attached thread which died without detaching.
 			 */
 			tls->terminated = TRUE;
+		}
 	}
 #endif
 }
