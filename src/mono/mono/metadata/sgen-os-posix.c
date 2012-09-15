@@ -102,7 +102,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, context);
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, context, NULL);
 
 	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for suspend from %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
 

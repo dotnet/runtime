@@ -576,7 +576,7 @@ thread_detach_func (gpointer user_data)
 }
 
 static void
-thread_suspend_func (gpointer user_data, void *sigctx)
+thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 {
 	TlsData *tls = user_data;
 
@@ -596,6 +596,9 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 		if (sigctx) {
 			mono_arch_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
+			tls->unwind_state.valid = TRUE;
+		} else if (ctx) {
+			memcpy (&tls->unwind_state.ctx, ctx, sizeof (MonoContext));
 			tls->unwind_state.valid = TRUE;
 		} else {
 			tls->unwind_state.valid = FALSE;

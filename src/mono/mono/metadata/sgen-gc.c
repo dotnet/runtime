@@ -3419,12 +3419,14 @@ update_current_thread_stack (void *start)
 #ifdef USE_MONO_CTX
 	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
 	info->monoctx = &cur_thread_ctx;
+	if (gc_callbacks.thread_suspend_func)
+		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, info->monoctx);
 #else
 	ARCH_STORE_REGS (ptr);
 	info->stopped_regs = ptr;
-#endif
 	if (gc_callbacks.thread_suspend_func)
-		gc_callbacks.thread_suspend_func (info->runtime_data, NULL);
+		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, NULL);
+#endif
 }
 
 void

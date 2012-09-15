@@ -72,7 +72,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, NULL);
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, NULL, NULL);
 
 	return TRUE;
 }

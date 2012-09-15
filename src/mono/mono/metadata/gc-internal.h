@@ -263,7 +263,7 @@ typedef struct {
 	 * by attach_func. This might called with GC locks held and the word stopped,
 	 * so it shouldn't do any synchronization etc.
 	 */
-	void (*thread_suspend_func) (gpointer user_data, void *sigcontext);
+	void (*thread_suspend_func) (gpointer user_data, void *sigcontext, MonoContext *ctx);
 	/* 
 	 * Function called to mark from thread stacks. user_data is the data returned 
 	 * by attach_func. This is called twice, with the word stopped:
