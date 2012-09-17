@@ -4305,6 +4305,68 @@ emit_memory_barrier (MonoCompile *cfg, int kind)
 }
 
 static MonoInst*
+llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins = NULL;
+	int opcode = 0;
+
+	/* The LLVM backend supports these intrinsics */
+	if (cmethod->klass == mono_defaults.math_class) {
+		if (strcmp (cmethod->name, "Sin") == 0) {
+			opcode = OP_SIN;
+		} else if (strcmp (cmethod->name, "Cos") == 0) {
+			opcode = OP_COS;
+		} else if (strcmp (cmethod->name, "Sqrt") == 0) {
+			opcode = OP_SQRT;
+		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
+			opcode = OP_ABS;
+		}
+
+		if (opcode) {
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->type = STACK_R8;
+			ins->dreg = mono_alloc_freg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+
+		opcode = 0;
+		if (cfg->opt & MONO_OPT_CMOV) {
+			if (strcmp (cmethod->name, "Min") == 0) {
+				if (fsig->params [0]->type == MONO_TYPE_I4)
+					opcode = OP_IMIN;
+				if (fsig->params [0]->type == MONO_TYPE_U4)
+					opcode = OP_IMIN_UN;
+				else if (fsig->params [0]->type == MONO_TYPE_I8)
+					opcode = OP_LMIN;
+				else if (fsig->params [0]->type == MONO_TYPE_U8)
+					opcode = OP_LMIN_UN;
+			} else if (strcmp (cmethod->name, "Max") == 0) {
+				if (fsig->params [0]->type == MONO_TYPE_I4)
+					opcode = OP_IMAX;
+				if (fsig->params [0]->type == MONO_TYPE_U4)
+					opcode = OP_IMAX_UN;
+				else if (fsig->params [0]->type == MONO_TYPE_I8)
+					opcode = OP_LMAX;
+				else if (fsig->params [0]->type == MONO_TYPE_U8)
+					opcode = OP_LMAX_UN;
+			}
+		}
+
+		if (opcode) {
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->type = fsig->params [0]->type == MONO_TYPE_I4 ? STACK_I4 : STACK_I8;
+			ins->dreg = mono_alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+
+	return ins;
+}
+
+static MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
@@ -4749,6 +4811,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 	}
 #endif
+
+	if (COMPILE_LLVM (cfg)) {
+		ins = llvm_emit_inst_for_method (cfg, cmethod, fsig, args);
+		if (ins)
+			return ins;
+	}
 
 	return mono_arch_emit_inst_for_method (cfg, cmethod, fsig, args);
 }
