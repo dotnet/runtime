@@ -7711,6 +7711,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		 */
 		sprintf (symbol, "thumb_end");
 		emit_section_change (acfg, ".text", 0);
+		emit_alignment (acfg, 8);
 		emit_label (acfg, symbol);
 		emit_zero_bytes (acfg, 16);
 
