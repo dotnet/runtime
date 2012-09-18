@@ -45,6 +45,7 @@
 
 #include "sgen-gc.h"
 #include "sgen-bridge.h"
+#include "sgen-hash-table.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
 

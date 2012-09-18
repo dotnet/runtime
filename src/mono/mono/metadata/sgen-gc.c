@@ -217,6 +217,7 @@
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-hash-table.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"

@@ -26,6 +26,7 @@
 #ifdef HAVE_SGEN_GC
 
 #include <mono/metadata/sgen-gc.h>
+#include <mono/metadata/sgen-hash-table.h>
 
 static void
 rehash (SgenHashTable *hash_table)

@@ -28,6 +28,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-hash-table.h"
 
 
 typedef struct _PinStatAddress PinStatAddress;
