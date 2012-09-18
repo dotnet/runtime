@@ -572,24 +572,14 @@ sgen_bridge_processing_stw_step (void)
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
 }
 
-typedef struct {
-	int num_sccs;
-	MonoGCBridgeSCC **sccs;
-} SCCData;
-
 static mono_bool
 is_bridge_object_alive (MonoObject *obj, void *data)
 {
-	SCCData *d = data;
-	int i;
-	for (i = 0; i < d->num_sccs; ++i) {
-		int j;
-		for (j = 0; j < d->sccs [i]->num_objs; ++j) {
-			if (obj == d->sccs [i]->objs [j])
-				return d->sccs [i]->is_alive;
-		}
-	}
-	return TRUE;
+	SgenHashTable *table = data;
+	unsigned char *value = sgen_hash_table_lookup (table, obj);
+	if (!value)
+		return TRUE;
+	return *value;
 }
 
 void
@@ -605,7 +595,7 @@ sgen_bridge_processing_finish (int generation)
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
 	MonoGCBridgeXRef *api_xrefs;
-	SCCData predicate_data;
+	SgenHashTable alive_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DATA, INTERNAL_MEM_BRIDGE_DATA, 1, mono_aligned_addr_hash, NULL);
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
 
@@ -761,19 +751,23 @@ sgen_bridge_processing_finish (int generation)
 	step_7 = SGEN_TV_ELAPSED (atv, btv);
 
 	for (i = 0; i < num_sccs; ++i) {
-		if (api_sccs [i]->is_alive)
-			continue;
-		for (j = 0; j < api_sccs [i]->num_objs; ++j)
-			sgen_mark_bridge_object (api_sccs [i]->objs [j]);
+		unsigned char alive = api_sccs [i]->is_alive ? 1 : 0;
+		for (j = 0; j < api_sccs [i]->num_objs; ++j) {
+			/* Build hash table for nulling weak links. */
+			sgen_hash_table_replace (&alive_hash, api_sccs [i]->objs [j], &alive, NULL);
+
+			/* Release for finalization those objects we no longer care. */
+			if (!api_sccs [i]->is_alive)
+				sgen_mark_bridge_object (api_sccs [i]->objs [j]);
+		}
 	}
 
 	/* Null weak links to dead objects. */
-	predicate_data.num_sccs = num_sccs;
-	predicate_data.sccs = api_sccs;
-
-	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &predicate_data);
+	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &alive_hash);
 	if (generation == GENERATION_OLD)
-		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &predicate_data);
+		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
+
+	sgen_hash_table_clean (&alive_hash);
 
 	/* free callback data */
 
