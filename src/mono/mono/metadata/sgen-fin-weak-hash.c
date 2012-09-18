@@ -474,6 +474,32 @@ null_links_for_domain (MonoDomain *domain, int generation)
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
+/* LOCKING: requires that the GC lock is held */
+void
+sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predicate, void *data)
+{
+	void **link;
+	gpointer dummy;
+	SgenHashTable *hash = get_dislink_hash_table (generation);
+	fprintf (stderr, "**** nulling links with predicate\n");
+	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
+		char *object = DISLINK_OBJECT (link);
+		mono_bool is_alive = predicate ((MonoObject*)object, data);
+
+		if (is_alive)
+			fprintf (stderr, "ALIVE %p %s\n", object, safe_name (object));
+		else
+			fprintf (stderr, "DEAD %p %s\n", object, safe_name (object));
+
+		if (!is_alive) {
+			*link = NULL;
+			DEBUG (5, fprintf (gc_debug_file, "Dislink nullified by predicate at %p to GCed object %p\n", link, object));
+			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+			continue;
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;
+}
+
 static void
 remove_finalizers_for_domain (MonoDomain *domain, int generation)
 {

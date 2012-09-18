@@ -572,8 +572,28 @@ sgen_bridge_processing_stw_step (void)
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
 }
 
+typedef struct {
+	int num_sccs;
+	MonoGCBridgeSCC **sccs;
+} SCCData;
+
+static mono_bool
+is_bridge_object_alive (MonoObject *obj, void *data)
+{
+	SCCData *d = data;
+	int i;
+	for (i = 0; i < d->num_sccs; ++i) {
+		int j;
+		for (j = 0; j < d->sccs [i]->num_objs; ++j) {
+			if (obj == d->sccs [i]->objs [j])
+				return d->sccs [i]->is_alive;
+		}
+	}
+	return TRUE;
+}
+
 void
-sgen_bridge_processing_finish (void)
+sgen_bridge_processing_finish (int generation)
 {
 	int i, j;
 	int num_sccs, num_xrefs;
@@ -585,6 +605,7 @@ sgen_bridge_processing_finish (void)
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
 	MonoGCBridgeXRef *api_xrefs;
+	SCCData predicate_data;
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
 
@@ -667,6 +688,7 @@ sgen_bridge_processing_finish (void)
 			continue;
 
 		api_sccs [j] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * scc->num_bridge_entries, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+		api_sccs [j]->is_alive = FALSE;
 		api_sccs [j]->num_objs = scc->num_bridge_entries;
 		scc->num_bridge_entries = 0;
 		scc->api_index = j++;
@@ -734,16 +756,24 @@ sgen_bridge_processing_finish (void)
 
 	bridge_callbacks.cross_references (num_sccs, api_sccs, num_xrefs, api_xrefs);
 
-/*Release for finalization those objects we no longer care. */
+	/* Release for finalization those objects we no longer care. */
 	SGEN_TV_GETTIME (btv);
 	step_7 = SGEN_TV_ELAPSED (atv, btv);
 
 	for (i = 0; i < num_sccs; ++i) {
-		if (!api_sccs [i]->objs [0])
+		if (api_sccs [i]->is_alive)
 			continue;
 		for (j = 0; j < api_sccs [i]->num_objs; ++j)
 			sgen_mark_bridge_object (api_sccs [i]->objs [j]);
 	}
+
+	/* Null weak links to dead objects. */
+	predicate_data.num_sccs = num_sccs;
+	predicate_data.sccs = api_sccs;
+
+	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &predicate_data);
+	if (generation == GENERATION_OLD)
+		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &predicate_data);
 
 	/* free callback data */
 

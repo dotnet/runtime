@@ -1824,9 +1824,9 @@ stw_bridge_process (void)
 }
 
 static void
-bridge_process (void)
+bridge_process (int generation)
 {
-	sgen_bridge_processing_finish ();
+	sgen_bridge_processing_finish (generation);
 }
 
 SgenObjectOperations *
@@ -3624,7 +3624,7 @@ restart_world (int generation, GGTimingInfo *timing)
 	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 
-	bridge_process ();
+	bridge_process (generation);
 
 	TV_GETTIME (end_bridge);
 	bridge_usec = TV_ELAPSED (end_sw, end_bridge);

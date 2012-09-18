@@ -778,7 +778,7 @@ gboolean sgen_object_is_live (void *obj) MONO_INTERNAL;
 gboolean sgen_need_bridge_processing (void) MONO_INTERNAL;
 void sgen_bridge_reset_data (void) MONO_INTERNAL;
 void sgen_bridge_processing_stw_step (void) MONO_INTERNAL;
-void sgen_bridge_processing_finish (void) MONO_INTERNAL;
+void sgen_bridge_processing_finish (int generation) MONO_INTERNAL;
 void sgen_register_test_bridge_callbacks (const char *bridge_class_name) MONO_INTERNAL;
 gboolean sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
 gboolean sgen_is_bridge_class (MonoClass *class) MONO_INTERNAL;
@@ -788,6 +788,9 @@ void sgen_bridge_register_finalized_object (MonoObject *object) MONO_INTERNAL;
 void sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_process_togglerefs (void) MONO_INTERNAL;
 
+typedef mono_bool (*WeakLinkAlivePredicateFunc) (MonoObject*, void*);
+
+void sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predicate, void *data) MONO_INTERNAL;
 
 gboolean sgen_gc_is_object_ready_for_finalization (void *object) MONO_INTERNAL;
 void sgen_gc_lock (void) MONO_INTERNAL;
