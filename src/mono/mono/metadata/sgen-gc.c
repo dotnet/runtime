@@ -235,6 +235,7 @@
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internal.h"
+#include "utils/dtrace.h"
 
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/memcheck.h>
@@ -2351,6 +2352,8 @@ collect_nursery (void)
 	if (disable_minor_collections)
 		return TRUE;
 
+	MONO_PROBE_GC_BEGIN (GENERATION_NURSERY);
+
 	verify_nursery ();
 
 	mono_perfcounters->gc_collections0++;
@@ -2571,6 +2574,8 @@ collect_nursery (void)
 	current_collection_generation = -1;
 	objects_pinned = 0;
 
+	MONO_PROBE_GC_END (GENERATION_NURSERY);
+
 	return needs_major;
 }
 
@@ -2591,6 +2596,8 @@ major_do_collection (const char *reason)
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
 	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
+
+	MONO_PROBE_GC_BEGIN (GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
 	mono_perfcounters->gc_collections1++;
@@ -2877,6 +2884,8 @@ major_do_collection (const char *reason)
 	binary_protocol_flush_buffers (FALSE);
 
 	//consistency_check ();
+
+	MONO_PROBE_GC_END (GENERATION_OLD);
 
 	return bytes_pinned_from_failed_allocation > 0;
 }
