@@ -221,7 +221,7 @@ typedef struct {
 typedef struct {
 	mgreg_t pc;
 	mgreg_t regs [16];
-	double fregs [8];
+	double fregs [16];
 	mgreg_t cpsr;
 } MonoContext;
 

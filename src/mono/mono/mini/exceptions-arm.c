@@ -24,6 +24,7 @@
 #endif  /* def HAVE_UCONTEXT_H */
 
 #include <mono/arch/arm/arm-codegen.h>
+#include <mono/arch/arm/arm-vfp-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -58,6 +59,11 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	 */
 
 	ctx_reg = ARMREG_R0;
+
+#if defined(ARM_FPU_VFP)
+	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, fregs));
+	ARM_FLDMD (code, ARM_VFP_D0, 16, ARMREG_IP);
+#endif
 
 	/* move pc to PC */
 	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, pc));
