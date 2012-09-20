@@ -2749,7 +2749,7 @@ can_marshal_struct (MonoClass *klass)
 
 	/* Special cases */
 	/* Its hard to compute whenever these can be marshalled or not */
-	if (!strcmp (klass->name_space, "System.Net.NetworkInformation.MacOsStructs"))
+	if (!strcmp (klass->name_space, "System.Net.NetworkInformation.MacOsStructs") && strcmp (klass->name, "sockaddr_dl"))
 		return TRUE;
 
 	return can_marshal;
