@@ -309,7 +309,7 @@ sgen_alloc_os_memory (size_t size, int activate, gboolean is_heap_memory, const 
 	if (ptr) {
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
 		if (is_heap_memory)
-			MONO_PROBE_GC_HEAP_ALLOC (ptr, size);
+			MONO_GC_HEAP_ALLOC (ptr, size);
 	}
 	return ptr;
 }
@@ -323,7 +323,7 @@ sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, g
 	if (ptr) {
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
 		if (is_heap_memory)
-			MONO_PROBE_GC_HEAP_ALLOC (ptr, size);
+			MONO_GC_HEAP_ALLOC (ptr, size);
 	}
 	return ptr;
 }
@@ -337,7 +337,7 @@ sgen_free_os_memory (void *addr, size_t size, gboolean is_heap_memory)
 	mono_vfree (addr, size);
 	SGEN_ATOMIC_ADD_P (total_alloc, -size);
 	if (is_heap_memory)
-		MONO_PROBE_GC_HEAP_FREE (addr, size);
+		MONO_GC_HEAP_FREE (addr, size);
 }
 
 int64_t

@@ -2352,7 +2352,7 @@ collect_nursery (void)
 	if (disable_minor_collections)
 		return TRUE;
 
-	MONO_PROBE_GC_BEGIN (GENERATION_NURSERY);
+	MONO_GC_BEGIN (GENERATION_NURSERY);
 
 	verify_nursery ();
 
@@ -2574,7 +2574,7 @@ collect_nursery (void)
 	current_collection_generation = -1;
 	objects_pinned = 0;
 
-	MONO_PROBE_GC_END (GENERATION_NURSERY);
+	MONO_GC_END (GENERATION_NURSERY);
 
 	return needs_major;
 }
@@ -2597,7 +2597,7 @@ major_do_collection (const char *reason)
 	ScanThreadDataJobData stdjd;
 	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
 
-	MONO_PROBE_GC_BEGIN (GENERATION_OLD);
+	MONO_GC_BEGIN (GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
 	mono_perfcounters->gc_collections1++;
@@ -2885,7 +2885,7 @@ major_do_collection (const char *reason)
 
 	//consistency_check ();
 
-	MONO_PROBE_GC_END (GENERATION_OLD);
+	MONO_GC_END (GENERATION_OLD);
 
 	return bytes_pinned_from_failed_allocation > 0;
 }
@@ -3888,7 +3888,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 		if (!sgen_park_current_thread_if_doing_handshake (p))
 			g_usleep (50);
 	}
-	MONO_PROBE_GC_LOCKED ();
+	MONO_GC_LOCKED ();
 #endif
 
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));

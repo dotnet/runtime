@@ -205,12 +205,12 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 #define LOCK_INIT(name)	mono_mutex_init (&(name), NULL)
 #define LOCK_GC do {						\
 		mono_mutex_lock (&gc_mutex);			\
-		MONO_PROBE_GC_LOCKED ();			\
+		MONO_GC_LOCKED ();				\
 	} while (0)
 #define TRYLOCK_GC (mono_mutex_trylock (&gc_mutex) == 0)
 #define UNLOCK_GC do {						\
 		mono_mutex_unlock (&gc_mutex);			\
-		MONO_PROBE_GC_UNLOCKED ();			\
+		MONO_GC_UNLOCKED ();				\
 	} while (0)
 #define LOCK_INTERRUPTION mono_mutex_lock (&interruption_mutex)
 #define UNLOCK_INTERRUPTION mono_mutex_unlock (&interruption_mutex)
