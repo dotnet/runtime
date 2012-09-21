@@ -117,6 +117,8 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 	static int last_major_gc_warned = -1;
 	static int num_degraded = 0;
 
+	void *p;
+
 	if (!for_mature) {
 		if (last_major_gc_warned < stat_major_gcs) {
 			++num_degraded;
@@ -131,7 +133,16 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 
 	sgen_ensure_free_space (size);
 
-	return major_collector.alloc_degraded (vtable, size);
+	p = major_collector.alloc_degraded (vtable, size);
+
+	if (for_mature) {
+		MONO_GC_MAJOR_OBJ_ALLOC_MATURE (p, size, NULL);
+	} else {
+		binary_protocol_alloc_degraded (p, vtable, size);
+		MONO_GC_MAJOR_OBJ_ALLOC_DEGRADED (p, size, NULL);
+	}
+
+	return p;
 }
 
 /*
@@ -239,11 +250,8 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			/* when running in degraded mode, we continue allocing that way
 			 * for a while, to decrease the number of useless nursery collections.
 			 */
-			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
-				p = alloc_degraded (vtable, size, FALSE);
-				binary_protocol_alloc_degraded (p, vtable, size);
-				return p;
-			}
+			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE)
+				return alloc_degraded (vtable, size, FALSE);
 
 			available_in_tlab = TLAB_REAL_END - TLAB_NEXT;
 			if (size > tlab_size || available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
@@ -252,13 +260,10 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					p = sgen_nursery_alloc (size);
 					if (!p) {
 						sgen_ensure_free_space (size);
-						if (degraded_mode) {
-							p = alloc_degraded (vtable, size, FALSE);
-							binary_protocol_alloc_degraded (p, vtable, size);
-							return p;
-						} else {
+						if (degraded_mode)
+							return alloc_degraded (vtable, size, FALSE);
+						else
 							p = sgen_nursery_alloc (size);
-						}
 					}
 				} while (!p);
 				if (!p) {
@@ -281,13 +286,10 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 					if (!p) {
 						sgen_ensure_free_space (tlab_size);
-						if (degraded_mode) {
-							p = alloc_degraded (vtable, size, FALSE);
-							binary_protocol_alloc_degraded (p, vtable, size);
-							return p;
-						} else {
+						if (degraded_mode)
+							return alloc_degraded (vtable, size, FALSE);
+						else
 							p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
-						}		
 					}
 				} while (!p);
 					
