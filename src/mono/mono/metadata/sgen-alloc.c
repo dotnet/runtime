@@ -265,6 +265,8 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					// no space left
 					g_assert (0);
 				}
+				if (p)
+					MONO_GC_NURSERY_OBJ_ALLOC (p, size, NULL);
 
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 					memset (p, 0, size);
@@ -303,6 +305,8 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 					memset (TLAB_START, 0, alloc_size);
 				}
+
+				MONO_GC_NURSERY_TLAB_ALLOC (p, alloc_size);
 
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
@@ -347,6 +351,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		p = sgen_nursery_alloc (size);
 		if (!p)
 			return NULL;
+		MONO_GC_NURSERY_OBJ_ALLOC (p, size, NULL);
 		sgen_set_nursery_scan_start ((char*)p);
 
 		/*FIXME we should use weak memory ops here. Should help specially on x86. */
@@ -379,6 +384,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			p = sgen_nursery_alloc (size);
 			if (!p)
 				return NULL;
+			MONO_GC_NURSERY_OBJ_ALLOC (p, size, NULL);
 
 			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 				memset (p, 0, size);			
@@ -399,6 +405,8 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 			if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 				memset (new_next, 0, alloc_size);
+
+			MONO_GC_NURSERY_TLAB_ALLOC (new_next, alloc_size);
 		}
 	}
 
