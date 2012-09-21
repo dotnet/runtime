@@ -46,6 +46,10 @@
 #define MONO_PROBE_GC_END_ENABLED()	MONO_GC_END_ENABLED ()
 
 
+#define MONO_PROBE_GC_LOCKED()		MONO_GC_LOCKED ()
+#define MONO_PROBE_GC_UNLOCKED()	MONO_GC_UNLOCKED ()
+
+
 #define MONO_PROBE_GC_HEAP_ALLOC(addr,size)	MONO_GC_HEAP_ALLOC ((addr), (size))
 #define MONO_PROBE_GC_HEAP_FREE(addr,size)	MONO_GC_HEAP_FREE ((addr), (size))
 
@@ -71,6 +75,13 @@
 
 #define MONO_PROBE_GC_END(generation)
 #define MONO_PROBE_GC_END_ENABLED() (0)
+
+
+#define MONO_PROBE_GC_LOCKED()
+#define MONO_PROBE_GC_LOCKED_ENABLED() (0)
+
+#define MONO_PROBE_GC_UNLOCKED()
+#define MONO_PROBE_GC_UNLOCKED_ENABLED() (0)
 
 
 #define MONO_PROBE_GC_HEAP_ALLOC(addr,size)

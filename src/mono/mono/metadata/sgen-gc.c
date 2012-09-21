@@ -3888,6 +3888,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 		if (!sgen_park_current_thread_if_doing_handshake (p))
 			g_usleep (50);
 	}
+	MONO_PROBE_GC_LOCKED ();
 #endif
 
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));
