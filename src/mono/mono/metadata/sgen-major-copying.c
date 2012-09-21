@@ -98,9 +98,9 @@ static void*
 major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	if (nursery_align)
-		nursery_start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, "nursery");
+		nursery_start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, TRUE, "nursery");
 	else
-		nursery_start = sgen_alloc_os_memory (nursery_size, TRUE, "nursery");
+		nursery_start = sgen_alloc_os_memory (nursery_size, TRUE, TRUE, "nursery");
 
 	nursery_end = nursery_start + nursery_size;
 	nursery_bits = the_nursery_bits;
@@ -129,7 +129,7 @@ alloc_major_section (void)
 	GCMemSection *section;
 	int scan_starts;
 
-	section = sgen_alloc_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE, "major heap section");
+	section = sgen_alloc_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE, TRUE, "major heap section");
 	section->next_data = section->data = (char*)section + SGEN_SIZEOF_GC_MEM_SECTION;
 	g_assert (!((mword)section->data & 7));
 	section->size = MAJOR_SECTION_SIZE - SGEN_SIZEOF_GC_MEM_SECTION;
@@ -157,7 +157,7 @@ free_major_section (GCMemSection *section)
 	DEBUG (3, fprintf (gc_debug_file, "Freed major section %p (%p-%p)\n", section, section->data, section->end_data));
 	sgen_free_internal_dynamic (section->scan_starts,
 			(section->size + SGEN_SCAN_START_SIZE - 1) / SGEN_SCAN_START_SIZE * sizeof (char*), INTERNAL_MEM_SCAN_STARTS);
-	sgen_free_os_memory (section, MAJOR_SECTION_SIZE);
+	sgen_free_os_memory (section, MAJOR_SECTION_SIZE, TRUE);
 
 	--num_major_sections;
 }

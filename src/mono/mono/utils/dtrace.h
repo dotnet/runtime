@@ -46,6 +46,9 @@
 #define MONO_PROBE_GC_END_ENABLED()	MONO_GC_END_ENABLED ()
 
 
+#define MONO_PROBE_GC_HEAP_ALLOC(addr,size)	MONO_GC_HEAP_ALLOC ((addr), (size))
+#define MONO_PROBE_GC_HEAP_FREE(addr,size)	MONO_GC_HEAP_FREE ((addr), (size))
+
 #else
 
 
@@ -69,6 +72,9 @@
 #define MONO_PROBE_GC_END(generation)
 #define MONO_PROBE_GC_END_ENABLED() (0)
 
+
+#define MONO_PROBE_GC_HEAP_ALLOC(addr,size)
+#define MONO_PROBE_GC_HEAP_FREE(addr,size)
 
 #endif
 

@@ -40,6 +40,7 @@
 #include "utils/mono-counters.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-logger-internal.h"
+#include "utils/dtrace.h"
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
@@ -301,23 +302,29 @@ sgen_assert_memory_alloc (void *ptr, const char *assert_description)
  * This must not require any lock.
  */
 void*
-sgen_alloc_os_memory (size_t size, int activate, const char *assert_description)
+sgen_alloc_os_memory (size_t size, int activate, gboolean is_heap_memory, const char *assert_description)
 {
 	void *ptr = mono_valloc (0, size, prot_flags_for_activate (activate));
 	sgen_assert_memory_alloc (ptr, assert_description);
-	if (ptr)
+	if (ptr) {
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
+		if (is_heap_memory)
+			MONO_PROBE_GC_HEAP_ALLOC (ptr, size);
+	}
 	return ptr;
 }
 
 /* size must be a power of 2 */
 void*
-sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, const char *assert_description)
+sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, gboolean is_heap_memory, const char *assert_description)
 {
 	void *ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
 	sgen_assert_memory_alloc (ptr, assert_description);
-	if (ptr)
+	if (ptr) {
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
+		if (is_heap_memory)
+			MONO_PROBE_GC_HEAP_ALLOC (ptr, size);
+	}
 	return ptr;
 }
 
@@ -325,10 +332,12 @@ sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, c
  * Free the memory returned by sgen_alloc_os_memory (), returning it to the OS.
  */
 void
-sgen_free_os_memory (void *addr, size_t size)
+sgen_free_os_memory (void *addr, size_t size, gboolean is_heap_memory)
 {
 	mono_vfree (addr, size);
 	SGEN_ATOMIC_ADD_P (total_alloc, -size);
+	if (is_heap_memory)
+		MONO_PROBE_GC_HEAP_FREE (addr, size);
 }
 
 int64_t

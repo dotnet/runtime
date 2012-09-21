@@ -655,10 +655,10 @@ sgen_card_tables_collect_stats (gboolean begin)
 void
 sgen_card_table_init (SgenRemeberedSet *remset)
 {
-	sgen_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE, "card table");
+	sgen_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE, FALSE, "card table");
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	sgen_shadow_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE, "shadow card table");
+	sgen_shadow_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE, FALSE, "shadow card table");
 #endif
 
 #ifdef HEAVY_STATISTICS

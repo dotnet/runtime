@@ -244,7 +244,7 @@ get_los_section_memory (size_t size)
 	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
 		return NULL;
 
-	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE, NULL);
+	section = sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE, TRUE, NULL);
 
 	if (!section)
 		return NULL;
@@ -323,7 +323,7 @@ sgen_los_free_object (LOSObject *obj)
 		size += sizeof (LOSObject);
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
-		sgen_free_os_memory (obj, size);
+		sgen_free_os_memory (obj, size, TRUE);
 		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
@@ -351,7 +351,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 
 #ifdef LOS_DUMMY
 	if (!los_segment)
-		los_segment = sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE, NULL);
+		los_segment = sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE, TRUE, NULL);
 	los_segment_index = ALIGN_UP (los_segment_index);
 
 	obj = (LOSObject*)(los_segment + los_segment_index);
@@ -372,7 +372,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
-			obj = sgen_alloc_os_memory (alloc_size, TRUE, NULL);
+			obj = sgen_alloc_os_memory (alloc_size, TRUE, TRUE, NULL);
 			if (obj)
 				obj->huge_object = TRUE;
 		}
@@ -423,7 +423,7 @@ sgen_los_sweep (void)
 				prev->next = next;
 			else
 				los_sections = next;
-			sgen_free_os_memory (section, LOS_SECTION_SIZE);
+			sgen_free_os_memory (section, LOS_SECTION_SIZE, TRUE);
 			sgen_memgov_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
