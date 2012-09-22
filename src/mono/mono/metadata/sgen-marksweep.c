@@ -1370,7 +1370,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			if (SGEN_OBJECT_IS_PINNED (obj))
 				return;
 			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
-			if (MONO_GC_OBJ_PINNED_ENABLED ()) {
+			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 				MONO_GC_OBJ_PINNED (obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}

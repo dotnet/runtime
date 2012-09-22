@@ -1245,7 +1245,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 					if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
 						DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 						binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
-						if (MONO_GC_OBJ_PINNED_ENABLED ()) {
+						if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 							int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
 							MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
 							MONO_GC_OBJ_PINNED (search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
@@ -1315,7 +1315,7 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	}
 	GRAY_OBJECT_ENQUEUE (queue, object);
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
-	if (MONO_GC_OBJ_PINNED_ENABLED ()) {
+	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (object) ? GENERATION_NURSERY : GENERATION_OLD;
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (object);
 		MONO_GC_OBJ_PINNED (object, sgen_safe_object_get_size (object), vt->klass->name_space, vt->klass->name, gen);
@@ -2699,7 +2699,7 @@ major_do_collection (const char *reason)
 		report.count = 0;
 		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (bigobj->data));
-			if (MONO_GC_OBJ_PINNED_ENABLED ()) {
+			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
 				MONO_GC_OBJ_PINNED (bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}

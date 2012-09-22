@@ -220,7 +220,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 			binary_protocol_alloc (p , vtable, size);
-			if (MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ())
+			if (G_UNLIKELY (MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ()))
 				MONO_GC_NURSERY_OBJ_ALLOC (p, size, vtable->klass->name_space, vtable->klass->name);
 			g_assert (*p == NULL);
 			mono_atomic_store_seq (p, vtable);
@@ -327,7 +327,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 		binary_protocol_alloc (p, vtable, size);
-		if (MONO_GC_MAJOR_OBJ_ALLOC_LARGE_ENABLED () || MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ()) {
+		if (G_UNLIKELY (MONO_GC_MAJOR_OBJ_ALLOC_LARGE_ENABLED ()|| MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ())) {
 			if (size > SGEN_MAX_SMALL_OBJ_SIZE)
 				MONO_GC_MAJOR_OBJ_ALLOC_LARGE (p, size, vtable->klass->name_space, vtable->klass->name);
 			else
@@ -419,7 +419,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	binary_protocol_alloc (p, vtable, size);
-	if (MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ())
+	if (G_UNLIKELY (MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ()))
 		MONO_GC_NURSERY_OBJ_ALLOC (p, size, vtable->klass->name_space, vtable->klass->name);
 	g_assert (*p == NULL); /* FIXME disable this in non debug builds */
 
