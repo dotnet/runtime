@@ -1370,6 +1370,9 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			if (SGEN_OBJECT_IS_PINNED (obj))
 				return;
 			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+			if (MONO_GC_OBJ_PINNED_ENABLED ()) {
+				MONO_GC_OBJ_PINNED (obj, sgen_safe_object_get_size (obj), NULL, GENERATION_OLD);
+			}
 			SGEN_PIN_OBJECT (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
