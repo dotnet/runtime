@@ -43,6 +43,12 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
 	binary_protocol_copy (obj, destination, vt, objsize);
 
+	if (G_UNLIKELY (MONO_GC_OBJ_MOVED_ENABLED ())) {
+		int dest_gen = sgen_ptr_in_nursery (destination) ? GENERATION_NURSERY : GENERATION_OLD;
+		int src_gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
+		MONO_GC_OBJ_MOVED (destination, obj, dest_gen, src_gen, objsize, vt->klass->name_space, vt->klass->name);
+	}
+
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
 		goto *copy_labels [objsize / sizeof (gpointer)];
