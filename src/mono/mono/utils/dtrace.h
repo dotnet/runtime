@@ -65,21 +65,25 @@
 #define MONO_GC_NURSERY_TLAB_ALLOC(addr,len)
 #define MONO_GC_NURSERY_TLAB_ALLOC_ENABLED()	(0)
 
-#define MONO_GC_NURSERY_OBJ_ALLOC(addr,size,class_name)
+#define MONO_GC_NURSERY_OBJ_ALLOC(addr,size,ns_name,class_name)
 #define MONO_GC_NURSERY_OBJ_ALLOC_ENABLED()	(0)
 
 
-#define MONO_GC_MAJOR_OBJ_ALLOC_LARGE(addr,size,class_name)
+#define MONO_GC_MAJOR_OBJ_ALLOC_LARGE(addr,size,ns_name,class_name)
 #define MONO_GC_MAJOR_OBJ_ALLOC_LARGE_ENABLED()	(0)
 
-#define MONO_GC_MAJOR_OBJ_ALLOC_PINNED(addr,size,class_name)
+#define MONO_GC_MAJOR_OBJ_ALLOC_PINNED(addr,size,ns_name,class_name)
 #define MONO_GC_MAJOR_OBJ_ALLOC_PINNED_ENABLED()	(0)
 
-#define MONO_GC_MAJOR_OBJ_ALLOC_DEGRADED(addr,size,class_name)
+#define MONO_GC_MAJOR_OBJ_ALLOC_DEGRADED(addr,size,ns_name,class_name)
 #define MONO_GC_MAJOR_OBJ_ALLOC_DEGRADED_ENABLED()	(0)
 
-#define MONO_GC_MAJOR_OBJ_ALLOC_MATURE(addr,size,class_name)
+#define MONO_GC_MAJOR_OBJ_ALLOC_MATURE(addr,size,ns_name,class_name)
 #define MONO_GC_MAJOR_OBJ_ALLOC_MATURE_ENABLED()	(0)
+
+
+#define MONO_GC_OBJ_MOVED(dest,src,dest_gen,src_gen,size,ns_name,class_name)
+#define MONO_GC_OBJ_MOVED_ENABLED()	(0)
 
 
 #define MONO_GC_NURSERY_SWEEPED(addr,len)
@@ -89,7 +93,7 @@
 #define MONO_GC_MAJOR_SWEEPED_ENABLED()	(0)
 
 
-#define MONO_GC_OBJ_PINNED(addr,size,class_name,generation)
+#define MONO_GC_OBJ_PINNED(addr,size,ns_name,class_name,generation)
 #define MONO_GC_OBJ_PINNED_ENABLED()	(0)
 
 #endif
