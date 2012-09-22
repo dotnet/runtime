@@ -1456,7 +1456,14 @@ ms_sweep (void)
 			} else {
 				/* an unmarked object */
 				if (MS_OBJ_ALLOCED (obj, block)) {
+					/*
+					 * FIXME: Merge consecutive
+					 * slots for lower reporting
+					 * overhead.  Maybe memset
+					 * will also benefit?
+					 */
 					binary_protocol_empty (obj, block->obj_size);
+					MONO_GC_MAJOR_SWEEPED (obj, block->obj_size);
 					memset (obj, 0, block->obj_size);
 				}
 				*(void**)obj = block->free_list;
