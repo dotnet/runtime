@@ -220,6 +220,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 			binary_protocol_alloc (p , vtable, size);
+			MONO_GC_NURSERY_OBJ_ALLOC (p, size, NULL);
 			g_assert (*p == NULL);
 			mono_atomic_store_seq (p, vtable);
 
@@ -270,8 +271,6 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					// no space left
 					g_assert (0);
 				}
-				if (p)
-					MONO_GC_NURSERY_OBJ_ALLOC (p, size, NULL);
 
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 					memset (p, 0, size);
@@ -308,8 +307,6 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					memset (TLAB_START, 0, alloc_size);
 				}
 
-				MONO_GC_NURSERY_TLAB_ALLOC (p, alloc_size);
-
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
 				TLAB_NEXT += size;
@@ -329,6 +326,12 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 		binary_protocol_alloc (p, vtable, size);
+		if (MONO_GC_MAJOR_OBJ_ALLOC_LARGE_ENABLED () || MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ()) {
+			if (size > SGEN_MAX_SMALL_OBJ_SIZE)
+				MONO_GC_MAJOR_OBJ_ALLOC_LARGE (p, size, NULL);
+			else
+				MONO_GC_NURSERY_OBJ_ALLOC (p, size, NULL);
+		}
 		mono_atomic_store_seq (p, vtable);
 	}
 
@@ -570,6 +573,10 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	}
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+		if (size > SGEN_MAX_SMALL_OBJ_SIZE)
+			MONO_GC_MAJOR_OBJ_ALLOC_LARGE (p, size, NULL);
+		else
+			MONO_GC_MAJOR_OBJ_ALLOC_PINNED (p, size, NULL);
 		binary_protocol_alloc_pinned (p, vtable, size);
 		mono_atomic_store_seq (p, vtable);
 	}
