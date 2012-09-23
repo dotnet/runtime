@@ -574,8 +574,8 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 
 	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
 	ievt = get_events_from_list (list);
-	LeaveCriticalSection (&data->io_lock);
 	data->modify (data->event_data, fd, state->operation, ievt, is_new);
+        LeaveCriticalSection (&data->io_lock);
 }
 
 #ifndef DISABLE_SOCKETS
