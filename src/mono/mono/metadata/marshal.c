@@ -447,7 +447,7 @@ parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piin
 		 * construct it.
 		 */
 		cinfo = mono_custom_attrs_from_class (klass);
-		if (cinfo) {
+		if (cinfo && !mono_runtime_get_no_exec ()) {
 			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
 			if (attr) {
 				piinfo->piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
