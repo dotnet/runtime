@@ -3024,7 +3024,7 @@ add_wrappers (MonoAotCompile *acfg)
 				int j;
 
 				for (j = 0; j < cattr->num_attrs; ++j)
-					if (cattr->attrs [j].ctor && !strcmp (cattr->attrs [j].ctor->klass->name, "MonoNativeFunctionWrapperAttribute"))
+					if (cattr->attrs [j].ctor && (!strcmp (cattr->attrs [j].ctor->klass->name, "MonoNativeFunctionWrapperAttribute") || !strcmp (cattr->attrs [j].ctor->klass->name, "UnmanagedFunctionPointerAttribute")))
 						break;
 				if (j < cattr->num_attrs)
 					add_method (acfg, mono_marshal_get_native_func_wrapper_aot (klass));
