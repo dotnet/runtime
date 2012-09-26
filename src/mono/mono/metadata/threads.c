@@ -3688,7 +3688,7 @@ search_tls_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 
 }
 
 static void
-update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int max_set)
+update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int numbits)
 {
 	int i;
 	int idx = (offset >> 24) - 1;
@@ -3699,7 +3699,7 @@ update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int max_set)
 	offset &= 0xffffff;
 	offset /= sizeof (gpointer);
 	/* offset is now the bitmap offset */
-	for (i = 0; i <= max_set; ++i) {
+	for (i = 0; i < numbits; ++i) {
 		if (bitmap [i / sizeof (uintptr_t)] & (1L << (i & (sizeof (uintptr_t) * 8 -1))))
 			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (1L << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
 	}
@@ -3729,7 +3729,7 @@ clear_reference_bitmap (guint32 offset, guint32 size)
  */
 
 guint32
-mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align, uintptr_t *bitmap, int max_set)
+mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align, uintptr_t *bitmap, int numbits)
 {
 	guint32 offset;
 	if (static_type == SPECIAL_STATIC_THREAD) {
@@ -3743,7 +3743,7 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 		} else {
 			offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
 		}
-		update_tls_reference_bitmap (offset, bitmap, max_set);
+		update_tls_reference_bitmap (offset, bitmap, numbits);
 		/* This can be called during startup */
 		if (threads != NULL)
 			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
@@ -3886,7 +3886,7 @@ mono_thread_alloc_tls (MonoReflectionType *type)
 	/* TlsDatum is a struct, so we subtract the object header size offset */
 	bitmap = mono_class_compute_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
 	size = mono_type_size (type->type, &align);
-	tls_offset = mono_alloc_special_static_data (SPECIAL_STATIC_THREAD, size, align, (uintptr_t*)bitmap, max_set);
+	tls_offset = mono_alloc_special_static_data (SPECIAL_STATIC_THREAD, size, align, (uintptr_t*)bitmap, max_set + 1);
 	if (bitmap != default_bitmap)
 		g_free (bitmap);
 	tlsrec = g_new0 (MonoTlsDataRecord, 1);
