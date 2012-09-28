@@ -4306,7 +4306,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	InterlockedIncrement (&mono_jit_stats.methods_compiled);
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_jit (method);
-	if (MONO_PROBE_METHOD_COMPILE_BEGIN_ENABLED ())
+	if (MONO_METHOD_COMPILE_BEGIN_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
 
 	if (compile_aot)
@@ -4382,7 +4382,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
 		cfg->exception_message = g_strdup (mono_error_get_message (&err));
 		mono_error_cleanup (&err);
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		return cfg;
 	}
@@ -4397,7 +4397,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 			cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
 		}
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		return cfg;
 	}
@@ -4601,7 +4601,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (i < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 			if (compile_aot) {
-				if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+				if (MONO_METHOD_COMPILE_END_ENABLED ())
 					MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 				return cfg;
 			}
@@ -4611,7 +4611,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 		g_assert (cfg->exception_type != MONO_EXCEPTION_GENERIC_SHARING_FAILED);
 
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		/* cfg contains the details of the failure, so let the caller cleanup */
 		return cfg;
@@ -4734,7 +4734,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	/* after method_to_ir */
 	if (parts == 1) {
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 		return cfg;
 	}
@@ -4771,7 +4771,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	/* after SSA translation */
 	if (parts == 2) {
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 		return cfg;
 	}
@@ -4838,7 +4838,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	/* after SSA removal */
 	if (parts == 3) {
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 		return cfg;
 	}
@@ -5077,7 +5077,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 	mono_jit_stats.native_code_size += cfg->code_len;
 
-	if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+	if (MONO_METHOD_COMPILE_END_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 
 	return cfg;
@@ -6372,7 +6372,7 @@ mini_init (const char *filename, const char *runtime_version)
 	MonoRuntimeCallbacks callbacks;
 	MonoThreadInfoRuntimeCallbacks ticallbacks;
 
-	MONO_PROBE_VES_INIT_BEGIN ();
+	MONO_VES_INIT_BEGIN ();
 
 #if defined(__linux__) && !defined(__native_client__)
 	if (access ("/proc/self/maps", F_OK) != 0) {
@@ -6784,7 +6784,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_profiler_runtime_initialized ();
 
-	MONO_PROBE_VES_INIT_END ();
+	MONO_VES_INIT_END ();
 	
 	return domain;
 }

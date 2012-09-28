@@ -235,6 +235,7 @@
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internal.h"
+#include "utils/dtrace.h"
 
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/memcheck.h>
@@ -1244,6 +1245,11 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 					if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
 						DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 						binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
+						if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+							int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
+							MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
+							MONO_GC_OBJ_PINNED (search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
+						}
 						pin_object (search_start);
 						GRAY_OBJECT_ENQUEUE (queue, search_start);
 						if (G_UNLIKELY (do_pin_stats))
@@ -1309,6 +1315,11 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	}
 	GRAY_OBJECT_ENQUEUE (queue, object);
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
+	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+		int gen = sgen_ptr_in_nursery (object) ? GENERATION_NURSERY : GENERATION_OLD;
+		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (object);
+		MONO_GC_OBJ_PINNED (object, sgen_safe_object_get_size (object), vt->klass->name_space, vt->klass->name, gen);
+	}
 }
 
 void
@@ -2351,6 +2362,8 @@ collect_nursery (void)
 	if (disable_minor_collections)
 		return TRUE;
 
+	MONO_GC_BEGIN (GENERATION_NURSERY);
+
 	verify_nursery ();
 
 	mono_perfcounters->gc_collections0++;
@@ -2571,6 +2584,8 @@ collect_nursery (void)
 	current_collection_generation = -1;
 	objects_pinned = 0;
 
+	MONO_GC_END (GENERATION_NURSERY);
+
 	return needs_major;
 }
 
@@ -2591,6 +2606,8 @@ major_do_collection (const char *reason)
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
 	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
+
+	MONO_GC_BEGIN (GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
 	mono_perfcounters->gc_collections1++;
@@ -2682,6 +2699,10 @@ major_do_collection (const char *reason)
 		report.count = 0;
 		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (bigobj->data));
+			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
+				MONO_GC_OBJ_PINNED (bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
+			}
 			pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
@@ -2877,6 +2898,8 @@ major_do_collection (const char *reason)
 	binary_protocol_flush_buffers (FALSE);
 
 	//consistency_check ();
+
+	MONO_GC_END (GENERATION_OLD);
 
 	return bytes_pinned_from_failed_allocation > 0;
 }
@@ -3879,6 +3902,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 		if (!sgen_park_current_thread_if_doing_handshake (p))
 			g_usleep (50);
 	}
+	MONO_GC_LOCKED ();
 #endif
 
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));

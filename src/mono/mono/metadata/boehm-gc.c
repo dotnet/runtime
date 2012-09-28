@@ -206,16 +206,16 @@ mono_gc_base_init (void)
 void
 mono_gc_collect (int generation)
 {
-	MONO_PROBE_GC_BEGIN (generation);
+	MONO_GC_BEGIN (generation);
 
 	mono_perfcounters->gc_induced++;
 	GC_gcollect ();
 	
-	MONO_PROBE_GC_END (generation);
+	MONO_GC_END (generation);
 #if defined(ENABLE_DTRACE) && defined(__sun__)
 	/* This works around a dtrace -G problem on Solaris.
 	   Limit its actual use to when the probe is enabled. */
-	if (MONO_PROBE_GC_END_ENABLED ())
+	if (MONO_GC_END_ENABLED ())
 		sleep(0);
 #endif
 }

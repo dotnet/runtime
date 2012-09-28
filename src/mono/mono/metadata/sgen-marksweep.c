@@ -311,7 +311,7 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 	if (nursery_align)
 		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
 
-	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE, "heap");
+	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE, TRUE, "heap");
 	ms_heap_start = nursery_start + nursery_size;
 	ms_heap_end = ms_heap_start + major_heap_size;
 
@@ -336,9 +336,9 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	char *start;
 	if (nursery_align)
-		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, "nursery");
+		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, TRUE, "nursery");
 	else
-		start = sgen_alloc_os_memory (nursery_size, TRUE, "nursery");
+		start = sgen_alloc_os_memory (nursery_size, TRUE, TRUE, "nursery");
 
 	return start;
 }
@@ -389,7 +389,7 @@ ms_get_empty_block (void)
 
  retry:
 	if (!empty_blocks) {
-		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE, "major heap section");
+		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE, TRUE, "major heap section");
 
 		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
 			block = p;
@@ -1370,6 +1370,10 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			if (SGEN_OBJECT_IS_PINNED (obj))
 				return;
 			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+				MONO_GC_OBJ_PINNED (obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
+			}
 			SGEN_PIN_OBJECT (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
@@ -1456,7 +1460,14 @@ ms_sweep (void)
 			} else {
 				/* an unmarked object */
 				if (MS_OBJ_ALLOCED (obj, block)) {
+					/*
+					 * FIXME: Merge consecutive
+					 * slots for lower reporting
+					 * overhead.  Maybe memset
+					 * will also benefit?
+					 */
 					binary_protocol_empty (obj, block->obj_size);
+					MONO_GC_MAJOR_SWEEPED (obj, block->obj_size);
 					memset (obj, 0, block->obj_size);
 				}
 				*(void**)obj = block->free_list;
@@ -1697,7 +1708,7 @@ major_have_computer_minor_collection_allowance (void)
 
 	while (num_empty_blocks > section_reserve) {
 		void *next = *(void**)empty_blocks;
-		sgen_free_os_memory (empty_blocks, MS_BLOCK_SIZE);
+		sgen_free_os_memory (empty_blocks, MS_BLOCK_SIZE, TRUE);
 		empty_blocks = next;
 		/*
 		 * Needs not be atomic because this is running
