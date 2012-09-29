@@ -364,7 +364,7 @@ sgen_check_whole_heap (void)
 {
 	/*setup valid_nursery_objects*/
 	if (!valid_nursery_objects)
-		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, TRUE, FALSE, "debugging data");
+		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "debugging data");
 	valid_nursery_object_count = 0;
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE);
 

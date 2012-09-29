@@ -302,13 +302,17 @@ sgen_assert_memory_alloc (void *ptr, const char *assert_description)
  * This must not require any lock.
  */
 void*
-sgen_alloc_os_memory (size_t size, int activate, gboolean is_heap_memory, const char *assert_description)
+sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description)
 {
-	void *ptr = mono_valloc (0, size, prot_flags_for_activate (activate));
+	void *ptr;
+
+	g_assert (!(flags & ~(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE)));
+
+	ptr = mono_valloc (0, size, prot_flags_for_activate (flags & SGEN_ALLOC_ACTIVATE));
 	sgen_assert_memory_alloc (ptr, assert_description);
 	if (ptr) {
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
-		if (is_heap_memory)
+		if (flags & SGEN_ALLOC_HEAP)
 			MONO_GC_HEAP_ALLOC ((mword)ptr, size);
 	}
 	return ptr;
@@ -316,13 +320,17 @@ sgen_alloc_os_memory (size_t size, int activate, gboolean is_heap_memory, const 
 
 /* size must be a power of 2 */
 void*
-sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, gboolean is_heap_memory, const char *assert_description)
+sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags, const char *assert_description)
 {
-	void *ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
+	void *ptr;
+
+	g_assert (!(flags & ~(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE)));
+
+	ptr = mono_valloc_aligned (size, alignment, prot_flags_for_activate (flags & SGEN_ALLOC_ACTIVATE));
 	sgen_assert_memory_alloc (ptr, assert_description);
 	if (ptr) {
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
-		if (is_heap_memory)
+		if (flags & SGEN_ALLOC_HEAP)
 			MONO_GC_HEAP_ALLOC ((mword)ptr, size);
 	}
 	return ptr;
@@ -332,11 +340,13 @@ sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, g
  * Free the memory returned by sgen_alloc_os_memory (), returning it to the OS.
  */
 void
-sgen_free_os_memory (void *addr, size_t size, gboolean is_heap_memory)
+sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags)
 {
+	g_assert (!(flags & ~SGEN_ALLOC_HEAP));
+
 	mono_vfree (addr, size);
 	SGEN_ATOMIC_ADD_P (total_alloc, -size);
-	if (is_heap_memory)
+	if (flags & SGEN_ALLOC_HEAP)
 		MONO_GC_HEAP_FREE ((mword)addr, size);
 }
 

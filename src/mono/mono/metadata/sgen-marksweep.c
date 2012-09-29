@@ -311,7 +311,7 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 	if (nursery_align)
 		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
 
-	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE, TRUE, "heap");
+	nursery_start = sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "heap");
 	ms_heap_start = nursery_start + nursery_size;
 	ms_heap_end = ms_heap_start + major_heap_size;
 
@@ -336,9 +336,9 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 {
 	char *start;
 	if (nursery_align)
-		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE, TRUE, "nursery");
+		start = sgen_alloc_os_memory_aligned (nursery_size, nursery_align, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "nursery");
 	else
-		start = sgen_alloc_os_memory (nursery_size, TRUE, TRUE, "nursery");
+		start = sgen_alloc_os_memory (nursery_size, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "nursery");
 
 	return start;
 }
@@ -389,7 +389,7 @@ ms_get_empty_block (void)
 
  retry:
 	if (!empty_blocks) {
-		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE, TRUE, "major heap section");
+		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "major heap section");
 
 		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
 			block = p;
@@ -1708,7 +1708,7 @@ major_have_computer_minor_collection_allowance (void)
 
 	while (num_empty_blocks > section_reserve) {
 		void *next = *(void**)empty_blocks;
-		sgen_free_os_memory (empty_blocks, MS_BLOCK_SIZE, TRUE);
+		sgen_free_os_memory (empty_blocks, MS_BLOCK_SIZE, SGEN_ALLOC_HEAP);
 		empty_blocks = next;
 		/*
 		 * Needs not be atomic because this is running

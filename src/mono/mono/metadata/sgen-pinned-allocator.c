@@ -219,7 +219,7 @@ alloc_pinned_chunk (SgenPinnedAllocator *alc)
 	int offset;
 	int size = SGEN_PINNED_CHUNK_SIZE;
 
-	chunk = sgen_alloc_os_memory_aligned (size, size, TRUE, TRUE, "pinned chunk");
+	chunk = sgen_alloc_os_memory_aligned (size, size, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "pinned chunk");
 	chunk->block.role = MEMORY_ROLE_PINNED;
 
 	sgen_update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
@@ -331,7 +331,7 @@ sgen_alloc_pinned (SgenPinnedAllocator *alc, size_t size)
 		LargePinnedMemHeader *mh;
 
 		size += sizeof (LargePinnedMemHeader);
-		mh = sgen_alloc_os_memory (size, TRUE, TRUE, "large pinned object");
+		mh = sgen_alloc_os_memory (size, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "large pinned object");
 		mh->magic = LARGE_PINNED_MEM_HEADER_MAGIC;
 		mh->size = size;
 		/* FIXME: do a CAS here */
@@ -385,7 +385,7 @@ sgen_free_pinned (SgenPinnedAllocator *alc, void *addr, size_t size)
 	g_assert (mh->size == size + sizeof (LargePinnedMemHeader));
 	/* FIXME: do a CAS */
 	large_pinned_bytes_alloced -= mh->size;
-	sgen_free_os_memory (mh, mh->size, TRUE);
+	sgen_free_os_memory (mh, mh->size, SGEN_ALLOC_HEAP);
 }
 
 void

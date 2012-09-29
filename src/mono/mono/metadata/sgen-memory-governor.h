@@ -44,10 +44,16 @@ mword sgen_get_minor_collection_allowance (void) MONO_INTERNAL;
 gboolean sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
 
 
+typedef enum {
+	SGEN_ALLOC_INTERNAL = 0,
+	SGEN_ALLOC_HEAP = 1,
+	SGEN_ALLOC_ACTIVATE = 2
+} SgenAllocFlags;
+
 /* OS memory allocation */
-void* sgen_alloc_os_memory (size_t size, int activate, gboolean is_heap_memory, const char *assert_description) MONO_INTERNAL;
-void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, gboolean activate, gboolean is_heap_memory, const char *assert_description) MONO_INTERNAL;
-void sgen_free_os_memory (void *addr, size_t size, gboolean is_heap_memory) MONO_INTERNAL;
+void* sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description) MONO_INTERNAL;
+void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags, const char *assert_description) MONO_INTERNAL;
+void sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags) MONO_INTERNAL;
 
 /* Error handling */
 void sgen_assert_memory_alloc (void *ptr, const char *assert_description) MONO_INTERNAL;
