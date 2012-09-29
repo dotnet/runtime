@@ -712,7 +712,7 @@ add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag
 {
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	binary_protocol_empty (frag_start, frag_size);
-	MONO_GC_NURSERY_SWEEPED (frag_start, frag_end - frag_start);
+	MONO_GC_NURSERY_SWEEPED ((mword)frag_start, frag_end - frag_start);
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= SGEN_MAX_NURSERY_WASTE) {
 		/* memsetting just the first chunk start is bound to provide better cache locality */

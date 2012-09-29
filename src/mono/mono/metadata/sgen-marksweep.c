@@ -1372,7 +1372,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
-				MONO_GC_OBJ_PINNED (obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
+				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
 			SGEN_PIN_OBJECT (obj);
 			/* FIXME: only enqueue if object has references */
@@ -1467,7 +1467,7 @@ ms_sweep (void)
 					 * will also benefit?
 					 */
 					binary_protocol_empty (obj, block->obj_size);
-					MONO_GC_MAJOR_SWEEPED (obj, block->obj_size);
+					MONO_GC_MAJOR_SWEEPED ((mword)obj, block->obj_size);
 					memset (obj, 0, block->obj_size);
 				}
 				*(void**)obj = block->free_list;

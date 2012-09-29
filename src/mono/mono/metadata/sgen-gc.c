@@ -1248,7 +1248,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 						if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 							int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
 							MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
-							MONO_GC_OBJ_PINNED (search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
+							MONO_GC_OBJ_PINNED ((mword)search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
 						}
 						pin_object (search_start);
 						GRAY_OBJECT_ENQUEUE (queue, search_start);
@@ -1318,7 +1318,7 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (object) ? GENERATION_NURSERY : GENERATION_OLD;
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (object);
-		MONO_GC_OBJ_PINNED (object, sgen_safe_object_get_size (object), vt->klass->name_space, vt->klass->name, gen);
+		MONO_GC_OBJ_PINNED ((mword)object, sgen_safe_object_get_size (object), vt->klass->name_space, vt->klass->name, gen);
 	}
 }
 
@@ -2701,7 +2701,7 @@ major_do_collection (const char *reason)
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (bigobj->data));
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
-				MONO_GC_OBJ_PINNED (bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
+				MONO_GC_OBJ_PINNED ((mword)bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
 			pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */

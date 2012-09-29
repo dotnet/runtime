@@ -46,7 +46,7 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	if (G_UNLIKELY (MONO_GC_OBJ_MOVED_ENABLED ())) {
 		int dest_gen = sgen_ptr_in_nursery (destination) ? GENERATION_NURSERY : GENERATION_OLD;
 		int src_gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
-		MONO_GC_OBJ_MOVED (destination, obj, dest_gen, src_gen, objsize, vt->klass->name_space, vt->klass->name);
+		MONO_GC_OBJ_MOVED ((mword)destination, (mword)obj, dest_gen, src_gen, objsize, vt->klass->name_space, vt->klass->name);
 	}
 
 	if (objsize <= sizeof (gpointer) * 8) {
