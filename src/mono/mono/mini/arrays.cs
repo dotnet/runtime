@@ -727,7 +727,7 @@ class Tests {
 		return 0;
 	}
 
-	public static int long_indices () {
+	public static int test_0_long_indices () {
 		int[] arr = new int [10];
 		int[,] arr2 = new int [10, 10];
 		long index = 1;
