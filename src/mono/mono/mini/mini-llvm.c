@@ -3278,7 +3278,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif
 		}
 		case OP_TLS_GET: {
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if (defined(TARGET_AMD64) || defined(TARGET_X86)) && defined(__linux__)
 #ifdef TARGET_AMD64
 			// 257 == FS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 257);
