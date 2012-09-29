@@ -4141,7 +4141,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	int realidx1_reg = alloc_preg (cfg);
 	int realidx2_reg = alloc_preg (cfg);
 	int sum_reg = alloc_preg (cfg);
-	int index1, index2;
+	int index1, index2, tmpreg;
 	MonoInst *ins;
 	guint32 size;
 
@@ -4150,6 +4150,22 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 
 	index1 = index_ins1->dreg;
 	index2 = index_ins2->dreg;
+
+#if SIZEOF_REGISTER == 8
+	/* The array reg is 64 bits but the index reg is only 32 */
+	if (COMPILE_LLVM (cfg)) {
+		/* Not needed */
+	} else {
+		tmpreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, tmpreg, index1);
+		index1 = tmpreg;
+		tmpreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, tmpreg, index2);
+		index2 = tmpreg;
+	}
+#else
+	// FIXME: Do we need to do something here for i8 indexes, like in ldelema_1_ins ?
+#endif
 
 	/* range checking */
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, 

@@ -739,6 +739,16 @@ class Tests {
 			return 2;
 		return 0;
 	}
+
+	// #7438
+	public static int test_0_ldelema_2_64bit () {
+        bool[,] test = new bool[201,201];
+        int x,y;
+        for(x=-100;x<100;x++) for(y=-100;y<100;y++){
+            test[x+100,y+100] = true;
+        }
+		return 0;
+	}		
 }
 
 
