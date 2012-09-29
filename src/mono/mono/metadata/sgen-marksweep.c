@@ -1467,7 +1467,7 @@ ms_sweep (void)
 					 * will also benefit?
 					 */
 					binary_protocol_empty (obj, block->obj_size);
-					MONO_GC_MAJOR_SWEEPED ((mword)obj, block->obj_size);
+					MONO_GC_MAJOR_SWEPT ((mword)obj, block->obj_size);
 					memset (obj, 0, block->obj_size);
 				}
 				*(void**)obj = block->free_list;

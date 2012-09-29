@@ -86,11 +86,11 @@
 #define MONO_GC_OBJ_MOVED_ENABLED()	(0)
 
 
-#define MONO_GC_NURSERY_SWEEPED(addr,len)
-#define MONO_GC_NURSERY_SWEEPED_ENABLED()	(0)
+#define MONO_GC_NURSERY_SWEPT(addr,len)
+#define MONO_GC_NURSERY_SWEPT_ENABLED()	(0)
 
-#define MONO_GC_MAJOR_SWEEPED(addr,len)
-#define MONO_GC_MAJOR_SWEEPED_ENABLED()	(0)
+#define MONO_GC_MAJOR_SWEPT(addr,len)
+#define MONO_GC_MAJOR_SWEPT_ENABLED()	(0)
 
 
 #define MONO_GC_OBJ_PINNED(addr,size,ns_name,class_name,generation)
