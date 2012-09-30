@@ -3754,7 +3754,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PSHUFLEW_LOW:
 		case OP_PSHUFLEW_HIGH: {
 			int mask [16];
-			LLVMValueRef v1 = NULL, v2 = NULL, mask_values [4];
+			LLVMValueRef v1 = NULL, v2 = NULL, mask_values [16];
 			int i, mask_size = 0;
 			int imask = ins->inst_c0;
 	
