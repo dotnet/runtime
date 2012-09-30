@@ -1627,6 +1627,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	call->stack_usage = cinfo->stack_usage;
+	call->stack_align_amount = cinfo->stack_align_amount;
 	cfg->arch.param_area_size = MAX (cfg->arch.param_area_size, sp_offset);
 }
 
@@ -3179,7 +3180,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			/* Copy arguments on the stack to our argument area */
-			for (i = 0; i < call->stack_usage; i += 4) {
+			for (i = 0; i < call->stack_usage - call->stack_align_amount; i += 4) {
 				x86_mov_reg_membase (code, X86_EAX, X86_ESP, i, 4);
 				x86_mov_membase_reg (code, X86_EBP, 8 + i, X86_EAX, 4);
 			}
