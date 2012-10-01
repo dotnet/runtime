@@ -4929,6 +4929,12 @@ mono_gc_is_critical_method (MonoMethod *method)
 }
 
 static gboolean
+sgen_has_critical_method (void)
+{
+	return write_barrier_method || sgen_has_managed_allocator ();
+}
+
+static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 {
 	MonoJitInfo *ji;
@@ -4938,6 +4944,8 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 		return FALSE;
 
 	if (!ip || !domain)
+		return FALSE;
+	if (!sgen_has_critical_method ())
 		return FALSE;
 	ji = mono_jit_info_table_find (domain, ip);
 	if (!ji)

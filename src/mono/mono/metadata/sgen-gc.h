@@ -1029,6 +1029,7 @@ typedef enum {
 void sgen_init_tlab_info (SgenThreadInfo* info);
 void sgen_clear_tlabs (void);
 gboolean sgen_is_managed_allocator (MonoMethod *method);
+gboolean sgen_has_managed_allocator (void);
 
 /* Debug support */
 

@@ -1020,6 +1020,17 @@ sgen_is_managed_allocator (MonoMethod *method)
 	return FALSE;
 }
 
+gboolean
+sgen_has_managed_allocator (void)
+{
+	int i;
+
+	for (i = 0; i < ATYPE_NUM; ++i)
+		if (alloc_method_cache [i])
+			return TRUE;
+	return FALSE;
+}	
+
 #ifdef HEAVY_STATISTICS
 void
 sgen_alloc_init_heavy_stats (void)
