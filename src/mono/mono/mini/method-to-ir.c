@@ -4343,6 +4343,26 @@ emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean bo
 }
 
 static MonoInst*
+emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args, int is_set)
+{
+	MonoClass *eklass;
+	
+	if (is_set)
+		eklass = mono_class_from_mono_type (fsig->params [2]);
+	else
+		eklass = mono_class_from_mono_type (fsig->ret);
+
+
+	if (is_set) {
+		return emit_array_store (cfg, eklass, args, FALSE);
+	} else {
+		MonoInst *ins, *addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE);
+		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &eklass->byval_arg, addr->dreg, 0);
+		return ins;
+	}
+}
+
+static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
@@ -4428,6 +4448,19 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	return ins;
+}
+
+static MonoInst*
+mini_emit_inst_for_sharable_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (cmethod->klass == mono_defaults.array_class) {
+		if (strcmp (cmethod->name, "UnsafeStore") == 0)
+			return emit_array_unsafe_access (cfg, fsig, args, TRUE);
+		if (strcmp (cmethod->name, "UnsafeLoad") == 0)
+			return emit_array_unsafe_access (cfg, fsig, args, FALSE);
+	}
+
+	return NULL;
 }
 
 static MonoInst*
@@ -7012,6 +7045,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
 				UNVERIFIED;
+
+			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
+				bblock = cfg->cbb;
+				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+					type_to_eval_stack_type ((cfg), fsig->ret, ins);
+					*sp = ins;
+					sp++;
+				}
+
+				CHECK_CFG_EXCEPTION;
+
+				ip += 5;
+				ins_flag = 0;
+				if (need_seq_point)
+					emit_seq_point (cfg, method, ip, FALSE);
+				break;
+			}
 
 			/* 
 			 * If the callee is a shared method, then its static cctor
