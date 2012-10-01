@@ -4294,6 +4294,54 @@ emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst
 	return store;
 }
 
+
+static gboolean
+generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
+{
+	return mini_type_is_reference (cfg, &klass->byval_arg);
+}
+
+static MonoInst*
+emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean bounds_check)
+{
+	if (generic_class_is_reference_type (cfg, klass) &&
+		!(sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL)) {
+		MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class, 1);
+		MonoMethod *helper = mono_marshal_get_virtual_stelemref (obj_array);
+		MonoInst *iargs [3];
+
+		if (!helper->slot)
+			mono_class_setup_vtable (obj_array);
+		g_assert (helper->slot);
+
+		if (sp [0]->type != STACK_OBJ)
+			return NULL;
+		if (sp [2]->type != STACK_OBJ)
+			return NULL;
+
+		iargs [2] = sp [2];
+		iargs [1] = sp [1];
+		iargs [0] = sp [0];
+
+		return mono_emit_method_call (cfg, helper, iargs, sp [0]);
+	} else {
+		MonoInst *ins;
+		if (sp [1]->opcode == OP_ICONST) {
+			int array_reg = sp [0]->dreg;
+			int index_reg = sp [1]->dreg;
+			int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + G_STRUCT_OFFSET (MonoArray, vector);
+
+			if (bounds_check)
+				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, array_reg, offset, sp [2]->dreg);
+		} else {
+			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], bounds_check);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0, sp [2]->dreg);
+		}
+		return ins;
+	}
+}
+
 static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -5561,12 +5609,6 @@ set_exception_object (MonoCompile *cfg, MonoException *exception)
 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_OBJECT_SUPPLIED);
 	MONO_GC_REGISTER_ROOT_SINGLE (cfg->exception_ptr);
 	cfg->exception_ptr = exception;
-}
-
-static gboolean
-generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
-{
-	return mini_type_is_reference (cfg, &klass->byval_arg);
 }
 
 static void
@@ -9536,8 +9578,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STELEM_R8:
 		case CEE_STELEM_REF:
 		case CEE_STELEM: {
-			MonoInst *addr;
-
 			CHECK_STACK (3);
 			sp -= 3;
 
@@ -9556,40 +9596,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			/* storing a NULL doesn't need any of the complex checks in stelemref */
-			if (generic_class_is_reference_type (cfg, klass) &&
-				!(sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL)) {
-				MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class, 1);
-				MonoMethod *helper = mono_marshal_get_virtual_stelemref (obj_array);
-				MonoInst *iargs [3];
-
-				if (!helper->slot)
-					mono_class_setup_vtable (obj_array);
-				g_assert (helper->slot);
-
-				if (sp [0]->type != STACK_OBJ)
-					UNVERIFIED;
-				if (sp [2]->type != STACK_OBJ)
-					UNVERIFIED;
-
-				iargs [2] = sp [2];
-				iargs [1] = sp [1];
-				iargs [0] = sp [0];
-
-				mono_emit_method_call (cfg, helper, iargs, sp [0]);
-			} else {
-				if (sp [1]->opcode == OP_ICONST) {
-					int array_reg = sp [0]->dreg;
-					int index_reg = sp [1]->dreg;
-					int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + G_STRUCT_OFFSET (MonoArray, vector);
-
-					MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
-					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, array_reg, offset, sp [2]->dreg);
-				} else {
-					addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
-					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0, sp [2]->dreg);
-				}
-			}
+			emit_array_store (cfg, klass, sp, TRUE);
 
 			if (*ip == CEE_STELEM)
 				ip += 5;
