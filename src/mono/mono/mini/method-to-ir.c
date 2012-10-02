@@ -4302,9 +4302,9 @@ generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
 }
 
 static MonoInst*
-emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean bounds_check)
+emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks)
 {
-	if (generic_class_is_reference_type (cfg, klass) &&
+	if (safety_checks && generic_class_is_reference_type (cfg, klass) &&
 		!(sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL)) {
 		MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class, 1);
 		MonoMethod *helper = mono_marshal_get_virtual_stelemref (obj_array);
@@ -4331,11 +4331,11 @@ emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean bo
 			int index_reg = sp [1]->dreg;
 			int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + G_STRUCT_OFFSET (MonoArray, vector);
 
-			if (bounds_check)
+			if (safety_checks)
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, array_reg, offset, sp [2]->dreg);
 		} else {
-			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], bounds_check);
+			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], safety_checks);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0, sp [2]->dreg);
 		}
 		return ins;
