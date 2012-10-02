@@ -4414,9 +4414,15 @@ mono_gc_weak_link_remove (void **link_addr)
 MonoObject*
 mono_gc_weak_link_get (void **link_addr)
 {
-	if (!*link_addr)
+	/*
+	 * We must only load *link_addr once because it might change
+	 * under our feet, and REVEAL_POINTER (NULL) results in an
+	 * invalid reference.
+	 */
+	void *ptr = *link_addr;
+	if (!ptr)
 		return NULL;
-	return (MonoObject*) REVEAL_POINTER (*link_addr);
+	return (MonoObject*) REVEAL_POINTER (ptr);
 }
 
 gboolean
