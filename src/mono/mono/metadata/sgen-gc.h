@@ -256,6 +256,8 @@ extern int current_collection_generation;
 
 extern unsigned int sgen_global_stop_count;
 
+extern gboolean bridge_processing_in_progress;
+
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 

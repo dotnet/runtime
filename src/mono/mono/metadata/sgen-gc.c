@@ -4423,6 +4423,18 @@ mono_gc_weak_link_get (void **link_addr)
 	void *ptr = *link_addr;
 	if (!ptr)
 		return NULL;
+
+	/*
+	 * During the second bridge processing step the world is
+	 * running again.  That step processes all weak links once
+	 * more to null those that refer to dead objects.  Before that
+	 * is completed, those links must not be followed, so we
+	 * conservatively wait for bridge processing when any weak
+	 * link is dereferenced.
+	 */
+	if (G_UNLIKELY (bridge_processing_in_progress))
+		mono_gc_wait_for_bridge_processing ();
+
 	return (MonoObject*) REVEAL_POINTER (ptr);
 }
 

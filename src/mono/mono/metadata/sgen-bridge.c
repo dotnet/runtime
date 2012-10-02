@@ -277,7 +277,7 @@ static MonoGCBridgeCallbacks bridge_callbacks;
 
 static int current_time;
 
-static gboolean bridge_processing_in_progress = FALSE;
+gboolean bridge_processing_in_progress = FALSE;
 
 void
 mono_gc_wait_for_bridge_processing (void)
@@ -554,6 +554,10 @@ sgen_bridge_processing_stw_step (void)
 	if (!registered_bridges.size)
 		return;
 
+	/*
+	 * bridge_processing_in_progress must be set with the world
+	 * stopped.  If not there would be race conditions.
+	 */
 	g_assert (!bridge_processing_in_progress);
 	bridge_processing_in_progress = TRUE;
 
