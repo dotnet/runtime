@@ -7020,7 +7020,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/*
 				 * We have the `constrained.' prefix opcode.
 				 */
-				if (constrained_call->valuetype && !cmethod->klass->valuetype) {
+				if (constrained_call->valuetype && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
 					/*
 					 * The type parameter is instantiated as a valuetype,
 					 * but that type doesn't override the method we're
@@ -7041,8 +7041,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, sp [0]->dreg, 0);
 					ins->type = STACK_OBJ;
 					sp [0] = ins;
-				} else if (cmethod->klass->valuetype)
+				} else {
+					if (cmethod->klass->valuetype) {
+						/* Own method */
+					} else {
+						/* Interface method */
+						int ioffset, slot;
+
+						mono_class_setup_vtable (constrained_call);
+						CHECK_TYPELOAD (constrained_call);
+						ioffset = mono_class_interface_offset (constrained_call, cmethod->klass);
+						if (ioffset == -1)
+							TYPE_LOAD_ERROR (constrained_call);
+						slot = mono_method_get_vtable_slot (cmethod);
+						if (slot == -1)
+							TYPE_LOAD_ERROR (cmethod->klass);
+						cmethod = constrained_call->vtable [ioffset + slot];
+					}
 					virtual = 0;
+				}
 				constrained_call = NULL;
 			}
 
