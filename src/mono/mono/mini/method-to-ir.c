@@ -68,9 +68,12 @@
 
 #define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20
-#define INLINE_FAILURE do {\
-		if ((cfg->method != method) && (method->wrapper_type == MONO_WRAPPER_NONE))\
-			goto inline_failure;\
+#define INLINE_FAILURE(msg) do {									\
+	if ((cfg->method != method) && (method->wrapper_type == MONO_WRAPPER_NONE)) { \
+		if (cfg->verbose_level >= 2)									\
+			printf ("inline failed: %s\n", msg);						\
+		goto inline_failure;											\
+	} \
 	} while (0)
 #define CHECK_CFG_EXCEPTION do {\
 		if (cfg->exception_type != MONO_EXCEPTION_NONE)\
@@ -5253,7 +5256,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		return costs + 1;
 	} else {
 		if (cfg->verbose_level > 2)
-			printf ("INLINE ABORTED %s\n", mono_method_full_name (cmethod, TRUE));
+			printf ("INLINE ABORTED %s (cost %d)\n", mono_method_full_name (cmethod, TRUE), costs);
 		cfg->exception_type = MONO_EXCEPTION_NONE;
 		mono_loader_clear_error ();
 
@@ -6781,7 +6784,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_JMP: {
 			MonoCallInst *call;
 
-			INLINE_FAILURE;
+			INLINE_FAILURE ("jmp");
 
 			CHECK_OPSIZE (5);
 			if (stack_start != sp)
@@ -6993,7 +6996,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod))
-						INLINE_FAILURE;
+						INLINE_FAILURE ("linkdemand");
 					CHECK_CFG_EXCEPTION;
 				}
 
@@ -7190,7 +7193,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (mono_method_signature (cmethod)->is_inflated);
 
 				/* Prevent inlining of methods that contain indirect calls */
-				INLINE_FAILURE;
+				INLINE_FAILURE ("virtual generic call");
 
 #if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK && defined(MONO_ARCH_GSHARED_SUPPORTED)
 				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt) {
@@ -7290,7 +7293,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 					/* Prevent inlining of methods that call wrappers */
-					INLINE_FAILURE;
+					INLINE_FAILURE ("wrapper call");
 					cmethod = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc, FALSE);
 					always = TRUE;
 				}
@@ -7321,7 +7324,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int i;
 
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
-				INLINE_FAILURE;
+				INLINE_FAILURE ("tail call");
 
 				/* keep it simple */
 				for (i =  fsig->param_count - 1; i >= 0; i--) {
@@ -7358,7 +7361,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						!mono_class_generic_sharing_enabled (cmethod->klass)) &&
 					(!virtual || MONO_METHOD_IS_FINAL (cmethod) ||
 						!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
-				INLINE_FAILURE;
+				INLINE_FAILURE ("gshared");
 
 				g_assert (cfg->generic_sharing_context && cmethod);
 				g_assert (!addr);
@@ -7387,7 +7390,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							!(cmethod->flags & METHOD_ATTRIBUTE_FINAL));
 
 				/* Prevent inlining of methods with indirect calls */
-				INLINE_FAILURE;
+				INLINE_FAILURE ("indirect call");
 
 				if (vtable_arg) {
 					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, vtable_arg);
@@ -7492,7 +7495,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoCallInst *call;
 
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
-				INLINE_FAILURE;
+				INLINE_FAILURE ("tail call");
 
 				//printf ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -7553,7 +7556,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Common call */
-			INLINE_FAILURE;
+			INLINE_FAILURE ("call");
 			ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL,
 											  imt_arg, vtable_arg);
 
@@ -8338,7 +8341,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 				if (check_linkdemand (cfg, method, cmethod))
-					INLINE_FAILURE;
+					INLINE_FAILURE ("linkdemand");
 				CHECK_CFG_EXCEPTION;
 			} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
 				ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
@@ -8515,7 +8518,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						inline_costs += costs - 5;
 					} else {
-						INLINE_FAILURE;
+						INLINE_FAILURE ("inline failure");
 						mono_emit_method_call_full (cfg, cmethod, fsig, sp, callvirt_this_arg, NULL, NULL);
 					}
 				} else if (context_used &&
@@ -8528,7 +8531,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					mono_emit_calli (cfg, fsig, sp, cmethod_addr, vtable_arg);
 				} else {
-					INLINE_FAILURE;
+					INLINE_FAILURE ("ctor call");
 					ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp,
 													  callvirt_this_arg, NULL, vtable_arg);
 				}
@@ -9258,7 +9261,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							/* .cctors: too many apps depend on them */
 							/* running with a specific order... */
 							if (! vtable->initialized)
-								INLINE_FAILURE;
+								INLINE_FAILURE ("class init");
 							ex = mono_runtime_class_init_full (vtable, FALSE);
 							if (ex) {
 								set_exception_object (cfg, ex);
@@ -10472,7 +10475,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod))
-						INLINE_FAILURE;
+						INLINE_FAILURE ("linkdemand");
 					CHECK_CFG_EXCEPTION;
 				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
@@ -10549,7 +10552,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod))
-						INLINE_FAILURE;
+						INLINE_FAILURE ("linkdemand");
 					CHECK_CFG_EXCEPTION;
 				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
