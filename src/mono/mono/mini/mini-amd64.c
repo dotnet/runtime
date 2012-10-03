@@ -3588,11 +3588,12 @@ mono_amd64_have_tls_get (void)
 #ifdef __APPLE__
 	static gboolean have_tls_get = FALSE;
 	static gboolean inited = FALSE;
+	guint8 *ins;
 
 	if (inited)
 		return have_tls_get;
 
-	guint8 *ins = (guint8*)pthread_getspecific;
+	ins = (guint8*)pthread_getspecific;
 
 	/*
 	 * We're looking for these two instructions:
