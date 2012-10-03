@@ -4,7 +4,7 @@ else
 Z_LIBS=
 endif
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	-fexceptions -DMONO_USE_EXC_TABLES	\
 	-I$(top_srcdir) 	\
 	$(GLIB_CFLAGS)

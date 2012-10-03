@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libmonowrapper.la
 
-INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
+AM_CPPFLAGS = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 if HOST_WIN32
 # glob.c doesnt build under windows

@@ -1,5 +1,5 @@
 
-INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
+AM_CPPFLAGS = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libmonoarch-s390x.la
 

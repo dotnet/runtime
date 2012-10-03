@@ -150,7 +150,7 @@ mono_SOURCES = \
 
 mono_CFLAGS = $(AM_CFLAGS)
 
-INCLUDES = $(LIBGC_CPPFLAGS)
+AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 
 mono_sgen_SOURCES = $(mono_SOURCES)
 mono_sgen_CFLAGS = $(AM_CFLAGS)

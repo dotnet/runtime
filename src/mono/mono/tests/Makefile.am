@@ -1035,7 +1035,7 @@ test-oom: $(OOM_TESTS)
 
 noinst_LTLIBRARIES = libtest.la
 
-INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
+AM_CPPFLAGS = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
 if HOST_WIN32
 # gcc-3.4.4 emits incorrect code when making indirect calls to stdcall functions using a tail call

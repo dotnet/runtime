@@ -1,4 +1,4 @@
-INCLUDES = 				\
+AM_CPPFLAGS = 				\
 	-I$(top_srcdir)			\
 	$(LIBGC_CPPFLAGS)		\
 	$(GLIB_CFLAGS)

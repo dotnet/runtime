@@ -22,7 +22,7 @@ endif
 
 bin_PROGRAMS = monograph
 
-INCLUDES = 				\
+AM_CPPFLAGS = 				\
 	-I$(top_srcdir)			\
 	$(GLIB_CFLAGS)
 
