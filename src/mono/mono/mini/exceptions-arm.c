@@ -151,7 +151,7 @@ mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_
 	MONO_CONTEXT_SET_SP (&ctx, sp);
 	MONO_CONTEXT_SET_IP (&ctx, pc);
 	memcpy (((guint8*)&ctx.regs) + (ARMREG_R4 * sizeof (mgreg_t)), int_regs, 8 * sizeof (mgreg_t));
-	/* memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS); */
+	memcpy (&ctx.fregs, fp_regs, sizeof (double) * 16);
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -205,6 +205,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+	int cfa_offset;
 
 	code = start = mono_global_codeman_reserve (size);
 
@@ -214,12 +215,26 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 	ARM_PUSH (code, MONO_ARM_REGSAVE_MASK);
 
-	mono_add_unwind_op_def_cfa (unwind_ops, code, start, ARMREG_SP, MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
+	cfa_offset = MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, ARMREG_SP, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, - sizeof (mgreg_t));
+
+	/* Save fp regs */
+	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * 16);
+	cfa_offset += sizeof (double) * 16;
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
+#if defined(ARM_FPU_VFP)
+	ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP);
+#endif
+
+	/* Param area */
+	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
+	cfa_offset += 8;
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
+	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, cfa_offset);
 	/* exc is already in place in r0 */
 	if (corlib) {
 		/* The caller ip is already in R1 */
@@ -229,13 +244,13 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
 	}
-	/* FIXME: pointer to the saved fp regs */
-	/*pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
-	ppc_addi (code, ppc_r7, ppc_sp, pos);*/
-	/* pointer to the saved int regs */
-	ARM_MOV_REG_REG (code, ARMREG_R3, ARMREG_SP); /* the pushed regs */
-	/* we encode rethrow in the ip, so we avoid args on the stack */
+	/* int regs */
+	ARM_ADD_REG_IMM8 (code, ARMREG_R3, ARMREG_SP, (cfa_offset - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t))));
+	/* we encode rethrow in the ip */
 	ARM_ORR_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, rethrow);
+	/* fp regs */
+	ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_SP, 8);
+	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, 0);
 
 	if (aot) {
 		const char *icall_name;

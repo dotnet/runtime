@@ -166,6 +166,12 @@ enum {
 #define ARM_FLDMD(p,first_reg,nregs,base)		\
 	ARM_FLDMD_COND(p,first_reg,nregs,base,ARMCOND_AL)
 
+#define ARM_FSTMD_COND(p,first_reg,nregs,base,cond)							\
+	ARM_EMIT((p), ARM_DEF_VFP_LSF((cond),ARM_VFP_COPROC_DOUBLE,0,ARMOP_STR,0,(base),(first_reg),((nregs) * 2) << 2))
+
+#define ARM_FSTMD(p,first_reg,nregs,base)		\
+	ARM_FSTMD_COND(p,first_reg,nregs,base,ARMCOND_AL)
+
 #include "arm_vfpmacros.h"
 
 /* coprocessor register transfer */
