@@ -100,7 +100,7 @@ MINI_OP(OP_STOREI8_MEMBASE_REG, "storei8_membase_reg", IREG, LREG, NONE)
 MINI_OP(OP_STORER4_MEMBASE_REG, "storer4_membase_reg", IREG, FREG, NONE)
 MINI_OP(OP_STORER8_MEMBASE_REG, "storer8_membase_reg", IREG, FREG, NONE)
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 MINI_OP(OP_STOREX_MEMBASE_REG, "storex_membase_reg", IREG, XREG, NONE)
 MINI_OP(OP_STOREX_ALIGNED_MEMBASE_REG,     "storex_aligned_membase_reg", IREG, XREG, NONE)
 MINI_OP(OP_STOREX_NTA_MEMBASE_REG,     "storex_nta_membase_reg", IREG, XREG, NONE)
@@ -128,7 +128,7 @@ MINI_OP(OP_LOADR8_MEMBASE,"loadr8_membase", FREG, IREG, NONE)
 
 MINI_OP(OP_LOADX_MEMBASE, 			"loadx_membase", XREG, IREG, NONE)
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 MINI_OP(OP_LOADX_ALIGNED_MEMBASE,  "loadx_aligned_membase", XREG, IREG, NONE)
 #endif
 
@@ -609,7 +609,7 @@ MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
 
 /* SIMD opcodes. */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 
 MINI_OP(OP_ADDPS, "addps", XREG, XREG, XREG)
 MINI_OP(OP_DIVPS, "divps", XREG, XREG, XREG)

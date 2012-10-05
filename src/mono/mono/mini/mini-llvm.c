@@ -640,7 +640,7 @@ static const char*
 simd_op_to_intrins (int opcode)
 {
 	switch (opcode) {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 	case OP_MINPD:
 		return "llvm.x86.sse2.min.pd";
 	case OP_MINPS:
@@ -781,7 +781,7 @@ simd_op_to_intrins (int opcode)
 static LLVMTypeRef
 simd_op_to_llvm_type (int opcode)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 	switch (opcode) {
 	case OP_EXTRACT_R8:
 	case OP_EXPAND_R8:
@@ -3433,7 +3433,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* 
 			 * SIMD
 			 */
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 		case OP_XZERO: {
 			values [ins->dreg] = LLVMConstNull (type_to_llvm_type (ctx, &ins->klass->byval_arg));
 			break;
