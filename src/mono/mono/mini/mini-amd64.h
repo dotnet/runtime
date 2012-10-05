@@ -89,8 +89,6 @@ struct sigcontext {
 };
 #endif  // sun, Solaris x86
 
-#define MONO_ARCH_SUPPORT_SIMD_INTRINSICS 1
-
 #ifndef DISABLE_SIMD
 #define MONO_ARCH_SIMD_INTRINSICS 1
 #define MONO_ARCH_NEED_SIMD_BANK 1

@@ -74,7 +74,6 @@ struct sigcontext {
 #endif /* HAVE_WORKING_SIGALTSTACK */
 #endif /* !HOST_WIN32 */
 
-#define MONO_ARCH_SUPPORT_SIMD_INTRINSICS 1
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
 #ifndef DISABLE_SIMD
