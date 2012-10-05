@@ -376,8 +376,6 @@ struct _MonoInternalThread {
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
 	HANDLE	    handle;
 	MonoArray  *cached_culture_info;
-	gpointer    unused1;
-	MonoBoolean threadpool_thread;
 	gunichar2  *name;
 	guint32	    name_len;
 	guint32	    state;
@@ -390,7 +388,10 @@ struct _MonoInternalThread {
 	gpointer jit_data;
 	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
 	MonoAppContext *current_appcontext;
-	int stack_size;
+	MonoException *pending_exception;
+	MonoThread *root_domain_thread;
+	MonoObject _serialized_principal;
+	int _serialized_principal_version;
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 interruption_requested;
@@ -398,25 +399,30 @@ struct _MonoInternalThread {
 	gpointer suspended_event;
 	gpointer resume_event;
 	CRITICAL_SECTION *synch_cs;
+	MonoBoolean threadpool_thread;
 	MonoBoolean thread_dump_requested;
-	gpointer end_stack; /* This is only used when running in the debugger. */
 	MonoBoolean thread_interrupt_requested;
+	gpointer end_stack; /* This is only used when running in the debugger. */
+	int stack_size;
 	guint8	apartment_state;
 	gint32 critical_region_level;
-	guint32 unused0;	
+	guint32 small_id;	
+	gint32 managed_id;
 	MonoThreadManageCallback manage_callback;
-	MonoException *pending_exception;
-	MonoThread *root_domain_thread;
 	gpointer interrupt_on_stop;
 	gsize    flags;
 	gpointer android_tid;
 	gpointer thread_pinning_ref;
-	gint32 managed_id;
 	gint32 ignore_next_signal;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
-	 * when a new field is added to the unmanaged MonoThread structure.
+	 * when a new field is added to this structure.
+	 * Please synchronize any changes with InternalThread in Thread.cs, i.e. add the
+	 * same field there.
 	 */
+	gpointer unused0;
+	gpointer unused1;
+	gpointer unused2;
 };
 
 struct _MonoThread {
