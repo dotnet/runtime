@@ -7576,7 +7576,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Common call */
 
 			/* Allow inlining of methods which consists of a call only */
-			if (!(ip + 5 < end && ip [5] == CEE_RET) || num_calls > 1 || !strcmp (cmethod->klass->name, "StackTrace"))
+			//if (!(ip + 5 < end && ip [5] == CEE_RET) || num_calls > 1 || !strcmp (cmethod->klass->name, "StackTrace"))
 				INLINE_FAILURE ("call");
 			ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL,
 											  imt_arg, vtable_arg);
