@@ -4168,6 +4168,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	}
 #else
 	// FIXME: Do we need to do something here for i8 indexes, like in ldelema_1_ins ?
+	tmpreg = -1;
 #endif
 
 	/* range checking */
