@@ -390,7 +390,7 @@ struct _MonoInternalThread {
 	MonoAppContext *current_appcontext;
 	MonoException *pending_exception;
 	MonoThread *root_domain_thread;
-	MonoObject _serialized_principal;
+	MonoObject *_serialized_principal;
 	int _serialized_principal_version;
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
@@ -406,8 +406,8 @@ struct _MonoInternalThread {
 	int stack_size;
 	guint8	apartment_state;
 	gint32 critical_region_level;
-	guint32 small_id;	
 	gint32 managed_id;
+	guint32 small_id;
 	MonoThreadManageCallback manage_callback;
 	gpointer interrupt_on_stop;
 	gsize    flags;
