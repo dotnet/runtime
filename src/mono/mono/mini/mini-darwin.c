@@ -307,7 +307,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 
 	mono_sigctx_to_monoctx (&ctx, &tctx->ctx);
 
-	domain_key = mono_domain_get_tls_offset ();
+	domain_key = mono_domain_get_tls_key ();
 	jit_key = mono_get_jit_tls_key ();
 
 	jit_tls = mono_mach_arch_get_tls_value_from_thread (thread_id, jit_key);
