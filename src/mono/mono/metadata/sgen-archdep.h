@@ -125,6 +125,7 @@
 #elif defined(TARGET_ARM)
 
 #define REDZONE_SIZE	0
+#define USE_MONO_CTX
 
 /* We dont store ip, sp */
 #define ARCH_NUM_REGS 14
