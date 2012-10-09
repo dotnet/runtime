@@ -234,10 +234,27 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->regs [ARMREG_SP]))
 
-// FIXME:
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
-	g_assert_not_reached (); \
+	__asm__ __volatile__(			\
+		"push {r0}\n"				\
+		"push {r1}\n"				\
+		"mov r1, r0\n"				\
+		"mov r0, %0\n"				\
+		"str r1, [r0]!\n"			\
+		"pop {r1}\n"				\
+		"str r1, [r0]!\n"			\
+		"stmia r0!, {r2-r12}\n"		\
+		"str sp, [r0]!\n"			\
+		"str lr, [r0]!\n"			\
+		"str pc, [r0]!\n"			\
+		"pop {r0}\n"				\
+		:							\
+		: "r" (&ctx.regs)			\
+		: "memory"					\
+	);								\
+	ctx.pc = ctx.regs [15];			\
 } while (0)
+
 
 #elif defined(__mono_ppc__) /* defined(__arm__) */
 
