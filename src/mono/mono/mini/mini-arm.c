@@ -886,7 +886,8 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-#if __APPLE__
+#ifdef MONO_CROSS_COMPILE
+#elif __APPLE__
 	sys_icache_invalidate (code, size);
 #elif __GNUC_PREREQ(4, 1)
 	__clear_cache (code, code + size);

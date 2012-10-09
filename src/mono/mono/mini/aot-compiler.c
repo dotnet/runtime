@@ -80,9 +80,9 @@
 
 #ifdef TARGET_WIN32
 #define SHARED_EXT ".dll"
-#elif defined(__ppc__) && defined(__APPLE__)
+#elif defined(__ppc__) && defined(TARGET_MACH)
 #define SHARED_EXT ".dylib"
-#elif defined(__APPLE__) && defined(TARGET_X86) && !defined(__native_client_codegen__)
+#elif defined(TARGET_MACH) && defined(TARGET_X86) && !defined(__native_client_codegen__)
 #define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"
@@ -407,7 +407,7 @@ static void
 emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 {
 	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 	/* On apple, all symbols need to be aligned to avoid warnings from ld */
 	emit_alignment (acfg, 4);
 #endif
@@ -531,7 +531,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #endif
 
 #ifdef TARGET_ARM
-#ifdef __MACH__
+#ifdef TARGET_MACH
 #define AOT_TARGET_STR "ARM (MACH)"
 #else
 #define AOT_TARGET_STR "ARM (!MACH)"
@@ -587,7 +587,7 @@ arch_init (MonoAotCompile *acfg)
 		g_string_append (acfg->llc_args, "-mattr=+v6");
 	} else {
 #ifdef ARM_FPU_VFP
-		g_string_append (acfg->llc_args, " -mattr=+vfp2,+d16");
+		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16");
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #else
 		g_string_append (acfg->llc_args, " -soft-float");
@@ -600,7 +600,7 @@ arch_init (MonoAotCompile *acfg)
 		mono_arch_set_target (acfg->aot_opts.mtriple);
 #endif
 
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 	acfg->llvm_label_prefix = "_";
 	acfg->need_no_dead_strip = TRUE;
 #endif
@@ -2513,7 +2513,7 @@ is_plt_patch (MonoJumpInfo *patch_info)
 static char*
 get_plt_symbol (MonoAotCompile *acfg, int plt_offset, MonoJumpInfo *patch_info)
 {
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 	/* 
 	 * The Apple linker reorganizes object files, so it doesn't like branches to local
 	 * labels, since those have no relocations.
@@ -3838,7 +3838,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
 						if (direct_pinvoke) {
 							const char*prefix;
-#if defined(__APPLE__)
+#if defined(TARGET_MACH)
 							prefix = "_";
 #else
 							prefix = "";
@@ -4804,7 +4804,7 @@ emit_plt (MonoAotCompile *acfg)
 			}
 
 			if (debug_sym) {
-#if defined(__APPLE__)
+#if defined(TARGET_MACH)
 				fprintf (acfg->fp, "	.thumb_func %s\n", debug_sym);
 				fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 #endif
@@ -5838,7 +5838,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 	plt_entry = get_plt_entry (llvm_acfg, ji);
 	plt_entry->llvm_used = TRUE;
 
-#if defined(__APPLE__)
+#if defined(TARGET_MACH)
 	return g_strdup_printf (plt_entry->llvm_symbol + strlen (llvm_acfg->llvm_label_prefix));
 #else
 	return g_strdup_printf (plt_entry->llvm_symbol);
@@ -6867,7 +6867,7 @@ emit_globals (MonoAotCompile *acfg)
 
 		sprintf (symbol, "name_%d", i);
 		emit_section_change (acfg, RODATA_SECT, 1);
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 		emit_alignment (acfg, 4);
 #endif
 		emit_label (acfg, symbol);
@@ -7043,7 +7043,7 @@ emit_file_info (MonoAotCompile *acfg)
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->trampoline_size [i]);
 
-#if defined (TARGET_ARM) && defined (__APPLE__)
+#if defined (TARGET_ARM) && defined (TARGET_MACH)
        {
                MonoType t;
                int align = 0;
@@ -7071,7 +7071,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
 		 * structure.
 		 */
-#if defined(__APPLE__) && !defined(__native_client_codegen__)
+#if defined(TARGET_MACH) && !defined(__native_client_codegen__)
 		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
 #else
 		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
@@ -7258,7 +7258,7 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "-m elf64ppc"
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
-#elif defined(TARGET_X86) && defined(__APPLE__) && !defined(__native_client_codegen__)
+#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
 #define AS_OPTIONS "-arch i386 -W"
 #else
 #define AS_OPTIONS ""
@@ -7321,11 +7321,11 @@ compile_asm (MonoAotCompile *acfg)
 
 #if defined(sparc)
 	command = g_strdup_printf ("ld -shared -G -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(__ppc__) && defined(__APPLE__)
+#elif defined(__ppc__) && defined(TARGET_MACH)
 	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(HOST_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(TARGET_X86) && defined(__APPLE__) && !defined(__native_client_codegen__)
+#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
 	command = g_strdup_printf ("gcc -m32 -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
 	command = g_strdup_printf ("%sld %s %s -shared -o %s %s.o", tool_prefix, EH_LD_OPTIONS, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
@@ -7346,7 +7346,7 @@ compile_asm (MonoAotCompile *acfg)
 	system (com);
 	g_free (com);*/
 
-#if defined(TARGET_ARM) && !defined(__APPLE__)
+#if defined(TARGET_ARM) && !defined(TARGET_MACH)
 	/* 
 	 * gas generates 'mapping symbols' each time code and data is mixed, which 
 	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.
@@ -7364,7 +7364,7 @@ compile_asm (MonoAotCompile *acfg)
 
 	rename (tmp_outfile_name, outfile_name);
 
-#if defined(__APPLE__)
+#if defined(TARGET_MACH)
 	command = g_strdup_printf ("dsymutil %s", outfile_name);
 	printf ("Generating debug symbols: %s\n", command);
 	if (system (command) != 0) {
