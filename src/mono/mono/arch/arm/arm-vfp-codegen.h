@@ -172,7 +172,7 @@ enum {
 #define ARM_FSTMD(p,first_reg,nregs,base)		\
 	ARM_FSTMD_COND(p,first_reg,nregs,base,ARMCOND_AL)
 
-#include "arm_vfpmacros.h"
+#include <mono/arch/arm/arm_vfpmacros.h>
 
 /* coprocessor register transfer */
 #define ARM_FMSR(p,freg,reg)	\
