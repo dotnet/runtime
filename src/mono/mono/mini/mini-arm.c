@@ -53,6 +53,10 @@
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
+#if __APPLE__
+void sys_icache_invalidate (void *start, size_t len);
+#endif
+
 static gint lmf_tls_offset = -1;
 static gint lmf_addr_tls_offset = -1;
 
