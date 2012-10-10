@@ -3434,7 +3434,7 @@ update_current_thread_stack (void *start)
 {
 	int stack_guard = 0;
 #ifndef USE_MONO_CTX
-	void *ptr = cur_thread_regs;
+	void *reg_ptr = cur_thread_regs;
 #endif
 	SgenThreadInfo *info = mono_thread_info_current ();
 	
@@ -3446,8 +3446,8 @@ update_current_thread_stack (void *start)
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, info->monoctx);
 #else
-	ARCH_STORE_REGS (ptr);
-	info->stopped_regs = ptr;
+	ARCH_STORE_REGS (reg_ptr);
+	info->stopped_regs = reg_ptr;
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, NULL);
 #endif

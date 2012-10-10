@@ -2,7 +2,7 @@
 
 #if defined(HAVE_SGEN_GC) && defined(HOST_WIN32)
 
-#include <windows.h>
+#include "io-layer/io-layer.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/gc-internal.h"

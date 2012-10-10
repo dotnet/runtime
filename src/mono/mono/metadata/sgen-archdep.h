@@ -28,7 +28,7 @@
 
 #include <mono/utils/mono-sigcontext.h>
 
-#ifdef __i386__
+#if defined(__i386__) || defined(TARGET_X86)
 
 #include <mono/utils/mono-context.h>
 
@@ -38,6 +38,18 @@
 
 #ifdef MONO_ARCH_HAS_MONO_CONTEXT
 #define USE_MONO_CTX
+#else
+#ifdef _MSC_VER
+#define ARCH_STORE_REGS(ptr) __asm {	\
+		__asm mov [ptr], edi \
+		__asm mov [ptr+4], esi \
+		__asm mov [ptr+8], ebx \
+		__asm mov [ptr+12], edx \
+		__asm mov [ptr+16], ecx \
+		__asm mov [ptr+20], eax \
+		__asm mov [ptr+24], ebp \
+		__asm mov [ptr+28], esp \
+	}
 #else
 #define ARCH_STORE_REGS(ptr)	\
 	__asm__ __volatile__(	\
@@ -53,12 +65,13 @@
 		: "r" (ptr)	\
 	)
 #endif
+#endif
 
 /*FIXME, move this to mono-sigcontext as this is generaly useful.*/
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_ESP ((ctx)))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_EIP ((ctx)))
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(TARGET_AMD64)
 
 #include <mono/utils/mono-context.h>
 

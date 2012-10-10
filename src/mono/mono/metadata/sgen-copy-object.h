@@ -37,7 +37,9 @@ extern long long stat_slots_allocated_in_vain;
 static inline void
 par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue)
 {
+#ifdef __GNUC__
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
+#endif
 
 	DEBUG (9, g_assert (vt->klass->inited));
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
@@ -49,6 +51,7 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 		MONO_GC_OBJ_MOVED ((mword)destination, (mword)obj, dest_gen, src_gen, objsize, vt->klass->name_space, vt->klass->name);
 	}
 
+#ifdef __GNUC__
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
 		goto *copy_labels [objsize / sizeof (gpointer)];
@@ -74,6 +77,9 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 		/*can't trust memcpy doing word copies */
 		mono_gc_memmove (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 	}
+#else
+		mono_gc_memmove (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
+#endif
 	/* adjust array->bounds */
 	DEBUG (9, g_assert (vt->gc_descr));
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
@@ -90,7 +96,11 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 }
 
+#ifdef _MSC_VER
+static __declspec(noinline) void*
+#else
 static G_GNUC_UNUSED void* __attribute__((noinline))
+#endif
 copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
@@ -150,7 +160,11 @@ extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
  * copy_object could be made into a macro once debugged (use inline for now).
  */
 
+#ifdef _MSC_VER
+static __forceinline void
+#else
 static inline void __attribute__((always_inline))
+#endif
 serial_copy_object (void **obj_slot, SgenGrayQueue *queue) 
 {
 	char *forwarded;

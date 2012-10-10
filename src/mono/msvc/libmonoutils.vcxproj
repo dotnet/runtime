@@ -22,12 +22,7 @@
   <ItemGroup>
     <ClCompile Include="..\mono\utils\dlmalloc.c" />
     <ClCompile Include="..\mono\utils\hazard-pointer.c" />
-    <ClCompile Include="..\mono\utils\lock-free-alloc.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\mono\utils\lock-free-alloc.c" />
     <ClCompile Include="..\mono\utils\lock-free-array-queue.c" />
     <ClCompile Include="..\mono\utils\lock-free-queue.c" />
     <ClCompile Include="..\mono\utils\mach-support-amd64.c" />

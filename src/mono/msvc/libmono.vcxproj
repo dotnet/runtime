@@ -320,9 +320,9 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>libgc.lib;libmonoruntime.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libgc.lib;libmonoruntimesgen.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>mono.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>monosgen.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
@@ -409,7 +409,7 @@
     <Link>
       <AdditionalDependencies>libgc.lib;libmonoruntime.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>mono.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>monosgen.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ImportLibrary>$(Platform)\lib\$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
@@ -479,9 +479,9 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>libgc.lib;libmonoruntime.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libgc.lib;libmonoruntimesgen.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>mono.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>monosgen.def</ModuleDefinitionFile>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -560,7 +560,7 @@
     <Link>
       <AdditionalDependencies>libgc.lib;libmonoruntime.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>mono.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>monosgen.def</ModuleDefinitionFile>
       <ImportLibrary>$(Platform)\lib\$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
