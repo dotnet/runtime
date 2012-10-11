@@ -729,16 +729,6 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse.rsqrt.ps";
 	case OP_RCPPS:
 		return "llvm.x86.sse.rcp.ps";
-	case OP_PCMPEQB:
-		return "llvm.x86.sse2.pcmpeq.b";
-	case OP_PCMPEQW:
-		return "llvm.x86.sse2.pcmpeq.w";
-	case OP_PCMPEQD:
-		return "llvm.x86.sse2.pcmpeq.d";
-	case OP_PCMPEQQ:
-		return "llvm.x86.sse41.pcmpeqq";
-	case OP_PCMPGTB:
-		return "llvm.x86.sse2.pcmpgt.b";
 	case OP_CVTDQ2PD:
 		return "llvm.x86.sse2.cvtdq2pd";
 	case OP_CVTDQ2PS:
@@ -3577,11 +3567,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PSUBW_SAT_UN:
 		case OP_PAVGB_UN:
 		case OP_PAVGW_UN:
-		case OP_PCMPEQB:
-		case OP_PCMPEQW:
-		case OP_PCMPEQD:
-		case OP_PCMPEQQ:
-		case OP_PCMPGTB:
 		case OP_PACKW:
 		case OP_PACKD:
 		case OP_PACKW_UN:
@@ -3594,6 +3579,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [1] = rhs;
 
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+			break;
+		}
+		case OP_PCMPEQB:
+		case OP_PCMPEQW:
+		case OP_PCMPEQD:
+		case OP_PCMPEQQ: {
+			values [ins->dreg] = LLVMBuildSExt (builder, LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, ""), LLVMTypeOf (lhs), "");
+			break;
+		}
+		case OP_PCMPGTB: {
+			values [ins->dreg] = LLVMBuildSExt (builder, LLVMBuildICmp (builder, LLVMIntSGT, lhs, rhs, ""), LLVMTypeOf (lhs), "");
 			break;
 		}
 		case OP_EXTRACT_R8:

@@ -105,6 +105,20 @@ public:
 
 	virtual void deallocateExceptionTable(void*) {
 	}
+
+	virtual uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment,
+										 unsigned SectionID) {
+		// FIXME:
+		assert(0);
+		return NULL;
+	}
+
+	virtual uint8_t *allocateDataSection(uintptr_t Size, unsigned Alignment,
+										 unsigned SectionID) {
+		// FIXME:
+		assert(0);
+		return NULL;
+	}
 };
 
 MonoJITMemoryManager::MonoJITMemoryManager ()

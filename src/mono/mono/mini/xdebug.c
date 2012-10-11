@@ -105,13 +105,6 @@ struct jit_descriptor
 /* GDB puts a breakpoint in this function.  */
 void MONO_NOINLINE __jit_debug_register_code(void);
 
-#if !defined(MONO_LLVM_LOADED) && defined(ENABLE_LLVM) && ((LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION >= 7) || LLVM_MAJOR_VERSION > 2)
-
-/* LLVM already defines these */
-extern struct jit_descriptor __jit_debug_descriptor;
-
-#else
-
 /* Make sure to specify the version statically, because the
    debugger may check the version before we can set it.  */
 struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
@@ -122,8 +115,6 @@ void MONO_NOINLINE __jit_debug_register_code(void) {
 	asm ("");
 #endif
 }
-
-#endif
 
 static MonoImageWriter *xdebug_w;
 static MonoDwarfWriter *xdebug_writer;
