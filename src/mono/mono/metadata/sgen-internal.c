@@ -107,6 +107,8 @@ description_for_type (int type)
 	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
+	case INTERNAL_MEM_BRIDGE_HASH_TABLE: return "bridge-hash-table";
+	case INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY: return "bridge-hash-table-entry";
 	case INTERNAL_MEM_JOB_QUEUE_ENTRY: return "job-queue-entry";
 	case INTERNAL_MEM_TOGGLEREF_DATA: return "toggleref-data";
 	default:

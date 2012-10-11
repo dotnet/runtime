@@ -271,7 +271,7 @@ typedef struct _SCC {
 	DynArray xrefs;		/* these are incoming, not outgoing */
 } SCC;
 
-static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DATA, INTERNAL_MEM_BRIDGE_DATA, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
+static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
 
 static MonoGCBridgeCallbacks bridge_callbacks;
 
