@@ -4847,7 +4847,6 @@ add_intrinsics (LLVMModuleRef module)
 		arg_types [1] = ret_type;
 		AddFunc (module, "llvm.x86.sse41.pminud", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse41.pmaxud", ret_type, arg_types, 2);
-		AddFunc (module, "llvm.x86.sse2.pcmpeq.d", ret_type, arg_types, 2);
 
 		ret_type = type_to_simd_type (MONO_TYPE_I2);
 		arg_types [0] = ret_type;
@@ -4855,7 +4854,6 @@ add_intrinsics (LLVMModuleRef module)
 		AddFunc (module, "llvm.x86.sse41.pminuw", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.pmins.w", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse41.pmaxuw", ret_type, arg_types, 2);
-		AddFunc (module, "llvm.x86.sse2.pcmpeq.w", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.padds.w", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.psubs.w", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.paddus.w", ret_type, arg_types, 2);
@@ -4869,18 +4867,11 @@ add_intrinsics (LLVMModuleRef module)
 		arg_types [1] = ret_type;
 		AddFunc (module, "llvm.x86.sse2.pminu.b", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.pmaxu.b", ret_type, arg_types, 2);
-		AddFunc (module, "llvm.x86.sse2.pcmpeq.b", ret_type, arg_types, 2);
-		AddFunc (module, "llvm.x86.sse2.pcmpgt.b", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.padds.b", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.psubs.b", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.paddus.b", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.psubus.b", ret_type, arg_types, 2);
 		AddFunc (module, "llvm.x86.sse2.pavg.b", ret_type, arg_types, 2);
-
-		ret_type = type_to_simd_type (MONO_TYPE_I8);
-		arg_types [0] = ret_type;
-		arg_types [1] = ret_type;
-		AddFunc (module, "llvm.x86.sse41.pcmpeqq", ret_type, arg_types, 2);
 
 		ret_type = type_to_simd_type (MONO_TYPE_R8);
 		arg_types [0] = ret_type;
