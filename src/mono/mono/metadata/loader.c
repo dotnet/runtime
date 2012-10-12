@@ -1287,6 +1287,17 @@ cached_module_load (const char *name, int flags, char **err)
 
 static MonoDl *internal_module;
 
+static gboolean
+is_absolute_path (const char *path)
+{
+#ifdef PLATFORM_MACOSX
+	if (!strncmp (path, "@executable_path/", 17) || !strncmp (path, "@loader_path/", 13) ||
+	    !strncmp (path, "@rpath/", 7))
+	    return TRUE;
+#endif
+	return g_path_is_absolute (path);
+}
+
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
 {
@@ -1374,6 +1385,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	 * Try loading the module using a variety of names
 	 */
 	for (i = 0; i < 4; ++i) {
+		char *base_name = NULL, *dir_name = NULL;
+		gboolean is_absolute = is_absolute_path (new_scope);
+		
 		switch (i) {
 		case 0:
 			/* Try the original name */
@@ -1389,12 +1403,21 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 				continue;
 			break;
 		case 2:
-			if (strstr (new_scope, "lib") != new_scope) {
+			if (is_absolute) {
+				dir_name = g_path_get_dirname (new_scope);
+				base_name = g_path_get_basename (new_scope);
+				if (strstr (base_name, "lib") != base_name) {
+					char *tmp = g_strdup_printf ("lib%s", base_name);       
+					g_free (base_name);
+					base_name = tmp;
+					file_name = g_strdup_printf ("%s%s%s", dir_name, G_DIR_SEPARATOR_S, base_name);
+					break;
+				}
+			} else if (strstr (new_scope, "lib") != new_scope) {
 				file_name = g_strdup_printf ("lib%s", new_scope);
+				break;
 			}
-			else
-				continue;
-			break;
+			continue;
 		default:
 #ifndef TARGET_WIN32
 			if (!g_ascii_strcasecmp ("user32.dll", new_scope) ||
@@ -1409,8 +1432,15 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			break;
 #endif
 		}
-
-		if (!module && g_path_is_absolute (file_name)) {
+		
+		if (is_absolute) {
+			if (!dir_name)
+				dir_name = g_path_get_dirname (file_name);
+			if (!base_name)
+				base_name = g_path_get_basename (file_name);
+		}
+		
+		if (!module && is_absolute) {
 			module = cached_module_load (file_name, MONO_DL_LAZY, &error_msg);
 			if (!module) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
@@ -1422,7 +1452,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			}
 		}
 
-		if (!module) {
+		if (!module && !is_absolute) {
 			void *iter = NULL;
 			char *mdirname = g_path_get_dirname (image->name);
 			while ((full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
@@ -1444,7 +1474,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 		if (!module) {
 			void *iter = NULL;
-			while ((full_name = mono_dl_build_path (NULL, file_name, &iter))) {
+			char *file_or_base = is_absolute ? base_name : file_name;
+			while ((full_name = mono_dl_build_path (dir_name, file_or_base, &iter))) {
 				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
 				if (!module) {
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
@@ -1472,6 +1503,10 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 
 		g_free (file_name);
+		if (is_absolute) {
+			g_free (base_name);
+			g_free (dir_name);
+		}
 
 		if (module)
 			break;
