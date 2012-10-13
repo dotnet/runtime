@@ -119,6 +119,16 @@ public:
 		assert(0);
 		return NULL;
 	}
+
+	virtual void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure) {
+		if (!strcmp (Name.c_str (), "__bzero")) {
+			return (void*)bzero;
+		} else {
+			outs () << "Unable to resolve: " << Name << "\n";
+			assert(0);
+			return NULL;
+		}
+	}
 };
 
 MonoJITMemoryManager::MonoJITMemoryManager ()
