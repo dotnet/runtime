@@ -35,6 +35,7 @@
 #include <glib.h>
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-archdep.h"
+#include "metadata/sgen-protocol.h"
 #include "metadata/object-internals.h"
 #include "metadata/gc-internal.h"
 
@@ -96,6 +97,10 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx, NULL);
+
+	DEBUG (1, fprintf (gc_debug_file, "thread %p stopped at %p stack_start=%p\n", (void*)info->info.native_handle, info->stopped_ip, info->stack_start));
+
+	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->stopped_ip);
 
 	return TRUE;
 }

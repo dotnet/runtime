@@ -2377,7 +2377,7 @@ collect_nursery (void)
 	
 	reset_pinned_from_failed_allocation ();
 
-	binary_protocol_collection (GENERATION_NURSERY);
+	binary_protocol_collection (stat_minor_gcs, GENERATION_NURSERY);
 	check_scan_starts ();
 
 	sgen_nursery_alloc_prepare_for_minor ();
@@ -2622,7 +2622,7 @@ major_do_collection (const char *reason)
 	//count_ref_nonref_objs ();
 	//consistency_check ();
 
-	binary_protocol_collection (GENERATION_OLD);
+	binary_protocol_collection (stat_major_gcs, GENERATION_OLD);
 	check_scan_starts ();
 
 	sgen_gray_object_queue_init (&gray_queue);
@@ -3481,6 +3481,7 @@ restart_threads_until_none_in_managed_allocator (void)
 			if (!info->thread_is_dying && (!info->stack_start || info->in_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
 				binary_protocol_thread_restart ((gpointer)mono_thread_info_get_tid (info));
+				DEBUG (3, fprintf (gc_debug_file, "thread %p resumed.\n", (void*)info->info.native_handle));
 				result = sgen_resume_thread (info);
 				if (result) {
 					++restart_count;

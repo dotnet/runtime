@@ -37,6 +37,7 @@ enum {
 	SGEN_PROTOCOL_PTR_UPDATE,
 	SGEN_PROTOCOL_CLEANUP,
 	SGEN_PROTOCOL_EMPTY,
+	SGEN_PROTOCOL_THREAD_SUSPEND,
 	SGEN_PROTOCOL_THREAD_RESTART,
 	SGEN_PROTOCOL_THREAD_REGISTER,
 	SGEN_PROTOCOL_THREAD_UNREGISTER,
@@ -46,7 +47,7 @@ enum {
 };
 
 typedef struct {
-	int generation;
+	int index, generation;
 } SGenProtocolCollection;
 
 typedef struct {
@@ -106,6 +107,10 @@ typedef struct {
 } SGenProtocolEmpty;
 
 typedef struct {
+	gpointer thread, stopped_ip;
+} SGenProtocolThreadSuspend;
+
+typedef struct {
 	gpointer thread;
 } SGenProtocolThreadRestart;
 
@@ -133,7 +138,7 @@ gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
 
 void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 
-void binary_protocol_collection (int generation) MONO_INTERNAL;
+void binary_protocol_collection (int index, int generation) MONO_INTERNAL;
 void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
@@ -145,6 +150,7 @@ void binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value
 void binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_cleanup (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_empty (gpointer start, int size) MONO_INTERNAL;
+void binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip) MONO_INTERNAL;
 void binary_protocol_thread_restart (gpointer thread) MONO_INTERNAL;
 void binary_protocol_thread_register (gpointer thread) MONO_INTERNAL;
 void binary_protocol_thread_unregister (gpointer thread) MONO_INTERNAL;
@@ -156,7 +162,7 @@ void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offs
 #define binary_protocol_is_enabled()	FALSE
 
 #define binary_protocol_flush_buffers(force)
-#define binary_protocol_collection(generation)
+#define binary_protocol_collection(index, generation)
 #define binary_protocol_alloc(obj, vtable, size)
 #define binary_protocol_alloc_pinned(obj, vtable, size)
 #define binary_protocol_alloc_degraded(obj, vtable, size)
@@ -168,6 +174,7 @@ void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offs
 #define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)
 #define binary_protocol_cleanup(ptr, vtable, size)
 #define binary_protocol_empty(start, size)
+#define binary_protocol_thread_suspend(thread, ip)
 #define binary_protocol_thread_restart(thread)
 #define binary_protocol_thread_register(thread)
 #define binary_protocol_thread_unregister(thread)

@@ -153,9 +153,9 @@ protocol_entry (unsigned char type, gpointer data, int size)
 }
 
 void
-binary_protocol_collection (int generation)
+binary_protocol_collection (int index, int generation)
 {
-	SGenProtocolCollection entry = { generation };
+	SGenProtocolCollection entry = { index, generation };
 	binary_protocol_flush_buffers (FALSE);
 	protocol_entry (SGEN_PROTOCOL_COLLECTION, &entry, sizeof (SGenProtocolCollection));
 }
@@ -238,11 +238,17 @@ binary_protocol_empty (gpointer start, int size)
 }
 
 void
+binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip)
+{
+	SGenProtocolThreadSuspend entry = { thread, stopped_ip };
+	protocol_entry (SGEN_PROTOCOL_THREAD_SUSPEND, &entry, sizeof (SGenProtocolThreadSuspend));
+}
+
+void
 binary_protocol_thread_restart (gpointer thread)
 {
 	SGenProtocolThreadRestart entry = { thread };
 	protocol_entry (SGEN_PROTOCOL_THREAD_RESTART, &entry, sizeof (SGenProtocolThreadRestart));
-
 }
 
 void
