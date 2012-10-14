@@ -22,8 +22,13 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef HAVE_SGEN_GC
+
 #include "config.h"
+#include "sgen-gc.h"
 #include "sgen-protocol.h"
+#include "sgen-memory-governor.h"
+#include "utils/mono-mmap.h"
 
 #ifdef SGEN_BINARY_PROTOCOL
 
@@ -265,3 +270,5 @@ binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, g
 }
 
 #endif
+
+#endif /* HAVE_SGEN_GC */
