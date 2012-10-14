@@ -375,4 +375,29 @@ sgen_check_whole_heap (void)
 
 	g_assert (!broken_heap);
 }
+
+static gboolean
+ptr_in_heap (char *object)
+{
+	if (sgen_ptr_in_nursery (object))
+		return TRUE;
+	
+	if (sgen_los_is_valid_object (object))
+		return TRUE;
+
+	if (major_collector.is_valid_object (object))
+		return TRUE;
+	return FALSE;
+}
+
+/*
+ * sgen_check_objref:
+ *   Do consistency checks on the object reference OBJ. Assert on failure.
+ */
+void
+sgen_check_objref (char *obj)
+{
+	g_assert (ptr_in_heap (obj));
+}
+
 #endif /*HAVE_SGEN_GC*/

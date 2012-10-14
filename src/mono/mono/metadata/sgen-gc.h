@@ -983,6 +983,7 @@ void sgen_check_consistency (void);
 void sgen_check_major_refs (void);
 void sgen_check_whole_heap (void);
 void sgen_check_whole_heap_stw (void) MONO_INTERNAL;
+void sgen_check_objref (char *obj);
 
 /* Write barrier support */
 

@@ -69,6 +69,7 @@ void
 sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 {
 	DEBUG (9, g_assert (obj));
+	//sgen_check_objref (obj);
 	if (G_UNLIKELY (!queue->first || queue->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE))
 		sgen_gray_object_alloc_queue_section (queue);
 	DEBUG (9, g_assert (queue->first && queue->first->end < SGEN_GRAY_QUEUE_SECTION_SIZE));
