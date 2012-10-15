@@ -1485,7 +1485,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	/* Arguments are pushed in the reverse order */
 	for (i = n - 1; i >= 0; i --) {
 		ArgInfo *ainfo = cinfo->args + i;
-		MonoType *t;
+		MonoType *orig_type, *t;
 		int argsize;
 
 		if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && i == 0) {
@@ -1503,6 +1503,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
+		orig_type = t;
 		t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
 
 		MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
@@ -1536,7 +1537,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 				MONO_ADD_INS (cfg->cbb, arg);
 				sp_offset += size;
-				emit_gc_param_slot_def (cfg, sp_offset, t);
+				emit_gc_param_slot_def (cfg, sp_offset, orig_type);
 			}
 		} else {
 			argsize = 4;
@@ -1579,7 +1580,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						/* this */
 						emit_gc_param_slot_def (cfg, sp_offset, &mono_defaults.object_class->byval_arg);
 					else
-						emit_gc_param_slot_def (cfg, sp_offset, t);
+						emit_gc_param_slot_def (cfg, sp_offset, orig_type);
 				} else {
 					/* i8/r8 */
 					for (j = 0; j < argsize; j += 4)

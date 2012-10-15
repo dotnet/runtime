@@ -542,15 +542,21 @@ class Tests {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	public static void liveness_12_inner (int a, int b, int c, int d, int e, int f, object o) {
+	public static void liveness_12_inner (int a, int b, int c, int d, int e, int f, object o, ref string s) {
 		GC.Collect (1);
 		o.GetHashCode ();
+		s.GetHashCode ();
+	}
+
+	class FooClass {
+		public string s;
 	}
 
 	// Liveness for param area
 	public static int test_0_liveness_12 () {
+		var f = new FooClass () { s = "A" };
 		// The ref argument should be passed on the stack
-		liveness_12_inner (1, 2, 3, 4, 5, 6, new object ());
+		liveness_12_inner (1, 2, 3, 4, 5, 6, new object (), ref f.s);
 		return 0;
 	}
 

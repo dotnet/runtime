@@ -679,6 +679,9 @@ fullaotcheck: mono $(fullaot_regtests)
 llvmfullaotcheck:
 	$(MAKE) fullaotcheck LLVM=1
 
+gccheck: gc-test.exe
+	MONO_GC_PARAMS=stack-mark=precise MONO_GC_DEBUG=clear-at-gc ./mono-sgen gc-test.exe	
+
 bench: mono test.exe
 	time env $(RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe
 
