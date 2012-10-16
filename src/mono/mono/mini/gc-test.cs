@@ -559,6 +559,27 @@ class Tests {
 		liveness_12_inner (1, 2, 3, 4, 5, 6, new object (), ref f.s);
 		return 0;
 	}
+	
+	interface IFace {
+		int foo ();
+	}
+
+	struct BarStruct : IFace {
+		int i;
+
+		public int foo () {
+			GC.Collect ();
+			return i;
+		}
+	}
+		
+	public static int test_0_liveness_unbox_trampoline () {
+		var s = new BarStruct ();
+		
+		IFace iface = s;
+		iface.foo ();
+		return 0;
+	}
 
 	public static void liveness_13_inner (ref ArrayList arr) {
 		// The value of arr will be stored in a spill slot

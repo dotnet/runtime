@@ -803,6 +803,8 @@ struct MonoCallInst {
 	guint dynamic_imt_arg : 1;
 	/* Whenever there is an RGCTX argument */
 	guint32 rgctx_reg : 1;
+	/* Whenever the call will need an unbox trampoline */
+	guint need_unbox_trampoline : 1;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
 	GSList *out_ireg_args;

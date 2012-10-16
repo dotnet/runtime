@@ -1576,11 +1576,16 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (cfg->compute_gc_maps) {
 				if (argsize == 4) {
 					/* FIXME: The == STACK_OBJ check might be fragile ? */
-					if (sig->hasthis && i == 0 && call->args [i]->type == STACK_OBJ)
+					if (sig->hasthis && i == 0 && call->args [i]->type == STACK_OBJ) {
 						/* this */
-						emit_gc_param_slot_def (cfg, sp_offset, &mono_defaults.object_class->byval_arg);
-					else
+						if (call->need_unbox_trampoline)
+							/* The unbox trampoline transforms this into a managed pointer */
+							emit_gc_param_slot_def (cfg, sp_offset, &mono_defaults.int_class->this_arg);
+						else
+							emit_gc_param_slot_def (cfg, sp_offset, &mono_defaults.object_class->byval_arg);
+					} else {
 						emit_gc_param_slot_def (cfg, sp_offset, orig_type);
+					}
 				} else {
 					/* i8/r8 */
 					for (j = 0; j < argsize; j += 4)

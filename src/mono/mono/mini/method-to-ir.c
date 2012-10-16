@@ -2222,7 +2222,7 @@ mono_patch_info_new (MonoMemPool *mp, int ip, MonoJumpInfoType type, gconstpoint
 
 inline static MonoCallInst *
 mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
-					 MonoInst **args, int calli, int virtual, int tail, int rgctx)
+					 MonoInst **args, int calli, int virtual, int tail, int rgctx, int unbox_trampoline)
 {
 	MonoCallInst *call;
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -2303,6 +2303,8 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	}
 #endif
 
+	call->need_unbox_trampoline = unbox_trampoline;
+
 #ifdef ENABLE_LLVM
 	if (COMPILE_LLVM (cfg))
 		mono_llvm_emit_call (cfg, call);
@@ -2344,7 +2346,7 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
 	}
 
-	call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE, rgctx_arg ? TRUE : FALSE);
+	call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE, rgctx_arg ? TRUE : FALSE, FALSE);
 
 	call->inst.sreg1 = addr->dreg;
 
@@ -2371,6 +2373,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	int context_used;
 	MonoCallInst *call;
 	int rgctx_reg = 0;
+	gboolean need_unbox_trampoline;
 
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
@@ -2402,7 +2405,9 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		return mono_emit_calli (cfg, sig, args, addr, NULL);
 	}
 
-	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual, FALSE, rgctx_arg ? TRUE : FALSE);
+	need_unbox_trampoline = method->klass == mono_defaults.object_class || (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
+
+	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual, FALSE, rgctx_arg ? TRUE : FALSE, need_unbox_trampoline);
 
 	if (might_be_remote)
 		call->method = mono_marshal_get_remoting_invoke_with_check (method);
@@ -2535,7 +2540,7 @@ mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature
 
 	g_assert (sig);
 
-	call = mono_emit_call_args (cfg, sig, args, FALSE, FALSE, FALSE, FALSE);
+	call = mono_emit_call_args (cfg, sig, args, FALSE, FALSE, FALSE, FALSE, FALSE);
 	call->fptr = func;
 
 	MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
@@ -7523,7 +7528,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 #ifdef MONO_ARCH_USE_OP_TAIL_CALL
 				/* Handle tail calls similarly to calls */
-				call = mono_emit_call_args (cfg, mono_method_signature (cmethod), sp, FALSE, FALSE, TRUE, FALSE);
+				call = mono_emit_call_args (cfg, mono_method_signature (cmethod), sp, FALSE, FALSE, TRUE, FALSE, FALSE);
 #else
 				MONO_INST_NEW_CALL (cfg, call, OP_JMP);
 				call->tail_call = TRUE;
