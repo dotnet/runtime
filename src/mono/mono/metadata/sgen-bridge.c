@@ -599,7 +599,7 @@ sgen_bridge_processing_finish (int generation)
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
 	MonoGCBridgeXRef *api_xrefs;
-	SgenHashTable alive_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DATA, INTERNAL_MEM_BRIDGE_DATA, 1, mono_aligned_addr_hash, NULL);
+	SgenHashTable alive_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE, INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY, 1, mono_aligned_addr_hash, NULL);
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
 
