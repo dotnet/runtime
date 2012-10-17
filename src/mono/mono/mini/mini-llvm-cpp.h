@@ -25,9 +25,10 @@ typedef enum {
 typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
 typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
 typedef void (ExceptionTableCb) (void *data);
+typedef char* (DlSymCb) (const char *name, void **symbol);
 
 LLVMExecutionEngineRef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb);
+mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb);
 
 void
 mono_llvm_dispose_ee (LLVMExecutionEngineRef ee);

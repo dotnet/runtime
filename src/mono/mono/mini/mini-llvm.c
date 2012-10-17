@@ -9,6 +9,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/mono-dl.h>
 
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
@@ -4735,6 +4736,17 @@ exception_cb (void *data)
 	g_free (type_info);
 }
 
+static char*
+dlsym_cb (const char *name, void **symbol)
+{
+	MonoDl *current;
+
+	current = mono_dl_open (NULL, 0, NULL);
+	g_assert (current);
+
+	return mono_dl_symbol (current, name, symbol);
+}
+
 static inline void
 AddFunc (LLVMModuleRef module, const char *name, LLVMTypeRef ret_type, LLVMTypeRef *param_types, int nparams)
 {
@@ -5029,7 +5041,7 @@ init_jit_module (void)
 
 	jit_module.module = LLVMModuleCreateWithName ("mono");
 
-	ee = mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (jit_module.module), alloc_cb, emitted_cb, exception_cb);
+	ee = mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (jit_module.module), alloc_cb, emitted_cb, exception_cb, dlsym_cb);
 
 	add_intrinsics (jit_module.module);
 
