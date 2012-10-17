@@ -7067,6 +7067,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (slot == -1)
 							TYPE_LOAD_ERROR (cmethod->klass);
 						cmethod = constrained_call->vtable [ioffset + slot];
+
+						if (cmethod->klass == mono_defaults.enum_class) {
+							/* Enum implements some interfaces, so treat this as the first case */
+							EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
+							ins->klass = constrained_call;
+							sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
+							CHECK_CFG_EXCEPTION;
+						}
 					}
 					virtual = 0;
 				}
