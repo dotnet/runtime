@@ -129,10 +129,6 @@ win32getdeps:
 win32setup:
 	makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=$(SOURCE_INSTALL_DIR) /DBUILDNUM=$(BUILDNUM) monowiz.win32.nsi
 
-patch-quiet:
-	find mono -name Makefile -exec scripts/patch-quiet.sh {} \;
-	find libgc -name Makefile -exec scripts/patch-quiet.sh {} \;
-
 update-csproj:
 	-rm msvc/scripts/order 
 	-mkdir msvc/scripts/inputs
