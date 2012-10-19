@@ -752,5 +752,9 @@ patch-libtool:
 	sed -e 's,if (for obj in $$oldobjs,if (for obj in "",g' < ../../libtool > 2; mv 2 ../../libtool
 	chmod a+x ../../libtool
 
+# Utility target to patch automake to generate the same format silent output as the old mono silent build did
+patch-automake:
+	src="@echo \"  '. \$$name . ' ' x (8 - length (\$$name)) . '\""; dst="@echo \"'. \$$name . ' ' x (7 - length (\$$name)) .'\""; sed -e "s/$$src/$$dst/g" < $$EXE > 2 && cp 2 $$EXE && rm -f 2
+
 tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`
