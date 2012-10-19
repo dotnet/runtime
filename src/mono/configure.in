@@ -22,6 +22,7 @@ AC_SUBST(API_VER)
 
 AC_PROG_LN_S
 
+AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # In case of cygwin, override LN_S, irrespective of what it determines.
