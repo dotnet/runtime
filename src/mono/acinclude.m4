@@ -158,6 +158,7 @@ modeok=false
 tagok=false
 for arg in "$[]@"; do
     case "$arg" in
+        --silent) ;;    
         --mode=compile) modeok=true ;;
         --tag=CC|--tag=CXX) tagok=true ;;
         --quiet) ;;
