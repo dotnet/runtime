@@ -889,8 +889,6 @@ typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size */
-	guint16 huge_object;
-	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 

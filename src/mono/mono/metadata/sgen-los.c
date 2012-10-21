@@ -357,8 +357,6 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size &= ~(pagesize - 1);
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
 			obj = sgen_alloc_os_memory (alloc_size, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, NULL);
-			if (obj)
-				obj->huge_object = TRUE;
 		}
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
