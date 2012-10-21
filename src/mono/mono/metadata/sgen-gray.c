@@ -131,6 +131,9 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue)
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 	SGEN_ASSERT (9, queue->balance == 0, "unbalanced queue on init %d", queue->balance);
 
+	queue->alloc_prepare_func = NULL;
+	queue->alloc_prepare_data = NULL;
+
 	/* Free the extra sections allocated during the last collection */
 	i = 0;
 	for (section = queue->free_list; section && i < GRAY_QUEUE_LENGTH_LIMIT - 1; section = section->next)
@@ -142,6 +145,20 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue)
 		section->next = next->next;
 		sgen_gray_object_free_queue_section (next);
 	}
+}
+
+static void
+invalid_prepare_func (SgenGrayQueue *queue)
+{
+	g_assert_not_reached ();
+}
+
+void
+sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
+{
+	sgen_gray_object_queue_init (queue);
+	queue->alloc_prepare_func = invalid_prepare_func;
+	queue->alloc_prepare_data = NULL;
 }
 
 void

@@ -2253,6 +2253,17 @@ verify_nursery (void)
 	}
 }
 
+static void
+init_gray_queue (void)
+{
+	if (sgen_collection_is_parallel ()) {
+		sgen_gray_object_queue_init_invalid (&gray_queue);
+		sgen_workers_init_distribute_gray_queue ();
+	} else {
+		sgen_gray_object_queue_init (&gray_queue);
+	}
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -2325,8 +2336,7 @@ collect_nursery (void)
 
 	sgen_memgov_minor_collection_start ();
 
-	sgen_gray_object_queue_init (&gray_queue);
-	sgen_workers_init_distribute_gray_queue ();
+	init_gray_queue ();
 
 	stat_minor_gcs++;
 	gc_stats.minor_gc_count ++;
@@ -2542,8 +2552,8 @@ major_do_collection (const char *reason)
 	binary_protocol_collection (stat_major_gcs, GENERATION_OLD);
 	check_scan_starts ();
 
-	sgen_gray_object_queue_init (&gray_queue);
-	sgen_workers_init_distribute_gray_queue ();
+	init_gray_queue ();
+
 	sgen_nursery_alloc_prepare_for_major ();
 
 	degraded_mode = 0;

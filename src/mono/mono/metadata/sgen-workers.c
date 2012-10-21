@@ -1,25 +1,22 @@
 /*
+ * sgen-workers.c: Worker threads for parallel and concurrent GC.
+ *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.
+ * Copyright (C) 2012 Xamarin Inc
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License 2.0 as published by the Free Software Foundation;
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU Library General Public
+ * License 2.0 along with this library; if not, write to the Free
+ * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 #include "config.h"
@@ -273,6 +270,13 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 		workers_wake_up_all ();
 }
 
+static void
+init_private_gray_queue (WorkerData *data)
+{
+	sgen_gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue,
+			workers_gray_queue_share_redirect, data);
+}
+
 static mono_native_thread_return_t
 workers_thread_func (void *data_untyped)
 {
@@ -283,8 +287,7 @@ workers_thread_func (void *data_untyped)
 	if (sgen_get_major_collector ()->init_worker_thread)
 		sgen_get_major_collector ()->init_worker_thread (data->major_collector_data);
 
-	sgen_gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue,
-			workers_gray_queue_share_redirect, data);
+	init_private_gray_queue (data);
 
 	for (;;) {
 		gboolean did_work = FALSE;
@@ -301,7 +304,7 @@ workers_thread_func (void *data_untyped)
 				workers_gray_queue_share_redirect (&data->private_gray_queue);
 			g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 
-			sgen_gray_object_queue_init (&data->private_gray_queue);
+			init_private_gray_queue (data);
 
 			did_work = TRUE;
 		}
@@ -323,13 +326,20 @@ sgen_workers_distribute_gray_queue_sections (void)
 	workers_gray_queue_share_redirect (&workers_distribute_gray_queue);
 }
 
+static void
+init_distribute_gray_queue (void)
+{
+	sgen_gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
+			workers_gray_queue_share_redirect, &workers_gc_thread_data);
+}
+
 void
 sgen_workers_init_distribute_gray_queue (void)
 {
 	if (!sgen_collection_is_parallel ())
 		return;
 
-	sgen_gray_object_queue_init (&workers_distribute_gray_queue);
+	init_distribute_gray_queue ();
 }
 
 void
@@ -350,8 +360,7 @@ sgen_workers_init (int num_workers)
 	MONO_SEM_INIT (&workers_waiting_sem, 0);
 	MONO_SEM_INIT (&workers_done_sem, 0);
 
-	sgen_gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
-			workers_gray_queue_share_redirect, &workers_gc_thread_data);
+	init_distribute_gray_queue ();
 	mono_mutex_init (&workers_gc_thread_data.stealable_stack_mutex, NULL);
 	workers_gc_thread_data.stealable_stack_fill = 0;
 
