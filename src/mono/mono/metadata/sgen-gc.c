@@ -442,7 +442,7 @@ static mword roots_size = 0; /* amount of memory in the root set */
 
 #define GC_ROOT_NUM 32
 typedef struct {
-	int count;
+	int count;		/* must be the first field */
 	void *objects [GC_ROOT_NUM];
 	int root_types [GC_ROOT_NUM];
 	uintptr_t extra_info [GC_ROOT_NUM];
@@ -2532,6 +2532,8 @@ major_do_collection (const char *reason)
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
 	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
+	gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
+	GCRootReport root_report = { 0 };
 
 	MONO_GC_BEGIN (GENERATION_OLD);
 
@@ -2622,9 +2624,6 @@ major_do_collection (const char *reason)
 	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		int dummy;
-		gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
-		GCRootReport report;
-		report.count = 0;
 		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((MonoObject*)(bigobj->data))));
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
@@ -2639,11 +2638,11 @@ major_do_collection (const char *reason)
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size);
 			
 			if (profile_roots)
-				add_profile_gc_root (&report, bigobj->data, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
+				add_profile_gc_root (&root_report, bigobj->data, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
 		}
-		if (profile_roots)
-			notify_gc_roots (&report);
 	}
+	if (profile_roots)
+		notify_gc_roots (&root_report);
 	/* second pass for the sections */
 	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
