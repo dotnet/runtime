@@ -369,16 +369,6 @@ mono_gc_flush_info (void)
 
 NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 
-/* the runtime can register areas of memory as roots: we keep two lists of roots,
- * a pinned root set for conservatively scanned roots and a normal one for
- * precisely scanned roots (currently implemented as a single list).
- */
-typedef struct _RootRecord RootRecord;
-struct _RootRecord {
-	char *end_root;
-	mword root_desc;
-};
-
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
 #define pin_object		SGEN_PIN_OBJECT
@@ -467,18 +457,11 @@ static EphemeronLinkNode *ephemeron_list;
 static int num_ready_finalizers = 0;
 static int no_finalize = 0;
 
-enum {
-	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
-	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
-	ROOT_TYPE_WBARRIER = 2, /* roots with a write barrier */
-	ROOT_TYPE_NUM
-};
-
 /* registered roots: the key to the hash is the root start address */
 /* 
  * Different kinds of roots are kept separate to speed up pin_from_roots () for example.
  */
-static SgenHashTable roots_hash [ROOT_TYPE_NUM] = {
+SgenHashTable roots_hash [ROOT_TYPE_NUM] = {
 	SGEN_HASH_TABLE_INIT (INTERNAL_MEM_ROOTS_TABLE, INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord), mono_aligned_addr_hash, NULL),
 	SGEN_HASH_TABLE_INIT (INTERNAL_MEM_ROOTS_TABLE, INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord), mono_aligned_addr_hash, NULL),
 	SGEN_HASH_TABLE_INIT (INTERNAL_MEM_ROOTS_TABLE, INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord), mono_aligned_addr_hash, NULL)
@@ -579,7 +562,6 @@ static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *ad
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
 static void report_finalizer_roots (void);
 static void report_registered_roots (void);
-static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static void collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
@@ -1446,31 +1428,6 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 		start++;
 	}
 	DEBUG (7, if (count) fprintf (gc_debug_file, "found %d potential pinned heap pointers\n", count));
-}
-
-/*
- * Debugging function: find in the conservative roots where @obj is being pinned.
- */
-static G_GNUC_UNUSED void
-find_pinning_reference (char *obj, size_t size)
-{
-	char **start;
-	RootRecord *root;
-	char *endobj = obj + size;
-
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_NORMAL], start, root) {
-		/* if desc is non-null it has precise info */
-		if (!root->root_desc) {
-			while (start < (char**)root->end_root) {
-				if (*start >= obj && *start < endobj) {
-					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in pinned roots %p-%p\n", obj, start, root->end_root));
-				}
-				start++;
-			}
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;
-
-	find_pinning_ref_from_thread (obj, size);
 }
 
 /*
@@ -3723,37 +3680,6 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 					start_nursery, end_nursery, PIN_TYPE_STACK);
 #endif
 	} END_FOREACH_THREAD
-}
-
-static void
-find_pinning_ref_from_thread (char *obj, size_t size)
-{
-	int j;
-	SgenThreadInfo *info;
-	char *endobj = obj + size;
-
-	FOREACH_THREAD (info) {
-		char **start = (char**)info->stack_start;
-		if (info->skip)
-			continue;
-		while (start < (char**)info->stack_end) {
-			if (*start >= obj && *start < endobj) {
-				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p\n", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->stack_start, info->stack_end));
-			}
-			start++;
-		}
-
-		for (j = 0; j < ARCH_NUM_REGS; ++j) {
-#ifdef USE_MONO_CTX
-			mword w = ((mword*)info->monoctx) [j];
-#else
-			mword w = (mword)info->stopped_regs [j];
-#endif
-
-			if (w >= (mword)obj && w < (mword)obj + size)
-				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)mono_thread_info_get_tid (info)));
-		} END_FOREACH_THREAD
-	}
 }
 
 static gboolean

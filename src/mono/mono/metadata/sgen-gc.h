@@ -48,6 +48,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/metadata/sgen-archdep.h>
 #include <mono/metadata/sgen-descriptor.h>
 #include <mono/metadata/sgen-gray.h>
+#include <mono/metadata/sgen-hash-table.h>
 
 #if defined(__MACH__)
 	#include <mach/mach_port.h>
@@ -383,6 +384,25 @@ List of what each bit on of the vtable gc bits means.
 enum {
 	SGEN_GC_BIT_BRIDGE_OBJECT = 1,
 };
+
+/* the runtime can register areas of memory as roots: we keep two lists of roots,
+ * a pinned root set for conservatively scanned roots and a normal one for
+ * precisely scanned roots (currently implemented as a single list).
+ */
+typedef struct _RootRecord RootRecord;
+struct _RootRecord {
+	char *end_root;
+	mword root_desc;
+};
+
+enum {
+	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
+	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
+	ROOT_TYPE_WBARRIER = 2, /* roots with a write barrier */
+	ROOT_TYPE_NUM
+};
+
+extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
 
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 
