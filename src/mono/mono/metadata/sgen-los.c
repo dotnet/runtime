@@ -332,6 +332,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	void **vtslot;
 
 	g_assert (size > SGEN_MAX_SMALL_OBJ_SIZE);
+	g_assert ((size & 1) == 0);
 
 #ifdef LOS_DUMMY
 	if (!los_segment)
@@ -537,5 +538,38 @@ sgen_los_scan_card_table (SgenGrayQueue *queue)
 	}
 }
 #endif
+
+mword
+sgen_los_object_size (LOSObject *obj)
+{
+	return obj->size & ~1L;
+}
+
+LOSObject*
+sgen_los_header_for_object (char *data)
+{
+	return (LOSObject*)(data - (sizeof (LOSObject*) + sizeof (mword)));
+}
+
+void
+sgen_los_pin_object (char *data)
+{
+	LOSObject *obj = sgen_los_header_for_object (data);
+	obj->size = obj->size | 1;
+}
+
+void
+sgen_los_unpin_object (char *data)
+{
+	LOSObject *obj = sgen_los_header_for_object (data);
+	obj->size = sgen_los_object_size (obj);
+}
+
+gboolean
+sgen_los_object_is_pinned (char *data)
+{
+	LOSObject *obj = sgen_los_header_for_object (data);
+	return obj->size & 1;
+}
 
 #endif /* HAVE_SGEN_GC */

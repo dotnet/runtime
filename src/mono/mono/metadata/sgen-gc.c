@@ -934,7 +934,7 @@ check_for_xdomain_refs (void)
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		scan_object_for_xdomain_refs (bigobj->data, bigobj->size, NULL);
+		scan_object_for_xdomain_refs (bigobj->data, sgen_los_object_size (bigobj), NULL);
 }
 
 static gboolean
@@ -2622,19 +2622,19 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		int dummy;
-		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &dummy)) {
+		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((MonoObject*)(bigobj->data))));
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
 				MONO_GC_OBJ_PINNED ((mword)bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
-			pin_object (bigobj->data);
+			sgen_los_pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
 			if (G_UNLIKELY (do_pin_stats))
 				sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
-			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size);
-			
+			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
+
 			if (profile_roots)
 				add_profile_gc_root (&root_report, bigobj->data, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
 		}
@@ -2772,9 +2772,10 @@ major_do_collection (const char *reason)
 	/* sweep the big objects list */
 	prevbo = NULL;
 	for (bigobj = los_object_list; bigobj;) {
-		if (object_is_pinned (bigobj->data)) {
-			unpin_object (bigobj->data);
-			sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + bigobj->size);
+		g_assert (!object_is_pinned (bigobj->data));
+		if (sgen_los_object_is_pinned (bigobj->data)) {
+			sgen_los_unpin_object (bigobj->data);
+			sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + sgen_los_object_size (bigobj));
 		} else {
 			LOSObject *to_free;
 			/* not referenced anywhere, so we can free it */
@@ -2994,11 +2995,22 @@ report_internal_mem_usage (void)
 static inline gboolean
 sgen_is_object_alive (void *object)
 {
+	mword objsize;
+
 	if (ptr_in_nursery (object))
 		return sgen_nursery_is_object_alive (object);
 	/* Oldgen objects can be pinned and forwarded too */
 	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
 		return TRUE;
+
+	/*
+	 * FIXME: major_collector.is_object_live() also calculates the
+	 * size.  Avoid the double calculation.
+	 */
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)object));
+	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
+		return sgen_los_object_is_pinned (object);
+
 	return major_collector.is_object_live (object);
 }
 

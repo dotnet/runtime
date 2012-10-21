@@ -888,7 +888,7 @@ int sgen_restart_world (int generation, GGTimingInfo *timing) MONO_INTERNAL;
 typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
-	mword size; /* this is the object size */
+	mword size; /* this is the object size, lowest bit used for pin/mark */
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -907,6 +907,12 @@ void sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 gboolean sgen_los_is_valid_object (char *object) MONO_INTERNAL;
 gboolean mono_sgen_los_describe_pointer (char *ptr) MONO_INTERNAL;
+LOSObject* sgen_los_header_for_object (char *data) MONO_INTERNAL;
+mword sgen_los_object_size (LOSObject *obj) MONO_INTERNAL;
+void sgen_los_pin_object (char *obj) MONO_INTERNAL;
+void sgen_los_unpin_object (char *obj) MONO_INTERNAL;
+gboolean sgen_los_object_is_pinned (char *obj) MONO_INTERNAL;
+
 
 /* nursery allocator */
 

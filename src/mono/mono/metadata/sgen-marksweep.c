@@ -1258,19 +1258,17 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 			MS_PAR_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 		} else {
-#ifdef FIXED_HEAP
-			mword vtable_word = *(mword*)obj;
-			vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
-#endif
+			LOSObject *bigobj = sgen_los_header_for_object (obj);
+			mword size_word = bigobj->size;
 
-			if (vtable_word & SGEN_PINNED_BIT)
+			if (size_word & 1)
 				return;
 			binary_protocol_pin (obj, vt, sgen_safe_object_get_size ((MonoObject*)obj));
-			if (SGEN_CAS_PTR (obj, (void*)(vtable_word | SGEN_PINNED_BIT), (void*)vtable_word) == (void*)vtable_word) {
+			if (SGEN_CAS_PTR ((void*)&bigobj->size, (void*)(size_word | 1), (void*)size_word) == (void*)size_word) {
 				if (SGEN_VTABLE_HAS_REFERENCES (vt))
 					GRAY_OBJECT_ENQUEUE (queue, obj);
 			} else {
-				g_assert (SGEN_OBJECT_IS_PINNED (obj));
+				g_assert (sgen_los_object_is_pinned (obj));
 			}
 		}
 	}
@@ -1395,14 +1393,14 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 				MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 			}
 		} else {
-			if (SGEN_OBJECT_IS_PINNED (obj))
+			if (sgen_los_object_is_pinned (obj))
 				return;
 			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
-			SGEN_PIN_OBJECT (obj);
+			sgen_los_pin_object (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
 		}
