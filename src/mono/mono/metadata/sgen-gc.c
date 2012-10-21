@@ -2515,12 +2515,16 @@ collect_nursery (void)
 	return needs_major;
 }
 
-static gboolean
-major_do_collection (const char *reason)
+typedef struct {
+	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
+	ScanThreadDataJobData stdjd;
+	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
+} AllJobData;
+
+static void
+major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 {
-	LOSObject *bigobj, *prevbo;
-	TV_DECLARE (all_atv);
-	TV_DECLARE (all_btv);
+	LOSObject *bigobj;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	/* FIXME: only use these values for the precise scan
@@ -2528,10 +2532,6 @@ major_do_collection (const char *reason)
 	 */
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
-	int old_next_pin_slot;
-	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
-	ScanThreadDataJobData stdjd;
-	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
 	gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
 	GCRootReport root_report = { 0 };
 
@@ -2563,9 +2563,7 @@ major_do_collection (const char *reason)
 	stat_major_gcs++;
 	gc_stats.major_gc_count ++;
 
-	/* world must be stopped already */
-	TV_GETTIME (all_atv);
-	atv = all_atv;
+	TV_GETTIME (atv);
 
 	/* Pinning depends on this */
 	sgen_clear_nursery_fragments ();
@@ -2646,7 +2644,7 @@ major_do_collection (const char *reason)
 	/* second pass for the sections */
 	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	old_next_pin_slot = sgen_get_pinned_count ();
+	*old_next_pin_slot = sgen_get_pinned_count ();
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
@@ -2668,25 +2666,25 @@ major_do_collection (const char *reason)
 	time_major_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scrrjd_normal.func = current_object_ops.copy_or_mark_object;
-	scrrjd_normal.heap_start = heap_start;
-	scrrjd_normal.heap_end = heap_end;
-	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
+	job_data->scrrjd_normal.func = current_object_ops.copy_or_mark_object;
+	job_data->scrrjd_normal.heap_start = heap_start;
+	job_data->scrrjd_normal.heap_end = heap_end;
+	job_data->scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
+	sgen_workers_enqueue_job (job_scan_from_registered_roots, &job_data->scrrjd_normal);
 
-	scrrjd_wbarrier.func = current_object_ops.copy_or_mark_object;
-	scrrjd_wbarrier.heap_start = heap_start;
-	scrrjd_wbarrier.heap_end = heap_end;
-	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
+	job_data->scrrjd_wbarrier.func = current_object_ops.copy_or_mark_object;
+	job_data->scrrjd_wbarrier.heap_start = heap_start;
+	job_data->scrrjd_wbarrier.heap_end = heap_end;
+	job_data->scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
+	sgen_workers_enqueue_job (job_scan_from_registered_roots, &job_data->scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED (atv, btv);
 
 	/* Threads */
-	stdjd.heap_start = heap_start;
-	stdjd.heap_end = heap_end;
-	sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
+	job_data->stdjd.heap_start = heap_start;
+	job_data->stdjd.heap_end = heap_end;
+	sgen_workers_enqueue_job (job_scan_thread_data, &job_data->stdjd);
 
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED (btv, atv);
@@ -2698,11 +2696,11 @@ major_do_collection (const char *reason)
 		report_finalizer_roots ();
 
 	/* scan the list of objects ready for finalization */
-	sfejd_fin_ready.list = fin_ready_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_fin_ready);
+	job_data->sfejd_fin_ready.list = fin_ready_list;
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, &job_data->sfejd_fin_ready);
 
-	sfejd_critical_fin.list = critical_fin_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
+	job_data->sfejd_critical_fin.list = critical_fin_list;
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, &job_data->sfejd_critical_fin);
 
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED (btv, atv);
@@ -2710,6 +2708,27 @@ major_do_collection (const char *reason)
 
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
+}
+
+static gboolean
+major_do_collection (const char *reason)
+{
+	LOSObject *bigobj, *prevbo;
+	TV_DECLARE (all_atv);
+	TV_DECLARE (all_btv);
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
+	char *heap_start = NULL;
+	char *heap_end = (char*)-1;
+	int old_next_pin_slot;
+	AllJobData job_data;
+
+	/* world must be stopped already */
+	TV_GETTIME (all_atv);
+
+	major_start_collection (&old_next_pin_slot, &job_data);
+
+	TV_GETTIME (btv);
 
 	if (major_collector.is_parallel) {
 		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
