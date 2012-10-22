@@ -2581,7 +2581,9 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 
 	init_gray_queue ();
 
-	sgen_nursery_alloc_prepare_for_major ();
+	/* The concurrent collector doesn't touch the nursery. */
+	if (!sgen_collection_is_concurrent ())
+		sgen_nursery_alloc_prepare_for_major ();
 
 	degraded_mode = 0;
 	SGEN_LOG (1, "Start major collection %d", stat_major_gcs);
@@ -2599,7 +2601,8 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	nursery_section->next_data = sgen_get_nursery_end ();
+	if (!sgen_collection_is_concurrent ())
+		nursery_section->next_data = sgen_get_nursery_end ();
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
 	 */
