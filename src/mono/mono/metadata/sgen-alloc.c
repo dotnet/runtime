@@ -129,9 +129,12 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 			last_major_gc_warned = stat_major_gcs;
 		}
 		InterlockedExchangeAdd (&degraded_mode, size);
+		sgen_ensure_free_space (size);
+	} else {
+		if (sgen_need_major_collection (size))
+			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure");
 	}
 
-	sgen_ensure_free_space (size);
 
 	p = major_collector.alloc_degraded (vtable, size);
 
