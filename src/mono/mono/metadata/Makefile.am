@@ -223,6 +223,7 @@ sgen_sources = \
 	sgen-marksweep-fixed.c	\
 	sgen-marksweep-par.c	\
 	sgen-marksweep-fixed-par.c	\
+	sgen-marksweep-conc.c	\
 	sgen-major-copying.c	\
 	sgen-los.c		\
 	sgen-protocol.c \

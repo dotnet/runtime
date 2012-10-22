@@ -2281,7 +2281,7 @@ verify_nursery (void)
 static void
 init_gray_queue (void)
 {
-	if (sgen_collection_is_parallel ()) {
+	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ()) {
 		sgen_gray_object_queue_init_invalid (&gray_queue);
 		sgen_workers_init_distribute_gray_queue ();
 	} else {
@@ -2447,7 +2447,7 @@ collect_nursery (void)
 	time_minor_scan_thread_data += TV_ELAPSED (btv, atv);
 	btv = atv;
 
-	if (sgen_collection_is_parallel ()) {
+	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ()) {
 		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			sgen_workers_distribute_gray_queue_sections ();
 			g_usleep (1000);
@@ -2455,7 +2455,7 @@ collect_nursery (void)
 	}
 	sgen_workers_join ();
 
-	if (sgen_collection_is_parallel ())
+	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ())
 		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 	/* Scan the list of objects ready for finalization. If */
@@ -2755,7 +2755,7 @@ major_do_collection (const char *reason)
 
 	TV_GETTIME (btv);
 
-	if (major_collector.is_parallel) {
+	if (major_collector.is_parallel || major_collector.is_concurrent) {
 		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			sgen_workers_distribute_gray_queue_sections ();
 			g_usleep (1000);
@@ -2767,7 +2767,7 @@ major_do_collection (const char *reason)
 	main_gc_thread = NULL;
 #endif
 
-	if (major_collector.is_parallel)
+	if (major_collector.is_parallel || major_collector.is_concurrent)
 		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 	/* all the objects in the heap */
@@ -2940,6 +2940,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			overflow_reason = "Minor overflow";
 		}
 	} else {
+		if (major_collector.is_concurrent)
+			collect_nursery ();
 		if (major_do_collection (reason)) {
 			overflow_generation_to_collect = GENERATION_NURSERY;
 			overflow_reason = "Excessive pinning";
@@ -2950,7 +2952,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	infos [0].total_time = SGEN_TV_ELAPSED (infos [0].total_time, gc_end);
 
 
-	if (overflow_generation_to_collect != -1) {
+	if (!major_collector.is_concurrent && overflow_generation_to_collect != -1) {
 		mono_profiler_gc_event (MONO_GC_EVENT_START, overflow_generation_to_collect);
 		infos [1].generation = overflow_generation_to_collect;
 		infos [1].reason = overflow_reason;
@@ -4335,6 +4337,8 @@ mono_gc_base_init (void)
 		sgen_marksweep_par_init (&major_collector);
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed-par")) {
 		sgen_marksweep_fixed_par_init (&major_collector);
+	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-conc")) {
+		sgen_marksweep_conc_init (&major_collector);
 	} else if (!strcmp (major_collector_opt, "copying")) {
 		sgen_copying_init (&major_collector);
 	} else {
@@ -4533,6 +4537,8 @@ mono_gc_base_init (void)
 
 	if (major_collector.is_parallel)
 		sgen_workers_init (num_workers);
+	else if (major_collector.is_concurrent)
+		sgen_workers_init (1);
 
 	if (major_collector_opt)
 		g_free (major_collector_opt);

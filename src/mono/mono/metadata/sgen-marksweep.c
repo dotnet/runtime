@@ -1274,6 +1274,44 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	}
 }
 #else
+#ifdef SGEN_CONCURRENT_MARK
+static void
+major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
+{
+	void *obj = *ptr;
+
+	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
+
+	if (sgen_ptr_in_nursery (obj)) {
+		g_assert (SGEN_OBJECT_IS_PINNED (obj));
+	} else {
+#ifdef FIXED_HEAP
+		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
+#else
+		mword objsize;
+
+		objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj));
+
+		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
+#endif
+		{
+			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
+			MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+		} else {
+			if (sgen_los_object_is_pinned (obj))
+				return;
+			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
+			}
+			sgen_los_pin_object (obj);
+			/* FIXME: only enqueue if object has references */
+			GRAY_OBJECT_ENQUEUE (queue, obj);
+		}
+	}
+}
+#else
 static void
 major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 {
@@ -1406,6 +1444,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		}
 	}
 }
+#endif
 #endif
 
 #include "sgen-major-scan-object.h"
@@ -2173,6 +2212,9 @@ post_param_init (void)
 }
 
 void
+#ifdef SGEN_CONCURRENT_MARK
+sgen_marksweep_conc_init
+#else
 #ifdef SGEN_PARALLEL_MARK
 #ifdef FIXED_HEAP
 sgen_marksweep_fixed_par_init
@@ -2184,6 +2226,7 @@ sgen_marksweep_par_init
 sgen_marksweep_fixed_init
 #else
 sgen_marksweep_init
+#endif
 #endif
 #endif
 	(SgenMajorCollector *collector)
@@ -2249,7 +2292,11 @@ sgen_marksweep_init
 #else
 	collector->is_parallel = FALSE;
 #endif
+#ifdef SGEN_CONCURRENT_MARK
+	collector->is_concurrent = TRUE;
+#else
 	collector->is_concurrent = FALSE;
+#endif
 	collector->supports_cardtable = TRUE;
 
 	collector->have_swept = &have_swept;
