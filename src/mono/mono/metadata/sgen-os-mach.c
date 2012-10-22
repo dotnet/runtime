@@ -47,7 +47,7 @@
 gboolean
 sgen_resume_thread (SgenThreadInfo *info)
 {
-	return thread_resume (info->mach_port) == KERN_SUCCESS;
+	return thread_resume (info->info.native_handle) == KERN_SUCCESS;
 }
 
 gboolean
@@ -64,11 +64,11 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
-	ret = thread_suspend (info->mach_port);
+	ret = thread_suspend (info->info.native_handle);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
-	ret = mono_mach_arch_get_thread_state (info->mach_port, state, &num_state);
+	ret = mono_mach_arch_get_thread_state (info->info.native_handle, state, &num_state);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
@@ -140,7 +140,7 @@ sgen_thread_handshake (BOOL suspend)
 			g_assert (info->doing_handshake);
 			info->doing_handshake = FALSE;
 
-			ret = thread_resume (info->mach_port);
+			ret = thread_resume (info->info.native_handle);
 			if (ret != KERN_SUCCESS)
 				continue;
 		}

@@ -3737,10 +3737,6 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	store_remset_buffer_index_addr = &store_remset_buffer_index;
 #endif
 
-#if defined(__MACH__)
-	info->mach_port = mach_thread_self ();
-#endif
-
 	/* try to get it with attributes first */
 #if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
 	{
@@ -3835,10 +3831,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));
 	DEBUG (3, fprintf (gc_debug_file, "unregister thread %p (%p)\n", p, (gpointer)mono_thread_info_get_tid (p)));
-
-#if defined(__MACH__)
-	mach_port_deallocate (current_task (), p->mach_port);
-#endif
 
 	if (gc_callbacks.thread_detach_func) {
 		gc_callbacks.thread_detach_func (p->runtime_data);

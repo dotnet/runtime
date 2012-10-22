@@ -50,10 +50,6 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/metadata/sgen-gray.h>
 #include <mono/metadata/sgen-hash-table.h>
 
-#if defined(__MACH__)
-	#include <mach/mach_port.h>
-#endif
-
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
  * Clearing at TLAB creation is much faster, but more complex and it might expose hard
@@ -105,14 +101,11 @@ enum {
 };
 
 /* eventually share with MonoThread? */
+/*
+ * This structure extends the MonoThreadInfo structure.
+ */
 struct _SgenThreadInfo {
 	MonoThreadInfo info;
-#if defined(__MACH__)
-	thread_port_t mach_port;
-#else
-	int signal;
-	unsigned int stop_count; /* to catch duplicate signals */
-#endif
 	int skip;
 	volatile int in_critical_region;
 	gboolean joined_stw;
@@ -130,6 +123,11 @@ struct _SgenThreadInfo {
 	long *store_remset_buffer_index_addr;
 	RememberedSet *remset;
 	gpointer runtime_data;
+
+	/* Only used on POSIX platforms */
+	int signal;
+	/* Ditto */
+	unsigned int stop_count; /* to catch duplicate signals */
 
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
