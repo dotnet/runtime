@@ -3399,12 +3399,12 @@ update_current_thread_stack (void *start)
 	g_assert (info->stack_start >= info->stack_start_limit && info->stack_start < info->stack_end);
 #ifdef USE_MONO_CTX
 	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
-	info->monoctx = &cur_thread_ctx;
+	memcpy (&info->ctx, &cur_thread_ctx, sizeof (MonoContext));
 	if (gc_callbacks.thread_suspend_func)
-		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, info->monoctx);
+		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, &info->ctx);
 #else
 	ARCH_STORE_REGS (reg_ptr);
-	info->stopped_regs = reg_ptr;
+	memcpy (&info->regs, reg_ptr, sizeof (info->regs));
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, NULL);
 #endif
@@ -3566,9 +3566,9 @@ restart_world (int generation, GGTimingInfo *timing)
 	FOREACH_THREAD (info) {
 		info->stack_start = NULL;
 #ifdef USE_MONO_CTX
-		info->monoctx = NULL;
+		memset (&info->ctx, 0, sizeof (MonoContext));
 #else
-		info->stopped_regs = NULL;
+		memset (&info->regs, 0, sizeof (info->regs));
 #endif
 	} END_FOREACH_THREAD
 
@@ -3670,15 +3670,15 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			}
 		}
 
+		if (!info->thread_is_dying && !precise) {
 #ifdef USE_MONO_CTX
-		if (!info->thread_is_dying && !precise)
-			conservatively_pin_objects_from ((void**)info->monoctx, (void**)info->monoctx + ARCH_NUM_REGS,
+			conservatively_pin_objects_from ((void**)&info->ctx, (void**)&info->ctx + ARCH_NUM_REGS,
 				start_nursery, end_nursery, PIN_TYPE_STACK);
 #else
-		if (!info->thread_is_dying && !precise)
-			conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
+			conservatively_pin_objects_from (&info->regs, &info->regs + ARCH_NUM_REGS,
 					start_nursery, end_nursery, PIN_TYPE_STACK);
 #endif
+		}
 	} END_FOREACH_THREAD
 }
 
@@ -3724,9 +3724,9 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	info->stopped_ip = NULL;
 	info->stopped_domain = NULL;
 #ifdef USE_MONO_CTX
-	info->monoctx = NULL;
+	memset (&info->ctx, 0, sizeof (MonoContext));
 #else
-	info->stopped_regs = NULL;
+	memset (&info->regs, 0, sizeof (info->regs));
 #endif
 
 	sgen_init_tlab_info (info);

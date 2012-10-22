@@ -68,7 +68,6 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->regs [5] = context.Eax;
 	info->regs [6] = context.Ebp;
 	info->regs [7] = context.Esp;
-	info->stopped_regs = &info->regs;
 
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)

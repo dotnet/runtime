@@ -57,9 +57,7 @@ static void
 suspend_thread (SgenThreadInfo *info, void *context)
 {
 	int stop_count;
-#ifdef USE_MONO_CTX
-	MonoContext monoctx;
-#else
+#ifndef USE_MONO_CTX
 	gpointer regs [ARCH_NUM_REGS];
 #endif
 	gpointer stack_start;
@@ -83,17 +81,16 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 #ifdef USE_MONO_CTX
 		if (context) {
-			mono_sigctx_to_monoctx (context, &monoctx);
-			info->monoctx = &monoctx;
+			mono_sigctx_to_monoctx (context, &info->ctx);
 		} else {
-			info->monoctx = NULL;
+			memset (&info->ctx, 0, sizeof (MonoContext));
 		}
 #else
 		if (context) {
 			ARCH_COPY_SIGCTX_REGS (regs, context);
-			info->stopped_regs = regs;
+			memcpy (&info->regs, regs, sizeof (info->regs));
 		} else {
-			info->stopped_regs = NULL;
+			memset (&info->regs, 0, sizeof (info->regs));
 		}
 #endif
 	} else {

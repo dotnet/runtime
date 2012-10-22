@@ -130,21 +130,14 @@ struct _SgenThreadInfo {
 	long *store_remset_buffer_index_addr;
 	RememberedSet *remset;
 	gpointer runtime_data;
+
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
 
 #ifdef USE_MONO_CTX
-#ifdef __MACH__
 	MonoContext ctx;		/* ditto */
-#endif
-	MonoContext *monoctx;	/* ditto */
-
 #else
-
-#if defined(__MACH__) || defined(HOST_WIN32)
 	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
-#endif
-	gpointer *stopped_regs;	    /* ditto */
 #endif
 
 #ifndef HAVE_KW_THREAD

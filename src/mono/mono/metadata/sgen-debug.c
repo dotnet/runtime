@@ -420,9 +420,9 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 
 		for (j = 0; j < ARCH_NUM_REGS; ++j) {
 #ifdef USE_MONO_CTX
-			mword w = ((mword*)info->monoctx) [j];
+			mword w = ((mword*)&info->ctx) [j];
 #else
-			mword w = (mword)info->stopped_regs [j];
+			mword w = (mword)&info->regs [j];
 #endif
 
 			if (w >= (mword)obj && w < (mword)obj + size)

@@ -86,10 +86,8 @@ sgen_suspend_thread (SgenThreadInfo *info)
 
 #ifdef USE_MONO_CTX
 		mono_sigctx_to_monoctx (&ctx, &info->ctx);
-		info->monoctx = &info->ctx;
 #else
 		ARCH_COPY_SIGCTX_REGS (&info->regs, &ctx);
-		info->stopped_regs = &info->regs;
 #endif
 	} else {
 		g_assert (!info->stack_start);
