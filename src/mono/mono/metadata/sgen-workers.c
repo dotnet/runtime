@@ -93,13 +93,19 @@ workers_wait (void)
 	MONO_SEM_WAIT (&workers_waiting_sem);
 }
 
+static gboolean
+collection_needs_workers (void)
+{
+	return sgen_collection_is_parallel () || sgen_collection_is_concurrent ();
+}
+
 void
 sgen_workers_enqueue_job (JobFunc func, void *data)
 {
 	int num_entries;
 	JobQueueEntry *entry;
 
-	if (!sgen_collection_is_parallel ()) {
+	if (!collection_needs_workers ()) {
 		func (NULL, data);
 		return;
 	}
@@ -144,7 +150,7 @@ workers_dequeue_and_do_job (WorkerData *data)
 	if (!entry)
 		return FALSE;
 
-	g_assert (sgen_collection_is_parallel ());
+	g_assert (collection_needs_workers ());
 
 	entry->func (data, entry->data);
 	sgen_free_internal (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY);
@@ -320,7 +326,7 @@ workers_thread_func (void *data_untyped)
 void
 sgen_workers_distribute_gray_queue_sections (void)
 {
-	if (!sgen_collection_is_parallel ())
+	if (!collection_needs_workers ())
 		return;
 
 	workers_gray_queue_share_redirect (&workers_distribute_gray_queue);
@@ -336,7 +342,7 @@ init_distribute_gray_queue (void)
 void
 sgen_workers_init_distribute_gray_queue (void)
 {
-	if (!sgen_collection_is_parallel ())
+	if (!collection_needs_workers ())
 		return;
 
 	init_distribute_gray_queue ();
@@ -347,7 +353,7 @@ sgen_workers_init (int num_workers)
 {
 	int i;
 
-	if (!sgen_get_major_collector ()->is_parallel)
+	if (!sgen_get_major_collector ()->is_parallel && !sgen_get_major_collector ()->is_concurrent)
 		return;
 
 	//g_print ("initing %d workers\n", num_workers);
@@ -402,7 +408,7 @@ sgen_workers_start_all_workers (void)
 {
 	int i;
 
-	if (!sgen_collection_is_parallel ())
+	if (!collection_needs_workers ())
 		return;
 
 	if (sgen_get_major_collector ()->init_worker_thread)
@@ -429,7 +435,7 @@ sgen_workers_start_all_workers (void)
 void
 sgen_workers_start_marking (void)
 {
-	if (!sgen_collection_is_parallel ())
+	if (!collection_needs_workers ())
 		return;
 
 	g_assert (workers_started && workers_gc_in_progress);
@@ -445,7 +451,7 @@ sgen_workers_join (void)
 {
 	int i;
 
-	if (!sgen_collection_is_parallel ())
+	if (!collection_needs_workers ())
 		return;
 
 	g_assert (sgen_gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));

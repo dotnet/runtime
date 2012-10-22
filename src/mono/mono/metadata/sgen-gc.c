@@ -553,9 +553,21 @@ static GrayQueue gray_queue;
 
 static SgenRemeberedSet remset;
 
+/* The gray queue to use from the main collection thread. */
+static SgenGrayQueue*
+sgen_workers_get_main_thread_queue (void)
+{
+	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ())
+		return sgen_workers_get_distribute_gray_queue ();
+	return &gray_queue;
+}
 
-#define WORKERS_DISTRIBUTE_GRAY_QUEUE (sgen_collection_is_parallel () ? sgen_workers_get_distribute_gray_queue () : &gray_queue)
+#define WORKERS_DISTRIBUTE_GRAY_QUEUE	(sgen_workers_get_main_thread_queue ())
 
+/*
+ * The gray queue a worker job must use.  If we're not parallel or
+ * concurrent, we use the main gray queue.
+ */
 static SgenGrayQueue*
 sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 {
@@ -2133,6 +2145,19 @@ sgen_collection_is_parallel (void)
 		return nursery_collection_is_parallel;
 	case GENERATION_OLD:
 		return major_collector.is_parallel;
+	default:
+		g_error ("Invalid current generation %d", current_collection_generation);
+	}
+}
+
+gboolean
+sgen_collection_is_concurrent (void)
+{
+	switch (current_collection_generation) {
+	case GENERATION_NURSERY:
+		return FALSE;
+	case GENERATION_OLD:
+		return major_collector.is_concurrent;
 	default:
 		g_error ("Invalid current generation %d", current_collection_generation);
 	}

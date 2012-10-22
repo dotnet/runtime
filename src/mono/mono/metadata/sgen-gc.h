@@ -543,6 +543,7 @@ typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 
 int sgen_get_current_collection_generation (void) MONO_INTERNAL;
 gboolean sgen_collection_is_parallel (void) MONO_INTERNAL;
+gboolean sgen_collection_is_concurrent (void) MONO_INTERNAL;
 
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
@@ -663,6 +664,7 @@ typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_parallel;
+	gboolean is_concurrent;
 	gboolean supports_cardtable;
 
 	/*

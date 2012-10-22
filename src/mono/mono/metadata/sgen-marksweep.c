@@ -2249,6 +2249,7 @@ sgen_marksweep_init
 #else
 	collector->is_parallel = FALSE;
 #endif
+	collector->is_concurrent = FALSE;
 	collector->supports_cardtable = TRUE;
 
 	collector->have_swept = &have_swept;
