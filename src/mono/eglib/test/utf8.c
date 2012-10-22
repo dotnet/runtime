@@ -140,7 +140,7 @@ compare_strings_utf16_RESULT (const gunichar2 *expected, const gunichar2 *actual
 }
 
 #if !defined(EGLIB_TESTS)
-#define g_utf8_to_utf16_with_nuls g_utf8_to_utf16
+#define eg_utf8_to_utf16_with_nuls g_utf8_to_utf16
 #endif
 
 RESULT
@@ -155,7 +155,7 @@ compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, gl
 
 	error = NULL;
 	if (include_nuls)
-		ret = g_utf8_to_utf16_with_nuls (utf8, size_spec, &in_read, &out_read, &error);
+		ret = eg_utf8_to_utf16_with_nuls (utf8, size_spec, &in_read, &out_read, &error);
 	else
 		ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &error);
 
@@ -272,7 +272,7 @@ test_utf8_to_utf16_with_nuls ()
 #endif
 
 	/* implicit length is forbidden */
-		if (g_utf8_to_utf16_with_nuls (src1, -1, NULL, NULL, NULL) != NULL)
+		if (eg_utf8_to_utf16_with_nuls (src1, -1, NULL, NULL, NULL) != NULL)
 		return FAILED ("explicit nulls must fail with -1 length\n");
 
 	/* empty string */
