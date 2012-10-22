@@ -204,8 +204,11 @@ typedef struct _SgenPinnedChunk SgenPinnedChunk;
 		mono_mutex_unlock (&gc_mutex);			\
 		MONO_GC_UNLOCKED ();				\
 	} while (0)
-#define LOCK_INTERRUPTION mono_mutex_lock (&interruption_mutex)
-#define UNLOCK_INTERRUPTION mono_mutex_unlock (&interruption_mutex)
+
+extern LOCK_DECLARE (sgen_interruption_mutex);
+
+#define LOCK_INTERRUPTION mono_mutex_lock (&sgen_interruption_mutex)
+#define UNLOCK_INTERRUPTION mono_mutex_unlock (&sgen_interruption_mutex)
 
 /* FIXME: Use InterlockedAdd & InterlockedAdd64 to reduce the CAS cost. */
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
@@ -812,6 +815,7 @@ void sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc 
 gboolean sgen_gc_is_object_ready_for_finalization (void *object) MONO_INTERNAL;
 void sgen_gc_lock (void) MONO_INTERNAL;
 void sgen_gc_unlock (void) MONO_INTERNAL;
+void sgen_gc_event_moves (void) MONO_INTERNAL;
 
 enum {
 	SPACE_NURSERY,
@@ -825,7 +829,22 @@ void sgen_set_pinned_from_failed_allocation (mword objsize) MONO_INTERNAL;
 
 void sgen_ensure_free_space (size_t size) MONO_INTERNAL;
 void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason) MONO_INTERNAL;
+gboolean sgen_has_critical_method (void) MONO_INTERNAL;
+gboolean sgen_is_critical_method (MonoMethod *method) MONO_INTERNAL;
 
+/* STW */
+
+typedef struct {
+	int generation;
+	const char *reason;
+	gboolean is_overflow;
+	SGEN_TV_DECLARE (total_time);
+	SGEN_TV_DECLARE (stw_time);
+	SGEN_TV_DECLARE (bridge_time);
+} GGTimingInfo;
+
+int sgen_stop_world (int generation) MONO_INTERNAL;
+int sgen_restart_world (int generation, GGTimingInfo *timing) MONO_INTERNAL;
 
 /* LOS */
 
@@ -1016,16 +1035,6 @@ sgen_dummy_use (gpointer v) {
 #error "Implement sgen_dummy_use for your compiler"
 #endif
 }
-
-
-typedef struct {
-	int generation;
-	const char *reason;
-	gboolean is_overflow;
-	SGEN_TV_DECLARE (total_time);
-	SGEN_TV_DECLARE (stw_time);
-	SGEN_TV_DECLARE (bridge_time);
-} GGTimingInfo;
 
 #endif /* HAVE_SGEN_GC */
 

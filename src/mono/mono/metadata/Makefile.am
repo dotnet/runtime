@@ -237,6 +237,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-split-nursery.c	\
 	sgen-memory-governor.c	\
 	sgen-memory-governor.h	\
+	sgen-stw.c \
 	string-icalls.c 	\
 	string-icalls.h 	\
 	sysmath.h		\

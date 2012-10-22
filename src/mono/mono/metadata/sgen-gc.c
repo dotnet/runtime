@@ -414,7 +414,7 @@ GCMemSection *nursery_section = NULL;
 static mword lowest_heap_address = ~(mword)0;
 static mword highest_heap_address = 0;
 
-static LOCK_DECLARE (interruption_mutex);
+LOCK_DECLARE (sgen_interruption_mutex);
 static LOCK_DECLARE (pin_queue_mutex);
 
 #define LOCK_PIN_QUEUE mono_mutex_lock (&pin_queue_mutex)
@@ -555,14 +555,11 @@ align_pointer (void *ptr)
 typedef SgenGrayQueue GrayQueue;
 
 /* forward declarations */
-static int stop_world (int generation);
-static int restart_world (int generation, GGTimingInfo *timing);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
 static void report_finalizer_roots (void);
 static void report_registered_roots (void);
-static void update_current_thread_stack (void *start);
 static void collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void process_fin_stage_entries (void);
@@ -576,7 +573,6 @@ static int pin_objects_from_addresses (GCMemSection *section, void **start, void
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
-static gboolean mono_gc_is_critical_method (MonoMethod *method);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
@@ -1773,19 +1769,6 @@ generation_name (int generation)
 	}
 }
 
-
-static void
-stw_bridge_process (void)
-{
-	sgen_bridge_processing_stw_step ();
-}
-
-static void
-bridge_process (int generation)
-{
-	sgen_bridge_processing_finish (generation);
-}
-
 SgenObjectOperations *
 sgen_get_current_object_ops (void){
 	return &current_object_ops;
@@ -2918,7 +2901,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	TV_GETTIME (infos [0].total_time);
 	infos [1].generation = -1;
 
-	stop_world (generation_to_collect);
+	sgen_stop_world (generation_to_collect);
 	//FIXME extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
 		if (collect_nursery ()) {
@@ -2965,7 +2948,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		degraded_mode = 1;
 	}
 
-	restart_world (generation_to_collect, infos);
+	sgen_restart_world (generation_to_collect, infos);
 
 	mono_profiler_gc_event (MONO_GC_EVENT_END, generation_to_collect);
 }
@@ -3380,221 +3363,11 @@ mono_gc_deregister_root (char* addr)
 
 unsigned int sgen_global_stop_count = 0;
 
-#ifdef USE_MONO_CTX
-static MonoContext cur_thread_ctx = {0};
-#else
-static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
-#endif
-
-static void
-update_current_thread_stack (void *start)
-{
-	int stack_guard = 0;
-#ifndef USE_MONO_CTX
-	void *reg_ptr = cur_thread_regs;
-#endif
-	SgenThreadInfo *info = mono_thread_info_current ();
-	
-	info->stack_start = align_pointer (&stack_guard);
-	g_assert (info->stack_start >= info->stack_start_limit && info->stack_start < info->stack_end);
-#ifdef USE_MONO_CTX
-	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
-	memcpy (&info->ctx, &cur_thread_ctx, sizeof (MonoContext));
-	if (gc_callbacks.thread_suspend_func)
-		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, &info->ctx);
-#else
-	ARCH_STORE_REGS (reg_ptr);
-	memcpy (&info->regs, reg_ptr, sizeof (info->regs));
-	if (gc_callbacks.thread_suspend_func)
-		gc_callbacks.thread_suspend_func (info->runtime_data, NULL, NULL);
-#endif
-}
-
 void
 sgen_fill_thread_info_for_suspend (SgenThreadInfo *info)
 {
 	if (remset.fill_thread_info_for_suspend)
 		remset.fill_thread_info_for_suspend (info);
-}
-
-static gboolean
-is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip);
-
-static int
-restart_threads_until_none_in_managed_allocator (void)
-{
-	SgenThreadInfo *info;
-	int num_threads_died = 0;
-	int sleep_duration = -1;
-
-	for (;;) {
-		int restart_count = 0, restarted_count = 0;
-		/* restart all threads that stopped in the
-		   allocator */
-		FOREACH_THREAD_SAFE (info) {
-			gboolean result;
-			if (info->skip || info->gc_disabled || !info->joined_stw)
-				continue;
-			if (!info->thread_is_dying && (!info->stack_start || info->in_critical_region ||
-					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
-				binary_protocol_thread_restart ((gpointer)mono_thread_info_get_tid (info));
-				DEBUG (3, fprintf (gc_debug_file, "thread %p resumed.\n", (void*)info->info.native_handle));
-				result = sgen_resume_thread (info);
-				if (result) {
-					++restart_count;
-				} else {
-					info->skip = 1;
-				}
-			} else {
-				/* we set the stopped_ip to
-				   NULL for threads which
-				   we're not restarting so
-				   that we can easily identify
-				   the others */
-				info->stopped_ip = NULL;
-				info->stopped_domain = NULL;
-			}
-		} END_FOREACH_THREAD_SAFE
-		/* if no threads were restarted, we're done */
-		if (restart_count == 0)
-			break;
-
-		/* wait for the threads to signal their restart */
-		sgen_wait_for_suspend_ack (restart_count);
-
-		if (sleep_duration < 0) {
-#ifdef HOST_WIN32
-			SwitchToThread ();
-#else
-			sched_yield ();
-#endif
-			sleep_duration = 0;
-		} else {
-			g_usleep (sleep_duration);
-			sleep_duration += 10;
-		}
-
-		/* stop them again */
-		FOREACH_THREAD (info) {
-			gboolean result;
-			if (info->skip || info->stopped_ip == NULL)
-				continue;
-			result = sgen_suspend_thread (info);
-
-			if (result) {
-				++restarted_count;
-			} else {
-				info->skip = 1;
-			}
-		} END_FOREACH_THREAD
-		/* some threads might have died */
-		num_threads_died += restart_count - restarted_count;
-		/* wait for the threads to signal their suspension
-		   again */
-		sgen_wait_for_suspend_ack (restarted_count);
-	}
-
-	return num_threads_died;
-}
-
-static void
-acquire_gc_locks (void)
-{
-	LOCK_INTERRUPTION;
-	mono_thread_info_suspend_lock ();
-}
-
-static void
-release_gc_locks (void)
-{
-	mono_thread_info_suspend_unlock ();
-	UNLOCK_INTERRUPTION;
-}
-
-static TV_DECLARE (stop_world_time);
-static unsigned long max_pause_usec = 0;
-
-/* LOCKING: assumes the GC lock is held */
-static int
-stop_world (int generation)
-{
-	int count, dead;
-
-	/*XXX this is the right stop, thought might not be the nicest place to put it*/
-	sgen_process_togglerefs ();
-
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
-	acquire_gc_locks ();
-
-	update_current_thread_stack (&count);
-
-	sgen_global_stop_count++;
-	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", sgen_global_stop_count, mono_thread_info_current (), (gpointer)mono_native_thread_id_get ()));
-	TV_GETTIME (stop_world_time);
-	count = sgen_thread_handshake (TRUE);
-	dead = restart_threads_until_none_in_managed_allocator ();
-	if (count < dead)
-		g_error ("More threads have died (%d) that been initialy suspended %d", dead, count);
-	count -= dead;
-
-	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
-
-	sgen_memgov_collection_start (generation);
-
-	return count;
-}
-
-/* LOCKING: assumes the GC lock is held */
-static int
-restart_world (int generation, GGTimingInfo *timing)
-{
-	int count;
-	SgenThreadInfo *info;
-	TV_DECLARE (end_sw);
-	TV_DECLARE (end_bridge);
-	unsigned long usec, bridge_usec;
-
-	/* notify the profiler of the leftovers */
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES)) {
-		if (moved_objects_idx) {
-			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
-			moved_objects_idx = 0;
-		}
-	}
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
-	FOREACH_THREAD (info) {
-		info->stack_start = NULL;
-#ifdef USE_MONO_CTX
-		memset (&info->ctx, 0, sizeof (MonoContext));
-#else
-		memset (&info->regs, 0, sizeof (info->regs));
-#endif
-	} END_FOREACH_THREAD
-
-	stw_bridge_process ();
-	release_gc_locks ();
-
-	count = sgen_thread_handshake (FALSE);
-	TV_GETTIME (end_sw);
-	usec = TV_ELAPSED (stop_world_time, end_sw);
-	max_pause_usec = MAX (usec, max_pause_usec);
-	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
-
-	bridge_process (generation);
-
-	TV_GETTIME (end_bridge);
-	bridge_usec = TV_ELAPSED (end_sw, end_bridge);
-
-	if (timing) {
-		timing [0].stw_time = usec;
-		timing [0].bridge_time = bridge_usec;
-	}
-	
-	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
-
-	return count;
 }
 
 int
@@ -4403,7 +4176,7 @@ mono_gc_is_gc_thread (void)
 static gboolean
 is_critical_method (MonoMethod *method)
 {
-	return mono_runtime_is_critical_method (method) || mono_gc_is_critical_method (method);
+	return mono_runtime_is_critical_method (method) || sgen_is_critical_method (method);
 }
 	
 void
@@ -4455,7 +4228,7 @@ mono_gc_base_init (void)
 
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
-	LOCK_INIT (interruption_mutex);
+	LOCK_INIT (sgen_interruption_mutex);
 	LOCK_INIT (pin_queue_mutex);
 
 	init_user_copy_or_mark_key ();
@@ -4861,36 +4634,16 @@ mono_gc_get_gc_name (void)
 
 static MonoMethod *write_barrier_method;
 
-static gboolean
-mono_gc_is_critical_method (MonoMethod *method)
+gboolean
+sgen_is_critical_method (MonoMethod *method)
 {
 	return (method == write_barrier_method || sgen_is_managed_allocator (method));
 }
 
-static gboolean
+gboolean
 sgen_has_critical_method (void)
 {
 	return write_barrier_method || sgen_has_managed_allocator ();
-}
-
-static gboolean
-is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
-{
-	MonoJitInfo *ji;
-
-	if (!mono_thread_internal_current ())
-		/* Happens during thread attach */
-		return FALSE;
-
-	if (!ip || !domain)
-		return FALSE;
-	if (!sgen_has_critical_method ())
-		return FALSE;
-	ji = mono_jit_info_table_find (domain, ip);
-	if (!ji)
-		return FALSE;
-
-	return mono_gc_is_critical_method (ji->method);
 }
 
 static void
@@ -5282,10 +5035,19 @@ mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack,
 void
 sgen_check_whole_heap_stw (void)
 {
-	stop_world (0);
+	sgen_stop_world (0);
 	sgen_clear_nursery_fragments ();
 	sgen_check_whole_heap ();
-	restart_world (0, NULL);
+	sgen_restart_world (0, NULL);
+}
+
+void
+sgen_gc_event_moves (void)
+{
+	if (moved_objects_idx) {
+		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+		moved_objects_idx = 0;
+	}
 }
 
 #endif /* HAVE_SGEN_GC */
