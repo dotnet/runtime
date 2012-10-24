@@ -266,6 +266,22 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		}
 		return bitmap;
 	}
+
+	case DESC_TYPE_COMPLEX: {
+		gsize *bitmap_data = sgen_get_complex_descriptor (d);
+		int bwords = (*bitmap_data) - 1;
+		int i;
+
+		bitmap = g_new0 (gsize, bwords);
+		*numbits = bwords * GC_BITS_PER_WORD;
+
+		for (i = 0; i < bwords; ++i) {
+			bitmap [i] = bitmap_data [i + 1];
+		}
+
+		return bitmap;
+	}
+
 	default:
 		g_assert_not_reached ();
 	}

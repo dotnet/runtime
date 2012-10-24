@@ -610,4 +610,22 @@ class Tests {
 		else
 			return 1;
 	}
+
+	struct LargeBitmap {
+		public object o1, o2, o3;
+		public int i;
+		public object o4, o5, o6, o7, o9, o10, o11, o12, o13, o14, o15, o16, o17, o18, o19, o20, o21, o22, o23, o24, o25, o26, o27, o28, o29, o30, o31, o32;
+	}
+
+	public static int test_12_large_bitmap () {
+		LargeBitmap lb = new LargeBitmap ();
+		lb.o1 = 1;
+		lb.o2 = 2;
+		lb.o3 = 3;
+		lb.o32 = 6;
+
+		GC.Collect (0);
+
+		return (int)lb.o1 + (int)lb.o2 + (int)lb.o3 + (int)lb.o32;
+	}
 }
