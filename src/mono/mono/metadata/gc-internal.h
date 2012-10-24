@@ -345,11 +345,8 @@ typedef struct _MonoReferenceQueue MonoReferenceQueue;
 typedef struct _RefQueueEntry RefQueueEntry;
 
 struct _RefQueueEntry {
-#ifdef HAVE_SGEN_GC
 	void *dis_link;
-#else
 	guint32 gchandle;
-#endif
 	void *user_data;
 	RefQueueEntry *next;
 };
