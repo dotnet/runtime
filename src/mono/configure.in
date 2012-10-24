@@ -2566,7 +2566,7 @@ SGEN_DEFINES=
 AC_ARG_WITH(sgen, [  --with-sgen=yes,no             Extra Generational GC, default=yes],[buildsgen=$with_sgen],[buildsgen=$build_sgen_default])
 if test x$buildsgen = xyes; then
    if $sgen_supported; then
-       SGEN_DEFINES="-DHAVE_SGEN_GC -DHAVE_MOVING_COLLECTOR -DHAVE_WRITE_BARRIERS"
+       SGEN_DEFINES="-DHAVE_SGEN_GC -DHAVE_MOVING_COLLECTOR"
        gc_msg="sgen and $gc_msg"
    else
        buildsgen=no
