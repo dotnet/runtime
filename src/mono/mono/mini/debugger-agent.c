@@ -167,7 +167,6 @@ struct _InvokeData
 typedef struct {
 	MonoThreadUnwindState context;
 
-	gpointer resume_event;
 	/* This is computed on demand when it is requested using the wire protocol */
 	/* It is freed up when the thread is resumed */
 	int frame_count;
@@ -3646,7 +3645,6 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	g_assert (!tls);
 	// FIXME: Free this somewhere
 	tls = g_new0 (DebuggerTlsData, 1);
-	tls->resume_event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	MONO_GC_REGISTER_ROOT_SINGLE (tls->thread);
 	tls->thread = thread;
 	mono_native_tls_set_value (debugger_tls_id, tls);
