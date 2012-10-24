@@ -887,7 +887,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 static gunichar2 *
-g_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, GError **err)
+eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, GError **err)
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -966,13 +966,13 @@ g_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *
 gunichar2 *
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return g_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, err);
 }
 
 gunichar2 *
 eg_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return g_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, err);
 }
 
 gunichar *
