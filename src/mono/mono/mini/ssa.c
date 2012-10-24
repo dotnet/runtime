@@ -1105,7 +1105,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 
 				/* Unlink target bblocks */
 				for (i = 0; i < table->table_size; ++i) {
-					if (i != idx) {
+					if (table->table [i] != table->table [idx]) {
 						remove_bb_from_phis (cfg, bb, table->table [i]);
 						mono_unlink_bblock (cfg, bb, table->table [i]);
 					}
