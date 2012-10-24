@@ -86,9 +86,6 @@ libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
 null_sources = \
 	console-null.c
 
-sgen_extra_sources = \
-	sgen-fin-weak-hash.c
-
 common_sources = \
 	$(platform_sources)	\
 	assembly.c		\
@@ -257,7 +254,8 @@ sgen_sources = \
 	sgen-split-nursery.c	\
 	sgen-memory-governor.c	\
 	sgen-memory-governor.h	\
-	sgen-stw.c
+	sgen-stw.c				\
+	sgen-fin-weak-hash.c
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(sgen_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
@@ -336,6 +334,6 @@ endif
 endif
 endif
 
-EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_extra_sources) runtime.h \
+EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
 		tpool-poll.c tpool-epoll.c tpool-kqueue.c
 

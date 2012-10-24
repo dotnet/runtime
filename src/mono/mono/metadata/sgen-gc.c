@@ -440,22 +440,11 @@ typedef struct {
 
 int current_collection_generation = -1;
 
-/*
- * The link pointer is hidden by negating each bit.  We use the lowest
- * bit of the link (before negation) to store whether it needs
- * resurrection tracking.
- */
-#define HIDE_POINTER(p,t)	((gpointer)(~((gulong)(p)|((t)?1:0))))
-#define REVEAL_POINTER(p)	((gpointer)((~(gulong)(p))&~3L))
-
 /* objects that are ready to be finalized */
 static FinalizeReadyEntry *fin_ready_list = NULL;
 static FinalizeReadyEntry *critical_fin_list = NULL;
 
 static EphemeronLinkNode *ephemeron_list;
-
-static int num_ready_finalizers = 0;
-static int no_finalize = 0;
 
 /* registered roots: the key to the hash is the root start address */
 /* 
@@ -560,19 +549,10 @@ static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *ad
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
 static void report_finalizer_roots (void);
 static void report_registered_roots (void);
-static void collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
-static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
-static void process_fin_stage_entries (void);
-static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue);
-static void null_links_for_domain (MonoDomain *domain, int generation);
-static void remove_finalizers_for_domain (MonoDomain *domain, int generation);
-static void process_dislink_stage_entries (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
-
-static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
@@ -986,7 +966,7 @@ clear_domain_process_object (char *obj, MonoDomain *domain)
 	if (remove && ((MonoObject*)obj)->synchronisation) {
 		void **dislink = mono_monitor_get_object_monitor_weak_link ((MonoObject*)obj);
 		if (dislink)
-			mono_gc_register_disappearing_link (NULL, dislink, FALSE, TRUE);
+			sgen_register_disappearing_link (NULL, dislink, FALSE, TRUE);
 	}
 
 	return remove;
@@ -1036,8 +1016,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 
 	LOCK_GC;
 
-	process_fin_stage_entries ();
-	process_dislink_stage_entries ();
+	sgen_process_fin_stage_entries ();
+	sgen_process_dislink_stage_entries ();
 
 	sgen_clear_nursery_fragments ();
 
@@ -1052,10 +1032,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 	null_ephemerons_for_domain (domain);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		null_links_for_domain (domain, i);
+		sgen_null_links_for_domain (domain, i);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		remove_finalizers_for_domain (domain, i);
+		sgen_remove_finalizers_for_domain (domain, i);
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
 			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
@@ -1769,6 +1749,12 @@ generation_name (int generation)
 	}
 }
 
+const char*
+sgen_generation_name (int generation)
+{
+	return generation_name (generation);
+}
+
 SgenObjectOperations *
 sgen_get_current_object_ops (void){
 	return &current_object_ops;
@@ -1826,9 +1812,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		sgen_scan_togglerefs (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), queue);
 
 	if (sgen_need_bridge_processing ()) {
-		collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
+		sgen_collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
-			collect_bridge_objects (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
+			sgen_collect_bridge_objects (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
 	}
 
 	/*
@@ -1841,9 +1827,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	We must clear weak links that don't track resurrection before processing object ready for
 	finalization so they can be cleared before that.
 	*/
-	null_link_in_range (copy_func, start_addr, end_addr, generation, TRUE, queue);
+	sgen_null_link_in_range (copy_func, start_addr, end_addr, generation, TRUE, queue);
 	if (generation == GENERATION_OLD)
-		null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, TRUE, queue);
+		sgen_null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, TRUE, queue);
 
 
 	/* walk the finalization queue and move also the objects that need to be
@@ -1851,9 +1837,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * on are also not reclaimed. As with the roots above, only objects in the nursery
 	 * are marked/copied.
 	 */
-	finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
+	sgen_finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
 	if (generation == GENERATION_OLD)
-		finalize_in_range (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
+		sgen_finalize_in_range (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
 	/* drain the new stack that might have been created */
 	DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
 	sgen_drain_gray_stack (queue, -1);
@@ -1887,9 +1873,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 	for (;;) {
-		null_link_in_range (copy_func, start_addr, end_addr, generation, FALSE, queue);
+		sgen_null_link_in_range (copy_func, start_addr, end_addr, generation, FALSE, queue);
 		if (generation == GENERATION_OLD)
-			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, FALSE, queue);
+			sgen_null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, FALSE, queue);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
 		sgen_drain_gray_stack (queue, -1);
@@ -2359,8 +2345,8 @@ collect_nursery (void)
 	if (remset.prepare_for_minor_collection)
 		remset.prepare_for_minor_collection ();
 
-	process_fin_stage_entries ();
-	process_dislink_stage_entries ();
+	sgen_process_fin_stage_entries ();
+	sgen_process_dislink_stage_entries ();
 
 	/* pin from pinned handles */
 	sgen_init_pinning ();
@@ -2606,8 +2592,8 @@ major_do_collection (const char *reason)
 	/* Remsets are not useful for a major collection */
 	remset.prepare_for_major_collection ();
 
-	process_fin_stage_entries ();
-	process_dislink_stage_entries ();
+	sgen_process_fin_stage_entries ();
+	sgen_process_dislink_stage_entries ();
 
 	TV_GETTIME (atv);
 	sgen_init_pinning ();
@@ -3016,8 +3002,9 @@ has_critical_finalizer (MonoObject *obj)
 	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
 
-static void
-queue_finalization_entry (MonoObject *obj) {
+void
+sgen_queue_finalization_entry (MonoObject *obj)
+{
 	FinalizeReadyEntry *entry = sgen_alloc_internal (INTERNAL_MEM_FINALIZE_READY_ENTRY);
 	entry->object = obj;
 	if (has_critical_finalizer (obj)) {
@@ -3038,8 +3025,6 @@ object_is_reachable (char *object, char *start, char *end)
 
 	return sgen_is_object_alive (object);
 }
-
-#include "sgen-fin-weak-hash.c"
 
 gboolean
 sgen_object_is_live (void *obj)
@@ -4096,13 +4081,13 @@ mono_gc_enable_events (void)
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
-	mono_gc_register_disappearing_link (obj, link_addr, track, FALSE);
+	sgen_register_disappearing_link (obj, link_addr, track, FALSE);
 }
 
 void
 mono_gc_weak_link_remove (void **link_addr)
 {
-	mono_gc_register_disappearing_link (NULL, link_addr, FALSE, FALSE);
+	sgen_register_disappearing_link (NULL, link_addr, FALSE, FALSE);
 }
 
 MonoObject*

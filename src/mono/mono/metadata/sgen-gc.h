@@ -253,10 +253,20 @@ extern unsigned int sgen_global_stop_count;
 
 extern gboolean bridge_processing_in_progress;
 
+extern int num_ready_finalizers;
+
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 
 #define SGEN_ALIGN_UP(s)		(((s)+(SGEN_ALLOC_ALIGN-1)) & ~(SGEN_ALLOC_ALIGN-1))
+
+/*
+ * The link pointer is hidden by negating each bit.  We use the lowest
+ * bit of the link (before negation) to store whether it needs
+ * resurrection tracking.
+ */
+#define HIDE_POINTER(p,t)	((gpointer)(~((gulong)(p)|((t)?1:0))))
+#define REVEAL_POINTER(p)	((gpointer)((~(gulong)(p))&~3L))
 
 #ifdef SGEN_ALIGN_NURSERY
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~((1 << (bits)) - 1)) == (mword)(start))
@@ -816,6 +826,18 @@ gboolean sgen_gc_is_object_ready_for_finalization (void *object) MONO_INTERNAL;
 void sgen_gc_lock (void) MONO_INTERNAL;
 void sgen_gc_unlock (void) MONO_INTERNAL;
 void sgen_gc_event_moves (void) MONO_INTERNAL;
+
+void sgen_queue_finalization_entry (MonoObject *obj) MONO_INTERNAL;
+const char* sgen_generation_name (int generation) MONO_INTERNAL;
+
+void sgen_collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_null_links_for_domain (MonoDomain *domain, int generation) MONO_INTERNAL;
+void sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation) MONO_INTERNAL;
+void sgen_process_fin_stage_entries (void) MONO_INTERNAL;
+void sgen_process_dislink_stage_entries (void) MONO_INTERNAL;
+void sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc) MONO_INTERNAL;
 
 enum {
 	SPACE_NURSERY,
