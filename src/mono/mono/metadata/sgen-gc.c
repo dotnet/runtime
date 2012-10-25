@@ -422,6 +422,7 @@ typedef struct {
 } Ephemeron;
 
 int current_collection_generation = -1;
+volatile gboolean concurrent_collection_in_progress = FALSE;
 
 /* objects that are ready to be finalized */
 static FinalizeReadyEntry *fin_ready_list = NULL;
@@ -534,7 +535,7 @@ static void report_finalizer_roots (void);
 static void report_registered_roots (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
-static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
+static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, gboolean only_enqueue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
@@ -1132,7 +1133,7 @@ sgen_drain_gray_stack (GrayQueue *queue, int max_objs)
  * pinned objects.  Return the number of pinned objects.
  */
 static int
-pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue)
+pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, gboolean only_enqueue)
 {
 	void *last = NULL;
 	int count = 0;
@@ -1202,7 +1203,8 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 							MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
 							MONO_GC_OBJ_PINNED ((mword)search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
 						}
-						pin_object (search_start);
+						if (!only_enqueue)
+							pin_object (search_start);
 						GRAY_OBJECT_ENQUEUE (queue, search_start);
 						if (G_UNLIKELY (do_pin_stats))
 							sgen_pin_stats_register_object (search_start, last_obj_size);
@@ -1234,14 +1236,14 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 }
 
 void
-sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue)
+sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue, gboolean only_enqueue)
 {
 	int num_entries = section->pin_queue_num_entries;
 	if (num_entries) {
 		void **start = section->pin_queue_start;
 		int reduced_to;
 		reduced_to = pin_objects_from_addresses (section, start, start + num_entries,
-				section->data, section->next_data, queue);
+				section->data, section->next_data, queue, only_enqueue);
 		section->pin_queue_num_entries = reduced_to;
 		if (!reduced_to)
 			section->pin_queue_start = NULL;
@@ -1252,6 +1254,8 @@ sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue)
 void
 sgen_pin_object (void *object, GrayQueue *queue)
 {
+	g_assert (!concurrent_collection_in_progress);
+
 	if (sgen_collection_is_parallel ()) {
 		LOCK_PIN_QUEUE;
 		/*object arrives pinned*/
@@ -2278,6 +2282,39 @@ verify_nursery (void)
 	}
 }
 
+/*
+ * Checks that no objects in the nursery are fowarded or pinned.  This
+ * is a precondition to restarting the mutator while doing a
+ * concurrent collection.  Note that we don't clear fragments because
+ * we depend on that having happened earlier.
+ */
+static void
+check_nursery_is_clean (void)
+{
+	char *start, *end, *cur;
+
+	start = cur = sgen_get_nursery_start ();
+	end = sgen_get_nursery_end ();
+
+	while (cur < end) {
+		size_t ss, size;
+
+		if (!*(void**)cur) {
+			cur += sizeof (void*);
+			continue;
+		}
+
+		g_assert (!object_is_forwarded (cur));
+		g_assert (!object_is_pinned (cur));
+
+		ss = safe_object_get_size ((MonoObject*)cur);
+		size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
+		verify_scan_starts (cur, cur + size);
+
+		cur += size;
+	}
+}
+
 static void
 init_gray_queue (void)
 {
@@ -2379,7 +2416,7 @@ collect_nursery (void)
 	/* identify pinned objects */
 	sgen_optimize_pin_queue (0);
 	sgen_pinning_setup_section (nursery_section);
-	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);	
+	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, FALSE);
 	sgen_pinning_trim_queue_to_section (nursery_section);
 
 	TV_GETTIME (atv);
@@ -2567,6 +2604,9 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	mono_perfcounters->gc_collections1++;
 #endif
 
+	if (major_collector.is_concurrent)
+		concurrent_collection_in_progress = TRUE;
+
 	current_object_ops = major_collector.major_ops;
 
 	reset_pinned_from_failed_allocation ();
@@ -2579,11 +2619,17 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	binary_protocol_collection (stat_major_gcs, GENERATION_OLD);
 	check_scan_starts ();
 
-	init_gray_queue ();
+	if (major_collector.is_concurrent) {
+		/*This cleans up unused fragments */
+		sgen_nursery_allocator_prepare_for_pinning ();
 
-	/* The concurrent collector doesn't touch the nursery. */
-	if (!sgen_collection_is_concurrent ())
+		check_nursery_is_clean ();
+	} else {
+		/* The concurrent collector doesn't touch the nursery. */
 		sgen_nursery_alloc_prepare_for_major ();
+	}
+
+	init_gray_queue ();
 
 	degraded_mode = 0;
 	SGEN_LOG (1, "Start major collection %d", stat_major_gcs);
@@ -2670,7 +2716,7 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	if (profile_roots)
 		notify_gc_roots (&root_report);
 	/* second pass for the sections */
-	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, concurrent_collection_in_progress);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	*old_next_pin_slot = sgen_get_pinned_count ();
 
@@ -2742,6 +2788,8 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 		sgen_finish_pinning ();
 
 		sgen_pin_stats_reset ();
+
+		check_nursery_is_clean ();
 	}
 }
 
@@ -2867,6 +2915,9 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	current_collection_generation = -1;
 
 	major_collector.finish_major_collection ();
+
+	if (major_collector.is_concurrent)
+		concurrent_collection_in_progress = FALSE;
 
 	check_scan_starts ();
 

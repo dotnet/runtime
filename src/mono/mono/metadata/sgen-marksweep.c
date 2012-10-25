@@ -1283,7 +1283,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
 
 	if (sgen_ptr_in_nursery (obj)) {
-		g_assert (SGEN_OBJECT_IS_PINNED (obj));
+		g_assert (!SGEN_OBJECT_IS_PINNED (obj));
 	} else {
 #ifdef FIXED_HEAP
 		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))

@@ -528,7 +528,7 @@ void sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc) MONO_INTERNAL
 
 void** sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
-void sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue, gboolean only_enqueue) MONO_INTERNAL;
 
 void sgen_pin_stats_register_object (char *obj, size_t size);
 void sgen_pin_stats_register_global_remset (char *obj);
