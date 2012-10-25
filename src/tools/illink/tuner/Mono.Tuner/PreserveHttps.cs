@@ -17,8 +17,10 @@ namespace Mono.Tuner {
 			"System.Net.Security.RemoteCertificateValidationCallback",
 			"System.Web.Services.Protocols.WebClientProtocol",
 			"System.Security.Cryptography.X509Certificates.X509Certificate",
+			"System.ServiceModel.ClientBase`1",
 			"System.Web.Services.WebServiceBindingAttribute",
 			"System.Web.Services.Protocols.SoapHttpClientProtocol",
+			"System.Xml.XmlDocument"
 		};
 
 		bool need_https;
@@ -70,20 +72,10 @@ namespace Mono.Tuner {
 
 		const string descriptor = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
 <linker>
-	<assembly fullname=""mscorlib"">
-		<namespace fullname=""System.Security.Cryptography"" />
-	</assembly>
-	<assembly fullname=""System"">
-		<namespace fullname=""System.Security.Cryptography"" />
-	</assembly>
 	<assembly fullname=""Mono.Security"">
 		<type fullname=""Mono.Security.Protocol.Tls.HttpsClientStream"" />
-		<type fullname=""Mono.Security.Protocol.Tls.SslClientStream"">
-			<method name=""get_SelectedClientCertificate"" />
-		</type>
-		<type fullname=""Mono.Security.Protocol.Tls.SslStreamBase"">
-			<method name=""get_ServerCertificate"" />
-		</type>
+		<type fullname=""Mono.Security.Protocol.Tls.SslClientStream"" />
+		<type fullname=""Mono.Security.Protocol.Tls.SslStreamBase"" />
 	</assembly>
 </linker>
 ";

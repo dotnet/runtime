@@ -12,7 +12,8 @@ namespace Mono.Tuner {
 
 	public abstract class ApplyPreserveAttributeBase : BaseSubStep {
 
-		protected abstract string PreserveAttribute { get; }
+		// set 'removeAttribute' to true if you want the preserved attribute to be removed from the final assembly
+		protected abstract bool IsPreservedAttribute (ICustomAttributeProvider provider, CustomAttribute attribute, out bool removeAttribute);
 
 		public override SubStepTargets Targets {
 			get {
@@ -100,8 +101,11 @@ namespace Mono.Tuner {
 		void PreserveConditional (IMetadataTokenProvider provider)
 		{
 			var method = provider as MethodDefinition;
-			if (method == null)
+			if (method == null) {
+				// workaround to support (uncommon but valid) conditional fields form [Preserve]
+				PreserveUnconditional (provider);
 				return;
+			}
 
 			Annotations.AddPreservedMethod (method.DeclaringType, method);
 		}
@@ -152,10 +156,12 @@ namespace Mono.Tuner {
 			for (int i = 0; i < attributes.Count; i++) {
 				var attribute = attributes [i];
 
-				if (attribute.Constructor.DeclaringType.FullName != PreserveAttribute)
+				bool remote_attribute;
+				if (!IsPreservedAttribute (provider, attribute, out remote_attribute))
 					continue;
 
-				attributes.RemoveAt (i);
+				if (remote_attribute)
+					attributes.RemoveAt (i);
 				return attribute;
 			}
 

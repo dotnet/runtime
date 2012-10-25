@@ -63,7 +63,7 @@ namespace Mono.Tuner {
 			return false;
 		}
 
-		protected override void MarkType (TypeReference reference)
+		protected override TypeDefinition MarkType (TypeReference reference)
 		{
 			if (reference == null)
 				throw new ArgumentNullException ("reference");
@@ -71,7 +71,7 @@ namespace Mono.Tuner {
 			reference = GetOriginalType (reference);
 
 			if (reference is GenericParameter)
-				return;
+				return null;
 
 			TypeDefinition type = reference.Resolve ();
 
@@ -79,9 +79,10 @@ namespace Mono.Tuner {
 				throw new ResolutionException (reference);
 
 			if (CheckProcessed (type))
-				return;
+				return type;
 
 			Annotations.Mark (type);
+			return type;
 		}
 	}
 }
