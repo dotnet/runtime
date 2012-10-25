@@ -474,6 +474,7 @@ enum {
 	INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_JOB_QUEUE_ENTRY,
 	INTERNAL_MEM_TOGGLEREF_DATA,
+	INTERNAL_MEM_CARDTABLE_MOD_UNION,
 	INTERNAL_MEM_MAX
 };
 
@@ -690,6 +691,7 @@ struct _SgenMajorCollector {
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (SgenGrayQueue *queue);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
+	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	void (*check_scan_starts) (void);
@@ -892,6 +894,10 @@ typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size, lowest bit used for pin/mark */
+	guint8 *cardtable_mod_union; /* only used by the concurrent collector */
+#ifdef SIZEOF_VOID_P < 8
+	mword dummy;		/* to align object to sizeof (double) */
+#endif
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -907,6 +913,7 @@ gboolean sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 void sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_los_update_cardtable_mod_union (void) MONO_INTERNAL;
 void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 gboolean sgen_los_is_valid_object (char *object) MONO_INTERNAL;
 gboolean mono_sgen_los_describe_pointer (char *ptr) MONO_INTERNAL;

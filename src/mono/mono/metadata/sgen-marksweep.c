@@ -93,6 +93,9 @@ struct _MSBlockInfo {
 	void **free_list;
 	MSBlockInfo *next_free;
 	void **pin_queue_start;
+#ifdef SGEN_CONCURRENT_MARK
+	guint8 *cardtable_mod_union;
+#endif
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
@@ -577,6 +580,9 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 
 	header = (MSBlockHeader*) info->block;
 	header->info = info;
+#endif
+#ifdef SGEN_CONCURRENT_MARK
+	info->cardtable_mod_union = NULL;
 #endif
 
 	update_heap_boundaries_for_block (info);
@@ -1604,6 +1610,13 @@ ms_sweep (void)
 
 		count = MS_BLOCK_FREE / block->obj_size;
 
+#ifdef SGEN_CONCURRENT_MARK
+		if (block->cardtable_mod_union) {
+			sgen_free_internal_dynamic (block->cardtable_mod_union, CARDS_PER_BLOCK, INTERNAL_MEM_CARDTABLE_MOD_UNION);
+			block->cardtable_mod_union = NULL;
+		}
+#endif
+
 		/* Count marked objects in the block */
 		for (i = 0; i < MS_NUM_MARK_WORDS; ++i) {
 			nused += bitcount (block->mark_words [i]);
@@ -2136,6 +2149,34 @@ major_scan_card_table (SgenGrayQueue *queue)
 		}
 	} END_FOREACH_BLOCK;
 }
+
+#ifdef SGEN_CONCURRENT_MARK
+static void
+update_cardtable_mod_union (void)
+{
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		guint8 *cards;
+		gboolean init = FALSE;
+
+		if (!block->cardtable_mod_union) {
+			block->cardtable_mod_union = sgen_alloc_internal_dynamic (CARDS_PER_BLOCK,
+					INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
+			init = TRUE;
+		}
+
+		cards = sgen_card_table_get_card_scan_address ((mword)block->block);
+		if (init) {
+			memcpy (block->cardtable_mod_union, cards, CARDS_PER_BLOCK);
+		} else {
+			int i;
+			for (i = 0; i < CARDS_PER_BLOCK; ++i)
+				block->cardtable_mod_union [i] |= cards [i];
+		}
+	} END_FOREACH_BLOCK;
+}
+#endif
 #endif
 
 static gboolean
@@ -2319,6 +2360,9 @@ sgen_marksweep_init
 #ifdef SGEN_HAVE_CARDTABLE
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
+#ifdef SGEN_CONCURRENT_MARK
+	collector->update_cardtable_mod_union = update_cardtable_mod_union;
+#endif
 #endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;

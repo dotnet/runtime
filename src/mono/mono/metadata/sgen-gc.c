@@ -2812,6 +2812,11 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	}
 	sgen_workers_join ();
 
+	if (major_collector.is_concurrent) {
+		major_collector.update_cardtable_mod_union ();
+		sgen_los_update_cardtable_mod_union ();
+	}
+
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 	main_gc_thread = NULL;
 #endif
