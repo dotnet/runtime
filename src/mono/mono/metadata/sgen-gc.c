@@ -2738,23 +2738,14 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
 }
 
-static gboolean
-major_do_collection (const char *reason)
+static void
+major_finish_collection (const char *reason, int old_next_pin_slot)
 {
 	LOSObject *bigobj, *prevbo;
-	TV_DECLARE (all_atv);
-	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
-	int old_next_pin_slot;
-	AllJobData job_data;
-
-	/* world must be stopped already */
-	TV_GETTIME (all_atv);
-
-	major_start_collection (&old_next_pin_slot, &job_data);
 
 	TV_GETTIME (btv);
 
@@ -2846,9 +2837,6 @@ major_do_collection (const char *reason)
 	TV_GETTIME (atv);
 	time_major_fragment_creation += TV_ELAPSED (btv, atv);
 
-	TV_GETTIME (all_btv);
-	gc_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
-
 	if (heap_dump_file)
 		dump_heap ("major", stat_major_gcs - 1, reason);
 
@@ -2875,6 +2863,24 @@ major_do_collection (const char *reason)
 	//consistency_check ();
 
 	MONO_GC_END (GENERATION_OLD);
+}
+
+static gboolean
+major_do_collection (const char *reason)
+{
+	TV_DECLARE (all_atv);
+	TV_DECLARE (all_btv);
+	AllJobData job_data;
+	int old_next_pin_slot;
+
+	/* world must be stopped already */
+	TV_GETTIME (all_atv);
+
+	major_start_collection (&old_next_pin_slot, &job_data);
+	major_finish_collection (reason, old_next_pin_slot);
+
+	TV_GETTIME (all_btv);
+	gc_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	return bytes_pinned_from_failed_allocation > 0;
 }
