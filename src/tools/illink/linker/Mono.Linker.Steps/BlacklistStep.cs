@@ -48,7 +48,7 @@ namespace Mono.Linker.Steps {
 				if (!IsReferenced (GetAssemblyName (name)))
 					continue;
 
-				Context.Pipeline.AddStepBefore (typeof (MarkStep), GetResolveStep (name));
+				Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetResolveStep (name));
 			}
 		}
 

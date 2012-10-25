@@ -42,7 +42,7 @@ namespace Mono.Linker.Steps {
 				MapType (type);
 		}
 
-		void MapType (TypeDefinition type)
+		protected virtual void MapType (TypeDefinition type)
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
