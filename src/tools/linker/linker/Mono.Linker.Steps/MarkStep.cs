@@ -332,15 +332,15 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (provider);
 		}
 
-		protected virtual void MarkType (TypeReference reference)
+		protected virtual TypeDefinition MarkType (TypeReference reference)
 		{
 			if (reference == null)
-				return;
+				return null;
 
 			reference = GetOriginalType (reference);
 
 			if (reference is GenericParameter)
-				return;
+				return null;
 
 //			if (IgnoreScope (reference.Scope))
 //				return;
@@ -351,7 +351,7 @@ namespace Mono.Linker.Steps {
 				throw new ResolutionException (reference);
 
 			if (CheckProcessed (type))
-				return;
+				return null;
 
 			MarkScope (type.Scope);
 			MarkType (type.BaseType);
@@ -371,7 +371,8 @@ namespace Mono.Linker.Steps {
 
 			MarkGenericParameterProvider (type);
 
-			if (type.IsValueType)
+			// keep fields for value-types and for classes with LayoutKind.Sequential or Explicit
+			if (type.IsValueType || !type.IsAutoLayout)
 				MarkFields (type, type.IsEnum);
 
 			if (type.HasInterfaces) {
@@ -387,6 +388,8 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (type);
 
 			ApplyPreserveInfo (type);
+
+			return type;
 		}
 
 		void MarkTypeSpecialCustomAttributes (TypeDefinition type)
@@ -708,7 +711,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected void MarkMethods (TypeDefinition type)
+		protected virtual void MarkMethods (TypeDefinition type)
 		{
 			if (type.HasMethods)
 				MarkMethodCollection (type.Methods);
@@ -720,7 +723,7 @@ namespace Mono.Linker.Steps {
 				MarkMethod (method);
 		}
 
-		void MarkMethod (MethodReference reference)
+		protected void MarkMethod (MethodReference reference)
 		{
 			reference = GetOriginalMethod (reference);
 
@@ -751,7 +754,7 @@ namespace Mono.Linker.Steps {
 			return assembly;
 		}
 
-		MethodReference GetOriginalMethod (MethodReference method)
+		protected MethodReference GetOriginalMethod (MethodReference method)
 		{
 			while (method is MethodSpecification) {
 				GenericInstanceMethod gim = method as GenericInstanceMethod;
@@ -896,7 +899,7 @@ namespace Mono.Linker.Steps {
 			MarkMethod (method);
 		}
 
-		void MarkMethodBody (MethodBody body)
+		protected virtual void MarkMethodBody (MethodBody body)
 		{
 			foreach (VariableDefinition var in body.Variables)
 				MarkType (var.VariableType);
