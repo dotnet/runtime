@@ -3912,6 +3912,8 @@ find_object_for_ptr (char *ptr)
 void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
+	gpointer obj;
+
 	HEAVY_STAT (++stat_wbarrier_generic_store);
 
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
@@ -3930,10 +3932,20 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	}
 #endif
 
-	if (*(gpointer*)ptr)
-		binary_protocol_wbarrier (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
+	obj = *(gpointer*)ptr;
+	if (obj)
+		binary_protocol_wbarrier (ptr, obj, (gpointer)LOAD_VTABLE (obj));
 
-	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr) || !ptr_in_nursery (*(gpointer*)ptr)) {
+	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr)) {
+		SGEN_LOG (8, "Skipping remset at %p", ptr);
+		return;
+	}
+
+	/*
+	 * We need to record old->old pointer locations for the
+	 * concurrent collector.
+	 */
+	if (!ptr_in_nursery (obj) && !concurrent_collection_in_progress) {
 		SGEN_LOG (8, "Skipping remset at %p", ptr);
 		return;
 	}
@@ -4801,13 +4813,15 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 	mono_mb_emit_icon (mb, (mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS);
 	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
 
-	// if (!ptr_in_nursery (*ptr)) return;
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
-	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_icon (mb, (mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS);
-	nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
+	if (!major_collector.is_concurrent) {
+		// if (!ptr_in_nursery (*ptr)) return;
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+		mono_mb_emit_byte (mb, CEE_SHR_UN);
+		mono_mb_emit_icon (mb, (mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS);
+		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
+	}
 #else
 	int label_continue1, label_continue2;
 	int dereferenced_var;
@@ -4835,15 +4849,17 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, dereferenced_var);
 
-	// if (*ptr < sgen_get_nursery_start ()) return;
-	mono_mb_emit_ldloc (mb, dereferenced_var);
-	mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_start ());
-	nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BLT);
+	if (!major_collector.is_concurrent) {
+		// if (*ptr < sgen_get_nursery_start ()) return;
+		mono_mb_emit_ldloc (mb, dereferenced_var);
+		mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_start ());
+		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BLT);
 
-	// if (*ptr >= sgen_get_nursery_end ()) return;
-	mono_mb_emit_ldloc (mb, dereferenced_var);
-	mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_end ());
-	nursery_check_return_labels [2] = mono_mb_emit_branch (mb, CEE_BGE);
+		// if (*ptr >= sgen_get_nursery_end ()) return;
+		mono_mb_emit_ldloc (mb, dereferenced_var);
+		mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_end ());
+		nursery_check_return_labels [2] = mono_mb_emit_branch (mb, CEE_BGE);
+	}
 #endif	
 }
 

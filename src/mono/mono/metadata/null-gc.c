@@ -335,6 +335,13 @@ mono_gc_get_card_table (int *shift_bits, gpointer *card_mask)
 	return NULL;
 }
 
+gboolean
+mono_gc_card_table_nursery_check (void)
+{
+	g_assert_not_reached ();
+	return TRUE;
+}
+
 void*
 mono_gc_get_nursery (int *shift_bits, size_t *size)
 {
