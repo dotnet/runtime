@@ -4376,6 +4376,10 @@ mono_gc_base_init (void)
 			if (g_str_has_prefix (opt, "wbarrier=")) {
 				opt = strchr (opt, '=') + 1;
 				if (strcmp (opt, "remset") == 0) {
+					if (major_collector.is_concurrent) {
+						fprintf (stderr, "The concurrent collector does not support the SSB write barrier.\n");
+						exit (1);
+					}
 					use_cardtable = FALSE;
 				} else if (strcmp (opt, "cardtable") == 0) {
 					if (!use_cardtable) {
