@@ -2736,6 +2736,13 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
+
+	if (major_collector.is_concurrent) {
+		/* prepare the pin queue for the next collection */
+		sgen_finish_pinning ();
+
+		sgen_pin_stats_reset ();
+	}
 }
 
 static void
@@ -2778,6 +2785,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	sgen_workers_reset_data ();
 
 	if (objects_pinned) {
+		g_assert (!major_collector.is_concurrent);
+
 		/*This is slow, but we just OOM'd*/
 		sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
 		sgen_optimize_pin_queue (0);
@@ -2824,15 +2833,22 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	TV_GETTIME (btv);
 	time_major_sweep += TV_ELAPSED (atv, btv);
 
-	/* walk the pin_queue, build up the fragment list of free memory, unmark
-	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
-	 * next allocations.
-	 */
-	if (!sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries))
-		degraded_mode = 1;
+	if (!major_collector.is_concurrent) {
+		/* walk the pin_queue, build up the fragment list of free memory, unmark
+		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
+		 * next allocations.
+		 */
+		if (!sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries))
+			degraded_mode = 1;
 
-	/* Clear TLABs for all threads */
-	sgen_clear_tlabs ();
+		/* prepare the pin queue for the next collection */
+		sgen_finish_pinning ();
+
+		/* Clear TLABs for all threads */
+		sgen_clear_tlabs ();
+
+		sgen_pin_stats_reset ();
+	}
 
 	TV_GETTIME (atv);
 	time_major_fragment_creation += TV_ELAPSED (btv, atv);
@@ -2840,14 +2856,10 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	if (heap_dump_file)
 		dump_heap ("major", stat_major_gcs - 1, reason);
 
-	/* prepare the pin queue for the next collection */
-	sgen_finish_pinning ();
-
 	if (fin_ready_list || critical_fin_list) {
 		SGEN_LOG (4, "Finalizer-thread wakeup: ready %d", num_ready_finalizers);
 		mono_gc_finalize_notify ();
 	}
-	sgen_pin_stats_reset ();
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
