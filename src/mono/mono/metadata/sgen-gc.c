@@ -2584,7 +2584,7 @@ typedef struct {
 } AllJobData;
 
 static void
-major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data)
+major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gboolean finish_up_concurrent_mark)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2634,8 +2634,10 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data)
 		check_for_xdomain_refs ();
 	}
 
-	/* Remsets are not useful for a major collection */
-	remset.prepare_for_major_collection ();
+	if (!finish_up_concurrent_mark) {
+		/* Remsets are not useful for a major collection */
+		remset.prepare_for_major_collection ();
+	}
 
 	sgen_process_fin_stage_entries ();
 	sgen_process_dislink_stage_entries ();
@@ -2672,6 +2674,10 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data)
 				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
 				MONO_GC_OBJ_PINNED ((mword)bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
+			if (sgen_los_object_is_pinned (bigobj->data)) {
+				g_assert (finish_up_concurrent_mark);
+				continue;
+			}
 			sgen_los_pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
@@ -2688,7 +2694,8 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data)
 	/* second pass for the sections */
 	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, concurrent_collection_in_progress);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	*old_next_pin_slot = sgen_get_pinned_count ();
+	if (old_next_pin_slot)
+		*old_next_pin_slot = sgen_get_pinned_count ();
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
@@ -2796,7 +2803,7 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, job_data);
+	major_copy_or_mark_from_roots (old_next_pin_slot, job_data, FALSE);
 }
 
 static void
@@ -2832,8 +2839,15 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	wait_for_workers_to_finish ();
 
 	if (major_collector.is_concurrent) {
+		AllJobData job_data;
+
 		major_collector.update_cardtable_mod_union ();
 		sgen_los_update_cardtable_mod_union ();
+
+		major_copy_or_mark_from_roots (NULL, &job_data, TRUE);
+		wait_for_workers_to_finish ();
+
+		check_nursery_is_clean ();
 	}
 
 	/* all the objects in the heap */
