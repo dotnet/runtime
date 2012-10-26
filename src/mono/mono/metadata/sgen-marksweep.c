@@ -2057,7 +2057,7 @@ skip_card (guint8 *card_data, guint8 *card_data_end)
 #define MS_OBJ_ALLOCED_FAST(o,b)		(*(void**)(o) && (*(char**)(o) < (b) || *(char**)(o) >= (b) + MS_BLOCK_SIZE))
 
 static void
-major_scan_card_table (SgenGrayQueue *queue)
+major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
 	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
@@ -2079,14 +2079,23 @@ major_scan_card_table (SgenGrayQueue *queue)
 #endif
 			char *obj, *end, *base;
 
+			if (mod_union) {
+#ifdef SGEN_CONCURRENT_MARK
+				cards = block->cardtable_mod_union;
+				g_assert (cards);
+#else
+				g_assert_not_reached ();
+#endif
+			} else {
 			/*We can avoid the extra copy since the remark cardtable was cleaned before */
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-			cards = sgen_card_table_get_card_scan_address ((mword)block_start);
+				cards = sgen_card_table_get_card_scan_address ((mword)block_start);
 #else
-			cards = cards_data;
-			if (!sgen_card_table_get_card_data (cards_data, (mword)block_start, CARDS_PER_BLOCK))
-				continue;
+				cards = cards_data;
+				if (!sgen_card_table_get_card_data (cards_data, (mword)block_start, CARDS_PER_BLOCK))
+					continue;
 #endif
+			}
 
 			if (!block->swept)
 				sweep_block (block);
@@ -2113,7 +2122,16 @@ major_scan_card_table (SgenGrayQueue *queue)
 			 * Cards aliasing happens in powers of two, so as long as major blocks are aligned to their
 			 * sizes, they won't overflow the cardtable overlap modulus.
 			 */
-			card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
+			if (mod_union) {
+#ifdef SGEN_CONCURRENT_MARK
+				card_data = card_base = block->cardtable_mod_union;
+				g_assert (card_data);
+#else
+				g_assert_not_reached ();
+#endif
+			} else {
+				card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
+			}
 			card_data_end = card_data + CARDS_PER_BLOCK;
 
 			for (card_data = initial_skip_card (card_data); card_data < card_data_end; ++card_data) { //card_data = skip_card (card_data + 1, card_data_end)) {
@@ -2391,6 +2409,9 @@ sgen_marksweep_init
 
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
 	collector->major_ops.scan_object = major_scan_object;
+#ifdef SGEN_CONCURRENT_MARK
+	collector->major_ops.scan_vtype = major_scan_vtype;
+#endif
 
 #ifdef SGEN_HAVE_CARDTABLE
 	/*cardtable requires major pages to be 8 cards aligned*/

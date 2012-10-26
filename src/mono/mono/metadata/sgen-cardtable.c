@@ -362,7 +362,7 @@ sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, Sge
 	SGEN_TV_GETTIME (btv);
 	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;
-	sgen_los_scan_card_table (queue);
+	sgen_los_scan_card_table (FALSE, queue);
 	SGEN_TV_GETTIME (atv);
 	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;

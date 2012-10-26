@@ -529,12 +529,18 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 
 #ifdef SGEN_HAVE_CARDTABLE
 void
-sgen_los_scan_card_table (SgenGrayQueue *queue)
+sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 {
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
-		sgen_cardtable_scan_object (obj->data, obj->size, NULL, queue);
+		guint8 *cards = NULL;
+		if (mod_union) {
+			cards = obj->cardtable_mod_union;
+			g_assert (cards);
+		}
+
+		sgen_cardtable_scan_object (obj->data, obj->size, cards, queue);
 	}
 }
 

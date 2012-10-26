@@ -48,3 +48,19 @@ major_scan_object (char *start, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_scan_object_called_major);
 }
+
+#ifdef SGEN_CONCURRENT_MARK
+#ifdef SGEN_PARALLEL_MARK
+#error concurrent and parallel mark not supported yet
+#else
+static void
+major_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
+{
+	/* The descriptors include info about the MonoObject header as well */
+	start -= sizeof (MonoObject);
+
+#define SCAN_OBJECT_NOVTABLE
+#include "sgen-scan-object.h"
+}
+#endif
+#endif

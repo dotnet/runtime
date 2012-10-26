@@ -689,7 +689,7 @@ struct _SgenMajorCollector {
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
-	void (*scan_card_table) (SgenGrayQueue *queue);
+	void (*scan_card_table) (gboolean mod_union, SgenGrayQueue *queue);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
@@ -912,7 +912,7 @@ void sgen_los_sweep (void) MONO_INTERNAL;
 gboolean sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
-void sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_los_update_cardtable_mod_union (void) MONO_INTERNAL;
 void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 gboolean sgen_los_is_valid_object (char *object) MONO_INTERNAL;

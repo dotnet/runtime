@@ -2231,6 +2231,20 @@ job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 }
 
 static void
+job_scan_major_mod_union_cardtable (WorkerData *worker_data, void *job_data_untyped)
+{
+	g_assert (concurrent_collection_in_progress);
+	major_collector.scan_card_table (TRUE, sgen_workers_get_job_gray_queue (worker_data));
+}
+
+static void
+job_scan_los_mod_union_cardtable (WorkerData *worker_data, void *job_data_untyped)
+{
+	g_assert (concurrent_collection_in_progress);
+	sgen_los_scan_card_table (TRUE, sgen_workers_get_job_gray_queue (worker_data));
+}
+
+static void
 verify_scan_starts (char *start, char *end)
 {
 	int i;
@@ -2753,6 +2767,12 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gbo
 	job_data->sfejd_critical_fin.list = critical_fin_list;
 	sgen_workers_enqueue_job (job_scan_finalizer_entries, &job_data->sfejd_critical_fin);
 
+	if (finish_up_concurrent_mark) {
+		/* Mod union card table */
+		sgen_workers_enqueue_job (job_scan_major_mod_union_cardtable, NULL);
+		sgen_workers_enqueue_job (job_scan_los_mod_union_cardtable, NULL);
+	}
+
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED (btv, atv);
 	SGEN_LOG (2, "Root scan: %d usecs", TV_ELAPSED (btv, atv));
@@ -2837,6 +2857,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	TV_GETTIME (btv);
 
 	wait_for_workers_to_finish ();
+
+	current_object_ops = major_collector.major_ops;
 
 	if (major_collector.is_concurrent) {
 		AllJobData job_data;
@@ -5155,7 +5177,7 @@ sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback ca
 void
 sgen_major_collector_scan_card_table (SgenGrayQueue *queue)
 {
-	major_collector.scan_card_table (queue);
+	major_collector.scan_card_table (FALSE, queue);
 }
 
 SgenMajorCollector*
