@@ -1109,9 +1109,13 @@ major_dump_heap (FILE *heap_dump_file)
 static void
 pin_major_object (char *obj, SgenGrayQueue *queue)
 {
+#ifdef SGEN_CONCURRENT_MARK
+	g_assert_not_reached ();
+#else
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
 	block->has_pinned = TRUE;
 	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+#endif
 }
 
 #include "sgen-major-copy-object.h"
