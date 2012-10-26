@@ -102,6 +102,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_MS_BLOCK_INFO: return "marksweep-block-info";
 	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
+	case INTERNAL_MEM_WORKER_JOB_DATA: return "worker-job-data";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE: return "bridge-hash-table";
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY: return "bridge-hash-table-entry";

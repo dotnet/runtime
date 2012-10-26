@@ -2179,6 +2179,7 @@ job_finish_remembered_set_scan (WorkerData *worker_data, void *job_data_untyped)
 	FinishRememberedSetScanJobData *job_data = job_data_untyped;
 
 	remset.finish_scan_remsets (job_data->heap_start, job_data->heap_end, sgen_workers_get_job_gray_queue (worker_data));
+	sgen_free_internal_dynamic (job_data, sizeof (FinishRememberedSetScanJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
 typedef struct
@@ -2198,6 +2199,7 @@ job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
 			job_data->heap_start, job_data->heap_end,
 			job_data->root_type,
 			sgen_workers_get_job_gray_queue (worker_data));
+	sgen_free_internal_dynamic (job_data, sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
 typedef struct
@@ -2213,6 +2215,7 @@ job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
 
 	scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE,
 			sgen_workers_get_job_gray_queue (worker_data));
+	sgen_free_internal_dynamic (job_data, sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
 typedef struct
@@ -2228,6 +2231,7 @@ job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 	scan_finalizer_entries (current_object_ops.copy_or_mark_object,
 			job_data->list,
 			sgen_workers_get_job_gray_queue (worker_data));
+	sgen_free_internal_dynamic (job_data, sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
 static void
@@ -2350,10 +2354,10 @@ collect_nursery (void)
 	gboolean needs_major;
 	size_t max_garbage_amount;
 	char *nursery_next;
-	FinishRememberedSetScanJobData frssjd;
-	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
-	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
-	ScanThreadDataJobData stdjd;
+	FinishRememberedSetScanJobData *frssjd;
+	ScanFromRegisteredRootsJobData *scrrjd_normal, *scrrjd_wbarrier;
+	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
+	ScanThreadDataJobData *stdjd;
 	mword fragment_total;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
@@ -2454,9 +2458,10 @@ collect_nursery (void)
 
 	sgen_workers_start_marking ();
 
-	frssjd.heap_start = sgen_get_nursery_start ();
-	frssjd.heap_end = nursery_next;
-	sgen_workers_enqueue_job (job_finish_remembered_set_scan, &frssjd);
+	frssjd = sgen_alloc_internal_dynamic (sizeof (FinishRememberedSetScanJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	frssjd->heap_start = sgen_get_nursery_start ();
+	frssjd->heap_end = nursery_next;
+	sgen_workers_enqueue_job (job_finish_remembered_set_scan, frssjd);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -2474,25 +2479,28 @@ collect_nursery (void)
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scrrjd_normal.func = current_object_ops.copy_or_mark_object;
-	scrrjd_normal.heap_start = sgen_get_nursery_start ();
-	scrrjd_normal.heap_end = nursery_next;
-	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_normal);
+	scrrjd_normal = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	scrrjd_normal->func = current_object_ops.copy_or_mark_object;
+	scrrjd_normal->heap_start = sgen_get_nursery_start ();
+	scrrjd_normal->heap_end = nursery_next;
+	scrrjd_normal->root_type = ROOT_TYPE_NORMAL;
+	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_normal);
 
-	scrrjd_wbarrier.func = current_object_ops.copy_or_mark_object;
-	scrrjd_wbarrier.heap_start = sgen_get_nursery_start ();
-	scrrjd_wbarrier.heap_end = nursery_next;
-	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, &scrrjd_wbarrier);
+	scrrjd_wbarrier = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	scrrjd_wbarrier->func = current_object_ops.copy_or_mark_object;
+	scrrjd_wbarrier->heap_start = sgen_get_nursery_start ();
+	scrrjd_wbarrier->heap_end = nursery_next;
+	scrrjd_wbarrier->root_type = ROOT_TYPE_WBARRIER;
+	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED (atv, btv);
 
 	/* thread data */
-	stdjd.heap_start = sgen_get_nursery_start ();
-	stdjd.heap_end = nursery_next;
-	sgen_workers_enqueue_job (job_scan_thread_data, &stdjd);
+	stdjd = sgen_alloc_internal_dynamic (sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	stdjd->heap_start = sgen_get_nursery_start ();
+	stdjd->heap_end = nursery_next;
+	sgen_workers_enqueue_job (job_scan_thread_data, stdjd);
 
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED (btv, atv);
@@ -2510,11 +2518,13 @@ collect_nursery (void)
 		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 	/* Scan the list of objects ready for finalization. If */
-	sfejd_fin_ready.list = fin_ready_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_fin_ready);
+	sfejd_fin_ready = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	sfejd_fin_ready->list = fin_ready_list;
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_fin_ready);
 
-	sfejd_critical_fin.list = critical_fin_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, &sfejd_critical_fin);
+	sfejd_critical_fin = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	sfejd_critical_fin->list = critical_fin_list;
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_critical_fin);
 
 	finish_gray_stack (sgen_get_nursery_start (), nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
@@ -2591,14 +2601,8 @@ collect_nursery (void)
 	return needs_major;
 }
 
-typedef struct {
-	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
-	ScanThreadDataJobData stdjd;
-	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
-} AllJobData;
-
 static void
-major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gboolean finish_up_concurrent_mark)
+major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concurrent_mark)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2610,6 +2614,9 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gbo
 	char *heap_end = (char*)-1;
 	gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
 	GCRootReport root_report = { 0 };
+	ScanFromRegisteredRootsJobData *scrrjd_normal, *scrrjd_wbarrier;
+	ScanThreadDataJobData *stdjd;
+	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
 
 	if (major_collector.is_concurrent) {
 		/*This cleans up unused fragments */
@@ -2731,25 +2738,28 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gbo
 	time_major_scan_pinned += TV_ELAPSED (btv, atv);
 
 	/* registered roots, this includes static fields */
-	job_data->scrrjd_normal.func = current_object_ops.copy_or_mark_object;
-	job_data->scrrjd_normal.heap_start = heap_start;
-	job_data->scrrjd_normal.heap_end = heap_end;
-	job_data->scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, &job_data->scrrjd_normal);
+	scrrjd_normal = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	scrrjd_normal->func = current_object_ops.copy_or_mark_object;
+	scrrjd_normal->heap_start = heap_start;
+	scrrjd_normal->heap_end = heap_end;
+	scrrjd_normal->root_type = ROOT_TYPE_NORMAL;
+	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_normal);
 
-	job_data->scrrjd_wbarrier.func = current_object_ops.copy_or_mark_object;
-	job_data->scrrjd_wbarrier.heap_start = heap_start;
-	job_data->scrrjd_wbarrier.heap_end = heap_end;
-	job_data->scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, &job_data->scrrjd_wbarrier);
+	scrrjd_wbarrier = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	scrrjd_wbarrier->func = current_object_ops.copy_or_mark_object;
+	scrrjd_wbarrier->heap_start = heap_start;
+	scrrjd_wbarrier->heap_end = heap_end;
+	scrrjd_wbarrier->root_type = ROOT_TYPE_WBARRIER;
+	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED (atv, btv);
 
 	/* Threads */
-	job_data->stdjd.heap_start = heap_start;
-	job_data->stdjd.heap_end = heap_end;
-	sgen_workers_enqueue_job (job_scan_thread_data, &job_data->stdjd);
+	stdjd = sgen_alloc_internal_dynamic (sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	stdjd->heap_start = heap_start;
+	stdjd->heap_end = heap_end;
+	sgen_workers_enqueue_job (job_scan_thread_data, stdjd);
 
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED (btv, atv);
@@ -2761,11 +2771,13 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gbo
 		report_finalizer_roots ();
 
 	/* scan the list of objects ready for finalization */
-	job_data->sfejd_fin_ready.list = fin_ready_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, &job_data->sfejd_fin_ready);
+	sfejd_fin_ready = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	sfejd_fin_ready->list = fin_ready_list;
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_fin_ready);
 
-	job_data->sfejd_critical_fin.list = critical_fin_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, &job_data->sfejd_critical_fin);
+	sfejd_critical_fin = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
+	sfejd_critical_fin->list = critical_fin_list;
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_critical_fin);
 
 	if (finish_up_concurrent_mark) {
 		/* Mod union card table */
@@ -2791,7 +2803,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data, gbo
 }
 
 static void
-major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
+major_start_collection (int *old_next_pin_slot)
 {
 	MONO_GC_BEGIN (GENERATION_OLD);
 
@@ -2823,7 +2835,7 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, job_data, FALSE);
+	major_copy_or_mark_from_roots (old_next_pin_slot, FALSE);
 }
 
 static void
@@ -2861,12 +2873,10 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	current_object_ops = major_collector.major_ops;
 
 	if (major_collector.is_concurrent) {
-		AllJobData job_data;
-
 		major_collector.update_cardtable_mod_union ();
 		sgen_los_update_cardtable_mod_union ();
 
-		major_copy_or_mark_from_roots (NULL, &job_data, TRUE);
+		major_copy_or_mark_from_roots (NULL, TRUE);
 		wait_for_workers_to_finish ();
 
 		check_nursery_is_clean ();
@@ -2986,13 +2996,12 @@ major_do_collection (const char *reason)
 {
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
-	AllJobData job_data;
 	int old_next_pin_slot;
 
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
 
-	major_start_collection (&old_next_pin_slot, &job_data);
+	major_start_collection (&old_next_pin_slot);
 	major_finish_collection (reason, old_next_pin_slot);
 
 	TV_GETTIME (all_btv);
