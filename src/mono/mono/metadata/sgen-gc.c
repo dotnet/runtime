@@ -2584,7 +2584,7 @@ typedef struct {
 } AllJobData;
 
 static void
-major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
+major_copy_or_mark_from_roots (int *old_next_pin_slot, AllJobData *job_data)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2597,28 +2597,6 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
 	GCRootReport root_report = { 0 };
 
-	MONO_GC_BEGIN (GENERATION_OLD);
-
-	current_collection_generation = GENERATION_OLD;
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_collections1++;
-#endif
-
-	if (major_collector.is_concurrent)
-		concurrent_collection_in_progress = TRUE;
-
-	current_object_ops = major_collector.major_ops;
-
-	reset_pinned_from_failed_allocation ();
-
-	sgen_memgov_major_collection_start ();
-
-	//count_ref_nonref_objs ();
-	//consistency_check ();
-
-	binary_protocol_collection (stat_major_gcs, GENERATION_OLD);
-	check_scan_starts ();
-
 	if (major_collector.is_concurrent) {
 		/*This cleans up unused fragments */
 		sgen_nursery_allocator_prepare_for_pinning ();
@@ -2630,11 +2608,6 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	}
 
 	init_gray_queue ();
-
-	degraded_mode = 0;
-	SGEN_LOG (1, "Start major collection %d", stat_major_gcs);
-	stat_major_gcs++;
-	gc_stats.major_gc_count ++;
 
 	TV_GETTIME (atv);
 
@@ -2652,9 +2625,6 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
 	 */
-
-	if (major_collector.start_major_collection)
-		major_collector.start_major_collection ();
 
 	objects_pinned = 0;
 	*major_collector.have_swept = FALSE;
@@ -2794,6 +2764,61 @@ major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
 }
 
 static void
+major_start_collection (int *old_next_pin_slot, AllJobData *job_data)
+{
+	MONO_GC_BEGIN (GENERATION_OLD);
+
+	current_collection_generation = GENERATION_OLD;
+#ifndef DISABLE_PERFCOUNTERS
+	mono_perfcounters->gc_collections1++;
+#endif
+
+	if (major_collector.is_concurrent)
+		concurrent_collection_in_progress = TRUE;
+
+	current_object_ops = major_collector.major_ops;
+
+	reset_pinned_from_failed_allocation ();
+
+	sgen_memgov_major_collection_start ();
+
+	//count_ref_nonref_objs ();
+	//consistency_check ();
+
+	binary_protocol_collection (stat_major_gcs, GENERATION_OLD);
+	check_scan_starts ();
+
+	degraded_mode = 0;
+	SGEN_LOG (1, "Start major collection %d", stat_major_gcs);
+	stat_major_gcs++;
+	gc_stats.major_gc_count ++;
+
+	if (major_collector.start_major_collection)
+		major_collector.start_major_collection ();
+
+	major_copy_or_mark_from_roots (old_next_pin_slot, job_data);
+}
+
+static void
+wait_for_workers_to_finish (void)
+{
+	if (major_collector.is_parallel || major_collector.is_concurrent) {
+		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
+			sgen_workers_distribute_gray_queue_sections ();
+			g_usleep (1000);
+		}
+	}
+	sgen_workers_join ();
+
+	if (major_collector.is_parallel || major_collector.is_concurrent)
+		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	main_gc_thread = NULL;
+#endif
+}
+
+static void
 major_finish_collection (const char *reason, int old_next_pin_slot)
 {
 	LOSObject *bigobj, *prevbo;
@@ -2804,25 +2829,12 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 
 	TV_GETTIME (btv);
 
-	if (major_collector.is_parallel || major_collector.is_concurrent) {
-		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
-			sgen_workers_distribute_gray_queue_sections ();
-			g_usleep (1000);
-		}
-	}
-	sgen_workers_join ();
+	wait_for_workers_to_finish ();
 
 	if (major_collector.is_concurrent) {
 		major_collector.update_cardtable_mod_union ();
 		sgen_los_update_cardtable_mod_union ();
 	}
-
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-	main_gc_thread = NULL;
-#endif
-
-	if (major_collector.is_parallel || major_collector.is_concurrent)
-		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
