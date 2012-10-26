@@ -726,13 +726,12 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 		items_written = mono_stringbuilder_capacity (sb);
 	
 	if (!error) {
-		if (! sb->str || sb->str == sb->cached_str) {
+		if (! sb->str || sb->str == sb->cached_str)
 			MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), items_written));
-			sb->cached_str = NULL;
-		}
 		
 		memcpy (mono_string_chars (sb->str), ut, items_written * 2);
 		sb->length = items_written;
+		sb->cached_str = NULL;
 	} else 
 		g_error_free (error);
 

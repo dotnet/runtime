@@ -1038,6 +1038,16 @@ mono_test_marshal_stringbuilder (char *s, int n)
 }
 
 LIBTEST_API int STDCALL  
+mono_test_marshal_stringbuilder2 (char *s, int n)
+{
+	const char m[] = "EFGH";
+
+	strncpy(s, m, n);
+	s [n] = '\0';
+	return 0;
+}
+
+LIBTEST_API int STDCALL  
 mono_test_marshal_stringbuilder_default (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";

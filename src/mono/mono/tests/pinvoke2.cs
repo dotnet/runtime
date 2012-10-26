@@ -279,6 +279,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder")]
 	public static extern void mono_test_marshal_stringbuilder (StringBuilder sb, int len);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder2")]
+	public static extern void mono_test_marshal_stringbuilder2 (StringBuilder sb, int len);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_default")]
 	public static extern void mono_test_marshal_stringbuilder_default (StringBuilder sb, int len);
 
@@ -775,11 +778,17 @@ public class Tests {
 		if (res != "This is my message.  Isn't it nice?")
 			return 1;  
 
+		// Test that cached_str is cleared
+		mono_test_marshal_stringbuilder2 (sb, sb.Capacity);
+		res = sb.ToString();
+		if (res != "EFGH")
+			return 2;
+
 		// Test StringBuilder with default capacity (16)
 		StringBuilder sb2 = new StringBuilder();
 		mono_test_marshal_stringbuilder_default (sb2, sb2.Capacity);
 		if (sb2.ToString () != "This is my messa")
-			return 2;
+			return 3;
 
 		return 0;
 	}
