@@ -1316,8 +1316,7 @@ socket_transport_connect (const char *address)
 #endif
 	}
 	
-	disconnected = !transport_handshake ();
-	if (disconnected)
+	if (!transport_handshake ())
 		exit (1);
 }
 
@@ -1446,6 +1445,8 @@ transport_handshake (void)
 	guint8 buf [128];
 	int res;
 	
+	disconnected = TRUE;
+	
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
 	do {
@@ -1474,7 +1475,7 @@ transport_handshake (void)
 	 * Set TCP_NODELAY on the socket so the client receives events/command
 	 * results immediately.
 	 */
-	{
+	if (conn_fd) {
 		int flag = 1;
 		int result = setsockopt (conn_fd,
                                  IPPROTO_TCP,
@@ -1487,6 +1488,7 @@ transport_handshake (void)
 	set_keepalive ();
 #endif
 	
+	disconnected = FALSE;
 	return TRUE;
 }
 
