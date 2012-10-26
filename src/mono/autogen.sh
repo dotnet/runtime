@@ -103,7 +103,7 @@ if grep "^AM_PROG_LIBTOOL" configure.in >/dev/null; then
 fi
 
 echo "Running aclocal -I m4 -I . $ACLOCAL_FLAGS ..."
-aclocal -I m4 -I . $ACLOCAL_FLAGS || {
+aclocal -W none -I m4 -I . $ACLOCAL_FLAGS || {
   echo
   echo "**Error**: aclocal failed. This may mean that you have not"
   echo "installed all of the packages you need, or you may need to"
@@ -119,7 +119,7 @@ if grep "^AM_CONFIG_HEADER" configure.in >/dev/null; then
 fi
 
 echo "Running automake --gnu $am_opt ..."
-automake --add-missing --gnu -Wno-portability $am_opt ||
+automake --add-missing --gnu -Wno-portability -Wno-obsolete $am_opt ||
   { echo "**Error**: automake failed."; exit 1; }
 echo "Running autoconf ..."
 autoconf || { echo "**Error**: autoconf failed."; exit 1; }
