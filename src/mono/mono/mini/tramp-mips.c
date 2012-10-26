@@ -109,7 +109,9 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
  * STACK would be 444 for 32 bit darwin
  */
 
-#define STACK (4*IREG_SIZE + 8 + sizeof(MonoLMF) + 32)
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
+#define STACK (int)(ALIGN_TO(4*IREG_SIZE + 8 + sizeof(MonoLMF) + 32, 8))
 
 void
 mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
@@ -185,9 +187,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Now we'll create in 'buf' the MIPS trampoline code. This
 	   is the trampoline code common to all methods  */
-		
+
 	code = buf = mono_global_codeman_reserve (max_code_len);
-		
+
 	/* Allocate the stack frame, and save the return address */
 	mips_addiu (code, mips_sp, mips_sp, -STACK);
 	mips_sw (code, mips_ra, mips_sp, STACK + MIPS_RET_ADDR_OFFSET);
