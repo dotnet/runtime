@@ -43,6 +43,8 @@ static volatile int workers_done_posted = 0;
 static volatile int workers_job_queue_num_entries = 0;
 static volatile JobQueueEntry *workers_job_queue = NULL;
 static LOCK_DECLARE (workers_job_queue_mutex);
+static int workers_num_jobs_enqueued = 0;
+static volatile int workers_num_jobs_finished = 0;
 
 static long long stat_workers_stolen_from_self_lock;
 static long long stat_workers_stolen_from_self_no_lock;
@@ -118,15 +120,25 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 	entry->next = workers_job_queue;
 	workers_job_queue = entry;
 	num_entries = ++workers_job_queue_num_entries;
+	++workers_num_jobs_enqueued;
 	mono_mutex_unlock (&workers_job_queue_mutex);
 
 	workers_wake_up (num_entries);
+}
+
+void
+sgen_workers_wait_for_jobs (void)
+{
+	// FIXME: implement this properly
+	while (workers_num_jobs_finished < workers_num_jobs_enqueued)
+		g_usleep (1000);
 }
 
 static gboolean
 workers_dequeue_and_do_job (WorkerData *data)
 {
 	JobQueueEntry *entry;
+	int num_finished;
 
 	/*
 	 * At this point the GC might not be running anymore.  We
@@ -154,6 +166,11 @@ workers_dequeue_and_do_job (WorkerData *data)
 
 	entry->func (data, entry->data);
 	sgen_free_internal (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY);
+
+	do {
+		num_finished = workers_num_jobs_finished;
+	} while (InterlockedCompareExchange (&workers_num_jobs_finished, num_finished + 1, num_finished) != num_finished);
+
 	return TRUE;
 }
 
@@ -418,6 +435,10 @@ sgen_workers_start_all_workers (void)
 	workers_gc_in_progress = TRUE;
 	workers_marking = FALSE;
 	workers_done_posted = 0;
+
+	g_assert (workers_job_queue_num_entries == 0);
+	workers_num_jobs_enqueued = 0;
+	workers_num_jobs_finished = 0;
 
 	if (workers_started) {
 		if (workers_num_waiting != workers_num)

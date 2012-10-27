@@ -129,7 +129,7 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 		sgen_ensure_free_space (size);
 	} else {
 		if (sgen_need_major_collection (size))
-			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure");
+			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", TRUE);
 	}
 
 
@@ -177,7 +177,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 		if (collect_before_allocs) {
 			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
-				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered");
+				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered", TRUE);
 				if (!degraded_mode && sgen_can_alloc_size (size) && size <= SGEN_MAX_SMALL_OBJ_SIZE) {
 					// FIXME:
 					g_assert_not_reached ();

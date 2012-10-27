@@ -156,7 +156,10 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 gboolean
 sgen_need_major_collection (mword space_needed)
 {
-	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
+	mword los_alloced;
+	if (sgen_concurrent_collection_in_progress ())
+		return FALSE;
+	los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
 	return (space_needed > sgen_memgov_available_free_space ()) ||
 		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }

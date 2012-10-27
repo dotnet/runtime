@@ -546,6 +546,7 @@ typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 int sgen_get_current_collection_generation (void) MONO_INTERNAL;
 gboolean sgen_collection_is_parallel (void) MONO_INTERNAL;
 gboolean sgen_collection_is_concurrent (void) MONO_INTERNAL;
+gboolean sgen_concurrent_collection_in_progress (void) MONO_INTERNAL;
 
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
@@ -871,7 +872,7 @@ void sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGra
 void sgen_set_pinned_from_failed_allocation (mword objsize) MONO_INTERNAL;
 
 void sgen_ensure_free_space (size_t size) MONO_INTERNAL;
-void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason) MONO_INTERNAL;
+void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish) MONO_INTERNAL;
 gboolean sgen_has_critical_method (void) MONO_INTERNAL;
 gboolean sgen_is_critical_method (MonoMethod *method) MONO_INTERNAL;
 

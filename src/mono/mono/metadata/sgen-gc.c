@@ -2167,6 +2167,12 @@ sgen_collection_is_concurrent (void)
 	}
 }
 
+gboolean
+sgen_concurrent_collection_in_progress (void)
+{
+	return concurrent_collection_in_progress;
+}
+
 typedef struct
 {
 	char *heap_start;
@@ -3012,6 +3018,28 @@ major_do_collection (const char *reason)
 
 static gboolean major_do_collection (const char *reason);
 
+static void
+major_start_concurrent_collection (const char *reason)
+{
+	// FIXME: store reason and pass it when finishing
+	major_start_collection (NULL);
+
+	sgen_workers_distribute_gray_queue_sections ();
+	g_assert (sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE));
+
+	sgen_workers_wait_for_jobs ();
+
+	current_collection_generation = -1;
+}
+
+static void
+major_finish_concurrent_collection (void)
+{
+	current_collection_generation = GENERATION_OLD;
+	major_finish_collection ("finishing", -1);
+	current_collection_generation = -1;
+}
+
 /*
  * Ensure an allocation request for @size will succeed by freeing enough memory.
  *
@@ -3046,11 +3074,11 @@ sgen_ensure_free_space (size_t size)
 
 	if (generation_to_collect == -1)
 		return;
-	sgen_perform_collection (size, generation_to_collect, reason);
+	sgen_perform_collection (size, generation_to_collect, reason, generation_to_collect == GENERATION_NURSERY);
 }
 
 void
-sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason)
+sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish)
 {
 	TV_DECLARE (gc_end);
 	GGTimingInfo infos [2];
@@ -3067,6 +3095,12 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	infos [1].generation = -1;
 
 	sgen_stop_world (generation_to_collect);
+
+	if (concurrent_collection_in_progress) {
+		g_assert (generation_to_collect == GENERATION_NURSERY);
+		major_finish_concurrent_collection ();
+	}
+
 	//FIXME extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
 		if (collect_nursery ()) {
@@ -3076,9 +3110,16 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	} else {
 		if (major_collector.is_concurrent)
 			collect_nursery ();
-		if (major_do_collection (reason)) {
-			overflow_generation_to_collect = GENERATION_NURSERY;
-			overflow_reason = "Excessive pinning";
+
+		if (major_collector.is_concurrent && !wait_to_finish) {
+			major_start_concurrent_collection (reason);
+			// FIXME: set infos[0] properly
+			goto done;
+		} else {
+			if (major_do_collection (reason)) {
+				overflow_generation_to_collect = GENERATION_NURSERY;
+				overflow_reason = "Excessive pinning";
+			}
 		}
 	}
 
@@ -3115,6 +3156,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		degraded_mode = 1;
 	}
 
+ done:
 	sgen_restart_world (generation_to_collect, infos);
 
 	mono_profiler_gc_event (MONO_GC_EVENT_END, generation_to_collect);
@@ -4204,7 +4246,7 @@ mono_gc_collect (int generation)
 	LOCK_GC;
 	if (generation > 1)
 		generation = 1;
-	sgen_perform_collection (0, generation, "user request");
+	sgen_perform_collection (0, generation, "user request", TRUE);
 	UNLOCK_GC;
 }
 
