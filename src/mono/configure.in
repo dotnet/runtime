@@ -679,12 +679,18 @@ AC_ARG_WITH(sigaltstack, [  --with-sigaltstack=yes,no      enable/disable suppor
 
 AC_ARG_WITH(static_mono, [  --with-static_mono=yes,no      link mono statically to libmono (faster) (defaults to yes)],[],[with_static_mono=yes])
 AC_ARG_WITH(shared_mono, [  --with-shared_mono=yes,no      build a shared libmono library (defaults to yes)],[],[with_shared_mono=yes])
+# Same as --with-shared_mono=no
+AC_ARG_ENABLE(libraries, [  --disable-libraries disable the build of libmono], enable_libraries=$enableval, enable_libraries=yes)
 
 if test "x$enable_static" = "xno"; then
    with_static_mono=no
 fi
 
 if test "x$enable_shared" = "xno"; then
+   with_shared_mono=no
+fi
+
+if test "x$enable_libraries" = "xno"; then
    with_shared_mono=no
 fi
 
