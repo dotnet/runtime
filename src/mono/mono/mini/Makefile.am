@@ -118,10 +118,16 @@ endif
 
 lib_LTLIBRARIES = $(shared_libraries)
 
-if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES = libmini.la
+if SHARED_MONO
+mini_common_lib = libmini.la
 else
-noinst_LTLIBRARIES = libmini.la libmini-static.la
+mini_common_lib = 
+endif
+
+if DISABLE_EXECUTABLES
+noinst_LTLIBRARIES = $(mini_common_lib)
+else
+noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la
 endif
 
 if MOONLIGHT
