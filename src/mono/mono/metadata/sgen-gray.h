@@ -54,7 +54,6 @@ void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
 void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
-gboolean sgen_drain_gray_stack (SgenGrayQueue *queue, int max_objs) MONO_INTERNAL;
 
 static inline gboolean
 sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)

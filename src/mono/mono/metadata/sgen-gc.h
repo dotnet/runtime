@@ -861,6 +861,8 @@ void sgen_process_fin_stage_entries (void) MONO_INTERNAL;
 void sgen_process_dislink_stage_entries (void) MONO_INTERNAL;
 void sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc) MONO_INTERNAL;
 
+gboolean sgen_drain_gray_stack (SgenGrayQueue *queue, ScanObjectFunc scan_func, int max_objs) MONO_INTERNAL;
+
 enum {
 	SPACE_NURSERY,
 	SPACE_MAJOR,
