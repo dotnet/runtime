@@ -764,6 +764,11 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 	 */
 	*(void**)obj = NULL;
 
+#ifdef SGEN_CONCURRENT_MARK
+	 if (obj)
+		 sgen_remember_major_object_for_concurrent_mark (obj);
+#endif
+
 	return obj;
 }
 

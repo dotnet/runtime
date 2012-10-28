@@ -548,6 +548,8 @@ gboolean sgen_collection_is_parallel (void) MONO_INTERNAL;
 gboolean sgen_collection_is_concurrent (void) MONO_INTERNAL;
 gboolean sgen_concurrent_collection_in_progress (void) MONO_INTERNAL;
 
+void sgen_remember_major_object_for_concurrent_mark (char *obj) MONO_INTERNAL;
+
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
 	ScanObjectFunc scan_object;

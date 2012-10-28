@@ -575,6 +575,30 @@ sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
 }
 
+static LOCK_DECLARE (workers_distribute_gray_queue_mutex);
+
+void
+sgen_remember_major_object_for_concurrent_mark (char *obj)
+{
+	gboolean need_lock = current_collection_generation != GENERATION_NURSERY;
+
+	if (!major_collector.is_concurrent)
+		return;
+
+	g_assert (current_collection_generation == GENERATION_NURSERY || current_collection_generation == -1);
+
+	if (!concurrent_collection_in_progress)
+		return;
+
+	if (need_lock)
+		mono_mutex_lock (&workers_distribute_gray_queue_mutex);
+
+	sgen_gray_object_enqueue (sgen_workers_get_distribute_gray_queue (), obj);
+
+	if (need_lock)
+		mono_mutex_unlock (&workers_distribute_gray_queue_mutex);
+}
+
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
 {
@@ -4742,6 +4766,9 @@ mono_gc_base_init (void)
 
 	if (minor_collector_opt)
 		g_free (minor_collector_opt);
+
+	if (major_collector.is_concurrent)
+		LOCK_INIT (workers_distribute_gray_queue_mutex);
 
 	alloc_nursery ();
 

@@ -384,6 +384,8 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_consistency_check ();
 #endif
 
+	sgen_remember_major_object_for_concurrent_mark (obj->data);
+
 	return obj->data;
 }
 
