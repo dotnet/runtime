@@ -66,7 +66,9 @@ describe_ptr (char *ptr)
 	mword desc;
 	int type;
 	char *start;
+	char *forwarded;
 
+ restart:
 	if (sgen_ptr_in_nursery (ptr)) {
 		printf ("Pointer inside nursery.\n");
 	} else {
@@ -96,8 +98,11 @@ describe_ptr (char *ptr)
 	if (object_is_pinned (ptr))
 		printf ("Object is pinned.\n");
 
-	if (object_is_forwarded (ptr))
-		printf ("Object is forwared.\n");
+	if ((forwarded = object_is_forwarded (ptr))) {
+		printf ("Object is forwarded to %p:\n", forwarded);
+		ptr = forwarded;
+		goto restart;
+	}
 
 	// FIXME: Handle pointers to the inside of objects
 	vtable = (MonoVTable*)LOAD_VTABLE (ptr);
