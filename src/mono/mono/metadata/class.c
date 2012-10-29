@@ -1620,7 +1620,7 @@ mono_class_layout_fields (MonoClass *class)
 	 */
 	 /* corlib is missing [StructLayout] directives in many places */
 	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		if (class->byval_arg.type != MONO_TYPE_VALUETYPE)
+		if (!class->valuetype)
 			gc_aware_layout = TRUE;
 	}
 

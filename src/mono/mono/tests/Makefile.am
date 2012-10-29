@@ -547,7 +547,9 @@ TEST_IL_SRC=			\
 	bug-515884.il	\
 	bug-633291.il	\
 	delegate-with-null-target.il	\
-	bug-318677.il
+	bug-318677.il	\
+	gsharing-valuetype-layout.il
+
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
