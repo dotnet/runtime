@@ -492,21 +492,22 @@ namespace Mono.Tuner {
 			return false;
 		}
 
-		public static bool Inherits (this TypeReference self, string className)
+		public static bool Inherits (this TypeReference self, string @namespace, string name)
 		{
-			if (className == null)
-				throw new ArgumentNullException ("className");
+			if (@namespace == null)
+				throw new ArgumentNullException ("namespace");
+			if (name == null)
+				throw new ArgumentNullException ("name");
 			if (self == null)
 				return false;
-
+			
 			TypeReference current = self.Resolve ();
 			while (current != null) {
-				string fullname = current.FullName;
-				if (fullname == className)
+				if (current.Is (@namespace, name))
 					return true;
-				if (fullname == "System.Object")
+				if (current.Is ("System", "Object"))
 					return false;
-
+				
 				TypeDefinition td = current.Resolve ();
 				if (td == null)
 					return false;		// could not resolve type
