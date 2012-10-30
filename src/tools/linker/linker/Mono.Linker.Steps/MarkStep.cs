@@ -723,12 +723,12 @@ namespace Mono.Linker.Steps {
 				MarkMethod (method);
 		}
 
-		protected void MarkMethod (MethodReference reference)
+		protected virtual MethodDefinition MarkMethod (MethodReference reference)
 		{
 			reference = GetOriginalMethod (reference);
 
 			if (reference.DeclaringType is ArrayType)
-				return;
+				return null;
 
 			if (reference.DeclaringType is GenericInstanceType)
 				MarkType (reference.DeclaringType);
@@ -745,6 +745,7 @@ namespace Mono.Linker.Steps {
 				Annotations.SetAction (method, MethodAction.Parse);
 
 			EnqueueMethod (method);
+			return method;
 		}
 
 		AssemblyDefinition ResolveAssembly (IMetadataScope scope)
