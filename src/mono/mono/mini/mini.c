@@ -3919,6 +3919,8 @@ mono_handle_out_of_line_bblock (MonoCompile *cfg)
 	}
 }
 
+#endif /* #ifndef DISABLE_JIT */
+
 static MonoJitInfo*
 create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 {
@@ -3937,6 +3939,8 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 
 	return jinfo;
 }
+
+#ifndef DISABLE_JIT
 
 static MonoJitInfo*
 create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
