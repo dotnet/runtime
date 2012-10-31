@@ -65,6 +65,7 @@
 #include "mini.h"
 #include "image-writer.h"
 #include "dwarfwriter.h"
+#include "mini-gc.h"
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 
@@ -5260,6 +5261,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "info")) {
 			printf ("AOT target setup: %s.\n", AOT_TARGET_STR);
 			exit (0);
+		} else if (str_begins_with (arg, "gc-maps")) {
+			mini_gc_enable_gc_maps_for_aot ();
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
@@ -5281,6 +5284,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    tool-prefix=\n");
 			printf ("    readonly-value=\n");
 			printf ("    soft-debug\n");
+			printf ("    gc-maps\n");
 			printf ("    print-skipped\n");
 			printf ("    stats\n");
 			printf ("    info\n");

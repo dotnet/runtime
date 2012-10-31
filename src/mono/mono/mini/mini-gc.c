@@ -262,6 +262,14 @@ static JITGCStats stats;
 
 static FILE *logfile;
 
+static gboolean enable_gc_maps_for_aot;
+
+void
+mini_gc_enable_gc_maps_for_aot (void)
+{
+	enable_gc_maps_for_aot = TRUE;
+}
+
 // FIXME: Move these to a shared place
 
 static inline void
@@ -1210,7 +1218,10 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	if (!mono_gc_is_moving ())
 		return;
 
-	if (!cfg->compile_aot && !mono_gc_precise_stack_mark_enabled ())
+	if (cfg->compile_aot) {
+		if (!enable_gc_maps_for_aot)
+			return;
+	} else if (!mono_gc_precise_stack_mark_enabled ())
 		return;
 
 #if 1

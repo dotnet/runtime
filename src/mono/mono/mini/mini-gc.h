@@ -22,6 +22,8 @@ void mini_gc_init (void) MONO_INTERNAL;
 
 void mini_gc_init_cfg (MonoCompile *cfg) MONO_INTERNAL;
 
+void mini_gc_enable_gc_maps_for_aot (void) MONO_INTERNAL;
+
 void mini_gc_create_gc_map (MonoCompile *cfg) MONO_INTERNAL;
 
 void mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType type) MONO_INTERNAL;
