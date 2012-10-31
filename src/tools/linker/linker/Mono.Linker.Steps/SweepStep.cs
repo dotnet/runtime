@@ -143,7 +143,7 @@ namespace Mono.Linker.Steps {
 			if (a.Name != b.Name)
 				return false;
 
-			if (a.Version != b.Version)
+			if (a.Version > b.Version)
 				return false;
 
 			return true;
