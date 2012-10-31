@@ -203,6 +203,9 @@ namespace Mono.Linker.Steps {
 
 		void MarkCustomAttributeProperties (CustomAttribute ca, TypeDefinition attribute)
 		{
+			if (!ca.HasProperties)
+				return;
+
 			foreach (var named_argument in ca.Properties) {
 				PropertyDefinition property = GetProperty (attribute, named_argument.Name);
 				if (property != null)
@@ -227,6 +230,9 @@ namespace Mono.Linker.Steps {
 
 		void MarkCustomAttributeFields (CustomAttribute ca, TypeDefinition attribute)
 		{
+			if (!ca.HasFields)
+				return;
+
 			foreach (var named_argument in ca.Fields) {
 				FieldDefinition field = GetField (attribute, named_argument.Name);
 				if (field != null)
@@ -251,6 +257,9 @@ namespace Mono.Linker.Steps {
 
 		void MarkCustomAttributeArguments (CustomAttribute ca)
 		{
+			if (!ca.HasConstructorArguments)
+				return;
+
 			foreach (var argument in ca.ConstructorArguments)
 				MarkIfType (argument);
 		}
