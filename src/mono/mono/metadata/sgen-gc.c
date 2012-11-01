@@ -535,7 +535,7 @@ static void report_finalizer_roots (void);
 static void report_registered_roots (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
-static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, gboolean only_enqueue);
+static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, ScanObjectFunc scan_func);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
@@ -1158,7 +1158,7 @@ sgen_drain_gray_stack (GrayQueue *queue, ScanObjectFunc scan_func, int max_objs)
  * pinned objects.  Return the number of pinned objects.
  */
 static int
-pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, gboolean only_enqueue)
+pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, ScanObjectFunc scan_func)
 {
 	void *last = NULL;
 	int count = 0;
@@ -1228,13 +1228,16 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 							MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
 							MONO_GC_OBJ_PINNED ((mword)search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
 						}
-						if (!only_enqueue)
+						if (scan_func) {
+							scan_func (search_start, queue);
+						} else {
 							pin_object (search_start);
-						GRAY_OBJECT_ENQUEUE (queue, search_start);
-						if (G_UNLIKELY (do_pin_stats))
-							sgen_pin_stats_register_object (search_start, last_obj_size);
-						definitely_pinned [count] = search_start;
-						count++;
+							GRAY_OBJECT_ENQUEUE (queue, search_start);
+							if (G_UNLIKELY (do_pin_stats))
+								sgen_pin_stats_register_object (search_start, last_obj_size);
+							definitely_pinned [count] = search_start;
+							count++;
+						}
 						break;
 					}
 				}
@@ -1261,14 +1264,14 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 }
 
 void
-sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue, gboolean only_enqueue)
+sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue, ScanObjectFunc scan_func)
 {
 	int num_entries = section->pin_queue_num_entries;
 	if (num_entries) {
 		void **start = section->pin_queue_start;
 		int reduced_to;
 		reduced_to = pin_objects_from_addresses (section, start, start + num_entries,
-				section->data, section->next_data, queue, only_enqueue);
+				section->data, section->next_data, queue, scan_func);
 		section->pin_queue_num_entries = reduced_to;
 		if (!reduced_to)
 			section->pin_queue_start = NULL;
@@ -2467,7 +2470,7 @@ collect_nursery (void)
 	/* identify pinned objects */
 	sgen_optimize_pin_queue (0);
 	sgen_pinning_setup_section (nursery_section);
-	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, FALSE);
+	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, NULL);
 	sgen_pinning_trim_queue_to_section (nursery_section);
 
 	TV_GETTIME (atv);
@@ -2751,7 +2754,8 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	if (profile_roots)
 		notify_gc_roots (&root_report);
 	/* second pass for the sections */
-	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, concurrent_collection_in_progress);
+	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE,
+			concurrent_collection_in_progress ? current_object_ops.scan_object : NULL);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	if (old_next_pin_slot)
 		*old_next_pin_slot = sgen_get_pinned_count ();

@@ -379,7 +379,7 @@ typedef struct {
  */
 #define SGEN_LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~SGEN_VTABLE_BITS_MASK)
 
-#if SGEN_MAX_DEBUG_LEVEL >= 9
+#if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
 #define GRAY_OBJECT_ENQUEUE sgen_gray_object_enqueue
 #define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = sgen_gray_object_dequeue ((queue)))
 #else
@@ -502,6 +502,10 @@ struct _ObjectList {
 	ObjectList *next;
 };
 
+typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
+typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
+typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
+
 void sgen_report_internal_mem_usage (void) MONO_INTERNAL;
 void sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc) MONO_INTERNAL;
 void sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;
@@ -530,7 +534,7 @@ void sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc) MONO_INTERNAL
 
 void** sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
-void sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue, gboolean only_enqueue) MONO_INTERNAL;
+void sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue, ScanObjectFunc scan_func) MONO_INTERNAL;
 
 void sgen_pin_stats_register_object (char *obj, size_t size);
 void sgen_pin_stats_register_global_remset (char *obj);
@@ -538,10 +542,6 @@ void sgen_pin_stats_print_class_stats (void);
 
 void sgen_sort_addresses (void **array, int size) MONO_INTERNAL;
 void sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
-
-typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
-typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
-typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 
 int sgen_get_current_collection_generation (void) MONO_INTERNAL;
 gboolean sgen_collection_is_parallel (void) MONO_INTERNAL;

@@ -489,7 +489,7 @@ major_pin_objects (SgenGrayQueue *queue)
 	GCMemSection *section;
 
 	for (section = section_list; section; section = section->block.next)
-		sgen_pin_objects_in_section (section, queue, FALSE);
+		sgen_pin_objects_in_section (section, queue, NULL);
 }
 
 static void
