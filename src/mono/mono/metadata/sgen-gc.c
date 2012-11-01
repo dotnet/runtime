@@ -260,6 +260,8 @@ guint32 collect_before_allocs = 0;
 static gboolean whole_heap_check_before_collection = FALSE;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
+/* If set, do a few checks when the concurrent collector is used */
+static gboolean do_concurrent_checks = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
 static gboolean xdomain_checks = FALSE;
 /* If not null, dump the heap after each collection into this file */
@@ -2663,7 +2665,8 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 		/*This cleans up unused fragments */
 		sgen_nursery_allocator_prepare_for_pinning ();
 
-		check_nursery_is_clean ();
+		if (do_concurrent_checks)
+			check_nursery_is_clean ();
 	} else {
 		/* The concurrent collector doesn't touch the nursery. */
 		sgen_nursery_alloc_prepare_for_major ();
@@ -2844,7 +2847,8 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 
 		sgen_pin_stats_reset ();
 
-		check_nursery_is_clean ();
+		if (do_concurrent_checks)
+			check_nursery_is_clean ();
 	}
 }
 
@@ -2922,7 +2926,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
 		wait_for_workers_to_finish ();
 
-		check_nursery_is_clean ();
+		if (do_concurrent_checks)
+			check_nursery_is_clean ();
 	}
 
 	/* all the objects in the heap */
@@ -4862,6 +4867,12 @@ mono_gc_base_init (void)
 				do_scan_starts_check = TRUE;
 			} else if (!strcmp (opt, "verify-nursery-at-minor-gc")) {
 				do_verify_nursery = TRUE;
+			} else if (!strcmp (opt, "check-concurrent")) {
+				if (!major_collector.is_concurrent) {
+					fprintf (stderr, "Error: check-concurrent only world with concurrent major collectors.\n");
+					exit (1);
+				}
+				do_concurrent_checks = TRUE;
 			} else if (!strcmp (opt, "dump-nursery-at-minor-gc")) {
 				do_dump_nursery_content = TRUE;
 			} else if (!strcmp (opt, "no-managed-allocator")) {
@@ -4898,6 +4909,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  disable-minor\n");
 				fprintf (stderr, "  disable-major\n");
 				fprintf (stderr, "  xdomain-checks\n");
+				fprintf (stderr, "  check-concurrent\n");
 				fprintf (stderr, "  clear-at-gc\n");
 				fprintf (stderr, "  clear-nursery-at-gc\n");
 				fprintf (stderr, "  check-scan-starts\n");
