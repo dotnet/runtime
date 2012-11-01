@@ -513,6 +513,21 @@ mono_class_is_open_constructed_type (MonoType *t)
 	}
 }
 
+/*
+This is a simple function to catch the most common bad instances of generic types.
+Specially those that might lead to further failures in the runtime.
+*/
+static gboolean
+is_valid_generic_argument (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_TYPEDBYREF:
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static MonoType*
 inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error)
 {
@@ -532,6 +547,12 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 		}
 
+		if (!is_valid_generic_argument (inst->type_argv [num])) {
+			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
+			mono_error_set_bad_image (error, image, "MVAR %d (%s) cannot be expanded with type 0x%x",
+				num, info ? info->name : "", inst->type_argv [num]->type);
+			return NULL;			
+		}
 		/*
 		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
@@ -553,6 +574,12 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			mono_error_set_bad_image (error, image, "VAR %d (%s) cannot be expanded in this context with %d instantiations",
 				num, info ? info->name : "", inst->type_argc);
 			return NULL;
+		}
+		if (!is_valid_generic_argument (inst->type_argv [num])) {
+			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
+			mono_error_set_bad_image (error, image, "VAR %d (%s) cannot be expanded with type 0x%x",
+				num, info ? info->name : "", inst->type_argv [num]->type);
+			return NULL;			
 		}
 		nt = mono_metadata_type_dup (image, inst->type_argv [num]);
 		nt->byref = type->byref;
