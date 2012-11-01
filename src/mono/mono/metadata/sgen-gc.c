@@ -2473,8 +2473,10 @@ collect_nursery (void)
 	SGEN_LOG (2, "Finding pinned pointers: %d in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
 	SGEN_LOG (4, "Start scan with %d pinned objects", sgen_get_pinned_count ());
 
-	if (whole_heap_check_before_collection)
+	if (whole_heap_check_before_collection) {
+		sgen_clear_nursery_fragments ();
 		sgen_check_whole_heap ();
+	}
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
 
