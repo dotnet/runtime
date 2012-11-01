@@ -36,12 +36,16 @@ struct _GrayQueueSection {
 typedef struct _SgenGrayQueue SgenGrayQueue;
 
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
+typedef void (*GrayQueueEnqueueCheckFunc) (SgenGrayQueue*, char*);
 
 struct _SgenGrayQueue {
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
 	int balance;
 	GrayQueueAllocPrepareFunc alloc_prepare_func;
+#ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
+	GrayQueueEnqueueCheckFunc enqueue_check_func;
+#endif
 	void *alloc_prepare_data;
 };
 
@@ -49,9 +53,10 @@ void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
 char* sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
-void sgen_gray_object_queue_init (SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
 void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
+void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
+		GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
 void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
 

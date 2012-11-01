@@ -63,6 +63,13 @@ typedef guint64 mword;
 //#define SGEN_BINARY_PROTOCOL
 
 /*
+ * This enables checks whenever objects are enqueued in gray queues.
+ * Right now the only check done is that we never enqueue nursery
+ * pointers in the concurrent collector.
+ */
+//#define SGEN_CHECK_GRAY_OBJECT_ENQUEUE
+
+/*
  * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
  * have cross-domain checks in the write barrier.
  */

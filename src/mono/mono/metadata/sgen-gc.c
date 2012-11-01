@@ -2376,7 +2376,7 @@ init_gray_queue (void)
 		sgen_gray_object_queue_init_invalid (&gray_queue);
 		sgen_workers_init_distribute_gray_queue ();
 	} else {
-		sgen_gray_object_queue_init (&gray_queue);
+		sgen_gray_object_queue_init (&gray_queue, NULL);
 	}
 }
 

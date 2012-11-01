@@ -294,9 +294,16 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 }
 
 static void
+concurrent_enqueue_check (SgenGrayQueue *queue, char *obj)
+{
+	g_assert (!sgen_ptr_in_nursery (obj));
+}
+
+static void
 init_private_gray_queue (WorkerData *data)
 {
 	sgen_gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue,
+			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
 			workers_gray_queue_share_redirect, data);
 }
 
@@ -353,6 +360,7 @@ static void
 init_distribute_gray_queue (void)
 {
 	sgen_gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
+			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
 			workers_gray_queue_share_redirect, &workers_gc_thread_data);
 }
 
