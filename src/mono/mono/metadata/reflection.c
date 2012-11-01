@@ -11972,7 +11972,14 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 				is_sre_pointer (mono_object_get_class(obj))) {
 		MonoReflectionType *ref_type = (MonoReflectionType *)obj;
 		MonoType *type = mono_reflection_type_get_handle (ref_type);
-		result = mono_class_from_mono_type (type);
+
+		if (context) {
+			MonoType *inflated = mono_class_inflate_generic_type (type, context);
+			result = mono_class_from_mono_type (inflated);
+			mono_metadata_free_type (inflated);
+		} else {
+			result = mono_class_from_mono_type (type);
+		}
 		*handle_class = mono_defaults.typehandle_class;
 	} else {
 		g_print ("%s\n", obj->vtable->klass->name);
