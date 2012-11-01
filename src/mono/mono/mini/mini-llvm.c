@@ -2158,15 +2158,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * http://llvm.org/bugs/show_bug.cgi?id=6102
 			 */
 			//LLVM_FAILURE (ctx, "aot+clauses");
-#ifdef TARGET_MACH
-			/*
-			 * llc asserts for this code when targeting darwin:
-			 * try {
-			 *   throw new Exception ();
-			 * } catch (Exception ex) {
-			 *   Console.WriteLine (ex);
-			 * }
-			 */
+#ifdef TARGET_ARM
+			// test_0_invalid_unbox_arrays () fails
 			LLVM_FAILURE (ctx, "aot+clauses");
 #endif
 		} else {
