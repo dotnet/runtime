@@ -765,8 +765,13 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 	*(void**)obj = NULL;
 
 #ifdef SGEN_CONCURRENT_MARK
-	 if (obj)
-		 sgen_remember_major_object_for_concurrent_mark (obj);
+	if (obj && sgen_remember_major_object_for_concurrent_mark (obj)) {
+		MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
+		int word, bit;
+		MS_CALC_MARK_BIT (word, bit, obj);
+		MS_SET_MARK_BIT (block, word, bit);
+		binary_protocol_mark (obj, NULL, size);
+	}
 #endif
 
 	return obj;
@@ -1315,7 +1320,6 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		} else {
 			if (sgen_los_object_is_pinned (obj))
 				return;
-			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);

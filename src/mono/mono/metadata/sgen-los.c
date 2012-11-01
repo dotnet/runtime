@@ -384,7 +384,8 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_consistency_check ();
 #endif
 
-	sgen_remember_major_object_for_concurrent_mark (obj->data);
+	if (sgen_remember_major_object_for_concurrent_mark (obj->data))
+		sgen_los_pin_object (obj->data);
 
 	return obj->data;
 }
@@ -586,6 +587,7 @@ sgen_los_pin_object (char *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = obj->size | 1;
+	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size ((MonoObject*)data));
 }
 
 void

@@ -577,18 +577,18 @@ sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 
 static LOCK_DECLARE (workers_distribute_gray_queue_mutex);
 
-void
+gboolean
 sgen_remember_major_object_for_concurrent_mark (char *obj)
 {
 	gboolean need_lock = current_collection_generation != GENERATION_NURSERY;
 
 	if (!major_collector.is_concurrent)
-		return;
+		return FALSE;
 
 	g_assert (current_collection_generation == GENERATION_NURSERY || current_collection_generation == -1);
 
 	if (!concurrent_collection_in_progress)
-		return;
+		return FALSE;
 
 	if (need_lock)
 		mono_mutex_lock (&workers_distribute_gray_queue_mutex);
@@ -597,6 +597,8 @@ sgen_remember_major_object_for_concurrent_mark (char *obj)
 
 	if (need_lock)
 		mono_mutex_unlock (&workers_distribute_gray_queue_mutex);
+
+	return TRUE;
 }
 
 static gboolean
