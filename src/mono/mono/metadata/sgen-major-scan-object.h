@@ -27,11 +27,17 @@ extern long long stat_scan_object_called_major;
 #define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH ((addr))
 #endif
 
+#ifdef SGEN_CONCURRENT_MARK
+#define FOLLOW_OBJECT(addr)	(!sgen_ptr_in_nursery ((addr)))
+#else
+#define FOLLOW_OBJECT(addr)	1
+#endif
+
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
 		void *__copy;						\
-		if (__old) {						\
+		if (__old && FOLLOW_OBJECT (__old)) {			\
 			PREFETCH_DYNAMIC_HEAP (__old);			\
 			major_copy_or_mark_object ((ptr), queue);	\
 			__copy = *(ptr);				\

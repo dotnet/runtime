@@ -510,6 +510,12 @@ sgen_workers_join (void)
 }
 
 gboolean
+sgen_workers_all_done (void)
+{
+	return workers_num_waiting == workers_num;
+}
+
+gboolean
 sgen_is_worker_thread (MonoNativeThreadId thread)
 {
 	int i;

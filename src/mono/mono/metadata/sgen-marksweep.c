@@ -727,6 +727,10 @@ alloc_obj_par (int size, gboolean pinned, gboolean has_references)
 	 */
 	*(void**)obj = NULL;
 
+#ifdef SGEN_CONCURRENT_MARK
+	g_assert_not_reached ();
+#endif
+
 	return obj;
 }
 
@@ -2134,7 +2138,14 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			if (mod_union) {
 #ifdef SGEN_CONCURRENT_MARK
 				card_data = card_base = block->cardtable_mod_union;
-				g_assert (card_data);
+				/*
+				 * This happens when the nursery
+				 * collection that precedes finishing
+				 * the concurrent collection allocates
+				 * new major blocks.
+				 */
+				if (!card_data)
+					continue;
 #else
 				g_assert_not_reached ();
 #endif

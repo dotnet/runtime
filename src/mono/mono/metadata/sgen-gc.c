@@ -2693,7 +2693,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 		check_for_xdomain_refs ();
 	}
 
-	if (!finish_up_concurrent_mark) {
+	if (!major_collector.is_concurrent) {
 		/* Remsets are not useful for a major collection */
 		remset.prepare_for_major_collection ();
 	}
@@ -2819,7 +2819,9 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	sfejd_critical_fin->list = critical_fin_list;
 	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_critical_fin);
 
-	if (finish_up_concurrent_mark) {
+	if (scan_mod_union) {
+		g_assert (finish_up_concurrent_mark);
+
 		/* Mod union card table */
 		sgen_workers_enqueue_job (job_scan_major_mod_union_cardtable, NULL);
 		sgen_workers_enqueue_job (job_scan_los_mod_union_cardtable, NULL);
@@ -2875,7 +2877,7 @@ major_start_collection (int *old_next_pin_slot)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, FALSE);
+	major_copy_or_mark_from_roots (old_next_pin_slot, FALSE, FALSE);
 }
 
 static void
@@ -2898,7 +2900,7 @@ wait_for_workers_to_finish (void)
 }
 
 static void
-major_finish_collection (const char *reason, int old_next_pin_slot)
+major_finish_collection (const char *reason, int old_next_pin_slot, gboolean scan_mod_union)
 {
 	LOSObject *bigobj, *prevbo;
 	TV_DECLARE (atv);
@@ -2913,10 +2915,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	current_object_ops = major_collector.major_ops;
 
 	if (major_collector.is_concurrent) {
-		major_collector.update_cardtable_mod_union ();
-		sgen_los_update_cardtable_mod_union ();
-
-		major_copy_or_mark_from_roots (NULL, TRUE);
+		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
 		wait_for_workers_to_finish ();
 
 		check_nursery_is_clean ();
@@ -3043,7 +3042,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (all_atv);
 
 	major_start_collection (&old_next_pin_slot);
-	major_finish_collection (reason, old_next_pin_slot);
+	major_finish_collection (reason, old_next_pin_slot, FALSE);
 
 	TV_GETTIME (all_btv);
 	gc_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
@@ -3060,19 +3059,34 @@ major_start_concurrent_collection (const char *reason)
 	major_start_collection (NULL);
 
 	sgen_workers_distribute_gray_queue_sections ();
-	g_assert (sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE));
+	g_assert (sgen_gray_object_queue_is_empty (sgen_workers_get_distribute_gray_queue ()));
 
 	sgen_workers_wait_for_jobs ();
 
 	current_collection_generation = -1;
 }
 
-static void
-major_finish_concurrent_collection (void)
+static gboolean
+major_update_or_finish_concurrent_collection (void)
 {
+	major_collector.update_cardtable_mod_union ();
+	sgen_los_update_cardtable_mod_union ();
+
+	if (!sgen_workers_all_done ()) {
+		g_print ("workers not done\n");
+		return FALSE;
+	}
+
+	collect_nursery ();
+
 	current_collection_generation = GENERATION_OLD;
-	major_finish_collection ("finishing", -1);
+	major_finish_collection ("finishing", -1, TRUE);
 	current_collection_generation = -1;
+
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap ();
+
+	return TRUE;
 }
 
 /*
@@ -3133,7 +3147,9 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	if (concurrent_collection_in_progress) {
 		g_assert (generation_to_collect == GENERATION_NURSERY);
-		major_finish_concurrent_collection ();
+		g_print ("finishing concurrent collection\n");
+		if (major_update_or_finish_concurrent_collection ())
+			goto done;
 	}
 
 	//FIXME extract overflow reason
@@ -3141,6 +3157,17 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		if (collect_nursery ()) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
+		}
+		if (concurrent_collection_in_progress) {
+			current_collection_generation = GENERATION_OLD;
+			// FIXME: we need to do the distribution in the background
+			for (;;) {
+				sgen_workers_distribute_gray_queue_sections ();
+				if (sgen_gray_object_queue_is_empty (sgen_workers_get_distribute_gray_queue ()))
+					break;
+				g_usleep (1000);
+			}
+			current_collection_generation = -1;
 		}
 	} else {
 		if (major_collector.is_concurrent)
