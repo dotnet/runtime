@@ -2401,6 +2401,7 @@ collect_nursery (void)
 		return TRUE;
 
 	MONO_GC_BEGIN (GENERATION_NURSERY);
+	binary_protocol_collection_begin (stat_minor_gcs, GENERATION_NURSERY);
 
 	verify_nursery ();
 
@@ -2416,7 +2417,6 @@ collect_nursery (void)
 	
 	reset_pinned_from_failed_allocation ();
 
-	binary_protocol_collection (stat_minor_gcs, GENERATION_NURSERY);
 	check_scan_starts ();
 
 	sgen_nursery_alloc_prepare_for_minor ();
@@ -2634,12 +2634,13 @@ collect_nursery (void)
 	objects_pinned = 0;
 
 	MONO_GC_END (GENERATION_NURSERY);
+	binary_protocol_collection_end (stat_minor_gcs - 1, GENERATION_NURSERY);
 
 	return needs_major;
 }
 
 static void
-major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concurrent_mark)
+major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concurrent_mark, gboolean scan_mod_union)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2845,6 +2846,7 @@ static void
 major_start_collection (int *old_next_pin_slot)
 {
 	MONO_GC_BEGIN (GENERATION_OLD);
+	binary_protocol_collection_begin (stat_major_gcs, GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
 #ifndef DISABLE_PERFCOUNTERS
@@ -2863,7 +2865,6 @@ major_start_collection (int *old_next_pin_slot)
 	//count_ref_nonref_objs ();
 	//consistency_check ();
 
-	binary_protocol_collection (stat_major_gcs, GENERATION_OLD);
 	check_scan_starts ();
 
 	degraded_mode = 0;
@@ -3028,6 +3029,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot)
 	//consistency_check ();
 
 	MONO_GC_END (GENERATION_OLD);
+	binary_protocol_collection_end (stat_major_gcs - 1, GENERATION_OLD);
 }
 
 static gboolean
