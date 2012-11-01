@@ -4568,6 +4568,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 
 		cfg->gsharedvt = TRUE;
+		// FIXME:
+		cfg->disable_llvm = TRUE;
 	}
 
 	if (cfg->generic_sharing_context) {
@@ -4709,6 +4711,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (cfg->verbose_level > 0) {
 		char *method_name;
+
+		method_name = mono_method_full_name (method, TRUE);
+		g_print ("converting %s%s%smethod %s\n", COMPILE_LLVM (cfg) ? "llvm " : "", cfg->gsharedvt ? "gsharedvt " : "", (cfg->generic_sharing_context && !cfg->gsharedvt) ? "gshared " : "", method_name);
+		/*
 		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", method_name = mono_method_full_name (method, TRUE));
 		else if (cfg->gsharedvt)
@@ -4717,6 +4723,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			g_print ("converting shared method %s\n", method_name = mono_method_full_name (method_to_compile, TRUE));
 		else
 			g_print ("converting method %s\n", method_name = mono_method_full_name (method, TRUE));
+		*/
 		g_free (method_name);
 	}
 

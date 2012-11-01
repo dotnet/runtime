@@ -3370,6 +3370,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			}
 
+			if (mini_is_gsharedvt_klass (cfg, klass)) {
+				// FIXME:
+				LLVM_FAILURE (ctx, "gsharedvt");
+				break;
+			}
+
 			switch (ins->opcode) {
 			case OP_STOREV_MEMBASE:
 				if (cfg->gen_write_barriers && klass->has_references && ins->inst_destbasereg != cfg->frame_reg) {
