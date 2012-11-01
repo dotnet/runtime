@@ -7776,6 +7776,20 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		g_assert (acfg->got_offset <= acfg->final_got_size);
 
 	printf ("Code: %d Info: %d Ex Info: %d Unwind Info: %d Class Info: %d PLT: %d GOT Info: %d GOT: %d Offsets: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.unwind_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, (int)(acfg->got_offset * sizeof (gpointer)), acfg->stats.offsets_size);
+	printf ("Compiled: %d/%d (%d%%), No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
+			acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100,
+			acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100,
+			acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
+	if (acfg->stats.genericcount)
+		printf ("%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
+	if (acfg->stats.abscount)
+		printf ("%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
+	if (acfg->stats.lmfcount)
+		printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
+	if (acfg->stats.ocount)
+		printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
+	if (acfg->llvm)
+		printf ("Methods compiled with LLVM: %d (%d%%)\n", acfg->stats.llvm_count, acfg->stats.mcount ? (acfg->stats.llvm_count * 100) / acfg->stats.mcount : 100);
 
 	TV_GETTIME (atv);
 	res = img_writer_emit_writeout (acfg->w);
@@ -7799,20 +7813,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 	TV_GETTIME (btv);
 	acfg->stats.link_time = TV_ELAPSED (atv, btv);
-
-	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.genericcount)
-		printf ("%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.abscount)
-		printf ("%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.lmfcount)
-		printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.ocount)
-		printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
-	if (acfg->llvm)
-		printf ("Methods compiled with LLVM: %d (%d%%)\n", acfg->stats.llvm_count, acfg->stats.mcount ? (acfg->stats.llvm_count * 100) / acfg->stats.mcount : 100);
-	printf ("Methods without GOT slots: %d (%d%%)\n", acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100);
-	printf ("Direct calls: %d (%d%%)\n", acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
 
 	if (acfg->aot_opts.stats) {
 		int i;
