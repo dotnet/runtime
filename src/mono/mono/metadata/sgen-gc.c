@@ -4541,6 +4541,8 @@ mono_gc_base_init (void)
 				do_verify_nursery = TRUE;
 			} else if (!strcmp (opt, "dump-nursery-at-minor-gc")) {
 				do_dump_nursery_content = TRUE;
+			} else if (!strcmp (opt, "no-managed-allocator")) {
+				sgen_set_use_managed_allocator (FALSE);
 			} else if (!strcmp (opt, "disable-minor")) {
 				disable_minor_collections = TRUE;
 			} else if (!strcmp (opt, "disable-major")) {
@@ -4568,12 +4570,21 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  verify-before-allocs[=<n>]\n");
 				fprintf (stderr, "  check-at-minor-collections\n");
 				fprintf (stderr, "  verify-before-collections\n");
+				fprintf (stderr, "  verify-nursery-at-minor-gc\n");
+				fprintf (stderr, "  dump-nursery-at-minor-gc\n");
 				fprintf (stderr, "  disable-minor\n");
 				fprintf (stderr, "  disable-major\n");
 				fprintf (stderr, "  xdomain-checks\n");
 				fprintf (stderr, "  clear-at-gc\n");
+				fprintf (stderr, "  clear-nursery-at-gc\n");
+				fprintf (stderr, "  check-scan-starts\n");
+				fprintf (stderr, "  no-managed-allocator\n");
 				fprintf (stderr, "  print-allowance\n");
 				fprintf (stderr, "  print-pinning\n");
+				fprintf (stderr, "  heap-dump=<filename>\n");
+#ifdef SGEN_BINARY_PROTOCOL
+				fprintf (stderr, "  binary-protocol=<filename>\n");
+#endif
 				exit (1);
 			}
 		}

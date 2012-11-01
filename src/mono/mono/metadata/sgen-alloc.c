@@ -69,6 +69,8 @@ enum {
 
 #undef OPDEF
 
+static gboolean use_managed_allocator = TRUE;
+
 #ifdef HEAVY_STATISTICS
 static long long stat_objects_alloced = 0;
 static long long stat_bytes_alloced = 0;
@@ -986,11 +988,20 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 #endif
 }
 
+void
+sgen_set_use_managed_allocator (gboolean flag)
+{
+	use_managed_allocator = flag;
+}
+
 MonoMethod*
 mono_gc_get_managed_allocator_by_type (int atype)
 {
 #ifdef MANAGED_ALLOCATION
 	MonoMethod *res;
+
+	if (!use_managed_allocator)
+		return NULL;
 
 	if (!mono_runtime_has_tls_get ())
 		return NULL;
