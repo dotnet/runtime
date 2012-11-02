@@ -28,6 +28,9 @@ namespace Mono.Tuner {
 
 				throw new NotSupportedException ("No active profile");
 			}
+			set {
+				current = value;
+			}
 		}
 
 		static Profile CreateProfile (string name)
