@@ -2118,10 +2118,23 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			base = sgen_card_table_align_pointer (obj);
 
 			while (obj < end) {
-				if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
-					int card_offset = (obj - base) >> CARD_BITS;
-					sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, queue);
+				int card_offset;
+
+				if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
+					goto next_large;
+
+				if (mod_union) {
+					/* FIXME: do this more efficiently */
+					int w, b;
+					MS_CALC_MARK_BIT (w, b, obj);
+					if (!MS_MARK_BIT (block, w, b))
+						goto next_large;
 				}
+
+				card_offset = (obj - base) >> CARD_BITS;
+				sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, queue);
+
+			next_large:
 				obj += block_obj_size;
 			}
 		} else {
@@ -2180,10 +2193,20 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 
 				obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
 				while (obj < end) {
-					if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
-						HEAVY_STAT (++scanned_objects);
-						scan_func (obj, queue);
+					if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
+						goto next_small;
+
+					if (mod_union) {
+						/* FIXME: do this more efficiently */
+						int w, b;
+						MS_CALC_MARK_BIT (w, b, obj);
+						if (!MS_MARK_BIT (block, w, b))
+							goto next_small;
 					}
+
+					HEAVY_STAT (++scanned_objects);
+					scan_func (obj, queue);
+				next_small:
 					obj += block_obj_size;
 				}
 				HEAVY_STAT (if (*card_data) ++remarked_cards);
