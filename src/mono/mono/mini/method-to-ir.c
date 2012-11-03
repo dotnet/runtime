@@ -106,12 +106,13 @@
 		}			\
 	} while (0)
 #define GSHAREDVT_FAILURE(opcode) do {		\
-		if (cfg->gsharedvt) {	\
-            if (cfg->verbose_level >= 2) \
-			    printf ("gsharedvt failed for method %s.%s.%s/%d opcode %s line %d\n", method->klass->name_space, method->klass->name, method->name, method->signature->param_count, mono_opcode_name ((opcode)), __LINE__); \
-			mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED); \
-			goto exception_exit;	\
-		}			\
+	if (cfg->gsharedvt) {												\
+		cfg->exception_message = g_strdup_printf ("gsharedvt failed for method %s.%s.%s/%d opcode %s %s:%d", method->klass->name_space, method->klass->name, method->name, method->signature->param_count, mono_opcode_name ((opcode)), __FILE__, __LINE__); \
+		if (cfg->verbose_level >= 2)									\
+			printf ("%s\n", cfg->exception_message); \
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED); \
+		goto exception_exit;											\
+	}																	\
 	} while (0)
 #define OUT_OF_MEMORY_FAILURE do {	\
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_OUT_OF_MEMORY);		\

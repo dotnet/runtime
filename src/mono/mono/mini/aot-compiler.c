@@ -5781,7 +5781,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	 */
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), FALSE, TRUE, 0);
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
-		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
+		if (acfg->aot_opts.print_skipped_methods)
+			printf ("Skip (gshared failure): %s (%s)\n", mono_method_full_name (method, TRUE), cfg->exception_message);
 		InterlockedIncrement (&acfg->stats.genericcount);
 		return;
 	}
