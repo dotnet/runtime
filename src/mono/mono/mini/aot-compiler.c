@@ -7569,6 +7569,8 @@ collect_methods (MonoAotCompile *acfg)
 			MonoType **args;
 			MonoGenericInst *inst;
 			MonoMethod *inflated, *gshared;
+			MonoGenericContainer *container;
+			MonoClass **constraints;
 
 			memset (&ctx, 0, sizeof (ctx));
 
@@ -7583,18 +7585,37 @@ collect_methods (MonoAotCompile *acfg)
 				ctx.class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 			}
 			if (method->is_generic) {
-				shared_context = mono_method_get_generic_container (method)->context;
+				container = mono_method_get_generic_container (method);
+				shared_context = container->context;
 				inst = shared_context.method_inst;
 
 				args = g_new0 (MonoType*, inst->type_argc);
-				for (i = 0; i < inst->type_argc; ++i) {
-					args [i] = &mono_defaults.int_class->byval_arg;
+				for (i = 0; i < container->type_argc; ++i) {
+					MonoGenericParamInfo *info = &container->type_params [i].info;
+					gboolean ref_only = FALSE;
+
+					if (info && info->constraints) {
+						constraints = info->constraints;
+
+						while (*constraints) {
+							MonoClass *cklass = *constraints;
+							if (!(cklass == mono_defaults.object_class || (cklass->image == mono_defaults.corlib && !strcmp (cklass->name, "ValueType"))))
+								/* Inflaring the method with our vtype would not be valid */
+								ref_only = TRUE;
+							constraints ++;
+						}
+					}
+
+					if (ref_only)
+						args [i] = &mono_defaults.object_class->byval_arg;
+					else
+						args [i] = &mono_defaults.int_class->byval_arg;
 				}
 				ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 			}
 
 			inflated = mono_class_inflate_generic_method (method, &ctx);
-			gshared = mini_get_shared_method (inflated);
+			gshared = mini_get_shared_method_full (inflated, FALSE, TRUE);
 			add_extra_method (acfg, gshared);
 		}
 	}
