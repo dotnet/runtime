@@ -10315,8 +10315,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 		case MONO_CUSTOM_PREFIX: {
 
-			GSHAREDVT_FAILURE (*ip);
-
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 
 			CHECK_OPSIZE (2);
