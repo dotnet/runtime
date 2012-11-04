@@ -2182,7 +2182,7 @@ callvirt_to_call_membase (int opcode)
 
 #ifdef MONO_ARCH_HAVE_IMT
 static void
-emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
+emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, MonoInst *imt_arg)
 {
 	int method_reg;
 
@@ -2192,11 +2192,11 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 		if (imt_arg) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
 		} else if (cfg->compile_aot) {
-			MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
+			MONO_EMIT_NEW_AOTCONST (cfg, method_reg, method, MONO_PATCH_INFO_METHODCONST);
 		} else {
 			MonoInst *ins;
 			MONO_INST_NEW (cfg, ins, OP_PCONST);
-			ins->inst_p0 = call->method;
+			ins->inst_p0 = method;
 			ins->dreg = method_reg;
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
@@ -2219,11 +2219,11 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 	if (imt_arg) {
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
 	} else if (cfg->compile_aot) {
-		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
+		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, method, MONO_PATCH_INFO_METHODCONST);
 	} else {
 		MonoInst *ins;
 		MONO_INST_NEW (cfg, ins, OP_PCONST);
-		ins->inst_p0 = call->method;
+		ins->inst_p0 = method;
 		ins->dreg = method_reg;
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
@@ -2385,6 +2385,33 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 	return (MonoInst*)call;
 }
 
+/* This is like calli, but we pass rgctx/imt arguments as well */
+static MonoInst*
+emit_gsharedvt_call (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoMethod *method, MonoInst *imt_arg, MonoInst *rgctx_arg)
+{
+	MonoCallInst *call;
+	int rgctx_reg = -1;
+
+	if (rgctx_arg) {
+		rgctx_reg = mono_alloc_preg (cfg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
+	}
+
+	call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE, rgctx_arg ? TRUE : FALSE, FALSE);
+
+	call->inst.sreg1 = addr->dreg;
+
+	if (imt_arg)
+		emit_imt_argument (cfg, call, method, imt_arg);
+
+	MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
+
+	if (rgctx_arg)
+		set_rgctx_arg (cfg, call, rgctx_reg, rgctx_arg);
+
+	return (MonoInst*)call;
+}
+
 static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used, MonoMethod *cmethod, MonoRgctxInfoType rgctx_type);
 static MonoInst*
@@ -2518,7 +2545,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 #ifdef MONO_ARCH_HAVE_IMT
 				if (mono_use_imt) {
 					guint32 imt_slot = mono_method_get_imt_slot (method);
-					emit_imt_argument (cfg, call, imt_arg);
+					emit_imt_argument (cfg, call, call->method, imt_arg);
 					slot_reg = vtable_reg;
 					call->inst.inst_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 				}
@@ -2535,7 +2562,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 #ifdef MONO_ARCH_HAVE_IMT
 				if (imt_arg) {
 					g_assert (mono_method_signature (method)->generic_param_count);
-					emit_imt_argument (cfg, call, imt_arg);
+					emit_imt_argument (cfg, call, call->method, imt_arg);
 				}
 #endif
 			}
@@ -7470,8 +7497,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *addr;
 
 				if (virtual) {
-					if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-						GSHAREDVT_FAILURE (*ip);
+					//if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+						//GSHAREDVT_FAILURE (*ip);
 					// disable for possible remoting calls
 					if (fsig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))
 						GSHAREDVT_FAILURE (*ip);
@@ -7488,7 +7515,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				else
 					addr = emit_get_rgctx_method (cfg, context_used,
 												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
-				ins = mono_emit_calli (cfg, fsig, sp, addr, vtable_arg);
+				ins = emit_gsharedvt_call (cfg, fsig, sp, addr, cmethod, imt_arg, vtable_arg);
 
 				if (!MONO_TYPE_IS_VOID (fsig->ret))
 					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);

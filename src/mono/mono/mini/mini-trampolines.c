@@ -352,7 +352,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		/* Call from normal/gshared code to gsharedvt code with variable signature */
 		gsctx = mono_jit_info_get_generic_sharing_context (ji);
 
-		info = mono_arch_get_gsharedvt_call_info (compiled_method, m, ji->method, gsctx, TRUE, FALSE);
+		info = mono_arch_get_gsharedvt_call_info (compiled_method, m, ji->method, gsctx, TRUE, -1);
 
 		if (!tramp_addr) {
 			wrapper = mono_marshal_get_gsharedvt_in_wrapper ();

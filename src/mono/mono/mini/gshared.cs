@@ -559,6 +559,10 @@ public class Tests
 		return 0;
 	}
 
+	public interface IFace<T> {
+		T return_t_iface (T t);
+	}
+
 	public class Parent<T> {
 		public virtual T return_t_vcall (T t) {
 			throw new Exception ();
@@ -566,8 +570,11 @@ public class Tests
 		}
 	}
 
-	public class Child<T> : Parent<T> {
+	public class Child<T> : Parent<T>, IFace<T> {
 		public override T return_t_vcall (T t) {
+			return t;
+		}
+		public T return_t_iface (T t) {
 			return t;
 		}
 	}
@@ -586,6 +593,19 @@ public class Tests
 				return 2;
 		}
 		if (return_t_vcall (new Child<double> (), 2.0) != 2.0)
+			return 3;
+		return 0;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static T return_t_iface<T> (IFace<T> r, T t) {
+		return r.return_t_iface (t);
+	}
+
+	public static int test_0_iface_calls () {
+		if (return_t_iface (new Child<int> (), 2) != 2)
+			return 1;
+		if (return_t_iface (new Child<double> (), 2.0) != 2.0)
 			return 3;
 		return 0;
 	}

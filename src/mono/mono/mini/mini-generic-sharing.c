@@ -973,6 +973,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		gpointer addr;
 		MonoJitInfo *ji;
 		gboolean virtual = oti->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT;
+		gint32 vcall_offset;
 
 		g_assert (method->is_inflated);
 
@@ -980,6 +981,22 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			addr = mono_compile_method (method);
 		else
 			addr = NULL;
+
+		if (virtual) {
+			/* Same as in mono_emit_method_call_full () */
+#ifndef MONO_ARCH_HAVE_IMT
+			NOT_IMPLEMENTED;
+#endif
+			if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+				guint32 imt_slot = mono_method_get_imt_slot (method);
+				vcall_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+			} else {
+				vcall_offset = G_STRUCT_OFFSET (MonoVTable, vtable) +
+					((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
+			}
+		} else {
+			vcall_offset = -1;
+		}
 
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
@@ -1011,7 +1028,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 			mini_init_gsctx (context, &gsctx);
 
-			info = mono_arch_get_gsharedvt_call_info (addr, method, gm, &gsctx, FALSE, virtual);
+			info = mono_arch_get_gsharedvt_call_info (addr, method, gm, &gsctx, FALSE, vcall_offset);
 
 			if (!tramp_addr) {
 				wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
@@ -1050,7 +1067,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			// FIXME: This is just a workaround
 			if (caller_method == method) {
 			} else {
-				info = mono_arch_get_gsharedvt_call_info (ji->code_start, method, ji->method, &gsctx, TRUE, FALSE);
+				info = mono_arch_get_gsharedvt_call_info (ji->code_start, method, ji->method, &gsctx, TRUE, -1);
 
 				if (!tramp_addr) {
 					wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
