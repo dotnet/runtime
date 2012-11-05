@@ -44,6 +44,7 @@ STRESS_TESTS_SRC=	\
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
 BASE_TEST_CS_SRC=		\
+	bug-2907.cs		\
 	array-init.cs		\
 	arraylist.cs		\
 	assemblyresolve_event.cs	\
