@@ -1228,6 +1228,21 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoString *marshal_cookie;
+	MonoString *marshal_type;
+	MonoReflectionType *marshal_type_ref;
+	MonoReflectionType *marshal_safe_array_user_defined_subtype;
+	guint32 utype;
+	guint32 array_subtype;
+	gint32 safe_array_subtype;
+	gint32 size_const;
+	gint32 IidParameterIndex;
+	gint16 size_param_index;
+} MonoReflectionMarshalAsAttribute;
+
+
+typedef struct {
+	MonoObject object;
 	gint32 call_conv;
 	gint32 charset;
 	MonoString *dll;
