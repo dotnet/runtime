@@ -1413,7 +1413,7 @@ MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelp
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig) MONO_INTERNAL;
 
-MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
+MonoReflectionMarshalAsAttribute* mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context) MONO_INTERNAL;

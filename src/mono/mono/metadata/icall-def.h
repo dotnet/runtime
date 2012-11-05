@@ -572,7 +572,7 @@ ICALL(TYPEB_7, "setup_internal_class", mono_reflection_setup_internal_class)
 
 ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 ICALL(FILEDI_1, "GetTypeModifiers", ves_icall_System_Reflection_FieldInfo_GetTypeModifiers)
-ICALL(FILEDI_2, "GetUnmanagedMarshal", ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal)
+ICALL(FILEDI_2, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info)
 ICALL(FILEDI_3, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type)
 
 ICALL_TYPE(MEMBERI, "System.Reflection.MemberInfo", MEMBERI_1)
