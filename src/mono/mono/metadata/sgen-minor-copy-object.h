@@ -227,7 +227,7 @@ PARALLEL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 	objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 	has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-	destination = COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION (obj, objsize, has_references);
+	destination = COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION (vt, obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
 		sgen_parallel_pin_or_update (obj_slot, obj, vt, queue);

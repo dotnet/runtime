@@ -178,7 +178,7 @@ to_space_expand (void)
 }
 
 static void*
-major_alloc_object (int size, gboolean has_references)
+major_alloc_object (MonoVTable *vtable, int size, gboolean has_references)
 {
 	char *dest = to_space_bumper;
 	/* Make sure we have enough space available */
@@ -190,6 +190,8 @@ major_alloc_object (int size, gboolean has_references)
 	to_space_bumper += size;
 	SGEN_ASSERT (8, to_space_bumper <= to_space_top, "to-space-bumper %p overflow to-space-top %p", to_space_bumper, to_space_top);
 	to_space_section->scan_starts [(dest - (char*)to_space_section->data)/SGEN_SCAN_START_SIZE] = dest;
+	/* FIXME: write vtable */
+	g_assert_not_reached ();
 	return dest;
 }
 
@@ -231,8 +233,10 @@ major_is_object_live (char *obj)
 
 /* size is a multiple of ALLOC_ALIGN */
 static void*
-major_alloc_small_pinned_obj (size_t size, gboolean has_references)
+major_alloc_small_pinned_obj (MonoVTable *vtable, size_t size, gboolean has_references)
 {
+	/* FIXME: write vtable */
+	g_assert_not_reached ();
 	return sgen_alloc_pinned (&pinned_allocator, size);
 }
 

@@ -640,8 +640,8 @@ sgen_nursery_is_object_alive (char *obj)
 }
 
 typedef struct {
-	char* (*alloc_for_promotion) (char *obj, size_t objsize, gboolean has_references);
-	char* (*par_alloc_for_promotion) (char *obj, size_t objsize, gboolean has_references);
+	char* (*alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
+	char* (*par_alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 	SgenObjectOperations parallel_ops;
@@ -680,13 +680,13 @@ struct _SgenMajorCollector {
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
-	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
+	void* (*alloc_small_pinned_obj) (MonoVTable *vtable, size_t size, gboolean has_references);
 	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
 
 	SgenObjectOperations major_ops;
 
-	void* (*alloc_object) (int size, gboolean has_references);
-	void* (*par_alloc_object) (int size, gboolean has_references);
+	void* (*alloc_object) (MonoVTable *vtable, int size, gboolean has_references);
+	void* (*par_alloc_object) (MonoVTable *vtable, int size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);

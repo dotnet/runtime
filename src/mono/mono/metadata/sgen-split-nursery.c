@@ -265,14 +265,14 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 }
 
 static inline char*
-alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;
 	int age;
 
 	age = get_object_age (obj);
 	if (age >= promote_age)
-		return major_collector.alloc_object (objsize, has_references);
+		return major_collector.alloc_object (vtable, objsize, has_references);
 
 	/* Promote! */
 	++age;
@@ -283,8 +283,10 @@ alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
 	} else {
 		p = alloc_for_promotion_slow_path (age, objsize);
 		if (!p)
-			p = major_collector.alloc_object (objsize, has_references);
+			return major_collector.alloc_object (vtable, objsize, has_references);
 	}
+
+	*(MonoVTable**)p = vtable;
 
 	return p;
 }
@@ -335,14 +337,14 @@ restart:
 }
 
 static inline char*
-par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+par_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	char *p;
 	int age;
 
 	age = get_object_age (obj);
 	if (age >= promote_age)
-		return major_collector.par_alloc_object (objsize, has_references);
+		return major_collector.par_alloc_object (vtable, objsize, has_references);
 
 restart:
 	p = age_alloc_buffers [age].next;
@@ -357,34 +359,36 @@ restart:
 
 		/* Have we failed to promote to the nursery, lets just evacuate it to old gen. */
 		if (!p)
-			p = major_collector.par_alloc_object (objsize, has_references);			
+			return major_collector.par_alloc_object (vtable, objsize, has_references);
 	}
+
+	*(MonoVTable**)p = vtable;
 
 	return p;
 }
 
 static char*
-minor_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+minor_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	/*
 	We only need to check for a non-nursery object if we're doing a major collection.
 	*/
 	if (!sgen_ptr_in_nursery (obj))
-		return major_collector.alloc_object (objsize, has_references);
+		return major_collector.alloc_object (vtable, objsize, has_references);
 
-	return alloc_for_promotion (obj, objsize, has_references);
+	return alloc_for_promotion (vtable, obj, objsize, has_references);
 }
 
 static char*
-minor_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+minor_par_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	/*
 	We only need to check for a non-nursery object if we're doing a major collection.
 	*/
 	if (!sgen_ptr_in_nursery (obj))
-		return major_collector.par_alloc_object (objsize, has_references);
+		return major_collector.par_alloc_object (vtable, objsize, has_references);
 
-	return par_alloc_for_promotion (obj, objsize, has_references);
+	return par_alloc_for_promotion (vtable, obj, objsize, has_references);
 }
 
 static SgenFragment*

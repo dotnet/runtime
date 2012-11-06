@@ -297,6 +297,7 @@ static void
 concurrent_enqueue_check (SgenGrayQueue *queue, char *obj)
 {
 	g_assert (!sgen_ptr_in_nursery (obj));
+	g_assert (SGEN_LOAD_VTABLE (obj));
 }
 
 static void

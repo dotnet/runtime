@@ -679,7 +679,7 @@ try_remove_block_from_free_list (MSBlockInfo *block, MSBlockInfo **free_blocks, 
 }
 
 static void*
-alloc_obj_par (int size, gboolean pinned, gboolean has_references)
+alloc_obj_par (MonoVTable *vtable, int size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
 	MSBlockInfo **free_blocks_local = FREE_BLOCKS_LOCAL (pinned, has_references);
@@ -721,11 +721,7 @@ alloc_obj_par (int size, gboolean pinned, gboolean has_references)
 		}
 	}
 
-	/*
-	 * FIXME: This should not be necessary because it'll be
-	 * overwritten by the vtable immediately.
-	 */
-	*(void**)obj = NULL;
+	*(MonoVTable**)obj = vtable;
 
 #ifdef SGEN_CONCURRENT_MARK
 	g_assert_not_reached ();
@@ -735,14 +731,14 @@ alloc_obj_par (int size, gboolean pinned, gboolean has_references)
 }
 
 static void*
-major_par_alloc_object (int size, gboolean has_references)
+major_par_alloc_object (MonoVTable *vtable, int size, gboolean has_references)
 {
-	return alloc_obj_par (size, FALSE, has_references);
+	return alloc_obj_par (vtable, size, FALSE, has_references);
 }
 #endif
 
 static void*
-alloc_obj (int size, gboolean pinned, gboolean has_references)
+alloc_obj (MonoVTable *vtable, int size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
@@ -762,11 +758,7 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 
 	obj = unlink_slot_from_free_list_uncontested (free_blocks, size_index);
 
-	/*
-	 * FIXME: This should not be necessary because it'll be
-	 * overwritten by the vtable immediately.
-	 */
-	*(void**)obj = NULL;
+	*(MonoVTable**)obj = vtable;
 
 #ifdef SGEN_CONCURRENT_MARK
 	if (obj && sgen_remember_major_object_for_concurrent_mark (obj)) {
@@ -782,9 +774,9 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 }
 
 static void*
-major_alloc_object (int size, gboolean has_references)
+major_alloc_object (MonoVTable *vtable, int size, gboolean has_references)
 {
-	return alloc_obj (size, FALSE, has_references);
+	return alloc_obj (vtable, size, FALSE, has_references);
 }
 
 /*
@@ -826,19 +818,19 @@ major_free_non_pinned_object (char *obj, size_t size)
 
 /* size is a multiple of SGEN_ALLOC_ALIGN */
 static void*
-major_alloc_small_pinned_obj (size_t size, gboolean has_references)
+major_alloc_small_pinned_obj (MonoVTable *vtable, size_t size, gboolean has_references)
 {
 	void *res;
 
 	ms_wait_for_sweep_done ();
 
-	res = alloc_obj (size, TRUE, has_references);
+	res = alloc_obj (vtable, size, TRUE, has_references);
 	 /*If we failed to alloc memory, we better try releasing memory
 	  *as pinned alloc is requested by the runtime.
 	  */
 	 if (!res) {
 		sgen_perform_collection (0, GENERATION_OLD, "pinned alloc failure", TRUE);
-		res = alloc_obj (size, TRUE, has_references);
+		res = alloc_obj (vtable, size, TRUE, has_references);
 	 }
 	 return res;
 }
@@ -862,9 +854,8 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 
 	old_num_sections = num_major_sections;
 
-	obj = alloc_obj (size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
+	obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
-		*(MonoVTable**)obj = vtable;
 		HEAVY_STAT (++stat_objects_alloced_degraded);
 		HEAVY_STAT (stat_bytes_alloced_degraded += size);
 		g_assert (num_major_sections >= old_num_sections);
@@ -1173,7 +1164,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-		destination = sgen_minor_collector.par_alloc_for_promotion (obj, objsize, has_references);
+		destination = sgen_minor_collector.par_alloc_for_promotion (vt, obj, objsize, has_references);
 		if (G_UNLIKELY (!destination)) {
 			if (!sgen_ptr_in_nursery (obj)) {
 				int size_index;
@@ -1186,14 +1177,6 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			sgen_set_pinned_from_failed_allocation (objsize);
 			return;
 		}
-
-		/*
-		 * We do this before the CAS because we want to make
-		 * sure that if another thread sees the destination
-		 * pointer the VTable is already in place.  Not doing
-		 * this can crash binary protocols.
-		 */
-		*(MonoVTable**)destination = vt;
 
 		if (SGEN_CAS_PTR (obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
 			gboolean was_marked;

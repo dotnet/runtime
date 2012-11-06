@@ -29,15 +29,15 @@
 #include "metadata/sgen-protocol.h"
 
 static inline char*
-alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
-	return major_collector.alloc_object (objsize, has_references);
+	return major_collector.alloc_object (vtable, objsize, has_references);
 }
 
 static inline char*
-par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references)
+par_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
-	return major_collector.par_alloc_object (objsize, has_references);
+	return major_collector.par_alloc_object (vtable, objsize, has_references);
 }
 
 static SgenFragment*

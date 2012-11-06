@@ -570,7 +570,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		p = sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		SGEN_ASSERT (9, vtable->klass->inited, "class %s:%s is not initialized", vtable->klass->name_space, vtable->klass->name);
-		p = major_collector.alloc_small_pinned_obj (size, SGEN_VTABLE_HAS_REFERENCES (vtable));
+		p = major_collector.alloc_small_pinned_obj (vtable, size, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	}
 	if (G_LIKELY (p)) {
 		SGEN_LOG (6, "Allocated pinned object %p, vtable: %p (%s), size: %zd", p, vtable, vtable->klass->name, size);
@@ -579,7 +579,6 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		else
 			MONO_GC_MAJOR_OBJ_ALLOC_PINNED ((mword)p, size, vtable->klass->name_space, vtable->klass->name);
 		binary_protocol_alloc_pinned (p, vtable, size);
-		mono_atomic_store_seq (p, vtable);
 	}
 	UNLOCK_GC;
 	return p;
@@ -592,7 +591,6 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 	size_t size = ALIGN_UP (vtable->klass->instance_size);
 	LOCK_GC;
 	res = alloc_degraded (vtable, size, TRUE);
-	mono_atomic_store_seq (res, vtable);
 	UNLOCK_GC;
 	if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer ((MonoObject*)res);
