@@ -694,6 +694,8 @@ if test "x$enable_libraries" = "xno"; then
    with_shared_mono=no
 fi
 
+AM_CONDITIONAL(DISABLE_LIBRARIES, test x$enable_libraries = xno)
+
 case $host in
 *nacl* ) with_shared_mono=yes;;
 esac
