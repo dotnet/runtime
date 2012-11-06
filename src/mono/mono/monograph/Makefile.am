@@ -20,7 +20,10 @@ else
 runtime_lib=../interpreter/libmint.la
 endif
 
+if DISABLE_LIBRARIES
+else
 bin_PROGRAMS = monograph
+endif
 
 AM_CPPFLAGS = 				\
 	-I$(top_srcdir)			\
