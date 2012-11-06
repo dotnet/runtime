@@ -1228,6 +1228,21 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoString *marshal_cookie;
+	MonoString *marshal_type;
+	MonoReflectionType *marshal_type_ref;
+	MonoReflectionType *marshal_safe_array_user_defined_subtype;
+	guint32 utype;
+	guint32 array_subtype;
+	gint32 safe_array_subtype;
+	gint32 size_const;
+	gint32 IidParameterIndex;
+	gint16 size_param_index;
+} MonoReflectionMarshalAsAttribute;
+
+
+typedef struct {
+	MonoObject object;
 	gint32 call_conv;
 	gint32 charset;
 	MonoString *dll;
@@ -1398,7 +1413,7 @@ MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelp
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig) MONO_INTERNAL;
 
-MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
+MonoReflectionMarshalAsAttribute* mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context) MONO_INTERNAL;

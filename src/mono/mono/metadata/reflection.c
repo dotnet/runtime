@@ -6862,7 +6862,7 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 		}
 
 		if (mspecs [i + 1])
-			MONO_OBJECT_SETREF (param, MarshalAsImpl, (MonoObject*)mono_reflection_marshal_from_marshal_spec (domain, method->klass, mspecs [i + 1]));
+			MONO_OBJECT_SETREF (param, MarshalAsImpl, (MonoObject*)mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [i + 1]));
 		
 		mono_array_setref (res, i, param);
 	}
@@ -10019,45 +10019,46 @@ mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
 }
 #endif /* !DISABLE_REFLECTION_EMIT */
 
-MonoReflectionMarshal*
-mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
+MonoReflectionMarshalAsAttribute*
+mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
 										   MonoMarshalSpec *spec)
 {
-	static MonoClass *System_Reflection_Emit_UnmanagedMarshalClass;
-	MonoReflectionMarshal *minfo;
+	static MonoClass *System_Reflection_Emit_MarshalAsAttribute;
+	MonoReflectionMarshalAsAttribute *minfo;
 	MonoType *mtype;
 
-	if (!System_Reflection_Emit_UnmanagedMarshalClass) {
-		System_Reflection_Emit_UnmanagedMarshalClass = mono_class_from_name (
-		   mono_defaults.corlib, "System.Reflection.Emit", "UnmanagedMarshal");
-		g_assert (System_Reflection_Emit_UnmanagedMarshalClass);
+	if (!System_Reflection_Emit_MarshalAsAttribute) {
+		System_Reflection_Emit_MarshalAsAttribute = mono_class_from_name (
+		   mono_defaults.corlib, "System.Runtime.InteropServices", "MarshalAsAttribute");
+		g_assert (System_Reflection_Emit_MarshalAsAttribute);
 	}
 
-	minfo = (MonoReflectionMarshal*)mono_object_new (domain, System_Reflection_Emit_UnmanagedMarshalClass);
-	minfo->type = spec->native;
+	minfo = (MonoReflectionMarshalAsAttribute*)mono_object_new (domain, System_Reflection_Emit_MarshalAsAttribute);
+	minfo->utype = spec->native;
 
-	switch (minfo->type) {
+	switch (minfo->utype) {
 	case MONO_NATIVE_LPARRAY:
-		minfo->eltype = spec->data.array_data.elem_type;
-		minfo->count = spec->data.array_data.num_elem;
-		minfo->param_num = spec->data.array_data.param_num;
+		minfo->array_subtype = spec->data.array_data.elem_type;
+		minfo->size_const = spec->data.array_data.num_elem;
+		if (spec->data.array_data.param_num != -1)
+			minfo->size_param_index = spec->data.array_data.param_num;
 		break;
 
 	case MONO_NATIVE_BYVALTSTR:
 	case MONO_NATIVE_BYVALARRAY:
-		minfo->count = spec->data.array_data.num_elem;
+		minfo->size_const = spec->data.array_data.num_elem;
 		break;
 
 	case MONO_NATIVE_CUSTOM:
 		if (spec->data.custom_data.custom_name) {
 			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, klass->image);
 			if (mtype)
-				MONO_OBJECT_SETREF (minfo, marshaltyperef, mono_type_get_object (domain, mtype));
+				MONO_OBJECT_SETREF (minfo, marshal_type_ref, mono_type_get_object (domain, mtype));
 
-			MONO_OBJECT_SETREF (minfo, marshaltype, mono_string_new (domain, spec->data.custom_data.custom_name));
+			MONO_OBJECT_SETREF (minfo, marshal_type, mono_string_new (domain, spec->data.custom_data.custom_name));
 		}
 		if (spec->data.custom_data.cookie)
-			MONO_OBJECT_SETREF (minfo, mcookie, mono_string_new (domain, spec->data.custom_data.cookie));
+			MONO_OBJECT_SETREF (minfo, marshal_cookie, mono_string_new (domain, spec->data.custom_data.cookie));
 		break;
 
 	default:
