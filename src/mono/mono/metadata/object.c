@@ -2538,7 +2538,9 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	rc->default_vtable = NULL;
 	rc->xdomain_vtable = NULL;
 	rc->proxy_class_name = name;
+#ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->loader_bytes += mono_string_length (class_name) + 1;
+#endif
 
 	g_hash_table_insert (domain->proxy_vtable_hash, key, rc);
 

@@ -5060,8 +5060,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	/* collect statistics */
+#ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->jit_methods++;
 	mono_perfcounters->jit_bytes += header->code_size;
+#endif
 	mono_jit_stats.allocated_code_size += cfg->code_len;
 	code_size_ratio = cfg->code_len;
 	if (code_size_ratio > mono_jit_stats.biggest_method_size && mono_jit_stats.enabled) {

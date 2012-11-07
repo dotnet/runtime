@@ -2293,7 +2293,9 @@ collect_nursery (void)
 
 	verify_nursery ();
 
+#ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->gc_collections0++;
+#endif
 
 	current_collection_generation = GENERATION_NURSERY;
 	if (sgen_collection_is_parallel ())
@@ -2537,7 +2539,9 @@ major_do_collection (const char *reason)
 	MONO_GC_BEGIN (GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
+#ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->gc_collections1++;
+#endif
 
 	current_object_ops = major_collector.major_ops;
 
