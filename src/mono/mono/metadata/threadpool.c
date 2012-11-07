@@ -189,7 +189,7 @@ enum {
 #include <mono/metadata/tpool-poll.c>
 #ifdef HAVE_EPOLL
 #include <mono/metadata/tpool-epoll.c>
-#elif defined(HAVE_KQUEUE)
+#elif defined(USE_KQUEUE_FOR_THREADPOOL)
 #include <mono/metadata/tpool-kqueue.c>
 #endif
 /*
@@ -496,7 +496,7 @@ init_event_system (SocketIOData *data)
 			data->event_system = POLL_BACKEND;
 		}
 	}
-#elif defined(HAVE_KQUEUE)
+#elif defined(USE_KQUEUE_FOR_THREADPOOL)
 	if (data->event_system == KQUEUE_BACKEND)
 		data->event_data = tp_kqueue_init (data);
 #endif
@@ -525,7 +525,7 @@ socket_io_init (SocketIOData *data)
 	data->sock_to_state = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC);
 #ifdef HAVE_EPOLL
 	data->event_system = EPOLL_BACKEND;
-#elif defined(HAVE_KQUEUE)
+#elif defined(USE_KQUEUE_FOR_THREADPOOL)
 	data->event_system = KQUEUE_BACKEND;
 #else
 	data->event_system = POLL_BACKEND;

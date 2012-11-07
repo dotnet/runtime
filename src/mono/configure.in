@@ -89,6 +89,7 @@ esac
 host_win32=no
 target_win32=no
 platform_android=no
+platform_darwin=no
 case "$host" in
 	*-mingw*|*-*-cygwin*)
 		AC_DEFINE(HOST_WIN32,1,[Host Platform is Win32])
@@ -1661,9 +1662,22 @@ if test x$target_win32 = xno; then
 	havekqueue=no
         AC_CHECK_FUNCS(kqueue, , AC_MSG_CHECKING(for kqueue in sys/event.h)
                 AC_TRY_LINK([#include <sys/event.h>], 
-                [ kqueue(); ], 
-                AC_DEFINE(HAVE_KQUEUE, 1, [Have kqueue]) AC_MSG_RESULT(yes),
-                AC_MSG_RESULT(no)))
+                [ kqueue(); ],[havekqueue=yes],[]))
+	AC_MSG_RESULT($havekqueue);
+
+	dnl **************************************
+	dnl * Darwin has a race that prevents us from using reliably:
+	dnl * http://lists.apple.com/archives/darwin-dev/2011/Jun/msg00016.html
+	dnl * Since kqueue is mostly used for scaling large web servers, 
+	dnl * and very few folks run Mono on large web servers on OSX, falling
+	dnl * back 
+	dnl **************************************
+	if test x$havekqueue = xyes; then
+		if x$platform_darwin = xno; then
+			AC_DEFINE(USE_KQUEUE_FOR_THREADPOOL, 1, [Use kqueue for the threadpool])
+		fi
+	fi
+
 	dnl ******************************
 	dnl *** Checks for SIOCGIFCONF ***
 	dnl ******************************
