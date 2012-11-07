@@ -6631,6 +6631,11 @@ mini_init (const char *filename, const char *runtime_version)
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
 
+#ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
+	if (mono_aot_only)
+		mono_set_generic_sharing_vt_supported (TRUE);
+#endif
+
 	InitializeCriticalSection (&jit_mutex);
 
 #ifdef MONO_DEBUGGER_SUPPORTED
