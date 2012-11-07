@@ -2462,6 +2462,19 @@ if test "x$host" != "x$target"; then
    AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
    enable_mcs_build=no
    case "$target" in
+   arm*-darwin*)
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
+
+		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
+		;;
    powerpc64-ps3-linux-gnu)
 		TARGET=POWERPC64
 		arch_target=powerpc64
