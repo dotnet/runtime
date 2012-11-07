@@ -835,9 +835,11 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 	if (method->klass->generic_class)
 		return mono_method_signature (method);
 
+#ifndef DISABLE_REFLECTION_EMIT
 	if (image->dynamic) {
 		sig = mono_reflection_lookup_signature (image, method, token);
 	} else {
+#endif
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 		sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
 
@@ -866,7 +868,9 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 			mono_loader_set_error_bad_image (g_strdup_printf ("Incompatible method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
 			return NULL;
 		}
+#ifndef DISABLE_REFLECTION_EMIT
 	}
+#endif
 
 
 	if (context) {
