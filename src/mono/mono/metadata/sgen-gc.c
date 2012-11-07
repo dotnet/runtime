@@ -2956,6 +2956,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
+	MONO_GC_SWEEP_BEGIN (GENERATION_OLD);
+
 	/* sweep the big objects list */
 	prevbo = NULL;
 	for (bigobj = los_object_list; bigobj;) {
@@ -2988,6 +2990,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	time_major_los_sweep += TV_ELAPSED (btv, atv);
 
 	major_collector.sweep ();
+
+	MONO_GC_SWEEP_END (GENERATION_OLD);
 
 	TV_GETTIME (btv);
 	time_major_sweep += TV_ELAPSED (atv, btv);
@@ -3064,6 +3068,8 @@ static gboolean major_do_collection (const char *reason);
 static void
 major_start_concurrent_collection (const char *reason)
 {
+	MONO_GC_CONCURRENT_START_BEGIN (GENERATION_OLD);
+
 	// FIXME: store reason and pass it when finishing
 	major_start_collection (NULL);
 
@@ -3072,16 +3078,22 @@ major_start_concurrent_collection (const char *reason)
 
 	sgen_workers_wait_for_jobs ();
 
+	MONO_GC_CONCURRENT_START_END (GENERATION_OLD);
+
 	current_collection_generation = -1;
 }
 
 static gboolean
 major_update_or_finish_concurrent_collection (void)
 {
+	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD);
+
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
 
 	if (!sgen_workers_all_done ()) {
+		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD);
+
 		g_print ("workers not done\n");
 		return FALSE;
 	}
@@ -3090,6 +3102,9 @@ major_update_or_finish_concurrent_collection (void)
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
+
+	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD);
+
 	current_collection_generation = -1;
 
 	if (whole_heap_check_before_collection)
