@@ -31,6 +31,7 @@ static WorkerData *workers_data;
 static WorkerData workers_gc_thread_data;
 
 static SgenGrayQueue workers_distribute_gray_queue;
+static gboolean workers_distribute_gray_queue_inited;
 
 static volatile gboolean workers_gc_in_progress = FALSE;
 static volatile gboolean workers_marking = FALSE;
@@ -71,6 +72,13 @@ static void
 workers_wake_up_all (void)
 {
 	workers_wake_up (workers_num);
+}
+
+void
+sgen_workers_wake_up_all (void)
+{
+	g_assert (workers_gc_in_progress);
+	workers_wake_up_all ();
 }
 
 static void
@@ -222,6 +230,7 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 static gboolean
 workers_get_work (WorkerData *data)
 {
+	SgenMajorCollector *major;
 	int i;
 
 	g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
@@ -234,13 +243,26 @@ workers_get_work (WorkerData *data)
 	if (workers_steal (data, &workers_gc_thread_data, TRUE))
 		return TRUE;
 
-	/* Finally, from another worker. */
+	/* From another worker. */
 	for (i = 0; i < workers_num; ++i) {
 		WorkerData *victim_data = &workers_data [i];
 		if (data == victim_data)
 			continue;
 		if (workers_steal (data, victim_data, TRUE))
 			return TRUE;
+	}
+
+	/*
+	 * If we're concurrent or parallel, from the workers
+	 * distribute gray queue.
+	 */
+	major = sgen_get_major_collector ();
+	if (major->is_concurrent || major->is_parallel) {
+		GrayQueueSection *section = sgen_gray_object_dequeue_section (&workers_distribute_gray_queue);
+		if (section) {
+			sgen_gray_object_enqueue_section (&data->private_gray_queue, section);
+			return TRUE;
+		}
 	}
 
 	/* Nobody to steal from */
@@ -305,6 +327,7 @@ init_private_gray_queue (WorkerData *data)
 {
 	sgen_gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue,
 			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
+			FALSE,
 			workers_gray_queue_share_redirect, data);
 }
 
@@ -358,11 +381,19 @@ sgen_workers_distribute_gray_queue_sections (void)
 }
 
 static void
-init_distribute_gray_queue (void)
+init_distribute_gray_queue (gboolean locked)
 {
+	if (workers_distribute_gray_queue_inited) {
+		g_assert (sgen_gray_object_queue_is_empty (&workers_distribute_gray_queue));
+		g_assert (!workers_distribute_gray_queue.locked == !locked);
+		return;
+	}
+
 	sgen_gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
 			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
+			locked,
 			workers_gray_queue_share_redirect, &workers_gc_thread_data);
+	workers_distribute_gray_queue_inited = TRUE;
 }
 
 void
@@ -371,7 +402,7 @@ sgen_workers_init_distribute_gray_queue (void)
 	if (!collection_needs_workers ())
 		return;
 
-	init_distribute_gray_queue ();
+	init_distribute_gray_queue (sgen_get_major_collector ()->is_concurrent || sgen_get_major_collector ()->is_parallel);
 }
 
 void
@@ -392,7 +423,7 @@ sgen_workers_init (int num_workers)
 	MONO_SEM_INIT (&workers_waiting_sem, 0);
 	MONO_SEM_INIT (&workers_done_sem, 0);
 
-	init_distribute_gray_queue ();
+	init_distribute_gray_queue (sgen_get_major_collector ()->is_concurrent || sgen_get_major_collector ()->is_parallel);
 	mono_mutex_init (&workers_gc_thread_data.stealable_stack_mutex, NULL);
 	workers_gc_thread_data.stealable_stack_fill = 0;
 

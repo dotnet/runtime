@@ -48,6 +48,7 @@ struct _JobQueueEntry {
 
 void sgen_workers_init (int num_workers) MONO_INTERNAL;
 void sgen_workers_start_all_workers (void) MONO_INTERNAL;
+void sgen_workers_wake_up_all (void) MONO_INTERNAL;
 void sgen_workers_init_distribute_gray_queue (void) MONO_INTERNAL;
 void sgen_workers_enqueue_job (JobFunc func, void *data) MONO_INTERNAL;
 void sgen_workers_wait_for_jobs (void) MONO_INTERNAL;

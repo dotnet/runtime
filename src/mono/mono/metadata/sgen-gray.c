@@ -26,10 +26,30 @@
 
 #define GRAY_QUEUE_LENGTH_LIMIT	64
 
+static void
+lock_queue (SgenGrayQueue *queue)
+{
+	if (!queue->locked)
+		return;
+
+	mono_mutex_lock (&queue->lock);
+}
+
+static void
+unlock_queue (SgenGrayQueue *queue)
+{
+	if (!queue->locked)
+		return;
+
+	mono_mutex_unlock (&queue->lock);
+}
+
 void
 sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
+
+	lock_queue (queue);
 
 	if (queue->alloc_prepare_func)
 		queue->alloc_prepare_func (queue);
@@ -48,6 +68,8 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 	/* Link it with the others */
 	section->next = queue->first;
 	queue->first = section;
+
+	unlock_queue (queue);
 }
 
 void
@@ -67,6 +89,9 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 {
 	SGEN_ASSERT (9, obj, "enqueueing a null object");
 	//sgen_check_objref (obj);
+
+	lock_queue (queue);
+
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	if (queue->enqueue_check_func)
 		queue->enqueue_check_func (queue, obj);
@@ -78,6 +103,8 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 	queue->first->objects [queue->first->end++] = obj;
 
 	SGEN_LOG_DO (9, ++queue->balance);
+
+	unlock_queue (queue);
 }
 
 char*
@@ -87,6 +114,14 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 
 	if (sgen_gray_object_queue_is_empty (queue))
 		return NULL;
+
+	if (queue->locked) {
+		lock_queue (queue);
+		if (sgen_gray_object_queue_is_empty (queue)) {
+			unlock_queue (queue);
+			return NULL;
+		}
+	}
 
 	SGEN_ASSERT (9, queue->first->end, "gray queue %p underflow, first %p, end %d", queue, queue->first, queue->first->end);
 
@@ -101,6 +136,8 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 
 	SGEN_LOG_DO (9, --queue->balance);
 
+	unlock_queue (queue);
+
 	return obj;
 }
 
@@ -112,10 +149,20 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 	if (!queue->first)
 		return NULL;
 
+	if (queue->locked) {
+		lock_queue (queue);
+		if (!queue->first) {
+			unlock_queue (queue);
+			return NULL;
+		}
+	}
+
 	section = queue->first;
 	queue->first = section->next;
 
 	section->next = NULL;
+
+	unlock_queue (queue);
 
 	return section;
 }
@@ -123,6 +170,8 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 void
 sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section)
 {
+	lock_queue (queue);
+
 	section->next = queue->first;
 	queue->first = section;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
@@ -132,10 +181,12 @@ sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *sectio
 			queue->enqueue_check_func (queue, section->objects [i]);
 	}
 #endif
+
+	unlock_queue (queue);
 }
 
 void
-sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func)
+sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean locked)
 {
 	GrayQueueSection *section, *next;
 	int i;
@@ -148,6 +199,14 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enq
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	queue->enqueue_check_func = enqueue_check_func;
 #endif
+
+	queue->locked = locked;
+	if (locked) {
+		mono_mutexattr_t attr;
+		mono_mutexattr_init (&attr);
+		mono_mutexattr_settype (&attr, MONO_MUTEX_RECURSIVE);
+		mono_mutex_init (&queue->lock, &attr);
+	}
 
 	/* Free the extra sections allocated during the last collection */
 	i = 0;
@@ -171,16 +230,17 @@ invalid_prepare_func (SgenGrayQueue *queue)
 void
 sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
 {
-	sgen_gray_object_queue_init (queue, NULL);
+	sgen_gray_object_queue_init (queue, NULL, FALSE);
 	queue->alloc_prepare_func = invalid_prepare_func;
 	queue->alloc_prepare_data = NULL;
 }
 
 void
 sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
+		gboolean locked,
 		GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
 {
-	sgen_gray_object_queue_init (queue, enqueue_check_func);
+	sgen_gray_object_queue_init (queue, enqueue_check_func, locked);
 	queue->alloc_prepare_func = alloc_prepare_func;
 	queue->alloc_prepare_data = data;
 }

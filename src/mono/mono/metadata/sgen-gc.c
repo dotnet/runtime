@@ -2378,7 +2378,7 @@ init_gray_queue (void)
 		sgen_gray_object_queue_init_invalid (&gray_queue);
 		sgen_workers_init_distribute_gray_queue ();
 	} else {
-		sgen_gray_object_queue_init (&gray_queue, NULL);
+		sgen_gray_object_queue_init (&gray_queue, NULL, FALSE);
 	}
 }
 
@@ -3167,17 +3167,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
-		if (concurrent_collection_in_progress) {
-			current_collection_generation = GENERATION_OLD;
-			// FIXME: we need to do the distribution in the background
-			for (;;) {
-				sgen_workers_distribute_gray_queue_sections ();
-				if (sgen_gray_object_queue_is_empty (sgen_workers_get_distribute_gray_queue ()))
-					break;
-				g_usleep (1000);
-			}
-			current_collection_generation = -1;
-		}
+		if (concurrent_collection_in_progress)
+			sgen_workers_wake_up_all ();
 	} else {
 		if (major_collector.is_concurrent)
 			collect_nursery ();
