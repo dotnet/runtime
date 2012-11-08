@@ -314,7 +314,7 @@ case "$host" in
 		case "$host" in
 			dnl Snow Leopard and newer config.guess reports as this
 			i*86-*-darwin*)
-				BROKEN_DARWIN_FLAGS="-arch i386 -D_XOPEN_SOURCE -mmacosx-version-min=10.5"
+				BROKEN_DARWIN_FLAGS="-arch i386 -D_XOPEN_SOURCE"
 				CPPFLAGS="$CPPFLAGS $BROKEN_DARWIN_FLAGS"
 				CFLAGS="$CFLAGS $BROKEN_DARWIN_FLAGS"
 				CXXFLAGS="$CXXFLAGS $BROKEN_DARWIN_FLAGS"
