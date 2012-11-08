@@ -1556,11 +1556,11 @@ if test x$target_win32 = xno; then
 					return 0;
 				}
 
-				for (i = 0; i < 3; ++i) {
-					sleep (1);
+				for (i = 0; i < 300; ++i) {
 					waitpid (son, &status, WNOHANG);
 					if (WIFEXITED (status) && WEXITSTATUS (status) == 0)
 						return 0;
+					usleep (10000);
 				}
 
 				kill (son, SIGKILL);
@@ -1663,7 +1663,6 @@ if test x$target_win32 = xno; then
         AC_CHECK_FUNCS(kqueue, , AC_MSG_CHECKING(for kqueue in sys/event.h)
                 AC_TRY_LINK([#include <sys/event.h>], 
                 [ kqueue(); ],[havekqueue=yes],[]))
-	AC_MSG_RESULT($havekqueue);
 
 	dnl **************************************
 	dnl * Darwin has a race that prevents us from using reliably:
