@@ -1962,6 +1962,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 				break;
 			}
 			case MONO_TYPE_OBJECT: {
+#ifndef DISABLE_COM
 				mono_init_com_types ();
 				if (to_object) {
 					static MonoMethod *variant_clear = NULL;
@@ -1989,7 +1990,11 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 					mono_mb_emit_byte(mb, CEE_LDIND_REF);
 					mono_mb_emit_ldloc (mb, 1);
 					mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
-					}
+				}
+#else
+				char *msg = g_strdup_printf ("COM support was disabled at compilation time.");
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+#endif
 				break;
 			}
 
@@ -2920,18 +2925,16 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		return method;
 
 	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
+#ifndef DISABLE_COM
 	if (method->klass->is_com_object || method->klass == mono_defaults.com_object_class) {
 		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), method->klass);
 		g_assert (vtable); /*FIXME do proper error handling*/
 
 		if (!vtable->remote) {
-#ifndef DISABLE_COM
 			return mono_cominterop_get_invoke (method);
-#else
-			g_assert_not_reached ();
-#endif
 		}
 	}
+#endif
 
 	sig = mono_signature_no_pinvoke (method);
 
@@ -6965,6 +6968,9 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
+
+#ifndef DISABLE_COM
+
 static int
 emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MonoMarshalSpec *spec, 
@@ -7079,6 +7085,8 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	return conv_arg;
 }
+
+#endif /* DISABLE_COM */
 
 static gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
@@ -8076,10 +8084,10 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
+#ifndef DISABLE_COM
 		if (spec && spec->native == MONO_NATIVE_STRUCT)
 			return emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-#ifndef DISABLE_COM
 		if (spec && (spec->native == MONO_NATIVE_IUNKNOWN ||
 			spec->native == MONO_NATIVE_IDISPATCH ||
 			spec->native == MONO_NATIVE_INTERFACE))

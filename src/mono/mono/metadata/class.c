@@ -5189,6 +5189,7 @@ mono_class_setup_mono_type (MonoClass *class)
 
 }
 
+#ifndef DISABLE_COM
 /*
  * COM initialization (using mono_init_com_types) is delayed until needed. 
  * However when a [ComImport] attribute is present on a type it will trigger
@@ -5212,6 +5213,7 @@ init_com_from_comimport (MonoClass *class)
 	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
 	mono_init_com_types ();
 }
+#endif /*DISABLE_COM*/
 
 /*
  * LOCKING: this assumes the loader lock is held
@@ -5238,11 +5240,13 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 
 	if (!MONO_CLASS_IS_INTERFACE (class)) {
 		/* Imported COM Objects always derive from __ComObject. */
+#ifndef DISABLE_COM
 		if (MONO_CLASS_IS_IMPORT (class)) {
 			init_com_from_comimport (class);
 			if (parent == mono_defaults.object_class)
 				parent = mono_defaults.com_object_class;
 		}
+#endif
 		if (!parent) {
 			/* set the parent to something useful and safe, but mark the type as broken */
 			parent = mono_defaults.object_class;
@@ -5288,8 +5292,10 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		/*class->enumtype = class->parent->enumtype; */
 	} else {
 		/* initialize com types if COM interfaces are present */
+#ifndef DISABLE_COM
 		if (MONO_CLASS_IS_IMPORT (class))
 			init_com_from_comimport (class);
+#endif
 		class->parent = NULL;
 	}
 

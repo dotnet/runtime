@@ -1612,11 +1612,13 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		mono_defaults.corlib, "System.Reflection", "CustomAttributeData");
 
 	/* these are initialized lazily when COM features are used */
+#ifndef DISABLE_COM
 	mono_defaults.variant_class = NULL;
 	mono_defaults.com_object_class = NULL;
 	mono_defaults.com_interop_proxy_class = NULL;
 	mono_defaults.iunknown_class = NULL;
 	mono_defaults.idispatch_class = NULL;
+#endif
 
 	/*
 	 * Note that mono_defaults.generic_*_class is only non-NULL if we're
@@ -1692,6 +1694,7 @@ mono_init_version (const char *domain_name, const char *version)
 	return mono_init_internal (domain_name, NULL, version);
 }
 
+#ifndef DISABLE_COM
 /**
  * mono_init_com_types:
  *
@@ -1731,6 +1734,7 @@ mono_init_com_types (void)
 
 	initialized = TRUE;
 }
+#endif /*DISABLE_COM*/
 
 /**
  * mono_cleanup:

@@ -1070,11 +1070,13 @@ typedef struct {
 	MonoClass *internals_visible_class;
 	MonoClass *generic_ilist_class;
 	MonoClass *generic_nullable_class;
+#ifndef DISABLE_COM
 	MonoClass *variant_class;
 	MonoClass *com_object_class;
 	MonoClass *com_interop_proxy_class;
 	MonoClass *iunknown_class;
 	MonoClass *idispatch_class;
+#endif
 	MonoClass *safehandle_class;
 	MonoClass *handleref_class;
 	MonoClass *attribute_class;
