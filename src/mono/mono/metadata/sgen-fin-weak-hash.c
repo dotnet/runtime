@@ -525,15 +525,9 @@ sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predi
 	void **link;
 	gpointer dummy;
 	SgenHashTable *hash = get_dislink_hash_table (generation);
-	fprintf (stderr, "**** nulling links with predicate\n");
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
 		mono_bool is_alive = predicate ((MonoObject*)object, data);
-
-		if (is_alive)
-			fprintf (stderr, "ALIVE %p %s\n", object, sgen_safe_name (object));
-		else
-			fprintf (stderr, "DEAD %p %s\n", object, sgen_safe_name (object));
 
 		if (!is_alive) {
 			*link = NULL;
