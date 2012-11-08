@@ -2671,7 +2671,11 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 			g_free (msg);
 		}
 
+#if defined(__APPLE__) && defined(__arm__)
+		g_assertion_message ("Terminating runtime due to unhandled exception");
+#else
 		exit (mono_environment_exitcode_get ());
+#endif
 	}
 
 	g_assert_not_reached ();
