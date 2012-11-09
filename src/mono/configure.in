@@ -324,6 +324,9 @@ case "$host" in
 				CPPFLAGS_FOR_EGLIB="$CPPFLAGS_FOR_EGLIB $BROKEN_DARWIN_FLAGS"
 				CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB $BROKEN_DARWIN_FLAGS"
 				;;
+			arm*-darwin*)
+				has_dtrace=no
+				;;
 		esac
 		;;
 	*-*-haiku*)
