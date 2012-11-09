@@ -10088,6 +10088,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 				func = mono_method_get_wrapper_data (method, token);
 				info = mono_find_jit_icall_by_addr (func);
+				if (!info)
+					g_error ("Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 				g_assert (info);
 
 				CHECK_STACK (info->sig->param_count);
