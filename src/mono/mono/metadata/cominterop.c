@@ -35,6 +35,17 @@
 #include <string.h>
 #include <errno.h>
 
+/*
+Code shared between the DISABLE_COM and !DISABLE_COM
+*/
+static void
+register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+{
+	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
+
+	mono_register_jit_icall (func, name, sig, save);
+}
+
 #ifndef DISABLE_COM
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -500,14 +511,6 @@ cominterop_type_from_handle (MonoType *handle)
 
 	mono_class_init (klass);
 	return mono_type_get_object (domain, handle);
-}
-
-static void
-register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
-{
-	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
-
-	mono_register_jit_icall (func, name, sig, save);
 }
 
 void
@@ -3142,6 +3145,19 @@ void mono_marshal_safearray_free_indices (gpointer indices)
 void
 mono_cominterop_init (void)
 {
+	/*FIXME
+	
+	This icalls are used by the marshal code when doing PtrToStructure and StructureToPtr and pinvoke.
+
+	If we leave them out and the FullAOT compiler finds the need to emit one of the above 3 wrappers it will
+	g_assert.
+
+	The proper fix would be to emit warning, remove them from marshal.c when DISABLE_COM is used and
+	emit an exception in the generated IL.
+	*/
+	register_icall (mono_string_to_bstr, "mono_string_to_bstr", "ptr obj", FALSE);
+	register_icall (mono_string_from_bstr, "mono_string_from_bstr", "obj ptr", FALSE);
+	register_icall (mono_free_bstr, "mono_free_bstr", "void ptr", FALSE);
 }
 
 void
