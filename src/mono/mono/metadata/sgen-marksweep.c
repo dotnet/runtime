@@ -88,6 +88,7 @@ struct _MSBlockInfo {
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
 	unsigned int is_to_space : 1;
+	unsigned int swept : 1;
 #ifdef FIXED_HEAP
 	unsigned int used : 1;
 	unsigned int zeroed : 1;
@@ -185,6 +186,7 @@ static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666;
 
 static gboolean concurrent_sweep = FALSE;
+static gboolean lazy_sweep = TRUE;
 static gboolean have_swept;
 
 /* all allocated blocks in the system */
@@ -216,6 +218,7 @@ static MonoNativeTlsKey workers_free_block_lists_key;
 
 static long long stat_major_blocks_alloced = 0;
 static long long stat_major_blocks_freed = 0;
+static long long stat_major_blocks_lazy_swept = 0;
 static long long stat_major_objects_evacuated = 0;
 static long long stat_time_wait_for_sweep = 0;
 
@@ -223,6 +226,9 @@ static gboolean ms_sweep_in_progress = FALSE;
 static MonoNativeThreadId ms_sweep_thread;
 static MonoSemType ms_sweep_cmd_semaphore;
 static MonoSemType ms_sweep_done_semaphore;
+
+static void
+sweep_block (MSBlockInfo *block);
 
 static void
 ms_signal_sweep_command (void)
@@ -458,7 +464,8 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 
 		/* blocks in the free lists must have at least
 		   one free slot */
-		g_assert (block->free_list);
+		if (block->swept)
+			g_assert (block->free_list);
 
 #ifdef FIXED_HEAP
 		/* the block must not be in the empty_blocks list */
@@ -518,8 +525,10 @@ consistency_check (void)
 		g_assert (num_free == 0);
 
 		/* check all mark words are zero */
-		for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
-			g_assert (block->mark_words [i] == 0);
+		if (block->swept) {
+			for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
+				g_assert (block->mark_words [i] == 0);
+		}
 	} END_FOREACH_BLOCK;
 
 	/* check free blocks */
@@ -566,6 +575,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->has_references = has_references;
 	info->has_pinned = pinned;
 	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD); /*FIXME WHY??? */
+	info->swept = 1;
 #ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
 
@@ -627,6 +637,11 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo **free_blocks, int size_inde
 
 	block = free_blocks [size_index];
 	DEBUG (9, g_assert (block));
+
+	if (G_UNLIKELY (!block->swept)) {
+		stat_major_blocks_lazy_swept ++;
+		sweep_block (block);
+	}
 
 	obj = block->free_list;
 	DEBUG (9, g_assert (obj));
@@ -1405,6 +1420,84 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 	}
 }
 
+// FIXME: Consistency check, heap traversal
+/*
+ * sweep_block:
+ *
+ *   Traverse BLOCK, freeing and zeroing unused objects.
+ */
+static void
+sweep_block (MSBlockInfo *block)
+{
+	int count;
+	int obj_index;
+	int obj_size_index;
+
+	if (block->swept)
+		return;
+
+	obj_size_index = block->obj_size_index;
+
+	count = MS_BLOCK_FREE / block->obj_size;
+	block->free_list = NULL;
+
+	for (obj_index = 0; obj_index < count; ++obj_index) {
+		int word, bit;
+		void *obj = MS_BLOCK_OBJ (block, obj_index);
+
+		MS_CALC_MARK_BIT (word, bit, obj);
+		if (MS_MARK_BIT (block, word, bit)) {
+			DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
+		} else {
+			/* an unmarked object */
+			if (MS_OBJ_ALLOCED (obj, block)) {
+				/*
+				 * FIXME: Merge consecutive
+				 * slots for lower reporting
+				 * overhead.  Maybe memset
+				 * will also benefit?
+				 */
+				binary_protocol_empty (obj, block->obj_size);
+				MONO_GC_MAJOR_SWEPT ((mword)obj, block->obj_size);
+				memset (obj, 0, block->obj_size);
+			}
+			*(void**)obj = block->free_list;
+			block->free_list = obj;
+		}
+	}
+
+	/* reset mark bits */
+	memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
+
+	/*
+	 * FIXME: reverse free list so that it's in address
+	 * order
+	 */
+
+	block->swept = 1;
+}
+
+static inline int
+bitcount (mword d)
+{
+#if SIZEOF_VOID_P == 8
+	/* http://www.jjj.de/bitwizardry/bitwizardrypage.html */
+	d -=  (d>>1) & 0x5555555555555555;
+	d  = ((d>>2) & 0x3333333333333333) + (d & 0x3333333333333333);
+	d  = ((d>>4) + d) & 0x0f0f0f0f0f0f0f0f;
+	d *= 0x0101010101010101;
+	return d >> 56;
+#else
+	/* http://aggregate.org/MAGIC/ */
+	d -= ((d >> 1) & 0x55555555);
+	d = (((d >> 2) & 0x33333333) + (d & 0x33333333));
+	d = (((d >> 4) + d) & 0x0f0f0f0f);
+	d += (d >> 8);
+	d += (d >> 16);
+	return (d & 0x0000003f);
+#endif
+}
+
 static void
 ms_sweep (void)
 {
@@ -1434,8 +1527,9 @@ ms_sweep (void)
 		int count;
 		gboolean have_live = FALSE;
 		gboolean has_pinned;
-		int obj_index;
+		gboolean have_free = FALSE;
 		int obj_size_index;
+		int nused = 0;
 
 		obj_size_index = block->obj_size_index;
 
@@ -1443,45 +1537,24 @@ ms_sweep (void)
 		block->has_pinned = block->pinned;
 
 		block->is_to_space = FALSE;
+		block->swept = 0;
 
 		count = MS_BLOCK_FREE / block->obj_size;
-		block->free_list = NULL;
 
-		for (obj_index = 0; obj_index < count; ++obj_index) {
-			int word, bit;
-			void *obj = MS_BLOCK_OBJ (block, obj_index);
-
-			MS_CALC_MARK_BIT (word, bit, obj);
-			if (MS_MARK_BIT (block, word, bit)) {
-				DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
-				have_live = TRUE;
-				if (!has_pinned)
-					++slots_used [obj_size_index];
-			} else {
-				/* an unmarked object */
-				if (MS_OBJ_ALLOCED (obj, block)) {
-					/*
-					 * FIXME: Merge consecutive
-					 * slots for lower reporting
-					 * overhead.  Maybe memset
-					 * will also benefit?
-					 */
-					binary_protocol_empty (obj, block->obj_size);
-					MONO_GC_MAJOR_SWEPT ((mword)obj, block->obj_size);
-					memset (obj, 0, block->obj_size);
-				}
-				*(void**)obj = block->free_list;
-				block->free_list = obj;
-			}
+		/* Count marked objects in the block */
+		for (i = 0; i < MS_NUM_MARK_WORDS; ++i) {
+			nused += bitcount (block->mark_words [i]);
 		}
+		if (nused) {
+			have_live = TRUE;
+			if (!has_pinned)
+				slots_used [obj_size_index] += nused;
+		}
+		if (nused < count)
+			have_free = TRUE;
 
-		/* reset mark bits */
-		memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
-
-		/*
-		 * FIXME: reverse free list so that it's in address
-		 * order
-		 */
+		if (!lazy_sweep)
+			sweep_block (block);
 
 		if (have_live) {
 			if (!has_pinned) {
@@ -1495,7 +1568,7 @@ ms_sweep (void)
 			 * If there are free slots in the block, add
 			 * the block to the corresponding free list.
 			 */
-			if (block->free_list) {
+			if (have_free) {
 				MSBlockInfo **free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
 				int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
 				block->next_free = free_blocks [index];
@@ -1521,7 +1594,6 @@ ms_sweep (void)
 			--num_major_sections;
 		}
 	}
-
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		float usage = (float)slots_used [i] / (float)slots_available [i];
 		if (num_blocks [i] > 5 && usage < evacuation_threshold) {
@@ -1680,6 +1752,20 @@ major_start_major_collection (void)
 
 		free_block_lists [0][i] = NULL;
 		free_block_lists [MS_BLOCK_FLAG_REFS][i] = NULL;
+	}
+
+	// Sweep all unswept blocks
+	if (lazy_sweep) {
+		MSBlockInfo **iter;
+
+		iter = &all_blocks;
+		while (*iter) {
+			MSBlockInfo *block = *iter;
+
+			sweep_block (block);
+
+			iter = &block->next;
+		}
 	}
 }
 
@@ -2109,6 +2195,7 @@ sgen_marksweep_init
 
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
+	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_lazy_swept);
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
 	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &stat_time_wait_for_sweep);
 #ifdef SGEN_PARALLEL_MARK
