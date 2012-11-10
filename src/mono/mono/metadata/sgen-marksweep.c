@@ -114,6 +114,7 @@ static MSBlockInfo *block_infos;
 #endif
 
 #define MS_BLOCK_OBJ(b,i)		((b)->block + MS_BLOCK_SKIP + (b)->obj_size * (i))
+#define MS_BLOCK_OBJ_FOR_SIZE(b,i,obj_size)		((b)->block + MS_BLOCK_SKIP + (obj_size) * (i))
 #define MS_BLOCK_DATA_FOR_OBJ(o)	((char*)((mword)(o) & ~(mword)(MS_BLOCK_SIZE - 1)))
 
 #ifdef FIXED_HEAP
@@ -1420,30 +1421,14 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 	}
 }
 
-// FIXME: Consistency check, heap traversal
-/*
- * sweep_block:
- *
- *   Traverse BLOCK, freeing and zeroing unused objects.
- */
-static void
-sweep_block (MSBlockInfo *block)
+static inline void
+sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 {
-	int count;
 	int obj_index;
-	int obj_size_index;
-
-	if (block->swept)
-		return;
-
-	obj_size_index = block->obj_size_index;
-
-	count = MS_BLOCK_FREE / block->obj_size;
-	block->free_list = NULL;
 
 	for (obj_index = 0; obj_index < count; ++obj_index) {
 		int word, bit;
-		void *obj = MS_BLOCK_OBJ (block, obj_index);
+		void *obj = MS_BLOCK_OBJ_FOR_SIZE (block, obj_index, obj_size);
 
 		MS_CALC_MARK_BIT (word, bit, obj);
 		if (MS_MARK_BIT (block, word, bit)) {
@@ -1457,13 +1442,43 @@ sweep_block (MSBlockInfo *block)
 				 * overhead.  Maybe memset
 				 * will also benefit?
 				 */
-				binary_protocol_empty (obj, block->obj_size);
-				MONO_GC_MAJOR_SWEPT ((mword)obj, block->obj_size);
-				memset (obj, 0, block->obj_size);
+				binary_protocol_empty (obj, obj_size);
+				MONO_GC_MAJOR_SWEPT ((mword)obj, obj_size);
+				memset (obj, 0, obj_size);
 			}
 			*(void**)obj = block->free_list;
 			block->free_list = obj;
 		}
+	}
+}
+
+// FIXME: Consistency check, heap traversal
+/*
+ * sweep_block:
+ *
+ *   Traverse BLOCK, freeing and zeroing unused objects.
+ */
+static void
+sweep_block (MSBlockInfo *block)
+{
+	int count;
+
+	if (block->swept)
+		return;
+
+	count = MS_BLOCK_FREE / block->obj_size;
+
+	block->free_list = NULL;
+
+	/* Use inline instances specialized to constant sizes, this allows the compiler to replace the memset calls with inline code */
+	// FIXME: Add more sizes
+	switch (block->obj_size) {
+	case 16:
+		sweep_block_for_size (block, count, 16);
+		break;
+	default:
+		sweep_block_for_size (block, count, block->obj_size);
+		break;
 	}
 
 	/* reset mark bits */
