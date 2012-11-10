@@ -1371,6 +1371,11 @@ static void
 conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type)
 {
 	int count = 0;
+
+#ifdef VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE
+	VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE (start, (char*)end - (char*)start);
+#endif
+
 	while (start < end) {
 		if (*start >= start_nursery && *start < end_nursery) {
 			/*
