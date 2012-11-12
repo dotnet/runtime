@@ -1,5 +1,7 @@
 #include "config.h"
 
+#ifdef HAVE_SGEN_GC
+
 #ifndef DISABLE_SGEN_MARKSWEEP_FIXED_PAR
 
 #define SGEN_PARALLEL_MARK
@@ -17,5 +19,7 @@ sgen_marksweep_fixed_par_init (SgenMajorCollector *collector)
 	fprintf (stderr, "Error: Mono was configured using --enable-minimal=sgen_marksweep_fixed_par.\n");
 	exit (1);
 }	
+
+#endif
 
 #endif

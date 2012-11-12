@@ -1,5 +1,7 @@
 #include "config.h"
 
+#ifdef HAVE_SGEN_GC
+
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_PAR
 
 #define SGEN_PARALLEL_MARK
@@ -18,3 +20,5 @@ sgen_marksweep_par_init (SgenMajorCollector *collector)
 }	
 
 #endif /* DISABLE_SGEN_MAJOR_MARKSWEEP_PAR */
+
+#endif
