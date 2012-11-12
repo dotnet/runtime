@@ -59,6 +59,8 @@
 #include "metadata/profiler-private.h"
 #include "metadata/sgen-memory-governor.h"
 
+#ifndef DISABLE_SGEN_MAJOR_COPYING
+
 #define MAJOR_SECTION_SIZE		SGEN_PINNED_CHUNK_SIZE
 #define BLOCK_FOR_OBJECT(o)		SGEN_PINNED_CHUNK_FOR_PTR ((o))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
@@ -698,5 +700,16 @@ sgen_copying_init (SgenMajorCollector *collector)
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
 	collector->major_ops.scan_object = major_scan_object;
 }
+
+#else /* DISABLE_SGEN_MAJOR_COPYING */
+
+void
+sgen_copying_init (SgenMajorCollector *collector)
+{
+	fprintf (stderr, "Error: Mono was configured using --enable-minimal=sgen_copying.\n");
+	exit (1);
+}
+
+#endif /* DISABLE_SGEN_MAJOR_COPYING */
 
 #endif

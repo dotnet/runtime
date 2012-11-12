@@ -1,5 +1,5 @@
 /*
- * sgen-cardtable.c: Card table implementation for sgen
+ * sgen-ssb.c: Remembered sets
  *
  * Author:
  * 	Rodrigo Kumpera (rkumpera@novell.com)
@@ -37,6 +37,8 @@
 #include "metadata/sgen-ssb.h"
 #include "metadata/sgen-protocol.h"
 #include "utils/mono-counters.h"
+
+#ifndef DISABLE_SGEN_REMSET
 
 /*A two slots cache for recently inserted remsets */
 static gpointer global_remset_cache [2];
@@ -894,7 +896,6 @@ sgen_ssb_find_address (char *addr)
 	return FALSE;
 }
 
-
 void
 sgen_ssb_init (SgenRemeberedSet *remset)
 {
@@ -941,4 +942,16 @@ sgen_ssb_init (SgenRemeberedSet *remset)
 
 	remset->find_address = sgen_ssb_find_address;
 }
-#endif
+
+#else
+
+void
+sgen_ssb_init (SgenRemeberedSet *remset)
+{
+	fprintf (stderr, "Error: Mono was configured using --enable-minimal=sgen_wbarrier.\n");
+	exit (1);
+}
+
+#endif /* DISABLE_SGEN_REMSET */
+
+#endif /* HAVE_SGEN_GC */
