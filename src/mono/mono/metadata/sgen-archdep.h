@@ -28,6 +28,16 @@
 
 #include <mono/utils/mono-sigcontext.h>
 
+#if defined(MONO_CROSS_COMPILE)
+
+#define REDZONE_SIZE	0
+
+#define ARCH_NUM_REGS 0
+#define ARCH_STORE_REGS(ptr)
+#define ARCH_SIGCTX_SP(ctx) NULL
+#define ARCH_SIGCTX_IP(ctx) NULL
+#define ARCH_COPY_SIGCTX_REGS(a,ctx)
+
 #if defined(__i386__) || defined(TARGET_X86)
 
 #include <mono/utils/mono-context.h>
