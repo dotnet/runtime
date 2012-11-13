@@ -41,7 +41,6 @@ typedef void (*GrayQueueEnqueueCheckFunc) (SgenGrayQueue*, char*);
 struct _SgenGrayQueue {
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
-	int balance;
 	GrayQueueAllocPrepareFunc alloc_prepare_func;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	GrayQueueEnqueueCheckFunc enqueue_check_func;

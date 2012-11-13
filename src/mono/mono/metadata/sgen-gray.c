@@ -102,8 +102,6 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 	SGEN_ASSERT (9, queue->first->end < SGEN_GRAY_QUEUE_SECTION_SIZE, "gray queue %p overflow, first %p, end %d", queue, queue->first, queue->first->end);
 	queue->first->objects [queue->first->end++] = obj;
 
-	SGEN_LOG_DO (9, ++queue->balance);
-
 	unlock_queue (queue);
 }
 
@@ -133,8 +131,6 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 		section->next = queue->free_list;
 		queue->free_list = section;
 	}
-
-	SGEN_LOG_DO (9, --queue->balance);
 
 	unlock_queue (queue);
 
@@ -192,7 +188,6 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enq
 	int i;
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
-	SGEN_ASSERT (9, queue->balance == 0, "unbalanced queue on init %d", queue->balance);
 
 	queue->alloc_prepare_func = NULL;
 	queue->alloc_prepare_data = NULL;
