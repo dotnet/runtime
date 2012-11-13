@@ -757,7 +757,6 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_METHOD].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_MODULEREF].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
-			n = MAX (n, meta->tables [MONO_TABLE_MEMBERREF].rows);
 
 			/* 3 bits to encode */
 			field_size = rtsize (n, 16 - 3);
