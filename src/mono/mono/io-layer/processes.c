@@ -33,6 +33,7 @@
 
 /* sys/resource.h (for rusage) is required when using osx 10.3 (but not 10.4) */
 #ifdef __APPLE__
+#include <TargetConditionals.h>
 #include <sys/resource.h>
 #ifdef HAVE_LIBPROC_H
 /* proc_name */
@@ -2136,7 +2137,7 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	}
 	g_free (filename);
 #elif defined(PLATFORM_MACOSX)
-#if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5) && !defined (__mono_ppc__) && !defined(__arm__)
+#if !defined (__mono_ppc__) && TARGET_OS_IPHONE == 0 && TARGET_IPHONE_SIMULATOR == 0
 	/* No proc name on OSX < 10.5 nor ppc nor iOS */
 	memset (buf, '\0', sizeof(buf));
 	proc_name (pid, buf, sizeof(buf));
