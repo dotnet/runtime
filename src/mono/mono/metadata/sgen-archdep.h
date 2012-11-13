@@ -38,7 +38,7 @@
 #define ARCH_SIGCTX_IP(ctx) NULL
 #define ARCH_COPY_SIGCTX_REGS(a,ctx)
 
-#if defined(__i386__) || defined(TARGET_X86)
+#elif defined(TARGET_X86)
 
 #include <mono/utils/mono-context.h>
 
@@ -81,7 +81,7 @@
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_ESP ((ctx)))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_EIP ((ctx)))
 
-#elif defined(__x86_64__) || defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64)
 
 #include <mono/utils/mono-context.h>
 
@@ -94,7 +94,7 @@
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_RSP (ctx))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_RIP (ctx))
 
-#elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
+#elif defined(TARGET_PPC)
 
 #define REDZONE_SIZE	224
 
@@ -122,7 +122,7 @@
 		((a)[__i]) = UCONTEXT_REG_Rn((ctx), __i);	\
 	} while (0)
 
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 
 #define REDZONE_SIZE	0
 
