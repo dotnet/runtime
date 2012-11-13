@@ -80,6 +80,18 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include "debugger-agent.h"
 #include "mini.h"
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+/*
+On iOS we can't use System.Environment.Exit () as it will do the wrong
+shutdown sequence.
+*/
+#if !defined (TARGET_OS_IPHONE) || !(TARGET_OS_IPHONE == 1 || TARGET_IPHONE_SIMULATOR == 1)
+#define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
+#endif
+
+
 #ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 #define DISABLE_DEBUGGER_AGENT 1
 #endif
@@ -6278,9 +6290,11 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		suspend_vm ();
 		wait_for_suspend ();
 
+#ifdef TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 		env_class = mono_class_from_name (mono_defaults.corlib, "System", "Environment");
 		if (env_class)
 			exit_method = mono_class_get_method_from_name (env_class, "Exit", 1);
+#endif
 
 		mono_loader_lock ();
 		thread = mono_g_hash_table_find (tid_to_thread, is_really_suspended, NULL);
