@@ -245,6 +245,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 #include <mono/utils/mono-context.h>
 #include <mono/arch/arm/arm-codegen.h>
+#include <mono/arch/arm/arm-vfp-codegen.h>
 
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
