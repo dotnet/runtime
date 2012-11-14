@@ -50,6 +50,7 @@
 #include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-memory-model.h>
 
 #include <time.h>
 #ifdef HAVE_SYS_TIME_H
@@ -664,43 +665,22 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 
 static MonoImage *get_socket_assembly (void)
 {
-	static const char *version = NULL;
-	static gboolean moonlight;
 	MonoDomain *domain = mono_domain_get ();
-	
-	if (version == NULL) {
-		version = mono_get_runtime_info ()->framework_version;
-		moonlight = !strcmp (version, "2.1");
-	}
 	
 	if (domain->socket_assembly == NULL) {
 		MonoImage *socket_assembly;
 
-		if (moonlight) {
-			socket_assembly = mono_image_loaded ("System.Net");
-			if (!socket_assembly) {
-				MonoAssembly *sa = mono_assembly_open ("System.Net.dll", NULL);
-			
-				if (!sa) {
-					g_assert_not_reached ();
-				} else {
-					socket_assembly = mono_assembly_get_image (sa);
-				}
-			}
-		} else {
-			socket_assembly = mono_image_loaded ("System");
-			if (!socket_assembly) {
-				MonoAssembly *sa = mono_assembly_open ("System.dll", NULL);
-			
-				if (!sa) {
-					g_assert_not_reached ();
-				} else {
-					socket_assembly = mono_assembly_get_image (sa);
-				}
+		socket_assembly = mono_image_loaded ("System");
+		if (!socket_assembly) {
+			MonoAssembly *sa = mono_assembly_open ("System.dll", NULL);
+		
+			if (!sa) {
+				g_assert_not_reached ();
+			} else {
+				socket_assembly = mono_assembly_get_image (sa);
 			}
 		}
-
-		domain->socket_assembly = socket_assembly;
+		mono_atomic_store_release (&domain->socket_assembly, socket_assembly);
 	}
 	
 	return domain->socket_assembly;

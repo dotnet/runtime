@@ -373,7 +373,6 @@ struct _MonoDomain {
 
 	/* Used by threadpool.c */
 	MonoImage *system_image;
-	MonoImage *system_net_dll;
 	MonoClass *corlib_asyncresult_class;
 	MonoClass *socket_class;
 	MonoClass *ad_unloaded_ex_class;

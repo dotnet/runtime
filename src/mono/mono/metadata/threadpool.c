@@ -215,30 +215,11 @@ is_corlib_type (MonoDomain *domain, MonoClass *klass)
 /*
  * Note that we call it is_socket_type() where 'socket' refers to the image
  * that contains the System.Net.Sockets.Socket type.
- * For moonlight there is a System.Net.Sockets.Socket class in both System.dll and System.Net.dll.
 */
 static gboolean
 is_socket_type (MonoDomain *domain, MonoClass *klass)
 {
-	static const char *version = NULL;
-	static gboolean moonlight;
-
-	if (is_system_type (domain, klass))
-		return TRUE;
-
-	/* If moonlight, check if the type is in System.Net.dll too */
-	if (version == NULL) {
-		version = mono_get_runtime_info ()->framework_version;
-		moonlight = !strcmp (version, "2.1");
-	}
-
-	if (!moonlight)
-		return FALSE;
-
-	if (domain->system_net_dll == NULL)
-		domain->system_net_dll = mono_image_loaded ("System.Net");
-	
-	return klass->image == domain->system_net_dll;
+	return is_system_type (domain, klass);
 }
 
 #define check_type_cached(domain, ASSEMBLY, _class, _namespace, _name, loc) do { \
