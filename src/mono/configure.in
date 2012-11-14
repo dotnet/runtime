@@ -326,7 +326,10 @@ case "$host" in
 				;;
 			arm*-darwin*)
 				has_dtrace=no
-				;;
+
+				# Disable the clang check if we're cross compiling
+				mono_cv_clang=no
+				;;			
 		esac
 		;;
 	*-*-haiku*)
