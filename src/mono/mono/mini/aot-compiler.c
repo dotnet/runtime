@@ -126,6 +126,7 @@ typedef struct MonoAotOptions {
 	gboolean direct_pinvoke;
 	gboolean direct_icalls;
 	gboolean no_direct_calls;
+	gboolean use_trampolines_page;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -904,6 +905,152 @@ arch_emit_llvm_plt_entry (MonoAotCompile *acfg, int index)
 	emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 #else
 	g_assert_not_reached ();
+#endif
+}
+
+/*
+ * arch_emit_specific_trampoline_pages:
+ *
+ * Emits a page full of trampolines: each trampoline uses its own address to
+ * lookup both the generic trampoline code and the data argument.
+ * This page can be remapped in process multiple times so we can get an
+ * unlimited number of trampolines.
+ * Specifically this implementation uses the following trick: two memory pages
+ * are allocated, with the first containing the data and the second containing the trampolines.
+ * To reduce trampoline size, each trampoline jumps at the start of the page where a common
+ * implementation does all the lifting.
+ * Note that the ARM single trampoline size is 8 bytes, exactly like the data that needs to be stored
+ * on the arm 32 bit system.
+ */
+static void
+arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
+{
+#if defined(TARGET_ARM)
+	guint8 buf [128];
+	guint8 *code;
+	guint8 *loop_start, *loop_branch_back, *loop_end_check, *imt_found_check;
+	int i;
+#define COMMON_TRAMP_SIZE 16
+	int count = (mono_pagesize () - COMMON_TRAMP_SIZE) / 8;
+	int imm8, rot_amount;
+
+	if (!acfg->aot_opts.use_trampolines_page)
+		return;
+
+	emit_alignment (acfg, mono_pagesize ());
+	emit_global (acfg, "specific_trampolines_page", TRUE);
+	emit_label (acfg, "specific_trampolines_page");
+
+	/* emit the generic code first, the trampoline address + 8 is in the lr register */
+	code = buf;
+	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	ARM_SUB_REG_IMM (code, ARMREG_LR, ARMREG_LR, imm8, rot_amount);
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_LR, -8);
+	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_LR, -4);
+	ARM_NOP (code);
+	g_assert (code - buf == COMMON_TRAMP_SIZE);
+
+	/* Emit it */
+	emit_bytes (acfg, buf, code - buf);
+
+	for (i = 0; i < count; ++i) {
+		code = buf;
+		ARM_PUSH (code, 0x5fff);
+		ARM_BL (code, 0);
+		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
+		g_assert (code - buf == 8);
+		emit_bytes (acfg, buf, code - buf);
+	}
+
+	/* now the rgctx trampolines: each specific trampolines puts in the ip register
+	 * the instruction pointer address, so the generic trampoline at the start of the page
+	 * subtracts 4096 to get to the data page and loads the values
+	 * We again fit the generic trampiline in 16 bytes.
+	 */
+	emit_global (acfg, "rgctx_trampolines_page", TRUE);
+	emit_label (acfg, "rgctx_trampolines_page");
+	code = buf;
+	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
+	ARM_LDR_IMM (code, MONO_ARCH_RGCTX_REG, ARMREG_IP, -8);
+	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, -4);
+	ARM_NOP (code);
+	g_assert (code - buf == COMMON_TRAMP_SIZE);
+
+	/* Emit it */
+	emit_bytes (acfg, buf, code - buf);
+
+	for (i = 0; i < count; ++i) {
+		code = buf;
+		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
+		ARM_B (code, 0);
+		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
+		g_assert (code - buf == 8);
+		emit_bytes (acfg, buf, code - buf);
+	}
+	/* now the imt trampolines: each specific trampolines puts in the ip register
+	 * the instruction pointer address, so the generic trampoline at the start of the page
+	 * subtracts 4096 to get to the data page and loads the values
+	 * We again fit the generic trampiline in 16 bytes.
+	 */
+#define IMT_TRAMP_SIZE 72
+	emit_global (acfg, "imt_trampolines_page", TRUE);
+	emit_label (acfg, "imt_trampolines_page");
+	code = buf;
+	/* Need at least two free registers, plus a slot for storing the pc */
+	ARM_PUSH (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_R2));
+
+	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_IP, -8);
+
+	/* The IMT method is in v5, r0 has the imt array address */
+
+	loop_start = code;
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_R0, 0);
+	ARM_CMP_REG_REG (code, ARMREG_R1, ARMREG_V5);
+	imt_found_check = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+
+	/* End-of-loop check */
+	ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
+	loop_end_check = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+
+	/* Loop footer */
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (gpointer) * 2);
+	loop_branch_back = code;
+	ARM_B (code, 0);
+	arm_patch (loop_branch_back, loop_start);
+
+	/* Match */
+	arm_patch (imt_found_check, code);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 4);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 0);
+	/* Save it to the third stack slot */
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
+	/* Restore the registers and branch */
+	ARM_POP (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_PC));
+
+	/* No match */
+	arm_patch (loop_end_check, code);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 4);
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
+	ARM_POP (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_PC));
+	ARM_NOP (code);
+
+	/* Emit it */
+	g_assert (code - buf == IMT_TRAMP_SIZE);
+	emit_bytes (acfg, buf, code - buf);
+
+	for (i = 0; i < count; ++i) {
+		code = buf;
+		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
+		ARM_B (code, 0);
+		arm_patch (code - 4, code - IMT_TRAMP_SIZE - 8 * (i + 1));
+		g_assert (code - buf == 8);
+		emit_bytes (acfg, buf, code - buf);
+	}
 #endif
 }
 
@@ -4959,7 +5106,8 @@ emit_trampolines (MonoAotCompile *acfg)
 		 * method.
 		 */
 		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-			mono_arch_create_generic_trampoline (tramp_type, &info, TRUE);
+			/* we overload the boolean here to indicate the slightly different trampoline needed, see mono_arch_create_generic_trampoline() */
+			mono_arch_create_generic_trampoline (tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
 
@@ -5119,6 +5267,8 @@ emit_trampolines (MonoAotCompile *acfg)
 			emit_label (acfg, end_symbol);
 		}
 
+		arch_emit_specific_trampoline_pages (acfg);
+
 		/* Reserve some entries at the end of the GOT for our use */
 		acfg->num_trampoline_got_entries = tramp_got_offset - acfg->got_offset;
 	}
@@ -5246,6 +5396,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->asm_writer = TRUE;
 		} else if (str_begins_with (arg, "nodebug")) {
 			opts->nodebug = TRUE;
+		} else if (str_begins_with (arg, "nopagetrampolines")) {
+			opts->use_trampolines_page = FALSE;
 		} else if (str_begins_with (arg, "ntrampolines=")) {
 			opts->ntrampolines = atoi (arg + strlen ("ntrampolines="));
 		} else if (str_begins_with (arg, "nrgctx-trampolines=")) {
@@ -5318,6 +5470,11 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		}
 	}
 
+	if (opts->use_trampolines_page) {
+		opts->ntrampolines = 0;
+		opts->nrgctx_trampolines = 0;
+		opts->nimt_trampolines = 0;
+	}
 	g_strfreev (args);
 }
 
@@ -7563,6 +7720,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.nrgctx_trampolines = 1024;
 	acfg->aot_opts.nimt_trampolines = 128;
 	acfg->aot_opts.llvm_path = g_strdup ("");
+#if MONOTOUCH
+	acfg->aot_opts.use_trampolines_page = TRUE;
+#endif
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 

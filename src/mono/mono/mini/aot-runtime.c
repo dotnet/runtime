@@ -126,11 +126,19 @@ typedef struct MonoAotModule {
 	/* The first unused trampoline of each kind */
 	guint32 trampoline_index [MONO_AOT_TRAMP_NUM];
 
+	gboolean use_page_trampolines;
+
 	MonoAotFileInfo info;
 
 	gpointer *globals;
 	MonoDl *sofile;
 } MonoAotModule;
+
+typedef struct {
+	void *next;
+	unsigned char *trampolines;
+	unsigned char *trampolines_end;
+} TrampolinePage;
 
 static GHashTable *aot_modules;
 #define mono_aot_lock() EnterCriticalSection (&aot_mutex)
@@ -173,6 +181,16 @@ static gsize aot_code_low_addr = (gssize)-1;
 static gsize aot_code_high_addr = 0;
 
 static GHashTable *aot_jit_icall_hash;
+
+#ifdef MONOTOUCH
+#define USE_PAGE_TRAMPOLINES ((MonoAotModule*)mono_defaults.corlib->aot_module)->use_page_trampolines
+#else
+#define USE_PAGE_TRAMPOLINES 0
+#endif
+
+#define mono_aot_page_lock() EnterCriticalSection (&aot_page_mutex)
+#define mono_aot_page_unlock() LeaveCriticalSection (&aot_page_mutex)
+static CRITICAL_SECTION aot_page_mutex;
 
 static void
 init_plt (MonoAotModule *info);
@@ -1645,6 +1663,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	assembly->image->aot_module = amodule;
 
 	if (mono_aot_only) {
+		char *code;
+		find_symbol (amodule->sofile, amodule->globals, "specific_trampolines_page", (gpointer *)&code);
+		amodule->use_page_trampolines = code != NULL;
+		/*g_warning ("using page trampolines: %d", amodule->use_page_trampolines);*/
 		if (mono_defaults.corlib) {
 			/* The second got slot contains the mscorlib got addr */
 			MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
@@ -1747,6 +1769,7 @@ void
 mono_aot_init (void)
 {
 	InitializeCriticalSection (&aot_mutex);
+	InitializeCriticalSection (&aot_page_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
@@ -3882,6 +3905,167 @@ mono_aot_get_trampoline (const char *name)
 	return mono_create_ftnptr_malloc (load_function (amodule, name));
 }
 
+#ifdef MONOTOUCH
+#include <mach/mach.h>
+
+static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
+/* these sizes are for ARM code, parametrize if porting to other architectures (see arch_emit_specific_trampoline_pages)
+ * trampoline size is assumed to be 8 bytes below as well (8 is the minimum for 32 bit archs, since we need to store
+ * two pointers for trampoline in the data page).
+ * the minimum for the common code must be at least sizeof(TrampolinePage), since we store the page info at the
+ * beginning of the data page.
+ */
+static const int trampolines_pages_code_offsets [MONO_AOT_TRAMP_NUM] = {16, 16, 72};
+
+static unsigned char*
+get_new_trampoline_from_page (int tramp_type)
+{
+	MonoAotModule *amodule;
+	MonoImage *image;
+	TrampolinePage *page;
+	int count;
+	void *tpage;
+	vm_address_t addr, taddr;
+	kern_return_t ret;
+	vm_prot_t prot, max_prot;
+	int psize;
+	unsigned char *code;
+
+	mono_aot_page_lock ();
+	page = trampoline_pages [tramp_type];
+	if (page && page->trampolines < page->trampolines_end) {
+		code = page->trampolines;
+		page->trampolines += 8;
+		mono_aot_page_unlock ();
+		return code;
+	}
+	mono_aot_page_unlock ();
+	psize = mono_pagesize ();
+	/* the trampoline template page is in the mscorlib module */
+	image = mono_defaults.corlib;
+	g_assert (image);
+
+	amodule = image->aot_module;
+	g_assert (amodule);
+
+	if (tramp_type == MONO_AOT_TRAMP_SPECIFIC)
+		tpage = load_function (amodule, "specific_trampolines_page");
+	else if (tramp_type == MONO_AOT_TRAMP_STATIC_RGCTX)
+		tpage = load_function (amodule, "rgctx_trampolines_page");
+	else if (tramp_type == MONO_AOT_TRAMP_IMT_THUNK)
+		tpage = load_function (amodule, "imt_trampolines_page");
+	else
+		g_error ("Incorrect tramp type for trampolines page");
+	g_assert (tpage);
+	/*g_warning ("loaded trampolines page at %x", tpage);*/
+
+	/* avoid the unlikely case of looping forever */
+	count = 40;
+	page = NULL;
+	while (page == NULL && count-- > 0) {
+		addr = 0;
+		/* allocate two contiguous pages of memory: the first page will contain the data (like a local constant pool)
+		 * while the second will contain the trampolines.
+		 */
+		ret = vm_allocate (mach_task_self (), &addr, psize * 2, VM_FLAGS_ANYWHERE);
+		if (ret != KERN_SUCCESS) {
+			g_error ("Cannot allocate memory for trampolines: %d", ret);
+			break;
+		}
+		/*g_warning ("allocated trampoline double page at %x", addr);*/
+		/* replace the second page with a remapped trampoline page */
+		taddr = addr + psize;
+		vm_deallocate (mach_task_self (), taddr, psize);
+		ret = vm_remap (mach_task_self (), &taddr, psize, 0, FALSE, mach_task_self(), (vm_address_t)tpage, FALSE, &prot, &max_prot, VM_INHERIT_SHARE);
+		if (ret != KERN_SUCCESS) {
+			/* someone else got the page, try again  */
+			vm_deallocate (mach_task_self (), addr, psize);
+			continue;
+		}
+		/*g_warning ("remapped trampoline page at %x", taddr);*/
+
+		mono_aot_page_lock ();
+		page = trampoline_pages [tramp_type];
+		/* some other thread already allocated, so use that to avoid wasting memory */
+		if (page && page->trampolines < page->trampolines_end) {
+			code = page->trampolines;
+			page->trampolines += 8;
+			mono_aot_page_unlock ();
+			vm_deallocate (mach_task_self (), addr, psize);
+			vm_deallocate (mach_task_self (), taddr, psize);
+			return code;
+		}
+		page = (TrampolinePage*)addr;
+		page->next = trampoline_pages [tramp_type];
+		trampoline_pages [tramp_type] = page;
+		page->trampolines = (void*)(taddr + trampolines_pages_code_offsets [tramp_type]);
+		page->trampolines_end = (void*)(taddr + psize);
+		code = page->trampolines;
+		page->trampolines += 8;
+		mono_aot_page_unlock ();
+		return code;
+	}
+	g_error ("Cannot allocate more trampoline pages: %d", ret);
+	return NULL;
+}
+
+#else
+static unsigned char*
+get_new_trampoline_from_page (int tramp_type)
+{
+	g_error ("Page trampolines not supported.");
+	return NULL;
+}
+#endif
+
+
+static gpointer
+get_new_specific_trampoline_from_page (gpointer tramp, gpointer arg)
+{
+	void *code;
+	gpointer *data;
+
+	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_SPECIFIC);
+
+	data = (gpointer*)((char*)code - mono_pagesize ());
+	data [0] = arg;
+	data [1] = tramp;
+	/*g_warning ("new trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
+	return code;
+
+}
+
+static gpointer
+get_new_rgctx_trampoline_from_page (gpointer tramp, gpointer arg)
+{
+	void *code;
+	gpointer *data;
+
+	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_STATIC_RGCTX);
+
+	data = (gpointer*)((char*)code - mono_pagesize ());
+	data [0] = arg;
+	data [1] = tramp;
+	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
+	return code;
+
+}
+
+static gpointer
+get_new_imt_trampoline_from_page (gpointer arg)
+{
+	void *code;
+	gpointer *data;
+
+	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_IMT_THUNK);
+
+	data = (gpointer*)((char*)code - mono_pagesize ());
+	data [0] = arg;
+	/*g_warning ("new imt trampoline at %p for data %p, (stored at %p)", code, arg, data);*/
+	return code;
+
+}
+
 /* Return a given kind of trampoline */
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
@@ -3962,10 +4146,15 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	tramp = generic_trampolines [tramp_type];
 	g_assert (tramp);
 
-	code = get_numerous_trampoline (MONO_AOT_TRAMP_SPECIFIC, 2, &amodule, &got_offset, &tramp_size);
+	if (USE_PAGE_TRAMPOLINES) {
+		code = get_new_specific_trampoline_from_page (tramp, arg1);
+		tramp_size = 8;
+	} else {
+		code = get_numerous_trampoline (MONO_AOT_TRAMP_SPECIFIC, 2, &amodule, &got_offset, &tramp_size);
 
-	amodule->got [got_offset] = tramp;
-	amodule->got [got_offset + 1] = arg1;
+		amodule->got [got_offset] = tramp;
+		amodule->got [got_offset + 1] = arg1;
+	}
 
 	if (code_len)
 		*code_len = tramp_size;
@@ -3980,10 +4169,14 @@ mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
 	guint8 *code;
 	guint32 got_offset;
 
-	code = get_numerous_trampoline (MONO_AOT_TRAMP_STATIC_RGCTX, 2, &amodule, &got_offset, NULL);
+	if (USE_PAGE_TRAMPOLINES) {
+		code = get_new_rgctx_trampoline_from_page (addr, ctx);
+	} else {
+		code = get_numerous_trampoline (MONO_AOT_TRAMP_STATIC_RGCTX, 2, &amodule, &got_offset, NULL);
 
-	amodule->got [got_offset] = ctx;
-	amodule->got [got_offset + 1] = addr; 
+		amodule->got [got_offset] = ctx;
+		amodule->got [got_offset + 1] = addr; 
+	}
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);
@@ -4053,8 +4246,6 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	int i, index, real_count;
 	MonoAotModule *amodule;
 
-	code = get_numerous_trampoline (MONO_AOT_TRAMP_IMT_THUNK, 1, &amodule, &got_offset, NULL);
-
 	real_count = 0;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -4087,7 +4278,13 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	buf [(index * 2)] = NULL;
 	buf [(index * 2) + 1] = fail_tramp;
 	
-	amodule->got [got_offset] = buf;
+	if (USE_PAGE_TRAMPOLINES) {
+		code = get_new_imt_trampoline_from_page (buf);
+	} else {
+		code = get_numerous_trampoline (MONO_AOT_TRAMP_IMT_THUNK, 1, &amodule, &got_offset, NULL);
+
+		amodule->got [got_offset] = buf;
+	}
 
 	return code;
 }

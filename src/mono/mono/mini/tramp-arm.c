@@ -180,13 +180,18 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	if (aot && tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
 		/* 
+		 * For page trampolines the data is in r1, so just move it, otherwise use the got slot as below.
 		 * The trampoline contains a pc-relative offset to the got slot 
 		 * preceeding the got slot where the value is stored. The offset can be
 		 * found at [lr + 0].
 		 */
-		ARM_LDR_IMM (code, ARMREG_V2, ARMREG_LR, 0);
-		ARM_ADD_REG_IMM (code, ARMREG_V2, ARMREG_V2, 4, 0);
-		ARM_LDR_REG_REG (code, ARMREG_V2, ARMREG_V2, ARMREG_LR);
+		if (aot == 2) {
+			ARM_MOV_REG_REG (code, ARMREG_V2, ARMREG_R1);
+		} else {
+			ARM_LDR_IMM (code, ARMREG_V2, ARMREG_LR, 0);
+			ARM_ADD_REG_IMM (code, ARMREG_V2, ARMREG_V2, 4, 0);
+			ARM_LDR_REG_REG (code, ARMREG_V2, ARMREG_V2, ARMREG_LR);
+		}
 	} else {
 		if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
 			ARM_LDR_IMM (code, ARMREG_V2, ARMREG_LR, 0);
