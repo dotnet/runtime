@@ -2024,6 +2024,9 @@ major_scan_card_table (SgenGrayQueue *queue)
 				continue;
 #endif
 
+			if (!block->swept)
+				sweep_block (block);
+
 			obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
 			end = block_start + MS_BLOCK_SIZE;
 			base = sgen_card_table_align_pointer (obj);
@@ -2060,6 +2063,9 @@ major_scan_card_table (SgenGrayQueue *queue)
 
 				if (!*card_data)
 					continue;
+
+				if (!block->swept)
+					sweep_block (block);
 
 				HEAVY_STAT (++marked_cards);
 
