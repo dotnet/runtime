@@ -2548,7 +2548,7 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(TARGET_X86, 1, [...])
 		sizeof_register=4
 		;;
-   arm*-unknown-linux-gnueabi*)
+   arm*-unknown-linux-*)
 		TARGET=ARM;
 		arch_target=arm;
 		AC_DEFINE(TARGET_ARM, 1, [...])
