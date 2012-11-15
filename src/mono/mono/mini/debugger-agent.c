@@ -80,14 +80,11 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include "debugger-agent.h"
 #include "mini.h"
 
-#if defined(__APPLE__)
-#include <TargetConditionals.h>
-#endif
 /*
 On iOS we can't use System.Environment.Exit () as it will do the wrong
 shutdown sequence.
 */
-#if !defined (TARGET_OS_IPHONE) || !(TARGET_OS_IPHONE == 1 || TARGET_IPHONE_SIMULATOR == 1)
+#if !defined (TARGET_IOS)
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 #endif
 

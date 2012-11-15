@@ -2137,7 +2137,7 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	}
 	g_free (filename);
 #elif defined(PLATFORM_MACOSX)
-#if !defined (__mono_ppc__) && TARGET_OS_IPHONE == 0 && TARGET_IPHONE_SIMULATOR == 0
+#if !defined (__mono_ppc__) && defined (TARGET_OSX)
 	/* No proc name on OSX < 10.5 nor ppc nor iOS */
 	memset (buf, '\0', sizeof(buf));
 	proc_name (pid, buf, sizeof(buf));

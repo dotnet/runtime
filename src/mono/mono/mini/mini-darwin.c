@@ -68,9 +68,8 @@
 #include <pthread.h>
 #include <dlfcn.h>
 #include <AvailabilityMacros.h>
-#include <TargetConditionals.h>
 
-#if (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5) && TARGET_OS_IPHONE == 0 && TARGET_IPHONE_SIMULATOR == 0
+#if defined (TARGET_OSX) && (MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5)
 #define NEEDS_EXCEPTION_THREAD
 #endif
 
