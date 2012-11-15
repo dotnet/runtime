@@ -24,16 +24,16 @@
 extern long long stat_scan_object_called_nursery;
 
 #if defined(SGEN_SIMPLE_NURSERY)
-#define serial_scan_object simple_nursery_serial_scan_object
-#define serial_scan_vtype simple_nursery_serial_scan_vtype
-#define parallel_scan_object simple_nursery_parallel_scan_object
-#define parallel_scan_vtype simple_nursery_parallel_scan_vtype
+#define SERIAL_SCAN_OBJECT simple_nursery_serial_scan_object
+#define SERIAL_SCAN_VTYPE simple_nursery_serial_scan_vtype
+#define PARALLEL_SCAN_OBJECT simple_nursery_parallel_scan_object
+#define PARALLEL_SCAN_VTYPE simple_nursery_parallel_scan_vtype
 
 #elif defined (SGEN_SPLIT_NURSERY)
-#define serial_scan_object split_nursery_serial_scan_object
-#define serial_scan_vtype split_nursery_serial_scan_vtype
-#define parallel_scan_object split_nursery_parallel_scan_object
-#define parallel_scan_vtype split_nursery_parallel_scan_vtype
+#define SERIAL_SCAN_OBJECT split_nursery_serial_scan_object
+#define SERIAL_SCAN_VTYPE split_nursery_serial_scan_vtype
+#define PARALLEL_SCAN_OBJECT split_nursery_parallel_scan_object
+#define PARALLEL_SCAN_VTYPE split_nursery_parallel_scan_vtype
 
 #else
 #error "Please define GC_CONF_NAME"
@@ -44,7 +44,7 @@ extern long long stat_scan_object_called_nursery;
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			parallel_copy_object ((ptr), queue);	\
+			PARALLEL_COPY_OBJECT ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
@@ -58,7 +58,7 @@ extern long long stat_scan_object_called_nursery;
  * them to the gray_objects area.
  */
 static void
-parallel_scan_object (char *start, SgenGrayQueue *queue)
+PARALLEL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 {
 #include "sgen-scan-object.h"
 
@@ -73,7 +73,7 @@ parallel_scan_object (char *start, SgenGrayQueue *queue)
  * Returns a pointer to the end of the object.
  */
 static void
-parallel_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
+PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
 {
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
@@ -87,7 +87,7 @@ parallel_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			serial_copy_object ((ptr), queue);	\
+			SERIAL_COPY_OBJECT ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
@@ -96,7 +96,7 @@ parallel_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 	} while (0)
 
 static void
-serial_scan_object (char *start, SgenGrayQueue *queue)
+SERIAL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 {
 #include "sgen-scan-object.h"
 
@@ -104,7 +104,7 @@ serial_scan_object (char *start, SgenGrayQueue *queue)
 }
 
 static void
-serial_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
+SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
 {
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
@@ -114,8 +114,8 @@ serial_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 }
 
 #define FILL_MINOR_COLLECTOR_SCAN_OBJECT(collector)	do {			\
-		(collector)->parallel_ops.scan_object = parallel_scan_object;	\
-		(collector)->parallel_ops.scan_vtype = parallel_scan_vtype;	\
-		(collector)->serial_ops.scan_object = serial_scan_object;	\
-		(collector)->serial_ops.scan_vtype = serial_scan_vtype; \
+		(collector)->parallel_ops.scan_object = PARALLEL_SCAN_OBJECT;	\
+		(collector)->parallel_ops.scan_vtype = PARALLEL_SCAN_VTYPE;	\
+		(collector)->serial_ops.scan_object = SERIAL_SCAN_OBJECT;	\
+		(collector)->serial_ops.scan_vtype = SERIAL_SCAN_VTYPE; \
 	} while (0)

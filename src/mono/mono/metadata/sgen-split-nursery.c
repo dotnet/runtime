@@ -523,9 +523,11 @@ print_gc_param_usage (void)
 
 #define SGEN_SPLIT_NURSERY
 
+#define SERIAL_COPY_OBJECT split_nursery_serial_copy_object
+#define PARALLEL_COPY_OBJECT split_nursery_parallel_copy_object
+
 #include "sgen-minor-copy-object.h"
 #include "sgen-minor-scan-object.h"
-
 
 void
 sgen_split_nursery_init (SgenMinorCollector *collector)
