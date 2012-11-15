@@ -36,7 +36,7 @@ struct _GrayQueueSection {
 typedef struct _SgenGrayQueue SgenGrayQueue;
 
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
-typedef void (*GrayQueueEnqueueCheckFunc) (SgenGrayQueue*, char*);
+typedef void (*GrayQueueEnqueueCheckFunc) (char*);
 
 struct _SgenGrayQueue {
 	GrayQueueSection *first;
@@ -46,21 +46,35 @@ struct _SgenGrayQueue {
 	GrayQueueEnqueueCheckFunc enqueue_check_func;
 #endif
 	void *alloc_prepare_data;
+};
+
+typedef struct _SgenSectionGrayQueue SgenSectionGrayQueue;
+
+struct _SgenSectionGrayQueue {
+	GrayQueueSection *first;
 	gboolean locked;
 	mono_mutex_t lock;
+#ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
+	GrayQueueEnqueueCheckFunc enqueue_check_func;
+#endif
 };
 
 void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
 char* sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
-void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean locked) MONO_INTERNAL;
+void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
 void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
-		gboolean locked,
 		GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
 void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
+
+void sgen_section_gray_queue_init (SgenSectionGrayQueue *queue, gboolean locked,
+		GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
+gboolean sgen_section_gray_queue_is_empty (SgenSectionGrayQueue *queue) MONO_INTERNAL;
+GrayQueueSection* sgen_section_gray_queue_dequeue (SgenSectionGrayQueue *queue) MONO_INTERNAL;
+void sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
 
 static inline gboolean
 sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)

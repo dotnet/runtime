@@ -553,19 +553,12 @@ SgenObjectOperations current_object_ops;
 SgenMajorCollector major_collector;
 SgenMinorCollector sgen_minor_collector;
 static GrayQueue gray_queue;
+static GrayQueue remember_major_objects_gray_queue;
 
 static SgenRemeberedSet remset;
 
 /* The gray queue to use from the main collection thread. */
-static SgenGrayQueue*
-sgen_workers_get_main_thread_queue (void)
-{
-	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ())
-		return sgen_workers_get_distribute_gray_queue ();
-	return &gray_queue;
-}
-
-#define WORKERS_DISTRIBUTE_GRAY_QUEUE	(sgen_workers_get_main_thread_queue ())
+#define WORKERS_DISTRIBUTE_GRAY_QUEUE	(&gray_queue)
 
 /*
  * The gray queue a worker job must use.  If we're not parallel or
@@ -577,13 +570,9 @@ sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
 }
 
-static LOCK_DECLARE (workers_distribute_gray_queue_mutex);
-
 gboolean
 sgen_remember_major_object_for_concurrent_mark (char *obj)
 {
-	gboolean need_lock = current_collection_generation != GENERATION_NURSERY;
-
 	if (!major_collector.is_concurrent)
 		return FALSE;
 
@@ -592,13 +581,7 @@ sgen_remember_major_object_for_concurrent_mark (char *obj)
 	if (!concurrent_collection_in_progress)
 		return FALSE;
 
-	if (need_lock)
-		mono_mutex_lock (&workers_distribute_gray_queue_mutex);
-
-	sgen_gray_object_enqueue (sgen_workers_get_distribute_gray_queue (), obj);
-
-	if (need_lock)
-		mono_mutex_unlock (&workers_distribute_gray_queue_mutex);
+	GRAY_OBJECT_ENQUEUE (&remember_major_objects_gray_queue, obj);
 
 	return TRUE;
 }
@@ -2372,13 +2355,41 @@ check_nursery_is_clean (void)
 }
 
 static void
+gray_queue_redirect (SgenGrayQueue *queue)
+{
+	gboolean wake = FALSE;
+
+
+	for (;;) {
+		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
+		if (!section)
+			break;
+		sgen_section_gray_queue_enqueue (queue->alloc_prepare_data, section);
+		wake = TRUE;
+	}
+
+	if (wake) {
+		g_assert (concurrent_collection_in_progress);
+		sgen_workers_wake_up_all ();
+	}
+}
+
+static void
 init_gray_queue (void)
 {
 	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ()) {
-		sgen_gray_object_queue_init_invalid (&gray_queue);
 		sgen_workers_init_distribute_gray_queue ();
+		sgen_gray_object_queue_init_with_alloc_prepare (&gray_queue, NULL,
+				gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
 	} else {
-		sgen_gray_object_queue_init (&gray_queue, NULL, FALSE);
+		sgen_gray_object_queue_init (&gray_queue, NULL);
+	}
+
+	if (major_collector.is_concurrent) {
+		sgen_gray_object_queue_init_with_alloc_prepare (&remember_major_objects_gray_queue, NULL,
+				gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
+	} else {
+		sgen_gray_object_queue_init_invalid (&remember_major_objects_gray_queue);
 	}
 }
 
@@ -2548,13 +2559,7 @@ collect_nursery (void)
 	time_minor_scan_thread_data += TV_ELAPSED (btv, atv);
 	btv = atv;
 
-	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ()) {
-		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
-			sgen_workers_distribute_gray_queue_sections ();
-			g_usleep (1000);
-		}
-	}
-	sgen_workers_join ();
+	g_assert (!sgen_collection_is_parallel () && !sgen_collection_is_concurrent ());
 
 	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ())
 		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
@@ -2891,16 +2896,14 @@ major_start_collection (int *old_next_pin_slot)
 static void
 wait_for_workers_to_finish (void)
 {
-	if (major_collector.is_parallel || major_collector.is_concurrent) {
-		while (!sgen_gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
-			sgen_workers_distribute_gray_queue_sections ();
-			g_usleep (1000);
-		}
-	}
-	sgen_workers_join ();
+	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
 
-	if (major_collector.is_parallel || major_collector.is_concurrent)
-		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+	if (major_collector.is_parallel || major_collector.is_concurrent) {
+		gray_queue_redirect (&gray_queue);
+		sgen_workers_join ();
+	}
+
+	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 	main_gc_thread = NULL;
@@ -2926,9 +2929,13 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
 		wait_for_workers_to_finish ();
 
+		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+
 		if (do_concurrent_checks)
 			check_nursery_is_clean ();
 	}
+
+	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
@@ -3073,9 +3080,7 @@ major_start_concurrent_collection (const char *reason)
 	// FIXME: store reason and pass it when finishing
 	major_start_collection (NULL);
 
-	sgen_workers_distribute_gray_queue_sections ();
-	g_assert (sgen_gray_object_queue_is_empty (sgen_workers_get_distribute_gray_queue ()));
-
+	gray_queue_redirect (&gray_queue);
 	sgen_workers_wait_for_jobs ();
 
 	MONO_GC_CONCURRENT_START_END (GENERATION_OLD);
@@ -3084,14 +3089,17 @@ major_start_concurrent_collection (const char *reason)
 }
 
 static gboolean
-major_update_or_finish_concurrent_collection (void)
+major_update_or_finish_concurrent_collection (gboolean force_finish)
 {
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD);
 
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
 
-	if (!sgen_workers_all_done ()) {
+	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
+
+	if (!force_finish && !sgen_workers_all_done ()) {
 		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD);
 
 		g_print ("workers not done\n");
@@ -3099,6 +3107,7 @@ major_update_or_finish_concurrent_collection (void)
 	}
 
 	collect_nursery ();
+	gray_queue_redirect (&remember_major_objects_gray_queue);
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
@@ -3170,9 +3179,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	sgen_stop_world (generation_to_collect);
 
 	if (concurrent_collection_in_progress) {
-		g_assert (generation_to_collect == GENERATION_NURSERY);
 		g_print ("finishing concurrent collection\n");
-		if (major_update_or_finish_concurrent_collection ())
+		if (major_update_or_finish_concurrent_collection (generation_to_collect == GENERATION_OLD))
 			goto done;
 	}
 
@@ -3182,11 +3190,15 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
-		if (concurrent_collection_in_progress)
+		if (concurrent_collection_in_progress) {
+			gray_queue_redirect (&remember_major_objects_gray_queue);
 			sgen_workers_wake_up_all ();
+		}
 	} else {
-		if (major_collector.is_concurrent)
+		if (major_collector.is_concurrent) {
+			g_assert (!concurrent_collection_in_progress);
 			collect_nursery ();
+		}
 
 		if (major_collector.is_concurrent && !wait_to_finish) {
 			major_start_concurrent_collection (reason);
@@ -3234,6 +3246,9 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	}
 
  done:
+	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
+
 	sgen_restart_world (generation_to_collect, infos);
 
 	mono_profiler_gc_event (MONO_GC_EVENT_END, generation_to_collect);
@@ -4814,9 +4829,6 @@ mono_gc_base_init (void)
 
 	if (minor_collector_opt)
 		g_free (minor_collector_opt);
-
-	if (major_collector.is_concurrent)
-		LOCK_INIT (workers_distribute_gray_queue_mutex);
 
 	alloc_nursery ();
 

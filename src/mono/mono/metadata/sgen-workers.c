@@ -30,7 +30,7 @@ static int workers_num;
 static WorkerData *workers_data;
 static WorkerData workers_gc_thread_data;
 
-static SgenGrayQueue workers_distribute_gray_queue;
+static SgenSectionGrayQueue workers_distribute_gray_queue;
 static gboolean workers_distribute_gray_queue_inited;
 
 static volatile gboolean workers_gc_in_progress = FALSE;
@@ -258,7 +258,7 @@ workers_get_work (WorkerData *data)
 	 */
 	major = sgen_get_major_collector ();
 	if (major->is_concurrent || major->is_parallel) {
-		GrayQueueSection *section = sgen_gray_object_dequeue_section (&workers_distribute_gray_queue);
+		GrayQueueSection *section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
 		if (section) {
 			sgen_gray_object_enqueue_section (&data->private_gray_queue, section);
 			return TRUE;
@@ -316,7 +316,7 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 }
 
 static void
-concurrent_enqueue_check (SgenGrayQueue *queue, char *obj)
+concurrent_enqueue_check (char *obj)
 {
 	g_assert (!sgen_ptr_in_nursery (obj));
 	g_assert (SGEN_LOAD_VTABLE (obj));
@@ -327,7 +327,6 @@ init_private_gray_queue (WorkerData *data)
 {
 	sgen_gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue,
 			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
-			FALSE,
 			workers_gray_queue_share_redirect, data);
 }
 
@@ -371,28 +370,17 @@ workers_thread_func (void *data_untyped)
 	return NULL;
 }
 
-void
-sgen_workers_distribute_gray_queue_sections (void)
-{
-	if (!collection_needs_workers ())
-		return;
-
-	workers_gray_queue_share_redirect (&workers_distribute_gray_queue);
-}
-
 static void
 init_distribute_gray_queue (gboolean locked)
 {
 	if (workers_distribute_gray_queue_inited) {
-		g_assert (sgen_gray_object_queue_is_empty (&workers_distribute_gray_queue));
+		g_assert (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue));
 		g_assert (!workers_distribute_gray_queue.locked == !locked);
 		return;
 	}
 
-	sgen_gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
-			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
-			locked,
-			workers_gray_queue_share_redirect, &workers_gc_thread_data);
+	sgen_section_gray_queue_init (&workers_distribute_gray_queue, locked,
+			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL);
 	workers_distribute_gray_queue_inited = TRUE;
 }
 
@@ -516,7 +504,6 @@ sgen_workers_join (void)
 		return;
 
 	g_assert (sgen_gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
-	g_assert (sgen_gray_object_queue_is_empty (&workers_distribute_gray_queue));
 
 	g_assert (workers_gc_in_progress);
 	workers_gc_in_progress = FALSE;
@@ -541,6 +528,7 @@ sgen_workers_join (void)
 
 	g_assert (workers_done_posted);
 
+	g_assert (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue));
 	g_assert (!workers_gc_thread_data.stealable_stack_fill);
 	g_assert (sgen_gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
 	for (i = 0; i < workers_num; ++i) {
@@ -570,14 +558,8 @@ sgen_is_worker_thread (MonoNativeThreadId thread)
 	return FALSE;
 }
 
-gboolean
-sgen_workers_is_distributed_queue (SgenGrayQueue *queue)
-{
-	return queue == &workers_distribute_gray_queue;
-}
-
-SgenGrayQueue*
-sgen_workers_get_distribute_gray_queue (void)
+SgenSectionGrayQueue*
+sgen_workers_get_distribute_section_gray_queue (void)
 {
 	return &workers_distribute_gray_queue;
 }
