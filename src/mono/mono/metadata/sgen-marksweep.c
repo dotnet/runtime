@@ -1833,6 +1833,8 @@ major_start_major_collection (void)
 	if (lazy_sweep) {
 		MSBlockInfo **iter;
 
+		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
+
 		iter = &all_blocks;
 		while (*iter) {
 			MSBlockInfo *block = *iter;
@@ -1841,6 +1843,8 @@ major_start_major_collection (void)
 
 			iter = &block->next;
 		}
+
+		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 	}
 }
 
@@ -2290,7 +2294,7 @@ major_reset_worker_data (void *data)
 #undef pthread_create
 
 static void
-post_param_init (void)
+post_param_init (SgenMajorCollector *collector)
 {
 	if (concurrent_sweep) {
 		if (!mono_native_thread_create (&ms_sweep_thread, ms_sweep_thread_func, NULL)) {
@@ -2298,6 +2302,8 @@ post_param_init (void)
 			exit (1);
 		}
 	}
+
+	collector->sweeps_lazily = lazy_sweep;
 }
 
 void

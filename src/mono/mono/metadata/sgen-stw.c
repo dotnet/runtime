@@ -251,7 +251,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
 		sgen_gc_event_moves ();
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
-	MONO_GC_WORLD_RESTART_BEGIN ();
+	MONO_GC_WORLD_RESTART_BEGIN (generation);
 	FOREACH_THREAD (info) {
 		info->stack_start = NULL;
 #ifdef USE_MONO_CTX
@@ -270,7 +270,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	max_pause_usec = MAX (usec, max_pause_usec);
 	SGEN_LOG (2, "restarted %d thread(s) (pause time: %d usec, max: %d)", count, (int)usec, (int)max_pause_usec);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
-	MONO_GC_WORLD_RESTART_END ();
+	MONO_GC_WORLD_RESTART_END (generation);
 
 	bridge_process (generation);
 

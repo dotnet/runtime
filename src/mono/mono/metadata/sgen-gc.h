@@ -671,6 +671,7 @@ struct _SgenMajorCollector {
 	gboolean is_parallel;
 	gboolean is_concurrent;
 	gboolean supports_cardtable;
+	gboolean sweeps_lazily;
 
 	/*
 	 * This is set to TRUE if the sweep for the last major
@@ -713,7 +714,7 @@ struct _SgenMajorCollector {
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	gboolean (*is_worker_thread) (MonoNativeThreadId thread);
-	void (*post_param_init) (void);
+	void (*post_param_init) (SgenMajorCollector *collector);
 	void* (*alloc_worker_data) (void);
 	void (*init_worker_thread) (void *data);
 	void (*reset_worker_data) (void *data);

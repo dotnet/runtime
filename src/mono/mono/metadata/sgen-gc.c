@@ -2963,7 +2963,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
-	MONO_GC_SWEEP_BEGIN (GENERATION_OLD);
+	MONO_GC_SWEEP_BEGIN (GENERATION_OLD, !major_collector.sweeps_lazily);
 
 	/* sweep the big objects list */
 	prevbo = NULL;
@@ -2998,7 +2998,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 	major_collector.sweep ();
 
-	MONO_GC_SWEEP_END (GENERATION_OLD);
+	MONO_GC_SWEEP_END (GENERATION_OLD, !major_collector.sweeps_lazily);
 
 	TV_GETTIME (btv);
 	time_major_sweep += TV_ELAPSED (atv, btv);
@@ -3165,7 +3165,10 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	TV_DECLARE (gc_end);
 	GGTimingInfo infos [2];
 	int overflow_generation_to_collect = -1;
+	int oldest_generation_collected = generation_to_collect;
 	const char *overflow_reason = NULL;
+
+	g_assert (generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD);
 
 	memset (infos, 0, sizeof (infos));
 	mono_profiler_gc_event (MONO_GC_EVENT_START, generation_to_collect);
@@ -3180,8 +3183,10 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	if (concurrent_collection_in_progress) {
 		g_print ("finishing concurrent collection\n");
-		if (major_update_or_finish_concurrent_collection (generation_to_collect == GENERATION_OLD))
+		if (major_update_or_finish_concurrent_collection (generation_to_collect == GENERATION_OLD)) {
+			oldest_generation_collected = GENERATION_OLD;
 			goto done;
+		}
 	}
 
 	//FIXME extract overflow reason
@@ -3233,6 +3238,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 		/* keep events symmetric */
 		mono_profiler_gc_event (MONO_GC_EVENT_END, overflow_generation_to_collect);
+
+		oldest_generation_collected = MAX (oldest_generation_collected, overflow_generation_to_collect);
 	}
 
 	SGEN_LOG (2, "Heap size: %lu, LOS size: %lu", (unsigned long)mono_gc_get_heap_size (), (unsigned long)los_memory_usage);
@@ -3249,7 +3256,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
 
-	sgen_restart_world (generation_to_collect, infos);
+	sgen_restart_world (oldest_generation_collected, infos);
 
 	mono_profiler_gc_event (MONO_GC_EVENT_END, generation_to_collect);
 }
@@ -4956,7 +4963,7 @@ mono_gc_base_init (void)
 	}
 
 	if (major_collector.post_param_init)
-		major_collector.post_param_init ();
+		major_collector.post_param_init (&major_collector);
 
 	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
 
