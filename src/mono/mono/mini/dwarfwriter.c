@@ -449,7 +449,9 @@ static int compile_unit_attr [] = {
 
 static int subprogram_attr [] = {
 	DW_AT_name         , DW_FORM_string,
+#ifndef TARGET_IOS
 	DW_AT_description  , DW_FORM_string,
+#endif
     DW_AT_low_pc       , DW_FORM_addr,
     DW_AT_high_pc      , DW_FORM_addr,
 	DW_AT_frame_base   , DW_FORM_block1
@@ -457,7 +459,9 @@ static int subprogram_attr [] = {
 
 static int tramp_subprogram_attr [] = {
 	DW_AT_name         , DW_FORM_string,
+#ifndef TARGET_IOS
 	DW_AT_description  , DW_FORM_string,
+#endif
     DW_AT_low_pc       , DW_FORM_addr,
     DW_AT_high_pc      , DW_FORM_addr,
 };
@@ -1909,7 +1913,9 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	emit_uleb128 (w, ABBREV_SUBPROGRAM);
 	name = mono_method_full_name (method, FALSE);
 	emit_string (w, name);
+#ifndef TARGET_IOS
 	emit_string (w, name);
+#endif
 	g_free (name);
 	if (start_symbol) {
 		emit_pointer_unaligned (w, start_symbol);
