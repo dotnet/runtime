@@ -41,6 +41,7 @@ extern long long stat_scan_object_called_major;
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
 		void *__copy;						\
+		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
 		if (__old && FOLLOW_OBJECT (__old)) {			\
 			PREFETCH_DYNAMIC_HEAP (__old);			\
 			CONCURRENT_NAME (major_copy_or_mark_object) ((ptr), __old, queue); \
@@ -57,9 +58,12 @@ extern long long stat_scan_object_called_major;
 static void
 CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
 {
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 
+	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 	HEAVY_STAT (++stat_scan_object_called_major);
 }
 
@@ -70,12 +74,16 @@ CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
 static void
 CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 
 #define SCAN_OBJECT_NOVTABLE
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
+
+	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 }
 #endif
 #endif

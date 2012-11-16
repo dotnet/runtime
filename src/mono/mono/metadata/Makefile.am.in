@@ -259,7 +259,9 @@ sgen_sources = \
 	sgen-memory-governor.c	\
 	sgen-memory-governor.h	\
 	sgen-stw.c				\
-	sgen-fin-weak-hash.c
+	sgen-fin-weak-hash.c	\
+	sgen-layout-stats.c	\
+	sgen-layout-stats.h
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)

@@ -41,6 +41,7 @@ extern long long stat_scan_object_called_nursery;
 #define HANDLE_PTR(ptr,obj)	do {	\
 		void *__old = *(ptr);	\
 		void *__copy;		\
+		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
 		if (__old) {	\
 			PARALLEL_COPY_OBJECT ((ptr), queue);	\
 			__copy = *(ptr);	\
@@ -58,9 +59,12 @@ extern long long stat_scan_object_called_nursery;
 static void
 PARALLEL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 {
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 
+	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 	HEAVY_STAT (++stat_scan_object_called_nursery);
 }
 
@@ -74,6 +78,8 @@ PARALLEL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 static void
 PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 
@@ -86,6 +92,7 @@ PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOC
 /* Global remsets are handled in SERIAL_COPY_OBJECT_FROM_OBJ */
 #define HANDLE_PTR(ptr,obj)	do {	\
 		void *__old = *(ptr);	\
+		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
 		if (__old) {	\
 			SERIAL_COPY_OBJECT_FROM_OBJ ((ptr), queue);	\
 			SGEN_COND_LOG (9, __old != *(ptr), "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
@@ -95,15 +102,20 @@ PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOC
 static void
 SERIAL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 {
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 
+	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 	HEAVY_STAT (++stat_scan_object_called_nursery);
 }
 
 static void
 SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 

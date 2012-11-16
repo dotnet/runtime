@@ -27,6 +27,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-layout-stats.h"
 
 static inline char*
 alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)

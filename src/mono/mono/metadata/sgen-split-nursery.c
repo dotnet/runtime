@@ -30,6 +30,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-layout-stats.h"
 #include "utils/mono-memory-model.h"
 
 /*

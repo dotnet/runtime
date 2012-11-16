@@ -214,6 +214,7 @@
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"
+#include "metadata/sgen-layout-stats.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -1103,9 +1104,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 	major_collector.iterate_objects (TRUE, FALSE, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
 	major_collector.iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
-	if (G_UNLIKELY (do_pin_stats)) {
-		if (domain == mono_get_root_domain ())
+	if (domain == mono_get_root_domain ()) {
+		if (G_UNLIKELY (do_pin_stats))
 			sgen_pin_stats_print_class_stats ();
+		sgen_object_layout_dump (stdout);
 	}
 
 	UNLOCK_GC;

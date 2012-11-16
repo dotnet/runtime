@@ -88,6 +88,15 @@ typedef guint64 mword;
  */
 //#define SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
 
+/*
+ * Object layout statistics gather a histogram of reference locations
+ * over all scanned objects.  We use this information to improve GC
+ * descriptors to speed up scanning.  This does not provide any
+ * troubleshooting assistance (unless you are troubled in highly
+ * unusual ways) and makes scanning slower.
+ */
+//#define SGEN_OBJECT_LAYOUT_STATISTICS
+
 #ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION

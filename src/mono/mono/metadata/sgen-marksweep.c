@@ -38,6 +38,7 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-layout-stats.h"
 #include "metadata/gc-internal.h"
 
 #if !defined(SGEN_PARALLEL_MARK) && !defined(FIXED_HEAP)

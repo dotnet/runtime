@@ -30,6 +30,7 @@
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-layout-stats.h"
 #include "utils/mono-counters.h"
 #include "utils/mono-time.h"
 #include "utils/mono-memory-model.h"
@@ -490,8 +491,10 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboo
 
 	HEAVY_STAT (++large_objects);
 
-	if (!SGEN_VTABLE_HAS_REFERENCES (vt))
+	if (!SGEN_VTABLE_HAS_REFERENCES (vt)) {
+		sgen_object_layout_scanned_bitmap (0);
 		return;
+	}
 
 	if (vt->rank) {
 		guint8 *card_data, *card_base;
@@ -508,6 +511,13 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboo
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 		guint8 *overflow_scan_end = NULL;
+#endif
+
+#ifdef SGEN_OBJECT_LAYOUT_STATISTICS
+		if (klass->element_class->valuetype)
+			sgen_object_layout_scanned_vtype_array ();
+		else
+			sgen_object_layout_scanned_ref_array ();
 #endif
 
 		if (cards)
