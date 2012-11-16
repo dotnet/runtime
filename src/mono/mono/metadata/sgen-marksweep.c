@@ -1870,6 +1870,12 @@ major_handle_gc_param (const char *opt)
 		}
 		evacuation_threshold = (float)percentage / 100.0;
 		return TRUE;
+	} else if (!strcmp (opt, "lazy-sweep")) {
+		lazy_sweep = TRUE;
+		return TRUE;
+	} else if (!strcmp (opt, "no-lazy-sweep")) {
+		lazy_sweep = FALSE;
+		return TRUE;
 	}
 
 	return FALSE;
@@ -1884,6 +1890,7 @@ major_print_gc_param_usage (void)
 			"  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n"
 #endif
 			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n"
+			"  (no-)lazy-sweep\n"
 			);
 }
 
