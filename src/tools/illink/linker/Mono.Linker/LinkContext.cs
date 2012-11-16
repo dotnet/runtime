@@ -144,15 +144,19 @@ namespace Mono.Linker {
 		public AssemblyDefinition Resolve (IMetadataScope scope)
 		{
 			AssemblyNameReference reference = GetReference (scope);
+			try {
+				AssemblyDefinition assembly = _resolver.Resolve (reference, _readerParameters);
 
-			AssemblyDefinition assembly = _resolver.Resolve (reference, _readerParameters);
+				if (SeenFirstTime (assembly)) {
+					SafeReadSymbols (assembly);
+					SetAction (assembly);
+				}
 
-			if (SeenFirstTime (assembly)) {
-				SafeReadSymbols (assembly);
-				SetAction (assembly);
+				return assembly;
 			}
-
-			return assembly;
+			catch {
+				throw new AssemblyResolutionException (reference);
+			}
 		}
 
 		bool SeenFirstTime (AssemblyDefinition assembly)
