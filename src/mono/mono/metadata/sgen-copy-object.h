@@ -96,6 +96,9 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 }
 
+/*
+ * This can return OBJ itself on OOM.
+ */
 #ifdef _MSC_VER
 static __declspec(noinline) void*
 #else

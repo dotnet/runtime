@@ -123,6 +123,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 {
 	char *forwarded;
 	char *obj = *obj_slot;
+	void *copy;
 
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
 
@@ -172,10 +173,17 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
-	*obj_slot = copy_object_no_checks (obj, queue);
+	copy = copy_object_no_checks (obj, queue);
+	*obj_slot = copy;
 #ifndef SGEN_SIMPLE_NURSERY
-	if (G_UNLIKELY (sgen_ptr_in_nursery (*obj_slot) && !sgen_ptr_in_nursery (obj_slot)))
+	if (G_UNLIKELY (sgen_ptr_in_nursery (copy) && !sgen_ptr_in_nursery (obj_slot)))
 		sgen_add_to_global_remset (obj_slot);
+#else
+	/* copy_object_no_checks () can return obj on OOM */
+	if (G_UNLIKELY (obj == copy)) {
+		if (G_UNLIKELY (sgen_ptr_in_nursery (copy) && !sgen_ptr_in_nursery (obj_slot)))
+			sgen_add_to_global_remset (obj_slot);
+	}
 #endif
 }
 
