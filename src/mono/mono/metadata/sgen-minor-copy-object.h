@@ -88,23 +88,95 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 		*obj_slot = forwarded;
 		return;
 	}
-	if (SGEN_OBJECT_IS_PINNED (obj)) {
+	if (G_UNLIKELY (SGEN_OBJECT_IS_PINNED (obj))) {
 		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
 		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
 		return;
 	}
 
+#ifndef SGEN_SIMPLE_NURSERY
 	if (sgen_nursery_is_to_space (obj)) {
 		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (tospace, no change)\n"));
 		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
 		return;
 	}
+#endif
 
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
 	*obj_slot = copy_object_no_checks (obj, queue);
+}
+
+/*
+ * SERIAL_COPY_OBJECT_FROM_OBJ:
+ *
+ *   Similar to SERIAL_COPY_OBJECT, but assumes that OBJ_SLOT is part of an object, so it handles global remsets as well.
+ */
+#ifdef _MSC_VER
+static __forceinline void
+#else
+static inline void __attribute__((always_inline))
+#endif
+SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue) 
+{
+	char *forwarded;
+	char *obj = *obj_slot;
+
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+
+	HEAVY_STAT (++stat_copy_object_called_nursery);
+
+	if (!sgen_ptr_in_nursery (obj)) {
+		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
+		return;
+	}
+
+	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
+
+	/*
+	 * Before we can copy the object we must make sure that we are
+	 * allowed to, i.e. that the object not pinned, not already
+	 * forwarded or belongs to the nursery To Space.
+	 */
+
+	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
+		DEBUG (9, g_assert ((*(MonoVTable**)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
+		*obj_slot = forwarded;
+#ifndef SGEN_SIMPLE_NURSERY
+		if (G_UNLIKELY (sgen_ptr_in_nursery (forwarded) && !sgen_ptr_in_nursery (obj_slot)))
+			sgen_add_to_global_remset (obj_slot);
+#endif
+		return;
+	}
+	if (G_UNLIKELY (SGEN_OBJECT_IS_PINNED (obj))) {
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
+		if (!sgen_ptr_in_nursery (obj_slot))
+			sgen_add_to_global_remset (obj_slot);
+		return;
+	}
+
+#ifndef SGEN_SIMPLE_NURSERY
+	if (sgen_nursery_is_to_space (obj)) {
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (tospace, no change)\n"));
+		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
+		return;
+	}
+#endif
+
+	HEAVY_STAT (++stat_objects_copied_nursery);
+
+	*obj_slot = copy_object_no_checks (obj, queue);
+#ifndef SGEN_SIMPLE_NURSERY
+	if (G_UNLIKELY (sgen_ptr_in_nursery (*obj_slot) && !sgen_ptr_in_nursery (obj_slot)))
+		sgen_add_to_global_remset (obj_slot);
+#endif
 }
 
 static void
