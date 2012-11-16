@@ -2921,7 +2921,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 	TV_GETTIME (btv);
 
-	wait_for_workers_to_finish ();
+	if (major_collector.is_concurrent || major_collector.is_parallel)
+		wait_for_workers_to_finish ();
 
 	current_object_ops = major_collector.major_ops;
 
