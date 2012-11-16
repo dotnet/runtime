@@ -2097,15 +2097,15 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 #endif
 			}
 
-			if (!block->swept)
-				sweep_block (block);
-
 			obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
 			end = block_start + MS_BLOCK_SIZE;
 			base = sgen_card_table_align_pointer (obj);
 
 			while (obj < end) {
 				int card_offset;
+
+				if (!block->swept)
+					sweep_block (block);
 
 				if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
 					goto next_large;
