@@ -7114,20 +7114,22 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_int32 (acfg, acfg->trampoline_size [i]);
 
 #if defined (TARGET_ARM) && defined (TARGET_MACH)
-       {
-               MonoType t;
-               int align = 0;
+	{
+		MonoType t;
+		int align = 0;
 
-               t.type = MONO_TYPE_R8;
-               mono_type_size (&t, &align);
+		memset (&t, 0, sizeof (MonoType));
+		t.type = MONO_TYPE_R8;
+		mono_type_size (&t, &align);
 
-               emit_int32 (acfg, align);
+		emit_int32 (acfg, align);
 
-               t.type = MONO_TYPE_I8;
-               mono_type_size (&t, &align);
+		memset (&t, 0, sizeof (MonoType));
+		t.type = MONO_TYPE_I8;
+		mono_type_size (&t, &align);
 
-               emit_int32 (acfg, align);
-       }
+		emit_int32 (acfg, align);
+	}
 #else
 	emit_int32 (acfg, __alignof__ (double));
 	emit_int32 (acfg, __alignof__ (gint64));
