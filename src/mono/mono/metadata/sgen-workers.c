@@ -481,6 +481,12 @@ sgen_workers_start_all_workers (void)
 	workers_started = TRUE;
 }
 
+gboolean
+sgen_workers_have_started (void)
+{
+	return workers_gc_in_progress;
+}
+
 void
 sgen_workers_start_marking (void)
 {

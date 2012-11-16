@@ -2370,7 +2370,8 @@ gray_queue_redirect (SgenGrayQueue *queue)
 
 	if (wake) {
 		g_assert (concurrent_collection_in_progress);
-		sgen_workers_wake_up_all ();
+		if (sgen_workers_have_started ())
+			sgen_workers_wake_up_all ();
 	}
 }
 
