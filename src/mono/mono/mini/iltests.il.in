@@ -2602,6 +2602,13 @@ END:
 		ret
 	}
 
+	.method public static default int32 test_1_sizeof_ref () cil managed {
+	    call   int32 Tests::SizeOfT<object>()
+		sizeof [mscorlib]System.IntPtr
+		ceq
+		ret
+	}
+
   .field static public int32 volatile_int
 
   	.method public static default int32 test_5_volatile_load_store () cil managed {

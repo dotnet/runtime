@@ -10846,7 +10846,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_SIZEOF: {
-				guint32 align;
+				guint32 val;
 				int ialign;
 
 				CHECK_STACK_OVF (1);
@@ -10854,14 +10854,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !method->klass->image->dynamic && !generic_context) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
-					token = mono_type_size (type, &ialign);
+					val = mono_type_size (type, &ialign);
 				} else {
 					MonoClass *klass = mono_class_get_full (image, token, generic_context);
 					CHECK_TYPELOAD (klass);
 					mono_class_init (klass);
-					token = mono_class_value_size (klass, &align);
+					val = mono_type_size (&klass->byval_arg, &ialign);
 				}
-				EMIT_NEW_ICONST (cfg, ins, token);
+				EMIT_NEW_ICONST (cfg, ins, val);
 				*sp++= ins;
 				ip += 6;
 				break;
