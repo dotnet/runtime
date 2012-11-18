@@ -570,6 +570,8 @@ sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
 }
 
+static gboolean have_non_collection_major_object_remembers = FALSE;
+
 gboolean
 sgen_remember_major_object_for_concurrent_mark (char *obj)
 {
@@ -583,7 +585,45 @@ sgen_remember_major_object_for_concurrent_mark (char *obj)
 
 	GRAY_OBJECT_ENQUEUE (&remember_major_objects_gray_queue, obj);
 
+	if (current_collection_generation != GENERATION_NURSERY) {
+		/*
+		 * This happens when the mutator allocates large or
+		 * pinned objects or when allocating in degraded
+		 * mode.
+		 */
+		have_non_collection_major_object_remembers = TRUE;
+	}
+
 	return TRUE;
+}
+
+static void
+gray_queue_redirect (SgenGrayQueue *queue)
+{
+	gboolean wake = FALSE;
+
+
+	for (;;) {
+		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
+		if (!section)
+			break;
+		sgen_section_gray_queue_enqueue (queue->alloc_prepare_data, section);
+		wake = TRUE;
+	}
+
+	if (wake) {
+		g_assert (concurrent_collection_in_progress ||
+				(current_collection_generation == GENERATION_OLD && major_collector.is_parallel));
+		if (sgen_workers_have_started ())
+			sgen_workers_wake_up_all ();
+	}
+}
+
+static void
+redirect_major_object_remembers (void)
+{
+	gray_queue_redirect (&remember_major_objects_gray_queue);
+	have_non_collection_major_object_remembers = FALSE;
 }
 
 static gboolean
@@ -2355,27 +2395,6 @@ check_nursery_is_clean (void)
 }
 
 static void
-gray_queue_redirect (SgenGrayQueue *queue)
-{
-	gboolean wake = FALSE;
-
-
-	for (;;) {
-		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
-		if (!section)
-			break;
-		sgen_section_gray_queue_enqueue (queue->alloc_prepare_data, section);
-		wake = TRUE;
-	}
-
-	if (wake) {
-		g_assert (concurrent_collection_in_progress);
-		if (sgen_workers_have_started ())
-			sgen_workers_wake_up_all ();
-	}
-}
-
-static void
 init_gray_queue (void)
 {
 	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ()) {
@@ -3095,11 +3114,12 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 {
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD);
 
+	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+	if (!have_non_collection_major_object_remembers)
+		g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
+
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
-
-	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
-	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
 
 	if (!force_finish && !sgen_workers_all_done ()) {
 		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD);
@@ -3109,7 +3129,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	}
 
 	collect_nursery ();
-	gray_queue_redirect (&remember_major_objects_gray_queue);
+	redirect_major_object_remembers ();
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
@@ -3172,6 +3192,11 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	g_assert (generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD);
 
+	if (have_non_collection_major_object_remembers) {
+		g_assert (concurrent_collection_in_progress);
+		redirect_major_object_remembers ();
+	}
+
 	memset (infos, 0, sizeof (infos));
 	mono_profiler_gc_event (MONO_GC_EVENT_START, generation_to_collect);
 
@@ -3198,7 +3223,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			overflow_reason = "Minor overflow";
 		}
 		if (concurrent_collection_in_progress) {
-			gray_queue_redirect (&remember_major_objects_gray_queue);
+			redirect_major_object_remembers ();
 			sgen_workers_wake_up_all ();
 		}
 	} else {
