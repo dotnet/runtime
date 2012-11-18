@@ -1988,7 +1988,14 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			if (mod_union) {
 #ifdef SGEN_CONCURRENT_MARK
 				cards = block->cardtable_mod_union;
-				g_assert (cards);
+				/*
+				 * This happens when the nursery
+				 * collection that precedes finishing
+				 * the concurrent collection allocates
+				 * new major blocks.
+				 */
+				if (!cards)
+					continue;
 #else
 				g_assert_not_reached ();
 #endif
