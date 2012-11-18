@@ -5926,7 +5926,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		 */
 		if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 			/* For the generic + rgctx trampolines */
-			acfg->final_got_size += 200;
+			acfg->final_got_size += 400;
 			/* For the specific trampolines */
 			for (ntype = 0; ntype < MONO_AOT_TRAMP_NUM; ++ntype)
 				acfg->final_got_size += acfg->num_trampolines [ntype] * 2;
