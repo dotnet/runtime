@@ -73,6 +73,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-ptr-array.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/runtime.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -6564,6 +6565,10 @@ ICALL_EXPORT void
 ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
+
+#ifndef MONO_CROSS_COMPILE
+	mono_runtime_shutdown ();
+#endif
 
 	mono_threads_set_shutting_down ();
 

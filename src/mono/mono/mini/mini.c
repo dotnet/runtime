@@ -6863,12 +6863,9 @@ mini_cleanup (MonoDomain *domain)
 #endif
 
 #ifndef MONO_CROSS_COMPILE	
-	mono_runtime_shutdown ();
 	/* 
-	 * mono_runtime_cleanup() and mono_domain_finalize () need to
-	 * be called early since they need the execution engine still
-	 * fully working (mono_domain_finalize may invoke managed finalizers
-	 * and mono_runtime_cleanup will wait for other threads to finish).
+	 * mono_domain_finalize () needs to be called early since it needs the
+	 * execution engine still fully working (it may invoke managed finalizers).
 	 */
 	mono_domain_finalize (domain, 2000);
 #endif
