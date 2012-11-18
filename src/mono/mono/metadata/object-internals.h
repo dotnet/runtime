@@ -83,7 +83,7 @@
 #endif
 
 #define MONO_CHECK_ARG(arg, expr)		G_STMT_START{		  \
-     if (!(expr))							  \
+		if (G_UNLIKELY (!(expr)))							  \
        {								  \
 		MonoException *ex;					  \
 		char *msg = g_strdup_printf ("assertion `%s' failed",	  \
@@ -95,7 +95,7 @@
        };				}G_STMT_END
 
 #define MONO_CHECK_ARG_NULL(arg)	    G_STMT_START{		  \
-     if (arg == NULL)							  \
+		if (G_UNLIKELY (arg == NULL))						  \
        {								  \
 		MonoException *ex;					  \
 		if (arg) {} /* check if the name exists */		  \
