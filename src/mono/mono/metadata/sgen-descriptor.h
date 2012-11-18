@@ -163,6 +163,8 @@ sgen_gc_descr_has_references (mword desc)
 			void **_objptr = (void**)(obj);	\
 			_objptr += ((desc) >> 16) & 0xff;	\
 			_objptr_end = _objptr + (((desc) >> 24) & 0xff);	\
+			HANDLE_PTR (_objptr, (obj)); \
+			_objptr ++; \
 			while (_objptr < _objptr_end) {	\
 				HANDLE_PTR (_objptr, (obj));	\
 				_objptr++;	\
