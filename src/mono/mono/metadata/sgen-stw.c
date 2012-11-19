@@ -121,7 +121,7 @@ restart_threads_until_none_in_managed_allocator (void)
 			if (!info->thread_is_dying && (!info->stack_start || info->in_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
 				binary_protocol_thread_restart ((gpointer)mono_thread_info_get_tid (info));
-				DEBUG (3, fprintf (gc_debug_file, "thread %p resumed.\n", (void*)info->info.native_handle));
+				SGEN_LOG (3, "thread %p resumed.", (void*)info->info.native_handle);
 				result = sgen_resume_thread (info);
 				if (result) {
 					++restart_count;
@@ -224,7 +224,7 @@ sgen_stop_world (int generation)
 	update_current_thread_stack (&count);
 
 	sgen_global_stop_count++;
-	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", sgen_global_stop_count, mono_thread_info_current (), (gpointer)mono_native_thread_id_get ()));
+	SGEN_LOG (3, "stopping world n %d from %p %p", sgen_global_stop_count, mono_thread_info_current (), (gpointer)mono_native_thread_id_get ());
 	TV_GETTIME (stop_world_time);
 	count = sgen_thread_handshake (TRUE);
 	dead = restart_threads_until_none_in_managed_allocator ();
@@ -232,7 +232,7 @@ sgen_stop_world (int generation)
 		g_error ("More threads have died (%d) that been initialy suspended %d", dead, count);
 	count -= dead;
 
-	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
+	SGEN_LOG (3, "world stopped %d thread(s)", count);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 
 	sgen_memgov_collection_start (generation);
@@ -270,7 +270,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	TV_GETTIME (end_sw);
 	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
-	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
+	SGEN_LOG (2, "restarted %d thread(s) (pause time: %d usec, max: %d)", count, (int)usec, (int)max_pause_usec);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 
 	bridge_process (generation);

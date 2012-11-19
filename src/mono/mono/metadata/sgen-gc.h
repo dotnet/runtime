@@ -242,8 +242,6 @@ extern long long stat_objects_copied_major;
 #define HEAVY_STAT(x)
 #endif
 
-#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) { a; fflush (gc_debug_file); } } while (0)
-
 #define SGEN_ASSERT(level, a, ...) do {	\
 	if (G_UNLIKELY ((level) <= SGEN_MAX_ASSERT_LEVEL && !(a))) {	\
 		g_error (__VA_ARGS__);	\
@@ -613,8 +611,8 @@ sgen_nursery_is_to_space (char *object)
 	int byte = idx / 8;
 	int bit = idx & 0x7;
 
-	DEBUG (4, g_assert (sgen_ptr_in_nursery (object)));
-	DEBUG (4, g_assert (byte < sgen_space_bitmap_size));
+	SGEN_ASSERT (4, sgen_ptr_in_nursery (object), "object %p is not in nursery [%p - %p]", object, sgen_get_nursery_start (), sgen_get_nursery_end ());
+	SGEN_ASSERT (4, byte < sgen_space_bitmap_size, "byte index %d out of range", byte, sgen_space_bitmap_size);
 
 	return (sgen_space_bitmap [byte] & (1 << bit)) != 0;
 }

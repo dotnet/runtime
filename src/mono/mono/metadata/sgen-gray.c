@@ -68,14 +68,14 @@ sgen_gray_object_free_queue_section (GrayQueueSection *section)
 void
 sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 {
-	DEBUG (9, g_assert (obj));
+	SGEN_ASSERT (9, obj, "enqueueing a null object");
 	//sgen_check_objref (obj);
 	if (G_UNLIKELY (!queue->first || queue->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE))
 		sgen_gray_object_alloc_queue_section (queue);
-	DEBUG (9, g_assert (queue->first && queue->first->end < SGEN_GRAY_QUEUE_SECTION_SIZE));
+	SGEN_ASSERT (9, queue->first->end < SGEN_GRAY_QUEUE_SECTION_SIZE, "gray queue %p overflow, first %p, end %d", queue, queue->first, queue->first->end);
 	queue->first->objects [queue->first->end++] = obj;
 
-	DEBUG (9, ++queue->balance);
+	SGEN_LOG_DO (9, ++queue->balance);
 }
 
 char*
@@ -86,7 +86,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	if (sgen_gray_object_queue_is_empty (queue))
 		return NULL;
 
-	DEBUG (9, g_assert (queue->first->end));
+	SGEN_ASSERT (9, queue->first->end, "gray queue %p underflow, first %p, end %d", queue, queue->first, queue->first->end);
 
 	obj = queue->first->objects [--queue->first->end];
 
@@ -97,7 +97,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 		queue->free_list = section;
 	}
 
-	DEBUG (9, --queue->balance);
+	SGEN_LOG_DO (9, --queue->balance);
 
 	return obj;
 }
@@ -132,7 +132,7 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue)
 	int i;
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
-	DEBUG (9, g_assert (queue->balance == 0));
+	SGEN_ASSERT (9, queue->balance == 0, "unbalanced queue on init %d", queue->balance);
 
 	/* Free the extra sections allocated during the last collection */
 	i = 0;

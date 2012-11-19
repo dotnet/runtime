@@ -643,7 +643,7 @@ sgen_clear_allocator_fragments (SgenFragmentAllocator *allocator)
 	SgenFragment *frag;
 
 	for (frag = unmask (allocator->alloc_head); frag; frag = unmask (frag->next)) {
-		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_next, frag->fragment_end));
+		SGEN_LOG (4, "Clear nursery frag %p-%p", frag->fragment_next, frag->fragment_end);
 		sgen_clear_range (frag->fragment_next, frag->fragment_end);
 #ifdef NALLOC_DEBUG
 		add_alloc_record (frag->fragment_next, frag->fragment_end - frag->fragment_next, CLEAR_NURSERY_FRAGS);
@@ -710,7 +710,7 @@ static mword fragment_total = 0;
 static void
 add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag_start, char* frag_end)
 {
-	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
+	SGEN_LOG (4, "Found empty fragment: %p-%p, size: %zd", frag_start, frag_end, frag_size);
 	binary_protocol_empty (frag_start, frag_size);
 	MONO_GC_NURSERY_SWEPT ((mword)frag_start, frag_end - frag_start);
 	/* Not worth dealing with smaller fragments: need to tune */
@@ -828,9 +828,9 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int n
 	sgen_minor_collector.build_fragments_finish (&mutator_allocator);
 
 	if (!unmask (mutator_allocator.alloc_head)) {
-		DEBUG (1, fprintf (gc_debug_file, "Nursery fully pinned (%d)\n", num_entries));
+		SGEN_LOG (1, "Nursery fully pinned (%d)", num_entries);
 		for (i = 0; i < num_entries; ++i) {
-			DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", start [i], sgen_safe_name (start [i]), sgen_safe_object_get_size (start [i])));
+			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %d", start [i], sgen_safe_name (start [i]), sgen_safe_object_get_size (start [i]));
 		}
 	}
 	return fragment_total;
@@ -866,7 +866,7 @@ sgen_can_alloc_size (size_t size)
 void*
 sgen_nursery_alloc (size_t size)
 {
-	DEBUG (4, fprintf (gc_debug_file, "Searching nursery for size: %zd\n", size));
+	SGEN_LOG (4, "Searching nursery for size: %zd", size);
 	size = SGEN_ALIGN_UP (size);
 
 	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_requests));
@@ -877,7 +877,7 @@ sgen_nursery_alloc (size_t size)
 void*
 sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, size_t *out_alloc_size)
 {
-	DEBUG (4, fprintf (gc_debug_file, "Searching for byte range desired size: %zd minimum size %zd\n", desired_size, minimum_size));
+	SGEN_LOG (4, "Searching for byte range desired size: %zd minimum size %zd", desired_size, minimum_size);
 
 	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_range_requests));
 

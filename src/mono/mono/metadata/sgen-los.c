@@ -308,7 +308,7 @@ sgen_los_free_object (LOSObject *obj)
 {
 #ifndef LOS_DUMMY
 	size_t size = obj->size;
-	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %lu\n", obj->data, (unsigned long)obj->size));
+	SGEN_LOG (4, "Freed large object %p, size %lu", obj->data, (unsigned long)obj->size);
 	binary_protocol_empty (obj->data, obj->size);
 
 	los_memory_usage -= size;
@@ -394,7 +394,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_object_list = obj;
 	los_memory_usage += size;
 	los_num_objects++;
-	DEBUG (4, fprintf (gc_debug_file, "Allocated large object %p, vtable: %p (%s), size: %zd\n", obj->data, vtable, vtable->klass->name, size));
+	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, vtable->klass->name, size);
 	binary_protocol_alloc (obj->data, vtable, size);
 
 #ifdef LOS_CONSISTENCY_CHECK
@@ -509,22 +509,23 @@ mono_sgen_los_describe_pointer (char *ptr)
 
 	for (obj = los_object_list; obj; obj = obj->next) {
 		MonoVTable *vtable;
+		const char *los_kind;
 		if (obj->data > ptr || obj->data + obj->size <= ptr)
 			continue;
 
 		if (obj->size > LOS_SECTION_OBJECT_LIMIT)
-			fprintf (gc_debug_file, "huge-los-ptr ");
+			los_kind = "huge-los-ptr ";
 		else
-			fprintf (gc_debug_file, "los-ptr ");
+			los_kind = "los-ptr ";
 
 		vtable = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
 
 		if (obj->data == ptr)
-			fprintf (gc_debug_file, "(object %s.%s size %d)", 
-					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
+			SGEN_LOG (1, "%s (object %s.%s size %d)", 
+					 los_kind, vtable->klass->name_space, vtable->klass->name, (int)obj->size);
 		else
-			fprintf (gc_debug_file, "(interior-ptr offset %td of %p (%s.%s) size %d)",
-					 ptr - obj->data, obj->data,
+			SGEN_LOG (1, "%s (interior-ptr offset %td of %p (%s.%s) size %d)",
+					 los_kind, ptr - obj->data, obj->data,
 					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
 
 		return TRUE;

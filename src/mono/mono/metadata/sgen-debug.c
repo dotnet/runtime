@@ -146,7 +146,7 @@ static void
 check_consistency_callback (char *start, size_t size, void *dummy)
 {
 	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
-	DEBUG (8, fprintf (gc_debug_file, "Scanning object %p, vtable: %p (%s)\n", start, vt, vt->klass->name));
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
 
 #define SCAN_OBJECT_ACTION
 #include "sgen-scan-object.h"
@@ -164,14 +164,14 @@ sgen_check_consistency (void)
 
 	missing_remsets = FALSE;
 
-	DEBUG (1, fprintf (gc_debug_file, "Begin heap consistency check...\n"));
+	SGEN_LOG (1, "Begin heap consistency check...");
 
 	// Check that oldspace->newspace pointers are registered with the collector
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
-	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
+	SGEN_LOG (1, "Heap consistency check done.");
 
 	if (!binary_protocol_is_enabled ())
 		g_assert (!missing_remsets);
@@ -413,7 +413,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			continue;
 		while (start < (char**)info->stack_end) {
 			if (*start >= obj && *start < endobj) {
-				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p\n", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->stack_start, info->stack_end));
+				SGEN_LOG (1, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->stack_start, info->stack_end);
 			}
 			start++;
 		}
@@ -426,7 +426,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 #endif
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)mono_thread_info_get_tid (info)));
+				SGEN_LOG (1, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, j, info, (gpointer)mono_thread_info_get_tid (info));
 		} END_FOREACH_THREAD
 	}
 }
@@ -446,7 +446,7 @@ find_pinning_reference (char *obj, size_t size)
 		if (!root->root_desc) {
 			while (start < (char**)root->end_root) {
 				if (*start >= obj && *start < endobj) {
-					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in pinned roots %p-%p\n", obj, start, root->end_root));
+					SGEN_LOG (1, "Object %p referenced in pinned roots %p-%p\n", obj, start, root->end_root);
 				}
 				start++;
 			}

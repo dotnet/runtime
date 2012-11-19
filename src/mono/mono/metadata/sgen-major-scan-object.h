@@ -37,7 +37,7 @@ extern long long stat_scan_object_called_major;
 			PREFETCH_DYNAMIC_HEAP (__old);			\
 			major_copy_or_mark_object ((ptr), queue);	\
 			__copy = *(ptr);				\
-			DEBUG (9, if (__old != __copy) sgen_debug_printf (9, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old)); \
+			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
 				sgen_add_to_global_remset ((ptr));	\
 		}							\

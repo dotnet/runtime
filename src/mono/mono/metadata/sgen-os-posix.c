@@ -101,7 +101,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, context, NULL);
 
-	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for suspend from %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+	SGEN_LOG (4, "Posting suspend_ack_semaphore for suspend from %p %p", info, (gpointer)mono_native_thread_id_get ());
 
 	/*
 	Block the restart signal. 
@@ -123,7 +123,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	/* Unblock the restart signal. */
 	pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
 
-	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+	SGEN_LOG (4, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)mono_native_thread_id_get ());
 	/* notify the waiting thread */
 	MONO_SEM_POST (suspend_ack_semaphore_ptr);
 }
@@ -170,7 +170,7 @@ restart_handler (int sig)
 	 */
 	if (info) {
 		info->signal = restart_signal_num;
-		DEBUG (4, fprintf (gc_debug_file, "Restart handler in %p %p\n", info, (gpointer)mono_native_thread_id_get ()));
+		SGEN_LOG (4, "Restart handler in %p %p", info, (gpointer)mono_native_thread_id_get ());
 	}
 	errno = old_errno;
 }

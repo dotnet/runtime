@@ -46,7 +46,7 @@ extern long long stat_scan_object_called_nursery;
 		if (__old) {	\
 			PARALLEL_COPY_OBJECT ((ptr), queue);	\
 			__copy = *(ptr);	\
-			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
+			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old);	\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
 				sgen_add_to_global_remset ((ptr));	\
 		}	\
@@ -92,7 +92,7 @@ PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
 		void *__old = *(ptr);	\
 		if (__old) {	\
 			SERIAL_COPY_OBJECT_FROM_OBJ ((ptr), queue);	\
-			DEBUG (9, if (__old != *(ptr)) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old)); \
+			SGEN_COND_LOG (9, __old != *(ptr), "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 		}	\
 	} while (0)
 

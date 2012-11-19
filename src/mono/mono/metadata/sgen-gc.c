@@ -848,7 +848,7 @@ static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
 	if (mono_object_domain (start) == domain) {
-		DEBUG (4, fprintf (gc_debug_file, "Need to cleanup object %p\n", start));
+		SGEN_LOG (4, "Need to cleanup object %p", start);
 		binary_protocol_cleanup (start, (gpointer)LOAD_VTABLE (start), safe_object_get_size ((MonoObject*)start));
 		return TRUE;
 	}
@@ -869,8 +869,7 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 		/* The server could already have been zeroed out, so
 		   we need to check for that, too. */
 		if (server && (!LOAD_VTABLE (server) || mono_object_domain (server) == domain)) {
-			DEBUG (4, fprintf (gc_debug_file, "Cleaning up remote pointer in %p to object %p\n",
-					start, server));
+			SGEN_LOG (4, "Cleaning up remote pointer in %p to object %p", start, server);
 			((MonoRealProxy*)start)->unwrapped_server = NULL;
 		}
 	}
@@ -1060,8 +1059,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 			else
 				los_object_list = bigobj->next;
 			bigobj = bigobj->next;
-			DEBUG (4, fprintf (gc_debug_file, "Freeing large object %p\n",
-					bigobj->data));
+			SGEN_LOG (4, "Freeing large object %p", bigobj->data);
 			sgen_los_free_object (to_free);
 			continue;
 		}
@@ -1112,7 +1110,7 @@ sgen_drain_gray_stack (GrayQueue *queue, int max_objs)
 			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
 				return TRUE;
-			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
+			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
 			scan_func (obj, queue);
 		}
 	} else {
@@ -1123,7 +1121,7 @@ sgen_drain_gray_stack (GrayQueue *queue, int max_objs)
 				GRAY_OBJECT_DEQUEUE (queue, obj);
 				if (!obj)
 					return TRUE;
-				DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
+				SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
 				scan_func (obj, queue);
 			}
 		} while (max_objs < 0);
@@ -1156,7 +1154,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 		addr = *start;
 		/* the range check should be reduntant */
 		if (addr != last && addr >= start_nursery && addr < end_nursery) {
-			DEBUG (5, fprintf (gc_debug_file, "Considering pinning addr %p\n", addr));
+			SGEN_LOG (5, "Considering pinning addr %p", addr);
 			/* multiple pointers to the same object */
 			if (addr >= last_obj && (char*)addr < (char*)last_obj + last_obj_size) {
 				start++;
@@ -1200,9 +1198,9 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 				if (((MonoObject*)last_obj)->synchronisation == GINT_TO_POINTER (-1)) {
 					/* Marks the beginning of a nursery fragment, skip */
 				} else {
-					DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %zd\n", last_obj, safe_name (last_obj), last_obj_size));
+					SGEN_LOG (8, "Pinned try match %p (%s), size %zd", last_obj, safe_name (last_obj), last_obj_size);
 					if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
-						DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
+						SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count);
 						binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
 						if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 							int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
@@ -1397,18 +1395,20 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			 */
 			mword addr = (mword)*start;
 			addr &= ~(ALLOC_ALIGN - 1);
-			if (addr >= (mword)start_nursery && addr < (mword)end_nursery)
+			if (addr >= (mword)start_nursery && addr < (mword)end_nursery) {
+				SGEN_LOG (6, "Pinning address %p from %p", (void*)addr, start);
 				sgen_pin_stage_ptr ((void*)addr);
+				count++;
+			}
 			if (G_UNLIKELY (do_pin_stats)) { 
 				if (ptr_in_nursery ((void*)addr))
 					sgen_pin_stats_register_address ((char*)addr, pin_type);
 			}
-			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p from %p\n", (void*)addr, start));
-			count++;
 		}
 		start++;
 	}
-	DEBUG (7, if (count) fprintf (gc_debug_file, "found %d potential pinned heap pointers\n", count));
+	if (count)
+		SGEN_LOG (7, "found %d potential pinned heap pointers", count);
 }
 
 /*
@@ -1421,10 +1421,10 @@ pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
 	void **start_root;
 	RootRecord *root;
-	DEBUG (2, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d/%d entries)\n", (int)roots_size, roots_hash [ROOT_TYPE_NORMAL].num_entries, roots_hash [ROOT_TYPE_PINNED].num_entries));
+	SGEN_LOG (2, "Scanning pinned roots (%d bytes, %d/%d entries)", (int)roots_size, roots_hash [ROOT_TYPE_NORMAL].num_entries, roots_hash [ROOT_TYPE_PINNED].num_entries);
 	/* objects pinned from the API are inside these roots */
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], start_root, root) {
-		DEBUG (6, fprintf (gc_debug_file, "Pinned roots %p-%p\n", start_root, root->end_root));
+		SGEN_LOG (6, "Pinned roots %p-%p", start_root, root->end_root);
 		conservatively_pin_objects_from (start_root, (void**)root->end_root, start_nursery, end_nursery, PIN_TYPE_OTHER);
 	} SGEN_HASH_TABLE_FOREACH_END;
 	/* now deal with the thread stacks
@@ -1481,7 +1481,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 		while (desc) {
 			if ((desc & 1) && *start_root) {
 				copy_func (start_root, queue);
-				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
+				SGEN_LOG (9, "Overwrote root at %p with %p", start_root, *start_root);
 				sgen_drain_gray_stack (queue, -1);
 			}
 			desc >>= 1;
@@ -1499,7 +1499,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 			while (bmap) {
 				if ((bmap & 1) && *objptr) {
 					copy_func (objptr, queue);
-					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
+					SGEN_LOG (9, "Overwrote root at %p with %p", objptr, *objptr);
 					sgen_drain_gray_stack (queue, -1);
 				}
 				bmap >>= 1;
@@ -1563,7 +1563,7 @@ alloc_nursery (void)
 
 	if (nursery_section)
 		return;
-	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %lu\n", (unsigned long)sgen_nursery_size));
+	SGEN_LOG (2, "Allocating nursery size: %lu", (unsigned long)sgen_nursery_size);
 	/* later we will alloc a larger area for the nursery but only activate
 	 * what we need. The rest will be used as expansion if we have too many pinned
 	 * objects in the existing nursery.
@@ -1582,7 +1582,7 @@ alloc_nursery (void)
 	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
-	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)mono_gc_get_heap_size ()));
+	SGEN_LOG (4, "Expanding nursery size (%p-%p): %lu, total: %lu", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)mono_gc_get_heap_size ());
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = data + sgen_nursery_size;
@@ -1718,7 +1718,7 @@ report_registered_roots_by_type (int root_type)
 	RootRecord *root;
 	report.count = 0;
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", start_root, root->end_root, (void*)root->root_desc));
+		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
 		precisely_report_roots_from (&report, start_root, (void**)root->end_root, root->root_desc);
 	} SGEN_HASH_TABLE_FOREACH_END;
 	notify_gc_roots (&report);
@@ -1739,7 +1739,7 @@ scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list
 	for (fin = list; fin; fin = fin->next) {
 		if (!fin->object)
 			continue;
-		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
+		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object));
 		copy_func (&fin->object, queue);
 	}
 }
@@ -1789,7 +1789,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	sgen_drain_gray_stack (queue, -1);
 	TV_GETTIME (atv);
-	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
+	SGEN_LOG (2, "%s generation done", generation_name (generation));
 
 	/*
 	Reset bridge data, we might have lingering data from a previous collection if this is a major
@@ -1846,7 +1846,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	if (generation == GENERATION_OLD)
 		sgen_finalize_in_range (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
 	/* drain the new stack that might have been created */
-	DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
+	SGEN_LOG (6, "Precise scan of gray area post fin");
 	sgen_drain_gray_stack (queue, -1);
 
 	/*
@@ -1866,7 +1866,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	clear_unreachable_ephemerons (copy_func, start_addr, end_addr, queue);
 
 	TV_GETTIME (btv);
-	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron roundss\n", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds));
+	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
 
 	/*
 	 * handle disappearing links
@@ -1916,7 +1916,7 @@ scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, ch
 	void **start_root;
 	RootRecord *root;
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", start_root, root->end_root, (void*)root->root_desc));
+		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
 		precisely_scan_objects_from (copy_func, start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, queue);
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
@@ -2226,7 +2226,7 @@ verify_scan_starts (char *start, char *end)
 	for (i = 0; i < nursery_section->num_scan_start; ++i) {
 		char *addr = nursery_section->scan_starts [i];
 		if (addr > start && addr < end)
-			fprintf (gc_debug_file, "NFC-BAD SCAN START [%d] %p for obj [%p %p]\n", i, addr, start, end);
+			SGEN_LOG (1, "NFC-BAD SCAN START [%d] %p for obj [%p %p]", i, addr, start, end);
 	}
 }
 
@@ -2253,22 +2253,21 @@ verify_nursery (void)
 		}
 
 		if (object_is_forwarded (cur))
-			fprintf (gc_debug_file, "FORWARDED OBJ %p\n", cur);
+			SGEN_LOG (1, "FORWARDED OBJ %p", cur);
 		else if (object_is_pinned (cur))
-			fprintf (gc_debug_file, "PINNED OBJ %p\n", cur);
+			SGEN_LOG (1, "PINNED OBJ %p", cur);
 
 		ss = safe_object_get_size ((MonoObject*)cur);
 		size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
 		verify_scan_starts (cur, cur + size);
 		if (do_dump_nursery_content) {
 			if (cur > hole_start)
-				fprintf (gc_debug_file, "HOLE [%p %p %d]\n", hole_start, cur, (int)(cur - hole_start));
-			fprintf (gc_debug_file, "OBJ  [%p %p %d %d %s %d]\n", cur, cur + size, (int)size, (int)ss, sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_get_array_fill_vtable ());
+				SGEN_LOG (1, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
+			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_get_array_fill_vtable ());
 		}
 		cur += size;
 		hole_start = cur;
 	}
-	fflush (gc_debug_file);
 }
 
 /*
@@ -2321,7 +2320,7 @@ collect_nursery (void)
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, sgen_get_nursery_end ());
 
-	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", stat_minor_gcs, sgen_get_nursery_start (), nursery_next, (int)(nursery_next - sgen_get_nursery_start ())));
+	SGEN_LOG (1, "Start nursery collection %d %p-%p, size: %d", stat_minor_gcs, sgen_get_nursery_start (), nursery_next, (int)(nursery_next - sgen_get_nursery_start ()));
 	max_garbage_amount = nursery_next - sgen_get_nursery_start ();
 	g_assert (nursery_section->size >= max_garbage_amount);
 
@@ -2367,8 +2366,8 @@ collect_nursery (void)
 
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED (btv, atv);
-	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", sgen_get_pinned_count (), TV_ELAPSED (btv, atv)));
-	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", sgen_get_pinned_count ()));
+	SGEN_LOG (2, "Finding pinned pointers: %d in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
+	SGEN_LOG (4, "Start scan with %d pinned objects", sgen_get_pinned_count ());
 
 	if (whole_heap_check_before_collection)
 		sgen_check_whole_heap ();
@@ -2393,7 +2392,7 @@ collect_nursery (void)
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
 	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
-	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
+	SGEN_LOG (2, "Old generation scan: %d usecs", TV_ELAPSED (atv, btv));
 
 	if (!sgen_collection_is_parallel ())
 		sgen_drain_gray_stack (&gray_queue, -1);
@@ -2481,7 +2480,7 @@ collect_nursery (void)
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_END, 0);
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED (atv, btv);
-	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %lu bytes available\n", TV_ELAPSED (atv, btv), (unsigned long)fragment_total));
+	SGEN_LOG (2, "Fragment creation: %d usecs, %lu bytes available", TV_ELAPSED (atv, btv), (unsigned long)fragment_total);
 
 	if (consistency_check_at_minor_collection)
 		sgen_check_major_refs ();
@@ -2497,7 +2496,7 @@ collect_nursery (void)
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
 	if (fin_ready_list || critical_fin_list) {
-		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
+		SGEN_LOG (4, "Finalizer-thread wakeup: ready %d", num_ready_finalizers);
 		mono_gc_finalize_notify ();
 	}
 	sgen_pin_stats_reset ();
@@ -2565,7 +2564,7 @@ major_do_collection (const char *reason)
 	sgen_nursery_alloc_prepare_for_major ();
 
 	degraded_mode = 0;
-	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", stat_major_gcs));
+	SGEN_LOG (1, "Start major collection %d", stat_major_gcs);
 	stat_major_gcs++;
 	gc_stats.major_gc_count ++;
 
@@ -2606,7 +2605,7 @@ major_do_collection (const char *reason)
 
 	TV_GETTIME (atv);
 	sgen_init_pinning ();
-	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
+	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	sgen_optimize_pin_queue (0);
 
@@ -2622,12 +2621,12 @@ major_do_collection (const char *reason)
 	 * The second, destructive, pass is to reduce the section
 	 * areas to pointers to the actually pinned objects.
 	 */
-	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
+	SGEN_LOG (6, "Pinning from sections");
 	/* first pass for the sections */
 	sgen_find_section_pin_queue_start_end (nursery_section);
 	major_collector.find_pin_queue_start_ends (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* identify possible pointers to the insize of large objects */
-	DEBUG (6, fprintf (gc_debug_file, "Pinning from large objects\n"));
+	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		int dummy;
 		gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
@@ -2644,7 +2643,7 @@ major_do_collection (const char *reason)
 			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
 			if (G_UNLIKELY (do_pin_stats))
 				sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
-			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %lu from roots\n", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size));
+			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size);
 			
 			if (profile_roots)
 				add_profile_gc_root (&report, bigobj->data, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
@@ -2659,8 +2658,8 @@ major_do_collection (const char *reason)
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
-	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", sgen_get_pinned_count (), TV_ELAPSED (atv, btv)));
-	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", sgen_get_pinned_count ()));
+	SGEN_LOG (2, "Finding pinned pointers: %d in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (atv, btv));
+	SGEN_LOG (4, "Start scan with %d pinned objects", sgen_get_pinned_count ());
 
 	major_collector.init_to_space ();
 
@@ -2715,7 +2714,7 @@ major_do_collection (const char *reason)
 
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED (btv, atv);
-	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
+	SGEN_LOG (2, "Root scan: %d usecs", TV_ELAPSED (btv, atv));
 
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
@@ -2817,7 +2816,7 @@ major_do_collection (const char *reason)
 	sgen_finish_pinning ();
 
 	if (fin_ready_list || critical_fin_list) {
-		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
+		SGEN_LOG (4, "Finalizer-thread wakeup: ready %d", num_ready_finalizers);
 		mono_gc_finalize_notify ();
 	}
 	sgen_pin_stats_reset ();
@@ -2933,12 +2932,12 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		mono_profiler_gc_event (MONO_GC_EVENT_END, overflow_generation_to_collect);
 	}
 
-	DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)mono_gc_get_heap_size (), (unsigned long)los_memory_usage));
+	SGEN_LOG (2, "Heap size: %lu, LOS size: %lu", (unsigned long)mono_gc_get_heap_size (), (unsigned long)los_memory_usage);
 
 	/* this also sets the proper pointers for the next allocation */
 	if (generation_to_collect == GENERATION_NURSERY && !sgen_can_alloc_size (requested_size)) {
 		/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-		DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", requested_size, sgen_get_pinned_count ()));
+		SGEN_LOG (1, "nursery collection didn't find enough room for %zd alloc (%d pinned)", requested_size, sgen_get_pinned_count ());
 		sgen_dump_pin_queue ();
 		degraded_mode = 1;
 	}
@@ -3088,7 +3087,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 		if (!object_is_reachable (object, start, end)) {
 			EphemeronLinkNode *tmp = current;
 
-			DEBUG (5, fprintf (gc_debug_file, "Dead Ephemeron array at %p\n", object));
+			SGEN_LOG (5, "Dead Ephemeron array at %p", object);
 
 			if (prev)
 				prev->next = current->next;
@@ -3108,7 +3107,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 		/*The array was promoted, add global remsets for key/values left behind in nursery.*/
 		was_promoted = was_in_nursery && !ptr_in_nursery (object);
 
-		DEBUG (5, fprintf (gc_debug_file, "Clearing unreachable entries for ephemeron array at %p\n", object));
+		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", object);
 
 		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
@@ -3121,9 +3120,9 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 			if (!key || key == tombstone)
 				continue;
 
-			DEBUG (5, fprintf (gc_debug_file, "[%td] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
+			SGEN_LOG (5, "[%td] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
 				key, object_is_reachable (key, start, end) ? "reachable" : "unreachable",
-				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable"));
+				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable");
 
 			if (!object_is_reachable (key, start, end)) {
 				cur->key = tombstone;
@@ -3133,11 +3132,11 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 
 			if (was_promoted) {
 				if (ptr_in_nursery (key)) {/*key was not promoted*/
-					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to key %p\n", key));
+					SGEN_LOG (5, "\tAdded remset to key %p", key);
 					sgen_add_to_global_remset (&cur->key);
 				}
 				if (ptr_in_nursery (cur->value)) {/*value was not promoted*/
-					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to value %p\n", cur->value));
+					SGEN_LOG (5, "\tAdded remset to value %p", cur->value);
 					sgen_add_to_global_remset (&cur->value);
 				}
 			}
@@ -3159,7 +3158,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 
 	for (current = ephemeron_list; current; current = current->next) {
 		char *object = current->array;
-		DEBUG (5, fprintf (gc_debug_file, "Ephemeron array at %p\n", object));
+		SGEN_LOG (5, "Ephemeron array at %p", object);
 
 		/*
 		For now we process all ephemerons during all collections.
@@ -3173,7 +3172,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 
 		/*It has to be alive*/
 		if (!object_is_reachable (object, start, end)) {
-			DEBUG (5, fprintf (gc_debug_file, "\tnot reachable\n"));
+			SGEN_LOG (5, "\tnot reachable");
 			continue;
 		}
 
@@ -3190,9 +3189,9 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 			if (!key || key == tombstone)
 				continue;
 
-			DEBUG (5, fprintf (gc_debug_file, "[%td] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
+			SGEN_LOG (5, "[%td] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
 				key, object_is_reachable (key, start, end) ? "reachable" : "unreachable",
-				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable"));
+				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable");
 
 			if (object_is_reachable (key, start, end)) {
 				char *value = cur->value;
@@ -3207,7 +3206,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 		}
 	}
 
-	DEBUG (5, fprintf (gc_debug_file, "Ephemeron run finished. Is it done %d\n", nothing_marked));
+	SGEN_LOG (5, "Ephemeron run finished. Is it done %d", nothing_marked);
 	return nothing_marked;
 }
 
@@ -3256,7 +3255,7 @@ mono_gc_invoke_finalizers (void)
 			num_ready_finalizers--;
 			obj = entry->object;
 			entry->object = NULL;
-			DEBUG (7, fprintf (gc_debug_file, "Finalizing object %p (%s)\n", obj, safe_name (obj)));
+			SGEN_LOG (7, "Finalizing object %p (%s)", obj, safe_name (obj));
 		}
 
 		UNLOCK_GC;
@@ -3317,7 +3316,7 @@ mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_typ
 	sgen_hash_table_replace (&roots_hash [root_type], start, &new_root, NULL);
 	roots_size += size;
 
-	DEBUG (3, fprintf (gc_debug_file, "Added root for range: %p-%p, descr: %p  (%d/%d bytes)\n", start, new_root.end_root, descr, (int)size, (int)roots_size));
+	SGEN_LOG (3, "Added root for range: %p-%p, descr: %p  (%d/%d bytes)", start, new_root.end_root, descr, (int)size, (int)roots_size);
 
 	UNLOCK_GC;
 	return TRUE;
@@ -3412,20 +3411,20 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 
 	FOREACH_THREAD (info) {
 		if (info->skip) {
-			DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
 		if (info->gc_disabled) {
-			DEBUG (3, fprintf (gc_debug_file, "GC disabled for thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
 
 		if (!info->joined_stw) {
-			DEBUG (3, fprintf (gc_debug_file, "Skipping thread not seen in STW %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			SGEN_LOG (3, "Skipping thread not seen in STW %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
 		
-		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ()));
+		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
 		if (!info->thread_is_dying) {
 			if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 				UserCopyOrMarkData data = { NULL, queue };
@@ -3536,7 +3535,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	if (remset.register_thread)
 		remset.register_thread (info);
 
-	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) stack end %p\n", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end));
+	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end);
 
 	if (gc_callbacks.thread_attach_func)
 		info->runtime_data = gc_callbacks.thread_attach_func ();
@@ -3597,7 +3596,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 #endif
 
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));
-	DEBUG (3, fprintf (gc_debug_file, "unregister thread %p (%p)\n", p, (gpointer)mono_thread_info_get_tid (p)));
+	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)mono_thread_info_get_tid (p));
 
 	if (gc_callbacks.thread_detach_func) {
 		gc_callbacks.thread_detach_func (p->runtime_data);
@@ -3696,7 +3695,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 		*(void**)field_ptr = value;
 		return;
 	}
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
+	SGEN_LOG (8, "Adding remset at %p", field_ptr);
 	if (value)
 		binary_protocol_wbarrier (field_ptr, value, value->vtable);
 
@@ -3711,7 +3710,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 		*(void**)slot_ptr = value;
 		return;
 	}
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
+	SGEN_LOG (8, "Adding remset at %p", slot_ptr);
 	if (value)
 		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
 
@@ -3808,11 +3807,11 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 		binary_protocol_wbarrier (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
 
 	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr) || !ptr_in_nursery (*(gpointer*)ptr)) {
-		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
+		SGEN_LOG (8, "Skipping remset at %p", ptr);
 		return;
 	}
 
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
+	SGEN_LOG (8, "Adding remset at %p", ptr);
 
 	remset.wbarrier_generic_nostore (ptr);
 }
@@ -3820,7 +3819,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
-	DEBUG (8, fprintf (gc_debug_file, "Wbarrier store at %p to %p (%s)\n", ptr, value, value ? safe_name (value) : "null"));
+	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? safe_name (value) : "null");
 	*(void**)ptr = value;
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
@@ -3868,7 +3867,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
 
-	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
+	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, klass->gc_descr, klass->name, klass);
 
 	if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
 		size_t element_size = mono_class_value_size (klass, NULL);
@@ -4141,7 +4140,7 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	node->next = ephemeron_list;
 	ephemeron_list = node;
 
-	DEBUG (5, fprintf (gc_debug_file, "Registered ephemeron array %p\n", obj));
+	SGEN_LOG (5, "Registered ephemeron array %p", obj);
 
 	UNLOCK_GC;
 	return TRUE;
@@ -4918,6 +4917,7 @@ mono_gc_is_disabled (void)
 	return FALSE;
 }
 
+//FIXME
 void
 sgen_debug_printf (int level, const char *format, ...)
 {

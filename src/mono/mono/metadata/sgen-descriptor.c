@@ -97,12 +97,12 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 		complex_descriptors = g_realloc (complex_descriptors, new_size * sizeof (gsize));
 		complex_descriptors_size = new_size;
 	}
-	DEBUG (6, fprintf (gc_debug_file, "Complex descriptor %d, size: %d (total desc memory: %d)\n", res, nwords, complex_descriptors_size));
+	SGEN_LOG (6, "Complex descriptor %d, size: %d (total desc memory: %d)", res, nwords, complex_descriptors_size);
 	complex_descriptors_next += nwords;
 	complex_descriptors [res] = nwords;
 	for (i = 0; i < nwords - 1; ++i) {
 		complex_descriptors [res + 1 + i] = bitmap [i];
-		DEBUG (6, fprintf (gc_debug_file, "\tvalue: %p\n", (void*)complex_descriptors [res + 1 + i]));
+		SGEN_LOG (6, "\tvalue: %p", (void*)complex_descriptors [res + 1 + i]);
 	}
 	sgen_gc_unlock ();
 	return res;
@@ -143,7 +143,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	}
 
 	if (first_set < 0) {
-		DEBUG (6, fprintf (gc_debug_file, "Ptrfree descriptor %p, size: %zd\n", (void*)desc, stored_size));
+		SGEN_LOG (6, "Ptrfree descriptor %p, size: %zd", (void*)desc, stored_size);
 		if (stored_size <= MAX_RUNLEN_OBJECT_SIZE)
 			return (void*)(DESC_TYPE_RUN_LENGTH | stored_size);
 		return (void*)DESC_TYPE_COMPLEX_PTRFREE;
@@ -158,7 +158,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		 */
 		if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
 			desc = DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24);
-			DEBUG (6, fprintf (gc_debug_file, "Runlen descriptor %p, size: %zd, first set: %d, num set: %d\n", (void*)desc, stored_size, first_set, num_set));
+			SGEN_LOG (6, "Runlen descriptor %p, size: %zd, first set: %d, num set: %d", (void*)desc, stored_size, first_set, num_set);
 			return (void*) desc;
 		}
 	}
@@ -166,14 +166,14 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	/* we know the 2-word header is ptr-free */
 	if (last_set < SMALL_BITMAP_SIZE + OBJECT_HEADER_WORDS) {
 		desc = DESC_TYPE_SMALL_BITMAP | stored_size | ((*bitmap >> OBJECT_HEADER_WORDS) << SMALL_BITMAP_SHIFT);
-		DEBUG (6, fprintf (gc_debug_file, "Smallbitmap descriptor %p, size: %zd, last set: %d\n", (void*)desc, stored_size, last_set));
+		SGEN_LOG (6, "Smallbitmap descriptor %p, size: %zd, last set: %d", (void*)desc, stored_size, last_set);
 		return (void*) desc;
 	}
 
 	/* we know the 2-word header is ptr-free */
 	if (last_set < LARGE_BITMAP_SIZE + OBJECT_HEADER_WORDS) {
 		desc = DESC_TYPE_LARGE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
-		DEBUG (6, fprintf (gc_debug_file, "Largebitmap descriptor %p, size: %zd, last set: %d\n", (void*)desc, stored_size, last_set));
+		SGEN_LOG (6, "Largebitmap descriptor %p, size: %zd, last set: %d", (void*)desc, stored_size, last_set);
 		return (void*) desc;
 	}
 	/* it's a complex object ... */

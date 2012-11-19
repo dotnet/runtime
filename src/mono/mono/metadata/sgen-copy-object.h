@@ -41,8 +41,8 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
 #endif
 
-	DEBUG (9, g_assert (vt->klass->inited));
-	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
+	SGEN_ASSERT (9, vt->klass->inited, "vtable %p for class %s:%s was not initialized", vt, vt->klass->name_space, vt->klass->name);
+	SGEN_LOG (9, " (to %p, %s size: %lu)", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize);
 	binary_protocol_copy (obj, destination, vt, objsize);
 
 	if (G_UNLIKELY (MONO_GC_OBJ_MOVED_ENABLED ())) {
@@ -81,17 +81,18 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 		mono_gc_memmove (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 #endif
 	/* adjust array->bounds */
-	DEBUG (9, g_assert (vt->gc_descr));
+	SGEN_ASSERT (9, vt->gc_descr, "vtable %p for class %s:%s has no gc descriptor", vt, vt->klass->name_space, vt->klass->name);
+
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
 		MonoArray *array = (MonoArray*)destination;
 		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
-		DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %lu, rank: %d, length: %lu\n", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array)));
+		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array));
 	}
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
 		sgen_register_moved_object (obj, destination);
 	obj = destination;
 	if (queue) {
-		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, sgen_safe_name (obj)));
+		SGEN_LOG (9, "Enqueuing gray object %p (%s)", obj, sgen_safe_name (obj));
 		GRAY_OBJECT_ENQUEUE (queue, obj);
 	}
 }

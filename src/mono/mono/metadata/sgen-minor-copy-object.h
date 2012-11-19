@@ -64,7 +64,7 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 	char *forwarded;
 	char *obj = *obj_slot;
 
-	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+	SGEN_ASSERT (9, current_collection_generation == GENERATION_NURSERY, "calling minor-serial-copy from a %d generation collection", current_collection_generation);
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
@@ -73,7 +73,7 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 
-	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
+	SGEN_LOG (9, "Precise copy of %p from %p", obj, obj_slot);
 
 	/*
 	 * Before we can copy the object we must make sure that we are
@@ -82,23 +82,23 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 	 */
 
 	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-		DEBUG (9, g_assert ((*(MonoVTable**)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		SGEN_ASSERT (9, (*(MonoVTable**)SGEN_LOAD_VTABLE (obj))->gc_descr,  "forwarded object %p has no gc descriptor", forwarded);
+		SGEN_LOG (9, " (already forwarded to %p)", forwarded);
 		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
 		return;
 	}
 	if (G_UNLIKELY (SGEN_OBJECT_IS_PINNED (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		SGEN_ASSERT (9, ((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr, "pinned object %p has no gc descriptor", obj);
+		SGEN_LOG (9, " (pinned, no change)");
 		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
 		return;
 	}
 
 #ifndef SGEN_SIMPLE_NURSERY
 	if (sgen_nursery_is_to_space (obj)) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (tospace, no change)\n"));
+		SGEN_ASSERT (9, ((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr, "to space object %p has no gc descriptor", obj);
+		SGEN_LOG (9, " (tospace, no change)");
 		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
 		return;
 	}
@@ -125,7 +125,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 	char *obj = *obj_slot;
 	void *copy;
 
-	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+	SGEN_ASSERT (9, current_collection_generation == GENERATION_NURSERY, "calling minor-serial-copy-from-obj from a %d generation collection", current_collection_generation);
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
@@ -134,7 +134,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 
-	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
+	SGEN_LOG (9, "Precise copy of %p from %p", obj, obj_slot);
 
 	/*
 	 * Before we can copy the object we must make sure that we are
@@ -143,8 +143,8 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 	 */
 
 	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-		DEBUG (9, g_assert ((*(MonoVTable**)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		SGEN_ASSERT (9, (*(MonoVTable**)SGEN_LOAD_VTABLE (obj))->gc_descr,  "forwarded object %p has no gc descriptor", forwarded);
+		SGEN_LOG (9, " (already forwarded to %p)", forwarded);
 		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
 #ifndef SGEN_SIMPLE_NURSERY
@@ -154,8 +154,8 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 	if (G_UNLIKELY (SGEN_OBJECT_IS_PINNED (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		SGEN_ASSERT (9, ((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr, "pinned object %p has no gc descriptor", obj);
+		SGEN_LOG (9, " (pinned, no change)");
 		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
 		if (!sgen_ptr_in_nursery (obj_slot))
 			sgen_add_to_global_remset (obj_slot);
@@ -164,8 +164,8 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 
 #ifndef SGEN_SIMPLE_NURSERY
 	if (sgen_nursery_is_to_space (obj)) {
-		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (tospace, no change)\n"));
+		SGEN_ASSERT (9, ((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr, "to space object %p has no gc descriptor", obj);
+		SGEN_LOG (9, " (tospace, no change)");
 		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
 		return;
 	}
@@ -196,7 +196,7 @@ PARALLEL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 	void *destination;
 	gboolean has_references;
 
-	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+	SGEN_ASSERT (9, current_collection_generation == GENERATION_NURSERY, "calling minor-par-copy from a %d generation collection", current_collection_generation);
 
 	HEAVY_STAT (++stat_copy_object_called_nursery);
 
