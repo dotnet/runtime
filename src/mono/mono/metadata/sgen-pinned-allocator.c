@@ -241,7 +241,7 @@ alloc_pinned_chunk (SgenPinnedAllocator *alc)
 	chunk->page_sizes [0] = PINNED_FIRST_SLOT_SIZE;
 	build_freelist (alc, chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE,
 			chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
-	sgen_debug_printf (4, "Allocated pinned chunk %p, size: %d\n", chunk, size);
+	SGEN_LOG (4, "Allocated pinned chunk %p, size: %d", chunk, size);
 
 	chunk->block.next = alc->chunk_list;
 	alc->chunk_list = chunk;
@@ -408,14 +408,14 @@ sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc ca
 	void *end_chunk;
 	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
 		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
-		sgen_debug_printf (6, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk);
+		SGEN_LOG (6, "Scanning pinned chunk %p (range: %p-%p)", chunk, chunk->start_data, end_chunk);
 		for (i = 0; i < chunk->num_pages; ++i) {
 			obj_size = chunk->page_sizes [i];
 			if (!obj_size)
 				continue;
 			p = i? (char*)chunk + i * FREELIST_PAGESIZE: chunk->start_data;
 			endp = i? p + FREELIST_PAGESIZE: (char*)chunk + FREELIST_PAGESIZE;
-			sgen_debug_printf (6, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp);
+			SGEN_LOG (6, "Page %d (size: %d, range: %p-%p)", i, obj_size, p, endp);
 			while (p + obj_size <= endp) {
 				ptr = (void**)p;
 				/* if the first word (the vtable) is outside the chunk we have an object */
@@ -485,7 +485,7 @@ sgen_pinned_scan_pinned_objects (SgenPinnedAllocator *alc, IterateObjectCallback
 	SgenPinnedChunk *chunk;
 
 	/* look for pinned addresses for pinned-alloc objects */
-	sgen_debug_printf (6, "Pinning from pinned-alloc objects\n");
+	SGEN_LOG (6, "Pinning from pinned-alloc objects");
 	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
 		int num_pinned;
 		void **pinned = sgen_find_optimized_pin_queue_area (chunk->start_data,

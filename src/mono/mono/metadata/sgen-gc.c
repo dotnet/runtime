@@ -1630,7 +1630,7 @@ mono_gc_precise_stack_mark_enabled (void)
 FILE *
 mono_gc_get_logfile (void)
 {
-	return sgen_get_logfile ();
+	return gc_debug_file;
 }
 
 static void
@@ -4915,26 +4915,6 @@ gboolean
 mono_gc_is_disabled (void)
 {
 	return FALSE;
-}
-
-//FIXME
-void
-sgen_debug_printf (int level, const char *format, ...)
-{
-	va_list ap;
-
-	if (level > gc_debug_level)
-		return;
-
-	va_start (ap, format);
-	vfprintf (gc_debug_file, format, ap);
-	va_end (ap);
-}
-
-FILE*
-sgen_get_logfile (void)
-{
-	return gc_debug_file;
 }
 
 #ifdef HOST_WIN32
