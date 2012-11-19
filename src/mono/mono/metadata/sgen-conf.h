@@ -82,10 +82,16 @@ typedef guint64 mword;
 
 /*
  * Maximum level of debug to enable on this build.
- * Making this a static variable enables us to put logging in a lot of places.
- * FIXME decouple logging from assertions
+ * Making this a constant enables us to put logging in a lot of places and
+ * not pay its cost on release builds.
  */
 #define SGEN_MAX_DEBUG_LEVEL 2
+
+/*
+ * Maximum level of asserts to enable on this build.
+ * FIXME replace all magic numbers with defines.
+ */
+#define SGEN_MAX_ASSERT_LEVEL 2
 
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)

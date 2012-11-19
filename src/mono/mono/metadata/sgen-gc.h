@@ -244,6 +244,28 @@ extern long long stat_objects_copied_major;
 
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) { a; fflush (gc_debug_file); } } while (0)
 
+#define SGEN_ASSERT(level, a, ...) do {	\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_ASSERT_LEVEL && !(a))) {	\
+		g_error (__VA_ARGS__);	\
+} } while (0)
+
+
+#define SGEN_LOG(level, format, ...) do {      \
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
+		fprintf (gc_debug_file, format "\n", ##__VA_ARGS__); fflush (gc_debug_file);	\
+} } while (0)
+
+#define SGEN_COND_LOG(level, cond, format, ...) do {	\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
+		if (cond)	\
+			fprintf (gc_debug_file, format "\n", ##__VA_ARGS__); fflush (gc_debug_file);	\
+} } while (0)
+
+#define SGEN_LOG_DO(level, fun) do {	\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
+		fun;	\
+} } while (0)
+
 extern int gc_debug_level;
 extern FILE* gc_debug_file;
 
