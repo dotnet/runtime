@@ -41,6 +41,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
+#include <mono/utils/mono-logger-internal.h>
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
@@ -250,13 +251,13 @@ extern long long stat_objects_copied_major;
 
 #define SGEN_LOG(level, format, ...) do {      \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		fprintf (gc_debug_file, format "\n", ##__VA_ARGS__); fflush (gc_debug_file);	\
+		mono_gc_printf (gc_debug_file, format, ##__VA_ARGS__);	\
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
 		if (cond)	\
-			fprintf (gc_debug_file, format "\n", ##__VA_ARGS__); fflush (gc_debug_file);	\
+			mono_gc_printf (gc_debug_file, format, ##__VA_ARGS__);	\
 } } while (0)
 
 #define SGEN_LOG_DO(level, fun) do {	\
