@@ -783,6 +783,9 @@ free_object (char *obj, size_t size, gboolean pinned)
 {
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
 	int word, bit;
+
+	if (!block->swept)
+		sweep_block (block);
 	DEBUG (9, g_assert ((pinned && block->pinned) || (!pinned && !block->pinned)));
 	DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
 	MS_CALC_MARK_BIT (word, bit, obj);
@@ -1452,7 +1455,6 @@ sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 	}
 }
 
-// FIXME: Consistency check, heap traversal
 /*
  * sweep_block:
  *
@@ -1562,8 +1564,6 @@ ms_sweep (void)
 		}
 		if (nused) {
 			have_live = TRUE;
-			if (!has_pinned)
-				slots_used [obj_size_index] += nused;
 		}
 		if (nused < count)
 			have_free = TRUE;
@@ -1574,6 +1574,7 @@ ms_sweep (void)
 		if (have_live) {
 			if (!has_pinned) {
 				++num_blocks [obj_size_index];
+				slots_used [obj_size_index] += nused;
 				slots_available [obj_size_index] += count;
 			}
 
