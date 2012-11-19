@@ -145,11 +145,11 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 	if (debug_print_allowance) {
 		mword old_major = last_collection_old_num_major_sections * major_collector.section_size;
 
-		fprintf (gc_debug_file, "Before collection: %td bytes (%td major, %td LOS)\n",
+		SGEN_LOG (1, "Before collection: %td bytes (%td major, %td LOS)",
 				old_major + last_collection_old_los_memory_usage, old_major, last_collection_old_los_memory_usage);
-		fprintf (gc_debug_file, "After collection: %td bytes (%td major, %td LOS)\n",
+		SGEN_LOG (1, "After collection: %td bytes (%td major, %td LOS)",
 				new_heap_size, new_major, last_collection_los_memory_usage);
-		fprintf (gc_debug_file, "Allowance: %td bytes\n", minor_collection_allowance);
+		SGEN_LOG (1, "Allowance: %td bytes", minor_collection_allowance);
 	}
 
 	if (major_collector.have_computed_minor_collection_allowance)
