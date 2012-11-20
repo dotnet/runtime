@@ -177,13 +177,20 @@ sgen_gc_descr_has_references (mword desc)
 		void **_objptr = (void**)(obj); \
 		gsize _bmap = (desc) >> 16;     \
 		_objptr += OBJECT_HEADER_WORDS; \
+		{ \
+			int _index = __builtin_ctz (_bmap); \
+			_objptr += _index; \
+			_bmap >>= (_index + 1);				\
+			HANDLE_PTR (_objptr, (obj));		\
+			_objptr ++;							\
+			} \
 		while (_bmap) { \
-			if ((_bmap & 1)) {      \
-				HANDLE_PTR (_objptr, (obj));    \
-			}       \
-			_bmap >>= 1;    \
-			++_objptr;      \
-			}       \
+			int _index = __builtin_ctz (_bmap); \
+			_objptr += _index; \
+			_bmap >>= (_index + 1);				\
+			HANDLE_PTR (_objptr, (obj));		\
+			_objptr ++;							\
+		}										\
 	} while (0)
 
 /* a bitmap desc means that there are pointer references or we'd have
