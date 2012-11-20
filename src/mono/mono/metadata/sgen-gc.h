@@ -940,7 +940,7 @@ char* sgen_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_refe
 extern MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
-extern __thread SgenThreadInfo *thread_info;
+extern __thread SgenThreadInfo *sgen_thread_info;
 extern __thread gpointer *store_remset_buffer;
 extern __thread long store_remset_buffer_index;
 extern __thread char *stack_end;
@@ -952,7 +952,7 @@ extern __thread long *store_remset_buffer_index_addr;
 #define REMEMBERED_SET	remembered_set
 #define STORE_REMSET_BUFFER	store_remset_buffer
 #define STORE_REMSET_BUFFER_INDEX	store_remset_buffer_index
-#define IN_CRITICAL_REGION thread_info->in_critical_region
+#define IN_CRITICAL_REGION sgen_thread_info->in_critical_region
 #else
 #define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
 #define REMEMBERED_SET	(__thread_info__->remset)
@@ -964,7 +964,7 @@ extern __thread long *store_remset_buffer_index_addr;
 #ifndef DISABLE_CRITICAL_REGION
 
 #ifdef HAVE_KW_THREAD
-#define IN_CRITICAL_REGION thread_info->in_critical_region
+#define IN_CRITICAL_REGION sgen_thread_info->in_critical_region
 #else
 #define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
 #endif

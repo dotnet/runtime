@@ -487,7 +487,7 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
 MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
-__thread SgenThreadInfo *thread_info;
+__thread SgenThreadInfo *sgen_thread_info;
 __thread gpointer *store_remset_buffer;
 __thread long store_remset_buffer_index;
 __thread char *stack_end;
@@ -3473,7 +3473,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	g_assert (!mono_native_tls_get_value (thread_info_key));
 	mono_native_tls_set_value (thread_info_key, info);
 #else
-	thread_info = info;
+	sgen_thread_info = info;
 #endif
 
 #if !defined(__MACH__)
