@@ -47,6 +47,12 @@ namespace Mono.Tuner {
 
 		bool IsSkipped (AssemblyDefinition assembly)
 		{
+			if (assembly.HasCustomAttributes) {
+				foreach (var ca in assembly.CustomAttributes) {
+					if (ca.AttributeType.Name == "PreserveAttribute")
+						return true;
+				}
+			}
 			return skipped_assemblies.Contains (assembly.Name.Name);
 		}
 
