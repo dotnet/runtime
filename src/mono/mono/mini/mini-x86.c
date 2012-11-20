@@ -5906,9 +5906,9 @@ mono_arch_get_patch_offset (guint8 *code)
 {
 	if ((code [0] == 0x8b) && (x86_modrm_mod (code [1]) == 0x2))
 		return 2;
-	else if ((code [0] == 0xba))
+	else if (code [0] == 0xba)
 		return 1;
-	else if ((code [0] == 0x68))
+	else if (code [0] == 0x68)
 		/* push IMM */
 		return 1;
 	else if ((code [0] == 0xff) && (x86_modrm_reg (code [1]) == 0x6))

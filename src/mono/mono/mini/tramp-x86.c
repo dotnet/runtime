@@ -125,7 +125,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	 */
 	code -= 6;
 	orig_code -= 6;
-	if ((code [1] == 0xe8)) {
+	if (code [1] == 0xe8) {
 		if (can_write) {
 			InterlockedExchange ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
 
