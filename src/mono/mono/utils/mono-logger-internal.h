@@ -89,6 +89,8 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 	va_end (args);
 }
 
+#endif /* !__GNUC__ */
+
 #if defined (PLATFORM_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 
 #define mono_gc_printf(gc_log_file, format, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, format "\n", ##__VA_ARGS__)
@@ -106,9 +108,9 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 #define mono_runtime_printf(format, ...) fprintf (stdout, format "\n", ##__VA_ARGS__)
 #define mono_runtime_printf_err(format, ...) fprintf (stderr, format "\n", ##__VA_ARGS__)
 #define mono_runtime_stdout_fflush() do { fflush (stdout); } while (0)
+
 #endif
 
-#endif /* !__GNUC__ */
 
 G_END_DECLS
 
