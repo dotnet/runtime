@@ -138,7 +138,7 @@ const static unsigned char coded_index_desc[] = {
 	5, /*tables*/
 	MONO_TABLE_TYPEDEF,
 	MONO_TABLE_TYPEREF,
-	MONO_TABLE_MODULE,
+	MONO_TABLE_MODULEREF,
 	MONO_TABLE_METHOD,
 	MONO_TABLE_TYPESPEC,
 
