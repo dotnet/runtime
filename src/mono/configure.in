@@ -497,7 +497,7 @@ AC_CHECK_SIZEOF(void *, 4)
 
 WARN=''
 if test x"$GCC" = xyes; then
-        WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch-enum'
+        WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum'
 		# The runtime code does not respect ANSI C strict aliasing rules
 		CFLAGS="$CFLAGS -fno-strict-aliasing"
 
@@ -2803,6 +2803,11 @@ fi
 AC_ARG_ENABLE(icall-tables,[  --disable-icall-tables Disable the runtime lookup of icalls], icall_tables=$enableval, icall_tables=yes)
 if test "x$icall_tables" = "xno"; then
    AC_DEFINE(DISABLE_ICALL_TABLES, 1, [Icall tables disabled])
+fi
+
+if test "x$mono_cv_clang" = "xyes"; then
+   # FIXME: This causes many compilation errors
+   with_tls=pthread
 fi
 
 if test "x$with_tls" = "x__thread"; then
