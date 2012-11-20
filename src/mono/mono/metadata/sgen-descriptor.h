@@ -172,6 +172,7 @@ sgen_gc_descr_has_references (mword desc)
 		}	\
 	} while (0)
 
+#ifdef __GNUC__
 #define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
 		/* there are pointers */        \
 		void **_objptr = (void**)(obj); \
@@ -192,6 +193,21 @@ sgen_gc_descr_has_references (mword desc)
 			_objptr ++;							\
 		}										\
 	} while (0)
+#else
+#define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
+		/* there are pointers */        \
+		void **_objptr = (void**)(obj); \
+		gsize _bmap = (desc) >> 16;     \
+		_objptr += OBJECT_HEADER_WORDS; \
+		while (_bmap) {						   \
+			if ((_bmap & 1)) {								   \
+				HANDLE_PTR (_objptr, (obj));				   \
+			}												   \
+			_bmap >>= 1;									   \
+			++_objptr;										   \
+		}													   \
+	} while (0)
+#endif
 
 /* a bitmap desc means that there are pointer references or we'd have
  * choosen run-length, instead: add an assert to check.
