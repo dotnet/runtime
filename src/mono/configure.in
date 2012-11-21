@@ -324,9 +324,6 @@ case "$host" in
 				;;
 			arm*-darwin*)
 				has_dtrace=no
-
-				# Disable the clang check if we're cross compiling
-				mono_cv_clang=no
 				;;			
 		esac
 		;;
@@ -538,14 +535,12 @@ CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
 
 AC_CACHE_CHECK([for clang],
 	mono_cv_clang,[
-	AC_TRY_RUN([
-		int main () {
-			#ifdef __clang__
-				return 0;
-			#else
-				return 1;
-			#endif
-		}
+	AC_TRY_COMPILE([], [
+		#ifdef __clang__
+		#else
+		#error "FAILED"
+		#endif
+		return 0;
 	],
 	[mono_cv_clang=yes],
 	[mono_cv_clang=no],
