@@ -2561,7 +2561,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 		info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
 		if (!info) {
-			DEBUG(1, fprintf (log_file, "[%p] mono_thread_info_suspend_sync () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res));
+			DEBUG(1, fprintf (log_file, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid));
 			/* 
 			 * Attached thread which died without detaching.
 			 */
