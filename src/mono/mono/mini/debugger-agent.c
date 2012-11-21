@@ -2560,13 +2560,19 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		MonoJitInfo *ji;
 
 		info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
-		g_assert (info);
+		if (!info) {
+			DEBUG(1, fprintf (log_file, "[%p] mono_thread_info_suspend_sync () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res));
+			/* 
+			 * Attached thread which died without detaching.
+			 */
+			tls->terminated = TRUE;
+		} else {
+			ji = mono_jit_info_table_find (info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
 
-		ji = mono_jit_info_table_find (info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+			thread_interrupt (tls, info, NULL, ji);
 
-		thread_interrupt (tls, info, NULL, ji);
-
-		mono_thread_info_resume (mono_thread_info_get_tid (info));
+			mono_thread_info_resume (mono_thread_info_get_tid (info));
+		}
 	} else {
 		res = mono_thread_kill (thread, mono_thread_get_abort_signal ());
 		if (res) {
