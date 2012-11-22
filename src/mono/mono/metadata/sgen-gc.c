@@ -3123,8 +3123,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 
 	if (!force_finish && !sgen_workers_all_done ()) {
 		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD);
-
-		g_print ("workers not done\n");
 		return FALSE;
 	}
 
@@ -3209,7 +3207,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	sgen_stop_world (generation_to_collect);
 
 	if (concurrent_collection_in_progress) {
-		g_print ("finishing concurrent collection\n");
 		if (major_update_or_finish_concurrent_collection (generation_to_collect == GENERATION_OLD)) {
 			oldest_generation_collected = GENERATION_OLD;
 			goto done;
