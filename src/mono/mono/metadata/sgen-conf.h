@@ -75,6 +75,13 @@ typedef guint64 mword;
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
+/*
+ * Define this to get number of objects marked information in the
+ * concurrent GC DTrace probes.  Has a small performance impact, so
+ * it's disabled by default.
+ */
+//#define SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
+
 #ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION

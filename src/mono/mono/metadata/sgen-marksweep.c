@@ -219,6 +219,14 @@ static long long stat_major_blocks_freed = 0;
 static long long stat_major_blocks_lazy_swept = 0;
 static long long stat_major_objects_evacuated = 0;
 
+static long long num_major_objects_marked = 0;
+
+#ifdef SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
+#define INC_NUM_MAJOR_OBJECTS_MARKED()	(++num_major_objects_marked)
+#else
+#define INC_NUM_MAJOR_OBJECTS_MARKED()
+#endif
+
 static void
 sweep_block (MSBlockInfo *block);
 
@@ -712,6 +720,7 @@ alloc_obj (MonoVTable *vtable, int size, gboolean pinned, gboolean has_reference
 		MS_CALC_MARK_BIT (word, bit, obj);
 		MS_SET_MARK_BIT (block, word, bit);
 		binary_protocol_mark (obj, NULL, size);
+		INC_NUM_MAJOR_OBJECTS_MARKED ();
 	}
 #endif
 
@@ -1023,6 +1032,7 @@ major_dump_heap (FILE *heap_dump_file)
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
+			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
@@ -1034,6 +1044,7 @@ major_dump_heap (FILE *heap_dump_file)
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
+			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
 #define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
@@ -1046,6 +1057,7 @@ major_dump_heap (FILE *heap_dump_file)
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
+			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
 
@@ -1252,6 +1264,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			sgen_los_pin_object (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
+			INC_NUM_MAJOR_OBJECTS_MARKED ();
 		}
 	}
 }
@@ -1389,6 +1402,16 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	}
 }
 #endif
+#endif
+
+#ifdef SGEN_CONCURRENT_MARK
+static long long
+major_get_and_reset_num_major_objects_marked (void)
+{
+	long long num = num_major_objects_marked;
+	num_major_objects_marked = 0;
+	return num;
+}
 #endif
 
 #include "sgen-major-scan-object.h"
@@ -2278,6 +2301,7 @@ sgen_marksweep_init
 #endif
 #ifdef SGEN_CONCURRENT_MARK
 	collector->is_concurrent = TRUE;
+	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 #else
 	collector->is_concurrent = FALSE;
 #endif

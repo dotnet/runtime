@@ -720,6 +720,7 @@ struct _SgenMajorCollector {
 	void (*reset_worker_data) (void *data);
 	gboolean (*is_valid_object) (char *object);
 	gboolean (*describe_pointer) (char *pointer);
+	long long (*get_and_reset_num_major_objects_marked) (void);
 };
 
 extern SgenMajorCollector major_collector;

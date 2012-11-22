@@ -3079,6 +3079,11 @@ major_do_collection (const char *reason)
 	TV_DECLARE (all_btv);
 	int old_next_pin_slot;
 
+	if (major_collector.get_and_reset_num_major_objects_marked) {
+		long long num_marked = major_collector.get_and_reset_num_major_objects_marked ();
+		g_assert (!num_marked);
+	}
+
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
 
@@ -3088,6 +3093,10 @@ major_do_collection (const char *reason)
 	TV_GETTIME (all_btv);
 	gc_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
+	/* FIXME: also report this to the user, preferably in gc-end. */
+	if (major_collector.get_and_reset_num_major_objects_marked)
+		major_collector.get_and_reset_num_major_objects_marked ();
+
 	return bytes_pinned_from_failed_allocation > 0;
 }
 
@@ -3096,6 +3105,10 @@ static gboolean major_do_collection (const char *reason);
 static void
 major_start_concurrent_collection (const char *reason)
 {
+	long long num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
+
+	g_assert (num_objects_marked == 0);
+
 	MONO_GC_CONCURRENT_START_BEGIN (GENERATION_OLD);
 
 	// FIXME: store reason and pass it when finishing
@@ -3104,7 +3117,8 @@ major_start_concurrent_collection (const char *reason)
 	gray_queue_redirect (&gray_queue);
 	sgen_workers_wait_for_jobs ();
 
-	MONO_GC_CONCURRENT_START_END (GENERATION_OLD);
+	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
+	MONO_GC_CONCURRENT_START_END (GENERATION_OLD, num_objects_marked);
 
 	current_collection_generation = -1;
 }
@@ -3112,7 +3126,7 @@ major_start_concurrent_collection (const char *reason)
 static gboolean
 major_update_or_finish_concurrent_collection (gboolean force_finish)
 {
-	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD);
+	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 	if (!have_non_collection_major_object_remembers)
@@ -3122,7 +3136,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	sgen_los_update_cardtable_mod_union ();
 
 	if (!force_finish && !sgen_workers_all_done ()) {
-		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD);
+		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 		return FALSE;
 	}
 
@@ -3132,7 +3146,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
 
-	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD);
+	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	current_collection_generation = -1;
 
