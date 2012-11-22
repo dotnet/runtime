@@ -1821,7 +1821,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	LLVMValueRef *args;
 	LLVMCallInfo *cinfo;
 	GSList *l;
-	int i, len;
+	int i, len, nargs;
 	gboolean vretaddr;
 	LLVMTypeRef llvm_sig;
 	gpointer target;
@@ -1943,23 +1943,27 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/* 
 	 * Collect and convert arguments
 	 */
-	len = sizeof (LLVMValueRef) * ((sig->param_count * 2) + sig->hasthis + vretaddr + call->rgctx_reg);
+	nargs = (sig->param_count * 2) + sig->hasthis + vretaddr + call->rgctx_reg + call->imt_arg_reg;
+	len = sizeof (LLVMValueRef) * nargs;
 	args = alloca (len);
 	memset (args, 0, len);
 	l = call->out_ireg_args;
 
 	if (call->rgctx_arg_reg) {
 		g_assert (values [call->rgctx_arg_reg]);
+		g_assert (sinfo.rgctx_arg_pindex < nargs);
 		args [sinfo.rgctx_arg_pindex] = values [call->rgctx_arg_reg];
 	}
 	if (call->imt_arg_reg) {
 		g_assert (values [call->imt_arg_reg]);
+		g_assert (sinfo.imt_arg_pindex < nargs);
 		args [sinfo.imt_arg_pindex] = values [call->imt_arg_reg];
 	}
 
 	if (vretaddr) {
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+		g_assert (sinfo.vret_arg_pindex < nargs);
 		args [sinfo.vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
 	}
 
