@@ -4746,11 +4746,21 @@ static char*
 dlsym_cb (const char *name, void **symbol)
 {
 	MonoDl *current;
+	char *err;
 
-	current = mono_dl_open (NULL, 0, NULL);
-	g_assert (current);
+	err = NULL;
+	if (!strcmp (name, "__bzero")) {
+		*symbol = (void*)bzero;
+	} else {
+		current = mono_dl_open (NULL, 0, NULL);
+		g_assert (current);
 
-	return mono_dl_symbol (current, name, symbol);
+		err = mono_dl_symbol (current, name, symbol);
+	}
+#ifdef MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK
+	*symbol = (char*)mono_arch_create_llvm_native_thunk (mono_domain_get (), (guint8*)(*symbol));
+#endif
+	return err;
 }
 
 static inline void

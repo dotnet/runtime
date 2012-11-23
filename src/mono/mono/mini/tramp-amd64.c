@@ -233,6 +233,25 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 #endif
 }
 
+guint8*
+mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
+{
+	/*
+	 * The caller is LLVM code and the call displacement might exceed 32 bits. We can't determine the caller address, so
+	 * we add a thunk every time.
+	 * Since the caller is also allocated using the domain code manager, hopefully the displacement will fit into 32 bits.
+	 * FIXME: Avoid this if possible if !MONO_ARCH_NOMAP32BIT and ADDR is 32 bits.
+	 */
+	guint8 *thunk_start, *thunk_code;
+
+	thunk_start = thunk_code = mono_domain_code_reserve (mono_domain_get (), 32);
+	amd64_jump_membase (thunk_code, AMD64_RIP, 0);
+	*(guint64*)thunk_code = (guint64)addr;
+	addr = thunk_start;
+	mono_arch_flush_icache (thunk_start, thunk_code - thunk_start);
+	return addr;
+}
+
 void
 mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {

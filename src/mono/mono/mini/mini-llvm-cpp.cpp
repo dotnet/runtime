@@ -134,20 +134,16 @@ public:
 	}
 
 	virtual void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure) {
-		if (!strcmp (Name.c_str (), "__bzero")) {
-			return (void*)bzero;
-		} else {
-			void *res;
-			char *err;
+		void *res;
+		char *err;
 
-			err = dlsym_cb (Name.c_str (), &res);
-			if (err) {
-				outs () << "Unable to resolve: " << Name << ": " << err << "\n";
-				assert(0);
-				return NULL;
-			}
-			return res;
+		err = dlsym_cb (Name.c_str (), &res);
+		if (err) {
+			outs () << "Unable to resolve: " << Name << ": " << err << "\n";
+			assert(0);
+			return NULL;
 		}
+		return res;
 	}
 };
 

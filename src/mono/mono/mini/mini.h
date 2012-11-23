@@ -2082,6 +2082,7 @@ gpointer  mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, 
 gpointer  mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info) MONO_INTERNAL;
 gpointer  mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
+guint8   *mono_arch_create_llvm_native_thunk     (MonoDomain *domain, guint8* addr) MONO_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_arch_get_global_fp_regs          (MonoCompile *cfg) MONO_INTERNAL;
