@@ -39,15 +39,23 @@ endif
 # convenience lib, so we have to do it ourselves
 #
 if SUPPORT_SGEN
+if DISABLE_EXECUTABLES
+shared_sgen_libraries = libmonoruntimesgen.la 
+else
 if SHARED_MONO
 shared_sgen_libraries = libmonoruntimesgen.la 
+endif
 endif
 sgen_libraries = $(shared_sgen_libraries) libmonoruntimesgen-static.la 
 endif
 
 if SUPPORT_BOEHM
+if DISABLE_EXECUTABLES
+shared_boehm_libraries = libmonoruntime.la
+else
 if SHARED_MONO
 shared_boehm_libraries = libmonoruntime.la
+endif
 endif
 boehm_libraries = $(shared_boehm_libraries) libmonoruntime-static.la
 endif
