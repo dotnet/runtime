@@ -2968,7 +2968,7 @@ fi
 
 # When --disable-shared is used, libtool transforms libmono-2.0.la into libmono-2.0.so
 # instead of libmono-static.a
-if test "x$enable_shared" = "xno"; then
+if test "x$enable_shared" = "xno" -a "x$enable_executables" = "xyes"; then
    LIBMONO_LA=libmini-static.la
 else
    LIBMONO_LA=libmono-$API_VER.la

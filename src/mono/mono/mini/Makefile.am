@@ -112,8 +112,12 @@ endif
 
 noinst_PROGRAMS = genmdesc
 
+if DISABLE_EXECUTABLES
+shared_libraries = $(boehm_libraries) $(sgen_libraries)
+else
 if SHARED_MONO
 shared_libraries = $(boehm_libraries) $(sgen_libraries)
+endif
 endif
 
 lib_LTLIBRARIES = $(shared_libraries)
