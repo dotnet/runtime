@@ -1362,6 +1362,44 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoInternalThread *thi
 	return(FALSE);
 }
 
+static gint32
+mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, gboolean alertable)
+{
+	MonoException *exc;
+	guint32 ret;
+	gint64 start;
+	gint32 diff_ms;
+	gint32 wait = ms;
+
+	start = (ms == -1) ? 0 : mono_100ns_ticks ();
+	do {
+		if (multiple)
+			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, alertable);
+		else
+			ret = WaitForSingleObjectEx (handles [0], ms, alertable);
+
+		if (ret != WAIT_IO_COMPLETION)
+			break;
+
+		exc = mono_thread_execute_interruption (thread);
+		if (exc)
+			mono_raise_exception (exc);
+
+		if (ms == -1)
+			continue;
+
+		/* Re-calculate ms according to the time passed */
+		diff_ms = (mono_100ns_ticks () - start) / 10000;
+		if (diff_ms >= ms) {
+			ret = WAIT_TIMEOUT;
+			break;
+		}
+		wait = ms - diff_ms;
+	} while (TRUE);
+	
+	return ret;
+}
+
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
@@ -1389,7 +1427,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	ret=WaitForMultipleObjectsEx(numhandles, handles, TRUE, ms, TRUE);
+	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, TRUE, ms, TRUE);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -1398,12 +1436,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	if(ret==WAIT_FAILED) {
 		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, GetCurrentThreadId ()));
 		return(FALSE);
-	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
-		/* Do we want to try again if we get
-		 * WAIT_IO_COMPLETION? The documentation for
-		 * WaitHandle doesn't give any clues.  (We'd have to
-		 * fiddle with the timeout if we retry.)
-		 */
+	} else if(ret==WAIT_TIMEOUT) {
 		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait timed out", __func__, GetCurrentThreadId ()));
 		return(FALSE);
 	}
@@ -1420,7 +1453,6 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoInternalThread *thread = mono_thread_internal_current ();
-	guint32 start;
 
 	/* Do this WaitSleepJoin check before creating objects */
 	mono_thread_current_check_pending_interrupt ();
@@ -1440,20 +1472,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
-	start = (ms == -1) ? 0 : mono_msec_ticks ();
-	do {
-		ret = WaitForMultipleObjectsEx (numhandles, handles, FALSE, ms, TRUE);
-		if (ret != WAIT_IO_COMPLETION)
-			break;
-		if (ms != -1) {
-			guint32 diff;
-
-			diff = mono_msec_ticks () - start;
-			ms -= diff;
-			if (ms <= 0)
-				break;
-		}
-	} while (ms == -1 || ms > 0);
+	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, FALSE, ms, TRUE);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -1489,19 +1508,14 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	ret=WaitForSingleObjectEx (handle, ms, TRUE);
+	ret = mono_wait_uninterrupted (thread, FALSE, 1, &handle, FALSE, ms, TRUE);
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
 	if(ret==WAIT_FAILED) {
 		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, GetCurrentThreadId ()));
 		return(FALSE);
-	} else if(ret==WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION) {
-		/* Do we want to try again if we get
-		 * WAIT_IO_COMPLETION? The documentation for
-		 * WaitHandle doesn't give any clues.  (We'd have to
-		 * fiddle with the timeout if we retry.)
-		 */
+	} else if(ret==WAIT_TIMEOUT) {
 		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait timed out", __func__, GetCurrentThreadId ()));
 		return(FALSE);
 	}
