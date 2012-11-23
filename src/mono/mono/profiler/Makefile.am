@@ -26,6 +26,9 @@ if HAVE_OPROFILE
 endif
 
 if SUPPORT_BOEHM
+if DISABLE_EXECUTABLES
+LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
+else
 if !SHARED_MONO
 static_libs=	\
 	$(top_builddir)/mono/metadata/libmonoruntime-static.la	\
@@ -37,6 +40,7 @@ static_libs=	\
 LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA) $(static_libs)
 else
 LIBMONO=$(top_builddir)/mono/mini/$(LIBMONO_LA)
+endif
 endif
 else
 LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
