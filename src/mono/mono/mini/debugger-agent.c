@@ -5151,9 +5151,9 @@ void
 mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx, 
 				      MonoContext *catch_ctx)
 {
-	int suspend_policy;
+	int i, j, suspend_policy;
 	GSList *events;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, *catch_ji;
 	EventInfo ei;
 	DebuggerTlsData *tls = NULL;
 
@@ -5216,15 +5216,45 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 		return;
 
 	ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (throw_ctx), NULL);
+	if (catch_ctx)
+		catch_ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (catch_ctx), NULL);
+	else
+		catch_ji = NULL;
 
 	ei.exc = (MonoObject*)exc;
 	ei.caught = catch_ctx != NULL;
 
 	mono_loader_lock ();
+
+	/* Treat exceptions which are caught in non-user code as unhandled */
+	for (i = 0; i < event_requests->len; ++i) {
+		EventRequest *req = g_ptr_array_index (event_requests, i);
+		if (req->event_kind != EVENT_KIND_EXCEPTION)
+			continue;
+
+		for (j = 0; j < req->nmodifiers; ++j) {
+			Modifier *mod = &req->modifiers [j];
+
+			if (mod->kind == MOD_KIND_ASSEMBLY_ONLY && catch_ji) {
+				int k;
+				gboolean found = FALSE;
+				MonoAssembly **assemblies = mod->data.assemblies;
+
+				if (assemblies) {
+					for (k = 0; assemblies [k]; ++k)
+						if (assemblies [k] == catch_ji->method->klass->image->assembly)
+							found = TRUE;
+				}
+				if (!found)
+					ei.caught = FALSE;
+			}
+		}
+	}
+
 	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, ji, &ei, &suspend_policy);
 	mono_loader_unlock ();
 
-	if (tls && catch_ctx) {
+	if (tls && ei.caught && catch_ctx) {
 		tls->catch_ctx = *catch_ctx;
 		tls->has_catch_ctx = TRUE;
 	}
