@@ -5599,7 +5599,7 @@ static void
 invalidated_delegate_trampoline (char *desc)
 {
 	g_error ("Unmanaged code called delegate of type %s which was already garbage collected.\n"
-		 "See http://www.go-mono.com/delegate.html for an explanation and ways to fix this.",
+		 "See http://www.mono-project.com/Diagnostic:Delegate for an explanation and ways to fix this.",
 		 desc);
 }
 #endif
