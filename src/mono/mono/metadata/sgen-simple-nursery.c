@@ -79,6 +79,7 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 
 #define SERIAL_COPY_OBJECT simple_nursery_serial_copy_object
 #define PARALLEL_COPY_OBJECT simple_nursery_parallel_copy_object
+#define SERIAL_COPY_OBJECT_FROM_OBJ simple_nursery_serial_copy_object_from_obj
 
 #include "sgen-minor-copy-object.h"
 #include "sgen-minor-scan-object.h"

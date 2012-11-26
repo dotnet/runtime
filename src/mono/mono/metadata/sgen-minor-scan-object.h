@@ -80,16 +80,16 @@ PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
 #include "sgen-scan-object.h"
 }
 
+#ifndef SERIAL_COPY_OBJECT_FROM_OBJ
+#define SERIAL_COPY_OBJECT_FROM_OBJ SERIAL_COPY_OBJECT
+#endif
+
 #undef HANDLE_PTR
 /* Global remsets are handled in SERIAL_COPY_OBJECT_FROM_OBJ */
 #define HANDLE_PTR(ptr,obj)	do {	\
 		void *__old = *(ptr);	\
-		void *__copy;		\
 		if (__old) {	\
-			SERIAL_COPY_OBJECT ((ptr), queue);	\
-			__copy = *(ptr);	\
-			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr));	\
+			SERIAL_COPY_OBJECT_FROM_OBJ ((ptr), queue);	\
 			SGEN_COND_LOG (9, __old != *(ptr), "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 		}	\
 	} while (0)
