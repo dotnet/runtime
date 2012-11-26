@@ -3158,6 +3158,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoCallInst *call = (MonoCallInst*)ins;
 			int pos = 0, i;
 
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
+
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
