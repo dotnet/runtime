@@ -3377,13 +3377,21 @@ void
 sgen_queue_finalization_entry (MonoObject *obj)
 {
 	FinalizeReadyEntry *entry = sgen_alloc_internal (INTERNAL_MEM_FINALIZE_READY_ENTRY);
+	gboolean critical = has_critical_finalizer (obj);
 	entry->object = obj;
-	if (has_critical_finalizer (obj)) {
+	if (critical) {
 		entry->next = critical_fin_list;
 		critical_fin_list = entry;
 	} else {
 		entry->next = fin_ready_list;
 		fin_ready_list = entry;
+	}
+
+	if (G_UNLIKELY (MONO_GC_FINALIZE_ENQUEUE_ENABLED ())) {
+		int gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
+		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
+		MONO_GC_FINALIZE_ENQUEUE ((mword)obj, sgen_safe_object_get_size (obj),
+				vt->klass->name_space, vt->klass->name, gen, critical);
 	}
 }
 

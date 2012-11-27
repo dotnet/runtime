@@ -96,6 +96,17 @@
 #define MONO_GC_OBJ_PINNED(addr,size,ns_name,class_name,generation)
 #define MONO_GC_OBJ_PINNED_ENABLED()	(0)
 
+
+#define MONO_GC_FINALIZE_ENQUEUE(addr,size,ns_name,class_name,generation,is_critical)
+#define MONO_GC_FINALIZE_ENQUEUE_ENABLED()	(0)
+
+#define MONO_GC_FINALIZE_INVOKE(addr,size,ns_name,class_name)
+#define MONO_GC_FINALIZE_INVOKE_ENABLED()	(0)
+
+
+#define MONO_GC_WEAK_UPDATE(ref_addr,old_addr,new_addr,size,ns_name,class_name,track)
+#define MONO_GC_WEAK_UPDATE_ENABLED()	(0)
+
 #endif
 
 #endif

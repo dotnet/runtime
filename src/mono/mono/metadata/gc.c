@@ -34,6 +34,7 @@
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/dtrace.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -226,6 +227,11 @@ mono_gc_run_finalize (void *obj, void *data)
 	runtime_invoke = domain->finalize_runtime_invoke;
 
 	mono_runtime_class_init (o->vtable);
+
+	if (G_UNLIKELY (MONO_GC_FINALIZE_INVOKE_ENABLED ())) {
+		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size (o),
+				o->vtable->klass->name_space, o->vtable->klass->name);
+	}
 
 	runtime_invoke (o, NULL, &exc, NULL);
 

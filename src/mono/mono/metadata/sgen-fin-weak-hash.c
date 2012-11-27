@@ -29,6 +29,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-gray.h"
+#include "utils/dtrace.h"
 
 #define ptr_in_nursery sgen_ptr_in_nursery
 
@@ -583,6 +584,17 @@ sgen_process_dislink_stage_entries (void)
 void
 sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc)
 {
+	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {
+		MonoVTable *vt = obj ? (MonoVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
+		MONO_GC_WEAK_UPDATE ((mword)link,
+				*link ? (mword)DISLINK_OBJECT (link) : (mword)0,
+				(mword)obj,
+				obj ? (mword)sgen_safe_object_get_size (obj) : (mword)0,
+				obj ? vt->klass->name_space : NULL,
+				obj ? vt->klass->name : NULL,
+				track ? 1 : 0);
+	}
+
 	if (obj)
 		*link = HIDE_POINTER (obj, track);
 	else
