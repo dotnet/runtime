@@ -731,12 +731,14 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	}
 	handles->bitmap [slot] |= 1 << i;
 	slot = slot * 32 + i;
-	handles->entries [slot] = obj;
+	handles->entries [slot] = NULL;
 	if (handles->type <= HANDLE_WEAK_TRACK) {
 		/*FIXME, what to use when obj == null?*/
 		handles->domain_ids [slot] = (obj ? mono_object_get_domain (obj) : mono_domain_get ())->domain_id;
 		if (obj)
 			mono_gc_weak_link_add (&(handles->entries [slot]), obj, track);
+	} else {
+		handles->entries [slot] = obj;
 	}
 
 #ifndef DISABLE_PERFCOUNTERS

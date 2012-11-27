@@ -311,6 +311,7 @@ mon_new (gsize id)
 
 	new->owner = id;
 	new->nest = 1;
+	new->data = NULL;
 	
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->gc_sync_blocks++;
