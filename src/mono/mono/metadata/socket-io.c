@@ -930,20 +930,11 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		g_assert (domain->sockaddr_data_field);
 	}
 
-	/* Make sure there is space for the family and size bytes */
-#ifdef HAVE_SYS_UN_H
-	if (saddr->sa_family == AF_UNIX) {
-		/* sa_len includes the entire sockaddr size, so we don't need the
-		 * N bytes (sizeof (unsigned short)) of the family. */
-		data=mono_array_new_cached(domain, mono_get_byte_class (), sa_size);
-	} else
-#endif
-	{
-		/* May be the +2 here is too conservative, as sa_len returns
-		 * the length of the entire sockaddr_in/in6, including
-		 * sizeof (unsigned short) of the family */
-		data=mono_array_new_cached(domain, mono_get_byte_class (), sa_size+2);
-	}
+	/* May be the +2 here is too conservative, as sa_len returns
+	 * the length of the entire sockaddr_in/in6, including
+	 * sizeof (unsigned short) of the family */
+	/* We can't really avoid the +2 as all code below depends on this size - INCLUDING unix domain sockets.*/
+	data=mono_array_new_cached(domain, mono_get_byte_class (), sa_size+2);
 
 	/* The data buffer is laid out as follows:
 	 * bytes 0 and 1 are the address family
