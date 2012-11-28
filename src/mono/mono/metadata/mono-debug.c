@@ -198,7 +198,10 @@ lookup_data_table (MonoDomain *domain)
 	MonoDebugDataTable *table;
 
 	table = g_hash_table_lookup (data_table_hash, domain);
-	g_assert (table);
+	if (!table) {
+		g_error ("lookup_data_table () failed for %p\n", domain);
+		g_assert (table);
+	}
 	return table;
 }
 
