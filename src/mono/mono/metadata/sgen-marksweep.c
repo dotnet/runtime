@@ -918,6 +918,8 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 			continue;
 		if (!block->pinned && !non_pinned)
 			continue;
+		if (lazy_sweep)
+			sweep_block (block);
 
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
