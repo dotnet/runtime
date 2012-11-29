@@ -51,15 +51,54 @@
 #define MONO_GC_END_ENABLED() (0)
 
 
+#define MONO_GC_CONCURRENT_START_BEGIN(generation)
+#define MONO_GC_CONCURRENT_START_BEGIN_ENABLED()	(0)
+
+#define MONO_GC_CONCURRENT_START_END(generation,num_major_objects_marked)
+#define MONO_GC_CONCURRENT_START_END_ENABLED()	(0)
+
+#define MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN(generation,num_major_objects_marked)
+#define MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN_ENABLED()	(0)
+
+#define MONO_GC_CONCURRENT_UPDATE_END(generation,num_major_objects_marked)
+#define MONO_GC_CONCURRENT_UPDATE_END_ENABLED()	(0)
+
+#define MONO_GC_CONCURRENT_FINISH_END(generation,num_major_objects_marked)
+#define MONO_GC_CONCURRENT_FINISH_END_ENABLED()	(0)
+
+
+#define MONO_GC_SWEEP_BEGIN(generation,full_sweep)
+#define MONO_GC_SWEEP_BEGIN_ENABLED()	(0)
+
+#define MONO_GC_SWEEP_END(generation,full_sweep)
+#define MONO_GC_SWEEP_END_ENABLED()	(0)
+
+
+#define MONO_GC_WORLD_STOP_BEGIN()
+#define MONO_GC_WORLD_STOP_BEGIN_ENABLED()	(0)
+
+#define MONO_GC_WORLD_STOP_END()
+#define MONO_GC_WORLD_STOP_END_ENABLED()	(0)
+
+#define MONO_GC_WORLD_RESTART_BEGIN(generation)
+#define MONO_GC_WORLD_RESTART_BEGIN_ENABLED()	(0)
+
+#define MONO_GC_WORLD_RESTART_END(generation)
+#define MONO_GC_WORLD_RESTART_END_ENABLED()	(0)
+
+
+#define MONO_GC_HEAP_ALLOC(addr,size)
+#define MONO_GC_HEAP_ALLOC_ENABLED()	(0)
+
+#define MONO_GC_HEAP_FREE(addr,size)
+#define MONO_GC_HEAP_FREE_ENABLED()	(0)
+
+
 #define MONO_GC_LOCKED()
 #define MONO_GC_LOCKED_ENABLED() (0)
 
 #define MONO_GC_UNLOCKED()
 #define MONO_GC_UNLOCKED_ENABLED() (0)
-
-
-#define MONO_GC_HEAP_ALLOC(addr,size)
-#define MONO_GC_HEAP_FREE(addr,size)
 
 
 #define MONO_GC_NURSERY_TLAB_ALLOC(addr,len)
