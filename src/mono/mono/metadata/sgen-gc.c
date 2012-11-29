@@ -1489,6 +1489,18 @@ pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue)
 	scan_thread_data (start_nursery, end_nursery, FALSE, queue);
 }
 
+static void
+unpin_objects_from_queue (SgenGrayQueue *queue)
+{
+	for (;;) {
+		char *addr;
+		GRAY_OBJECT_DEQUEUE (queue, addr);
+		if (!addr)
+			break;
+		SGEN_UNPIN_OBJECT (addr);
+	}
+}
+
 typedef struct {
 	CopyOrMarkObjectFunc func;
 	GrayQueue *queue;
@@ -2418,7 +2430,7 @@ init_gray_queue (void)
  * collection.
  */
 static gboolean
-collect_nursery (void)
+collect_nursery (SgenGrayQueue *unpin_queue)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
@@ -2616,7 +2628,9 @@ collect_nursery (void)
 	 * next allocations.
 	 */
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
-	fragment_total = sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries);
+	fragment_total = sgen_build_nursery_fragments (nursery_section,
+			nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries,
+			unpin_queue);
 	if (!fragment_total)
 		degraded_mode = 1;
 
@@ -3029,7 +3043,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 		 * next allocations.
 		 */
-		if (!sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries))
+		if (!sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries, NULL))
 			degraded_mode = 1;
 
 		/* prepare the pin queue for the next collection */
@@ -3126,6 +3140,9 @@ major_start_concurrent_collection (const char *reason)
 static gboolean
 major_update_or_finish_concurrent_collection (gboolean force_finish)
 {
+	SgenGrayQueue unpin_queue;
+	memset (&unpin_queue, 0, sizeof (unpin_queue));
+
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
@@ -3140,11 +3157,14 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 		return FALSE;
 	}
 
-	collect_nursery ();
+	collect_nursery (&unpin_queue);
 	redirect_major_object_remembers ();
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
+
+	unpin_objects_from_queue (&unpin_queue);
+	sgen_gray_object_queue_deinit (&unpin_queue);
 
 	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
@@ -3229,7 +3249,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	//FIXME extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
-		if (collect_nursery ()) {
+		if (collect_nursery (NULL)) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
@@ -3238,9 +3258,18 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			sgen_workers_wake_up_all ();
 		}
 	} else {
+		SgenGrayQueue unpin_queue;
+		SgenGrayQueue *unpin_queue_ptr;
+		memset (&unpin_queue, 0, sizeof (unpin_queue));
+
+		if (major_collector.is_concurrent && wait_to_finish)
+			unpin_queue_ptr = &unpin_queue;
+		else
+			unpin_queue_ptr = NULL;
+
 		if (major_collector.is_concurrent) {
 			g_assert (!concurrent_collection_in_progress);
-			collect_nursery ();
+			collect_nursery (unpin_queue_ptr);
 		}
 
 		if (major_collector.is_concurrent && !wait_to_finish) {
@@ -3252,6 +3281,11 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 				overflow_generation_to_collect = GENERATION_NURSERY;
 				overflow_reason = "Excessive pinning";
 			}
+		}
+
+		if (unpin_queue_ptr) {
+			unpin_objects_from_queue (unpin_queue_ptr);
+			sgen_gray_object_queue_deinit (unpin_queue_ptr);
 		}
 	}
 
@@ -3267,7 +3301,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		infos [1].total_time = gc_end;
 
 		if (overflow_generation_to_collect == GENERATION_NURSERY)
-			collect_nursery ();
+			collect_nursery (NULL);
 		else
 			major_do_collection (overflow_reason);
 

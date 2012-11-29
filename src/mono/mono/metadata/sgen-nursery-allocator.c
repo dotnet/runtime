@@ -742,7 +742,7 @@ fragment_list_reverse (SgenFragmentAllocator *allocator)
 }
 
 mword
-sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries)
+sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries, SgenGrayQueue *unpin_queue)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
@@ -776,7 +776,10 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int n
 			addr1 = frags_ranges->fragment_start;
 
 		if (addr0 < addr1) {
-			SGEN_UNPIN_OBJECT (addr0);
+			if (unpin_queue)
+				GRAY_OBJECT_ENQUEUE (unpin_queue, addr0);
+			else
+				SGEN_UNPIN_OBJECT (addr0);
 			sgen_set_nursery_scan_start (addr0);
 			frag_end = addr0;
 			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)addr0));

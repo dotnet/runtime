@@ -181,6 +181,17 @@ sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueE
 	queue->alloc_prepare_data = data;
 }
 
+void
+sgen_gray_object_queue_deinit (SgenGrayQueue *queue)
+{
+	g_assert (!queue->first);
+	while (queue->free_list) {
+		GrayQueueSection *next = queue->free_list->next;
+		sgen_gray_object_free_queue_section (queue->free_list);
+		queue->free_list = next;
+	}
+}
+
 static void
 lock_section_queue (SgenSectionGrayQueue *queue)
 {
