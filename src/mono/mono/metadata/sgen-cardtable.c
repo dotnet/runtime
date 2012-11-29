@@ -599,7 +599,7 @@ LOOP_HEAD:
 #ifdef CARDTABLE_STATS
 
 typedef struct {
-	int total, marked, remarked;	
+	int total, marked, remarked, gc_marked;	
 } card_stats;
 
 static card_stats major_stats, los_stats;
@@ -610,9 +610,12 @@ count_marked_cards (mword start, mword size)
 {
 	mword end = start + size;
 	while (start <= end) {
+		guint8 card = *sgen_card_table_get_card_address (start);
 		++cur_stats->total;
-		if (sgen_card_table_address_is_marked (start))
+		if (card)
 			++cur_stats->marked;
+		if (card == 2)
+			++cur_stats->gc_marked;
 		start += CARD_SIZE_IN_BYTES;
 	}
 }
@@ -622,8 +625,10 @@ count_remarked_cards (mword start, mword size)
 {
 	mword end = start + size;
 	while (start <= end) {
-		if (sgen_card_table_address_is_marked (start))
+		if (sgen_card_table_address_is_marked (start)) {
 			++cur_stats->remarked;
+			*sgen_card_table_get_card_address (start) = 2;
+		}
 		start += CARD_SIZE_IN_BYTES;
 	}
 }
@@ -643,12 +648,12 @@ sgen_card_tables_collect_stats (gboolean begin)
 		sgen_los_iterate_live_block_ranges (count_marked_cards);
 	} else {
 		cur_stats = &major_stats;
-		sgen_major_collector_iterate_live_block_ranges (count_marked_cards);
+		sgen_major_collector_iterate_live_block_ranges (count_remarked_cards);
 		cur_stats = &los_stats;
 		sgen_los_iterate_live_block_ranges (count_remarked_cards);
-		printf ("cards major (t %d m %d r %d)  los (t %d m %d r %d) major_scan %.2fms los_scan %.2fms\n", 
-			major_stats.total, major_stats.marked, major_stats.remarked,
-			los_stats.total, los_stats.marked, los_stats.remarked,
+		printf ("cards major (t %d m %d g %d r %d)  los (t %d m %d g %d r %d) major_scan %.2fms los_scan %.2fms\n", 
+			major_stats.total, major_stats.marked, major_stats.gc_marked, major_stats.remarked,
+			los_stats.total, los_stats.marked, los_stats.gc_marked, los_stats.remarked,
 			last_major_scan_time / 1000.0, last_los_scan_time / 1000.0);
 	}
 #endif
