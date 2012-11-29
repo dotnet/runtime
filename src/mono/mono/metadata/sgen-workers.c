@@ -314,6 +314,7 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 static void
 concurrent_enqueue_check (char *obj)
 {
+	g_assert (sgen_concurrent_collection_in_progress ());
 	g_assert (!sgen_ptr_in_nursery (obj));
 	g_assert (SGEN_LOAD_VTABLE (obj));
 }

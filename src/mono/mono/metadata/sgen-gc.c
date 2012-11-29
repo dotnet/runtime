@@ -614,8 +614,12 @@ gray_queue_redirect (SgenGrayQueue *queue)
 	if (wake) {
 		g_assert (concurrent_collection_in_progress ||
 				(current_collection_generation == GENERATION_OLD && major_collector.is_parallel));
-		if (sgen_workers_have_started ())
+		if (sgen_workers_have_started ()) {
 			sgen_workers_wake_up_all ();
+		} else {
+			if (concurrent_collection_in_progress)
+				g_assert (current_collection_generation == -1);
+		}
 	}
 }
 
@@ -2915,6 +2919,8 @@ major_start_collection (int *old_next_pin_slot)
 	mono_perfcounters->gc_collections1++;
 #endif
 
+	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
+
 	if (major_collector.is_concurrent)
 		concurrent_collection_in_progress = TRUE;
 
@@ -3091,6 +3097,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	current_collection_generation = -1;
 
 	major_collector.finish_major_collection ();
+
+	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
 	if (major_collector.is_concurrent)
 		concurrent_collection_in_progress = FALSE;
