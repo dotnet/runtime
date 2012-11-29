@@ -2753,6 +2753,17 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	sgen_optimize_pin_queue (0);
 
 	/*
+	 * The concurrent collector doesn't move objects, neither on
+	 * the major heap nor in the nursery, so we can mark even
+	 * before pinning has finished.  For the non-concurrent
+	 * collector we start the workers after pinning.
+	 */
+	if (major_collector.is_concurrent) {
+		sgen_workers_start_all_workers ();
+		sgen_workers_start_marking ();
+	}
+
+	/*
 	 * pin_queue now contains all candidate pointers, sorted and
 	 * uniqued.  We must do two passes now to figure out which
 	 * objects are pinned.
@@ -2813,8 +2824,10 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	sgen_workers_start_all_workers ();
-	sgen_workers_start_marking ();
+	if (!major_collector.is_concurrent) {
+		sgen_workers_start_all_workers ();
+		sgen_workers_start_marking ();
+	}
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
