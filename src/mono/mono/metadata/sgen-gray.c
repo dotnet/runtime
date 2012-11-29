@@ -192,6 +192,13 @@ sgen_gray_object_queue_deinit (SgenGrayQueue *queue)
 	}
 }
 
+void
+sgen_gray_object_queue_disable_alloc_prepare (SgenGrayQueue *queue)
+{
+	queue->alloc_prepare_func = NULL;
+	queue->alloc_prepare_data = NULL;
+}
+
 static void
 lock_section_queue (SgenSectionGrayQueue *queue)
 {

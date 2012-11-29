@@ -2970,6 +2970,12 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 			check_nursery_is_clean ();
 	}
 
+	/*
+	 * The workers have stopped so we need to finish gray queue
+	 * work that might result from finalization in the main GC
+	 * thread.  Redirection must therefore be turned off.
+	 */
+	sgen_gray_object_queue_disable_alloc_prepare (&gray_queue);
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
 	/* all the objects in the heap */
