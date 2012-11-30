@@ -506,6 +506,13 @@ typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
 
+typedef struct
+{
+	ScanObjectFunc scan_func;
+	CopyOrMarkObjectFunc copy_func;
+	SgenGrayQueue *queue;
+} ScanCopyContext;
+
 void sgen_report_internal_mem_usage (void) MONO_INTERNAL;
 void sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc) MONO_INTERNAL;
 void sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;
@@ -534,7 +541,7 @@ void sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc) MONO_INTERNAL
 
 void** sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
-void sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue, ScanObjectFunc scan_func) MONO_INTERNAL;
+void sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx) MONO_INTERNAL;
 
 void sgen_pin_stats_register_object (char *obj, size_t size);
 void sgen_pin_stats_register_global_remset (char *obj);
@@ -841,7 +848,7 @@ gboolean sgen_is_bridge_class (MonoClass *class) MONO_INTERNAL;
 void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void sgen_bridge_register_finalized_object (MonoObject *object) MONO_INTERNAL;
 
-void sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_INTERNAL;
 void sgen_process_togglerefs (void) MONO_INTERNAL;
 
 typedef mono_bool (*WeakLinkAlivePredicateFunc) (MonoObject*, void*);
@@ -856,16 +863,16 @@ void sgen_gc_event_moves (void) MONO_INTERNAL;
 void sgen_queue_finalization_entry (MonoObject *obj) MONO_INTERNAL;
 const char* sgen_generation_name (int generation) MONO_INTERNAL;
 
-void sgen_collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_collect_bridge_objects (char *start, char *end, int generation, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_finalize_in_range (char *start, char *end, int generation, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_null_link_in_range (char *start, char *end, int generation, gboolean before_finalization, ScanCopyContext ctx) MONO_INTERNAL;
 void sgen_null_links_for_domain (MonoDomain *domain, int generation) MONO_INTERNAL;
 void sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation) MONO_INTERNAL;
 void sgen_process_fin_stage_entries (void) MONO_INTERNAL;
 void sgen_process_dislink_stage_entries (void) MONO_INTERNAL;
 void sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc) MONO_INTERNAL;
 
-gboolean sgen_drain_gray_stack (SgenGrayQueue *queue, ScanObjectFunc scan_func, int max_objs) MONO_INTERNAL;
+gboolean sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx) MONO_INTERNAL;
 
 enum {
 	SPACE_NURSERY,

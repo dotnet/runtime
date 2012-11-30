@@ -491,9 +491,10 @@ static void
 major_pin_objects (SgenGrayQueue *queue)
 {
 	GCMemSection *section;
+	ScanCopyContext ctx = { NULL, NULL, queue };
 
 	for (section = section_list; section; section = section->block.next)
-		sgen_pin_objects_in_section (section, queue, NULL);
+		sgen_pin_objects_in_section (section, ctx);
 }
 
 static void

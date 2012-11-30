@@ -106,8 +106,10 @@ sgen_mark_bridge_object (MonoObject *obj)
 
 /* LOCKING: requires that the GC lock is held */
 void
-sgen_collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
+sgen_collect_bridge_objects (char *start, char *end, int generation, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	GrayQueue *queue = ctx.queue;
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
 	gpointer dummy;
@@ -161,8 +163,10 @@ sgen_collect_bridge_objects (CopyOrMarkObjectFunc copy_func, char *start, char *
 
 /* LOCKING: requires that the GC lock is held */
 void
-sgen_finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
+sgen_finalize_in_range (char *start, char *end, int generation, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	GrayQueue *queue = ctx.queue;
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
 	gpointer dummy;
@@ -425,8 +429,10 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, int generation)
 
 /* LOCKING: requires that the GC lock is held */
 void
-sgen_null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue)
+sgen_null_link_in_range (char *start, char *end, int generation, gboolean before_finalization, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	GrayQueue *queue = ctx.queue;
 	void **link;
 	gpointer dummy;
 	SgenHashTable *hash = get_dislink_hash_table (generation);

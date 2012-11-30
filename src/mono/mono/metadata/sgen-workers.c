@@ -346,9 +346,12 @@ workers_thread_func (void *data_untyped)
 		}
 
 		if (workers_marking && (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
+			ScanCopyContext ctx = { sgen_get_major_collector ()->major_ops.scan_object, NULL,
+				&data->private_gray_queue };
+
 			g_assert (!sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 
-			while (!sgen_drain_gray_stack (&data->private_gray_queue, sgen_get_major_collector ()->major_ops.scan_object, 32))
+			while (!sgen_drain_gray_stack (32, ctx))
 				workers_gray_queue_share_redirect (&data->private_gray_queue);
 			g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 

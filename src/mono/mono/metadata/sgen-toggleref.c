@@ -91,8 +91,10 @@ sgen_process_togglerefs (void)
 }
 
 void
-sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue)
+sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	SgenGrayQueue *queue = ctx.queue;
 	int i;
 
 	SGEN_LOG (4, "Scanning ToggleRefs %d", toggleref_array_size);

@@ -531,13 +531,13 @@ typedef SgenGrayQueue GrayQueue;
 
 /* forward declarations */
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue);
-static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, ScanObjectFunc scan_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
-static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue);
+static void scan_from_registered_roots (char *addr_start, char *addr_end, int root_type, ScanCopyContext ctx);
+static void scan_finalizer_entries (FinalizeReadyEntry *list, ScanCopyContext ctx);
 static void report_finalizer_roots (void);
 static void report_registered_roots (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
-static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, ScanObjectFunc scan_func);
+static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, ScanCopyContext ctx);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
@@ -545,8 +545,8 @@ void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
 static void init_stats (void);
 
-static int mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
-static void clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
+static int mark_ephemerons_in_range (char *start, char *end, ScanCopyContext ctx);
+static void clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenObjectOperations current_object_ops;
@@ -1151,9 +1151,11 @@ sgen_add_to_global_remset (gpointer ptr)
  * usage.
  */
 gboolean
-sgen_drain_gray_stack (GrayQueue *queue, ScanObjectFunc scan_func, int max_objs)
+sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 {
 	char *obj;
+	ScanObjectFunc scan_func = ctx.scan_func;
+	GrayQueue *queue = ctx.queue;
 
 	if (max_objs == -1) {
 		for (;;) {
@@ -1187,7 +1189,7 @@ sgen_drain_gray_stack (GrayQueue *queue, ScanObjectFunc scan_func, int max_objs)
  * pinned objects.  Return the number of pinned objects.
  */
 static int
-pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue, ScanObjectFunc scan_func)
+pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, ScanCopyContext ctx)
 {
 	void *last = NULL;
 	int count = 0;
@@ -1197,6 +1199,8 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	void *addr;
 	int idx;
 	void **definitely_pinned = start;
+	ScanObjectFunc scan_func = ctx.scan_func;
+	SgenGrayQueue *queue = ctx.queue;
 
 	sgen_nursery_allocator_prepare_for_pinning ();
 
@@ -1293,14 +1297,14 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 }
 
 void
-sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue, ScanObjectFunc scan_func)
+sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx)
 {
 	int num_entries = section->pin_queue_num_entries;
 	if (num_entries) {
 		void **start = section->pin_queue_start;
 		int reduced_to;
 		reduced_to = pin_objects_from_addresses (section, start, start + num_entries,
-				section->data, section->next_data, queue, scan_func);
+				section->data, section->next_data, ctx);
 		section->pin_queue_num_entries = reduced_to;
 		if (!reduced_to)
 			section->pin_queue_start = NULL;
@@ -1541,8 +1545,11 @@ single_arg_user_copy_or_mark (void **obj)
  * This function is not thread-safe!
  */
 static void
-precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, ScanObjectFunc scan_func, void** start_root, void** end_root, char* n_start, char *n_end, mword desc, GrayQueue *queue)
+precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, char *n_end, mword desc, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	SgenGrayQueue *queue = ctx.queue;
+
 	switch (desc & ROOT_DESC_TYPE_MASK) {
 	case ROOT_DESC_BITMAP:
 		desc >>= ROOT_DESC_TYPE_SHIFT;
@@ -1550,7 +1557,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, ScanObjectFunc scan
 			if ((desc & 1) && *start_root) {
 				copy_func (start_root, queue);
 				SGEN_LOG (9, "Overwrote root at %p with %p", start_root, *start_root);
-				sgen_drain_gray_stack (queue, scan_func, -1);
+				sgen_drain_gray_stack (-1, ctx);
 			}
 			desc >>= 1;
 			start_root++;
@@ -1568,7 +1575,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, ScanObjectFunc scan
 				if ((bmap & 1) && *objptr) {
 					copy_func (objptr, queue);
 					SGEN_LOG (9, "Overwrote root at %p with %p", objptr, *objptr);
-					sgen_drain_gray_stack (queue, scan_func, -1);
+					sgen_drain_gray_stack (-1, ctx);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -1800,8 +1807,10 @@ report_registered_roots (void)
 }
 
 static void
-scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeReadyEntry *list, GrayQueue *queue)
+scan_finalizer_entries (FinalizeReadyEntry *list, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	SgenGrayQueue *queue = ctx.queue;
 	FinalizeReadyEntry *fin;
 
 	for (fin = list; fin; fin = fin->next) {
@@ -1842,6 +1851,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	int done_with_ephemerons, ephemeron_rounds = 0;
 	CopyOrMarkObjectFunc copy_func = current_object_ops.copy_or_mark_object;
 	ScanObjectFunc scan_func = current_object_ops.scan_object;
+	ScanCopyContext ctx = { scan_func, copy_func, queue };
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -1856,7 +1866,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	sgen_drain_gray_stack (queue, scan_func, -1);
+	sgen_drain_gray_stack (-1, ctx);
 	TV_GETTIME (atv);
 	SGEN_LOG (2, "%s generation done", generation_name (generation));
 
@@ -1876,34 +1886,34 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	done_with_ephemerons = 0;
 	do {
-		done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr, queue);
-		sgen_drain_gray_stack (queue, scan_func, -1);
+		done_with_ephemerons = mark_ephemerons_in_range (start_addr, end_addr, ctx);
+		sgen_drain_gray_stack (-1, ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
-	sgen_scan_togglerefs (copy_func, start_addr, end_addr, queue);
+	sgen_scan_togglerefs (start_addr, end_addr, ctx);
 	if (generation == GENERATION_OLD)
-		sgen_scan_togglerefs (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), queue);
+		sgen_scan_togglerefs (sgen_get_nursery_start (), sgen_get_nursery_end (), ctx);
 
 	if (sgen_need_bridge_processing ()) {
-		sgen_collect_bridge_objects (copy_func, start_addr, end_addr, generation, queue);
+		sgen_collect_bridge_objects (start_addr, end_addr, generation, ctx);
 		if (generation == GENERATION_OLD)
-			sgen_collect_bridge_objects (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
+			sgen_collect_bridge_objects (sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, ctx);
 	}
 
 	/*
 	Make sure we drain the gray stack before processing disappearing links and finalizers.
 	If we don't make sure it is empty we might wrongly see a live object as dead.
 	*/
-	sgen_drain_gray_stack (queue, scan_func, -1);
+	sgen_drain_gray_stack (-1, ctx);
 
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for
 	finalization so they can be cleared before that.
 	*/
-	sgen_null_link_in_range (copy_func, start_addr, end_addr, generation, TRUE, queue);
+	sgen_null_link_in_range (start_addr, end_addr, generation, TRUE, ctx);
 	if (generation == GENERATION_OLD)
-		sgen_null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, TRUE, queue);
+		sgen_null_link_in_range (start_addr, end_addr, GENERATION_NURSERY, TRUE, ctx);
 
 
 	/* walk the finalization queue and move also the objects that need to be
@@ -1911,20 +1921,20 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * on are also not reclaimed. As with the roots above, only objects in the nursery
 	 * are marked/copied.
 	 */
-	sgen_finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
+	sgen_finalize_in_range (start_addr, end_addr, generation, ctx);
 	if (generation == GENERATION_OLD)
-		sgen_finalize_in_range (copy_func, sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, queue);
+		sgen_finalize_in_range (sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, ctx);
 	/* drain the new stack that might have been created */
 	SGEN_LOG (6, "Precise scan of gray area post fin");
-	sgen_drain_gray_stack (queue, scan_func, -1);
+	sgen_drain_gray_stack (-1, ctx);
 
 	/*
 	 * This must be done again after processing finalizable objects since CWL slots are cleared only after the key is finalized.
 	 */
 	done_with_ephemerons = 0;
 	do {
-		done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr, queue);
-		sgen_drain_gray_stack (queue, scan_func, -1);
+		done_with_ephemerons = mark_ephemerons_in_range (start_addr, end_addr, ctx);
+		sgen_drain_gray_stack (-1, ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1932,7 +1942,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (copy_func, start_addr, end_addr, queue);
+	clear_unreachable_ephemerons (start_addr, end_addr, ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -1947,12 +1957,12 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 	for (;;) {
-		sgen_null_link_in_range (copy_func, start_addr, end_addr, generation, FALSE, queue);
+		sgen_null_link_in_range (start_addr, end_addr, generation, FALSE, ctx);
 		if (generation == GENERATION_OLD)
-			sgen_null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, FALSE, queue);
+			sgen_null_link_in_range (start_addr, end_addr, GENERATION_NURSERY, FALSE, ctx);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
-		sgen_drain_gray_stack (queue, scan_func, -1);
+		sgen_drain_gray_stack (-1, ctx);
 	}
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
@@ -1980,13 +1990,13 @@ check_scan_starts (void)
 }
 
 static void
-scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, ScanObjectFunc scan_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue)
+scan_from_registered_roots (char *addr_start, char *addr_end, int root_type, ScanCopyContext ctx)
 {
 	void **start_root;
 	RootRecord *root;
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
 		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
-		precisely_scan_objects_from (copy_func, scan_func, start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, queue);
+		precisely_scan_objects_from (start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, ctx);
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
@@ -2271,11 +2281,10 @@ static void
 job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
 {
 	ScanFromRegisteredRootsJobData *job_data = job_data_untyped;
+	ScanCopyContext ctx = { job_data->scan_func, job_data->copy_or_mark_func,
+		sgen_workers_get_job_gray_queue (worker_data) };
 
-	scan_from_registered_roots (job_data->copy_or_mark_func, job_data->scan_func,
-			job_data->heap_start, job_data->heap_end,
-			job_data->root_type,
-			sgen_workers_get_job_gray_queue (worker_data));
+	scan_from_registered_roots (job_data->heap_start, job_data->heap_end, job_data->root_type, ctx);
 	sgen_free_internal_dynamic (job_data, sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
@@ -2304,10 +2313,9 @@ static void
 job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 {
 	ScanFinalizerEntriesJobData *job_data = job_data_untyped;
+	ScanCopyContext ctx = { NULL, current_object_ops.copy_or_mark_object, sgen_workers_get_job_gray_queue (worker_data) };
 
-	scan_finalizer_entries (current_object_ops.copy_or_mark_object,
-			job_data->list,
-			sgen_workers_get_job_gray_queue (worker_data));
+	scan_finalizer_entries (job_data->list, ctx);
 	sgen_free_internal_dynamic (job_data, sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
@@ -2444,6 +2452,7 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
 	ScanThreadDataJobData *stdjd;
 	mword fragment_total;
+	ScanCopyContext ctx;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -2519,7 +2528,10 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	/* identify pinned objects */
 	sgen_optimize_pin_queue (0);
 	sgen_pinning_setup_section (nursery_section);
-	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE, NULL);
+	ctx.scan_func = NULL;
+	ctx.copy_func = NULL;
+	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
+	sgen_pin_objects_in_section (nursery_section, ctx);
 	sgen_pinning_trim_queue_to_section (nursery_section);
 
 	TV_GETTIME (atv);
@@ -2555,8 +2567,12 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Old generation scan: %d usecs", TV_ELAPSED (atv, btv));
 
-	if (!sgen_collection_is_parallel ())
-		sgen_drain_gray_stack (&gray_queue, current_object_ops.scan_object, -1);
+	if (!sgen_collection_is_parallel ()) {
+		ctx.scan_func = current_object_ops.scan_object;
+		ctx.copy_func = NULL;
+		ctx.queue = &gray_queue;
+		sgen_drain_gray_stack (-1, ctx);
+	}
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -2703,6 +2719,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	ScanFromRegisteredRootsJobData *scrrjd_normal, *scrrjd_wbarrier;
 	ScanThreadDataJobData *stdjd;
 	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
+	ScanCopyContext ctx;
 
 	if (major_collector.is_concurrent) {
 		/*This cleans up unused fragments */
@@ -2811,8 +2828,10 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	if (profile_roots)
 		notify_gc_roots (&root_report);
 	/* second pass for the sections */
-	sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE,
-			concurrent_collection_in_progress ? current_object_ops.scan_object : NULL);
+	ctx.scan_func = concurrent_collection_in_progress ? current_object_ops.scan_object : NULL;
+	ctx.copy_func = NULL;
+	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
+	sgen_pin_objects_in_section (nursery_section, ctx);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	if (old_next_pin_slot)
 		*old_next_pin_slot = sgen_get_pinned_count ();
@@ -3505,8 +3524,10 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue)
+clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	GrayQueue *queue = ctx.queue;
 	int was_in_nursery, was_promoted;
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
 	MonoArray *array;
@@ -3580,8 +3601,10 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 
 /* LOCKING: requires that the GC lock is held */
 static int
-mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue)
+mark_ephemerons_in_range (char *start, char *end, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	GrayQueue *queue = ctx.queue;
 	int nothing_marked = 1;
 	EphemeronLinkNode *current = ephemeron_list;
 	MonoArray *array;
