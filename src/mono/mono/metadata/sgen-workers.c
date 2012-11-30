@@ -175,9 +175,7 @@ workers_dequeue_and_do_job (WorkerData *data)
 	entry->func (data, entry->data);
 	sgen_free_internal (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY);
 
-	do {
-		num_finished = workers_num_jobs_finished;
-	} while (InterlockedCompareExchange (&workers_num_jobs_finished, num_finished + 1, num_finished) != num_finished);
+	SGEN_ATOMIC_ADD (workers_num_jobs_finished, 1);
 
 	return TRUE;
 }
