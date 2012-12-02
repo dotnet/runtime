@@ -70,6 +70,12 @@ typedef guint64 mword;
 //#define SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 
 /*
+ * This keeps track of where a gray object queue section is and
+ * whether it is where it should be.
+ */
+//#define SGEN_CHECK_GRAY_OBJECT_SECTIONS
+
+/*
  * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
  * have cross-domain checks in the write barrier.
  */

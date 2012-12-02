@@ -26,6 +26,20 @@
 
 #define GRAY_QUEUE_LENGTH_LIMIT	64
 
+#ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
+#define STATE_TRANSITION(s,o,n)	do {					\
+		int __old = (o);					\
+		if (InterlockedCompareExchange ((volatile int*)&(s)->state, (n), __old) != __old) \
+			g_assert_not_reached ();			\
+	} while (0)
+#define STATE_SET(s,v)		(s)->state = (v)
+#define STATE_ASSERT(s,v)	g_assert ((s)->state == (v))
+#else
+#define STATE_TRANSITION(s,o,n)
+#define STATE_SET(s,v)
+#define STATE_ASSERT(s,v)
+#endif
+
 void
 sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
@@ -38,12 +52,16 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 		/* Use the previously allocated queue sections if possible */
 		section = queue->free_list;
 		queue->free_list = section->next;
+		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FREE_LIST, GRAY_QUEUE_SECTION_STATE_FLOATING);
 	} else {
 		/* Allocate a new section */
 		section = sgen_alloc_internal (INTERNAL_MEM_GRAY_QUEUE);
+		STATE_SET (section, GRAY_QUEUE_SECTION_STATE_FLOATING);
 	}
 
 	section->end = 0;
+
+	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 
 	/* Link it with the others */
 	section->next = queue->first;
@@ -53,6 +71,7 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 void
 sgen_gray_object_free_queue_section (GrayQueueSection *section)
 {
+	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_FREED);
 	sgen_free_internal (section, INTERNAL_MEM_GRAY_QUEUE);
 }
 
@@ -75,6 +94,7 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 
 	if (G_UNLIKELY (!queue->first || queue->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE))
 		sgen_gray_object_alloc_queue_section (queue);
+	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 	SGEN_ASSERT (9, queue->first->end < SGEN_GRAY_QUEUE_SECTION_SIZE, "gray queue %p overflow, first %p, end %d", queue, queue->first, queue->first->end);
 	queue->first->objects [queue->first->end++] = obj;
 }
@@ -87,6 +107,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	if (sgen_gray_object_queue_is_empty (queue))
 		return NULL;
 
+	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 	SGEN_ASSERT (9, queue->first->end, "gray queue %p underflow, first %p, end %d", queue, queue->first, queue->first->end);
 
 	obj = queue->first->objects [--queue->first->end];
@@ -95,6 +116,9 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 		GrayQueueSection *section = queue->first;
 		queue->first = section->next;
 		section->next = queue->free_list;
+
+		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FREE_LIST);
+
 		queue->free_list = section;
 	}
 
@@ -114,12 +138,16 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 
 	section->next = NULL;
 
+	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FLOATING);
+
 	return section;
 }
 
 void
 sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section)
 {
+	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
+
 	section->next = queue->first;
 	queue->first = section;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
@@ -147,13 +175,16 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enq
 
 	/* Free the extra sections allocated during the last collection */
 	i = 0;
-	for (section = queue->free_list; section && i < GRAY_QUEUE_LENGTH_LIMIT - 1; section = section->next)
+	for (section = queue->free_list; section && i < GRAY_QUEUE_LENGTH_LIMIT - 1; section = section->next) {
+		STATE_ASSERT (section, GRAY_QUEUE_SECTION_STATE_FREE_LIST);
 		i ++;
+	}
 	if (!section)
 		return;
 	while (section->next) {
 		next = section->next;
 		section->next = next->next;
+		STATE_TRANSITION (next, GRAY_QUEUE_SECTION_STATE_FREE_LIST, GRAY_QUEUE_SECTION_STATE_FLOATING);
 		sgen_gray_object_free_queue_section (next);
 	}
 }
@@ -187,6 +218,7 @@ sgen_gray_object_queue_deinit (SgenGrayQueue *queue)
 	g_assert (!queue->first);
 	while (queue->free_list) {
 		GrayQueueSection *next = queue->free_list->next;
+		STATE_TRANSITION (queue->free_list, GRAY_QUEUE_SECTION_STATE_FREE_LIST, GRAY_QUEUE_SECTION_STATE_FLOATING);
 		sgen_gray_object_free_queue_section (queue->free_list);
 		queue->free_list = next;
 	}
@@ -252,6 +284,8 @@ sgen_section_gray_queue_dequeue (SgenSectionGrayQueue *queue)
 		section = queue->first;
 		queue->first = section->next;
 
+		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FLOATING);
+
 		section->next = NULL;
 	} else {
 		section = NULL;
@@ -265,6 +299,8 @@ sgen_section_gray_queue_dequeue (SgenSectionGrayQueue *queue)
 void
 sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *section)
 {
+	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
+
 	lock_section_queue (queue);
 
 	section->next = queue->first;

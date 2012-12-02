@@ -22,12 +22,29 @@
 
 #define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 
+#ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
+typedef enum {
+	GRAY_QUEUE_SECTION_STATE_FLOATING,
+	GRAY_QUEUE_SECTION_STATE_ENQUEUED,
+ 	GRAY_QUEUE_SECTION_STATE_FREE_LIST,
+ 	GRAY_QUEUE_SECTION_STATE_FREED
+} GrayQueueSectionState;
+#endif
+
 /*
  * This is a stack now instead of a queue, so the most recently added items are removed
  * first, improving cache locality, and keeping the stack size manageable.
  */
 typedef struct _GrayQueueSection GrayQueueSection;
 struct _GrayQueueSection {
+#ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
+	/*
+	 * The dummy is here so that the state doesn't get overwritten
+	 * by the internal allocator once the section is freed.
+	 */
+	int dummy;
+	GrayQueueSectionState state;
+#endif
 	int end;
 	GrayQueueSection *next;
 	char *objects [SGEN_GRAY_QUEUE_SECTION_SIZE];
