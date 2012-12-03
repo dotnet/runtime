@@ -224,5 +224,11 @@
 #define MONO_DEPRECATED 
 #endif
 
+#ifdef __GNUC__
+#define MONO_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define MONO_ALWAYS_INLINE
+#endif
+
 #endif /* __UTILS_MONO_COMPILER_H__*/
 
