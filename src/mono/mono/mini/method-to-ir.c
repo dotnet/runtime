@@ -3920,6 +3920,7 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 		return;
 
 	MONO_INST_NEW (cfg, getaddr, OP_LOAD_GOTADDR);
+	getaddr->cil_code = cfg->header->code;
 	getaddr->dreg = cfg->got_var->dreg;
 
 	/* Add it to the start of the first bblock */

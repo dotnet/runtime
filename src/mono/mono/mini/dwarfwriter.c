@@ -52,6 +52,7 @@ struct _MonoDwarfWriter
 	const char *temp_prefix;
 	gboolean emit_line, appending, collect_line_info;
 	GSList *line_info;
+	int cur_file_index;
 };
 
 static void
@@ -111,6 +112,7 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_st
 	w->class_to_vtype_die = g_hash_table_new (NULL, NULL);
 	w->class_to_pointer_die = g_hash_table_new (NULL, NULL);
 	w->class_to_reference_die = g_hash_table_new (NULL, NULL);
+	w->cur_file_index = -1;
 
 	return w;
 }
@@ -763,14 +765,15 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	int i;
 	GHashTable *dir_to_index, *index_to_dir;
 	GSList *l;
+	GSList *info_list;
 
 	g_assert (w->collect_line_info);
 
 	add_line_number_file_name (w, "<unknown>", 0, 0);
 
 	/* Collect files */
-	// FIXME: Revert list
-	for (l = w->line_info; l; l = l->next) {
+	info_list = g_slist_reverse (w->line_info);
+	for (l = info_list; l; l = l->next) {
 		MethodLineNumberInfo *info = l->data;
 		MonoDebugMethodInfo *minfo;
 		char *source_file;
@@ -877,11 +880,12 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	emit_label (w, ".Ldebug_line_header_end");
 
 	/* Emit line number table */
-	for (l = w->line_info; l; l = l->next) {
+	for (l = info_list; l; l = l->next) {
 		MethodLineNumberInfo *info = l->data;
 
 		emit_line_number_info (w, info->method, info->start_symbol, info->end_symbol, info->code, info->code_size, info->debug_info);
 	}
+	g_slist_free (info_list);
 
 	emit_byte (w, 0);
 	emit_byte (w, 1);
@@ -1597,6 +1601,7 @@ emit_advance_op (MonoDwarfWriter *w, int line_diff, int addr_diff)
 	if (opcode != 0) {
 		emit_byte (w, opcode);
 	} else {
+		//printf ("large: %d %d %d\n", line_diff, addr_diff, max_special_addr_diff);
 		emit_byte (w, DW_LNS_advance_line);
 		emit_sleb128 (w, line_diff);
 		emit_byte (w, DW_LNS_advance_pc);
@@ -1630,7 +1635,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLineNumberEntry *ln_array;
 	int *native_to_il_offset = NULL;
-
+	
 	if (!w->emit_line) {
 		mono_metadata_free_mh (header);
 		return;
@@ -1674,6 +1679,8 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	prev_il_offset = -1;
 
 	for (i = 0; i < code_size; ++i) {
+		int line_diff, addr_diff;
+
 		if (!minfo)
 			continue;
 
@@ -1700,57 +1707,60 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		prev_il_offset = il_offset;
 
 		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
-		if (loc && loc->source_file) {
-			int line_diff = (gint32)loc->row - (gint32)prev_line;
-			int addr_diff = i - prev_native_offset;
+		if (!(loc && loc->source_file))
+			continue;
 
-			if (first) {	
-				emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
+		line_diff = (gint32)loc->row - (gint32)prev_line;
+		addr_diff = i - prev_native_offset;
 
-				emit_byte (w, 0);
-				emit_byte (w, sizeof (gpointer) + 1);
-				emit_byte (w, DW_LNE_set_address);
-				if (start_symbol)
-					emit_pointer_unaligned (w, start_symbol);
+		if (first) {	
+			emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
+
+			emit_byte (w, 0);
+			emit_byte (w, sizeof (gpointer) + 1);
+			emit_byte (w, DW_LNE_set_address);
+			if (start_symbol)
+				emit_pointer_unaligned (w, start_symbol);
+			else
+				emit_pointer_value (w, code);
+
+			/* 
+			 * The prolog+initlocals region does not have a line number, this
+			 * makes them belong to the first line of the method.
+			 */
+			emit_byte (w, DW_LNS_advance_line);
+			//printf ("FIRST: %d %d %d\n", prev_line, loc->row, il_offset);
+			emit_sleb128 (w, (gint32)loc->row - (gint32)prev_line);
+			prev_line = loc->row;
+			first = FALSE;
+		}
+
+		if (loc->row != prev_line) {
+			if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
+				/* Add an entry to the file table */
+				/* FIXME: Avoid duplicates */
+				if (w->collect_line_info)
+					file_index = get_line_number_file_name (w, loc->source_file) + 1;
 				else
-					emit_pointer_value (w, code);
+					file_index = emit_line_number_file_name (w, loc->source_file, 0, 0);
+				g_free (prev_file_name);
+				prev_file_name = g_strdup (loc->source_file);
 
-				/* 
-				 * The prolog+initlocals region does not have a line number, this
-				 * makes them belong to the first line of the method.
-				 */
-				emit_byte (w, DW_LNS_advance_line);
-				emit_sleb128 (w, (gint32)loc->row - (gint32)prev_line);
-				prev_line = loc->row;
-			}
-
-			if (loc->row != prev_line) {
-				if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
-					/* Add an entry to the file table */
-					/* FIXME: Avoid duplicates */
-					if (w->collect_line_info)
-						file_index = get_line_number_file_name (w, loc->source_file) + 1;
-					else
-						file_index = emit_line_number_file_name (w, loc->source_file, 0, 0);
-					g_free (prev_file_name);
-					prev_file_name = g_strdup (loc->source_file);
-
+				if (w->cur_file_index != file_index) {
 					emit_byte (w, DW_LNS_set_file);
 					emit_uleb128 (w, file_index);
 					emit_byte (w, DW_LNS_copy);
-				}
-				//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
-
-				emit_advance_op (w, line_diff, addr_diff);
-
-				prev_line = loc->row;
-				prev_native_offset = i;
+					w->cur_file_index = file_index;
+				}					
 			}
+			//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
+			emit_advance_op (w, line_diff, addr_diff);
 
-			first = FALSE;
-
-			mono_debug_symfile_free_location (loc);
+			prev_line = loc->row;
+			prev_native_offset = i;
 		}
+
+		mono_debug_symfile_free_location (loc);
 	}
 
 	g_free (native_to_il_offset);
