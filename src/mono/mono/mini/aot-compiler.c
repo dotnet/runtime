@@ -4769,12 +4769,14 @@ emit_plt (MonoAotCompile *acfg)
 			/* Emit only a thumb version */
 			continue;
 
-		if (!acfg->thumb_mixed)
+		if (acfg->llvm && !acfg->thumb_mixed)
 			emit_label (acfg, plt_entry->llvm_symbol);
 
 		if (debug_sym) {
-			if (acfg->need_no_dead_strip)
+			if (acfg->need_no_dead_strip) {
+				img_writer_emit_unset_mode (acfg->w);
 				fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
+			}
 			emit_local_symbol (acfg, debug_sym, NULL, TRUE);
 			emit_label (acfg, debug_sym);
 		}

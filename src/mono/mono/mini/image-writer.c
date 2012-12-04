@@ -1624,7 +1624,7 @@ asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 #if (defined(TARGET_X86) && defined(TARGET_ASM_APPLE))
         name = get_label(name);
         fprintf (acfg->fp, "%s:\n", name);
-        if (name[0] != 'L')
+        if (name[0] != 'L' && name[0] != '_')
             fprintf (acfg->fp, "_%s:\n", name);
 
 #elif (defined(HOST_WIN32) && (defined(TARGET_X86) || defined(TARGET_AMD64))) || (defined(TARGET_X86) && defined(TARGET_ASM_APPLE))
@@ -1789,7 +1789,7 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 
 	if (offset == 0 && strcmp (start, ".") != 0) {
 		char symbol [128];
-		sprintf (symbol, ".LDIFF_SYM%d", acfg->label_gen);
+		sprintf (symbol, "%sDIFF_SYM%d", AS_TEMP_LABEL_PREFIX, acfg->label_gen);
 		acfg->label_gen ++;
 		fprintf (acfg->fp, "\n%s=%s - %s", symbol, end, start);
 		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
