@@ -76,8 +76,15 @@ describe_ptr (char *ptr)
 			else
 				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
 			ptr = start;
-		} else if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
-			printf ("Pointer inside oldspace.\n");
+		} else if (major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
+			if (ptr == start)
+				printf ("Pointer is the start of object %p in oldspace.\n", start);
+			else if (start)
+				printf ("Pointer is at offset 0x%x of object %p in oldspace.\n", (int)(ptr - start), start);
+			else
+				printf ("Pointer inside oldspace.\n");
+			if (start)
+				ptr = start;
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			printf ("Pointer is inside a pinned chunk.\n");
 		} else {

@@ -619,9 +619,12 @@ major_finish_major_collection (void)
 }
 
 static gboolean
-major_ptr_is_in_non_pinned_space (char *ptr)
+major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 {
 	GCMemSection *section;
+
+	// FIXME:
+	*start = NULL;
 	for (section = section_list; section;) {
 		if (ptr >= section->data && ptr < section->data + section->size)
 			return TRUE;

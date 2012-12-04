@@ -892,13 +892,24 @@ major_is_object_live (char *obj)
 }
 
 static gboolean
-major_ptr_is_in_non_pinned_space (char *ptr)
+major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 {
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE)
+		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE) {
+			int count = MS_BLOCK_FREE / block->obj_size;
+			int i;
+
+			*start = NULL;
+			for (i = 0; i <= count; ++i) {
+				if (ptr >= MS_BLOCK_OBJ (block, i) && ptr < MS_BLOCK_OBJ (block, i + 1)) {
+					*start = MS_BLOCK_OBJ (block, i);
+					break;
+				}
+			}
 			return !block->pinned;
+		}
 	} END_FOREACH_BLOCK;
 	return FALSE;
 }

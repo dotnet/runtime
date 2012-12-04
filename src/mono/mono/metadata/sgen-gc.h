@@ -698,7 +698,7 @@ struct _SgenMajorCollector {
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (void);
 	void (*have_computed_minor_collection_allowance) (void);
-	gboolean (*ptr_is_in_non_pinned_space) (char *ptr);
+	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
 	int (*get_num_major_sections) (void);
