@@ -781,6 +781,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 		ji = frame.ji;
 
+		// FIXME: For skipped frames, scan the param area of the parent frame conservatively ?
+
 		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 			/*
 			 * These frames are problematic for several reasons:
@@ -1668,10 +1670,6 @@ process_variables (MonoCompile *cfg)
 		if (ins->inst_offset % SIZEOF_SLOT != 0)
 			continue;
 
-		if (is_arg && ins->inst_offset >= gcfg->max_offset)
-			/* In parent frame */
-			continue;
-
 		pos = fp_offset_to_slot (cfg, ins->inst_offset);
 
 		if (is_arg && ins->flags & MONO_INST_IS_DEAD) {
@@ -1792,7 +1790,7 @@ process_variables (MonoCompile *cfg)
 		if (!mini_type_is_reference (cfg, t)) {
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 			if (cfg->verbose_level > 1)
-				printf ("\tnoref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
+				printf ("\tnoref%s at %s0x%x(fp) (R%d, slot = %d): %s\n", (is_arg ? " arg" : ""), ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 			if (!t->byref && sizeof (mgreg_t) == 4 && (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_R8)) {
 				set_slot_everywhere (gcfg, pos + 1, SLOT_NOREF);
 				if (cfg->verbose_level > 1)
@@ -1830,7 +1828,7 @@ process_variables (MonoCompile *cfg)
 		}
 
 		if (cfg->verbose_level > 1) {
-			printf ("\tref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
+			printf ("\tref%s at %s0x%x(fp) (R%d, slot = %d): %s\n", (is_arg ? " arg" : ""), ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 		}
 	}
 
@@ -1856,28 +1854,6 @@ sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 	NOT_IMPLEMENTED;
 	return -1;
 #endif
-}
-
-static GCSlotType
-type_to_gc_slot_type (MonoCompile *cfg, MonoType *t)
-{
-	if (t->byref)
-		return SLOT_PIN;
-	t = mini_type_get_underlying_type (NULL, t);
-	if (mini_type_is_reference (cfg, t))
-		return SLOT_REF;
-	else {
-		if (MONO_TYPE_ISSTRUCT (t)) {
-			MonoClass *klass = mono_class_from_mono_type (t);
-			if (!klass->has_references) {
-				return SLOT_NOREF;
-			} else {
-				// FIXME:
-				return SLOT_PIN;
-			}
-		}
-		return SLOT_NOREF;
-	}
 }
 
 static void
@@ -1929,54 +1905,10 @@ process_param_area_slots (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, i, SLOT_NOREF);
 	}
 
-	for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
-		GCCallSite *callsite = gcfg->callsites [cindex];
-		GSList *l;
-
-		for (l = callsite->param_slots; l; l = l->next) {
-			MonoInst *def = l->data;
-			MonoType *t = def->inst_vtype;
-			int sp_offset = def->inst_offset;
-			int fp_offset = sp_offset_to_fp_offset (cfg, sp_offset);
-			int slot = fp_offset_to_slot (cfg, fp_offset);
-			GCSlotType type = type_to_gc_slot_type (cfg, t);
-
-			if (MONO_TYPE_ISSTRUCT (t)) {
-				guint32 align;
-				guint32 size;
-				int size_in_slots;
-				gsize *bitmap;
-				int j, numbits;
-
-				size = mini_type_stack_size_full (cfg->generic_sharing_context, t, &align, FALSE);
-				size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
-
-				bitmap = get_vtype_bitmap (t, &numbits);
-				if (type == SLOT_NOREF || !bitmap) {
-					for (i = 0; i < size_in_slots; ++i) {
-						set_slot_in_range (gcfg, slot + i, def->backend.pc_offset, callsite->pc_offset + 1, type);
-					}
-					if (cfg->verbose_level > 1)
-						printf ("\t%s param area slots at %s0x%x(fp)=0x%x(sp) (slot = %d-%d) [0x%x-0x%x]\n", slot_type_to_string (type), get_offset_sign (fp_offset), get_offset_val (fp_offset), sp_offset, slot, slot + (size / (int)sizeof (mgreg_t)), def->backend.pc_offset, callsite->pc_offset + 1);
-				} else {
-					for (j = 0; j < numbits; ++j) {
-						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
-							/* The descriptor is for the boxed object */
-							set_slot (gcfg, (slot + j - (sizeof (MonoObject) / SIZEOF_SLOT)), cindex, SLOT_REF);
-						}
-					}
-					if (cfg->verbose_level > 1)
-						printf ("\tvtype param area slots at %s0x%x(fp)=0x%x(sp) (slot = %d-%d) [0x%x-0x%x]\n", get_offset_sign (fp_offset), get_offset_val (fp_offset), sp_offset, slot, slot + (size / (int)sizeof (mgreg_t)), def->backend.pc_offset, callsite->pc_offset + 1);
-				}
-				g_free (bitmap);
-			} else {
-				/* The slot is live between the def instruction and the call */
-				set_slot_in_range (gcfg, slot, def->backend.pc_offset, callsite->pc_offset + 1, type);
-				if (cfg->verbose_level > 1)
-					printf ("\t%s param area slot at %s0x%x(fp)=0x%x(sp) (slot = %d) [0x%x-0x%x]\n", slot_type_to_string (type), get_offset_sign (fp_offset), get_offset_val (fp_offset), sp_offset, slot, def->backend.pc_offset, callsite->pc_offset + 1);
-			}
-		}
-	}
+	/*
+	 * We treat param area slots as being part of the callee's frame, to be able to handle tail calls which overwrite
+	 * the argument area of the caller.
+	 */
 }
 
 static void
@@ -2067,8 +1999,14 @@ compute_frame_size (MonoCompile *cfg)
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoInst *ins = cfg->args [i];
 
-		if (ins->opcode == OP_REGOFFSET)
+		if (ins->opcode == OP_REGOFFSET) {
+			int size, size_in_slots;
+			size = mini_type_stack_size_full (cfg->generic_sharing_context, ins->inst_vtype, NULL, ins->backend.is_pinvoke);
+			size_in_slots = ALIGN_TO (size, SIZEOF_SLOT) / SIZEOF_SLOT;
+
 			min_offset = MIN (min_offset, ins->inst_offset);
+			max_offset = MAX ((int)max_offset, (int)(ins->inst_offset + (size_in_slots * SIZEOF_SLOT)));
+		}
 	}
 
 	/* Cfa slots */
