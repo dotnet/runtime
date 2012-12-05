@@ -217,6 +217,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/2.0/System.Xml.Linq.dll
 %_prefix/lib/mono/2.0/System.Xml.dll
 %_prefix/lib/mono/2.0/System.dll
+%_prefix/lib/mono/2.0/System.Json.dll
 %_prefix/lib/mono/2.0/al.exe*
 %_prefix/lib/mono/2.0/cscompmgd.dll
 %_prefix/lib/mono/2.0/gacutil.exe*
@@ -244,6 +245,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/System.Drawing.dll
 %_prefix/lib/mono/4.0/System.Dynamic.dll
 %_prefix/lib/mono/4.0/System.Json.dll
+%_prefix/lib/mono/4.0/System.Json.Microsoft.dll
 %_prefix/lib/mono/4.0/System.Net.dll
 %_prefix/lib/mono/4.0/System.Numerics.dll
 %_prefix/lib/mono/4.0/System.Security.dll
@@ -290,6 +292,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.Drawing.dll
 %_prefix/lib/mono/4.5/System.Dynamic.dll
 %_prefix/lib/mono/4.5/System.Json.dll
+%_prefix/lib/mono/4.5/System.Json.Microsoft.dll
 %_prefix/lib/mono/4.5/System.Net.dll
 %_prefix/lib/mono/4.5/System.Net.Http.dll
 %_prefix/lib/mono/4.5/System.Numerics.dll
@@ -334,6 +337,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/System.Xml
 %_prefix/lib/mono/gac/System.Xml.Linq
 %_prefix/lib/mono/gac/System.Json
+%_prefix/lib/mono/gac/System.Json.Microsoft
 %_prefix/lib/mono/gac/cscompmgd
 %_prefix/lib/mono/mono-configuration-crypto
 
