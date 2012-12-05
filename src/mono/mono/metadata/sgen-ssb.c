@@ -764,6 +764,7 @@ sgen_ssb_record_pointer (gpointer ptr)
 	global_remset = rs;
 	*(global_remset->store_next++) = (mword)ptr;
 
+#if SGEN_MAX_DEBUG_LEVEL >= 4
 	{
 		int global_rs_size = 0;
 
@@ -772,6 +773,7 @@ sgen_ssb_record_pointer (gpointer ptr)
 		}
 		SGEN_LOG (4, "Global remset now has size %d", global_rs_size);
 	}
+#endif
 
  done:
 	if (lock)
