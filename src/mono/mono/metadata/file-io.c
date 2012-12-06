@@ -1218,7 +1218,7 @@ void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 
 //Support for io-layer free mmap'd files.
 
-#if (defined (__MACH__) && defined (TARGET_ARM)) || defined (TARGET_ANDROID)
+#if defined (TARGET_IOS) || defined (TARGET_ANDROID)
 
 gint64
 mono_filesize_from_path (MonoString *string)

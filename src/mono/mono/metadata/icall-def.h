@@ -315,7 +315,7 @@ ICALL(INOW_1, "AddWatch", ves_icall_System_IO_InotifyWatcher_AddWatch)
 ICALL(INOW_2, "GetInotifyInstance", ves_icall_System_IO_InotifyWatcher_GetInotifyInstance)
 ICALL(INOW_3, "RemoveWatch", ves_icall_System_IO_InotifyWatcher_RemoveWatch)
 
-#if (defined (__MACH__) && defined (TARGET_ARM)) || defined (TARGET_ANDROID)
+#if defined (TARGET_IOS) || defined (TARGET_ANDROID)
 ICALL_TYPE(MMAPIMPL, "System.IO.MemoryMappedFiles.MemoryMapImpl", MMAPIMPL_1)
 ICALL(MMAPIMPL_1, "mono_filesize_from_fd", mono_filesize_from_fd)
 ICALL(MMAPIMPL_2, "mono_filesize_from_path", mono_filesize_from_path)
