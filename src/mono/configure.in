@@ -160,10 +160,10 @@ case "$host" in
 			libmono_cflags="$PTHREAD_CFLAGS"
 		fi
 		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -pthread"
+			LDFLAGS="$LDFLAGS -pthread -L/usr/local/lib"
 			libmono_ldflags="-pthread"
 		else
-			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
+			LDFLAGS="$LDFLAGS $PTHREAD_LIBS -L/usr/local/lib"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
 		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD"
@@ -1207,6 +1207,14 @@ if test x$target_win32 = xno; then
 	dnl *** Checks for libsocket  ***
 	dnl *****************************
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
+
+	case "$host" in
+		*-*-*freebsd*)
+			dnl *****************************
+			dnl *** Checks for libinotify ***
+			dnl *****************************
+			AC_CHECK_LIB(inotify, inotify_init, LIBS="$LIBS -linotify")
+	esac
 
 	dnl *******************************
 	dnl *** Checks for MSG_NOSIGNAL ***
