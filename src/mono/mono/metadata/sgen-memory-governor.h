@@ -56,7 +56,7 @@ void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags
 void sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags) MONO_INTERNAL;
 
 /* Error handling */
-void sgen_assert_memory_alloc (void *ptr, const char *assert_description) MONO_INTERNAL;
+void sgen_assert_memory_alloc (void *ptr, size_t requested_size, const char *assert_description) MONO_INTERNAL;
 
 #endif
 

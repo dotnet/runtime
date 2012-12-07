@@ -127,7 +127,7 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 	if (size > allocator_sizes [NUM_ALLOCATORS - 1]) {
 		p = sgen_alloc_os_memory (size, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, NULL);
 		if (!p)
-			sgen_assert_memory_alloc (NULL, description_for_type (type));
+			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
 		return p;
 	}
 
@@ -135,7 +135,7 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 
 	p = mono_lock_free_alloc (&allocators [index]);
 	if (!p)
-		sgen_assert_memory_alloc (NULL, description_for_type (type));
+		sgen_assert_memory_alloc (NULL, size, description_for_type (type));
 	memset (p, 0, size);
 	return p;
 }

@@ -882,6 +882,7 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
+	g_assert (index < meta->heap_strings.size);
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
 	return meta->heap_strings.data + index;
 }
@@ -896,6 +897,7 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
+	g_assert (index < meta->heap_us.size);
 	g_return_val_if_fail (index < meta->heap_us.size, "");
 	return meta->heap_us.data + index;
 }
@@ -910,6 +912,7 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
+	g_assert (index < meta->heap_blob.size);
 	g_return_val_if_fail (index < meta->heap_blob.size, "");/*FIXME shouldn't we return NULL and check for index == 0?*/
 	return meta->heap_blob.data + index;
 }
