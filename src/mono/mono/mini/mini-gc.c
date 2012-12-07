@@ -1716,11 +1716,13 @@ process_variables (MonoCompile *cfg)
 			 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
 			 * them during VZERO decomposition.
 			 */
-			if (!pc_offsets [vmv->vreg])
-				pin = TRUE;
+			if (!is_arg) {
+				if (!pc_offsets [vmv->vreg])
+					pin = TRUE;
 
-			if (ins->backend.is_pinvoke)
-				pin = TRUE;
+				if (ins->backend.is_pinvoke)
+					pin = TRUE;
+			}
 
 			if (bitmap) {
 				for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
