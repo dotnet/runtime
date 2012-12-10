@@ -903,6 +903,15 @@ fi
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
 AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)
 
+AC_ARG_ENABLE(extension-module, [  --enable-extension-module enables usage of the extension module], has_extension_module=$enableval, has_extension_module=no)
+AM_CONDITIONAL([HAS_EXTENSION_MODULE], [test x$has_extension_module != xno])
+
+if test x$has_extension_module != xno ; then
+	AC_DEFINE([ENABLE_EXTENSION_MODULE], 1, [Extension module enabled])
+	AC_MSG_NOTICE([Enabling mono extension module.])
+fi
+
+
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_COMPILE_IFELSE([
 	AC_LANG_SOURCE([[
@@ -3366,6 +3375,10 @@ fi
 
     if test x$with_moonlight != xno; then
       echo "MOONLIGHT = 1" >> $srcdir/$mcsdir/build/config.make
+    fi
+
+    if test x$has_extension_module != xno; then
+        echo "EXTENSION_MODULE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
 	default_profile=net_2_0

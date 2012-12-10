@@ -772,3 +772,7 @@ patch-automake:
 
 tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`
+
+if HAS_EXTENSION_MODULE
+include $(top_srcdir)/../mono-extensions/mono/mini/Makefile.am
+endif
