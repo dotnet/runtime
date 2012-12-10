@@ -910,7 +910,7 @@ struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size, lowest bit used for pin/mark */
 	guint8 *cardtable_mod_union; /* only used by the concurrent collector */
-#ifdef SIZEOF_VOID_P < 8
+#if SIZEOF_VOID_P < 8
 	mword dummy;		/* to align object to sizeof (double) */
 #endif
 	char data [MONO_ZERO_LEN_ARRAY];
