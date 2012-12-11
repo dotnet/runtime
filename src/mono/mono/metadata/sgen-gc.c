@@ -1144,6 +1144,56 @@ mono_gc_clear_domain (MonoDomain * domain)
 void
 sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 {
+	if (!major_collector.is_concurrent) {
+		g_assert (object_is_pinned (obj));
+		g_assert (current_collection_generation != -1);
+	}
+
+	/*
+	 * During concurrent collections we must always record global
+	 * remsets because cementing is reset at the end of the
+	 * concurrent collection, so we cannot miss a major->minor
+	 * reference.
+	 *
+	 * The reason we cannot reset cementing at the start of a
+	 * concurrent collection is that the nursery collections
+	 * running concurrently must keep pinning the cemented
+	 * objects, exactly because we don't have the global remsets
+	 * that point to them anymore.
+	 *
+	 * This results in nursery collections still being slowed down
+	 * by oft-referenced pinned objects during concurrent
+	 * collections.  One solution would be to keep separate,
+	 * dedicated global remset card tables during concurrent
+	 * collections, and when finishing the concurrent collection
+	 * to merge them into the main card table.
+	 *
+	 * To simplify and save memory, it should be possible to use
+	 * the mod union card table for that purpose: During
+	 * concurrent collections, always record global remsets to the
+	 * mod union card table.  When finishing the concurrent
+	 * collection, reset cementing, and when scanning the mod
+	 * union table, record global remsets again, like always.  The
+	 * downside to this is that we still have a long pause during
+	 * which all those objects must be scanned to process the
+	 * references.
+	 *
+	 * An alternative might be to reset cementing at the start of
+	 * concurrent collections in such a way that nursery
+	 * collections happening during the major collection still pin
+	 * the formerly cemented objects.  We'd just need a shadow
+	 * cementing table for that purpose.  The nursery collections
+	 * still work with the old cementing table (can they cement
+	 * new objects?), while the major collector builds up a new
+	 * cementing table, adding global remsets whenever needed like
+	 * usual.  When the major collector finishes, the old
+	 * cementing table is replaced by the new one.
+	 */
+	if (!concurrent_collection_in_progress &&
+			sgen_cement_lookup_or_register (obj, current_collection_generation != -1)) {
+		return;
+	}
+
 	remset.record_pointer (ptr);
 
 #ifdef ENABLE_DTRACE
@@ -2460,12 +2510,19 @@ init_gray_queue (void)
 	}
 }
 
+static void
+pin_stage_object_callback (char *obj, size_t size, void *data)
+{
+	sgen_pin_stage_ptr (obj);
+	/* FIXME: do pin stats if enabled */
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
  */
 static gboolean
-collect_nursery (SgenGrayQueue *unpin_queue)
+collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
@@ -2552,6 +2609,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	sgen_init_pinning ();
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
 	pin_from_roots (sgen_get_nursery_start (), nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	/* pin cemented objects */
+	sgen_cement_iterate (pin_stage_object_callback, NULL);
 	/* identify pinned objects */
 	sgen_optimize_pin_queue (0);
 	sgen_pinning_setup_section (nursery_section);
@@ -2721,6 +2780,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 		mono_gc_finalize_notify ();
 	}
 	sgen_pin_stats_reset ();
+	/* clear cemented hash */
+	sgen_cement_clear_below_threshold ();
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
@@ -2829,6 +2890,13 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	sgen_optimize_pin_queue (0);
+
+	/*
+	 * Cementing is reset at the end of concurrent mark.  See
+	 * sgen_add_to_global_remset() for the explanation.
+	 */
+	if (finish_up_concurrent_mark)
+		sgen_cement_reset ();
 
 	/*
 	 * The concurrent collector doesn't move objects, neither on
@@ -3177,6 +3245,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		sgen_pin_stats_reset ();
 	}
 
+	sgen_cement_clear_below_threshold ();
+
 	TV_GETTIME (atv);
 	time_major_fragment_creation += TV_ELAPSED (btv, atv);
 
@@ -3281,7 +3351,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 		return FALSE;
 	}
 
-	collect_nursery (&unpin_queue);
+	collect_nursery (&unpin_queue, TRUE);
 	redirect_major_object_remembers ();
 
 	current_collection_generation = GENERATION_OLD;
@@ -3384,7 +3454,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	//FIXME extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
-		if (collect_nursery (NULL)) {
+		if (collect_nursery (NULL, FALSE)) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
@@ -3404,7 +3474,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 		if (major_collector.is_concurrent) {
 			g_assert (!concurrent_collection_in_progress);
-			collect_nursery (unpin_queue_ptr);
+			collect_nursery (unpin_queue_ptr, FALSE);
 		}
 
 		if (major_collector.is_concurrent && !wait_to_finish) {
@@ -3436,7 +3506,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		infos [1].total_time = gc_end;
 
 		if (overflow_generation_to_collect == GENERATION_NURSERY)
-			collect_nursery (NULL);
+			collect_nursery (NULL, FALSE);
 		else
 			major_do_collection (overflow_reason);
 

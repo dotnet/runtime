@@ -179,4 +179,70 @@ sgen_dump_pin_queue (void)
 	}	
 }
 
+#define CEMENT_THRESHOLD	1000
+#define CEMENT_HASH_SIZE	61
+
+typedef struct _CementHashEntry CementHashEntry;
+struct _CementHashEntry {
+	char *obj;
+	unsigned int count;
+};
+
+static CementHashEntry cement_hash [CEMENT_HASH_SIZE];
+
+void
+sgen_cement_reset (void)
+{
+	memset (cement_hash, 0, sizeof (cement_hash));
+}
+
+gboolean
+sgen_cement_lookup_or_register (char *obj, gboolean do_register)
+{
+	int i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
+
+	g_assert (sgen_ptr_in_nursery (obj));
+
+	if (do_register && !cement_hash [i].obj) {
+		g_assert (!cement_hash [i].count);
+		cement_hash [i].obj = obj;
+	} else if (cement_hash [i].obj != obj) {
+		return FALSE;
+	}
+
+	if (cement_hash [i].count >= CEMENT_THRESHOLD)
+		return TRUE;
+
+	if (do_register)
+		++cement_hash [i].count;
+
+	return FALSE;
+}
+
+void
+sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data)
+{
+	int i;
+	for (i = 0; i < CEMENT_HASH_SIZE; ++i) {
+		if (!cement_hash [i].count)
+			continue;
+
+		g_assert (cement_hash [i].count >= CEMENT_THRESHOLD);
+
+		callback (cement_hash [i].obj, 0, callback_data);
+	}
+}
+
+void
+sgen_cement_clear_below_threshold (void)
+{
+	int i;
+	for (i = 0; i < CEMENT_HASH_SIZE; ++i) {
+		if (cement_hash [i].count < CEMENT_THRESHOLD) {
+			cement_hash [i].obj = NULL;
+			cement_hash [i].count = 0;
+		}
+	}
+}
+
 #endif /* HAVE_SGEN_GC */
