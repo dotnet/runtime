@@ -3887,6 +3887,10 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
 				set_user_copy_or_mark_data (NULL);
 			} else if (!precise) {
+				if (!conservative_stack_mark) {
+					fprintf (stderr, "Precise stack mark not supported - disabling.\n");
+					conservative_stack_mark = TRUE;
+				}
 				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
 			}
 		}
