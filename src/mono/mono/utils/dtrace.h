@@ -51,6 +51,34 @@
 #define MONO_GC_END_ENABLED() (0)
 
 
+#define MONO_GC_CHECKPOINT_1(generation)
+#define MONO_GC_CHECKPOINT_1_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_2(generation)
+#define MONO_GC_CHECKPOINT_2_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_3(generation)
+#define MONO_GC_CHECKPOINT_3_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_4(generation)
+#define MONO_GC_CHECKPOINT_4_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_5(generation)
+#define MONO_GC_CHECKPOINT_5_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_6(generation)
+#define MONO_GC_CHECKPOINT_6_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_7(generation)
+#define MONO_GC_CHECKPOINT_7_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_8(generation)
+#define MONO_GC_CHECKPOINT_8_ENABLED()	(0)
+
+#define MONO_GC_CHECKPOINT_9(generation)
+#define MONO_GC_CHECKPOINT_9_ENABLED()	(0)
+
+
 #define MONO_GC_CONCURRENT_START_BEGIN(generation)
 #define MONO_GC_CONCURRENT_START_BEGIN_ENABLED()	(0)
 
@@ -145,6 +173,10 @@
 
 #define MONO_GC_WEAK_UPDATE(ref_addr,old_addr,new_addr,size,ns_name,class_name,track)
 #define MONO_GC_WEAK_UPDATE_ENABLED()	(0)
+
+
+#define MONO_GC_GLOBAL_REMSET_ADD(ref_addr,obj_addr,size,ns_name,class_name)
+#define MONO_GC_GLOBAL_REMSET_ADD()	(0)
 
 #endif
 

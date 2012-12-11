@@ -1141,6 +1141,13 @@ void
 sgen_add_to_global_remset (gpointer ptr)
 {
 	remset.record_pointer (ptr);
+
+	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
+		void *obj = *(void**)ptr;
+		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
+		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
+				vt->klass->name_space, vt->klass->name);
+	}
 }
 
 /*
@@ -2518,8 +2525,12 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	if (remset.prepare_for_minor_collection)
 		remset.prepare_for_minor_collection ();
 
+	MONO_GC_CHECKPOINT_1 (GENERATION_NURSERY);
+
 	sgen_process_fin_stage_entries ();
 	sgen_process_dislink_stage_entries ();
+
+	MONO_GC_CHECKPOINT_2 (GENERATION_NURSERY);
 
 	/* pin from pinned handles */
 	sgen_init_pinning ();
@@ -2538,6 +2549,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	time_minor_pinning += TV_ELAPSED (btv, atv);
 	SGEN_LOG (2, "Finding pinned pointers: %d in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
 	SGEN_LOG (4, "Start scan with %d pinned objects", sgen_get_pinned_count ());
+
+	MONO_GC_CHECKPOINT_3 (GENERATION_NURSERY);
 
 	if (whole_heap_check_before_collection) {
 		sgen_clear_nursery_fragments ();
@@ -2567,6 +2580,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Old generation scan: %d usecs", TV_ELAPSED (atv, btv));
 
+	MONO_GC_CHECKPOINT_4 (GENERATION_NURSERY);
+
 	if (!sgen_collection_is_parallel ()) {
 		ctx.scan_func = current_object_ops.scan_object;
 		ctx.copy_func = NULL;
@@ -2580,6 +2595,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 		report_finalizer_roots ();
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
+
+	MONO_GC_CHECKPOINT_5 (GENERATION_NURSERY);
 
 	/* registered roots, this includes static fields */
 	scrrjd_normal = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
@@ -2601,6 +2618,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED (atv, btv);
 
+	MONO_GC_CHECKPOINT_6 (GENERATION_NURSERY);
+
 	/* thread data */
 	stdjd = sgen_alloc_internal_dynamic (sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	stdjd->heap_start = sgen_get_nursery_start ();
@@ -2610,6 +2629,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED (btv, atv);
 	btv = atv;
+
+	MONO_GC_CHECKPOINT_7 (GENERATION_NURSERY);
 
 	g_assert (!sgen_collection_is_parallel () && !sgen_collection_is_concurrent ());
 
@@ -2625,10 +2646,14 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	sfejd_critical_fin->list = critical_fin_list;
 	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_critical_fin);
 
+	MONO_GC_CHECKPOINT_8 (GENERATION_NURSERY);
+
 	finish_gray_stack (sgen_get_nursery_start (), nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED (btv, atv);
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
+
+	MONO_GC_CHECKPOINT_9 (GENERATION_NURSERY);
 
 	/*
 	 * The (single-threaded) finalization code might have done
