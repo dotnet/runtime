@@ -102,6 +102,24 @@ if grep "^AM_PROG_LIBTOOL" configure.in >/dev/null; then
   fi
 fi
 
+
+#
+# Plug in the extension module
+#
+has_ext_mod=false
+for PARAM; do
+    if test $PARAM = "--enable-extension-module" ; then
+		has_ext_mod=true
+	fi
+done
+
+if test x$has_ext_mod = xtrue; then
+	cat mono/mini/Makefile.am.in ../mono-extensions/mono/mini/Makefile.am > mono/mini/Makefile.am
+else
+	cat mono/mini/Makefile.am.in > mono/mini/Makefile.am
+fi
+
+
 echo "Running aclocal -I m4 -I . $ACLOCAL_FLAGS ..."
 aclocal -Wnone -I m4 -I . $ACLOCAL_FLAGS || {
   echo
