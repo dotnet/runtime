@@ -1021,6 +1021,68 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.5/Npgsql.dll
 %_prefix/lib/mono/gac/Npgsql
 
+%package -n mono-rx-core
+License:        MIT License (or similar) ; Apache License 2.0
+Summary:        Reactive Extensions for Mono core libraries
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+Provides:       mono(System.Reactive.Interfaces) = 1.0.5000.0
+
+%description -n mono-rx-core
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Reactive Extensions for Mono, core packages, which don't depend on
+desktop-specific features.
+
+%files -n mono-rx-core
+%defattr(-, root, root)
+%_libdir/pkgconfig/reactive.core.pc
+%_prefix/lib/mono/4.5/System.Reactive.Core.dll
+%_prefix/lib/mono/4.5/System.Reactive.Debugger.dll
+%_prefix/lib/mono/4.5/System.Reactive.Experimental.dll
+%_prefix/lib/mono/4.5/System.Reactive.Interfaces.dll
+%_prefix/lib/mono/4.5/System.Reactive.Linq.dll
+%_prefix/lib/mono/4.5/System.Reactive.PlatformServices.dll
+%_prefix/lib/mono/4.5/System.Reactive.Providers.dll
+%_prefix/lib/mono/4.5/System.Reactive.Runtime.Remoting.dll
+%_prefix/lib/mono/gac/System.Reactive.Core
+%_prefix/lib/mono/gac/System.Reactive.Debugger
+%_prefix/lib/mono/gac/System.Reactive.Experimental
+%_prefix/lib/mono/gac/System.Reactive.Interfaces
+%_prefix/lib/mono/gac/System.Reactive.Linq
+%_prefix/lib/mono/gac/System.Reactive.PlatformServices
+%_prefix/lib/mono/gac/System.Reactive.Providers
+%_prefix/lib/mono/gac/System.Reactive.Runtime.Remoting
+
+%package -n mono-rx-desktop
+License:        MIT License (or similar) ; Apache License 2.0
+Summary:        Reactive Extensions for Mono desktop-specific libraries
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+Requires:       mono-rx-core == %version-%release
+Provides:       mono(System.Reactive.Interfaces) = 1.0.5000.0
+
+%description -n mono-rx-desktop
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Reactive Extensions for Mono, desktop-specific packages (winforms,
+windows threading).
+
+%files -n mono-rx-desktop
+%defattr(-, root, root)
+%_prefix/lib/mono/4.5/System.Reactive.Windows.Forms.dll
+%_prefix/lib/mono/4.5/System.Reactive.Windows.Threading.dll
+%_prefix/lib/mono/gac/System.Reactive.Windows.Forms
+%_prefix/lib/mono/gac/System.Reactive.Windows.Threading
+
 %package -n mono-nunit
 License:        LGPL v2.1 only
 Summary:        NUnit Testing Framework
