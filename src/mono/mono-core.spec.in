@@ -1040,7 +1040,7 @@ desktop-specific features.
 
 %files -n mono-rx-core
 %defattr(-, root, root)
-%_libdir/pkgconfig/reactive.core.pc
+%_libdir/pkgconfig/reactive.pc
 %_prefix/lib/mono/4.5/System.Reactive.Core.dll
 %_prefix/lib/mono/4.5/System.Reactive.Debugger.dll
 %_prefix/lib/mono/4.5/System.Reactive.Experimental.dll
