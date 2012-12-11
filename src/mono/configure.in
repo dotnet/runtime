@@ -3285,6 +3285,7 @@ data/system.web.mvc.pc
 data/system.web.mvc2.pc
 data/system.web.mvc3.pc
 data/aspnetwebstack.pc
+data/reactive.pc
 samples/Makefile
 support/Makefile
 data/config
