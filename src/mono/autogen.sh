@@ -114,7 +114,9 @@ for PARAM; do
 done
 
 if test x$has_ext_mod = xtrue; then
-	cat mono/mini/Makefile.am.in ../mono-extensions/mono/mini/Makefile.am > mono/mini/Makefile.am
+	pushd ../mono-extensions/scripts
+	sh ./prepare-repo.sh || exit 1
+	popd
 else
 	cat mono/mini/Makefile.am.in > mono/mini/Makefile.am
 fi
