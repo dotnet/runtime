@@ -33,13 +33,28 @@ static void *workers_gc_thread_major_collector_data = NULL;
 static SgenSectionGrayQueue workers_distribute_gray_queue;
 static gboolean workers_distribute_gray_queue_inited;
 
-static volatile gboolean workers_gc_in_progress = FALSE;
 static volatile gboolean workers_marking = FALSE;
 static gboolean workers_started = FALSE;
-static volatile int workers_num_waiting = 0;
+
+typedef union {
+	gint32 value;
+	struct {
+		/*
+		 * Decremented by the main thread and incremented by
+		 * worker threads.
+		 */
+		guint32 num_waiting : 8;
+		/* Set by worker threads and reset by the main thread. */
+		guint32 done_posted : 1;
+		/* Set by the main thread. */
+		guint32 gc_in_progress : 1;
+	} data;
+} State;
+
+static volatile State workers_state;
+
 static MonoSemType workers_waiting_sem;
 static MonoSemType workers_done_sem;
-static volatile int workers_done_posted = 0;
 
 static volatile int workers_job_queue_num_entries = 0;
 static volatile JobQueueEntry *workers_job_queue = NULL;
@@ -52,18 +67,32 @@ static long long stat_workers_stolen_from_self_no_lock;
 static long long stat_workers_stolen_from_others;
 static long long stat_workers_num_waited;
 
+static gboolean
+set_state (State old_state, State new_state)
+{
+	return InterlockedCompareExchange (&workers_state.value,
+			new_state.value, old_state.value) == old_state.value;
+}
+
 static void
 workers_wake_up (int max)
 {
 	int i;
 
 	for (i = 0; i < max; ++i) {
-		int num;
+		State old_state, new_state;
 		do {
-			num = workers_num_waiting;
-			if (num == 0)
+			old_state = new_state = workers_state;
+			/*
+			 * We must not wake workers up once done has
+			 * been posted.
+			 */
+			if (old_state.data.done_posted)
 				return;
-		} while (InterlockedCompareExchange (&workers_num_waiting, num - 1, num) != num);
+			if (old_state.data.num_waiting == 0)
+				return;
+			--new_state.data.num_waiting;
+		} while (!set_state (old_state, new_state));
 		MONO_SEM_POST (&workers_waiting_sem);
 	}
 }
@@ -77,29 +106,34 @@ workers_wake_up_all (void)
 void
 sgen_workers_wake_up_all (void)
 {
-	g_assert (workers_gc_in_progress);
+	g_assert (workers_state.data.gc_in_progress);
 	workers_wake_up_all ();
 }
 
 static void
 workers_wait (void)
 {
-	int num;
+	State old_state, new_state;
 	++stat_workers_num_waited;
 	do {
-		num = workers_num_waiting;
-	} while (InterlockedCompareExchange (&workers_num_waiting, num + 1, num) != num);
-	if (num + 1 == workers_num && !workers_gc_in_progress) {
-		/* Make sure the done semaphore is only posted once. */
-		int posted;
-		do {
-			posted = workers_done_posted;
-			if (posted)
-				break;
-		} while (InterlockedCompareExchange (&workers_done_posted, 1, 0) != 0);
-		if (!posted)
-			MONO_SEM_POST (&workers_done_sem);
-	}
+		old_state = new_state = workers_state;
+		/*
+		 * Only the last worker thread awake can set the done
+		 * posted flag, and since we're awake and haven't set
+		 * it yet, it cannot be set.
+		 */
+		g_assert (!old_state.data.done_posted);
+		++new_state.data.num_waiting;
+		/*
+		 * This is the only place where we use
+		 * workers_gc_in_progress in the worker threads.
+		 */
+		if (new_state.data.num_waiting == workers_num && !old_state.data.gc_in_progress)
+			new_state.data.done_posted = 1;
+	} while (!set_state (old_state, new_state));
+	mono_memory_barrier ();
+	if (new_state.data.done_posted)
+		MONO_SEM_POST (&workers_done_sem);
 	MONO_SEM_WAIT (&workers_waiting_sem);
 }
 
@@ -120,6 +154,8 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 		return;
 	}
 
+	g_assert (workers_state.data.gc_in_progress);
+
 	entry = sgen_alloc_internal (INTERNAL_MEM_JOB_QUEUE_ENTRY);
 	entry->func = func;
 	entry->data = data;
@@ -138,8 +174,14 @@ void
 sgen_workers_wait_for_jobs (void)
 {
 	// FIXME: implement this properly
-	while (workers_num_jobs_finished < workers_num_jobs_enqueued)
+	while (workers_num_jobs_finished < workers_num_jobs_enqueued) {
+		State state = workers_state;
+		g_assert (state.data.gc_in_progress);
+		g_assert (!state.data.done_posted);
+		if (state.data.num_waiting == workers_num)
+			workers_wake_up_all ();
 		g_usleep (1000);
+	}
 }
 
 static gboolean
@@ -275,7 +317,7 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 		 * There are still objects in the stealable stack, so
 		 * wake up any workers that might be sleeping
 		 */
-		if (workers_gc_in_progress)
+		if (workers_state.data.gc_in_progress)
 			workers_wake_up_all ();
 		return;
 	}
@@ -305,7 +347,7 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 
 	mono_mutex_unlock (&data->stealable_stack_mutex);
 
-	if (workers_gc_in_progress)
+	if (workers_state.data.gc_in_progress)
 		workers_wake_up_all ();
 }
 
@@ -447,6 +489,7 @@ workers_start_worker (int index)
 void
 sgen_workers_start_all_workers (void)
 {
+	State old_state, new_state;
 	int i;
 
 	if (!collection_needs_workers ())
@@ -455,21 +498,36 @@ sgen_workers_start_all_workers (void)
 	if (sgen_get_major_collector ()->init_worker_thread)
 		sgen_get_major_collector ()->init_worker_thread (workers_gc_thread_major_collector_data);
 
-	g_assert (!workers_gc_in_progress);
-	workers_gc_in_progress = TRUE;
+	old_state = new_state = workers_state;
+	g_assert (!old_state.data.gc_in_progress);
+	new_state.data.gc_in_progress = TRUE;
+
 	workers_marking = FALSE;
-	workers_done_posted = 0;
 
 	g_assert (workers_job_queue_num_entries == 0);
 	workers_num_jobs_enqueued = 0;
 	workers_num_jobs_finished = 0;
 
 	if (workers_started) {
-		if (workers_num_waiting != workers_num)
-			g_error ("Expecting all %d sgen workers to be parked, but only %d are", workers_num, workers_num_waiting);
+		g_assert (old_state.data.done_posted);
+		if (old_state.data.num_waiting != workers_num) {
+			g_error ("Expecting all %d sgen workers to be parked, but only %d are",
+					workers_num, old_state.data.num_waiting);
+		}
+
+		/* Clear the done posted flag */
+		new_state.data.done_posted = 0;
+		if (!set_state (old_state, new_state))
+			g_assert_not_reached ();
+
 		workers_wake_up_all ();
 		return;
 	}
+
+	g_assert (!old_state.data.done_posted);
+
+	if (!set_state (old_state, new_state))
+		g_assert_not_reached ();
 
 	for (i = 0; i < workers_num; ++i)
 		workers_start_worker (i);
@@ -480,7 +538,7 @@ sgen_workers_start_all_workers (void)
 gboolean
 sgen_workers_have_started (void)
 {
-	return workers_gc_in_progress;
+	return workers_state.data.gc_in_progress;
 }
 
 void
@@ -489,7 +547,7 @@ sgen_workers_start_marking (void)
 	if (!collection_needs_workers ())
 		return;
 
-	g_assert (workers_started && workers_gc_in_progress);
+	g_assert (workers_started && workers_state.data.gc_in_progress);
 	g_assert (!workers_marking);
 
 	workers_marking = TRUE;
@@ -500,25 +558,62 @@ sgen_workers_start_marking (void)
 void
 sgen_workers_join (void)
 {
+	State old_state, new_state;
 	int i;
 
 	if (!collection_needs_workers ())
 		return;
 
-	g_assert (workers_gc_in_progress);
-	workers_gc_in_progress = FALSE;
-	if (workers_num_waiting == workers_num) {
+	do {
+		old_state = new_state = workers_state;
+		g_assert (old_state.data.gc_in_progress);
+		g_assert (!old_state.data.done_posted);
+
+		new_state.data.gc_in_progress = 0;
+	} while (!set_state (old_state, new_state));
+
+	if (new_state.data.num_waiting == workers_num) {
 		/*
-		 * All the workers might have shut down at this point
-		 * and posted the done semaphore but we don't know it
-		 * yet.  It's not a big deal to wake them up again -
-		 * they'll just do one iteration of their loop trying to
-		 * find something to do and then go back to waiting
-		 * again.
+		 * All the workers have shut down but haven't posted
+		 * the done semaphore yet, or, if we come from below,
+		 * haven't done all their work yet.
+		 *
+		 * It's not a big deal to wake them up again - they'll
+		 * just do one iteration of their loop trying to find
+		 * something to do and then go back to waiting again.
 		 */
+	reawaken:
 		workers_wake_up_all ();
 	}
 	MONO_SEM_WAIT (&workers_done_sem);
+
+	old_state = new_state = workers_state;
+	g_assert (old_state.data.num_waiting == workers_num);
+	g_assert (old_state.data.done_posted);
+
+	if (workers_job_queue_num_entries || !sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue)) {
+		/*
+		 * There's a small race condition that we avoid here.
+		 * It's possible that a worker thread runs out of
+		 * things to do, so it goes to sleep.  Right at that
+		 * moment a new job is enqueued, but the thread is
+		 * still registered as running.  Now the threads are
+		 * joined, and we wait for the semaphore.  Only at
+		 * this point does the worker go to sleep, and posts
+		 * the semaphore, because workers_gc_in_progress is
+		 * already FALSE.  The job is still in the queue,
+		 * though.
+		 *
+		 * Clear the done posted flag.
+		 */
+		new_state.data.done_posted = 0;
+		if (!set_state (old_state, new_state))
+			g_assert_not_reached ();
+		goto reawaken;
+	}
+
+	/* At this point all the workers have stopped. */
+
 	workers_marking = FALSE;
 
 	if (sgen_get_major_collector ()->reset_worker_data) {
@@ -526,8 +621,7 @@ sgen_workers_join (void)
 			sgen_get_major_collector ()->reset_worker_data (workers_data [i].major_collector_data);
 	}
 
-	g_assert (workers_done_posted);
-
+	g_assert (workers_job_queue_num_entries == 0);
 	g_assert (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue));
 	for (i = 0; i < workers_num; ++i) {
 		g_assert (!workers_data [i].stealable_stack_fill);
@@ -538,7 +632,14 @@ sgen_workers_join (void)
 gboolean
 sgen_workers_all_done (void)
 {
-	return workers_num_waiting == workers_num;
+	State state = workers_state;
+	/*
+	 * Can only be called while the collection is still in
+	 * progress, i.e., before done has been posted.
+	 */
+	g_assert (state.data.gc_in_progress);
+	g_assert (!state.data.done_posted);
+	return state.data.num_waiting == workers_num;
 }
 
 gboolean
