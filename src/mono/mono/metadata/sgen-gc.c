@@ -4654,6 +4654,7 @@ mono_gc_base_init (void)
 	int dummy;
 	gboolean debug_print_allowance = FALSE;
 	double allowance_ratio = 0, save_target = 0;
+	gboolean have_split_nursery = FALSE;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -4736,11 +4737,12 @@ mono_gc_base_init (void)
 	if (!minor_collector_opt) {
 		sgen_simple_nursery_init (&sgen_minor_collector);
 	} else {
-		if (!strcmp (minor_collector_opt, "simple"))
+		if (!strcmp (minor_collector_opt, "simple")) {
 			sgen_simple_nursery_init (&sgen_minor_collector);
-		else if (!strcmp (minor_collector_opt, "split"))
+		} else if (!strcmp (minor_collector_opt, "split")) {
 			sgen_split_nursery_init (&sgen_minor_collector);
-		else {
+			have_split_nursery = TRUE;
+		} else {
 			fprintf (stderr, "Unknown minor collector `%s'.\n", minor_collector_opt);
 			exit (1);
 		}
@@ -4755,6 +4757,10 @@ mono_gc_base_init (void)
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed-par")) {
 		sgen_marksweep_fixed_par_init (&major_collector);
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-conc")) {
+		if (have_split_nursery) {
+			fprintf (stderr, "Concurrent Mark&Sweep does not yet support the split nursery.\n");
+			exit (1);
+		}
 		sgen_marksweep_conc_init (&major_collector);
 	} else if (!strcmp (major_collector_opt, "copying")) {
 		sgen_copying_init (&major_collector);

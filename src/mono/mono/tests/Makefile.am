@@ -806,10 +806,8 @@ sgen-regular-tests: $(SGEN_TESTS)
 		MONO_GC_PARAMS=major=marksweep-conc MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.5.stdout 2> $$fn.5.stderr || exit 1;	\
 		MONO_ENV_OPTIONS="--gc=sgen"                                    $(RUNTIME) $$fn > $$fn.2.stdout 2> $$fn.2.stderr || exit 1;	\
 		MONO_GC_PARAMS=major=marksweep-par,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.3.stdout 2> $$fn.3.stderr || exit 1;	\
-		MONO_GC_PARAMS=major=marksweep-conc,minor=split MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.6.stdout 2> $$fn.6.stderr || exit 1;	\
 		MONO_GC_PARAMS=minor=split MONO_ENV_OPTIONS="--gc=sgen"                     $(RUNTIME) $$fn > $$fn.4.stdout 2> $$fn.4.stderr || exit 1;	\
 		MONO_GC_PARAMS=major=marksweep-par,minor=split,alloc-ratio=95 MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.7.stdout 2> $$fn.7.stderr || exit 1;	\
-		MONO_GC_PARAMS=major=marksweep-conc,minor=split,alloc-ratio=95 MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.9.stdout 2> $$fn.9.stderr || exit 1;	\
 		MONO_GC_PARAMS=minor=split,alloc-ratio=95 MONO_ENV_OPTIONS="--gc=sgen"                     $(RUNTIME) $$fn > $$fn.8.stdout 2> $$fn.8.stderr || exit 1;	\
 		echo "Test $$fn with ssb remset...";	\
 		MONO_GC_PARAMS=major=marksweep-par,wbarrier=remset MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.10.stdout 2> $$fn.10.stderr || exit 1;	\
