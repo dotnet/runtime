@@ -319,7 +319,6 @@ struct _MonoClass {
 	/* next byte */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* fields is initialized */
-	guint instance_size_inited     : 1; /* instance_size is initialized */
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 

@@ -1681,7 +1681,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
  *  - has_static_refs (same, but for static fields)
  *  - instance_size (size of the object in memory)
  *  - class_size (size needed for the static fields)
- *  - instance_size_inited (flag set when the instance_size is set)
+ *  - size_inited (flag set when the instance_size is set)
  *
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -1939,10 +1939,6 @@ mono_class_layout_fields (MonoClass *class)
 		field->offset &= ~(align - 1);
 		class->sizes.class_size = field->offset + size;
 	}
-
-	/* size_inited is also set in mono_class_setup_fields () so it cannot be used to check whenever instance_size was set */
-	mono_memory_barrier ();
-	class->instance_size_inited = 1;
 }
 
 static MonoMethod*
@@ -6443,7 +6439,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 gint32
 mono_class_instance_size (MonoClass *klass)
 {	
-	if (!klass->instance_size_inited)
+	if (!klass->size_inited)
 		mono_class_init (klass);
 
 	return klass->instance_size;
