@@ -2549,6 +2549,7 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
 	case MONO_WRAPPER_XDOMAIN_INVOKE:
 	case MONO_WRAPPER_SYNCHRONIZED:
+	case MONO_WRAPPER_UNBOX:
 		res = mono_marshal_get_wrapper_info (wrapper);
 		if (res == NULL)
 			return wrapper;
