@@ -980,4 +980,24 @@ class Tests {
 		var r = new ConstrainedEnum [10];
 		return Foo3<ConstrainedEnum>.CompareTo (r);
 	}
+
+	public interface IFoo2 {
+		void MoveNext ();
+	}
+
+	public struct Foo2 : IFoo2 {
+		public void MoveNext () {
+		}
+	}
+
+	public static Action Dingus (ref Foo2 f) {
+		return new Action (f.MoveNext);
+	}
+
+	public static int test_0_delegate_unbox_full_aot () {
+		Foo2 foo = new Foo2 ();
+		Dingus (ref foo) ();
+		return 0;
+	}
+
 }

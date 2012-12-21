@@ -868,6 +868,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	MonoMethod *method = NULL;
 	gboolean multicast, callvirt = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
+	gboolean need_unbox_tramp = FALSE;
 	gboolean enable_caching = TRUE;
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
@@ -903,8 +904,12 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			if (!sig)
 				mono_error_raise_exception (&err);
 				
-			if (sig->hasthis && method->klass->valuetype)
-				method = mono_marshal_get_unbox_wrapper (method);
+			if (sig->hasthis && method->klass->valuetype) {
+				if (mono_aot_only)
+					need_unbox_tramp = TRUE;
+				else
+					method = mono_marshal_get_unbox_wrapper (method);
+			}
 		}
 	} else {
 		ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
@@ -944,8 +949,11 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			delegate->method_ptr = *delegate->method_code;
 		} else {
 			delegate->method_ptr = mono_compile_method (method);
-			if (need_rgctx_tramp)
-				delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
+			if (need_unbox_tramp)
+				delegate->method_ptr = get_unbox_trampoline (method, delegate->method_ptr, need_rgctx_tramp);
+			else
+				if (need_rgctx_tramp)
+					delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 			if (enable_caching && delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
 			mono_debugger_trampoline_compiled (NULL, method, delegate->method_ptr);
