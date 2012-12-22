@@ -676,6 +676,9 @@ static gboolean protocol_version_set;
 /* A hash table containing all active domains */
 static GHashTable *domains;
 
+/* The number of times the runtime is suspended */
+static gint32 suspend_count;
+
 static void transport_init (void);
 static void transport_connect (const char *address);
 static gboolean transport_handshake (void);
@@ -1813,6 +1816,7 @@ objrefs_cleanup (void)
 }
 
 static GHashTable *obj_to_objref;
+static MonoGHashTable *suspended_objs;
 
 /*
  * Return an ObjRef for OBJ.
@@ -1829,8 +1833,18 @@ get_objref (MonoObject *obj)
 
 	mono_loader_lock ();
 
-	if (!obj_to_objref)
+	if (!obj_to_objref) {
 		obj_to_objref = g_hash_table_new (NULL, NULL);
+		suspended_objs = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
+		MONO_GC_REGISTER_ROOT_FIXED (suspended_objs);
+	}
+
+	if (suspend_count) {
+		/*
+		 * Have to keep object refs created during suspensions alive for the duration of the suspension, so GCs during invokes don't collect them.
+		 */
+		mono_g_hash_table_insert (suspended_objs, obj, NULL);
+	}
 	
 	/* FIXME: The tables can grow indefinitely */
 
@@ -1875,6 +1889,20 @@ get_objref (MonoObject *obj)
 	mono_loader_unlock ();
 
 	return ref;
+}
+
+static gboolean
+true_pred (gpointer key, gpointer value, gpointer user_data)
+{
+	return TRUE;
+}
+
+static void
+clear_suspended_objs (void)
+{
+	mono_loader_lock ();
+	mono_g_hash_table_foreach_remove (suspended_objs, true_pred, NULL);
+	mono_loader_unlock ();
 }
 
 static inline int
@@ -2282,9 +2310,6 @@ save_thread_context (MonoContext *ctx)
 	else
 		mono_thread_state_init_from_current (&tls->context);
 }
-
-/* The number of times the runtime is suspended */
-static gint32 suspend_count;
 
 /* Number of threads suspended */
 /* 
@@ -6310,6 +6335,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		if (suspend_count == 0)
 			return ERR_NOT_SUSPENDED;
 		resume_vm ();
+		clear_suspended_objs ();
 		break;
 	case CMD_VM_DISPOSE:
 		/* Clear all event requests */
