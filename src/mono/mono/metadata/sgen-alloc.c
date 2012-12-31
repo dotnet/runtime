@@ -129,7 +129,7 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 		sgen_ensure_free_space (size);
 	} else {
 		if (sgen_need_major_collection (size))
-			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", TRUE);
+			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature);
 	}
 
 

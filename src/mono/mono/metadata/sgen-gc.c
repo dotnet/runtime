@@ -3281,7 +3281,7 @@ sgen_ensure_free_space (size_t size)
 
 	if (generation_to_collect == -1)
 		return;
-	sgen_perform_collection (size, generation_to_collect, reason, generation_to_collect == GENERATION_NURSERY);
+	sgen_perform_collection (size, generation_to_collect, reason, FALSE);
 }
 
 void
@@ -3312,10 +3312,12 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	sgen_stop_world (generation_to_collect);
 
 	if (concurrent_collection_in_progress) {
-		if (major_update_or_finish_concurrent_collection (generation_to_collect == GENERATION_OLD)) {
+		if (major_update_or_finish_concurrent_collection (wait_to_finish && generation_to_collect == GENERATION_OLD)) {
 			oldest_generation_collected = GENERATION_OLD;
 			goto done;
 		}
+		if (generation_to_collect == GENERATION_OLD)
+			goto done;
 	}
 
 	//FIXME extract overflow reason
