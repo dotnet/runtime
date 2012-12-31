@@ -206,20 +206,10 @@ mono_gc_base_init (void)
 void
 mono_gc_collect (int generation)
 {
-	MONO_GC_BEGIN (generation);
-
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->gc_induced++;
 #endif
 	GC_gcollect ();
-	
-	MONO_GC_END (generation);
-#if defined(ENABLE_DTRACE) && defined(__sun__)
-	/* This works around a dtrace -G problem on Solaris.
-	   Limit its actual use to when the probe is enabled. */
-	if (MONO_GC_END_ENABLED ())
-		sleep(0);
-#endif
 }
 
 /**
@@ -406,19 +396,44 @@ on_gc_notification (GCEventType event)
 {
 	MonoGCEvent e = (MonoGCEvent)event;
 
-	if (e == MONO_GC_EVENT_PRE_STOP_WORLD) 
+	switch (e) {
+	case MONO_GC_EVENT_PRE_STOP_WORLD:
+		MONO_GC_WORLD_STOP_BEGIN ();
 		mono_thread_info_suspend_lock ();
-	else if (e == MONO_GC_EVENT_POST_START_WORLD)
+		break;
+
+	case MONO_GC_EVENT_POST_STOP_WORLD:
+		MONO_GC_WORLD_STOP_END ();
+		break;
+
+	case MONO_GC_EVENT_PRE_START_WORLD:
+		MONO_GC_WORLD_RESTART_BEGIN (1);
+		break;
+
+	case MONO_GC_EVENT_POST_START_WORLD:
+		MONO_GC_WORLD_RESTART_END (1);
 		mono_thread_info_suspend_unlock ();
-	
-	if (e == MONO_GC_EVENT_START) {
+		break;
+
+	case MONO_GC_EVENT_START:
+		MONO_GC_BEGIN (1);
 #ifndef DISABLE_PERFCOUNTERS
 		if (mono_perfcounters)
 			mono_perfcounters->gc_collections0++;
 #endif
 		gc_stats.major_gc_count ++;
 		gc_start_time = mono_100ns_ticks ();
-	} else if (e == MONO_GC_EVENT_END) {
+		break;
+
+	case MONO_GC_EVENT_END:
+		MONO_GC_END (1);
+#if defined(ENABLE_DTRACE) && defined(__sun__)
+		/* This works around a dtrace -G problem on Solaris.
+		   Limit its actual use to when the probe is enabled. */
+		if (MONO_GC_END_ENABLED ())
+			sleep(0);
+#endif
+
 #ifndef DISABLE_PERFCOUNTERS
 		if (mono_perfcounters) {
 			guint64 heap_size = GC_get_heap_size ();
@@ -431,7 +446,9 @@ on_gc_notification (GCEventType event)
 #endif
 		gc_stats.major_gc_time_usecs += (mono_100ns_ticks () - gc_start_time) / 10;
 		mono_trace_message (MONO_TRACE_GC, "gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
+		break;
 	}
+
 	mono_profiler_gc_event (e, 0);
 }
  
