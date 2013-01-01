@@ -24,6 +24,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-protocol.h"
 
 static void** pin_queue;
 static int pin_queue_size = 0;
@@ -194,6 +195,7 @@ void
 sgen_cement_reset (void)
 {
 	memset (cement_hash, 0, sizeof (cement_hash));
+	binary_protocol_cement_reset ();
 }
 
 gboolean
@@ -213,8 +215,15 @@ sgen_cement_lookup_or_register (char *obj, gboolean do_register)
 	if (cement_hash [i].count >= CEMENT_THRESHOLD)
 		return TRUE;
 
-	if (do_register)
+	if (do_register) {
 		++cement_hash [i].count;
+#ifdef SGEN_BINARY_PROTOCOL
+		if (cement_hash [i].count == CEMENT_THRESHOLD) {
+			binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
+					sgen_safe_object_get_size ((MonoObject*)obj));
+		}
+#endif
+	}
 
 	return FALSE;
 }

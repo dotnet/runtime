@@ -288,6 +288,18 @@ binary_protocol_card_scan (gpointer start, int size)
 	protocol_entry (SGEN_PROTOCOL_CARD_SCAN, &entry, sizeof (SGenProtocolCardScan));
 }
 
+void
+binary_protocol_cement (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolCement entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_CEMENT, &entry, sizeof (SGenProtocolCement));
+}
+
+void
+binary_protocol_cement_reset (void)
+{
+	protocol_entry (SGEN_PROTOCOL_CEMENT_RESET, NULL, 0);
+}
 #endif
 
 #endif /* HAVE_SGEN_GC */
