@@ -47,6 +47,7 @@ void sgen_pin_stats_reset (void) MONO_INTERNAL;
 
 /* Perpetual pinning, aka cementing */
 
+void sgen_cement_init (gboolean enabled) MONO_INTERNAL;
 void sgen_cement_reset (void) MONO_INTERNAL;
 gboolean sgen_cement_lookup_or_register (char *obj, gboolean do_register) MONO_INTERNAL;
 void sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;

@@ -4832,6 +4832,7 @@ mono_gc_base_init (void)
 	gboolean debug_print_allowance = FALSE;
 	double allowance_ratio = 0, save_target = 0;
 	gboolean have_split_nursery = FALSE;
+	gboolean cement_enabled = TRUE;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -5107,6 +5108,15 @@ mono_gc_base_init (void)
 				continue;
 			}
 
+			if (!strcmp (opt, "cementing")) {
+				cement_enabled = TRUE;
+				continue;
+			}
+			if (!strcmp (opt, "no-cementing")) {
+				cement_enabled = FALSE;
+				continue;
+			}
+
 			if (major_collector.handle_gc_param && major_collector.handle_gc_param (opt))
 				continue;
 
@@ -5121,6 +5131,7 @@ mono_gc_base_init (void)
 			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
+			fprintf (stderr, "  [no-]cementing\n");
 			if (major_collector.print_gc_param_usage)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
@@ -5145,6 +5156,8 @@ mono_gc_base_init (void)
 		g_free (minor_collector_opt);
 
 	alloc_nursery ();
+
+	sgen_cement_init (cement_enabled);
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);

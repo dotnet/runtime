@@ -191,6 +191,14 @@ struct _CementHashEntry {
 
 static CementHashEntry cement_hash [CEMENT_HASH_SIZE];
 
+static gboolean cement_enabled = TRUE;
+
+void
+sgen_cement_init (gboolean enabled)
+{
+	cement_enabled = enabled;
+}
+
 void
 sgen_cement_reset (void)
 {
@@ -201,7 +209,12 @@ sgen_cement_reset (void)
 gboolean
 sgen_cement_lookup_or_register (char *obj, gboolean do_register)
 {
-	int i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
+	int i;
+
+	if (!cement_enabled)
+		return FALSE;
+
+	i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
 
 	g_assert (sgen_ptr_in_nursery (obj));
 
