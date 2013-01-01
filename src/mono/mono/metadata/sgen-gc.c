@@ -2637,7 +2637,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	if (whole_heap_check_before_collection) {
 		sgen_clear_nursery_fragments ();
-		sgen_check_whole_heap ();
+		sgen_check_whole_heap (finish_up_concurrent_mark);
 	}
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
@@ -2866,7 +2866,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap ();
+		sgen_check_whole_heap (finish_up_concurrent_mark);
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
@@ -3365,15 +3365,15 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
 
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap (FALSE);
+
 	unpin_objects_from_queue (&unpin_queue);
 	sgen_gray_object_queue_deinit (&unpin_queue);
 
 	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	current_collection_generation = -1;
-
-	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap ();
 
 	return TRUE;
 }
@@ -5704,7 +5704,7 @@ sgen_check_whole_heap_stw (void)
 {
 	sgen_stop_world (0);
 	sgen_clear_nursery_fragments ();
-	sgen_check_whole_heap ();
+	sgen_check_whole_heap (FALSE);
 	sgen_restart_world (0, NULL);
 }
 

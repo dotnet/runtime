@@ -32,6 +32,7 @@
 #include "metadata/sgen-ssb.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-pinning.h"
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
@@ -358,15 +359,17 @@ FIXME Flag missing remsets due to pinning as non fatal
 			if (!is_valid_object_pointer (*(char**)ptr)) {	\
 				bad_pointer_spew ((char*)obj, (char**)ptr);	\
 			} else if (!sgen_ptr_in_nursery (obj) && sgen_ptr_in_nursery ((char*)*ptr)) {	\
-				if (!sgen_get_remset ()->find_address ((char*)(ptr))) \
+				if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup_or_register ((char*)*(ptr), FALSE) && (!allow_missing_pinned || !SGEN_OBJECT_IS_PINNED ((char*)*(ptr)))) \
 			        missing_remset_spew ((char*)obj, (char**)ptr);	\
 			}	\
         } \
 	} while (0)
 
 static void
-verify_object_pointers_callback (char *start, size_t size, void *dummy)
+verify_object_pointers_callback (char *start, size_t size, void *data)
 {
+	gboolean allow_missing_pinned = (gboolean)data;
+
 #define SCAN_OBJECT_ACTION
 #include "sgen-scan-object.h"
 }
@@ -377,14 +380,14 @@ FIXME:
 depend on OP_DUMMY_USE.
 */
 void
-sgen_check_whole_heap (void)
+sgen_check_whole_heap (gboolean allow_missing_pinned)
 {
 	setup_valid_nursery_objects ();
 
 	broken_heap = FALSE;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, NULL, FALSE);
-	major_collector.iterate_objects (TRUE, TRUE, verify_object_pointers_callback, NULL);
-	sgen_los_iterate_objects (verify_object_pointers_callback, NULL);	
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*)allow_missing_pinned, FALSE);
+	major_collector.iterate_objects (TRUE, TRUE, verify_object_pointers_callback, (void*)allow_missing_pinned);
+	sgen_los_iterate_objects (verify_object_pointers_callback, (void*)allow_missing_pinned);
 
 	g_assert (!broken_heap);
 }
