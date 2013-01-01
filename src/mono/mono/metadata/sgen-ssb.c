@@ -747,14 +747,6 @@ sgen_ssb_record_pointer (gpointer ptr)
 	if (!global_remset_location_was_not_added (ptr))
 		goto done;
 
-	if (G_UNLIKELY (do_pin_stats))
-		sgen_pin_stats_register_global_remset (obj);
-
-	SGEN_LOG (8, "Adding global remset for %p", ptr);
-	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)SGEN_LOAD_VTABLE (obj));
-
-	HEAVY_STAT (++stat_global_remsets_added);
-
 	/* 
 	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
 	 * To avoid uncontrolled growth of the global remset, only add each pointer once.

@@ -1197,6 +1197,14 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 	remset.record_pointer (ptr);
 
 #ifdef ENABLE_DTRACE
+	if (G_UNLIKELY (do_pin_stats))
+		sgen_pin_stats_register_global_remset (obj);
+
+	SGEN_LOG (8, "Adding global remset for %p", ptr);
+	binary_protocol_global_remset (ptr, obj, (gpointer)SGEN_LOAD_VTABLE (obj));
+
+	HEAVY_STAT (++stat_global_remsets_added);
+
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
