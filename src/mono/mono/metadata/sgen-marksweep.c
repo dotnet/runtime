@@ -1077,9 +1077,8 @@ pin_major_object (char *obj, SgenGrayQueue *queue)
 
 #ifdef SGEN_PARALLEL_MARK
 static void
-major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
+major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 {
-	void *obj = *ptr;
 	mword objsize;
 	MSBlockInfo *block;
 	MonoVTable *vt;
@@ -1233,10 +1232,8 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 #else
 #ifdef SGEN_CONCURRENT_MARK
 static void
-major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
+major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 {
-	void *obj = *ptr;
-
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
 
 	if (!sgen_ptr_in_nursery (obj)) {
@@ -1268,9 +1265,8 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 }
 #else
 static void
-major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
+major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 {
-	void *obj = *ptr;
 	MSBlockInfo *block;
 
 	HEAVY_STAT (++stat_copy_object_called_major);
@@ -1401,6 +1397,12 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 }
 #endif
 #endif
+
+static void
+major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object (ptr, *ptr, queue);
+}
 
 #ifdef SGEN_CONCURRENT_MARK
 static long long
@@ -2349,7 +2351,7 @@ sgen_marksweep_init
 	collector->is_valid_object = major_is_valid_object;
 	collector->describe_pointer = major_describe_pointer;
 
-	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
+	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops.scan_object = major_scan_object;
 #ifdef SGEN_CONCURRENT_MARK
 	collector->major_ops.scan_vtype = major_scan_vtype;

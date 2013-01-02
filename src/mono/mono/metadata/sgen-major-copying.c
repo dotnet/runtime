@@ -279,10 +279,10 @@ pin_major_object (char *obj, SgenGrayQueue *queue)
 #include "sgen-major-copy-object.h"
 
 static void
-major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
+major_copy_or_mark_object (void **obj_slot, void *obj_void, SgenGrayQueue *queue)
 {
 	char *forwarded;
-	char *obj = *obj_slot;
+	char *obj = obj_void;
 	mword objsize;
 
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
@@ -385,6 +385,12 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	HEAVY_STAT (++stat_objects_copied_major);
 
 	*obj_slot = copy_object_no_checks (obj, queue);
+}
+
+static void
+major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object (ptr, *ptr, queue);
 }
 
 #include "sgen-major-scan-object.h"
@@ -692,7 +698,7 @@ sgen_copying_init (SgenMajorCollector *collector)
 	collector->handle_gc_param = NULL;
 	collector->print_gc_param_usage = NULL;
 
-	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object;
+	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops.scan_object = major_scan_object;
 }
 
