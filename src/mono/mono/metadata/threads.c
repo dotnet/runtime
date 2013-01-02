@@ -764,7 +764,8 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 		ResumeThread (thread_handle);
 
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
-	g_assert (((char*)&internal->unused2 - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
+	if (mono_check_corlib_version () == NULL)
+		g_assert (((char*)&internal->unused2 - (char*)internal) == mono_defaults.internal_thread_class->fields [mono_defaults.internal_thread_class->field.count - 1].offset);
 
 	return internal;
 }
