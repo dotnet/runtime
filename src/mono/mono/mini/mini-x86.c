@@ -3640,7 +3640,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			br = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
 	
 			/* add correction constant mn */
-			x86_fld80_mem (code, mn);
+			if (cfg->compile_aot) {
+				x86_push_imm (code, (((guint32)mn [9]) << 24) | ((guint32)mn [8] << 16) | ((guint32)mn [7] << 8) | ((guint32)mn [6]));
+				x86_push_imm (code, (((guint32)mn [5]) << 24) | ((guint32)mn [4] << 16) | ((guint32)mn [3] << 8) | ((guint32)mn [2]));
+				x86_push_imm (code, (((guint32)mn [1]) << 24) | ((guint32)mn [0] << 16));
+				x86_fld80_membase (code, X86_ESP, 2);
+				x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+			} else {
+				x86_fld80_mem (code, mn);
+			}
 			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 
 			x86_patch (br, code);

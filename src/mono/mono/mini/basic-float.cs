@@ -207,6 +207,10 @@ class Tests {
 		ulong b = (ulong)d;
 		if (b != 1000)
 			return 0;
+		a = 0xffffffffffffffff;
+		float f = (float)a;
+		if (!(f > 0f))
+			return 1;
 		return 4;
 	}
 
