@@ -108,7 +108,7 @@ fi
 #
 has_ext_mod=false
 for PARAM; do
-    if test $PARAM = "--enable-extension-module" ; then
+    if test "$PARAM" = "--enable-extension-module" ; then
 		has_ext_mod=true
 	fi
 done
