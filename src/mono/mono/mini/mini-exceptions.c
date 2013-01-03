@@ -542,6 +542,47 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 	return method;
 }
 
+/**
+ * mono_exception_walk_native_trace:
+ * @ex: The exception object whose frames should be walked
+ * @func: callback to call for each stack frame
+ * @user_data: data passed to the callback
+ *
+ * This function walks the stacktrace of an exception. For
+ * each frame the callback function is called with the relevant info.
+ * The walk ends when no more stack frames are found or when the callback
+ * returns a TRUE value.
+ */
+ 
+gboolean
+mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray *ta = ex->trace_ips;
+	int len, i;
+
+	if (ta == NULL)
+		return FALSE;
+
+	len = mono_array_length (ta) >> 1;
+	for (i = 0; i < len; i++) {
+		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
+		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
+		MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
+
+		if (ji == NULL) {
+			if (func (NULL, ip, 0, FALSE, user_data))
+				return TRUE;
+		} else {
+			MonoMethod *method = get_method_from_stack_frame (ji, generic_info);
+			if (func (method, ji->code_start, (char *) ip - (char *) ji->code_start, TRUE, user_data))
+				return TRUE;
+		}
+	}
+	
+	return len > 0;
+}
+
 MonoString *
 ves_icall_System_Exception_get_trace (MonoException *ex)
 {
