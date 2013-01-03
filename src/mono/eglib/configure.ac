@@ -100,6 +100,9 @@ i*86-*-darwin*)
     ;;
 esac
 
+target_osx=no
+target_ios=no
+
 if test "x$platform_darwin" = "xyes"; then
 	AC_TRY_COMPILE([#include "TargetConditionals.h"],[
 	#if TARGET_IPHONE_SIMULATOR == 1 || TARGET_OS_IPHONE == 1
@@ -108,8 +111,10 @@ if test "x$platform_darwin" = "xyes"; then
 	return 0;
 	], [
 		AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
+		target_osx=yes
 	], [
 		AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
+		target_ios=yes
 	])
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
 fi
@@ -129,7 +134,15 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
-AC_CHECK_FUNCS(strndup strlcpy stpcpy getpwuid_r strtok_r rewinddir vasprintf)
+AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
+
+#
+# iOS detection of strndup and getpwuid_r is faulty for some reason so let's simply avoid it
+#
+if test x$target_ios = xno; then
+AC_CHECK_FUNCS(strndup getpwuid_r)
+fi
+
 AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
 AM_ICONV()
 AC_SEARCH_LIBS(sqrtf, m)
