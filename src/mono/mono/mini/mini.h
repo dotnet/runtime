@@ -135,6 +135,8 @@
 /* Constants used to encode different types of methods in AOT */
 enum {
 	MONO_AOT_METHODREF_MIN = 240,
+	/* Image index bigger than METHODREF_MIN */
+	MONO_AOT_METHODREF_LARGE_IMAGE_INDEX = 249,
 	/* Runtime provided methods on arrays */
 	MONO_AOT_METHODREF_ARRAY = 250,
 	MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE = 251,

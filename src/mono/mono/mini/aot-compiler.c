@@ -2369,8 +2369,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	 * types of method encodings.
 	 */
 
-	g_assert (image_index < MONO_AOT_METHODREF_MIN);
-
 	/* Mark methods which can't use aot trampolines because they need the further 
 	 * processing in mono_magic_trampoline () which requires a MonoMethod*.
 	 */
@@ -2595,7 +2593,14 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		}
 	} else {
 		g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-		encode_value ((image_index << 24) | mono_metadata_token_index (token), p, &p);
+
+		if (image_index >= MONO_AOT_METHODREF_MIN) {
+			encode_value ((MONO_AOT_METHODREF_LARGE_IMAGE_INDEX << 24), p, &p);
+			encode_value (image_index, p, &p);
+			encode_value (mono_metadata_token_index (token), p, &p);
+		} else {
+			encode_value ((image_index << 24) | mono_metadata_token_index (token), p, &p);
+		}
 	}
 	*endbuf = p;
 }

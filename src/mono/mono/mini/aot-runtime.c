@@ -1123,7 +1123,11 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			g_assert_not_reached ();
 		}
 	} else {
-		g_assert (image_index < MONO_AOT_METHODREF_MIN);
+		if (image_index == MONO_AOT_METHODREF_LARGE_IMAGE_INDEX) {
+			image_index = decode_value (p, &p);
+			value = decode_value (p, &p);
+		}
+
 		ref->token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
 		image = load_image (module, image_index, TRUE);
