@@ -176,7 +176,7 @@
 
 
 #define MONO_GC_GLOBAL_REMSET_ADD(ref_addr,obj_addr,size,ns_name,class_name)
-#define MONO_GC_GLOBAL_REMSET_ADD()	(0)
+#define MONO_GC_GLOBAL_REMSET_ADD_ENABLED()	(0)
 
 #endif
 
