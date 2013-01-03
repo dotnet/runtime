@@ -100,6 +100,20 @@ i*86-*-darwin*)
     ;;
 esac
 
+if test "x$platform_darwin" = "xyes"; then
+	AC_TRY_COMPILE([#include "TargetConditionals.h"],[
+	#if TARGET_IPHONE_SIMULATOR == 1 || TARGET_OS_IPHONE == 1
+	#error fail this for ios
+	#endif
+	return 0;
+	], [
+		AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
+	], [
+		AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
+	])
+   AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
+fi
+
 AC_SUBST(ORDER)
 AC_SUBST(CFLAGS)
 AC_SUBST(PATHSEP)
