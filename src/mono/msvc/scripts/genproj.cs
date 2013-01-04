@@ -72,6 +72,13 @@ class SlnGenerator {
 			sln.WriteLine ("EndGlobal");
 		}
 	}
+
+	internal bool ContainsKey(string csprojFilename)
+	{
+		return libraries.ContainsKey(csprojFilename);
+	}
+
+	public int Count { get { return libraries.Count; } }
 }
 
 class MsbuildGenerator {
@@ -309,7 +316,7 @@ class MsbuildGenerator {
 		case "/doc": 
 		{
 			Console.WriteLine ("{0} = not supported", arg);
-			throw new Exception ();
+			return true; // throwing an exception was a showstopper, so far as I can see.
 		}
 		case "/lib":
 		{
@@ -544,11 +551,22 @@ class MsbuildGenerator {
 		else
 			return path.Replace ("/", "\\");
 	}
-	
-	public string Generate (XElement xproject)
+
+	public class VsCsproj
 	{
+		public string projectGuid;
+		public string output;
+		public string outputfile;
+		public string library_output;
+		public double fx_version;
+	}
+
+	public VsCsproj Generate (XElement xproject, List<MsbuildGenerator.VsCsproj> projects)
+	{
+
+		var result = new VsCsproj();
 		string library = xproject.Attribute ("library").Value;
-		string boot, mcs, flags, output_name, built_sources, library_output, response, fx_version;
+		string boot, mcs, flags, output_name, built_sources, library_output, response, fx_version, profile;
 
 		boot  = xproject.Element ("boot").Value;
 		mcs   = xproject.Element ("mcs").Value;
@@ -557,8 +575,20 @@ class MsbuildGenerator {
 		built_sources = xproject.Element ("built_sources").Value;
 		library_output = xproject.Element ("library_output").Value;
 		response = xproject.Element ("response").Value;
-		fx_version = xproject.Element ("fx_version").Value;
-
+		fx_version = xproject.Element("fx_version").Value;
+		//if (library.EndsWith("-build")) fx_version = "2.0"; // otherwise problem if .NET4.5 is installed, seems. (https://github.com/nikhilk/scriptsharp/issues/156)
+		profile = xproject.Element("profile").Value;
+		if (string.IsNullOrEmpty(response))
+		{
+			// Address the issue where entries are missing the fx_version
+			// Should be fixed in the Makefile or elsewhere; this is a workaround
+			//<fx_version>basic</fx_version>
+			//<profile>./../build/deps/mcs.exe.sources.response</profile>
+			//<response></response>
+			response = profile;
+			profile = fx_version;
+			fx_version = response.Contains("basic") ? "2.0" : "4.0";
+		}
 		//
 		// Prebuild code, might be in inputs, check:
 		//  inputs/LIBRARY-PROFILE.pre
@@ -602,7 +632,7 @@ class MsbuildGenerator {
 		}
 		
 		string [] source_files;
-		Console.WriteLine ("Base: {0} res: {1}", base_dir, response);
+		//Console.WriteLine ("Base: {0} res: {1}", base_dir, response);
 		using (var reader = new StreamReader (NativeName (base_dir + "\\" + response))){
 			source_files  = reader.ReadToEnd ().Split ();
 		}
@@ -627,42 +657,45 @@ class MsbuildGenerator {
 
 			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", src));
 		}
-		
-		var mono_paths = mcs.Substring (0, mcs.IndexOf (' ')).Split (new char [] {':'});
-		for (int i = 0; i < mono_paths.Length; i++){
-			int p = mono_paths [i].LastIndexOf ('/');
-			if (p != -1)
-				mono_paths [i] = mono_paths [i].Substring (p + 1);
-		}
-		
-		var encoded_mono_paths = string.Join ("-", mono_paths).Replace ("--", "-");
-		
-		var refs = new StringBuilder ();
-		
-		if (references.Count > 0 || reference_aliases.Count > 0){
-			string last = mono_paths [0].Substring (mono_paths [0].LastIndexOf ('/') + 1);
-			
-			string hint_path = class_dir + "\\lib\\" + last;
 
-			foreach (string r in references){
-				refs.Append ("    <Reference Include=\"" + r + "\">\n");
-				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
-				refs.Append ("      <HintPath>" + r + "</HintPath>\n");
-				refs.Append ("    </Reference>\n");
-			}
+		//if (library == "corlib-build") // otherwise, does not compile on fx_version == 4.0
+		//{
+		//    references.Add("System.dll");
+		//    references.Add("System.Xml.dll");
+		//}
 
-			foreach (string r in reference_aliases){
-				int index = r.IndexOf ('=');
-				string alias = r.Substring (0, index);
-				string assembly = r.Substring (index + 1);
+		//if (library == "System.Core-build") // otherwise, slow compile. May be a transient need.
+		//{
+		//    this.ignore_warning.Add(1685);
+		//    this.ignore_warning.Add(0436);
+		//}
 
-				refs.Append ("    <Reference Include=\"" + assembly + "\">\n");
-				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
-				refs.Append ("      <HintPath>" + r + "</HintPath>\n");
-				refs.Append ("      <Aliases>" + alias + "</Aliases>\n");
-				refs.Append ("    </Reference>\n");
-			}
-		}
+		var refs = new StringBuilder();
+
+		//if (references.Count > 0 || reference_aliases.Count > 0){
+		//    string last = mono_paths [0].Substring (mono_paths [0].LastIndexOf ('/') + 1);
+
+		//    string hint_path = class_dir + "\\lib\\" + last;
+
+		//    foreach (string r in references){
+		//        refs.Append ("    <Reference Include=\"" + r + "\">\n");
+		//        refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
+		//        refs.Append ("      <HintPath>" + r + "</HintPath>\n");
+		//        refs.Append ("    </Reference>\n");
+		//    }
+
+		//    foreach (string r in reference_aliases){
+		//        int index = r.IndexOf ('=');
+		//        string alias = r.Substring (0, index);
+		//        string assembly = r.Substring (index + 1);
+
+		//        refs.Append ("    <Reference Include=\"" + assembly + "\">\n");
+		//        refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
+		//        refs.Append ("      <HintPath>" + r + "</HintPath>\n");
+		//        refs.Append ("      <Aliases>" + alias + "</Aliases>\n");
+		//        refs.Append ("    </Reference>\n");
+		//    }
+		//}
 		
 		bool is_test = response.Contains ("_test_");
 		if (is_test) {
@@ -679,45 +712,122 @@ class MsbuildGenerator {
 			}
 			resources.AppendFormat ("  </ItemGroup>\n");
 		}
-		
-		try {
-			library_output = Path.GetDirectoryName (library_output);
-			if (string.IsNullOrEmpty (library_output))
-				library_output = @".\";
-		} catch {
-			Console.WriteLine ("Error in path: {0} while processing {1}", library_output, library);
+		if (references.Count > 0 || reference_aliases.Count > 0)
+		{
+			// -r:mscorlib.dll -r:System.dll
+			//<ProjectReference Include="..\corlib\corlib-basic.csproj">
+			//  <Project>{155aef28-c81f-405d-9072-9d52780e3e70}</Project>
+			//  <Name>corlib-basic</Name>
+			//</ProjectReference>
+			//<ProjectReference Include="..\System\System-basic.csproj">
+			//  <Project>{2094e859-db2f-481f-9630-f89d31d9ed48}</Project>
+			//  <Name>System-basic</Name>
+			//</ProjectReference>
+
+			foreach (string r in references)
+			{
+				VsCsproj lastMatching = getMatchingCsproj(Path.GetFileName(r), double.Parse(fx_version), projects);
+				if (lastMatching == null)
+				{
+					refs.Append("    <Reference Include=\"" + r + "\">\n");
+					refs.Append("      <SpecificVersion>False</SpecificVersion>\n");
+					refs.Append("      <HintPath>" + r + "</HintPath>\n");
+					refs.Append("    </Reference>\n");
+				}
+				else
+				{
+					refs.Append("    <ProjectReference Include=\"" + lastMatching.outputfile + "\">" + Environment.NewLine);
+					refs.Append("      <Project>" + lastMatching.projectGuid + "</Project>" + Environment.NewLine);
+					refs.Append("      <Name>" + Path.GetFileNameWithoutExtension(lastMatching.outputfile) + "</Name>" + Environment.NewLine);
+					refs.Append("    </ProjectReference>" + Environment.NewLine);
+				}
+			}
+
+			foreach (string r in reference_aliases)
+			{
+				int index = r.IndexOf('=');
+				string alias = r.Substring(0, index);
+				string assembly = r.Substring(index + 1);
+
+				refs.Append("    <Reference Include=\"" + assembly + "\">\n");
+				refs.Append("      <SpecificVersion>False</SpecificVersion>\n");
+				refs.Append("      <HintPath>" + r + "</HintPath>\n");
+				refs.Append("      <Aliases>" + alias + "</Aliases>\n");
+				refs.Append("    </Reference>\n");
+			}
 		}
-		
+
+		string library_output_dir = string.Empty;
+		try
+		{
+			// ../class/lib/build/tmp/System.Xml.dll
+			//   /class/lib/basic/System.Core.dll
+			// <library_output>mcs.exe</library_output>
+			bool has_tmp = library_output.Contains("/tmp/");
+			string p = library_output.Replace("/tmp/", "/").Replace("/", @"\");
+			string profile_dir = Path.GetDirectoryName(p);
+			string d = has_tmp ? Path.Combine(profile_dir, library) : profile_dir;
+			library_output_dir = d;
+			if (string.IsNullOrEmpty(library_output_dir))
+				library_output_dir = @".\";
+			library_output = Path.Combine(library_output_dir, output_name).Replace(@"\", "/");
+		}
+		catch
+		{
+			Console.WriteLine("Error in path: {0} while processing {1}", library_output_dir, library);
+		}
+
+
+		string postbuild = string.Empty;
+		postbuild = string.Format(
+			//"if not \"$(OutDir)\" == \"..\\lib\\{0}\" xcopy $(OutDir)$(TargetName).* ..\\lib\\{0}\\ /Y /R /D",
+			"xcopy $(TargetName).* $(ProjectDir)..\\lib\\{0}\\ /Y /R /D",
+			profile);
+
+		bool basic_or_build = (library.Contains("-basic") || library.Contains("-build"));
+
 		//
 		// Replace the template values
 		//
-		string output = template.
-			Replace ("@DEFINES@", defines.ToString ()).
-			Replace ("@DISABLEDWARNINGS@", string.Join (",", (from i in ignore_warning select i.ToString ()).ToArray ())).
-			Replace ("@NOSTDLIB@", StdLib ? "" : "<NoStdLib>true</NoStdLib>").
-			Replace ("@ALLOWUNSAFE@", Unsafe ? "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>" : "").
-			Replace ("@FX_VERSION", fx_version).
-			Replace ("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension (output_name)).
-			Replace ("@OUTPUTDIR@", library_output).
-			Replace ("@DEFINECONSTANTS@", defines.ToString ()).
-			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
+		result.projectGuid = "{" + Guid.NewGuid().ToString() + "}";
+		result.library_output = library_output;
+		result.fx_version = double.Parse(fx_version);
+		result.output = template.
+			Replace("@PROJECTGUID@", result.projectGuid).
+			Replace("@DEFINES@", defines.ToString()).
+			Replace("@DISABLEDWARNINGS@", string.Join(",", (from i in ignore_warning select i.ToString()).ToArray())).
+			//Replace("@NOSTDLIB@", (basic_or_build || (!StdLib)) ? "<NoStdLib>true</NoStdLib>" : string.Empty).
+			Replace("@NOSTDLIB@", "<NoStdLib>" + (!StdLib).ToString() + "</NoStdLib>").
+			Replace("@NOCONFIG@", "<NoConfig>" + (!load_default_config).ToString() + "</NoConfig>").
+			Replace("@ALLOWUNSAFE@", Unsafe ? "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>" : "").
+			Replace("@FX_VERSION", fx_version).
+			Replace("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension(output_name)).
+			Replace("@OUTPUTDIR@", library_output_dir).
+			Replace("@DEFINECONSTANTS@", defines.ToString()).
+			Replace("@DEBUG@", want_debugging_support ? "true" : "false").
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
 			Replace ("@REFERENCES@", refs.ToString ()).
 			Replace ("@PREBUILD@", prebuild).
+			Replace ("@POSTBUILD@", postbuild).
 			Replace ("@ADDITIONALLIBPATHS@", String.Format ("<AdditionalLibPaths>{0}</AdditionalLibPaths>", string.Join (",", libs.ToArray ()))).
 			Replace ("@RESOURCES@", resources.ToString ()).
 			Replace ("@OPTIMIZE@", Optimize ? "true" : "false").
 			Replace ("@SOURCES@", sources.ToString ());
 
 
-		string ofile = "..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
-		ofile = ofile.Replace ('\\', '/');
+		result.outputfile = ("..\\..\\mcs\\" + dir + "\\" + library + ".csproj").Replace('\\', '/');
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
-		using (var o = new StreamWriter (ofile)){
-			o.WriteLine (output);
+		using (var o = new StreamWriter(result.outputfile))
+		{
+			o.WriteLine(result.output);
 		}
 
-		return ofile;
+		return result;
+	}
+
+	private VsCsproj getMatchingCsproj(string dllReferenceName, double fx_version, List<VsCsproj> projects)
+	{
+		return projects.LastOrDefault((x => x.library_output.EndsWith(dllReferenceName) && (x.fx_version <= fx_version)));
 	}
 	
 }
@@ -732,33 +842,118 @@ public class Driver {
 		}
 
 		var sln_gen = new SlnGenerator ();
+		var small_full_sln_gen = new SlnGenerator ();
+		var basic_sln_gen = new SlnGenerator ();
+		var build_sln_gen = new SlnGenerator ();
+		var two_sln_gen = new SlnGenerator ();
+		var four_sln_gen = new SlnGenerator ();
+		var four_five_sln_gen = new SlnGenerator ();
+		var projects = new List<MsbuildGenerator.VsCsproj> ();
+
 		XDocument doc = XDocument.Load ("order.xml");
-		foreach (XElement project in doc.Root.Elements ()){
+		var duplicates = new List<string> ();
+		foreach (XElement project in doc.Root.Elements ())
+		{
 			string dir = project.Attribute ("dir").Value;
 			string library = project.Attribute ("library").Value;
 
 			//
 			// Do only class libraries for now
 			//
-			if (!(dir.StartsWith ("class") || dir.StartsWith ("mcs")))
+			if (!(dir.StartsWith ("class") || dir.StartsWith ("mcs") || dir.StartsWith ("basic")))
 				continue;
 
 			//
 			// Do not do 2.1, it is not working yet
 			// Do not do basic, as there is no point (requires a system mcs to be installed).
 			//
-			if (library.Contains ("moonlight") || library.Contains ("-basic") || library.EndsWith ("bootstrap"))
+			//if (library.Contains ("moonlight") || library.Contains ("-basic") || library.EndsWith ("bootstrap"))
+			if (library.Contains ("moonlight") || library.EndsWith ("bootstrap"))
 				continue;
-			
+
 			var gen = new MsbuildGenerator (dir);
-			try {
-				//sln_gen.Add (gen.Generate (project));
-				gen.Generate (project);
-			} catch (Exception e) {
+			try
+			{
+				var csproj = gen.Generate (project, projects);
+				projects.Add (csproj);
+				var csprojFilename = csproj.outputfile;
+				if (!sln_gen.ContainsKey (csprojFilename))
+				{
+					sln_gen.Add (csprojFilename);
+					if (library.Contains ("-basic"))
+					{
+						basic_sln_gen.Add (csprojFilename);
+						build_sln_gen.Add (csprojFilename);
+					}
+					else if (library.Contains ("-build"))
+					{
+						build_sln_gen.Add (csprojFilename);
+					}
+					else if (library.Contains ("_4_0"))
+						four_sln_gen.Add (csprojFilename);
+					else if (library.Contains ("_4_5"))
+						four_five_sln_gen.Add (csprojFilename);
+					else if (library.Contains ("_2_0"))
+						two_sln_gen.Add (csprojFilename);
+
+					if (isCommonLibrary (library))
+					{
+						small_full_sln_gen.Add (csprojFilename);
+					}
+					//else
+					//    Console.WriteLine("not sure what to do with {0}"
+				}
+				else
+				{
+					duplicates.Add (csprojFilename);
+				}
+			}
+			catch (Exception e)
+			{
 				Console.WriteLine ("Error in {0}\n{1}", dir, e);
 			}
 		}
-		sln_gen.Write ("mcs_full.sln");
-    }
 
+		StringBuilder sb = new StringBuilder ();
+		sb.AppendLine ("WARNING: Skipped the following duplicate project references:");
+		foreach (var item in duplicates)
+		{
+			sb.AppendLine (item);
+		}
+		Console.Error.WriteLine (sb.ToString ());
+
+		Console.WriteLine (String.Format ("Writing a solution with {0} projects", sln_gen.Count));
+		sln_gen.Write ("mcs_full.sln");
+		basic_sln_gen.Write ("mcs_basic.sln");
+		build_sln_gen.Write ("mcs_build.sln");
+		four_sln_gen.Write ("mcs_v4.sln");
+		four_five_sln_gen.Write ("mcs_v4_5.sln");
+		two_sln_gen.Write ("mcs_v2.sln");
+		small_full_sln_gen.Write ("small_full.sln");
+
+	}
+
+	private static bool isCommonLibrary (string library)
+	{
+		if (library.Contains ("-basic"))
+			return true;
+		if (library.Contains ("-build"))
+			return true;
+		if (library.StartsWith ("corlib"))
+			return true;
+		if (library.StartsWith ("System-"))
+			return true;
+		if (library.StartsWith ("System.Xml"))
+			return true;
+		if (library.StartsWith ("System.Secu"))
+			return true;
+		if (library.StartsWith ("System.Configuration"))
+			return true;
+		if (library.StartsWith ("System.Core"))
+			return true;
+		if (library.StartsWith ("Mono."))
+			return true;
+
+		return false;
+	}
 }
