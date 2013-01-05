@@ -9919,8 +9919,13 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		g_assert (*sig == 0x06);
 		field->type = mono_metadata_parse_type_full (image, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (!field->type) {
+			MonoLoaderError *lerror = mono_loader_get_last_error ();
+
 			mono_error_set_type_load_class (error, class, "Could not load field %s type", field->name);
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			if (lerror)
+				set_failure_from_loader_error (class, lerror);
+			else
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_loader_clear_error ();
 		}
 	}
