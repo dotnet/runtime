@@ -1000,4 +1000,17 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_arrays_ireadonly () {
+		int[] arr = new int [10];
+		for (int i = 0; i < 10; ++i)
+			arr [i] = i;
+		IReadOnlyList<int> a = (IReadOnlyList<int>)(object)arr;
+		if (a.Count != 10)
+			return 1;
+		if (a [0] != 0)
+			return 2;
+		if (a [1] != 1)
+			return 3;
+		return 0;
+	}
 }

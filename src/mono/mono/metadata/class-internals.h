@@ -1082,6 +1082,7 @@ typedef struct {
 	MonoClass *attribute_class;
 	MonoClass *customattribute_data_class;
 	MonoClass *critical_finalizer_object;
+	MonoClass *generic_ireadonlylist_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;
