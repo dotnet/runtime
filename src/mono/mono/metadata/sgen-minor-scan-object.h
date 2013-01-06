@@ -46,7 +46,7 @@ extern long long stat_scan_object_called_nursery;
 			__copy = *(ptr);	\
 			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old);	\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr));	\
+				sgen_add_to_global_remset ((ptr), __copy); \
 		}	\
 	} while (0)
 
