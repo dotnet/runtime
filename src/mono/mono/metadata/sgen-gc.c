@@ -550,7 +550,7 @@ void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 static void init_stats (void);
 
 static int mark_ephemerons_in_range (ScanCopyContext ctx);
-static void clear_unreachable_ephemerons (ScanCopyContext ctx);
+static void clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenObjectOperations current_object_ops;
@@ -1142,57 +1142,23 @@ mono_gc_clear_domain (MonoDomain * domain)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-sgen_add_to_global_remset (gpointer ptr, gpointer obj)
+sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cementing)
 {
+	g_assert (sgen_ptr_in_nursery (obj));
+
 	if (!major_collector.is_concurrent) {
+		g_assert (!concurrent_cementing);
 		g_assert (object_is_pinned (obj));
 		g_assert (current_collection_generation != -1);
+	} else {
+		if (current_collection_generation == -1)
+			g_assert (concurrent_cementing);
+		if (concurrent_cementing)
+			g_assert (concurrent_collection_in_progress);
 	}
 
-	/*
-	 * During concurrent collections we must always record global
-	 * remsets because cementing is reset at the end of the
-	 * concurrent collection, so we cannot miss a major->minor
-	 * reference.
-	 *
-	 * The reason we cannot reset cementing at the start of a
-	 * concurrent collection is that the nursery collections
-	 * running concurrently must keep pinning the cemented
-	 * objects, exactly because we don't have the global remsets
-	 * that point to them anymore.
-	 *
-	 * This results in nursery collections still being slowed down
-	 * by oft-referenced pinned objects during concurrent
-	 * collections.  One solution would be to keep separate,
-	 * dedicated global remset card tables during concurrent
-	 * collections, and when finishing the concurrent collection
-	 * to merge them into the main card table.
-	 *
-	 * To simplify and save memory, it should be possible to use
-	 * the mod union card table for that purpose: During
-	 * concurrent collections, always record global remsets to the
-	 * mod union card table.  When finishing the concurrent
-	 * collection, reset cementing, and when scanning the mod
-	 * union table, record global remsets again, like always.  The
-	 * downside to this is that we still have a long pause during
-	 * which all those objects must be scanned to process the
-	 * references.
-	 *
-	 * An alternative might be to reset cementing at the start of
-	 * concurrent collections in such a way that nursery
-	 * collections happening during the major collection still pin
-	 * the formerly cemented objects.  We'd just need a shadow
-	 * cementing table for that purpose.  The nursery collections
-	 * still work with the old cementing table (can they cement
-	 * new objects?), while the major collector builds up a new
-	 * cementing table, adding global remsets whenever needed like
-	 * usual.  When the major collector finishes, the old
-	 * cementing table is replaced by the new one.
-	 */
-	if (!concurrent_collection_in_progress &&
-			sgen_cement_lookup_or_register (obj, current_collection_generation != -1)) {
+	if (sgen_cement_lookup_or_register (obj, concurrent_cementing))
 		return;
-	}
 
 	remset.record_pointer (ptr);
 
@@ -2023,7 +1989,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (ctx);
+	clear_unreachable_ephemerons (generation == GENERATION_OLD && major_collector.is_concurrent, ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -2868,6 +2834,9 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	if (whole_heap_check_before_collection)
 		sgen_check_whole_heap (finish_up_concurrent_mark);
 
+	if (!major_collector.is_concurrent)
+		sgen_cement_reset ();
+
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
@@ -2898,13 +2867,6 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	sgen_optimize_pin_queue (0);
-
-	/*
-	 * Cementing is reset at the end of concurrent mark.  See
-	 * sgen_add_to_global_remset() for the explanation.
-	 */
-	if (finish_up_concurrent_mark)
-		sgen_cement_reset ();
 
 	/*
 	 * The concurrent collector doesn't move objects, neither on
@@ -3091,8 +3053,11 @@ major_start_collection (int *old_next_pin_slot)
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	if (major_collector.is_concurrent)
+	if (major_collector.is_concurrent) {
 		concurrent_collection_in_progress = TRUE;
+
+		sgen_cement_concurrent_start ();
+	}
 
 	current_object_ops = major_collector.major_ops;
 
@@ -3253,6 +3218,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		sgen_pin_stats_reset ();
 	}
 
+	if (major_collector.is_concurrent)
+		sgen_cement_concurrent_finish ();
 	sgen_cement_clear_below_threshold ();
 
 	TV_GETTIME (atv);
@@ -3719,7 +3686,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (ScanCopyContext ctx)
+clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;

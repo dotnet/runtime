@@ -190,8 +190,10 @@ struct _CementHashEntry {
 };
 
 static CementHashEntry cement_hash [CEMENT_HASH_SIZE];
+static CementHashEntry cement_hash_concurrent [CEMENT_HASH_SIZE];
 
 static gboolean cement_enabled = TRUE;
+static gboolean cement_concurrent = FALSE;
 
 void
 sgen_cement_init (gboolean enabled)
@@ -202,41 +204,86 @@ sgen_cement_init (gboolean enabled)
 void
 sgen_cement_reset (void)
 {
+	g_assert (!cement_concurrent);
+
 	memset (cement_hash, 0, sizeof (cement_hash));
 	binary_protocol_cement_reset ();
 }
 
+/*
+ * The reason we cannot simply reset cementing at the start of a
+ * concurrent collection is that the nursery collections running
+ * concurrently must keep pinning the cemented objects, because we
+ * don't have the global remsets that point to them anymore - if the
+ * nursery collector moved the cemented objects, we'd have invalid
+ * pointers in the major heap.
+ *
+ * What we do instead is to reset cementing at the start of concurrent
+ * collections in such a way that nursery collections happening during
+ * the major collection still pin the formerly cemented objects.  We
+ * have a shadow cementing table for that purpose.  The nursery
+ * collections still work with the old cementing table, while the
+ * major collector builds up a new cementing table, adding global
+ * remsets whenever needed like usual.  When the major collector
+ * finishes, the old cementing table is replaced by the new one.
+ */
+
+void
+sgen_cement_concurrent_start (void)
+{
+	g_assert (!cement_concurrent);
+	cement_concurrent = TRUE;
+
+	memset (cement_hash_concurrent, 0, sizeof (cement_hash));
+}
+
+void
+sgen_cement_concurrent_finish (void)
+{
+	g_assert (cement_concurrent);
+	cement_concurrent = FALSE;
+
+	memcpy (cement_hash, cement_hash_concurrent, sizeof (cement_hash));
+}
+
 gboolean
-sgen_cement_lookup_or_register (char *obj, gboolean do_register)
+sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 {
 	int i;
+	CementHashEntry *hash;
 
 	if (!cement_enabled)
 		return FALSE;
+
+	if (concurrent_cementing)
+		g_assert (cement_concurrent);
+
+	if (concurrent_cementing)
+		hash = cement_hash_concurrent;
+	else
+		hash = cement_hash;
 
 	i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
 
 	g_assert (sgen_ptr_in_nursery (obj));
 
-	if (do_register && !cement_hash [i].obj) {
-		g_assert (!cement_hash [i].count);
-		cement_hash [i].obj = obj;
-	} else if (cement_hash [i].obj != obj) {
+	if (!hash [i].obj) {
+		g_assert (!hash [i].count);
+		hash [i].obj = obj;
+	} else if (hash [i].obj != obj) {
 		return FALSE;
 	}
 
-	if (cement_hash [i].count >= CEMENT_THRESHOLD)
+	if (hash [i].count >= CEMENT_THRESHOLD)
 		return TRUE;
 
-	if (do_register) {
-		++cement_hash [i].count;
+	++hash [i].count;
 #ifdef SGEN_BINARY_PROTOCOL
-		if (cement_hash [i].count == CEMENT_THRESHOLD) {
-			binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
-					sgen_safe_object_get_size ((MonoObject*)obj));
-		}
-#endif
+	if (hash [i].count == CEMENT_THRESHOLD) {
+		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
+				sgen_safe_object_get_size ((MonoObject*)obj));
 	}
+#endif
 
 	return FALSE;
 }
