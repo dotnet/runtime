@@ -1421,7 +1421,7 @@ mono_class_setup_fields (MonoClass *class)
 	MonoGenericContainer *container = NULL;
 	MonoClass *gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
 
-	if (class->size_inited)
+	if (class->setup_fields_called)
 		return;
 
 	if (class->generic_class && class->generic_class->container_class->image->dynamic && !class->generic_class->container_class->wastypebuilder) {
@@ -1494,9 +1494,9 @@ mono_class_setup_fields (MonoClass *class)
 		if (explicit_size && real_size) {
 			class->instance_size = MAX (real_size, class->instance_size);
 		}
-		class->size_inited = 1;
 		class->blittable = blittable;
 		mono_memory_barrier ();
+		class->size_inited = 1;
 		class->fields_inited = 1;
 		return;
 	}
@@ -1505,7 +1505,7 @@ mono_class_setup_fields (MonoClass *class)
 		blittable = FALSE;
 
 	/* Prevent infinite loops if the class references itself */
-	class->size_inited = 1;
+	class->setup_fields_called = 1;
 
 	if (class->generic_container) {
 		container = class->generic_container;
@@ -1911,6 +1911,7 @@ mono_class_layout_fields (MonoClass *class)
 			class->min_align = MAX (class->min_align, class->instance_size - sizeof (MonoObject));
 	}
 
+	mono_memory_barrier ();
 	class->size_inited = 1;
 
 	/*
@@ -5797,6 +5798,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 			 */
 			klass->instance_size = gklass->instance_size;
 			klass->sizes.class_size = gklass->sizes.class_size;
+			mono_memory_barrier ();
 			klass->size_inited = 1;
 		}
 	}
@@ -5889,6 +5891,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	/*Init these fields to sane values*/
 	klass->min_align = 1;
 	klass->instance_size = sizeof (gpointer);
+	mono_memory_barrier ();
 	klass->size_inited = 1;
 
 	mono_class_setup_supertypes (klass);
