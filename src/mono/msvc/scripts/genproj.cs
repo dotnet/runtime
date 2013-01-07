@@ -551,9 +551,11 @@ class MsbuildGenerator {
 	public class VsCsproj {
 		public string projectGuid;
 		public string output;
-		public string outputfile;
+		public string csprojFileName;
 		public string library_output;
 		public double fx_version;
+		public List<VsCsproj> projReferences = new List<VsCsproj> ();
+		public string library;
 	}
 
 	public VsCsproj Generate (XElement xproject, List<MsbuildGenerator.VsCsproj> projects)
@@ -581,7 +583,21 @@ class MsbuildGenerator {
 			//<response></response>
 			response = profile;
 			profile = fx_version;
-			fx_version = response.Contains ("basic") ? "2.0" : "4.0";
+			if (response.Contains ("build") || response.Contains ("basic") || response.Contains ("_2_0")) {
+				fx_version = "2.0";
+				if (response.Contains ("_2_0")) profile = "net_2_0";
+			} if (response.Contains ("build") || response.Contains ("basic") || response.Contains ("_2_0")) {
+				fx_version = "2.0";
+			} else if (response.Contains ("_3_5")) {
+				fx_version = "3.5";
+				profile = "net_3_5";
+			} else if (response.Contains ("_4_0")) {
+				fx_version = "4.0";
+				profile = "net_4_0";
+			} else if (response.Contains ("_4_5")) {
+				fx_version = "4.5";
+				profile = "net_4_5";
+			}
 		}
 		//
 		// Prebuild code, might be in inputs, check:
@@ -664,11 +680,18 @@ class MsbuildGenerator {
 		//    this.ignore_warning.Add(0436);
 		//}
 
+		result.library = library;
+		result.csprojFileName = ("..\\..\\mcs\\" + dir + "\\" + library + ".csproj").Replace ('/', '\\');
+		var csprojDir = Path.GetDirectoryName(result.csprojFileName);
+
 		var refs = new StringBuilder ();
 
 		bool is_test = response.Contains ("_test_");
 		if (is_test) {
-			refs.Append ("    <Reference Include=\"nunit.framework\" />\n");
+			// F:\src\mono\mcs\class\lib\net_2_0\nunit.framework.dll
+			// F:\src\mono\mcs\class\SomeProject\SomeProject_test_-net_2_0.csproj
+			var nunitLibPath = Path.Combine (@"..\lib", profile, "nunit.framework.dll");
+			refs.Append (string.Format ("    <Reference Include=\"{0}\" />\n", nunitLibPath));
 		}
 
 		var resources = new StringBuilder ();
@@ -691,19 +714,24 @@ class MsbuildGenerator {
 			//  <Project>{2094e859-db2f-481f-9630-f89d31d9ed48}</Project>
 			//  <Name>System-basic</Name>
 			//</ProjectReference>
-
-			foreach (string r in references) {
+			var refdistinct = references.Distinct();
+			foreach (string r in refdistinct) {
 				VsCsproj lastMatching = getMatchingCsproj (Path.GetFileName (r), double.Parse (fx_version), projects);
 				if (lastMatching == null) {
 					refs.Append ("    <Reference Include=\"" + r + "\">\n");
 					refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
 					refs.Append ("      <HintPath>" + r + "</HintPath>\n");
+					refs.Append ("      <Private>False</Private>");
 					refs.Append ("    </Reference>\n");
 				} else {
-					refs.Append ("    <ProjectReference Include=\"" + lastMatching.outputfile + "\">" + Environment.NewLine);
+					//refs.Append ("    <ProjectReference Include=\"" + getRelativePath (result.csprojFileName, lastMatching.csprojFileName) + "\">" + Environment.NewLine);
+					refs.Append ("    <ProjectReference Include=\"" + lastMatching.csprojFileName + "\">" + Environment.NewLine);
 					refs.Append ("      <Project>" + lastMatching.projectGuid + "</Project>" + Environment.NewLine);
-					refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.outputfile) + "</Name>" + Environment.NewLine);
+					refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.csprojFileName) + "</Name>" + Environment.NewLine);
+					refs.Append ("      <Private>False</Private>");
 					refs.Append ("    </ProjectReference>" + Environment.NewLine);
+					if (result.projReferences.Contains (lastMatching) == false)
+						result.projReferences.Add (lastMatching);
 				}
 			}
 
@@ -739,10 +767,10 @@ class MsbuildGenerator {
 
 
 		string postbuild = string.Empty;
-		postbuild = string.Format (
-			//"if not \"$(OutDir)\" == \"..\\lib\\{0}\" xcopy $(OutDir)$(TargetName).* ..\\lib\\{0}\\ /Y /R /D",
-			"xcopy $(TargetName).* $(ProjectDir)..\\lib\\{0}\\ /Y /R /D",
-			profile);
+		//postbuild = string.Format (
+		//	//"if not \"$(OutDir)\" == \"..\\lib\\{0}\" xcopy $(OutDir)$(TargetName).* ..\\lib\\{0}\\ /Y /R /D",
+		//	"xcopy $(TargetName).* $(ProjectDir)..\\lib\\{0}\\ /Y /R /D",
+		//	profile);
 
 		bool basic_or_build = (library.Contains ("-basic") || library.Contains ("-build"));
 
@@ -774,14 +802,17 @@ class MsbuildGenerator {
 			Replace ("@OPTIMIZE@", Optimize ? "true" : "false").
 			Replace ("@SOURCES@", sources.ToString ());
 
-
-		result.outputfile = ("..\\..\\mcs\\" + dir + "\\" + library + ".csproj").Replace ('\\', '/');
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
-		using (var o = new StreamWriter (result.outputfile)) {
+		using (var o = new StreamWriter (result.csprojFileName)) {
 			o.WriteLine (result.output);
 		}
 
 		return result;
+	}
+
+	private string getRelativePath (string p1, string p2)
+	{
+		throw new NotImplementedException ();
 	}
 
 	private VsCsproj getMatchingCsproj (string dllReferenceName, double fx_version, List<VsCsproj> projects)
@@ -796,7 +827,7 @@ public class Driver {
 	static void Main (string [] args)
 	{
 		if (!File.Exists ("genproj.cs")) {
-			Console.WriteLine ("This command should be ran from mono/msvc/scripts");
+			Console.WriteLine ("This command must be executed from mono/msvc/scripts");
 			Environment.Exit (1);
 		}
 
@@ -806,6 +837,7 @@ public class Driver {
 		var build_sln_gen = new SlnGenerator ();
 		var two_sln_gen = new SlnGenerator ();
 		var four_sln_gen = new SlnGenerator ();
+		var three_five_sln_gen = new SlnGenerator ();
 		var four_five_sln_gen = new SlnGenerator ();
 		var projects = new List<MsbuildGenerator.VsCsproj> ();
 
@@ -833,60 +865,114 @@ public class Driver {
 			try {
 				var csproj = gen.Generate (project, projects);
 				projects.Add (csproj);
-				var csprojFilename = csproj.outputfile;
+				var csprojFilename = csproj.csprojFileName;
 				if (!sln_gen.ContainsKey (csprojFilename)) {
 					sln_gen.Add (csprojFilename);
-					if (library.Contains ("-basic")) {
-						basic_sln_gen.Add (csprojFilename);
-						build_sln_gen.Add (csprojFilename);
-					} else if (library.Contains ("-build")) {
-						build_sln_gen.Add (csprojFilename);
-					} else if (library.Contains ("_4_0"))
-						four_sln_gen.Add (csprojFilename);
-					else if (library.Contains ("_4_5"))
-						four_five_sln_gen.Add (csprojFilename);
-					else if (library.Contains ("_2_0"))
-						two_sln_gen.Add (csprojFilename);
-
-					if (isCommonLibrary (library)) {
-						small_full_sln_gen.Add (csprojFilename);
-					}
-					//else
-					//    Console.WriteLine("not sure what to do with {0}"
 				} else {
 					duplicates.Add (csprojFilename);
 				}
+
 			} catch (Exception e) {
 				Console.WriteLine ("Error in {0}\n{1}", dir, e);
 			}
 		}
 
+
+		//{
+		//try {
+		fillSolution (two_sln_gen, "_2_0", projects, isCommonLibrary);
+		fillSolution (four_five_sln_gen, "_4_5", projects);
+		fillSolution (four_sln_gen, "_4_0", projects);
+		fillSolution (three_five_sln_gen, "_3_5", projects);
+		//		var csproj = gen.Generate (project, projects);
+		//		projects.Add (csproj);
+		//		if (!sln_gen.ContainsKey (csprojFilename)) {
+		//			sln_gen.Add (csprojFilename);
+		//			if (library.Contains ("-basic")) {
+		//				basic_sln_gen.Add (csprojFilename);
+		//				build_sln_gen.Add (csprojFilename);
+		//				two_sln_gen.Add (csprojFilename);
+		//			} else if (library.Contains ("-build"))
+		//				build_sln_gen.Add (csprojFilename);
+		//			else if (library.Contains ("_2_0"))
+		//				two_sln_gen.Add (csprojFilename);
+		//			else if (library.Contains ("_3_5"))
+		//				three_five_sln_gen.Add (csprojFilename);
+		//			else if (library.Contains ("_4_0"))
+		//				four_sln_gen.Add (csprojFilename);
+		//			else if (library.Contains ("_4_5"))
+		//				four_five_sln_gen.Add (csprojFilename);
+		//			else
+		//				Console.WriteLine ("Don't know in which solution to put {0}; undetected profile", csprojFilename);
+		//			if (isCommonLibrary (library)) {
+		//				small_full_sln_gen.Add (csprojFilename);
+		//			}
+		//	} catch (Exception e) {
+		//		Console.WriteLine ("Error in {0}\n{1}", dir, e);
+		//	}
+
 		StringBuilder sb = new StringBuilder ();
-		sb.AppendLine ("WARNING: Skipped the following duplicate project references:");
+		sb.AppendLine ("WARNING: Skipped the following project references, apparent duplicates in order.xml:");
 		foreach (var item in duplicates) {
 			sb.AppendLine (item);
 		}
-		Console.Error.WriteLine (sb.ToString ());
+		Console.WriteLine (sb.ToString ());
 
-		Console.WriteLine (String.Format ("Writing a solution with {0} projects", sln_gen.Count));
-		sln_gen.Write ("mcs_full.sln");
-		basic_sln_gen.Write ("mcs_basic.sln");
-		build_sln_gen.Write ("mcs_build.sln");
-		four_sln_gen.Write ("mcs_v4.sln");
-		four_five_sln_gen.Write ("mcs_v4_5.sln");
-		two_sln_gen.Write ("mcs_v2.sln");
-		small_full_sln_gen.Write ("small_full.sln");
-
+		writeSolution (two_sln_gen, "net_2_0.sln");
+		writeSolution (three_five_sln_gen, "net_3_5.sln");
+		writeSolution (four_sln_gen, "net_4_0.sln");
+		writeSolution (four_five_sln_gen, "net_4_5.sln");
+		// A few other optional solutions
+		// Solutions with 'everything' and the most common libraries used in development may be of interest
+		//writeSolution (sln_gen, "mcs_full.sln");
+		//writeSolution (small_full_sln_gen, "small_full.sln");
+		// The following may be useful if lacking visual studio or MonoDevelop, to bootstrap mono compiler self-hosting
+		//writeSolution (basic_sln_gen, "mcs_basic.sln");
+		//writeSolution (build_sln_gen, "mcs_build.sln");
 	}
 
-	private static bool isCommonLibrary (string library)
+	private static void fillSolution (SlnGenerator solution, string profileString, List<MsbuildGenerator.VsCsproj> projects, Func<MsbuildGenerator.VsCsproj, bool> additionalFilter = null)
 	{
-		if (library.Contains ("-basic"))
-			return true;
-		if (library.Contains ("-build"))
-			return true;
-		if (library.StartsWith ("corlib"))
-			return true;
+		foreach (var vsCsproj in projects) {
+			if (!vsCsproj.library.Contains (profileString))
+				continue;
+			if (additionalFilter != null && !additionalFilter (vsCsproj))
+				continue;
+			var csprojFilename = vsCsproj.csprojFileName;
+			if (!solution.ContainsKey (csprojFilename)) {
+				solution.Add (csprojFilename);
+				recursiveAddProj (solution, vsCsproj);
+			}
+		}
+	}
+
+	private static void recursiveAddProj (SlnGenerator solution, MsbuildGenerator.VsCsproj vsCsproj, int recursiveDepth = 1)
+	{
+		const int max_recursive = 10;
+		if (recursiveDepth > max_recursive) throw new Exception (string.Format ("Reached {0} levels of project dependency", max_recursive));
+		foreach (var projRef in vsCsproj.projReferences) {
+			if (!solution.ContainsKey (projRef.csprojFileName)) {
+				solution.Add (projRef.csprojFileName);
+				recursiveAddProj (solution, projRef, recursiveDepth + 1);
+			}
+		}
+	}
+
+	private static void writeSolution (SlnGenerator sln_gen, string slnfilename)
+	{
+		Console.WriteLine (String.Format ("Writing solution {1}, with {0} projects", sln_gen.Count, slnfilename));
+		sln_gen.Write (slnfilename);
+	}
+
+	private static bool isCommonLibrary (MsbuildGenerator.VsCsproj proj)
+	{
+		var library = proj.library;
+		//if (library.Contains ("-basic"))
+		//	return true;
+		//if (library.Contains ("-build"))
+		//	return true;
+		//if (library.StartsWith ("corlib"))
+		//	return true;
 		if (library.StartsWith ("System-"))
 			return true;
 		if (library.StartsWith ("System.Xml"))
@@ -897,8 +983,8 @@ public class Driver {
 			return true;
 		if (library.StartsWith ("System.Core"))
 			return true;
-		if (library.StartsWith ("Mono."))
-			return true;
+		//if (library.StartsWith ("Mono."))
+		//	return true;
 
 		return false;
 	}
