@@ -3283,6 +3283,13 @@ sgen_ensure_free_space (size_t size)
 		}
 	}
 
+	if (generation_to_collect == -1) {
+		if (concurrent_collection_in_progress && sgen_workers_all_done ()) {
+			generation_to_collect = GENERATION_OLD;
+			reason = "Finish concurrent collection";
+		}
+	}
+
 	if (generation_to_collect == -1)
 		return;
 	sgen_perform_collection (size, generation_to_collect, reason, FALSE);
