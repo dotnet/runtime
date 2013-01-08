@@ -51,6 +51,10 @@
 #define MONO_GC_END_ENABLED() (0)
 
 
+#define MONO_GC_REQUESTED(generation,requested_size,wait_to_finish)
+#define MONO_GC_REQUESTED_ENABLED()	(0)
+
+
 #define MONO_GC_CHECKPOINT_1(generation)
 #define MONO_GC_CHECKPOINT_1_ENABLED()	(0)
 

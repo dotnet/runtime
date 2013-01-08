@@ -3304,6 +3304,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	int oldest_generation_collected = generation_to_collect;
 	const char *overflow_reason = NULL;
 
+	MONO_GC_REQUESTED (generation_to_collect, requested_size, wait_to_finish ? 1 : 0);
+
 	g_assert (generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD);
 
 	if (have_non_collection_major_object_remembers) {
