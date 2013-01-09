@@ -19,14 +19,31 @@ public enum LanguageVersion {
 	Default = LINQ
 }
 
-class SlnGenerator {
-	const string header = "Microsoft Visual Studio Solution File, Format Version 10.00\n" +
-		"# Visual Studio 2008";
+class SlnGenerator
+{
+	public static readonly string NewLine = Environment.NewLine; // "\n"; 
+	public SlnGenerator(string formatVersion = "2012")
+	{
+		switch (formatVersion)
+		{
+		case "2008":
+			this.header = makeHeader("10.00", "2008");
+			break;
+		default:
+			this.header = makeHeader("12.00", "2012");
+			break;
+		}
+	}
 
+	private string makeHeader (string formatVersion, string yearTag)
+	{
+		return string.Format ("Microsoft Visual Studio Solution File, Format Version {0}" + NewLine + "# Visual Studio {1}", formatVersion, yearTag);
+	}
 	const string project_start = "Project(\"{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}\") = \"{0}\", \"{1}\", \"{{{2}}}\"";
 	const string project_end = "EndProject";
 
 	Dictionary<string, string> libraries = new Dictionary<string, string> ();
+	private string header;
 
 	public void Add (string library)
 	{
@@ -79,7 +96,15 @@ class SlnGenerator {
 	public int Count { get { return libraries.Count; } }
 }
 
-class MsbuildGenerator {
+class MsbuildGenerator
+{
+	static readonly string NewLine = SlnGenerator.NewLine;
+
+	public const string profile_2_0 = "_2_0";
+	public const string profile_3_5 = "_3_5";
+	public const string profile_4_0 = "_4_0";
+	public const string profile_4_5 = "_4_5";
+
 	static void Usage ()
 	{
 		Console.WriteLine ("Invalid argument");
@@ -583,18 +608,18 @@ class MsbuildGenerator {
 			//<response></response>
 			response = profile;
 			profile = fx_version;
-			if (response.Contains ("build") || response.Contains ("basic") || response.Contains ("_2_0")) {
+			if (response.Contains ("build") || response.Contains ("basic") || response.Contains (profile_2_0)) {
 				fx_version = "2.0";
-				if (response.Contains ("_2_0")) profile = "net_2_0";
-			} if (response.Contains ("build") || response.Contains ("basic") || response.Contains ("_2_0")) {
+				if (response.Contains (profile_2_0)) profile = "net_2_0";
+			} if (response.Contains ("build") || response.Contains ("basic") || response.Contains (profile_2_0)) {
 				fx_version = "2.0";
-			} else if (response.Contains ("_3_5")) {
+			} else if (response.Contains (profile_3_5)) {
 				fx_version = "3.5";
 				profile = "net_3_5";
-			} else if (response.Contains ("_4_0")) {
+			} else if (response.Contains (profile_4_0)) {
 				fx_version = "4.0";
 				profile = "net_4_0";
-			} else if (response.Contains ("_4_5")) {
+			} else if (response.Contains (profile_4_5)) {
 				fx_version = "4.5";
 				profile = "net_4_5";
 			}
@@ -655,7 +680,7 @@ class MsbuildGenerator {
 			if (src.StartsWith (@"Test\..\"))
 				src = src.Substring (8, src.Length - 8);
 
-			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", src));
+			sources.Append (String.Format ("   <Compile Include=\"{0}\" />" + NewLine, src));
 		}
 		foreach (string s in built_sources.Split ()) {
 			if (s.Length == 0)
@@ -665,7 +690,7 @@ class MsbuildGenerator {
 			if (src.StartsWith (@"Test\..\"))
 				src = src.Substring (8, src.Length - 8);
 
-			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", src));
+			sources.Append (String.Format ("   <Compile Include=\"{0}\" />" + NewLine, src));
 		}
 
 		//if (library == "corlib-build") // otherwise, does not compile on fx_version == 4.0
@@ -691,18 +716,18 @@ class MsbuildGenerator {
 			// F:\src\mono\mcs\class\lib\net_2_0\nunit.framework.dll
 			// F:\src\mono\mcs\class\SomeProject\SomeProject_test_-net_2_0.csproj
 			var nunitLibPath = Path.Combine (@"..\lib", profile, "nunit.framework.dll");
-			refs.Append (string.Format ("    <Reference Include=\"{0}\" />\n", nunitLibPath));
+			refs.Append (string.Format ("    <Reference Include=\"{0}\" />" + NewLine, nunitLibPath));
 		}
 
 		var resources = new StringBuilder ();
 		if (embedded_resources.Count > 0) {
-			resources.AppendFormat ("  <ItemGroup>\n");
+			resources.AppendFormat ("  <ItemGroup>" + NewLine);
 			foreach (var dk in embedded_resources) {
-				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">\n", dk.Key);
-				resources.AppendFormat ("       <LogicalName>{0}</LogicalName>\n", dk.Value);
-				resources.AppendFormat ("    </EmbeddedResource>\n");
+				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, dk.Key);
+				resources.AppendFormat ("       <LogicalName>{0}</LogicalName>" + NewLine, dk.Value);
+				resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
 			}
-			resources.AppendFormat ("  </ItemGroup>\n");
+			resources.AppendFormat ("  </ItemGroup>" + NewLine);
 		}
 		if (references.Count > 0 || reference_aliases.Count > 0) {
 			// -r:mscorlib.dll -r:System.dll
@@ -718,18 +743,18 @@ class MsbuildGenerator {
 			foreach (string r in refdistinct) {
 				VsCsproj lastMatching = getMatchingCsproj (Path.GetFileName (r), double.Parse (fx_version), projects);
 				if (lastMatching == null) {
-					refs.Append ("    <Reference Include=\"" + r + "\">\n");
-					refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
-					refs.Append ("      <HintPath>" + r + "</HintPath>\n");
+					refs.Append ("    <Reference Include=\"" + r + "\">" + NewLine);
+					refs.Append ("      <SpecificVersion>False</SpecificVersion>" + NewLine);
+					refs.Append ("      <HintPath>" + r + "</HintPath>" + NewLine);
 					refs.Append ("      <Private>False</Private>");
-					refs.Append ("    </Reference>\n");
+					refs.Append ("    </Reference>" + NewLine);
 				} else {
-					//refs.Append ("    <ProjectReference Include=\"" + getRelativePath (result.csprojFileName, lastMatching.csprojFileName) + "\">" + Environment.NewLine);
-					refs.Append ("    <ProjectReference Include=\"" + lastMatching.csprojFileName + "\">" + Environment.NewLine);
-					refs.Append ("      <Project>" + lastMatching.projectGuid + "</Project>" + Environment.NewLine);
-					refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.csprojFileName) + "</Name>" + Environment.NewLine);
+					//refs.Append ("    <ProjectReference Include=\"" + getRelativePath (result.csprojFileName, lastMatching.csprojFileName) + "\">" + NewLine);
+					refs.Append ("    <ProjectReference Include=\"" + getRelativePath( result.csprojFileName, lastMatching.csprojFileName )+ "\">" + NewLine);
+					refs.Append ("      <Project>" + lastMatching.projectGuid + "</Project>" + NewLine);
+					refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.csprojFileName) + "</Name>" + NewLine);
 					refs.Append ("      <Private>False</Private>");
-					refs.Append ("    </ProjectReference>" + Environment.NewLine);
+					refs.Append ("    </ProjectReference>" + NewLine);
 					if (result.projReferences.Contains (lastMatching) == false)
 						result.projReferences.Add (lastMatching);
 				}
@@ -740,11 +765,11 @@ class MsbuildGenerator {
 				string alias = r.Substring (0, index);
 				string assembly = r.Substring (index + 1);
 
-				refs.Append ("    <Reference Include=\"" + assembly + "\">\n");
-				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
-				refs.Append ("      <HintPath>" + r + "</HintPath>\n");
-				refs.Append ("      <Aliases>" + alias + "</Aliases>\n");
-				refs.Append ("    </Reference>\n");
+				refs.Append ("    <Reference Include=\"" + assembly + "\">" + NewLine);
+				refs.Append ("      <SpecificVersion>False</SpecificVersion>" + NewLine);
+				refs.Append ("      <HintPath>" + r + "</HintPath>" + NewLine);
+				refs.Append ("      <Aliases>" + alias + "</Aliases>" + NewLine);
+				refs.Append ("    </Reference>" + NewLine);
 			}
 		}
 
@@ -810,9 +835,17 @@ class MsbuildGenerator {
 		return result;
 	}
 
-	private string getRelativePath (string p1, string p2)
+	private string getRelativePath (string referencerPath, string referenceePath)
 	{
-		throw new NotImplementedException ();
+		// F:\src\mono\msvc\scripts\
+		//..\..\mcs\class\System\System-net_2_0.csproj
+		//..\..\mcs\class\corlib\corlib-net_2_0.csproj
+		//  So from \System\, corlib needs to be referenced as:
+		// ..\corlib\corlib-net_2_0.csproj
+
+		// Could be possible to use PathRelativePathTo, but this is a P/Invoke to Win32 API.
+		// For now, simpler but less robust:
+		return referenceePath.Replace (@"..\..\mcs\class", "..");
 	}
 
 	private VsCsproj getMatchingCsproj (string dllReferenceName, double fx_version, List<VsCsproj> projects)
@@ -831,14 +864,25 @@ public class Driver {
 			Environment.Exit (1);
 		}
 
-		var sln_gen = new SlnGenerator ();
-		var small_full_sln_gen = new SlnGenerator ();
-		var basic_sln_gen = new SlnGenerator ();
-		var build_sln_gen = new SlnGenerator ();
-		var two_sln_gen = new SlnGenerator ();
-		var four_sln_gen = new SlnGenerator ();
-		var three_five_sln_gen = new SlnGenerator ();
-		var four_five_sln_gen = new SlnGenerator ();
+		if (args.Length == 1 && args[0].ToLower().Contains("-h"))
+		{
+			Console.WriteLine ("Usage:");
+			Console.WriteLine ("genproj.exe [visual_studio_release] [output_full_solutions]");
+			Console.WriteLine ("If output_full_solutions is false, only the main System*.dll");
+			Console.WriteLine (" assemblies (and dependencies) is included in the solution.");
+			Console.WriteLine ("Example:");
+			Console.WriteLine ("genproj.exe 2012 false");
+			Console.WriteLine ("genproj.exe with no arguments is equivalent to 'genproj.exe 2012 true'");
+			Environment.Exit (0);
+		}
+		var slnVersion = (args.Length > 0) ? args[0] : "2012";
+		bool fullSolutions = (args.Length > 1) ? bool.Parse (args [1]) : true;
+
+		var sln_gen = new SlnGenerator (slnVersion);
+		var two_sln_gen = new SlnGenerator (slnVersion);
+		var four_sln_gen = new SlnGenerator (slnVersion);
+		var three_five_sln_gen = new SlnGenerator (slnVersion);
+		var four_five_sln_gen = new SlnGenerator (slnVersion);
 		var projects = new List<MsbuildGenerator.VsCsproj> ();
 
 		XDocument doc = XDocument.Load ("order.xml");
@@ -877,42 +921,16 @@ public class Driver {
 			}
 		}
 
+		Func<MsbuildGenerator.VsCsproj, bool> additionalFilter;
+		additionalFilter = fullSolutions ? (Func<MsbuildGenerator.VsCsproj, bool>) null : isCommonLibrary;
 
-		//{
-		//try {
-		fillSolution (two_sln_gen, "_2_0", projects, isCommonLibrary);
-		fillSolution (four_five_sln_gen, "_4_5", projects);
-		fillSolution (four_sln_gen, "_4_0", projects);
-		fillSolution (three_five_sln_gen, "_3_5", projects);
-		//		var csproj = gen.Generate (project, projects);
-		//		projects.Add (csproj);
-		//		if (!sln_gen.ContainsKey (csprojFilename)) {
-		//			sln_gen.Add (csprojFilename);
-		//			if (library.Contains ("-basic")) {
-		//				basic_sln_gen.Add (csprojFilename);
-		//				build_sln_gen.Add (csprojFilename);
-		//				two_sln_gen.Add (csprojFilename);
-		//			} else if (library.Contains ("-build"))
-		//				build_sln_gen.Add (csprojFilename);
-		//			else if (library.Contains ("_2_0"))
-		//				two_sln_gen.Add (csprojFilename);
-		//			else if (library.Contains ("_3_5"))
-		//				three_five_sln_gen.Add (csprojFilename);
-		//			else if (library.Contains ("_4_0"))
-		//				four_sln_gen.Add (csprojFilename);
-		//			else if (library.Contains ("_4_5"))
-		//				four_five_sln_gen.Add (csprojFilename);
-		//			else
-		//				Console.WriteLine ("Don't know in which solution to put {0}; undetected profile", csprojFilename);
-		//			if (isCommonLibrary (library)) {
-		//				small_full_sln_gen.Add (csprojFilename);
-		//			}
-		//	} catch (Exception e) {
-		//		Console.WriteLine ("Error in {0}\n{1}", dir, e);
-		//	}
+		fillSolution (two_sln_gen, MsbuildGenerator.profile_2_0, projects, additionalFilter);
+		fillSolution (four_five_sln_gen, MsbuildGenerator.profile_4_5, projects, additionalFilter);
+		fillSolution (four_sln_gen, MsbuildGenerator.profile_4_0, projects, additionalFilter);
+		fillSolution (three_five_sln_gen, MsbuildGenerator.profile_3_5, projects, additionalFilter);
 
-		StringBuilder sb = new StringBuilder ();
-		sb.AppendLine ("WARNING: Skipped the following project references, apparent duplicates in order.xml:");
+		var sb = new StringBuilder ();
+		sb.AppendLine ("WARNING: Skipped some project references, apparent duplicates in order.xml:");
 		foreach (var item in duplicates) {
 			sb.AppendLine (item);
 		}
