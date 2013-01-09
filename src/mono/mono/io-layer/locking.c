@@ -34,6 +34,11 @@ _wapi_lock_file_region (int fd, off_t offset, off_t length)
 	struct flock lock_data;
 	int ret;
 
+	if (offset < 0 || length < 0) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return(FALSE);
+	}
+
 	lock_data.l_type = F_WRLCK;
 	lock_data.l_whence = SEEK_SET;
 	lock_data.l_start = offset;
@@ -146,6 +151,10 @@ LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
 
 	DEBUG ("%s: Locking handle %p, offset %lld, length %lld", __func__, handle, offset, length);
 #else
+	if (offset_high > 0 || length_high > 0) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return (FALSE);
+	}
 	offset = offset_low;
 	length = length_low;
 
