@@ -4151,13 +4151,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
-		case OP_CALL_MEMBASE:
-			g_assert (arm_is_imm12 (ins->inst_offset));
+		case OP_CALL_MEMBASE: {
+			gboolean imt_arg = FALSE;
+
 			g_assert (ins->sreg1 != ARMREG_LR);
 			call = (MonoCallInst*)ins;
-			if (call->dynamic_imt_arg || call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			if (call->dynamic_imt_arg || call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+				imt_arg = TRUE;
+			if (!arm_is_imm12 (ins->inst_offset))
+				code = mono_arm_emit_load_imm (code, ARMREG_IP, ins->inst_offset);
+			if (imt_arg)
 				ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_PC, 4);
+			else
+				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+			if (!arm_is_imm12 (ins->inst_offset))
+				ARM_LDR_REG_REG (code, ARMREG_PC, ins->sreg1, ARMREG_IP);
+			else
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
+			if (imt_arg) {
 				/* 
 				 * We can't embed the method in the code stream in PIC code, or
 				 * in gshared code.
@@ -4170,14 +4181,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					*((gpointer*)code) = (gpointer)call->method;
 				code += 4;
-			} else {
-				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
 			}
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		}
 		case OP_LOCALLOC: {
 			/* keep alignment */
 			int alloca_waste = cfg->param_area;

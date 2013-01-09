@@ -142,7 +142,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 		*obj_slot = forwarded;
 #ifndef SGEN_SIMPLE_NURSERY
 		if (G_UNLIKELY (sgen_ptr_in_nursery (forwarded) && !sgen_ptr_in_nursery (obj_slot)))
-			sgen_add_to_global_remset (obj_slot);
+			sgen_add_to_global_remset (obj_slot, forwarded);
 #endif
 		return;
 	}
@@ -151,7 +151,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 		SGEN_LOG (9, " (pinned, no change)");
 		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
 		if (!sgen_ptr_in_nursery (obj_slot))
-			sgen_add_to_global_remset (obj_slot);
+			sgen_add_to_global_remset (obj_slot, obj);
 		return;
 	}
 
@@ -170,12 +170,12 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 	*obj_slot = copy;
 #ifndef SGEN_SIMPLE_NURSERY
 	if (G_UNLIKELY (sgen_ptr_in_nursery (copy) && !sgen_ptr_in_nursery (obj_slot)))
-		sgen_add_to_global_remset (obj_slot);
+		sgen_add_to_global_remset (obj_slot, copy);
 #else
 	/* copy_object_no_checks () can return obj on OOM */
 	if (G_UNLIKELY (obj == copy)) {
 		if (G_UNLIKELY (sgen_ptr_in_nursery (copy) && !sgen_ptr_in_nursery (obj_slot)))
-			sgen_add_to_global_remset (obj_slot);
+			sgen_add_to_global_remset (obj_slot, copy);
 	}
 #endif
 }

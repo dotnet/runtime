@@ -65,6 +65,8 @@
 
 /* the architecture needs a memory fence */
 #if defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "perf_event.h"
 #define USE_PERF_EVENTS 1
 static int read_perf_mmap (MonoProfiler* prof);

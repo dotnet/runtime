@@ -1421,7 +1421,7 @@ mono_class_setup_fields (MonoClass *class)
 	MonoGenericContainer *container = NULL;
 	MonoClass *gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
 
-	if (class->size_inited)
+	if (class->setup_fields_called)
 		return;
 
 	if (class->generic_class && class->generic_class->container_class->image->dynamic && !class->generic_class->container_class->wastypebuilder) {
@@ -1494,9 +1494,9 @@ mono_class_setup_fields (MonoClass *class)
 		if (explicit_size && real_size) {
 			class->instance_size = MAX (real_size, class->instance_size);
 		}
-		class->size_inited = 1;
 		class->blittable = blittable;
 		mono_memory_barrier ();
+		class->size_inited = 1;
 		class->fields_inited = 1;
 		return;
 	}
@@ -1505,7 +1505,7 @@ mono_class_setup_fields (MonoClass *class)
 		blittable = FALSE;
 
 	/* Prevent infinite loops if the class references itself */
-	class->size_inited = 1;
+	class->setup_fields_called = 1;
 
 	if (class->generic_container) {
 		container = class->generic_container;
@@ -1911,6 +1911,7 @@ mono_class_layout_fields (MonoClass *class)
 			class->min_align = MAX (class->min_align, class->instance_size - sizeof (MonoObject));
 	}
 
+	mono_memory_barrier ();
 	class->size_inited = 1;
 
 	/*
@@ -2807,9 +2808,11 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 	static MonoClass* generic_icollection_class = NULL;
 	static MonoClass* generic_ienumerable_class = NULL;
 	static MonoClass* generic_ienumerator_class = NULL;
+	static MonoClass* generic_ireadonlylist_class = NULL;
+	static MonoClass* generic_ireadonlycollection_class = NULL;
 	MonoClass *valuetype_types[2] = { NULL, NULL };
 	MonoClass **interfaces = NULL;
-	int i, interface_count, real_count, original_rank;
+	int i, nifaces, interface_count, real_count, original_rank;
 	int all_interfaces;
 	gboolean internal_enumerator;
 	gboolean eclass_is_valuetype;
@@ -2851,6 +2854,10 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			"System.Collections.Generic", "IEnumerable`1");
 		generic_ienumerator_class = mono_class_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IEnumerator`1");
+		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IReadOnlyList`1");
+		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IReadOnlyCollection`1");
 	}
 
 	mono_class_init (eclass);
@@ -2858,15 +2865,17 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 	/*
 	 * Arrays in 2.0 need to implement a number of generic interfaces
 	 * (IList`1, ICollection`1, IEnumerable`1 for a number of types depending
-	 * on the element class). We collect the types needed to build the
-	 * instantiations in interfaces at intervals of 3, because 3 are
+	 * on the element class). For net 4.5, we also need to implement IReadOnlyList`1/IReadOnlyCollection`1.
+	 * We collect the types needed to build the
+	 * instantiations in interfaces at intervals of 3/5, because 3/5 are
 	 * the generic interfaces needed to implement.
 	 */
+	nifaces = generic_ireadonlylist_class ? 5 : 3;
 	if (eclass->valuetype) {
 		fill_valuetype_array_derived_types (valuetype_types, eclass, original_rank);
 
-		/* IList, ICollection, IEnumerable */
-		real_count = interface_count = valuetype_types [1] ? 6 : 3;
+		/* IList, ICollection, IEnumerable, IReadOnlyList`1 */
+		real_count = interface_count = valuetype_types [1] ? (nifaces * 2) : nifaces;
 		if (internal_enumerator) {
 			++real_count;
 			if (valuetype_types [1])
@@ -2876,7 +2885,7 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 		interfaces = g_malloc0 (sizeof (MonoClass*) * real_count);
 		interfaces [0] = valuetype_types [0];
 		if (valuetype_types [1])
-			interfaces [3] = valuetype_types [1];
+			interfaces [nifaces] = valuetype_types [1];
 
 		eclass_is_valuetype = TRUE;
 	} else {
@@ -2904,8 +2913,8 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			if (valuetype_types [1])
 				++interface_count;
 		}
-		/* IList, ICollection, IEnumerable */
-		interface_count *= 3;
+		/* IList, ICollection, IEnumerable, IReadOnlyList */
+		interface_count *= nifaces;
 		real_count = interface_count;
 		if (internal_enumerator) {
 			real_count += (MONO_CLASS_IS_INTERFACE (eclass) ? 1 : idepth) + eclass->interface_offsets_count;
@@ -2915,39 +2924,43 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 		interfaces = g_malloc0 (sizeof (MonoClass*) * real_count);
 		if (MONO_CLASS_IS_INTERFACE (eclass)) {
 			interfaces [0] = mono_defaults.object_class;
-			j = 3;
+			j = nifaces;
 		} else {
 			j = 0;
 			for (i = 0; i < idepth; i++) {
 				mono_class_init (eclass->supertypes [i]);
 				interfaces [j] = eclass->supertypes [i];
-				j += 3;
+				j += nifaces;
 			}
 		}
 		if (all_interfaces) {
 			for (i = 0; i < eclass->interface_offsets_count; i++) {
 				interfaces [j] = eclass->interfaces_packed [i];
-				j += 3;
+				j += nifaces;
 			}
 		} else {
 			for (i = 0; i < eclass->interface_count; i++) {
 				interfaces [j] = eclass->interfaces [i];
-				j += 3;
+				j += nifaces;
 			}
 		}
 		if (valuetype_types [1]) {
 			interfaces [j] = array_class_get_if_rank (valuetype_types [1], original_rank);
-			j += 3;
+			j += nifaces;
 		}
 	}
 
 	/* instantiate the generic interfaces */
-	for (i = 0; i < interface_count; i += 3) {
+	for (i = 0; i < interface_count; i += nifaces) {
 		MonoClass *iface = interfaces [i];
 
 		interfaces [i + 0] = inflate_class_one_arg (mono_defaults.generic_ilist_class, iface);
 		interfaces [i + 1] = inflate_class_one_arg (generic_icollection_class, iface);
 		interfaces [i + 2] = inflate_class_one_arg (generic_ienumerable_class, iface);
+		if (generic_ireadonlylist_class) {
+			interfaces [i + 3] = inflate_class_one_arg (generic_ireadonlylist_class, iface);
+			interfaces [i + 4] = inflate_class_one_arg (generic_ireadonlycollection_class, iface);
+		}
 	}
 	if (internal_enumerator) {
 		int j;
@@ -3339,14 +3352,19 @@ setup_interface_offsets (MonoClass *class, int cur_slot, gboolean overwrite)
 				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
 			}
 		} else {
-			int ilist_offset, icollection_offset, ienumerable_offset;
+			int ilist_offset, icollection_offset, ienumerable_offset, ireadonlylist_offset, ireadonlycollection_offset;
 			int ilist_iface_idx = find_array_interface (class, "IList`1");
 			MonoClass* ilist_class = class->interfaces [ilist_iface_idx];
+			int ireadonlylist_iface_idx = find_array_interface (class, "IReadOnlyList`1");
+			MonoClass* ireadonlylist_class = ireadonlylist_iface_idx != -1 ? class->interfaces [ireadonlylist_iface_idx] : NULL;
 			int icollection_iface_idx = find_array_interface (ilist_class, "ICollection`1");
 			int ienumerable_iface_idx = find_array_interface (ilist_class, "IEnumerable`1");
+			int ireadonlycollection_iface_idx = ireadonlylist_iface_idx != -1 ? find_array_interface (ireadonlylist_class, "IReadOnlyCollection`1") : -1;
 			ilist_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ilist_iface_idx]);
 			icollection_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ilist_class->interfaces [icollection_iface_idx]);
 			ienumerable_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ilist_class->interfaces [ienumerable_iface_idx]);
+			ireadonlylist_offset = ireadonlylist_iface_idx != -1 ? find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ireadonlylist_iface_idx]) : -1;
+			ireadonlycollection_offset = ireadonlycollection_iface_idx != -1 ? find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ireadonlylist_class->interfaces [ireadonlycollection_iface_idx]) : -1;
 			g_assert (ilist_offset >= 0 && icollection_offset >= 0 && ienumerable_offset >= 0);
 			for (i = 0; i < num_array_interfaces; ++i) {
 				int offset;
@@ -3357,6 +3375,10 @@ setup_interface_offsets (MonoClass *class, int cur_slot, gboolean overwrite)
 					offset = icollection_offset;
 				else if (strcmp (ic->name, "IEnumerable`1") == 0)
 					offset = ienumerable_offset;
+				else if (strcmp (ic->name, "IReadOnlyList`1") == 0)
+					offset = ireadonlylist_offset;
+				else if (strcmp (ic->name, "IReadOnlyCollection`1") == 0)
+					offset = ireadonlycollection_offset;
 				else
 					g_assert_not_reached ();
 				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, offset, TRUE);
@@ -3765,7 +3787,7 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 			TRACE_INTERFACE_VTABLE (printf ("[INTERFACE NAMESPACE CHECK FAILED]"));
 			return FALSE;
 		}
-		if ((ic_name == NULL) || ((strcmp (ic_name, "IEnumerable`1") != 0) && (strcmp (ic_name, "ICollection`1") != 0) && (strcmp (ic_name, "IList`1") != 0))) {
+		if ((ic_name == NULL) || ((strcmp (ic_name, "IEnumerable`1") != 0) && (strcmp (ic_name, "ICollection`1") != 0) && (strcmp (ic_name, "IList`1") != 0) && (strcmp (ic_name, "IReadOnlyList`1") != 0) && (strcmp (ic_name, "IReadOnlyCollection`1") != 0))) {
 			TRACE_INTERFACE_VTABLE (printf ("[INTERFACE NAME CHECK FAILED]"));
 			return FALSE;
 		}
@@ -4676,6 +4698,9 @@ generic_array_methods (MonoClass *class)
 		const char *mname, *iname;
 		gchar *name;
 		MonoMethod *m = tmp->data;
+		const char *ireadonlylist_prefix = "InternalArray__IReadOnlyList_";
+		const char *ireadonlycollection_prefix = "InternalArray__IReadOnlyCollection_";
+
 		generic_array_method_info [i].array_method = m;
 		if (!strncmp (m->name, "InternalArray__ICollection_", 27)) {
 			iname = "System.Collections.Generic.ICollection`1.";
@@ -4683,6 +4708,12 @@ generic_array_methods (MonoClass *class)
 		} else if (!strncmp (m->name, "InternalArray__IEnumerable_", 27)) {
 			iname = "System.Collections.Generic.IEnumerable`1.";
 			mname = m->name + 27;
+		} else if (!strncmp (m->name, ireadonlylist_prefix, strlen (ireadonlylist_prefix))) {
+			iname = "System.Collections.Generic.IReadOnlyList`1.";
+			mname = m->name + strlen (ireadonlylist_prefix);
+		} else if (!strncmp (m->name, ireadonlycollection_prefix, strlen (ireadonlycollection_prefix))) {
+			iname = "System.Collections.Generic.IReadOnlyCollection`1.";
+			mname = m->name + strlen (ireadonlycollection_prefix);
 		} else if (!strncmp (m->name, "InternalArray__", 15)) {
 			iname = "System.Collections.Generic.IList`1.";
 			mname = m->name + 15;
@@ -5767,6 +5798,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 			 */
 			klass->instance_size = gklass->instance_size;
 			klass->sizes.class_size = gklass->sizes.class_size;
+			mono_memory_barrier ();
 			klass->size_inited = 1;
 		}
 	}
@@ -5859,6 +5891,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	/*Init these fields to sane values*/
 	klass->min_align = 1;
 	klass->instance_size = sizeof (gpointer);
+	mono_memory_barrier ();
 	klass->size_inited = 1;
 
 	mono_class_setup_supertypes (klass);
@@ -9797,16 +9830,19 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		return;
 	}
 
-	if (klass->rank == 1 && klass->byval_arg.type != MONO_TYPE_ARRAY && mono_defaults.generic_ilist_class) {
+	if (klass->rank == 1 && klass->byval_arg.type != MONO_TYPE_ARRAY) {
 		MonoType *args [1];
 
 		/* generic IList, ICollection, IEnumerable */
-		klass->interface_count = 1;
+		klass->interface_count = mono_defaults.generic_ireadonlylist_class ? 2 : 1;
 		klass->interfaces = mono_image_alloc0 (klass->image, sizeof (MonoClass*) * klass->interface_count);
 
 		args [0] = &klass->element_class->byval_arg;
 		klass->interfaces [0] = mono_class_bind_generic_parameters (
 			mono_defaults.generic_ilist_class, 1, args, FALSE);
+		if (klass->interface_count > 1)
+			klass->interfaces [1] = mono_class_bind_generic_parameters (
+			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
 	} else if (klass->generic_class) {
 		MonoClass *gklass = klass->generic_class->container_class;
 
@@ -9886,8 +9922,13 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		g_assert (*sig == 0x06);
 		field->type = mono_metadata_parse_type_full (image, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (!field->type) {
+			MonoLoaderError *lerror = mono_loader_get_last_error ();
+
 			mono_error_set_type_load_class (error, class, "Could not load field %s type", field->name);
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			if (lerror)
+				set_failure_from_loader_error (class, lerror);
+			else
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_loader_clear_error ();
 		}
 	}

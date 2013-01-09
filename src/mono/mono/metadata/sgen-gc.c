@@ -1138,12 +1138,11 @@ mono_gc_clear_domain (MonoDomain * domain)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-sgen_add_to_global_remset (gpointer ptr)
+sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 {
 	remset.record_pointer (ptr);
 
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
-		void *obj = *(void**)ptr;
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
 				vt->klass->name_space, vt->klass->name);
@@ -3611,13 +3610,14 @@ clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
 			}
 
 			if (was_promoted) {
+				gpointer value = cur->value;
 				if (ptr_in_nursery (key)) {/*key was not promoted*/
 					SGEN_LOG (5, "\tAdded remset to key %p", key);
-					sgen_add_to_global_remset (&cur->key);
+					sgen_add_to_global_remset (&cur->key, key);
 				}
-				if (ptr_in_nursery (cur->value)) {/*value was not promoted*/
+				if (ptr_in_nursery (value)) {/*value was not promoted*/
 					SGEN_LOG (5, "\tAdded remset to value %p", cur->value);
-					sgen_add_to_global_remset (&cur->value);
+					sgen_add_to_global_remset (&cur->value, value);
 				}
 			}
 		}

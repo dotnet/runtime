@@ -2963,6 +2963,7 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	int i;
 
 	seq_points = find_seq_points (domain, method);
+	g_assert (seq_points);
 	if (info)
 		*info = seq_points;
 
@@ -2985,9 +2986,11 @@ find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	MonoSeqPointInfo *seq_points;
 	int i;
 
-	seq_points = find_seq_points (domain, method);
+	seq_points = get_seq_points (domain, method);
 	if (info)
 		*info = seq_points;
+	if (!seq_points)
+		return NULL;
 
 	for (i = seq_points->len - 1; i >= 0; --i) {
 		if (seq_points->seq_points [i].native_offset <= native_offset)
@@ -4394,6 +4397,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 * the offset recorded in the seq point map, so find the prev seq point before ip.
 	 */
 	sp = find_prev_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
+	g_assert (sp);
 
 	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, ip, native_offset, sp ? sp->il_offset : -1));
 

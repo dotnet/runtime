@@ -410,18 +410,20 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
+			gpointer copy;
 
 			sgen_get_current_object_ops ()->copy_or_mark_object (ptr, queue);
-			SGEN_LOG (9, "Overwrote remset at %p with %p", ptr, *ptr);
+			copy = *ptr;
+			SGEN_LOG (9, "Overwrote remset at %p with %p", ptr, copy);
 			if (old)
-				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)SGEN_LOAD_VTABLE (*ptr), sgen_safe_object_get_size (*ptr));
-			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
+				binary_protocol_ptr_update (ptr, old, copy, (gpointer)SGEN_LOAD_VTABLE (copy), sgen_safe_object_get_size (copy));
+			if (!global && copy >= start_nursery && copy < end_nursery) {
 				/*
 				 * If the object is pinned, each reference to it from nonpinned objects
 				 * becomes part of the global remset, which can grow very large.
 				 */
-				SGEN_LOG (9, "Add to global remset because of pinning %p (%p %s)", ptr, *ptr, sgen_safe_name (*ptr));
-				sgen_add_to_global_remset (ptr);
+				SGEN_LOG (9, "Add to global remset because of pinning %p (%p %s)", ptr, copy, sgen_safe_name (copy));
+				sgen_add_to_global_remset (ptr, copy);
 			}
 		} else {
 			SGEN_LOG (9, "Skipping remset at %p holding %p", ptr, *ptr);
@@ -435,10 +437,12 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
+			gpointer copy;
 			copy_func (ptr, queue);
-			SGEN_LOG (9, "Overwrote remset at %p with %p (count: %d)", ptr, *ptr, (int)count);
-			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				sgen_add_to_global_remset (ptr);
+			copy = *ptr;
+			SGEN_LOG (9, "Overwrote remset at %p with %p (count: %d)", ptr, copy, (int)count);
+			if (!global && copy >= start_nursery && copy < end_nursery)
+				sgen_add_to_global_remset (ptr, copy);
 			++ptr;
 		}
 		return p + 2;
