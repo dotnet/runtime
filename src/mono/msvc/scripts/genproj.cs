@@ -936,10 +936,10 @@ public class Driver {
 		}
 		Console.WriteLine (sb.ToString ());
 
-		writeSolution (two_sln_gen, "net_2_0.sln");
-		writeSolution (three_five_sln_gen, "net_3_5.sln");
-		writeSolution (four_sln_gen, "net_4_0.sln");
-		writeSolution (four_five_sln_gen, "net_4_5.sln");
+		writeSolution (two_sln_gen, mkSlnName (MsbuildGenerator.profile_2_0));
+		writeSolution (three_five_sln_gen, mkSlnName (MsbuildGenerator.profile_3_5));
+		writeSolution (four_sln_gen, mkSlnName (MsbuildGenerator.profile_4_0));
+		writeSolution (four_five_sln_gen, mkSlnName (MsbuildGenerator.profile_4_5));
 		// A few other optional solutions
 		// Solutions with 'everything' and the most common libraries used in development may be of interest
 		//writeSolution (sln_gen, "mcs_full.sln");
@@ -947,6 +947,11 @@ public class Driver {
 		// The following may be useful if lacking visual studio or MonoDevelop, to bootstrap mono compiler self-hosting
 		//writeSolution (basic_sln_gen, "mcs_basic.sln");
 		//writeSolution (build_sln_gen, "mcs_build.sln");
+	}
+
+	private static string mkSlnName (string profileTag)
+	{
+		return "net" + profileTag + ".sln";
 	}
 
 	private static void fillSolution (SlnGenerator solution, string profileString, List<MsbuildGenerator.VsCsproj> projects, Func<MsbuildGenerator.VsCsproj, bool> additionalFilter = null)
