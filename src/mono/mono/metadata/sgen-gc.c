@@ -561,7 +561,6 @@ SgenObjectOperations current_object_ops;
 SgenMajorCollector major_collector;
 SgenMinorCollector sgen_minor_collector;
 static GrayQueue gray_queue;
-static GrayQueue remember_major_objects_gray_queue;
 
 static SgenRemeberedSet remset;
 
@@ -576,33 +575,6 @@ static SgenGrayQueue*
 sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 {
 	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
-}
-
-static gboolean have_non_collection_major_object_remembers = FALSE;
-
-gboolean
-sgen_remember_major_object_for_concurrent_mark (char *obj)
-{
-	if (!major_collector.is_concurrent)
-		return FALSE;
-
-	g_assert (current_collection_generation == GENERATION_NURSERY || current_collection_generation == -1);
-
-	if (!concurrent_collection_in_progress)
-		return FALSE;
-
-	GRAY_OBJECT_ENQUEUE (&remember_major_objects_gray_queue, obj);
-
-	if (current_collection_generation != GENERATION_NURSERY) {
-		/*
-		 * This happens when the mutator allocates large or
-		 * pinned objects or when allocating in degraded
-		 * mode.
-		 */
-		have_non_collection_major_object_remembers = TRUE;
-	}
-
-	return TRUE;
 }
 
 static void
@@ -629,13 +601,6 @@ gray_queue_redirect (SgenGrayQueue *queue)
 				g_assert (current_collection_generation == -1);
 		}
 	}
-}
-
-static void
-redirect_major_object_remembers (void)
-{
-	gray_queue_redirect (&remember_major_objects_gray_queue);
-	have_non_collection_major_object_remembers = FALSE;
 }
 
 static gboolean
@@ -2484,13 +2449,6 @@ init_gray_queue (void)
 	} else {
 		sgen_gray_object_queue_init (&gray_queue, NULL);
 	}
-
-	if (major_collector.is_concurrent) {
-		sgen_gray_object_queue_init_with_alloc_prepare (&remember_major_objects_gray_queue, NULL,
-				gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
-	} else {
-		sgen_gray_object_queue_init_invalid (&remember_major_objects_gray_queue);
-	}
 }
 
 static void
@@ -3107,8 +3065,6 @@ major_start_collection (int *old_next_pin_slot)
 static void
 wait_for_workers_to_finish (void)
 {
-	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
-
 	if (major_collector.is_parallel || major_collector.is_concurrent) {
 		gray_queue_redirect (&gray_queue);
 		sgen_workers_join ();
@@ -3338,8 +3294,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
-	if (!have_non_collection_major_object_remembers)
-		g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
 
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
@@ -3350,7 +3304,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	}
 
 	collect_nursery (&unpin_queue, TRUE);
-	redirect_major_object_remembers ();
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
@@ -3425,11 +3378,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	g_assert (generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD);
 
-	if (have_non_collection_major_object_remembers) {
-		g_assert (concurrent_collection_in_progress);
-		redirect_major_object_remembers ();
-	}
-
 	memset (infos, 0, sizeof (infos));
 	mono_profiler_gc_event (MONO_GC_EVENT_START, generation_to_collect);
 
@@ -3455,10 +3403,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		if (collect_nursery (NULL, FALSE)) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
-		}
-		if (concurrent_collection_in_progress) {
-			redirect_major_object_remembers ();
-			sgen_workers_wake_up_all ();
 		}
 	} else {
 		SgenGrayQueue unpin_queue;
@@ -3529,7 +3473,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
  done:
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
-	g_assert (sgen_gray_object_queue_is_empty (&remember_major_objects_gray_queue));
 
 	sgen_restart_world (oldest_generation_collected, infos);
 

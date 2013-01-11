@@ -713,17 +713,6 @@ alloc_obj (MonoVTable *vtable, int size, gboolean pinned, gboolean has_reference
 
 	*(MonoVTable**)obj = vtable;
 
-#ifdef SGEN_CONCURRENT_MARK
-	if (obj && sgen_remember_major_object_for_concurrent_mark (obj)) {
-		MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-		int word, bit;
-		MS_CALC_MARK_BIT (word, bit, obj);
-		MS_SET_MARK_BIT (block, word, bit);
-		binary_protocol_mark (obj, NULL, size);
-		INC_NUM_MAJOR_OBJECTS_MARKED ();
-	}
-#endif
-
 	return obj;
 }
 
