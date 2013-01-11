@@ -485,7 +485,8 @@ find_next_card (guint8 *card_data, guint8 *end)
 }
 
 void
-sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, SgenGrayQueue *queue)
+sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards,
+		gboolean always_copy_or_mark, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
@@ -564,7 +565,7 @@ LOOP_HEAD:
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
-					if (G_UNLIKELY (sgen_ptr_in_nursery (old))) {
+					if ((always_copy_or_mark && old) || G_UNLIKELY (sgen_ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
 						copy_func ((void**)elem, queue);
 						new = *(gpointer*)elem;

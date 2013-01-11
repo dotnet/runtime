@@ -548,7 +548,7 @@ sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			g_assert (cards);
 		}
 
-		sgen_cardtable_scan_object (obj->data, obj->size, cards, queue);
+		sgen_cardtable_scan_object (obj->data, obj->size, cards, mod_union, queue);
 	}
 }
 

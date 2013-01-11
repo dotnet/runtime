@@ -2060,7 +2060,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				}
 
 				card_offset = (obj - base) >> CARD_BITS;
-				sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, queue);
+				sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, mod_union, queue);
 
 			next_large:
 				obj += block_obj_size;
