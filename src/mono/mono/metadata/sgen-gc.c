@@ -260,6 +260,8 @@ guint32 collect_before_allocs = 0;
 static gboolean whole_heap_check_before_collection = FALSE;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
+/* If set, check whether mark bits are consistent after major collections */
+static gboolean check_mark_bits_after_major_collection = FALSE;
 /* If set, do a few checks when the concurrent collector is used */
 static gboolean do_concurrent_checks = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
@@ -3066,6 +3068,9 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
+	if (check_mark_bits_after_major_collection)
+		sgen_check_major_heap_marked ();
+
 	MONO_GC_SWEEP_BEGIN (GENERATION_OLD, !major_collector.sweeps_lazily);
 
 	/* sweep the big objects list */
@@ -5049,6 +5054,8 @@ mono_gc_base_init (void)
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
 				nursery_clear_policy = CLEAR_AT_GC;
+			} else if (!strcmp (opt, "check-mark-bits")) {
+				check_mark_bits_after_major_collection = TRUE;
 			} else if (!strcmp (opt, "xdomain-checks")) {
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
@@ -5095,6 +5102,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  collect-before-allocs[=<n>]\n");
 				fprintf (stderr, "  verify-before-allocs[=<n>]\n");
 				fprintf (stderr, "  check-at-minor-collections\n");
+				fprintf (stderr, "  check-mark-bits\n");
 				fprintf (stderr, "  verify-before-collections\n");
 				fprintf (stderr, "  verify-nursery-at-minor-gc\n");
 				fprintf (stderr, "  dump-nursery-at-minor-gc\n");

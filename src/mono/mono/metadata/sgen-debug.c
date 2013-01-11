@@ -469,4 +469,47 @@ find_pinning_reference (char *obj, size_t size)
 	find_pinning_ref_from_thread (obj, size);
 }
 
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+		char* __target = *(char**)ptr;				\
+		if (__target) {						\
+			g_assert (is_valid_object_pointer (__target));	\
+			if (sgen_ptr_in_nursery (__target)) {		\
+				g_assert (SGEN_OBJECT_IS_PINNED (__target)); \
+			} else if (sgen_los_is_valid_object (__target)) { \
+				g_assert (sgen_los_object_is_pinned (__target)); \
+			} else if (major_collector.is_valid_object (__target)) { \
+				g_assert (major_collector.is_object_live (__target)); \
+			} else {					\
+				g_assert_not_reached ();		\
+			}						\
+		}							\
+	} while (0)
+
+static void
+check_marked_callback (char *start, size_t size, void *dummy)
+{
+	gboolean is_los = (gboolean)dummy;
+
+	if (is_los) {
+		if (!sgen_los_object_is_pinned (start))
+			return;
+	} else {
+		if (!major_collector.is_object_live (start))
+			return;
+	}
+
+#define SCAN_OBJECT_ACTION
+#include "sgen-scan-object.h"
+}
+
+void
+sgen_check_major_heap_marked (void)
+{
+	setup_valid_nursery_objects ();
+
+	major_collector.iterate_objects (TRUE, TRUE, check_marked_callback, (void*)FALSE);
+	sgen_los_iterate_objects (check_marked_callback, (void*)TRUE);
+}
+
 #endif /*HAVE_SGEN_GC*/
