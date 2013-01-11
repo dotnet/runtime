@@ -932,32 +932,37 @@ major_describe_pointer (char *ptr)
 		char *obj;
 		gboolean live;
 		MonoVTable *vtable;
+		int w, b;
+		gboolean marked;
 
 		if ((block->block > ptr) || ((block->block + MS_BLOCK_SIZE) <= ptr))
 			continue;
 
-		SGEN_LOG (1, "major-ptr (block %p sz %d pin %d ref %d) ",
+		SGEN_LOG (0, "major-ptr (block %p sz %d pin %d ref %d)\n",
 			block->block, block->obj_size, block->pinned, block->has_references);
 
 		idx = MS_BLOCK_OBJ_INDEX (ptr, block);
 		obj = (char*)MS_BLOCK_OBJ (block, idx);
 		live = MS_OBJ_ALLOCED (obj, block);
 		vtable = live ? (MonoVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
-		
+
+		MS_CALC_MARK_BIT (w, b, obj);
+		marked = MS_MARK_BIT (block, w, b);
+
 		if (obj == ptr) {
+			SGEN_LOG (0, "\t(");
 			if (live)
-				SGEN_LOG (1, "\t(object %s.%s)", vtable->klass->name_space, vtable->klass->name);
+				SGEN_LOG (0, "object");
 			else
-				SGEN_LOG (1, "(dead-object)");
+				SGEN_LOG (0, "dead-object");
 		} else {
 			if (live)
-				SGEN_LOG (1, "(interior-ptr offset %td of %p %s.%s)",
-					ptr - obj,
-					obj, vtable->klass->name_space, vtable->klass->name);
+				SGEN_LOG (0, "interior-ptr offset %td", ptr - obj);
 			else
-				SGEN_LOG (1, "(dead-interior-ptr to %td to %p)",
-					ptr - obj, obj);
+				SGEN_LOG (0, "dead-interior-ptr offset %td", ptr - obj);
 		}
+
+		SGEN_LOG (0, " marked %d)\n", marked ? 1 : 0);
 
 		return TRUE;
 	} END_FOREACH_BLOCK;
@@ -2095,7 +2100,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				int idx = card_data - card_base;
 				char *start = (char*)(block_start + idx * CARD_SIZE_IN_BYTES);
 				char *end = start + CARD_SIZE_IN_BYTES;
-				char *obj;
+				char *first_obj, *obj;
 
 				HEAVY_STAT (++scanned_cards);
 
@@ -2114,7 +2119,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				else
 					index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
 
-				obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
+				obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
 				while (obj < end) {
 					if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
 						goto next_small;
@@ -2133,6 +2138,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 					obj += block_obj_size;
 				}
 				HEAVY_STAT (if (*card_data) ++remarked_cards);
+				binary_protocol_card_scan (first_obj, obj - first_obj);
 			}
 		}
 	} END_FOREACH_BLOCK;

@@ -281,6 +281,13 @@ binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, g
 
 }
 
+void
+binary_protocol_card_scan (gpointer start, int size)
+{
+	SGenProtocolCardScan entry = { start, size };
+	protocol_entry (SGEN_PROTOCOL_CARD_SCAN, &entry, sizeof (SGenProtocolCardScan));
+}
+
 #endif
 
 #endif /* HAVE_SGEN_GC */

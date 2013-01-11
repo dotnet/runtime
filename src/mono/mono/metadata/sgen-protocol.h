@@ -42,7 +42,8 @@ enum {
 	SGEN_PROTOCOL_THREAD_UNREGISTER,
 	SGEN_PROTOCOL_MISSING_REMSET,
 	SGEN_PROTOCOL_ALLOC_PINNED,
-	SGEN_PROTOCOL_ALLOC_DEGRADED
+	SGEN_PROTOCOL_ALLOC_DEGRADED,
+	SGEN_PROTOCOL_CARD_SCAN
 };
 
 typedef struct {
@@ -130,6 +131,11 @@ typedef struct {
 	int value_pinned;
 } SGenProtocolMissingRemset;
 
+typedef struct {
+	gpointer start;
+	int size;
+} SGenProtocolCardScan;
+
 /* missing: finalizers, dislinks, roots, non-store wbarriers */
 
 void binary_protocol_init (const char *filename) MONO_INTERNAL;
@@ -156,6 +162,7 @@ void binary_protocol_thread_register (gpointer thread) MONO_INTERNAL;
 void binary_protocol_thread_unregister (gpointer thread) MONO_INTERNAL;
 void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset,
 		gpointer value, gpointer value_vtable, int value_pinned) MONO_INTERNAL;
+void binary_protocol_card_scan (gpointer start, int size) MONO_INTERNAL;
 
 #else
 
@@ -180,5 +187,6 @@ void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offs
 #define binary_protocol_thread_register(thread)
 #define binary_protocol_thread_unregister(thread)
 #define binary_protocol_missing_remset(obj, obj_vtable, offset, value, value_vtable, value_pinned)
+#define binary_protocol_card_scan(start, size)
 
 #endif

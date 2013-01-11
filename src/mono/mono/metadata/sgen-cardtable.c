@@ -29,6 +29,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-protocol.h"
 #include "utils/mono-counters.h"
 #include "utils/mono-time.h"
 #include "utils/mono-memory-model.h"
@@ -537,7 +538,7 @@ LOOP_HEAD:
 			int idx = (card_data - card_base) + extra_idx;
 			char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
 			char *card_end = start + CARD_SIZE_IN_BYTES;
-			char *elem;
+			char *first_elem, *elem;
 
 			HEAVY_STAT (++los_marked_cards);
 
@@ -551,7 +552,7 @@ LOOP_HEAD:
 			else
 				index = ARRAY_OBJ_INDEX (start, obj, elem_size);
 
-			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, elem_size, index);
+			elem = first_elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
 				ScanVTypeFunc scan_vtype_func = sgen_get_current_object_ops ()->scan_vtype;
 
@@ -572,6 +573,8 @@ LOOP_HEAD:
 					}
 				}
 			}
+
+			binary_protocol_card_scan (first_elem, elem - first_elem);
 		}
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -592,6 +595,8 @@ LOOP_HEAD:
 		} else if (sgen_card_table_region_begin_scanning ((mword)obj, block_obj_size)) {
 			sgen_get_current_object_ops ()->scan_object (obj, queue);
 		}
+
+		binary_protocol_card_scan (obj, sgen_safe_object_get_size ((MonoObject*)obj));
 	}
 }
 

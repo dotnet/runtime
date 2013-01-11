@@ -496,23 +496,28 @@ mono_sgen_los_describe_pointer (char *ptr)
 	for (obj = los_object_list; obj; obj = obj->next) {
 		MonoVTable *vtable;
 		const char *los_kind;
+		mword size;
+		gboolean pinned;
+
 		if (obj->data > ptr || obj->data + obj->size <= ptr)
 			continue;
 
-		if (obj->size > LOS_SECTION_OBJECT_LIMIT)
-			los_kind = "huge-los-ptr ";
+		size = sgen_los_object_size (obj);
+		pinned = sgen_los_object_is_pinned (obj->data);
+
+		if (size > LOS_SECTION_OBJECT_LIMIT)
+			los_kind = "huge-los-ptr";
 		else
-			los_kind = "los-ptr ";
+			los_kind = "los-ptr";
 
 		vtable = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
 
-		if (obj->data == ptr)
-			SGEN_LOG (1, "%s (object %s.%s size %d)", 
-					 los_kind, vtable->klass->name_space, vtable->klass->name, (int)obj->size);
-		else
-			SGEN_LOG (1, "%s (interior-ptr offset %td of %p (%s.%s) size %d)",
-					 los_kind, ptr - obj->data, obj->data,
-					 vtable->klass->name_space, vtable->klass->name, (int)obj->size);
+		if (obj->data == ptr) {
+			SGEN_LOG (0, "%s (size %td pin %d)\n", los_kind, size, pinned ? 1 : 0);
+		} else {
+			SGEN_LOG (0, "%s (interior-ptr offset %td size %td pin %d)",
+					los_kind, ptr - obj->data, size, pinned ? 1 : 0);
+		}
 
 		return TRUE;
 	}
