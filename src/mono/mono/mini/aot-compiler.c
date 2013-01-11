@@ -2873,9 +2873,13 @@ can_marshal_struct (MonoClass *klass)
 	MonoClassField *field;
 	gboolean can_marshal = TRUE;
 	gpointer iter = NULL;
+	MonoMarshalType *info;
+	int i;
 
 	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
 		return FALSE;
+
+	info = mono_marshal_load_type_info (klass);
 
 	/* Only allow a few field types to avoid asserts in the marshalling code */
 	while ((field = mono_class_get_fields (klass, &iter))) {
@@ -2904,6 +2908,19 @@ can_marshal_struct (MonoClass *klass)
 			if (!mono_class_from_mono_type (field->type)->enumtype && !can_marshal_struct (mono_class_from_mono_type (field->type)))
 				can_marshal = FALSE;
 			break;
+		case MONO_TYPE_SZARRAY: {
+			gboolean has_mspec = FALSE;
+
+			if (info) {
+				for (i = 0; i < info->num_fields; ++i) {
+					if (info->fields [i].field == field && info->fields [i].mspec)
+						has_mspec = TRUE;
+				}
+			}
+			if (!has_mspec)
+				can_marshal = FALSE;
+			break;
+		}
 		default:
 			can_marshal = FALSE;
 			break;
