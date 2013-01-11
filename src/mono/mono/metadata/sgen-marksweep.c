@@ -228,7 +228,7 @@ static long long num_major_objects_marked = 0;
 #endif
 
 static void
-sweep_block (MSBlockInfo *block);
+sweep_block (MSBlockInfo *block, gboolean during_major_collection);
 
 static int
 ms_find_block_obj_size_index (int size)
@@ -598,7 +598,7 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo **free_blocks, int size_inde
 
 	if (G_UNLIKELY (!block->swept)) {
 		stat_major_blocks_lazy_swept ++;
-		sweep_block (block);
+		sweep_block (block, FALSE);
 	}
 
 	obj = block->free_list;
@@ -747,7 +747,7 @@ free_object (char *obj, size_t size, gboolean pinned)
 	int word, bit;
 
 	if (!block->swept)
-		sweep_block (block);
+		sweep_block (block, FALSE);
 	SGEN_ASSERT (9, (pinned && block->pinned) || (!pinned && !block->pinned), "free-object pinning mixup object %p pinned %d block %p pinned %d", obj, pinned, block, block->pinned);
 	SGEN_ASSERT (9, MS_OBJ_ALLOCED (obj, block), "object %p is already free", obj);
 	MS_CALC_MARK_BIT (word, bit, obj);
@@ -889,7 +889,7 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 		if (!block->pinned && !non_pinned)
 			continue;
 		if (lazy_sweep)
-			sweep_block (block);
+			sweep_block (block, FALSE);
 
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
@@ -1480,9 +1480,12 @@ sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
  *   Traverse BLOCK, freeing and zeroing unused objects.
  */
 static void
-sweep_block (MSBlockInfo *block)
+sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 {
 	int count;
+
+	if (!during_major_collection)
+		g_assert (!sgen_concurrent_collection_in_progress ());
 
 	if (block->swept)
 		return;
@@ -1595,7 +1598,7 @@ ms_sweep (void)
 			have_free = TRUE;
 
 		if (!lazy_sweep)
-			sweep_block (block);
+			sweep_block (block, TRUE);
 
 		if (have_live) {
 			if (!has_pinned) {
@@ -1776,7 +1779,7 @@ major_start_major_collection (void)
 		while (*iter) {
 			MSBlockInfo *block = *iter;
 
-			sweep_block (block);
+			sweep_block (block, TRUE);
 
 			iter = &block->next;
 		}
@@ -2047,7 +2050,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				int card_offset;
 
 				if (!block->swept)
-					sweep_block (block);
+					sweep_block (block, FALSE);
 
 				if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
 					goto next_large;
@@ -2109,7 +2112,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 					continue;
 
 				if (!block->swept)
-					sweep_block (block);
+					sweep_block (block, FALSE);
 
 				HEAVY_STAT (++marked_cards);
 
