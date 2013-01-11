@@ -59,18 +59,24 @@ const char*descriptor_types [] = {
 	"complex_arr"
 };
 
-void
-describe_ptr (char *ptr)
+static char* describe_nursery_ptr (char *ptr, gboolean need_setup);
+
+static void
+describe_pointer (char *ptr, gboolean need_setup)
 {
 	MonoVTable *vtable;
 	mword desc;
 	int type;
 	char *start;
 	char *forwarded;
+	mword size;
 
  restart:
 	if (sgen_ptr_in_nursery (ptr)) {
-		printf ("Pointer inside nursery.\n");
+		start = describe_nursery_ptr (ptr, need_setup);
+		if (!start)
+			return;
+		ptr = start;
 	} else {
 		if (sgen_ptr_is_in_los (ptr, &start)) {
 			if (ptr == start)
@@ -78,6 +84,7 @@ describe_ptr (char *ptr)
 			else
 				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
 			ptr = start;
+			mono_sgen_los_describe_pointer (ptr);
 		} else if (major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
 			if (ptr == start)
 				printf ("Pointer is the start of object %p in oldspace.\n", start);
@@ -87,6 +94,7 @@ describe_ptr (char *ptr)
 				printf ("Pointer inside oldspace.\n");
 			if (start)
 				ptr = start;
+			major_collector.describe_pointer (ptr);
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			printf ("Pointer is inside a pinned chunk.\n");
 		} else {
@@ -123,6 +131,15 @@ describe_ptr (char *ptr)
 
 	type = desc & 0x7;
 	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
+
+	size = sgen_safe_object_get_size ((MonoObject*)ptr);
+	printf ("Size: %td\n", size);
+}
+
+void
+describe_ptr (char *ptr)
+{
+	describe_pointer (ptr, TRUE);
 }
 
 static gboolean missing_remsets;
@@ -137,7 +154,7 @@ static gboolean missing_remsets;
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && sgen_ptr_in_nursery ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address ((char*)(ptr))) { \
-			SGEN_LOG (1, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
+			SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			if (!object_is_pinned (*(ptr)))								\
 				missing_remsets = TRUE;									\
@@ -239,6 +256,15 @@ setup_mono_sgen_scan_area_with_callback (char *object, size_t size, void *data)
 	valid_nursery_objects [valid_nursery_object_count++] = object;
 }
 
+static void
+setup_valid_nursery_objects (void)
+{
+	if (!valid_nursery_objects)
+		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "debugging data");
+	valid_nursery_object_count = 0;
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE);
+}
+
 static gboolean
 find_object_in_nursery_dump (char *object)
 {
@@ -257,10 +283,13 @@ find_object_in_nursery_dump (char *object)
 	return FALSE;
 }
 
-static void
-describe_nursery_ptr (char *ptr)
+static char*
+describe_nursery_ptr (char *ptr, gboolean need_setup)
 {
 	int i;
+
+	if (need_setup)
+		setup_valid_nursery_objects ();
 
 	for (i = 0; i < valid_nursery_object_count; ++i) {
 		if (valid_nursery_objects [i] >= ptr)
@@ -268,19 +297,15 @@ describe_nursery_ptr (char *ptr)
 	}
 
 	if (i >= valid_nursery_object_count || valid_nursery_objects [i] + safe_object_get_size ((MonoObject *)valid_nursery_objects [i]) < ptr) {
-		SGEN_LOG (1, "nursery-ptr (unalloc'd-memory)");
+		SGEN_LOG (0, "nursery-ptr (unalloc'd-memory)\n");
+		return NULL;
 	} else {
 		char *obj = valid_nursery_objects [i];
-		MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
-		int size = safe_object_get_size ((MonoObject *)obj);
-
 		if (obj == ptr)
-			SGEN_LOG (1, "nursery-ptr (object %s.%s size %d)", 
-				vtable->klass->name_space, vtable->klass->name, size);
+			SGEN_LOG (0, "nursery-ptr\n");
 		else
-			SGEN_LOG (1, "nursery-ptr (interior-ptr offset %td of %p (%s.%s) size %d)",
-				ptr - obj, obj,
-				vtable->klass->name_space, vtable->klass->name, size);
+			SGEN_LOG (0, "nursery-ptr (interior-ptr offset %td)\n", ptr - obj);
+		return obj;
 	}
 }
 
@@ -298,29 +323,16 @@ is_valid_object_pointer (char *object)
 	return FALSE;
 }
 
-
-static void
-describe_pointer (char *ptr)
-{
-	if (sgen_ptr_in_nursery (ptr)) {
-		describe_nursery_ptr (ptr);
-	} else if (major_collector.describe_pointer (ptr)) {
-		//Nothing really
-	} else if (!mono_sgen_los_describe_pointer (ptr)) {
-		SGEN_LOG (1, "\tnon-heap-ptr");
-	}
-}
-
 static void
 bad_pointer_spew (char *obj, char **slot)
 {
 	char *ptr = *slot;
 	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
 
-	SGEN_LOG (1, "Invalid object pointer %p at offset %td in object %p (%s.%s):", ptr,
+	SGEN_LOG (0, "Invalid object pointer %p at offset %td in object %p (%s.%s):", ptr,
 		(char*)slot - obj,
 		obj, vtable->klass->name_space, vtable->klass->name);
-	describe_pointer (ptr);
+	describe_pointer (ptr, FALSE);
 	broken_heap = TRUE;
 }
 
@@ -330,7 +342,7 @@ missing_remset_spew (char *obj, char **slot)
 	char *ptr = *slot;
 	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
 
-    SGEN_LOG (1, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.",
+	SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.",
  		ptr, (char*)slot - obj, obj, 
 		vtable->klass->name_space, vtable->klass->name);
 
@@ -367,11 +379,7 @@ depend on OP_DUMMY_USE.
 void
 sgen_check_whole_heap (void)
 {
-	/*setup valid_nursery_objects*/
-	if (!valid_nursery_objects)
-		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "debugging data");
-	valid_nursery_object_count = 0;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE);
+	setup_valid_nursery_objects ();
 
 	broken_heap = FALSE;
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, NULL, FALSE);
@@ -418,7 +426,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			continue;
 		while (start < (char**)info->stack_end) {
 			if (*start >= obj && *start < endobj) {
-				SGEN_LOG (1, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->stack_start, info->stack_end);
+				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->stack_start, info->stack_end);
 			}
 			start++;
 		}
@@ -431,7 +439,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 #endif
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				SGEN_LOG (1, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, j, info, (gpointer)mono_thread_info_get_tid (info));
+				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, j, info, (gpointer)mono_thread_info_get_tid (info));
 		} END_FOREACH_THREAD
 	}
 }
@@ -451,7 +459,7 @@ find_pinning_reference (char *obj, size_t size)
 		if (!root->root_desc) {
 			while (start < (char**)root->end_root) {
 				if (*start >= obj && *start < endobj) {
-					SGEN_LOG (1, "Object %p referenced in pinned roots %p-%p\n", obj, start, root->end_root);
+					SGEN_LOG (0, "Object %p referenced in pinned roots %p-%p\n", obj, start, root->end_root);
 				}
 				start++;
 			}
