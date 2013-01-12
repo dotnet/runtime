@@ -1262,16 +1262,22 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 				} else {
 					SGEN_LOG (8, "Pinned try match %p (%s), size %zd", last_obj, safe_name (last_obj), last_obj_size);
 					if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
-						SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count);
-						binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
-						if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
-							int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
-							MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
-							MONO_GC_OBJ_PINNED ((mword)search_start, sgen_safe_object_get_size (search_start), vt->klass->name_space, vt->klass->name, gen);
-						}
 						if (scan_func) {
 							scan_func (search_start, queue);
 						} else {
+							SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
+									search_start, *(void**)search_start, safe_name (search_start), count);
+							binary_protocol_pin (search_start,
+									(gpointer)LOAD_VTABLE (search_start),
+									safe_object_get_size (search_start));
+							if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+								int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
+								MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
+								MONO_GC_OBJ_PINNED ((mword)search_start,
+										sgen_safe_object_get_size (search_start),
+										vt->klass->name_space, vt->klass->name, gen);
+							}
+
 							pin_object (search_start);
 							GRAY_OBJECT_ENQUEUE (queue, search_start);
 							if (G_UNLIKELY (do_pin_stats))
