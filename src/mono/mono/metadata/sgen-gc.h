@@ -647,6 +647,8 @@ sgen_nursery_is_object_alive (char *obj)
 }
 
 typedef struct {
+	gboolean is_split;
+
 	char* (*alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
 	char* (*par_alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
 

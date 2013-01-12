@@ -530,6 +530,8 @@ print_gc_param_usage (void)
 void
 sgen_split_nursery_init (SgenMinorCollector *collector)
 {
+	collector->is_split = TRUE;
+
 	collector->alloc_for_promotion = minor_alloc_for_promotion;
 	collector->par_alloc_for_promotion = minor_par_alloc_for_promotion;
 

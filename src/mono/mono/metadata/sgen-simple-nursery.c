@@ -87,6 +87,8 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 void
 sgen_simple_nursery_init (SgenMinorCollector *collector)
 {
+	collector->is_split = FALSE;
+
 	collector->alloc_for_promotion = alloc_for_promotion;
 	collector->par_alloc_for_promotion = par_alloc_for_promotion;
 
