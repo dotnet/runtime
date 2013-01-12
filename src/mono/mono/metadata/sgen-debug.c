@@ -512,4 +512,24 @@ sgen_check_major_heap_marked (void)
 	sgen_los_iterate_objects (check_marked_callback, (void*)TRUE);
 }
 
+static void
+check_nursery_objects_pinned_callback (char *obj, size_t size, void *data /* ScanCopyContext *ctx */)
+{
+	gboolean pinned = (gboolean)data;
+
+	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
+	if (pinned)
+		g_assert (SGEN_OBJECT_IS_PINNED (obj));
+	else
+		g_assert (!SGEN_OBJECT_IS_PINNED (obj));
+}
+
+void
+sgen_check_nursery_objects_pinned (gboolean pinned)
+{
+	sgen_clear_nursery_fragments ();
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*)pinned /* (void*)&ctx */, FALSE);
+}
+
 #endif /*HAVE_SGEN_GC*/

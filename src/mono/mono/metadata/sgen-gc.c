@@ -262,6 +262,8 @@ static gboolean whole_heap_check_before_collection = FALSE;
 static gboolean consistency_check_at_minor_collection = FALSE;
 /* If set, check whether mark bits are consistent after major collections */
 static gboolean check_mark_bits_after_major_collection = FALSE;
+/* If set, check that all nursery objects are pinned/not pinned, depending on context */
+static gboolean check_nursery_objects_pinned = FALSE;
 /* If set, do a few checks when the concurrent collector is used */
 static gboolean do_concurrent_checks = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
@@ -1527,6 +1529,7 @@ unpin_objects_from_queue (SgenGrayQueue *queue)
 		GRAY_OBJECT_DEQUEUE (queue, addr);
 		if (!addr)
 			break;
+		g_assert (SGEN_OBJECT_IS_PINNED (addr));
 		SGEN_UNPIN_OBJECT (addr);
 	}
 }
@@ -2738,7 +2741,23 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	MONO_GC_END (GENERATION_NURSERY);
 	binary_protocol_collection_end (stat_minor_gcs - 1, GENERATION_NURSERY);
 
+	if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
+		sgen_check_nursery_objects_pinned (unpin_queue != NULL);
+
 	return needs_major;
+}
+
+static void
+scan_nursery_objects_callback (char *obj, size_t size, ScanCopyContext *ctx)
+{
+	ctx->scan_func (obj, ctx->queue);
+}
+
+static void
+scan_nursery_objects (ScanCopyContext ctx)
+{
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+			(IterateObjectCallbackFunc)scan_nursery_objects_callback, (void*)&ctx, FALSE);
 }
 
 static void
@@ -2873,7 +2892,21 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	ctx.scan_func = concurrent_collection_in_progress ? current_object_ops.scan_object : NULL;
 	ctx.copy_func = NULL;
 	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
-	sgen_pin_objects_in_section (nursery_section, ctx);
+
+	if (major_collector.is_concurrent && sgen_minor_collector.is_split) {
+		/*
+		 * With the split nursery, not all remaining nursery
+		 * objects are pinned: those in to-space are not.  We
+		 * need to scan all nursery objects, though, so we
+		 * have to do it by iterating over the whole nursery.
+		 */
+		scan_nursery_objects (ctx);
+	} else {
+		sgen_pin_objects_in_section (nursery_section, ctx);
+		if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
+			sgen_check_nursery_objects_pinned (!concurrent_collection_in_progress || finish_up_concurrent_mark);
+	}
+
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	if (old_next_pin_slot)
 		*old_next_pin_slot = sgen_get_pinned_count ();
@@ -4823,10 +4856,6 @@ mono_gc_base_init (void)
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed-par")) {
 		sgen_marksweep_fixed_par_init (&major_collector);
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-conc")) {
-		if (have_split_nursery) {
-			fprintf (stderr, "Concurrent Mark&Sweep does not yet support the split nursery.\n");
-			exit (1);
-		}
 		sgen_marksweep_conc_init (&major_collector);
 	} else {
 		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector_opt);
@@ -5084,6 +5113,8 @@ mono_gc_base_init (void)
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "check-mark-bits")) {
 				check_mark_bits_after_major_collection = TRUE;
+			} else if (!strcmp (opt, "check-nursery-pinned")) {
+				check_nursery_objects_pinned = TRUE;
 			} else if (!strcmp (opt, "xdomain-checks")) {
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
@@ -5131,6 +5162,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  verify-before-allocs[=<n>]\n");
 				fprintf (stderr, "  check-at-minor-collections\n");
 				fprintf (stderr, "  check-mark-bits\n");
+				fprintf (stderr, "  check-nursery-pinned\n");
 				fprintf (stderr, "  verify-before-collections\n");
 				fprintf (stderr, "  verify-nursery-at-minor-gc\n");
 				fprintf (stderr, "  dump-nursery-at-minor-gc\n");

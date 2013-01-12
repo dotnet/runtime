@@ -1047,6 +1047,7 @@ void sgen_check_whole_heap (void);
 void sgen_check_whole_heap_stw (void) MONO_INTERNAL;
 void sgen_check_objref (char *obj);
 void sgen_check_major_heap_marked (void) MONO_INTERNAL;
+void sgen_check_nursery_objects_pinned (gboolean pinned) MONO_INTERNAL;
 
 /* Write barrier support */
 
