@@ -160,6 +160,43 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 		SGEN_ASSERT (9, ((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr, "to space object %p has no gc descriptor", obj);
 		SGEN_LOG (9, " (tospace, no change)");
 		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
+
+		/*
+		 * FIXME:
+		 *
+		 * The card table scanning code sometimes clears cards
+		 * that have just been set for a global remset.  In
+		 * the split nursery the following situation can
+		 * occur:
+		 *
+		 * Let's say object A starts in card C but continues
+		 * into C+1.  Within A, at offset O there's a
+		 * reference to a new nursery object X.  A+O is in
+		 * card C+1.  Now card C is scanned, and as part of
+		 * it, object A.  The reference at A+O is processed by
+		 * copying X into nursery to-space at Y.  Since it's
+		 * still in the nursery, a global remset must be added
+		 * for A+O, so card C+1 is marked.  Now, however, card
+		 * C+1 is scanned, which means that it's cleared
+		 * first.  This wouldn't be terribly bad if reference
+		 * A+O were re-scanned and the global remset re-added,
+		 * but since the reference points to to-space, that
+		 * doesn't happen, and C+1 remains cleared: the remset
+		 * is lost.
+		 *
+		 * There's at least two ways to fix this.  The easy
+		 * one is to re-add the remset on the re-scan.  This
+		 * is that - the following two lines of code.
+		 *
+		 * The proper solution appears to be to first make a
+		 * copy of the cards before scanning a block, then to
+		 * clear all the cards and scan from the copy, so no
+		 * remsets will be overwritten.  Scanning objects at
+		 * most once would be the icing on the cake.
+		 */
+		if (!sgen_ptr_in_nursery (obj_slot))
+			sgen_add_to_global_remset (obj_slot, obj);
+
 		return;
 	}
 #endif
