@@ -25,38 +25,56 @@ namespace Mono.Tuner {
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if (IsSkipped (assembly)) {
-				ProcessUserAssembly (assembly);
-				return;
-			}
-
-			if (!link_sdk_only) {
+			if (!IsSkipped (assembly) && IsLinked (assembly)) {
 				if (!Annotations.HasAction (assembly)) // stray assembly not picked up when resolving references
 					Annotations.SetAction (assembly, AssemblyAction.Link);
-
 				return;
 			}
-
-			if (Profile.IsSdkAssembly (assembly) || Profile.IsProductAssembly (assembly)) {
-				Annotations.SetAction (assembly, AssemblyAction.Link);
-				return;
-			}
-
 			ProcessUserAssembly (assembly);
 		}
 
-		bool IsSkipped (AssemblyDefinition assembly)
+		protected virtual bool IsPreservedAttribute (CustomAttribute attribute)
+		{
+			return (attribute.AttributeType.Name == "PreserveAttribute");
+		}
+
+		protected virtual bool IsLinkerSafeAttribute (CustomAttribute attribute)
+		{
+			return (attribute.AttributeType.Name == "LinkerSafeAttribute");
+		}
+
+		protected virtual bool IsSkipped (AssemblyDefinition assembly)
 		{
 			if (assembly.HasCustomAttributes) {
 				foreach (var ca in assembly.CustomAttributes) {
-					if (ca.AttributeType.Name == "PreserveAttribute")
+					if (IsPreservedAttribute (ca))
 						return true;
 				}
 			}
 			return skipped_assemblies.Contains (assembly.Name.Name);
 		}
 
-		void ProcessUserAssembly (AssemblyDefinition assembly)
+		protected virtual bool IsLinked (AssemblyDefinition assembly)
+		{
+			// LinkAll
+			if (!link_sdk_only)
+				return true;
+			// Link SDK : applies to BCL/SDK and product assembly (e.g. monotouch.dll)
+			if (Profile.IsSdkAssembly (assembly))
+				return true;
+			if (Profile.IsProductAssembly (assembly))
+			    return true;
+			// the assembly can be marked with [LinkAssembly]
+			if (assembly.HasCustomAttributes) {
+				foreach (var ca in assembly.CustomAttributes) {
+					if (IsLinkerSafeAttribute (ca))
+						return true;
+				}
+			}
+			return false;
+		}
+
+		protected void ProcessUserAssembly (AssemblyDefinition assembly)
 		{
 			ResolveFromAssemblyStep.ProcessLibrary (Context, assembly);
 		}
