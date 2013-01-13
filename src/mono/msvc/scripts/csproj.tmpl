@@ -13,7 +13,8 @@
     @NOCONFIG@
     @ALLOWUNSAFE@
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <AssemblyName>@ASSEMBLYNAME@</AssemblyName>
     <TargetFrameworkVersion>v@FX_VERSION</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -26,7 +27,6 @@
     <DefineConstants>DEBUG;TRACE;@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,7 +35,6 @@
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <!-- Set AddAdditionalExplicitAssemblyReferences to false, otherwise if targetting .NET4.0, 
   Microsoft.NETFramework.props will force a dependency on the assembly System.Core. This
@@ -45,8 +44,7 @@
   </PropertyGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    @SOURCES@
-  </ItemGroup>
+@SOURCES@  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -55,14 +53,16 @@
   </Target>
   -->
   <PropertyGroup>
-    <PreBuildEvent>@PREBUILD@</PreBuildEvent>
-    <PostBuildEvent>@POSTBUILD@</PostBuildEvent>
+    <PreBuildEvent>
+@PREBUILD@
+    </PreBuildEvent>
+    <PostBuildEvent>
+@POSTBUILD@
+  </PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
-    @REFERENCES@
-  </ItemGroup>
+@REFERENCES@  </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
-  @RESOURCES@
-</Project>
+@RESOURCES@</Project>
