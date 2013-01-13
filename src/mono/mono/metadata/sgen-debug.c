@@ -359,7 +359,7 @@ FIXME Flag missing remsets due to pinning as non fatal
 			if (!is_valid_object_pointer (*(char**)ptr)) {	\
 				bad_pointer_spew ((char*)obj, (char**)ptr);	\
 			} else if (!sgen_ptr_in_nursery (obj) && sgen_ptr_in_nursery ((char*)*ptr)) {	\
-				if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup_or_register ((char*)*(ptr), FALSE) && (!allow_missing_pinned || !SGEN_OBJECT_IS_PINNED ((char*)*(ptr)))) \
+				if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup ((char*)*(ptr)) && (!allow_missing_pinned || !SGEN_OBJECT_IS_PINNED ((char*)*(ptr)))) \
 			        missing_remset_spew ((char*)obj, (char**)ptr);	\
 			}	\
         } \

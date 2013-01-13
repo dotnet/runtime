@@ -247,6 +247,24 @@ sgen_cement_concurrent_finish (void)
 }
 
 gboolean
+sgen_cement_lookup (char *obj)
+{
+	int i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
+
+	g_assert (sgen_ptr_in_nursery (obj));
+
+	if (!cement_enabled)
+		return FALSE;
+
+	if (!cement_hash [i].obj)
+		return FALSE;
+	if (cement_hash [i].obj != obj)
+		return FALSE;
+
+	return cement_hash [i].count >= CEMENT_THRESHOLD;
+}
+
+gboolean
 sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 {
 	int i;
