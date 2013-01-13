@@ -1148,7 +1148,6 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cemen
 
 	if (!major_collector.is_concurrent) {
 		g_assert (!concurrent_cementing);
-		g_assert (object_is_pinned (obj));
 		g_assert (current_collection_generation != -1);
 	} else {
 		if (current_collection_generation == -1)
@@ -1157,7 +1156,9 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cemen
 			g_assert (concurrent_collection_in_progress);
 	}
 
-	if (sgen_cement_lookup_or_register (obj, concurrent_cementing))
+	if (!object_is_pinned (obj))
+		g_assert (sgen_minor_collector.is_split);
+	else if (sgen_cement_lookup_or_register (obj, concurrent_cementing))
 		return;
 
 	remset.record_pointer (ptr);
