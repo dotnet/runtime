@@ -3353,6 +3353,15 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 								s = strdup_tolower (sinfo->source_file);
 								if (g_hash_table_lookup (mod->data.source_files, s))
 									found = TRUE;
+								else {
+									char *s2 = g_path_get_basename (sinfo->source_file);
+									char *s3 = strdup_tolower (s2);
+
+									if (g_hash_table_lookup (mod->data.source_files, s3))
+										found = TRUE;
+									g_free (s2);
+									g_free (s3);
+								}
 								g_free (s);
 							}
 							g_ptr_array_free (source_file_list, TRUE);
