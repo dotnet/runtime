@@ -1235,7 +1235,12 @@ mono_gc_cleanup (void)
 					 */
 					Sleep (100);
 				}
+			} else {
+				int ret;
 
+				/* Wait for the thread to actually exit */
+				ret = WaitForSingleObjectEx (gc_thread->handle, INFINITE, TRUE);
+				g_assert (ret == WAIT_OBJECT_0);
 			}
 		}
 		gc_thread = NULL;
