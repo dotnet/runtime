@@ -4465,6 +4465,8 @@ static MonoJitInfo*
 mono_thread_info_get_last_managed (MonoThreadInfo *info)
 {
 	MonoJitInfo *ji = NULL;
+	if (!info)
+		return NULL;
 	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, &info->suspend_state, MONO_UNWIND_SIGNAL_SAFE, &ji);
 	return ji;
 }
@@ -4571,10 +4573,18 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		transition_to_suspended (thread);
 		mono_thread_info_self_suspend ();
 	} else {
-		MonoThreadInfo *info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, interrupt);
-		MonoJitInfo *ji = mono_thread_info_get_last_managed (info);
-		gboolean protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
-		gboolean running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+		MonoThreadInfo *info;
+		MonoJitInfo *ji;
+		gboolean protected_wrapper;
+		gboolean running_managed;
+
+		/*A null info usually means the thread is already dead. */
+		if (!(info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, interrupt)))
+			return;
+
+		ji = mono_thread_info_get_last_managed (info);
+		protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
+		running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
 
 		if (running_managed && !protected_wrapper) {
 			transition_to_suspended (thread);
