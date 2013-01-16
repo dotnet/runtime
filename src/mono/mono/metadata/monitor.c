@@ -270,7 +270,7 @@ mon_new (gsize id)
 							new->wait_list = g_slist_remove (new->wait_list, new->wait_list->data);
 						}
 					}
-					mono_gc_weak_link_remove (&new->data);
+					mono_gc_weak_link_remove (&new->data, FALSE);
 					new->data = monitor_freelist;
 					monitor_freelist = new;
 				}

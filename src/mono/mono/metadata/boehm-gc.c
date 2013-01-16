@@ -506,13 +506,19 @@ mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
 	/* libgc requires that we use HIDE_POINTER... */
 	*link_addr = (void*)HIDE_POINTER (obj);
-	GC_GENERAL_REGISTER_DISAPPEARING_LINK (link_addr, obj);
+	if (track)
+		GC_REGISTER_LONG_LINK (link_addr, obj);
+	else
+		GC_GENERAL_REGISTER_DISAPPEARING_LINK (link_addr, obj);
 }
 
 void
-mono_gc_weak_link_remove (void **link_addr)
+mono_gc_weak_link_remove (void **link_addr, gboolean track)
 {
-	GC_unregister_disappearing_link (link_addr);
+	if (track)
+		GC_unregister_long_link (link_addr);
+	else
+		GC_unregister_disappearing_link (link_addr);
 	*link_addr = NULL;
 }
 
@@ -612,112 +618,6 @@ gboolean
 mono_gc_pending_finalizers (void)
 {
 	return GC_should_invoke_finalizers ();
-}
-
-/*
- * LOCKING: Assumes the domain_finalizers lock is held.
- */
-static void
-add_weak_track_handle_internal (MonoDomain *domain, MonoObject *obj, guint32 gchandle)
-{
-	GSList *refs;
-
-	if (!domain->track_resurrection_objects_hash)
-		domain->track_resurrection_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-	refs = g_hash_table_lookup (domain->track_resurrection_objects_hash, obj);
-	refs = g_slist_prepend (refs, GUINT_TO_POINTER (gchandle));
-	g_hash_table_insert (domain->track_resurrection_objects_hash, obj, refs);
-}
-
-void
-mono_gc_add_weak_track_handle (MonoObject *obj, guint32 handle)
-{
-	MonoDomain *domain;
-
-	if (!obj)
-		return;
-
-	domain = mono_object_get_domain (obj);
-
-	mono_domain_finalizers_lock (domain);
-
-	add_weak_track_handle_internal (domain, obj, handle);
-
-	g_hash_table_insert (domain->track_resurrection_handles_hash, GUINT_TO_POINTER (handle), obj);
-
-	mono_domain_finalizers_unlock (domain);
-}
-
-/*
- * LOCKING: Assumes the domain_finalizers lock is held.
- */
-static void
-remove_weak_track_handle_internal (MonoDomain *domain, MonoObject *obj, guint32 gchandle)
-{
-	GSList *refs;
-
-	if (!domain->track_resurrection_objects_hash)
-		return;
-
-	refs = g_hash_table_lookup (domain->track_resurrection_objects_hash, obj);
-	refs = g_slist_remove (refs, GUINT_TO_POINTER (gchandle));
-	g_hash_table_insert (domain->track_resurrection_objects_hash, obj, refs);
-}
-
-void
-mono_gc_change_weak_track_handle (MonoObject *old_obj, MonoObject *obj, guint32 gchandle)
-{
-	MonoDomain *domain = mono_domain_get ();
-
-	mono_domain_finalizers_lock (domain);
-
-	if (old_obj)
-		remove_weak_track_handle_internal (domain, old_obj, gchandle);
-	if (obj)
-		add_weak_track_handle_internal (domain, obj, gchandle);
-
-	mono_domain_finalizers_unlock (domain);
-}
-
-void
-mono_gc_remove_weak_track_handle (guint32 gchandle)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoObject *obj;
-
-	/* Clean our entries in the two hashes in MonoDomain */
-
-	mono_domain_finalizers_lock (domain);
-
-	/* Get the original object this handle pointed to */
-	obj = g_hash_table_lookup (domain->track_resurrection_handles_hash, GUINT_TO_POINTER (gchandle));
-	if (obj) {
-		g_hash_table_remove (domain->track_resurrection_handles_hash, GUINT_TO_POINTER (gchandle));
-
-		remove_weak_track_handle_internal (domain, obj, gchandle);
-	}
-
-	mono_domain_finalizers_unlock (domain);
-}
-
-GSList*
-mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj)
-{
-	GSList *refs = NULL;
-
-	if (domain->track_resurrection_objects_hash) {
-		refs = g_hash_table_lookup (domain->track_resurrection_objects_hash, obj);
-
-		if (refs)
-			/*
-			 * Since we don't run finalizers again for resurrected objects,
-			 * no need to keep these around.
-			 */
-			g_hash_table_remove (domain->track_resurrection_objects_hash, obj);
-	}
-
-	return refs;
 }
 
 void

@@ -4611,9 +4611,9 @@ mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 }
 
 void
-mono_gc_weak_link_remove (void **link_addr)
+mono_gc_weak_link_remove (void **link_addr, gboolean track)
 {
-	sgen_register_disappearing_link (NULL, link_addr, FALSE, FALSE);
+	sgen_register_disappearing_link (NULL, link_addr, track, FALSE);
 }
 
 MonoObject*
