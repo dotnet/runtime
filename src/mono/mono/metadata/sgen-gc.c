@@ -1678,8 +1678,6 @@ alloc_nursery (void)
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS, TRUE);
 	section->num_scan_start = scan_starts;
-	section->block.role = MEMORY_ROLE_GEN0;
-	section->block.next = NULL;
 
 	nursery_section = section;
 
@@ -4813,8 +4811,6 @@ mono_gc_base_init (void)
 			exit (1);
 		}
 		sgen_marksweep_conc_init (&major_collector);
-	} else if (!strcmp (major_collector_opt, "copying")) {
-		sgen_copying_init (&major_collector);
 	} else {
 		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector_opt);
 		exit (1);
@@ -4997,7 +4993,7 @@ mono_gc_base_init (void)
 			fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 			fprintf (stderr, "  soft-heap-limit=n (where N is an integer, possibly with a k, m or a g suffix)\n");
 			fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
-			fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par', 'marksweep-fixed', 'marksweep-fixed-par' or `copying')\n");
+			fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par', 'marksweep-fixed' or 'marksweep-fixed-par')\n");
 			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");

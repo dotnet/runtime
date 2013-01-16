@@ -146,25 +146,11 @@ struct _SgenThreadInfo {
 #endif
 };
 
-enum {
-	MEMORY_ROLE_GEN0,
-	MEMORY_ROLE_GEN1,
-	MEMORY_ROLE_PINNED
-};
-
-typedef struct _SgenBlock SgenBlock;
-struct _SgenBlock {
-	void *next;
-	unsigned char role;
-};
-
 /*
- * The nursery section and the major copying collector's sections use
- * this struct.
+ * The nursery section uses this struct.
  */
 typedef struct _GCMemSection GCMemSection;
 struct _GCMemSection {
-	SgenBlock block;
 	char *data;
 	mword size;
 	/* pointer where more data could be allocated if it fits */
@@ -179,12 +165,7 @@ struct _GCMemSection {
 	void **pin_queue_start;
 	int pin_queue_num_entries;
 	unsigned short num_scan_start;
-	gboolean is_to_space;
 };
-
-#define SGEN_PINNED_CHUNK_FOR_PTR(o)	((SgenBlock*)(((mword)(o)) & ~(SGEN_PINNED_CHUNK_SIZE - 1)))
-
-typedef struct _SgenPinnedChunk SgenPinnedChunk;
 
 /*
  * Recursion is not allowed for the thread lock.
@@ -479,14 +460,6 @@ enum {
 	INTERNAL_MEM_MAX
 };
 
-#define SGEN_PINNED_FREELIST_NUM_SLOTS	30
-
-typedef struct {
-	SgenPinnedChunk *chunk_list;
-	SgenPinnedChunk *free_lists [SGEN_PINNED_FREELIST_NUM_SLOTS];
-	void *delayed_free_lists [SGEN_PINNED_FREELIST_NUM_SLOTS];
-} SgenPinnedAllocator;
-
 enum {
 	GENERATION_NURSERY,
 	GENERATION_OLD,
@@ -494,7 +467,6 @@ enum {
 };
 
 void sgen_init_internal_allocator (void) MONO_INTERNAL;
-void sgen_init_pinned_allocator (void) MONO_INTERNAL;
 
 typedef struct _ObjectList ObjectList;
 struct _ObjectList {
@@ -514,7 +486,6 @@ typedef struct
 } ScanCopyContext;
 
 void sgen_report_internal_mem_usage (void) MONO_INTERNAL;
-void sgen_report_pinned_mem_usage (SgenPinnedAllocator *alc) MONO_INTERNAL;
 void sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;
 void sgen_dump_section (GCMemSection *section, const char *type) MONO_INTERNAL;
 void sgen_dump_occupied (char *start, char *end, char *section_start) MONO_INTERNAL;
@@ -529,15 +500,7 @@ void sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure) MONO_INTERNAL;
 void sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
 
-void* sgen_alloc_pinned (SgenPinnedAllocator *allocator, size_t size) MONO_INTERNAL;
-void sgen_free_pinned (SgenPinnedAllocator *allocator, void *addr, size_t size) MONO_INTERNAL;
-
 gboolean sgen_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
-
-void sgen_pinned_scan_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
-void sgen_pinned_scan_pinned_objects (SgenPinnedAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
-
-void sgen_pinned_update_heap_boundaries (SgenPinnedAllocator *alc) MONO_INTERNAL;
 
 void** sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
@@ -739,7 +702,6 @@ void sgen_marksweep_fixed_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void sgen_marksweep_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void sgen_marksweep_fixed_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
 void sgen_marksweep_conc_init (SgenMajorCollector *collector) MONO_INTERNAL;
-void sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
 SgenMajorCollector* sgen_get_major_collector (void) MONO_INTERNAL;
 
 

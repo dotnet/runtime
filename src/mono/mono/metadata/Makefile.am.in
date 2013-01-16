@@ -218,13 +218,11 @@ sgen_sources = \
 	sgen-os-win32.c		\
 	sgen-gc.c		\
 	sgen-internal.c		\
-	sgen-pinned-allocator.c	\
 	sgen-marksweep.c	\
 	sgen-marksweep-fixed.c	\
 	sgen-marksweep-par.c	\
 	sgen-marksweep-fixed-par.c	\
 	sgen-marksweep-conc.c	\
-	sgen-major-copying.c	\
 	sgen-los.c		\
 	sgen-protocol.c \
 	sgen-bridge.c		\
