@@ -327,12 +327,6 @@ struct _MonoDomain {
 	 */
 	GHashTable         *finalizable_objects_hash;
 
-	/* These two are boehm only */
-	/* Maps MonoObjects to a GSList of WeakTrackResurrection GCHandles pointing to them */
-	GHashTable         *track_resurrection_objects_hash;
-	/* Maps WeakTrackResurrection GCHandles to the MonoObjects they point to */
-	GHashTable         *track_resurrection_handles_hash;
-
 	/* Protects the three hashes above */
 	CRITICAL_SECTION   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
