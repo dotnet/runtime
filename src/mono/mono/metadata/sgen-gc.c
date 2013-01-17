@@ -547,8 +547,8 @@ void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
 static void init_stats (void);
 
-static int mark_ephemerons_in_range (char *start, char *end, ScanCopyContext ctx);
-static void clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx);
+static int mark_ephemerons_in_range (ScanCopyContext ctx);
+static void clear_unreachable_ephemerons (ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenObjectOperations current_object_ops;
@@ -1893,12 +1893,12 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 
 	/*
 	 * Walk the ephemeron tables marking all values with reachable keys. This must be completely done
-	 * before processing finalizable objects or non-tracking weak hamdle to avoid finalizing/clearing
+	 * before processing finalizable objects and non-tracking weak links to avoid finalizing/clearing
 	 * objects that are in fact reachable.
 	 */
 	done_with_ephemerons = 0;
 	do {
-		done_with_ephemerons = mark_ephemerons_in_range (start_addr, end_addr, ctx);
+		done_with_ephemerons = mark_ephemerons_in_range (ctx);
 		sgen_drain_gray_stack (-1, ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
@@ -1945,7 +1945,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	done_with_ephemerons = 0;
 	do {
-		done_with_ephemerons = mark_ephemerons_in_range (start_addr, end_addr, ctx);
+		done_with_ephemerons = mark_ephemerons_in_range (ctx);
 		sgen_drain_gray_stack (-1, ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
@@ -1954,7 +1954,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (start_addr, end_addr, ctx);
+	clear_unreachable_ephemerons (ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -3450,19 +3450,11 @@ report_internal_mem_usage (void)
  * ######################################################################
  */
 
-/*
- * If the object has been forwarded it means it's still referenced from a root. 
- * If it is pinned it's still alive as well.
- * A LOS object is only alive if we have pinned it.
- * Return TRUE if @obj is ready to be finalized.
- */
 static inline gboolean
-sgen_is_object_alive (void *object)
+sgen_major_is_object_alive (void *object)
 {
 	mword objsize;
 
-	if (ptr_in_nursery (object))
-		return sgen_nursery_is_object_alive (object);
 	/* Oldgen objects can be pinned and forwarded too */
 	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
 		return TRUE;
@@ -3477,6 +3469,55 @@ sgen_is_object_alive (void *object)
 
 	return major_collector.is_object_live (object);
 }
+
+/*
+ * If the object has been forwarded it means it's still referenced from a root. 
+ * If it is pinned it's still alive as well.
+ * A LOS object is only alive if we have pinned it.
+ * Return TRUE if @obj is ready to be finalized.
+ */
+static inline gboolean
+sgen_is_object_alive (void *object)
+{
+	if (ptr_in_nursery (object))
+		return sgen_nursery_is_object_alive (object);
+
+	return sgen_major_is_object_alive (object);
+}
+
+/*
+ * This function returns true if @object is either alive or it belongs to the old gen
+ * and we're currently doing a minor collection.
+ */
+static inline int
+sgen_is_object_alive_for_current_gen (char *object)
+{
+	if (ptr_in_nursery (object))
+		return sgen_nursery_is_object_alive (object);
+
+	if (current_collection_generation == GENERATION_NURSERY)
+		return TRUE;
+
+	return sgen_major_is_object_alive (object);
+}
+
+/*
+ * This function returns true if @object is either alive and belongs to the
+ * current collection - major collections are full heap, so old gen objects
+ * are never alive during a minor collection.
+ */
+static inline int
+sgen_is_object_alive_and_on_current_collection (char *object)
+{
+	if (ptr_in_nursery (object))
+		return sgen_nursery_is_object_alive (object);
+
+	if (current_collection_generation == GENERATION_NURSERY)
+		return FALSE;
+
+	return sgen_major_is_object_alive (object);
+}
+
 
 gboolean
 sgen_gc_is_object_ready_for_finalization (void *object)
@@ -3519,25 +3560,10 @@ sgen_queue_finalization_entry (MonoObject *obj)
 	}
 }
 
-static inline int
-object_is_reachable (char *object, char *start, char *end)
-{
-	/*This happens for non nursery objects during minor collections. We just treat all objects as alive.*/
-	if (object < start || object >= end)
-		return TRUE;
-
-	return sgen_is_object_alive (object);
-}
-
 gboolean
 sgen_object_is_live (void *obj)
 {
-	if (ptr_in_nursery (obj))
-		return object_is_pinned (obj);
-	/* FIXME This is semantically wrong! All tenured object are considered alive during a nursery collection. */
-	if (current_collection_generation == GENERATION_NURSERY)
-		return FALSE;
-	return major_collector.is_object_live (obj);
+	return sgen_is_object_alive_and_on_current_collection (obj);
 }
 
 /* LOCKING: requires that the GC lock is held */
@@ -3568,11 +3594,10 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
+clear_unreachable_ephemerons (ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
-	int was_in_nursery, was_promoted;
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
 	MonoArray *array;
 	Ephemeron *cur, *array_end;
@@ -3581,7 +3606,7 @@ clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
 	while (current) {
 		char *object = current->array;
 
-		if (!object_is_reachable (object, start, end)) {
+		if (!sgen_is_object_alive_for_current_gen (object)) {
 			EphemeronLinkNode *tmp = current;
 
 			SGEN_LOG (5, "Dead Ephemeron array at %p", object);
@@ -3597,12 +3622,8 @@ clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
 			continue;
 		}
 
-		was_in_nursery = ptr_in_nursery (object);
 		copy_func ((void**)&object, queue);
 		current->array = object;
-
-		/*The array was promoted, add global remsets for key/values left behind in nursery.*/
-		was_promoted = was_in_nursery && !ptr_in_nursery (object);
 
 		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", object);
 
@@ -3618,25 +3639,13 @@ clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
 				continue;
 
 			SGEN_LOG (5, "[%td] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
-				key, object_is_reachable (key, start, end) ? "reachable" : "unreachable",
-				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable");
+				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
+				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
-			if (!object_is_reachable (key, start, end)) {
+			if (!sgen_is_object_alive_for_current_gen (key)) {
 				cur->key = tombstone;
 				cur->value = NULL;
 				continue;
-			}
-
-			if (was_promoted) {
-				gpointer value = cur->value;
-				if (ptr_in_nursery (key)) {/*key was not promoted*/
-					SGEN_LOG (5, "\tAdded remset to key %p", key);
-					sgen_add_to_global_remset (&cur->key, key);
-				}
-				if (ptr_in_nursery (value)) {/*value was not promoted*/
-					SGEN_LOG (5, "\tAdded remset to value %p", cur->value);
-					sgen_add_to_global_remset (&cur->value, value);
-				}
 			}
 		}
 		prev = current;
@@ -3644,9 +3653,13 @@ clear_unreachable_ephemerons (char *start, char *end, ScanCopyContext ctx)
 	}
 }
 
-/* LOCKING: requires that the GC lock is held */
+/*
+LOCKING: requires that the GC lock is held
+
+Limitations: We scan all ephemerons on every collection since the current design doesn't allow for a simple nursery/mature split.
+*/
 static int
-mark_ephemerons_in_range (char *start, char *end, ScanCopyContext ctx)
+mark_ephemerons_in_range (ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
@@ -3660,18 +3673,8 @@ mark_ephemerons_in_range (char *start, char *end, ScanCopyContext ctx)
 		char *object = current->array;
 		SGEN_LOG (5, "Ephemeron array at %p", object);
 
-		/*
-		For now we process all ephemerons during all collections.
-		Ideally we should use remset information to partially scan those
-		arrays.
-		We already emit write barriers for Ephemeron fields, it's
-		just that we don't process them.
-		*/
-		/*if (object < start || object >= end)
-			continue;*/
-
 		/*It has to be alive*/
-		if (!object_is_reachable (object, start, end)) {
+		if (!sgen_is_object_alive_for_current_gen (object)) {
 			SGEN_LOG (5, "\tnot reachable");
 			continue;
 		}
@@ -3690,15 +3693,15 @@ mark_ephemerons_in_range (char *start, char *end, ScanCopyContext ctx)
 				continue;
 
 			SGEN_LOG (5, "[%td] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
-				key, object_is_reachable (key, start, end) ? "reachable" : "unreachable",
-				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable");
+				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
+				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
-			if (object_is_reachable (key, start, end)) {
+			if (sgen_is_object_alive_for_current_gen (key)) {
 				char *value = cur->value;
 
 				copy_func ((void**)&cur->key, queue);
 				if (value) {
-					if (!object_is_reachable (value, start, end))
+					if (!sgen_is_object_alive_for_current_gen (value))
 						nothing_marked = 0;
 					copy_func ((void**)&cur->value, queue);
 				}
