@@ -827,9 +827,9 @@ void sgen_gc_event_moves (void) MONO_INTERNAL;
 void sgen_queue_finalization_entry (MonoObject *obj) MONO_INTERNAL;
 const char* sgen_generation_name (int generation) MONO_INTERNAL;
 
-void sgen_collect_bridge_objects (char *start, char *end, int generation, ScanCopyContext ctx) MONO_INTERNAL;
-void sgen_finalize_in_range (char *start, char *end, int generation, ScanCopyContext ctx) MONO_INTERNAL;
-void sgen_null_link_in_range (char *start, char *end, int generation, gboolean before_finalization, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_finalize_in_range (int generation, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx) MONO_INTERNAL;
 void sgen_null_links_for_domain (MonoDomain *domain, int generation) MONO_INTERNAL;
 void sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation) MONO_INTERNAL;
 void sgen_process_fin_stage_entries (void) MONO_INTERNAL;

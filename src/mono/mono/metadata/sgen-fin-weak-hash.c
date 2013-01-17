@@ -106,7 +106,7 @@ sgen_mark_bridge_object (MonoObject *obj)
 
 /* LOCKING: requires that the GC lock is held */
 void
-sgen_collect_bridge_objects (char *start, char *end, int generation, ScanCopyContext ctx)
+sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
@@ -127,7 +127,7 @@ sgen_collect_bridge_objects (char *start, char *end, int generation, ScanCopyCon
 			continue;
 
 		/* Object is a bridge object and major heap says it's dead  */
-		if (!((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)))
+		if (major_collector.is_object_live ((char*)object))
 			continue;
 
 		/* Nursery says the object is dead. */
@@ -163,7 +163,7 @@ sgen_collect_bridge_objects (char *start, char *end, int generation, ScanCopyCon
 
 /* LOCKING: requires that the GC lock is held */
 void
-sgen_finalize_in_range (char *start, char *end, int generation, ScanCopyContext ctx)
+sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
@@ -176,7 +176,7 @@ sgen_finalize_in_range (char *start, char *end, int generation, ScanCopyContext 
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
 		int tag = tagged_object_get_tag (object);
 		object = tagged_object_get_object (object);
-		if ((char*)object >= start && (char*)object < end && !major_collector.is_object_live ((char*)object)) {
+		if (!major_collector.is_object_live ((char*)object)) {
 			gboolean is_fin_ready = sgen_gc_is_object_ready_for_finalization (object);
 			MonoObject *copy = object;
 			copy_func ((void**)&copy, queue);
@@ -429,7 +429,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, int generation)
 
 /* LOCKING: requires that the GC lock is held */
 void
-sgen_null_link_in_range (char *start, char *end, int generation, gboolean before_finalization, ScanCopyContext ctx)
+sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
@@ -463,7 +463,7 @@ sgen_null_link_in_range (char *start, char *end, int generation, gboolean before
 		if (track != before_finalization) {
 			object = DISLINK_OBJECT (link);
 
-			if (object >= start && object < end && !major_collector.is_object_live (object)) {
+			if (!major_collector.is_object_live (object)) {
 				if (sgen_gc_is_object_ready_for_finalization (object)) {
 					*link = NULL;
 					SGEN_LOG (5, "Dislink nullified at %p to GCed object %p", link, object);

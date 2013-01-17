@@ -1908,9 +1908,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		sgen_scan_togglerefs (sgen_get_nursery_start (), sgen_get_nursery_end (), ctx);
 
 	if (sgen_need_bridge_processing ()) {
-		sgen_collect_bridge_objects (start_addr, end_addr, generation, ctx);
+		sgen_collect_bridge_objects (generation, ctx);
 		if (generation == GENERATION_OLD)
-			sgen_collect_bridge_objects (sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, ctx);
+			sgen_collect_bridge_objects (GENERATION_NURSERY, ctx);
 	}
 
 	/*
@@ -1923,9 +1923,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	We must clear weak links that don't track resurrection before processing object ready for
 	finalization so they can be cleared before that.
 	*/
-	sgen_null_link_in_range (start_addr, end_addr, generation, TRUE, ctx);
+	sgen_null_link_in_range (generation, TRUE, ctx);
 	if (generation == GENERATION_OLD)
-		sgen_null_link_in_range (start_addr, end_addr, GENERATION_NURSERY, TRUE, ctx);
+		sgen_null_link_in_range (GENERATION_NURSERY, TRUE, ctx);
 
 
 	/* walk the finalization queue and move also the objects that need to be
@@ -1933,9 +1933,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * on are also not reclaimed. As with the roots above, only objects in the nursery
 	 * are marked/copied.
 	 */
-	sgen_finalize_in_range (start_addr, end_addr, generation, ctx);
+	sgen_finalize_in_range (generation, ctx);
 	if (generation == GENERATION_OLD)
-		sgen_finalize_in_range (sgen_get_nursery_start (), sgen_get_nursery_end (), GENERATION_NURSERY, ctx);
+		sgen_finalize_in_range (GENERATION_NURSERY, ctx);
 	/* drain the new stack that might have been created */
 	SGEN_LOG (6, "Precise scan of gray area post fin");
 	sgen_drain_gray_stack (-1, ctx);
@@ -1969,9 +1969,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 	for (;;) {
-		sgen_null_link_in_range (start_addr, end_addr, generation, FALSE, ctx);
+		sgen_null_link_in_range (generation, FALSE, ctx);
 		if (generation == GENERATION_OLD)
-			sgen_null_link_in_range (start_addr, end_addr, GENERATION_NURSERY, FALSE, ctx);
+			sgen_null_link_in_range (GENERATION_NURSERY, FALSE, ctx);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
 		sgen_drain_gray_stack (-1, ctx);
