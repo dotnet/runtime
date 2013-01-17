@@ -439,8 +439,18 @@ sgen_null_link_in_range (char *start, char *end, int generation, gboolean before
 
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object;
-		gboolean track = DISLINK_TRACK (link);
+		gboolean track;
 
+		/*
+		We null a weak link before unregistering it, so it's possible that a thread is
+		suspended right in between setting the content to null and staging the unregister.
+
+		The rest of this code cannot handle null links as DISLINK_OBJECT (NULL) produces an invalid address.
+		*/
+		if (!*link)
+			continue;
+
+		track = DISLINK_TRACK (link);
 		/*
 		 * Tracked references are processed after
 		 * finalization handling whereas standard weak
@@ -500,7 +510,7 @@ sgen_null_links_for_domain (MonoDomain *domain, int generation)
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
-		if (object && !((MonoObject*)object)->vtable) {
+		if (*link && object && !((MonoObject*)object)->vtable) {
 			gboolean free = TRUE;
 
 			if (*link) {
@@ -529,7 +539,11 @@ sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predi
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
-		mono_bool is_alive = predicate ((MonoObject*)object, data);
+		mono_bool is_alive;
+
+		if (!*link)
+			continue;
+		is_alive = predicate ((MonoObject*)object, data);
 
 		if (!is_alive) {
 			*link = NULL;
