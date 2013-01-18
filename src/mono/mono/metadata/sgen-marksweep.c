@@ -1221,7 +1221,10 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		} else {
 			LOSObject *bigobj = sgen_los_header_for_object (obj);
 			mword size_word = bigobj->size;
-
+#ifdef FIXED_HEAP
+			mword vtable_word = *(mword*)obj;
+			vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+#endif
 			if (size_word & 1)
 				return;
 			binary_protocol_pin (obj, vt, sgen_safe_object_get_size ((MonoObject*)obj));
