@@ -441,7 +441,7 @@ find_card_offset (mword card)
 	return (__builtin_ffsll (GUINT64_TO_LE(card)) - 1) / 8;
 #else
 	int i;
-	guint8 *ptr = (guint *) &card;
+	guint8 *ptr = (guint8 *) &card;
 	for (i = 0; i < sizeof (mword); ++i) {
 		if (ptr[i])
 			return i;

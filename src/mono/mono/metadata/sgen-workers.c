@@ -188,7 +188,6 @@ static gboolean
 workers_dequeue_and_do_job (WorkerData *data)
 {
 	JobQueueEntry *entry;
-	int num_finished;
 
 	/*
 	 * At this point the GC might not be running anymore.  We

@@ -604,6 +604,8 @@ sgen_process_dislink_stage_entries (void)
 void
 sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc)
 {
+
+#ifdef ENABLE_DTRACE
 	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {
 		MonoVTable *vt = obj ? (MonoVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
 		MONO_GC_WEAK_UPDATE ((mword)link,
@@ -614,6 +616,7 @@ sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, g
 				obj ? vt->klass->name : NULL,
 				track ? 1 : 0);
 	}
+#endif
 
 	if (obj)
 		*link = HIDE_POINTER (obj, track);

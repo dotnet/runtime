@@ -4253,6 +4253,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			size_t nursery_size;
 			gulong card_table = (gulong)mono_gc_get_card_table (&card_table_shift, &card_table_mask);
 			gulong nursery_start = (gulong)mono_gc_get_nursery (&nursery_shift, &nursery_size);
+			gboolean card_table_nursery_check = mono_gc_card_table_nursery_check ();
 
 			/*
 			 * We need one register we can clobber, we choose EDX and make sreg1
@@ -4275,7 +4276,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * done:
 			 */
 
-			if (mono_gc_card_table_nursery_check ()) {
+			if (card_table_nursery_check) {
 				if (value != X86_EDX)
 					x86_mov_reg_reg (code, X86_EDX, value, 4);
 				x86_shift_reg_imm (code, X86_SHR, X86_EDX, nursery_shift);
@@ -4287,7 +4288,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (card_table_mask)
 				x86_alu_reg_imm (code, X86_AND, X86_EDX, (int)card_table_mask);
 			x86_mov_membase_imm (code, X86_EDX, card_table, 1, 1);
-			if (mono_gc_card_table_nursery_check ())
+			if (card_table_nursery_check)
 				x86_patch (br, code);
 			break;
 		}

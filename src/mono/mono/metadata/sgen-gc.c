@@ -1144,11 +1144,13 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 {
 	remset.record_pointer (ptr);
 
+#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
 				vt->klass->name_space, vt->klass->name);
 	}
+#endif
 }
 
 /*
@@ -1270,6 +1272,8 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 							binary_protocol_pin (search_start,
 									(gpointer)LOAD_VTABLE (search_start),
 									safe_object_get_size (search_start));
+
+#ifdef ENABLE_DTRACE
 							if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 								int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
 								MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
@@ -1277,6 +1281,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 										sgen_safe_object_get_size (search_start),
 										vt->klass->name_space, vt->klass->name, gen);
 							}
+#endif
 
 							pin_object (search_start);
 							GRAY_OBJECT_ENQUEUE (queue, search_start);
@@ -1346,11 +1351,14 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	}
 	GRAY_OBJECT_ENQUEUE (queue, object);
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
+
+#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (object) ? GENERATION_NURSERY : GENERATION_OLD;
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (object);
 		MONO_GC_OBJ_PINNED ((mword)object, sgen_safe_object_get_size (object), vt->klass->name_space, vt->klass->name, gen);
 	}
+#endif
 }
 
 void
@@ -2836,10 +2844,14 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 		int dummy;
 		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((MonoObject*)(bigobj->data))));
+
+#ifdef ENABLE_DTRACE
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
 				MONO_GC_OBJ_PINNED ((mword)bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
+#endif
+
 			if (sgen_los_object_is_pinned (bigobj->data)) {
 				g_assert (finish_up_concurrent_mark);
 				continue;
@@ -3552,12 +3564,14 @@ sgen_queue_finalization_entry (MonoObject *obj)
 		fin_ready_list = entry;
 	}
 
+#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_FINALIZE_ENQUEUE_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_FINALIZE_ENQUEUE ((mword)obj, sgen_safe_object_get_size (obj),
 				vt->klass->name_space, vt->klass->name, gen, critical);
 	}
+#endif
 }
 
 gboolean
@@ -4175,7 +4189,7 @@ mono_gc_pthread_detach (pthread_t thread)
 }
 
 void
-mono_gc_pthread_exit (void *retval)
+mono_gc_pthread_exit (void *retval) 
 {
 	pthread_exit (retval);
 }

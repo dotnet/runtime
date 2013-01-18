@@ -219,9 +219,9 @@ static long long stat_major_blocks_freed = 0;
 static long long stat_major_blocks_lazy_swept = 0;
 static long long stat_major_objects_evacuated = 0;
 
-static long long num_major_objects_marked = 0;
 
 #ifdef SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
+static long long num_major_objects_marked = 0;
 #define INC_NUM_MAJOR_OBJECTS_MARKED()	(++num_major_objects_marked)
 #else
 #define INC_NUM_MAJOR_OBJECTS_MARKED()
@@ -1260,10 +1260,14 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		} else {
 			if (sgen_los_object_is_pinned (obj))
 				return;
+
+#ifdef ENABLE_DTRACE
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
+#endif
+
 			sgen_los_pin_object (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
@@ -1394,10 +1398,14 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 			if (sgen_los_object_is_pinned (obj))
 				return;
 			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+
+#ifdef ENABLE_DTRACE
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
 			}
+#endif
+
 			sgen_los_pin_object (obj);
 			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (queue, obj);
@@ -1417,9 +1425,13 @@ major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
 static long long
 major_get_and_reset_num_major_objects_marked (void)
 {
+#ifdef SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
 	long long num = num_major_objects_marked;
 	num_major_objects_marked = 0;
 	return num;
+#else
+	return 0;
+#endif
 }
 #endif
 
