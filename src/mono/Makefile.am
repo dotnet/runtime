@@ -161,6 +161,8 @@ win32setup:
 
 update-csproj:
 	-rm msvc/scripts/order 
+	-rm msvc/scripts/order.xml
+	-rm -rf msvc/scripts/inputs
 	-mkdir msvc/scripts/inputs
 	(cd runtime; make V=1 extra_targets=csproj-local)
 
@@ -169,16 +171,18 @@ package-inputs:
 	echo '<root>' >> msvc/scripts/order.xml
 	for i in `cat msvc/scripts/order`; do \
 		set `echo $$i | sed -e 's/:/ /' -e 's/.input//'`; \
-		cat msvc/scripts/inputs/$$2.input | \
+		cat msvc/scripts/inputs/$$2.input | sed -e 's/\\\\/\\/g' -e 's/\\/\\\\/g' | \
 		(echo "    <project dir=\"$$1\" library=\"$$2\">"; \
 		 read boot;   echo "      <boot>$$boot</boot>"; \
 		 read mcs;    echo "      <mcs>$$mcs</mcs>"; \
 		 read flags;  echo "      <flags>$$flags</flags>"; \
 		 read output; echo "      <output>$$output</output>"; \
-		 read built;  echo "      <built_sources>$$built</built_sources>"; \
+		 read built;  echo "      <built_sources>`echo $$built | sed 's/\\\/\\\\/g'`</built_sources>"; \
 		 read libou;  echo "      <library_output>$$libou</library_output>"; \
 		 read fx_ver; echo "      <fx_version>$$fx_ver</fx_version>"; \
+		 read profile; echo "      <profile>$$profile</profile>"; \
 		 read resp;   echo "      <response>$$resp</response>"; \
-		echo "    </project>") >> msvc/scripts/order.xml; \
+		 echo "    </project>") >> msvc/scripts/order.xml; \
 	done
 	echo "</root>" >> msvc/scripts/order.xml
+

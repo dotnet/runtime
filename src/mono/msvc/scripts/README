@@ -1,3 +1,5 @@
+README					Last updated: 2013-01-09
+
 Visual Studio Build Setup for Mono's Managed Code
 =================================================
 
@@ -34,14 +36,47 @@ necessary to build the Mono class libraries.
 	With this input, it is possible to generate an XML file, to do
 	this do:
 
-	     	  make package-inputs
+		  make package-inputs
 
 	This will generate order.xml, this contains the ordered list in
 	which directories must be compiled as well as the command line
 	options used to build it.
 
-* Generate csproj files
+* Generate .csproj and .sln files
 
 	Run the genproj.exe executable in this directory.
 
+		cd msvc/scripts/
+		/cygdrive/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe genproj.csproj
+		./genproj.exe
+		
+	One output of genproj is the solutions for the successive profiles, 
+	from net_2_0.sln to from net_4.5.sln 
 
+	The command
+		./genproj.exe -h 
+	lists a couple of options, notably to limit the scope of 
+	the output solutions for each profiles to System*.dll assemblies 
+	and dependencies.
+
+* Compiling from Visual Studio
+
+	Before you try to compile from Visual Studio, you are *strongly* 
+	advised to set the maximum number of parallel project builds 
+	to 1 (Tools -> Options -> Projects and Solutions -> Build and Run)
+	Due to the iterative building process for some of Mono's 
+	assemblies, there can be clashes writing to /obj/Debug for 
+	some projects
+
+* KNOWN ISSUES
+
+	* Many assemblies still fail to compile, due to missing project 
+	references output by genproj, or other issues yet to determine
+	
+	* The first build of a solution may have a large number of 
+	failing compilations, more than subsequent solution Builds
+	
+	* The .NET 2.0 profile assemblies end up targetting the 
+	v4.0 runtime, even when requesting 2.0 in the csproj file
+	(http://social.msdn.microsoft.com/Forums/en-US/msbuild/
+	thread/6c9cd0e1-7fb8-480a-b006-f034b5926e03)

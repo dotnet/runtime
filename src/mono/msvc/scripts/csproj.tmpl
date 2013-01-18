@@ -5,22 +5,21 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{155AEF28-C81F-405D-9072-9D52780E3E70}</ProjectGuid>
+    <ProjectGuid>@PROJECTGUID@</ProjectGuid>
     <OutputType>Library</OutputType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <OutputPath>@OUTPUTDIR@</OutputPath>
     @NOSTDLIB@
+    @NOCONFIG@
     @ALLOWUNSAFE@
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <AssemblyName>@ASSEMBLYNAME@</AssemblyName>
     <TargetFrameworkVersion>v@FX_VERSION</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <!-- Filter out System.Core added by: Microsoft.NETFramework.props  -->
-    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
@@ -28,22 +27,24 @@
     <DefineConstants>DEBUG;TRACE;@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>  
     <DebugType>pdbonly</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <Optimize>true</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    @ADDITIONALLIBPATHS@
+  </PropertyGroup>
+  <!-- Set AddAdditionalExplicitAssemblyReferences to false, otherwise if targetting .NET4.0, 
+  Microsoft.NETFramework.props will force a dependency on the assembly System.Core. This
+  is a problem to compile the Mono mscorlib.dll -->
+  <PropertyGroup>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
   </PropertyGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-@SOURCES@
-  </ItemGroup>
+@SOURCES@  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -52,13 +53,16 @@
   </Target>
   -->
   <PropertyGroup>
-    <PreBuildEvent>@PREBUILD@</PreBuildEvent>
+    <PreBuildEvent>
+@PREBUILD@
+    </PreBuildEvent>
+    <PostBuildEvent>
+@POSTBUILD@
+  </PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
-@REFERENCES@
-  </ItemGroup>
+@REFERENCES@  </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
-  @RESOURCES@
-</Project>
+@RESOURCES@</Project>
