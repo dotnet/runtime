@@ -27,6 +27,9 @@
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
+static MonoType*
+mini_get_gsharedvt_alloc_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t);
+
 static int
 type_check_context_used (MonoType *type, gboolean recursive)
 {
@@ -672,6 +675,11 @@ get_shared_class (MonoClass *class)
 	 */
 	//g_assert_not_reached ();
 
+	/* The gsharedvt changes break this */
+	if (ALLOW_PARTIAL_SHARING)
+		g_assert_not_reached ();
+
+#if 0
 	if (class->is_inflated) {
 		MonoGenericContext *context = &class->generic_class->context;
 		MonoGenericContext *container_context;
@@ -701,6 +709,7 @@ get_shared_class (MonoClass *class)
 			return class;
 		}
 	}
+#endif
 
 	return class_uninstantiated (class);
 }
@@ -1527,6 +1536,7 @@ has_constraints (MonoGenericContainer *container)
  * @method: a method
  * @allow_type_vars: whether to regard type variables as reference types
  * @alloc_partial: whether to allow partial sharing
+ * @alloc_gsharedvt: whenever to allow sharing over valuetypes
  *
  * Returns TRUE iff the method is inflated or part of an inflated
  * class, its context is sharable and it has no constraints on its
@@ -1534,10 +1544,13 @@ has_constraints (MonoGenericContainer *container)
  */
 gboolean
 mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_type_vars,
-										   gboolean allow_partial)
+										   gboolean allow_partial, gboolean allow_gsharedvt)
 {
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
+
+	if (allow_gsharedvt && mini_is_gsharedvt_sharable_method (method))
+		return TRUE;
 
 	if (method->is_inflated) {
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
@@ -1574,7 +1587,7 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 gboolean
 mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars)
 {
-	return mono_method_is_generic_sharable_impl_full (method, allow_type_vars, ALLOW_PARTIAL_SHARING);
+	return mono_method_is_generic_sharable_impl_full (method, allow_type_vars, ALLOW_PARTIAL_SHARING, TRUE);
 }
 
 gboolean
@@ -1643,11 +1656,18 @@ mono_method_construct_object_context (MonoMethod *method)
 }
 
 static gboolean gshared_supported;
+static gboolean gsharedvt_supported;
 
 void
 mono_set_generic_sharing_supported (gboolean supported)
 {
 	gshared_supported = supported;
+}
+
+void
+mono_set_generic_sharing_vt_supported (gboolean supported)
+{
+	gsharedvt_supported = supported;
 }
 
 /*
@@ -1842,10 +1862,15 @@ mini_class_get_context (MonoClass *class)
 MonoType*
 mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type)
 {
+	/* FIXME: Some callers don't pass in a gsctx, like mono_dyn_call_prepare () */
+	/*
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
 		g_assert (gsctx);
-
-	return mono_type_get_basic_type_from_generic (type);
+	*/
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
+		return mini_get_gsharedvt_alloc_type_gsctx (gsctx, type);
+	else
+		return mono_type_get_basic_type_from_generic (type);
 }
 
 /*
@@ -1859,7 +1884,7 @@ mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
 {
 	if (type->byref)
 		return &mono_defaults.int_class->byval_arg;
-	return mono_type_get_basic_type_from_generic (mono_type_get_underlying_type (type));
+	return mini_get_basic_type_from_generic (gsctx, mono_type_get_underlying_type (type));
 }
 
 /*
@@ -1884,12 +1909,20 @@ mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align)
 /*
  * mini_type_stack_size_full:
  *
- *   Same as mini_type_stack_size, but handle pinvoke data types as well.
+ *   Same as mini_type_stack_size, but handle gsharedvt and pinvoke data types as well.
  */
 int
 mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke)
 {
 	int size;
+
+	/*
+	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR)
+		g_assert (gsctx);
+	*/
+
+	if (mini_is_gsharedvt_type_gsctx (gsctx, t))
+		t = mini_get_gsharedvt_alloc_type_gsctx (gsctx, t);
 
 	if (pinvoke) {
 		size = mono_type_native_stack_size (t, align);
@@ -1927,6 +1960,30 @@ mono_generic_sharing_cleanup (void)
 		g_hash_table_destroy (generic_subclass_hash);
 }
 
+/*
+ * mini_type_var_is_vt:
+ *
+ *   Return whenever T is a type variable instantiated with a vtype.
+ */
+gboolean
+mini_type_var_is_vt (MonoCompile *cfg, MonoType *type)
+{
+	if (type->type == MONO_TYPE_VAR) {
+		if (cfg->generic_sharing_context->var_is_vt && cfg->generic_sharing_context->var_is_vt [type->data.generic_param->num])
+			return TRUE;
+		else
+			return FALSE;
+	} else if (type->type == MONO_TYPE_MVAR) {
+		if (cfg->generic_sharing_context->mvar_is_vt && cfg->generic_sharing_context->mvar_is_vt [type->data.generic_param->num])
+			return TRUE;
+		else
+			return FALSE;
+	} else {
+		g_assert_not_reached ();
+	}
+	return FALSE;
+}
+
 gboolean
 mini_type_is_reference (MonoCompile *cfg, MonoType *type)
 {
@@ -1935,5 +1992,81 @@ mini_type_is_reference (MonoCompile *cfg, MonoType *type)
 	if (!cfg->generic_sharing_context)
 		return FALSE;
 	/*FIXME the probably needs better handle under partial sharing*/
-	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
+	return ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && !mini_type_var_is_vt (cfg, type));
 }
+
+/*
+ * mini_method_get_rgctx:
+ *
+ *  Return the RGCTX which needs to be passed to M when it is called.
+ */
+gpointer
+mini_method_get_rgctx (MonoMethod *m)
+{
+	if (mini_method_get_context (m)->method_inst)
+		return mono_method_lookup_rgctx (mono_class_vtable (mono_domain_get (), m->klass), mini_method_get_context (m)->method_inst);
+	else
+		return mono_class_vtable (mono_domain_get (), m->klass);
+}
+
+#ifdef MONOTOUCH
+
+#include "mini-generic-sharing-gshared.c"
+
+#else
+
+gboolean
+mini_is_gsharedvt_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t)
+{
+	return FALSE;
+}
+
+gboolean
+mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t)
+{
+	return FALSE;
+}
+
+gboolean
+mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass)
+{
+	return FALSE;
+}
+
+gboolean
+mini_is_gsharedvt_signature (MonoCompile *cfg, MonoMethodSignature *sig)
+{
+	return FALSE;
+}
+
+gboolean
+mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t)
+{
+	return FALSE;
+}
+
+static MonoType*
+mini_get_gsharedvt_alloc_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t)
+{
+	return NULL;
+}
+
+MonoType*
+mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t)
+{
+	return NULL;
+}
+
+gboolean
+mini_is_gsharedvt_sharable_method (MonoMethod *method)
+{
+	return FALSE;
+}
+
+gboolean
+mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig)
+{
+	return FALSE;
+}
+
+#endif /* !MONOTOUCH */

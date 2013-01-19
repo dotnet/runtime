@@ -2335,9 +2335,11 @@ MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip
 
 /* Generic sharing */
 
-
 void
 mono_set_generic_sharing_supported (gboolean supported) MONO_INTERNAL;
+
+void
+mono_set_generic_sharing_vt_supported (gboolean supported) MONO_INTERNAL;
 
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
@@ -2386,7 +2388,7 @@ gboolean
 mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
 
 gboolean
-mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_type_vars, gboolean allow_partial) MONO_INTERNAL;
+mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_type_vars, gboolean allow_partial, gboolean allow_gsharedvt) MONO_INTERNAL;
 
 gboolean
 mono_is_partially_sharable_inst (MonoGenericInst *inst) MONO_INTERNAL;
@@ -2423,7 +2425,17 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type) MONO_INTERNAL;
 gboolean mini_type_is_reference (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
-
+gboolean mini_type_var_is_vt (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_signature (MonoCompile *cfg, MonoMethodSignature *sig) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
+MonoType* mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_INTERNAL;
+gpointer mini_method_get_rgctx (MonoMethod *m) MONO_INTERNAL;
+void mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 
 /* wapihandles.c */
 int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;

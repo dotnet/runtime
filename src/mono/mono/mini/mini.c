@@ -4230,7 +4230,7 @@ mini_get_shared_method (MonoMethod *method)
 		shared_context = declaring_method->klass->generic_container->context;
 
 	/* Handle partial sharing */
-	if (method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE)) {
+	if (method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE)) {
 		MonoGenericContext *context = mono_method_get_context (method);
 		MonoGenericInst *inst;
 		MonoType **type_argv;

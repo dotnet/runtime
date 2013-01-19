@@ -3486,7 +3486,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE))
+		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE))
 			/* Already added */
 			continue;
 
@@ -3754,7 +3754,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		 * If the method is fully sharable, it was already added in place of its
 		 * generic definition.
 		 */
-		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE))
+		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE))
 			continue;
 
 		/*
