@@ -816,3 +816,59 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 
 	return target;
 }
+
+/*
+ * mono_arch_get_gsharedvt_arg_trampoline:
+ *
+ *   See tramp-x86.c for documentation.
+ */
+gpointer
+mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+{
+	guint8 *code, *start;
+	int buf_len;
+	gpointer *constants;
+
+	buf_len = 24;
+
+	start = code = mono_domain_code_reserve (domain, buf_len);
+
+	/* Similar to the specialized trampoline code */
+	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 8);
+	/* arg is passed in LR */
+	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_PC, 0);
+	code = emit_bx (code, ARMREG_IP);
+	constants = (gpointer*)code;
+	constants [0] = arg;
+	constants [1] = addr;
+	code += 8;
+
+	g_assert ((code - start) <= buf_len);
+
+	nacl_domain_code_validate (domain, &start, buf_len, &code);
+	mono_arch_flush_icache (start, code - start);
+
+	return start;
+}
+
+#ifdef MONOTOUCH
+
+#include "tramp-arm-gsharedvt.c"
+
+#else
+
+gpointer
+mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer *caller_regs, gpointer *callee_regs)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	return NULL;
+}
+
+#endif /* !MONOTOUCH */

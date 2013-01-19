@@ -419,8 +419,10 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 	int k, frame_size = 0;
 	guint32 size, align, pad;
 	int offset = 8;
+	MonoType *t;
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
+	t = mini_type_get_underlying_type (gsctx, csig->ret);
+	if (MONO_TYPE_ISSTRUCT (t)) {
 		frame_size += sizeof (gpointer);
 		offset += 4;
 	}
@@ -680,6 +682,7 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
 	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
 	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
+	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 
 #ifdef ARM_FPU_FPA
 	arm_fpu = MONO_ARM_FPU_FPA;
@@ -775,10 +778,10 @@ mono_arch_cpu_enumerate_simd_versions (void)
 #ifndef DISABLE_JIT
 
 static gboolean
-is_regsize_var (MonoType *t) {
+is_regsize_var (MonoGenericSharingContext *gsctx, MonoType *t) {
 	if (t->byref)
 		return TRUE;
-	t = mini_type_get_underlying_type (NULL, t);
+	t = mini_type_get_underlying_type (gsctx, t);
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -821,7 +824,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 			continue;
 
 		/* we can only allocate 32 bit values */
-		if (is_regsize_var (ins->inst_vtype)) {
+		if (is_regsize_var (cfg->generic_sharing_context, ins->inst_vtype)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
 			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
@@ -1019,6 +1022,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
 	gboolean is_pinvoke = sig->pinvoke;
+	MonoType *t;
 
 	if (mp)
 		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
@@ -1029,10 +1033,11 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	gr = ARMREG_R0;
 
 	/* FIXME: handle returning a struct */
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	t = mini_type_get_underlying_type (gsctx, sig->ret);
+	if (MONO_TYPE_ISSTRUCT (t)) {
 		guint32 align;
 
-		if (is_pinvoke && mono_class_native_size (mono_class_from_mono_type (sig->ret), &align) <= sizeof (gpointer)) {
+		if (is_pinvoke && mono_class_native_size (mono_class_from_mono_type (t), &align) <= sizeof (gpointer)) {
 			cinfo->ret.storage = RegTypeStructByVal;
 		} else {
 			cinfo->vtype_retaddr = TRUE;
@@ -1085,7 +1090,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			n++;
 			continue;
 		}
-		simpletype = mini_type_get_underlying_type (NULL, sig->params [i]);
+		simpletype = mini_type_get_underlying_type (gsctx, sig->params [i]);
 		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -1144,10 +1149,9 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 				if (is_pinvoke)
 					size = mono_class_native_size (klass, &align);
 				else
-					size = mono_class_value_size (klass, &align);
+					size = mini_type_stack_size_full (gsctx, simpletype, &align, FALSE);
 			}
-			DEBUG(printf ("load %d bytes struct\n",
-				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
+			DEBUG(printf ("load %d bytes struct\n", size));
 			align_size = size;
 			nwords = 0;
 			align_size += (sizeof (gpointer) - 1);
@@ -1201,7 +1205,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	}
 
 	{
-		simpletype = mini_type_get_underlying_type (NULL, sig->ret);
+		simpletype = mini_type_get_underlying_type (gsctx, sig->ret);
 		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -1392,14 +1396,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	offset = 0;
 	curinst = 0;
-	if (!MONO_TYPE_ISSTRUCT (sig->ret)) {
-		switch (mini_type_get_underlying_type (NULL, sig->ret)->type) {
-		case MONO_TYPE_VOID:
-			break;
-		default:
+	if (!MONO_TYPE_ISSTRUCT (sig->ret) && !cinfo->vtype_retaddr) {
+		if (sig->ret->type != MONO_TYPE_VOID) {
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = ARMREG_R0;
-			break;
 		}
 	}
 	/* local vars are at a positive offset from the stack pointer */
@@ -1424,24 +1424,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += 8;
 
 	/* the MonoLMF structure is stored just below the stack pointer */
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		if (cinfo->ret.storage == RegTypeStructByVal) {
-			cfg->ret->opcode = OP_REGOFFSET;
-			cfg->ret->inst_basereg = cfg->frame_reg;
-			offset += sizeof (gpointer) - 1;
-			offset &= ~(sizeof (gpointer) - 1);
-			cfg->ret->inst_offset = - offset;
-		} else {
-			ins = cfg->vret_addr;
-			offset += sizeof(gpointer) - 1;
-			offset &= ~(sizeof(gpointer) - 1);
-			ins->inst_offset = offset;
-			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = cfg->frame_reg;
-			if (G_UNLIKELY (cfg->verbose_level > 1)) {
-				printf ("vret_addr =");
-				mono_print_ins (cfg->vret_addr);
-			}
+	if (cinfo->ret.storage == RegTypeStructByVal) {
+		cfg->ret->opcode = OP_REGOFFSET;
+		cfg->ret->inst_basereg = cfg->frame_reg;
+		offset += sizeof (gpointer) - 1;
+		offset &= ~(sizeof (gpointer) - 1);
+		cfg->ret->inst_offset = - offset;
+		offset += sizeof(gpointer);
+	} else if (cinfo->vtype_retaddr) {
+		ins = cfg->vret_addr;
+		offset += sizeof(gpointer) - 1;
+		offset &= ~(sizeof(gpointer) - 1);
+		ins->inst_offset = offset;
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = cfg->frame_reg;
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr =");
+			mono_print_ins (cfg->vret_addr);
 		}
 		offset += sizeof(gpointer);
 	}
@@ -1511,18 +1510,24 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	curinst = cfg->locals_start;
 	for (i = curinst; i < cfg->num_varinfo; ++i) {
+		MonoType *t;
+
 		ins = cfg->varinfo [i];
 		if ((ins->flags & MONO_INST_IS_DEAD) || ins->opcode == OP_REGVAR || ins->opcode == OP_REGOFFSET)
 			continue;
 
+		t = ins->inst_vtype;
+		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (cfg, t))
+			t = mini_get_gsharedvt_alloc_type_for_type (cfg, t);
+
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
-		if (ins->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (ins->inst_vtype) && ins->inst_vtype->type != MONO_TYPE_TYPEDBYREF) {
-			size = mono_class_native_size (mono_class_from_mono_type (ins->inst_vtype), &ualign);
+		if (ins->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
+			size = mono_class_native_size (mono_class_from_mono_type (t), &ualign);
 			align = ualign;
 		}
 		else
-			size = mono_type_size (ins->inst_vtype, &align);
+			size = mono_type_size (t, &align);
 
 		/* FIXME: if a structure is misaligned, our memcpy doesn't work,
 		 * since it loads/stores misaligned words, which don't do the right thing.
@@ -1573,7 +1578,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (ins->opcode != OP_REGVAR) {
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
-			size = mini_type_stack_size_full (NULL, sig->params [i], &ualign, sig->pinvoke);
+			size = mini_type_stack_size_full (cfg->generic_sharing_context, sig->params [i], &ualign, sig->pinvoke);
 			align = ualign;
 			/* FIXME: if a structure is misaligned, our memcpy doesn't work,
 			 * since it loads/stores misaligned words, which don't do the right thing.
@@ -1618,7 +1623,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == RegTypeStructByVal)
 		cfg->ret_var_is_local = TRUE;
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage != RegTypeStructByVal) {
+	if (cinfo->vtype_retaddr) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
@@ -1770,7 +1775,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
-		t = mini_type_get_underlying_type (NULL, t);
+		t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* Emit the signature cookie just before the implicit arguments */
@@ -1934,20 +1939,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos))
 		emit_sig_cookie (cfg, call, cinfo);
 
-	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (cinfo->ret.storage == RegTypeStructByVal) {
+		/* The JIT will transform this into a normal call */
+		call->vret_in_reg = TRUE;
+	} else if (cinfo->vtype_retaddr) {
 		MonoInst *vtarg;
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+		vtarg->sreg1 = call->vret_var->dreg;
+		vtarg->dreg = mono_alloc_preg (cfg);
+		MONO_ADD_INS (cfg->cbb, vtarg);
 
-		if (cinfo->ret.storage == RegTypeStructByVal) {
-			/* The JIT will transform this into a normal call */
-			call->vret_in_reg = TRUE;
-		} else {
-			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
-			vtarg->sreg1 = call->vret_var->dreg;
-			vtarg->dreg = mono_alloc_preg (cfg);
-			MONO_ADD_INS (cfg->cbb, vtarg);
-
-			mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
-		}
+		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
 	}
 
 	call->stack_usage = cinfo->stack_usage;
@@ -3421,7 +3423,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	cinfo = get_call_info (cfg->generic_sharing_context, NULL, sig);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (cinfo->vtype_retaddr) {
 		ArgInfo *ainfo = &cinfo->ret;
 		inst = cfg->vret_addr;
 		g_assert (arm_is_imm12 (inst->inst_offset));
@@ -5163,7 +5165,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cinfo = get_call_info (cfg->generic_sharing_context, NULL, sig);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage != RegTypeStructByVal) {
+	if (cinfo->vtype_retaddr) {
 		ArgInfo *ainfo = &cinfo->ret;
 		inst = cfg->vret_addr;
 		g_assert (arm_is_imm12 (inst->inst_offset));
@@ -6246,3 +6248,24 @@ mono_arch_set_target (char *mtriple)
 	if (strstr (mtriple, "gnueabi"))
 		eabi_supported = TRUE;
 }
+
+#ifdef MONOTOUCH
+
+#include "mini-arm-gsharedvt.c"
+
+#else
+
+gboolean
+mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
+{
+	return FALSE;
+}
+
+gpointer
+mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethod *normal_method, MonoMethod *gsharedvt_method, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gboolean virtual)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
+#endif /* !MONOTOUCH */

@@ -97,12 +97,45 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
+
+/* Return value marshalling for calls between gsharedvt and normal code */
+typedef enum {
+	GSHAREDVT_RET_NONE = 0,
+	GSHAREDVT_RET_IREGS = 1,
+	GSHAREDVT_RET_I1 = 5,
+	GSHAREDVT_RET_U1 = 6,
+	GSHAREDVT_RET_I2 = 7,
+	GSHAREDVT_RET_U2 = 8
+} GSharedVtRetMarshal;
+
+typedef struct {
+	/* Method address to call */
+	gpointer addr;
+	/* The trampoline reads this, so keep the size explicit */
+	int ret_marshal;
+	/* If ret_marshal != NONE, this is the reg of the vret arg, else -1 */
+	int vret_arg_reg;
+	/* The stack slot where the return value will be stored */
+	int vret_slot;
+	int stack_usage, map_count;
+	/* If not -1, then make a virtual call using this vtable offset */
+	int vcall_offset;
+	/* Whenever this is a in or an out call */
+	int gsharedvt_in;
+	/* Maps stack slots/registers in the caller to the stack slots/registers in the callee */
+	/* A negative value means a register, i.e. -1=r0, -2=r1 etc. */
+	int map [MONO_ZERO_LEN_ARRAY];
+} GSharedVtCallInfo;
+
 void arm_patch (guchar *code, const guchar *target);
 guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
 
 void
 mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
+
+gpointer
+mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer *caller_regs, gpointer *callee_regs) MONO_INTERNAL;
 
 typedef enum {
 	MONO_ARM_FPU_NONE = 0,
@@ -183,6 +216,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
+#define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
 /* Matches the HAVE_AEABI_READ_TP define in mini-arm.c */
 #if defined(__ARM_EABI__) && defined(__linux__) && !defined(TARGET_ANDROID)
