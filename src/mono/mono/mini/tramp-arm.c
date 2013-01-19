@@ -817,6 +817,8 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 	return target;
 }
 
+#ifndef DISABLE_JIT
+
 /*
  * mono_arch_get_gsharedvt_arg_trampoline:
  *
@@ -872,3 +874,5 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 }
 
 #endif /* !MONOTOUCH */
+
+#endif /* DISABLE_JIT */

@@ -7343,4 +7343,23 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	return NULL;
 }
 
-#endif	
+#endif
+
+#ifdef DISABLE_JIT
+
+gpointer
+mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+{
+       g_assert_not_reached ();
+       return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+       g_assert_not_reached ();
+       return NULL;
+}
+
+#endif
+
