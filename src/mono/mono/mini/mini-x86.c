@@ -204,6 +204,8 @@ typedef struct {
 	gint16 offset;
 	gint8  reg;
 	ArgStorage storage;
+	int nslots;
+	gboolean is_pair;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
@@ -220,6 +222,7 @@ typedef struct {
 	gboolean vtype_retaddr;
 	/* The index of the vret arg in the argument list */
 	int vret_arg_index;
+	int vret_arg_offset;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -261,6 +264,7 @@ add_general_pair (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 	
 	ainfo->storage = ArgOnStack;
 	(*stack_size) += sizeof (gpointer) * 2;
+	ainfo->nslots = 2;
 }
 
 static void inline
@@ -271,6 +275,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
     if (*gr >= FLOAT_PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
 		(*stack_size) += is_double ? 8 : 4;
+		ainfo->nslots = is_double ? 2 : 1;
     }
     else {
 		/* A double register */
@@ -335,6 +340,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	ainfo->offset = *stack_size;
 	ainfo->storage = ArgOnStack;
 	*stack_size += ALIGN_TO (size, sizeof (gpointer));
+	ainfo->nslots = ALIGN_TO (size, sizeof (gpointer)) / sizeof (gpointer);
 }
 
 /*
@@ -357,6 +363,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 
 	gr = 0;
 	fr = 0;
+	cinfo->nargs = n;
 
 	/* return value */
 	{
@@ -386,6 +393,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_I8:
 			cinfo->ret.storage = ArgInIReg;
 			cinfo->ret.reg = X86_EAX;
+			cinfo->ret.is_pair = TRUE;
 			break;
 		case MONO_TYPE_R4:
 			cinfo->ret.storage = ArgOnFloatFpStack;
@@ -400,7 +408,8 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 				break;
 			}
 			/* Fall through */
-		case MONO_TYPE_VALUETYPE: {
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
@@ -410,10 +419,6 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			}
 			break;
 		}
-		case MONO_TYPE_TYPEDBYREF:
-			/* Same as a valuetype with size 12 */
-			cinfo->vtype_retaddr = TRUE;
-			break;
 		case MONO_TYPE_VOID:
 			cinfo->ret.storage = ArgNone;
 			break;
@@ -437,6 +442,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0]);
 			pstart = 1;
 		}
+		cinfo->vret_arg_offset = stack_size;
 		add_general (&gr, &stack_size, &cinfo->ret);
 		cinfo->vret_arg_index = 1;
 	} else {
@@ -511,11 +517,8 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			}
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
-			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
-			break;
 		case MONO_TYPE_TYPEDBYREF:
-			stack_size += sizeof (MonoTypedRef);
-			ainfo->storage = ArgOnStack;
+			add_valuetype (gsctx, sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
@@ -793,6 +796,7 @@ mono_arch_init (void)
 
 	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
 	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);
+	mono_aot_register_jit_icall ("mono_x86_start_gsharedvt_call", mono_x86_start_gsharedvt_call);
 }
 
 /*
@@ -1183,7 +1187,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	switch (cinfo->ret.storage) {
 	case ArgOnStack:
-		if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		if (cfg->vret_addr) {
 			/* 
 			 * In the new IR, the cfg->vret_addr variable represents the
 			 * vtype return value.
@@ -1246,7 +1250,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
-	if ((cinfo->ret.storage != ArgValuetypeInReg) && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if ((cinfo->ret.storage != ArgValuetypeInReg) && (MONO_TYPE_ISSTRUCT (sig->ret) || mini_is_gsharedvt_type (cfg, sig->ret))) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 	}
 
@@ -1602,7 +1606,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
-	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (sig->ret && (MONO_TYPE_ISSTRUCT (sig->ret) || cinfo->vtype_retaddr)) {
 		MonoInst *vtarg;
 
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
@@ -5012,6 +5016,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
+static G_GNUC_UNUSED void
+stack_unaligned (MonoMethod *m, gpointer caller)
+{
+	printf ("%s\n", mono_method_full_name (m, TRUE));
+	g_assert_not_reached ();
+}
+
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -5045,6 +5056,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alignment_check = (guint)cfg->native_code & kNaClAlignmentMask;
   	g_assert(alignment_check == 0);
+#endif
+
+#if 0
+	{
+		guint8 *br [16];
+
+	/* Check that the stack is aligned on osx */
+	x86_mov_reg_reg (code, X86_EAX, X86_ESP, sizeof (mgreg_t));
+	x86_alu_reg_imm (code, X86_AND, X86_EAX, 15);
+	x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0xc);
+	br [0] = code;
+	x86_branch_disp (code, X86_CC_Z, 0, FALSE);
+	x86_push_membase (code, X86_ESP, 0);
+	x86_push_imm (code, cfg->method);
+	x86_mov_reg_imm (code, X86_EAX, stack_unaligned);
+	x86_call_reg (code, X86_EAX);
+	x86_patch (br [0], code);
+	}
 #endif
 
 	/* Offset between RSP and the CFA */
@@ -5463,8 +5492,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (CALLCONV_IS_STDCALL (sig)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-		stack_to_pop = mono_arch_get_argument_info (cfg->generic_sharing_context, sig, sig->param_count, arg_info);
-	} else if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret) && (cinfo->ret.storage == ArgOnStack))
+		stack_to_pop = mono_arch_get_argument_info (NULL, sig, sig->param_count, arg_info);
+	} else if (cinfo->vtype_retaddr)
 		stack_to_pop = 4;
 	else
 		stack_to_pop = 0;
@@ -6663,3 +6692,23 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 #endif
 
+#ifdef MONOTOUCH
+
+#include "mini-x86-gsharedvt.c"
+
+#else
+
+gboolean
+mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
+{
+	return FALSE;
+}
+
+gpointer
+mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethod *normal_method, MonoMethod *gsharedvt_method, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gboolean virtual)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
+#endif /* !MONOTOUCH */
