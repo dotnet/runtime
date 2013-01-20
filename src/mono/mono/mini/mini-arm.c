@@ -6251,7 +6251,7 @@ mono_arch_set_target (char *mtriple)
 
 #ifdef MONOTOUCH
 
-#include "mini-arm-gsharedvt.c"
+#include "../../../mono-extensions/mono/mini/mini-arm-gsharedvt.c"
 
 #else
 

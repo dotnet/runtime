@@ -2159,7 +2159,7 @@ mini_type_is_vtype (MonoCompile *cfg, MonoType *t)
 
 #ifdef MONOTOUCH
 
-#include "mini-generic-sharing-gsharedvt.c"
+#include "../../../mono-extensions/mono/mini/mini-generic-sharing-gsharedvt.c"
 
 #else
 
