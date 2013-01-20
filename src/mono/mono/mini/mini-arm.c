@@ -682,7 +682,9 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
 	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
 	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
+#ifdef MONOTOUCH
 	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
+#endif
 
 #ifdef ARM_FPU_FPA
 	arm_fpu = MONO_ARM_FPU_FPA;
