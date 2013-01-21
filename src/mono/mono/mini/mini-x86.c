@@ -6696,7 +6696,7 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 #ifdef MONOTOUCH
 
-#include "mini-x86-gsharedvt.c"
+#include "../../../mono-extensions/mono/mini/mini-x86-gsharedvt.c"
 
 #else
 
