@@ -854,6 +854,8 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	return start;
 }
 
+#endif
+
 #ifdef MONOTOUCH
 
 #include "../../../mono-extensions/mono/mini/tramp-arm-gsharedvt.c"
@@ -874,5 +876,3 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 }
 
 #endif /* !MONOTOUCH */
-
-#endif /* DISABLE_JIT */
