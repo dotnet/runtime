@@ -2898,9 +2898,6 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 
 	/* if native is true there should be no references in the struct */
 	if (cfg->gen_write_barriers && klass->has_references && !native) {
-		// FIXME-VT:
-		g_assert (!size_ins);
-
 		/* Avoid barriers when storing to the stack */
 		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
 			  (dest->opcode == OP_LDADDR))) {
@@ -2913,7 +2910,7 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 				context_used = mono_class_check_context_used (klass);
 
 			/* It's ok to intrinsify under gsharing since shared code types are layout stable. */
-			if ((cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, iargs, n, align)) {
+			if (!size_ins && (cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, iargs, n, align)) {
 				return;
 			} else if (context_used) {
 				iargs [2] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
