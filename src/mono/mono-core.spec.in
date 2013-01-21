@@ -1384,7 +1384,6 @@ Monodoc-core contains documentation tools for C#.
 %_mandir/man5/mdoc.5%ext_man
 %_prefix/lib/mono/4.5/mdoc.exe*
 %_prefix/lib/mono/4.5/mod.exe*
-%_prefix/lib/mono/4.5/monodoc.dll*
 %_prefix/lib/mono/4.0/monodoc.dll*
 %_prefix/lib/mono/gac/monodoc
 %_prefix/lib/mono/monodoc
