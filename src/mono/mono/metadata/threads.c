@@ -2086,13 +2086,14 @@ mono_thread_get_abort_signal (void)
 {
 #ifdef HOST_WIN32
 	return -1;
-#else
-#ifndef	SIGRTMIN
+#elif defined(PLATFORM_ANDROID)
+	return SIGUNUSED;
+#elif !defined (SIGRTMIN)
 #ifdef SIGUSR1
 	return SIGUSR1;
 #else
 	return -1;
-#endif
+#endif /* SIGUSR1 */
 #else
 	static int abort_signum = -1;
 	int i;
@@ -2109,7 +2110,6 @@ mono_thread_get_abort_signal (void)
 	}
 	/* fallback to the old way */
 	return SIGRTMIN;
-#endif
 #endif /* HOST_WIN32 */
 }
 
