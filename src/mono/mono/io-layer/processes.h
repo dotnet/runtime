@@ -146,6 +146,10 @@ struct _WapiShellExecuteInfo
 #define CREATE_DEFAULT_ERROR_MODE 0x04000000
 #define CREATE_NO_WINDOW 0x08000000
 
+#ifndef HOST_WIN32
+#define CREATE_NO_DETACH 0x10000000
+#endif
+
 #ifdef NEW_STUFF
 #define CREATE_PRESERVE_CODE_AUTHZ_LEVEL find out the value for this one...
 #endif

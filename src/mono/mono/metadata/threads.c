@@ -695,13 +695,22 @@ register_thread_start_argument (MonoThread *thread, struct StartInfo *start_info
 	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
 }
 
-MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size)
+/*
+ * mono_thread_create_internal:
+ * 
+ * If NO_DETACH is TRUE, then the thread is not detached using pthread_detach (). This is needed to fix the race condition where waiting for a thred to exit only waits for its exit event to be
+ * signalled, which can cause shutdown crashes if the thread shutdown code accesses data already freed by the runtime shutdown.
+ * Currently, this is only used for the finalizer thread.
+ */
+MonoInternalThread*
+mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, gboolean no_detach, guint32 stack_size)
 {
 	MonoThread *thread;
 	MonoInternalThread *internal;
 	HANDLE thread_handle;
 	struct StartInfo *start_info;
 	gsize tid;
+	guint32 create_flags;
 
 	thread = create_thread_object (domain);
 	internal = create_internal_thread_object ();
@@ -733,8 +742,13 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
+	create_flags = CREATE_SUSPENDED;
+#ifndef HOST_WIN32
+	if (no_detach)
+		create_flags |= CREATE_NO_DETACH;
+#endif
 	thread_handle = mono_create_thread (NULL, stack_size, (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
-				     CREATE_SUSPENDED, &tid);
+				     create_flags, &tid);
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
@@ -773,7 +787,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 void
 mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
-	mono_thread_create_internal (domain, func, arg, FALSE, 0);
+	mono_thread_create_internal (domain, func, arg, FALSE, FALSE, 0);
 }
 
 /*

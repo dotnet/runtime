@@ -247,9 +247,11 @@ static void *thread_start_routine (gpointer args)
 {
 	struct _WapiHandle_thread *thread = (struct _WapiHandle_thread *)args;
 	int thr_ret;
-	
-	thr_ret = mono_gc_pthread_detach (pthread_self ());
-	g_assert (thr_ret == 0);
+
+	if (!(thread->create_flags & CREATE_NO_DETACH)) {
+		thr_ret = mono_gc_pthread_detach (pthread_self ());
+		g_assert (thr_ret == 0);
+	}
 
 	thr_ret = pthread_setspecific (thread_hash_key,
 				       (void *)thread->handle);

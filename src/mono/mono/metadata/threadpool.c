@@ -515,7 +515,7 @@ socket_io_init (SocketIOData *data)
 		data->event_system = POLL_BACKEND;
 
 	init_event_system (data);
-	mono_thread_create_internal (mono_get_root_domain (), data->wait, data, TRUE, SMALL_STACK);
+	mono_thread_create_internal (mono_get_root_domain (), data->wait, data, TRUE, FALSE, SMALL_STACK);
 	LeaveCriticalSection (&data->io_lock);
 	data->inited = 2;
 	threadpool_start_thread (&async_io_tp);
@@ -667,7 +667,7 @@ threadpool_start_idle_threads (ThreadPool *tp)
 #ifndef DISABLE_PERFCOUNTERS
 		mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
 #endif
-		mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
+		mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, FALSE, stack_size);
 		SleepEx (100, TRUE);
 	} while (1);
 }
@@ -1009,7 +1009,7 @@ threadpool_start_thread (ThreadPool *tp)
 #ifndef DISABLE_PERFCOUNTERS
 			mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
 #endif
-			mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
+			mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, FALSE, stack_size);
 			return TRUE;
 		}
 	}
@@ -1048,12 +1048,12 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 
 	if (tp->pool_status == 0 && InterlockedCompareExchange (&tp->pool_status, 1, 0) == 0) {
 		if (!tp->is_io) {
-			mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK);
+			mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, FALSE, SMALL_STACK);
 			threadpool_start_thread (tp);
 		}
 		/* Create on demand up to min_threads to avoid startup penalty for apps that don't use
 		 * the threadpool that much
-		* mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE, SMALL_STACK);
+		* mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE, FALSE, SMALL_STACK);
 		*/
 	}
 
@@ -1594,9 +1594,9 @@ ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint co
 	InterlockedExchange (&async_tp.min_threads, workerThreads);
 	InterlockedExchange (&async_io_tp.min_threads, completionPortThreads);
 	if (workerThreads > async_tp.nthreads)
-		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE, SMALL_STACK);
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE, FALSE, SMALL_STACK);
 	if (completionPortThreads > async_io_tp.nthreads)
-		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE, SMALL_STACK);
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE, FALSE, SMALL_STACK);
 	return TRUE;
 }
 

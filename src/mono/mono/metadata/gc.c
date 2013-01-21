@@ -1118,7 +1118,7 @@ static
 void
 mono_gc_init_finalizer_thread (void)
 {
-	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE, 0);
+	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE, TRUE, 0);
 	ves_icall_System_Threading_Thread_SetName_internal (gc_thread, mono_string_new (mono_domain_get (), "Finalizer"));
 }
 
@@ -1207,6 +1207,15 @@ mono_gc_cleanup (void)
 				/* Wait for the thread to actually exit */
 				ret = WaitForSingleObjectEx (gc_thread->handle, INFINITE, TRUE);
 				g_assert (ret == WAIT_OBJECT_0);
+
+#ifndef HOST_WIN32
+				/*
+				 * The above wait only waits for the exited event to be signalled, the thread might still be running. To fix this race, we
+				 * create the finalizer thread without calling pthread_detach () on it, so we can wait for it manually.
+				 */
+				ret = pthread_join ((gpointer)(gsize)gc_thread->tid, NULL);
+				g_assert (ret == 0);
+#endif
 			}
 		}
 		gc_thread = NULL;
