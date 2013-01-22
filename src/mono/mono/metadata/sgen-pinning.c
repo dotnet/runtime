@@ -281,6 +281,16 @@ sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 	else
 		hash = cement_hash;
 
+	/*
+	 * We use modulus hashing, which is fine with constants as gcc
+	 * can optimize them to multiplication, but with variable
+	 * values it would be a bad idea given armv7 has no hardware
+	 * for division, making it 20x slower than a multiplication.
+	 *
+	 * This code path can be quite hot, depending on the workload,
+	 * so if we make the hash size user-adjustable we should
+	 * figure out something not involving division.
+	 */
 	i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
 
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Can only cement pointers to nursery objects");
