@@ -180,17 +180,14 @@ sgen_dump_pin_queue (void)
 	}	
 }
 
-#define CEMENT_THRESHOLD	1000
-#define CEMENT_HASH_SIZE	61
-
 typedef struct _CementHashEntry CementHashEntry;
 struct _CementHashEntry {
 	char *obj;
 	unsigned int count;
 };
 
-static CementHashEntry cement_hash [CEMENT_HASH_SIZE];
-static CementHashEntry cement_hash_concurrent [CEMENT_HASH_SIZE];
+static CementHashEntry cement_hash [SGEN_CEMENT_HASH_SIZE];
+static CementHashEntry cement_hash_concurrent [SGEN_CEMENT_HASH_SIZE];
 
 static gboolean cement_enabled = TRUE;
 static gboolean cement_concurrent = FALSE;
@@ -249,7 +246,7 @@ sgen_cement_concurrent_finish (void)
 gboolean
 sgen_cement_lookup (char *obj)
 {
-	int i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
+	int i = mono_aligned_addr_hash (obj) % SGEN_CEMENT_HASH_SIZE;
 
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Looking up cementing for non-nursery objects makes no sense");
 
@@ -261,7 +258,7 @@ sgen_cement_lookup (char *obj)
 	if (cement_hash [i].obj != obj)
 		return FALSE;
 
-	return cement_hash [i].count >= CEMENT_THRESHOLD;
+	return cement_hash [i].count >= SGEN_CEMENT_THRESHOLD;
 }
 
 gboolean
@@ -291,7 +288,7 @@ sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 	 * so if we make the hash size user-adjustable we should
 	 * figure out something not involving division.
 	 */
-	i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
+	i = mono_aligned_addr_hash (obj) % SGEN_CEMENT_HASH_SIZE;
 
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Can only cement pointers to nursery objects");
 
@@ -302,12 +299,12 @@ sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 		return FALSE;
 	}
 
-	if (hash [i].count >= CEMENT_THRESHOLD)
+	if (hash [i].count >= SGEN_CEMENT_THRESHOLD)
 		return TRUE;
 
 	++hash [i].count;
 #ifdef SGEN_BINARY_PROTOCOL
-	if (hash [i].count == CEMENT_THRESHOLD) {
+	if (hash [i].count == SGEN_CEMENT_THRESHOLD) {
 		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
 				sgen_safe_object_get_size ((MonoObject*)obj));
 	}
@@ -320,11 +317,11 @@ void
 sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data)
 {
 	int i;
-	for (i = 0; i < CEMENT_HASH_SIZE; ++i) {
+	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; ++i) {
 		if (!cement_hash [i].count)
 			continue;
 
-		SGEN_ASSERT (5, cement_hash [i].count >= CEMENT_THRESHOLD, "Cementing hash inconsistent");
+		SGEN_ASSERT (5, cement_hash [i].count >= SGEN_CEMENT_THRESHOLD, "Cementing hash inconsistent");
 
 		callback (cement_hash [i].obj, 0, callback_data);
 	}
@@ -334,8 +331,8 @@ void
 sgen_cement_clear_below_threshold (void)
 {
 	int i;
-	for (i = 0; i < CEMENT_HASH_SIZE; ++i) {
-		if (cement_hash [i].count < CEMENT_THRESHOLD) {
+	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; ++i) {
+		if (cement_hash [i].count < SGEN_CEMENT_THRESHOLD) {
 			cement_hash [i].obj = NULL;
 			cement_hash [i].count = 0;
 		}
