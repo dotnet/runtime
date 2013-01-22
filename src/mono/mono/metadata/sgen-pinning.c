@@ -204,7 +204,7 @@ sgen_cement_init (gboolean enabled)
 void
 sgen_cement_reset (void)
 {
-	g_assert (!cement_concurrent);
+	SGEN_ASSERT (1, !cement_concurrent, "Concurrent cementing cannot simply be reset");
 
 	memset (cement_hash, 0, sizeof (cement_hash));
 	binary_protocol_cement_reset ();
@@ -231,7 +231,7 @@ sgen_cement_reset (void)
 void
 sgen_cement_concurrent_start (void)
 {
-	g_assert (!cement_concurrent);
+	SGEN_ASSERT (1, !cement_concurrent, "Concurrent cementing has already been started");
 	cement_concurrent = TRUE;
 
 	memset (cement_hash_concurrent, 0, sizeof (cement_hash));
@@ -240,7 +240,7 @@ sgen_cement_concurrent_start (void)
 void
 sgen_cement_concurrent_finish (void)
 {
-	g_assert (cement_concurrent);
+	SGEN_ASSERT (1, cement_concurrent, "Concurrent cementing hasn't been started");
 	cement_concurrent = FALSE;
 
 	memcpy (cement_hash, cement_hash_concurrent, sizeof (cement_hash));
@@ -251,7 +251,7 @@ sgen_cement_lookup (char *obj)
 {
 	int i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
 
-	g_assert (sgen_ptr_in_nursery (obj));
+	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Looking up cementing for non-nursery objects makes no sense");
 
 	if (!cement_enabled)
 		return FALSE;
@@ -274,7 +274,7 @@ sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 		return FALSE;
 
 	if (concurrent_cementing)
-		g_assert (cement_concurrent);
+		SGEN_ASSERT (5, cement_concurrent, "Cementing wasn't inited with concurrent flag");
 
 	if (concurrent_cementing)
 		hash = cement_hash_concurrent;
@@ -283,10 +283,10 @@ sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 
 	i = mono_aligned_addr_hash (obj) % CEMENT_HASH_SIZE;
 
-	g_assert (sgen_ptr_in_nursery (obj));
+	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Can only cement pointers to nursery objects");
 
 	if (!hash [i].obj) {
-		g_assert (!hash [i].count);
+		SGEN_ASSERT (5, !hash [i].count, "Cementing hash inconsistent");
 		hash [i].obj = obj;
 	} else if (hash [i].obj != obj) {
 		return FALSE;
@@ -314,7 +314,7 @@ sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data)
 		if (!cement_hash [i].count)
 			continue;
 
-		g_assert (cement_hash [i].count >= CEMENT_THRESHOLD);
+		SGEN_ASSERT (5, cement_hash [i].count >= CEMENT_THRESHOLD, "Cementing hash inconsistent");
 
 		callback (cement_hash [i].obj, 0, callback_data);
 	}

@@ -108,7 +108,7 @@ typedef guint64 mword;
  * Maximum level of asserts to enable on this build.
  * FIXME replace all magic numbers with defines.
  */
-#define SGEN_MAX_ASSERT_LEVEL 2
+#define SGEN_MAX_ASSERT_LEVEL 5
 
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
