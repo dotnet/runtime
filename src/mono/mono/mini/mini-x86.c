@@ -796,7 +796,7 @@ mono_arch_init (void)
 
 	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
 	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
 	mono_aot_register_jit_icall ("mono_x86_start_gsharedvt_call", mono_x86_start_gsharedvt_call);
 #endif
 }
@@ -6694,7 +6694,7 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 #endif
 
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
 
 #include "../../../mono-extensions/mono/mini/mini-x86-gsharedvt.c"
 

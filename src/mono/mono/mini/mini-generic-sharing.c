@@ -2157,7 +2157,7 @@ mini_type_is_vtype (MonoCompile *cfg, MonoType *t)
     return MONO_TYPE_ISSTRUCT (t) || mini_is_gsharedvt_variable_type (cfg, t);
 }
 
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
 
 #include "../../../mono-extensions/mono/mini/mini-generic-sharing-gsharedvt.c"
 

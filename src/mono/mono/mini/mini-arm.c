@@ -682,7 +682,7 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
 	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
 	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
 	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 #endif
 
@@ -6251,7 +6251,7 @@ mono_arch_set_target (char *mtriple)
 		eabi_supported = TRUE;
 }
 
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
 
 #include "../../../mono-extensions/mono/mini/mini-arm-gsharedvt.c"
 
