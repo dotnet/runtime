@@ -1157,7 +1157,7 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cemen
 	}
 
 	if (!object_is_pinned (obj))
-		SGEN_ASSERT (5, sgen_minor_collector.is_split, "Non-pinned objects can only remain in nursery if it is a split nursery");
+		SGEN_ASSERT (5, concurrent_cementing || sgen_minor_collector.is_split, "Non-pinned objects can only remain in nursery if it is a split nursery");
 	else if (sgen_cement_lookup_or_register (obj, concurrent_cementing))
 		return;
 
