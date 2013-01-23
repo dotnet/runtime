@@ -2932,13 +2932,27 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	ctx.copy_func = NULL;
 	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
 
+	/*
+	 * Concurrent mark never follows references into the nursery.
+	 * In the start and finish pauses we must scan live nursery
+	 * objects, though.  We could simply scan all nursery objects,
+	 * but that would be conservative.  The easiest way is to do a
+	 * nursery collection, which copies all live nursery objects
+	 * (except pinned ones, with the simple nursery) to the major
+	 * heap.  Scanning the mod union table later will then scan
+	 * those promoted objects, provided they're reachable.  Pinned
+	 * objects in the nursery - which we can trivially find in the
+	 * pinning queue - are treated as roots in the mark pauses.
+	 *
+	 * The split nursery complicates the latter part because
+	 * non-pinned objects can survive in the nursery.  That's why
+	 * we need to do a full front-to-back scan of the nursery,
+	 * marking all objects.
+	 *
+	 * Non-concurrent mark evacuates from the nursery, so it's
+	 * sufficient to just scan pinned nursery objects.
+	 */
 	if (major_collector.is_concurrent && sgen_minor_collector.is_split) {
-		/*
-		 * With the split nursery, not all remaining nursery
-		 * objects are pinned: those in to-space are not.  We
-		 * need to scan all nursery objects, though, so we
-		 * have to do it by iterating over the whole nursery.
-		 */
 		scan_nursery_objects (ctx);
 	} else {
 		sgen_pin_objects_in_section (nursery_section, ctx);
