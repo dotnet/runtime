@@ -1,24 +1,21 @@
 /*
+ * sgen-pinning.h: All about pinning objects.
+ *
  * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
+ * Copyright (C) 2012 Xamarin Inc
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License 2.0 as published by the Free Software Foundation;
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * You should have received a copy of the GNU Library General Public
+ * License 2.0 along with this library; if not, write to the Free
+ * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #ifndef __MONO_SGEN_PINNING_H__
 #define __MONO_SGEN_PINNING_H__
@@ -47,5 +44,16 @@ void sgen_pin_stats_register_address (char *addr, int pin_type) MONO_INTERNAL;
 size_t sgen_pin_stats_get_pinned_byte_count (int pin_type) MONO_INTERNAL;
 ObjectList *sgen_pin_stats_get_object_list (void) MONO_INTERNAL;
 void sgen_pin_stats_reset (void) MONO_INTERNAL;
+
+/* Perpetual pinning, aka cementing */
+
+void sgen_cement_init (gboolean enabled) MONO_INTERNAL;
+void sgen_cement_reset (void) MONO_INTERNAL;
+void sgen_cement_concurrent_start (void) MONO_INTERNAL;
+void sgen_cement_concurrent_finish (void) MONO_INTERNAL;
+gboolean sgen_cement_lookup (char *obj) MONO_INTERNAL;
+gboolean sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing) MONO_INTERNAL;
+void sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
+void sgen_cement_clear_below_threshold (void) MONO_INTERNAL;
 
 #endif

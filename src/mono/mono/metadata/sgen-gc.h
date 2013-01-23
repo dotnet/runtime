@@ -511,7 +511,7 @@ void sgen_pin_stats_register_global_remset (char *obj);
 void sgen_pin_stats_print_class_stats (void);
 
 void sgen_sort_addresses (void **array, int size) MONO_INTERNAL;
-void sgen_add_to_global_remset (gpointer ptr, gpointer obj) MONO_INTERNAL;
+void sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cementing) MONO_INTERNAL;
 
 int sgen_get_current_collection_generation (void) MONO_INTERNAL;
 gboolean sgen_collection_is_parallel (void) MONO_INTERNAL;
@@ -1043,7 +1043,7 @@ gboolean sgen_has_managed_allocator (void);
 
 void sgen_check_consistency (void);
 void sgen_check_major_refs (void);
-void sgen_check_whole_heap (void);
+void sgen_check_whole_heap (gboolean allow_missing_pinning);
 void sgen_check_whole_heap_stw (void) MONO_INTERNAL;
 void sgen_check_objref (char *obj);
 void sgen_check_major_heap_marked (void) MONO_INTERNAL;

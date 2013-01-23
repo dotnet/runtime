@@ -32,7 +32,7 @@ void sgen_card_table_reset_region (mword start, mword end) MONO_INTERNAL;
 void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
 void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
 void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards,
-		gboolean always_copy_or_mark, SgenGrayQueue *queue) MONO_INTERNAL;
+		gboolean mod_union, SgenGrayQueue *queue) MONO_INTERNAL;
 
 gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
 

@@ -550,7 +550,7 @@ void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 static void init_stats (void);
 
 static int mark_ephemerons_in_range (ScanCopyContext ctx);
-static void clear_unreachable_ephemerons (ScanCopyContext ctx);
+static void clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenObjectOperations current_object_ops;
@@ -1142,11 +1142,36 @@ mono_gc_clear_domain (MonoDomain * domain)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-sgen_add_to_global_remset (gpointer ptr, gpointer obj)
+sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cementing)
 {
+	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Target pointer of global remset must be in the nursery");
+
+	if (!major_collector.is_concurrent) {
+		SGEN_ASSERT (5, !concurrent_cementing, "Concurrent cementing must only happen with the concurrent collector");
+		SGEN_ASSERT (5, current_collection_generation != -1, "Global remsets can only be added during collections");
+	} else {
+		if (current_collection_generation == -1)
+			SGEN_ASSERT (5, concurrent_cementing, "Global remsets outside of collection pauses can only be added by the concurrent collector");
+		if (concurrent_cementing)
+			SGEN_ASSERT (5, concurrent_collection_in_progress, "Concurrent collection must be in process in order to add global remsets");
+	}
+
+	if (!object_is_pinned (obj))
+		SGEN_ASSERT (5, concurrent_cementing || sgen_minor_collector.is_split, "Non-pinned objects can only remain in nursery if it is a split nursery");
+	else if (sgen_cement_lookup_or_register (obj, concurrent_cementing))
+		return;
+
 	remset.record_pointer (ptr);
 
 #ifdef ENABLE_DTRACE
+	if (G_UNLIKELY (do_pin_stats))
+		sgen_pin_stats_register_global_remset (obj);
+
+	SGEN_LOG (8, "Adding global remset for %p", ptr);
+	binary_protocol_global_remset (ptr, obj, (gpointer)SGEN_LOAD_VTABLE (obj));
+
+	HEAVY_STAT (++stat_global_remsets_added);
+
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
@@ -1965,7 +1990,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (ctx);
+	clear_unreachable_ephemerons (generation == GENERATION_OLD && major_collector.is_concurrent, ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -2460,12 +2485,19 @@ init_gray_queue (void)
 	}
 }
 
+static void
+pin_stage_object_callback (char *obj, size_t size, void *data)
+{
+	sgen_pin_stage_ptr (obj);
+	/* FIXME: do pin stats if enabled */
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
  */
 static gboolean
-collect_nursery (SgenGrayQueue *unpin_queue)
+collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 {
 	gboolean needs_major;
 	size_t max_garbage_amount;
@@ -2552,6 +2584,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 	sgen_init_pinning ();
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
 	pin_from_roots (sgen_get_nursery_start (), nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	/* pin cemented objects */
+	sgen_cement_iterate (pin_stage_object_callback, NULL);
 	/* identify pinned objects */
 	sgen_optimize_pin_queue (0);
 	sgen_pinning_setup_section (nursery_section);
@@ -2570,7 +2604,7 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 
 	if (whole_heap_check_before_collection) {
 		sgen_clear_nursery_fragments ();
-		sgen_check_whole_heap ();
+		sgen_check_whole_heap (finish_up_concurrent_mark);
 	}
 	if (consistency_check_at_minor_collection)
 		sgen_check_consistency ();
@@ -2721,6 +2755,8 @@ collect_nursery (SgenGrayQueue *unpin_queue)
 		mono_gc_finalize_notify ();
 	}
 	sgen_pin_stats_reset ();
+	/* clear cemented hash */
+	sgen_cement_clear_below_threshold ();
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
@@ -2797,7 +2833,10 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap ();
+		sgen_check_whole_heap (finish_up_concurrent_mark);
+
+	if (!major_collector.is_concurrent)
+		sgen_cement_reset ();
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
@@ -2893,13 +2932,27 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	ctx.copy_func = NULL;
 	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
 
+	/*
+	 * Concurrent mark never follows references into the nursery.
+	 * In the start and finish pauses we must scan live nursery
+	 * objects, though.  We could simply scan all nursery objects,
+	 * but that would be conservative.  The easiest way is to do a
+	 * nursery collection, which copies all live nursery objects
+	 * (except pinned ones, with the simple nursery) to the major
+	 * heap.  Scanning the mod union table later will then scan
+	 * those promoted objects, provided they're reachable.  Pinned
+	 * objects in the nursery - which we can trivially find in the
+	 * pinning queue - are treated as roots in the mark pauses.
+	 *
+	 * The split nursery complicates the latter part because
+	 * non-pinned objects can survive in the nursery.  That's why
+	 * we need to do a full front-to-back scan of the nursery,
+	 * marking all objects.
+	 *
+	 * Non-concurrent mark evacuates from the nursery, so it's
+	 * sufficient to just scan pinned nursery objects.
+	 */
 	if (major_collector.is_concurrent && sgen_minor_collector.is_split) {
-		/*
-		 * With the split nursery, not all remaining nursery
-		 * objects are pinned: those in to-space are not.  We
-		 * need to scan all nursery objects, though, so we
-		 * have to do it by iterating over the whole nursery.
-		 */
 		scan_nursery_objects (ctx);
 	} else {
 		sgen_pin_objects_in_section (nursery_section, ctx);
@@ -3015,8 +3068,11 @@ major_start_collection (int *old_next_pin_slot)
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	if (major_collector.is_concurrent)
+	if (major_collector.is_concurrent) {
 		concurrent_collection_in_progress = TRUE;
+
+		sgen_cement_concurrent_start ();
+	}
 
 	current_object_ops = major_collector.major_ops;
 
@@ -3177,6 +3233,10 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		sgen_pin_stats_reset ();
 	}
 
+	if (major_collector.is_concurrent)
+		sgen_cement_concurrent_finish ();
+	sgen_cement_clear_below_threshold ();
+
 	TV_GETTIME (atv);
 	time_major_fragment_creation += TV_ELAPSED (btv, atv);
 
@@ -3281,11 +3341,14 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 		return FALSE;
 	}
 
-	collect_nursery (&unpin_queue);
+	collect_nursery (&unpin_queue, TRUE);
 	redirect_major_object_remembers ();
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
+
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap (FALSE);
 
 	unpin_objects_from_queue (&unpin_queue);
 	sgen_gray_object_queue_deinit (&unpin_queue);
@@ -3293,9 +3356,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	current_collection_generation = -1;
-
-	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap ();
 
 	return TRUE;
 }
@@ -3384,7 +3444,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	//FIXME extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
-		if (collect_nursery (NULL)) {
+		if (collect_nursery (NULL, FALSE)) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
@@ -3404,7 +3464,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 		if (major_collector.is_concurrent) {
 			g_assert (!concurrent_collection_in_progress);
-			collect_nursery (unpin_queue_ptr);
+			collect_nursery (unpin_queue_ptr, FALSE);
 		}
 
 		if (major_collector.is_concurrent && !wait_to_finish) {
@@ -3436,7 +3496,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		infos [1].total_time = gc_end;
 
 		if (overflow_generation_to_collect == GENERATION_NURSERY)
-			collect_nursery (NULL);
+			collect_nursery (NULL, FALSE);
 		else
 			major_do_collection (overflow_reason);
 
@@ -3641,7 +3701,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (ScanCopyContext ctx)
+clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
@@ -4754,6 +4814,7 @@ mono_gc_base_init (void)
 	gboolean debug_print_allowance = FALSE;
 	double allowance_ratio = 0, save_target = 0;
 	gboolean have_split_nursery = FALSE;
+	gboolean cement_enabled = TRUE;
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
@@ -5029,6 +5090,15 @@ mono_gc_base_init (void)
 				continue;
 			}
 
+			if (!strcmp (opt, "cementing")) {
+				cement_enabled = TRUE;
+				continue;
+			}
+			if (!strcmp (opt, "no-cementing")) {
+				cement_enabled = FALSE;
+				continue;
+			}
+
 			if (major_collector.handle_gc_param && major_collector.handle_gc_param (opt))
 				continue;
 
@@ -5043,6 +5113,7 @@ mono_gc_base_init (void)
 			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
+			fprintf (stderr, "  [no-]cementing\n");
 			if (major_collector.print_gc_param_usage)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
@@ -5067,6 +5138,8 @@ mono_gc_base_init (void)
 		g_free (minor_collector_opt);
 
 	alloc_nursery ();
+
+	sgen_cement_init (cement_enabled);
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);
@@ -5613,7 +5686,7 @@ sgen_check_whole_heap_stw (void)
 {
 	sgen_stop_world (0);
 	sgen_clear_nursery_fragments ();
-	sgen_check_whole_heap ();
+	sgen_check_whole_heap (FALSE);
 	sgen_restart_world (0, NULL);
 }
 

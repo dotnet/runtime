@@ -24,6 +24,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-protocol.h"
 
 static void** pin_queue;
 static int pin_queue_size = 0;
@@ -177,6 +178,165 @@ sgen_dump_pin_queue (void)
 	for (i = 0; i < last_num_pinned; ++i) {
 		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %d", pin_queue [i], sgen_safe_name (pin_queue [i]), sgen_safe_object_get_size (pin_queue [i]));
 	}	
+}
+
+typedef struct _CementHashEntry CementHashEntry;
+struct _CementHashEntry {
+	char *obj;
+	unsigned int count;
+};
+
+static CementHashEntry cement_hash [SGEN_CEMENT_HASH_SIZE];
+static CementHashEntry cement_hash_concurrent [SGEN_CEMENT_HASH_SIZE];
+
+static gboolean cement_enabled = TRUE;
+static gboolean cement_concurrent = FALSE;
+
+void
+sgen_cement_init (gboolean enabled)
+{
+	cement_enabled = enabled;
+}
+
+void
+sgen_cement_reset (void)
+{
+	SGEN_ASSERT (1, !cement_concurrent, "Concurrent cementing cannot simply be reset");
+
+	memset (cement_hash, 0, sizeof (cement_hash));
+	binary_protocol_cement_reset ();
+}
+
+/*
+ * The reason we cannot simply reset cementing at the start of a
+ * concurrent collection is that the nursery collections running
+ * concurrently must keep pinning the cemented objects, because we
+ * don't have the global remsets that point to them anymore - if the
+ * nursery collector moved the cemented objects, we'd have invalid
+ * pointers in the major heap.
+ *
+ * What we do instead is to reset cementing at the start of concurrent
+ * collections in such a way that nursery collections happening during
+ * the major collection still pin the formerly cemented objects.  We
+ * have a shadow cementing table for that purpose.  The nursery
+ * collections still work with the old cementing table, while the
+ * major collector builds up a new cementing table, adding global
+ * remsets whenever needed like usual.  When the major collector
+ * finishes, the old cementing table is replaced by the new one.
+ */
+
+void
+sgen_cement_concurrent_start (void)
+{
+	SGEN_ASSERT (1, !cement_concurrent, "Concurrent cementing has already been started");
+	cement_concurrent = TRUE;
+
+	memset (cement_hash_concurrent, 0, sizeof (cement_hash));
+}
+
+void
+sgen_cement_concurrent_finish (void)
+{
+	SGEN_ASSERT (1, cement_concurrent, "Concurrent cementing hasn't been started");
+	cement_concurrent = FALSE;
+
+	memcpy (cement_hash, cement_hash_concurrent, sizeof (cement_hash));
+}
+
+gboolean
+sgen_cement_lookup (char *obj)
+{
+	int i = mono_aligned_addr_hash (obj) % SGEN_CEMENT_HASH_SIZE;
+
+	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Looking up cementing for non-nursery objects makes no sense");
+
+	if (!cement_enabled)
+		return FALSE;
+
+	if (!cement_hash [i].obj)
+		return FALSE;
+	if (cement_hash [i].obj != obj)
+		return FALSE;
+
+	return cement_hash [i].count >= SGEN_CEMENT_THRESHOLD;
+}
+
+gboolean
+sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
+{
+	int i;
+	CementHashEntry *hash;
+
+	if (!cement_enabled)
+		return FALSE;
+
+	if (concurrent_cementing)
+		SGEN_ASSERT (5, cement_concurrent, "Cementing wasn't inited with concurrent flag");
+
+	if (concurrent_cementing)
+		hash = cement_hash_concurrent;
+	else
+		hash = cement_hash;
+
+	/*
+	 * We use modulus hashing, which is fine with constants as gcc
+	 * can optimize them to multiplication, but with variable
+	 * values it would be a bad idea given armv7 has no hardware
+	 * for division, making it 20x slower than a multiplication.
+	 *
+	 * This code path can be quite hot, depending on the workload,
+	 * so if we make the hash size user-adjustable we should
+	 * figure out something not involving division.
+	 */
+	i = mono_aligned_addr_hash (obj) % SGEN_CEMENT_HASH_SIZE;
+
+	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Can only cement pointers to nursery objects");
+
+	if (!hash [i].obj) {
+		SGEN_ASSERT (5, !hash [i].count, "Cementing hash inconsistent");
+		hash [i].obj = obj;
+	} else if (hash [i].obj != obj) {
+		return FALSE;
+	}
+
+	if (hash [i].count >= SGEN_CEMENT_THRESHOLD)
+		return TRUE;
+
+	++hash [i].count;
+#ifdef SGEN_BINARY_PROTOCOL
+	if (hash [i].count == SGEN_CEMENT_THRESHOLD) {
+		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
+				sgen_safe_object_get_size ((MonoObject*)obj));
+	}
+#endif
+
+	return FALSE;
+}
+
+void
+sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data)
+{
+	int i;
+	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; ++i) {
+		if (!cement_hash [i].count)
+			continue;
+
+		SGEN_ASSERT (5, cement_hash [i].count >= SGEN_CEMENT_THRESHOLD, "Cementing hash inconsistent");
+
+		callback (cement_hash [i].obj, 0, callback_data);
+	}
+}
+
+void
+sgen_cement_clear_below_threshold (void)
+{
+	int i;
+	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; ++i) {
+		if (cement_hash [i].count < SGEN_CEMENT_THRESHOLD) {
+			cement_hash [i].obj = NULL;
+			cement_hash [i].count = 0;
+		}
+	}
 }
 
 #endif /* HAVE_SGEN_GC */

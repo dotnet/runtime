@@ -423,7 +423,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				SGEN_LOG (9, "Add to global remset because of pinning %p (%p %s)", ptr, copy, sgen_safe_name (copy));
-				sgen_add_to_global_remset (ptr, copy);
+				sgen_add_to_global_remset (ptr, copy, FALSE);
 			}
 		} else {
 			SGEN_LOG (9, "Skipping remset at %p holding %p", ptr, *ptr);
@@ -442,7 +442,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			copy = *ptr;
 			SGEN_LOG (9, "Overwrote remset at %p with %p (count: %d)", ptr, copy, (int)count);
 			if (!global && copy >= start_nursery && copy < end_nursery)
-				sgen_add_to_global_remset (ptr, copy);
+				sgen_add_to_global_remset (ptr, copy, FALSE);
 			++ptr;
 		}
 		return p + 2;
@@ -746,14 +746,6 @@ sgen_ssb_record_pointer (gpointer ptr)
 
 	if (!global_remset_location_was_not_added (ptr))
 		goto done;
-
-	if (G_UNLIKELY (do_pin_stats))
-		sgen_pin_stats_register_global_remset (obj);
-
-	SGEN_LOG (8, "Adding global remset for %p", ptr);
-	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)SGEN_LOAD_VTABLE (obj));
-
-	HEAVY_STAT (++stat_global_remsets_added);
 
 	/* 
 	 * FIXME: If an object remains pinned, we need to add it at every minor collection.

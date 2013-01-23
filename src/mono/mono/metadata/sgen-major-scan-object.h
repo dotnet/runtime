@@ -29,8 +29,12 @@ extern long long stat_scan_object_called_major;
 
 #ifdef SGEN_CONCURRENT_MARK
 #define FOLLOW_OBJECT(addr)	(!sgen_ptr_in_nursery ((addr)))
+#define ALWAYS_ADD_TO_GLOBAL_REMSET	1
+#define CONCURRENT_CEMENTING	1
 #else
 #define FOLLOW_OBJECT(addr)	1
+#define ALWAYS_ADD_TO_GLOBAL_REMSET	0
+#define CONCURRENT_CEMENTING	0
 #endif
 
 #undef HANDLE_PTR
@@ -43,7 +47,10 @@ extern long long stat_scan_object_called_major;
 			__copy = *(ptr);				\
 			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr), __copy); \
+				sgen_add_to_global_remset ((ptr), __copy, CONCURRENT_CEMENTING);	\
+		} else {						\
+			if (ALWAYS_ADD_TO_GLOBAL_REMSET && G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
+				sgen_add_to_global_remset ((ptr), __old, CONCURRENT_CEMENTING); \
 		}							\
 	} while (0)
 

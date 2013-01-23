@@ -108,7 +108,7 @@ typedef guint64 mword;
  * Maximum level of asserts to enable on this build.
  * FIXME replace all magic numbers with defines.
  */
-#define SGEN_MAX_ASSERT_LEVEL 2
+#define SGEN_MAX_ASSERT_LEVEL 5
 
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
@@ -194,5 +194,20 @@ typedef guint64 mword;
 
 #define SGEN_MIN_SAVE_TARGET_RATIO 0.1
 #define SGEN_MAX_SAVE_TARGET_RATIO 2.0
+
+/*
+ * Configurable cementing parameters.
+ *
+ * The hash table size should be a prime.  If there are too many
+ * pinned nursery objects with many references from the major heap,
+ * this number must be increased.
+ *
+ * The threshold is the number of references from the major heap to a
+ * pinned nursery object which triggers cementing: if there are more
+ * than that number of references, the pinned object is cemented until
+ * the next major collection.
+ */
+#define SGEN_CEMENT_HASH_SIZE	61
+#define SGEN_CEMENT_THRESHOLD	1000
 
 #endif
