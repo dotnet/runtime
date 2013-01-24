@@ -303,12 +303,17 @@ sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
 		return TRUE;
 
 	++hash [i].count;
-#ifdef SGEN_BINARY_PROTOCOL
 	if (hash [i].count == SGEN_CEMENT_THRESHOLD) {
+		if (G_UNLIKELY (MONO_GC_OBJ_CEMENTED_ENABLED())) {
+			MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+			MONO_GC_OBJ_CEMENTED ((mword)obj, sgen_safe_object_get_size ((MonoObject*)obj),
+					vt->klass->name_space, vt->klass->name);
+		}
+#ifdef SGEN_BINARY_PROTOCOL
 		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
 				sgen_safe_object_get_size ((MonoObject*)obj));
-	}
 #endif
+	}
 
 	return FALSE;
 }
