@@ -776,4 +776,30 @@ public class Tests
 		arm_params1<int> (1, 2, 3, 4, 5, 6);
 		return 0;
 	}
+
+	sealed class ScheduledItem<TAbsolute, TValue> {
+		private readonly object _scheduler;
+		private readonly TValue _state;
+		private readonly object _action;
+
+		public ScheduledItem(object o, TValue state, object action, TAbsolute dueTime) {
+			_state = state;
+		}
+	}
+
+    abstract class VirtualTimeSchedulerBase<TAbsolute, TRelative> {
+        public abstract void ScheduleAbsolute<TState>(TState state, TAbsolute dueTime);
+	}
+
+	class VirtualTimeScheduler<TAbsolute, TRelative> : VirtualTimeSchedulerBase<TAbsolute, TRelative> {
+		public override void ScheduleAbsolute<TState>(TState state, TAbsolute dueTime) {
+			var si = new ScheduledItem<TAbsolute, TState>(this, state, null, dueTime);
+		}
+	}
+
+	public static int test_0_rx_mixed_regress () {
+		var v = new VirtualTimeScheduler<long, long> ();
+		v.ScheduleAbsolute<Action> (null, 22);
+		return 0;
+	}
 }

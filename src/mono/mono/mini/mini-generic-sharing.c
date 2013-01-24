@@ -859,7 +859,10 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 		return GUINT_TO_POINTER (mono_class_array_element_size (class));
 	case MONO_RGCTX_INFO_VALUE_SIZE:
-		return GUINT_TO_POINTER (mono_class_value_size (class, NULL));
+		if (MONO_TYPE_IS_REFERENCE (&class->byval_arg))
+			return GUINT_TO_POINTER (sizeof (gpointer));
+		else
+			return GUINT_TO_POINTER (mono_class_value_size (class, NULL));
 	default:
 		g_assert_not_reached ();
 	}
