@@ -6972,9 +6972,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean check_this = FALSE;
 			gboolean supported_tail_call = FALSE;
 			gboolean need_seq_point = FALSE;
+			guint32 call_opcode = *ip;
+			gboolean emit_widen = TRUE;
+			gboolean push_res = TRUE;
+			gboolean skip_ret = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
+
+			ins = NULL;
 
 			if (calli) {
 				GSHAREDVT_FAILURE (*ip);
@@ -7201,24 +7207,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				constrained_call = NULL;
 			}
 
-			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
+			if (!calli && check_call_signature (cfg, fsig, sp))
 				UNVERIFIED;
 
 			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
 				bblock = cfg->cbb;
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					type_to_eval_stack_type ((cfg), fsig->ret, ins);
-					*sp = ins;
-					sp++;
+					emit_widen = FALSE;
 				}
 
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				if (need_seq_point)
-					emit_seq_point (cfg, method, ip, FALSE);
-				break;
+				goto call_end;
 			}
 
 			/* 
@@ -7396,16 +7395,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL);
 				}
 
-				if (!MONO_TYPE_IS_VOID (fsig->ret))
-					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
-
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				if (need_seq_point)
-					emit_seq_point (cfg, method, ip, FALSE);
-				break;
+				goto call_end;
 			}
 
 			/*
@@ -7440,17 +7430,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				bblock = cfg->cbb;
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					type_to_eval_stack_type ((cfg), fsig->ret, ins);
-					*sp = ins;
-					sp++;
+					emit_widen = FALSE;
 				}
-
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				if (need_seq_point)
-					emit_seq_point (cfg, method, ip, FALSE);
-				break;
+				goto call_end;
 			}
 
 			/* Inlining */
@@ -7469,21 +7451,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					always = TRUE;
 				}
 
- 				if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, dont_inline, always))) {
-					ip += 5;
+ 				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, dont_inline, always);
+				if (costs) {
 					cfg->real_offset += 5;
 					bblock = cfg->cbb;
 
  					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 						/* *sp is already set by inline_method */
  						sp++;
+						push_res = FALSE;
 					}
 
 					inline_costs += costs;
-					ins_flag = 0;
-					if (need_seq_point)
-						emit_seq_point (cfg, method, ip, FALSE);
-					break;
+
+					goto call_end;
 				}
 			}
 
@@ -7514,16 +7495,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
 				ins = emit_gsharedvt_call (cfg, fsig, sp, addr, cmethod, imt_arg, vtable_arg);
 
-				if (!MONO_TYPE_IS_VOID (fsig->ret))
-					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
-
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				if (need_seq_point)
-					emit_seq_point (cfg, method, ip, FALSE);
-				break;
+				goto call_end;
 			}
 
 			if (virtual && cmethod && cfg->gsharedvt && cmethod->slot == -1) {
@@ -7536,7 +7508,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 10 * num_calls++;
 
 			/* Tail recursion elimination */
-			if ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && cmethod == method && ip [5] == CEE_RET && !vtable_arg) {
+			if ((cfg->opt & MONO_OPT_TAILC) && call_opcode == CEE_CALL && cmethod == method && ip [5] == CEE_RET && !vtable_arg) {
 				gboolean has_vtargs = FALSE;
 				int i;
 
@@ -7561,12 +7533,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					/* skip the CEE_RET, too */
 					if (ip_in_bb (cfg, bblock, ip + 5))
-						ip += 6;
-					else
-						ip += 5;
-
-					ins_flag = 0;
-					break;
+						skip_ret = TRUE;
+					push_res = FALSE;
+					goto call_end;
 				}
 			}
 
@@ -7597,9 +7566,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (addr) {
 				g_assert (!imt_arg);
 
-				if (*ip == CEE_CALL)
+				if (call_opcode == CEE_CALL)
 					g_assert (context_used);
-				else if (*ip == CEE_CALLI)
+				else if (call_opcode == CEE_CALLI)
 					g_assert (!vtable_arg);
 				else
 					/* FIXME: what the hell is this??? */
@@ -7626,16 +7595,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL);
 					}
 				}
-				if (!MONO_TYPE_IS_VOID (fsig->ret))
-					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				if (need_seq_point)
-					emit_seq_point (cfg, method, ip, FALSE);
-				break;
+				goto call_end;
 			}
 	      				
 			/* Array methods */
@@ -7662,8 +7623,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, FALSE);
 
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, fsig->ret, addr->dreg, 0);
-
-					*sp++ = ins;
 				} else if (strcmp (cmethod->name, "Address") == 0) { /* array Address */
 					if (!cmethod->klass->element_class->valuetype && !readonly)
 						mini_emit_check_array_type (cfg, sp [0], cmethod->klass);
@@ -7671,43 +7630,29 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					
 					readonly = FALSE;
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, FALSE);
-					*sp++ = addr;
+					ins = addr;
 				} else {
 					g_assert_not_reached ();
 				}
 
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				emit_seq_point (cfg, method, ip, FALSE);
-				break;
+				emit_widen = FALSE;
+				goto call_end;
 			}
 
 			ins = mini_redirect_call (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL);
-			if (ins) {
-				if (!MONO_TYPE_IS_VOID (fsig->ret))
-					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
-
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-				if (need_seq_point)
-					emit_seq_point (cfg, method, ip, FALSE);
-				break;
-			}
+			if (ins)
+				goto call_end;
 
 			/* Tail prefix / tail call optimization */
 
 			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests */
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
-			supported_tail_call = cmethod && 
-				((((ins_flag & MONO_INST_TAILCALL) && (*ip == CEE_CALL))
+			if (cmethod && 
+				((((ins_flag & MONO_INST_TAILCALL) && (call_opcode == CEE_CALL))
 				  ))//|| ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && ip [5] == CEE_RET))
-				&& !vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig);
-
+				&& !vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig))
+				supported_tail_call = TRUE;
 			if (supported_tail_call) {
 				MonoCallInst *call;
 
@@ -7743,21 +7688,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				link_bblock (cfg, bblock, end_bblock);			
 				start_new_bblock = 1;
 
-				CHECK_CFG_EXCEPTION;
-
-				ip += 5;
-				ins_flag = 0;
-
 				// FIXME: Eliminate unreachable epilogs
 
 				/*
 				 * OP_TAILCALL has no return value, so skip the CEE_RET if it is
 				 * only reachable from this call.
 				 */
-				GET_BBLOCK (cfg, tblock, ip);
+				GET_BBLOCK (cfg, tblock, ip + 5);
 				if (tblock == bblock || tblock->in_count == 0)
-					ip += 1;
-				break;
+					skip_ret = TRUE;
+				push_res = TRUE;
+
+				goto call_end;
 			}
 
 			/* 
@@ -7768,21 +7710,33 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * change the called method to a dummy wrapper, and resolve that wrapper
 			 * to the real method in mono_jit_compile_method ().
 			 */
-			if (cfg->method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED && mono_marshal_method_from_wrapper (cfg->method) == cmethod) {
+			if (cfg->method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED && mono_marshal_method_from_wrapper (cfg->method) == cmethod)
 				cmethod = mono_marshal_get_synchronized_inner_wrapper (cmethod);
-			}
 
 			/* Common call */
 			INLINE_FAILURE ("call");
 			ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL,
 											  imt_arg, vtable_arg);
 
-			if (!MONO_TYPE_IS_VOID (fsig->ret))
-				*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
+			call_end:
+
+			/* End of call, INS should contain the result of the call, if any */
+
+			if (push_res && !MONO_TYPE_IS_VOID (fsig->ret)) {
+				g_assert (ins);
+				if (emit_widen)
+					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
+				else
+					*sp++ = ins;
+			}
 
 			CHECK_CFG_EXCEPTION;
 
 			ip += 5;
+			if (skip_ret) {
+				g_assert (*ip == CEE_RET);
+				ip += 1;
+			}
 			ins_flag = 0;
 			if (need_seq_point)
 				emit_seq_point (cfg, method, ip, FALSE);
