@@ -4536,6 +4536,8 @@ resume_from_signal_handler (void *sigctx, void *func)
 	/* Save the original context in TLS */
 	// FIXME: This might not work on an altstack ?
 	tls = mono_native_tls_get_value (debugger_tls_id);
+	if (!tls)
+		fprintf (stderr, "Thread %p is not attached to the JIT.\n", (gpointer)GetCurrentThreadId ());
 	g_assert (tls);
 
 	// FIXME: MonoContext usually doesn't include the fp registers, so these are 
