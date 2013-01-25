@@ -2181,6 +2181,7 @@ callvirt_to_call_membase (int opcode)
 }
 
 #ifdef MONO_ARCH_HAVE_IMT
+/* Either METHOD or IMT_ARG needs to be set */
 static void
 emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, MonoInst *imt_arg)
 {
@@ -2363,31 +2364,7 @@ set_rgctx_arg (MonoCompile *cfg, MonoCallInst *call, int rgctx_reg, MonoInst *rg
 }	
 
 inline static MonoInst*
-mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoInst *rgctx_arg)
-{
-	MonoCallInst *call;
-	int rgctx_reg = -1;
-
-	if (rgctx_arg) {
-		rgctx_reg = mono_alloc_preg (cfg);
-		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
-	}
-
-	call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE, rgctx_arg ? TRUE : FALSE, FALSE);
-
-	call->inst.sreg1 = addr->dreg;
-
-	MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
-
-	if (rgctx_arg)
-		set_rgctx_arg (cfg, call, rgctx_reg, rgctx_arg);
-
-	return (MonoInst*)call;
-}
-
-/* This is like calli, but we pass rgctx/imt arguments as well */
-static MonoInst*
-emit_gsharedvt_call (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoMethod *method, MonoInst *imt_arg, MonoInst *rgctx_arg)
+mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
 	MonoCallInst *call;
 	int rgctx_reg = -1;
@@ -2402,7 +2379,7 @@ emit_gsharedvt_call (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args
 	call->inst.sreg1 = addr->dreg;
 
 	if (imt_arg)
-		emit_imt_argument (cfg, call, method, imt_arg);
+		emit_imt_argument (cfg, call, NULL, imt_arg);
 
 	MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
 
@@ -2456,7 +2433,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		addr = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK);
 
-		return mono_emit_calli (cfg, sig, args, addr, NULL);
+		return mono_emit_calli (cfg, sig, args, addr, NULL, NULL);
 	}
 
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
@@ -3270,7 +3247,7 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 
 		rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
 
-		return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, rgctx);
+		return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, NULL, rgctx);
 	} else {
 		return mono_emit_method_call (cfg, method, &val, NULL);
 	}
@@ -3427,7 +3404,7 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 													MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 			MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
 
-			return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, rgctx);
+			return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, NULL, rgctx);
 		} else {
 			return mono_emit_method_call (cfg, method, &val, NULL);
 		}
@@ -7353,11 +7330,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
 		 	    !(MONO_METHOD_IS_FINAL (cmethod) && 
 			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
-			    mono_method_signature (cmethod)->generic_param_count) {
+			    fsig->generic_param_count) {
 				MonoInst *this_temp, *this_arg_temp, *store;
 				MonoInst *iargs [4];
+				gboolean use_imt = FALSE;
 
-				g_assert (mono_method_signature (cmethod)->is_inflated);
+				g_assert (fsig->is_inflated);
 
 				/* Prevent inlining of methods that contain indirect calls */
 				INLINE_FAILURE ("virtual generic call");
@@ -7366,16 +7344,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					GSHAREDVT_FAILURE (*ip);
 
 #if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK && defined(MONO_ARCH_GSHARED_SUPPORTED)
-				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt) {
+				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt)
+					use_imt = TRUE;
+#endif
+
+				if (use_imt) {
 					g_assert (!imt_arg);
 					if (!context_used)
 						g_assert (cmethod->is_inflated);
 					imt_arg = emit_get_rgctx_method (cfg, context_used,
 													 cmethod, MONO_RGCTX_INFO_METHOD);
 					ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp, sp [0], imt_arg, NULL);
-				} else
-#endif
-				{
+				} else {
 					this_temp = mono_compile_create_var (cfg, type_from_stack_type (sp [0]), OP_LOCAL);
 					NEW_TEMPSTORE (cfg, store, this_temp->inst_c0, sp [0]);
 					MONO_ADD_INS (bblock, store);
@@ -7392,7 +7372,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					EMIT_NEW_TEMPLOAD (cfg, sp [0], this_arg_temp->inst_c0);
 
-					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL);
+					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
 				}
 
 				goto call_end;
@@ -7436,7 +7416,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Inlining */
-			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
+			if (cmethod && (cfg->opt & MONO_OPT_INLINE) &&
 				(!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
 			    !disable_inline && mono_method_check_inlining (cfg, cmethod) &&
 				 !g_list_find (dont_inline, cmethod)) {
@@ -7467,45 +7447,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto call_end;
 				}
 			}
-
-			/*
-			 * Making generic calls out of gsharedvt methods.
-			 */
-			if (cmethod && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
-				MonoInst *addr;
-
-				if (virtual) {
-					//if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-						//GSHAREDVT_FAILURE (*ip);
-					// disable for possible remoting calls
-					if (fsig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))
-						GSHAREDVT_FAILURE (*ip);
-					// virtual generic calls were disabled earlier
-				}
-
-				if (cmethod->klass->rank && cmethod->klass->byval_arg.type != MONO_TYPE_SZARRAY)
-					/* test_0_multi_dim_arrays () in gshared.cs */
-					GSHAREDVT_FAILURE (*ip);
-
-				if (virtual && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))
-					addr = emit_get_rgctx_method (cfg, context_used,
-												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT);
-				else
-					addr = emit_get_rgctx_method (cfg, context_used,
-												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
-				ins = emit_gsharedvt_call (cfg, fsig, sp, addr, cmethod, imt_arg, vtable_arg);
-
-				goto call_end;
-			}
-
-			if (virtual && cmethod && cfg->gsharedvt && cmethod->slot == -1) {
-				mono_class_setup_vtable (cmethod->klass);
-				if (cmethod->slot == -1)
-					// FIXME: How can this happen ?
-					GSHAREDVT_FAILURE (*ip);
-			}
-			
-			inline_costs += 10 * num_calls++;
 
 			/* Tail recursion elimination */
 			if ((cfg->opt & MONO_OPT_TAILC) && call_opcode == CEE_CALL && cmethod == method && ip [5] == CEE_RET && !vtable_arg) {
@@ -7539,14 +7480,50 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
+			inline_costs += 10 * num_calls++;
+
+			/*
+			 * Making generic calls out of gsharedvt methods.
+			 */
+			if (cmethod && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
+				if (virtual) {
+					//if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+						//GSHAREDVT_FAILURE (*ip);
+					// disable for possible remoting calls
+					if (fsig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))
+						GSHAREDVT_FAILURE (*ip);
+					// virtual generic calls were disabled earlier
+				}
+
+				if (cmethod->klass->rank && cmethod->klass->byval_arg.type != MONO_TYPE_SZARRAY)
+					/* test_0_multi_dim_arrays () in gshared.cs */
+					GSHAREDVT_FAILURE (*ip);
+
+				if (virtual && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))
+					addr = emit_get_rgctx_method (cfg, context_used,
+												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT);
+				else
+					addr = emit_get_rgctx_method (cfg, context_used,
+												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
+				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
+				goto call_end;
+			}
+
+			if (virtual && cmethod && cfg->gsharedvt && cmethod->slot == -1) {
+				mono_class_setup_vtable (cmethod->klass);
+				if (cmethod->slot == -1)
+					// FIXME: How can this happen ?
+					GSHAREDVT_FAILURE (*ip);
+			}
+			
 			/* Generic sharing */
 			/* FIXME: only do this for generic methods if
 			   they are not shared! */
 			if (context_used && !imt_arg && !array_rank &&
-					(!mono_method_is_generic_sharable_impl (cmethod, TRUE) ||
-						!mono_class_generic_sharing_enabled (cmethod->klass)) &&
-					(!virtual || MONO_METHOD_IS_FINAL (cmethod) ||
-						!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
+				(!mono_method_is_generic_sharable_impl (cmethod, TRUE) ||
+				 !mono_class_generic_sharing_enabled (cmethod->klass)) &&
+				(!virtual || MONO_METHOD_IS_FINAL (cmethod) ||
+				 !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
 				INLINE_FAILURE ("gshared");
 
 				g_assert (cfg->generic_sharing_context && cmethod);
@@ -7560,12 +7537,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * indirect call.
 				 */
 				addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
+				goto call_end;
 			}
 
 			/* Indirect calls */
 			if (addr) {
-				g_assert (!imt_arg);
-
 				if (call_opcode == CEE_CALL)
 					g_assert (context_used);
 				else if (call_opcode == CEE_CALLI)
@@ -7578,22 +7555,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Prevent inlining of methods with indirect calls */
 				INLINE_FAILURE ("indirect call");
 
-				if (vtable_arg) {
-					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, vtable_arg);
+				if (addr->opcode == OP_AOTCONST && addr->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
+					/* 
+					 * Instead of emitting an indirect call, emit a direct call
+					 * with the contents of the aotconst as the patch info.
+					 */
+					ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_p0, fsig, sp);
+					NULLIFY_INS (addr);
+				} else if (addr->opcode == OP_GOT_ENTRY && addr->inst_right->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
+					ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_right->inst_left, fsig, sp);
+					NULLIFY_INS (addr);
 				} else {
-					if (addr->opcode == OP_AOTCONST && addr->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
-						/* 
-						 * Instead of emitting an indirect call, emit a direct call
-						 * with the contents of the aotconst as the patch info.
-						 */
-						ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_p0, fsig, sp);
-						NULLIFY_INS (addr);
-					} else if (addr->opcode == OP_GOT_ENTRY && addr->inst_right->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
-						ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_right->inst_left, fsig, sp);
-						NULLIFY_INS (addr);
-					} else {
-						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL);
-					}
+					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
 				}
 
 				goto call_end;
@@ -8711,7 +8684,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					addr = emit_get_rgctx_method (cfg, context_used,
 												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
-					mono_emit_calli (cfg, fsig, sp, addr, vtable_arg);
+					mono_emit_calli (cfg, fsig, sp, addr, NULL, vtable_arg);
 				} else if (context_used &&
 						(!mono_method_is_generic_sharable_impl (cmethod, TRUE) ||
 							!mono_class_generic_sharing_enabled (cmethod->klass))) {
@@ -8720,7 +8693,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod_addr = emit_get_rgctx_method (cfg, context_used,
 						cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 
-					mono_emit_calli (cfg, fsig, sp, cmethod_addr, vtable_arg);
+					mono_emit_calli (cfg, fsig, sp, cmethod_addr, NULL, vtable_arg);
 				} else {
 					INLINE_FAILURE ("ctor call");
 					ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp,
