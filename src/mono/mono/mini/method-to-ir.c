@@ -7675,7 +7675,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				GET_BBLOCK (cfg, tblock, ip + 5);
 				if (tblock == bblock || tblock->in_count == 0)
 					skip_ret = TRUE;
-				push_res = TRUE;
+				push_res = FALSE;
 
 				goto call_end;
 			}
