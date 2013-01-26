@@ -1,4 +1,3 @@
-
 This is Mono.
 
 	1. Installation
@@ -160,7 +159,7 @@ This is Mono.
 	Expect to find a few testsuite failures.  As a sanity check, you
 	can compare the failures you got with
 
-		http://go-mono.com/tests/displayTestResults.php
+		https://wrench.mono-project.com/Wrench/
 
 	You can now install mono with:
 
