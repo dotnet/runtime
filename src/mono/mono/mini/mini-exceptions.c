@@ -2268,6 +2268,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	struct sigaction sa;
 #endif
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
 
 	if (handling_sigsegv)
 		return;
@@ -2293,7 +2294,6 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	void *array [256];
 	char **names;
 	int i, size;
-	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
 
 	mono_runtime_printf_err ("\nNative stacktrace:\n");
 
@@ -2331,6 +2331,9 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		waitpid (pid, &status, 0);
 	}
 #endif
+ }
+#endif
+
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend
 	 * on anything working. So try to print out lots of diagnostics, starting 
@@ -2345,8 +2348,6 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 			 "=================================================================\n",
 			signal_str);
 
- }
-#endif
 
 #ifdef MONO_ARCH_USE_SIGACTION
 
@@ -2359,7 +2360,12 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 
 #endif
 
+	/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
+#if defined (PLATFORM_ANDROID)
+	exit (-1);
+#else
 	abort ();
+#endif
 }
 
 static void
@@ -2698,12 +2704,14 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 	} else {
 		MonoObject *other = NULL;
 		MonoString *str = mono_object_to_string (exc, &other);
-		if (str) {
-			char *msg = mono_string_to_utf8 (str);
-			mono_runtime_printf_err ("[ERROR] FATAL UNHANDLED EXCEPTION: %s", msg);
-			g_free (msg);
-		}
-
+		char *msg = NULL;
+		
+		if (str)
+			msg = mono_string_to_utf8 (str);
+		else
+			msg = g_strdup ("Nested exception trying to figure out what went wrong");
+		mono_runtime_printf_err ("[ERROR] FATAL UNHANDLED EXCEPTION: %s", msg);
+		g_free (msg);
 #if defined(__APPLE__) && defined(__arm__)
 		g_assertion_message ("Terminating runtime due to unhandled exception");
 #else
