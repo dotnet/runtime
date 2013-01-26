@@ -95,7 +95,7 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 
 #define mono_gc_printf(gc_log_file, format, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, format "\n", ##__VA_ARGS__)
 #define mono_runtime_printf(format, ...) g_log ("mono-rt", G_LOG_LEVEL_MESSAGE, format "\n", ##__VA_ARGS__)
-#define mono_runtime_printf_err(format, ...) g_log ("mono-rt", G_LOG_LEVEL_ERROR, format "\n", ##__VA_ARGS__)
+#define mono_runtime_printf_err(format, ...) g_log ("mono-rt", G_LOG_LEVEL_CRITICAL, format "\n", ##__VA_ARGS__)
 #define mono_runtime_stdout_fflush() do { } while (0)
 
 #else
