@@ -126,15 +126,16 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 		p = sgen_alloc_os_memory (size, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, NULL);
 		if (!p)
 			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
-		return p;
+	} else {
+		index = index_for_size (size);
+
+		p = mono_lock_free_alloc (&allocators [index]);
+		if (!p)
+			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
+		memset (p, 0, size);
 	}
 
-	index = index_for_size (size);
-
-	p = mono_lock_free_alloc (&allocators [index]);
-	if (!p)
-		sgen_assert_memory_alloc (NULL, size, description_for_type (type));
-	memset (p, 0, size);
+	MONO_GC_INTERNAL_ALLOC (p, size, type);
 	return p;
 }
 
@@ -144,22 +145,26 @@ sgen_free_internal_dynamic (void *addr, size_t size, int type)
 	if (!addr)
 		return;
 
-	if (size > allocator_sizes [NUM_ALLOCATORS - 1]) {
+	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
 		sgen_free_os_memory (addr, size, SGEN_ALLOC_INTERNAL);
-		return;
-	}
+	else
+		mono_lock_free_free (addr);
 
-	mono_lock_free_free (addr);
+	MONO_GC_INTERNAL_DEALLOC (addr, size, type);
 }
 
 void*
 sgen_alloc_internal (int type)
 {
 	int index = fixed_type_allocator_indexes [type];
+	int size = allocator_sizes [index];
 	void *p;
 	g_assert (index >= 0 && index < NUM_ALLOCATORS);
 	p = mono_lock_free_alloc (&allocators [index]);
-	memset (p, 0, allocator_sizes [index]);
+	memset (p, 0, size);
+
+	MONO_GC_INTERNAL_ALLOC (p, size, type);
+
 	return p;
 }
 
@@ -175,6 +180,11 @@ sgen_free_internal (void *addr, int type)
 	g_assert (index >= 0 && index < NUM_ALLOCATORS);
 
 	mono_lock_free_free (addr);
+
+	if (MONO_GC_INTERNAL_DEALLOC_ENABLED ()) {
+		int size = allocator_sizes [index];
+		MONO_GC_INTERNAL_DEALLOC (addr, size, type);
+	}
 }
 
 void
