@@ -553,6 +553,8 @@ static int mark_ephemerons_in_range (ScanCopyContext ctx);
 static void clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
+static gboolean major_update_or_finish_concurrent_collection (gboolean force_finish);
+
 SgenObjectOperations current_object_ops;
 SgenMajorCollector major_collector;
 SgenMinorCollector sgen_minor_collector;
@@ -1069,6 +1071,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 	int i;
 
 	LOCK_GC;
+
+	if (concurrent_collection_in_progress)
+		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE);
+	g_assert (!concurrent_collection_in_progress);
 
 	sgen_process_fin_stage_entries ();
 	sgen_process_dislink_stage_entries ();
