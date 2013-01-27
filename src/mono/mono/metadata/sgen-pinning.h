@@ -52,7 +52,7 @@ void sgen_cement_reset (void) MONO_INTERNAL;
 void sgen_cement_concurrent_start (void) MONO_INTERNAL;
 void sgen_cement_concurrent_finish (void) MONO_INTERNAL;
 gboolean sgen_cement_lookup (char *obj) MONO_INTERNAL;
-gboolean sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing) MONO_INTERNAL;
+gboolean sgen_cement_lookup_or_register (char *obj) MONO_INTERNAL;
 void sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
 void sgen_cement_clear_below_threshold (void) MONO_INTERNAL;
 
