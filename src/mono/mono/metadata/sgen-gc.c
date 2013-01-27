@@ -2259,7 +2259,7 @@ sgen_collection_is_concurrent (void)
 	case GENERATION_NURSERY:
 		return FALSE;
 	case GENERATION_OLD:
-		return major_collector.is_concurrent;
+		return concurrent_collection_in_progress;
 	default:
 		g_error ("Invalid current generation %d", current_collection_generation);
 	}
@@ -2777,7 +2777,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
 	ScanCopyContext ctx;
 
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		/*This cleans up unused fragments */
 		sgen_nursery_allocator_prepare_for_pinning ();
 
@@ -2798,9 +2798,6 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	if (whole_heap_check_before_collection)
 		sgen_check_whole_heap (finish_up_concurrent_mark);
 
-	if (!major_collector.is_concurrent)
-		sgen_cement_reset ();
-
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
@@ -2818,7 +2815,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 		check_for_xdomain_refs ();
 	}
 
-	if (!major_collector.is_concurrent) {
+	if (!concurrent_collection_in_progress) {
 		/* Remsets are not useful for a major collection */
 		remset.prepare_for_major_collection ();
 	}
@@ -2830,6 +2827,20 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	sgen_init_pinning ();
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+
+	if (!concurrent_collection_in_progress) {
+		if (major_collector.is_concurrent) {
+			/*
+			 * The concurrent major collector cannot evict
+			 * yet, so we need to pin cemented objects to
+			 * not break some asserts.
+			 */
+			sgen_cement_iterate (pin_stage_object_callback, NULL);
+		}
+
+		sgen_cement_reset ();
+	}
+
 	sgen_optimize_pin_queue (0);
 
 	/*
@@ -2838,7 +2849,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		sgen_workers_start_all_workers ();
 		sgen_workers_start_marking ();
 	}
@@ -2915,7 +2926,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	 * Non-concurrent mark evacuates from the nursery, so it's
 	 * sufficient to just scan pinned nursery objects.
 	 */
-	if (major_collector.is_concurrent && sgen_minor_collector.is_split) {
+	if (concurrent_collection_in_progress && sgen_minor_collector.is_split) {
 		scan_nursery_objects (ctx);
 	} else {
 		sgen_pin_objects_in_section (nursery_section, ctx);
@@ -2938,7 +2949,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	if (!major_collector.is_concurrent) {
+	if (!concurrent_collection_in_progress && major_collector.is_parallel) {
 		sgen_workers_start_all_workers ();
 		sgen_workers_start_marking ();
 	}
@@ -3007,7 +3018,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
 
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		/* prepare the pin queue for the next collection */
 		sgen_finish_pinning ();
 
@@ -3019,7 +3030,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 }
 
 static void
-major_start_collection (int *old_next_pin_slot)
+major_start_collection (gboolean concurrent, int *old_next_pin_slot)
 {
 	MONO_GC_BEGIN (GENERATION_OLD);
 	binary_protocol_collection_begin (stat_major_gcs, GENERATION_OLD);
@@ -3031,7 +3042,8 @@ major_start_collection (int *old_next_pin_slot)
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	if (major_collector.is_concurrent) {
+	if (concurrent) {
+		g_assert (major_collector.is_concurrent);
 		concurrent_collection_in_progress = TRUE;
 
 		sgen_cement_concurrent_start ();
@@ -3062,7 +3074,7 @@ major_start_collection (int *old_next_pin_slot)
 static void
 wait_for_workers_to_finish (void)
 {
-	if (major_collector.is_parallel || major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress || major_collector.is_parallel) {
 		gray_queue_redirect (&gray_queue);
 		sgen_workers_join ();
 	}
@@ -3085,12 +3097,12 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 	TV_GETTIME (btv);
 
-	if (major_collector.is_concurrent || major_collector.is_parallel)
+	if (concurrent_collection_in_progress || major_collector.is_parallel)
 		wait_for_workers_to_finish ();
 
 	current_object_ops = major_collector.major_ops;
 
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
 		wait_for_workers_to_finish ();
 
@@ -3122,7 +3134,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	sgen_workers_reset_data ();
 
 	if (objects_pinned) {
-		g_assert (!major_collector.is_concurrent);
+		g_assert (!concurrent_collection_in_progress);
 
 		/*This is slow, but we just OOM'd*/
 		sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
@@ -3177,7 +3189,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	TV_GETTIME (btv);
 	time_major_sweep += TV_ELAPSED (atv, btv);
 
-	if (!major_collector.is_concurrent) {
+	if (!concurrent_collection_in_progress) {
 		/* walk the pin_queue, build up the fragment list of free memory, unmark
 		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 		 * next allocations.
@@ -3194,7 +3206,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		sgen_pin_stats_reset ();
 	}
 
-	if (major_collector.is_concurrent)
+	if (concurrent_collection_in_progress)
 		sgen_cement_concurrent_finish ();
 	sgen_cement_clear_below_threshold ();
 
@@ -3218,7 +3230,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	if (major_collector.is_concurrent)
+	if (concurrent_collection_in_progress)
 		concurrent_collection_in_progress = FALSE;
 
 	check_scan_starts ();
@@ -3246,7 +3258,7 @@ major_do_collection (const char *reason)
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
 
-	major_start_collection (&old_next_pin_slot);
+	major_start_collection (FALSE, &old_next_pin_slot);
 	major_finish_collection (reason, old_next_pin_slot, FALSE);
 
 	TV_GETTIME (all_btv);
@@ -3271,7 +3283,7 @@ major_start_concurrent_collection (const char *reason)
 	MONO_GC_CONCURRENT_START_BEGIN (GENERATION_OLD);
 
 	// FIXME: store reason and pass it when finishing
-	major_start_collection (NULL);
+	major_start_collection (TRUE, NULL);
 
 	gray_queue_redirect (&gray_queue);
 	sgen_workers_wait_for_jobs ();
@@ -3402,18 +3414,10 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			overflow_reason = "Minor overflow";
 		}
 	} else {
-		SgenGrayQueue unpin_queue;
-		SgenGrayQueue *unpin_queue_ptr;
-		memset (&unpin_queue, 0, sizeof (unpin_queue));
-
-		if (major_collector.is_concurrent && wait_to_finish)
-			unpin_queue_ptr = &unpin_queue;
-		else
-			unpin_queue_ptr = NULL;
-
 		if (major_collector.is_concurrent) {
 			g_assert (!concurrent_collection_in_progress);
-			collect_nursery (unpin_queue_ptr, FALSE);
+			if (!wait_to_finish)
+				collect_nursery (NULL, FALSE);
 		}
 
 		if (major_collector.is_concurrent && !wait_to_finish) {
@@ -3425,11 +3429,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 				overflow_generation_to_collect = GENERATION_NURSERY;
 				overflow_reason = "Excessive pinning";
 			}
-		}
-
-		if (unpin_queue_ptr) {
-			unpin_objects_from_queue (unpin_queue_ptr);
-			sgen_gray_object_queue_deinit (unpin_queue_ptr);
 		}
 	}
 
