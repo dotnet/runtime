@@ -1115,22 +1115,19 @@ mono_gc_clear_domain (MonoDomain * domain)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cementing)
+sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 {
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Target pointer of global remset must be in the nursery");
 
 	if (!major_collector.is_concurrent) {
-		SGEN_ASSERT (5, !concurrent_cementing, "Concurrent cementing must only happen with the concurrent collector");
 		SGEN_ASSERT (5, current_collection_generation != -1, "Global remsets can only be added during collections");
 	} else {
 		if (current_collection_generation == -1)
-			SGEN_ASSERT (5, concurrent_cementing, "Global remsets outside of collection pauses can only be added by the concurrent collector");
-		if (concurrent_cementing)
-			SGEN_ASSERT (5, concurrent_collection_in_progress, "Concurrent collection must be in process in order to add global remsets");
+			SGEN_ASSERT (5, sgen_concurrent_collection_in_progress (), "Global remsets outside of collection pauses can only be added by the concurrent collector");
 	}
 
 	if (!object_is_pinned (obj))
-		SGEN_ASSERT (5, concurrent_cementing || sgen_minor_collector.is_split, "Non-pinned objects can only remain in nursery if it is a split nursery");
+		SGEN_ASSERT (5, sgen_minor_collector.is_split || sgen_concurrent_collection_in_progress (), "Non-pinned objects can only remain in nursery if it is a split nursery");
 	else if (sgen_cement_lookup_or_register (obj))
 		return;
 
