@@ -3047,9 +3047,11 @@ major_start_collection (gboolean concurrent, int *old_next_pin_slot)
 		concurrent_collection_in_progress = TRUE;
 
 		sgen_cement_concurrent_start ();
-	}
 
-	current_object_ops = major_collector.major_ops;
+		current_object_ops = major_collector.major_concurrent_ops;
+	} else {
+		current_object_ops = major_collector.major_ops;
+	}
 
 	reset_pinned_from_failed_allocation ();
 
@@ -3100,9 +3102,9 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	if (concurrent_collection_in_progress || major_collector.is_parallel)
 		wait_for_workers_to_finish ();
 
-	current_object_ops = major_collector.major_ops;
-
 	if (concurrent_collection_in_progress) {
+		current_object_ops = major_collector.major_concurrent_ops;
+
 		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
 		wait_for_workers_to_finish ();
 
@@ -3110,6 +3112,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 		if (do_concurrent_checks)
 			check_nursery_is_clean ();
+	} else {
+		current_object_ops = major_collector.major_ops;
 	}
 
 	/*

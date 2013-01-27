@@ -1229,7 +1229,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 #else
 #ifdef SGEN_CONCURRENT_MARK
 static void
-major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
+major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
 {
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
 
@@ -1264,7 +1264,8 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		}
 	}
 }
-#else
+#endif
+
 static void
 major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 {
@@ -1402,7 +1403,6 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 	}
 }
 #endif
-#endif
 
 static void
 major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
@@ -1411,6 +1411,12 @@ major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
 }
 
 #ifdef SGEN_CONCURRENT_MARK
+static void
+major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
+}
+
 static long long
 major_get_and_reset_num_major_objects_marked (void)
 {
@@ -1425,6 +1431,12 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 
 #include "sgen-major-scan-object.h"
+
+#ifdef SGEN_CONCURRENT_MARK
+#define SCAN_FOR_CONCURRENT_MARK
+#include "sgen-major-scan-object.h"
+#undef SCAN_FOR_CONCURRENT_MARK
+#endif
 
 static void
 mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
@@ -2368,7 +2380,9 @@ sgen_marksweep_init
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops.scan_object = major_scan_object;
 #ifdef SGEN_CONCURRENT_MARK
-	collector->major_ops.scan_vtype = major_scan_vtype;
+	collector->major_concurrent_ops.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
+	collector->major_concurrent_ops.scan_object = major_scan_object_concurrent;
+	collector->major_concurrent_ops.scan_vtype = major_scan_vtype_concurrent;
 #endif
 
 #ifdef SGEN_HAVE_CARDTABLE
