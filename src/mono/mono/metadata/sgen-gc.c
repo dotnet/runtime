@@ -552,7 +552,7 @@ void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 static void init_stats (void);
 
 static int mark_ephemerons_in_range (ScanCopyContext ctx);
-static void clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx);
+static void clear_unreachable_ephemerons (ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 static gboolean major_update_or_finish_concurrent_collection (gboolean force_finish);
@@ -1963,7 +1963,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (generation == GENERATION_OLD && major_collector.is_concurrent, ctx);
+	clear_unreachable_ephemerons (ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -3652,7 +3652,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx)
+clear_unreachable_ephemerons (ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
