@@ -1136,7 +1136,6 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cemen
 
 	remset.record_pointer (ptr);
 
-#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (do_pin_stats))
 		sgen_pin_stats_register_global_remset (obj);
 
@@ -1145,6 +1144,7 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cemen
 
 	HEAVY_STAT (++stat_global_remsets_added);
 
+#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
