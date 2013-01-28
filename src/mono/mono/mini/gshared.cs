@@ -802,4 +802,54 @@ public class Tests
 		v.ScheduleAbsolute<Action> (null, 22);
 		return 0;
 	}
+
+	public class Base {
+		public virtual T foo<T> (T t) {
+			return t;
+		}
+	}
+
+	class Class1 : Base {
+		public object o;
+
+		public override T foo<T> (T t) {
+			o = t;
+			return t;
+		}
+	}
+
+	class Class2 : Base {
+		public object o;
+
+		public override T foo<T> (T t) {
+			o = t;
+			return t;
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void bar<T> (Base b, T t) {
+		b.foo (t);
+	}
+
+	public static int test_0_virtual_generic () {
+		Class1 c1 = new Class1 ();
+		Class2 c2 = new Class2 ();
+		bar (c1, 5);
+		if (!(c1.o is int) || ((int)c1.o != 5))
+			return 1;
+		bar (c1, 6.0);
+		if (!(c1.o is double) || ((double)c1.o != 6.0))
+			return 2;
+		bar (c1, 7.0f);
+		if (!(c1.o is float) || ((float)c1.o != 7.0f))
+			return 3;
+		bar (c2, 5);
+		if (!(c2.o is int) || ((int)c2.o != 5))
+			return 4;
+		bar (c2, 6.0);
+		bar (c2, 7.0f);
+		return 0;
+	}
+
 }

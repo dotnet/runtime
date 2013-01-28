@@ -3455,6 +3455,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			/* gsharedvt */
 			/* Use the all-vt shared method since this is what was AOTed */
 			method_index = find_extra_method (mini_get_shared_method_full (method, TRUE, FALSE), &amodule);
+			if (method_index != 0xffffff)
+				method = mini_get_shared_method_full (method, TRUE, FALSE);
 		}
 
 		if (method_index == 0xffffff) {

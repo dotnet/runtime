@@ -7335,7 +7335,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
 		 	    !(MONO_METHOD_IS_FINAL (cmethod) && 
 			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
-			    fsig->generic_param_count) {
+			    fsig->generic_param_count && 
+				!(cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig))) {
 				MonoInst *this_temp, *this_arg_temp, *store;
 				MonoInst *iargs [4];
 				gboolean use_imt = FALSE;
@@ -7497,7 +7498,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					// disable for possible remoting calls
 					if (fsig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))
 						GSHAREDVT_FAILURE (*ip);
-					// virtual generic calls were disabled earlier
+					if (fsig->generic_param_count) {
+						/* virtual generic call */
+						g_assert (mono_use_imt);
+						g_assert (!imt_arg);
+						/* Same as the virtual generic case above */
+						imt_arg = emit_get_rgctx_method (cfg, context_used,
+														 cmethod, MONO_RGCTX_INFO_METHOD);
+						/* This is not needed, as the trampoline code will pass one, and it might be passed in the same reg as the imt arg */
+						vtable_arg = NULL;
+					}
 				}
 
 				if (cmethod->klass->rank && cmethod->klass->byval_arg.type != MONO_TYPE_SZARRAY)
