@@ -3603,6 +3603,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	MonoAotModule *module = (MonoAotModule*)aot_module;
 	gboolean res, no_ftnptr = FALSE;
 	MonoMemPool *mp;
+	gboolean using_gsharedvt = FALSE;
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
 
@@ -3618,6 +3619,10 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 		return NULL;
 	}
 
+#ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
+	using_gsharedvt = TRUE;
+#endif
+
 	/* 
 	 * Avoid calling resolve_patch_target in the full-aot case if possible, since
 	 * it would create a trampoline, and we don't need that.
@@ -3625,7 +3630,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	 * in mono_magic_trampoline ().
 	 */
 	if (mono_aot_only && ji.type == MONO_PATCH_INFO_METHOD && !ji.data.method->is_generic && !mono_method_check_context_used (ji.data.method) && !(ji.data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) &&
-		!mono_method_needs_static_rgctx_invoke (ji.data.method, FALSE)) {
+		!mono_method_needs_static_rgctx_invoke (ji.data.method, FALSE) && !using_gsharedvt) {
 		target = mono_jit_compile_method (ji.data.method);
 		no_ftnptr = TRUE;
 	} else {
@@ -3795,18 +3800,19 @@ mono_aot_register_jit_icall (const char *name, gpointer addr)
 }
 
 /*
- * load_function:
+ * load_function_full:
  *
  *   Load the function named NAME from the aot image. 
  */
 static gpointer
-load_function (MonoAotModule *amodule, const char *name)
+load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **out_tinfo)
 {
 	char *symbol;
 	guint8 *p;
 	int n_patches, pindex;
 	MonoMemPool *mp;
 	gpointer code;
+	guint32 info_offset;
 
 	/* Load the code */
 
@@ -3827,7 +3833,30 @@ load_function (MonoAotModule *amodule, const char *name)
 		/* Nothing to patch */
 		return code;
 
-	p = amodule->blob + *(guint32*)p;
+	info_offset = *(guint32*)p;
+	if (out_tinfo) {
+		MonoTrampInfo *tinfo;
+		guint32 code_size, uw_info_len, uw_offset;
+		guint8 *uw_info;
+		/* Construct a MonoTrampInfo from the data in the AOT image */
+
+		p += sizeof (guint32);
+		code_size = *(guint32*)p;
+		p += sizeof (guint32);
+		uw_offset = *(guint32*)p;
+		uw_info = amodule->unwind_info + uw_offset;
+		uw_info_len = decode_value (uw_info, &uw_info);
+
+		tinfo = g_new0 (MonoTrampInfo, 1);
+		tinfo->code = code;
+		tinfo->code_size = code_size;
+		tinfo->uw_info = uw_info;
+		tinfo->uw_info_len = uw_info_len;
+
+		*out_tinfo = tinfo;
+	}
+
+	p = amodule->blob + info_offset;
 
 	/* Similar to mono_aot_load_method () */
 
@@ -3914,12 +3943,18 @@ load_function (MonoAotModule *amodule, const char *name)
 	return code;
 }
 
+static gpointer
+load_function (MonoAotModule *amodule, const char *name)
+{
+	return load_function_full (amodule, name, NULL);
+}
+
 /*
  * Return the trampoline identified by NAME from the mscorlib AOT file.
  * On ppc64, this returns a function descriptor.
  */
 gpointer
-mono_aot_get_trampoline (const char *name)
+mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 {
 	MonoImage *image;
 	MonoAotModule *amodule;
@@ -3930,7 +3965,13 @@ mono_aot_get_trampoline (const char *name)
 	amodule = image->aot_module;
 	g_assert (amodule);
 
-	return mono_create_ftnptr_malloc (load_function (amodule, name));
+	return mono_create_ftnptr_malloc (load_function_full (amodule, name, out_tinfo));
+}
+
+gpointer
+mono_aot_get_trampoline (const char *name)
+{
+	return mono_aot_get_trampoline_full (name, NULL);
 }
 
 #ifdef MONOTOUCH

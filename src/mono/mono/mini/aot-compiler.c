@@ -127,6 +127,7 @@ typedef struct MonoAotOptions {
 	gboolean direct_icalls;
 	gboolean no_direct_calls;
 	gboolean use_trampolines_page;
+	gboolean no_instances;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -1285,7 +1286,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 	guint8 *code;
 
 	if (acfg->thumb_mixed && cfg->compile_llvm) {
-		fprintf (acfg->fp, "add r0, r0, #%d\n", sizeof (MonoObject));
+		fprintf (acfg->fp, "add r0, r0, #%d\n", (int)sizeof (MonoObject));
 		fprintf (acfg->fp, "b %s\n", call_target);
 		fprintf (acfg->fp, ".arm\n");
 		return;
@@ -3685,6 +3686,9 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 	MonoGenericContext ctx;
 	MonoType *args [16];
 
+	if (acfg->aot_opts.no_instances)
+		return;
+
 	memset (&ctx, 0, sizeof (ctx));
 
 	for (i = 0; i < ninsts; ++i) {
@@ -3732,6 +3736,9 @@ add_generic_instances (MonoAotCompile *acfg)
 	guint32 token;
 	MonoMethod *method;
 	MonoGenericContext *context;
+
+	if (acfg->aot_opts.no_instances)
+		return;
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
 		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
@@ -5120,10 +5127,17 @@ emit_plt (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 }
 
+/*
+ * emit_trampoline_full:
+ *
+ *   If EMIT_TINFO is TRUE, emit additional information which can be used to create a MonoJitInfo for this trampoline by
+ * create_jit_info_for_trampoline ().
+ */
 static G_GNUC_UNUSED void
-emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
+emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info, gboolean emit_tinfo)
 {
 	char start_symbol [256];
+	char end_symbol [256];
 	char symbol [256];
 	guint32 buf_size, info_offset;
 	MonoJumpInfo *patch_info;
@@ -5165,6 +5179,11 @@ emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 
 	emit_symbol_size (acfg, start_symbol, ".");
 
+	if (emit_tinfo) {
+		sprintf (end_symbol, "%snamede_%s", acfg->temp_prefix, name);
+		emit_label (acfg, end_symbol);
+	}
+
 	/* Emit info */
 
 	/* Sort relocations */
@@ -5191,6 +5210,22 @@ emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 
 	emit_int32 (acfg, info_offset);
 
+	if (emit_tinfo) {
+		guint8 *encoded;
+		guint32 encoded_len;
+		guint32 uw_offset;
+
+		/*
+		 * Emit additional information which can be used to reconstruct a partial MonoTrampInfo.
+		 */
+		encoded = mono_unwind_ops_encode (info->unwind_ops, &encoded_len);
+		uw_offset = get_unwind_info_offset (acfg, encoded, encoded_len);
+		g_free (encoded);
+
+		emit_symbol_diff (acfg, end_symbol, start_symbol, 0);
+		emit_int32 (acfg, uw_offset);
+	}
+
 	/* Emit debug info */
 	if (unwind_ops) {
 		char symbol2 [256];
@@ -5201,6 +5236,12 @@ emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 		if (acfg->dwarf)
 			mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
 	}
+}
+
+static G_GNUC_UNUSED void
+emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
+{
+	emit_trampoline_full (acfg, got_offset, info, FALSE);
 }
 
 static void
@@ -5263,7 +5304,7 @@ emit_trampolines (MonoAotCompile *acfg)
 
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 		mono_arch_get_gsharedvt_trampoline (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
 #endif
 
 #if defined(MONO_ARCH_HAVE_GET_TRAMPOLINES)
@@ -5564,6 +5605,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->print_skipped_methods = TRUE;
 		} else if (str_begins_with (arg, "stats")) {
 			opts->stats = TRUE;
+		} else if (str_begins_with (arg, "no-instances")) {
+			opts->no_instances = TRUE;
 		} else if (str_begins_with (arg, "log-generics")) {
 			opts->log_generics = TRUE;
 		} else if (str_begins_with (arg, "mtriple=")) {
@@ -5601,6 +5644,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    soft-debug\n");
 			printf ("    gc-maps\n");
 			printf ("    print-skipped\n");
+			printf ("    no-instances\n");
 			printf ("    stats\n");
 			printf ("    info\n");
 			printf ("    help/?\n");
@@ -5868,7 +5912,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	 * encountered.
 	 */
 	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
-	if (depth < 32) {
+	if (!acfg->aot_opts.no_instances && depth < 32) {
 		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_METHOD: {

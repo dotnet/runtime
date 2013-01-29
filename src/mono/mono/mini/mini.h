@@ -1771,6 +1771,12 @@ enum {
 	 * Unwind information. Owned by this structure.
 	 */
 	GSList *unwind_ops;
+
+	 /*
+	  * Encoded unwind info loaded from AOT images
+	  */
+	 guint8 *uw_info;
+	 guint32 uw_info_len;
 } MonoTrampInfo;
 
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
@@ -1947,6 +1953,7 @@ void     mono_aot_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, g
 gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot) MONO_INTERNAL;
 gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 gpointer mono_aot_get_trampoline            (const char *name) MONO_INTERNAL;
+gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **out_tinfo) MONO_INTERNAL;
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
 gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr) MONO_INTERNAL;

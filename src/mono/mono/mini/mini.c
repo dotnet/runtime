@@ -3929,7 +3929,12 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 	guint8 *uw_info;
 	guint32 info_len;
 
-	uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
+	if (info->uw_info) {
+		uw_info = info->uw_info;
+		info_len = info->uw_info_len;
+	} else {
+		uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
+	}
 
 	jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
 	jinfo->method = wrapper;
@@ -5521,15 +5526,13 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			 * works.
 			 * FIXME: The caller signature doesn't match the callee, which might cause problems on some platforms
 			 */
-			if (mono_aot_only) {
-				// FIXME: No EH
-				return mono_aot_get_trampoline ("gsharedvt_trampoline");
-			} else {
+			if (mono_aot_only)
+				mono_aot_get_trampoline_full ("gsharedvt_trampoline", &tinfo);
+			else
 				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);
-				jinfo = create_jit_info_for_trampoline (method, tinfo);
-				mono_jit_info_table_add (mono_get_root_domain (), jinfo);
-				return tinfo->code;
-			}
+			jinfo = create_jit_info_for_trampoline (method, tinfo);
+			mono_jit_info_table_add (mono_get_root_domain (), jinfo);
+			return tinfo->code;
 		}
 	}
 
