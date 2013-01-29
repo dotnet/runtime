@@ -7524,7 +7524,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto call_end;
 			}
 
-			if (virtual && cmethod && cfg->gsharedvt && cmethod->slot == -1) {
+			if (virtual && cmethod && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && cfg->gsharedvt && cmethod->slot == -1) {
 				mono_class_setup_vtable (cmethod->klass);
 				if (cmethod->slot == -1)
 					// FIXME: How can this happen ?
