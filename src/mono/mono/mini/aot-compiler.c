@@ -6399,7 +6399,7 @@ emit_code (MonoAotCompile *acfg)
 		method = cfg->orig_method;
 
 		/* Emit unbox trampoline */
-		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype) {
 			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
@@ -6518,7 +6518,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype) {
 			index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
 
