@@ -1484,12 +1484,13 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 /*
  * mono_class_fill_runtime_generic_context:
  * @class_vtable: a vtable
+ * @caller: caller method address
  * @slot: a slot index to be instantiated
  *
  * Instantiates a slot in the RGCTX, returning its value.
  */
 gpointer
-mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
+mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint8 *caller, guint32 slot)
 {
 	static gboolean inited = FALSE;
 	static int num_alloced = 0;
@@ -1514,7 +1515,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 
 	mono_domain_unlock (domain);
 
-	info = fill_runtime_generic_context (class_vtable, rgctx, NULL, slot, 0);
+	info = fill_runtime_generic_context (class_vtable, rgctx, caller, slot, 0);
 
 	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (&class_vtable->klass->byval_arg), slot, info));
 

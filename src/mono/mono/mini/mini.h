@@ -2371,7 +2371,7 @@ gboolean
 mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
 
 gpointer
-mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot) MONO_INTERNAL;
+mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint8 *caller, guint32 slot) MONO_INTERNAL;
 
 gpointer
 mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint8 *caller, guint32 slot) MONO_INTERNAL;
