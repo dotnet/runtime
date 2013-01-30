@@ -411,33 +411,6 @@ typedef struct {
 
 #ifndef DISABLE_LOGGING
 
-static const char*
-info_type_to_str (MonoRgctxInfoType type)
-{
-	switch (type) {
-	case MONO_RGCTX_INFO_STATIC_DATA: return "STATIC_DATA";
-	case MONO_RGCTX_INFO_KLASS: return "KLASS";
-	case MONO_RGCTX_INFO_VTABLE: return "VTABLE";
-	case MONO_RGCTX_INFO_TYPE: return "TYPE";
-	case MONO_RGCTX_INFO_REFLECTION_TYPE: return "REFLECTION_TYPE";
-	case MONO_RGCTX_INFO_METHOD: return "METHOD";
-	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: return "GENERIC_METHOD_CODE";
-	case MONO_RGCTX_INFO_CLASS_FIELD: return "CLASS_FIELD";
-	case MONO_RGCTX_INFO_METHOD_RGCTX: return "METHOD_RGCTX";
-	case MONO_RGCTX_INFO_METHOD_CONTEXT: return "METHOD_CONTEXT";
-	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK: return "REMOTING_INVOKE_WITH_CHECK";
-	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE: return "METHOD_DELEGATE_CODE";
-	case MONO_RGCTX_INFO_CAST_CACHE: return "CAST_CACHE";
-	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE: return "ARRAY_ELEMENT_SIZE";
-	case MONO_RGCTX_INFO_VALUE_SIZE: return "VALUE_SIZE";
-	case MONO_RGCTX_INFO_FIELD_OFFSET: return "FIELD_OFFSET";
-	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE";
-	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT";
-	default:
-		return "<UNKNOWN RGCTX INFO TYPE>";
-	}
-}
-
 static void
 print_ji (MonoJumpInfo *ji)
 {
@@ -447,7 +420,7 @@ print_ji (MonoJumpInfo *ji)
 
 		printf ("[RGCTX_FETCH ");
 		print_ji (entry->data);
-		printf (" - %s]", info_type_to_str (entry->info_type));
+		printf (" - %s]", mono_rgctx_info_type_to_str (entry->info_type));
 		break;
 	}
 	case MONO_PATCH_INFO_METHODCONST: {

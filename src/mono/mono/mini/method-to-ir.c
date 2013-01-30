@@ -3410,18 +3410,55 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 		}
 	}
 
-	alloc = handle_alloc (cfg, klass, TRUE, context_used);
-	if (!alloc)
-		return NULL;
-
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
+		MonoBasicBlock *is_ref_bb, *end_bb;
+		MonoInst *res, *is_ref, *src_var, *addr;
+		int addr_reg, dreg;
+
+		dreg = alloc_ireg (cfg);
+
+		NEW_BBLOCK (cfg, is_ref_bb);
+		NEW_BBLOCK (cfg, end_bb);
+		is_ref = emit_get_rgctx_klass (cfg, context_used, klass,
+									   MONO_RGCTX_INFO_CLASS_IS_REF);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 1);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_ref_bb);
+
+		/* Non-ref case */
+		alloc = handle_alloc (cfg, klass, TRUE, context_used);
+		if (!alloc)
+			return NULL;
 		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
 		ins->opcode = OP_STOREV_MEMBASE;
-	} else {
-		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
-	}
 
-	return alloc;
+		EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, alloc->dreg);
+		res->type = STACK_OBJ;
+		res->klass = klass;
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+		
+		/* Ref case */
+		MONO_START_BB (cfg, is_ref_bb);
+		addr_reg = alloc_ireg (cfg);
+
+		/* val is a vtype, so has to load the value manually */
+		src_var = get_vreg_to_inst (cfg, val->dreg);
+		if (!src_var)
+			src_var = mono_compile_create_var_for_vreg (cfg, &klass->byval_arg, OP_LOCAL, val->dreg);
+		EMIT_NEW_VARLOADA (cfg, addr, src_var, src_var->inst_vtype);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, addr->dreg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+		MONO_START_BB (cfg, end_bb);
+
+		return res;
+	} else {
+		alloc = handle_alloc (cfg, klass, TRUE, context_used);
+		if (!alloc)
+			return NULL;
+
+		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
+		return alloc;
+	}
 }
 
 
@@ -7147,6 +7184,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 					ins->klass = constrained_call;
 					sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
+					bblock = cfg->cbb;
 					CHECK_CFG_EXCEPTION;
 				} else if (!constrained_call->valuetype) {
 					int dreg = alloc_ireg_ref (cfg);
@@ -7181,6 +7219,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 							ins->klass = constrained_call;
 							sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
+							bblock = cfg->cbb;
 							CHECK_CFG_EXCEPTION;
 						}
 					}
@@ -9043,6 +9082,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			*sp++ = handle_box (cfg, val, klass, context_used);
+			bblock = cfg->cbb;
 
 			CHECK_CFG_EXCEPTION;
 			ip += 5;

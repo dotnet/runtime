@@ -520,7 +520,8 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
-	case MONO_RGCTX_INFO_VALUE_SIZE: {
+	case MONO_RGCTX_INFO_VALUE_SIZE:
+	case MONO_RGCTX_INFO_CLASS_IS_REF: {
 		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
 			data, context, &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
@@ -863,6 +864,11 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 			return GUINT_TO_POINTER (sizeof (gpointer));
 		else
 			return GUINT_TO_POINTER (mono_class_value_size (class, NULL));
+	case MONO_RGCTX_INFO_CLASS_IS_REF:
+		if (MONO_TYPE_IS_REFERENCE (&class->byval_arg))
+			return GUINT_TO_POINTER (1);
+		else
+			return GUINT_TO_POINTER (0);
 	default:
 		g_assert_not_reached ();
 	}
@@ -882,7 +888,7 @@ ji_is_gsharedvt (MonoJitInfo *ji)
 
 static gpointer
 instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti,
-	MonoGenericContext *context, MonoClass *class)
+				  MonoGenericContext *context, MonoClass *class, guint8 *caller)
 {
 	gpointer data;
 	gboolean temporary;
@@ -909,7 +915,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
-	case MONO_RGCTX_INFO_VALUE_SIZE: {
+	case MONO_RGCTX_INFO_VALUE_SIZE:
+	case MONO_RGCTX_INFO_CLASS_IS_REF: {
 		MonoClass *arg_class = mono_class_from_mono_type (data);
 
 		free_inflated_info (oti->info_type, data);
@@ -974,9 +981,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoMethod *caller_method = oti->data;
 		MonoMethod *method = data;
 		gpointer addr;
-		MonoJitInfo *ji;
+		MonoJitInfo *caller_ji, *ji;
 		gboolean virtual = oti->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT;
 		gint32 vcall_offset;
+		MonoGenericJitInfo *gji;
 
 		g_assert (method->is_inflated);
 
@@ -1001,6 +1009,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			vcall_offset = -1;
 		}
 
+		g_assert (caller);
+		caller_ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (caller), NULL);
+		g_assert (caller_ji);
+		gji = mono_jit_info_get_generic_jit_info (caller_ji);
+		g_assert (gji);
+
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
 		 * non-shared method. The latter call cannot be patched, so instead of using a normal call, we make an indirect
@@ -1018,7 +1032,6 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			static gpointer tramp_addr;
 			gpointer info;
 			MonoMethod *wrapper;
-			MonoGenericSharingContext gsctx;
 			MonoMethod *gm;
 
 			g_assert (method->is_inflated);
@@ -1029,9 +1042,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 			gm = caller_method;
 
-			mini_init_gsctx (context, &gsctx);
-
-			info = mono_arch_get_gsharedvt_call_info (addr, method, gm, &gsctx, FALSE, vcall_offset);
+			info = mono_arch_get_gsharedvt_call_info (addr, method, gm, gji->generic_sharing_context, FALSE, vcall_offset);
 
 			if (!tramp_addr) {
 				wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
@@ -1057,7 +1068,6 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			static gpointer tramp_addr;
 			gpointer info;
 			MonoMethod *wrapper;
-			MonoGenericSharingContext gsctx;
 
 			//
 			// FIXME:
@@ -1065,12 +1075,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			// A trampoline is not always needed, but its hard to determine when it can be omitted.
 			//
 
-			mini_init_gsctx (context, &gsctx);
-
 			// FIXME: This is just a workaround
 			if (caller_method == method) {
 			} else {
-				info = mono_arch_get_gsharedvt_call_info (ji->code_start, method, ji->method, &gsctx, TRUE, -1);
+				info = mono_arch_get_gsharedvt_call_info (ji->code_start, method, ji->method, gji->generic_sharing_context, TRUE, -1);
 
 				if (!tramp_addr) {
 					wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
@@ -1130,8 +1138,8 @@ fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointe
 	}
 }
 
-G_GNUC_UNUSED static const char*
-info_type_to_str (MonoRgctxInfoType type)
+const char*
+mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 {
 	switch (type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: return "STATIC_DATA";
@@ -1149,9 +1157,12 @@ info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_CAST_CACHE: return "CAST_CACHE";
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE: return "ARRAY_ELEMENT_SIZE";
 	case MONO_RGCTX_INFO_VALUE_SIZE: return "VALUE_SIZE";
+	case MONO_RGCTX_INFO_CLASS_IS_REF: return "CLASS_IS_REF";
 	case MONO_RGCTX_INFO_FIELD_OFFSET: return "FIELD_OFFSET";
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE";
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT";
 	default:
-		return "<>";
+		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
 }
 
@@ -1182,7 +1193,7 @@ register_info (MonoClass *class, int type_argc, gpointer data, MonoRgctxInfoType
 			break;
 	}
 
-	DEBUG (printf ("set slot %s, infos [%d] = %s, %s\n", mono_type_get_full_name (class), i, info_type_to_str (info_type), rgctx_info_to_str (info_type, data)));
+	DEBUG (printf ("set slot %s, infos [%d] = %s, %s\n", mono_type_get_full_name (class), i, mono_rgctx_info_type_to_str (info_type), rgctx_info_to_str (info_type, data)));
 
 	/* Mark the slot as used in all parent classes (until we find
 	   a parent class which already has it marked used). */
@@ -1225,6 +1236,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
+	case MONO_RGCTX_INFO_CLASS_IS_REF:
 		return mono_class_from_mono_type (data1) == mono_class_from_mono_type (data2);
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
@@ -1389,7 +1401,7 @@ alloc_rgctx_array (MonoDomain *domain, int n, gboolean is_mrgctx)
 }
 
 static gpointer
-fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContext *rgctx, guint32 slot,
+fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContext *rgctx, guint8 *caller, guint32 slot,
 		MonoGenericInst *method_inst)
 {
 	gpointer info;
@@ -1444,7 +1456,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	oti = class_get_rgctx_template_oti (get_shared_class (class),
 										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
 	/* This might take the loader lock */
-	info = instantiate_info (domain, &oti, &context, class);
+	info = instantiate_info (domain, &oti, &context, class, caller);
 
 	/*
 	if (method_inst)
@@ -1502,7 +1514,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 
 	mono_domain_unlock (domain);
 
-	info = fill_runtime_generic_context (class_vtable, rgctx, slot, 0);
+	info = fill_runtime_generic_context (class_vtable, rgctx, NULL, slot, 0);
 
 	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (&class_vtable->klass->byval_arg), slot, info));
 
@@ -1512,16 +1524,17 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 /*
  * mono_method_fill_runtime_generic_context:
  * @mrgctx: an MRGCTX
+ * @caller: caller method address
  * @slot: a slot index to be instantiated
  *
  * Instantiates a slot in the MRGCTX.
  */
 gpointer
-mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot)
+mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint8* caller, guint32 slot)
 {
 	gpointer info;
 
-	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, slot,
+	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, caller, slot,
 		mrgctx->method_inst);
 
 	return info;

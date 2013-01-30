@@ -947,7 +947,7 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 	num_lookups++;
 
 	if (mrgctx)
-		return mono_method_fill_runtime_generic_context (arg, index);
+		return mono_method_fill_runtime_generic_context (arg, code, index);
 	else
 		return mono_class_fill_runtime_generic_context (arg, index);
 #else

@@ -141,7 +141,7 @@ public class Tests
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	private static void box<T> (T [] array, object[] arr) {
+	private static void box<T1, T> (T [] array, object[] arr) {
 		object x = array [0];
 		arr [0] = x;
 	}
@@ -151,12 +151,18 @@ public class Tests
 		arr [0] = new Foo () { i = 1, j = 2 };
 
 		object[] arr2 = new object [16];
-		box<Foo> (arr, arr2);
+		box<int, Foo> (arr, arr2);
 		if (arr2 [0].GetType () != typeof (Foo))
 			return 1;
 		Foo f = (Foo)arr2 [0];
 		if (f.i != 1 || f.j != 2)
 			return 2;
+		string[] arr3 = new string [16];
+		object[] arr4 = new object [16];
+		arr3 [0] = "OK";
+		box<int, string> (arr3, arr4);
+		if (arr4 [0] != (object)arr3 [0])
+			return 3;
 		return 0;
 	}
 
