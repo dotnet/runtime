@@ -5728,12 +5728,15 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 		return (MonoMethod*)regs [ARMREG_V5];
 
 	/* The IMT value is stored in the code stream right after the LDC instruction. */
+	/* This is no longer true for the gsharedvt_in trampoline */
+	/*
 	if (!IS_LDR_PC (code_ptr [0])) {
 		g_warning ("invalid code stream, instruction before IMT value is not a LDC in %s() (code %p value 0: 0x%x -1: 0x%x -2: 0x%x)", __FUNCTION__, code, code_ptr [2], code_ptr [1], code_ptr [0]);
 		g_assert (IS_LDR_PC (code_ptr [0]));
 	}
+	*/
 	if (code_ptr [1] == 0)
-		/* This is AOTed code, the IMT method is in V5 */
+		/* This is AOTed code, or the gsharedvt trampoline, the IMT method is in V5 */
 		return (MonoMethod*)regs [ARMREG_V5];
 	else
 		return (MonoMethod*) code_ptr [1];
