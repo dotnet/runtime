@@ -4611,6 +4611,23 @@ mono_method_get_vtable_slot (MonoMethod *method)
 		mono_class_setup_vtable (method->klass);
 		if (method->klass->exception_type)
 			return -1;
+		if (method->slot == -1) {
+			MonoClass *gklass;
+			int i;
+
+			/* This can happen for abstract methods of generic instances due to the shortcut code in mono_class_setup_vtable_general (). */
+			g_assert (method->klass->generic_class);
+			gklass = method->klass->generic_class->container_class;
+			mono_class_setup_methods (method->klass);
+			g_assert (method->klass->methods);
+			for (i = 0; i < method->klass->method.count; ++i) {
+				if (method->klass->methods [i] == method)
+					break;
+			}
+			g_assert (i < method->klass->method.count);
+			g_assert (gklass->methods);
+			method->slot = gklass->methods [i]->slot;
+		}
 		g_assert (method->slot != -1);
 	}
 	return method->slot;
