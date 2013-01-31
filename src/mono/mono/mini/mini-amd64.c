@@ -999,6 +999,9 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 				break;
 			}
 			/* fall through */
+#if defined( __native_client_codegen__ )
+		case MONO_TYPE_TYPEDBYREF:
+#endif
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
@@ -1009,10 +1012,12 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			}
 			break;
 		}
+#if !defined( __native_client_codegen__ )
 		case MONO_TYPE_TYPEDBYREF:
 			/* Same as a valuetype with size 24 */
 			cinfo->vtype_retaddr = TRUE;
 			break;
+#endif
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -1116,7 +1121,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
-#ifdef HOST_WIN32
+#if defined( HOST_WIN32 ) || defined( __native_client_codegen__ )
 			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 #else
 			stack_size += sizeof (MonoTypedRef);
@@ -1657,7 +1662,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
+			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || ((sig->ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
 				cfg->vret_addr->opcode = OP_REGVAR;
 				cfg->vret_addr->inst_c0 = cinfo->ret.reg;
 			}
@@ -1771,7 +1776,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
+			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || ((sig->ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
 				if (cfg->globalra) {
 					cfg->vret_addr->opcode = OP_REGVAR;
 					cfg->vret_addr->inst_c0 = cinfo->ret.reg;
@@ -3042,7 +3047,10 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 #ifdef MONO_ARCH_NOMAP32BIT
 		near_call = FALSE;
 #endif
-
+#if defined(__native_client__)
+		/* Always use near_call == TRUE for Native Client */
+		near_call = TRUE;
+#endif
 		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
 		if (optimize_for_xen)
 			near_call = FALSE;
@@ -4077,6 +4085,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_CMP, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COMPARE_IMM:
+#if defined(__mono_ilp32__)
+                        /* Comparison of pointer immediates should be 4 bytes to avoid sign-extend problems */
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_reg_imm_size (code, X86_CMP, ins->sreg1, ins->inst_imm, 4);
+			break;
+#endif
 		case OP_LCOMPARE_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_CMP, ins->sreg1, ins->inst_imm);
@@ -8127,7 +8141,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			if (item->check_target_idx || fail_case) {
 				if (!item->compare_done || fail_case) {
 					if (amd64_is_imm32 (item->key))
-						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
+						amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof(gpointer));
 					else {
 						amd64_mov_reg_imm (code, MONO_ARCH_IMT_SCRATCH_REG, item->key);
 						amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, MONO_ARCH_IMT_SCRATCH_REG);
@@ -8153,7 +8167,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				/* enable the commented code to assert on wrong method */
 #if 0
 				if (amd64_is_imm32 (item->key))
-					amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
+					amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof(gpointer));
 				else {
 					amd64_mov_reg_imm (code, MONO_ARCH_IMT_SCRATCH_REG, item->key);
 					amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, MONO_ARCH_IMT_SCRATCH_REG);
@@ -8178,7 +8192,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 		} else {
 			if (amd64_is_imm32 (item->key))
-				amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
+				amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof (gpointer));
 			else {
 				amd64_mov_reg_imm (code, MONO_ARCH_IMT_SCRATCH_REG, item->key);
 				amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, MONO_ARCH_IMT_SCRATCH_REG);
