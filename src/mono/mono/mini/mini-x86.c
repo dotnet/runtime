@@ -2810,6 +2810,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IDIV:
 		case OP_IREM:
+#if defined( __native_client_codegen__ )
+			x86_alu_reg_imm (code, X86_CMP, ins->sreg2, 0);
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "DivideByZeroException");
+#endif
 			/* 
 			 * The code is the same for div/rem, the allocator will allocate dreg
 			 * to RAX/RDX as appropriate.
@@ -2827,6 +2831,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IDIV_UN:
 		case OP_IREM_UN:
+#if defined( __native_client_codegen__ )
+			x86_alu_reg_imm (code, X86_CMP, ins->sreg2, 0);
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "DivideByZeroException");
+#endif
 			if (ins->sreg2 == X86_EDX) {
 				x86_push_reg (code, ins->sreg2);
 				x86_alu_reg_reg (code, X86_XOR, X86_EDX, X86_EDX);
@@ -2838,6 +2846,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_DIV_IMM:
+#if defined( __native_client_codegen__ )
+			if (ins->inst_imm == 0) {
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, "DivideByZeroException");
+				x86_jump32 (code, 0);
+				break;
+			}
+#endif
 			x86_mov_reg_imm (code, ins->sreg2, ins->inst_imm);
 			x86_cdq (code);
 			x86_div_reg (code, ins->sreg2, TRUE);
