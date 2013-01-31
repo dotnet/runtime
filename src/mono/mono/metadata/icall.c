@@ -6531,6 +6531,11 @@ ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
 
+/* FIXME: There are some cleanup hangs that should be worked out, but
+ * if the program is going to exit, everything will be cleaned up when
+ * NaCl exits anyway.
+ */
+#ifndef __native_client__
 	mono_runtime_shutdown ();
 
 	/* This will kill the tp threads which cannot be suspended */
@@ -6540,6 +6545,7 @@ ves_icall_System_Environment_Exit (int result)
 	mono_thread_suspend_all_other_threads ();
 
 	mono_runtime_quit ();
+#endif
 
 	/* we may need to do some cleanup here... */
 	exit (result);
@@ -7214,6 +7220,12 @@ mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
 	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 	res.value = iter->args;
+#if defined(__native_client__) && SIZEOF_REGISTER == 8
+	/* Values are stored as 8 byte register sized objects, but 'value'
+	 * is dereferenced as a pointer in other routines.
+	 */
+	res.value = (char*)res.value + 4;
+#endif
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	if (arg_size <= sizeof (gpointer)) {
 		int dummy;

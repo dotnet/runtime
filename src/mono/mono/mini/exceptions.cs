@@ -26,8 +26,8 @@ using System.Runtime.CompilerServices;
 
 class Tests {
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 
 	public static int test_0_catch () {
@@ -1455,6 +1455,7 @@ class Tests {
 		return 0;
 	}
 	
+	[Category ("NaClDisable")]
 	public static int test_0_div_zero () {
 		int d = 1;
 		int q = 0;
@@ -1560,6 +1561,7 @@ class Tests {
 		return 0;
 	}
 
+	[Category ("NaClDisable")]
 	public static int test_0_long_div_zero () {
 		long d = 1;
 		long q = 0;

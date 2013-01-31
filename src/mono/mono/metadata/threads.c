@@ -3475,6 +3475,10 @@ collect_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 gboolean
 mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 {
+#ifdef __native_client__
+	return FALSE;
+#endif
+
 	abort_appdomain_data user_data;
 	guint32 start_time;
 	int orig_timeout = timeout;
@@ -4450,6 +4454,10 @@ mono_runtime_has_tls_get (void)
 int
 mono_thread_kill (MonoInternalThread *thread, int signal)
 {
+#ifdef __native_client__
+	/* Workaround pthread_kill abort() in NaCl glibc. */
+	return -1;
+#endif
 #ifdef HOST_WIN32
 	/* Win32 uses QueueUserAPC and callers of this are guarded */
 	g_assert_not_reached ();

@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_SYS_SEM_H
+#if defined(HAVE_SYS_SEM_H) && !(defined(__native_client__) && defined(__GLIBC__))
 #  include <sys/sem.h>
 #else
 #  define DISABLE_SHARED_HANDLES

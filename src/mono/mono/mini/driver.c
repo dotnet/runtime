@@ -1423,6 +1423,9 @@ mono_main (int argc, char* argv[])
 #ifdef HOST_WIN32
 	int mixed_mode = FALSE;
 #endif
+#ifdef __native_client__
+	gboolean nacl_null_checks_off = FALSE;
+#endif
 
 #ifdef MOONLIGHT
 #ifndef HOST_WIN32
@@ -1727,6 +1730,8 @@ mono_main (int argc, char* argv[])
 #ifdef __native_client__
 		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
 			nacl_mono_path = g_strdup(argv[++i]);
+		} else if (strcmp (argv [i], "--nacl-null-checks-off") == 0){
+			nacl_null_checks_off = TRUE;
 #endif
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
@@ -1738,6 +1743,10 @@ mono_main (int argc, char* argv[])
 	if (getenv ("MONO_NACL_ALIGN_MASK_OFF"))
 	{
 		nacl_align_byte = -1; /* 0xff */
+	}
+	if (!nacl_null_checks_off) {
+		MonoDebugOptions *opt = mini_get_debug_options ();
+		opt->explicit_null_checks = TRUE;
 	}
 #endif
 
@@ -1950,7 +1959,7 @@ mono_main (int argc, char* argv[])
 	 * This used to be an amd64 only crash, but it looks like now most glibc targets do unwinding
 	 * that requires reading the target code.
 	 */
-#ifdef __linux__
+#if defined( __linux__ ) || defined( __native_client__ )
 		mono_dont_free_global_codeman = TRUE;
 #endif
 

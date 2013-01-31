@@ -44,14 +44,9 @@ mono_path_canonicalize (const char *path)
 	if (g_path_is_absolute (path)) {
 		abspath = g_strdup (path);
 	} else {
-#ifdef __native_client__
-		gchar *tmpdir = ".";
-		abspath = g_build_filename (tmpdir, path, NULL);
-#else
 		gchar *tmpdir = g_get_current_dir ();
 		abspath = g_build_filename (tmpdir, path, NULL);
 		g_free (tmpdir);
-#endif
 	}
 
 #ifdef HOST_WIN32

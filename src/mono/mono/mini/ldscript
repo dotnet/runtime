@@ -5,6 +5,9 @@ VER_1 {
               GC_start_blocking;
               GC_end_blocking;
               gc_thread_vtable;
+              __nacl_suspend_thread_if_needed;
+              __nacl_thread_suspension_needed;
+              nacl_mono_path;
       local:
               *;
 };
