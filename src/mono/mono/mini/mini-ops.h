@@ -573,6 +573,11 @@ MINI_OP(OP_SUB_OVF_CARRY,   "sub_ovf_carry", IREG, IREG, IREG)
 MINI_OP(OP_ADD_OVF_UN_CARRY,   "add_ovf_un_carry", IREG, IREG, IREG)
 MINI_OP(OP_SUB_OVF_UN_CARRY,   "sub_ovf_un_carry", IREG, IREG, IREG)
 
+/* instructions with explicit long arguments to deal with 64-bit ilp32 machines */
+MINI_OP(OP_LADDCC,   "laddcc", LREG, LREG, LREG)
+MINI_OP(OP_LSUBCC,   "lsubcc", LREG, LREG, LREG)
+
+
 /* FP functions usually done by the CPU */
 MINI_OP(OP_SIN,     "sin", FREG, FREG, NONE)
 MINI_OP(OP_COS,     "cos", FREG, FREG, NONE)

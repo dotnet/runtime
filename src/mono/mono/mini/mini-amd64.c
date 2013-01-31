@@ -4312,6 +4312,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ADDCC:
+		case OP_LADDCC:
 		case OP_LADD:
 			amd64_alu_reg_reg (code, X86_ADD, ins->sreg1, ins->sreg2);
 			break;
@@ -4328,6 +4329,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_ADC, ins->dreg, ins->inst_imm);
 			break;
 		case OP_SUBCC:
+		case OP_LSUBCC:
 		case OP_LSUB:
 			amd64_alu_reg_reg (code, X86_SUB, ins->sreg1, ins->sreg2);
 			break;

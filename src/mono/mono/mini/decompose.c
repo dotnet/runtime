@@ -53,14 +53,30 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 	case OP_LADD_OVF:
 		if (COMPILE_LLVM (cfg))
 			break;
-		EMIT_NEW_BIALU (cfg, repl, OP_ADDCC, ins->dreg, ins->sreg1, ins->sreg2);
+		{
+			int opcode;
+#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+			opcode = OP_LADDCC;
+#else
+			opcode = OP_ADDCC;
+#endif
+			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
+		}
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
 	case OP_LADD_OVF_UN:
 		if (COMPILE_LLVM (cfg))
 			break;
-		EMIT_NEW_BIALU (cfg, repl, OP_ADDCC, ins->dreg, ins->sreg1, ins->sreg2);
+		{
+			int opcode;
+#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+			opcode = OP_LADDCC;
+#else
+			opcode = OP_ADDCC;
+#endif
+			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
+		}
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
@@ -68,14 +84,30 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 	case OP_LSUB_OVF:
 		if (COMPILE_LLVM (cfg))
 			break;
-		EMIT_NEW_BIALU (cfg, repl, OP_SUBCC, ins->dreg, ins->sreg1, ins->sreg2);
+		{
+			int opcode;
+#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+			opcode = OP_LSUBCC;
+#else
+			opcode = OP_SUBCC;
+#endif
+			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
+		}
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
 	case OP_LSUB_OVF_UN:
 		if (COMPILE_LLVM (cfg))
 			break;
-		EMIT_NEW_BIALU (cfg, repl, OP_SUBCC, ins->dreg, ins->sreg1, ins->sreg2);
+		{
+			int opcode;
+#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+			opcode = OP_LSUBCC;
+#else
+			opcode = OP_SUBCC;
+#endif
+			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
+		}
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		NULLIFY_INS (ins);
 		break;

@@ -318,6 +318,9 @@ sext_i1: dest:i src1:i len:4
 sext_i2: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:8
 
+laddcc: dest:i src1:i src2:i len:3 clob:1
+lsubcc: dest:i src1:i src2:i len:3 clob:1
+
 # 32 bit opcodes
 int_add: dest:i src1:i src2:i clob:1 len:4 nacl:7
 int_sub: dest:i src1:i src2:i clob:1 len:4 nacl:7
