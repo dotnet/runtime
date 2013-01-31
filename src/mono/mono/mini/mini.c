@@ -462,6 +462,14 @@ void *mono_global_codeman_reserve (int size)
 }
 
 #if defined(__native_client_codegen__) && defined(__native_client__)
+void
+mono_nacl_gc()
+{
+#ifdef __native_client_gc__
+	__nacl_suspend_thread_if_needed();
+#endif
+}
+
 /* Given the temporary buffer (allocated by mono_global_codeman_reserve) into
  * which we are generating code, return a pointer to the destination in the
  * dynamic code segment into which the code will be copied when

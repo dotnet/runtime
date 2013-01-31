@@ -814,6 +814,14 @@ typedef union {
 		x86_imm_emit32 ((inst), (imm));	\
 	} while (0)
 
+#define x86_test_mem_imm8(inst,mem,imm)	\
+	do {	\
+		x86_codegen_pre(&(inst), 7); \
+		*(inst)++ = (unsigned char)0xf6;	\
+		x86_mem_emit ((inst), 0, (mem));	\
+		x86_imm_emit8 ((inst), (imm));	\
+	} while (0)
+
 #define x86_test_mem_imm(inst,mem,imm)	\
 	do {	\
 		x86_codegen_pre(&(inst), 10); \
