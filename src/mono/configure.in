@@ -2586,6 +2586,15 @@ case "$host" in
 		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
   		fi
 		;;
+# TODO: make proper support for NaCl host.
+#        arm*-*nacl)
+#		TARGET=ARM;
+#		arch_target=arm;
+#		ACCESS_UNALIGNED="no"
+#		JIT_SUPPORTED=yes
+#		sgen_supported=true
+#		AOT_SUPPORTED="no"
+#		;;
 	s390-*-linux*)
 		TARGET=S390;
 		arch_target=s390;
@@ -2650,6 +2659,28 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		;;
+# TODO: make proper support for NaCl target.
+#   arm*-*nacl)
+#		TARGET=ARM
+#		arch_target=arm
+#		AC_DEFINE(TARGET_ARM, 1, [...])
+#		ACCESS_UNALIGNED="no"
+#		JIT_SUPPORTED=yes
+#		sizeof_register=4
+#               CPPFLAGS="$CPPFLAGS \
+#                    -DARM_FPU_VFP=1 -D__ARM_EABI__ \
+#                    -D__arm__ \
+#                    -D__portable_native_client__ \
+#                    -DARM_FPU_VFP=1 \
+#                    -Dtimezone=_timezone \
+#                    -DDISABLE_SOCKETS \
+#                    -DDISABLE_ATTACH \
+#                    -DUSE_NEWLIB"
+#		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+#		with_tls=pthread
+#		;;
    i686-*-nacl)
 		TARGET=X86
 		arch_target=x86
