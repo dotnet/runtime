@@ -177,7 +177,7 @@ unregister_thread (void *arg)
 		mono_threads_unregister_current_thread (info);
 
 	/*now it's safe to free the thread info.*/
-	mono_thread_hazardous_free_or_queue (info, free_thread_info);
+	mono_thread_hazardous_free_or_queue (info, free_thread_info, TRUE, FALSE);
 	mono_thread_small_id_free (small_id);
 }
 

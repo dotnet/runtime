@@ -272,6 +272,8 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 	MONO_GC_WORLD_RESTART_END (generation);
 
+	mono_thread_hazardous_try_free_some ();
+
 	bridge_process (generation);
 
 	TV_GETTIME (end_bridge);

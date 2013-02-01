@@ -18,8 +18,10 @@ typedef struct {
 
 typedef void (*MonoHazardousFreeFunc) (gpointer p);
 
-void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func) MONO_INTERNAL;
+void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
+		gboolean free_func_might_lock, gboolean lock_free_context) MONO_INTERNAL;
 void mono_thread_hazardous_try_free_all (void) MONO_INTERNAL;
+void mono_thread_hazardous_try_free_some (void) MONO_INTERNAL;
 MonoThreadHazardPointers* mono_hazard_pointer_get (void) MONO_INTERNAL;
 gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index) MONO_INTERNAL;
 

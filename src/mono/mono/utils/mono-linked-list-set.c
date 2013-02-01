@@ -56,7 +56,8 @@ get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers
 
 /*
 Initialize @list and will use @free_node_func to release memory.
-If @free_node_func is null the caller is responsible for releasing node memory. 
+If @free_node_func is null the caller is responsible for releasing node memory.
+@free_node_func must be lock-free.  That implies that it cannot use malloc/free.
 */
 void
 mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *))
@@ -125,7 +126,7 @@ try_again:
 				mono_memory_write_barrier ();
 				mono_hazard_pointer_clear (hp, 1);
 				if (list->free_node_func)
-					mono_thread_hazardous_free_or_queue (cur, list->free_node_func);
+					mono_thread_hazardous_free_or_queue (cur, list->free_node_func, FALSE, TRUE);
 			} else
 				goto try_again;
 		}
@@ -193,7 +194,7 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 			mono_memory_write_barrier ();
 			mono_hazard_pointer_clear (hp, 1);
 			if (list->free_node_func)
-				mono_thread_hazardous_free_or_queue (value, list->free_node_func);
+				mono_thread_hazardous_free_or_queue (value, list->free_node_func, FALSE, TRUE);
 		} else
 			mono_lls_find (list, hp, value->key);
 		return TRUE;

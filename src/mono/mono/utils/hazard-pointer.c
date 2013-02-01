@@ -19,6 +19,7 @@
 typedef struct {
 	gpointer p;
 	MonoHazardousFreeFunc free_func;
+	gboolean might_lock;
 } DelayedFreeItem;
 
 /* The hazard table */
@@ -196,7 +197,7 @@ get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int 
 }
 
 static gboolean
-try_free_delayed_free_item (void)
+try_free_delayed_free_item (gboolean lock_free_context)
 {
 	DelayedFreeItem item;
 	gboolean popped = mono_lock_free_array_queue_pop (&delayed_free_queue, &item);
@@ -204,7 +205,7 @@ try_free_delayed_free_item (void)
 	if (!popped)
 		return FALSE;
 
-	if (is_pointer_hazardous (item.p)) {
+	if ((lock_free_context && item.might_lock) || (is_pointer_hazardous (item.p))) {
 		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 		return FALSE;
 	}
@@ -215,19 +216,25 @@ try_free_delayed_free_item (void)
 }
 
 void
-mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func)
+mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
+		gboolean free_func_might_lock, gboolean lock_free_context)
 {
 	int i;
+
+	if (lock_free_context)
+		g_assert (!free_func_might_lock);
+	if (free_func_might_lock)
+		g_assert (!lock_free_context);
 
 	/* First try to free a few entries in the delayed free
 	   table. */
 	for (i = 0; i < 3; ++i)
-		try_free_delayed_free_item ();
+		try_free_delayed_free_item (lock_free_context);
 
 	/* Now see if the pointer we're freeing is hazardous.  If it
 	   isn't, free it.  Otherwise put it in the delay list. */
 	if (is_pointer_hazardous (p)) {
-		DelayedFreeItem item = { p, free_func };
+		DelayedFreeItem item = { p, free_func, free_func_might_lock };
 
 		++mono_stats.hazardous_pointer_count;
 
@@ -240,8 +247,16 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 void
 mono_thread_hazardous_try_free_all (void)
 {
-	while (try_free_delayed_free_item ())
+	while (try_free_delayed_free_item (FALSE))
 		;
+}
+
+void
+mono_thread_hazardous_try_free_some (void)
+{
+	int i;
+	for (i = 0; i < 10; ++i)
+		try_free_delayed_free_item (FALSE);
 }
 
 void
