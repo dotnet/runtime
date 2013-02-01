@@ -463,6 +463,11 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 	/* number of needed places for elements needed */
 	required_size = (int)((long)num_elements * JIT_INFO_TABLE_FILL_RATIO_DENOM / JIT_INFO_TABLE_FILL_RATIO_NOM);
 	num_chunks = (required_size + MONO_JIT_INFO_TABLE_CHUNK_SIZE - 1) / MONO_JIT_INFO_TABLE_CHUNK_SIZE;
+	if (num_chunks == 0) {
+		g_assert (num_elements == 0);
+		return jit_info_table_new (old->domain);
+	}
+	g_assert (num_chunks > 0);
 
 	new = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*) * num_chunks);
 	new->domain = old->domain;
