@@ -1904,12 +1904,6 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 }
 
 static void
-free_slist (gpointer key, gpointer value, gpointer user_data)
-{
-	g_slist_free (value);
-}
-
-static void
 unregister_vtable_reflection_type (MonoVTable *vtable)
 {
 	MonoObject *type = vtable->type;
