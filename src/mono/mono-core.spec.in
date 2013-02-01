@@ -1205,6 +1205,7 @@ Mono development tools.
 %_bindir/sgen
 %_bindir/signcode
 %_bindir/xbuild
+%_bindir/mdbrebase
 %dir %_datadir/mono-2.0
 %dir %_datadir/mono-2.0/mono
 %dir %_datadir/mono-2.0/mono/cil
@@ -1328,6 +1329,7 @@ Mono development tools.
 %_prefix/lib/mono/4.5/signcode.exe*
 %_prefix/lib/mono/4.5/xbuild.exe*
 %_prefix/lib/mono/4.5/xbuild.rsp
+%_prefix/lib/mono/4.5/mdbrebase.exe*
 %_prefix/lib/mono/gac/Microsoft.Build
 %_prefix/lib/mono/gac/Microsoft.Build.Engine
 %_prefix/lib/mono/gac/Microsoft.Build.Framework
