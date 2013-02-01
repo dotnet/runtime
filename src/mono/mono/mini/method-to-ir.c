@@ -8544,9 +8544,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
-			if (cmethod->klass->valuetype)
-				GSHAREDVT_FAILURE (*ip);
-
 			/*
 			if (cfg->gsharedvt) {
 				if (mini_is_gsharedvt_variable_signature (sig))

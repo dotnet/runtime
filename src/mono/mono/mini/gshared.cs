@@ -429,6 +429,21 @@ public class Tests
 		return 0;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static GFoo2<T> newobj_vt<T> (T t1, T t2) {
+		return new GFoo2<T> () { t = t1, t2 = t2 };
+	}
+
+	public static int test_0_gshared_new_vt () {
+		GFoo2<int> v1 = newobj_vt (1, 2);
+		if (v1.t != 1 || v1.t2 != 2)
+			return 1;
+		GFoo2<double> v2 = newobj_vt (1.0, 2.0);
+		if (v2.t != 1.0 || v2.t2 != 2.0)
+			return 2;
+		return 0;
+	}
+
 	//
 	// Tests for transitioning out of gsharedvt code
 	//
