@@ -5305,6 +5305,10 @@ emit_trampolines (MonoAotCompile *acfg)
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 		mono_arch_get_gsharedvt_trampoline (&info, TRUE);
 		emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
+
+		/* Create a separate out trampoline for more information in stack traces */
+		info->name = g_strdup ("gsharedvt_out_trampoline");
+		emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
 #endif
 
 #if defined(MONO_ARCH_HAVE_GET_TRAMPOLINES)

@@ -5515,11 +5515,15 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
-			static MonoTrampInfo *tinfo;
+			static MonoTrampInfo *in_tinfo, *out_tinfo;
+			MonoTrampInfo *tinfo;
 			MonoJitInfo *jinfo;
+			gboolean is_in = info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN;
 
-			if (tinfo)
-				return tinfo->code;
+			if (is_in && in_tinfo)
+				return in_tinfo->code;
+			else if (!is_in && out_tinfo)
+				return out_tinfo->code;
 
 			/*
 			 * This is a special wrapper whose body is implemented in assembly, like a trampoline. We use a wrapper so EH
@@ -5527,11 +5531,15 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			 * FIXME: The caller signature doesn't match the callee, which might cause problems on some platforms
 			 */
 			if (mono_aot_only)
-				mono_aot_get_trampoline_full ("gsharedvt_trampoline", &tinfo);
+				mono_aot_get_trampoline_full (is_in ? "gsharedvt_trampoline" : "gsharedvt_out_trampoline", &tinfo);
 			else
 				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);
 			jinfo = create_jit_info_for_trampoline (method, tinfo);
 			mono_jit_info_table_add (mono_get_root_domain (), jinfo);
+			if (is_in)
+				in_tinfo = tinfo;
+			else
+				out_tinfo = tinfo;
 			return tinfo->code;
 		}
 	}
