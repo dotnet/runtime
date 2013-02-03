@@ -1129,7 +1129,6 @@ mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *kla
 	MonoMethod *m;
 	int vt_slot;
 	gpointer this_arg;
-	gpointer args [2];
 
 	/* Lookup the virtual method */
 	mono_class_setup_vtable (klass);
