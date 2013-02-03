@@ -173,5 +173,7 @@ mono_object_isinst_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cach
 MonoObject*
 mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache);
 
+MonoObject* mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass) MONO_INTERNAL;
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 

@@ -1122,3 +1122,24 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 
 	return mono_compile_method (m);
 }
+
+MonoObject*
+mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	int vt_slot;
+	gpointer this_arg;
+	gpointer args [2];
+
+	/* Lookup the virtual method */
+	mono_class_setup_vtable (klass);
+	g_assert (klass->vtable);
+	vt_slot = mono_method_get_vtable_slot (cmethod);
+	m = klass->vtable [vt_slot];
+	if (klass->valuetype)
+		this_arg = mp;
+	else
+		this_arg = *(gpointer*)mp;
+	return mono_runtime_invoke (m, this_arg, NULL, NULL);
+}
+

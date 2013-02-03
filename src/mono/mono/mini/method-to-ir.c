@@ -7045,8 +7045,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->verbose_level > 2)
 						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
 
-					GSHAREDVT_FAILURE (*ip);
-
 					if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
 						/* 
 						 * This is needed since get_method_constrained can't find 
@@ -7172,6 +7170,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= n;
 
 			if (constrained_call) {
+				if (mini_is_gsharedvt_klass (cfg, constrained_call)) {
+					/*
+					 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
+					 */
+					/* Special case Object:ToString () as its easy to implement */
+					if (cmethod->klass == mono_defaults.object_class && !strcmp (cmethod->name, "ToString")) {
+						MonoInst *args [3];
+
+						args [0] = sp [0];
+						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
+						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
+						ins = mono_emit_jit_icall (cfg, mono_object_tostring_gsharedvt, args);
+						goto call_end;
+					} else {
+						GSHAREDVT_FAILURE (*ip);
+					}
+				}
 				/*
 				 * We have the `constrained.' prefix opcode.
 				 */

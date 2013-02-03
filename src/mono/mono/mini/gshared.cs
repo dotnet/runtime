@@ -873,4 +873,16 @@ public class Tests
 		return 0;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static string to_string<T, T2>(T t, T2 t2) {
+		return t.ToString ();
+	}
+
+	public static int test_0_constrained_tostring () {
+		if (to_string<int, int> (1, 1) != "1")
+			return 1;
+		if (to_string<string, int> ("A", 1) != "A")
+			return 2;
+		return 0;
+	}
 }
