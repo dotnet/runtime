@@ -1652,10 +1652,8 @@ mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_ty
 gboolean
 mono_method_is_generic_impl (MonoMethod *method)
 {
-	if (method->is_inflated) {
-		g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+	if (method->is_inflated)
 		return TRUE;
-	}
 	/* We don't treat wrappers as generic code, i.e., we never
 	   apply generic sharing to them.  This is especially
 	   important for static rgctx invoke wrappers, which only work

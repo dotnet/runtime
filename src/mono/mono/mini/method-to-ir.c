@@ -5537,10 +5537,13 @@ mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, Mono
 {
 	MonoMethod *method;
 
-	if (m->wrapper_type != MONO_WRAPPER_NONE)
-		return mono_method_get_wrapper_data (m, token);
-
-	method = mono_get_method_full (m->klass->image, token, klass, context);
+	if (m->wrapper_type != MONO_WRAPPER_NONE) {
+		method = mono_method_get_wrapper_data (m, token);
+		if (context)
+			method = mono_class_inflate_generic_method (method, context);
+	} else {
+		method = mono_get_method_full (m->klass->image, token, klass, context);
+	}
 
 	return method;
 }
@@ -5568,6 +5571,26 @@ mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 	if (klass)
 		mono_class_init (klass);
 	return klass;
+}
+
+static inline MonoMethodSignature*
+mini_get_signature (MonoMethod *method, guint32 token, MonoGenericContext *context)
+{
+	MonoMethodSignature *fsig;
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE) {
+		MonoError error;
+
+		fsig = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
+		if (context) {
+			fsig = mono_inflate_generic_signature (fsig, context, &error);
+			// FIXME:
+			g_assert (mono_error_ok (&error));
+		}
+	} else {
+		fsig = mono_metadata_parse_signature (method->klass->image, token);
+	}
+	return fsig;
 }
 
 /*
@@ -7007,11 +7030,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				addr = *sp;
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					fsig = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
-				else
-					fsig = mono_metadata_parse_signature (image, token);
-
+				fsig = mini_get_signature (method, token, generic_context);
 				n = fsig->param_count + fsig->hasthis;
 
 				if (method->dynamic && fsig->pinvoke) {
@@ -7030,38 +7049,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			} else {
 				MonoMethod *cil_method;
-				
-				if (method->wrapper_type != MONO_WRAPPER_NONE) {
-					if (constrained_call && cfg->verbose_level > 2)
-						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
-					cmethod = (MonoMethod *)mono_method_get_wrapper_data (method, token);
-					cil_method = cmethod;
-					if (constrained_call && !((constrained_call->byval_arg.type == MONO_TYPE_VAR ||
-							constrained_call->byval_arg.type == MONO_TYPE_MVAR) &&
-							cfg->generic_sharing_context)) {
-						cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_call, generic_context);
-					}
-				} else if (constrained_call) {
-					if (cfg->verbose_level > 2)
-						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
 
-					if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
-						/* 
-						 * This is needed since get_method_constrained can't find 
-						 * the method in klass representing a type var.
-						 * The type var is guaranteed to be a reference type in this
-						 * case.
-						 */
-						cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
-						cil_method = cmethod;
-						if (!mini_is_gsharedvt_klass (cfg, constrained_call))
-							g_assert (!cmethod->klass->valuetype);
+				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+				cil_method = cmethod;
+				
+				if (constrained_call) {
+					if (method->wrapper_type != MONO_WRAPPER_NONE) {
+						if (cfg->verbose_level > 2)
+							printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+						if (!((constrained_call->byval_arg.type == MONO_TYPE_VAR ||
+							   constrained_call->byval_arg.type == MONO_TYPE_MVAR) &&
+							  cfg->generic_sharing_context)) {
+							cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_call, generic_context);
+						}
 					} else {
-						cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
+						if (cfg->verbose_level > 2)
+							printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+
+						if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+							/* 
+							 * This is needed since get_method_constrained can't find 
+							 * the method in klass representing a type var.
+							 * The type var is guaranteed to be a reference type in this
+							 * case.
+							 */
+							if (!mini_is_gsharedvt_klass (cfg, constrained_call))
+								g_assert (!cmethod->klass->valuetype);
+						} else {
+							cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
+						}
 					}
-				} else {
-					cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
-					cil_method = cmethod;
 				}
 					
 				if (!cmethod || mono_loader_get_last_error ())
@@ -11024,10 +11041,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_CONSTRAINED_:
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				if (method->wrapper_type != MONO_WRAPPER_NONE)
-					constrained_call =  (MonoClass *)mono_method_get_wrapper_data (method, token);
-				else
-					constrained_call = mono_class_get_full (image, token, generic_context);
+				constrained_call = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (constrained_call);
 				ip += 6;
 				break;

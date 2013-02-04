@@ -1019,6 +1019,9 @@ mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *con
 void
 mono_metadata_free_inflated_signature (MonoMethodSignature *sig);
 
+MonoMethodSignature*
+mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+
 typedef struct {
 	MonoImage *corlib;
 	MonoClass *object_class;

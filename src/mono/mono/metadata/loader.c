@@ -780,6 +780,25 @@ fail:
 	return NULL;
 }
 
+/*
+ * mono_inflate_generic_signature:
+ *
+ *   Inflate SIG with CONTEXT, and return a canonical copy. On error, set ERROR, and return NULL.
+ */
+MonoMethodSignature*
+mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *context, MonoError *error)
+{
+	MonoMethodSignature *res, *cached;
+
+	res = inflate_generic_signature_checked (NULL, sig, context, error);
+	if (!mono_error_ok (error))
+		return NULL;
+	cached = mono_metadata_get_inflated_signature (res, context);
+	if (cached != res)
+		mono_metadata_free_inflated_signature (res);
+	return cached;
+}
+
 static MonoMethodHeader*
 inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 {
