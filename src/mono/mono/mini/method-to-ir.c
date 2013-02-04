@@ -7774,6 +7774,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 1;
 			}
 			ins_flag = 0;
+			constrained_call = NULL;
 			if (need_seq_point)
 				emit_seq_point (cfg, method, ip, FALSE);
 			break;
