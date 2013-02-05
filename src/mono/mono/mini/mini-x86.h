@@ -312,6 +312,8 @@ typedef struct {
 	int stack_usage, map_count;
 	/* If not -1, then make a virtual call using this vtable offset */
 	int vcall_offset;
+	/* If 1, make an indirect call to the address in the rgctx reg */
+	int calli;
 	/* Whenever this is a in or an out call */
 	int gsharedvt_in;
 	int map [MONO_ZERO_LEN_ARRAY];

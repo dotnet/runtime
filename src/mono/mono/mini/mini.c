@@ -3274,6 +3274,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		case MONO_PATCH_INFO_FIELD:
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.field, entry->info_type, mono_method_get_context (entry->method));
 			break;
+		case MONO_PATCH_INFO_SIGNATURE:
+			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.sig, entry->info_type, mono_method_get_context (entry->method));
+			break;
 		default:
 			g_assert_not_reached ();
 			break;
@@ -7375,3 +7378,19 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 #endif
 
+#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED) && !defined(MONOTOUCH) && !defined(MONO_EXTENSIONS)
+
+gboolean
+mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
+{
+	return FALSE;
+}
+
+gpointer
+mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
+#endif

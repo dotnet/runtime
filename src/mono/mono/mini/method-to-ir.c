@@ -3048,6 +3048,16 @@ emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
+static MonoInst*
+emit_get_rgctx_sig (MonoCompile *cfg, int context_used,
+					MonoMethodSignature *sig, MonoRgctxInfoType rgctx_type)
+{
+	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_SIGNATURE, sig, rgctx_type);
+	MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
+
+	return emit_rgctx_fetch (cfg, rgctx, entry);
+}
+
 /*
  * emit_get_rgctx_method:
  *
@@ -7025,7 +7035,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = NULL;
 
 			if (calli) {
-				GSHAREDVT_FAILURE (*ip);
+				//GSHAREDVT_FAILURE (*ip);
 				cmethod = NULL;
 				CHECK_STACK (1);
 				--sp;
@@ -7593,6 +7603,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					addr = emit_get_rgctx_method (cfg, context_used,
 												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
 				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
+				goto call_end;
+			} else if (calli && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
+				/*
+				 * We pass the address to the gsharedvt trampoline in the rgctx reg
+				 */
+				MonoInst *callee = addr;
+
+				if (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE)
+					/* Not tested */
+					GSHAREDVT_FAILURE (*ip);
+				if (cfg->compile_aot)
+					GSHAREDVT_FAILURE (*ip);
+
+				addr = emit_get_rgctx_sig (cfg, context_used,
+											  fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);
+				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, callee);
 				goto call_end;
 			}
 

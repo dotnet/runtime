@@ -574,6 +574,15 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		return &inflated_class->fields [i];
 	}
+	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: {
+		MonoMethodSignature *sig = data;
+		MonoMethodSignature *isig;
+		MonoError error;
+
+		isig = mono_inflate_generic_signature (sig, context, &error);
+		g_assert (mono_error_ok (&error));
+		return isig;
+	}
 
 	default:
 		g_assert_not_reached ();
@@ -976,6 +985,44 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		return method->context.method_inst;
 	}
+	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: {
+		MonoMethodSignature *gsig = oti->data;
+		MonoMethodSignature *sig = data;
+		static gpointer tramp_addr;
+		gpointer info;
+		MonoMethod *wrapper;
+		gpointer addr;
+		MonoJitInfo *caller_ji;
+		MonoGenericJitInfo *gji;
+
+		/*
+		 * This is an indirect call to the address passed by the caller in the rgctx reg.
+		 */
+		//printf ("CALLI\n");
+
+		g_assert (caller);
+		caller_ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (caller), NULL);
+		g_assert (caller_ji);
+		gji = mono_jit_info_get_generic_jit_info (caller_ji);
+		g_assert (gji);
+
+		info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, -1, TRUE);
+
+		if (!tramp_addr) {
+			wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
+			addr = mono_compile_method (wrapper);
+			mono_memory_barrier ();
+			tramp_addr = addr;
+		}
+		addr = tramp_addr;
+
+		if (mono_aot_only)
+			addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
+		else
+			addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+
+		return addr;
+	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: {
 		MonoMethod *caller_method = oti->data;
@@ -1046,7 +1093,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			sig = mono_method_signature (method);
 			gsig = mono_method_signature (gm); 
 
-			info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, vcall_offset);
+			info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, vcall_offset, FALSE);
 
 			if (!tramp_addr) {
 				wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
@@ -1086,7 +1133,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				sig = mono_method_signature (method);
 				gsig = mono_method_signature (ji->method); 
 
-				info = mono_arch_get_gsharedvt_call_info (ji->code_start, sig, gsig, gji->generic_sharing_context, TRUE, -1);
+				info = mono_arch_get_gsharedvt_call_info (ji->code_start, sig, gsig, gji->generic_sharing_context, TRUE, -1, FALSE);
 
 				if (!tramp_addr) {
 					wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
@@ -1169,6 +1216,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_FIELD_OFFSET: return "FIELD_OFFSET";
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE";
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT";
+	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: return "SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI";
 	default:
 		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
@@ -1256,6 +1304,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT:
+	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI:
 		return data1 == data2;
 	default:
 		g_assert_not_reached ();

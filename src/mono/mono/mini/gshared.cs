@@ -885,4 +885,30 @@ public class Tests
 			return 2;
 		return 0;
 	}
+
+	struct Pair<T1, T2> {
+		public T1 First;
+		public T2 Second;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static TState call_del<TState>(TState state, Func<object, TState, TState> action) {
+		return action(null, state);
+	}
+
+	public static int test_0_delegate_wrappers () {
+		Func<object, Pair<int, int>, Pair<int, int>> del1 = delegate (object o, Pair<int, int> p) { return p; };
+		Func<object, Pair<int, int>, Pair<int, int>> del2 = delegate (object o, Pair<int, int> p) { return p; };
+		Func<object, Pair<double, int>, Pair<double, int>> del3 = delegate (object o, Pair<double, int> p) { return p; };
+		var r1 = call_del<Pair<int, int>> (new Pair<int, int> { First = 1, Second = 2}, del1);
+		if (r1.First != 1 || r1.Second != 2)
+			return 1;
+		var r2 = call_del<Pair<int, int>> (new Pair<int, int> { First = 3, Second = 4}, del2);
+		if (r2.First != 3 || r2.Second != 4)
+			return 2;
+		var r3 = call_del<Pair<double, int>> (new Pair<double, int> { First = 1.0, Second = 2}, del3);
+		if (r3.First != 1.0 || r3.Second != 2)
+			return 3;
+		return 0;
+	}
 }

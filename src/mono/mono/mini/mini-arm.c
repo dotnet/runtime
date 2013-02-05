@@ -6258,19 +6258,4 @@ mono_arch_set_target (char *mtriple)
 
 #include "../../../mono-extensions/mono/mini/mini-arm-gsharedvt.c"
 
-#else
-
-gboolean
-mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
-{
-	return FALSE;
-}
-
-gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gint32 vcall_offset)
-{
-	NOT_IMPLEMENTED;
-	return NULL;
-}
-
 #endif /* !MONOTOUCH */

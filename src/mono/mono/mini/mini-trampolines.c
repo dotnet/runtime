@@ -356,7 +356,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		sig = mono_method_signature (m);
 		gsig = mono_method_signature (ji->method); 
 
-		info = mono_arch_get_gsharedvt_call_info (compiled_method, sig, gsig, gsctx, TRUE, -1);
+		info = mono_arch_get_gsharedvt_call_info (compiled_method, sig, gsig, gsctx, TRUE, -1, FALSE);
 
 		if (!tramp_addr) {
 			wrapper = mono_marshal_get_gsharedvt_in_wrapper ();

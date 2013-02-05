@@ -1055,6 +1055,8 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE,
 	/* Same for virtual calls */
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT,
+	/* Same for calli, associated with a signature */
+	MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI,
 	MONO_RGCTX_INFO_CLASS_IS_REF
 } MonoRgctxInfoType;
 
@@ -1144,6 +1146,7 @@ struct MonoJumpInfo {
 		MonoJumpInfoBBTable *table;
 		MonoJumpInfoRgctxEntry *rgctx_entry;
 		MonoJumpInfoImtTramp *imt_tramp;
+		MonoMethodSignature *sig;
 	} data;
 };
  
@@ -2149,7 +2152,7 @@ GSList*   mono_arch_get_cie_program             (void) MONO_INTERNAL;
 void      mono_arch_set_target                  (char *mtriple) MONO_INTERNAL;
 gboolean  mono_arch_gsharedvt_sig_supported     (MonoMethodSignature *sig) MONO_INTERNAL;
 gpointer  mono_arch_get_gsharedvt_trampoline    (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
-gpointer  mono_arch_get_gsharedvt_call_info     (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gint32 vcall_offset) MONO_INTERNAL;
+gpointer  mono_arch_get_gsharedvt_call_info     (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli) MONO_INTERNAL;
 
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
