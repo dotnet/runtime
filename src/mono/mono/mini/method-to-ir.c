@@ -7025,7 +7025,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = NULL;
 
 			if (calli) {
-				//GSHAREDVT_FAILURE (*ip);
+				GSHAREDVT_FAILURE (*ip);
 				cmethod = NULL;
 				CHECK_STACK (1);
 				--sp;
