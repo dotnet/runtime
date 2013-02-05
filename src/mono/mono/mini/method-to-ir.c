@@ -7321,7 +7321,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					if (sharing_enabled && context_sharable)
 						pass_mrgctx = TRUE;
-					if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig))
+					if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, mono_method_signature (cmethod)))
 						pass_mrgctx = TRUE;
 				}
 			}
