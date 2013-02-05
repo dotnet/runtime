@@ -7594,8 +7594,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 												  cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
 				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
 				goto call_end;
-			} else if (calli && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
-				printf ("HIT!\n");
 			}
 
 			/* Generic sharing */
