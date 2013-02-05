@@ -1033,6 +1033,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			gpointer info;
 			MonoMethod *wrapper;
 			MonoMethod *gm;
+			MonoMethodSignature *sig, *gsig;
 
 			g_assert (method->is_inflated);
 
@@ -1042,7 +1043,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 			gm = caller_method;
 
-			info = mono_arch_get_gsharedvt_call_info (addr, method, gm, gji->generic_sharing_context, FALSE, vcall_offset);
+			sig = mono_method_signature (method);
+			gsig = mono_method_signature (gm); 
+
+			info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, vcall_offset);
 
 			if (!tramp_addr) {
 				wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
@@ -1068,6 +1072,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			static gpointer tramp_addr;
 			gpointer info;
 			MonoMethod *wrapper;
+			MonoMethodSignature *sig, *gsig;
 
 			//
 			// FIXME:
@@ -1078,7 +1083,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			// FIXME: This is just a workaround
 			if (caller_method == method) {
 			} else {
-				info = mono_arch_get_gsharedvt_call_info (ji->code_start, method, ji->method, gji->generic_sharing_context, TRUE, -1);
+				sig = mono_method_signature (method);
+				gsig = mono_method_signature (ji->method); 
+
+				info = mono_arch_get_gsharedvt_call_info (ji->code_start, sig, gsig, gji->generic_sharing_context, TRUE, -1);
 
 				if (!tramp_addr) {
 					wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
