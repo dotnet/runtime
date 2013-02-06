@@ -1,5 +1,5 @@
 /*
- * console-io.c: ConsoleDriver internal calls
+ * debug-helpers.c:
  *
  * Author:
  *	Mono Project (http://www.mono-project.com)
@@ -1020,4 +1020,3 @@ mono_class_describe_statics (MonoClass* klass)
 		}
 	}
 }
-

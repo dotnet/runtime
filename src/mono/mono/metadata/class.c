@@ -10027,3 +10027,10 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
 	}
 	return NULL;
 }
+
+char*
+mono_class_full_name (MonoClass *klass)
+{
+	return mono_type_full_name (&klass->byval_arg);
+}
+
