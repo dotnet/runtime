@@ -2380,6 +2380,10 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 			encode_value (array->lobounds [i], p, &p);
 		break;
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		encode_klass_ref (acfg, mono_class_from_mono_type (t), p, &p);
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -2570,7 +2574,19 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			}
 			break;
 		}
-		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_INVOKE: {
+			if (method->is_inflated) {
+				/* These wrappers are identified by their class */
+				encode_value (1, p, &p);
+				encode_klass_ref (acfg, method->klass, p, &p);
+			} else {
+				MonoMethodSignature *sig = mono_method_signature (method);
+
+				encode_value (0, p, &p);
+				encode_signature (acfg, sig, p, &p);
+			}
+			break;
+		}
 		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
 			MonoMethodSignature *sig = mono_method_signature (method);
@@ -3005,6 +3021,60 @@ can_marshal_struct (MonoClass *klass)
 }
 
 static void
+create_gsharedvt_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericContext *ctx)
+{
+	/* Create a vtype instantiation */
+	MonoGenericContext shared_context;
+	MonoType **args;
+	MonoGenericInst *inst;
+	MonoGenericContainer *container;
+	MonoClass **constraints;
+	int i;
+
+	memset (ctx, 0, sizeof (MonoGenericContext));
+
+	if (method->klass->generic_container) {
+		shared_context = method->klass->generic_container->context;
+		inst = shared_context.class_inst;
+
+		args = g_new0 (MonoType*, inst->type_argc);
+		for (i = 0; i < inst->type_argc; ++i) {
+			args [i] = &mono_defaults.int_class->byval_arg;
+		}
+		ctx->class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+	}
+	if (method->is_generic) {
+		container = mono_method_get_generic_container (method);
+		shared_context = container->context;
+		inst = shared_context.method_inst;
+
+		args = g_new0 (MonoType*, inst->type_argc);
+		for (i = 0; i < container->type_argc; ++i) {
+			MonoGenericParamInfo *info = &container->type_params [i].info;
+			gboolean ref_only = FALSE;
+
+			if (info && info->constraints) {
+				constraints = info->constraints;
+
+				while (*constraints) {
+					MonoClass *cklass = *constraints;
+					if (!(cklass == mono_defaults.object_class || (cklass->image == mono_defaults.corlib && !strcmp (cklass->name, "ValueType"))))
+						/* Inflaring the method with our vtype would not be valid */
+						ref_only = TRUE;
+					constraints ++;
+				}
+			}
+
+			if (ref_only)
+				args [i] = &mono_defaults.object_class->byval_arg;
+			else
+				args [i] = &mono_defaults.int_class->byval_arg;
+		}
+		ctx->method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+	}
+}
+
+static void
 add_wrappers (MonoAotCompile *acfg)
 {
 	MonoMethod *method, *m;
@@ -3252,7 +3322,10 @@ add_wrappers (MonoAotCompile *acfg)
 			continue;
 		}
 
-		if (klass->delegate && klass != mono_defaults.delegate_class && klass != mono_defaults.multicastdelegate_class && !klass->generic_container) {
+		if (!klass->delegate || klass == mono_defaults.delegate_class || klass == mono_defaults.multicastdelegate_class)
+			continue;
+
+		if (!klass->generic_container) {
 			method = mono_get_delegate_invoke (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
@@ -3278,6 +3351,24 @@ add_wrappers (MonoAotCompile *acfg)
 				if (j < cattr->num_attrs)
 					add_method (acfg, mono_marshal_get_native_func_wrapper_aot (klass));
 			}
+		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->generic_container) {
+			MonoGenericContext ctx;
+			MonoMethod *inst, *gshared;
+
+			/*
+			 * Emit a gsharedvt version of the generic delegate-invoke wrapper
+			 */
+
+			method = mono_get_delegate_invoke (klass);
+			create_gsharedvt_inst (acfg, method, &ctx);
+
+			inst = mono_class_inflate_generic_method (method, &ctx);
+
+			m = mono_marshal_get_delegate_invoke (inst, NULL);
+			g_assert (m->is_inflated);
+
+			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+			add_extra_method (acfg, gshared);
 		}
 	}
 
@@ -5693,13 +5784,8 @@ can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
 }
 
 static gboolean
-can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	switch (patch_info->type) {
-	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_METHODCONST: {
-		MonoMethod *method = patch_info->data.method;
-
 		if (method->wrapper_type) {
 			switch (method->wrapper_type) {
 			case MONO_WRAPPER_NONE:
@@ -5717,6 +5803,7 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_UNKNOWN:
 			case MONO_WRAPPER_WRITE_BARRIER:
+			case MONO_WRAPPER_DELEGATE_INVOKE:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
 			case MONO_WRAPPER_CASTCLASS: {
@@ -5742,7 +5829,18 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 				}
 			}
 		}
-		break;
+		return TRUE;
+}
+
+static gboolean
+can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHODCONST: {
+		MonoMethod *method = patch_info->data.method;
+
+		return can_encode_method (acfg, method);
 	}
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS_INIT:
@@ -5758,6 +5856,8 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 
+		if (!can_encode_method (acfg, entry->method))
+			return FALSE;
 		if (!can_encode_patch (acfg, entry->data))
 			return FALSE;
 		break;
@@ -7612,55 +7712,10 @@ collect_methods (MonoAotCompile *acfg)
 			continue;
 		if (method->is_generic || method->klass->generic_container) {
 			/* Create a vtype instantiation */
-			MonoGenericContext shared_context;
 			MonoGenericContext ctx;
-			MonoType **args;
-			MonoGenericInst *inst;
 			MonoMethod *inflated, *gshared;
-			MonoGenericContainer *container;
-			MonoClass **constraints;
 
-			memset (&ctx, 0, sizeof (ctx));
-
-			if (method->klass->generic_container) {
-				shared_context = method->klass->generic_container->context;
-				inst = shared_context.class_inst;
-
-				args = g_new0 (MonoType*, inst->type_argc);
-				for (i = 0; i < inst->type_argc; ++i) {
-					args [i] = &mono_defaults.int_class->byval_arg;
-				}
-				ctx.class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
-			}
-			if (method->is_generic) {
-				container = mono_method_get_generic_container (method);
-				shared_context = container->context;
-				inst = shared_context.method_inst;
-
-				args = g_new0 (MonoType*, inst->type_argc);
-				for (i = 0; i < container->type_argc; ++i) {
-					MonoGenericParamInfo *info = &container->type_params [i].info;
-					gboolean ref_only = FALSE;
-
-					if (info && info->constraints) {
-						constraints = info->constraints;
-
-						while (*constraints) {
-							MonoClass *cklass = *constraints;
-							if (!(cklass == mono_defaults.object_class || (cklass->image == mono_defaults.corlib && !strcmp (cklass->name, "ValueType"))))
-								/* Inflaring the method with our vtype would not be valid */
-								ref_only = TRUE;
-							constraints ++;
-						}
-					}
-
-					if (ref_only)
-						args [i] = &mono_defaults.object_class->byval_arg;
-					else
-						args [i] = &mono_defaults.int_class->byval_arg;
-				}
-				ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
-			}
+			create_gsharedvt_inst (acfg, method, &ctx);
 
 			inflated = mono_class_inflate_generic_method (method, &ctx);
 			gshared = mini_get_shared_method_full (inflated, FALSE, TRUE);

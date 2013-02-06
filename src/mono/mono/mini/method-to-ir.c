@@ -7613,8 +7613,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE)
 					/* Not tested */
 					GSHAREDVT_FAILURE (*ip);
-				if (cfg->compile_aot)
-					GSHAREDVT_FAILURE (*ip);
 
 				addr = emit_get_rgctx_sig (cfg, context_used,
 											  fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);

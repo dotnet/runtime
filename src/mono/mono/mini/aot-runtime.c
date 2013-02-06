@@ -644,6 +644,14 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		t->data.array = array;
 		break;
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR: {
+		MonoClass *klass = decode_klass_ref (module, p, &p);
+		if (!klass)
+			return NULL;
+		t->data.generic_param = klass->byval_arg.data.generic_param;
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -1018,7 +1026,26 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			}
 			break;
 		}
-		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_INVOKE: {
+			gboolean is_inflated = decode_value (p, &p);
+
+			if (is_inflated) {
+				MonoClass *klass;
+				MonoMethod *invoke, *wrapper;
+
+				klass = decode_klass_ref (module, p, &p);
+				if (!klass)
+					return FALSE;
+				invoke = mono_get_delegate_invoke (klass);
+				wrapper = mono_marshal_get_delegate_invoke (invoke, NULL);
+				if (target && wrapper != target)
+					return FALSE;
+				ref->method = wrapper;
+				break;
+			} else {
+				/* Fall through */
+			}
+		}
 		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
 			/*
