@@ -1103,6 +1103,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	/* The general, unoptimized case */
 	m = mono_marshal_get_delegate_invoke (invoke, delegate);
 	code = mono_compile_method (m);
+	code = mini_add_method_trampoline (NULL, m, code, NULL, need_rgctx_tramp);
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 	mono_debugger_trampoline_compiled (NULL, m, delegate->invoke_impl);
 
