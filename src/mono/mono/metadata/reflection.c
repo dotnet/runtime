@@ -2750,10 +2750,15 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObject *f, MonoCl
 	if (token)
 		return token;
 
-	if (is_field_on_inst (field))
-		type = get_field_on_inst_generic_type (field);
-	else
-		type = mono_field_get_type (field);
+	if (field->parent->generic_class && field->parent->generic_class->container_class && field->parent->generic_class->container_class->fields) {
+		int index = field - field->parent->fields;
+		type = mono_field_get_type (&field->parent->generic_class->container_class->fields [index]);
+	} else {
+		if (is_field_on_inst (field))
+			type = get_field_on_inst_generic_type (field);
+		else
+			type = mono_field_get_type (field);
+	}
 	token = mono_image_get_memberref_token (assembly, &field->parent->byval_arg,
 											mono_field_get_name (field),
 											fieldref_encode_signature (assembly, field->parent->image, type));
