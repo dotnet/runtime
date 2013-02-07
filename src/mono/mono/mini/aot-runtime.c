@@ -4288,6 +4288,10 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_extra_method (method, &amodule);
+		if (method_index == 0xffffff && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE)) {
+			MonoMethod *shared = mini_get_shared_method_full (method, TRUE, TRUE);
+			method_index = find_extra_method (shared, &amodule);
+		}
 		g_assert (method_index != 0xffffff);
 	} else {
 		amodule = method->klass->image->aot_module;
