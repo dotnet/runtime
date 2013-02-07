@@ -896,6 +896,50 @@ ji_is_gsharedvt (MonoJitInfo *ji)
 }
 
 static gpointer
+add_gsharedvt_in_wrapper (gpointer info)
+{
+	static gpointer tramp_addr;
+	MonoMethod *wrapper;
+	gpointer addr;
+
+	if (!tramp_addr) {
+		wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
+		addr = mono_compile_method (wrapper);
+		mono_memory_barrier ();
+		tramp_addr = addr;
+	}
+	addr = tramp_addr;
+
+	if (mono_aot_only)
+		addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
+	else
+		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+	return addr;
+}
+
+static gpointer
+add_gsharedvt_out_wrapper (gpointer info)
+{
+	static gpointer tramp_addr;
+	MonoMethod *wrapper;
+	gpointer addr;
+
+	if (!tramp_addr) {
+		wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
+		addr = mono_compile_method (wrapper);
+		mono_memory_barrier ();
+		tramp_addr = addr;
+	}
+	addr = tramp_addr;
+
+	if (mono_aot_only)
+		addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
+	else
+		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+	return addr;
+}
+
+static gpointer
 instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti,
 				  MonoGenericContext *context, MonoClass *class, guint8 *caller)
 {
@@ -988,9 +1032,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: {
 		MonoMethodSignature *gsig = oti->data;
 		MonoMethodSignature *sig = data;
-		static gpointer tramp_addr;
 		gpointer info;
-		MonoMethod *wrapper;
 		gpointer addr;
 		MonoJitInfo *caller_ji;
 		MonoGenericJitInfo *gji;
@@ -1008,18 +1050,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, -1, TRUE);
 
-		if (!tramp_addr) {
-			wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
-			addr = mono_compile_method (wrapper);
-			mono_memory_barrier ();
-			tramp_addr = addr;
-		}
-		addr = tramp_addr;
-
-		if (mono_aot_only)
-			addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
-		else
-			addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+		addr = add_gsharedvt_out_wrapper (info);
 
 		return addr;
 	}
@@ -1028,10 +1059,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoMethod *caller_method = oti->data;
 		MonoMethod *method = data;
 		gpointer addr;
-		MonoJitInfo *caller_ji, *ji;
+		MonoJitInfo *caller_ji, *callee_ji;
 		gboolean virtual = oti->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT;
 		gint32 vcall_offset;
-		MonoGenericJitInfo *gji;
+		MonoGenericJitInfo *gji, *callee_gji = NULL;
+		gboolean callee_gsharedvt;
 
 		g_assert (method->is_inflated);
 
@@ -1062,6 +1094,14 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		gji = mono_jit_info_get_generic_jit_info (caller_ji);
 		g_assert (gji);
 
+		// FIXME: This loads information in the AOT case
+		callee_ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr), NULL);
+		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		if (callee_gsharedvt) {
+			callee_gji = mono_jit_info_get_generic_jit_info (callee_ji);
+			g_assert (callee_gji);
+		}
+
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
 		 * non-shared method. The latter call cannot be patched, so instead of using a normal call, we make an indirect
@@ -1073,12 +1113,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		 * caller -> out trampoline -> in trampoline -> callee
 		 * This is not very efficient, but it is easy to implement.
 		 */
-		// FIXME: This loads information from AOT
-		ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr), NULL);
-		if (virtual || !ji_is_gsharedvt (ji)) {
-			static gpointer tramp_addr;
+		if (virtual || !callee_gsharedvt) {
 			gpointer info;
-			MonoMethod *wrapper;
 			MonoMethod *gm;
 			MonoMethodSignature *sig, *gsig;
 
@@ -1095,60 +1131,51 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 			info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, vcall_offset, FALSE);
 
-			if (!tramp_addr) {
-				wrapper = mono_marshal_get_gsharedvt_out_wrapper ();
-				addr = mono_compile_method (wrapper);
-				mono_memory_barrier ();
-				tramp_addr = addr;
-			}
-			addr = tramp_addr;
-
-			if (mono_aot_only)
-				addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
-			else
-				addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
-
+			addr = add_gsharedvt_out_wrapper (info);
 #if 0
 			if (virtual)
 				printf ("OUT-VCALL: %s\n", mono_method_full_name (method, TRUE));
 			else
 				printf ("OUT: %s\n", mono_method_full_name (method, TRUE));
 #endif
-		} else if (!mini_is_gsharedvt_variable_signature (mono_method_signature (caller_method)) && ji_is_gsharedvt (ji)) {
-			/* This is the IN case handled by mini_add_method_trampoline () */
-			static gpointer tramp_addr;
-			gpointer info;
-			MonoMethod *wrapper;
+			//		} else if (!mini_is_gsharedvt_variable_signature (mono_method_signature (caller_method)) && callee_gsharedvt) {
+		} else if (callee_gsharedvt) {
 			MonoMethodSignature *sig, *gsig;
+			gpointer info;
 
-			//
-			// FIXME:
-			// This is a combination of the normal in and out cases, since the caller is a gsharedvt method.
-			// A trampoline is not always needed, but its hard to determine when it can be omitted.
-			//
+			/*
+			 * This is a combination of the out and in cases, since both the caller and the callee are gsharedvt methods.
+			 * The caller and the callee can use different gsharedvt signatures, so we have to add both an out and an in
+			 * trampoline, i.e.:
+			 * class Base<T> {
+			 *   public void foo<T1> (T1 t1, T t, object o) {}
+			 * }
+			 * class AClass : Base<long> {
+			 * public void bar<T> (T t, long time, object o) {
+			 *   foo (t, time, o);
+			 * }
+			 * }
+			 * Here, the caller uses !!0,long, while the callee uses !!0,!0
+			 * FIXME: Optimize this.
+			 */
 
-			// FIXME: This is just a workaround
 			if (caller_method == method) {
 			} else {
 				sig = mono_method_signature (method);
-				gsig = mono_method_signature (ji->method); 
+				gsig = mono_method_signature (callee_ji->method); 
 
-				info = mono_arch_get_gsharedvt_call_info (ji->code_start, sig, gsig, gji->generic_sharing_context, TRUE, -1, FALSE);
+				info = mono_arch_get_gsharedvt_call_info (callee_ji->code_start, sig, gsig, callee_gji->generic_sharing_context, TRUE, -1, FALSE);
 
-				if (!tramp_addr) {
-					wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
-					addr = mono_compile_method (wrapper);
-					mono_memory_barrier ();
-					tramp_addr = addr;
-				}
-				addr = tramp_addr;
+				addr = add_gsharedvt_in_wrapper (info);
 
-				if (mono_aot_only)
-					addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
-				else
-					addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+				sig = mono_method_signature (method);
+				gsig = mono_method_signature (caller_method); 
 
-				//printf ("IN-RGCTX: %s\n", mono_method_full_name (method, TRUE));
+				info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, -1, FALSE);
+
+				addr = add_gsharedvt_out_wrapper (info);
+
+				//printf ("OUT-IN-RGCTX: %s\n", mono_method_full_name (method, TRUE));
 			}
 		}
 

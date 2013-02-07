@@ -911,4 +911,28 @@ public class Tests
 			return 3;
 		return 0;
 	}
+
+	class Base<T> {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public object foo<T1> (T1 t1, T t, object o) {
+			return o;
+		}
+	}
+
+	class AClass : Base<long> {
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public object bar<T> (T t, long time, object o) {
+			return foo (t, time, o);
+		}
+	}
+
+	public static int test_0_out_in_wrappers () {
+		var a = new AClass ();
+		object o1 = "A";
+		object o2 = a.bar<long> (1024, 0, o1);
+		if (o1 != o2)
+			return 1;
+		return 0;		
+	}
 }
