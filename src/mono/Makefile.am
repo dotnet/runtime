@@ -174,7 +174,6 @@ package-inputs:
 		cat msvc/scripts/inputs/$$2.input | sed -e 's/\\\\/\\/g' -e 's/\\/\\\\/g' | \
 		(echo "    <project dir=\"$$1\" library=\"$$2\">"; \
 		 read boot;   echo "      <boot>$$boot</boot>"; \
-		 read mcs;    echo "      <mcs>$$mcs</mcs>"; \
 		 read flags;  echo "      <flags>$$flags</flags>"; \
 		 read output; echo "      <output>$$output</output>"; \
 		 read built;  echo "      <built_sources>`echo $$built | sed 's/\\\/\\\\/g'`</built_sources>"; \

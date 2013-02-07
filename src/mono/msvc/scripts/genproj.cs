@@ -20,7 +20,7 @@ public enum LanguageVersion {
 }
 
 class SlnGenerator {
-	public static readonly string NewLine = Environment.NewLine; // "\n"; 
+	public static readonly string NewLine = "\r\n"; //Environment.NewLine; // "\n"; 
 	public SlnGenerator (string formatVersion = "2012")
 	{
 		switch (formatVersion) {
@@ -586,10 +586,9 @@ class MsbuildGenerator {
 
 		var result = new VsCsproj ();
 		string library = xproject.Attribute ("library").Value;
-		string boot, mcs, flags, output_name, built_sources, library_output, response, fx_version, profile;
+		string boot, flags, output_name, built_sources, library_output, response, fx_version, profile;
 
 		boot = xproject.Element ("boot").Value;
-		mcs = xproject.Element ("mcs").Value;
 		flags = xproject.Element ("flags").Value;
 		output_name = xproject.Element ("output").Value;
 		built_sources = xproject.Element ("built_sources").Value;
@@ -669,6 +668,9 @@ class MsbuildGenerator {
 		using (var reader = new StreamReader (NativeName (base_dir + "\\" + response))) {
 			source_files = reader.ReadToEnd ().Split ();
 		}
+
+		Array.Sort (source_files);
+
 		StringBuilder sources = new StringBuilder ();
 		foreach (string s in source_files) {
 			if (s.Length == 0)
@@ -678,9 +680,13 @@ class MsbuildGenerator {
 			if (src.StartsWith (@"Test\..\"))
 				src = src.Substring (8, src.Length - 8);
 
-			sources.Append (String.Format ("    <Compile Include=\"{0}\" />" + NewLine, src));
+			sources.AppendFormat ("    <Compile Include=\"{0}\" />" + NewLine, src);
 		}
-		foreach (string s in built_sources.Split ()) {
+
+		source_files = built_sources.Split ();
+		Array.Sort (source_files);
+
+		foreach (string s in source_files) {
 			if (s.Length == 0)
 				continue;
 
@@ -688,7 +694,7 @@ class MsbuildGenerator {
 			if (src.StartsWith (@"Test\..\"))
 				src = src.Substring (8, src.Length - 8);
 
-			sources.Append (String.Format ("    <Compile Include=\"{0}\" />" + NewLine, src));
+			sources.AppendFormat ("    <Compile Include=\"{0}\" />" + NewLine, src);
 		}
 		sources.Remove (sources.Length - 1, 1);
 
@@ -705,8 +711,7 @@ class MsbuildGenerator {
 		//}
 
 		result.library = library;
-		result.csprojFileName = ("..\\..\\mcs\\" + dir + "\\" + library + ".csproj").Replace ('/', '\\');
-		var csprojDir = Path.GetDirectoryName (result.csprojFileName);
+		result.csprojFileName = "..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
 
 		var refs = new StringBuilder ();
 
@@ -714,7 +719,7 @@ class MsbuildGenerator {
 		if (is_test) {
 			// F:\src\mono\mcs\class\lib\net_2_0\nunit.framework.dll
 			// F:\src\mono\mcs\class\SomeProject\SomeProject_test_-net_2_0.csproj
-			var nunitLibPath = Path.Combine (@"..\lib", profile, "nunit.framework.dll");
+			var nunitLibPath = string.Format (@"..\lib\{0}\nunit.framework.dll", profile);
 			refs.Append (string.Format ("    <Reference Include=\"{0}\" />" + NewLine, nunitLibPath));
 		}
 
@@ -744,9 +749,9 @@ class MsbuildGenerator {
 				if (lastMatching != null) {
 					addProjectReference (refs, result, lastMatching, r);
 				} else {
-					var msg = string.Format ("From {0}, could not find a matching project reference for {1}", library, r);
-					//throw new NotSupportedException (msg);
-					Console.WriteLine ("WARNING: " + msg + NewLine + "  --> Adding reference with hintpath instead");
+					var msg = string.Format ("", library, r);
+					Console.WriteLine ("{0}: Could not find a matching project reference for {1}", library, Path.GetFileName (r));
+					Console.WriteLine ("  --> Adding reference with hintpath instead");
 					refs.Append ("    <Reference Include=\"" + r + "\">" + NewLine);
 					refs.Append ("      <SpecificVersion>False</SpecificVersion>" + NewLine);
 					refs.Append ("      <HintPath>" + r + "</HintPath>" + NewLine);
@@ -833,7 +838,7 @@ class MsbuildGenerator {
 			Replace ("@SOURCES@", sources.ToString ());
 
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
-		using (var o = new StreamWriter (result.csprojFileName)) {
+		using (var o = new StreamWriter (NativeName (result.csprojFileName))) {
 			o.WriteLine (result.output);
 		}
 
@@ -842,8 +847,7 @@ class MsbuildGenerator {
 
 	private void addProjectReference (StringBuilder refs, VsCsproj result, VsCsproj lastMatching, string r)
 	{
-		refs.Append ("    <ProjectReference Include=\"" +
-			    getRelativePath (result.csprojFileName, lastMatching.csprojFileName) + "\">" + NewLine);
+		refs.AppendFormat ("    <ProjectReference Include=\"{0}\">{1}", getRelativePath (result.csprojFileName, lastMatching.csprojFileName), NewLine);
 		refs.Append ("      <Project>" + lastMatching.projectGuid + "</Project>" + NewLine);
 		refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.csprojFileName) + "</Name>" + NewLine);
 		//refs.Append("      <HintPath>" + r + "</HintPath>" + NewLine);
@@ -852,7 +856,7 @@ class MsbuildGenerator {
 			result.projReferences.Add (lastMatching);
 	}
 
-	private string getRelativePath (string referencerPath, string referenceePath)
+	static string getRelativePath (string referencerPath, string referenceePath)
 	{
 		// F:\src\mono\msvc\scripts\
 		//..\..\mcs\class\System\System-net_2_0.csproj
@@ -862,12 +866,12 @@ class MsbuildGenerator {
 
 		// Could be possible to use PathRelativePathTo, but this is a P/Invoke to Win32 API.
 		// For now, simpler but less robust:
-		return referenceePath.Replace (@"..\..\mcs\class", "..");
+		return referenceePath.Replace (@"..\..\mcs\class", "..").Replace ("/", "\\");
 	}
 
-	private VsCsproj getMatchingCsproj (string dllReferenceName, List<VsCsproj> projects)
+	static VsCsproj getMatchingCsproj (string dllReferenceName, List<VsCsproj> projects)
 	{
-		return projects.LastOrDefault ((x => x.library_output.EndsWith (dllReferenceName)));
+		return projects.LastOrDefault (x => Path.GetFileName (x.library_output).Replace (".dll", "") == dllReferenceName.Replace (".dll", ""));
 	}
 
 }
