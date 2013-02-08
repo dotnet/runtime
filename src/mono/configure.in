@@ -173,10 +173,6 @@ case "$host" in
 		libgc_threads=pthreads
 		# This doesn't seem to work as of 7.0 on amd64
 		with_sigaltstack=no
-# TLS is only partially implemented on -CURRENT (compiler support
-# but NOT library support)
-#
-		with_tls=pthread
 		use_sigposix=yes
 		;;
 	*-*-*openbsd*)
@@ -1444,6 +1440,7 @@ if test x$target_win32 = xno; then
 		;;
 	esac
 	AC_CHECK_HEADERS(pthread.h)
+	AC_CHECK_HEADERS(pthread_np.h)
 	AC_CHECK_FUNCS(pthread_mutex_timedlock)
 	AC_CHECK_FUNCS(pthread_getattr_np pthread_attr_get_np)
 	AC_CHECK_FUNCS(pthread_kill)
