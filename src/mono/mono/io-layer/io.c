@@ -4126,8 +4126,12 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 		if (strcmp (*(splitted + 1), utf8_root_path_name) == 0 ||
 		    (strcmp (*(splitted + 1), "/") == 0 && strlen (utf8_root_path_name) == 0)) {
 			drive_type = _wapi_get_drive_type (*(splitted + 2));
-			g_strfreev (splitted);
-			break;
+			/* it is possible this path might be mounted again with
+			   a known type...keep looking */
+			if (drive_type != DRIVE_UNKNOWN) {
+				g_strfreev (splitted);
+				break;
+			}
 		}
 
 		g_strfreev (splitted);
