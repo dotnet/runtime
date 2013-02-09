@@ -533,9 +533,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
 	case MONO_RGCTX_INFO_METHOD_CONTEXT:
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
-	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
-	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
-	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: {
+	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE: {
 		MonoMethod *method = data;
 		MonoMethod *inflated_method;
 		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
@@ -557,6 +555,39 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		mono_class_init (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
+	}
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: {
+		MonoJumpInfoGSharedVtCall *info = data;
+		MonoMethod *method = info->method;
+		MonoMethod *inflated_method;
+		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
+		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
+		MonoJumpInfoGSharedVtCall *res;
+
+		// FIXME:
+		res = g_new0 (MonoJumpInfoGSharedVtCall, 1);
+		/* Keep the original signature */
+		res->sig = info->sig;
+
+		mono_metadata_free_type (inflated_type);
+
+		mono_class_init (inflated_class);
+
+		g_assert (!method->wrapper_type);
+
+		if (inflated_class->byval_arg.type == MONO_TYPE_ARRAY ||
+				inflated_class->byval_arg.type == MONO_TYPE_SZARRAY) {
+			inflated_method = mono_method_search_in_array_class (inflated_class,
+				method->name, method->signature);
+		} else {
+			inflated_method = mono_class_inflate_generic_method (method, context);
+		}
+		mono_class_init (inflated_method->klass);
+		g_assert (inflated_method->klass == inflated_class);
+		res->method = inflated_method;
+
+		return res;
 	}
 
 	case MONO_RGCTX_INFO_CLASS_FIELD:
@@ -1056,14 +1087,20 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: {
-		MonoMethod *caller_method = oti->data;
-		MonoMethod *method = data;
+		MonoJumpInfoGSharedVtCall *call_info = data;
+		MonoMethodSignature *call_sig;
+		MonoMethod *method;
 		gpointer addr;
 		MonoJitInfo *caller_ji, *callee_ji;
 		gboolean virtual = oti->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT;
 		gint32 vcall_offset;
 		MonoGenericJitInfo *gji, *callee_gji = NULL;
 		gboolean callee_gsharedvt;
+
+		/* This is the original generic signature used by the caller */
+		call_sig = call_info->sig;
+		/* This is the instantiated method which is called */
+		method = call_info->method;
 
 		g_assert (method->is_inflated);
 
@@ -1115,19 +1152,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		 */
 		if (virtual || !callee_gsharedvt) {
 			gpointer info;
-			MonoMethod *gm;
 			MonoMethodSignature *sig, *gsig;
 
 			g_assert (method->is_inflated);
 
-			/* Have to pass TRUE for is_gshared since METHOD might not be gsharedvt but we need its shared version */
-			gm = mini_get_shared_method_full (method, FALSE, TRUE);
-			g_assert (gm != method);
-
-			gm = caller_method;
-
 			sig = mono_method_signature (method);
-			gsig = mono_method_signature (gm); 
+			gsig = call_sig;
 
 			info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, vcall_offset, FALSE);
 
@@ -1159,7 +1189,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			 * FIXME: Optimize this.
 			 */
 
-			if (caller_method == method) {
+			if (call_sig == mono_method_signature (method)) {
 			} else {
 				sig = mono_method_signature (method);
 				gsig = mono_method_signature (callee_ji->method); 
@@ -1169,7 +1199,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				addr = add_gsharedvt_in_wrapper (info);
 
 				sig = mono_method_signature (method);
-				gsig = mono_method_signature (caller_method); 
+				gsig = call_sig;
 
 				info = mono_arch_get_gsharedvt_call_info (addr, sig, gsig, gji->generic_sharing_context, FALSE, -1, FALSE);
 

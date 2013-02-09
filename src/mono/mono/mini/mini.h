@@ -1117,6 +1117,8 @@ typedef struct MonoJumpInfoImtTramp {
 	int vt_offset;
 } MonoJumpInfoImtTramp;
 
+typedef struct MonoJumpInfoGSharedVtCall MonoJumpInfoGSharedVtCall;
+
 typedef struct MonoJumpInfo MonoJumpInfo;
 struct MonoJumpInfo {
 	MonoJumpInfo *next;
@@ -1146,6 +1148,7 @@ struct MonoJumpInfo {
 		MonoJumpInfoBBTable *table;
 		MonoJumpInfoRgctxEntry *rgctx_entry;
 		MonoJumpInfoImtTramp *imt_tramp;
+		MonoJumpInfoGSharedVtCall *gsharedvt;
 		MonoMethodSignature *sig;
 	} data;
 };
@@ -1156,6 +1159,14 @@ struct MonoJumpInfoRgctxEntry {
 	gboolean in_mrgctx;
 	MonoJumpInfo *data; /* describes the data to be loaded */
 	MonoRgctxInfoType info_type;
+};
+
+/* Contains information about a gsharedvt call */
+struct MonoJumpInfoGSharedVtCall {
+	/* The original signature of the call */
+	MonoMethodSignature *sig;
+	/* The method which is called */
+	MonoMethod *method;
 };
 
 typedef enum {

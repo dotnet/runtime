@@ -3277,6 +3277,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		case MONO_PATCH_INFO_SIGNATURE:
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.sig, entry->info_type, mono_method_get_context (entry->method));
 			break;
+		case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			MonoJumpInfoGSharedVtCall *call_info = mono_domain_alloc0 (domain, sizeof (MonoJumpInfoGSharedVtCall));
+
+			memcpy (call_info, entry->data->data.gsharedvt, sizeof (MonoJumpInfoGSharedVtCall));
+			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, call_info, entry->info_type, mono_method_get_context (entry->method));
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 			break;

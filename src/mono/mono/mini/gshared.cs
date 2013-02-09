@@ -935,4 +935,28 @@ public class Tests
 			return 1;
 		return 0;		
 	}
+
+		interface BIFace {
+			object AMethod ();
+		}
+
+		class Base<TAbsolute, T2> : BIFace {
+
+			public TAbsolute Clock { get; set; }
+
+			public virtual object AMethod () {
+				return Clock;
+			}
+		}
+
+		class BClass : Base<long, long> {
+		}
+
+	public static int test_0_regress_1 () {
+		BIFace c = new BClass ();
+		object o = c.AMethod ();
+		if (!(o is long) || ((long)o != 0))
+			return 1;
+		return 0;
+	}
 }
