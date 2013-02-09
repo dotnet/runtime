@@ -2248,6 +2248,24 @@ mono_patch_info_new (MonoMemPool *mp, int ip, MonoJumpInfoType type, gconstpoint
 	return ji;
 }
 
+static int
+mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass)
+{
+	if (cfg->generic_sharing_context)
+		return mono_class_check_context_used (klass);
+	else
+		return 0;
+}
+
+static int
+mini_method_check_context_used (MonoCompile *cfg, MonoMethod *method)
+{
+	if (cfg->generic_sharing_context)
+		return mono_method_check_context_used (method);
+	else
+		return 0;
+}
+
 inline static MonoCallInst *
 mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
 					 MonoInst **args, int calli, int virtual, int tail, int rgctx, int unbox_trampoline)
@@ -2420,7 +2438,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
-	context_used = mono_method_check_context_used (method);
+	context_used = mini_method_check_context_used (cfg, method);
 
 	might_be_remote = this && sig->hasthis &&
 		(method->klass->marshalbyref || method->klass == mono_defaults.object_class) &&
@@ -2864,7 +2882,7 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
 		g_assert (!native);
-		context_used = mono_class_check_context_used (klass);
+		context_used = mini_class_check_context_used (cfg, klass);
 		size_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_VALUE_SIZE);
 	}
 
@@ -2878,13 +2896,12 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 		/* Avoid barriers when storing to the stack */
 		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
 			  (dest->opcode == OP_LDADDR))) {
-			int context_used = 0;
+			int context_used;
 
 			iargs [0] = dest;
 			iargs [1] = src;
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			/* It's ok to intrinsify under gsharing since shared code types are layout stable. */
 			if (!size_ins && (cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, iargs, n, align)) {
@@ -2946,7 +2963,7 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 
 	mono_class_init (klass);
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
-		context_used = mono_class_check_context_used (klass);
+		context_used = mini_class_check_context_used (cfg, klass);
 		size_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_VALUE_SIZE);
 		n = -1;
 	} else {
@@ -3125,10 +3142,9 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 {
 	MonoInst *vtable_arg;
 	MonoCallInst *call;
-	int context_used = 0;
+	int context_used;
 
-	if (cfg->generic_sharing_context)
-		context_used = mono_class_check_context_used (klass);
+	context_used = mini_class_check_context_used (cfg, klass);
 
 	if (context_used) {
 		vtable_arg = emit_get_rgctx_klass (cfg, context_used,
@@ -3208,10 +3224,9 @@ static void
 mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_class)
 {
 	int vtable_reg = alloc_preg (cfg);
-	int context_used = 0;
+	int context_used;
 
-	if (cfg->generic_sharing_context)
-		context_used = mono_class_check_context_used (array_class);
+	context_used = mini_class_check_context_used (cfg, array_class);
 
 	save_cast_details (cfg, array_class, obj->dreg);
 
@@ -4256,7 +4271,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 
 		/* gsharedvt */
 		g_assert (cfg->generic_sharing_context);
-		context_used = mono_class_check_context_used (klass);
+		context_used = mini_class_check_context_used (cfg, klass);
 		g_assert (context_used);
 		rgctx_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IMUL, mult_reg, index2_reg, rgctx_ins->dreg);
@@ -7357,7 +7372,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context && cmethod) {
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
 
-				context_used = mono_method_check_context_used (cmethod);
+				context_used = mini_method_check_context_used (cfg, cmethod);
 
 				if (context_used && (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 					/* Generic method interface
@@ -8606,8 +8621,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!mono_class_init (cmethod->klass))
 				TYPE_LOAD_ERROR (cmethod->klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_method_check_context_used (cmethod);
+			context_used = mini_method_check_context_used (cfg, cmethod);
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 				if (check_linkdemand (cfg, method, cmethod))
@@ -8845,8 +8859,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
@@ -8907,8 +8920,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
  
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
@@ -8969,8 +8981,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  
 			mono_save_token_info (cfg, image, token, klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (mini_is_gsharedvt_klass (cfg, klass))
 				/* Need to check for nullable types at runtime */
@@ -9061,8 +9072,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			mono_save_token_info (cfg, image, token, klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (generic_class_is_reference_type (cfg, klass)) {
 				*sp++ = val;
@@ -9166,8 +9176,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			mono_save_token_info (cfg, image, token, klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (mono_class_is_nullable (klass)) {
 				MonoInst *val;
@@ -9272,8 +9281,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				is_instance = FALSE;
 			}
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			/* INSTANCE CASE */
 
@@ -9315,8 +9323,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (mini_is_gsharedvt_klass (cfg, klass)) {
 						MonoInst *offset_ins;
 
-						if (cfg->generic_sharing_context)
-							context_used = mono_class_check_context_used (klass);
+						context_used = mini_class_check_context_used (cfg, klass);
 
 						offset_ins = emit_get_rgctx_field (cfg, context_used, field, MONO_RGCTX_INFO_FIELD_OFFSET);
 						dreg = alloc_ireg_mp (cfg);
@@ -9453,8 +9460,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			GENERIC_SHARING_FAILURE (op);
 #endif
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			ftype = mono_field_get_type (field);
 
@@ -9765,8 +9771,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (sp [0]->type == STACK_I8 || (SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_I4);
@@ -10032,8 +10037,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			// FIXME:
 			src_var = get_vreg_to_inst (cfg, sp [0]->dreg);
@@ -10073,8 +10077,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
+			context_used = mini_class_check_context_used (cfg, klass);
 
 			loc = mono_compile_create_var (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL);
 			EMIT_NEW_TEMPLOADA (cfg, addr, loc->inst_c0);
@@ -10145,11 +10148,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (mono_type_get_type (handle) == MONO_TYPE_CLASS)
 						context_used = 0;
 					else
-						context_used = mono_class_check_context_used (mono_class_from_mono_type (handle));
+						context_used = mini_class_check_context_used (cfg, mono_class_from_mono_type (handle));
 				} else if (handle_class == mono_defaults.fieldhandle_class)
-					context_used = mono_class_check_context_used (((MonoClassField*)handle)->parent);
+					context_used = mini_class_check_context_used (cfg, ((MonoClassField*)handle)->parent);
 				else if (handle_class == mono_defaults.methodhandle_class)
-					context_used = mono_method_check_context_used (handle);
+					context_used = mini_method_check_context_used (cfg, handle);
 				else
 					g_assert_not_reached ();
 			}
@@ -10160,10 +10163,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *addr, *vtvar, *iargs [3];
 				int method_context_used;
 
-				if (cfg->generic_sharing_context)
-					method_context_used = mono_method_check_context_used (method);
-				else
-					method_context_used = 0;
+				method_context_used = mini_method_check_context_used (cfg, method);
 
 				vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL); 
 
@@ -10815,8 +10815,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				mono_save_token_info (cfg, image, n, cmethod);
 
-				if (cfg->generic_sharing_context)
-					context_used = mono_method_check_context_used (cmethod);
+				context_used = mini_method_check_context_used (cfg, cmethod);
 
 				cil_method = cmethod;
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
@@ -10838,14 +10837,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (ctor_method && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
 						MonoInst *target_ins;
 						MonoMethod *invoke;
-						int invoke_context_used = 0;
+						int invoke_context_used;
 
 						invoke = mono_get_delegate_invoke (ctor_method->klass);
 						if (!invoke || !mono_method_signature (invoke))
 							LOAD_ERROR;
 
-						if (cfg->generic_sharing_context)
-							invoke_context_used = mono_method_check_context_used (invoke);
+						invoke_context_used = mini_method_check_context_used (cfg, invoke);
 
 						target_ins = sp [-1];
 
@@ -10898,8 +10896,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					LOAD_ERROR;
 				mono_class_init (cmethod->klass);
  
-				if (cfg->generic_sharing_context)
-					context_used = mono_method_check_context_used (cmethod);
+				context_used = mini_method_check_context_used (cfg, cmethod);
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod))
