@@ -1227,6 +1227,51 @@ if test x$target_win32 = xno; then
 	])
 
 	dnl *****************************
+	dnl *** Checks for IPPROTO_IP ***
+	dnl *****************************
+	AC_MSG_CHECKING(for IPPROTO_IP)
+	AC_TRY_COMPILE([#include <netinet/in.h>], [
+		int level = IPPROTO_IP;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IPPROTO_IP, 1, [Have IPPROTO_IP])
+	], [
+		# We'll have to use getprotobyname
+		AC_MSG_RESULT(no)
+	])
+
+	dnl *******************************
+	dnl *** Checks for IPPROTO_IPV6 ***
+	dnl *******************************
+	AC_MSG_CHECKING(for IPPROTO_IPV6)
+	AC_TRY_COMPILE([#include <netinet/in.h>], [
+		int level = IPPROTO_IPV6;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IPPROTO_IPV6, 1, [Have IPPROTO_IPV6])
+	], [
+		# We'll have to use getprotobyname
+		AC_MSG_RESULT(no)
+	])
+
+	dnl ******************************
+	dnl *** Checks for IPPROTO_TCP ***
+	dnl ******************************
+	AC_MSG_CHECKING(for IPPROTO_TCP)
+	AC_TRY_COMPILE([#include <netinet/in.h>], [
+		int level = IPPROTO_TCP;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IPPROTO_TCP, 1, [Have IPPROTO_TCP])
+	], [
+		# We'll have to use getprotobyname
+		AC_MSG_RESULT(no)
+	])
+
+	dnl *****************************
 	dnl *** Checks for SOL_IP     ***
 	dnl *****************************
 	AC_MSG_CHECKING(for SOL_IP)
@@ -1275,7 +1320,7 @@ if test x$target_win32 = xno; then
 	dnl *** Checks for IP_PKTINFO ***
 	dnl *****************************
 	AC_MSG_CHECKING(for IP_PKTINFO)
-	AC_TRY_COMPILE([#include <netdb.h>], [
+	AC_TRY_COMPILE([#include <linux/in.h>], [
 		int level = IP_PKTINFO;
 	], [
 		# Yes, we have it...
@@ -1300,10 +1345,24 @@ if test x$target_win32 = xno; then
 	])
 
 	dnl **********************************
+	dnl *** Checks for IP_DONTFRAG     ***
+	dnl **********************************
+	AC_MSG_CHECKING(for IP_DONTFRAG)
+	AC_TRY_COMPILE([#include <netinet/in.h>], [
+		int level = IP_DONTFRAG;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_DONTFRAG, 1, [Have IP_DONTFRAG])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
 	dnl *** Checks for IP_DONTFRAGMENT ***
 	dnl **********************************
 	AC_MSG_CHECKING(for IP_DONTFRAGMENT)
-	AC_TRY_COMPILE([#include <netdb.h>], [
+	AC_TRY_COMPILE([#include <Ws2ipdef.h>], [
 		int level = IP_DONTFRAGMENT;
 	], [
 		# Yes, we have it...
@@ -1317,12 +1376,26 @@ if test x$target_win32 = xno; then
 	dnl *** Checks for IP_MTU_DISCOVER ***
 	dnl **********************************
 	AC_MSG_CHECKING(for IP_MTU_DISCOVER)
-	AC_TRY_COMPILE([#include <netdb.h>], [
+	AC_TRY_COMPILE([#include <linux/in.h>], [
 		int level = IP_MTU_DISCOVER;
 	], [
 		# Yes, we have it...
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_IP_MTU_DISCOVER, 1, [Have IP_MTU_DISCOVER])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Checks for  IP_PMTUDISC_DO ***
+	dnl **********************************
+	AC_MSG_CHECKING(for IP_PMTUDISC_DO)
+	AC_TRY_COMPILE([#include <linux/in.h>], [
+		int level = IP_PMTUDISC_DO;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_PMTUDISC_DO, 1, [Have IP_PMTUDISC_DO])
 	], [
 		AC_MSG_RESULT(no)
 	])
