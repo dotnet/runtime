@@ -4278,6 +4278,12 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 	char *name1, *name2, *cached;
 	int i, j, len, count;
 
+#ifdef TARGET_MACH
+	// This is so that we don't accidentally create a local symbol (which starts with 'L')
+	if (!prefix || !*prefix)
+		prefix = "_";
+#endif
+
 	name1 = mono_method_full_name (method, TRUE);
 	len = strlen (name1);
 	name2 = malloc (strlen (prefix) + len + 16);
