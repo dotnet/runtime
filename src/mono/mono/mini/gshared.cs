@@ -448,9 +448,10 @@ public class Tests
 	// Tests for transitioning out of gsharedvt code
 	//
 
+	// T1=Nullable<..> is not currently supported by gsharedvt
+
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	static T return_t_nogshared<T> (T t) {
-		// This is not currently supported by gsharedvt
+	static T return_t_nogshared<T,T1> (T t) {
 		object o = t;
 		T t2 = (T)o;
 		//Console.WriteLine ("X: " + t);
@@ -458,16 +459,14 @@ public class Tests
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	static int return_int_nogshared<T> (T t) {
-		// This is not currently supported by gsharedvt
+	static int return_int_nogshared<T,T1> (T t) {
 		object o = t;
 		T t2 = (T)o;
 		return 2;
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	static A return_vtype_nogshared<T> (T t) {
-		// This is not currently supported by gsharedvt
+	static A return_vtype_nogshared<T,T1> (T t) {
 		object o = t;
 		T t2 = (T)o;
 		return new A () { a = 1, b = 2, c = 3 };
@@ -475,17 +474,17 @@ public class Tests
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static T return2_t_out<T> (T t) {
-		return return_t_nogshared (t);
+		return return_t_nogshared<T, int?> (t);
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static int return2_int_out<T> (T t) {
-		return return_int_nogshared (t);
+		return return_int_nogshared<T, int?> (t);
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static A return2_vtype_out<T> (T t) {
-		return return_vtype_nogshared (t);
+		return return_vtype_nogshared<T, int?> (t);
 	}
 
 	struct A {
@@ -957,6 +956,32 @@ public class Tests
 		object o = c.AMethod ();
 		if (!(o is long) || ((long)o != 0))
 			return 1;
+		return 0;
+	}
+
+	interface IFace3 {
+		T unbox_any<T> (object o);
+	}
+
+	class Class3 : IFace3 {
+		public virtual T unbox_any<T> (object o) {
+			return (T)o;
+		}
+	}
+
+	public static int test_0_unbox_any () {
+		IFace3 o = new Class3 ();
+		if (o.unbox_any<int> (16) != 16)
+			return 1;
+		if (o.unbox_any<long> ((long)32) != 32)
+			return 2;
+		if (o.unbox_any<double> (2.0) != 2.0)
+			return 3;
+		try {
+			o.unbox_any<int> (2.0);
+			return 4;
+		} catch (Exception) {
+		}
 		return 0;
 	}
 }

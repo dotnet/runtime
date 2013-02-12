@@ -8983,9 +8983,39 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (mini_is_gsharedvt_klass (cfg, klass))
-				/* Need to check for nullable types at runtime */
-				GSHAREDVT_FAILURE (*ip);
+			if (mini_is_gsharedvt_klass (cfg, klass)) {
+				MonoInst *obj, *addr, *klass_inst, *args[16];
+				int dreg;
+
+				obj = *sp;
+
+				/* Need to check for nullable types at runtime, but those are disabled in mini_is_gsharedvt_sharable_method*/
+				g_assert (!mono_class_is_nullable (klass));
+
+				klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+
+				/* obj */
+				args [0] = obj;
+
+				/* klass */
+				args [1] = klass_inst;
+
+				/* CASTCLASS */
+				obj = mono_emit_jit_icall (cfg, mono_object_castclass, args);
+
+				/* UNBOX */
+				dreg = alloc_dreg (cfg, STACK_MP);
+				NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, dreg, obj->dreg, sizeof (MonoObject));
+				MONO_ADD_INS (cfg->cbb, addr);
+
+				/* LDOBJ */
+				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0);
+				*sp++ = ins;
+
+				ip += 5;
+				inline_costs += 2;
+				break;
+			}
 
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
