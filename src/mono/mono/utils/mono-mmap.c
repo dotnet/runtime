@@ -478,7 +478,7 @@ shared_area_disabled (void)
 			use_shared_area = -1;
 		use_shared_area = 1;
 	}
-	return use_shared_area == 1;
+	return use_shared_area == -1;
 }
 
 #if defined(HAVE_SHM_OPEN) && !defined (DISABLE_SHARED_PERFCOUNTERS)
