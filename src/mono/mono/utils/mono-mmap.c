@@ -490,7 +490,6 @@ mono_shared_area_instances_slow (void **array, int count, gboolean cleanup)
 	return j;
 }
 
-#if (defined (__MACH__) && defined (TARGET_ARM))
 static int
 mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
 {
@@ -523,9 +522,6 @@ mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
 	g_dir_close (dir);
 	return i;
 }
-#else
-#define mono_shared_area_instances_helper mono_shared_area_instances_slow
-#endif
 
 void*
 mono_shared_area (void)
