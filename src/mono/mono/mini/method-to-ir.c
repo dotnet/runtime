@@ -8987,10 +8987,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *obj, *addr, *klass_inst, *args[16];
 				int dreg;
 
-				obj = *sp;
-
 				/* Need to check for nullable types at runtime, but those are disabled in mini_is_gsharedvt_sharable_method*/
-				g_assert (!mono_class_is_nullable (klass));
+				if (mono_class_is_nullable (klass))
+					GSHAREDVT_FAILURE (*ip);
+
+				obj = *sp;
 
 				klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 
