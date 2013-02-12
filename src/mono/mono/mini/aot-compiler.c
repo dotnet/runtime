@@ -222,9 +222,7 @@ typedef struct MonoAotCompile {
 	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
 	GHashTable *ginst_hash;
 	gboolean global_symbols;
-#ifdef MONOTOUCH
 	gboolean direct_method_addresses;
-#endif
 } MonoAotCompile;
 
 typedef struct {
@@ -6637,7 +6635,10 @@ emit_code (MonoAotCompile *acfg)
 			sprintf (symbol, "ut_%d", index);
 
 			emit_int32 (acfg, index);
-			emit_symbol_diff (acfg, symbol, end_symbol, 0);
+			if (acfg->direct_method_addresses)
+				emit_pointer (acfg, symbol);
+			else
+				emit_symbol_diff (acfg, symbol, end_symbol, 0);
 			/* Make sure the table is sorted by index */
 			g_assert (index > prev_index);
 			prev_index = index;

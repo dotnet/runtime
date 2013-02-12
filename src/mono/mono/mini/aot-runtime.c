@@ -4323,7 +4323,10 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 		} else if (entry [0] > method_index) {
 			high = entry_index;
 		} else {
-			code = amodule->code + entry [1];
+			if (amodule->info.flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES)
+				code = (gpointer)(gsize)entry [1];
+			else
+				code = amodule->code + entry [1];
 			break;
 		}
 	}
