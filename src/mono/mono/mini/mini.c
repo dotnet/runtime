@@ -2922,6 +2922,10 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		memcpy (res->data.rgctx_entry, patch_info->data.rgctx_entry, sizeof (MonoJumpInfoRgctxEntry));
 		res->data.rgctx_entry->data = mono_patch_info_dup_mp (mp, res->data.rgctx_entry->data);
 		break;
+	case MONO_PATCH_INFO_GSHAREDVT_CALL:
+		res->data.gsharedvt = mono_mempool_alloc (mp, sizeof (MonoJumpInfoGSharedVtCall));
+		memcpy (res->data.gsharedvt, patch_info->data.gsharedvt, sizeof (MonoJumpInfoGSharedVtCall));
+		break;
 	default:
 		break;
 	}
@@ -2958,6 +2962,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SFLDA:
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		return (ji->type << 8) | (gssize)ji->data.target;
+	case MONO_PATCH_INFO_GSHAREDVT_CALL:
+		return (ji->type << 8) | (gssize)ji->data.gsharedvt->method;
 	default:
 		return (ji->type << 8);
 	}
