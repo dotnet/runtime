@@ -7244,6 +7244,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
 						ins = mono_emit_jit_icall (cfg, mono_object_tostring_gsharedvt, args);
 						goto call_end;
+					} else if (constrained_call->valuetype && cmethod->klass->valuetype) {
+						/* The 'Own method' case below */
 					} else {
 						GSHAREDVT_FAILURE (*ip);
 					}
@@ -10916,8 +10918,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_LDVIRTFTN: {
 				MonoInst *args [2];
-
-				GSHAREDVT_FAILURE (*ip);
 
 				CHECK_STACK (1);
 				CHECK_OPSIZE (6);
