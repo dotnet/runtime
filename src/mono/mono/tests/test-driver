@@ -3,6 +3,8 @@
 my $interpreter = shift;
 my $test = shift;
 my $disabled_tests = shift;
+my $dump_output = shift;
+
 my $output = $test;
 my $stdout = $test.'.stdout';
 my $stderr = $test.'.stderr';
@@ -32,6 +34,7 @@ if (!defined ($cpid)) {
 	alarm ($timeout);
 	$SIG{ALRM} = sub {
 		print "failed after $timeout seconds timeout.\n";
+		dump_files ();
 		# process group kill
 		kill (-9, $cpid);
 		exit (3);
@@ -43,6 +46,7 @@ if (!defined ($cpid)) {
 
 if ($res) {
 	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
+	dump_files ();
 	if (($? & 127) == 2) {
 		exit (2);
 	} else {
@@ -51,12 +55,25 @@ if ($res) {
 }
 if (-f $output && (read_file ($output) ne read_file ($stdout))) {
     	print "failed output.\n";
+	dump_files ();
 	exit (1);
 }
 
 print "pass.\n";
 unlink ($stderr);
 exit (0);
+
+sub dump_files {
+	if ($dump_output ne "dump-output") {
+		return;
+	}
+
+	printf ("----STDOUT-----\n");
+	print read_file($stdout);
+	printf ("----STDERR-----\n");
+	print read_file($stderr);
+	printf ("---------------\n");
+}
 
 sub read_file {
 	local ($/);
