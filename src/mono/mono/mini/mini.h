@@ -298,6 +298,8 @@ typedef struct
 	gpointer agent_info;
 	/* Maps MonoMethod to an arch-specific structure */
 	GHashTable *arch_seq_points;
+	/* Maps a GSharedVtTrampInfo structure to a trampoline address */
+	GHashTable *gsharedvt_arg_tramp_hash;
 } MonoJitDomainInfo;
 
 typedef struct {
@@ -2481,6 +2483,9 @@ gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_INTERNAL;
 gpointer mini_method_get_rgctx (MonoMethod *m) MONO_INTERNAL;
 void mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
+
+gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx,
+									 gint32 vcall_offset, gboolean calli) MONO_INTERNAL;
 
 /* wapihandles.c */
 int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;

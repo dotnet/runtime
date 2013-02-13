@@ -342,9 +342,6 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 	addr = compiled_method;
 
 	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (ji->method))) {
-		static gpointer tramp_addr;
-		gpointer info;
-		MonoMethod *wrapper;
 		MonoGenericSharingContext *gsctx;
 		MonoMethodSignature *sig, *gsig;
 
@@ -356,20 +353,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		sig = mono_method_signature (m);
 		gsig = mono_method_signature (ji->method); 
 
-		info = mono_arch_get_gsharedvt_call_info (compiled_method, sig, gsig, gsctx, TRUE, -1, FALSE);
-
-		if (!tramp_addr) {
-			wrapper = mono_marshal_get_gsharedvt_in_wrapper ();
-			addr = mono_compile_method (wrapper);
-			mono_memory_barrier ();
-			tramp_addr = addr;
-		}
-		addr = tramp_addr;
-
-		if (mono_aot_only)
-			addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
-		else
-			addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+		addr = mini_get_gsharedvt_wrapper (TRUE, compiled_method, sig, gsig, gsctx, -1, FALSE);
 
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
