@@ -11,6 +11,20 @@ my $stderr = $test.'.stderr';
 
 $output =~ s/\.exe$/.output/;
 
+my $test_binary = $test;
+
+if ($test =~ /.*|.*/) {
+	my @values = split(/\|/, $test);
+	my $binary = @values[0];
+	my $test_name = @values[1];
+
+	$test_binary = $binary;
+	$test = $test_name . "_" . $binary;
+	$stdout = $test.'.stdout';
+	$stderr = $test.'.stderr';
+	$output = $test;
+}
+
 $| = 0;
 print "Testing $test... ";
 
@@ -24,9 +38,9 @@ foreach $disabled (split (/ /, $disabled_tests)) {
 my $res;
 my $cpid = fork ();
 if (!defined ($cpid)) {
-	$res = system("$interpreter @ARGV $test 2>$stderr 1>$stdout");
+	$res = system("$interpreter @ARGV $test_binary 2>$stderr 1>$stdout");
 } elsif ($cpid == 0) {
-	exec ("$interpreter @ARGV $test 2>$stderr 1>$stdout") || die "Cannot exec: $!";
+	exec ("$interpreter @ARGV $test_binary 2>$stderr 1>$stdout") || die "Cannot exec: $!";
 } else {
 	# in the parent, setup the alarm
 	# test must complete in 2 minutes or it is considered buggy
