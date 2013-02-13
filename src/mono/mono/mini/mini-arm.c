@@ -968,6 +968,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 {
 	if (simple) {
 		if (*gr > ARMREG_R3) {
+			ainfo->size = 4;
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->storage = RegTypeBase;
@@ -983,7 +984,8 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			split = i8_align == 4;
 		else
 			split = TRUE;
-		
+
+		ainfo->size = 8;
 		if (*gr == ARMREG_R3 && split) {
 			/* first word in r3 and the second on the stack */
 			ainfo->offset = *stack_size;
