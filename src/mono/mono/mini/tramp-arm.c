@@ -872,6 +872,8 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 gpointer
 mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 {
+	if (info)
+		*info = NULL;
 	return NULL;
 }
 

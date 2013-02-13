@@ -1136,6 +1136,8 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 gpointer
 mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 {
+	if (info)
+		*info = NULL;
 	return NULL;
 }
 
