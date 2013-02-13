@@ -210,7 +210,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		}
 		/* FIXME: try run-len first */
 		/* Note: we can't skip the object header here, because it's not present */
-		if (last_set <= SMALL_BITMAP_SIZE) {
+		if (last_set < SMALL_BITMAP_SIZE) {
 			return (void*)(desc | VECTOR_SUBTYPE_BITMAP | (*elem_bitmap << 16));
 		}
 	}
