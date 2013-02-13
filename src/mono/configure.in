@@ -734,7 +734,7 @@ AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compi
 DISABLED_FEATURES=none
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
-     LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug,
+     LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains,
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters,
 	 sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying.],
 [
@@ -868,6 +868,11 @@ fi
 if test "x$mono_feature_disable_shared_perfcounters" = "xyes"; then
 	AC_DEFINE(DISABLE_SHARED_PERFCOUNTERS, 1, [Disable shared perfcounters.])
 	AC_MSG_NOTICE([Disabled Shared perfcounters.])
+fi
+
+if test "x$mono_feature_disable_appdomains" = "xyes"; then
+	AC_DEFINE(DISABLE_APPDOMAINS, 1, [Disable support for multiple appdomains.])
+	AC_MSG_NOTICE([Disabled support for multiple appdomains.])
 fi
 
 if test "x$mono_feature_disable_sgen_remset" = "xyes"; then

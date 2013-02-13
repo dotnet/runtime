@@ -864,12 +864,17 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
+#ifdef DISABLE_APPDOMAINS
+	mono_raise_exception (mono_get_exception_not_supported ("AppDomain creation is not supported on this runtime."));
+	return NULL;
+#else
 	char *fname = mono_string_to_utf8 (friendly_name);
 	MonoAppDomain *ad = mono_domain_create_appdomain_internal (fname, setup);
 	
 	g_free (fname);
 
 	return ad;
+#endif
 }
 
 MonoArray *
