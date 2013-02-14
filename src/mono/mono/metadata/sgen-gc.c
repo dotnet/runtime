@@ -4747,14 +4747,28 @@ mono_gc_weak_link_remove (void **link_addr, gboolean track)
 MonoObject*
 mono_gc_weak_link_get (void **link_addr)
 {
+	void * volatile *link_addr_volatile;
+	void *ptr;
+	MonoObject *obj;
+ retry:
+	link_addr_volatile = link_addr;
+	ptr = (void*)*link_addr_volatile;
 	/*
-	 * We must only load *link_addr once because it might change
-	 * under our feet, and REVEAL_POINTER (NULL) results in an
-	 * invalid reference.
+	 * At this point we have a hidden pointer.  If the GC runs
+	 * here, it will not recognize the hidden pointer as a
+	 * reference, and if the object behind it is not referenced
+	 * elsewhere, it will be freed.  Once the world is restarted
+	 * we reveal the pointer, giving us a pointer to a freed
+	 * object.  To make sure we don't return it, we load the
+	 * hidden pointer again.  If it's still the same, we can be
+	 * sure the object reference is valid.
 	 */
-	void *ptr = *link_addr;
-	if (!ptr)
+	if (ptr)
+		obj = (MonoObject*) REVEAL_POINTER (ptr);
+	else
 		return NULL;
+
+	mono_memory_barrier ();
 
 	/*
 	 * During the second bridge processing step the world is
@@ -4767,7 +4781,10 @@ mono_gc_weak_link_get (void **link_addr)
 	if (G_UNLIKELY (bridge_processing_in_progress))
 		mono_gc_wait_for_bridge_processing ();
 
-	return (MonoObject*) REVEAL_POINTER (ptr);
+	if ((void*)*link_addr_volatile != ptr)
+		goto retry;
+
+	return obj;
 }
 
 gboolean
