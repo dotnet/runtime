@@ -22,7 +22,7 @@ namespace TestApp
 
 			assembly =
 				Thread.GetDomain ().DefineDynamicAssembly (
-					assemblyName, AssemblyBuilderAccess.RunAndSave | (AssemblyBuilderAccess)0x800, ".");
+					assemblyName, AssemblyBuilderAccess.RunAndSave, ".");
 
 			module = assembly.DefineDynamicModule ("module1", "Module1.dll");
 		}
@@ -54,14 +54,6 @@ namespace TestApp
 				Console.WriteLine ("fully open instantiation not the same of the generic type definition for the TypeBuilder created type");
 				return 3;
 			}
-
-			try {
-				type.GetConstructors ();
-			} catch (Exception e) {
-				Console.WriteLine ("fully open instantiation of TypeBuilder must have GetConstructors working {0}", e);
-				return 4;
-			}
-
 
 			try {
 				oires.GetConstructors ();
