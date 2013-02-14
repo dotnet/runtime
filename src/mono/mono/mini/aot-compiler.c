@@ -2802,6 +2802,8 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 
 		new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
 
+		// g_assert (mono_patch_info_equal (patch_info, new_ji));
+
 		res = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoPltEntry));
 		res->plt_offset = acfg->plt_offset;
 		res->ji = new_ji;
