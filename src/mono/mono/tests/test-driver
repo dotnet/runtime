@@ -11,9 +11,11 @@ my $stderr = $test.'.stderr';
 
 $output =~ s/\.exe$/.output/;
 
+my $timeout_in_minutes = 2;
+
 my $test_binary = $test;
 
-if ($test =~ /.*|.*/) {
+if ($test =~ /.*\|.*/) {
 	my @values = split(/\|/, $test);
 	my $binary = @values[0];
 	my $test_name = @values[1];
@@ -23,6 +25,9 @@ if ($test =~ /.*|.*/) {
 	$stdout = $test.'.stdout';
 	$stderr = $test.'.stderr';
 	$output = $test;
+
+	#This is a silly workaround, but all tests that use extra parameters need a larger timeout.
+	$timeout_in_minutes = 5;
 }
 
 $| = 0;
@@ -44,7 +49,7 @@ if (!defined ($cpid)) {
 } else {
 	# in the parent, setup the alarm
 	# test must complete in 2 minutes or it is considered buggy
-	my $timeout = 2*60;
+	my $timeout = $timeout_in_minutes * 60;
 	alarm ($timeout);
 	$SIG{ALRM} = sub {
 		print "failed after $timeout seconds timeout.\n";
