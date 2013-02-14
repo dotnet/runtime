@@ -360,8 +360,6 @@ BASE_TEST_CS_SRC=		\
 	gchandles.cs	\
 	interlocked-3.cs	\
 	interlocked-4.2.cs	\
-	finalizer-wait.cs	\
-	critical-finalizers.cs	\
 	appdomain-thread-abort.cs \
 	xdomain-threads.cs	\
 	w32message.cs	\
@@ -633,7 +631,7 @@ endif
 endif
 endif
 
-test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test-messages
+test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen test-messages rm-empty-logs
 test-wrench: assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen test-messages rm-empty-logs
 
 # Remove empty .stdout and .stderr files for wrench
