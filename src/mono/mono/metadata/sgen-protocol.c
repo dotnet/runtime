@@ -300,6 +300,14 @@ binary_protocol_cement_reset (void)
 {
 	protocol_entry (SGEN_PROTOCOL_CEMENT_RESET, NULL, 0);
 }
+
+void
+binary_protocol_dislink_update (gpointer link, gpointer obj, int track)
+{
+	SGenProtocolDislinkUpdate entry = { link, obj, track };
+	protocol_entry (SGEN_PROTOCOL_DISLINK_UPDATE, &entry, sizeof (SGenProtocolDislinkUpdate));
+}
+
 #endif
 
 #endif /* HAVE_SGEN_GC */

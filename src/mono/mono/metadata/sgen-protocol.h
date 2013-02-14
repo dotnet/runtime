@@ -45,7 +45,8 @@ enum {
 	SGEN_PROTOCOL_ALLOC_DEGRADED,
 	SGEN_PROTOCOL_CARD_SCAN,
 	SGEN_PROTOCOL_CEMENT,
-	SGEN_PROTOCOL_CEMENT_RESET
+	SGEN_PROTOCOL_CEMENT_RESET,
+	SGEN_PROTOCOL_DISLINK_UPDATE
 };
 
 typedef struct {
@@ -144,6 +145,12 @@ typedef struct {
 	int size;
 } SGenProtocolCement;
 
+typedef struct {
+	gpointer link;
+	gpointer obj;
+	int track;
+} SGenProtocolDislinkUpdate;
+
 /* missing: finalizers, dislinks, roots, non-store wbarriers */
 
 void binary_protocol_init (const char *filename) MONO_INTERNAL;
@@ -173,6 +180,7 @@ void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offs
 void binary_protocol_card_scan (gpointer start, int size) MONO_INTERNAL;
 void binary_protocol_cement (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_cement_reset (void) MONO_INTERNAL;
+void binary_protocol_dislink_update (gpointer link, gpointer obj, int track) MONO_INTERNAL;
 
 #else
 
@@ -200,5 +208,6 @@ void binary_protocol_cement_reset (void) MONO_INTERNAL;
 #define binary_protocol_card_scan(start, size)
 #define binary_protocol_cement(ptr, vtable, size)
 #define binary_protocol_cement_reset()
+#define binary_protocol_dislink_update(link,obj,track)
 
 #endif

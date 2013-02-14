@@ -29,6 +29,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-gray.h"
+#include "metadata/sgen-protocol.h"
 #include "utils/dtrace.h"
 
 #define ptr_in_nursery sgen_ptr_in_nursery
@@ -466,6 +467,7 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 			if (!major_collector.is_object_live (object)) {
 				if (sgen_gc_is_object_ready_for_finalization (object)) {
 					*link = NULL;
+					binary_protocol_dislink_update (link, NULL, 0);
 					SGEN_LOG (5, "Dislink nullified at %p to GCed object %p", link, object);
 					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 					continue;
@@ -487,12 +489,14 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 						g_assert (copy);
 						*link = HIDE_POINTER (copy, track);
 						add_or_remove_disappearing_link ((MonoObject*)copy, link, GENERATION_OLD);
+						binary_protocol_dislink_update (link, copy, track);
 
 						SGEN_LOG (5, "Upgraded dislink at %p to major because object %p moved to %p", link, object, copy);
 
 						continue;
 					} else {
 						*link = HIDE_POINTER (copy, track);
+						binary_protocol_dislink_update (link, copy, track);
 						SGEN_LOG (5, "Updated dislink at %p to %p", link, DISLINK_OBJECT (link));
 					}
 				}
@@ -515,6 +519,7 @@ sgen_null_links_for_domain (MonoDomain *domain, int generation)
 
 			if (*link) {
 				*link = NULL;
+				binary_protocol_dislink_update (link, NULL, 0);
 				free = FALSE;
 				/*
 				 * This can happen if finalizers are not ran, i.e. Environment.Exit ()
@@ -547,6 +552,7 @@ sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predi
 
 		if (!is_alive) {
 			*link = NULL;
+			binary_protocol_dislink_update (link, NULL, 0);
 			SGEN_LOG (5, "Dislink nullified by predicate at %p to GCed object %p", link, object);
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;
@@ -622,6 +628,8 @@ sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, g
 		*link = HIDE_POINTER (obj, track);
 	else
 		*link = NULL;
+
+	binary_protocol_dislink_update (link, obj, track);
 
 #if 1
 	if (in_gc) {
