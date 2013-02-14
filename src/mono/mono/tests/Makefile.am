@@ -447,16 +447,12 @@ PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe
 endif
 
 # The two finalizer tests only work under sgen
-# gc-altstack.exe fails under boehm because it has no support for altstack
 # bug-459094.exe creates an extremely deep directory tree
 # delegate-invoke.exe depends on 929c6bc9b6d76a273f251e6f5dfacac36e9c38bd which was
 # reverted.
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
-	finalizer-wait.exe	\
-	critical-finalizers.exe	\
-	gc-altstack.exe \
 	bug-459094.exe \
 	delegate-invoke.exe \
 	$(PLATFORM_DISABLED_TESTS)
@@ -797,6 +793,8 @@ EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-brid
 #DISABLE_SGEN_TESTS =
 
 SGEN_TESTS =	\
+	finalizer-wait.exe	\
+	critical-finalizers.exe	\
 	sgen-descriptors.exe	\
 	sgen-gshared-vtype.exe	\
 	sgen-domain-unload.exe	\
