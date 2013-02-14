@@ -391,7 +391,6 @@ sgen_safe_name (void* obj)
  * ######################################################################
  */
 LOCK_DECLARE (gc_mutex);
-static int gc_disabled = 0;
 
 static gboolean use_cardtable;
 
@@ -4683,22 +4682,6 @@ mono_gc_get_used_size (void)
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
 	return tot;
-}
-
-void
-mono_gc_disable (void)
-{
-	LOCK_GC;
-	gc_disabled++;
-	UNLOCK_GC;
-}
-
-void
-mono_gc_enable (void)
-{
-	LOCK_GC;
-	gc_disabled--;
-	UNLOCK_GC;
 }
 
 int

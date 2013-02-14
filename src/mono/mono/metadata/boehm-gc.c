@@ -299,26 +299,6 @@ mono_gc_get_heap_size (void)
 	return GC_get_heap_size ();
 }
 
-void
-mono_gc_disable (void)
-{
-#ifdef HAVE_GC_ENABLE
-	GC_disable ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-void
-mono_gc_enable (void)
-{
-#ifdef HAVE_GC_ENABLE
-	GC_enable ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
 gboolean
 mono_gc_is_gc_thread (void)
 {
