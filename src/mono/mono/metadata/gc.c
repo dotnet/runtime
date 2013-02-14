@@ -681,26 +681,21 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 			gpointer *entries;
 			guint16 *domain_ids;
 			domain_ids = g_malloc0 (sizeof (guint16) * new_size);
-			entries = g_malloc (sizeof (gpointer) * new_size);
-			/* we disable GC because we could lose some disappearing link updates */
-			mono_gc_disable ();
-			mono_gc_memmove (entries, handles->entries, sizeof (gpointer) * handles->size);
-			mono_gc_bzero (entries + handles->size, sizeof (gpointer) * handles->size);
+			entries = g_malloc0 (sizeof (gpointer) * new_size);
 			memcpy (domain_ids, handles->domain_ids, sizeof (guint16) * handles->size);
 			for (i = 0; i < handles->size; ++i) {
 				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
-				if (handles->entries [i])
-					mono_gc_weak_link_remove (&(handles->entries [i]), track);
-				/*g_print ("reg/unreg entry %d of type %d at %p to object %p (%p), was: %p\n", i, handles->type, &(entries [i]), obj, entries [i], handles->entries [i]);*/
 				if (obj) {
 					mono_gc_weak_link_add (&(entries [i]), obj, track);
+					mono_gc_weak_link_remove (&(handles->entries [i]), track);
+				} else {
+					g_assert (!handles->entries [i]);
 				}
 			}
 			g_free (handles->entries);
 			g_free (handles->domain_ids);
 			handles->entries = entries;
 			handles->domain_ids = domain_ids;
-			mono_gc_enable ();
 		}
 
 		/* set i and slot to the next free position */
