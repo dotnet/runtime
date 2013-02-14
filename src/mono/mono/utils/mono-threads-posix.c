@@ -93,10 +93,15 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->suspend_state, context);
 
-	g_assert (ret);
+	/* thread_state_init_from_sigctx return FALSE if the current thread is detaching and suspend can't continue. */
+	current->suspend_can_continue = ret;
 
 	MONO_SEM_POST (&current->suspend_semaphore);
-		
+
+	/* This thread is doomed, all we can do is give up and let the suspender recover. */
+	if (!ret)
+		return;
+
 	while (MONO_SEM_WAIT (&current->resume_semaphore) != 0) {
 		/*if (EINTR != errno) ABORT("sem_wait failed"); */
 	}
@@ -195,7 +200,7 @@ mono_threads_core_suspend (MonoThreadInfo *info)
 	while (MONO_SEM_WAIT (&info->suspend_semaphore) != 0) {
 		/* g_assert (errno == EINTR); */
 	}
-	return TRUE;
+	return info->suspend_can_continue;
 }
 
 gboolean

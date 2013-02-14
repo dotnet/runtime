@@ -109,6 +109,7 @@ typedef struct {
 #if (defined(_POSIX_VERSION) || defined(__native_client__)) && !defined (__MACH__)
 	MonoSemType suspend_semaphore;
 	gboolean syscall_break_signal;
+	gboolean suspend_can_continue;
 #endif
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
