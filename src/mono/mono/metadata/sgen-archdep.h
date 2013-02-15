@@ -89,7 +89,7 @@
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_RSP (ctx))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_RIP (ctx))
 
-#elif defined(TARGET_PPC)
+#elif defined(TARGET_POWERPC)
 
 #define REDZONE_SIZE	224
 
