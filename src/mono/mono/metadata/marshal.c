@@ -4375,7 +4375,12 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 	if (sig->hasthis) {
 		if (method->string_ctor) {
-			mono_mb_emit_ptr (mb, string_dummy);
+			if (mono_gc_is_moving ()) {
+				mono_mb_emit_ptr (mb, &string_dummy);
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
+			} else {
+				mono_mb_emit_ptr (mb, string_dummy);
+			}
 		} else {
 			mono_mb_emit_ldarg (mb, 0);
 		}
