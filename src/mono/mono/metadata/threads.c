@@ -410,7 +410,11 @@ static void thread_cleanup (MonoInternalThread *thread)
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread);
 
-	MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
+	if (mono_gc_is_moving ()) {
+		MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
+		thread->thread_pinning_ref = NULL;
+	}
+		
 }
 
 static gpointer
@@ -763,9 +767,11 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	internal->handle=thread_handle;
 	internal->tid=tid;
 	internal->apartment_state=ThreadApartmentState_Unknown;
-	internal->thread_pinning_ref = internal;
 	internal->managed_id = get_next_managed_thread_id ();
-	MONO_GC_REGISTER_ROOT_PINNING (internal->thread_pinning_ref);
+	if (mono_gc_is_moving ()) {
+		internal->thread_pinning_ref = internal;
+		MONO_GC_REGISTER_ROOT_PINNING (internal->thread_pinning_ref);
+	}
 
 	internal->synch_cs = g_new0 (CRITICAL_SECTION, 1);
 	InitializeCriticalSection (internal->synch_cs);
@@ -894,9 +900,11 @@ mono_thread_attach (MonoDomain *domain)
 	thread->android_tid = (gpointer) gettid ();
 #endif
 	thread->apartment_state=ThreadApartmentState_Unknown;
-	thread->thread_pinning_ref = thread;
 	thread->managed_id = get_next_managed_thread_id ();
-	MONO_GC_REGISTER_ROOT_PINNING (thread->thread_pinning_ref);
+	if (mono_gc_is_moving ()) {
+		thread->thread_pinning_ref = thread;
+		MONO_GC_REGISTER_ROOT_PINNING (thread->thread_pinning_ref);
+	}
 
 	thread->stack_ptr = &tid;
 
@@ -1063,8 +1071,10 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		
 		internal->handle=thread;
 		internal->tid=tid;
-		internal->thread_pinning_ref = internal;
-		MONO_GC_REGISTER_ROOT_PINNING (internal->thread_pinning_ref);
+		if (mono_gc_is_moving ()) {
+			internal->thread_pinning_ref = internal;
+			MONO_GC_REGISTER_ROOT_PINNING (internal->thread_pinning_ref);
+		}
 		
 
 		/* Don't call handle_store() here, delay it to Start.
