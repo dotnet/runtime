@@ -7244,6 +7244,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
 						ins = mono_emit_jit_icall (cfg, mono_object_tostring_gsharedvt, args);
 						goto call_end;
+					} else if (cmethod->klass == mono_defaults.object_class && !strcmp (cmethod->name, "GetHashCode")) {
+						MonoInst *args [3];
+
+						args [0] = sp [0];
+						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
+						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
+						ins = mono_emit_jit_icall (cfg, mono_object_gethashcode_gsharedvt, args);
+						goto call_end;
 					} else if (constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
 					} else {

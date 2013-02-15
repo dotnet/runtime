@@ -175,5 +175,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 
 MonoObject* mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass) MONO_INTERNAL;
 
+int mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass) MONO_INTERNAL;
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 

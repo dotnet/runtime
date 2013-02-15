@@ -1142,3 +1142,27 @@ mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *kla
 	return mono_runtime_invoke (m, this_arg, NULL, NULL);
 }
 
+int
+mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	int vt_slot;
+	gpointer this_arg;
+	MonoObject *res;
+	gpointer p;
+
+	/* Lookup the virtual method */
+	mono_class_setup_vtable (klass);
+	g_assert (klass->vtable);
+	vt_slot = mono_method_get_vtable_slot (cmethod);
+	m = klass->vtable [vt_slot];
+	if (klass->valuetype)
+		this_arg = mp;
+	else
+		this_arg = *(gpointer*)mp;
+	// FIXME: This boxes the result
+	res = mono_runtime_invoke (m, this_arg, NULL, NULL);
+	p = mono_object_unbox (res);
+	return *(int*)p;
+}
+

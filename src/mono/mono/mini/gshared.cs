@@ -885,6 +885,21 @@ public class Tests
 		return 0;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int get_hash<T, T2>(T t, T2 t2) {
+		return t.GetHashCode ();
+	}
+
+	public static int test_0_constrained_get_hash () {
+		if (get_hash<int, int> (1, 1) != 1.GetHashCode ())
+			return 1;
+		if (get_hash<double, int> (1.0, 1) != 1.0.GetHashCode ())
+			return 2;
+		if (get_hash<string, int> ("A", 1) != "A".GetHashCode ())
+			return 3;
+		return 0;
+	}
+
 	struct Pair<T1, T2> {
 		public T1 First;
 		public T2 Second;
