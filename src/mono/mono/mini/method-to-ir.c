@@ -8741,6 +8741,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					alloc = mono_emit_jit_icall (cfg, mono_array_new_2, sp);
 				else if (fsig->param_count == 3)
 					alloc = mono_emit_jit_icall (cfg, mono_array_new_3, sp);
+				else if (fsig->param_count == 4)
+					alloc = mono_emit_jit_icall (cfg, mono_array_new_4, sp);
 				else
 					alloc = handle_array_new (cfg, fsig->param_count, sp, ip);
 			} else if (cmethod->string_ctor) {
