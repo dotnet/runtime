@@ -3409,6 +3409,12 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		}
 		if (generation_to_collect == GENERATION_OLD)
 			goto done;
+	} else {
+		if (generation_to_collect == GENERATION_OLD &&
+				major_collector.want_synchronous_collection &&
+				*major_collector.want_synchronous_collection) {
+			wait_to_finish = TRUE;
+		}
 	}
 
 	//FIXME extract overflow reason

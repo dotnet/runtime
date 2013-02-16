@@ -648,6 +648,12 @@ struct _SgenMajorCollector {
 	 * collection has been completed.
 	 */
 	gboolean *have_swept;
+	/*
+	 * This is set to TRUE by the sweep if the next major
+	 * collection should be synchronous (for evacuation).  For
+	 * non-concurrent collectors, this should be NULL.
+	 */
+	gboolean *want_synchronous_collection;
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
