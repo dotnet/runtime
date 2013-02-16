@@ -4337,26 +4337,76 @@ is_gsharedvt_method (MonoMethod *method)
 	return FALSE;
 }
 
+static gboolean
+has_ref_constraint (MonoGenericParamInfo *info)
+{
+	MonoClass **constraints;
+
+	//return FALSE;
+
+	if (info && info->constraints) {
+		constraints = info->constraints;
+
+		while (*constraints) {
+			MonoClass *cklass = *constraints;
+			if (!(cklass == mono_defaults.object_class || (cklass->image == mono_defaults.corlib && !strcmp (cklass->name, "ValueType")) || MONO_CLASS_IS_INTERFACE (cklass)))
+				return TRUE;
+			constraints ++;
+		}
+	}
+	return FALSE;
+}
+
+static MonoGenericInst*
+get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGenericContainer *container, gboolean all_vt, gboolean gsharedvt)
+{
+	MonoGenericInst *res;
+	MonoType **type_argv;
+	int i;
+
+	type_argv = g_new0 (MonoType*, inst->type_argc);
+	for (i = 0; i < inst->type_argc; ++i) {
+		if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
+			type_argv [i] = shared_inst->type_argv [i];
+		} else if (all_vt) {
+			if (container && has_ref_constraint (&container->type_params [i].info))
+				type_argv [i] = shared_inst->type_argv [i];
+			else
+				type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
+		} else if (gsharedvt) {
+			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
+		} else {
+			type_argv [i] = inst->type_argv [i];
+		}
+	}
+
+	res = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
+	g_free (type_argv);
+	return res;
+}
+
 /*
  * mini_get_shared_method_full:
  *
  *   Return the method which is actually compiled/registered when doing generic sharing.
  * If ALL_VT is true, return the shared method belonging to an all-vtype instantiation.
  * If IS_GSHAREDVT is true, treat METHOD as a gsharedvt method even if it fails some constraints.
+ * METHOD can be a non-inflated generic method.
  */
 MonoMethod*
 mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt)
 {
 	MonoGenericContext shared_context;
 	MonoMethod *declaring_method, *res;
-	int i;
 	gboolean partial = FALSE;
 	gboolean gsharedvt = FALSE;
+	MonoGenericContainer *class_container, *method_container = NULL;
 
-	if (method->is_generic || method->klass->generic_container)
+	if (method->is_generic || method->klass->generic_container) {
 		declaring_method = method;
-	else
+	} else {
 		declaring_method = mono_method_get_declaring_generic_method (method);
+	}
 
 	if (declaring_method->is_generic)
 		shared_context = mono_method_get_generic_container (declaring_method)->context;
@@ -4368,46 +4418,30 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		is_gsharedvt || mini_is_gsharedvt_sharable_method (method)) {
 		MonoGenericContext *context = mono_method_get_context (method);
 		MonoGenericInst *inst;
-		MonoType **type_argv;
 
 		gsharedvt = is_gsharedvt || mini_is_gsharedvt_sharable_method (method);
+
+		class_container = declaring_method->klass->generic_container;
+		method_container = mono_method_get_generic_container (declaring_method);
 
 		/* 
 		 * Create the shared context by replacing the ref type arguments with
 		 * type parameters, and keeping the rest.
 		 */
 		partial = TRUE;
-		inst = context->class_inst;
-		if (inst) {
-			type_argv = g_new0 (MonoType*, inst->type_argc);
-			for (i = 0; i < inst->type_argc; ++i) {
-				if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR))
-					type_argv [i] = shared_context.class_inst->type_argv [i];
-				else if (gsharedvt)
-					type_argv [i] = get_gsharedvt_type (shared_context.class_inst->type_argv [i]);
-				else
-					type_argv [i] = inst->type_argv [i];
-			}
+		if (context)
+			inst = context->class_inst;
+		else
+			inst = shared_context.class_inst;
+		if (inst)
+			shared_context.class_inst = get_shared_inst (inst, shared_context.class_inst, class_container, all_vt, gsharedvt);
 
-			shared_context.class_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
-			g_free (type_argv);
-		}
-
-		inst = context->method_inst;
-		if (inst) {
-			type_argv = g_new0 (MonoType*, inst->type_argc);
-			for (i = 0; i < inst->type_argc; ++i) {
-				if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR))
-					type_argv [i] = shared_context.method_inst->type_argv [i];
-				else if (gsharedvt)
-					type_argv [i] = get_gsharedvt_type (shared_context.method_inst->type_argv [i]);
-				else
-					type_argv [i] = inst->type_argv [i];
-			}
-
-			shared_context.method_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
-			g_free (type_argv);
-		}
+		if (context)
+			inst = context->method_inst;
+		else
+			inst = shared_context.method_inst;
+		if (inst)
+			shared_context.method_inst = get_shared_inst (inst, shared_context.method_inst, method_container, all_vt, gsharedvt);
 	}
 
     res = mono_class_inflate_generic_method (declaring_method, &shared_context);
@@ -4439,10 +4473,8 @@ mini_init_gsctx_full (MonoGenericContext *context, MonoGenericSharingContext *gs
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
-			if (!all_vt && (MONO_TYPE_IS_REFERENCE (type) || (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))) {
-			} else {
+			if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->serial == 1)
 				gsctx->var_is_vt [i] = TRUE;
-			}
 		}
 	}
 	if (context->method_inst) {
@@ -4452,10 +4484,8 @@ mini_init_gsctx_full (MonoGenericContext *context, MonoGenericSharingContext *gs
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
-			if (!all_vt && (MONO_TYPE_IS_REFERENCE (type) || (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))) {
-			} else {
+			if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->serial == 1)
 				gsctx->mvar_is_vt [i] = TRUE;
-			}
 		}
 	}
 }

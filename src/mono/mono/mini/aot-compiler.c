@@ -7726,14 +7726,9 @@ collect_methods (MonoAotCompile *acfg)
 		if (!method)
 			continue;
 		if (method->is_generic || method->klass->generic_container) {
-			/* Create a vtype instantiation */
-			MonoGenericContext ctx;
-			MonoMethod *inflated, *gshared;
+			MonoMethod *gshared;
 
-			create_gsharedvt_inst (acfg, method, &ctx);
-
-			inflated = mono_class_inflate_generic_method (method, &ctx);
-			gshared = mini_get_shared_method_full (inflated, FALSE, TRUE);
+			gshared = mini_get_shared_method_full (method, TRUE, TRUE);
 			add_extra_method (acfg, gshared);
 		}
 	}

@@ -491,6 +491,7 @@ public class Tests
 		public int a, b, c;
 	}
 
+	[Category ("!FULLAOT")]
 	public static int test_0_gsharedvt_out () {
 		if (return2_t_out (2) != 2)
 			return 1;
@@ -997,6 +998,24 @@ public class Tests
 			return 4;
 		} catch (Exception) {
 		}
+		return 0;
+	}
+
+	interface IFace4 {
+		TSource Catch<TSource, TException>(TSource t)  where TException : Exception;
+	}
+
+	class Class4 : IFace4 {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+			public TSource Catch<TSource, TException>(TSource t)  where TException : Exception {
+			return t;
+		}
+	}
+
+	// Check that mixed instantiations are correctly created/found in AOT
+	public static int test_0_constraints () {
+		IFace4 o = new Class4 ();
+		o.Catch<int, Exception> (1);
 		return 0;
 	}
 }
