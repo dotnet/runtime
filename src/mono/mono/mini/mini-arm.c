@@ -5677,43 +5677,41 @@ mono_arch_flush_register_windows (void)
 void
 mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
+	int method_reg = mono_alloc_ireg (cfg);
+
 	if (cfg->compile_aot) {
-		int method_reg = mono_alloc_ireg (cfg);
 		MonoInst *ins;
 
 		call->dynamic_imt_arg = TRUE;
 
 		if (imt_arg) {
-			mono_call_inst_add_outarg_reg (cfg, call, imt_arg->dreg, ARMREG_V5, FALSE);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
 		} else {
 			MONO_INST_NEW (cfg, ins, OP_AOTCONST);
 			ins->dreg = method_reg;
 			ins->inst_p0 = call->method;
 			ins->inst_c1 = MONO_PATCH_INFO_METHODCONST;
 			MONO_ADD_INS (cfg->cbb, ins);
-
-			mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
 		}
+		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
 	} else if (cfg->generic_context || imt_arg || mono_use_llvm) {
-
 		/* Always pass in a register for simplicity */
 		call->dynamic_imt_arg = TRUE;
 
 		cfg->uses_rgctx_reg = TRUE;
 
 		if (imt_arg) {
-			mono_call_inst_add_outarg_reg (cfg, call, imt_arg->dreg, ARMREG_V5, FALSE);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
 		} else {
 			MonoInst *ins;
-			int method_reg = mono_alloc_preg (cfg);
 
 			MONO_INST_NEW (cfg, ins, OP_PCONST);
 			ins->inst_p0 = call->method;
 			ins->dreg = method_reg;
 			MONO_ADD_INS (cfg->cbb, ins);
-
-			mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
 		}
+
+		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
 	}
 }
 
