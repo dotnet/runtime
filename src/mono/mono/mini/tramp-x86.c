@@ -688,6 +688,48 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	return buf;
 }
 
+/*
+ * mono_arch_create_general_rgctx_lazy_fetch_trampoline:
+ *
+ *   This is a general variant of the rgctx fetch trampolines. It receives a pointer to gpointer[2] in the rgctx reg. The first entry contains the slot, the second
+ * the trampoline to call if the slot is not filled.
+ */
+gpointer
+mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8 *code, *buf;
+	int tramp_size;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	g_assert (aot);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	tramp_size = 64;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	// FIXME: Currently, we always go to the slow path.
+	
+	/* Load trampoline addr */
+	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_RGCTX_REG, 4, 4);
+	/* Load mrgctx/vtable */
+	x86_mov_reg_membase (code, MONO_ARCH_VTABLE_REG, X86_ESP, 4, 4);
+
+	x86_jump_reg (code, X86_EAX);
+
+	nacl_global_codeman_validate (&buf, tramp_size, &code);
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
+
 gpointer
 mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {

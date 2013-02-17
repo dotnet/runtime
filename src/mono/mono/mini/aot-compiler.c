@@ -133,6 +133,7 @@ typedef struct MonoAotOptions {
 	int nrgctx_trampolines;
 	int nimt_trampolines;
 	int ngsharedvt_arg_trampolines;
+	int nrgctx_fetch_trampolines;
 	gboolean print_skipped_methods;
 	gboolean stats;
 	char *tool_prefix;
@@ -5427,7 +5428,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		}
 #endif
 
-		for (i = 0; i < 128; ++i) {
+		for (i = 0; i < acfg->aot_opts.nrgctx_fetch_trampolines; ++i) {
 			int offset;
 
 			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
@@ -5438,6 +5439,11 @@ emit_trampolines (MonoAotCompile *acfg)
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
+
+#ifdef MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE
+		mono_arch_create_general_rgctx_lazy_fetch_trampoline (&info, TRUE);
+		emit_trampoline (acfg, acfg->got_offset, info);
+#endif
 
 		{
 			GSList *l;
@@ -7578,6 +7584,7 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_int32 (acfg, acfg->trampoline_got_offset_base [i]);
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->trampoline_size [i]);
+	emit_int32 (acfg, acfg->aot_opts.nrgctx_fetch_trampolines);
 
 #if defined (TARGET_ARM) && defined (TARGET_MACH)
 	{
@@ -8045,6 +8052,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.ntrampolines = 1024;
 	acfg->aot_opts.nrgctx_trampolines = 1024;
 	acfg->aot_opts.nimt_trampolines = 128;
+	acfg->aot_opts.nrgctx_fetch_trampolines = 128;
 	acfg->aot_opts.ngsharedvt_arg_trampolines = 128;
 	acfg->aot_opts.llvm_path = g_strdup ("");
 #if MONOTOUCH

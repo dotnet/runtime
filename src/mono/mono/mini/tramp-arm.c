@@ -629,6 +629,39 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	return buf;
 }
 
+gpointer
+mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8 *code, *buf;
+	int tramp_size;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	g_assert (aot);
+
+	tramp_size = 32;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, 0);
+
+	// FIXME: Currently, we always go to the slow path.
+	/* Load trampoline addr */
+	ARM_LDR_IMM (code, ARMREG_R1, MONO_ARCH_RGCTX_REG, 4);
+	/* The vtable/mrgctx is in R0 */
+	g_assert (MONO_ARCH_VTABLE_REG == ARMREG_R0);
+	code = emit_bx (code, ARMREG_R1);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
+
 #define arm_is_imm8(v) ((v) > -256 && (v) < 256)
 
 gpointer

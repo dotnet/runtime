@@ -4341,6 +4341,26 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 {
 	char *symbol;
 	gpointer code;
+	MonoAotModule *amodule = mono_defaults.corlib->aot_module;
+	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
+	static int count = 0;
+
+	count ++;
+	if (index >= amodule->info.num_rgctx_fetch_trampolines) {
+		static gpointer addr;
+		gpointer *info;
+
+		/*
+		 * Use the general version of the rgctx fetch trampoline. It receives a pair of <slot, trampoline> in the rgctx arg reg.
+		 */
+		if (!addr)
+			addr = load_function (amodule, "rgctx_fetch_trampoline_general");
+		info = mono_domain_alloc0 (mono_get_root_domain (), sizeof (gpointer) * 2);
+		info [0] = GUINT_TO_POINTER (slot);
+		info [1] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+		code = mono_aot_get_static_rgctx_trampoline (info, addr);
+		return mono_create_ftnptr (mono_domain_get (), code);
+	}
 
 	symbol = mono_get_rgctx_fetch_trampoline_name (slot);
 	code = load_function (mono_defaults.corlib->aot_module, symbol);
