@@ -4021,7 +4021,7 @@ static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
  * the minimum for the common code must be at least sizeof(TrampolinePage), since we store the page info at the
  * beginning of the data page.
  */
-static const int trampolines_pages_code_offsets [MONO_AOT_TRAMP_NUM] = {16, 16, 72};
+static const int trampolines_pages_code_offsets [MONO_AOT_TRAMP_NUM] = {16, 16, 72, 16};
 
 static unsigned char*
 get_new_trampoline_from_page (int tramp_type)
@@ -4060,6 +4060,8 @@ get_new_trampoline_from_page (int tramp_type)
 		tpage = load_function (amodule, "rgctx_trampolines_page");
 	else if (tramp_type == MONO_AOT_TRAMP_IMT_THUNK)
 		tpage = load_function (amodule, "imt_trampolines_page");
+	else if (tramp_type == MONO_AOT_TRAMP_GSHAREDVT_ARG)
+		tpage = load_function (amodule, "gsharedvt_arg_trampolines_page");
 	else
 		g_error ("Incorrect tramp type for trampolines page");
 	g_assert (tpage);
@@ -4170,6 +4172,21 @@ get_new_imt_trampoline_from_page (gpointer arg)
 	/*g_warning ("new imt trampoline at %p for data %p, (stored at %p)", code, arg, data);*/
 	return code;
 
+}
+
+static gpointer
+get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
+{
+	void *code;
+	gpointer *data;
+
+	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_GSHAREDVT_ARG);
+
+	data = (gpointer*)((char*)code - mono_pagesize ());
+	data [0] = arg;
+	data [1] = tramp;
+	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
+	return code;
 }
 
 /* Return a given kind of trampoline */
@@ -4428,10 +4445,14 @@ mono_aot_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 	guint8 *code;
 	guint32 got_offset;
 
-	code = get_numerous_trampoline (MONO_AOT_TRAMP_GSHAREDVT_ARG, 2, &amodule, &got_offset, NULL);
+	if (USE_PAGE_TRAMPOLINES) {
+		code = get_new_gsharedvt_arg_trampoline_from_page (addr, arg);
+	} else {
+		code = get_numerous_trampoline (MONO_AOT_TRAMP_GSHAREDVT_ARG, 2, &amodule, &got_offset, NULL);
 
-	amodule->got [got_offset] = arg;
-	amodule->got [got_offset + 1] = addr; 
+		amodule->got [got_offset] = arg;
+		amodule->got [got_offset + 1] = addr; 
+	}
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);

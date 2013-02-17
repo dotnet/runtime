@@ -989,6 +989,31 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		g_assert (code - buf == 8);
 		emit_bytes (acfg, buf, code - buf);
 	}
+
+	/*
+	 * gsharedvt arg trampolines: see arch_emit_gsharedvt_arg_trampoline ()
+	 */
+	emit_global (acfg, "gsharedvt_arg_trampolines_page", TRUE);
+	emit_label (acfg, "gsharedvt_arg_trampolines_page");
+	code = buf;
+	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
+	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
+	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_IP, -8);
+	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, -4);
+	g_assert (code - buf == COMMON_TRAMP_SIZE);
+	/* Emit it */
+	emit_bytes (acfg, buf, code - buf);
+
+	for (i = 0; i < count; ++i) {
+		code = buf;
+		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
+		ARM_B (code, 0);
+		arm_patch (code - 4, code - COMMON_TRAMP_SIZE - 8 * (i + 1));
+		g_assert (code - buf == 8);
+		emit_bytes (acfg, buf, code - buf);
+	}
+
 	/* now the imt trampolines: each specific trampolines puts in the ip register
 	 * the instruction pointer address, so the generic trampoline at the start of the page
 	 * subtracts 4096 to get to the data page and loads the values
@@ -5772,6 +5797,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		opts->ntrampolines = 0;
 		opts->nrgctx_trampolines = 0;
 		opts->nimt_trampolines = 0;
+		opts->ngsharedvt_arg_trampolines = 0;
 	}
 	g_strfreev (args);
 }
