@@ -1979,7 +1979,6 @@ gpointer mono_aot_get_imt_thunk             (MonoVTable *vtable, MonoDomain *dom
 gpointer mono_aot_get_gsharedvt_arg_trampoline(gpointer arg, gpointer addr) MONO_INTERNAL;
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
-char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
 MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method) MONO_INTERNAL;
 guint32  mono_aot_get_got_offset            (MonoJumpInfo *ji) MONO_LLVM_INTERNAL;
 char*    mono_aot_get_method_name           (MonoCompile *cfg) MONO_LLVM_INTERNAL;

@@ -6850,37 +6850,6 @@ mono_aot_method_hash (MonoMethod *method)
 #undef final
 
 /*
- * mono_aot_wrapper_name:
- *
- *   Return a string which uniqely identifies the given wrapper method.
- */
-char*
-mono_aot_wrapper_name (MonoMethod *method)
-{
-	char *name, *tmpsig, *klass_desc;
-
-	tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-
-	switch (method->wrapper_type) {
-	case MONO_WRAPPER_RUNTIME_INVOKE:
-		if (!strcmp (method->name, "runtime_invoke_dynamic"))
-			name = g_strdup_printf ("(wrapper runtime-invoke-dynamic)");
-		else
-			name = g_strdup_printf ("%s (%s)", method->name, tmpsig);
-		break;
-	default:
-		klass_desc = mono_type_full_name (&method->klass->byval_arg);
-		name = g_strdup_printf ("%s:%s (%s)", klass_desc, method->name, tmpsig);
-		g_free (klass_desc);
-		break;
-	}
-
-	g_free (tmpsig);
-
-	return name;
-}
-
-/*
  * mono_aot_get_array_helper_from_wrapper;
  *
  * Get the helper method in Array called by an array wrapper method.

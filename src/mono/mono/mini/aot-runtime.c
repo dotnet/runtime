@@ -3210,7 +3210,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 }
 
 static guint32
-find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, const char *name)
+find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 {
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
@@ -3306,18 +3306,12 @@ find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
 	guint32 index;
 	GPtrArray *modules;
 	int i;
-	char *name = NULL;
-
-	if (method->wrapper_type)
-		name = mono_aot_wrapper_name (method);
 
 	/* Try the method's module first */
 	*out_amodule = method->klass->image->aot_module;
-	index = find_extra_method_in_amodule (method->klass->image->aot_module, method, name);
-	if (index != 0xffffff) {
-		g_free (name);
+	index = find_extra_method_in_amodule (method->klass->image->aot_module, method);
+	if (index != 0xffffff)
 		return index;
-	}
 
 	/* 
 	 * Try all other modules.
@@ -3337,7 +3331,7 @@ find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
 		MonoAotModule *amodule = g_ptr_array_index (modules, i);
 
 		if (amodule != method->klass->image->aot_module)
-			index = find_extra_method_in_amodule (amodule, method, name);
+			index = find_extra_method_in_amodule (amodule, method);
 		if (index != 0xffffff) {
 			*out_amodule = amodule;
 			break;
@@ -3346,7 +3340,6 @@ find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
 	
 	g_ptr_array_free (modules, TRUE);
 
-	g_free (name);
 	return index;
 }
 
