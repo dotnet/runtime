@@ -6,10 +6,12 @@
  *
  * Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
  */
+#include <config.h>
 
 #include "declsec.h"
 #include "mini.h"
 
+#ifndef DISABLE_VERIFIER
 /*
  * Does the methods (or it's class) as any declarative security attribute ?
  * Is so are they applicable ? (e.g. static class constructor)
@@ -403,3 +405,30 @@ mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *cal
 	/* if (violation) g_warning ("mono_declsec_linkdemand violation reported %d", violation); */
 	return violation;
 }
+
+#else /* DISABLE_JIT */
+
+void
+mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo)
+{
+}
+
+MonoSecurityFrame*
+mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo)
+{
+	return NULL;
+}
+
+guint32
+mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee)
+{
+	return MONO_JIT_SECURITY_OK;
+}
+
+MonoBoolean
+mono_method_has_declsec (MonoMethod *method)
+{
+	return FALSE;
+}
+
+#endif

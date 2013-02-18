@@ -6884,7 +6884,9 @@ mini_init (const char *filename, const char *runtime_version)
 				mono_debugger_agent_unhandled_exception);
 #endif
 
+#ifndef DISABLE_JIT
 	mono_create_helper_signatures ();
+#endif
 
 	register_jit_stats ();
 

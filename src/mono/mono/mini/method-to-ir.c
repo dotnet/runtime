@@ -11,6 +11,9 @@
  */
 
 #include <config.h>
+
+#ifndef DISABLE_JIT
+
 #include <signal.h>
 
 #ifdef HAVE_UNISTD_H
@@ -350,12 +353,6 @@ mono_create_helper_signatures (void)
 	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
 	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
 }
-
-/* 
- * Can't put this at the beginning, since other files reference stuff from this
- * file.
- */
-#ifndef DISABLE_JIT
 
 /*
  * When using gsharedvt, some instatiations might be verifiable, and some might be not. i.e. 
@@ -11449,8 +11446,6 @@ store_membase_reg_to_store_membase_imm (int opcode)
 	return -1;
 }		
 
-#endif /* DISABLE_JIT */
-
 int
 mono_op_to_op_imm (int opcode)
 {
@@ -11905,8 +11900,6 @@ mono_op_to_op_imm_noemul (int opcode)
 		return mono_op_to_op_imm (opcode);
 	}
 }
-
-#ifndef DISABLE_JIT
 
 /**
  * mono_handle_global_vregs:
