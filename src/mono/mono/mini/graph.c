@@ -6,6 +6,11 @@
  *
  * (C) 2003 Ximian, Inc.
  */
+
+#include <config.h>
+
+#ifndef DISABLE_JIT
+
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>
 
@@ -335,4 +340,6 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 	system (com);
 	g_free (com);
 }
+
+#endif /* DISABLE_JIT */
 

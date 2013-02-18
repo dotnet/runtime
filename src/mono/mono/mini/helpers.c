@@ -3,6 +3,11 @@
  *
  * (C) 2003 Ximian, Inc.
  */
+
+#include <config.h>
+
+#ifndef DISABLE_JIT
+
 #include "mini.h"
 #include <ctype.h>
 #include <mono/metadata/opcodes.h>
@@ -277,3 +282,4 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 }
 
+#endif /* DISABLE_JIT */

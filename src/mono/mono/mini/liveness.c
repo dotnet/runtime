@@ -8,6 +8,10 @@
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <config.h>
+
+#ifndef DISABLE_JIT
+
 #include "mini.h"
 
 #define SPILL_COST_INCREMENT (1 << (bb->nesting << 1))
@@ -1128,3 +1132,4 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	g_free (vreg_to_varinfo);
 }
 
+#endif /* DISABLE_JIT */

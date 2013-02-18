@@ -12,6 +12,8 @@
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <config.h>
+#ifndef DISABLE_JIT
 
 #include <string.h>
 #include <stdio.h>
@@ -611,3 +613,5 @@ mono_local_deadce (MonoCompile *cfg)
 
 	//mono_print_code (cfg, "AFTER LOCAL-DEADCE");
 }
+
+#endif /* DISABLE_JIT */
