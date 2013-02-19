@@ -996,10 +996,10 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	emit_global (acfg, "gsharedvt_arg_trampolines_page", TRUE);
 	emit_label (acfg, "gsharedvt_arg_trampolines_page");
 	code = buf;
-	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
+	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3));
 	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
 	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
-	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_IP, -8);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_IP, -8);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, -4);
 	g_assert (code - buf == COMMON_TRAMP_SIZE);
 	/* Emit it */
@@ -1827,10 +1827,10 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	/* Similar to arch_emit_specific_trampoline () */
 	*tramp_size = 24;
 	code = buf;
-	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
+	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3));
 	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
 	/* Load the arg value from the GOT */
-	ARM_LDR_REG_REG (code, ARMREG_LR, ARMREG_PC, ARMREG_R1);
+	ARM_LDR_REG_REG (code, ARMREG_R0, ARMREG_PC, ARMREG_R1);
 	/* Load the addr from the GOT */
 	ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_PC, ARMREG_R1);
 	/* Branch to it */
