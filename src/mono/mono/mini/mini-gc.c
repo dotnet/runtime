@@ -1211,6 +1211,8 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		precise_pass (tls, stack_start, stack_end);
 }
 
+#ifndef DISABLE_JIT
+
 static void
 mini_gc_init_gc_map (MonoCompile *cfg)
 {
@@ -2428,6 +2430,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	create_map (cfg);
 }
 
+#endif /* DISABLE_JIT */
+
 static void
 parse_debug_options (void)
 {
@@ -2514,6 +2518,8 @@ mini_gc_init (void)
 {
 }
 
+#ifndef DISABLE_JIT
+
 static void
 mini_gc_init_gc_map (MonoCompile *cfg)
 {
@@ -2534,12 +2540,16 @@ mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType ty
 {
 }
 
+#endif /* DISABLE_JIT */
+
 void
 mini_gc_enable_gc_maps_for_aot (void)
 {
 }
 
 #endif
+
+#ifndef DISABLE_JIT
 
 /*
  * mini_gc_init_cfg:
@@ -2556,6 +2566,8 @@ mini_gc_init_cfg (MonoCompile *cfg)
 
 	mini_gc_init_gc_map (cfg);
 }
+
+#endif /* DISABLE_JIT */
 
 /*
  * Problems with the current code:

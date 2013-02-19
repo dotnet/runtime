@@ -976,6 +976,8 @@ mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 	return mono_type_to_stind (type);
 }
 
+#ifndef DISABLE_JIT
+
 int
 mono_op_imm_to_op (int opcode)
 {
@@ -1105,6 +1107,8 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 
 	bb->max_vreg = MAX (bb->max_vreg, cfg->next_vreg);
 }
+
+#endif
 
 static void
 set_vreg_to_inst (MonoCompile *cfg, int vreg, MonoInst *inst)
@@ -3438,8 +3442,6 @@ mono_compile_create_vars (MonoCompile *cfg)
 	mono_arch_create_vars (cfg);
 }
 
-#endif /* #ifndef DISABLE_JIT */
-
 void
 mono_print_code (MonoCompile *cfg, const char* msg)
 {
@@ -3448,8 +3450,6 @@ mono_print_code (MonoCompile *cfg, const char* msg)
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
 		mono_print_bb (bb, msg);
 }
-
-#ifndef DISABLE_JIT
 
 static void
 mono_postprocess_patches (MonoCompile *cfg)
