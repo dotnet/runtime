@@ -278,6 +278,12 @@ static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
+/*
+ * If the major collector is concurrent and this is FALSE, we will
+ * never initiate a synchronous major collection, unless requested via
+ * GC.Collect().
+ */
+static gboolean allow_synchronous_major = TRUE;
 static gboolean nursery_collection_is_parallel = FALSE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
@@ -3411,6 +3417,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			goto done;
 	} else {
 		if (generation_to_collect == GENERATION_OLD &&
+				allow_synchronous_major &&
 				major_collector.want_synchronous_collection &&
 				*major_collector.want_synchronous_collection) {
 			wait_to_finish = TRUE;
@@ -4741,6 +4748,16 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	return TRUE;
 }
 
+gboolean
+mono_gc_set_allow_synchronous_major (gboolean flag)
+{
+	if (!major_collector.is_concurrent)
+		return flag;
+
+	allow_synchronous_major = flag;
+	return TRUE;
+}
+
 void*
 mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 {
@@ -5058,6 +5075,23 @@ mono_gc_base_init (void)
 				}
 				continue;
 			}
+			if (g_str_has_prefix (opt, "allow-synchronous-major=")) {
+				if (!major_collector.is_concurrent) {
+					fprintf (stderr, "Warning: allow-synchronous-major has no effect because the major collector is not concurrent.\n");
+					continue;
+				}
+
+				opt = strchr (opt, '=') + 1;
+
+				if (!strcmp (opt, "yes")) {
+					allow_synchronous_major = TRUE;
+				} else if (!strcmp (opt, "no")) {
+					allow_synchronous_major = FALSE;
+				} else {
+					fprintf (stderr, "allow-synchronous-major must be either `yes' or `no'.\n");
+					exit (1);
+				}
+			}
 
 			if (!strcmp (opt, "cementing")) {
 				cement_enabled = TRUE;
@@ -5083,6 +5117,8 @@ mono_gc_base_init (void)
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
 			fprintf (stderr, "  [no-]cementing\n");
+			if (major_collector.is_concurrent)
+				fprintf (stderr, "  allow-synchronous-major=FLAG (where FLAG is `yes' or `no')\n");
 			if (major_collector.print_gc_param_usage)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
