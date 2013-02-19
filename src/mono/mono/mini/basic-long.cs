@@ -1190,5 +1190,11 @@ class Tests {
 		    return (value == 65526) ? 0 : 1;
 		}
 	}
+
+	public static int test_0_lneg_regress_10320 () {
+		long a = 0x100000000;
+		ulong c = ((ulong) (-(-a))) >> 32;
+		return c == 1 ? 0 : 1;
+	}
 }
 
