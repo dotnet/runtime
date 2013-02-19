@@ -4458,8 +4458,8 @@ mini_get_shared_method (MonoMethod *method)
 	return mini_get_shared_method_full (method, FALSE, FALSE);
 }
 
-static void
-mini_init_gsctx_full (MonoGenericContext *context, MonoGenericSharingContext *gsctx, gboolean all_vt)
+void
+mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
 	MonoGenericInst *inst;
 	int i;
@@ -4488,12 +4488,6 @@ mini_init_gsctx_full (MonoGenericContext *context, MonoGenericSharingContext *gs
 				gsctx->mvar_is_vt [i] = TRUE;
 		}
 	}
-}
-
-void
-mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
-{
-	mini_init_gsctx_full (context, gsctx, FALSE);
 }
 
 #ifndef DISABLE_JIT
@@ -4610,18 +4604,21 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		MonoMethodInflated *inflated;
 		MonoGenericContext *context;
 
-		g_assert (method->is_inflated);
-		inflated = (MonoMethodInflated*)method;
-		context = &inflated->context;
-
 		// FIXME: Free the contents of gsctx if compilation fails
 		if (method_is_gshared) {
+			g_assert (method->is_inflated);
+			inflated = (MonoMethodInflated*)method;
+			context = &inflated->context;
+
 			/* We are compiling a gsharedvt method directly */
 			g_assert (compile_aot);
-			mini_init_gsctx_full (context, &cfg->gsctx, TRUE);
 		} else {
-			mini_init_gsctx (context, &cfg->gsctx);
+			g_assert (method_to_compile->is_inflated);
+			inflated = (MonoMethodInflated*)method_to_compile;
+			context = &inflated->context;
 		}
+
+		mini_init_gsctx (context, &cfg->gsctx);
 
 		cfg->gsharedvt = TRUE;
 		// FIXME:
