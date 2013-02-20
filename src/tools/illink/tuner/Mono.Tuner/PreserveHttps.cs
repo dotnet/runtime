@@ -30,7 +30,7 @@ namespace Mono.Tuner {
 			if (need_https)
 				return;
 
-			if (Profile.IsSdkAssembly (assembly))
+			if (Profile.IsSdkAssembly (assembly) || Profile.IsProductAssembly (assembly))
 				return;
 
 			if (HasNeededReference (assembly.MainModule))
