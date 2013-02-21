@@ -440,6 +440,16 @@
       <profile>net_2_0</profile>
       <response>I18N.MidEast.dll.sources</response>
     </project>
+    <project dir="class/I18N/MidEast" library="I18N.MidEast-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../../class/lib/net_2_0/I18N.MidEast.dll</flags>
+      <output>I18N.MidEast_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>I18N.MidEast_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../../build/deps/I18N.MidEast_test_net_2_0.dll.response</response>
+    </project>
     <project dir="class/I18N/Other" library="I18N.Other-net_2_0">
       <boot>false</boot>
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
@@ -2369,6 +2379,16 @@
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.MidEast.dll.sources</response>
+    </project>
+    <project dir="class/I18N/MidEast" library="I18N.MidEast-tests-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../../class/lib/net_4_0/I18N.MidEast.dll</flags>
+      <output>I18N.MidEast_test_net_4_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>I18N.MidEast_test_net_4_0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../../build/deps/I18N.MidEast_test_net_4_0.dll.response</response>
     </project>
     <project dir="class/I18N/Other" library="I18N.Other-net_4_0">
       <boot>false</boot>
@@ -4320,6 +4340,16 @@
       <profile>net_4_5</profile>
       <response>I18N.MidEast.dll.sources</response>
     </project>
+    <project dir="class/I18N/MidEast" library="I18N.MidEast-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../../class/lib/net_4_5/I18N.MidEast.dll</flags>
+      <output>I18N.MidEast_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>I18N.MidEast_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../../build/deps/I18N.MidEast_test_net_4_5.dll.response</response>
+    </project>
     <project dir="class/I18N/Other" library="I18N.Other-net_4_5">
       <boot>false</boot>
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
@@ -6112,7 +6142,7 @@
     </project>
     <project dir="class/EntityFramework" library="EntityFramework-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.Data.dll -r:System.Transactions.dll -r:System.Xml.Linq.dll -r:System.Configuration.dll -r:System.ComponentModel.DataAnnotations.dll -r:System.Runtime.Serialization.dll -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:Microsoft.CSharp.dll -keyfile:../ecma.pub -delaysign -warn:1 -resource:System.Data.Entity.Properties.Resources.resources -resource:System.Data.Entity.Properties.Resources.Migrate.resources -resource:System.Data.Entity.Properties.Resources.PowerShell.resources -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinition.csdl -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinitionVersion3.csdl -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.ProviderServices.ProviderManifest.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.AnnotationSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CodeGenerationSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_1_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_3.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/system.data.resources.entitystoreschemagenerator.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema_3.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_3.xsd</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.Data.dll -r:System.Transactions.dll -r:System.Xml.Linq.dll -r:System.Configuration.dll -r:System.ComponentModel.DataAnnotations.dll -r:System.Runtime.Serialization.dll -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:Microsoft.CSharp.dll -keyfile:../ecma.pub -delaysign -warn:1 -resource:System.Data.Entity.Properties.Resources.resources -resource:System.Data.Entity.Properties.Resources.Migrate.resources -resource:System.Data.Entity.Properties.Resources.PowerShell.resources -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinition.csdl -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinitionVersion3.csdl -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.ProviderServices.ProviderManifest.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.AnnotationSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CodeGenerationSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_1_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_3.xsd -resource:System.Data.Resources.EntityStoreSchemaGenerator.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema_3.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_3.xsd</flags>
       <output>EntityFramework.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/EntityFramework.dll</library_output>
@@ -6122,7 +6152,7 @@
     </project>
     <project dir="class/EntityFramework.SqlServer" library="EntityFramework.SqlServer-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:EntityFramework.dll -r:System.Data.dll -keyfile:../ecma.pub -delaysign -warn:1 -resource:System.Data.Entity.SqlServer.Properties.Resources.SqlServer.resources -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinition.csdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.ProviderManifest.xml -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinition.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinition_Sql8.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinitionVersion3.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinitionVersion3_Sql8.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaMapping.msl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaMappingVersion3.msl</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:EntityFramework.dll -r:System.Data.dll -keyfile:../ecma.pub -delaysign -warn:1 -resource:System.Data.Entity.SqlServer.Properties.Resources.SqlServer.resources -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.ProviderManifest.xml -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinition.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinition_Sql8.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinitionVersion3.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaDefinitionVersion3_Sql8.ssdl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaMapping.msl -resource:../../../external/entityframework/src/EntityFramework.SqlServer/Resources/System/Data/SqlClient/System.Data.Resources.SqlClient.SqlProviderServices.StoreSchemaMappingVersion3.msl</flags>
       <output>EntityFramework.SqlServer.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/EntityFramework.SqlServer.dll</library_output>
