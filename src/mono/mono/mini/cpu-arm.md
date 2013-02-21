@@ -290,20 +290,20 @@ int_cgt_un: dest:i len:12
 int_clt: dest:i len:12
 int_clt_un: dest:i len:12
 
-cond_exc_ieq: len:8
-cond_exc_ine_un: len:8
-cond_exc_ilt: len:8
-cond_exc_ilt_un: len:8
-cond_exc_igt: len:8
-cond_exc_igt_un: len:8
-cond_exc_ige: len:8
-cond_exc_ige_un: len:8
-cond_exc_ile: len:8
-cond_exc_ile_un: len:8
-cond_exc_iov: len:12
-cond_exc_ino: len:8
-cond_exc_ic: len:12
-cond_exc_inc: len:8
+cond_exc_ieq: len:16
+cond_exc_ine_un: len:16
+cond_exc_ilt: len:16
+cond_exc_ilt_un: len:16
+cond_exc_igt: len:16
+cond_exc_igt_un: len:16
+cond_exc_ige: len:16
+cond_exc_ige_un: len:16
+cond_exc_ile: len:16
+cond_exc_ile_un: len:16
+cond_exc_iov: len:20
+cond_exc_ino: len:16
+cond_exc_ic: len:20
+cond_exc_inc: len:16
 
 icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:12
