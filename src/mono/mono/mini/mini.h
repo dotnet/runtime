@@ -2183,6 +2183,13 @@ gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *cod
 void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func) MONO_INTERNAL;
 #endif
 
+#ifdef USE_JUMP_TABLES
+gpointer*
+mono_arch_jumptable_entry_from_code (guint8 *code);
+gpointer*
+mono_jumptable_get_entry (guint8 *code);
+#endif
+
 gboolean
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						 MonoJitInfo *ji, MonoContext *ctx, 

@@ -53,8 +53,8 @@ nop: len:4
 relaxed_nop: len:4
 break: len:4
 jmp: len:92
-br: len:4
-switch: src1:i len:8
+br: len:16
+switch: src1:i len:12
 # See the comment in resume_from_signal_handler, we can't copy the fp regs from sigctx to MonoContext on linux,
 # since the corresponding sigctx structures are not well defined.
 seq_point: len:38 clob:c
@@ -63,7 +63,7 @@ throw: src1:i len:24
 rethrow: src1:i len:20
 start_handler: len:20
 endfinally: len:20
-call_handler: len:12 clob:c
+call_handler: len:16 clob:c
 endfilter: src1:i len:16
 
 ckfinite: dest:f src1:f len:64
@@ -81,7 +81,7 @@ setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
 call: dest:a clob:c len:20
 call_reg: dest:a src1:i len:8 clob:c
-call_membase: dest:a src1:b len:16 clob:c
+call_membase: dest:a src1:b len:24 clob:c
 voidcall: len:20 clob:c
 voidcall_reg: src1:i len:8 clob:c
 voidcall_membase: src1:b len:16 clob:c
@@ -143,19 +143,19 @@ xor_imm: dest:i src1:i len:12
 shl_imm: dest:i src1:i len:8
 shr_imm: dest:i src1:i len:8
 shr_un_imm: dest:i src1:i len:8
-cond_exc_eq: len:8
-cond_exc_ne_un: len:8
-cond_exc_lt: len:8
-cond_exc_lt_un: len:8
-cond_exc_gt: len:8
-cond_exc_gt_un: len:8
-cond_exc_ge: len:8
-cond_exc_ge_un: len:8
-cond_exc_le: len:8
-cond_exc_le_un: len:8
-cond_exc_ov: len:12
+cond_exc_eq: len:16
+cond_exc_ne_un: len:16
+cond_exc_lt: len:16
+cond_exc_lt_un: len:16
+cond_exc_gt: len:16
+cond_exc_gt_un: len:16
+cond_exc_ge: len:16
+cond_exc_ge_un: len:16
+cond_exc_le: len:16
+cond_exc_le_un: len:16
+cond_exc_ov: len:16
 cond_exc_no: len:8
-cond_exc_c: len:12
+cond_exc_c: len:16
 cond_exc_nc: len:8
 #float_beq: src1:f src2:f len:20
 #float_bne_un: src1:f src2:f len:20
@@ -233,16 +233,16 @@ int_conv_to_u4: dest:i src1:i
 int_conv_to_r_un: dest:f src1:i len:56
 int_conv_to_u2: dest:i src1:i len:8
 int_conv_to_u1: dest:i src1:i len:4
-int_beq: len:8
-int_bge: len:8
-int_bgt: len:8
-int_ble: len:8
-int_blt: len:8
-int_bne_un: len:8
-int_bge_un: len:8
-int_bgt_un: len:8
-int_ble_un: len:8
-int_blt_un: len:8
+int_beq: len:16
+int_bge: len:16
+int_bgt: len:16
+int_ble: len:16
+int_blt: len:16
+int_bne_un: len:16
+int_bge_un: len:16
+int_bgt_un: len:16
+int_ble_un: len:16
+int_blt_un: len:16
 int_add_ovf: dest:i src1:i src2:i len:16
 int_add_ovf_un: dest:i src1:i src2:i len:16
 int_mul_ovf: dest:i src1:i src2:i len:16
@@ -316,16 +316,16 @@ vcall2_membase: src1:b len:12 clob:c
 dyn_call: src1:i src2:i len:120 clob:c
 
 # This is different from the original JIT opcodes
-float_beq: len:20
-float_bne_un: len:20
-float_blt: len:20
-float_blt_un: len:20
-float_bgt: len:20
-float_bgt_un: len:20
-float_bge: len:20
-float_bge_un: len:20
-float_ble: len:20
-float_ble_un: len:20
+float_beq: len:32
+float_bne_un: len:32
+float_blt: len:32
+float_blt_un: len:32
+float_bgt: len:32
+float_bgt_un: len:32
+float_bge: len:32
+float_bge_un: len:32
+float_ble: len:32
+float_ble_un: len:32
 
 liverange_start: len:0
 liverange_end: len:0

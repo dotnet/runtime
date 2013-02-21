@@ -7444,3 +7444,11 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 }
 
 #endif
+
+#ifdef USE_JUMP_TABLES
+gpointer*
+mono_jumptable_get_entry (guint8 *code_ptr)
+{
+        return mono_arch_jumptable_entry_from_code (code_ptr);
+}
+#endif
