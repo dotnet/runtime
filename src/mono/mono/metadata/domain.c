@@ -1553,18 +1553,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	        mono_defaults.corlib, "System.Runtime.InteropServices", "Marshal");
 	g_assert (mono_defaults.marshal_class != 0);
 
-	mono_defaults.iserializeable_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Runtime.Serialization", "ISerializable");
-	g_assert (mono_defaults.iserializeable_class != 0);
-
-	mono_defaults.serializationinfo_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Runtime.Serialization", "SerializationInfo");
-	g_assert (mono_defaults.serializationinfo_class != 0);
-
-	mono_defaults.streamingcontext_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Runtime.Serialization", "StreamingContext");
-	g_assert (mono_defaults.streamingcontext_class != 0);
-
 	mono_defaults.typed_reference_class =  mono_class_from_name (
 	        mono_defaults.corlib, "System", "TypedReference");
 	g_assert (mono_defaults.typed_reference_class != 0);
