@@ -82,6 +82,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-io-portability.h>
+#include <mono/utils/mono-digest.h>
 
 #if defined (HOST_WIN32)
 #include <windows.h>
