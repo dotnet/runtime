@@ -7,6 +7,7 @@ typedef HRESULT (STDAPICALLTYPE *MONOFIXUPCOREE) (HMODULE);
 typedef void (__stdcall *WRITESTRING) (const wchar_t*);
 
 #ifdef _WIN64
+#include <stdint.h>
 extern "C" void __security_check_cookie(unsigned __int64 value)
 {
 }
