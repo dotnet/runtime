@@ -2013,6 +2013,11 @@ if test x$target_win32 = xno; then
 	AC_CHECK_HEADERS(sys/param.h)
 	AC_CHECK_HEADERS(dirent.h)
 
+	dnl ******************************************
+	dnl *** Checks for OSX and iOS compilation ***
+	dnl ******************************************
+	AC_CHECK_HEADERS(CommonCrypto/CommonDigest.h)
+
 	dnl *********************************
 	dnl *** Check for Console 2.0 I/O ***
 	dnl *********************************

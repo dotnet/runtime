@@ -75,6 +75,27 @@ A million repetitions of "a"
 #include <glib.h>
 #include "mono-digest.h"
 
+#if HAVE_COMMONCRYPTO_COMMONDIGEST_H
+
+void
+mono_sha1_init (MonoSHA1Context* context)
+{
+	CC_SHA1_Init (context);
+}
+
+void
+mono_sha1_update (MonoSHA1Context* context, const guchar* data, guint32 len)
+{
+	CC_SHA1_Update (context, data, len);
+}
+
+void
+mono_sha1_final (MonoSHA1Context* context, unsigned char digest[20])
+{
+	CC_SHA1_Final (digest, context);
+}
+
+#else
 
 /* #include <process.h> */	/* prototype for exit() - JHB */
 /* Using return() instead of exit() - SWR */
@@ -244,6 +265,8 @@ unsigned char finalcount[8];
     SHA1Transform(context->state, context->buffer);
 #endif
 }
+
+#endif
  
 void
 mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20])

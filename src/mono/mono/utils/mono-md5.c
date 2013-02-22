@@ -27,6 +27,28 @@
 #include <string.h>
 #include "mono-digest.h"
 
+#if HAVE_COMMONCRYPTO_COMMONDIGEST_H
+
+void
+mono_md5_init (MonoMD5Context *ctx)
+{
+	CC_MD5_Init (ctx);
+}
+
+void
+mono_md5_update (MonoMD5Context *ctx, const guchar *buf, guint32 len)
+{
+	CC_MD5_Update (ctx, buf, len);
+}
+
+void
+mono_md5_final (MonoMD5Context *ctx, guchar digest[16])
+{
+	CC_MD5_Final (digest, ctx);
+}
+
+#else
+
 static void md5_transform (guint32 buf[4], const guint32 in[16]);
 
 static gint _ie = 0x44332211;
@@ -295,7 +317,7 @@ md5_transform (guint32 buf[4], const guint32 in[16])
 	buf[3] += d;
 }
 
-
+#endif
 
 
 /**

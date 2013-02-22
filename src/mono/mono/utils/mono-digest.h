@@ -26,9 +26,19 @@
 #ifndef __MONO_DIGEST_H__
 #define __MONO_DIGEST_H__
 
+#include <config.h>
 #include <glib.h>
 
 G_BEGIN_DECLS
+
+#if HAVE_COMMONCRYPTO_COMMONDIGEST_H
+
+#include <CommonCrypto/CommonDigest.h>
+
+#define MonoSHA1Context	CC_SHA1_CTX
+#define MonoMD5Context	CC_MD5_CTX
+
+#else
 
 typedef struct {
 	guint32 buf[4];
@@ -36,6 +46,8 @@ typedef struct {
 	guchar in[64];
 	gint doByteReverse;
 } MonoMD5Context;
+
+#endif
 
 void mono_md5_get_digest (const guchar *buffer, gint buffer_size, guchar digest[16]);
 
@@ -48,11 +60,15 @@ void mono_md5_init   (MonoMD5Context *ctx);
 void mono_md5_update (MonoMD5Context *ctx, const guchar *buf, guint32 len);
 void mono_md5_final  (MonoMD5Context *ctx, guchar digest[16]);
 
+#if !HAVE_COMMONCRYPTO_COMMONDIGEST_H
+
 typedef struct {
     guint32 state[5];
     guint32 count[2];
     unsigned char buffer[64];
 } MonoSHA1Context;
+
+#endif
 
 void mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20]);
 void mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20]);
