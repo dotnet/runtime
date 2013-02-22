@@ -2573,7 +2573,7 @@ if (0 && ins->inst_true_bb->native_offset) { \
 	ARM_B_COND (code, (condcode), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffffff); \
 } else { \
 	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-	code = mono_arm_patchable_b (code, (condcode));	\
+	ARM_B_COND (code, (condcode), 0); \
 }
 
 #define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_FLAGS(ins, branch_cc_table [(cond)])
@@ -2586,8 +2586,8 @@ if (0 && ins->inst_true_bb->native_offset) { \
 #define EMIT_COND_SYSTEM_EXCEPTION_FLAGS(condcode,exc_name)            \
         do {                                                        \
 		mono_add_patch_info (cfg, code - cfg->native_code,   \
-				    MONO_PATCH_INFO_EXC, exc_name);  \
-		code = mono_arm_patchable_bl (code, (condcode));    \
+				    MONO_PATCH_INFO_EXC, exc_name); \
+		ARM_BL_COND (code, (condcode), 0); \
 	} while (0); 
 
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name) EMIT_COND_SYSTEM_EXCEPTION_FLAGS(branch_cc_table [(cond)], (exc_name))

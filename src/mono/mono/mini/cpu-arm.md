@@ -143,19 +143,19 @@ xor_imm: dest:i src1:i len:12
 shl_imm: dest:i src1:i len:8
 shr_imm: dest:i src1:i len:8
 shr_un_imm: dest:i src1:i len:8
-cond_exc_eq: len:16
-cond_exc_ne_un: len:16
-cond_exc_lt: len:16
-cond_exc_lt_un: len:16
-cond_exc_gt: len:16
-cond_exc_gt_un: len:16
-cond_exc_ge: len:16
-cond_exc_ge_un: len:16
-cond_exc_le: len:16
-cond_exc_le_un: len:16
-cond_exc_ov: len:16
+cond_exc_eq: len:8
+cond_exc_ne_un: len:8
+cond_exc_lt: len:8
+cond_exc_lt_un: len:8
+cond_exc_gt: len:8
+cond_exc_gt_un: len:8
+cond_exc_ge: len:8
+cond_exc_ge_un: len:8
+cond_exc_le: len:8
+cond_exc_le_un: len:8
+cond_exc_ov: len:12
 cond_exc_no: len:8
-cond_exc_c: len:16
+cond_exc_c: len:12
 cond_exc_nc: len:8
 #float_beq: src1:f src2:f len:20
 #float_bne_un: src1:f src2:f len:20
