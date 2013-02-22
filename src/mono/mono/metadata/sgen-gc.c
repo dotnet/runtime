@@ -5273,6 +5273,8 @@ sgen_has_critical_method (void)
 	return write_barrier_method || sgen_has_managed_allocator ();
 }
 
+#ifndef DISABLE_JIT
+
 static void
 emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 {
@@ -5338,6 +5340,7 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 	}
 #endif	
 }
+#endif
 
 MonoMethod*
 mono_gc_get_write_barrier (void)
@@ -5377,6 +5380,7 @@ mono_gc_get_write_barrier (void)
 
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
+#ifndef DISABLE_JIT
 #ifdef MANAGED_WBARRIER
 	if (use_cardtable) {
 		emit_nursery_check (mb, nursery_check_labels);
@@ -5504,6 +5508,7 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_byte (mb, CEE_RET);
 	}
 
+#endif
 	res = mono_mb_create_method (mb, sig, 16);
 	mono_mb_free (mb);
 

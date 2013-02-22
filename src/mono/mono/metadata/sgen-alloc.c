@@ -714,6 +714,8 @@ create_allocator (int atype)
 		csig->params [i] = &mono_defaults.int_class->byval_arg;
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
+
+#ifndef DISABLE_JIT
 	size_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
 		/* size = vtable->klass->instance_size; */
@@ -892,6 +894,7 @@ create_allocator (int atype)
 	/* return p */
 	mono_mb_emit_ldloc (mb, p_var);
 	mono_mb_emit_byte (mb, CEE_RET);
+#endif
 
 	res = mono_mb_create_method (mb, csig, 8);
 	mono_mb_free (mb);
