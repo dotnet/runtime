@@ -254,9 +254,7 @@ typedef struct {
 	 * The context where single stepping should resume while the thread is suspended because
 	 * of an EXCEPTION event.
 	 */
-	MonoContext catch_ctx;
-
-	gboolean has_catch_ctx;
+	MonoThreadUnwindState catch_state;
 
 	/*
 	 * The context which needs to be restored after handling a single step/breakpoint
@@ -5044,7 +5042,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 	g_assert (tls->context.valid);
 	ss_req->start_sp = ss_req->last_sp = MONO_CONTEXT_GET_SP (&tls->context.ctx);
 
-	if (tls->has_catch_ctx) {
+	if (tls->catch_state.valid) {
 		gboolean res;
 		StackFrameInfo frame;
 		MonoContext new_ctx;
@@ -5055,7 +5053,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		 */
 
 		/* Find the the jit info for the catch context */
-		res = mono_find_jit_info_ext (mono_domain_get (), thread->jit_data, NULL, &tls->catch_ctx, &new_ctx, NULL, &lmf, NULL, &frame);
+		res = mono_find_jit_info_ext (tls->catch_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], thread->jit_data, NULL, &tls->catch_state.ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		g_assert (res);
 		g_assert (frame.type == FRAME_TYPE_MANAGED);
 
@@ -5295,14 +5293,16 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 	mono_loader_unlock ();
 
 	if (tls && ei.caught && catch_ctx) {
-		tls->catch_ctx = *catch_ctx;
-		tls->has_catch_ctx = TRUE;
+		memset (&tls->catch_state, 0, sizeof (tls->catch_state));
+		tls->catch_state.ctx = *catch_ctx;
+		tls->catch_state.unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+		tls->catch_state.valid = TRUE;
 	}
 
 	process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, suspend_policy);
 
 	if (tls)
-		tls->has_catch_ctx = FALSE;
+		tls->catch_state.valid = FALSE;
 }
 
 void
