@@ -1078,7 +1078,8 @@ class Tests {
 	}
 	public static int test_0_cond_branch_side_effects () {
 		counter = 5;
-		if (WriteStuff());
+		if (WriteStuff()) {
+		}
 		if (counter == 10)
 			return 0;
 		return 1;
@@ -1546,6 +1547,26 @@ ncells ) {
 
 	static int test_0_synchronized () {
 		getInstance ();
+		return 0;
+	}
+
+	struct BStruct {
+		public Type t;
+	}
+
+	class Del<T> {
+		public static BStruct foo () {
+			return new BStruct () { t = typeof (T) };
+		}
+	}
+
+	delegate BStruct ADelegate ();
+
+	static int test_0_regress_10601 () {
+		var act = (ADelegate)(Del<string>.foo);
+		BStruct b = act ();
+		if (b.t != typeof (string))
+			return 1;
 		return 0;
 	}
 }
