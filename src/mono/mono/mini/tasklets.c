@@ -106,8 +106,8 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 		/* clear to avoid GC retention */
 		if (num_bytes < cont->stack_used_size) {
 			memset ((char*)cont->saved_stack + num_bytes, 0, cont->stack_used_size - num_bytes);
-			cont->stack_used_size = num_bytes;
 		}
+		cont->stack_used_size = num_bytes;
 	} else {
 		tasklets_lock ();
 		internal_init ();
