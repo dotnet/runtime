@@ -278,6 +278,12 @@ static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
+/*
+ * If the major collector is concurrent and this is FALSE, we will
+ * never initiate a synchronous major collection, unless requested via
+ * GC.Collect().
+ */
+static gboolean allow_synchronous_major = TRUE;
 static gboolean nursery_collection_is_parallel = FALSE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
@@ -552,7 +558,7 @@ void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 static void init_stats (void);
 
 static int mark_ephemerons_in_range (ScanCopyContext ctx);
-static void clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx);
+static void clear_unreachable_ephemerons (ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 static gboolean major_update_or_finish_concurrent_collection (gboolean force_finish);
@@ -1115,28 +1121,24 @@ mono_gc_clear_domain (MonoDomain * domain)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cementing)
+sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 {
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Target pointer of global remset must be in the nursery");
 
 	if (!major_collector.is_concurrent) {
-		SGEN_ASSERT (5, !concurrent_cementing, "Concurrent cementing must only happen with the concurrent collector");
 		SGEN_ASSERT (5, current_collection_generation != -1, "Global remsets can only be added during collections");
 	} else {
 		if (current_collection_generation == -1)
-			SGEN_ASSERT (5, concurrent_cementing, "Global remsets outside of collection pauses can only be added by the concurrent collector");
-		if (concurrent_cementing)
-			SGEN_ASSERT (5, concurrent_collection_in_progress, "Concurrent collection must be in process in order to add global remsets");
+			SGEN_ASSERT (5, sgen_concurrent_collection_in_progress (), "Global remsets outside of collection pauses can only be added by the concurrent collector");
 	}
 
 	if (!object_is_pinned (obj))
-		SGEN_ASSERT (5, concurrent_cementing || sgen_minor_collector.is_split, "Non-pinned objects can only remain in nursery if it is a split nursery");
-	else if (sgen_cement_lookup_or_register (obj, concurrent_cementing))
+		SGEN_ASSERT (5, sgen_minor_collector.is_split || sgen_concurrent_collection_in_progress (), "Non-pinned objects can only remain in nursery if it is a split nursery");
+	else if (sgen_cement_lookup_or_register (obj))
 		return;
 
 	remset.record_pointer (ptr);
 
-#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (do_pin_stats))
 		sgen_pin_stats_register_global_remset (obj);
 
@@ -1145,6 +1147,7 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj, gboolean concurrent_cemen
 
 	HEAVY_STAT (++stat_global_remsets_added);
 
+#ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
 		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
@@ -1963,7 +1966,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (generation == GENERATION_OLD && major_collector.is_concurrent, ctx);
+	clear_unreachable_ephemerons (ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -2262,7 +2265,7 @@ sgen_collection_is_concurrent (void)
 	case GENERATION_NURSERY:
 		return FALSE;
 	case GENERATION_OLD:
-		return major_collector.is_concurrent;
+		return concurrent_collection_in_progress;
 	default:
 		g_error ("Invalid current generation %d", current_collection_generation);
 	}
@@ -2780,7 +2783,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
 	ScanCopyContext ctx;
 
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		/*This cleans up unused fragments */
 		sgen_nursery_allocator_prepare_for_pinning ();
 
@@ -2801,9 +2804,6 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	if (whole_heap_check_before_collection)
 		sgen_check_whole_heap (finish_up_concurrent_mark);
 
-	if (!major_collector.is_concurrent)
-		sgen_cement_reset ();
-
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
@@ -2821,7 +2821,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 		check_for_xdomain_refs ();
 	}
 
-	if (!major_collector.is_concurrent) {
+	if (!concurrent_collection_in_progress) {
 		/* Remsets are not useful for a major collection */
 		remset.prepare_for_major_collection ();
 	}
@@ -2833,6 +2833,20 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	sgen_init_pinning ();
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+
+	if (!concurrent_collection_in_progress) {
+		if (major_collector.is_concurrent) {
+			/*
+			 * The concurrent major collector cannot evict
+			 * yet, so we need to pin cemented objects to
+			 * not break some asserts.
+			 */
+			sgen_cement_iterate (pin_stage_object_callback, NULL);
+		}
+
+		sgen_cement_reset ();
+	}
+
 	sgen_optimize_pin_queue (0);
 
 	/*
@@ -2841,7 +2855,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		sgen_workers_start_all_workers ();
 		sgen_workers_start_marking ();
 	}
@@ -2918,7 +2932,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	 * Non-concurrent mark evacuates from the nursery, so it's
 	 * sufficient to just scan pinned nursery objects.
 	 */
-	if (major_collector.is_concurrent && sgen_minor_collector.is_split) {
+	if (concurrent_collection_in_progress && sgen_minor_collector.is_split) {
 		scan_nursery_objects (ctx);
 	} else {
 		sgen_pin_objects_in_section (nursery_section, ctx);
@@ -2941,7 +2955,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	if (!major_collector.is_concurrent) {
+	if (!concurrent_collection_in_progress && major_collector.is_parallel) {
 		sgen_workers_start_all_workers ();
 		sgen_workers_start_marking ();
 	}
@@ -3010,7 +3024,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
 
-	if (major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress) {
 		/* prepare the pin queue for the next collection */
 		sgen_finish_pinning ();
 
@@ -3022,7 +3036,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 }
 
 static void
-major_start_collection (int *old_next_pin_slot)
+major_start_collection (gboolean concurrent, int *old_next_pin_slot)
 {
 	MONO_GC_BEGIN (GENERATION_OLD);
 	binary_protocol_collection_begin (stat_major_gcs, GENERATION_OLD);
@@ -3034,13 +3048,16 @@ major_start_collection (int *old_next_pin_slot)
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	if (major_collector.is_concurrent) {
+	if (concurrent) {
+		g_assert (major_collector.is_concurrent);
 		concurrent_collection_in_progress = TRUE;
 
 		sgen_cement_concurrent_start ();
-	}
 
-	current_object_ops = major_collector.major_ops;
+		current_object_ops = major_collector.major_concurrent_ops;
+	} else {
+		current_object_ops = major_collector.major_ops;
+	}
 
 	reset_pinned_from_failed_allocation ();
 
@@ -3065,7 +3082,7 @@ major_start_collection (int *old_next_pin_slot)
 static void
 wait_for_workers_to_finish (void)
 {
-	if (major_collector.is_parallel || major_collector.is_concurrent) {
+	if (concurrent_collection_in_progress || major_collector.is_parallel) {
 		gray_queue_redirect (&gray_queue);
 		sgen_workers_join ();
 	}
@@ -3088,12 +3105,12 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 	TV_GETTIME (btv);
 
-	if (major_collector.is_concurrent || major_collector.is_parallel)
+	if (concurrent_collection_in_progress || major_collector.is_parallel)
 		wait_for_workers_to_finish ();
 
-	current_object_ops = major_collector.major_ops;
+	if (concurrent_collection_in_progress) {
+		current_object_ops = major_collector.major_concurrent_ops;
 
-	if (major_collector.is_concurrent) {
 		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
 		wait_for_workers_to_finish ();
 
@@ -3101,6 +3118,8 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 		if (do_concurrent_checks)
 			check_nursery_is_clean ();
+	} else {
+		current_object_ops = major_collector.major_ops;
 	}
 
 	/*
@@ -3125,7 +3144,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	sgen_workers_reset_data ();
 
 	if (objects_pinned) {
-		g_assert (!major_collector.is_concurrent);
+		g_assert (!concurrent_collection_in_progress);
 
 		/*This is slow, but we just OOM'd*/
 		sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
@@ -3180,7 +3199,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	TV_GETTIME (btv);
 	time_major_sweep += TV_ELAPSED (atv, btv);
 
-	if (!major_collector.is_concurrent) {
+	if (!concurrent_collection_in_progress) {
 		/* walk the pin_queue, build up the fragment list of free memory, unmark
 		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 		 * next allocations.
@@ -3197,7 +3216,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 		sgen_pin_stats_reset ();
 	}
 
-	if (major_collector.is_concurrent)
+	if (concurrent_collection_in_progress)
 		sgen_cement_concurrent_finish ();
 	sgen_cement_clear_below_threshold ();
 
@@ -3221,7 +3240,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
-	if (major_collector.is_concurrent)
+	if (concurrent_collection_in_progress)
 		concurrent_collection_in_progress = FALSE;
 
 	check_scan_starts ();
@@ -3249,7 +3268,7 @@ major_do_collection (const char *reason)
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
 
-	major_start_collection (&old_next_pin_slot);
+	major_start_collection (FALSE, &old_next_pin_slot);
 	major_finish_collection (reason, old_next_pin_slot, FALSE);
 
 	TV_GETTIME (all_btv);
@@ -3274,7 +3293,7 @@ major_start_concurrent_collection (const char *reason)
 	MONO_GC_CONCURRENT_START_BEGIN (GENERATION_OLD);
 
 	// FIXME: store reason and pass it when finishing
-	major_start_collection (NULL);
+	major_start_collection (TRUE, NULL);
 
 	gray_queue_redirect (&gray_queue);
 	sgen_workers_wait_for_jobs ();
@@ -3396,6 +3415,13 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		}
 		if (generation_to_collect == GENERATION_OLD)
 			goto done;
+	} else {
+		if (generation_to_collect == GENERATION_OLD &&
+				allow_synchronous_major &&
+				major_collector.want_synchronous_collection &&
+				*major_collector.want_synchronous_collection) {
+			wait_to_finish = TRUE;
+		}
 	}
 
 	//FIXME extract overflow reason
@@ -3405,18 +3431,10 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 			overflow_reason = "Minor overflow";
 		}
 	} else {
-		SgenGrayQueue unpin_queue;
-		SgenGrayQueue *unpin_queue_ptr;
-		memset (&unpin_queue, 0, sizeof (unpin_queue));
-
-		if (major_collector.is_concurrent && wait_to_finish)
-			unpin_queue_ptr = &unpin_queue;
-		else
-			unpin_queue_ptr = NULL;
-
 		if (major_collector.is_concurrent) {
 			g_assert (!concurrent_collection_in_progress);
-			collect_nursery (unpin_queue_ptr, FALSE);
+			if (!wait_to_finish)
+				collect_nursery (NULL, FALSE);
 		}
 
 		if (major_collector.is_concurrent && !wait_to_finish) {
@@ -3428,11 +3446,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 				overflow_generation_to_collect = GENERATION_NURSERY;
 				overflow_reason = "Excessive pinning";
 			}
-		}
-
-		if (unpin_queue_ptr) {
-			unpin_objects_from_queue (unpin_queue_ptr);
-			sgen_gray_object_queue_deinit (unpin_queue_ptr);
 		}
 	}
 
@@ -3652,7 +3665,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (gboolean concurrent_cementing, ScanCopyContext ctx)
+clear_unreachable_ephemerons (ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
@@ -4735,6 +4748,16 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	return TRUE;
 }
 
+gboolean
+mono_gc_set_allow_synchronous_major (gboolean flag)
+{
+	if (!major_collector.is_concurrent)
+		return flag;
+
+	allow_synchronous_major = flag;
+	return TRUE;
+}
+
 void*
 mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 {
@@ -5052,6 +5075,23 @@ mono_gc_base_init (void)
 				}
 				continue;
 			}
+			if (g_str_has_prefix (opt, "allow-synchronous-major=")) {
+				if (!major_collector.is_concurrent) {
+					fprintf (stderr, "Warning: allow-synchronous-major has no effect because the major collector is not concurrent.\n");
+					continue;
+				}
+
+				opt = strchr (opt, '=') + 1;
+
+				if (!strcmp (opt, "yes")) {
+					allow_synchronous_major = TRUE;
+				} else if (!strcmp (opt, "no")) {
+					allow_synchronous_major = FALSE;
+				} else {
+					fprintf (stderr, "allow-synchronous-major must be either `yes' or `no'.\n");
+					exit (1);
+				}
+			}
 
 			if (!strcmp (opt, "cementing")) {
 				cement_enabled = TRUE;
@@ -5077,6 +5117,8 @@ mono_gc_base_init (void)
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
 			fprintf (stderr, "  [no-]cementing\n");
+			if (major_collector.is_concurrent)
+				fprintf (stderr, "  allow-synchronous-major=FLAG (where FLAG is `yes' or `no')\n");
 			if (major_collector.print_gc_param_usage)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)

@@ -27,14 +27,14 @@ extern long long stat_scan_object_called_major;
 #define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH ((addr))
 #endif
 
-#ifdef SGEN_CONCURRENT_MARK
+#ifdef SCAN_FOR_CONCURRENT_MARK
 #define FOLLOW_OBJECT(addr)	(!sgen_ptr_in_nursery ((addr)))
 #define ALWAYS_ADD_TO_GLOBAL_REMSET	1
-#define CONCURRENT_CEMENTING	1
+#define CONCURRENT_NAME(x)	x ## _concurrent
 #else
 #define FOLLOW_OBJECT(addr)	1
 #define ALWAYS_ADD_TO_GLOBAL_REMSET	0
-#define CONCURRENT_CEMENTING	0
+#define CONCURRENT_NAME(x)	x
 #endif
 
 #undef HANDLE_PTR
@@ -43,31 +43,31 @@ extern long long stat_scan_object_called_major;
 		void *__copy;						\
 		if (__old && FOLLOW_OBJECT (__old)) {			\
 			PREFETCH_DYNAMIC_HEAP (__old);			\
-			major_copy_or_mark_object ((ptr), __old, queue);	\
+			CONCURRENT_NAME (major_copy_or_mark_object) ((ptr), __old, queue); \
 			__copy = *(ptr);				\
 			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr), __copy, CONCURRENT_CEMENTING);	\
+				sgen_add_to_global_remset ((ptr), __copy);	\
 		} else {						\
 			if (ALWAYS_ADD_TO_GLOBAL_REMSET && G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr), __old, CONCURRENT_CEMENTING); \
+				sgen_add_to_global_remset ((ptr), __old); \
 		}							\
 	} while (0)
 
 static void
-major_scan_object (char *start, SgenGrayQueue *queue)
+CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
 {
 #include "sgen-scan-object.h"
 
 	HEAVY_STAT (++stat_scan_object_called_major);
 }
 
-#ifdef SGEN_CONCURRENT_MARK
+#ifdef SCAN_FOR_CONCURRENT_MARK
 #ifdef SGEN_PARALLEL_MARK
 #error concurrent and parallel mark not supported yet
 #else
 static void
-major_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
+CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue)
 {
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
@@ -77,3 +77,8 @@ major_scan_vtype (char *start, mword desc, SgenGrayQueue *queue)
 }
 #endif
 #endif
+
+#undef PREFETCH_DYNAMIC_HEAP
+#undef FOLLOW_OBJECT
+#undef ALWAYS_ADD_TO_GLOBAL_REMSET
+#undef CONCURRENT_NAME

@@ -569,7 +569,7 @@ LOOP_HEAD:
 						copy_func ((void**)elem, queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (sgen_ptr_in_nursery (new)))
-							sgen_add_to_global_remset (elem, new, mod_union);
+							sgen_add_to_global_remset (elem, new);
 					}
 				}
 			}

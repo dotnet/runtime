@@ -581,6 +581,12 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 	return NULL;
 }
 
+MonoBoolean
+ves_icall_Mono_Runtime_SetGCAllowSynchronousMajor (MonoBoolean flag)
+{
+	return mono_gc_set_allow_synchronous_major (flag);
+}
+
 typedef struct {
 	guint32  *bitmap;
 	gpointer *entries;

@@ -423,7 +423,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				SGEN_LOG (9, "Add to global remset because of pinning %p (%p %s)", ptr, copy, sgen_safe_name (copy));
-				sgen_add_to_global_remset (ptr, copy, FALSE);
+				sgen_add_to_global_remset (ptr, copy);
 			}
 		} else {
 			SGEN_LOG (9, "Skipping remset at %p holding %p", ptr, *ptr);
@@ -442,7 +442,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			copy = *ptr;
 			SGEN_LOG (9, "Overwrote remset at %p with %p (count: %d)", ptr, copy, (int)count);
 			if (!global && copy >= start_nursery && copy < end_nursery)
-				sgen_add_to_global_remset (ptr, copy, FALSE);
+				sgen_add_to_global_remset (ptr, copy);
 			++ptr;
 		}
 		return p + 2;

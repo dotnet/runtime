@@ -262,10 +262,11 @@ sgen_cement_lookup (char *obj)
 }
 
 gboolean
-sgen_cement_lookup_or_register (char *obj, gboolean concurrent_cementing)
+sgen_cement_lookup_or_register (char *obj)
 {
 	int i;
 	CementHashEntry *hash;
+	gboolean concurrent_cementing = sgen_concurrent_collection_in_progress ();
 
 	if (!cement_enabled)
 		return FALSE;

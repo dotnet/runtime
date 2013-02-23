@@ -387,7 +387,8 @@ BASE_TEST_CS_SRC=		\
 	appdomain-unload-doesnot-raise-pending-events.cs	\
 	bug-6148.cs	\
 	assembly_append_ordering.cs	\
-	bug-10127.cs
+	bug-10127.cs	\
+	allow-synchronous-major.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
