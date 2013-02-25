@@ -5547,7 +5547,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		jte = mono_jumptable_add_entries (3);
 		jte [0] = (gpointer)&ss_trigger_var;
 		jte [1] = single_step_func_wrapper;
-                jte [2] = breakpoint_func_wrapper;
+		jte [2] = breakpoint_func_wrapper;
 		code = mono_arm_load_jumptable_entry_addr (code, jte, ARMREG_LR);
 #else
 		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
@@ -5967,8 +5967,8 @@ gpointer
 mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
 	gpointer fail_tramp)
 {
-        int size, i;
-        arminstr_t *code, *start;
+	int size, i;
+	arminstr_t *code, *start;
 #ifdef USE_JUMP_TABLES
 	gpointer *jte;
 #else

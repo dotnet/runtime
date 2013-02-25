@@ -402,18 +402,6 @@ typedef struct  {
 #define mono_domain_jit_code_hash_lock(domain) mono_locks_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 #define mono_domain_jit_code_hash_unlock(domain) mono_locks_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 
-#ifdef USE_JUMP_TABLES
-void
-mono_jumptable_init  (void) MONO_INTERNAL;
-gpointer*
-mono_jumptable_add_entry (void) MONO_INTERNAL;
-gpointer*
-mono_jumptable_add_entries (guint32 entries) MONO_INTERNAL;
-void
-mono_jumptable_cleanup  (void) MONO_INTERNAL;
-#endif
-
-
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 
 void

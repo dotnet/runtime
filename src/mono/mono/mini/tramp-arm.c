@@ -30,7 +30,7 @@ static guint8* nullified_class_init_trampoline;
 static guint16
 decode_imm16 (guint32 insn)
 {
-  return (((insn >> 16) & 0xf) << 12) | (insn & 0xfff);
+	return (((insn >> 16) & 0xf) << 12) | (insn & 0xfff);
 }
 
 #define INSN_MASK 0xff00000
@@ -40,18 +40,18 @@ decode_imm16 (guint32 insn)
 gpointer*
 mono_arch_jumptable_entry_from_code (guint8 *code)
 {
-        guint32 insn1 = ((guint32*)code) [0];
-        guint32 insn2 = ((guint32*)code) [1];
+	guint32 insn1 = ((guint32*)code) [0];
+	guint32 insn2 = ((guint32*)code) [1];
 
-        if (((insn1 & INSN_MASK) == MOVW_MASK) &&
-            ((insn2 & INSN_MASK) == MOVT_MASK) ) {
-                guint32 imm_lo = decode_imm16 (insn1);
-                guint32 imm_hi = decode_imm16 (insn2);
-                return (gpointer*) GUINT_TO_POINTER (imm_lo | (imm_hi << 16));
-        } else {
-                g_assert_not_reached ();
-                return NULL;
-        }
+	if (((insn1 & INSN_MASK) == MOVW_MASK) &&
+	    ((insn2 & INSN_MASK) == MOVT_MASK) ) {
+		guint32 imm_lo = decode_imm16 (insn1);
+		guint32 imm_hi = decode_imm16 (insn2);
+		return (gpointer*) GUINT_TO_POINTER (imm_lo | (imm_hi << 16));
+	} else {
+		g_assert_not_reached ();
+		return NULL;
+	}
 }
 
 #undef INSN_MASK
@@ -506,7 +506,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 #ifdef USE_JUMP_TABLES
 	/* For jumptables case we always generate the same code for trampolines,
-         * namely
+	 * namely
 	 *   push {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, lr}
 	 *   movw lr, lo(jte)
 	 *   movt lr, hi(jte)
@@ -514,12 +514,12 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	 *   bx r1
 	 */
 	ARM_PUSH (code, 0x5fff);
-        constants = mono_jumptable_add_entries (2);
-        code = mono_arm_load_jumptable_entry_addr (code, constants, ARMREG_LR);
-        ARM_LDR_IMM (code, ARMREG_R1, ARMREG_LR, 4);
+	constants = mono_jumptable_add_entries (2);
+	code = mono_arm_load_jumptable_entry_addr (code, constants, ARMREG_LR);
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_LR, 4);
 	code = emit_bx (code, ARMREG_R1);
-        constants[0] = arg1;
-	constants[1] = tramp;
+	constants [0] = arg1;
+	constants [1] = tramp;
 #else
 	/* we could reduce this to 12 bytes if tramp is within reach:
 	 * ARM_PUSH ()
@@ -579,7 +579,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	MonoDomain *domain = mono_domain_get ();
 #ifdef USE_JUMP_TABLES
 	gpointer *jte;
-        guint32 size = 20;
+	guint32 size = 20;
 #else
         guint32 size = 16;
 #endif
