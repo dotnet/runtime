@@ -962,6 +962,8 @@ mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 	return mono_type_to_ldind (type);
 }
 
+#ifndef DISABLE_JIT
+
 guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
@@ -975,8 +977,6 @@ mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 	}
 	return mono_type_to_stind (type);
 }
-
-#ifndef DISABLE_JIT
 
 int
 mono_op_imm_to_op (int opcode)
@@ -7426,24 +7426,6 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;
-}
-
-#endif
-
-#ifdef DISABLE_JIT
-
-gpointer
-mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
-{
-       g_assert_not_reached ();
-       return NULL;
-}
-
-gpointer
-mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-       g_assert_not_reached ();
-       return NULL;
 }
 
 #endif
