@@ -237,6 +237,11 @@ case "$host" in
 		libdl="-ldl"
 		libgc_threads=pthreads
 		use_sigposix=yes
+		if test "x$cross_compiling" != "xno"; then
+                	# to bypass the underscore linker check, not
+                	# available during cross-compilation
+                	mono_cv_uscore=no
+                fi
 		;;
 	*-*-nacl*)
 		host_win32=no
@@ -554,6 +559,8 @@ AC_ARG_WITH(mcs-path, [  --with-mcs-path=/path/to/mcs      Specify an alternate 
 		mcsdir=$with_mcs_path
 	fi
 )
+
+AC_ARG_WITH(jumptables, [  --with-jumptables=yes,no      enable/disable support for jumptables (ARM-only for now) (defaults to no)],[],[with_jumptables=no])
 
 #
 # A sanity check to catch cases where the package was unpacked
@@ -2566,6 +2573,11 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		sgen_supported=true
 		AOT_SUPPORTED="yes"
+		if test "x$cross_compiling" != "xno"; then
+		   # Provide sane defaults when cross-compiling
+		   CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+  		fi
 		;;
 	s390-*-linux*)
 		TARGET=S390;
@@ -2957,6 +2969,12 @@ if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_bui
 	   # libgc's gc_locks.h depends on this
 	   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
 	fi
+fi
+
+if test ${TARGET} = ARM; then
+	if test "x${with_jumptables}" = "xyes"; then
+                AC_DEFINE(USE_JUMP_TABLES, 1, Use jump tables in JIT)
+        fi
 fi
 
 if test ${TARGET} = unknown; then

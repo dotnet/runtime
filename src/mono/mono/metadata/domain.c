@@ -2697,4 +2697,3 @@ mono_framework_version (void)
 {
 	return current_runtime->framework_version [0] - '0';
 }
-

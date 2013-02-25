@@ -259,5 +259,19 @@ mono_arm_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
 guint8*
 mono_arm_get_thumb_plt_entry (guint8 *code) MONO_INTERNAL;
 
+guint8*
+mono_arm_patchable_b (guint8 *code, int cond);
+
+guint8*
+mono_arm_patchable_bl (guint8 *code, int cond);
+
+#ifdef USE_JUMP_TABLES
+guint8*
+mono_arm_load_jumptable_entry_addr (guint8 *code, gpointer *jte, ARMReg reg) MONO_INTERNAL;
+
+guint8*
+mono_arm_load_jumptable_entry (guint8 *code, gpointer *jte, ARMReg reg) MONO_INTERNAL;
+#endif
+
 #endif /* __MONO_MINI_ARM_H__ */
 
