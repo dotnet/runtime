@@ -317,12 +317,6 @@ alpha_sources = \
 	exceptions-alpha.c	\
 	tramp-alpha.c
 
-hppa_sources = \
-	mini-hppa.c		\
-	mini-hppa.h		\
-	exceptions-hppa.c	\
-	tramp-hppa.c
-
 darwin_sources = \
 	mini-darwin.c
 
@@ -514,13 +508,6 @@ arch_built = cpu-alpha.h
 arch_define=__alpha__
 endif
 
-if HPPA
-# Only support 32-bit targets for now
-arch_sources = $(hppa_sources)
-arch_built = cpu-hppa.h
-arch_define=__hppa__
-endif
-
 if HOST_WIN32
 os_sources = $(windows_sources)
 monobin_platform_ldflags=
@@ -649,9 +636,6 @@ cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-alpha.h alpha_desc $(srcdir)/cpu-alpha.md
 
-cpu-hppa.h: cpu-hppa.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-hppa.h hppa_desc $(srcdir)/cpu-hppa.md
-
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
 
@@ -749,7 +733,6 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(s390x_sources) cpu-s390x.md 		\
 	$(ia64_sources) cpu-ia64.md 		\
 	$(alpha_sources) cpu-alpha.md 		\
-	$(hppa_sources) cpu-hppa.md 		\
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)

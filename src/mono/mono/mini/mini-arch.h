@@ -23,8 +23,6 @@
 #include "mini-alpha.h"
 #elif defined(__mips__)
 #include "mini-mips.h"
-#elif defined(__hppa__)
-#include "mini-hppa.h"
 #else
 #error add arch specific include file in mini-arch.h
 #endif

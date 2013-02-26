@@ -2524,20 +2524,6 @@ case "$host" in
 		have_visibility_hidden=no
 		INTL="intl"
 		;;
-	hppa2.0w-hp-hpux11.00 | hppa64-hp-hpux11.00)
-		TARGET=HPPA;
-		arch_target=hppa; 
-		LIBC="libc.sl"
-		ACCESS_UNALIGNED="no"
-		INTERP_SUPPORTED=yes
-		interp_wanted=true
-		;;
-	hppa*linux*)
-		TARGET=HPPA;
-		arch_target=hppa; 
-		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
-		;;
 	macppc-*-openbsd* | powerpc*-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* | powerpc-*-freebsd* )
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
@@ -3146,7 +3132,6 @@ AM_CONDITIONAL(POWERPC64, test x$TARGET = xPOWERPC64)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(S390, test x$TARGET = xS390)
 AM_CONDITIONAL(S390x, test x$TARGET = xS390x)
-AM_CONDITIONAL(HPPA, test x$TARGET = xHPPA)
 AM_CONDITIONAL(HOST_X86, test x$HOST = xX86)
 AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
 AM_CONDITIONAL(HOST_ARM, test x$HOST = xARM)
@@ -3336,7 +3321,6 @@ mono/cil/Makefile
 mono/arch/Makefile
 mono/arch/x86/Makefile
 mono/arch/amd64/Makefile
-mono/arch/hppa/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
 mono/arch/s390/Makefile
