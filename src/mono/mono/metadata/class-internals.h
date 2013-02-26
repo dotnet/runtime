@@ -297,8 +297,10 @@ struct _MonoClass {
 	/* next byte */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint has_finalize    : 1; /* class has its own Finalize impl */ 
+#ifndef DISABLE_REMOTING
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
 	guint contextbound    : 1; /* class is a ContextBoundObject */
+#endif
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
@@ -415,6 +417,14 @@ int mono_class_interface_match (const uint8_t *bitmap, int id) MONO_INTERNAL;
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && mono_class_interface_match ((k)->interface_bitmap, (uiid)))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
+
+#ifdef DISABLE_REMOTING
+#define mono_class_is_marshalbyref(klass) (FALSE)
+#define mono_class_is_contextbound(klass) (FALSE)
+#else
+#define mono_class_is_marshalbyref(klass) ((klass)->marshalbyref)
+#define mono_class_is_contextbound(klass) ((klass)->contextbound)
+#endif
 
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match) MONO_INTERNAL;

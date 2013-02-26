@@ -934,7 +934,7 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (klass->instance_size > tlab_size)
 		return NULL;
-	if (klass->has_finalize || klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (klass->has_finalize || mono_class_is_marshalbyref (klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return NULL;
 	if (klass->rank)
 		return NULL;
@@ -976,7 +976,7 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 		return NULL;
 	if (has_per_allocation_action)
 		return NULL;
-	g_assert (!mono_class_has_finalizer (klass) && !klass->marshalbyref);
+	g_assert (!mono_class_has_finalizer (klass) && !mono_class_is_marshalbyref (klass));
 
 	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR);
 #else

@@ -2107,7 +2107,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type);
 	}
 
-	if (class->contextbound)
+	if (mono_class_is_contextbound (class))
 		vt->remote = 1;
 	else
 		vt->remote = 0;
@@ -3654,7 +3654,7 @@ serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 		return NULL;
 	}
 
-	g_assert (!mono_object_class (obj)->marshalbyref);
+	g_assert (!mono_class_is_marshalbyref (mono_object_class (obj)));
 
 	params [0] = obj;
 	*exc = NULL;
@@ -3704,7 +3704,7 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	if (!get_proxy_method)
 		get_proxy_method = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
 
-	g_assert (obj->vtable->klass->marshalbyref);
+	g_assert (mono_class_is_marshalbyref (obj->vtable->klass));
 
 	real_proxy = (MonoRealProxy*) mono_object_new (domain, mono_defaults.real_proxy_class);
 	reflection_type = mono_type_get_object (domain, &obj->vtable->klass->byval_arg);
@@ -3742,7 +3742,7 @@ mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, 
 
 	*exc = NULL;
 
-	if (mono_object_class (obj)->marshalbyref) {
+	if (mono_class_is_marshalbyref (mono_object_class (obj))) {
 		deserialized = make_transparent_proxy (obj, &failure, exc);
 	} else {
 		MonoDomain *domain = mono_domain_get ();
@@ -4472,7 +4472,7 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 	if (!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		profile_allocs = FALSE;
 
-	if (mono_class_has_finalizer (vtable->klass) || vtable->klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return mono_object_new_specific;
 
 	if (!vtable->klass->has_references) {
@@ -5200,7 +5200,7 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+	if (mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
 		return mono_object_isinst_mbyref (obj, klass);
 
 	if (!obj)
@@ -5941,7 +5941,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)target;
-		if (tp->remote_class->proxy_class->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+		if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 			target = tp->rp->unwrapped_server;
 		} else {
 			return mono_remoting_invoke ((MonoObject *)tp->rp, msg, exc, out_args);
@@ -6265,7 +6265,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
 	g_assert (res != NULL);
 
-	if (tp->remote_class->proxy_class->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		mono_field_get_value (tp->rp->unwrapped_server, field, res);
 		return res;
 	}
@@ -6325,7 +6325,7 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 
 	field_class = mono_class_from_mono_type (field->type);
 
-	if (tp->remote_class->proxy_class->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		gpointer val;
 		if (field_class->valuetype) {
 			res = mono_object_new (domain, field_class);
@@ -6392,7 +6392,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 
 	field_class = mono_class_from_mono_type (field->type);
 
-	if (tp->remote_class->proxy_class->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		if (field_class->valuetype) mono_field_set_value (tp->rp->unwrapped_server, field, val);
 		else mono_field_set_value (tp->rp->unwrapped_server, field, *((MonoObject **)val));
 		return;
@@ -6448,7 +6448,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 
 	field_class = mono_class_from_mono_type (field->type);
 
-	if (tp->remote_class->proxy_class->contextbound && tp->rp->context == (MonoObject *) mono_context_get ()) {
+	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		if (field_class->valuetype) mono_field_set_value (tp->rp->unwrapped_server, field, ((gchar *) arg) + sizeof (MonoObject));
 		else mono_field_set_value (tp->rp->unwrapped_server, field, arg);
 		return;

@@ -1060,8 +1060,11 @@ mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
 	static int offset = -1;
 	static guint8 mask;
 
+	//XXX temporary hack until we properly remove all marshaling code
+#ifndef DISABLE_REMOTING
 	if (offset < 0)
 		mono_marshal_find_bitfield_offset (MonoClass, contextbound, &offset, &mask);
+#endif
 
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -2119,7 +2122,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
-		if (!tp->remote_class->proxy_class->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
+		if (!mono_class_is_contextbound (tp->remote_class->proxy_class) || tp->rp->context != (MonoObject *) mono_context_get ()) {
 
 			/* If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
@@ -2889,7 +2892,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	/* skip the this pointer */
 	params++;
 
-	if (this->remote_class->proxy_class->contextbound && this->rp->context == (MonoObject *) mono_context_get ())
+	if (mono_class_is_contextbound (this->remote_class->proxy_class) && this->rp->context == (MonoObject *) mono_context_get ())
 	{
 		int i;
 		MonoMethodSignature *sig = mono_method_signature (method);
@@ -3147,7 +3150,7 @@ mono_marshal_emit_xdomain_copy_out_value (MonoMethodBuilder *mb, MonoClass *pcla
 static gboolean
 mono_marshal_supports_fast_xdomain (MonoMethod *method)
 {
-	return !method->klass->contextbound &&
+	return !mono_class_is_contextbound (method->klass) &&
 		   !((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && (strcmp (".ctor", method->name) == 0));
 }
 
@@ -10186,7 +10189,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_INTERFACE;
 #endif
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
-	if (element_class->marshalbyref || element_class->rank || mono_class_has_variant_generic_params (element_class))
+	if (mono_class_is_marshalbyref (element_class) || element_class->rank || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
 	if (element_class->flags & TYPE_ATTRIBUTE_SEALED)
 		return STELEMREF_SEALED_CLASS;
