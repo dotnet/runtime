@@ -65,39 +65,6 @@ NurseryClearPolicy sgen_get_nursery_clear_policy (void) MONO_INTERNAL;
 #define SGEN_TV_ELAPSED(start,end) (int)((end-start) / 10)
 #define SGEN_TV_ELAPSED_MS(start,end) ((SGEN_TV_ELAPSED((start),(end)) + 500) / 1000)
 
-/* for use with write barriers */
-typedef struct _RememberedSet RememberedSet;
-struct _RememberedSet {
-	mword *store_next;
-	mword *end_set;
-	RememberedSet *next;
-	mword data [MONO_ZERO_LEN_ARRAY];
-};
-
-/*
- * We're never actually using the first element.  It's always set to
- * NULL to simplify the elimination of consecutive duplicate
- * entries.
- */
-#define STORE_REMSET_BUFFER_SIZE	1023
-
-typedef struct _GenericStoreRememberedSet GenericStoreRememberedSet;
-struct _GenericStoreRememberedSet {
-	GenericStoreRememberedSet *next;
-	/* We need one entry less because the first entry of store
-	   remset buffers is always a dummy and we don't copy it. */
-	gpointer data [STORE_REMSET_BUFFER_SIZE - 1];
-};
-
-/* we have 4 possible values in the low 2 bits */
-enum {
-	REMSET_LOCATION, /* just a pointer to the exact location */
-	REMSET_RANGE,    /* range of pointer fields */
-	REMSET_OBJECT,   /* mark all the object for scanning */
-	REMSET_VTYPE,    /* a valuetype array described by a gc descriptor, a count and a size */
-	REMSET_TYPE_MASK = 0x3
-};
-
 /* eventually share with MonoThread? */
 /*
  * This structure extends the MonoThreadInfo structure.
@@ -117,9 +84,6 @@ struct _SgenThreadInfo {
 	char **tlab_start_addr;
 	char **tlab_temp_end_addr;
 	char **tlab_real_end_addr;
-	gpointer **store_remset_buffer_addr;
-	long *store_remset_buffer_index_addr;
-	RememberedSet *remset;
 	gpointer runtime_data;
 
 	/* Only used on POSIX platforms */
@@ -141,8 +105,6 @@ struct _SgenThreadInfo {
 	char *tlab_next;
 	char *tlab_temp_end;
 	char *tlab_real_end;
-	gpointer *store_remset_buffer;
-	long store_remset_buffer_index;
 #endif
 };
 
@@ -441,9 +403,7 @@ enum {
 	INTERNAL_MEM_STATISTICS,
 	INTERNAL_MEM_STAT_PINNED_CLASS,
 	INTERNAL_MEM_STAT_REMSET_CLASS,
-	INTERNAL_MEM_REMSET,
 	INTERNAL_MEM_GRAY_QUEUE,
-	INTERNAL_MEM_STORE_REMSET,
 	INTERNAL_MEM_MS_TABLES,
 	INTERNAL_MEM_MS_BLOCK_INFO,
 	INTERNAL_MEM_EPHEMERON_LINK,
@@ -942,23 +902,14 @@ extern MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
 extern __thread SgenThreadInfo *sgen_thread_info;
-extern __thread gpointer *store_remset_buffer;
-extern __thread long store_remset_buffer_index;
 extern __thread char *stack_end;
-extern __thread long *store_remset_buffer_index_addr;
 #endif
 
 #ifdef HAVE_KW_THREAD
 #define TLAB_ACCESS_INIT
-#define REMEMBERED_SET	remembered_set
-#define STORE_REMSET_BUFFER	store_remset_buffer
-#define STORE_REMSET_BUFFER_INDEX	store_remset_buffer_index
 #define IN_CRITICAL_REGION sgen_thread_info->in_critical_region
 #else
 #define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
-#define REMEMBERED_SET	(__thread_info__->remset)
-#define STORE_REMSET_BUFFER	(__thread_info__->store_remset_buffer)
-#define STORE_REMSET_BUFFER_INDEX	(__thread_info__->store_remset_buffer_index)
 #define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
 #endif
 

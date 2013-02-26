@@ -532,7 +532,6 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	}
 }
 
-#ifdef SGEN_HAVE_CARDTABLE
 void
 sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 {
@@ -570,7 +569,6 @@ sgen_los_update_cardtable_mod_union (void)
 		}
 	}
 }
-#endif
 
 mword
 sgen_los_object_size (LOSObject *obj)

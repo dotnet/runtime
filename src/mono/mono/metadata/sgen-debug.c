@@ -29,7 +29,6 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-ssb.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-pinning.h"

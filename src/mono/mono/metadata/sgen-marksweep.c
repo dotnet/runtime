@@ -1964,7 +1964,6 @@ major_print_gc_param_usage (void)
 			);
 }
 
-#ifdef SGEN_HAVE_CARDTABLE
 static void
 major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
@@ -2213,7 +2212,6 @@ update_cardtable_mod_union (void)
 	} END_FOREACH_BLOCK;
 }
 #endif
-#endif
 
 static void
 alloc_free_block_lists (MSBlockInfo ***lists)
@@ -2374,12 +2372,10 @@ sgen_marksweep_init
 	collector->find_pin_queue_start_ends = major_find_pin_queue_start_ends;
 	collector->pin_objects = major_pin_objects;
 	collector->pin_major_object = pin_major_object;
-#ifdef SGEN_HAVE_CARDTABLE
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
 #ifdef SGEN_CONCURRENT_MARK
 	collector->update_cardtable_mod_union = update_cardtable_mod_union;
-#endif
 #endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
@@ -2409,10 +2405,8 @@ sgen_marksweep_init
 	collector->major_concurrent_ops.scan_vtype = major_scan_vtype_concurrent;
 #endif
 
-#ifdef SGEN_HAVE_CARDTABLE
 	/*cardtable requires major pages to be 8 cards aligned*/
 	g_assert ((MS_BLOCK_SIZE % (8 * CARD_SIZE_IN_BYTES)) == 0);
-#endif
 }
 
 #endif

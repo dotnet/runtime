@@ -34,8 +34,6 @@
 #include "utils/mono-time.h"
 #include "utils/mono-memory-model.h"
 
-#ifdef SGEN_HAVE_CARDTABLE
-
 //#define CARDTABLE_STATS
 
 #ifdef HAVE_UNISTD_H
@@ -723,7 +721,5 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 {
 	return NULL;
 }
-
-#endif
 
 #endif /*HAVE_SGEN_GC*/
