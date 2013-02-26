@@ -310,6 +310,7 @@ long long stat_nursery_copy_object_failed_forwarded = 0;
 long long stat_nursery_copy_object_failed_pinned = 0;
 long long stat_nursery_copy_object_failed_to_space = 0;
 
+static int stat_wbarrier_add_to_global_remset = 0;
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
 static int stat_wbarrier_arrayref_copy = 0;
@@ -1125,6 +1126,8 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 {
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Target pointer of global remset must be in the nursery");
 
+	HEAVY_STAT (++stat_wbarrier_add_to_global_remset);
+
 	if (!major_collector.is_concurrent) {
 		SGEN_ASSERT (5, current_collection_generation != -1, "Global remsets can only be added during collections");
 	} else {
@@ -1145,7 +1148,6 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 	SGEN_LOG (8, "Adding global remset for %p", ptr);
 	binary_protocol_global_remset (ptr, obj, (gpointer)SGEN_LOAD_VTABLE (obj));
 
-	HEAVY_STAT (++stat_global_remsets_added);
 
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
@@ -2199,6 +2201,7 @@ init_stats (void)
 	mono_counters_register ("Number of pinned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_pinned_objects);
 
 #ifdef HEAVY_STATISTICS
+	mono_counters_register ("WBarrier remember pointer", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_add_to_global_remset);
 	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
 	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_arrayref);
 	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_arrayref_copy);

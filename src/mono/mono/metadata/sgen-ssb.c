@@ -36,6 +36,10 @@
 /*A two slots cache for recently inserted remsets */
 static gpointer global_remset_cache [2];
 
+/*A hashed slot cache */
+#define HASH_T_S 131072
+// static gpointer global_remset_hash_cache [HASH_T_S];
+
 static LOCK_DECLARE (global_remset_mutex);
 
 #define LOCK_GLOBAL_REMSET mono_mutex_lock (&global_remset_mutex)
@@ -61,6 +65,7 @@ static long long stat_global_remsets_added = 0;
 static long long stat_global_remsets_readded = 0;
 static long long stat_global_remsets_processed = 0;
 static long long stat_global_remsets_discarded = 0;
+static long long stat_global_remsets_discarded2 = 0;
 
 #endif
 
@@ -281,6 +286,7 @@ sgen_ssb_wbarrier_generic_nostore (gpointer ptr)
 	/* This simple optimization eliminates a sizable portion of
 	   entries.  Comparing it to the last but one entry as well
 	   doesn't eliminate significantly more entries. */
+	// if (!global_remset_location_was_not_added (ptr)) {
 	if (buffer [index] == ptr) {
 		UNLOCK_GC;
 		return;
@@ -641,6 +647,7 @@ static void
 sgen_ssb_prepare_for_minor_collection (void)
 {
 	memset (global_remset_cache, 0, sizeof (global_remset_cache));
+	// memset (global_remset_hash_cache, 0, sizeof (global_remset_hash_cache));
 }
 
 /*
@@ -711,6 +718,14 @@ global_remset_location_was_not_added (gpointer ptr)
 {
 
 	gpointer first = global_remset_cache [0], second;
+
+	// int hash_idx = ((mword)ptr * 1737350767) & (HASH_T_S - 1);
+	// if (global_remset_hash_cache [hash_idx] == ptr) {
+	// 	HEAVY_STAT (++stat_global_remsets_discarded2);
+	// } else {
+	// 	global_remset_hash_cache [hash_idx] = ptr;
+	// }
+
 	if (first == ptr) {
 		HEAVY_STAT (++stat_global_remsets_discarded);
 		return FALSE;
@@ -759,6 +774,8 @@ sgen_ssb_record_pointer (gpointer ptr)
 	rs->next = global_remset;
 	global_remset = rs;
 	*(global_remset->store_next++) = (mword)ptr;
+
+	HEAVY_STAT (++stat_global_remsets_added);
 
 #if SGEN_MAX_DEBUG_LEVEL >= 4
 	{
@@ -909,6 +926,7 @@ sgen_ssb_init (SgenRemeberedSet *remset)
 	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
 	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
+	mono_counters_register ("Global remsets discarded_hash", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded2);
 #endif
 
 	remset->wbarrier_set_field = sgen_ssb_wbarrier_set_field;

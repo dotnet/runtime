@@ -37,7 +37,7 @@ typedef guint64 mword;
  * Turning on heavy statistics will turn off the managed allocator and
  * the managed write barrier.
  */
-//#define HEAVY_STATISTICS
+// #define HEAVY_STATISTICS
 
 /*
  * Define this to allow the user to change the nursery size by
