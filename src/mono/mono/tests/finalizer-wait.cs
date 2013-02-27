@@ -22,12 +22,17 @@ class T {
 		p = null;
 	}
 
-	static void callMakeP () {
-		makeP ();
+	static void callMakeP (int i) {
+		if (i <= 0)
+		{
+			makeP ();
+			return;
+		}
+		callMakeP (i - 1);
 	}
 
 	static int Main () {
-		callMakeP ();
+		callMakeP (100);
 
 		GC.Collect ();
 		while (!finalized) {
