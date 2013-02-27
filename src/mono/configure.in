@@ -742,7 +742,7 @@ DISABLED_FEATURES=none
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, 
-     reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters,
+     reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters, remoting,
 	 sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
@@ -880,6 +880,11 @@ fi
 if test "x$mono_feature_disable_appdomains" = "xyes"; then
 	AC_DEFINE(DISABLE_APPDOMAINS, 1, [Disable support for multiple appdomains.])
 	AC_MSG_NOTICE([Disabled support for multiple appdomains.])
+fi
+
+if test "x$mono_feature_disable_remoting" = "xyes"; then
+	AC_DEFINE(DISABLE_REMOTING, 1, [Disable remoting support (This disables type proxies and make com non-functional)])
+	AC_MSG_NOTICE([Disabled remoting])
 fi
 
 if test "x$mono_feature_disable_sgen_remset" = "xyes"; then
