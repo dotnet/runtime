@@ -2837,17 +2837,20 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
-	if (!concurrent_collection_in_progress) {
+	if (!concurrent_collection_in_progress || finish_up_concurrent_mark) {
 		if (major_collector.is_concurrent) {
 			/*
 			 * The concurrent major collector cannot evict
 			 * yet, so we need to pin cemented objects to
 			 * not break some asserts.
+			 *
+			 * FIXME: We could evict now!
 			 */
 			sgen_cement_iterate (pin_stage_object_callback, NULL);
 		}
 
-		sgen_cement_reset ();
+		if (!concurrent_collection_in_progress)
+			sgen_cement_reset ();
 	}
 
 	sgen_optimize_pin_queue (0);
