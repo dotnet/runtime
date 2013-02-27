@@ -30,12 +30,6 @@
  * SCAN_OBJECT_NOSCAN - if defined, don't actually scan the object,
  * i.e. don't invoke the OBJ_XXX macros.
  *
- * SCAN_OBJECT_ACTION - is invoked after an object has been scanned.
- * The object's start is "start", its length in bytes (including
- * padding at the end) is "skip_size".  "desc" is the object's GC
- * descriptor.  The action can use the macro
- * "SCAN" to scan the object.
- *
  * SCAN_OBJECT_NOVTABLE - desc is provided by the includer, instead of
  * vt.  Complex arrays cannot not be scanned.
  *
@@ -43,10 +37,6 @@
  * Should only be used for scanning that's done for the actual
  * collection, not for debugging scans.
  */
-
-#ifndef SCAN_OBJECT_ACTION
-#define SCAN_OBJECT_ACTION
-#endif
 
 {
 #ifndef SCAN_OBJECT_NOVTABLE
@@ -73,7 +63,6 @@
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
-		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
 	case DESC_TYPE_SMALL_BITMAP:
@@ -81,7 +70,6 @@
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
-		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
 	case DESC_TYPE_VECTOR:
@@ -89,7 +77,6 @@
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
-		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
 	case DESC_TYPE_LARGE_BITMAP:
@@ -97,7 +84,6 @@
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
-		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
 	case DESC_TYPE_COMPLEX:
@@ -106,7 +92,6 @@
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
-		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
 #ifndef SCAN_OBJECT_NOVTABLE
@@ -116,13 +101,11 @@
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
-		SCAN_OBJECT_ACTION;
 #undef SCAN
 		break;
 #endif
 	case DESC_TYPE_COMPLEX_PTRFREE:
 		/*Nothing to do*/
-		SCAN_OBJECT_ACTION;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -130,6 +113,5 @@
 }
 
 #undef SCAN_OBJECT_NOSCAN
-#undef SCAN_OBJECT_ACTION
 #undef SCAN_OBJECT_NOVTABLE
 #undef SCAN_OBJECT_PROTOCOL
