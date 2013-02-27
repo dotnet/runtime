@@ -147,8 +147,14 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 	
 	if (vasprintf (&msg, format, args) < 0)
 		return;
+
+#if MONOTOUCH
+	FILE *target = stderr;
+#else
+	FILE *target = stdout;
+#endif
 	
-	printf ("%s%s%s\n",
+	fprintf (target, "%s%s%s\n",
 		log_domain != NULL ? log_domain : "",
 		log_domain != NULL ? ": " : "",
 		msg);
