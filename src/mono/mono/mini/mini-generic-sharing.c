@@ -1102,8 +1102,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		addr = mono_compile_method (data);
 		return mini_add_method_trampoline (NULL, data, addr, NULL, mono_method_needs_static_rgctx_invoke (data, FALSE));
 	}
+#ifndef DISABLE_REMOTING
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
 		return mono_compile_method (mono_marshal_get_remoting_invoke_with_check (data));
+#endif
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return mono_domain_alloc0 (domain, sizeof (gpointer));
 	case MONO_RGCTX_INFO_CLASS_FIELD:

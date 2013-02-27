@@ -6394,6 +6394,7 @@ SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)
 	mono_arch_handle_exception (ctx, exc);
 }
 
+#ifndef DISABLE_REMOTING
 /* mono_jit_create_remoting_trampoline:
  * @method: pointer to the method info
  *
@@ -6417,11 +6418,13 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))) {
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
 		addr = mono_compile_method (nm);
-	} else {
+	} else
+	{
 		addr = mono_compile_method (method);
 	}
 	return mono_get_addr_from_ftnptr (addr);
 }
+#endif
 
 static gpointer *vtable_trampolines;
 static int vtable_trampolines_size;
@@ -6815,7 +6818,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_free_method (mono_jit_free_method);
 	mono_install_trampoline (mono_create_jit_trampoline);
 	mono_install_jump_trampoline (mono_create_jump_trampoline);
+#ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
+#endif
 	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
 	mono_install_create_domain_hook (mini_create_jit_domain_info);
 	mono_install_free_domain_hook (mini_free_jit_domain_info);
@@ -7332,10 +7337,12 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 			mono_compile_method (invoke);
 		}
+#ifndef DISABLE_REMOTING
 		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
 			invoke = mono_marshal_get_remoting_invoke_with_check (method);
 			mono_compile_method (invoke);
 		}
+#endif
 	}
 
 	/* Load and precompile referenced assemblies as well */

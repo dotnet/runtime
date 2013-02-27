@@ -267,18 +267,6 @@ gpointer
 mono_marshal_get_wrapper_info (MonoMethod *wrapper) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_remoting_invoke (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_xappdomain_invoke (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_remoting_invoke_with_check (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
@@ -321,21 +309,6 @@ MonoMethod *
 mono_marshal_get_ptr_to_struct (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_stfld_wrapper (MonoType *type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_ldfld_wrapper (MonoType *type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_ldflda_wrapper (MonoType *type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_stfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
-
-MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
@@ -355,9 +328,6 @@ mono_marshal_get_isinst (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_castclass (MonoClass *klass) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_proxy_cancast (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_stelemref (void) MONO_INTERNAL;
@@ -400,9 +370,6 @@ mono_marshal_free_array (gpointer *ptr, int size) MONO_INTERNAL;
 
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj) MONO_INTERNAL;
-
-MonoObject *
-mono_marshal_xdomain_copy_value (MonoObject *val) MONO_INTERNAL;
 
 void
 cominterop_release_all_rcws (void) MONO_INTERNAL; 
@@ -603,6 +570,44 @@ mono_marshal_emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb) MONO_INTER
 
 void
 mono_marshal_use_aot_wrappers (gboolean use) MONO_INTERNAL;
+
+MonoObject *
+mono_marshal_xdomain_copy_value (MonoObject *val) MONO_INTERNAL;
+
+
+#ifndef DISABLE_REMOTING
+
+MonoMethod *
+mono_marshal_get_remoting_invoke (MonoMethod *method) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_xappdomain_invoke (MonoMethod *method) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_remoting_invoke_with_check (MonoMethod *method) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_stfld_wrapper (MonoType *type) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_ldfld_wrapper (MonoType *type) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_ldflda_wrapper (MonoType *type) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_stfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_proxy_cancast (MonoClass *klass) MONO_INTERNAL;
+
+#endif
 
 G_END_DECLS
 

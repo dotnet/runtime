@@ -786,6 +786,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image = mono_defaults.corlib;
 
 		switch (wrapper_type) {
+#ifndef DISABLE_REMOTING
 		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
 			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
@@ -827,6 +828,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_STFLD_REMOTE:
 			ref->method = mono_marshal_get_stfld_remote_wrapper (NULL);
 			break;
+#endif
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 

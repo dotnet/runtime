@@ -696,8 +696,15 @@ typedef struct {
 
 #define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
+#ifndef DISABLE_REMOTING
+
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class) MONO_INTERNAL;
+
+void
+mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
+
+#endif
 
 typedef struct {
 	gulong new_object_count;
@@ -952,9 +959,6 @@ mono_install_trampoline (MonoTrampoline func) MONO_INTERNAL;
 
 void
 mono_install_jump_trampoline (MonoJumpTrampoline func) MONO_INTERNAL;
-
-void
-mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
 
 void
 mono_install_delegate_trampoline (MonoDelegateTrampoline func) MONO_INTERNAL;

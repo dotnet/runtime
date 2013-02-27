@@ -613,10 +613,6 @@ mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj,
 			     MonoReflectionMethod *method, MonoArray *out_args) MONO_INTERNAL;
 
 MonoObject *
-mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
-
-MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
 			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
 
@@ -1458,11 +1454,17 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 gboolean
 mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res) MONO_INTERNAL;
 
+#ifdef DISABLE_REMOTING
+MonoObject *
+mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
+			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
+
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy) MONO_INTERNAL;
 
 void
 mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass) MONO_INTERNAL;
+#endif
 
 gpointer
 mono_create_ftnptr (MonoDomain *domain, gpointer addr) MONO_INTERNAL;
