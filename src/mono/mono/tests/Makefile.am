@@ -810,13 +810,7 @@ SGEN_CONFIGURATIONS =	\
 	"major=marksweep-par,minor=split|ms-par-split"	\
 	"minor=split|ms-split"	\
 	"major=marksweep-par,minor=split,alloc-ratio=95|ms-par-split-95"	\
-	"minor=split,alloc-ratio=95|ms-split-95"	\
-	"major=marksweep-par,wbarrier=remset|ms-par-ssb"	\
-	"wbarrier=remset|ms-ssb"	\
-	"major=marksweep-par,minor=split,wbarrier=remset|ms-par-split-ssb"	\
-	"minor=split,wbarrier=remset|ms-split-ssb"	\
-	"major=marksweep-par,minor=split,alloc-ratio=95,wbarrier=remset|ms-par-split-ssb-95"	\
-	"minor=split,alloc-ratio=95,wbarrier=remset|ms-split-ssb-95"
+	"minor=split,alloc-ratio=95|ms-split-95"
 
 #FIXME We should move to use SGEN_CONFIGURATIONS once sgen supports trailling commas or its argument list.
 SGEN_BRIDGE_CONFIGURATIONS =	\

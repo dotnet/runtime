@@ -95,9 +95,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_STATISTICS: return "statistics";
 	case INTERNAL_MEM_STAT_PINNED_CLASS: return "pinned-class";
 	case INTERNAL_MEM_STAT_REMSET_CLASS: return "remset-class";
-	case INTERNAL_MEM_REMSET: return "remset";
 	case INTERNAL_MEM_GRAY_QUEUE: return "gray-queue";
-	case INTERNAL_MEM_STORE_REMSET: return "store-remset";
 	case INTERNAL_MEM_MS_TABLES: return "marksweep-tables";
 	case INTERNAL_MEM_MS_BLOCK_INFO: return "marksweep-block-info";
 	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
