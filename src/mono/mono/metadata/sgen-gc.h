@@ -378,8 +378,6 @@ void sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
 gboolean sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p) MONO_INTERNAL;
 void sgen_os_init (void) MONO_INTERNAL;
 
-void sgen_fill_thread_info_for_suspend (SgenThreadInfo *info) MONO_INTERNAL;
-
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread) MONO_INTERNAL;
 
 void sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
@@ -685,16 +683,11 @@ typedef struct {
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
-	void (*begin_scan_remsets) (void *start_nursery, void *end_nursery, SgenGrayQueue *queue); /* OPTIONAL */
 	void (*finish_scan_remsets) (void *start_nursery, void *end_nursery, SgenGrayQueue *queue);
 
-	void (*register_thread) (SgenThreadInfo *p); /* OPTIONAL */
-	void (*cleanup_thread) (SgenThreadInfo *p); /* OPTIONAL */
-	void (*fill_thread_info_for_suspend) (SgenThreadInfo *info); /* OPTIONAL */
-	void (*prepare_for_minor_collection) (void); /* OPTIONAL */
 	void (*prepare_for_major_collection) (void);
 
-	void (*finish_minor_collection) (void); /* OPTIONAL */
+	void (*finish_minor_collection) (void);
 	gboolean (*find_address) (char *addr);
 } SgenRemeberedSet;
 

@@ -2536,9 +2536,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	stat_minor_gcs++;
 	gc_stats.minor_gc_count ++;
 
-	if (remset.prepare_for_minor_collection)
-		remset.prepare_for_minor_collection ();
-
 	MONO_GC_CHECKPOINT_1 (GENERATION_NURSERY);
 
 	sgen_process_fin_stage_entries ();
@@ -2576,14 +2573,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 		sgen_check_consistency ();
 
 	sgen_workers_start_all_workers ();
-
-	/*
-	 * Perform the sequential part of remembered set scanning.
-	 * This usually involves scanning global information that might later be produced by evacuation.
-	 */
-	if (remset.begin_scan_remsets)
-		remset.begin_scan_remsets (sgen_get_nursery_start (), nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-
 	sgen_workers_start_marking ();
 
 	frssjd = sgen_alloc_internal_dynamic (sizeof (FinishRememberedSetScanJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
@@ -2726,8 +2715,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
-	if (remset.finish_minor_collection)
-		remset.finish_minor_collection ();
+	remset.finish_minor_collection ();
 
 	check_scan_starts ();
 
@@ -3930,13 +3918,6 @@ mono_gc_deregister_root (char* addr)
 
 unsigned int sgen_global_stop_count = 0;
 
-void
-sgen_fill_thread_info_for_suspend (SgenThreadInfo *info)
-{
-	if (remset.fill_thread_info_for_suspend)
-		remset.fill_thread_info_for_suspend (info);
-}
-
 int
 sgen_get_current_collection_generation (void)
 {
@@ -4111,9 +4092,6 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	stack_end = info->stack_end;
 #endif
 
-	if (remset.register_thread)
-		remset.register_thread (info);
-
 	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end);
 
 	if (gc_callbacks.thread_attach_func)
@@ -4121,13 +4099,6 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 
 	UNLOCK_GC;
 	return info;
-}
-
-static void
-sgen_wbarrier_cleanup_thread (SgenThreadInfo *p)
-{
-	if (remset.cleanup_thread)
-		remset.cleanup_thread (p);
 }
 
 static void
@@ -4181,7 +4152,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 		gc_callbacks.thread_detach_func (p->runtime_data);
 		p->runtime_data = NULL;
 	}
-	sgen_wbarrier_cleanup_thread (p);
 
 	mono_threads_unregister_current_thread (p);
 	UNLOCK_GC;
@@ -5241,9 +5211,6 @@ mono_gc_base_init (void)
 	memset (&remset, 0, sizeof (remset));
 
 	sgen_card_table_init (&remset);
-
-	if (remset.register_thread)
-		remset.register_thread (mono_thread_info_current ());
 
 	gc_initialized = 1;
 }
