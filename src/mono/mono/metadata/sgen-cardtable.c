@@ -557,7 +557,7 @@ LOOP_HEAD:
 				ScanVTypeFunc scan_vtype_func = sgen_get_current_object_ops ()->scan_vtype;
 
 				for (; elem < card_end; elem += elem_size)
-					scan_vtype_func (elem, desc, queue);
+					scan_vtype_func (elem, desc, queue BINARY_PROTOCOL_ARG (elem_size));
 			} else {
 				CopyOrMarkObjectFunc copy_func = sgen_get_current_object_ops ()->copy_or_mark_object;
 

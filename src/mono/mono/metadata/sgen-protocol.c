@@ -209,6 +209,20 @@ binary_protocol_mark (gpointer obj, gpointer vtable, int size)
 }
 
 void
+binary_protocol_scan_begin (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolScanBegin entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_SCAN_BEGIN, &entry, sizeof (SGenProtocolScanBegin));
+}
+
+void
+binary_protocol_scan_vtype_begin (gpointer obj, int size)
+{
+	SGenProtocolScanVTypeBegin entry = { obj, size };
+	protocol_entry (SGEN_PROTOCOL_SCAN_VTYPE_BEGIN, &entry, sizeof (SGenProtocolScanVTypeBegin));
+}
+
+void
 binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable)
 {
 	SGenProtocolWBarrier entry = { ptr, value, value_vtable };

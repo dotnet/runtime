@@ -57,6 +57,7 @@ extern long long stat_scan_object_called_major;
 static void
 CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
 {
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 
 	HEAVY_STAT (++stat_scan_object_called_major);
@@ -67,12 +68,13 @@ CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
 #error concurrent and parallel mark not supported yet
 #else
 static void
-CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue)
+CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 
 #define SCAN_OBJECT_NOVTABLE
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 }
 #endif

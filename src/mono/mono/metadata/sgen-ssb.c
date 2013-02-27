@@ -469,7 +469,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		count = p [2];
 		skip_size = p [3];
 		while (count-- > 0) {
-			sgen_get_current_object_ops ()->scan_vtype ((char*)ptr, desc, queue);
+			sgen_get_current_object_ops ()->scan_vtype ((char*)ptr, desc, queue BINARY_PROTOCOL_ARG (skip_size));
 			ptr = (void**)((char*)ptr + skip_size);
 		}
 		return p + 4;

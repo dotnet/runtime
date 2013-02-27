@@ -31,6 +31,8 @@ enum {
 	SGEN_PROTOCOL_COPY,
 	SGEN_PROTOCOL_PIN,
 	SGEN_PROTOCOL_MARK,
+	SGEN_PROTOCOL_SCAN_BEGIN,
+	SGEN_PROTOCOL_SCAN_VTYPE_BEGIN,
 	SGEN_PROTOCOL_WBARRIER,
 	SGEN_PROTOCOL_GLOBAL_REMSET,
 	SGEN_PROTOCOL_PTR_UPDATE,
@@ -77,6 +79,17 @@ typedef struct {
 	gpointer vtable;
 	int size;
 } SGenProtocolMark;
+
+typedef struct {
+	gpointer obj;
+	gpointer vtable;
+	int size;
+} SGenProtocolScanBegin;
+
+typedef struct {
+	gpointer obj;
+	int size;
+} SGenProtocolScanVTypeBegin;
 
 typedef struct {
 	gpointer ptr;
@@ -166,6 +179,8 @@ void binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size) MO
 void binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_pin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_mark (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_scan_begin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_scan_vtype_begin (gpointer start, int size) MONO_INTERNAL;
 void binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable) MONO_INTERNAL;
 void binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value_vtable) MONO_INTERNAL;
 void binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, int size) MONO_INTERNAL;
@@ -195,6 +210,8 @@ void binary_protocol_dislink_update (gpointer link, gpointer obj, int track) MON
 #define binary_protocol_copy(from, to, vtable, size)
 #define binary_protocol_pin(obj, vtable, size)
 #define binary_protocol_mark(obj, vtable, size)
+#define binary_protocol_scan_begin(obj, vtable, size)
+#define binary_protocol_scan_vtype_begin(obj, size)
 #define binary_protocol_wbarrier(ptr, value, value_vtable)
 #define binary_protocol_global_remset(ptr, value, value_vtable)
 #define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)

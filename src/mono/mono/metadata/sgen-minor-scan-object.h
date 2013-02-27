@@ -58,6 +58,7 @@ extern long long stat_scan_object_called_nursery;
 static void
 PARALLEL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 {
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 
 	HEAVY_STAT (++stat_scan_object_called_nursery);
@@ -71,12 +72,13 @@ PARALLEL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
  * Returns a pointer to the end of the object.
  */
 static void
-PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
+PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 
 #define SCAN_OBJECT_NOVTABLE
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 }
 
@@ -93,18 +95,20 @@ PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
 static void
 SERIAL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
 {
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 
 	HEAVY_STAT (++stat_scan_object_called_nursery);
 }
 
 static void
-SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue)
+SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
 
 #define SCAN_OBJECT_NOVTABLE
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 }
 

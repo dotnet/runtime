@@ -466,6 +466,12 @@ enum {
 	GENERATION_MAX
 };
 
+#ifdef SGEN_BINARY_PROTOCOL
+#define BINARY_PROTOCOL_ARG(x)	,x
+#else
+#define BINARY_PROTOCOL_ARG(x)
+#endif
+
 void sgen_init_internal_allocator (void) MONO_INTERNAL;
 
 typedef struct _ObjectList ObjectList;
@@ -476,7 +482,7 @@ struct _ObjectList {
 
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
-typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue*);
+typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
 
 typedef struct
 {
