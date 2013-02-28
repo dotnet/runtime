@@ -1018,4 +1018,26 @@ public class Tests
 		o.Catch<int, Exception> (1);
 		return 0;
 	}
+
+	internal static Type Process<TSource, TElement> (TSource[] arr, Action<TElement, TElement> call) {
+		arr [0] = default (TSource);
+		return typeof (TSource);
+	}
+
+	interface IFace5 {
+		Type foo<T> ();
+	}
+
+	class Class5 : IFace5 {
+		public Type foo<T> () {
+			return Process<KeyValuePair<long, T>, T> (new KeyValuePair<long, T> [10], null);
+		}
+	}
+
+	public static int test_0_rgctx_call_from_gshared_code () {
+		var c = new Class5 ();
+		if (c.foo<string> () != typeof (KeyValuePair<long, string>))
+			return 1;
+		return 0;
+	}
 }

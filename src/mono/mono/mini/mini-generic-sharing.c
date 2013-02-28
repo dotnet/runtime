@@ -1096,11 +1096,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		return mono_type_get_object (domain, data);
 	case MONO_RGCTX_INFO_METHOD:
 		return data;
-	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
-		/*
-		 * We can't create a jump trampoline here, as it cannot be patched.
-		 */
-		return mono_compile_method (data);
+	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: {
+		gpointer addr;
+
+		addr = mono_compile_method (data);
+		return mini_add_method_trampoline (NULL, data, addr, NULL, mono_method_needs_static_rgctx_invoke (data, FALSE));
+	}
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
 		return mono_compile_method (mono_marshal_get_remoting_invoke_with_check (data));
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
