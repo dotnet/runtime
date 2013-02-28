@@ -696,18 +696,6 @@ typedef struct {
 
 #define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
-#ifndef DISABLE_REMOTING
-
-MonoRemoteClass*
-mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class) MONO_INTERNAL;
-
-typedef gpointer (*MonoRemotingTrampoline) (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target);
-
-void
-mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
-
-#endif
-
 typedef struct {
 	gulong new_object_count;
 	gulong initialized_class_count;
@@ -1114,8 +1102,13 @@ typedef struct {
 #define mono_class_is_transparent_proxy(klass) (FALSE)
 #define mono_class_is_real_proxy(klass) (FALSE)
 #define mono_object_is_transparent_proxy(object) (FALSE)
-
 #else
+MonoRemoteClass*
+mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class) MONO_INTERNAL;
+
+void
+mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
+
 #define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
 #define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
 #define mono_object_is_transparent_proxy(object) (((MonoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
