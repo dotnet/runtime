@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+from optparse import OptionParser
+
+parser = OptionParser ()
+parser.add_option ("--switch", action = "store_true", dest = "switch")
+
+(options, args) = parser.parse_args ()
+
 def print_file (file_name):
     f = open (file_name, "r")
     for line in f:
@@ -64,11 +71,20 @@ def gen_binary_search (left, right):
     return name
 
 print "public class Bitmaps {"
-method_name = gen_binary_search (0, len (names))
-print "  public static Filler MakeAndFill (int which, object[] refs) {"
-print "    if (which >= %d) return null;" % len (names)
-print "    return %s (which, refs);" % method_name
-print "  }"
+if options.switch:
+    print "  public static Filler MakeAndFill (int which, object[] refs) {"
+    print "    switch (which) {"
+    for i in range (0, len (names)):
+        print "      case %d: { var b = new %s (); b.Fill (refs); return b; }" % (i, names [i])
+    print "      default: return null;"
+    print "    }"
+    print "  }"
+else:
+    method_name = gen_binary_search (0, len (names))
+    print "  public static Filler MakeAndFill (int which, object[] refs) {"
+    print "    if (which >= %d) return null;" % len (names)
+    print "    return %s (which, refs);" % method_name
+    print "  }"
 print "  public const int NumWhich = %d;" % len (names)
 print "}"
 
