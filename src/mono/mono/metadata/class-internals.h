@@ -701,6 +701,8 @@ typedef struct {
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class) MONO_INTERNAL;
 
+typedef gpointer (*MonoRemotingTrampoline) (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target);
+
 void
 mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
 
