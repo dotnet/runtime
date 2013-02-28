@@ -302,7 +302,7 @@ ji_is_gsharedvt (MonoJitInfo *ji)
  * ORIG_METHOD is the method the caller originally called i.e. an iface method, or NULL.
  */
 gpointer
-mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, MonoJitInfo *caller_ji, gboolean add_static_rgctx_tramp)
+mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp)
 {
 	gpointer addr = compiled_method;
 	gboolean callee_gsharedvt, callee_array_helper;
@@ -573,10 +573,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 
 	mono_debugger_trampoline_compiled (code, m, addr);
 
-	// FIXME: Is this needed ?
-	if (!ji)
-		ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
-	addr = mini_add_method_trampoline (orig_method, m, compiled_method, ji, need_rgctx_tramp);
+	addr = mini_add_method_trampoline (orig_method, m, compiled_method, need_rgctx_tramp);
 
 	if (generic_virtual || variant_iface) {
 		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
@@ -1059,7 +1056,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 				// FIXME: GSHAREDVT
 				addr = get_unbox_trampoline (method, addr, need_rgctx_tramp);
 			else
-				addr = mini_add_method_trampoline (NULL, method, compiled_method, NULL, need_rgctx_tramp);
+				addr = mini_add_method_trampoline (NULL, method, compiled_method, need_rgctx_tramp);
 			delegate->method_ptr = addr;
 			if (enable_caching && delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
@@ -1087,7 +1084,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	/* The general, unoptimized case */
 	m = mono_marshal_get_delegate_invoke (invoke, delegate);
 	code = mono_compile_method (m);
-	code = mini_add_method_trampoline (NULL, m, code, NULL, mono_method_needs_static_rgctx_invoke (m, FALSE));
+	code = mini_add_method_trampoline (NULL, m, code, mono_method_needs_static_rgctx_invoke (m, FALSE));
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 	mono_debugger_trampoline_compiled (NULL, m, delegate->invoke_impl);
 
