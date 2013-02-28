@@ -404,7 +404,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 
 		this_arg = mono_arch_get_this_arg_from_call (regs, code);
 
-		if (this_arg->vtable->klass == mono_defaults.transparent_proxy_class) {
+		if (mono_object_is_transparent_proxy (this_arg)) {
 			/* Use the slow path for now */
 		    m = mono_object_get_virtual_method (this_arg, m);
 			vtable_slot_to_patch = NULL;

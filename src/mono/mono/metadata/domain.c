@@ -1513,6 +1513,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
                 mono_defaults.corlib, "System", "AppDomain");
 	g_assert (mono_defaults.appdomain_class != 0);
 
+#ifndef DISABLE_REMOTING
 	mono_defaults.transparent_proxy_class = mono_class_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "TransparentProxy");
 	g_assert (mono_defaults.transparent_proxy_class != 0);
@@ -1520,6 +1521,15 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.real_proxy_class = mono_class_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "RealProxy");
 	g_assert (mono_defaults.real_proxy_class != 0);
+
+	mono_defaults.marshalbyrefobject_class =  mono_class_from_name (
+	        mono_defaults.corlib, "System", "MarshalByRefObject");
+	g_assert (mono_defaults.marshalbyrefobject_class != 0);
+
+	mono_defaults.iremotingtypeinfo_class = mono_class_from_name (
+	        mono_defaults.corlib, "System.Runtime.Remoting", "IRemotingTypeInfo");
+	g_assert (mono_defaults.iremotingtypeinfo_class != 0);
+#endif
 
 	mono_defaults.mono_method_message_class = mono_class_from_name (
                 mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "MonoMethodMessage");
@@ -1561,17 +1571,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	        mono_defaults.corlib, "System", "RuntimeArgumentHandle");
 	g_assert (mono_defaults.argumenthandle_class != 0);
 
-	mono_defaults.marshalbyrefobject_class =  mono_class_from_name (
-	        mono_defaults.corlib, "System", "MarshalByRefObject");
-	g_assert (mono_defaults.marshalbyrefobject_class != 0);
-
 	mono_defaults.monitor_class =  mono_class_from_name (
 	        mono_defaults.corlib, "System.Threading", "Monitor");
 	g_assert (mono_defaults.monitor_class != 0);
-
-	mono_defaults.iremotingtypeinfo_class = mono_class_from_name (
-	        mono_defaults.corlib, "System.Runtime.Remoting", "IRemotingTypeInfo");
-	g_assert (mono_defaults.iremotingtypeinfo_class != 0);
 
 	mono_defaults.runtimesecurityframe_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Security", "RuntimeSecurityFrame");

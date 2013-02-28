@@ -2700,16 +2700,16 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 {
 	MonoClass *klass;
 	MonoMethod **vtable;
-	gboolean is_proxy;
+	gboolean is_proxy = FALSE;
 	MonoMethod *res = NULL;
 
 	klass = mono_object_class (obj);
+#ifndef DISABLE_REMOTING
 	if (klass == mono_defaults.transparent_proxy_class) {
 		klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
 		is_proxy = TRUE;
-	} else {
-		is_proxy = FALSE;
 	}
+#endif
 
 	if (!is_proxy && ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 			return method;
@@ -3705,6 +3705,7 @@ deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	return result;
 }
 
+#ifndef DISABLE_REMOTING
 static MonoObject*
 make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 {
@@ -3733,6 +3734,7 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 
 	return (MonoObject*) transparent_proxy;
 }
+#endif /* DISABLE_REMOTING */
 
 /**
  * mono_object_xdomain_representation
@@ -3756,9 +3758,13 @@ mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, 
 
 	*exc = NULL;
 
+#ifndef DISABLE_REMOTING
 	if (mono_class_is_marshalbyref (mono_object_class (obj))) {
 		deserialized = make_transparent_proxy (obj, &failure, exc);
-	} else {
+	} 
+	else
+#endif
+	{
 		MonoDomain *domain = mono_domain_get ();
 		MonoObject *serialized;
 
@@ -5245,7 +5251,7 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 			return obj;
 	} else {
 		MonoClass *oklass = vt->klass;
-		if (oklass == mono_defaults.transparent_proxy_class)
+		if (mono_class_is_transparent_proxy (oklass))
 			oklass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
 
 		mono_class_setup_supertypes (klass);	
@@ -5906,6 +5912,7 @@ mono_message_init (MonoDomain *domain,
 	}
 }
 
+#ifndef DISABLE_REMOTING
 /**
  * mono_remoting_invoke:
  * @real_proxy: pointer to a RealProxy object
@@ -5942,6 +5949,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 
 	return mono_runtime_invoke (im, NULL, pa, exc);
 }
+#endif
 
 MonoObject *
 mono_message_invoke (MonoObject *target, MonoMethodMessage *msg, 
@@ -5954,8 +5962,8 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	MonoObject *ret;
 	int i, j, outarg_count = 0;
 
-	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
-
+#ifndef DISABLE_REMOTING
+	if (target && mono_object_is_transparent_proxy (target)) {
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)target;
 		if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 			target = tp->rp->unwrapped_server;
@@ -5963,6 +5971,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 			return mono_remoting_invoke ((MonoObject *)tp->rp, msg, exc, out_args);
 		}
 	}
+#endif
 
 	domain = mono_domain_get (); 
 	method = msg->method->method;
@@ -6255,6 +6264,8 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 	}
 }
 
+#ifndef DISABLE_REMOTING
+
 /**
  * mono_load_remote_field:
  * @this: pointer to an object
@@ -6281,7 +6292,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	MonoObject *exc;
 	char* full_name;
 
-	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+	g_assert (mono_object_is_transparent_proxy (this));
 	g_assert (res != NULL);
 
 	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
@@ -6320,7 +6331,6 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 		return res;
 }
 
-#ifdef DISABLE_REMOTING
 /**
  * mono_load_remote_field_new:
  * @this: 
@@ -6341,7 +6351,7 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 	MonoObject *exc, *res;
 	char* full_name;
 
-	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+	g_assert (mono_object_is_transparent_proxy (this));
 
 	field_class = mono_class_from_mono_type (field->type);
 
@@ -6408,7 +6418,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	MonoObject *arg;
 	char* full_name;
 
-	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+	g_assert (mono_object_is_transparent_proxy (this));
 
 	field_class = mono_class_from_mono_type (field->type);
 
@@ -6464,7 +6474,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	MonoObject *exc;
 	char* full_name;
 
-	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+	g_assert (mono_object_is_transparent_proxy (this));
 
 	field_class = mono_class_from_mono_type (field->type);
 

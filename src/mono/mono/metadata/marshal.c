@@ -2119,6 +2119,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	if (mcast_delegate->prev != NULL)
 		mono_raise_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
 
+#ifndef DISABLE_REMOTING
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
@@ -2146,6 +2147,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			return ares;
 		}
 	}
+#endif
 
 	klass = delegate->object.vtable->klass;
 
@@ -2742,14 +2744,17 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 		return NULL;
 	}
 
-	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
+#ifndef DISABLE_REMOTING
+	if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
 		msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 		mono_message_init (domain, msg, delegate->method_info, NULL);
 		msg->call_type = CallType_EndInvoke;
 		MONO_OBJECT_SETREF (msg, async_result, ares);
 		res = mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
-	} else {
+	} else
+#endif
+	{
 		res = mono_thread_pool_finish (ares, &out_args, &exc);
 	}
 

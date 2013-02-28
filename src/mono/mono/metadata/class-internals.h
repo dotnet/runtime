@@ -1070,8 +1070,12 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+#ifndef DISABLE_REMOTING
 	MonoClass *transparent_proxy_class;
 	MonoClass *real_proxy_class;
+	MonoClass *marshalbyrefobject_class;
+	MonoClass *iremotingtypeinfo_class;
+#endif
 	MonoClass *mono_method_message_class;
 	MonoClass *appdomain_class;
 	MonoClass *field_info_class;
@@ -1081,12 +1085,9 @@ typedef struct {
 	MonoClass *stack_frame_class;
 	MonoClass *stack_trace_class;
 	MonoClass *marshal_class;
-
 	MonoClass *typed_reference_class;
 	MonoClass *argumenthandle_class;
-	MonoClass *marshalbyrefobject_class;
 	MonoClass *monitor_class;
-	MonoClass *iremotingtypeinfo_class;
 	MonoClass *runtimesecurityframe_class;
 	MonoClass *executioncontext_class;
 	MonoClass *internals_visible_class;
@@ -1106,6 +1107,17 @@ typedef struct {
 	MonoClass *critical_finalizer_object;
 	MonoClass *generic_ireadonlylist_class;
 } MonoDefaults;
+
+#ifdef DISABLE_REMOTING
+#define mono_class_is_transparent_proxy(klass) (FALSE)
+#define mono_class_is_real_proxy(klass) (FALSE)
+#define mono_object_is_transparent_proxy(object) (FALSE)
+
+#else
+#define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
+#define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
+#define mono_object_is_transparent_proxy(object) (((MOnoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
+#endif
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;
 

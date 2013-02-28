@@ -615,9 +615,12 @@ is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
 		return TRUE;
 	if (o->vtable->klass == mono_defaults.internal_thread_class && offset == G_STRUCT_OFFSET (MonoInternalThread, current_appcontext))
 		return TRUE;
+
+#ifndef DISABLE_REMOTING
 	if (mono_class_has_parent_fast (o->vtable->klass, mono_defaults.real_proxy_class) &&
 			offset == G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server))
 		return TRUE;
+#endif
 	/* Thread.cached_culture_info */
 	if (!strcmp (ref->vtable->klass->name_space, "System.Globalization") &&
 			!strcmp (ref->vtable->klass->name, "CultureInfo") &&
@@ -888,6 +891,7 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 		g_assert (mono_object_domain (start) == mono_get_root_domain ());
 	/* The object could be a proxy for an object in the domain
 	   we're deleting. */
+#ifndef DISABLE_REMOTING
 	if (mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
 		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
 
@@ -898,6 +902,7 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 			((MonoRealProxy*)start)->unwrapped_server = NULL;
 		}
 	}
+#endif
 }
 
 static MonoDomain *check_domain = NULL;

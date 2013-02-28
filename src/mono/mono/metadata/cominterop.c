@@ -254,7 +254,7 @@ cominterop_object_is_rcw (MonoObject *obj)
 	if (!obj)
 		return FALSE;
 	klass = mono_object_class (obj);
-	if (klass != mono_defaults.transparent_proxy_class)
+	if (mono_class_is_transparent_proxy (klass))
 		return FALSE;
 
 	real_proxy = ((MonoTransparentProxy*)obj)->rp;
@@ -608,8 +608,10 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 			com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
 		if (!com_interop_proxy_get_proxy)
 			com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
+#ifndef DISABLE_REMOTING
 		if (!get_transparent_proxy)
 			get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
+#endif
 
 		real_proxy = mono_mb_add_local (mb, &com_interop_proxy_class->byval_arg);
 
@@ -1456,7 +1458,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (M
 		if (!object)
 			return NULL;
 		klass = mono_object_class (object);
-		if (klass != mono_defaults.transparent_proxy_class) {
+		if (mono_class_is_transparent_proxy (klass)) {
 			g_assert_not_reached ();
 			return NULL;
 		}

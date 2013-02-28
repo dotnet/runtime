@@ -1454,7 +1454,7 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 gboolean
 mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res) MONO_INTERNAL;
 
-#ifdef DISABLE_REMOTING
+#ifndef DISABLE_REMOTING
 MonoObject *
 mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
 			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
