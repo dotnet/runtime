@@ -1169,10 +1169,12 @@ ves_icall_System_Object_GetType (MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifndef DISABLE_REMOTING
 	if (obj->vtable->klass != mono_defaults.transparent_proxy_class)
-		return mono_type_get_object (mono_object_domain (obj), &obj->vtable->klass->byval_arg);
-	else
 		return mono_type_get_object (mono_object_domain (obj), &((MonoTransparentProxy*)obj)->remote_class->proxy_class->byval_arg);
+	else
+#endif
+		return mono_type_get_object (mono_object_domain (obj), &obj->vtable->klass->byval_arg);
 }
 
 ICALL_EXPORT void
@@ -2876,6 +2878,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	return mono_runtime_invoke_array (m, obj, params, NULL);
 }
 
+#ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoObject *
 ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoArray **outArgs) 
 {
@@ -3003,6 +3006,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 	return result;
 }
+#endif
 
 static guint64
 read_enum_value (char *mem, int type)
@@ -6274,6 +6278,7 @@ ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, Mo
 	return TRUE;
 }
 
+#ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoObject *
 ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this, MonoString *class_name)
 {
@@ -6305,6 +6310,7 @@ ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxy *tp)
 {
 	return mono_type_get_object (mono_object_domain (tp), &tp->remote_class->proxy_class->byval_arg);
 }
+#endif
 
 /* System.Environment */
 
@@ -6793,6 +6799,7 @@ ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this,
 	mono_message_init (mono_object_domain (this), this, method, out_args);
 }
 
+#ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoBoolean
 ves_icall_IsTransparentProxy (MonoObject *proxy)
 {
@@ -6897,6 +6904,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 		return mono_object_new_alloc_specific (mono_class_vtable_full (domain, klass, TRUE));
 	}
 }
+#endif
 
 ICALL_EXPORT MonoString *
 ves_icall_System_IO_get_temp_path (void)

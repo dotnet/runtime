@@ -124,8 +124,6 @@ mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype
 static void
 mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *eltype, guint32 elnum);
 
-static MonoObject *
-mono_remoting_wrapper (MonoMethod *method, gpointer *params);
 
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
@@ -142,8 +140,14 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push);
 static gboolean
 mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image);
 
+#ifndef DISABLE_REMOTING
+static MonoObject *
+mono_remoting_wrapper (MonoMethod *method, gpointer *params);
+
 void
 mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
+
+#endif
 
 static MonoReflectionType *
 type_from_handle (MonoType *handle);
@@ -248,7 +252,6 @@ mono_marshal_init (void)
 		register_icall (g_free, "g_free", "void ptr", FALSE);
 		register_icall (mono_object_isinst, "mono_object_isinst", "object object ptr", FALSE);
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
-		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
 		register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
@@ -258,11 +261,14 @@ mono_marshal_init (void)
 		register_icall (mono_compile_method, "mono_compile_method", "ptr ptr", FALSE);
 		register_icall (mono_context_get, "mono_context_get", "object", FALSE);
 		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
-		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
 
+#ifndef DISABLE_REMOTING
+		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
+		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+#endif
 		mono_cominterop_init ();
 	}
 }
@@ -278,9 +284,9 @@ mono_marshal_cleanup (void)
 	marshal_mutex_initialized = FALSE;
 }
 
-MonoClass *byte_array_class;
+#ifndef DISABLE_REMOTING
+static MonoClass *byte_array_class;
 static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixexc, *method_rs_appdomain_target;
-static MonoMethod *method_set_context, *method_get_context;
 static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_rs_serialize_exc;
 
 static void
@@ -302,11 +308,6 @@ mono_remoting_marshal_init (void)
 		klass = mono_defaults.exception_class;
 		method_exc_fixexc = mono_class_get_method_from_name (klass, "FixRemotingException", -1);
 	
-		klass = mono_defaults.thread_class;
-		method_get_context = mono_class_get_method_from_name (klass, "get_CurrentContext", -1);
-	
-		klass = mono_defaults.appdomain_class;
-		method_set_context = mono_class_get_method_from_name (klass, "InternalSetContext", -1);
 		byte_array_class = mono_array_class_get (mono_defaults.byte_class, 1);
 	
 		klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "CallContext");
@@ -318,6 +319,7 @@ mono_remoting_marshal_init (void)
 		module_initialized = TRUE;
 	}
 }
+#endif
 
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
@@ -1024,7 +1026,7 @@ mono_string_new_len_wrapper (const char *text, guint length)
 }
 
 #ifndef DISABLE_JIT
-
+#ifndef DISABLE_REMOTING
 static int
 mono_mb_emit_proxy_check (MonoMethodBuilder *mb, int branch_code)
 {
@@ -1074,6 +1076,7 @@ mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
 	mono_mb_emit_icon (mb, 0);
 	return mono_mb_emit_branch (mb, branch_code);
 }
+#endif /* DISABLE_REMOTING */
 
 /*
  * mono_mb_emit_exception_marshal_directive:
@@ -2116,10 +2119,11 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	if (mcast_delegate->prev != NULL)
 		mono_raise_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
 
+#ifndef DISABLE_REMOTING
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
-		if (!tp->remote_class->proxy_class->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
+		if (!mono_class_is_contextbound (tp->remote_class->proxy_class) || tp->rp->context != (MonoObject *) mono_context_get ()) {
 
 			/* If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
@@ -2143,6 +2147,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			return ares;
 		}
 	}
+#endif
 
 	klass = delegate->object.vtable->klass;
 
@@ -2739,14 +2744,17 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 		return NULL;
 	}
 
-	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
+#ifndef DISABLE_REMOTING
+	if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
 		msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 		mono_message_init (domain, msg, delegate->method_info, NULL);
 		msg->call_type = CallType_EndInvoke;
 		MONO_OBJECT_SETREF (msg, async_result, ares);
 		res = mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
-	} else {
+	} else
+#endif
+	{
 		res = mono_thread_pool_finish (ares, &out_args, &exc);
 	}
 
@@ -2873,6 +2881,8 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	return res;
 }
 
+#ifndef DISABLE_REMOTING
+
 static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 {
@@ -2889,7 +2899,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	/* skip the this pointer */
 	params++;
 
-	if (this->remote_class->proxy_class->contextbound && this->rp->context == (MonoObject *) mono_context_get ())
+	if (mono_class_is_contextbound (this->remote_class->proxy_class) && this->rp->context == (MonoObject *) mono_context_get ())
 	{
 		int i;
 		MonoMethodSignature *sig = mono_method_signature (method);
@@ -2987,6 +2997,9 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 	return res;
 }
+
+#endif /* DISABLE_REMOTING */
+
 
 /* mono_get_xdomain_marshal_type()
  * Returns the kind of marshalling that a type needs for cross domain calls.
@@ -3126,7 +3139,9 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 	}
 }
 
-#ifndef DISABLE_JIT
+
+#if !(defined (DISABLE_JIT) || defined (DISABLE_REMOTING))
+
 static void
 mono_marshal_emit_xdomain_copy_value (MonoMethodBuilder *mb, MonoClass *pclass)
 {
@@ -3141,15 +3156,17 @@ mono_marshal_emit_xdomain_copy_out_value (MonoMethodBuilder *mb, MonoClass *pcla
 }
 #endif
 
+#ifndef DISABLE_REMOTING
 /* mono_marshal_supports_fast_xdomain()
  * Returns TRUE if the method can use the fast xdomain wrapper.
  */
 static gboolean
 mono_marshal_supports_fast_xdomain (MonoMethod *method)
 {
-	return !method->klass->contextbound &&
+	return !mono_class_is_contextbound (method->klass) &&
 		   !((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && (strcmp (".ctor", method->name) == 0));
 }
+#endif
 
 static gint32
 mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
@@ -3168,7 +3185,7 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
 	return current_domain->domain_id;
 }
 
-#ifndef DISABLE_JIT
+#if !(defined (DISABLE_JIT) || defined (DISABLE_REMOTING))
 static void
 mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 {
@@ -3214,6 +3231,8 @@ mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image)
 	
 	return tmp != NULL;
 }
+
+#ifndef DISABLE_REMOTING
 
 /* mono_marshal_get_xappdomain_dispatch ()
  * Generates a method that dispatches a method call from another domain into
@@ -3886,6 +3905,8 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 
 	return res;
 }
+
+#endif /* DISABLE_REMOTING */
 
 typedef struct
 {
@@ -4992,6 +5013,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 }
 #endif
 
+#ifndef DISABLE_REMOTING
 /*
  * mono_marshal_get_ldfld_remote_wrapper:
  * @klass: The return type
@@ -5546,6 +5568,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	
 	return res;
 }
+#endif /* DISABLE_REMOTING */
 
 /*
  * generates IL code for the icall wrapper (the generated method
@@ -9574,11 +9597,11 @@ mono_marshal_get_isinst (MonoClass *klass)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_op (mb, CEE_MONO_CISINST, klass);
 
-	/* The result of MONO_ISINST can be:
+	/* The result of MONO_CISINST can be:
 	   	0) the type check succeeded
 		1) the type check did not succeed
 		2) a CanCastTo call is needed */
-	
+#ifndef DISABLE_REMOTING
 	mono_mb_emit_byte (mb, CEE_DUP);
 	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
@@ -9608,7 +9631,25 @@ mono_marshal_get_isinst (MonoClass *klass)
 	mono_mb_patch_branch (mb, pos_end);
 	mono_mb_patch_branch (mb, pos_end2);
 	mono_mb_emit_byte (mb, CEE_RET);
-#endif
+#else
+	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/* fail */
+
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	pos_end = mono_mb_emit_branch (mb, CEE_BR);
+
+	/* success */
+
+	mono_mb_patch_branch (mb, pos_was_ok);
+	mono_mb_emit_ldarg (mb, 0);
+
+	/* the end */
+
+	mono_mb_patch_branch (mb, pos_end);
+	mono_mb_emit_byte (mb, CEE_RET);
+#endif /* DISABLE_REMOTING */
+#endif /* DISABLE_JIT */
 
 	res = mono_mb_create_and_cache (cache, klass, mb, isint_sig, isint_sig->param_count + 16);
 	mono_mb_free (mb);
@@ -9660,12 +9701,12 @@ mono_marshal_get_castclass (MonoClass *klass)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_op (mb, CEE_MONO_CCASTCLASS, klass);
 
-	/* The result of MONO_ISINST can be:
+	/* The result of MONO_CCASTCLASS can be:
 	   	0) the cast is valid
 		1) cast of unknown proxy type
 		or an exception if the cast is is invalid
 	*/
-	
+#ifndef DISABLE_REMOTING
 	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 	/* get the real proxy from the transparent proxy*/
@@ -9680,11 +9721,16 @@ mono_marshal_get_castclass (MonoClass *klass)
 	/* success */
 	mono_mb_patch_branch (mb, pos_was_ok);
 	mono_mb_patch_branch (mb, pos_was_ok2);
+#else
+	/* MONO_CCASTCLASS leaves an int in the stack with the result, pop it. */
+	mono_mb_emit_byte (mb, CEE_POP);
+#endif /* DISABLE_REMOTING */
+
 	mono_mb_emit_ldarg (mb, 0);
 	
 	/* the end */
 	mono_mb_emit_byte (mb, CEE_RET);
-#endif
+#endif /* DISABLE_JIT */
 
 	res = mono_mb_create_and_cache (cache, klass, mb, castclass_sig, castclass_sig->param_count + 16);
 	mono_mb_free (mb);
@@ -9695,6 +9741,7 @@ mono_marshal_get_castclass (MonoClass *klass)
 	return res;
 }
 
+#ifndef DISABLE_REMOTING
 MonoMethod *
 mono_marshal_get_proxy_cancast (MonoClass *klass)
 {
@@ -9783,6 +9830,7 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentPro
 	klass = mono_class_from_mono_type (rtype->type);
 	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass);
 }
+#endif /*DISABLE_REMOTING */
 
 /**
  * mono_marshal_get_struct_to_ptr:
@@ -10186,7 +10234,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_INTERFACE;
 #endif
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
-	if (element_class->marshalbyref || element_class->rank || mono_class_has_variant_generic_params (element_class))
+	if (mono_class_is_marshalbyref (element_class) || element_class->rank || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
 	if (element_class->flags & TYPE_ATTRIBUTE_SEALED)
 		return STELEMREF_SEALED_CLASS;

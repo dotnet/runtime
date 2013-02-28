@@ -6122,7 +6122,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					supported = FALSE;
 			}
 
-			if (method->klass->contextbound || !info->compiled_method)
+			if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
 				supported = FALSE;
 
 			if (supported)
@@ -6394,6 +6394,7 @@ SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)
 	mono_arch_handle_exception (ctx, exc);
 }
 
+#ifndef DISABLE_REMOTING
 /* mono_jit_create_remoting_trampoline:
  * @method: pointer to the method info
  *
@@ -6414,14 +6415,16 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	}
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || 
-	    (mono_method_signature (method)->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))) {
+	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))) {
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
 		addr = mono_compile_method (nm);
-	} else {
+	} else
+	{
 		addr = mono_compile_method (method);
 	}
 	return mono_get_addr_from_ftnptr (addr);
 }
+#endif
 
 static gpointer *vtable_trampolines;
 static int vtable_trampolines_size;
@@ -6815,7 +6818,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_free_method (mono_jit_free_method);
 	mono_install_trampoline (mono_create_jit_trampoline);
 	mono_install_jump_trampoline (mono_create_jump_trampoline);
+#ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
+#endif
 	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
 	mono_install_create_domain_hook (mini_create_jit_domain_info);
 	mono_install_free_domain_hook (mini_free_jit_domain_info);
@@ -6909,8 +6914,10 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_thread_get_undeniable_exception, "mono_thread_get_undeniable_exception", "object", FALSE);
 	register_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", "void", FALSE);
 	register_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", "void", FALSE);
+#ifndef DISABLE_REMOTING
 	register_icall (mono_load_remote_field_new, "mono_load_remote_field_new", "object object ptr ptr", FALSE);
 	register_icall (mono_store_remote_field_new, "mono_store_remote_field_new", "void object ptr ptr object", FALSE);
+#endif
 
 #if defined(__native_client__) || defined(__native_client_codegen__)
 	register_icall (mono_nacl_gc, "mono_nacl_gc", "void", TRUE);
@@ -7332,10 +7339,12 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 			mono_compile_method (invoke);
 		}
-		if (method->klass->marshalbyref && mono_method_signature (method)->hasthis) {
+#ifndef DISABLE_REMOTING
+		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
 			invoke = mono_marshal_get_remoting_invoke_with_check (method);
 			mono_compile_method (invoke);
 		}
+#endif
 	}
 
 	/* Load and precompile referenced assemblies as well */

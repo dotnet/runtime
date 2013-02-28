@@ -297,8 +297,10 @@ struct _MonoClass {
 	/* next byte */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint has_finalize    : 1; /* class has its own Finalize impl */ 
+#ifndef DISABLE_REMOTING
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
 	guint contextbound    : 1; /* class is a ContextBoundObject */
+#endif
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
@@ -415,6 +417,14 @@ int mono_class_interface_match (const uint8_t *bitmap, int id) MONO_INTERNAL;
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && mono_class_interface_match ((k)->interface_bitmap, (uiid)))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
+
+#ifdef DISABLE_REMOTING
+#define mono_class_is_marshalbyref(klass) (FALSE)
+#define mono_class_is_contextbound(klass) (FALSE)
+#else
+#define mono_class_is_marshalbyref(klass) ((klass)->marshalbyref)
+#define mono_class_is_contextbound(klass) ((klass)->contextbound)
+#endif
 
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match) MONO_INTERNAL;
@@ -686,8 +696,15 @@ typedef struct {
 
 #define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
+#ifndef DISABLE_REMOTING
+
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class) MONO_INTERNAL;
+
+void
+mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
+
+#endif
 
 typedef struct {
 	gulong new_object_count;
@@ -944,9 +961,6 @@ void
 mono_install_jump_trampoline (MonoJumpTrampoline func) MONO_INTERNAL;
 
 void
-mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
-
-void
 mono_install_delegate_trampoline (MonoDelegateTrampoline func) MONO_INTERNAL;
 
 gpointer
@@ -1056,8 +1070,12 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+#ifndef DISABLE_REMOTING
 	MonoClass *transparent_proxy_class;
 	MonoClass *real_proxy_class;
+	MonoClass *marshalbyrefobject_class;
+	MonoClass *iremotingtypeinfo_class;
+#endif
 	MonoClass *mono_method_message_class;
 	MonoClass *appdomain_class;
 	MonoClass *field_info_class;
@@ -1067,12 +1085,9 @@ typedef struct {
 	MonoClass *stack_frame_class;
 	MonoClass *stack_trace_class;
 	MonoClass *marshal_class;
-
 	MonoClass *typed_reference_class;
 	MonoClass *argumenthandle_class;
-	MonoClass *marshalbyrefobject_class;
 	MonoClass *monitor_class;
-	MonoClass *iremotingtypeinfo_class;
 	MonoClass *runtimesecurityframe_class;
 	MonoClass *executioncontext_class;
 	MonoClass *internals_visible_class;
@@ -1092,6 +1107,17 @@ typedef struct {
 	MonoClass *critical_finalizer_object;
 	MonoClass *generic_ireadonlylist_class;
 } MonoDefaults;
+
+#ifdef DISABLE_REMOTING
+#define mono_class_is_transparent_proxy(klass) (FALSE)
+#define mono_class_is_real_proxy(klass) (FALSE)
+#define mono_object_is_transparent_proxy(object) (FALSE)
+
+#else
+#define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
+#define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
+#define mono_object_is_transparent_proxy(object) (((MOnoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
+#endif
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;
 

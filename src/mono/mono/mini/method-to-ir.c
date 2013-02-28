@@ -2413,7 +2413,7 @@ static MonoInst*
 mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 							MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
-	gboolean might_be_remote;
+	gboolean might_be_remote = FALSE;
 	gboolean virtual = this != NULL;
 	gboolean enable_for_aot = TRUE;
 	int context_used;
@@ -2437,8 +2437,9 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 	context_used = mini_method_check_context_used (cfg, method);
 
+#ifndef DISABLE_REMOTING
 	might_be_remote = this && sig->hasthis &&
-		(method->klass->marshalbyref || method->klass == mono_defaults.object_class) &&
+		(mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) &&
 		!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && (!MONO_CHECK_THIS (this) || context_used);
 
 	if (might_be_remote && context_used) {
@@ -2450,14 +2451,17 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		return mono_emit_calli (cfg, sig, args, addr, NULL, NULL);
 	}
+#endif
 
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
 
 	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual, FALSE, rgctx_arg ? TRUE : FALSE, need_unbox_trampoline);
 
+#ifndef DISABLE_REMOTING
 	if (might_be_remote)
 		call->method = mono_marshal_get_remoting_invoke_with_check (method);
 	else
+#endif
 		call->method = method;
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this;
@@ -2501,18 +2505,20 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			(!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
 			 (MONO_METHOD_IS_FINAL (method) &&
 			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
-			!(method->klass->marshalbyref && context_used)) {
+			!(mono_class_is_marshalbyref (method->klass) && context_used)) {
 			/* 
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.
 			 */
-			if (method->klass->marshalbyref || method->klass == mono_defaults.object_class) {
+#ifndef DISABLE_REMOTING
+			if (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) {
 				/* 
 				 * The check above ensures method is not gshared, this is needed since
 				 * gshared methods can't have wrappers.
 				 */
 				method = call->method = mono_marshal_get_remoting_invoke_with_check (method);
 			}
+#endif
 
 			if (!method->string_ctor)
 				MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
@@ -3531,7 +3537,7 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 }
 
 // FIXME: This doesn't work yet (class libs tests fail?)
-#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 /*
  * Returns NULL and set the cfg exception on error.
@@ -3786,26 +3792,37 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	2) if the object is a proxy whose type cannot be determined */
 
 	MonoInst *ins;
+#ifndef DISABLE_REMOTING
 	MonoBasicBlock *true_bb, *false_bb, *false2_bb, *end_bb, *no_proxy_bb, *interface_fail_bb;
+#else
+	MonoBasicBlock *true_bb, *false_bb, *end_bb;
+#endif
 	int obj_reg = src->dreg;
 	int dreg = alloc_ireg (cfg);
 	int tmp_reg;
+#ifndef DISABLE_REMOTING
 	int klass_reg = alloc_preg (cfg);
+#endif
 
 	NEW_BBLOCK (cfg, true_bb);
 	NEW_BBLOCK (cfg, false_bb);
-	NEW_BBLOCK (cfg, false2_bb);
 	NEW_BBLOCK (cfg, end_bb);
+#ifndef DISABLE_REMOTING
+	NEW_BBLOCK (cfg, false2_bb);
 	NEW_BBLOCK (cfg, no_proxy_bb);
+#endif
 
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+#ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, interface_fail_bb);
+#endif
 
 		tmp_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+#ifndef DISABLE_REMOTING
 		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, true_bb);
 		MONO_START_BB (cfg, interface_fail_bb);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -3816,7 +3833,11 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false2_bb);		
+#else
+		mini_emit_iface_cast (cfg, tmp_reg, klass, false_bb, true_bb);
+#endif
 	} else {
+#ifndef DISABLE_REMOTING
 		tmp_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -3837,6 +3858,9 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 		MONO_START_BB (cfg, no_proxy_bb);
 
 		mini_emit_isninst_cast (cfg, klass_reg, klass, false_bb, true_bb);
+#else
+		g_error ("transparent proxy support is disabled while trying to JIT code that uses it");
+#endif
 	}
 
 	MONO_START_BB (cfg, false_bb);
@@ -3844,10 +3868,12 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
+#ifndef DISABLE_REMOTING
 	MONO_START_BB (cfg, false2_bb);
 
 	MONO_EMIT_NEW_ICONST (cfg, dreg, 2);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+#endif
 
 	MONO_START_BB (cfg, true_bb);
 
@@ -3872,13 +3898,20 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	an InvalidCastException exception is thrown otherwhise*/
 	
 	MonoInst *ins;
+#ifndef DISABLE_REMOTING
 	MonoBasicBlock *end_bb, *ok_result_bb, *no_proxy_bb, *interface_fail_bb, *fail_1_bb;
+#else
+	MonoBasicBlock *ok_result_bb;
+#endif
 	int obj_reg = src->dreg;
 	int dreg = alloc_ireg (cfg);
 	int tmp_reg = alloc_preg (cfg);
-	int klass_reg = alloc_preg (cfg);
 
+#ifndef DISABLE_REMOTING
+	int klass_reg = alloc_preg (cfg);
 	NEW_BBLOCK (cfg, end_bb);
+#endif
+
 	NEW_BBLOCK (cfg, ok_result_bb);
 
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
@@ -3887,6 +3920,7 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	save_cast_details (cfg, klass, obj_reg);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+#ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, interface_fail_bb);
 	
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -3903,8 +3937,13 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 		
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-		
+#else
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, ok_result_bb);
+#endif
 	} else {
+#ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, no_proxy_bb);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -3932,13 +3971,18 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 		MONO_START_BB (cfg, no_proxy_bb);
 
 		mini_emit_castclass (cfg, obj_reg, klass_reg, klass, ok_result_bb);
+#else
+		g_error ("Transparent proxy support is disabled while trying to JIT code that uses it");
+#endif
 	}
 
 	MONO_START_BB (cfg, ok_result_bb);
 
 	MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 
+#ifndef DISABLE_REMOTING
 	MONO_START_BB (cfg, end_bb);
+#endif
 
 	/* FIXME: */
 	MONO_INST_NEW (cfg, ins, OP_ICONST);
@@ -4112,7 +4156,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	/*runtime, icall and pinvoke are checked by summary call*/
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) ||
-	    (method->klass->marshalbyref) ||
+	    (mono_class_is_marshalbyref (method->klass)) ||
 	    header.has_clauses)
 		return FALSE;
 
@@ -7150,7 +7194,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					const int test_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_STATIC;
 					const int expected_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL;
-					if (!virtual && cmethod->klass->marshalbyref && (cmethod->flags & test_flags) == expected_flags && cfg->method->wrapper_type == MONO_WRAPPER_NONE)
+					if (!virtual && mono_class_is_marshalbyref (cmethod->klass) && (cmethod->flags & test_flags) == expected_flags && cfg->method->wrapper_type == MONO_WRAPPER_NONE)
 						virtual = 1;
 				}
 
@@ -7435,7 +7479,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* !marshalbyref is needed to properly handle generic methods + remoting */
 				if ((!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 					 MONO_METHOD_IS_FINAL (cmethod)) &&
-					!cmethod->klass->marshalbyref) {
+					!mono_class_is_marshalbyref (cmethod->klass)) {
 					if (virtual)
 						check_this = TRUE;
 					virtual = 0;
@@ -7621,7 +7665,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					//if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 						//GSHAREDVT_FAILURE (*ip);
 					// disable for possible remoting calls
-					if (fsig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))
+					if (fsig->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))
 						GSHAREDVT_FAILURE (*ip);
 					if (fsig->generic_param_count) {
 						/* virtual generic call */
@@ -8805,7 +8849,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* Now call the actual ctor */
 				/* Avoid virtual calls to ctors if possible */
-				if (cmethod->klass->marshalbyref)
+				if (mono_class_is_marshalbyref (cmethod->klass))
 					callvirt_this_arg = sp [0];
 
 
@@ -8901,7 +8945,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = mono_emit_method_call (cfg, mono_castclass, args, NULL);
 				ip += 5;
 				inline_costs += 2;
-			} else if (!context_used && (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 				MonoMethod *mono_castclass;
 				MonoInst *iargs [1];
 				int costs;
@@ -8961,7 +9005,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = mono_emit_method_call (cfg, mono_isinst, args, NULL);
 				ip += 5;
 				inline_costs += 2;
-			} else if (!context_used && (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 				MonoMethod *mono_isinst;
 				MonoInst *iargs [1];
 				int costs;
@@ -9061,7 +9105,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = mono_emit_method_call (cfg, mono_castclass, args, NULL);
 					ip += 5;
 					inline_costs += 2;
-				} else if (!context_used && (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+				} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 					MonoMethod *mono_castclass;
 					MonoInst *iargs [1];
 					int costs;
@@ -9340,7 +9384,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (op == CEE_STFLD) {
 				if (target_type_is_incompatible (cfg, field->type, sp [1]))
 					UNVERIFIED;
-				if ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class) {
+#ifndef DISABLE_REMOTING
+				if ((mono_class_is_marshalbyref (klass) && !MONO_CHECK_THIS (sp [0])) || mono_class_is_contextbound (klass) || klass == mono_defaults.marshalbyrefobject_class) {
 					MonoMethod *stfld_wrapper = mono_marshal_get_stfld_wrapper (field->type); 
 					MonoInst *iargs [5];
 
@@ -9366,7 +9411,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else {
 						mono_emit_method_call (cfg, stfld_wrapper, iargs, NULL);
 					}
-				} else {
+				} else
+#endif
+				{
 					MonoInst *store;
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
@@ -9404,7 +9451,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			if (is_instance && ((klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) || klass->contextbound || klass == mono_defaults.marshalbyrefobject_class)) {
+#ifndef DISABLE_REMOTING
+			if (is_instance && ((mono_class_is_marshalbyref (klass) && !MONO_CHECK_THIS (sp [0])) || mono_class_is_contextbound (klass) || klass == mono_defaults.marshalbyrefobject_class)) {
 				MonoMethod *wrapper = (op == CEE_LDFLDA) ? mono_marshal_get_ldflda_wrapper (field->type) : mono_marshal_get_ldfld_wrapper (field->type); 
 				MonoInst *iargs [4];
 
@@ -9430,7 +9478,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = mono_emit_method_call (cfg, wrapper, iargs, NULL);
 					*sp++ = ins;
 				}
-			} else if (is_instance) {
+			} else 
+#endif
+			if (is_instance) {
 				if (sp [0]->type == STACK_VTYPE) {
 					MonoInst *var;
 

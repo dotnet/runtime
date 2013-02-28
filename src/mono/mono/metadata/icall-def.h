@@ -738,13 +738,16 @@ ICALL(MARSHAL_40, "WriteIntPtr", ves_icall_System_Runtime_InteropServices_Marsha
 ICALL(MARSHAL_41, "copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged)
 ICALL(MARSHAL_42, "copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged)
 
+#ifndef DISABLE_REMOTING
 ICALL_TYPE(ACTS, "System.Runtime.Remoting.Activation.ActivationServices", ACTS_1)
 ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance)
 ICALL(ACTS_2, "EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation)
+#endif
 
 ICALL_TYPE(MONOMM, "System.Runtime.Remoting.Messaging.MonoMethodMessage", MONOMM_1)
 ICALL(MONOMM_1, "InitMessage", ves_icall_MonoMethodMessage_InitMessage)
 
+#ifndef DISABLE_REMOTING
 ICALL_TYPE(REALP, "System.Runtime.Remoting.Proxies.RealProxy", REALP_1)
 ICALL(REALP_1, "InternalGetProxyType", ves_icall_Remoting_RealProxy_InternalGetProxyType)
 ICALL(REALP_2, "InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy)
@@ -753,6 +756,7 @@ ICALL_TYPE(REMSER, "System.Runtime.Remoting.RemotingServices", REMSER_0)
 ICALL(REMSER_0, "GetVirtualMethod", ves_icall_Remoting_RemotingServices_GetVirtualMethod)
 ICALL(REMSER_1, "InternalExecute", ves_icall_InternalExecute)
 ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
+#endif
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethod_GetFunctionPointer)
