@@ -1089,6 +1089,8 @@ typedef struct {
 #define MONO_RGCTX_SLOT_INDEX(s)	((s) & 0x7fffffff)
 #define MONO_RGCTX_SLOT_IS_MRGCTX(s)	(((s) & 0x80000000) ? TRUE : FALSE)
 
+#define MONO_GSHAREDVT_DEL_INVOKE_VT_OFFSET -2
+
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
 #include "patch-info.h"

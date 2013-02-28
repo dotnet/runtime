@@ -340,8 +340,8 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
 void 
 mono_x86_patch (unsigned char* code, gpointer target) MONO_INTERNAL;
 
-void
-mono_x86_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee) MONO_INTERNAL;
+gpointer
+mono_x86_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_X86_H__ */  
 

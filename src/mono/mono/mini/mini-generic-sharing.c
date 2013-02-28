@@ -1188,7 +1188,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 #ifndef MONO_ARCH_HAVE_IMT
 			NOT_IMPLEMENTED;
 #endif
-			if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
+				/* See mono_emit_method_call_full () */
+				/* The gsharedvt trampoline will recognize this constant */
+				vcall_offset = MONO_GSHAREDVT_DEL_INVOKE_VT_OFFSET;
+			} else if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				guint32 imt_slot = mono_method_get_imt_slot (method);
 				vcall_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 			} else {

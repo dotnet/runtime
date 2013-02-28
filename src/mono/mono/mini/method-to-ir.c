@@ -7048,6 +7048,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int calli = *ip == CEE_CALLI;
 			gboolean pass_imt_from_rgctx = FALSE;
 			MonoInst *imt_arg = NULL;
+			MonoInst *keep_this_alive = NULL;
 			gboolean pass_vtable = FALSE;
 			gboolean pass_mrgctx = FALSE;
 			MonoInst *vtable_arg = NULL;
@@ -7638,6 +7639,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* test_0_multi_dim_arrays () in gshared.cs */
 					GSHAREDVT_FAILURE (*ip);
 
+				if ((cmethod->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (cmethod->name, "Invoke")))
+					keep_this_alive = sp [0];
+
 				if (virtual && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))
 					info_type = MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT;
 				else
@@ -7847,6 +7851,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 				else
 					*sp++ = ins;
+			}
+
+			if (keep_this_alive) {
+				MonoInst *dummy_use;
+
+				/* See mono_emit_method_call_full () */
+				EMIT_NEW_DUMMY_USE (cfg, dummy_use, keep_this_alive);
 			}
 
 			CHECK_CFG_EXCEPTION;
