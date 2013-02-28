@@ -7730,6 +7730,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * the method in the rgctx and do an
 				 * indirect call.
 				 */
+				if (fsig->hasthis)
+					MONO_EMIT_NEW_CHECK_THIS (cfg, sp [0]->dreg);
+
 				addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
 				goto call_end;

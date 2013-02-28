@@ -1040,4 +1040,22 @@ public class Tests
 			return 1;
 		return 0;
 	}
+
+	public class Enumbers<T> {
+		public object Enumerate (List<KeyValuePair<T, string>> alist)
+		{
+			return alist.ToArray ();
+		}
+	}
+
+	public static int test_0_checkthis_gshared_call () {
+		Enumbers<string> e = new Enumbers<string> ();
+		try {
+			e.Enumerate (null);
+			return 1;
+		}
+		catch (NullReferenceException) {
+		}
+		return 0;
+	}
 }
