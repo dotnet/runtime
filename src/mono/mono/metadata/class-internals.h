@@ -1118,7 +1118,7 @@ typedef struct {
 #else
 #define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
 #define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
-#define mono_object_is_transparent_proxy(object) (((MOnoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
+#define mono_object_is_transparent_proxy(object) (((MonoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
 #endif
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;
