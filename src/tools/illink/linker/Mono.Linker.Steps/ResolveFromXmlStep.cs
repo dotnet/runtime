@@ -6,6 +6,7 @@
 //
 // (C) 2006 Jb Evain
 // (C) 2007 Novell, Inc.
+// Copyright 2013 Xamarin Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -195,17 +196,18 @@ namespace Mono.Linker.Steps {
 		void ProcessFields (TypeDefinition type, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				if (GetAttribute (iterator.Current, "signature") != null)
-					ProcessFieldSignature (type, iterator.Current);
+				string value = GetSignature (iterator.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessFieldSignature (type, value);
 
-				if (GetAttribute (iterator.Current, "name") != null)
-					ProcessFieldName (type, iterator.Current);
+				value = GetAttribute (iterator.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessFieldName (type, value);
 			}
 		}
 
-		void ProcessFieldSignature (TypeDefinition type, XPathNavigator nav)
+		void ProcessFieldSignature (TypeDefinition type, string signature)
 		{
-			string signature = GetSignature (nav);
 			FieldDefinition field = GetField (type, signature);
 			MarkField (type, field, signature);
 		}
@@ -218,12 +220,11 @@ namespace Mono.Linker.Steps {
 				AddUnresolveMarker (string.Format ("T: {0}; F: {1}", type, signature));
 		}
 
-		void ProcessFieldName (TypeDefinition type, XPathNavigator nav)
+		void ProcessFieldName (TypeDefinition type, string name)
 		{
 			if (!type.HasFields)
 				return;
 
-			string name = GetAttribute (nav, "name");
 			foreach (FieldDefinition field in type.Fields)
 				if (field.Name == name)
 					MarkField (type, field, name);
@@ -249,17 +250,18 @@ namespace Mono.Linker.Steps {
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext()) {
-				if (GetAttribute (iterator.Current, "signature") != null)
-					ProcessMethodSignature (type, iterator.Current);
+				string value = GetSignature (iterator.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessMethodSignature (type, value);
 
-				if (GetAttribute (iterator.Current, "name") != null)
-					ProcessMethodName (type, iterator.Current);
+				value = GetAttribute (iterator.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessMethodName (type, value);
 			}
 		}
 
-		void ProcessMethodSignature (TypeDefinition type, XPathNavigator nav)
+		void ProcessMethodSignature (TypeDefinition type, string signature)
 		{
-			string signature = GetSignature (nav);
 			MethodDefinition meth = GetMethod (type, signature);
 			MarkMethod (type, meth, signature);
 		}
@@ -273,9 +275,8 @@ namespace Mono.Linker.Steps {
 				AddUnresolveMarker (string.Format ("T: {0}; M: {1}", type, signature));
 		}
 
-		void ProcessMethodName (TypeDefinition type, XPathNavigator nav)
+		void ProcessMethodName (TypeDefinition type, string name)
 		{
-			string name = GetAttribute (nav, "name");
 			if (!type.HasMethods)
 				return;
 
