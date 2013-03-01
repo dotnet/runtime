@@ -1586,8 +1586,11 @@ asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 {
 	asm_writer_emit_unset_mode (acfg);
 #if  ((defined(__ppc__) || defined(TARGET_X86)) && defined(TARGET_ASM_APPLE)) || (defined(HOST_WIN32) && !defined(MONO_CROSS_COMPILE))
-    // mach-o always uses a '_' prefix.
-	fprintf (acfg->fp, "\t.globl _%s\n", name);
+	if (name[0] != '_')
+		// mach-o always uses a '_' prefix.
+		fprintf (acfg->fp, "\t.globl _%s\n", name);
+	else
+		fprintf (acfg->fp, "\t.globl %s\n", name);
 #else
 	fprintf (acfg->fp, "\t.globl %s\n", name);
 #endif
