@@ -6880,6 +6880,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 	if (enable) vtable->remote = 1;
 	else vtable->remote = 0;
 }
+#endif
 
 ICALL_EXPORT MonoObject *
 ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionType *type)
@@ -6904,7 +6905,6 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 		return mono_object_new_alloc_specific (mono_class_vtable_full (domain, klass, TRUE));
 	}
 }
-#endif
 
 ICALL_EXPORT MonoString *
 ves_icall_System_IO_get_temp_path (void)

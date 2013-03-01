@@ -738,9 +738,9 @@ ICALL(MARSHAL_40, "WriteIntPtr", ves_icall_System_Runtime_InteropServices_Marsha
 ICALL(MARSHAL_41, "copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged)
 ICALL(MARSHAL_42, "copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged)
 
-#ifndef DISABLE_REMOTING
 ICALL_TYPE(ACTS, "System.Runtime.Remoting.Activation.ActivationServices", ACTS_1)
 ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance)
+#ifndef DISABLE_REMOTING
 ICALL(ACTS_2, "EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation)
 #endif
 
