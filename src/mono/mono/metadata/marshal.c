@@ -8636,21 +8636,26 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mb->method->save_lmf = 1;
 
-#ifndef DISABLE_JIT
 	/*
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.
 	 */
 	if (!piinfo->addr && !aot) {
+#ifndef DISABLE_JIT
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
+#endif
 		csig = signature_dup (method->klass->image, sig);
 		csig->pinvoke = 0;
 		res = mono_mb_create_and_cache (cache, method,
 										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
+
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+		mono_marshal_set_wrapper_info (res, info);
+
 		return res;
 	}
-#endif
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {

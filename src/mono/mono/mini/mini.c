@@ -2315,8 +2315,25 @@ mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
 }
 
+/*
+ * For JIT icalls implemented in C.
+ * NAME should be the same as the name of the C function whose address is FUNC.
+ */
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall_full (func, name, sig, save, save ? name : NULL);
+}
+
+static void
+register_dyn_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
 	MonoMethodSignature *sig;
 
@@ -2582,7 +2599,8 @@ mono_get_lmf_addr (void)
 #else
 	MonoJitTlsData *jit_tls;
 
-	if ((jit_tls = mono_native_tls_get_value (mono_jit_tls_id)))
+	jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	if (G_LIKELY (jit_tls))
 		return &jit_tls->lmf;
 
 	/*
@@ -3342,6 +3360,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_CASTCLASS_CACHE: {
 		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		break;
+	}
+	case MONO_PATCH_INFO_JIT_TLS_ID: {
+		target = (gpointer)mono_jit_tls_id;
 		break;
 	}
 	default:
@@ -6907,10 +6929,9 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
-	register_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
-	register_icall (mono_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);
-	register_icall (mono_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
-				 "void ptr", TRUE);
+	register_dyn_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
+	register_dyn_icall (mono_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);
+	register_dyn_icall (mono_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", "void ptr", TRUE);
 	register_icall (mono_thread_get_undeniable_exception, "mono_thread_get_undeniable_exception", "object", FALSE);
 	register_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", "void", FALSE);
 	register_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", "void", FALSE);
@@ -7048,7 +7069,7 @@ mini_init (const char *filename, const char *runtime_version)
 		"ptr ptr ptr ptr", FALSE);
 	register_icall (mono_get_special_static_data, "mono_get_special_static_data", "ptr int", FALSE);
 	register_icall (mono_ldstr, "mono_ldstr", "object ptr ptr int32", FALSE);
-	register_icall (mono_helper_stelem_ref_check, "helper_stelem_ref_check", "void object object", FALSE);
+	register_icall (mono_helper_stelem_ref_check, "mono_helper_stelem_ref_check", "void object object", FALSE);
 	register_icall (mono_object_new, "mono_object_new", "object ptr ptr", FALSE);
 	register_icall (mono_object_new_specific, "mono_object_new_specific", "object ptr", FALSE);
 	register_icall (mono_array_new, "mono_array_new", "object ptr ptr int32", FALSE);
@@ -7057,10 +7078,10 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
 	register_icall (mono_ldvirtfn_gshared, "mono_ldvirtfn_gshared", "ptr object ptr", FALSE);
-	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
-	register_icall (mono_helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
-	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
-	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
+	register_icall (mono_helper_compile_generic_method, "mono_helper_compile_generic_method", "ptr object ptr ptr", FALSE);
+	register_icall (mono_helper_ldstr, "mono_helper_ldstr", "object ptr int", FALSE);
+	register_icall (mono_helper_ldstr_mscorlib, "mono_helper_ldstr_mscorlib", "object int", FALSE);
+	register_icall (mono_helper_newobj_mscorlib, "mono_helper_newobj_mscorlib", "object int", FALSE);
 	register_icall (mono_value_copy, "mono_value_copy", "void ptr ptr ptr", FALSE);
 	register_icall (mono_object_castclass, "mono_object_castclass", "object object ptr", FALSE);
 	register_icall (mono_break, "mono_break", NULL, TRUE);
@@ -7082,7 +7103,10 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_object_isinst_with_cache, "mono_object_isinst_with_cache", "object object ptr ptr", FALSE);
 
 	register_icall (mono_debugger_agent_user_break, "mono_debugger_agent_user_break", "void", FALSE);
+#endif
 
+#ifdef TARGET_IOS
+	register_icall (pthread_getspecific, "pthread_getspecific", NULL, TRUE);
 #endif
 
 	mono_generic_sharing_init ();

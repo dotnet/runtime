@@ -643,6 +643,7 @@ typedef struct {
 	gconstpointer wrapper;
 	gconstpointer trampoline;
 	MonoMethodSignature *sig;
+	const char *c_symbol;
 } MonoJitICallInfo;
 
 typedef struct {
@@ -1196,6 +1197,9 @@ mono_create_icall_signature (const char *sigstr) MONO_INTERNAL;
 MonoJitICallInfo *
 mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save) MONO_INTERNAL;
 
+MonoJitICallInfo *
+mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save, const char *c_symbol) MONO_INTERNAL;
+
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper) MONO_INTERNAL;
 
@@ -1207,6 +1211,9 @@ mono_find_jit_icall_by_addr (gconstpointer addr) MONO_LLVM_INTERNAL;
 
 GHashTable*
 mono_get_jit_icall_info (void) MONO_INTERNAL;
+
+const char*
+mono_lookup_jit_icall_symbol (const char *name) MONO_INTERNAL;
 
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data) MONO_INTERNAL;

@@ -1170,7 +1170,7 @@ ves_icall_System_Object_GetType (MonoObject *obj)
 	MONO_ARCH_SAVE_REGS;
 
 #ifndef DISABLE_REMOTING
-	if (obj->vtable->klass == mono_defaults.transparent_proxy_class)
+	if (obj->vtable->klass != mono_defaults.transparent_proxy_class)
 		return mono_type_get_object (mono_object_domain (obj), &((MonoTransparentProxy*)obj)->remote_class->proxy_class->byval_arg);
 	else
 #endif
@@ -8395,6 +8395,25 @@ mono_get_jit_icall_info (void)
 	return jit_icall_hash_name;
 }
 
+/*
+ * mono_lookup_jit_icall_symbol:
+ *
+ *   Given the jit icall NAME, returns its C symbol if possible, or NULL.
+ */
+const char*
+mono_lookup_jit_icall_symbol (const char *name)
+{
+	MonoJitICallInfo *info;
+	const char *res = NULL;
+
+	mono_loader_lock ();
+	info = g_hash_table_lookup (jit_icall_hash_name, name);
+	if (info)
+		res = info->c_symbol;
+	mono_loader_unlock ();
+	return res;
+}
+
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 {
@@ -8404,7 +8423,7 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 }
 
 MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save, const char *c_symbol)
 {
 	MonoJitICallInfo *info;
 	
@@ -8428,6 +8447,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	info->name = name;
 	info->func = func;
 	info->sig = sig;
+	info->c_symbol = c_symbol;
 
 	if (is_save) {
 		info->wrapper = func;
@@ -8441,3 +8461,10 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	mono_loader_unlock ();
 	return info;
 }
+
+MonoJitICallInfo *
+mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+{
+	return mono_register_jit_icall_full (func, name, sig, is_save, NULL);
+}
+
