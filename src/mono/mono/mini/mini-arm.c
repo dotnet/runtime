@@ -385,7 +385,7 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	if (lmf_addr_tls_offset != -1) {
 		get_lmf_fast = TRUE;
 
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							 (gpointer)"__aeabi_read_tp");
 		code = emit_call_seq (cfg, code);
 
@@ -393,38 +393,9 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 		get_lmf_fast = TRUE;
 	}
 #endif
-
-#ifdef TARGET_IOS
-	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-		int lmf_offset;
-
-		/* Inline mono_get_lmf_addr () */
-		/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
-
-		/* Load mono_jit_tls_id */
-		/* OP_AOTCONST */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_TLS_ID, NULL);
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-		ARM_B (code, 0);
-		*(gpointer*)code = NULL;
-		code += 4;
-		ARM_LDR_REG_REG (code, ARMREG_R0, ARMREG_PC, ARMREG_R0);
-		/* call pthread_getspecific () */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-							 (gpointer)"pthread_getspecific");
-		code = emit_call_seq (cfg, code);
-		/* lmf_addr = &jit_tls->lmf */
-		lmf_offset = G_STRUCT_OFFSET (MonoJitTlsData, lmf);
-		g_assert (arm_is_imm8 (lmf_offset));
-		ARM_ADD_REG_IMM (code, ARMREG_R0, ARMREG_R0, lmf_offset, 0);
-
-		get_lmf_fast = TRUE;
-	}
-#endif
-
 	if (!get_lmf_fast) {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-							 (gpointer)"mono_get_lmf_addr");
+								 (gpointer)"mono_get_lmf_addr");
 		code = emit_call_seq (cfg, code);
 	}
 	/* we build the MonoLMF structure on the stack - see mini-arm.h */

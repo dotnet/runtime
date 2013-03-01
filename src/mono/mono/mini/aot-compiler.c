@@ -210,7 +210,6 @@ typedef struct MonoAotCompile {
 	char *plt_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
-	const char *user_symbol_prefix;
 	const char *llvm_label_prefix;
 	guint32 label_generator;
 	gboolean llvm;
@@ -590,7 +589,6 @@ arch_init (MonoAotCompile *acfg)
 	 * symbols.
 	 */
 	acfg->llvm_label_prefix = "";
-	acfg->user_symbol_prefix = "";
 
 #ifdef TARGET_ARM
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
@@ -611,7 +609,6 @@ arch_init (MonoAotCompile *acfg)
 #endif
 
 #ifdef TARGET_MACH
-	acfg->user_symbol_prefix = "_";
 	acfg->llvm_label_prefix = "_";
 	acfg->need_no_dead_strip = TRUE;
 #endif
@@ -633,11 +630,11 @@ arch_init (MonoAotCompile *acfg)
  * calling code.
  */
 static void
-arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean external, int *call_size)
+arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
-	if (external && !acfg->use_bin_writer) {
+	if (FALSE && !acfg->use_bin_writer) {
 		img_writer_emit_unset_mode (acfg->w);
 		fprintf (acfg->fp, "call %s\n", target);
 	} else {
@@ -4148,7 +4145,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	MonoMethodHeader *header;
-	gboolean skip, direct_call, external_call;
+	gboolean skip, direct_call;
 	guint32 got_slot;
 	const char *direct_call_target;
 	const char *direct_pinvoke;
@@ -4198,7 +4195,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				 * the same assembly and requires no initialization.
 				 */
 				direct_call = FALSE;
-				external_call = FALSE;
 				if ((patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == acfg->image)) {
 					if (!got_only && is_direct_callable (acfg, method, patch_info)) {
 						MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
@@ -4217,18 +4213,16 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						else
 							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
 						if (direct_pinvoke) {
+							const char*prefix;
+#if defined(TARGET_MACH)
+							prefix = "_";
+#else
+							prefix = "";
+#endif
 							direct_call = TRUE;
 							g_assert (strlen (direct_pinvoke) < 1000);
-							direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, direct_pinvoke);
+							direct_call_target = g_strdup_printf ("%s%s", prefix, direct_pinvoke);
 						}
-					}
-				} else if (patch_info->type == MONO_PATCH_INFO_INTERNAL_METHOD) {
-					const char *sym = mono_lookup_jit_icall_symbol (patch_info->data.name);
-					if (sym && acfg->aot_opts.direct_icalls) {
-						direct_call = TRUE;
-						external_call = TRUE;
-						g_assert (strlen (sym) < 1000);
-						direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, sym);
 					}
 				}
 
@@ -4253,7 +4247,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				if (direct_call) {
 					int call_size;
 
-					arch_emit_direct_call (acfg, direct_call_target, external_call, &call_size);
+					arch_emit_direct_call (acfg, direct_call_target, &call_size);
 					i += call_size - 1;
 				} else {
 					int code_size;
@@ -4437,7 +4431,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (get_image_index (acfg, patch_info->data.image), p, &p);
 		break;
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
-	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		break;
@@ -8179,10 +8172,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/* This is very common */
 		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
 		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
-		get_got_offset (acfg, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
-		ji->type = MONO_PATCH_INFO_JIT_TLS_ID;
 		get_got_offset (acfg, ji);
 	}
 

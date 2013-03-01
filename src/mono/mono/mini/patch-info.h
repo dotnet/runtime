@@ -44,6 +44,4 @@ PATCH_INFO(GC_CARD_TABLE_ADDR, "gc_card_table_addr")
 PATCH_INFO(CASTCLASS_CACHE, "castclass_cache")
 PATCH_INFO(SIGNATURE, "signature")
 PATCH_INFO(GSHAREDVT_CALL, "gsharedvt_call")
-PATCH_INFO(JIT_TLS_ID, "jit_tls_id")
 PATCH_INFO(NONE, "none")
-
