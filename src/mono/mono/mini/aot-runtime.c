@@ -2885,6 +2885,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
+	case MONO_PATCH_INFO_JIT_TLS_ID:
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		gboolean res;

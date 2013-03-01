@@ -4437,6 +4437,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (get_image_index (acfg, patch_info->data.image), p, &p);
 		break;
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
+	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		break;
@@ -8178,6 +8179,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/* This is very common */
 		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
 		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
+		get_got_offset (acfg, ji);
+
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji->type = MONO_PATCH_INFO_JIT_TLS_ID;
 		get_got_offset (acfg, ji);
 	}
 
