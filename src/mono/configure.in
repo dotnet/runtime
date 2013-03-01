@@ -2512,18 +2512,6 @@ case "$host" in
 		fi
 		sgen_supported=true
 		;;
-       alpha*-*-linux* | alpha*-*-osf*)
-		TARGET=ALPHA;
-		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
-		arch_target=alpha;
-		CFLAGS="$CFLAGS -mieee -O0"
-		case $host_os in
-		  linux*)
-			LIBC="libc.so.6.1"
-			INTL="libc.so.6.1"
-		esac
-	       ;;
 	*-mingw*|*-*-cygwin*)
 		# When this is enabled, it leads to very strange crashes at runtime (gcc-3.4.4)
 		have_visibility_hidden=no
@@ -2857,7 +2845,7 @@ fi
 mono_debugger_supported=no
 AC_ARG_ENABLE(mono-debugger, [  --disable-mono-debugger disable support for the mdb debugger], try_mono_debugger=$enableval, try_mono_debugger=yes)
 if test "x$try_mono_debugger" = "xyes"; then
-	if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86" -o "x$TARGET" = "xALPHA" -o "x$TARGET" = "xS390x"; then
+	if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86" -o "x$TARGET" = "xS390x"; then
 		if test x$use_included_gc = xyes; then
 			case "$host" in
 			*-*-*linux*)
@@ -3133,7 +3121,6 @@ AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
 AM_CONDITIONAL(SPARC64, test x$TARGET = xSPARC64)
 AM_CONDITIONAL(X86, test x$TARGET = xX86)
 AM_CONDITIONAL(AMD64, test x$TARGET = xAMD64)
-AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
 AM_CONDITIONAL(IA64, test x$TARGET = xIA64)
 AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
@@ -3336,7 +3323,6 @@ mono/arch/sparc/Makefile
 mono/arch/s390/Makefile
 mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
-mono/arch/alpha/Makefile
 mono/arch/ia64/Makefile
 mono/arch/mips/Makefile
 mono/interpreter/Makefile

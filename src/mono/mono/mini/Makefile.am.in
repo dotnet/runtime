@@ -311,12 +311,6 @@ ia64_sources = \
 	exceptions-ia64.c	\
 	tramp-ia64.c
 
-alpha_sources = \
-	mini-alpha.c		\
-	mini-alpha.h		\
-	exceptions-alpha.c	\
-	tramp-alpha.c
-
 darwin_sources = \
 	mini-darwin.c
 
@@ -502,12 +496,6 @@ arch_built = cpu-ia64.h
 arch_define=__ia64__
 endif
 
-if ALPHA
-arch_sources = $(alpha_sources) $(mono_debugger_sources)
-arch_built = cpu-alpha.h
-arch_define=__alpha__
-endif
-
 if HOST_WIN32
 os_sources = $(windows_sources)
 monobin_platform_ldflags=
@@ -633,9 +621,6 @@ cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-ia64.h ia64_desc $(srcdir)/cpu-ia64.md
 
-cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-alpha.h alpha_desc $(srcdir)/cpu-alpha.md
-
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
 
@@ -732,7 +717,6 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(s390_sources) cpu-s390.md 		\
 	$(s390x_sources) cpu-s390x.md 		\
 	$(ia64_sources) cpu-ia64.md 		\
-	$(alpha_sources) cpu-alpha.md 		\
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)

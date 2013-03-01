@@ -1151,30 +1151,6 @@ MINI_OP(OP_IA64_LOADR4_MEMBASE_INC,"ia64_loadr4_membase_inc", IREG, IREG, NONE)
 MINI_OP(OP_IA64_LOADR8_MEMBASE_INC,"ia64_loadr8_membase_inc", IREG, IREG, NONE)
 #endif
 
-#if defined(__alpha__)
-MINI_OP(OP_ALPHA_CMP_EQ, "alpha_cmp_eq")
-MINI_OP(OP_ALPHA_CMP_IMM_EQ, "alpha_cmp_imm_eq")
-MINI_OP(OP_ALPHA_CMP_ULT, "alpha_cmp_ult")
-MINI_OP(OP_ALPHA_CMP_IMM_ULT, "alpha_cmp_imm_ult")
-MINI_OP(OP_ALPHA_CMP_ULE, "alpha_cmp_ule")
-MINI_OP(OP_ALPHA_CMP_IMM_ULE, "alpha_cmp_imm_ule")
-MINI_OP(OP_ALPHA_CMP_LT, "alpha_cmp_lt")
-MINI_OP(OP_ALPHA_CMP_IMM_LT, "alpha_cmp_imm_lt")
-MINI_OP(OP_ALPHA_CMP_LE, "alpha_cmp_le")
-MINI_OP(OP_ALPHA_CMP_IMM_LE, "alpha_cmp_imm_le")
-
-MINI_OP(OP_ALPHA_CMPT_EQ, "alpha_cmpt_eq")
-MINI_OP(OP_ALPHA_CMPT_EQ_SU, "alpha_cmpt_eq_su")
-MINI_OP(OP_ALPHA_CMPT_LT, "alpha_cmpt_lt")
-MINI_OP(OP_ALPHA_CMPT_LT_SU, "alpha_cmpt_lt_su")
-MINI_OP(OP_ALPHA_CMPT_LE, "alpha_cmpt_le")
-MINI_OP(OP_ALPHA_CMPT_LE_SU, "alpha_cmpt_le_su")
-MINI_OP(OP_ALPHA_CMPT_UN, "alpha_cmpt_un")
-MINI_OP(OP_ALPHA_CMPT_UN_SU, "alpha_cmpt_un_su")
-MINI_OP(OP_ALPHA_TRAPB, "alpha_trapb")
-
-#endif
-
 #if defined(__mips__)
 MINI_OP(OP_MIPS_BEQ,   "mips_beq", NONE, IREG, IREG)
 MINI_OP(OP_MIPS_BGEZ,  "mips_bgez", NONE, IREG, NONE)
