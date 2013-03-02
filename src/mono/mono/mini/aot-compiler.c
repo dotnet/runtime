@@ -3281,16 +3281,14 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 
 		/* Stelemref wrappers */
-		/* There is only a constant number of these, iterating over all types should handle them all */
-		for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
-			MonoClass *klass;
-		
-			token = MONO_TOKEN_TYPE_DEF | (i + 1);
-			klass = mono_class_get (acfg->image, token);
-			if (klass)
-				add_method (acfg, mono_marshal_get_virtual_stelemref (mono_array_class_get (klass, 1)));
-			else
-				mono_loader_clear_error ();
+		{
+			MonoMethod **wrappers;
+			int nwrappers;
+
+			wrappers = mono_marshal_get_virtual_stelemref_wrappers (&nwrappers);
+			for (i = 0; i < nwrappers; ++i)
+				add_method (acfg, wrappers [i]);
+			g_free (wrappers);
 		}
 
 		/* castclass_with_check wrapper */

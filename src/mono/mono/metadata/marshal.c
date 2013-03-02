@@ -10300,23 +10300,19 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
  *	- Maybe mve some MonoClass field into the vtable to reduce the number of loads
  *	- Add a case for arrays of arrays.
  */
-MonoMethod*
-mono_marshal_get_virtual_stelemref (MonoClass *array_class)
+static MonoMethod*
+get_virtual_stelemref_wrapper (int kind)
 {
 	static MonoMethod *cached_methods [STELEMREF_KIND_COUNT] = { NULL }; /*object iface sealed regular*/
 	static MonoMethodSignature *signature;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	int kind;
 	char *name;
 	const char *param_names [16];
 	guint32 b1, b2, b3;
 	int aklass, vklass, vtable, uiid;
 	int array_slot_addr;
 	WrapperInfo *info;
-
-	g_assert (array_class->rank == 1);
-	kind = get_virtual_stelemref_kind (array_class->element_class);
 
 	if (cached_methods [kind])
 		return cached_methods [kind];
@@ -10683,6 +10679,30 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 
 	mono_mb_free (mb);
 	return cached_methods [kind];
+}
+
+MonoMethod*
+mono_marshal_get_virtual_stelemref (MonoClass *array_class)
+{
+	int kind;
+
+	g_assert (array_class->rank == 1);
+	kind = get_virtual_stelemref_kind (array_class->element_class);
+
+	return get_virtual_stelemref_wrapper (kind);
+}
+
+MonoMethod**
+mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
+{
+	MonoMethod **res;
+	int i;
+
+	*nwrappers = STELEMREF_KIND_COUNT;
+	res = g_malloc0 (STELEMREF_KIND_COUNT * sizeof (MonoMethod*));
+	for (i = 0; i < STELEMREF_KIND_COUNT; ++i)
+		res [i] = get_virtual_stelemref_wrapper (i);
+	return res;
 }
 
 /*
