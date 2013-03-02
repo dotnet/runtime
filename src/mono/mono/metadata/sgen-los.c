@@ -579,7 +579,7 @@ sgen_los_object_size (LOSObject *obj)
 LOSObject*
 sgen_los_header_for_object (char *data)
 {
-	return (LOSObject*)(data - (sizeof (LOSObject*) + sizeof (mword)));
+	return (LOSObject*)(data - sizeof (LOSObject));
 }
 
 void
