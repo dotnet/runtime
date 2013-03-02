@@ -35,6 +35,7 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/dtrace.h>
+#include <mono/utils/mono-threads.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -1214,7 +1215,7 @@ mono_gc_cleanup (void)
 				 * The above wait only waits for the exited event to be signalled, the thread might still be running. To fix this race, we
 				 * create the finalizer thread without calling pthread_detach () on it, so we can wait for it manually.
 				 */
-				ret = pthread_join ((gpointer)(gsize)gc_thread->tid, NULL);
+				ret = pthread_join ((MonoNativeThreadId)(gpointer)(gsize)gc_thread->tid, NULL);
 				g_assert (ret == 0);
 #endif
 			}
