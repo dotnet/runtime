@@ -4872,6 +4872,11 @@ mono_gc_base_init (void)
 		exit (1);
 	}
 
+	if (have_split_nursery && major_collector.is_parallel) {
+		fprintf (stderr, "Split nursery is not supported with the parallel collector yet.\n");
+		exit (1);
+	}
+
 	num_workers = mono_cpu_count ();
 	g_assert (num_workers > 0);
 	if (num_workers > 16)

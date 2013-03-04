@@ -807,9 +807,7 @@ SGEN_CONFIGURATIONS =	\
 	"major=marksweep-par|ms-par"	\
 	"major=marksweep-conc|ms-conc"	\
 	"major=marksweep-conc,minor=split|ms-conc-split"	\
-	"major=marksweep-par,minor=split|ms-par-split"	\
 	"minor=split|ms-split"	\
-	"major=marksweep-par,minor=split,alloc-ratio=95|ms-par-split-95"	\
 	"minor=split,alloc-ratio=95|ms-split-95"
 
 #FIXME We should move to use SGEN_CONFIGURATIONS once sgen supports trailling commas or its argument list.
