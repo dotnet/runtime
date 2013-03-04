@@ -719,7 +719,8 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(ia64_sources) cpu-ia64.md 		\
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
-	$(posix_sources)
+	$(posix_sources)					\
+	Makefile.am.in
 
 version.h: Makefile
 	if test -d $(top_srcdir)/.git; then \
