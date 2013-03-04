@@ -833,7 +833,53 @@ mono_assembly_addref (MonoAssembly *assembly)
 	InterlockedIncrement (&assembly->ref_count);
 }
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
+#define SILVERLIGHT_KEY "7cec85d7bea7798e"
+#define WINFX_KEY "31bf3856ad364e35"
+#define ECMA_KEY "b77a5c561934e089"
+#define MSFINAL_KEY "b03f5f7f11d50a3a"
+
+typedef struct {
+	const char *name;
+	const char *from;
+	const char *to;
+} KeyRemapEntry;
+
+static KeyRemapEntry key_remap_table[] = {
+	{ "Microsoft.CSharp", WINFX_KEY, MSFINAL_KEY },
+	{ "System", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.ComponentModel.Composition", WINFX_KEY, ECMA_KEY },
+	{ "System.ComponentModel.DataAnnotations", "ddd0da4d3e678217", WINFX_KEY },
+	{ "System.Core", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.Numerics", WINFX_KEY, ECMA_KEY },
+	{ "System.Runtime.Serialization", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.ServiceModel", WINFX_KEY, ECMA_KEY },
+	{ "System.ServiceModel.Web", SILVERLIGHT_KEY, WINFX_KEY },
+	{ "System.Windows", SILVERLIGHT_KEY, MSFINAL_KEY },
+	{ "System.Xml", SILVERLIGHT_KEY, ECMA_KEY },
+	{ "System.Xml.Linq", WINFX_KEY, ECMA_KEY },
+	{ "System.Xml.Serialization", WINFX_KEY, MSFINAL_KEY }
+};
+
+static void
+remap_keys (MonoAssemblyName *aname)
+{
+	int i;
+	for (i = 0; i < G_N_ELEMENTS (key_remap_table); i++) {
+		const KeyRemapEntry *entry = &key_remap_table [i];
+
+		if (strcmp (aname->name, entry->name) ||
+		    !mono_public_tokens_are_equal (aname->public_key_token, (const unsigned char*) entry->from))
+			continue;
+
+		memcpy (aname->public_key_token, entry->to, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		     
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+			    "Remapped public key token of retargetable assembly %s from %s to %s",
+			    aname->name, entry->from, entry->to);
+		return;
+	}
+}
+
 static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
@@ -860,6 +906,8 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		/* Remap assembly name */
 		if (!strcmp (aname->name, "System.Net"))
 			dest_aname->name = g_strdup ("System");
+		
+		remap_keys (dest_aname);
 
 		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
 					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
@@ -871,7 +919,8 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 
 		return dest_aname;
 	}
-
+	
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	first = 0;
 	last = G_N_ELEMENTS (framework_assemblies) - 1;
 	
@@ -909,9 +958,10 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 			first = pos + 1;
 		}
 	}
+#endif
+
 	return aname;
 }
-#endif
 
 /*
  * mono_assembly_get_assemblyref:
@@ -2182,9 +2232,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 {
 	MonoAssembly *res;
 	MonoAssemblyName *aname, base_name;
-#ifndef DISABLE_ASSEMBLY_REMAPPING
-	MonoAssemblyName maped_aname;
-#endif
+	MonoAssemblyName mapped_aname;
 	gchar *fullname, *gacpath;
 	gchar **paths;
 
@@ -2194,14 +2242,12 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if (!mono_assembly_name_parse (name, aname))
 		return NULL;
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
 	/* 
 	 * If no specific version has been requested, make sure we load the
 	 * correct version for system assemblies.
 	 */ 
 	if ((aname->major | aname->minor | aname->build | aname->revision) == 0)
-		aname = mono_assembly_remap_version (aname, &maped_aname);
-#endif
+		aname = mono_assembly_remap_version (aname, &mapped_aname);
 	
 	res = mono_assembly_loaded (aname);
 	if (res) {
@@ -2747,17 +2793,13 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
-#ifndef DISABLE_ASSEMBLY_REMAPPING
 	MonoAssemblyName maped_aname;
-#endif
 	MonoAssemblyName maped_name_pp;
 	int ext_index;
 	const char *ext;
 	int len;
 
-#ifndef DISABLE_ASSEMBLY_REMAPPING
 	aname = mono_assembly_remap_version (aname, &maped_aname);
-#endif
 	
 	/* Reflection only assemblies don't get assembly binding */
 	if (!refonly)
@@ -2868,11 +2910,9 @@ MonoAssembly*
 mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
 	MonoAssembly *res;
-#ifndef DISABLE_ASSEMBLY_REMAPPING
 	MonoAssemblyName maped_aname;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
-#endif
 
 	res = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
 
