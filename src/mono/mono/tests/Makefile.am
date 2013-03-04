@@ -1,4 +1,4 @@
-SUBDIRS = cas assemblyresolve
+SUBDIRS = cas assemblyresolve gc-descriptors
 
 check-local: test
 
