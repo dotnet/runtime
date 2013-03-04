@@ -8,7 +8,7 @@ public class DescriptorTest
 		var last = new Filler [Bitmaps.NumWhich];
 		for (var i = 0; i < 1000000000; ++i)
 		{
-			var o = Bitmaps.MakeAndFill (which, objs);
+			var o = Bitmaps.MakeAndFill (which, objs, r.Next (2) == 0);
 			objs [r.Next (objs.Length)] = o;
 			last [which] = o;
 

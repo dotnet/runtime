@@ -24,13 +24,13 @@ print ""
 names = []
 
 max_offset = 512
-max_bitmap = 512
+max_bitmap = 257
 
 for offset in range (0, max_offset, 19):
     for bitmap in range (0, max_bitmap):
         name = "Bitmap%dSkip%d" % (bitmap, offset)
         names.append (name)
-        print "public class %s : Filler {" % name
+        print "public struct %s : Filler {" % name
         for i in range (0, 16):
             bit = 1 << i
             if offset & bit:
@@ -47,22 +47,39 @@ for offset in range (0, max_offset, 19):
             if bitmap & bit:
                 print "    ref%d = refs [%d];" % (i, i)
         print "  }"
+        print "}"
+        print "public class %sWrapper : Filler {" % name
+        print "  %s[] a;" % name
+        print "  public %sWrapper () {" % name
+        print "    a = new %s [1];" % name
+        print "  }"
+        print "  public void Fill (object[] refs) {"
+        print "    a [0].Fill (refs);"
+        print "  }"
         print "}\n"
 
 def search_method_name (left, right):
     return "MakeAndFillL%dR%d" % (left, right)
 
+def gen_new (name):
+    print "Filler b;"
+    print "if (wrap)"
+    print "  b = new %sWrapper ();" % name
+    print "else"
+    print "  b = new %s ();" % name
+    print "b.Fill (refs); return b;"
+
 def gen_binary_search (left, right):
     name = search_method_name (left, right)
-    print "public static Filler %s (int which, object[] refs) {" % name
+    print "public static Filler %s (int which, object[] refs, bool wrap) {" % name
     if left + 1 >= right:
-        print "var b = new %s (); b.Fill (refs); return b;" % (names [left])
+        gen_new (names [left])
     else:
         mid = (left + right) / 2
         print "if (which < %d) {" % mid
-        print "return %s (which, refs);" % search_method_name (left, mid)
+        print "return %s (which, refs, wrap);" % search_method_name (left, mid)
         print "} else {"
-        print "return %s (which, refs);" % search_method_name (mid, right)
+        print "return %s (which, refs, wrap);" % search_method_name (mid, right)
         print "}"
     print "}"
     if left + 1 < right:
@@ -72,18 +89,20 @@ def gen_binary_search (left, right):
 
 print "public class Bitmaps {"
 if options.switch:
-    print "  public static Filler MakeAndFill (int which, object[] refs) {"
+    print "  public static Filler MakeAndFill (int which, object[] refs, bool wrap) {"
     print "    switch (which) {"
     for i in range (0, len (names)):
-        print "      case %d: { var b = new %s (); b.Fill (refs); return b; }" % (i, names [i])
+        print "      case %d: {" % i
+        gen_new (names [i])
+        print "}"
     print "      default: return null;"
     print "    }"
     print "  }"
 else:
     method_name = gen_binary_search (0, len (names))
-    print "  public static Filler MakeAndFill (int which, object[] refs) {"
+    print "  public static Filler MakeAndFill (int which, object[] refs, bool wrap) {"
     print "    if (which >= %d) return null;" % len (names)
-    print "    return %s (which, refs);" % method_name
+    print "    return %s (which, refs, wrap);" % method_name
     print "  }"
 print "  public const int NumWhich = %d;" % len (names)
 print "}"
