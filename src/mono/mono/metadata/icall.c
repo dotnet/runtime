@@ -4538,53 +4538,6 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	return result;
 }
 
-typedef struct {
-	MonoArray *res;
-	int idx;
-} NameSpaceInfo;
-
-static void
-foreach_namespace (const char* key, gconstpointer val, NameSpaceInfo *info)
-{
-	MonoString *name = mono_string_new (mono_object_domain (info->res), key);
-
-	mono_array_setref (info->res, info->idx, name);
-	info->idx++;
-}
-
-ICALL_EXPORT MonoArray*
-ves_icall_System_Reflection_Assembly_GetNamespaces (MonoReflectionAssembly *assembly) 
-{
-	MonoImage *img = assembly->assembly->image;
-	MonoArray *res;
-	NameSpaceInfo info;
-	int len;
-
-	MONO_ARCH_SAVE_REGS;
-
-	mono_image_lock (img);
-	mono_image_init_name_cache (img);
-
-RETRY_LEN:
-	len = g_hash_table_size (img->name_cache);
-	mono_image_unlock (img);
-
-	/*we can't create objects holding the image lock */
-	res = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, len);
-
-	mono_image_lock (img);
-	/*len might have changed, create a new array*/
-	if (len != g_hash_table_size (img->name_cache))
-		goto RETRY_LEN;
-
-	info.res = res;
-	info.idx = 0;
-	g_hash_table_foreach (img->name_cache, (GHFunc)foreach_namespace, &info);
-	mono_image_unlock (img);
-
-	return res;
-}
-
 /* move this in some file in mono/util/ */
 static char *
 g_concat_dir_and_file (const char *dir, const char *file)
