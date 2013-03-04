@@ -34,6 +34,13 @@
 #endif
 #include <errno.h>
 
+#ifdef _MSC_VER
+#define FORCE_INLINE(RET_TYPE) __forceinline RET_TYPE
+#else
+#define FORCE_INLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
+#endif
+
+
 #define UNROLL_DECODE_UTF8 0
 #define UNROLL_ENCODE_UTF8 0
 
@@ -61,7 +68,7 @@ static int encode_utf16be (gunichar c, char *outbuf, size_t outleft);
 static int decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar);
 static int encode_utf16le (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
+static FORCE_INLINE (int) decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
 static int encode_utf8 (gunichar c, char *outbuf, size_t outleft);
 
 static int decode_latin1 (char *inbuf, size_t inleft, gunichar *outchar);
@@ -480,7 +487,7 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 	}
 }
 
-static int
+static FORCE_INLINE (int)
 decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 {
 	unsigned char *inptr = (unsigned char *) inbuf;
@@ -828,7 +835,7 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 	return n;
 }
 
-static int
+static FORCE_INLINE (int)
 g_unichar_to_utf16 (gunichar c, gunichar2 *outbuf)
 {
 	gunichar c2;
