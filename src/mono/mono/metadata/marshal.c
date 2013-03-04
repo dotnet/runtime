@@ -5623,13 +5623,17 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	return res;
 }
 
-#ifndef DISABLE_JIT
 static int
 emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 					 MonoMarshalSpec *spec, 
 					 int conv_arg, MonoType **conv_arg_type, 
 					 MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN && t->type == MONO_TYPE_VALUETYPE)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+	return conv_arg;
+#else
 	MonoType *mtype;
 	MonoClass *mklass;
 	static MonoClass *ICustomMarshaler = NULL;
@@ -5923,8 +5927,9 @@ handle_exception:
 	default:
 		g_assert_not_reached ();
 	}
-		
 	return conv_arg;
+#endif
+
 }
 
 static int
@@ -5933,6 +5938,7 @@ emit_marshal_asany (EmitMarshalContext *m, int argnum, MonoType *t,
 					int conv_arg, MonoType **conv_arg_type, 
 					MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -5969,7 +5975,7 @@ emit_marshal_asany (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -5979,6 +5985,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 					int conv_arg, MonoType **conv_arg_type, 
 					MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass, *date_time_class;
 	int pos = 0, pos2;
@@ -6252,7 +6259,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -6262,6 +6269,16 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 					 int conv_arg, MonoType **conv_arg_type, 
 					 MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	}
+#else
 	MonoMethodBuilder *mb = m->mb;
 	MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 	MonoMarshalConv conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
@@ -6419,15 +6436,20 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
+
 
 static int
 emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t, 
 			 MonoMarshalSpec *spec, int conv_arg, 
 			 MonoType **conv_arg_type, MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+#else
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action){
@@ -6578,15 +6600,20 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		printf ("Unhandled case for MarshalAction: %d\n", action);
 	}
-
+#endif
 	return conv_arg;
 }
+
 
 static int
 emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t, 
 			MonoMarshalSpec *spec, int conv_arg, 
 			MonoType **conv_arg_type, MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+#else
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action){
@@ -6639,9 +6666,10 @@ emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		fprintf (stderr, "Unhandled case for MarshalAction: %d\n", action);
 	}
-
+#endif
 	return conv_arg;
 }
+
 
 static int
 emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
@@ -6649,6 +6677,10 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		     int conv_arg, MonoType **conv_arg_type, 
 		     MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+#else
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type (t);
 	int pos, pos2, loc;
@@ -7122,10 +7154,11 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
+#ifndef DISABLE_JIT
 
 #ifndef DISABLE_COM
 
@@ -7245,6 +7278,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 #endif /* DISABLE_COM */
+#endif /* DISABLE_JIT */
 
 static gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
@@ -7264,12 +7298,23 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 	}
 }
 
+
 static int
 emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					MonoMarshalSpec *spec, 
 					int conv_arg, MonoType **conv_arg_type, 
 					MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		*conv_arg_type = &mono_defaults.object_class->byval_arg;
+		break;
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	}
+#else
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type (t);
 	gboolean need_convert, need_free;
@@ -7942,8 +7987,54 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
+}
+
+static MonoType*
+marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
+{
+	if (spec == NULL) {
+		return &mono_defaults.int32_class->byval_arg;
+	} else {
+		switch (spec->native) {
+		case MONO_NATIVE_I1:
+		case MONO_NATIVE_U1:
+			return &mono_defaults.byte_class->byval_arg;
+		case MONO_NATIVE_VARIANTBOOL:
+			if (ldc_op) *ldc_op = CEE_LDC_I4_M1;
+			return &mono_defaults.int16_class->byval_arg;
+		case MONO_NATIVE_BOOLEAN:
+			return &mono_defaults.int32_class->byval_arg;
+		default:
+			g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+			return &mono_defaults.int32_class->byval_arg;
+		}
+	}
+}
+
+static MonoClass*
+marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/)
+{
+	MonoClass* conv_arg_class = mono_defaults.int32_class;
+	if (spec) {
+		switch (spec->native) {
+		case MONO_NATIVE_I1:
+		case MONO_NATIVE_U1:
+			conv_arg_class = mono_defaults.byte_class;
+			if (ldop) *ldop = CEE_LDIND_I1;
+			break;
+		case MONO_NATIVE_VARIANTBOOL:
+			conv_arg_class = mono_defaults.int16_class;
+			if (ldop) *ldop = CEE_LDIND_I2;
+			break;
+		case MONO_NATIVE_BOOLEAN:
+			break;
+		default:
+			g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+		}
+	}
+	return conv_arg_class;
 }
 
 static int
@@ -7952,6 +8043,26 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		      int conv_arg, MonoType **conv_arg_type, 
 		      MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		if (t->byref)
+			*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		else
+			*conv_arg_type = marshal_boolean_conv_in_get_local_type (spec, NULL);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		MonoClass* conv_arg_class = marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
+		if (t->byref)
+			*conv_arg_type = &conv_arg_class->this_arg;
+		else
+			*conv_arg_type = &conv_arg_class->byval_arg;
+		break;
+	}
+
+	}
+#else
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -7960,27 +8071,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		int label_false;
 		guint8 ldc_op = CEE_LDC_I4_1;
 
-		if (spec == NULL) {
-			local_type = &mono_defaults.int32_class->byval_arg;
-		} else {
-			switch (spec->native) {
-			case MONO_NATIVE_I1:
-			case MONO_NATIVE_U1:
-				local_type = &mono_defaults.byte_class->byval_arg;
-				break;
-			case MONO_NATIVE_VARIANTBOOL:
-				local_type = &mono_defaults.int16_class->byval_arg;
-				ldc_op = CEE_LDC_I4_M1;
-				break;
-			case MONO_NATIVE_BOOLEAN:
-				local_type = &mono_defaults.int32_class->byval_arg;
-				break;
-			default:
-				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
-				local_type = &mono_defaults.int32_class->byval_arg;
-				break;
-			}
-		}
+		local_type = marshal_boolean_conv_in_get_local_type (spec, &ldc_op);
 		if (t->byref)
 			*conv_arg_type = &mono_defaults.int_class->byval_arg;
 		else
@@ -8038,25 +8129,8 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		guint8 ldop = CEE_LDIND_I4;
 		int label_null, label_false;
 
+		conv_arg_class = marshal_boolean_managed_conv_in_get_conv_arg_class (spec, &ldop);
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-
-		if (spec) {
-			switch (spec->native) {
-			case MONO_NATIVE_I1:
-			case MONO_NATIVE_U1:
-				conv_arg_class = mono_defaults.byte_class;
-				ldop = CEE_LDIND_I1;
-				break;
-			case MONO_NATIVE_VARIANTBOOL:
-				conv_arg_class = mono_defaults.int16_class;
-				ldop = CEE_LDIND_I2;
-				break;
-			case MONO_NATIVE_BOOLEAN:
-				break;
-			default:
-				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
-			}
-		}
 
 		if (t->byref)
 			*conv_arg_type = &conv_arg_class->this_arg;
@@ -8129,7 +8203,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8138,6 +8212,7 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 		  MonoMarshalSpec *spec, int conv_arg, 
 		  MonoType **conv_arg_type, MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -8163,7 +8238,7 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8172,6 +8247,7 @@ emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t,
 		   MonoMarshalSpec *spec, int conv_arg, 
 		   MonoType **conv_arg_type, MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -8190,7 +8266,7 @@ emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8199,6 +8275,7 @@ emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MonoMarshalSpec *spec, int conv_arg, 
 		     MonoType **conv_arg_type, MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -8214,7 +8291,7 @@ emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8290,10 +8367,10 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			return emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	}
-
 	return conv_arg;
 }
 
+#ifndef DISABLE_JIT
 /**
  * mono_marshal_emit_native_wrapper:
  * @image: the image to use for looking up custom marshallers
@@ -8513,8 +8590,8 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 
 	mono_mb_emit_byte (mb, CEE_RET);
 }
-
 #endif /* DISABLE_JIT */
+
 
 G_GNUC_UNUSED static void
 code_for (MonoMethod *method) {
@@ -8856,7 +8933,6 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	return res;
 }
 
-#ifndef DISABLE_JIT
 /*
  * mono_marshal_emit_managed_wrapper:
  *
@@ -8868,6 +8944,29 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
+#ifdef DISABLE_JIT
+	MonoMethodSignature *sig, *csig;
+	int i;
+
+	sig = m->sig;
+	csig = m->csig;
+
+	/* we first do all conversions */
+	for (i = 0; i < sig->param_count; i ++) {
+		MonoType *t = sig->params [i];
+
+		switch (t->type) {
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_BOOLEAN:
+			emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+		}
+	}
+#else
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
 	gboolean closed = FALSE;
@@ -9049,8 +9148,8 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	if (closed)
 		g_free (sig);
+#endif
 }
-#endif /* DISABLE_JIT */
 
 static void 
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig)
@@ -9224,9 +9323,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-#ifndef DISABLE_JIT
 	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle);
-#endif
 
 	if (!target_handle) {
 		WrapperInfo *info;
@@ -9296,9 +9393,9 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
-#ifndef DISABLE_JIT
 		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0);
 
+#ifndef DISABLE_JIT
 		mb->dynamic = 1;
 #endif
 		method = mono_mb_create_method (mb, csig, sig->param_count + 16);
