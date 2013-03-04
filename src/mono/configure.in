@@ -3335,6 +3335,7 @@ mono/tests/cas/demand/Makefile
 mono/tests/cas/inheritance/Makefile
 mono/tests/cas/linkdemand/Makefile
 mono/tests/cas/threads/Makefile
+mono/tests/gc-descriptors/Makefile
 mono/benchmark/Makefile
 mono/monograph/Makefile
 mono/io-layer/Makefile
