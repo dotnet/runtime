@@ -9,3 +9,5 @@ descriptor-tests.exe : descriptor-tests.cs
 
 descriptor-tests.cs : descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-descriptor-tests.py
 	./gen-descriptor-tests.py >descriptor-tests.cs
+
+EXTRA_DIST = descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-descriptor-tests.py
