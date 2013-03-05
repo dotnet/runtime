@@ -133,7 +133,7 @@ class Tests
 	}
 
 	public static int test_0_string_ctor () {
-		string res = (string)typeof (String).GetConstructor (new Type [] { typeof (char[]) }).Invoke (null, new object [] { new char [] { 'A', 'B', 'C' } });
+		string res = (string)typeof (String).GetConstructor (new Type [] { typeof (char[]) }).Invoke (new object [] { new char [] { 'A', 'B', 'C' } });
 		if (res == "ABC")
 			return 0;
 		else

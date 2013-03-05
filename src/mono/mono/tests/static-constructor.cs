@@ -52,8 +52,8 @@ public class Tests {
 		ConstructorInfo con1 = typeof (A).GetConstructor (BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type [1] { typeof (int) }, null);
 		ConstructorInfo con2 = typeof (B).GetConstructor (BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type [1] { typeof (int) }, null);
 
-		con1.Invoke (null, new Object [] { 0 });
-		con2.Invoke (null, new Object [] { 0 });
+		con1.Invoke (new Object [] { 0 });
+		con2.Invoke (new Object [] { 0 });
 
 		// Test what happens when static initialization throws an exception
 		// First start a thread which will trigger the initialization
