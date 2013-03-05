@@ -75,7 +75,7 @@ def gen_binary_search (left, right):
     if left + 1 >= right:
         gen_new (names [left])
     else:
-        mid = (left + right) / 2
+        mid = (left + right) // 2
         print ("if (which < %d) {" % mid)
         print ("return %s (which, refs, wrap);" % search_method_name (left, mid))
         print ("} else {")
