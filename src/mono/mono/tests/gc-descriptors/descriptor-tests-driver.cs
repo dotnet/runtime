@@ -2,7 +2,7 @@ public class DescriptorTest
 {
 	public static void Main ()
 	{
-		var r = new Random ();
+		var r = new Random (31415);
 		var objs = new object [9];
 		var which = 0;
 		var last = new Filler [Bitmaps.NumWhich];
