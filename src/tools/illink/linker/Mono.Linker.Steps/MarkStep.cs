@@ -843,6 +843,9 @@ namespace Mono.Linker.Steps {
 				return;
 
 			foreach (MethodDefinition base_method in base_methods) {
+				if (base_method.DeclaringType.IsInterface && !method.DeclaringType.IsInterface)
+					continue;
+
 				MarkMethod (base_method);
 				MarkBaseMethods (base_method);
 			}
