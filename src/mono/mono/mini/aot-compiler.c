@@ -4222,9 +4222,20 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 							direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, direct_pinvoke);
 						}
 					}
-				} else if (patch_info->type == MONO_PATCH_INFO_INTERNAL_METHOD) {
+				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 					const char *sym = mono_lookup_jit_icall_symbol (patch_info->data.name);
-					if (sym && acfg->aot_opts.direct_icalls) {
+					if (!got_only && sym && acfg->aot_opts.direct_icalls) {
+						/* Call to a C function implementing a jit icall */
+						direct_call = TRUE;
+						external_call = TRUE;
+						g_assert (strlen (sym) < 1000);
+						direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, sym);
+					}
+				} else if (patch_info->type == MONO_PATCH_INFO_INTERNAL_METHOD) {
+					MonoJitICallInfo *info = mono_find_jit_icall_by_name (patch_info->data.name);
+					const char *sym = mono_lookup_jit_icall_symbol (patch_info->data.name);
+					if (!got_only && sym && acfg->aot_opts.direct_icalls && info->func == info->wrapper) {
+						/* Call to a jit icall without a wrapper */
 						direct_call = TRUE;
 						external_call = TRUE;
 						g_assert (strlen (sym) < 1000);
