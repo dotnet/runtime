@@ -2998,23 +2998,26 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 			}
 		}
 		else {
-			if (cfg->abs_patches && g_hash_table_lookup (cfg->abs_patches, data)) {
-				/* 
-				 * This is not really an optimization, but required because the
-				 * generic class init trampolines use R11 to pass the vtable.
-				 */
-				near_call = TRUE;
+			MonoJumpInfo *jinfo = NULL;
+
+			if (cfg->abs_patches)
+				jinfo = g_hash_table_lookup (cfg->abs_patches, data);
+			if (jinfo) {
+				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+					if ((((guint64)data) >> 32) == 0)
+						near_call = TRUE;
+					no_patch = TRUE;
+				} else {
+					/* 
+					 * This is not really an optimization, but required because the
+					 * generic class init trampolines use R11 to pass the vtable.
+					 */
+					near_call = TRUE;
+				}
 			} else {
 				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
 				if (info) {
-					if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
-						strstr (cfg->method->name, info->name)) {
-						/* A call to the wrapped function */
-						if ((((guint64)data) >> 32) == 0)
-							near_call = TRUE;
-						no_patch = TRUE;
-					}
-					else if (info->func == info->wrapper) {
+					if (info->func == info->wrapper) {
 						/* No wrapper */
 						if ((((guint64)info->func) >> 32) == 0)
 							near_call = TRUE;

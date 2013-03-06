@@ -2292,8 +2292,8 @@ mono_find_jit_opcode_emulation (int opcode)
 	return NULL;
 }
 
-void
-mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
+static void
+register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw)
 {
 	MonoJitICallInfo *info;
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
@@ -2301,7 +2301,7 @@ mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	info = mono_register_jit_icall (func, name, sig, no_throw);
+	info = mono_register_jit_icall_full (func, name, sig, no_throw, symbol);
 
 	if (emul_opcode_num >= emul_opcode_alloced) {
 		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
@@ -2313,6 +2313,12 @@ mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	emul_opcode_opcodes [emul_opcode_num] = opcode;
 	emul_opcode_num++;
 	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
+}
+
+void
+mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
+{
+	register_opcode_emulation (opcode, name, sigstr, func, NULL, no_throw);
 }
 
 /*
@@ -3085,6 +3091,15 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
+		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+		if (!mi) {
+			g_warning ("unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
+			g_assert_not_reached ();
+		}
+		target = mi->func;
+		break;
+	}
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE);
 #if defined(__native_client__) && defined(__native_client_codegen__)
@@ -3268,15 +3283,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 				g_error ("Unregistered icall '%s'\n", mono_method_full_name (patch_info->data.method, TRUE));
 		}
 		break;
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
-		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-		if (!mi) {
-			g_warning ("unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
-			g_assert_not_reached ();
-		}
-		target = mi->func;
-		break;
-	}
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 		target = mono_thread_interruption_request_flag ();
 		break;
@@ -3490,27 +3496,14 @@ mono_postprocess_patches (MonoCompile *cfg)
 			 */
 			if (info) {
 				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
-				// FIXME: CLEAN UP THIS MESS.
-				if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
-					strstr (cfg->method->name, info->name)) {
-					/*
-					 * This is an icall wrapper, and this is a call to the
-					 * wrapped function.
-					 */
-					if (cfg->compile_aot) {
-						patch_info->type = MONO_PATCH_INFO_JIT_ICALL_ADDR;
-						patch_info->data.name = info->name;
-					}
-				} else {
-					/* for these array methods we currently register the same function pointer
-					 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
-					 * will return the incorrect one depending on the order they are registered.
-					 * See tests/test-arr.cs
-					 */
-					if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
-						patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-						patch_info->data.name = info->name;
-					}
+				/* for these array methods we currently register the same function pointer
+				 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
+				 * will return the incorrect one depending on the order they are registered.
+				 * See tests/test-arr.cs
+				 */
+				if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
+					patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+					patch_info->data.name = info->name;
 				}
 			}
 
@@ -5827,17 +5820,16 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	MonoJitInfo *info;
 	gpointer code, p;
 	MonoJitICallInfo *callinfo = NULL;
+	WrapperInfo *winfo = NULL;
 
 	/*
 	 * ICALL wrappers are handled specially, since there is only one copy of them
 	 * shared by all appdomains.
 	 */
-	if ((method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (strstr (method->name, "__icall_wrapper_") == method->name)) {
-		const char *icall_name;
-
-		icall_name = method->name + strlen ("__icall_wrapper_");
-		g_assert (icall_name);
-		callinfo = mono_find_jit_icall_by_name (icall_name);
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+		winfo = mono_marshal_get_wrapper_info (method);
+	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+		callinfo = mono_find_jit_icall_by_addr (winfo->d.icall.func);
 		g_assert (callinfo);
 
 		/* Must be domain neutral since there is only one copy */

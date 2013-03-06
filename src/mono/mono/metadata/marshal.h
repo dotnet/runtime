@@ -144,6 +144,10 @@ typedef struct {
 	MonoMethod *method;
 } GenericArrayHelperWrapperInfo;
 
+typedef struct {
+	gpointer func;
+} ICallWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -168,6 +172,8 @@ typedef struct {
 		SynchronizedInnerWrapperInfo synchronized_inner;
 		/* GENERIC_ARRAY_HELPER */
 		GenericArrayHelperWrapperInfo generic_array_helper;
+		/* ICALL_WRAPPER */
+		ICallWrapperInfo icall;
 	} d;
 } WrapperInfo;
 

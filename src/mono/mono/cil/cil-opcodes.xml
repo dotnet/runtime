@@ -311,4 +311,5 @@
 <opcode name="mono_memory_barrier" input="Pop0" output="Push0" args="InlineI" o1="0xF0" o2="0x10" flow="next" />
 <opcode name="mono_jit_attach" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x11" flow="next" />
 <opcode name="mono_jit_detach" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x12" flow="next" />
+<opcode name="mono_jit_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x13" flow="next" />
 </opdesc>

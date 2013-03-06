@@ -311,6 +311,7 @@ OPDEF(CEE_MONO_DYN_CALL, "mono_dyn_call", Pop0, PushI, InlineI, X, 2, 0xF0, 0x0F
 OPDEF(CEE_MONO_MEMORY_BARRIER, "mono_memory_barrier", Pop0, Push0, InlineI, X, 2, 0xF0, 0x10, NEXT)
 OPDEF(CEE_MONO_JIT_ATTACH, "mono_jit_attach", Pop0, Push0, InlineNone, X, 2, 0xF0, 0x11, NEXT)
 OPDEF(CEE_MONO_JIT_DETACH, "mono_jit_detach", Pop0, Push0, InlineNone, X, 2, 0xF0, 0x12, NEXT)
+OPDEF(CEE_MONO_JIT_ICALL_ADDR, "mono_jit_icall_addr", Pop0, Push0, InlineNone, X, 2, 0xF0, 0x13, NEXT)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

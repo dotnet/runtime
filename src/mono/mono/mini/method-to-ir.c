@@ -7752,20 +7752,29 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Prevent inlining of methods with indirect calls */
 				INLINE_FAILURE ("indirect call");
 
-				if (addr->opcode == OP_AOTCONST && addr->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
+				if (addr->opcode == OP_PCONST || addr->opcode == OP_AOTCONST || addr->opcode == OP_GOT_ENTRY) {
+					int info_type;
+					gpointer info_data;
+
 					/* 
 					 * Instead of emitting an indirect call, emit a direct call
 					 * with the contents of the aotconst as the patch info.
 					 */
-					ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_p0, fsig, sp);
-					NULLIFY_INS (addr);
-				} else if (addr->opcode == OP_GOT_ENTRY && addr->inst_right->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
-					ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_right->inst_left, fsig, sp);
-					NULLIFY_INS (addr);
-				} else {
-					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
+					if (addr->opcode == OP_PCONST || addr->opcode == OP_AOTCONST) {
+						info_type = addr->inst_c1;
+						info_data = addr->inst_p0;
+					} else {
+						info_type = addr->inst_right->inst_c1;
+						info_data = addr->inst_right->inst_left;
+					}
+					
+					if (info_type == MONO_PATCH_INFO_ICALL_ADDR || info_type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+						ins = (MonoInst*)mono_emit_abs_call (cfg, info_type, info_data, fsig, sp);
+						NULLIFY_INS (addr);
+						goto call_end;
+					}
 				}
-
+				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
 				goto call_end;
 			}
 	      				
@@ -10528,23 +10537,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 
 				ptr = mono_method_get_wrapper_data (method, token);
-				if (cfg->compile_aot && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (strstr (method->name, "__icall_wrapper_") == method->name)) {
-					MonoJitICallInfo *callinfo;
-					const char *icall_name;
-
-					icall_name = method->name + strlen ("__icall_wrapper_");
-					g_assert (icall_name);
-					callinfo = mono_find_jit_icall_by_name (icall_name);
-					g_assert (callinfo);
-						
-					if (ptr == callinfo->func) {
-						/* Will be transformed into an AOTCONST later */
-						EMIT_NEW_PCONST (cfg, ins, ptr);
-						*sp++ = ins;
-						ip += 6;
-						break;
-					}
-				}
 				/* FIXME: Generalize this */
 				if (cfg->compile_aot && ptr == mono_thread_interruption_request_flag ()) {
 					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
@@ -10558,6 +10550,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				inline_costs += 10 * num_calls++;
 				/* Can't embed random pointers into AOT code */
 				cfg->disable_aot = 1;
+				break;
+			}
+			case CEE_MONO_JIT_ICALL_ADDR: {
+				MonoJitICallInfo *callinfo;
+				gpointer ptr;
+
+				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
+				token = read32 (ip + 2);
+
+				ptr = mono_method_get_wrapper_data (method, token);
+				callinfo = mono_find_jit_icall_by_addr (ptr);
+				g_assert (callinfo);
+				EMIT_NEW_JIT_ICALL_ADDRCONST (cfg, ins, (char*)callinfo->name);
+				*sp++ = ins;
+				ip += 6;
+				inline_costs += 10 * num_calls++;
 				break;
 			}
 			case CEE_MONO_ICALL_ADDR: {

@@ -291,6 +291,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		} \
 	} while (0)
 
+#define NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (name))
+
 #define GET_VARINFO_INST(cfg,num) ((cfg)->varinfo [(num)]->inst)
 
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
@@ -432,12 +434,13 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define EMIT_NEW_METHOD_RGCTX_CONST(cfg,dest,method) do { NEW_METHOD_RGCTX_CONST ((cfg), (dest), (method)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
+#define EMIT_NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) do { NEW_JIT_ICALL_ADDRCONST ((cfg), (dest), (name)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
 #define EMIT_NEW_VARLOAD(cfg,dest,var,vartype) do { NEW_VARLOAD ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_VARSTORE(cfg,dest,var,vartype,inst) do { NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_VARLOADA(cfg,dest,var,vartype) do { NEW_VARLOADA ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
-
 
 #ifdef MONO_ARCH_SOFT_FLOAT
 

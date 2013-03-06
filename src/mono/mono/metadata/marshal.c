@@ -5603,7 +5603,9 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-	mono_mb_emit_native_call (mb, csig2, (gpointer) func);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func);
+	mono_mb_emit_calli (mb, csig2);
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -5618,6 +5620,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	mono_mb_free (mb);
 
 	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_ICALL_WRAPPER);
+	info->d.icall.func = (gpointer)func;
 	mono_marshal_set_wrapper_info (res, info);
 	
 	return res;

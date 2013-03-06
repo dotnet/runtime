@@ -1892,14 +1892,12 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 {
 	gboolean needs_paddings = TRUE;
 	guint32 pad_size;
+	MonoJumpInfo *jinfo = NULL;
 
-	if (cfg->abs_patches && g_hash_table_lookup (cfg->abs_patches, data)) {
-	} else {
-		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
-		if (info) {
-			if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && strstr (cfg->method->name, info->name))
-				needs_paddings = FALSE; /* A call to the wrapped function */
-		}
+	if (cfg->abs_patches) {
+		jinfo = g_hash_table_lookup (cfg->abs_patches, data);
+		if (jinfo && jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR)
+			needs_paddings = FALSE;
 	}
 
 	if (cfg->compile_aot)
@@ -4972,6 +4970,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 		case MONO_PATCH_INFO_MONITOR_ENTER:
 		case MONO_PATCH_INFO_MONITOR_EXIT:
+		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 #if defined(__native_client_codegen__) && defined(__native_client__)
 			if (nacl_is_code_address (code)) {
 				/* For tail calls, code is patched after being installed */
