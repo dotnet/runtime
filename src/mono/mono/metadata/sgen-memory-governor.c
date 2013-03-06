@@ -395,13 +395,13 @@ sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance, do
 		return;
 
 	if (max_heap < soft_limit) {
-		fprintf (stderr, "max-heap-size must be at least as large as soft-heap-limit.\n");
-		exit (1);
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Setting to minimum.", "`max-heap-size` must be at least as large as `soft-heap-limit`.");
+		max_heap = soft_limit;
 	}
 
 	if (max_heap < sgen_nursery_size * 4) {
-		fprintf (stderr, "max-heap-size must be at least 4 times larger than nursery size.\n");
-		exit (1);
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Setting to minimum.", "`max-heap-size` must be at least 4 times as large as `nursery size`.");
+		max_heap = sgen_nursery_size * 4;
 	}
 	max_heap_size = max_heap - sgen_nursery_size;
 

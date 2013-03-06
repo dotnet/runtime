@@ -464,8 +464,6 @@ void sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure) MONO_INTERNAL;
 void sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
 
-gboolean sgen_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
-
 void** sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
 void sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx) MONO_INTERNAL;
@@ -1022,6 +1020,14 @@ sgen_dummy_use (gpointer v) {
 #error "Implement sgen_dummy_use for your compiler"
 #endif
 }
+
+/* Environment variable parsing */
+
+#define MONO_GC_PARAMS_NAME	"MONO_GC_PARAMS"
+#define MONO_GC_DEBUG_NAME	"MONO_GC_DEBUG"
+
+gboolean sgen_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
+void sgen_env_var_error (const char *env_var, const char *fallback, const char *description_format, ...) MONO_INTERNAL;
 
 #endif /* HAVE_SGEN_GC */
 
