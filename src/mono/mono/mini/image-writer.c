@@ -108,7 +108,7 @@
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-#if defined(TARGET_AMD64) && !defined(HOST_WIN32)
+#if defined(TARGET_AMD64) && !defined(HOST_WIN32) && !defined(__APPLE__)
 #define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
@@ -1585,7 +1585,7 @@ static void
 asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if  ((defined(__ppc__) || defined(TARGET_X86)) && defined(TARGET_ASM_APPLE)) || (defined(HOST_WIN32) && !defined(MONO_CROSS_COMPILE))
+#if  ((defined(__ppc__) || defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(TARGET_ASM_APPLE)) || (defined(HOST_WIN32) && !defined(MONO_CROSS_COMPILE))
 	if (name[0] != '_')
 		// mach-o always uses a '_' prefix.
 		fprintf (acfg->fp, "\t.globl _%s\n", name);
@@ -1624,7 +1624,7 @@ static void
 asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if (defined(TARGET_X86) && defined(TARGET_ASM_APPLE))
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(TARGET_ASM_APPLE)
         name = get_label(name);
         fprintf (acfg->fp, "%s:\n", name);
         if (name[0] != 'L' && name[0] != '_')
