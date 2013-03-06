@@ -4891,6 +4891,8 @@ mono_gc_base_init (void)
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
+			if (!strcmp (opt, ""))
+				continue;
 			if (g_str_has_prefix (opt, "major="))
 				continue;
 			if (g_str_has_prefix (opt, "minor="))
@@ -5090,6 +5092,8 @@ mono_gc_base_init (void)
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; ptr && *ptr; ptr ++) {
 			char *opt = *ptr;
+			if (!strcmp (opt, ""))
+				continue;
 			if (opt [0] >= '0' && opt [0] <= '9') {
 				gc_debug_level = atoi (opt);
 				opt++;
