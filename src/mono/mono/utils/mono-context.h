@@ -239,9 +239,9 @@ typedef struct {
 		"push {r0}\n"				\
 		"push {r1}\n"				\
 		"mov r0, %0\n"				\
-		"ldr r1, [sp, 4]\n"			\
+		"ldr r1, [sp, #4]\n"			\
 		"str r1, [r0]!\n"			\
-		"ldr r1, [sp, 0]\n"			\
+		"ldr r1, [sp, #0]\n"			\
 		"str r1, [r0]!\n"			\
 		"stmia r0!, {r2-r12}\n"		\
 		"str sp, [r0]!\n"			\
