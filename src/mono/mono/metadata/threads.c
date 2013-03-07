@@ -4616,8 +4616,10 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		gboolean running_managed;
 
 		/*A null info usually means the thread is already dead. */
-		if (!(info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, interrupt)))
+		if (!(info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, interrupt))) {
+			LeaveCriticalSection (thread->synch_cs);
 			return;
+		}
 
 		ji = mono_thread_info_get_last_managed (info);
 		protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
