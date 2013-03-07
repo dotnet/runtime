@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 class Tests {
 
@@ -1012,5 +1013,11 @@ class Tests {
 		if (a [1] != 1)
 			return 3;
 		return 0;
+	}
+
+	public static int test_0_volatile_read_write () {
+		string foo = "ABC";
+		Volatile.Write (ref foo, "DEF");
+		return Volatile.Read (ref foo) == "DEF" ? 0 : 1;
 	}
 }

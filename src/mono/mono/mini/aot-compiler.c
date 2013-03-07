@@ -4089,6 +4089,24 @@ add_generic_instances (MonoAotCompile *acfg)
 				}
 			}
 		}
+
+		/* Same for Volatile.Read/Write<T> */
+		{
+			MonoGenericContext ctx;
+			MonoType *args [16];
+			MonoMethod *m;
+			MonoClass *volatile_klass = mono_class_from_name (mono_defaults.corlib, "System.Threading", "Volatile");
+			gpointer iter = NULL;
+
+			while ((m = mono_class_get_methods (volatile_klass, &iter))) {
+				if ((!strcmp (m->name, "Read") || !strcmp (m->name, "Write")) && m->is_generic) {
+					memset (&ctx, 0, sizeof (ctx));
+					args [0] = &mono_defaults.object_class->byval_arg;
+					ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+					add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (m, &ctx), TRUE, TRUE));
+				}
+			}
+		}
 	}
 }
 
