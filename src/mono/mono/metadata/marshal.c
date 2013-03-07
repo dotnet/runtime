@@ -2660,6 +2660,59 @@ get_wrapper_target_class (MonoImage *image)
 	return klass;
 }
 
+static MonoMethod*
+check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def_method, MonoGenericContext *ctx)
+{
+	MonoMethod *res;
+	MonoMethod *inst, *def;
+
+	/*
+	 * Look for the instance
+	 */
+	res = mono_marshal_find_in_cache (cache, orig_method->klass);
+	if (res)
+		return res;
+
+	/*
+	 * Look for the definition
+	 */
+	def = mono_marshal_find_in_cache (cache, def_method->klass);
+	if (def) {
+		inst = mono_class_inflate_generic_method (def, ctx);
+		/* Cache it */
+		mono_memory_barrier ();
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, orig_method->klass);
+		if (!res) {
+			g_hash_table_insert (cache, orig_method->klass, inst);
+			res = inst;
+		}
+		mono_marshal_unlock ();
+		return res;
+	}
+	return NULL;
+}
+
+static MonoMethod*
+cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx)
+{
+	MonoMethod *inst, *res;
+
+	/*
+	 * We use the same cache for the generic definition and the instances.
+	 */
+	inst = mono_class_inflate_generic_method (def, ctx);
+	mono_memory_barrier ();
+	mono_marshal_lock ();
+	res = g_hash_table_lookup (cache, orig_method->klass);
+	if (!res) {
+		g_hash_table_insert (cache, orig_method->klass, inst);
+		res = inst;
+	}
+	mono_marshal_unlock ();
+	return res;
+}
+
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
@@ -2669,22 +2722,46 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	GHashTable *cache;
 	int params_var;
 	char *name;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
 
+	/*
+	 * For generic delegates, create a generic wrapper, and returns an instance to help AOT.
+	 */
+	if (method->is_inflated) {
+		orig_method = method;
+		ctx = &((MonoMethodInflated*)method)->context;
+		method = ((MonoMethodInflated*)method)->declaring;
+	}
+
 	sig = mono_signature_no_pinvoke (method);
 
-	cache = get_cache (&method->klass->image->delegate_begin_invoke_cache,
-					   (GHashFunc)mono_signature_hash, 
-					   (GCompareFunc)mono_metadata_signature_equal);
-	if ((res = mono_marshal_find_in_cache (cache, sig)))
-		return res;
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = get_cache (&method->klass->image->delegate_begin_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
+		if (res)
+			return res;
+	} else {
+		cache = get_cache (&method->klass->image->delegate_begin_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
+		if ((res = mono_marshal_find_in_cache (cache, sig)))
+			return res;
+	}
 
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "begin_invoke");
-	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
+	if (ctx)
+		mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
+	else
+		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
 #ifndef DISABLE_JIT
@@ -2696,7 +2773,14 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
+	} else {
+		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+	}
+
 	mono_mb_free (mb);
 	return res;
 }
@@ -2823,6 +2907,12 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 		break;
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR: {
+		MonoClass *klass = mono_class_from_mono_type (return_type);
+		mono_mb_emit_op (mb, CEE_UNBOX_ANY, klass);
+		break;
+	}
 	default:
 		g_warning ("type 0x%x not handled", return_type->type);
 		g_assert_not_reached ();
@@ -2842,22 +2932,46 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	GHashTable *cache;
 	int params_var;
 	char *name;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "EndInvoke"));
 
+	/*
+	 * For generic delegates, create a generic wrapper, and returns an instance to help AOT.
+	 */
+	if (method->is_inflated) {
+		orig_method = method;
+		ctx = &((MonoMethodInflated*)method)->context;
+		method = ((MonoMethodInflated*)method)->declaring;
+	}
+
 	sig = mono_signature_no_pinvoke (method);
 
-	cache = get_cache (&method->klass->image->delegate_end_invoke_cache,
-					   (GHashFunc)mono_signature_hash, 
-					   (GCompareFunc)mono_metadata_signature_equal);
-	if ((res = mono_marshal_find_in_cache (cache, sig)))
-		return res;
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = get_cache (&method->klass->image->delegate_end_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
+		if (res)
+			return res;
+	} else {
+		cache = get_cache (&method->klass->image->delegate_end_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
+		if ((res = mono_marshal_find_in_cache (cache, sig)))
+			return res;
+	}
 
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "end_invoke");
-	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_END_INVOKE);
+	if (ctx)
+		mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
+	else
+		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
 #ifndef DISABLE_JIT
@@ -2874,8 +2988,14 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 		mono_mb_emit_restore_result (mb, sig->ret);
 #endif
 
-	res = mono_mb_create_and_cache (cache, sig,
-										 mb, sig, sig->param_count + 16);
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
+	} else {
+		res = mono_mb_create_and_cache (cache, sig,
+										mb, sig, sig->param_count + 16);
+	}
 	mono_mb_free (mb);
 
 	return res;
@@ -4022,33 +4142,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	 * Check cache
 	 */
 	if (ctx) {
-		MonoMethod *def, *inst;
-
-		/*
-		 * Look for the instance
-		 */
 		cache = get_cache (&method->klass->image->delegate_invoke_generic_cache, mono_aligned_addr_hash, NULL);
-		res = mono_marshal_find_in_cache (cache, orig_method->klass);
+		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
-
-		/*
-		 * Look for the definition
-		 */
-		def = mono_marshal_find_in_cache (cache, method->klass);
-		if (def) {
-			inst = mono_class_inflate_generic_method (def, ctx);
-			/* Cache it */
-			mono_memory_barrier ();
-			mono_marshal_lock ();
-			res = g_hash_table_lookup (cache, orig_method->klass);
-			if (!res) {
-				g_hash_table_insert (cache, orig_method->klass, inst);
-				res = inst;
-			}
-			mono_marshal_unlock ();
-			return res;
-		}
 	} else if (callvirt || static_method_with_first_arg_bound) {
 		GHashTable **cache_ptr;
 		if (static_method_with_first_arg_bound)
@@ -4197,22 +4294,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 #endif /* DISABLE_JIT */
 
 	if (ctx) {
-		MonoMethod *def, *inst;
+		MonoMethod *def;
 
-		/*
-		 * We use the same cache for the generic definition and the instances.
-		 */
 		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
-
-		inst = mono_class_inflate_generic_method (def, ctx);
-		mono_memory_barrier ();
-		mono_marshal_lock ();
-		res = g_hash_table_lookup (cache, orig_method->klass);
-		if (!res) {
-			g_hash_table_insert (cache, orig_method->klass, inst);
-			res = inst;
-		}
-		mono_marshal_unlock ();
+		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
 	} else if (static_method_with_first_arg_bound || callvirt) {
 		// From mono_mb_create_and_cache
 		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);

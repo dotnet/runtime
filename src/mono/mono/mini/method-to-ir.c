@@ -5651,10 +5651,13 @@ mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 {
 	MonoClass *klass;
 
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
+	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		klass = mono_method_get_wrapper_data (method, token);
-	else
+		if (context)
+			klass = mono_class_inflate_generic_class (klass, context);
+	} else {
 		klass = mono_class_get_full (method->klass->image, token, context);
+	}
 	if (klass)
 		mono_class_init (klass);
 	return klass;

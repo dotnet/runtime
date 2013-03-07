@@ -1058,4 +1058,30 @@ public class Tests
 		}
 		return 0;
 	}
+
+	interface IFace6 {
+		T[] Del<T> (T t);
+	}
+
+	class Class6 : IFace6 {
+		public T[] Del<T> (T t) {
+			var res = new T [5];
+			Func<T, T, T, T, T> func = delegate(T t1, T t2, T t3, T t4) { res [0] = t1; res [1] = t2; res [2] = t3; res [3] = t4; return t1; };
+			var v = func.BeginInvoke(t, t, t, t, null, null);
+			res [4] = func.EndInvoke (v);
+			return res;
+		}
+	}
+
+	public static int test_0_begin_end_invoke () {
+		IFace6 o = new Class6 ();
+		var arr1 = o.Del (1);
+		if (arr1 [0] != 1 || arr1 [1] != 1 || arr1 [2] != 1 || arr1 [3] != 1 || arr1 [4] != 1)
+			return 1;
+		var arr2 = o.Del (2.0);
+		if (arr2 [0] != 2.0 || arr2 [1] != 2.0 || arr2 [2] != 2.0 || arr2 [3] != 2.0 || arr2 [4] != 2.0)
+			return 2;
+		return 0;
+	}
+
 }
