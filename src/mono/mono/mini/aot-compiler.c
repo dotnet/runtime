@@ -354,6 +354,18 @@ emit_pointer (MonoAotCompile *acfg, const char *target)
 }
 
 static inline void
+emit_pointer_2 (MonoAotCompile *acfg, const char *prefix, const char *target) 
+{ 
+	if (prefix [0] != '\0') {
+		char *s = g_strdup_printf ("%s%s", prefix, target);
+		img_writer_emit_pointer (acfg->w, s);
+		g_free (s);
+	} else {
+		img_writer_emit_pointer (acfg->w, target);
+	}
+}
+
+static inline void
 emit_int16 (MonoAotCompile *acfg, int value) 
 { 
 	img_writer_emit_int16 (acfg->w, value); 
@@ -939,13 +951,15 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 #define COMMON_TRAMP_SIZE 16
 	int count = (mono_pagesize () - COMMON_TRAMP_SIZE) / 8;
 	int imm8, rot_amount;
+	char symbol [128];
 
 	if (!acfg->aot_opts.use_trampolines_page)
 		return;
 
+	sprintf (symbol, "%sspecific_trampolines_page", acfg->user_symbol_prefix);
 	emit_alignment (acfg, mono_pagesize ());
-	emit_global (acfg, "specific_trampolines_page", TRUE);
-	emit_label (acfg, "specific_trampolines_page");
+	emit_global (acfg, symbol, TRUE);
+	emit_label (acfg, symbol);
 
 	/* emit the generic code first, the trampoline address + 8 is in the lr register */
 	code = buf;
@@ -973,8 +987,9 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	 * subtracts 4096 to get to the data page and loads the values
 	 * We again fit the generic trampiline in 16 bytes.
 	 */
-	emit_global (acfg, "rgctx_trampolines_page", TRUE);
-	emit_label (acfg, "rgctx_trampolines_page");
+	sprintf (symbol, "%srgctx_trampolines_page", acfg->user_symbol_prefix);
+	emit_global (acfg, symbol, TRUE);
+	emit_label (acfg, symbol);
 	code = buf;
 	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
 	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
@@ -998,8 +1013,9 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/*
 	 * gsharedvt arg trampolines: see arch_emit_gsharedvt_arg_trampoline ()
 	 */
-	emit_global (acfg, "gsharedvt_arg_trampolines_page", TRUE);
-	emit_label (acfg, "gsharedvt_arg_trampolines_page");
+	sprintf (symbol, "%sgshatedvt_arg_trampolines_page", acfg->user_symbol_prefix);
+	emit_global (acfg, symbol, TRUE);
+	emit_label (acfg, symbol);
 	code = buf;
 	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3));
 	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
@@ -1025,8 +1041,9 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	 * We again fit the generic trampiline in 16 bytes.
 	 */
 #define IMT_TRAMP_SIZE 72
-	emit_global (acfg, "imt_trampolines_page", TRUE);
-	emit_label (acfg, "imt_trampolines_page");
+	sprintf (symbol, "%simt_trampolines_page", acfg->user_symbol_prefix);
+	emit_global (acfg, symbol, TRUE);
+	emit_label (acfg, symbol);
 	code = buf;
 	/* Need at least two free registers, plus a slot for storing the pc */
 	ARM_PUSH (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_R2));
@@ -5306,7 +5323,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 
 	/* Emit code */
 
-	sprintf (start_symbol, "%s", name);
+	sprintf (start_symbol, "%s%s", acfg->user_symbol_prefix, name);
 
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, start_symbol, TRUE);
@@ -5345,7 +5362,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 	encode_patch_list (acfg, patches, patches->len, got_offset, p, &p);
 	g_assert (p - buf < buf_size);
 
-	sprintf (symbol, "%s_p", name);
+	sprintf (symbol, "%s%s_p", acfg->user_symbol_prefix, name);
 
 	info_offset = add_to_blob (acfg, buf, p - buf);
 
@@ -7510,7 +7527,7 @@ emit_file_info (MonoAotCompile *acfg)
 	gc_name = mono_gc_get_gc_name ();
 	gc_name_offset = add_to_blob (acfg, (guint8*)gc_name, strlen (gc_name) + 1);
 
-	sprintf (symbol, "mono_aot_file_info");
+	sprintf (symbol, "%smono_aot_file_info", acfg->user_symbol_prefix);
 	emit_section_change (acfg, ".data", 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -7629,11 +7646,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
 		 * structure.
 		 */
-#if defined(TARGET_MACH) && !defined(__native_client_codegen__)
-		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
-#else
-		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
-#endif
+		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
 
 		/* Get rid of characters which cannot occur in symbols */
 		p = symbol;
@@ -7644,7 +7657,7 @@ emit_file_info (MonoAotCompile *acfg)
 		acfg->static_linking_symbol = g_strdup (symbol);
 		emit_global_inner (acfg, symbol, FALSE);
 		emit_label (acfg, symbol);
-		emit_pointer (acfg, "mono_aot_file_info");
+		emit_pointer_2 (acfg, acfg->user_symbol_prefix, "mono_aot_file_info");
 	}
 }
 

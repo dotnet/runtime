@@ -1585,15 +1585,8 @@ static void
 asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if  ((defined(__ppc__) || defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(TARGET_ASM_APPLE)) || (defined(HOST_WIN32) && !defined(MONO_CROSS_COMPILE))
-	if (name[0] != '_')
-		// mach-o always uses a '_' prefix.
-		fprintf (acfg->fp, "\t.globl _%s\n", name);
-	else
-		fprintf (acfg->fp, "\t.globl %s\n", name);
-#else
+
 	fprintf (acfg->fp, "\t.globl %s\n", name);
-#endif
 
 	asm_writer_emit_symbol_type (acfg, name, func);
 }
@@ -1624,22 +1617,7 @@ static void
 asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(TARGET_ASM_APPLE)
-        name = get_label(name);
-        fprintf (acfg->fp, "%s:\n", name);
-        if (name[0] != 'L' && name[0] != '_')
-            fprintf (acfg->fp, "_%s:\n", name);
-
-#elif (defined(HOST_WIN32) && (defined(TARGET_X86) || defined(TARGET_AMD64))) || (defined(TARGET_X86) && defined(TARGET_ASM_APPLE))
-	fprintf (acfg->fp, "_%s:\n", name);
-#if defined(HOST_WIN32)
-	/* Emit a normal label too */
-	fprintf (acfg->fp, "%s:\n", name);
-#endif
-#else
 	fprintf (acfg->fp, "%s:\n", get_label (name));
-#endif
-
 }
 
 static void

@@ -1341,6 +1341,11 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		guint16 *table, *entry;
 		guint16 table_size;
 		guint32 hash;		
+		char *symbol = (char*)name;
+
+#ifdef TARGET_MACH
+		symbol = g_strdup_printf ("_%s", name);
+#endif
 
 		/* The first entry points to the hash */
 		table = globals [0];
@@ -1349,7 +1354,7 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		table_size = table [0];
 		table ++;
 
-		hash = mono_metadata_str_hash (name) % table_size;
+		hash = mono_metadata_str_hash (symbol) % table_size;
 
 		entry = &table [hash * 2];
 
@@ -1361,7 +1366,7 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 
 			//printf ("X: %s %s\n", (char*)globals [index * 2], name);
 
-			if (!strcmp (globals [index * 2], name)) {
+			if (!strcmp (globals [index * 2], symbol)) {
 				global_index = index;
 				break;
 			}
@@ -1377,6 +1382,9 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 			*value = globals [global_index * 2 + 1];
 		else
 			*value = NULL;
+
+		if (symbol != name)
+			g_free (symbol);
 	} else {
 		char *err = mono_dl_symbol (module, name, value);
 
