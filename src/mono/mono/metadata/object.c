@@ -3485,6 +3485,44 @@ mono_get_delegate_invoke (MonoClass *klass)
 }
 
 /**
+ * mono_get_delegate_begin_invoke:
+ * @klass: The delegate class
+ *
+ * Returns: the MonoMethod for the "BeginInvoke" method in the delegate klass or NULL if @klass is a broken delegate type
+ */
+MonoMethod *
+mono_get_delegate_begin_invoke (MonoClass *klass)
+{
+	MonoMethod *im;
+
+	/* This is called at runtime, so avoid the slower search in metadata */
+	mono_class_setup_methods (klass);
+	if (klass->exception_type)
+		return NULL;
+	im = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
+	return im;
+}
+
+/**
+ * mono_get_delegate_end_invoke:
+ * @klass: The delegate class
+ *
+ * Returns: the MonoMethod for the "EndInvoke" method in the delegate klass or NULL if @klass is a broken delegate type
+ */
+MonoMethod *
+mono_get_delegate_end_invoke (MonoClass *klass)
+{
+	MonoMethod *im;
+
+	/* This is called at runtime, so avoid the slower search in metadata */
+	mono_class_setup_methods (klass);
+	if (klass->exception_type)
+		return NULL;
+	im = mono_class_get_method_from_name (klass, "EndInvoke", -1);
+	return im;
+}
+
+/**
  * mono_runtime_delegate_invoke:
  * @delegate: pointer to a delegate object.
  * @params: parameters for the delegate.

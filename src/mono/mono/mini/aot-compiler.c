@@ -2606,21 +2606,17 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-			if (info) {
-				encode_value (info->subtype, p, &p);
-				if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
-					encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
-			} else {
-				MonoMethodSignature *sig;
-
-				encode_value (0, p, &p);
-
-				sig = mono_method_signature (method);
-				encode_signature (acfg, sig, p, &p);
-			}
+			g_assert (info);
+			encode_value (info->subtype, p, &p);
+			if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
+				encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
+			else if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL)
+				encode_signature (acfg, info->d.runtime_invoke.sig, p, &p);
 			break;
 		}
-		case MONO_WRAPPER_DELEGATE_INVOKE: {
+		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
 			if (method->is_inflated) {
 				/* These wrappers are identified by their class */
 				encode_value (1, p, &p);
@@ -2631,12 +2627,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_value (0, p, &p);
 				encode_signature (acfg, sig, p, &p);
 			}
-			break;
-		}
-		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
-			MonoMethodSignature *sig = mono_method_signature (method);
-			encode_signature (acfg, sig, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_NATIVE_TO_MANAGED: {
@@ -3402,9 +3392,9 @@ add_wrappers (MonoAotCompile *acfg)
 			MonoMethod *inst, *gshared;
 
 			/*
-			 * Emit a gsharedvt version of the generic delegate-invoke wrapper
+			 * Emit gsharedvt versions of the generic delegate-invoke wrappers
 			 */
-
+			/* Invoke */
 			method = mono_get_delegate_invoke (klass);
 			create_gsharedvt_inst (acfg, method, &ctx);
 
@@ -3415,6 +3405,31 @@ add_wrappers (MonoAotCompile *acfg)
 
 			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
 			add_extra_method (acfg, gshared);
+
+			/* begin-invoke */
+			method = mono_get_delegate_begin_invoke (klass);
+			create_gsharedvt_inst (acfg, method, &ctx);
+
+			inst = mono_class_inflate_generic_method (method, &ctx);
+
+			m = mono_marshal_get_delegate_begin_invoke (inst);
+			g_assert (m->is_inflated);
+
+			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+			add_extra_method (acfg, gshared);
+
+			/* end-invoke */
+			method = mono_get_delegate_end_invoke (klass);
+			create_gsharedvt_inst (acfg, method, &ctx);
+
+			inst = mono_class_inflate_generic_method (method, &ctx);
+
+			m = mono_marshal_get_delegate_end_invoke (inst);
+			g_assert (m->is_inflated);
+
+			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+			add_extra_method (acfg, gshared);
+
 		}
 	}
 
@@ -5883,6 +5898,8 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_UNKNOWN:
 			case MONO_WRAPPER_WRITE_BARRIER:
 			case MONO_WRAPPER_DELEGATE_INVOKE:
+			case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+			case MONO_WRAPPER_DELEGATE_END_INVOKE:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
 			case MONO_WRAPPER_CASTCLASS: {

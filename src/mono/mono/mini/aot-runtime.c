@@ -1021,14 +1021,26 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, TRUE);
 			} else {
-				if (sig_matches_target (module, target, p, &p))
+				MonoMethodSignature *sig;
+				WrapperInfo *info;
+
+				sig = decode_signature_with_target (module, NULL, p, &p);
+				info = mono_marshal_get_wrapper_info (target);
+				g_assert (info);
+
+				if (info->subtype != subtype)
+					return FALSE;
+				g_assert (info->d.runtime_invoke.sig);
+				if (mono_metadata_signature_equal (sig, info->d.runtime_invoke.sig))
 					ref->method = target;
 				else
 					return FALSE;
 			}
 			break;
 		}
-		case MONO_WRAPPER_DELEGATE_INVOKE: {
+		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
 			gboolean is_inflated = decode_value (p, &p);
 
 			if (is_inflated) {
@@ -1038,29 +1050,40 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				klass = decode_klass_ref (module, p, &p);
 				if (!klass)
 					return FALSE;
-				invoke = mono_get_delegate_invoke (klass);
-				wrapper = mono_marshal_get_delegate_invoke (invoke, NULL);
+
+				switch (wrapper_type) {
+				case MONO_WRAPPER_DELEGATE_INVOKE:
+					invoke = mono_get_delegate_invoke (klass);
+					wrapper = mono_marshal_get_delegate_invoke (invoke, NULL);
+					break;
+				case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+					invoke = mono_get_delegate_begin_invoke (klass);
+					wrapper = mono_marshal_get_delegate_begin_invoke (invoke);
+					break;
+				case MONO_WRAPPER_DELEGATE_END_INVOKE:
+					invoke = mono_get_delegate_end_invoke (klass);
+					wrapper = mono_marshal_get_delegate_end_invoke (invoke);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
 				if (target && wrapper != target)
 					return FALSE;
 				ref->method = wrapper;
-				break;
 			} else {
-				/* Fall through */
-			}
-		}
-		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
-			/*
-			 * These wrappers are associated with a signature, not with a method.
-			 * Since we can't decode them into methods, they need a target method.
-			 */
-			if (!target)
-				return FALSE;
+				/*
+				 * These wrappers are associated with a signature, not with a method.
+				 * Since we can't decode them into methods, they need a target method.
+				 */
+				if (!target)
+					return FALSE;
 
-			if (sig_matches_target (module, target, p, &p))
-				ref->method = target;
-			else
-				return FALSE;
+				if (sig_matches_target (module, target, p, &p))
+					ref->method = target;
+				else
+					return FALSE;
+			}
 			break;
 		}
 		case MONO_WRAPPER_NATIVE_TO_MANAGED: {

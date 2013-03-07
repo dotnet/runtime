@@ -4946,6 +4946,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 				g_hash_table_insert (cache, callsig, res);
 				/* Can't insert it into wrapper_hash since the key is a signature */
 				g_hash_table_insert (method->klass->image->runtime_invoke_direct_cache, method, res);
+				info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
+				info->d.runtime_invoke.sig = callsig;
+				mono_marshal_set_wrapper_info (res, info);
 			} else {
 				mono_free_method (newm);
 			}
