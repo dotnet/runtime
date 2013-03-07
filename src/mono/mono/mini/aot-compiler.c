@@ -1013,7 +1013,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/*
 	 * gsharedvt arg trampolines: see arch_emit_gsharedvt_arg_trampoline ()
 	 */
-	sprintf (symbol, "%sgshatedvt_arg_trampolines_page", acfg->user_symbol_prefix);
+	sprintf (symbol, "%sgsharedvt_arg_trampolines_page", acfg->user_symbol_prefix);
 	emit_global (acfg, symbol, TRUE);
 	emit_label (acfg, symbol);
 	code = buf;
