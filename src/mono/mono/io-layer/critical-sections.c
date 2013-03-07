@@ -10,6 +10,7 @@
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/critical-section-private.h>
@@ -90,7 +91,8 @@ void DeleteCriticalSection(WapiCriticalSection *section)
 	int ret;
 	
 	ret = mono_mutex_destroy(&section->mutex);
-	g_assert (ret == 0);
+	if (ret)
+		g_error ("Failed to destroy mutex %p error code %d errno %d", &section->mutex, ret, errno);
 }
 
 /**
