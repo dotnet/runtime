@@ -2466,6 +2466,12 @@ ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr)
 	return *((volatile float *) (ptr));
 }
 
+MonoObject*
+ves_icall_System_Threading_Volatile_Read_T (void *ptr)
+{
+	return (MonoObject*)*((volatile MonoObject**)ptr);
+}
+
 void
 ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8 value)
 {
@@ -2512,6 +2518,13 @@ void
 ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float value)
 {
 	*((volatile float *) ptr) = value;
+}
+
+void
+ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value)
+{
+	*((volatile MonoObject **) ptr) = value;
+	mono_gc_wbarrier_generic_nostore (ptr);
 }
 
 void mono_thread_init (MonoThreadStartCB start_cb,

@@ -933,7 +933,8 @@ ICALL(THREADP_35, "SetMaxThreads", ves_icall_System_Threading_ThreadPool_SetMaxT
 ICALL(THREADP_4, "SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads)
 ICALL(THREADP_5, "pool_queue", icall_append_job)
 
-ICALL_TYPE(VOLATILE, "System.Threading.Volatile", VOLATILE_1)
+ICALL_TYPE(VOLATILE, "System.Threading.Volatile", VOLATILE_28)
+ICALL(VOLATILE_28, "Read(T&)", ves_icall_System_Threading_Volatile_Read_T)
 ICALL(VOLATILE_1, "Read(bool&)", ves_icall_System_Threading_Thread_VolatileRead1)
 ICALL(VOLATILE_2, "Read(byte&)", ves_icall_System_Threading_Thread_VolatileRead1)
 ICALL(VOLATILE_3, "Read(double&)", ves_icall_System_Threading_Thread_VolatileReadDouble)
@@ -947,6 +948,7 @@ ICALL(VOLATILE_10, "Read(uint&)", ves_icall_System_Threading_Thread_VolatileRead
 ICALL(VOLATILE_11, "Read(uint16&)", ves_icall_System_Threading_Thread_VolatileRead2)
 ICALL(VOLATILE_12, "Read(uintptr&)", ves_icall_System_Threading_Thread_VolatileReadIntPtr)
 ICALL(VOLATILE_13, "Read(ulong&)", ves_icall_System_Threading_Thread_VolatileRead8)
+ICALL(VOLATILE_27, "Write(T&,T)", ves_icall_System_Threading_Volatile_Write_T)
 ICALL(VOLATILE_14, "Write(bool&,bool)", ves_icall_System_Threading_Thread_VolatileWrite1)
 ICALL(VOLATILE_15, "Write(byte&,byte)", ves_icall_System_Threading_Thread_VolatileWrite1)
 ICALL(VOLATILE_16, "Write(double&,double)", ves_icall_System_Threading_Thread_VolatileWriteDouble)

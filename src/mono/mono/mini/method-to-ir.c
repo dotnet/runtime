@@ -5086,6 +5086,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_CAS */
 
+		if (strcmp (cmethod->name, "MemoryBarrier") == 0)
+			ins = emit_memory_barrier (cfg, FullBarrier);
+
 		if (ins)
 			return ins;
 	} else if (cmethod->klass->image == mono_defaults.corlib) {
