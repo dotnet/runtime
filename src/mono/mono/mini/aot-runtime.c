@@ -1516,7 +1516,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		 */
 		return;
 
-	if (assembly->image->dynamic)
+	if (assembly->image->dynamic || assembly->ref_only)
 		return;
 
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
