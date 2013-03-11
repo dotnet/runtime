@@ -2504,6 +2504,7 @@ gboolean mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t) MONO_IN
 MonoType* mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_INTERNAL;
+gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst) MONO_INTERNAL;
 gpointer mini_method_get_rgctx (MonoMethod *m) MONO_INTERNAL;
 void mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 
