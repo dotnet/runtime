@@ -1560,6 +1560,12 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 #define align_down(ptr) ((void*)(_toi(ptr) & ~ptr_mask))
 #define align_up(ptr) ((void*) ((_toi(ptr) + ptr_mask) & ~ptr_mask))
 
+#define BZERO_WORDS(dest,words) do {	\
+	int __i;	\
+	for (__i = 0; __i < (words); ++__i)	\
+		((void **)(dest))[__i] = 0;	\
+} while (0)
+
 /**
  * mono_gc_bzero:
  * @dest: address to start to clear
@@ -1574,24 +1580,53 @@ mono_gc_reference_queue_free (MonoReferenceQueue *queue)
 void
 mono_gc_bzero (void *dest, size_t size)
 {
-	char *p = (char*)dest;
-	char *end = p + size;
-	char *align_end = align_up (p);
-	char *word_end;
+	char *d = (char*)dest;
+	size_t tail_bytes, word_bytes;
 
-	while (p < align_end)
-		*p++ = 0;
+	/*
+	If we're copying less than a word, just use memset.
 
-	word_end = align_down (end);
-	while (p < word_end) {
-		*((void**)p) = NULL;
-		p += sizeof (void*);
+	We cannot bail out early if both are aligned because some implementations
+	use byte copying for sizes smaller than 16. OSX, on this case.
+	*/
+	if (size < sizeof(void*)) {
+		memset (dest, 0, size);
+		return;
 	}
 
-	while (p < end)
-		*p++ = 0;
-}
+	/*align to word boundary */
+	while (unaligned_bytes (d) && size) {
+		*d++ = 0;
+		--size;
+	}
 
+	/* copy all words with memmove */
+	word_bytes = (size_t)align_down (size);
+	switch (word_bytes) {
+	case sizeof (void*) * 1:
+		BZERO_WORDS (dest, 1);
+		break;
+	case sizeof (void*) * 2:
+		BZERO_WORDS (dest, 2);
+		break;
+	case sizeof (void*) * 3:
+		BZERO_WORDS (dest, 3);
+		break;
+	case sizeof (void*) * 4:
+		BZERO_WORDS (dest, 4);
+		break;
+	default:
+		memset (d, 0, word_bytes);
+	}
+
+	tail_bytes = unaligned_bytes (size);
+	if (tail_bytes) {
+		d += word_bytes;
+		do {
+			*d++ = 0;
+		} while (--tail_bytes);
+	}
+}
 
 /**
  * mono_gc_memmove:
@@ -1602,18 +1637,19 @@ mono_gc_bzero (void *dest, size_t size)
  * Move @size bytes from @src to @dest.
  * size MUST be a multiple of sizeof (gpointer)
  *
- * FIXME borrow faster code from some BSD libc or bionic
  */
 void
 mono_gc_memmove (void *dest, const void *src, size_t size)
 {
 	/*
-	 * If dest and src are differently aligned with respect to
-	 * pointer size then it makes no sense to do aligned copying.
-	 * In fact, we would end up with unaligned loads which is
-	 * incorrect on some architectures.
-	 */
-	if ((char*)dest - (char*)align_down (dest) != (char*)src - (char*)align_down (src)) {
+	If we're copying less than a word we don't need to worry about word tearing
+	so we bailout to memmove early.
+
+	If both dest is aligned and size is a multiple of word size, we can go straigh
+	to memmove.
+
+	*/
+	if (size < sizeof(void*) || !((_toi (dest) | (size)) & sizeof (void*))) {
 		memmove (dest, src, size);
 		return;
 	}
@@ -1622,45 +1658,51 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 	 * A bit of explanation on why we align only dest before doing word copies.
 	 * Pointers to managed objects must always be stored in word aligned addresses, so
 	 * even if dest is misaligned, src will be by the same amount - this ensure proper atomicity of reads.
+	 *
+	 * We don't need to case when source and destination have different alignments since we only do word stores
+	 * using memmove, which must handle it.
 	 */
-	if (dest > src && ((size_t)((char*)dest - (char*)src) < size)) {
+	if (dest > src && ((size_t)((char*)dest - (char*)src) < size)) { /*backward copy*/
 		char *p = (char*)dest + size;
-		char *s = (char*)src + size;
-		char *start = (char*)dest;
-		char *align_end = MAX((char*)dest, (char*)align_down (p));
-		char *word_start;
+			char *s = (char*)src + size;
+			char *start = (char*)dest;
+			char *align_end = MAX((char*)dest, (char*)align_down (p));
+			char *word_start;
+			size_t bytes_to_memmove;
 
-		while (p > align_end)
-			*--p = *--s;
+			while (p > align_end)
+				*--p = *--s;
 
-		word_start = align_up (start);
-		while (p > word_start) {
-			p -= sizeof (void*);
-			s -= sizeof (void*);
-			*((void**)p) = *((void**)s);
-		}
+			word_start = align_up (start);
+			bytes_to_memmove = p - word_start;
+			p -= bytes_to_memmove;
+			s -= bytes_to_memmove;
+			memmove (p, s, bytes_to_memmove);
 
-		while (p > start)
-			*--p = *--s;
+			while (p > start)
+				*--p = *--s;
 	} else {
-		char *p = (char*)dest;
-		char *s = (char*)src;
-		char *end = p + size;
-		char *align_end = MIN ((char*)end, (char*)align_up (p));
-		char *word_end;
+		char *d = (char*)dest;
+		const char *s = (const char*)src;
+		size_t tail_bytes;
 
-		while (p < align_end)
-			*p++ = *s++;
-
-		word_end = align_down (end);
-		while (p < word_end) {
-			*((void**)p) = *((void**)s);
-			p += sizeof (void*);
-			s += sizeof (void*);
+		/*align to word boundary */
+		while (unaligned_bytes (d)) {
+			*d++ = *s++;
+			--size;
 		}
 
-		while (p < end)
-			*p++ = *s++;
+		/* copy all words with memmove */
+		memmove (d, s, (size_t)align_down (size));
+
+		tail_bytes = unaligned_bytes (size);
+		if (tail_bytes) {
+			d += (size_t)align_down (size);
+			s += (size_t)align_down (size);
+			do {
+				*d++ = *s++;
+			} while (--tail_bytes);
+		}
 	}
 }
 

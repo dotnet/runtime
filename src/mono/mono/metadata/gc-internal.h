@@ -362,6 +362,10 @@ gboolean mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved) MONO_INTERNAL;
 #endif
 
+/*
+Those functions must be used when it's possible that either destination is not
+word aligned or size is not a multiple of word size.
+*/
 void mono_gc_bzero (void *dest, size_t size) MONO_INTERNAL;
 void mono_gc_memmove (void *dest, const void *src, size_t size) MONO_INTERNAL;
 
