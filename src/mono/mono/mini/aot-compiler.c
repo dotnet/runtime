@@ -123,6 +123,7 @@ typedef struct MonoAotOptions {
 	gboolean asm_only;
 	gboolean asm_writer;
 	gboolean nodebug;
+	gboolean dwarf_debug;
 	gboolean soft_debug;
 	gboolean log_generics;
 	gboolean direct_pinvoke;
@@ -5783,6 +5784,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->asm_writer = TRUE;
 		} else if (str_begins_with (arg, "nodebug")) {
 			opts->nodebug = TRUE;
+		} else if (str_begins_with (arg, "dwarfdebug")) {
+			opts->dwarf_debug = TRUE;
 		} else if (str_begins_with (arg, "nopagetrampolines")) {
 			opts->use_trampolines_page = FALSE;
 		} else if (str_begins_with (arg, "ntrampolines=")) {
@@ -5842,6 +5845,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    asmonly\n");
 			printf ("    asmwriter\n");
 			printf ("    nodebug\n");
+			printf ("    dwarfdebug\n");
 			printf ("    ntrampolines=\n");
 			printf ("    nrgctx-trampolines=\n");
 			printf ("    nimt-trampolines=\n");
@@ -8338,8 +8342,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
-	if (!acfg->aot_opts.nodebug)
+	if (!acfg->aot_opts.nodebug || acfg->aot_opts.dwarf_debug) {
+		if (acfg->aot_opts.dwarf_debug && mono_debug_format == MONO_DEBUG_FORMAT_NONE) {
+			fprintf (stderr, "The dwarf AOT option requires the --debug option.\n");
+			return 1;
+		}
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE);
+	}
 
 	img_writer_emit_start (acfg->w);
 
