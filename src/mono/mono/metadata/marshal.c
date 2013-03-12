@@ -3077,7 +3077,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), method->klass);
 		g_assert (vtable); /*FIXME do proper error handling*/
 
-		if (!vtable->remote) {
+		if (!mono_vtable_is_remote (vtable)) {
 			return mono_cominterop_get_invoke (method);
 		}
 	}

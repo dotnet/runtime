@@ -6829,8 +6829,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 	klass = mono_class_from_mono_type (type->type);
 	vtable = mono_class_vtable_full (mono_domain_get (), klass, TRUE);
 
-	if (enable) vtable->remote = 1;
-	else vtable->remote = 0;
+	mono_vtable_set_is_remote (vtable, enable);
 }
 #endif
 

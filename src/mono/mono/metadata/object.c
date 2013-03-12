@@ -2113,10 +2113,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type);
 	}
 
-	if (mono_class_is_contextbound (class))
-		vt->remote = 1;
-	else
-		vt->remote = 0;
+	mono_vtable_set_is_remote (vt, mono_class_is_contextbound (class));
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
@@ -2629,8 +2626,8 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 		MonoClass *klass;
 		type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 		klass = mono_class_from_mono_type (type);
-#ifndef DISABLE_COM
-		if ((mono_class_is_com_object (klass) || (mono_defaults.com_object_class && klass == mono_defaults.com_object_class)) && !mono_class_vtable (mono_domain_get (), klass)->remote)
+#ifndef DISABLE_COMf
+		if ((mono_class_is_com_object (klass) || (mono_defaults.com_object_class && klass == mono_defaults.com_object_class)) && !mono_vtable_is_remote (mono_class_vtable (mono_domain_get (), klass)))
 			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_COMINTEROP);
 		else
 #endif
@@ -4428,7 +4425,7 @@ mono_object_new_specific (MonoVTable *vtable)
 	MONO_ARCH_SAVE_REGS;
 	
 	/* check for is_com_object for COM Interop */
-	if (vtable->remote || mono_class_is_com_object (vtable->klass))
+	if (mono_vtable_is_remote (vtable) || mono_class_is_com_object (vtable->klass))
 	{
 		gpointer pa [1];
 		MonoMethod *im = vtable->domain->create_proxy_for_type_method;

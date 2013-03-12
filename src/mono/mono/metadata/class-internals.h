@@ -421,9 +421,13 @@ int mono_class_interface_match (const uint8_t *bitmap, int id) MONO_INTERNAL;
 #ifdef DISABLE_REMOTING
 #define mono_class_is_marshalbyref(klass) (FALSE)
 #define mono_class_is_contextbound(klass) (FALSE)
+#define mono_vtable_is_remote(vtable) (FALSE)
+#define mono_vtable_set_is_remote(vtable,enable) do {} while (0)
 #else
 #define mono_class_is_marshalbyref(klass) ((klass)->marshalbyref)
 #define mono_class_is_contextbound(klass) ((klass)->contextbound)
+#define mono_vtable_is_remote(vtable) ((vtable)->remote)
+#define mono_vtable_set_is_remote(vtable,enable) do { (vtable)->remote = enable ? 1 : 0; } while (0)
 #endif
 
 #ifdef DISABLE_COM
