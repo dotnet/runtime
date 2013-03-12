@@ -16,6 +16,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/threads-types.h>
 
 static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
@@ -36,10 +37,30 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	mono_runtime_delegate_invoke (delegate, pa, &exc);
 }
 
+static void
+mono_runtime_fire_process_exit_event (void)
+{
+#ifndef MONO_CROSS_COMPILE
+	mono_domain_foreach (fire_process_exit_event, NULL);
+#endif
+}
+
+/*
+Initialize runtime shutdown.
+After this call completes the thread pool will stop accepting new jobs and
+
+*/
 void
 mono_runtime_shutdown (void)
 {
-	mono_domain_foreach (fire_process_exit_event, NULL);
+	mono_runtime_fire_process_exit_event ();
+
+	mono_threads_set_shutting_down ();
+
+	/* No new threads will be created after this point */
+
+	mono_runtime_set_shutting_down ();
+
 }
 
 

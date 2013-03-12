@@ -6530,13 +6530,7 @@ ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifndef MONO_CROSS_COMPILE
 	mono_runtime_shutdown ();
-#endif
-
-	mono_threads_set_shutting_down ();
-
-	mono_runtime_set_shutting_down ();
 
 	/* This will kill the tp threads which cannot be suspended */
 	mono_thread_pool_cleanup ();

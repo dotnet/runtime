@@ -2907,15 +2907,7 @@ void mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
-#ifndef MONO_CROSS_COMPILE
 	mono_runtime_shutdown ();
-#endif
-
-	mono_threads_set_shutting_down ();
-
-	/* No new threads will be created after this point */
-
-	mono_runtime_set_shutting_down ();
 
 	THREAD_DEBUG (g_message ("%s: threadpool cleanup", __func__));
 	mono_thread_pool_cleanup ();
