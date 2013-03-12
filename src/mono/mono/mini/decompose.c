@@ -31,8 +31,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 
 	switch (ins->opcode) {
 	case OP_LCONV_TO_I4:
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_IMM, ins->dreg, ins->sreg1, 0);
-		NULLIFY_INS (ins);
+		ins->opcode = OP_SEXT_I4;
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_I:

@@ -1569,5 +1569,13 @@ ncells ) {
 			return 1;
 		return 0;
 	}
+
+	static int test_0_regress_11058 () {
+		int foo = -252674008;
+		int foo2 = (int)(foo ^ 0xF0F0F0F0); // = 28888
+		var arr = new byte[foo2].Length;
+		return 0;
+	}
+
 }
 
