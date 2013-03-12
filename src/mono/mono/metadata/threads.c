@@ -33,6 +33,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/runtime.h>
 #include <mono/io-layer/io-layer.h>
 #ifndef HOST_WIN32
 #include <mono/io-layer/threads.h>
@@ -2905,6 +2906,10 @@ void mono_thread_manage (void)
 		}
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
+
+#ifndef MONO_CROSS_COMPILE
+	mono_runtime_shutdown ();
+#endif
 
 	mono_threads_set_shutting_down ();
 
