@@ -2279,7 +2279,7 @@ ves_icall_type_iscomobject (MonoReflectionType *type)
 	MonoClass *klass = mono_class_from_mono_type (type->type);
 	mono_class_init_or_throw (klass);
 
-	return (klass && klass->is_com_object);
+	return mono_class_is_com_object (klass);
 }
 
 ICALL_EXPORT MonoReflectionModule*

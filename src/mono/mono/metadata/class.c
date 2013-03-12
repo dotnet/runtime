@@ -5384,10 +5384,9 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 #endif
 
 		class->delegate  = parent->delegate;
-		if (MONO_CLASS_IS_IMPORT (class))
-			class->is_com_object = 1;
-		else
-			class->is_com_object = parent->is_com_object;
+
+		if (MONO_CLASS_IS_IMPORT (class) || mono_class_is_com_object (parent))
+			mono_class_set_is_com_object (class);
 		
 		if (system_namespace) {
 #ifndef DISABLE_REMOTING

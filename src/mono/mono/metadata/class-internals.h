@@ -426,6 +426,15 @@ int mono_class_interface_match (const uint8_t *bitmap, int id) MONO_INTERNAL;
 #define mono_class_is_contextbound(klass) ((klass)->contextbound)
 #endif
 
+#ifdef DISABLE_COM
+#define mono_class_is_com_object(klass) (FALSE)
+#define mono_class_set_is_com_object(klass) do {} while (0)
+#else
+#define mono_class_is_com_object(klass) ((klass)->is_com_object)
+#define mono_class_set_is_com_object(klass) do { (klass)->is_com_object = 1; } while (0)
+#endif
+
+
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match) MONO_INTERNAL;
 
