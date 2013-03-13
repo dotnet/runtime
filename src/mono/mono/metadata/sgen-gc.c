@@ -546,7 +546,7 @@ static void report_registered_roots (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, ScanCopyContext ctx);
-static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
+static void finish_gray_stack (int generation, GrayQueue *queue);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
@@ -1871,7 +1871,7 @@ sgen_get_current_object_ops (void){
 
 
 static void
-finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue)
+finish_gray_stack (int generation, GrayQueue *queue)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -1879,6 +1879,8 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	CopyOrMarkObjectFunc copy_func = current_object_ops.copy_or_mark_object;
 	ScanObjectFunc scan_func = current_object_ops.scan_object;
 	ScanCopyContext ctx = { scan_func, copy_func, queue };
+	char *start_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_start () : NULL;
+	char *end_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_end () : (char*)-1;
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2660,7 +2662,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_8 (GENERATION_NURSERY);
 
-	finish_gray_stack (sgen_get_nursery_start (), nursery_next, GENERATION_NURSERY, &gray_queue);
+	finish_gray_stack (GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED (btv, atv);
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
@@ -3095,8 +3097,6 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	LOSObject *bigobj, *prevbo;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
-	char *heap_start = NULL;
-	char *heap_end = (char*)-1;
 
 	TV_GETTIME (btv);
 
@@ -3126,7 +3126,7 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
 	/* all the objects in the heap */
-	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
+	finish_gray_stack (GENERATION_OLD, &gray_queue);
 	TV_GETTIME (atv);
 	time_major_finish_gray_stack += TV_ELAPSED (btv, atv);
 
