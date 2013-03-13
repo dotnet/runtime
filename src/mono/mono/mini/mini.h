@@ -516,7 +516,12 @@ extern gboolean mono_use_llvm;
 extern const char ins_info[];
 extern const gint8 ins_sreg_counts [];
 
+#ifndef DISABLE_JIT
 #define mono_inst_get_num_src_registers(ins) (ins_sreg_counts [(ins)->opcode - OP_START - 1])
+#else
+#define mono_inst_get_num_src_registers(ins) 0
+#endif
+
 #define mono_inst_get_src_registers(ins, regs) (((regs) [0] = (ins)->sreg1), ((regs) [1] = (ins)->sreg2), ((regs) [2] = (ins)->sreg3), mono_inst_get_num_src_registers ((ins)))
 
 #define MONO_BB_FOR_EACH_INS(bb, ins) for ((ins) = (bb)->code; (ins); (ins) = (ins)->next)

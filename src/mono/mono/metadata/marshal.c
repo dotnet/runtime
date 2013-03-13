@@ -1097,6 +1097,8 @@ mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, char *msg)
 	mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", s);
 }
 
+#endif /* !DISABLE_JIT */
+
 guint
 mono_type_to_ldind (MonoType *type)
 {
@@ -1207,6 +1209,8 @@ handle_enum:
 	}
 	return -1;
 }
+
+#ifndef DISABLE_JIT
 
 static void
 emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
