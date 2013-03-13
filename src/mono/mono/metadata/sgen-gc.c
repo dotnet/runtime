@@ -1921,8 +1921,6 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	} while (!done_with_ephemerons);
 
 	sgen_scan_togglerefs (start_addr, end_addr, ctx);
-	if (generation == GENERATION_OLD)
-		sgen_scan_togglerefs (sgen_get_nursery_start (), sgen_get_nursery_end (), ctx);
 
 	if (sgen_need_bridge_processing ()) {
 		sgen_collect_bridge_objects (generation, ctx);
