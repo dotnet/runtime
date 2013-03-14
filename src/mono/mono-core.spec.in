@@ -291,6 +291,8 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.Core.dll
 %_prefix/lib/mono/4.5/System.Drawing.dll
 %_prefix/lib/mono/4.5/System.Dynamic.dll
+%_prefix/lib/mono/4.5/System.IO.Compression.dll
+%_prefix/lib/mono/4.5/System.IO.Compression.FileSystem.dll
 %_prefix/lib/mono/4.5/System.Json.dll
 %_prefix/lib/mono/4.5/System.Json.Microsoft.dll
 %_prefix/lib/mono/4.5/System.Net.dll
@@ -329,6 +331,8 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/System.Core
 %_prefix/lib/mono/gac/System.Drawing
 %_prefix/lib/mono/gac/System.Dynamic
+%_prefix/lib/mono/gac/System.IO.Compression
+%_prefix/lib/mono/gac/System.IO.Compression.FileSystem
 %_prefix/lib/mono/gac/System.Net
 %_prefix/lib/mono/gac/System.Net.Http
 %_prefix/lib/mono/gac/System.Numerics
