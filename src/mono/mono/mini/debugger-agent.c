@@ -5375,8 +5375,12 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 	MonoObject *obj;
 
 	if (t->byref) {
-		if (!(*(void**)addr))
-			printf ("%s\n", mono_type_full_name (t));
+		if (!(*(void**)addr)) {
+			/* This can happen with compiler generated locals */
+			//printf ("%s\n", mono_type_full_name (t));
+			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
+			return;
+		}
 		g_assert (*(void**)addr);
 		addr = *(void**)addr;
 	}
