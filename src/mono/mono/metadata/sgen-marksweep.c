@@ -363,9 +363,21 @@ ms_get_empty_block (void)
 
  retry:
 	if (!empty_blocks) {
-		p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, "major heap section");
+		/*
+		 * We try allocating MS_BLOCK_ALLOC_NUM blocks first.  If that's
+		 * unsuccessful, we halve the number of blocks and try again, until we're at
+		 * 1.  If that doesn't work, either, we assert.
+		 */
+		int alloc_num = MS_BLOCK_ALLOC_NUM;
+		for (;;) {
+			p = sgen_alloc_os_memory_aligned (MS_BLOCK_SIZE * alloc_num, MS_BLOCK_SIZE, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE,
+					alloc_num == 1 ? "major heap section" : NULL);
+			if (p)
+				break;
+			alloc_num >>= 1;
+		}
 
-		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
+		for (i = 0; i < alloc_num; ++i) {
 			block = p;
 			/*
 			 * We do the free list update one after the
@@ -379,9 +391,9 @@ ms_get_empty_block (void)
 			p += MS_BLOCK_SIZE;
 		}
 
-		SGEN_ATOMIC_ADD (num_empty_blocks, MS_BLOCK_ALLOC_NUM);
+		SGEN_ATOMIC_ADD (num_empty_blocks, alloc_num);
 
-		stat_major_blocks_alloced += MS_BLOCK_ALLOC_NUM;
+		stat_major_blocks_alloced += alloc_num;
 	}
 
 	do {
