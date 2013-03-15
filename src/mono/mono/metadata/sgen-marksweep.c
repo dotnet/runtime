@@ -56,7 +56,7 @@
 
 /*
  * Don't allocate single blocks, but alloc a contingent of this many
- * blocks in one swoop.
+ * blocks in one swoop.  This must be a power of two.
  */
 #define MS_BLOCK_ALLOC_NUM	32
 
@@ -1844,6 +1844,18 @@ major_finish_major_collection (void)
 {
 }
 
+#if !defined(FIXED_HEAP) && SIZEOF_VOID_P != 8
+static int
+compare_pointers (const void *va, const void *vb) {
+	char *a = *(char**)va, *b = *(char**)vb;
+	if (a < b)
+		return -1;
+	if (a > b)
+		return 1;
+	return 0;
+}
+#endif
+
 static void
 major_have_computer_minor_collection_allowance (void)
 {
@@ -1852,13 +1864,107 @@ major_have_computer_minor_collection_allowance (void)
 
 	g_assert (have_swept);
 
+#if SIZEOF_VOID_P != 8
+	{
+		int i, num_empty_blocks_orig, num_blocks;
+		void *block;
+		void **empty_block_arr;
+		void **rebuild_next;
+
+		if (num_empty_blocks <= section_reserve)
+			return;
+		SGEN_ASSERT (0, num_empty_blocks > 0, "section reserve can't be negative");
+
+		num_empty_blocks_orig = num_empty_blocks;
+		empty_block_arr = (void**)sgen_alloc_internal_dynamic (sizeof (void*) * num_empty_blocks_orig,
+				INTERNAL_MEM_MS_BLOCK_INFO_SORT, FALSE);
+		if (!empty_block_arr)
+			goto fallback;
+
+		i = 0;
+		for (block = empty_blocks; block; block = *(void**)block)
+			empty_block_arr [i++] = block;
+		SGEN_ASSERT (0, i == num_empty_blocks, "empty block count wrong");
+
+		qsort (empty_block_arr, num_empty_blocks, sizeof (void*), compare_pointers);
+
+		/*
+		 * We iterate over the free blocks, trying to find MS_BLOCK_ALLOC_NUM
+		 * contiguous ones.  If we do, we free them.  If that's not enough to get to
+		 * section_reserve, we halve the number of contiguous blocks we're looking
+		 * for and have another go, until we're done with looking for pairs of
+		 * blocks, at which point we give up and go to the fallback.
+		 */
+		num_blocks = MS_BLOCK_ALLOC_NUM;
+		while (num_empty_blocks > section_reserve && num_blocks > 1) {
+			int first = -1;
+
+			for (i = 0; i < num_empty_blocks_orig; ++i) {
+				if (!empty_block_arr [i]) {
+					first = -1;
+					continue;
+				}
+
+				if (first < 0) {
+					first = i;
+					continue;
+				}
+
+				SGEN_ASSERT (0, first >= 0 && i > first, "algorithm is wrong");
+
+				if ((char*)empty_block_arr [i] != ((char*)empty_block_arr [i-1]) + MS_BLOCK_SIZE) {
+					first = i;
+					continue;
+				}
+
+				if (i + 1 - first == num_blocks) {
+					/*
+					 * We found num_blocks contiguous blocks.  Free them
+					 * and null their array entries.  As an optimization
+					 * we could, instead of nulling the entries, shift
+					 * the following entries over to the left, while
+					 * we're iterating.
+					 */
+					int j;
+					sgen_free_os_memory (empty_block_arr [first], MS_BLOCK_SIZE * num_blocks, SGEN_ALLOC_HEAP);
+					for (j = first; j <= i; ++j)
+						empty_block_arr [j] = NULL;
+
+					num_empty_blocks -= num_blocks;
+
+					stat_major_blocks_freed += num_blocks;
+
+					first = -1;
+				}
+			}
+
+			num_blocks >>= 1;
+		}
+
+		/* rebuild empty_blocks free list */
+		rebuild_next = (void**)&empty_blocks;
+		for (i = 0; i < num_empty_blocks_orig; ++i) {
+			if (!empty_block_arr [i])
+				continue;
+			*rebuild_next = empty_block_arr [i];
+			rebuild_next = (void**)empty_block_arr [i];
+		}
+		*rebuild_next = NULL;
+
+		/* free array */
+		sgen_free_internal_dynamic (empty_block_arr, sizeof (void*) * num_empty_blocks_orig, INTERNAL_MEM_MS_BLOCK_INFO_SORT);
+	}
+
+	SGEN_ASSERT (0, num_empty_blocks >= 0, "we freed more blocks than we had in the first place?");
+
+ fallback:
 	/*
-	 * FIXME: We don't free blocks on 32 bit platforms because it
-	 * can lead to address space fragmentation, since we're
-	 * allocating blocks in larger contingents.
+	 * This is our threshold.  If there's not more empty than used blocks, we won't
+	 * release uncontiguous blocks, in fear of fragmenting the address space.
 	 */
-	if (sizeof (mword) < 8)
+	if (num_empty_blocks <= num_major_sections)
 		return;
+#endif
 
 	while (num_empty_blocks > section_reserve) {
 		void *next = *(void**)empty_blocks;
