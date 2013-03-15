@@ -1604,16 +1604,16 @@ mono_gc_bzero (void *dest, size_t size)
 	word_bytes = (size_t)align_down (size);
 	switch (word_bytes) {
 	case sizeof (void*) * 1:
-		BZERO_WORDS (dest, 1);
+		BZERO_WORDS (d, 1);
 		break;
 	case sizeof (void*) * 2:
-		BZERO_WORDS (dest, 2);
+		BZERO_WORDS (d, 2);
 		break;
 	case sizeof (void*) * 3:
-		BZERO_WORDS (dest, 3);
+		BZERO_WORDS (d, 3);
 		break;
 	case sizeof (void*) * 4:
-		BZERO_WORDS (dest, 4);
+		BZERO_WORDS (d, 4);
 		break;
 	default:
 		memset (d, 0, word_bytes);
