@@ -1878,7 +1878,7 @@ major_have_computer_minor_collection_allowance (void)
 
 #if SIZEOF_VOID_P != 8
 	{
-		int i, num_empty_blocks_orig, num_blocks;
+		int i, num_empty_blocks_orig, num_blocks, arr_length;
 		void *block;
 		void **empty_block_arr;
 		void **rebuild_next;
@@ -1907,29 +1907,40 @@ major_have_computer_minor_collection_allowance (void)
 		 * for and have another go, until we're done with looking for pairs of
 		 * blocks, at which point we give up and go to the fallback.
 		 */
+		arr_length = num_empty_blocks_orig;
 		num_blocks = MS_BLOCK_ALLOC_NUM;
 		while (num_empty_blocks > section_reserve && num_blocks > 1) {
 			int first = -1;
+			int dest = 0;
 
-			for (i = 0; i < num_empty_blocks_orig; ++i) {
-				if (!empty_block_arr [i]) {
-					first = -1;
-					continue;
+			dest = 0;
+			for (i = 0; i < arr_length; ++i) {
+				int d = dest;
+				void *block = empty_block_arr [i];
+				SGEN_ASSERT (0, block, "we're not shifting correctly");
+				if (i != dest) {
+					empty_block_arr [dest] = block;
+					/*
+					 * This is not strictly necessary, but we're
+					 * cautious.
+					 */
+					empty_block_arr [i] = NULL;
 				}
+				++dest;
 
 				if (first < 0) {
-					first = i;
+					first = d;
 					continue;
 				}
 
-				SGEN_ASSERT (0, first >= 0 && i > first, "algorithm is wrong");
+				SGEN_ASSERT (0, first >= 0 && d > first, "algorithm is wrong");
 
-				if ((char*)empty_block_arr [i] != ((char*)empty_block_arr [i-1]) + MS_BLOCK_SIZE) {
-					first = i;
+				if ((char*)block != ((char*)empty_block_arr [d-1]) + MS_BLOCK_SIZE) {
+					first = d;
 					continue;
 				}
 
-				if (i + 1 - first == num_blocks) {
+				if (d + 1 - first == num_blocks) {
 					/*
 					 * We found num_blocks contiguous blocks.  Free them
 					 * and null their array entries.  As an optimization
@@ -1939,27 +1950,32 @@ major_have_computer_minor_collection_allowance (void)
 					 */
 					int j;
 					sgen_free_os_memory (empty_block_arr [first], MS_BLOCK_SIZE * num_blocks, SGEN_ALLOC_HEAP);
-					for (j = first; j <= i; ++j)
+					for (j = first; j <= d; ++j)
 						empty_block_arr [j] = NULL;
+					dest = first;
+					first = -1;
 
 					num_empty_blocks -= num_blocks;
 
 					stat_major_blocks_freed += num_blocks;
 
-					first = -1;
 				}
 			}
+
+			SGEN_ASSERT (0, dest <= i && dest <= arr_length, "array length is off");
+			arr_length = dest;
+			SGEN_ASSERT (0, arr_length == num_empty_blocks, "array length is off");
 
 			num_blocks >>= 1;
 		}
 
 		/* rebuild empty_blocks free list */
 		rebuild_next = (void**)&empty_blocks;
-		for (i = 0; i < num_empty_blocks_orig; ++i) {
-			if (!empty_block_arr [i])
-				continue;
-			*rebuild_next = empty_block_arr [i];
-			rebuild_next = (void**)empty_block_arr [i];
+		for (i = 0; i < arr_length; ++i) {
+			void *block = empty_block_arr [i];
+			SGEN_ASSERT (0, block, "we're missing blocks");
+			*rebuild_next = block;
+			rebuild_next = (void**)block;
 		}
 		*rebuild_next = NULL;
 
