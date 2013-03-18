@@ -232,6 +232,12 @@ static long long stat_major_blocks_freed = 0;
 static long long stat_major_blocks_lazy_swept = 0;
 static long long stat_major_objects_evacuated = 0;
 
+#if SIZEOF_VOID_P != 8
+static long long stat_major_blocks_freed_ideal = 0;
+static long long stat_major_blocks_freed_less_ideal = 0;
+static long long stat_major_blocks_freed_individual = 0;
+static long long stat_major_blocks_alloced_less_ideal = 0;
+#endif
 
 #ifdef SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
 static long long num_major_objects_marked = 0;
@@ -394,6 +400,10 @@ ms_get_empty_block (void)
 		SGEN_ATOMIC_ADD (num_empty_blocks, alloc_num);
 
 		stat_major_blocks_alloced += alloc_num;
+#if SIZEOF_VOID_P != 8
+		if (alloc_num != MS_BLOCK_ALLOC_NUM)
+			stat_major_blocks_alloced_less_ideal += alloc_num;
+#endif
 	}
 
 	do {
@@ -1958,6 +1968,10 @@ major_have_computer_minor_collection_allowance (void)
 					num_empty_blocks -= num_blocks;
 
 					stat_major_blocks_freed += num_blocks;
+					if (num_blocks == MS_BLOCK_ALLOC_NUM)
+						stat_major_blocks_freed_ideal += num_blocks;
+					else
+						stat_major_blocks_freed_less_ideal += num_blocks;
 
 				}
 			}
@@ -2005,6 +2019,9 @@ major_have_computer_minor_collection_allowance (void)
 		--num_empty_blocks;
 
 		++stat_major_blocks_freed;
+#if SIZEOF_VOID_P != 8
+		++stat_major_blocks_freed_individual;
+#endif
 	}
 #endif
 }
@@ -2482,6 +2499,13 @@ sgen_marksweep_fixed_init (SgenMajorCollector *collector)
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_lazy_swept);
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
+#if SIZEOF_VOID_P != 8
+	mono_counters_register ("# major blocks freed ideally", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed_ideal);
+	mono_counters_register ("# major blocks freed less ideally", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed_less_ideal);
+	mono_counters_register ("# major blocks freed individually", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed_individual);
+	mono_counters_register ("# major blocks allocated less ideally", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced_less_ideal);
+#endif
+
 #ifdef SGEN_PARALLEL_MARK
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_alloc (&workers_free_block_lists_key, NULL);
