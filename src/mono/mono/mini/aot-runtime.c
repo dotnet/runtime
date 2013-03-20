@@ -2118,7 +2118,17 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	cie = p + ((fde_count + 1) * 8);
 
 	/* Binary search in the table to find the entry for code */
-	offset = code - amodule->mono_eh_frame;
+	if (func_encoding == DW_EH_PE_absptr) {
+		/*
+		 * Table entries are encoded as DW_EH_PE_absptr, because the ios linker can move functions inside object files to make thumb work,
+		 * so the offsets between two symbols in the text segment are not assembler constant.
+		 */
+		g_assert (sizeof(gpointer) == 4);
+		offset = GPOINTER_TO_INT (code);
+	} else {
+		/* Table entries are encoded as DW_EH_PE_pcrel relative to mono_eh_frame */
+		offset = code - amodule->mono_eh_frame;
+	}
 
 	left = 0;
 	right = fde_count;
@@ -2127,21 +2137,12 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 		offset1 = table [(pos * 2)];
 		if (pos + 1 == fde_count) {
-			/* FIXME: */
-			offset2 = amodule->code_end - amodule->code;
+			if (func_encoding == DW_EH_PE_absptr)
+				offset2 = GPOINTER_TO_INT (amodule->code_end);
+			else
+				offset2 = amodule->code_end - amodule->code;
 		} else {
-			/* Encoded as DW_EH_PE_pcrel, but relative to mono_eh_frame */
 			offset2 = table [(pos + 1) * 2];
-		}
-
-		if (func_encoding == DW_EH_PE_absptr) {
-			/*
-			 * Encoded as DW_EH_PE_absptr, because the ios linker can move functions inside object files to make thumb work,
-			 * so the offsets between two symbols in the text segment are not assembler constant.
-			 */
-			g_assert (sizeof(gpointer) == 4);
-			offset1 -= (gint32)(gsize)amodule->mono_eh_frame;
-			offset2 -= (gint32)(gsize)amodule->mono_eh_frame;
 		}
 
 		if (offset < offset1)
