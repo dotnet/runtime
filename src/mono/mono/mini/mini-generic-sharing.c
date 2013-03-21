@@ -1868,6 +1868,51 @@ has_constraints (MonoGenericContainer *container)
 	*/
 }
 
+static G_GNUC_UNUSED gboolean
+is_async_state_machine_class (MonoClass *klass)
+{
+	static MonoClass *iclass;
+	static gboolean iclass_set;
+
+	if (!iclass_set) {
+		iclass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "IAsyncStateMachine");
+		mono_memory_barrier ();
+		iclass_set = TRUE;
+	}
+
+	if (iclass && klass->valuetype && strstr (klass->name, "c__async") && mono_class_is_assignable_from (iclass, klass))
+		return TRUE;
+	return FALSE;
+}
+
+static G_GNUC_UNUSED gboolean
+is_async_method (MonoMethod *method)
+{
+	MonoCustomAttrInfo *cattr;
+	MonoMethodSignature *sig;
+	gboolean res = FALSE;
+
+	/* Do less expensive checks first */
+	sig = mono_method_signature (method);
+	if (sig && sig->ret && sig->ret->type == MONO_TYPE_GENERICINST && (!strcmp (sig->ret->data.generic_class->container_class->name, "Task") || !strcmp (sig->ret->data.generic_class->container_class->name, "Task`1"))) {
+		cattr = mono_custom_attrs_from_method (method);
+		if (cattr) {
+			static MonoClass *attr_class;
+			static gboolean attr_class_set;
+
+			if (!attr_class_set) {
+				attr_class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
+				mono_memory_barrier ();
+				attr_class_set = TRUE;
+			}
+			if (attr_class && mono_custom_attrs_has_attr (cattr, attr_class))
+				res = TRUE;
+			mono_custom_attrs_free (cattr);
+		}
+	}
+	return res;
+}
+
 /*
  * mono_method_is_generic_sharable_impl_full:
  * @method: a method
@@ -1884,6 +1929,16 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 										   gboolean allow_partial, gboolean allow_gsharedvt)
 {
 	if (!mono_method_is_generic_impl (method))
+		return FALSE;
+
+	/*
+	 * Generic async methods have an associated state machine class which is a generic struct. This struct
+	 * is too large to be handled by gsharedvt so we make it visible to the AOT compiler by disabling sharing
+	 * of the async method and the state machine class.
+	 */
+	if (is_async_state_machine_class (method->klass))
+		return FALSE;
+	if (is_async_method (method))
 		return FALSE;
 
 	if (allow_gsharedvt && mini_is_gsharedvt_sharable_method (method))
@@ -2356,6 +2411,15 @@ gboolean
 mini_type_is_vtype (MonoCompile *cfg, MonoType *t)
 {
     return MONO_TYPE_ISSTRUCT (t) || mini_is_gsharedvt_variable_type (cfg, t);
+}
+
+gboolean
+mini_class_is_generic_sharable (MonoClass *klass)
+{
+	if (klass->generic_class && is_async_state_machine_class (klass))
+		return FALSE;
+
+	return (klass->generic_class && mono_generic_context_is_sharable (&klass->generic_class->context, FALSE));
 }
 
 #if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
