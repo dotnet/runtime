@@ -1393,6 +1393,7 @@ typedef struct
 #define MONO_S_OK 0x00000000L
 #define MONO_E_NOINTERFACE 0x80004002L
 #define MONO_E_NOTIMPL 0x80004001L
+#define MONO_E_INVALIDARG          0x80070057L
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk)
@@ -2398,7 +2399,12 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 static int STDCALL 
 cominterop_ccw_get_type_info_count (MonoCCWInterface* ccwe, guint32 *pctinfo)
 {
-	return MONO_E_NOTIMPL;
+	if(!pctinfo)
+		return MONO_E_INVALIDARG;
+
+	*pctinfo = 1;
+
+	return MONO_S_OK;
 }
 
 static int STDCALL 
