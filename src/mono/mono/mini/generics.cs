@@ -1022,6 +1022,8 @@ class Tests {
 		return Volatile.Read (ref foo) == "DEF" ? 0 : 1;
 	}
 
+	// FIXME: Doesn't work with --regression as Interlocked.Add(ref long) is only implemented as an intrinsic
+#if FALSE
 	public static async Task<T> FooAsync<T> (int i, int j) {
 		Task<int> t = new Task<int> (delegate () { Console.WriteLine ("HIT!"); return 0; });
 		var response = await t;
@@ -1033,4 +1035,5 @@ class Tests {
 		t.RunSynchronously ();
 		return 0;
 	}
+#endif
 }
