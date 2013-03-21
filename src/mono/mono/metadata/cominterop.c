@@ -32,6 +32,7 @@
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/gc-internal.h"
 #include "mono/utils/mono-counters.h"
+#include "mono/utils/strenc.h"
 #include "mono/utils/atomic.h"
 #include <string.h>
 #include <errno.h>
@@ -1394,6 +1395,8 @@ typedef struct
 #define MONO_E_NOINTERFACE 0x80004002L
 #define MONO_E_NOTIMPL 0x80004001L
 #define MONO_E_INVALIDARG          0x80070057L
+#define MONO_E_DISP_E_UNKNOWNNAME  0x80020006L
+#define MONO_E_DISPID_UNKNOWN      (gint32)-1
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk)
@@ -2418,7 +2421,32 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 											 gunichar2** rgszNames, guint32 cNames,
 											 guint32 lcid, gint32 *rgDispId)
 {
-	return MONO_E_NOTIMPL;
+       int i,ret = MONO_S_OK;
+       MonoMethod* method;
+       gchar* methodname;
+       MonoClass *klass = NULL;
+       MonoCCW* ccw = ccwe->ccw;
+       MonoObject* object = mono_gchandle_get_target (ccw->gc_handle);
+
+       g_assert (object);
+       klass = mono_object_class (object);
+
+       if (!mono_domain_get ())
+               mono_thread_attach (mono_get_root_domain ());
+
+       for (i=0; i < cNames; i++) {
+               methodname = mono_unicode_to_external (rgszNames[i]);
+
+               method = mono_class_get_method_from_name(klass, methodname, -1);
+               if (method)
+                       rgDispId[i] = (gint32)method->token;
+               else {
+                       rgDispId[i] = MONO_E_DISPID_UNKNOWN;
+                       ret = MONO_E_DISP_E_UNKNOWNNAME;
+               }
+       }
+
+       return ret;
 }
 
 static int STDCALL 
