@@ -1905,7 +1905,7 @@ is_async_method (MonoMethod *method)
 	if (attr_class && sig && ((sig->ret->type == MONO_TYPE_VOID) ||
 				(sig->ret->type == MONO_TYPE_CLASS && (sig->ret->data.generic_class->container_class->name, "Task")) ||
 				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (sig->ret->data.generic_class->container_class->name, "Task`1")))) {
-		printf ("X: %s\n", mono_method_full_name (method, TRUE));
+		//printf ("X: %s\n", mono_method_full_name (method, TRUE));
 		cattr = mono_custom_attrs_from_method (method);
 		if (cattr) {
 			if (mono_custom_attrs_has_attr (cattr, attr_class))
