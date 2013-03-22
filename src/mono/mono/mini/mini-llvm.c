@@ -3998,7 +3998,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				else
 					ctx->lmodule->throw = callee;
 			}
-			arg = convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, &mono_get_object_class ()->byval_arg));
+			arg = convert (ctx, lhs, type_to_llvm_type (ctx, &mono_get_object_class ()->byval_arg));
 			emit_call (ctx, bb, &builder, callee, &arg, 1);
 			break;
 		}

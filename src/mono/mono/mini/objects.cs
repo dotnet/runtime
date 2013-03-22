@@ -1577,5 +1577,23 @@ ncells ) {
 		return 0;
 	}
 
+	public static void do_throw () {
+		throw new Exception ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void empty () {
+	}
+
+	// #11297
+	public static int test_0_llvm_inline_throw () {
+		try {
+			empty ();
+		} catch (Exception ex) {
+			do_throw ();
+		}
+
+		return 0;
+	}
 }
 
