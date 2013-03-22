@@ -378,7 +378,8 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 				     sei->lpDirectory, NULL, &process_info);
 		g_free (args);
 		if (!ret){
-			SetLastError (ERROR_INVALID_DATA);
+			if (GetLastError () != ERROR_OUTOFMEMORY)
+				SetLastError (ERROR_INVALID_DATA);
 			return FALSE;
 		}
 	}
@@ -564,6 +565,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	int startup_pipe [2] = {-1, -1};
 	int dummy;
 	struct MonoProcess *mono_process;
+	gboolean fork_failed = FALSE;
 	
 	mono_once (&process_ops_once, process_ops_init);
 	mono_once (&process_sig_chld_once, process_add_sigchld_handler);
@@ -965,7 +967,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (pid == -1) {
 		/* Error */
 		SetLastError (ERROR_OUTOFMEMORY);
-		_wapi_handle_unref (handle);
+		ret = FALSE;
+		fork_failed = TRUE;
 		goto cleanup;
 	} else if (pid == 0) {
 		/* Child */
@@ -1069,6 +1072,9 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 cleanup:
 	_wapi_handle_unlock_shared_handles ();
+
+	if (fork_failed)
+		_wapi_handle_unref (handle);
 
 	if (startup_pipe [1] != -1) {
 		/* Write 1 byte, doesn't matter what */
