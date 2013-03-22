@@ -1891,21 +1891,24 @@ is_async_method (MonoMethod *method)
 	MonoCustomAttrInfo *cattr;
 	MonoMethodSignature *sig;
 	gboolean res = FALSE;
+	static MonoClass *attr_class;
+	static gboolean attr_class_set;
+
+	if (!attr_class_set) {
+		attr_class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
+		mono_memory_barrier ();
+		attr_class_set = TRUE;
+	}
 
 	/* Do less expensive checks first */
 	sig = mono_method_signature (method);
-	if (sig && sig->ret && sig->ret->type == MONO_TYPE_GENERICINST && (!strcmp (sig->ret->data.generic_class->container_class->name, "Task") || !strcmp (sig->ret->data.generic_class->container_class->name, "Task`1"))) {
+	if (attr_class && sig && ((sig->ret->type == MONO_TYPE_VOID) ||
+				(sig->ret->type == MONO_TYPE_CLASS && (sig->ret->data.generic_class->container_class->name, "Task")) ||
+				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (sig->ret->data.generic_class->container_class->name, "Task`1")))) {
+		printf ("X: %s\n", mono_method_full_name (method, TRUE));
 		cattr = mono_custom_attrs_from_method (method);
 		if (cattr) {
-			static MonoClass *attr_class;
-			static gboolean attr_class_set;
-
-			if (!attr_class_set) {
-				attr_class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
-				mono_memory_barrier ();
-				attr_class_set = TRUE;
-			}
-			if (attr_class && mono_custom_attrs_has_attr (cattr, attr_class))
+			if (mono_custom_attrs_has_attr (cattr, attr_class))
 				res = TRUE;
 			mono_custom_attrs_free (cattr);
 		}
@@ -1938,11 +1941,12 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 	 */
 	if (is_async_state_machine_class (method->klass))
 		return FALSE;
-	if (is_async_method (method))
-		return FALSE;
 
-	if (allow_gsharedvt && mini_is_gsharedvt_sharable_method (method))
+	if (allow_gsharedvt && mini_is_gsharedvt_sharable_method (method)) {
+		if (is_async_method (method))
+			return FALSE;
 		return TRUE;
+	}
 
 	if (method->is_inflated) {
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
@@ -1971,6 +1975,10 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 	}
 
 	if (method->klass->generic_container && !allow_type_vars)
+		return FALSE;
+
+	/* This does potentially expensive cattr checks, so do it at the end */
+	if (is_async_method (method))
 		return FALSE;
 
 	return TRUE;
