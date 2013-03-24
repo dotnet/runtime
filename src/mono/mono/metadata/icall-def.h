@@ -715,11 +715,6 @@ ICALL(MARSHAL_22, "QueryInterfaceInternal", ves_icall_System_Runtime_InteropServ
 #endif
 ICALL(MARSHAL_43, "ReAllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem)
 ICALL(MARSHAL_23, "ReAllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal)
-ICALL(MARSHAL_24, "ReadByte", ves_icall_System_Runtime_InteropServices_Marshal_ReadByte)
-ICALL(MARSHAL_25, "ReadInt16", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16)
-ICALL(MARSHAL_26, "ReadInt32", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32)
-ICALL(MARSHAL_27, "ReadInt64", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64)
-ICALL(MARSHAL_28, "ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr)
 #ifndef DISABLE_COM
 ICALL(MARSHAL_49, "ReleaseComObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal)
 ICALL(MARSHAL_29, "ReleaseInternal", ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal)
@@ -730,11 +725,6 @@ ICALL(MARSHAL_32, "StringToHGlobalAnsi", ves_icall_System_Runtime_InteropService
 ICALL(MARSHAL_33, "StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni)
 ICALL(MARSHAL_34, "StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr)
 ICALL(MARSHAL_35, "UnsafeAddrOfPinnedArrayElement", ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement)
-ICALL(MARSHAL_36, "WriteByte", ves_icall_System_Runtime_InteropServices_Marshal_WriteByte)
-ICALL(MARSHAL_37, "WriteInt16", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16)
-ICALL(MARSHAL_38, "WriteInt32", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32)
-ICALL(MARSHAL_39, "WriteInt64", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64)
-ICALL(MARSHAL_40, "WriteIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr)
 ICALL(MARSHAL_41, "copy_from_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged)
 ICALL(MARSHAL_42, "copy_to_unmanaged", ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged)
 
