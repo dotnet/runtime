@@ -3580,7 +3580,8 @@ add_wrappers (MonoAotCompile *acfg)
 			continue;
 		}
 
-		if (klass->valuetype && !klass->generic_container && can_marshal_struct (klass)) {
+		if (klass->valuetype && !klass->generic_container && can_marshal_struct (klass) &&
+			!(klass->nested_in && strstr (klass->nested_in->name, "<PrivateImplementationDetails>") == klass->nested_in->name)) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
