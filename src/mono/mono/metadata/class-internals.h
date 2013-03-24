@@ -711,7 +711,7 @@ typedef struct {
 #define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 typedef struct {
-	gulong new_object_count;
+	guint64 new_object_count;
 	gulong initialized_class_count;
 	gulong generic_vtable_count;
 	gulong used_class_count;

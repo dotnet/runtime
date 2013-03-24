@@ -1136,6 +1136,7 @@ mono_gc_init (void)
 	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_NORMAL].entries);
 	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_PINNED].entries);
 
+	mono_counters_register ("Created object count", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &mono_stats.new_object_count);
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_stats.major_gc_count);
 	mono_counters_register ("Minor GC time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &gc_stats.minor_gc_time_usecs);

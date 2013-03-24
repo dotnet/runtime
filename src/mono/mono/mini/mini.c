@@ -7146,7 +7146,6 @@ print_jit_stats (void)
 		g_print ("Biggest method:         %ld (%s)\n", mono_jit_stats.biggest_method_size,
 				 mono_jit_stats.biggest_method);
 
-		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);
 		g_print ("Delegates created:      %ld\n", mono_stats.delegate_creations);
 		g_print ("Initialized classes:    %ld\n", mono_stats.initialized_class_count);
 		g_print ("Used classes:           %ld\n", mono_stats.used_class_count);
