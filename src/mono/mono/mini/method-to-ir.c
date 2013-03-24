@@ -7109,6 +7109,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean emit_widen = TRUE;
 			gboolean push_res = TRUE;
 			gboolean skip_ret = FALSE;
+			gboolean delegate_invoke = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -7364,6 +7365,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (!calli && check_call_signature (cfg, fsig, sp))
 				UNVERIFIED;
+
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+			if (cmethod && (cmethod->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
+				delegate_invoke = TRUE;
+#endif
 
 			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
 				bblock = cfg->cbb;
@@ -7719,7 +7725,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Generic sharing */
 			/* FIXME: only do this for generic methods if
 			   they are not shared! */
-			if (context_used && !imt_arg && !array_rank &&
+			if (context_used && !imt_arg && !array_rank && !delegate_invoke &&
 				(!mono_method_is_generic_sharable_impl (cmethod, TRUE) ||
 				 !mono_class_generic_sharing_enabled (cmethod->klass)) &&
 				(!virtual || MONO_METHOD_IS_FINAL (cmethod) ||
