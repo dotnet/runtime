@@ -2841,8 +2841,6 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 
 		new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
 
-		// g_assert (mono_patch_info_equal (patch_info, new_ji));
-
 		res = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoPltEntry));
 		res->plt_offset = acfg->plt_offset;
 		res->ji = new_ji;
@@ -2857,6 +2855,10 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		g_hash_table_insert (acfg->patch_to_plt_entry, new_ji, res);
 
 		g_hash_table_insert (acfg->plt_offset_to_entry, GUINT_TO_POINTER (res->plt_offset), res);
+
+		//g_assert (mono_patch_info_equal (patch_info, new_ji));
+		//mono_print_ji (patch_info); printf ("\n");
+		//g_hash_table_print_stats (acfg->patch_to_plt_entry);
 
 		acfg->plt_offset ++;
 	}

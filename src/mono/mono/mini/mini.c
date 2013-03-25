@@ -2983,19 +2983,42 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 	case MONO_PATCH_INFO_CLASS_INIT:
+	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
+	case MONO_PATCH_INFO_METHOD_RGCTX:
+	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_SIGNATURE:
 		return (ji->type << 8) | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return (ji->type << 8) | (gssize)ji->data.gsharedvt->method;
-	default:
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *e = ji->data.rgctx_entry;
+
+		return (ji->type << 8) | (gssize)e->method | (e->in_mrgctx) | e->info_type | mono_patch_info_hash (e->data);
+	}
+	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
+	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_JIT_TLS_ID:
+	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_EXIT:
+	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return (ji->type << 8);
+	case MONO_PATCH_INFO_SWITCH:
+		return (ji->type << 8) | ji->data.table->table_size;
+	default:
+		printf ("info type: %d\n", ji->type);
+		mono_print_ji (ji); printf ("\n");
+		g_assert_not_reached ();
+		return 0;
 	}
 }
 
