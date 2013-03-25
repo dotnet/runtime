@@ -411,15 +411,21 @@ typedef struct {
 
 #ifndef DISABLE_LOGGING
 
-static void
-print_ji (MonoJumpInfo *ji)
+static const char* const patch_info_str[] = {
+#define PATCH_INFO(a,b) "" #a,
+#include "patch-info.h"
+#undef PATCH_INFO
+};
+
+void
+mono_print_ji (const MonoJumpInfo *ji)
 {
 	switch (ji->type) {
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		MonoJumpInfoRgctxEntry *entry = ji->data.rgctx_entry;
 
 		printf ("[RGCTX_FETCH ");
-		print_ji (entry->data);
+		mono_print_ji (entry->data);
 		printf (" - %s]", mono_rgctx_info_type_to_str (entry->info_type));
 		break;
 	}
@@ -430,7 +436,7 @@ print_ji (MonoJumpInfo *ji)
 		break;
 	}
 	default:
-		printf ("[%d]", ji->type);
+		printf ("[%s]", patch_info_str [ji->type]);
 		break;
 	}
 }
@@ -611,7 +617,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			MonoJumpInfo *ji = (MonoJumpInfo*)call->fptr;
 
 			printf (" ");
-			print_ji (ji);
+			mono_print_ji (ji);
 		} else if (call->fptr) {
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
 			if (info)
@@ -699,6 +705,12 @@ print_regtrack (RegTrack *t, int num)
 	}
 }
 #else
+
+void
+mono_print_ji (const MonoJumpInfo *ji)
+{
+}
+
 void
 mono_print_ins_index (int i, MonoInst *ins)
 {

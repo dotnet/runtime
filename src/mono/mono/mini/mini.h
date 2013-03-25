@@ -1863,6 +1863,7 @@ void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *b
 void      mono_optimize_branches            (MonoCompile *cfg) MONO_INTERNAL;
 
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom) MONO_INTERNAL;
+void      mono_print_ji                     (const MonoJumpInfo *ji) MONO_INTERNAL;
 void      mono_print_ins_index              (int i, MonoInst *ins) MONO_INTERNAL;
 void      mono_print_ins                    (MonoInst *ins) MONO_INTERNAL;
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg) MONO_INTERNAL;
