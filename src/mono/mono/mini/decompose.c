@@ -1397,8 +1397,9 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						dest = mono_emit_jit_icall (cfg, mono_array_new, iargs);
 						dest->dreg = ins->dreg;
 					} else {
-						MonoVTable *vtable = mono_class_vtable (cfg->domain, mono_array_class_get (ins->inst_newa_class, 1));
-						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (vtable, 1);
+						MonoClass *array_class = mono_array_class_get (ins->inst_newa_class, 1);
+						MonoVTable *vtable = mono_class_vtable (cfg->domain, array_class);
+						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
 						g_assert (vtable); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
 						NEW_VTABLECONST (cfg, iargs [0], vtable);

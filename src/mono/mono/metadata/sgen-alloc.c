@@ -953,11 +953,9 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 }
 
 MonoMethod*
-mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
+mono_gc_get_managed_array_allocator (MonoClass *klass)
 {
 #ifdef MANAGED_ALLOCATION
-	MonoClass *klass = vtable->klass;
-
 #ifdef HAVE_KW_THREAD
 	int tlab_next_offset = -1;
 	int tlab_temp_end_offset = -1;
@@ -968,7 +966,7 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 		return NULL;
 #endif
 
-	if (rank != 1)
+	if (klass->rank != 1)
 		return NULL;
 	if (!mono_runtime_has_tls_get ())
 		return NULL;

@@ -9910,21 +9910,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (context_used) {
 				MonoInst *args [3];
 				MonoClass *array_class = mono_array_class_get (klass, 1);
-				/* FIXME: we cannot get a managed
-				   allocator because we can't get the
-				   open generic class's vtable.  We
-				   have the same problem in
-				   handle_alloc().  This
-				   needs to be solved so that we can
-				   have managed allocs of shared
-				   generic classes. */
-				/*
-				MonoVTable *array_class_vtable = mono_class_vtable (cfg->domain, array_class);
-				MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class_vtable, 1);
-				*/
-				MonoMethod *managed_alloc = NULL;
+				MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
-				/* FIXME: Decompose later to help abcrem */
+				/* FIXME: Use OP_NEWARR and decompose later to help abcrem */
 
 				/* vtable */
 				args [0] = emit_get_rgctx_klass (cfg, context_used,
