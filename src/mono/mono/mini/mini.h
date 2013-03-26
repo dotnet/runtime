@@ -2503,14 +2503,14 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type) MONO_INTERNAL;
 gboolean mini_type_is_reference (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
-gboolean mini_type_is_vtype (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
-gboolean mini_type_var_is_vt (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
-gboolean mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass) MONO_INTERNAL;
+gboolean mini_type_is_vtype (MonoCompile *cfg, MonoType *t); /* should be internal but it's used by llvm */
+gboolean mini_type_var_is_vt (MonoCompile *cfg, MonoType *type); /* should be internal but it's used by llvm */
+gboolean mini_is_gsharedvt_klass (MonoCompile *cfg, MonoClass *klass); /* should be internal but it's used by llvm */
 gboolean mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_signature (MonoCompile *cfg, MonoMethodSignature *sig) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
-MonoType* mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
+MonoType* mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t); /* should be internal but it's used by llvm */
 gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst) MONO_INTERNAL;
