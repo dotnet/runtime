@@ -1959,6 +1959,9 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(lockf)
 	AC_CHECK_FUNCS(swab)
 	AC_CHECK_FUNCS(setusershell endusershell)
+	AC_CHECK_FUNCS(futimens utimensat)
+	AC_CHECK_FUNCS(fstatat mknodat readlinkat)
+	AC_CHECK_FUNCS(readv writev preadv pwritev)
 	AC_CHECK_SIZEOF(size_t)
 	AC_CHECK_TYPES([blksize_t], [AC_DEFINE(HAVE_BLKSIZE_T)], , 
 		[#include <sys/types.h>
@@ -1973,6 +1976,8 @@ if test x$target_win32 = xno; then
 	AC_CHECK_TYPES([struct flock], [AC_DEFINE(HAVE_STRUCT_FLOCK)], ,
 		[#include <unistd.h>
 		 #include <fcntl.h>])
+	AC_CHECK_TYPES([struct iovec], [AC_DEFINE(HAVE_STRUCT_IOVEC)], ,
+		[#include <sys/uio.h>])
 	AC_CHECK_TYPES([struct pollfd], [AC_DEFINE(HAVE_STRUCT_POLLFD)], ,
 		[#include <sys/poll.h>])
 	AC_CHECK_TYPES([struct stat], [AC_DEFINE(HAVE_STRUCT_STAT)], ,
