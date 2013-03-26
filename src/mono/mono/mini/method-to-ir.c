@@ -157,7 +157,7 @@ static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm = NULL
 #define FREG 'f'
 #define VREG 'v'
 #define XREG 'x'
-#if SIZEOF_REGISTER == 8 && SIZEOF_REGISTER == SIZEOF_VOIDP
+#if SIZEOF_REGISTER == 8 && SIZEOF_REGISTER == SIZEOF_VOID_P
 #define LREG IREG
 #else
 #define LREG 'l'
