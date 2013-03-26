@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Run this to generate all the initial makefiles, etc.
 # Ripped off from GNOME macros version
 
