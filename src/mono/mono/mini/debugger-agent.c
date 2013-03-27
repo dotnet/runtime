@@ -2939,16 +2939,13 @@ get_seq_points (MonoDomain *domain, MonoMethod *method)
 	return seq_points;
 }
 
-static MonoSeqPointInfo*
-find_seq_points (MonoDomain *domain, MonoMethod *method)
+static void
+no_seq_points_found (MonoMethod *method)
 {
-	MonoSeqPointInfo *seq_points = get_seq_points (domain, method);
-
-	if (!seq_points)
-		printf ("Unable to find seq points for method '%s'.\n", mono_method_full_name (method, TRUE));
-	g_assert (seq_points);
-
-	return seq_points;
+	/*
+	 * This can happen in full-aot mode with assemblies AOTed without the 'soft-debug' option to save space.
+	 */
+	printf ("Unable to find seq points for method '%s'.\n", mono_method_full_name (method, TRUE));
 }
 
 /*
@@ -2962,7 +2959,12 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	MonoSeqPointInfo *seq_points;
 	int i;
 
-	seq_points = find_seq_points (domain, method);
+	seq_points = get_seq_points (domain, method);
+	if (!seq_points) {
+		if (info)
+			*info = NULL;
+		return NULL;
+	}
 	g_assert (seq_points);
 	if (info)
 		*info = seq_points;
@@ -4406,6 +4408,8 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 * the offset recorded in the seq point map, so find the prev seq point before ip.
 	 */
 	sp = find_prev_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
+	if (!sp)
+		no_seq_points_found (ji->method);
 	g_assert (sp);
 
 	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, ip, native_offset, sp ? sp->il_offset : -1));
@@ -4936,13 +4940,16 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 			// There could be method calls before the next seq point in the caller when using nested calls
 			//enable_global = TRUE;
 		} else {
-			while (sp && sp->next_len == 0) {
+			if (sp && sp->next_len == 0) {
 				sp = NULL;
-				if (frame_index < tls->frame_count) {
+				while (frame_index < tls->frame_count) {
 					StackFrame *frame = tls->frames [frame_index];
 
 					method = frame->method;
 					sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
+					if (sp && sp->next_len != 0)
+						break;
+					sp = NULL;
 					frame_index ++;
 				}
 			}
@@ -5064,6 +5071,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		 * point after ip.
 		 */
 		sp = find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info);
+		if (!sp)
+			no_seq_points_found (frame.method);
 		g_assert (sp);
 
 		method = frame.method;
@@ -5108,6 +5117,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 			if (!method && frame->il_offset != -1) {
 				/* FIXME: Sort the table and use a binary search */
 				sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
+				if (!sp)
+					no_seq_points_found (frame->method);
 				g_assert (sp);
 				method = frame->method;
 			}
