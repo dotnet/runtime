@@ -2007,6 +2007,11 @@ if test x$target_win32 = xno; then
 		[struct statfs.f_flags],,, 
 		[#include <sys/types.h>
 		 #include <sys/vfs.h>])
+	AC_CHECK_MEMBERS(
+		[struct stat.st_atim, struct stat.st_mtim, struct stat.st_ctim],,, 
+		[#include <sys/types.h>
+		 #include <sys/stat.h>
+		 #include <unistd.h>])
 
 	dnl Favour xattr through glibc, but use libattr if we have to
 	AC_CHECK_FUNC(lsetxattr, ,
