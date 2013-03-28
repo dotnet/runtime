@@ -17,6 +17,7 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/handles-private.h>
+#include <mono/utils/atomic.h>
 
 #if 0
 // #define DEBUG(...) g_message(__VA_ARGS__)

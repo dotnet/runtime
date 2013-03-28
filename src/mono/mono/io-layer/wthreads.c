@@ -28,10 +28,10 @@
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
-#include <mono/io-layer/atomic.h>
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/gc_wrapper.h>
+#include <mono/utils/atomic.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
