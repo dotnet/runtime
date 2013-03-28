@@ -132,11 +132,9 @@ static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {
 	gint32 ret;
 
-	printf ("X: %d %d\n", *val, new_val);	
 	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
 			      : "r" (new_val), "m" (*val), "a" (*val));
-	printf ("X2: %d\n", ret);	
 	return(ret);
 }
 
