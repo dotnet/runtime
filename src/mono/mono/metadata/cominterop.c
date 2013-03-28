@@ -32,6 +32,7 @@
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/gc-internal.h"
 #include "mono/utils/mono-counters.h"
+#include "mono/utils/atomic.h"
 #include <string.h>
 #include <errno.h>
 

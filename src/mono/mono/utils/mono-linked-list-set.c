@@ -16,8 +16,7 @@
 
 #include <mono/utils/mono-linked-list-set.h>
 
-/*atomics.*/
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/atomic.h>
 
 static inline gpointer
 mask (gpointer n, uintptr_t bit)

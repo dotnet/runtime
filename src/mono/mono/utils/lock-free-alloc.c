@@ -82,7 +82,7 @@
 #include <glib.h>
 #include <stdlib.h>
 
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/atomic.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/hazard-pointer.h>

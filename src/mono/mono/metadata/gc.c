@@ -36,6 +36,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/atomic.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>

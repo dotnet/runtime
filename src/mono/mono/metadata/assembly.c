@@ -34,6 +34,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 #include <mono/utils/mono-io-portability.h>
+#include <mono/utils/atomic.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>

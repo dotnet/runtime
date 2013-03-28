@@ -12,6 +12,7 @@
 #include <mono/metadata/mono-cq.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/atomic.h>
 
 #define CQ_DEBUG(...)
 //#define CQ_DEBUG(...) g_message(__VA_ARGS__)

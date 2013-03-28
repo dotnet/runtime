@@ -38,6 +38,7 @@
 #include "utils/mono-proclib.h"
 #include "utils/mono-networkinterfaces.h"
 #include "utils/mono-error-internals.h"
+#include "utils/atomic.h"
 #include <mono/io-layer/io-layer.h>
 
 /* map of CounterSample.cs */

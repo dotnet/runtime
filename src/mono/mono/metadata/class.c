@@ -16,9 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#if !HOST_WIN32
-#include <mono/io-layer/atomic.h>
-#endif
 #include <mono/metadata/image.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata.h>
@@ -44,6 +41,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/atomic.h>
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;

@@ -53,7 +53,7 @@
 
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/hazard-pointer.h>
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/atomic.h>
 
 #include <mono/utils/lock-free-queue.h>
 

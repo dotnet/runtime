@@ -23,8 +23,6 @@
 
 #include <glib.h>
 
-#include "mono/io-layer/wapi.h"
-
 #if defined(__NetBSD__) && defined(HAVE_ATOMIC_OPS)
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,

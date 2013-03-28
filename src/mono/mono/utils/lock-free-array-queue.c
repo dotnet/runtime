@@ -16,7 +16,7 @@
  * entry data, and then sets the state to USED or FREE.
  */
 
-#include <mono/io-layer/io-layer.h>
+#include <mono/utils/atomic.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-mmap.h>
 

@@ -26,6 +26,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/atomic.h>
 
 /*
  * Pull the list of opcodes

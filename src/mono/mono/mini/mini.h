@@ -29,6 +29,7 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/atomic.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 

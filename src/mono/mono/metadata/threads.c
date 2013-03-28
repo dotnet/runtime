@@ -47,6 +47,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/atomic.h>
 
 #include <mono/metadata/gc-internal.h>
 

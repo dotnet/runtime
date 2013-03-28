@@ -13,6 +13,7 @@
 #include <mono/metadata/mono-wsq.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/atomic.h>
 
 #define INITIAL_LENGTH	32
 #define WSQ_DEBUG(...)

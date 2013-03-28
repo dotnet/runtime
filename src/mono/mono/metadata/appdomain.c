@@ -60,6 +60,7 @@
 #include <mono/utils/mono-stdlib.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/atomic.h>
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
