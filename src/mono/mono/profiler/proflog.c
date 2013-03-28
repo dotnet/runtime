@@ -13,6 +13,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/atomic.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -1139,7 +1140,7 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 }
 
 #ifndef HOST_WIN32
-#include "mono/io-layer/atomic.h"
+#include "mono/utils/atomic.h"
 #endif
 #define cmp_exchange InterlockedCompareExchangePointer
 /*#else
