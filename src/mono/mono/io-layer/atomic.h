@@ -27,7 +27,6 @@
 
 #if defined(__NetBSD__) && defined(HAVE_ATOMIC_OPS)
 
-#define WAPI_ATOMIC_ASM
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
        gint32 exch, gint32 comp)
 {
@@ -66,7 +65,6 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 }
 
 #elif defined(__i386__) || defined(__x86_64__)
-#define WAPI_ATOMIC_ASM
 
 /*
  * NB: The *Pointer() functions here assume that
@@ -129,23 +127,18 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
 
 /*
  * See
- * http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
+ * http://msdn.microsoft.com/msdnmag/issues/0700/Win32/
  * for the reasons for using cmpxchg and a loop here.
- *
- * That url is no longer valid, but it's still in the google cache at the
- * moment: http://www.google.com/search?q=cache:http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
- *
- * For the time being, http://msdn.microsoft.com/msdnmag/issues/0700/Win32/
- * might work.  Bet it will change soon enough though.
  */
 static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {
 	gint32 ret;
-	
+
+	printf ("X: %d %d\n", *val, new_val);	
 	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
 			      : "r" (new_val), "m" (*val), "a" (*val));
-
+	printf ("X2: %d\n", ret);	
 	return(ret);
 }
 
@@ -179,7 +172,6 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 }
 
 #elif (defined(sparc) || defined (__sparc__)) && defined(__GNUC__)
-#define WAPI_ATOMIC_ASM
 
 G_GNUC_UNUSED 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *_dest, gint32 _exch, gint32 _comp)
@@ -340,8 +332,6 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *_dest, gint32 add)
 }
 
 #elif __s390__
-
-#define WAPI_ATOMIC_ASM
 
 static inline gint32 
 InterlockedCompareExchange(volatile gint32 *dest,
@@ -557,7 +547,6 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 # endif
 
 #elif defined(__mono_ppc__)
-#define WAPI_ATOMIC_ASM
 
 #ifdef G_COMPILER_CODEWARRIOR
 static inline gint32 InterlockedIncrement(volatile register gint32 *val)
@@ -743,7 +732,6 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 #endif /* !G_COMPILER_CODEWARRIOR */
 
 #elif defined(__arm__)
-#define WAPI_ATOMIC_ASM
 
 /*
  * Atomic operations on ARM doesn't contain memory barriers, and the runtime code
@@ -994,7 +982,6 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 }
 
 #elif defined(__ia64__)
-#define WAPI_ATOMIC_ASM
 
 #ifdef __INTEL_COMPILER
 #include <ia64intrin.h>
@@ -1111,7 +1098,6 @@ static inline gint32 InterlockedExchangeAdd(gint32 volatile *val, gint32 add)
 }
 
 #elif defined(__mips__)
-#define WAPI_ATOMIC_ASM
 
 #if SIZEOF_REGISTER == 8
 #error "Not implemented."
@@ -1205,6 +1191,8 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 
 #else
 
+#define WAPI_NO_ATOMIC_ASM
+
 extern gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp);
 extern gint32 InterlockedIncrement(volatile gint32 *dest);
@@ -1213,10 +1201,55 @@ extern gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 
-#if defined(__hppa__)
-#define WAPI_ATOMIC_ASM
 #endif
 
+/* Not yet used */
+#ifdef USE_GCC_ATOMIC_OPS
+
+static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
+						gint32 exch, gint32 comp)
+{
+	return __sync_val_compare_and_swap (dest, comp, exch);
+}
+
+static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
+{
+	return __sync_val_compare_and_swap (dest, comp, exch);
+}
+
+static inline gint32 InterlockedIncrement(volatile gint32 *val)
+{
+	return __sync_add_and_fetch (val, 1);
+}
+
+static inline gint32 InterlockedDecrement(volatile gint32 *val)
+{
+	return __sync_add_and_fetch (val, -1);
+}
+
+static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
+{
+	gint32 old_val;
+	do {
+		old_val = *val;
+	} while (__sync_val_compare_and_swap (val, old_val, new_val) != old_val);
+	return old_val;
+}
+
+static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
+						  gpointer new_val)
+{
+	gpointer old_val;
+	do {
+		old_val = *val;
+	} while (__sync_val_compare_and_swap (val, old_val, new_val) != old_val);
+	return old_val;
+}
+
+static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
+{
+	return __sync_fetch_and_add (val, add);
+}
 #endif
 
 #endif /* _WAPI_ATOMIC_H_ */
