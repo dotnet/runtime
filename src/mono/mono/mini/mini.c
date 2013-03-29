@@ -1526,7 +1526,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 		return FALSE;
 	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
 		return FALSE;
-	if (mono_security_get_mode () != MONO_SECURITY_MODE_NONE)
+	if (mono_security_enabled ())
 		return FALSE;
 	return mono_assembly_has_skip_verification (assembly);
 }
@@ -4061,7 +4061,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			printf ("Number of try block holes %d\n", num_holes);
 	}
 
-	if (mono_method_has_declsec (cfg->method_to_register)) {
+	if (mono_security_method_has_declsec (cfg->method_to_register)) {
 		cas_size = sizeof (MonoMethodCasInfo);
 	}
 
@@ -5698,6 +5698,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_FIELD_ACCESS:
 		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
 		break;
+#ifndef DISABLE_SECURITY
 	/* this can only be set if the security manager is active */
 	case MONO_EXCEPTION_SECURITY_LINKDEMAND: {
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
@@ -5711,6 +5712,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		ex = (MonoException*)exc;
 		break;
 	}
+#endif
 	case MONO_EXCEPTION_OBJECT_SUPPLIED: {
 		MonoException *exp = cfg->exception_ptr;
 		MONO_GC_UNREGISTER_ROOT (cfg->exception_ptr);
@@ -6102,7 +6104,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	mono_domain_unlock (domain);		
 
 	if (!info) {
-		if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+		if (mono_security_core_clr_enabled ()) {
 			/* 
 			 * This might be redundant since mono_class_vtable () already does this,
 			 * but keep it just in case for moonlight.
@@ -7213,7 +7215,7 @@ print_jit_stats (void)
 		g_print ("JIT info table lookups: %ld\n", mono_stats.jit_info_table_lookup_count);
 
 		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
-		if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
+		if (mono_security_cas_enabled ()) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
 			g_print ("LinkDemand (icall)    : %ld\n", mono_jit_stats.cas_linkdemand_icall);

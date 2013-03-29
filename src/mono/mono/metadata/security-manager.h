@@ -63,17 +63,18 @@ typedef struct {
 	MonoClass *suppressunmanagedcodesecurity;	/* System.Security.SuppressUnmanagedCodeSecurityAttribute */
 } MonoSecurityManager;
 
-/* Initialization/utility functions */
-void mono_activate_security_manager (void) MONO_INTERNAL;
-gboolean mono_is_security_manager_active (void) MONO_INTERNAL;
-MonoSecurityManager* mono_security_manager_get_methods (void) MONO_INTERNAL;
 gboolean mono_is_ecma_key (const char *publickey, int size) MONO_INTERNAL;
 MonoMethod* mono_get_context_capture_method (void) MONO_INTERNAL;
 
 void mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
 void mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base) MONO_INTERNAL;
 
+/* Initialization/utility functions */
+void mono_activate_security_manager (void) MONO_INTERNAL;
+MonoSecurityManager* mono_security_manager_get_methods (void) MONO_INTERNAL;
+
 /* Security mode */
+gboolean mono_is_security_manager_active (void) MONO_INTERNAL;
 void mono_security_set_mode (MonoSecurityMode mode) MONO_INTERNAL;
 MonoSecurityMode mono_security_get_mode (void) MONO_INTERNAL;
 
@@ -84,5 +85,16 @@ MonoBoolean ves_icall_System_Security_SecurityManager_get_CheckExecutionRights (
 void ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean value) MONO_INTERNAL;
 MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions) MONO_INTERNAL;
 
+#ifndef DISABLE_SECURITY
+#define mono_security_enabled() (mono_is_security_manager_active ())
+#define mono_security_cas_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
+#define mono_security_core_clr_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+#define mono_security_smcs_hack_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_SMCS_HACK)
+#else
+#define mono_security_enabled() (FALSE)
+#define mono_security_cas_enabled() (FALSE)
+#define mono_security_core_clr_enabled() (FALSE)
+#define mono_security_smcs_hack_enabled() (FALSE)
+#endif
 
 #endif /* _MONO_METADATA_SECURITY_MANAGER_H_ */

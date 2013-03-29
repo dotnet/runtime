@@ -1807,7 +1807,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		mono_raise_exception (mono_get_exception_invalid_operation (
 					"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods."));
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+	if (mono_security_core_clr_enabled ())
 		mono_security_core_clr_ensure_reflection_access_field (cf);
 
 	return mono_field_get_value_object (domain, cf, obj);
@@ -1827,7 +1827,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		mono_raise_exception (mono_get_exception_invalid_operation (
 					"It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods."));
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+	if (mono_security_core_clr_enabled ())
 		mono_security_core_clr_ensure_reflection_access_field (cf);
 
 	type = mono_field_get_type_checked (cf, &error);
@@ -2803,7 +2803,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	*exc = NULL;
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+	if (mono_security_core_clr_enabled ())
 		mono_security_core_clr_ensure_reflection_access_method (m);
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
@@ -4232,16 +4232,17 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	if (type->type == MONO_TYPE_CLASS) {
 		MonoClass *klass = mono_type_get_class (type);
 
-		if (mono_is_security_manager_active () && !klass->exception_type)
+		if (mono_security_enabled () && !klass->exception_type)
 			/* Some security problems are detected during generic vtable construction */
 			mono_class_setup_vtable (klass);
+
 		/* need to report exceptions ? */
 		if (throwOnError && klass->exception_type) {
 			/* report SecurityException (or others) that occured when loading the assembly */
 			MonoException *exc = mono_class_get_exception_for_failure (klass);
 			mono_loader_clear_error ();
 			mono_raise_exception (exc);
-		} else if (klass->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) {
+		} else if (mono_security_enabled () && klass->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) {
 			return NULL;
 		}
 	}
@@ -5851,7 +5852,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+	if (mono_security_core_clr_enabled ()) {
 		if (!mono_security_core_clr_ensure_delegate_creation (method, throwOnBindFailure))
 			return NULL;
 	}

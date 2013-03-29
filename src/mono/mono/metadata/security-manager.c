@@ -9,17 +9,10 @@
 
 #include "security-manager.h"
 
-
-/* Internal stuff */
-
-static MonoSecurityManager secman;
+static MonoSecurityMode mono_security_mode = MONO_SECURITY_MODE_NONE;
 static MonoBoolean mono_security_manager_activated = FALSE;
 static MonoBoolean mono_security_manager_enabled = TRUE;
 static MonoBoolean mono_security_manager_execution = TRUE;
-static MonoSecurityMode mono_security_mode = MONO_SECURITY_MODE_NONE;
-
-
-/* Public stuff */
 
 void
 mono_security_set_mode (MonoSecurityMode mode)
@@ -32,6 +25,26 @@ mono_security_get_mode (void)
 {
 	return mono_security_mode;
 }
+
+/*
+ * Note: The security manager is activate once when executing the Mono. This 
+ * is not meant to be a turn on/off runtime switch.
+ */
+void
+mono_activate_security_manager (void)
+{
+	mono_security_manager_activated = TRUE;
+}
+
+gboolean
+mono_is_security_manager_active (void)
+{
+	return mono_security_manager_activated;
+}
+
+#ifndef DISABLE_SECURITY
+
+static MonoSecurityManager secman;
 
 MonoSecurityManager*
 mono_security_manager_get_methods (void)
@@ -160,22 +173,25 @@ mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base)
 	}
 }
 
+#else
 
-/*
- * Note: The security manager is activate once when executing the Mono. This 
- * is not meant to be a turn on/off runtime switch.
- */
+MonoSecurityManager*
+mono_security_manager_get_methods (void)
+{
+	return NULL;
+}
+
 void
-mono_activate_security_manager (void)
+mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent)
 {
-	mono_security_manager_activated = TRUE;
 }
 
-gboolean
-mono_is_security_manager_active (void)
+void
+mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base)
 {
-	return mono_security_manager_activated;
 }
+
+#endif /* DISABLE_SECURITY */
 
 /*
  * @publickey	An encoded (with header) public key

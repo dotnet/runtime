@@ -11,7 +11,8 @@
 #include "declsec.h"
 #include "mini.h"
 
-#ifndef DISABLE_VERIFIER
+#ifndef DISABLE_SECURITY
+
 /*
  * Does the methods (or it's class) as any declarative security attribute ?
  * Is so are they applicable ? (e.g. static class constructor)
@@ -406,7 +407,7 @@ mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *cal
 	return violation;
 }
 
-#else /* DISABLE_JIT */
+#else /* DISABLE_SECURITY */
 
 void
 mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo)

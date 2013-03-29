@@ -4221,7 +4221,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	 * CAS - do not inline methods with declarative security
 	 * Note: this has to be before any possible return TRUE;
 	 */
-	if (mono_method_has_declsec (method))
+	if (mono_security_method_has_declsec (method))
 		return FALSE;
 
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -5694,7 +5694,7 @@ gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *cal
 {
 	guint32 result;
 	
-	if ((cfg->method != caller) && mono_method_has_declsec (callee)) {
+	if ((cfg->method != caller) && mono_security_method_has_declsec (callee)) {
 		return TRUE;
 	}
 	
@@ -6193,7 +6193,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP;
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
 
-	dont_verify |= mono_security_get_mode () == MONO_SECURITY_MODE_SMCS_HACK;
+	dont_verify |= mono_security_smcs_hack_enabled ();
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -6458,10 +6458,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
+	if (mono_security_cas_enabled ())
 		secman = mono_security_manager_get_methods ();
 
-	security = (secman && mono_method_has_declsec (method));
+	security = (secman && mono_security_method_has_declsec (method));
 	/* at this point having security doesn't mean we have any code to generate */
 	if (security && (cfg->method == method)) {
 		/* Only Demand, NonCasDemand and DemandChoice requires code generation.
@@ -6549,7 +6549,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, secman->demandunmanaged, NULL, NULL);
 	}
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+	if (mono_security_core_clr_enabled ()) {
 		/* check if this is native code, e.g. an icall or a p/invoke */
 		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 			MonoMethod *wrapped = mono_marshal_method_from_wrapper (method);
@@ -7052,7 +7052,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
 
-			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
+			if (mono_security_cas_enabled ())
 				CHECK_CFG_EXCEPTION;
 
 #ifdef MONO_ARCH_USE_OP_TAIL_CALL
@@ -7187,7 +7187,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						METHOD_ACCESS_FAILURE;
 				}
 
-				if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				if (mono_security_core_clr_enabled ())
 					ensure_method_is_allowed_to_call_method (cfg, method, cil_method, bblock, ip);
 
 				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
@@ -7259,7 +7259,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 				*/
 
-				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
+				if (mono_security_cas_enabled ()) {
 					if (check_linkdemand (cfg, method, cmethod))
 						INLINE_FAILURE ("linkdemand");
 					CHECK_CFG_EXCEPTION;
@@ -8717,11 +8717,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
-			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
+			if (mono_security_cas_enabled ()) {
 				if (check_linkdemand (cfg, method, cmethod))
 					INLINE_FAILURE ("linkdemand");
 				CHECK_CFG_EXCEPTION;
-			} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+			} else if (mono_security_core_clr_enabled ()) {
 				ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
  			}
 
@@ -9380,12 +9380,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			/* if the class is Critical then transparent code cannot access it's fields */
-			if (!is_instance && mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+			if (!is_instance && mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
 
 			/* XXX this is technically required but, so far (SL2), no [SecurityCritical] types (not many exists) have
 			   any visible *instance* field  (in fact there's a single case for a static field in Marshal) XXX
-			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
 			*/
 
@@ -10944,13 +10944,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
 					METHOD_ACCESS_FAILURE;
 
-				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
+				if (mono_security_cas_enabled ()) {
 					if (check_linkdemand (cfg, method, cmethod))
 						INLINE_FAILURE ("linkdemand");
 					CHECK_CFG_EXCEPTION;
-				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+				} else if (mono_security_core_clr_enabled ()) {
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
- 				}
+				}
 
 				/* 
 				 * Optimize the common case of ldftn+delegate creation
@@ -10970,7 +10970,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						target_ins = sp [-1];
 
-						if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+						if (mono_security_core_clr_enabled ())
 							ensure_method_is_allowed_to_call_method (cfg, method, ctor_method, bblock, ip);
 
 						if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC)) {
@@ -11019,11 +11019,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  
 				context_used = mini_method_check_context_used (cfg, cmethod);
 
-				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
+				if (mono_security_cas_enabled ()) {
 					if (check_linkdemand (cfg, method, cmethod))
 						INLINE_FAILURE ("linkdemand");
 					CHECK_CFG_EXCEPTION;
-				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+				} else if (mono_security_core_clr_enabled ()) {
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
 				}
 
