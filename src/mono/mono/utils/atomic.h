@@ -23,7 +23,11 @@
 
 #include <glib.h>
 
-#if defined(__NetBSD__) && defined(HAVE_ATOMIC_OPS)
+#if defined(__WIN32__) || defined(_WIN32)
+
+#include <windows.h>
+
+#elif defined(__NetBSD__) && defined(HAVE_ATOMIC_OPS)
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
        gint32 exch, gint32 comp)
