@@ -12,7 +12,7 @@
 #include <glib.h>
 #include <pthread.h>
 
-#include "mono/io-layer/wapi.h"
+#include <mono/utils/atomic.h>
 
 #ifdef WAPI_NO_ATOMIC_ASM
 
