@@ -1868,6 +1868,20 @@ has_constraints (MonoGenericContainer *container)
 	*/
 }
 
+static gboolean
+mini_method_is_open (MonoMethod *method)
+{
+	if (method->is_inflated) {
+		MonoGenericContext *ctx = mono_method_get_context (method);
+
+		if (ctx->class_inst && ctx->class_inst->is_open)
+			return TRUE;
+		if (ctx->method_inst && ctx->method_inst->is_open)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static G_GNUC_UNUSED gboolean
 is_async_state_machine_class (MonoClass *klass)
 {
@@ -1978,8 +1992,12 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 		return FALSE;
 
 	/* This does potentially expensive cattr checks, so do it at the end */
-	if (is_async_method (method))
+	if (is_async_method (method)) {
+		if (mini_method_is_open (method))
+			/* The JIT can't compile these without sharing */
+			return TRUE;
 		return FALSE;
+	}
 
 	return TRUE;
 }
