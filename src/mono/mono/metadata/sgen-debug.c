@@ -200,6 +200,59 @@ sgen_check_consistency (void)
 		g_assert (!missing_remsets);
 }
 
+static gboolean
+is_major_or_los_object_marked (char *obj)
+{
+	if (sgen_safe_object_get_size ((MonoObject*)obj) > SGEN_MAX_SMALL_OBJ_SIZE) {
+		return sgen_los_object_is_pinned (obj);
+	} else {
+		return sgen_get_major_collector ()->is_object_live (obj);
+	}
+}
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+	if (*(ptr) && !sgen_ptr_in_nursery ((char*)*(ptr)) && !is_major_or_los_object_marked ((char*)*(ptr))) { \
+		if (!sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
+			SGEN_LOG (0, "major->major reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
+			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+		}																\
+	}																	\
+	} while (0)
+
+static void
+check_mod_union_callback (char *start, size_t size, void *dummy)
+{
+	gboolean in_los = (gboolean)dummy;
+	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
+	guint8 *cards;
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
+
+	if (!is_major_or_los_object_marked (start))
+		return;
+
+	if (in_los)
+		cards = sgen_los_header_for_object (start)->cardtable_mod_union;
+	else
+		cards = sgen_get_major_collector ()->get_cardtable_mod_union_for_object (start);
+
+	SGEN_ASSERT (0, cards, "we must have mod union for marked major objects");
+
+#include "sgen-scan-object.h"
+}
+
+void
+sgen_check_mod_union_consistency (void)
+{
+	missing_remsets = FALSE;
+
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_mod_union_callback, (void*)FALSE);
+
+	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_mod_union_callback, (void*)TRUE);
+
+	if (!binary_protocol_is_enabled ())
+		g_assert (!missing_remsets);
+}
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\

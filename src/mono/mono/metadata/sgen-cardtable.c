@@ -278,6 +278,13 @@ sgen_card_table_find_address (char *addr)
 	return sgen_card_table_address_is_marked ((mword)addr);
 }
 
+static gboolean
+sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char *addr)
+{
+	cards_start = sgen_card_table_align_pointer (cards_start);
+	return cards [(addr - cards_start) >> CARD_BITS];
+}
+
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
 static void
@@ -710,6 +717,7 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	remset->prepare_for_major_collection = sgen_card_table_prepare_for_major_collection;
 
 	remset->find_address = sgen_card_table_find_address;
+	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;
 }
 
 #else

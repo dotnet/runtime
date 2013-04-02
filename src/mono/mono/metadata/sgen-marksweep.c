@@ -2378,6 +2378,13 @@ update_cardtable_mod_union (void)
 		}
 	} END_FOREACH_BLOCK;
 }
+
+static guint8*
+major_get_cardtable_mod_union_for_object (char *obj)
+{
+	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
+	return &block->cardtable_mod_union [(obj - (char*)sgen_card_table_align_pointer (block->block)) >> CARD_BITS];
+}
 #endif
 
 static void
@@ -2555,8 +2562,10 @@ sgen_marksweep_fixed_init (SgenMajorCollector *collector)
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
-	if (is_concurrent)
+	if (is_concurrent) {
 		collector->update_cardtable_mod_union = update_cardtable_mod_union;
+		collector->get_cardtable_mod_union_for_object = major_get_cardtable_mod_union_for_object;
+	}
 #endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
