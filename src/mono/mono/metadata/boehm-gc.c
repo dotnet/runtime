@@ -923,7 +923,7 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (!SMALL_ENOUGH (klass->instance_size))
 		return NULL;
-	if (mono_class_has_finalizer (klass) || klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return NULL;
 	if (klass->rank)
 		return NULL;
