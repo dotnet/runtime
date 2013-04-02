@@ -223,7 +223,7 @@ is_major_or_los_object_marked (char *obj)
 static void
 check_mod_union_callback (char *start, size_t size, void *dummy)
 {
-	gboolean in_los = (gboolean)dummy;
+	gboolean in_los = (gboolean) (size_t) dummy;
 	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
 	guint8 *cards;
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
