@@ -25,6 +25,7 @@
 #ifdef SGEN_BINARY_PROTOCOL
 
 enum {
+	SGEN_PROTOCOL_COLLECTION_FORCE,
 	SGEN_PROTOCOL_COLLECTION_BEGIN,
 	SGEN_PROTOCOL_COLLECTION_END,
 	SGEN_PROTOCOL_ALLOC,
@@ -50,6 +51,10 @@ enum {
 	SGEN_PROTOCOL_CEMENT_RESET,
 	SGEN_PROTOCOL_DISLINK_UPDATE
 };
+
+typedef struct {
+	int generation;
+} SGenProtocolCollectionForce;
 
 typedef struct {
 	int index, generation;
@@ -171,6 +176,7 @@ gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
 
 void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 
+void binary_protocol_collection_force (int generation) MONO_INTERNAL;
 void binary_protocol_collection_begin (int index, int generation) MONO_INTERNAL;
 void binary_protocol_collection_end (int index, int generation) MONO_INTERNAL;
 void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
@@ -202,6 +208,7 @@ void binary_protocol_dislink_update (gpointer link, gpointer obj, int track) MON
 #define binary_protocol_is_enabled()	FALSE
 
 #define binary_protocol_flush_buffers(force)
+#define binary_protocol_collection_force(generation)
 #define binary_protocol_collection_begin(index, generation)
 #define binary_protocol_collection_end(index, generation)
 #define binary_protocol_alloc(obj, vtable, size)

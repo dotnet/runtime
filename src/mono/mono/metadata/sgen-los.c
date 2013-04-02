@@ -554,8 +554,8 @@ sgen_los_update_cardtable_mod_union (void)
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
-		guint8 *start_card = sgen_card_table_get_card_scan_address ((mword)obj->data);
-		guint8 *end_card = sgen_card_table_get_card_scan_address ((mword)obj->data + obj->size - 1) + 1;
+		guint8 *start_card = sgen_card_table_get_card_address ((mword)obj->data);
+		guint8 *end_card = sgen_card_table_get_card_address ((mword)obj->data + obj->size - 1) + 1;
 		size_t num_cards = end_card - start_card;
 
 		if (!obj->cardtable_mod_union) {

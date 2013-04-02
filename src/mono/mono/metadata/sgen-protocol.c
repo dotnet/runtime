@@ -33,18 +33,19 @@
 /* If not null, dump binary protocol to this file */
 static FILE *binary_protocol_file = NULL;
 
-static int binary_protocol_use_count = 0;
+/* We set this to -1 to indicate an exclusive lock */
+static volatile int binary_protocol_use_count = 0;
 
 #define BINARY_PROTOCOL_BUFFER_SIZE	(65536 - 2 * 8)
 
 typedef struct _BinaryProtocolBuffer BinaryProtocolBuffer;
 struct _BinaryProtocolBuffer {
-	BinaryProtocolBuffer *next;
-	int index;
+	BinaryProtocolBuffer * volatile next;
+	volatile int index;
 	unsigned char buffer [BINARY_PROTOCOL_BUFFER_SIZE];
 };
 
-static BinaryProtocolBuffer *binary_protocol_buffers = NULL;
+static BinaryProtocolBuffer * volatile binary_protocol_buffers = NULL;
 
 void
 binary_protocol_init (const char *filename)
@@ -56,6 +57,53 @@ gboolean
 binary_protocol_is_enabled (void)
 {
 	return binary_protocol_file != NULL;
+}
+
+static gboolean
+try_lock_exclusive (void)
+{
+	do {
+		if (binary_protocol_use_count)
+			return FALSE;
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, -1, 0) != 0);
+	mono_memory_barrier ();
+	return TRUE;
+}
+
+static void
+unlock_exclusive (void)
+{
+	mono_memory_barrier ();
+	SGEN_ASSERT (0, binary_protocol_use_count == -1, "Exclusively locked count must be -1");
+	if (InterlockedCompareExchange (&binary_protocol_use_count, 0, -1) != -1)
+		SGEN_ASSERT (0, FALSE, "Somebody messed with the exclusive lock");
+}
+
+static void
+lock_recursive (void)
+{
+	int old_count;
+	do {
+	retry:
+		old_count = binary_protocol_use_count;
+		if (old_count < 0) {
+			/* Exclusively locked - retry */
+			/* FIXME: short back-off */
+			goto retry;
+		}
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
+	mono_memory_barrier ();
+}
+
+static void
+unlock_recursive (void)
+{
+	int old_count;
+	mono_memory_barrier ();
+	do {
+		old_count = binary_protocol_use_count;
+		SGEN_ASSERT (0, old_count > 0, "Locked use count must be at least 1");
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
 }
 
 static void
@@ -78,11 +126,14 @@ binary_protocol_flush_buffers (gboolean force)
 	if (!binary_protocol_file)
 		return;
 
-	if (!force && binary_protocol_use_count != 0)
+	if (!force && !try_lock_exclusive ())
 		return;
 
 	binary_protocol_flush_buffers_rec (binary_protocol_buffers);
 	binary_protocol_buffers = NULL;
+
+	if (!force)
+		unlock_exclusive ();
 
 	fflush (binary_protocol_file);
 }
@@ -115,15 +166,11 @@ protocol_entry (unsigned char type, gpointer data, int size)
 {
 	int index;
 	BinaryProtocolBuffer *buffer;
-	int old_count;
 
 	if (!binary_protocol_file)
 		return;
 
-	do {
-		old_count = binary_protocol_use_count;
-		g_assert (old_count >= 0);
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
+	lock_recursive ();
 
  retry:
 	buffer = binary_protocol_get_buffer (size + 1);
@@ -144,10 +191,15 @@ protocol_entry (unsigned char type, gpointer data, int size)
 
 	g_assert (index <= BINARY_PROTOCOL_BUFFER_SIZE);
 
-	do {
-		old_count = binary_protocol_use_count;
-		g_assert (old_count > 0);
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
+	unlock_recursive ();
+}
+
+void
+binary_protocol_collection_force (int generation)
+{
+	SGenProtocolCollectionForce entry = { generation };
+	binary_protocol_flush_buffers (FALSE);
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_FORCE, &entry, sizeof (SGenProtocolCollectionForce));
 }
 
 void
