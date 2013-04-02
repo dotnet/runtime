@@ -2413,7 +2413,9 @@ static MonoInst*
 mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 							MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
+#ifndef DISABLE_REMOTING
 	gboolean might_be_remote = FALSE;
+#endif
 	gboolean virtual = this != NULL;
 	gboolean enable_for_aot = TRUE;
 	int context_used;
@@ -9325,7 +9327,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDSFLDA:
 		case CEE_STSFLD: {
 			MonoClassField *field;
+#ifndef DISABLE_REMOTING
 			int costs;
+#endif
 			guint foffset;
 			gboolean is_instance;
 			int op;

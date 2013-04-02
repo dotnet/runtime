@@ -585,11 +585,13 @@ mono_array_to_savearray (MonoArray *array)
 gpointer
 mono_array_to_lparray (MonoArray *array)
 {
+#ifndef DISABLE_COM
 	gpointer *nativeArray = NULL;
 	int nativeArraySize = 0;
 
 	int i = 0;
 	MonoClass *klass;
+#endif
 
 	if (!array)
 		return NULL;
@@ -9766,7 +9768,10 @@ mono_marshal_get_isinst (MonoClass *klass)
 	static MonoMethodSignature *isint_sig = NULL;
 	GHashTable *cache;
 	MonoMethod *res;
-	int pos_was_ok, pos_failed, pos_end, pos_end2;
+	int pos_was_ok, pos_end;
+#ifndef DISABLE_REMOTING
+	int pos_end2, pos_failed;
+#endif
 	char *name;
 	MonoMethodBuilder *mb;
 
@@ -9869,7 +9874,9 @@ mono_marshal_get_castclass (MonoClass *klass)
 	static MonoMethodSignature *castclass_sig = NULL;
 	GHashTable *cache;
 	MonoMethod *res;
+#ifndef DISABLE_REMOTING
 	int pos_was_ok, pos_was_ok2;
+#endif
 	char *name;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
