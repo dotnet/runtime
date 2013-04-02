@@ -151,6 +151,14 @@ protocol_entry (unsigned char type, gpointer data, int size)
 }
 
 void
+binary_protocol_collection_force (int generation)
+{
+	SGenProtocolCollectionForce entry = { generation };
+	binary_protocol_flush_buffers (FALSE);
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_FORCE, &entry, sizeof (SGenProtocolCollectionForce));
+}
+
+void
 binary_protocol_collection_begin (int index, int generation)
 {
 	SGenProtocolCollection entry = { index, generation };
