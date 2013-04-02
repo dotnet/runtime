@@ -975,7 +975,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		
 		if (startup_pipe [0] != -1) {
 			/* Wait until the parent has updated it's internal data */
-			read (startup_pipe [0], &dummy, 1);
+			ssize_t _i G_GNUC_UNUSED = read (startup_pipe [0], &dummy, 1);
 			DEBUG ("%s: child: parent has completed its setup", __func__);
 			close (startup_pipe [0]);
 			close (startup_pipe [1]);
@@ -1078,7 +1078,7 @@ cleanup:
 
 	if (startup_pipe [1] != -1) {
 		/* Write 1 byte, doesn't matter what */
-		write (startup_pipe [1], startup_pipe, 1);
+		ssize_t _i G_GNUC_UNUSED = write (startup_pipe [1], startup_pipe, 1);
 		close (startup_pipe [0]);
 		close (startup_pipe [1]);
 	}
