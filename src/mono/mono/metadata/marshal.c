@@ -601,14 +601,12 @@ mono_array_to_lparray (MonoArray *array)
 	case MONO_TYPE_VOID:
 		g_assert_not_reached ();
 		break;
-#ifndef DISABLE_COM
 	case MONO_TYPE_CLASS:
 		nativeArraySize = array->max_length;
 		nativeArray = malloc(sizeof(gpointer) * nativeArraySize);
 		for(i = 0; i < nativeArraySize; ++i) 	
 			nativeArray[i] = ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal(((gpointer*)array->vector)[i]);
 		return nativeArray;
-#endif
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
