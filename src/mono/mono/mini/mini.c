@@ -3394,7 +3394,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_TLS_ID: {
-		target = (gpointer)mono_jit_tls_id;
+		target = (gpointer) (size_t) mono_jit_tls_id;
 		break;
 	}
 	default:

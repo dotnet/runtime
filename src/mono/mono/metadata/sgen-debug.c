@@ -418,7 +418,7 @@ FIXME Flag missing remsets due to pinning as non fatal
 static void
 verify_object_pointers_callback (char *start, size_t size, void *data)
 {
-	gboolean allow_missing_pinned = (gboolean)data;
+	gboolean allow_missing_pinned = (gboolean) (size_t) data;
 
 #include "sgen-scan-object.h"
 }
@@ -434,9 +434,9 @@ sgen_check_whole_heap (gboolean allow_missing_pinned)
 	setup_valid_nursery_objects ();
 
 	broken_heap = FALSE;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*)allow_missing_pinned, FALSE);
-	major_collector.iterate_objects (TRUE, TRUE, verify_object_pointers_callback, (void*)allow_missing_pinned);
-	sgen_los_iterate_objects (verify_object_pointers_callback, (void*)allow_missing_pinned);
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE);
+	major_collector.iterate_objects (TRUE, TRUE, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
+	sgen_los_iterate_objects (verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 
 	g_assert (!broken_heap);
 }
@@ -541,7 +541,7 @@ find_pinning_reference (char *obj, size_t size)
 static void
 check_marked_callback (char *start, size_t size, void *dummy)
 {
-	gboolean is_los = (gboolean)dummy;
+	gboolean is_los = (gboolean) (size_t) dummy;
 
 	if (is_los) {
 		if (!sgen_los_object_is_pinned (start))
@@ -566,7 +566,7 @@ sgen_check_major_heap_marked (void)
 static void
 check_nursery_objects_pinned_callback (char *obj, size_t size, void *data /* ScanCopyContext *ctx */)
 {
-	gboolean pinned = (gboolean)data;
+	gboolean pinned = (gboolean) (size_t) data;
 
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
 	if (pinned)
@@ -580,7 +580,7 @@ sgen_check_nursery_objects_pinned (gboolean pinned)
 {
 	sgen_clear_nursery_fragments ();
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*)pinned /* (void*)&ctx */, FALSE);
+			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE);
 }
 
 #endif /*HAVE_SGEN_GC*/
