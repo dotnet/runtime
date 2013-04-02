@@ -181,7 +181,7 @@ sgen_free_internal (void *addr, int type)
 	mono_lock_free_free (addr);
 
 	if (MONO_GC_INTERNAL_DEALLOC_ENABLED ()) {
-		int size = allocator_sizes [index];
+		int size G_GNUC_UNUSED = allocator_sizes [index];
 		MONO_GC_INTERNAL_DEALLOC ((mword)addr, size, type);
 	}
 }
