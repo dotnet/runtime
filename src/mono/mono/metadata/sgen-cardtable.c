@@ -47,6 +47,7 @@
 
 guint8 *sgen_cardtable;
 
+static gboolean need_mod_union;
 
 #ifdef HEAVY_STATISTICS
 long long marked_cards;
@@ -82,7 +83,7 @@ static void
 sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	*(void**)field_ptr = value;
-	if (sgen_ptr_in_nursery (value))
+	if (need_mod_union || sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)field_ptr);
 	sgen_dummy_use (value);
 }
@@ -91,7 +92,7 @@ static void
 sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	*(void**)slot_ptr = value;
-	if (sgen_ptr_in_nursery (value))
+	if (need_mod_union || sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)slot_ptr);
 	sgen_dummy_use (value);	
 }
@@ -111,7 +112,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 		for (; dest >= start; --src, --dest) {
 			gpointer value = *src;
 			*dest = value;
-			if (sgen_ptr_in_nursery (value))
+			if (need_mod_union || sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
 		}
@@ -120,7 +121,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 		for (; dest < end; ++src, ++dest) {
 			gpointer value = *src;
 			*dest = value;
-			if (sgen_ptr_in_nursery (value))
+			if (need_mod_union || sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
 		}
@@ -718,6 +719,8 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 
 	remset->find_address = sgen_card_table_find_address;
 	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;
+
+	need_mod_union = sgen_get_major_collector ()->is_concurrent;
 }
 
 #else
