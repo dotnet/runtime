@@ -2368,7 +2368,7 @@ update_cardtable_mod_union (void)
 			init = TRUE;
 		}
 
-		cards = sgen_card_table_get_card_scan_address ((mword)block->block);
+		cards = sgen_card_table_get_card_address ((mword)block->block);
 		if (init) {
 			memcpy (block->cardtable_mod_union, cards, CARDS_PER_BLOCK);
 		} else {
