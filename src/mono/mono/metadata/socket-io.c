@@ -2045,6 +2045,8 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 #endif /* AF_INET6 */
 #endif
 
+#if defined(__APPLE__)
+
 #if defined(HAVE_GETIFADDRS) && defined(HAVE_IF_NAMETOINDEX)
 static int
 get_local_interface_id (int family)
@@ -2080,6 +2082,8 @@ get_local_interface_id (int family)
 	return 0;
 }
 #endif
+
+#endif /* __APPLE__ */
 
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
