@@ -2359,23 +2359,12 @@ update_cardtable_mod_union (void)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		guint8 *cards;
-		gboolean init = FALSE;
+		size_t num_cards;
 
-		if (!block->cardtable_mod_union) {
-			block->cardtable_mod_union = sgen_alloc_internal_dynamic (CARDS_PER_BLOCK,
-					INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
-			init = TRUE;
-		}
+		block->cardtable_mod_union = sgen_card_table_update_mod_union (block->cardtable_mod_union,
+				block->block, MS_BLOCK_SIZE, &num_cards);
 
-		cards = sgen_card_table_get_card_address ((mword)block->block);
-		if (init) {
-			memcpy (block->cardtable_mod_union, cards, CARDS_PER_BLOCK);
-		} else {
-			int i;
-			for (i = 0; i < CARDS_PER_BLOCK; ++i)
-				block->cardtable_mod_union [i] |= cards [i];
-		}
+		SGEN_ASSERT (0, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
 	} END_FOREACH_BLOCK;
 }
 

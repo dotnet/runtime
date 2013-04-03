@@ -553,8 +553,10 @@ sgen_los_update_cardtable_mod_union (void)
 {
 	LOSObject *obj;
 
-	for (obj = los_object_list; obj; obj = obj->next)
-		obj->cardtable_mod_union = sgen_card_table_update_mod_union (obj->cardtable_mod_union, obj->data, obj->size);
+	for (obj = los_object_list; obj; obj = obj->next) {
+		obj->cardtable_mod_union = sgen_card_table_update_mod_union (obj->cardtable_mod_union,
+				obj->data, obj->size, NULL);
+	}
 }
 
 mword

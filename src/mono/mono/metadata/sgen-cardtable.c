@@ -306,7 +306,7 @@ alloc_mod_union (size_t num_cards)
 }
 
 guint8*
-sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size)
+sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards)
 {
 	guint8 *result = dest;
 	guint8 *start_card = sgen_card_table_get_card_address ((mword)obj);
@@ -340,6 +340,9 @@ sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size)
 	}
 
 	update_mod_union (dest, init, start_card, end_card);
+
+	if (out_num_cards)
+		*out_num_cards = num_cards;
 
 	return result;
 }
