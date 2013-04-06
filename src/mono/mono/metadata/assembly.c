@@ -56,6 +56,7 @@ typedef struct  {
 static const char*
 default_path [] = {
 	NULL,
+	NULL,
 	NULL
 };
 
@@ -2782,7 +2783,10 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	}
 	corlib = load_in_path (corlib_file, default_path, status, FALSE);
 	g_free (corlib_file);
-
+	
+	if (corlib && !strcmp (runtime->framework_version, "4.5"))
+		default_path [1] = g_strdup_printf ("%s/mono/4.5/Facades", default_path [0]);
+		
 	return corlib;
 }
 
