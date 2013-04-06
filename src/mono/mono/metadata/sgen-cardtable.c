@@ -784,24 +784,4 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	need_mod_union = sgen_get_major_collector ()->is_concurrent;
 }
 
-#else
-
-void
-sgen_card_table_mark_address (mword address)
-{
-	g_assert_not_reached ();
-}
-
-void
-sgen_card_table_mark_range (mword address, mword size)
-{
-	g_assert_not_reached ();
-}
-
-guint8*
-mono_gc_get_card_table (int *shift_bits, gpointer *mask)
-{
-	return NULL;
-}
-
 #endif /*HAVE_SGEN_GC*/
