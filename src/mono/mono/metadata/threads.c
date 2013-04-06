@@ -816,9 +816,21 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
 	return;
 	/* FIXME: simplify the mess below */
-#elif !defined(HOST_WIN32)
+#elif defined(HOST_WIN32)
+	/* http://en.wikipedia.org/wiki/Win32_Thread_Information_Block */
+	void* tib = (void*)__readfsdword(0x18);
+	guint8 *stackTop = (guint8*)*(int*)((char*)tib + 4);
+	guint8 *stackBottom = (guint8*)*(int*)((char*)tib + 8);
+
+	*staddr = stackBottom;
+	*stsize = stackTop - stackBottom;
+	return;
+#else
 	pthread_attr_t attr;
 	guint8 *current = (guint8*)&attr;
+
+	*staddr = NULL;
+	*stsize = (size_t)-1;
 
 	pthread_attr_init (&attr);
 #  ifdef HAVE_PTHREAD_GETATTR_NP
@@ -854,9 +866,6 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #  endif
 
 	pthread_attr_destroy (&attr);
-#else
-	*staddr = NULL;
-	*stsize = (size_t)-1;
 #endif
 
 	/* When running under emacs, sometimes staddr is not aligned to a page size */
