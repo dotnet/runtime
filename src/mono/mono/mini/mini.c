@@ -54,6 +54,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-path.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/dtrace.h>
 
