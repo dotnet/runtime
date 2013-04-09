@@ -608,14 +608,20 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper terminating", __func__, GetCurrentThreadId ()));
 
-	thread_cleanup (internal);
-
 	/* Do any cleanup needed for apartment state. This
 	 * cannot be done in thread_cleanup since thread_cleanup could be 
 	 * called for a thread other than the current thread.
 	 * mono_thread_cleanup_apartment_state cleans up apartment
 	 * for the current thead */
 	mono_thread_cleanup_apartment_state ();
+
+	/*
+	 * This will signal async signal handlers that the thread has exited.
+	 */
+	mono_domain_unset ();
+	mono_memory_barrier ();
+
+	thread_cleanup (internal);
 
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
@@ -626,7 +632,6 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
-	mono_domain_unset ();
 
 	return(0);
 }
