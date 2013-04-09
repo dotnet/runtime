@@ -263,20 +263,14 @@ mono_gc_out_of_memory (size_t size)
 static void
 object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 {
-#if HAVE_BOEHM_GC
-	guint offset = 0;
 	MonoDomain *domain;
 
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_argument_null ("obj"));
-	
+
 	domain = obj->vtable->domain;
 
-#ifndef GC_DEBUG
-	/* This assertion is not valid when GC_DEBUG is defined */
-	g_assert (GC_base (obj) == (char*)obj - offset);
-#endif
-
+#if HAVE_BOEHM_GC
 	if (mono_domain_is_unloading (domain) && (callback != NULL))
 		/*
 		 * Can't register finalizers in a dying appdomain, since they
@@ -293,17 +287,14 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 
 	mono_domain_finalizers_unlock (domain);
 
-	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
+	mono_gc_register_for_finalization (obj, callback);
 #elif defined(HAVE_SGEN_GC)
-	if (obj == NULL)
-		mono_raise_exception (mono_get_exception_argument_null ("obj"));
-
 	/*
 	 * If we register finalizers for domains that are unloading we might
 	 * end up running them while or after the domain is being cleared, so
 	 * the objects will not be valid anymore.
 	 */
-	if (!mono_domain_is_unloading (obj->vtable->domain))
+	if (!mono_domain_is_unloading (domain))
 		mono_gc_register_for_finalization (obj, callback);
 #endif
 }

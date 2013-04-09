@@ -1145,6 +1145,19 @@ void mono_gc_set_skip_thread (gboolean value)
 {
 }
 
+void
+mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+{
+	guint offset = 0;
+
+#ifndef GC_DEBUG
+	/* This assertion is not valid when GC_DEBUG is defined */
+	g_assert (GC_base (obj) == (char*)obj - offset);
+#endif
+
+	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, user_data, GUINT_TO_POINTER (offset), NULL, NULL);
+}
+
 /*
  * These will call the redefined versions in libgc.
  */
