@@ -798,6 +798,18 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	mono_thread_create_internal (domain, func, arg, FALSE, FALSE, 0);
 }
 
+#if defined(HOST_WIN32) && defined(__GNUC__)
+static __inline__ __attribute__((always_inline))
+/* This is not defined by gcc */
+unsigned long long
+__readfsdword (unsigned long long offset)
+{
+	unsigned long long value;
+	__asm__("movl %%fs:%a[offset], %k[value]" : [value] "=q" (value) : [offset] "irm" (offset));
+	return value;
+}
+#endif
+
 /*
  * mono_thread_get_stack_bounds:
  *
