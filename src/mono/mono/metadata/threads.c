@@ -399,6 +399,15 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	mono_profiler_thread_end (thread->tid);
 
+	if (thread == mono_thread_internal_current ()) {
+		/*
+		 * This will signal async signal handlers that the thread has exited.
+		 * The profiler callback needs this to be set, so it cannot be done earlier.
+		 */
+		mono_domain_unset ();
+		mono_memory_barrier ();
+	}
+
 	if (thread == mono_thread_internal_current ())
 		mono_thread_pop_appdomain_ref ();
 
@@ -614,12 +623,6 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	 * mono_thread_cleanup_apartment_state cleans up apartment
 	 * for the current thead */
 	mono_thread_cleanup_apartment_state ();
-
-	/*
-	 * This will signal async signal handlers that the thread has exited.
-	 */
-	mono_domain_unset ();
-	mono_memory_barrier ();
 
 	thread_cleanup (internal);
 
