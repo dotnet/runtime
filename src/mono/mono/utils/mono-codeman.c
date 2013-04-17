@@ -91,7 +91,7 @@ struct _MonoCodeManager {
 	CodeChunk *current;
 	CodeChunk *full;
 #if defined(__native_client_codegen__) && defined(__native_client__)
-	MonoGHashTable *hash;
+	GHashTable *hash;
 #endif
 };
 
@@ -228,14 +228,16 @@ mono_code_manager_new (void)
 	if (next_dynamic_code_addr == NULL) {
 		const guint kPageMask = 0xFFFF; /* 64K pages */
 		next_dynamic_code_addr = (uintptr_t)(etext + kPageMask) & ~kPageMask;
+#if defined (__GLIBC__)
+		/* TODO: For now, just jump 64MB ahead to avoid dynamic libraries. */
+		next_dynamic_code_addr += (uintptr_t)0x4000000;
+#else
 		/* Workaround bug in service runtime, unable to allocate */
 		/* from the first page in the dynamic code section.    */
-		/* TODO: remove */
 		next_dynamic_code_addr += (uintptr_t)0x10000;
+#endif
 	}
-	cman->hash =  mono_g_hash_table_new (NULL, NULL);
-	/* Keep the hash table from being collected */
-	mono_gc_register_root (&cman->hash, sizeof (void*), NULL);
+	cman->hash =  g_hash_table_new (NULL, NULL);
 	if (patch_source_base == NULL) {
 		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
 		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
@@ -546,7 +548,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	/* Allocate code space from the service runtime */
 	code_ptr = allocate_code (size);
 	/* Insert pointer to code space in hash, keyed by buffer ptr */
-	mono_g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
+	g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
 
 	nacl_jit_check_init ();
 
@@ -598,7 +600,7 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 	unsigned char *code;
 	int status;
 	g_assert (newsize <= size);
-	code = mono_g_hash_table_lookup (cman->hash, data);
+	code = g_hash_table_lookup (cman->hash, data);
 	g_assert (code != NULL);
 	/* Pad space after code with HLTs */
 	/* TODO: this is x86/amd64 specific */
@@ -608,9 +610,15 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 	}
 	status = nacl_dyncode_create (code, data, newsize);
 	if (status != 0) {
+		unsigned char *codep;
+		fprintf(stderr, "Error creating Native Client dynamic code section attempted to be\n"
+		                "emitted at %p (hex dissasembly of code follows):\n", code);
+		for (codep = data; codep < data + newsize; codep++)
+			fprintf(stderr, "%02x ", *codep);
+		fprintf(stderr, "\n");
 		g_assert_not_reached ();
 	}
-	mono_g_hash_table_remove (cman->hash, data);
+	g_hash_table_remove (cman->hash, data);
 	g_assert (data == patch_source_base[patch_current_depth]);
 	g_assert (code == patch_dest_base[patch_current_depth]);
 	patch_current_depth--;
@@ -623,7 +631,7 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 void *
 nacl_code_manager_get_code_dest (MonoCodeManager *cman, void *data)
 {
-	return mono_g_hash_table_lookup (cman->hash, data);
+	return g_hash_table_lookup (cman->hash, data);
 }
 #endif
 

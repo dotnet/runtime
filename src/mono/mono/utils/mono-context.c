@@ -252,6 +252,8 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
+#elif defined(__native_client__)
+	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;
 
@@ -269,6 +271,8 @@ void
 mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
 #ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif defined(__native_client__)
 	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = ctx;

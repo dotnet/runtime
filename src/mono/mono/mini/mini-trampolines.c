@@ -1680,7 +1680,9 @@ static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
 	"aot_plt",
 	"delegate",
 	"restore_stack_prot",
+#ifndef DISABLE_REMOTING
 	"generic_virtual_remoting",
+#endif
 	"monitor_enter",
 	"monitor_exit",
 	"vcall",

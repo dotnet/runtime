@@ -60,4 +60,10 @@ MonoSecurityFrame* mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *j
 
 guint32 mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee) MONO_INTERNAL;
 
+#ifndef DISABLE_SECURITY
+#define mono_security_method_has_declsec(method) (mono_method_has_declsec(method))
+#else
+#define mono_security_method_has_declsec(method) (FALSE)
+#endif
+
 #endif /* _MONO_MINI_DECLSEC_H_ */

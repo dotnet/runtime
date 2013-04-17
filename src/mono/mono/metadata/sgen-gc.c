@@ -263,6 +263,8 @@ guint32 collect_before_allocs = 0;
 static gboolean whole_heap_check_before_collection = FALSE;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
+/* If set, do a mod union consistency check before each finishing collection pause */
+static gboolean mod_union_consistency_check = FALSE;
 /* If set, check whether mark bits are consistent after major collections */
 static gboolean check_mark_bits_after_major_collection = FALSE;
 /* If set, check that all nursery objects are pinned/not pinned, depending on context */
@@ -3315,6 +3317,9 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 		return FALSE;
 	}
 
+	if (mod_union_consistency_check)
+		sgen_check_mod_union_consistency ();
+
 	collect_nursery (&unpin_queue, TRUE);
 
 	current_collection_generation = GENERATION_OLD;
@@ -3387,6 +3392,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	const char *overflow_reason = NULL;
 
 	MONO_GC_REQUESTED (generation_to_collect, requested_size, wait_to_finish ? 1 : 0);
+	if (wait_to_finish)
+		binary_protocol_collection_force (generation_to_collect);
 
 	g_assert (generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD);
 
@@ -5169,6 +5176,12 @@ mono_gc_base_init (void)
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
 				nursery_clear_policy = CLEAR_AT_GC;
+			} else if (!strcmp (opt, "mod-union-consistency-check")) {
+				if (!major_collector.is_concurrent) {
+					sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "`mod-union-consistency-check` only works with concurrent major collector.");
+					continue;
+				}
+				mod_union_consistency_check = TRUE;
 			} else if (!strcmp (opt, "check-mark-bits")) {
 				check_mark_bits_after_major_collection = TRUE;
 			} else if (!strcmp (opt, "check-nursery-pinned")) {

@@ -47,6 +47,7 @@
 
 guint8 *sgen_cardtable;
 
+static gboolean need_mod_union;
 
 #ifdef HEAVY_STATISTICS
 long long marked_cards;
@@ -82,7 +83,7 @@ static void
 sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	*(void**)field_ptr = value;
-	if (sgen_ptr_in_nursery (value))
+	if (need_mod_union || sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)field_ptr);
 	sgen_dummy_use (value);
 }
@@ -91,7 +92,7 @@ static void
 sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	*(void**)slot_ptr = value;
-	if (sgen_ptr_in_nursery (value))
+	if (need_mod_union || sgen_ptr_in_nursery (value))
 		sgen_card_table_mark_address ((mword)slot_ptr);
 	sgen_dummy_use (value);	
 }
@@ -111,7 +112,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 		for (; dest >= start; --src, --dest) {
 			gpointer value = *src;
 			*dest = value;
-			if (sgen_ptr_in_nursery (value))
+			if (need_mod_union || sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
 		}
@@ -120,7 +121,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 		for (; dest < end; ++src, ++dest) {
 			gpointer value = *src;
 			*dest = value;
-			if (sgen_ptr_in_nursery (value))
+			if (need_mod_union || sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
 		}
@@ -276,6 +277,74 @@ static gboolean
 sgen_card_table_find_address (char *addr)
 {
 	return sgen_card_table_address_is_marked ((mword)addr);
+}
+
+static gboolean
+sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char *addr)
+{
+	cards_start = sgen_card_table_align_pointer (cards_start);
+	return cards [(addr - cards_start) >> CARD_BITS];
+}
+
+static void
+update_mod_union (guint8 *dest, gboolean init, guint8 *start_card, guint8 *end_card)
+{
+	size_t num_cards = end_card - start_card;
+	if (init) {
+		memcpy (dest, start_card, num_cards);
+	} else {
+		int i;
+		for (i = 0; i < num_cards; ++i)
+			dest [i] |= start_card [i];
+	}
+}
+
+static guint8*
+alloc_mod_union (size_t num_cards)
+{
+	return sgen_alloc_internal_dynamic (num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
+}
+
+guint8*
+sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards)
+{
+	guint8 *result = dest;
+	guint8 *start_card = sgen_card_table_get_card_address ((mword)obj);
+	guint8 *end_card = sgen_card_table_get_card_address ((mword)obj + obj_size - 1) + 1;
+	gboolean init = dest == NULL;
+	size_t num_cards;
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	if (end_card < start_card) {
+		guint8 *edge_card = sgen_cardtable + CARD_COUNT_IN_BYTES;
+		size_t num_cards_to_edge = edge_card - start_card;
+
+		num_cards = (end_card + CARD_COUNT_IN_BYTES) - start_card;
+		if (init) {
+			result = dest = alloc_mod_union (num_cards);
+			//g_print ("%d cards for %d bytes: %p\n", num_cards, num_bytes, dest);
+		}
+
+		update_mod_union (dest, init, start_card, edge_card);
+
+		SGEN_ASSERT (0, num_cards == (edge_card - start_card) + (end_card - sgen_cardtable), "wrong number of cards");
+
+		dest += num_cards_to_edge;
+		start_card = sgen_cardtable;
+	} else
+#endif
+	{
+		num_cards = end_card - start_card;
+		if (init)
+			result = dest = alloc_mod_union (num_cards);
+	}
+
+	update_mod_union (dest, init, start_card, end_card);
+
+	if (out_num_cards)
+		*out_num_cards = num_cards;
+
+	return result;
 }
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -710,26 +779,9 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	remset->prepare_for_major_collection = sgen_card_table_prepare_for_major_collection;
 
 	remset->find_address = sgen_card_table_find_address;
-}
+	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;
 
-#else
-
-void
-sgen_card_table_mark_address (mword address)
-{
-	g_assert_not_reached ();
-}
-
-void
-sgen_card_table_mark_range (mword address, mword size)
-{
-	g_assert_not_reached ();
-}
-
-guint8*
-mono_gc_get_card_table (int *shift_bits, gpointer *mask)
-{
-	return NULL;
+	need_mod_union = sgen_get_major_collector ()->is_concurrent;
 }
 
 #endif /*HAVE_SGEN_GC*/

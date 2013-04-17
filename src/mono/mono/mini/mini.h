@@ -39,6 +39,11 @@
 #include "mini-unwind.h"
 #include "jit.h"
 
+#ifdef __native_client_codegen__
+#include <nacl/nacl_dyncode.h>
+#endif
+
+
 /*
  * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
  * can be linked into both mono and mono-sgen.
@@ -1957,6 +1962,8 @@ extern const guint kNaClAlignmentMask;
 #endif
 
 #if defined(__native_client__) || defined(__native_client_codegen__)
+extern volatile int __nacl_thread_suspension_needed;
+extern void __nacl_suspend_thread_if_needed();
 void mono_nacl_gc();
 #endif
 

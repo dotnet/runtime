@@ -100,7 +100,17 @@ mono_runtime_cleanup_handlers (void)
 {
 }
 
+pid_t
+mono_runtime_syscall_fork (void)
+{
+	g_assert_not_reached();
+	return 0;
+}
 
+void
+mono_gdb_render_native_backtraces (pid_t crashed_pid)
+{
+}
 
 #else
 

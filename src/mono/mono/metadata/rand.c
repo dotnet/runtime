@@ -182,6 +182,8 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpoint
 
 #elif defined (__native_client__)
 
+#include <time.h>
+
 MonoBoolean
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (void)
 {

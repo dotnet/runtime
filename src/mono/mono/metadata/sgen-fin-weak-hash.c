@@ -447,9 +447,13 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 		suspended right in between setting the content to null and staging the unregister.
 
 		The rest of this code cannot handle null links as DISLINK_OBJECT (NULL) produces an invalid address.
+
+		We should simply skip the entry as the staged removal will take place during the next GC.
 		*/
-		if (!*link)
+		if (!*link) {
+			SGEN_LOG (5, "Dislink %p was externally nullified", link);
 			continue;
+		}
 
 		track = DISLINK_TRACK (link);
 		/*
@@ -463,6 +467,13 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 		 */
 		if (track != before_finalization) {
 			object = DISLINK_OBJECT (link);
+			/*
+			We should guard against a null object been hidden. This can sometimes happen.
+			*/
+			if (!object) {
+				SGEN_LOG (5, "Dislink %p with a hidden null object", link);
+				continue;
+			}
 
 			if (!major_collector.is_object_live (object)) {
 				if (sgen_gc_is_object_ready_for_finalization (object)) {

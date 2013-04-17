@@ -2359,24 +2359,20 @@ update_cardtable_mod_union (void)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		guint8 *cards;
-		gboolean init = FALSE;
+		size_t num_cards;
 
-		if (!block->cardtable_mod_union) {
-			block->cardtable_mod_union = sgen_alloc_internal_dynamic (CARDS_PER_BLOCK,
-					INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
-			init = TRUE;
-		}
+		block->cardtable_mod_union = sgen_card_table_update_mod_union (block->cardtable_mod_union,
+				block->block, MS_BLOCK_SIZE, &num_cards);
 
-		cards = sgen_card_table_get_card_scan_address ((mword)block->block);
-		if (init) {
-			memcpy (block->cardtable_mod_union, cards, CARDS_PER_BLOCK);
-		} else {
-			int i;
-			for (i = 0; i < CARDS_PER_BLOCK; ++i)
-				block->cardtable_mod_union [i] |= cards [i];
-		}
+		SGEN_ASSERT (0, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
 	} END_FOREACH_BLOCK;
+}
+
+static guint8*
+major_get_cardtable_mod_union_for_object (char *obj)
+{
+	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
+	return &block->cardtable_mod_union [(obj - (char*)sgen_card_table_align_pointer (block->block)) >> CARD_BITS];
 }
 #endif
 
@@ -2555,8 +2551,10 @@ sgen_marksweep_fixed_init (SgenMajorCollector *collector)
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
-	if (is_concurrent)
+	if (is_concurrent) {
 		collector->update_cardtable_mod_union = update_cardtable_mod_union;
+		collector->get_cardtable_mod_union_for_object = major_get_cardtable_mod_union_for_object;
+	}
 #endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;

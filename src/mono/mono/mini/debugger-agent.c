@@ -4038,11 +4038,13 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 
 		if (error) {
 			mono_error_set_error (error, MONO_ERROR_GENERIC, "%s", s);
+			g_warning ("%s", s);
 			g_free (s);
 			return;
 		} else {
-			g_error ("%s", s);
+			g_warning ("%s", s);
 			g_free (s);
+			return;
 		}
 	}
 

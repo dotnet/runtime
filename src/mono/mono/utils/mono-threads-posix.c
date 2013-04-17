@@ -169,6 +169,9 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 		errno = old_errno;
 	}
 	return result;
+#elif defined(__native_client__)
+	/* Workaround pthread_kill abort() in NaCl glibc. */
+	return 0;
 #else
 	return pthread_kill (mono_thread_info_get_tid (info), signum);
 #endif

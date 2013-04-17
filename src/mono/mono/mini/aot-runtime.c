@@ -1519,7 +1519,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (assembly->image->dynamic || assembly->ref_only)
 		return;
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
+	if (mono_security_cas_enabled ())
 		return;
 
 	mono_aot_lock ();
@@ -1840,7 +1840,9 @@ mono_aot_init (void)
 	InitializeCriticalSection (&aot_page_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
 
+#ifndef __native_client__
 	mono_install_assembly_load_hook (load_aot_module, NULL);
+#endif
 
 	if (g_getenv ("MONO_LASTAOT"))
 		mono_last_aot_method = atoi (g_getenv ("MONO_LASTAOT"));

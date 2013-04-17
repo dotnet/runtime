@@ -306,7 +306,7 @@ sgen_cement_lookup_or_register (char *obj)
 	++hash [i].count;
 	if (hash [i].count == SGEN_CEMENT_THRESHOLD) {
 		if (G_UNLIKELY (MONO_GC_OBJ_CEMENTED_ENABLED())) {
-			MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+			MonoVTable *vt G_GNUC_UNUSED = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 			MONO_GC_OBJ_CEMENTED ((mword)obj, sgen_safe_object_get_size ((MonoObject*)obj),
 					vt->klass->name_space, vt->klass->name);
 		}

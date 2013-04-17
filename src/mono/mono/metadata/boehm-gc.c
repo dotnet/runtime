@@ -74,7 +74,7 @@ mono_gc_base_init (void)
 	 * we used to do this only when running on valgrind,
 	 * but it happens also in other setups.
 	 */
-#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
+#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK) && !defined(__native_client__)
 	{
 		size_t size;
 		void *sstart;
@@ -923,7 +923,7 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (!SMALL_ENOUGH (klass->instance_size))
 		return NULL;
-	if (mono_class_has_finalizer (klass) || klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return NULL;
 	if (klass->rank)
 		return NULL;
@@ -1143,6 +1143,19 @@ mono_gc_set_stack_end (void *stack_end)
 
 void mono_gc_set_skip_thread (gboolean value)
 {
+}
+
+void
+mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+{
+	guint offset = 0;
+
+#ifndef GC_DEBUG
+	/* This assertion is not valid when GC_DEBUG is defined */
+	g_assert (GC_base (obj) == (char*)obj - offset);
+#endif
+
+	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, user_data, GUINT_TO_POINTER (offset), NULL, NULL);
 }
 
 /*

@@ -399,6 +399,15 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	mono_profiler_thread_end (thread->tid);
 
+	if (thread == mono_thread_internal_current ()) {
+		/*
+		 * This will signal async signal handlers that the thread has exited.
+		 * The profiler callback needs this to be set, so it cannot be done earlier.
+		 */
+		mono_domain_unset ();
+		mono_memory_barrier ();
+	}
+
 	if (thread == mono_thread_internal_current ())
 		mono_thread_pop_appdomain_ref ();
 
@@ -608,14 +617,14 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper terminating", __func__, GetCurrentThreadId ()));
 
-	thread_cleanup (internal);
-
 	/* Do any cleanup needed for apartment state. This
 	 * cannot be done in thread_cleanup since thread_cleanup could be 
 	 * called for a thread other than the current thread.
 	 * mono_thread_cleanup_apartment_state cleans up apartment
 	 * for the current thead */
 	mono_thread_cleanup_apartment_state ();
+
+	thread_cleanup (internal);
 
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
@@ -626,7 +635,6 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
-	mono_domain_unset ();
 
 	return(0);
 }
@@ -798,6 +806,18 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	mono_thread_create_internal (domain, func, arg, FALSE, FALSE, 0);
 }
 
+#if defined(HOST_WIN32) && defined(__GNUC__) && defined(TARGET_X86)
+static __inline__ __attribute__((always_inline))
+/* This is not defined by gcc */
+unsigned long long
+__readfsdword (unsigned long long offset)
+{
+	unsigned long long value;
+	__asm__("movl %%fs:%a[offset], %k[value]" : [value] "=q" (value) : [offset] "irm" (offset));
+	return value;
+}
+#endif
+
 /*
  * mono_thread_get_stack_bounds:
  *
@@ -816,9 +836,26 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
 	return;
 	/* FIXME: simplify the mess below */
-#elif !defined(HOST_WIN32)
+#elif defined(HOST_WIN32)
+#ifdef TARGET_X86
+	/* http://en.wikipedia.org/wiki/Win32_Thread_Information_Block */
+	void* tib = (void*)__readfsdword(0x18);
+	guint8 *stackTop = (guint8*)*(int*)((char*)tib + 4);
+	guint8 *stackBottom = (guint8*)*(int*)((char*)tib + 8);
+
+	*staddr = stackBottom;
+	*stsize = stackTop - stackBottom;
+#else
+	*staddr = NULL;
+	*stsize = (size_t)-1;
+#endif
+	return;
+#else
 	pthread_attr_t attr;
 	guint8 *current = (guint8*)&attr;
+
+	*staddr = NULL;
+	*stsize = (size_t)-1;
 
 	pthread_attr_init (&attr);
 #  ifdef HAVE_PTHREAD_GETATTR_NP
@@ -854,9 +891,6 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #  endif
 
 	pthread_attr_destroy (&attr);
-#else
-	*staddr = NULL;
-	*stsize = (size_t)-1;
 #endif
 
 	/* When running under emacs, sometimes staddr is not aligned to a page size */
@@ -3466,6 +3500,10 @@ collect_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 gboolean
 mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 {
+#ifdef __native_client__
+	return FALSE;
+#endif
+
 	abort_appdomain_data user_data;
 	guint32 start_time;
 	int orig_timeout = timeout;
@@ -4441,6 +4479,10 @@ mono_runtime_has_tls_get (void)
 int
 mono_thread_kill (MonoInternalThread *thread, int signal)
 {
+#ifdef __native_client__
+	/* Workaround pthread_kill abort() in NaCl glibc. */
+	return -1;
+#endif
 #ifdef HOST_WIN32
 	/* Win32 uses QueueUserAPC and callers of this are guarded */
 	g_assert_not_reached ();
