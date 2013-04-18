@@ -2551,11 +2551,6 @@ mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType ty
 
 #endif /* DISABLE_JIT */
 
-void
-mini_gc_enable_gc_maps_for_aot (void)
-{
-}
-
 #endif
 
 #ifndef DISABLE_JIT
