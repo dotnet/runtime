@@ -4434,12 +4434,15 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 
 handle_enum:
 	switch (t->type) {
+		/* Can't share these as the argument needs to be loaded using sign/zero extension */
+		/*
 	case MONO_TYPE_U1:
 		return &mono_defaults.sbyte_class->byval_arg;
 	case MONO_TYPE_U2:
 		return &mono_defaults.int16_class->byval_arg;
 	case MONO_TYPE_U4:
 		return &mono_defaults.int32_class->byval_arg;
+		*/
 	case MONO_TYPE_U8:
 		return &mono_defaults.int64_class->byval_arg;
 	case MONO_TYPE_BOOLEAN:

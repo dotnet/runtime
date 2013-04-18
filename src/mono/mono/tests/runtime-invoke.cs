@@ -178,4 +178,23 @@ class Tests
 		//Console.WriteLine (new IntPtr (val));
         return val;
     }
+
+	public static bool pack_u2 (ushort us) {
+		return true;
+	}
+
+	public static bool pack_i2 (short value) {
+		int c = 0;
+		// Force 'value' to be register allocated
+		for (int i = 0; i < value; ++i)
+			c += value;
+	  return value < 0x80;
+	}
+
+	// #11750
+	public static int test_0_i2_u2 () {
+		typeof (Tests).GetMethod ("pack_u2").Invoke (null, new object [] { (ushort)0 });
+		var res = typeof (Tests).GetMethod ("pack_i2").Invoke (null, new object [] { (short)-1 });
+		return (bool)res ? 0 : 1;
+	}
 }
