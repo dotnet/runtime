@@ -2002,11 +2002,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	sa.ss_sp = tls->signal_stack;
 	sa.ss_size = MONO_ARCH_SIGNAL_STACK_SIZE;
-#if __APPLE__
 	sa.ss_flags = 0;
-#else
-	sa.ss_flags = SS_ONSTACK;
-#endif
 	g_assert (sigaltstack (&sa, NULL) == 0);
 
 	mono_gc_register_altstack ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size, (char*)staddr + stsize - ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size), tls->signal_stack, tls->signal_stack_size);
