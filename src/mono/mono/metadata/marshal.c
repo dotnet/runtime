@@ -4446,9 +4446,9 @@ handle_enum:
 	case MONO_TYPE_U8:
 		return &mono_defaults.int64_class->byval_arg;
 	case MONO_TYPE_BOOLEAN:
-		return &mono_defaults.sbyte_class->byval_arg;
+		return &mono_defaults.byte_class->byval_arg;
 	case MONO_TYPE_CHAR:
-		return &mono_defaults.int16_class->byval_arg;
+		return &mono_defaults.uint16_class->byval_arg;
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
