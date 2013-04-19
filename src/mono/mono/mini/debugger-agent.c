@@ -6391,10 +6391,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_EXIT: {
 		MonoInternalThread *thread;
 		DebuggerTlsData *tls;
-		MonoClass *env_class;
 #ifdef TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
-		MonoMethod *exit_method = NULL;
+		MonoClass *env_class;
 #endif
+		MonoMethod *exit_method = NULL;
 		gpointer *args;
 		int exit_code;
 
