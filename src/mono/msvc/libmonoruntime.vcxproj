@@ -105,7 +105,6 @@
     <ClCompile Include="..\mono\metadata\sgen-os-mach.c" />
     <ClCompile Include="..\mono\metadata\sgen-os-posix.c" />
     <ClCompile Include="..\mono\metadata\sgen-os-win32.c" />
-    <ClCompile Include="..\mono\metadata\sgen-pinned-allocator.c" />
     <ClCompile Include="..\mono\metadata\sgen-pinning-stats.c" />
     <ClCompile Include="..\mono\metadata\sgen-pinning.c" />
     <ClCompile Include="..\mono\metadata\sgen-protocol.c" />
