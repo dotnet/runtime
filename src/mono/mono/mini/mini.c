@@ -6800,7 +6800,9 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
-	
+
+	mono_code_manager_init ();
+
 	mono_arch_cpu_init ();
 
 	mono_arch_init ();
@@ -7303,6 +7305,8 @@ mini_cleanup (MonoDomain *domain)
 	DeleteCriticalSection (&jit_mutex);
 
 	DeleteCriticalSection (&mono_delegate_section);
+
+	mono_code_manager_cleanup ();
 
 #ifdef USE_JUMP_TABLES
 	mono_jumptable_cleanup ();

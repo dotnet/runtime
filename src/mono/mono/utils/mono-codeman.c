@@ -203,6 +203,87 @@ nacl_inverse_modify_patch_target (unsigned char *target)
 
 #endif /* __native_client_codegen && __native_client__ */
 
+#define VALLOC_FREELIST_SIZE 16
+
+static CRITICAL_SECTION valloc_mutex;
+static GHashTable *valloc_freelists;
+
+static void*
+codechunk_valloc (guint32 size)
+{
+	void *ptr;
+	GSList *freelist;
+
+	if (!valloc_freelists) {
+		InitializeCriticalSection (&valloc_mutex);
+		valloc_freelists = g_hash_table_new (NULL, NULL);
+	}
+
+	/*
+	 * Keep a small freelist of memory blocks to decrease pressure on the kernel memory subsystem to avoid #3321.
+	 */
+	EnterCriticalSection (&valloc_mutex);
+	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
+	if (freelist) {
+		ptr = freelist->data;
+		memset (ptr, 0, size);
+		freelist = g_slist_remove_link (freelist, freelist);
+		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
+	} else {
+		ptr = mono_valloc (NULL, size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+	}
+	LeaveCriticalSection (&valloc_mutex);
+	return ptr;
+}
+
+static void
+codechunk_vfree (void *ptr, guint32 size)
+{
+	GSList *freelist;
+
+	EnterCriticalSection (&valloc_mutex);
+	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
+	if (!freelist || g_slist_length (freelist) < VALLOC_FREELIST_SIZE) {
+		freelist = g_slist_prepend (freelist, ptr);
+		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
+	} else {
+		mono_vfree (ptr, size);
+	}
+	LeaveCriticalSection (&valloc_mutex);
+}		
+
+static void
+codechunk_cleanup (void)
+{
+	GHashTableIter iter;
+	gpointer key, value;
+
+	if (!valloc_freelists)
+		return;
+	g_hash_table_iter_init (&iter, valloc_freelists);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		GSList *freelist = value;
+		GSList *l;
+
+		for (l = freelist; l; l = l->next) {
+			mono_vfree (l->data, GPOINTER_TO_UINT (key));
+		}
+		g_slist_free (freelist);
+	}
+	g_hash_table_destroy (valloc_freelists);
+}
+
+void
+mono_code_manager_init (void)
+{
+}
+
+void
+mono_code_manager_cleanup (void)
+{
+	codechunk_cleanup ();
+}
+
 /**
  * mono_code_manager_new:
  *
@@ -284,7 +365,7 @@ free_chunklist (CodeChunk *chunk)
 		mono_profiler_code_chunk_destroy ((gpointer) dead->data);
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
-			mono_vfree (dead->data, dead->size);
+			codechunk_vfree (dead->data, dead->size);
 			/* valgrind_unregister(dead->data); */
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
 			dlfree (dead->data);
@@ -429,7 +510,7 @@ new_codechunk (int dynamic, int size)
 		/* Allocate MIN_ALIGN-1 more than we need so we can still */
 		/* guarantee MIN_ALIGN alignment for individual allocs    */
 		/* from mono_code_manager_reserve_align.                  */
-		ptr = mono_valloc (NULL, chunk_size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		ptr = codechunk_valloc (chunk_size);
 		if (!ptr)
 			return NULL;
 	}
