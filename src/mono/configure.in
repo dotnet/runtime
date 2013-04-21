@@ -171,6 +171,8 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
 		libdl=
 		libgc_threads=pthreads
+		# This doesn't seem to work as of 7.0 on amd64
+		with_sigaltstack=no
 		use_sigposix=yes
 		;;
 	*-*-*openbsd*)
@@ -2974,46 +2976,80 @@ if test "x$with_tls" = "x__thread"; then
 	])
 fi
 
-if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_build != xno; then
+if test ${TARGET} = ARM; then
 	dnl ******************************************
 	dnl *** Check to see what FPU is available ***
 	dnl ******************************************
 	AC_MSG_CHECKING(which FPU to use)
 
+	#
+	# This is a bit tricky:
+	#
+	# if (__ARM_PCS_VFP) {
+	# 	/* mfloat-abi=hard == VFP with hard ABI */
+	# } elif (!__SOFTFP__) {
+	# 	/* mfloat-abi=softfp == VFP with soft ABI */
+	# } else {
+	# 	/* mfloat-abi=soft == no VFP */
+	# }
+	#
+	# The exception is iOS (w/ GCC) where none of the above
+	# are defined (but iOS always uses the 'softfp' ABI).
+	#
+	# No support for FPA.
+	#
+
 	fpu=NONE
-	if gcc -v 2>&1 | grep -q -- '--with-float=hard'; then
-	   fpu=VFP_HARD
+
+	# iOS GCC always uses the 'softfp' ABI.
+	if test x"$GCC" = xyes && test x$platform_darwin = xyes; then
+		fpu=VFP
 	fi
 
-	if test x$fpu = xNONE; then
-	   ORIG_CFLAGS=$CFLAGS
-	   CFLAGS="$CFLAGS -mfpu=vfp -mfloat-abi=softfp"
-	   AC_TRY_RUN([
-				int main () { __asm__ ("faddd	d7, d6, d7"); return 0; }
-				], fpu=VFP, fpu=NONE)
-	   CFLAGS=$ORIG_CFLAGS
-	fi
-
+	# Are we using the 'hard' ABI?
 	if test x$fpu = xNONE; then
 		AC_TRY_COMPILE([], [
-			__asm__ ("ldfd f0, [r0]");
-			], fpu=FPA, fpu=NONE)
+			#ifndef __ARM_PCS_VFP
+			#error "Float ABI is not 'hard'"
+			#endif
+			return 0;
+		], [
+			fpu=VFP_HARD
+		], [
+			fpu=NONE
+		])
+	fi
+
+	# No 'hard' ABI. 'soft' or 'softfp'?
+	if test x$fpu = xNONE; then
+		AC_TRY_COMPILE([], [
+			#ifdef __SOFTFP__
+			#error "Float ABI is not 'softfp'"
+			#endif
+			return 0;
+		], [
+			fpu=VFP
+		], [
+			fpu=NONE
+		])
 	fi
 
 	AC_MSG_RESULT($fpu)
 	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu=1"
 	unset fpu
 
-	AC_MSG_CHECKING(for ARMV6)
-	AC_TRY_RUN([
-		int main () { __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); return 0; }
-			], armv6=yes, armv6=no)
+	if test x$cross_compiling = xno; then
+		AC_MSG_CHECKING(for ARMV6)
+		AC_TRY_RUN([
+			int main () { __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); return 0; }
+				], armv6=yes, armv6=no)
 
-	AC_MSG_RESULT($armv6)
-	if test ${armv6} = yes; then
-	   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
-	   # libgc's gc_locks.h depends on this
-	   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+		AC_MSG_RESULT($armv6)
+		if test ${armv6} = yes; then
+		   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
+		   # libgc's gc_locks.h depends on this
+		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+		fi
 	fi
 fi
 
