@@ -51,17 +51,6 @@ typedef pthread_cond_t mono_cond_t;
 #define MONO_RECURSIVE_MUTEX_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER
 #define MONO_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 
-#define mono_mutexattr_init(attr) pthread_mutexattr_init (attr)
-#define mono_mutexattr_settype(attr,type) pthread_mutexattr_settype (attr, type)
-#define mono_mutexattr_gettype(attr,type) pthread_mutexattr_gettype (attr, type)
-#define mono_mutexattr_setpshared(attr,pshared) pthread_mutexattr_setpshared (attr, pshared)
-#define mono_mutexattr_getpshared(attr,pshared) pthread_mutexattr_getpshared (attr, pshared)
-#define mono_mutexattr_setprotocol(attr,protocol) pthread_mutexattr_setprotocol (attr, protocol)
-#define mono_mutexattr_getprotocol(attr,protocol) pthread_mutexattr_getprotocol (attr, protocol)
-#define mono_mutexattr_setprioceiling(attr,prioceiling) pthread_mutexattr_setprioceiling (attr, prioceiling)
-#define mono_mutexattr_getprioceiling(attr,prioceiling) pthread_mutexattr_getprioceiling (attr, prioceiling)
-#define mono_mutexattr_destroy(attr) pthread_mutexattr_destroy (attr)
-	
 #define mono_mutex_init(mutex) pthread_mutex_init (mutex, NULL)
 #define mono_mutex_lock(mutex) pthread_mutex_lock (mutex)
 #define mono_mutex_trylock(mutex) pthread_mutex_trylock (mutex)
