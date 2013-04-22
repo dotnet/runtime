@@ -2757,6 +2757,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	jit_tls->lmf = lmf;
 #endif
 
+#ifdef MONO_ARCH_HAVE_TLS_INIT
+	mono_arch_tls_init ();
+#endif
+
 	mono_setup_altstack (jit_tls);
 
 	return jit_tls;
@@ -6907,9 +6911,9 @@ mini_init (const char *filename, const char *runtime_version)
 			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 	}
 #endif
+
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();
-	
 
 	/* This must come after mono_init () in the aot-only case */
 	mono_exceptions_init ();
