@@ -806,7 +806,7 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	mono_thread_create_internal (domain, func, arg, FALSE, FALSE, 0);
 }
 
-#if defined(HOST_WIN32) && defined(__GNUC__) && defined(TARGET_X86)
+#if defined(HOST_WIN32) && defined(__GNUC__)
 static __inline__ __attribute__((always_inline))
 /* This is not defined by gcc */
 unsigned long long
@@ -837,7 +837,6 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	return;
 	/* FIXME: simplify the mess below */
 #elif defined(HOST_WIN32)
-#ifdef TARGET_X86
 	/* http://en.wikipedia.org/wiki/Win32_Thread_Information_Block */
 	void* tib = (void*)__readfsdword(0x18);
 	guint8 *stackTop = (guint8*)*(int*)((char*)tib + 4);
@@ -845,10 +844,6 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 
 	*staddr = stackBottom;
 	*stsize = stackTop - stackBottom;
-#else
-	*staddr = NULL;
-	*stsize = (size_t)-1;
-#endif
 	return;
 #else
 	pthread_attr_t attr;
