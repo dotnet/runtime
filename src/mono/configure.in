@@ -2600,15 +2600,6 @@ case "$host" in
 #		sgen_supported=true
 #		AOT_SUPPORTED="no"
 #		;;
-	s390-*-linux*)
-		TARGET=S390;
-		arch_target=s390;
-		ACCESS_UNALIGNED="yes"
-		JIT_SUPPORTED=yes
-		sgen_supported=true
-		# Required CFLAGS for s390[x].  USE_STRING_INLINES is automatic with gcc 4.1
-		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
-		;;
 	s390x-*-linux*)
 		TARGET=S390x;
 		arch_target=s390x;
@@ -3225,7 +3216,6 @@ AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(POWERPC64, test x$TARGET = xPOWERPC64)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
-AM_CONDITIONAL(S390, test x$TARGET = xS390)
 AM_CONDITIONAL(S390x, test x$TARGET = xS390x)
 AM_CONDITIONAL(HOST_X86, test x$HOST = xX86)
 AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
@@ -3418,7 +3408,6 @@ mono/arch/x86/Makefile
 mono/arch/amd64/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
-mono/arch/s390/Makefile
 mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
 mono/arch/ia64/Makefile
