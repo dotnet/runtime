@@ -94,6 +94,8 @@ typedef HANDLE mono_cond_t;
 
 #endif
 
+int mono_mutex_init_suspend_safe (mono_mutex_t *mutex);
+
 G_END_DECLS
 
 #endif /* __MONO_MUTEX_H__ */

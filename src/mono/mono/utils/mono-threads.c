@@ -33,7 +33,7 @@ The GC has to acquire this lock before starting a STW to make sure
 a runtime suspend won't make it wronly see a thread in a safepoint
 when it is in fact not.
 */
-static CRITICAL_SECTION global_suspend_lock;
+static mono_mutex_t global_suspend_lock;
 
 
 static int thread_info_size;
@@ -103,7 +103,7 @@ free_thread_info (gpointer mem)
 {
 	MonoThreadInfo *info = mem;
 
-	DeleteCriticalSection (&info->suspend_lock);
+	mono_mutex_destroy (&info->suspend_lock);
 	MONO_SEM_DESTROY (&info->resume_semaphore);
 	MONO_SEM_DESTROY (&info->finish_resume_semaphore);
 	mono_threads_platform_free (info);
@@ -127,7 +127,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
 	info->small_id = small_id;
 
-	InitializeCriticalSection (&info->suspend_lock);
+	mono_mutex_init_suspend_safe (&info->suspend_lock);
 	MONO_SEM_INIT (&info->resume_semaphore, 0);
 	MONO_SEM_INIT (&info->finish_resume_semaphore, 0);
 
@@ -274,7 +274,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	res = mono_native_tls_alloc (&small_id_key, NULL);
 	g_assert (res);
 
-	InitializeCriticalSection (&global_suspend_lock);
+	mono_mutex_init_suspend_safe (&global_suspend_lock);
 
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
@@ -314,7 +314,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 	if (!info)
 		return NULL;
 
-	EnterCriticalSection (&info->suspend_lock);
+	mono_mutex_lock (&info->suspend_lock);
 
 	/*thread is on the process of detaching*/
 	if (mono_thread_info_run_state (info) > STATE_RUNNING) {
@@ -327,12 +327,12 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 	if (info->suspend_count) {
 		++info->suspend_count;
 		mono_hazard_pointer_clear (hp, 1);
-		LeaveCriticalSection (&info->suspend_lock);
+		mono_mutex_unlock (&info->suspend_lock);
 		return info;
 	}
 
 	if (!mono_threads_core_suspend (info)) {
-		LeaveCriticalSection (&info->suspend_lock);
+		mono_mutex_unlock (&info->suspend_lock);
 		mono_hazard_pointer_clear (hp, 1);
 		return NULL;
 	}
@@ -342,7 +342,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 
 	++info->suspend_count;
 	info->thread_state |= STATE_SUSPENDED;
-	LeaveCriticalSection (&info->suspend_lock);
+	mono_mutex_unlock (&info->suspend_lock);
 	mono_hazard_pointer_clear (hp, 1);
 
 	return info;
@@ -356,7 +356,7 @@ mono_thread_info_self_suspend (void)
 	if (!info)
 		return;
 
-	EnterCriticalSection (&info->suspend_lock);
+	mono_mutex_lock (&info->suspend_lock);
 
 	THREADS_DEBUG ("self suspend IN COUNT %d\n", info->suspend_count);
 
@@ -368,7 +368,7 @@ mono_thread_info_self_suspend (void)
 	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->suspend_state, NULL);
 	g_assert (ret);
 
-	LeaveCriticalSection (&info->suspend_lock);
+	mono_mutex_unlock (&info->suspend_lock);
 
 	while (MONO_SEM_WAIT (&info->resume_semaphore) != 0) {
 		/*if (EINTR != errno) ABORT("sem_wait failed"); */
@@ -404,12 +404,12 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 	if (!info)
 		return FALSE;
 
-	EnterCriticalSection (&info->suspend_lock);
+	mono_mutex_lock (&info->suspend_lock);
 
 	THREADS_DEBUG ("resume %x IN COUNT %d\n",tid, info->suspend_count);
 
 	if (info->suspend_count <= 0) {
-		LeaveCriticalSection (&info->suspend_lock);
+		mono_mutex_unlock (&info->suspend_lock);
 		mono_hazard_pointer_clear (hp, 1);
 		return FALSE;
 	}
@@ -423,7 +423,7 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 	if (--info->suspend_count == 0)
 		result = mono_thread_info_resume_internal (info);
 
-	LeaveCriticalSection (&info->suspend_lock);
+	mono_mutex_unlock (&info->suspend_lock);
 	mono_hazard_pointer_clear (hp, 1);
 
 	return result;
@@ -526,13 +526,13 @@ STW to make sure no unsafe pending suspend is in progress.
 void
 mono_thread_info_suspend_lock (void)
 {
-	EnterCriticalSection (&global_suspend_lock);
+	mono_mutex_lock (&global_suspend_lock);
 }
 
 void
 mono_thread_info_suspend_unlock (void)
 {
-	LeaveCriticalSection (&global_suspend_lock);
+	mono_mutex_unlock (&global_suspend_lock);
 }
 
 void

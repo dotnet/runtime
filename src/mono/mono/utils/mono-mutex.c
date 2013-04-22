@@ -20,6 +20,10 @@
 
 #include "mono-mutex.h"
 
+#if defined(__APPLE__)
+#define _DARWIN_C_SOURCE
+#include <pthread_spis.h>
+#endif
 
 #ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
 /* Android does not implement pthread_mutex_timedlock(), but does provide an
@@ -82,4 +86,56 @@ mono_once (mono_once_t *once, void (*once_init) (void))
 	}
 	
 	return 0;
+}
+
+/*
+Returns a recursive mutex that is safe under suspension.
+
+A suspension safe mutex means one that can handle this scenario:
+
+mutex M
+
+thread 1:
+1)lock M
+2)suspend thread 2
+3)unlock M
+4)lock M
+
+thread 2:
+5)lock M
+
+Say (1) happens before (5) and (5) happens before (2).
+This means that thread 2 was suspended by the kernel because
+it's waiting on mutext M.
+
+Thread 1 then proceed to suspend thread 2 and unlock/lock the
+mutex.
+
+If the kernel implements mutexes with FIFO wait lists, this means
+that thread 1 will be blocked waiting for thread 2 acquire the lock.
+Since thread 2 is suspended, we have a deadlock.
+
+A suspend safe mutex is an unfair lock but will schedule any runable
+thread that is waiting for a the lock.
+
+This problem was witnessed on OSX in mono/tests/thread-exit.cs.
+
+*/
+int
+mono_mutex_init_suspend_safe (mono_mutex_t *mutex)
+{
+#if defined(__APPLE__)
+	int res;
+	pthread_mutexattr_t attr;
+
+	pthread_mutexattr_init (&attr);
+	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutexattr_setpolicy_np (&attr, _PTHREAD_MUTEX_POLICY_FIRSTFIT);
+	res = pthread_mutex_init (mutex, &attr);
+	pthread_mutexattr_destroy (&attr);
+
+	return res;
+#else
+	return mono_mutex_init (mutex);
+#endif
 }
