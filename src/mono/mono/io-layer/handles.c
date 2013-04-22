@@ -173,7 +173,7 @@ pid_t _wapi_getpid (void)
 }
 
 
-static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
+static mono_mutex_t scan_mutex;
 
 static void handle_cleanup (void)
 {
@@ -279,11 +279,14 @@ wapi_init (void)
 	if (_wapi_shm_enabled ())
 		_wapi_collection_init ();
 #endif
+	_wapi_io_init ();
+	mono_mutex_init (&scan_mutex);
 
 	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
 
 	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_cond;
 	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_mutex;
+
 
 	/* Using g_atexit here instead of an explicit function call in
 	 * a cleanup routine lets us cope when a third-party library

@@ -47,10 +47,6 @@ typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_mutexattr_t mono_mutexattr_t;
 typedef pthread_cond_t mono_cond_t;
 
-#define MONO_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-#define MONO_RECURSIVE_MUTEX_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER
-#define MONO_COND_INITIALIZER PTHREAD_COND_INITIALIZER
-
 #define mono_mutex_init(mutex) pthread_mutex_init (mutex, NULL)
 #define mono_mutex_lock(mutex) pthread_mutex_lock (mutex)
 #define mono_mutex_trylock(mutex) pthread_mutex_trylock (mutex)
@@ -109,7 +105,6 @@ typedef HANDLE mono_cond_t;
 #define mono_cond_broadcast(cond) (!SetEvent(*(cond)))
 #define mono_cond_destroy(cond) CloseHandle(*(cond))
 
-#define MONO_COND_INITIALIZER NULL
 #endif
 
 G_END_DECLS
