@@ -68,7 +68,6 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/misc-private.h>
-#include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/threads.h>
 #include <mono/utils/strenc.h>
@@ -76,6 +75,7 @@
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-mutex.h>
 
 /* The process' environment strings */
 #if defined(__APPLE__) && !defined (__arm__)

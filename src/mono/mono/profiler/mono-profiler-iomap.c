@@ -23,7 +23,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/loader.h>
-#include <mono/io-layer/mono-mutex.h>
+#include <mono/utils/mono-mutex.h>
 
 #define LOCATION_INDENT "        "
 #define BACKTRACE_SIZE 64

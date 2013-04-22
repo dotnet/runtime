@@ -25,13 +25,13 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/misc-private.h>
-#include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/gc_wrapper.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-mutex.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>

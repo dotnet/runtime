@@ -13,7 +13,7 @@
 #include <glib.h>
 #include <pthread.h>
 
-#include "mono-mutex.h"
+#include <mono/utils/mono-mutex.h>
 
 G_BEGIN_DECLS
 

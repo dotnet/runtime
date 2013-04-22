@@ -100,7 +100,7 @@ shutdown sequence.
 
 #ifndef DISABLE_DEBUGGER_AGENT
 
-#include <mono/io-layer/mono-mutex.h>
+#include <mono/utils/mono-mutex.h>
 
 /* Definitions to make backporting to 2.6 easier */
 //#define MonoInternalThread MonoThread

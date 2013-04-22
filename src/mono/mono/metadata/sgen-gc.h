@@ -40,7 +40,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/atomic.h>
-#include <mono/io-layer/mono-mutex.h>
+#include <mono/utils/mono-mutex.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-conf.h>

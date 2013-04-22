@@ -15,7 +15,7 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/critical-section-private.h>
 
-#include "mono-mutex.h"
+#include <mono/utils/mono-mutex.h>
 
 /* A critical section is really just like a lightweight mutex. It
  * can't be waited for, and doesn't have a handle.
