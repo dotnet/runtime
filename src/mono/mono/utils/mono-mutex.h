@@ -61,8 +61,8 @@ typedef pthread_cond_t mono_cond_t;
 #define mono_mutexattr_setprioceiling(attr,prioceiling) pthread_mutexattr_setprioceiling (attr, prioceiling)
 #define mono_mutexattr_getprioceiling(attr,prioceiling) pthread_mutexattr_getprioceiling (attr, prioceiling)
 #define mono_mutexattr_destroy(attr) pthread_mutexattr_destroy (attr)
-
-#define mono_mutex_init(mutex,attr) pthread_mutex_init (mutex, attr)
+	
+#define mono_mutex_init(mutex) pthread_mutex_init (mutex, NULL)
 #define mono_mutex_lock(mutex) pthread_mutex_lock (mutex)
 #define mono_mutex_trylock(mutex) pthread_mutex_trylock (mutex)
 #define mono_mutex_timedlock(mutex,timeout) pthread_mutex_timedlock (mutex, timeout)
@@ -85,12 +85,28 @@ static inline int mono_mutex_unlock_in_cleanup (mono_mutex_t *mutex)
 	return(mono_mutex_unlock (mutex));
 }
 
+/* Returns zero on success. */
+static inline int
+mono_mutex_init_recursive (mono_mutex_t *mutex)
+{
+	int res;
+	pthread_mutexattr_t attr;
+
+	pthread_mutexattr_init (&attr);
+	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+	res = pthread_mutex_init (mutex, &attr);
+	pthread_mutexattr_destroy (&attr);
+
+	return res;
+}
+
 #else
 
 typedef CRITICAL_SECTION mono_mutex_t;
 typedef HANDLE mono_cond_t;
 
-#define mono_mutex_init(mutex,attr) InitializeCriticalSection((mutex))
+#define mono_mutex_init(mutex) (InitializeCriticalSection((mutex)), 0)
+#define mono_mutex_init_recursive(mutex) (InitializeCriticalSection((mutex)), 0)
 #define mono_mutex_lock(mutex) EnterCriticalSection((mutex))
 #define mono_mutex_trylock(mutex) TryEnterCriticalSection((mutex))
 #define mono_mutex_unlock(mutex)  LeaveCriticalSection((mutex))

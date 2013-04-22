@@ -256,19 +256,7 @@ sgen_section_gray_queue_init (SgenSectionGrayQueue *queue, gboolean locked, Gray
 
 	queue->locked = locked;
 	if (locked) {
-#ifdef HOST_WIN32
-		/*
-		 * mono_mutex_t is a critical section on Win32, which
-		 * is recursive by default.  mono_mutexattr_t is not
-		 * defined there.
-		 */
-		mono_mutex_init (&queue->lock, NULL);
-#else
-		mono_mutexattr_t attr;
-		mono_mutexattr_init (&attr);
-		mono_mutexattr_settype (&attr, MONO_MUTEX_RECURSIVE);
-		mono_mutex_init (&queue->lock, &attr);
-#endif
+		mono_mutex_init_recursive (&queue->lock);
 	}
 
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE

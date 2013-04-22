@@ -300,7 +300,6 @@ wapi_cleanup (void)
 	
 	_wapi_has_shut_down = TRUE;
 
-	_wapi_critical_section_cleanup ();
 	_wapi_error_cleanup ();
 	_wapi_thread_cleanup ();
 }
@@ -336,7 +335,7 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 		thr_ret = pthread_cond_init (&handle->signal_cond, NULL);
 		g_assert (thr_ret == 0);
 				
-		thr_ret = mono_mutex_init (&handle->signal_mutex, NULL);
+		thr_ret = mono_mutex_init (&handle->signal_mutex);
 		g_assert (thr_ret == 0);
 
 		if (handle_specific != NULL) {

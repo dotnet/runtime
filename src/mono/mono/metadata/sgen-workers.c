@@ -460,7 +460,7 @@ sgen_workers_init (int num_workers)
 
 	for (i = 0; i < workers_num; ++i) {
 		/* private gray queue is inited by the thread itself */
-		mono_mutex_init (&workers_data [i].stealable_stack_mutex, NULL);
+		mono_mutex_init (&workers_data [i].stealable_stack_mutex);
 		workers_data [i].stealable_stack_fill = 0;
 
 		if (sgen_get_major_collector ()->alloc_worker_data)

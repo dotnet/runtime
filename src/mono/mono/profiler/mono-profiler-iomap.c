@@ -532,7 +532,7 @@ void mono_profiler_startup (const char *desc)
 {
 	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
 
-	mono_mutex_init (&mismatched_files_section, NULL);
+	mono_mutex_init (&mismatched_files_section);
 	prof->mismatched_files_hash = g_hash_table_new (mismatched_files_guint32_hash, mismatched_files_guint32_equal);
 	prof->saved_strings_hash = g_hash_table_new (NULL, NULL);
 	prof->string_locations_hash = g_hash_table_new (mismatched_files_guint32_hash, mismatched_files_guint32_equal);

@@ -916,7 +916,7 @@ mono_debugger_agent_init (void)
 
 	event_requests = g_ptr_array_new ();
 
-	mono_mutex_init (&debugger_thread_exited_mutex, NULL);
+	mono_mutex_init (&debugger_thread_exited_mutex);
 	mono_cond_init (&debugger_thread_exited_cond, NULL);
 
 	mono_profiler_install ((MonoProfiler*)&debugger_profiler, runtime_shutdown);
@@ -2329,7 +2329,7 @@ static MonoSemType suspend_sem;
 static void
 suspend_init (void)
 {
-	mono_mutex_init (&suspend_mutex, NULL);
+	mono_mutex_init (&suspend_mutex);
 	mono_cond_init (&suspend_cond, NULL);	
 	MONO_SEM_INIT (&suspend_sem, 0);
 }

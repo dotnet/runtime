@@ -21,30 +21,6 @@
  * can't be waited for, and doesn't have a handle.
  */
 
-/* According to the MSDN docs, the Microsoft implementation spins a
- * number of times then waits for a semaphore.  I could implement that
- * here but I'd need a mutex around the critical section structure
- * anyway.  So I may as well just use a pthread mutex.
- */
-static mono_once_t attr_key_once=MONO_ONCE_INIT;
-static mono_mutexattr_t attr;
-
-static void attr_init(void)
-{
-	int ret;
-	
-	ret = mono_mutexattr_init(&attr);
-	g_assert (ret == 0);
-	
-	ret = mono_mutexattr_settype(&attr, MONO_MUTEX_RECURSIVE);
-	g_assert (ret == 0);
-}
-
-void _wapi_critical_section_cleanup (void)
-{
-	mono_mutexattr_destroy (&attr);
-}
-
 /**
  * InitializeCriticalSection:
  * @section: The critical section to initialise
@@ -55,8 +31,7 @@ void InitializeCriticalSection(WapiCriticalSection *section)
 {
 	int ret;
 	
-	mono_once(&attr_key_once, attr_init);
-	ret = mono_mutex_init(&section->mutex, &attr);
+	ret = mono_mutex_init_recursive (&section->mutex);
 	g_assert (ret == 0);
 }
 

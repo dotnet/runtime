@@ -51,10 +51,10 @@ static gpointer wapi_storage [16];
 static void
 noshm_semaphores_init (void)
 {
-       int i;
+	int i;
 
-       for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) 
-               mono_mutex_init (&noshm_sems [i], NULL);
+	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) 
+		mono_mutex_init (&noshm_sems [i]);
 }
 
 static int
