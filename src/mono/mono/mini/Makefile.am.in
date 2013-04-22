@@ -293,12 +293,6 @@ sparc_sources = \
 	exceptions-sparc.c	\
 	tramp-sparc.c
 
-s390_sources = \
-	mini-s390.c		\
-	mini-s390.h		\
-	exceptions-s390.c	\
-	tramp-s390.c
-
 s390x_sources = \
 	mini-s390x.c		\
 	mini-s390x.h		\
@@ -482,12 +476,6 @@ arch_built=cpu-sparc.h
 arch_define=__sparc__
 endif
 
-if S390
-arch_sources = $(s390_sources)
-arch_built=cpu-s390.h
-arch_define=__s390__
-endif
-
 if S390x
 arch_sources = $(s390x_sources)
 arch_built=cpu-s390x.h
@@ -620,9 +608,6 @@ cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
 cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-sparc.h sparc_desc $(srcdir)/cpu-sparc.md
 
-cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-s390.h s390_cpu_desc $(srcdir)/cpu-s390.md
-
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-s390x.h s390x_cpu_desc $(srcdir)/cpu-s390x.md
 
@@ -726,7 +711,6 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(arm_sources) cpu-arm.md 		\
 	$(mips_sources) cpu-mips.md 		\
 	$(sparc_sources) cpu-sparc.md 		\
-	$(s390_sources) cpu-s390.md 		\
 	$(s390x_sources) cpu-s390x.md 		\
 	$(ia64_sources) cpu-ia64.md 		\
 	$(windows_sources)			\
