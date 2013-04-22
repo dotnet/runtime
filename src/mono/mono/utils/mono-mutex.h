@@ -30,19 +30,6 @@ typedef struct {
 
 int mono_once (mono_once_t *once, void (*once_init) (void));
 
-
-#define MONO_MUTEX_NORMAL             PTHREAD_MUTEX_NORMAL
-#define MONO_MUTEX_RECURSIVE          PTHREAD_MUTEX_RECURSIVE
-#define MONO_MUTEX_ERRORCHECK         PTHREAD_MUTEX_NORMAL
-#define MONO_MUTEX_DEFAULT            PTHREAD_MUTEX_NORMAL
-
-#define MONO_THREAD_PRIO_NONE         PTHREAD_PRIO_NONE
-#define MONO_THREAD_PRIO_INHERIT      PTHREAD_PRIO_INHERIT
-#define MONO_THREAD_PRIO_PROTECT      PTHREAD_PRIO_PROTECT
-
-#define MONO_THREAD_PROCESS_PRIVATE   PTHREAD_PROCESS_PRIVATE
-#define MONO_THREAD_PROCESS_SHARED    PTHREAD_PROCESS_SHARED
-
 typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_mutexattr_t mono_mutexattr_t;
 typedef pthread_cond_t mono_cond_t;
