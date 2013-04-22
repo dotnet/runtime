@@ -31,79 +31,6 @@ typedef struct {
 int mono_once (mono_once_t *once, void (*once_init) (void));
 
 
-#ifdef USE_MONO_MUTEX
-
-#define MONO_THREAD_NONE ((pthread_t)~0)
-
-/* mutex types... */
-enum {
-	MONO_MUTEX_NORMAL,
-	MONO_MUTEX_RECURSIVE,
-	MONO_MUTEX_ERRORCHECK = MONO_MUTEX_NORMAL,
-	MONO_MUTEX_DEFAULT = MONO_MUTEX_NORMAL
-};
-
-/* mutex protocol attributes... */
-enum {
-	MONO_THREAD_PRIO_NONE,
-	MONO_THREAD_PRIO_INHERIT,
-	MONO_THREAD_PRIO_PROTECT,
-};
-
-/* mutex process sharing attributes... */
-enum {
-	MONO_THREAD_PROCESS_PRIVATE,
-	MONO_THREAD_PROCESS_SHARED
-};
-
-typedef struct _mono_mutexattr_t {
-	int type     : 1;
-	int shared   : 1;
-	int protocol : 2;
-	int priority : 28;
-} mono_mutexattr_t;
-
-typedef struct _mono_mutex_t {
-	int type;
-	pthread_t owner;
-	short waiters;
-	short depth;
-	pthread_mutex_t mutex;
-	pthread_cond_t cond;
-} mono_mutex_t;
-
-/* static initializers */
-#define MONO_MUTEX_INITIALIZER { 0, MONO_THREAD_NONE, 0, 0, PTHREAD_MUTEX_INITIALIZER, 0 }
-#define MONO_RECURSIVE_MUTEX_INITIALIZER { 0, MONO_THREAD_NONE, 0, 0, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER }
-
-int mono_mutexattr_init (mono_mutexattr_t *attr);
-int mono_mutexattr_settype (mono_mutexattr_t *attr, int type);
-int mono_mutexattr_gettype (mono_mutexattr_t *attr, int *type);
-int mono_mutexattr_setpshared (mono_mutexattr_t *attr, int pshared);
-int mono_mutexattr_getpshared (mono_mutexattr_t *attr, int *pshared);
-int mono_mutexattr_setprotocol (mono_mutexattr_t *attr, int protocol);
-int mono_mutexattr_getprotocol (mono_mutexattr_t *attr, int *protocol);
-int mono_mutexattr_setprioceiling (mono_mutexattr_t *attr, int prioceiling);
-int mono_mutexattr_getprioceiling (mono_mutexattr_t *attr, int *prioceiling);
-int mono_mutexattr_destroy (mono_mutexattr_t *attr);
-
-
-int mono_mutex_init (mono_mutex_t *mutex, const mono_mutexattr_t *attr);
-int mono_mutex_lock (mono_mutex_t *mutex);
-int mono_mutex_trylock (mono_mutex_t *mutex);
-int mono_mutex_timedlock (mono_mutex_t *mutex, const struct timespec *timeout);
-int mono_mutex_unlock (mono_mutex_t *mutex);
-int mono_mutex_destroy (mono_mutex_t *mutex);
-
-#define mono_cond_init(cond,attr) pthread_cond_init (cond, attr)
-int mono_cond_wait (pthread_cond_t *cond, mono_mutex_t *mutex);
-int mono_cond_timedwait (pthread_cond_t *cond, mono_mutex_t *mutex, const struct timespec *timeout);
-#define mono_cond_signal(cond) pthread_cond_signal (cond)
-#define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
-#define mono_cond_destroy(cond)
-
-#else /* system is equipped with a fully-functional pthread mutex library */
-
 #define MONO_MUTEX_NORMAL             PTHREAD_MUTEX_NORMAL
 #define MONO_MUTEX_RECURSIVE          PTHREAD_MUTEX_RECURSIVE
 #define MONO_MUTEX_ERRORCHECK         PTHREAD_MUTEX_NORMAL
@@ -148,8 +75,6 @@ typedef pthread_cond_t mono_cond_t;
 #define mono_cond_signal(cond) pthread_cond_signal (cond)
 #define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
 #define mono_cond_destroy(cond)
-
-#endif /* USE_MONO_MUTEX */
 
 /* This is a function so it can be passed to pthread_cleanup_push -
  * that is a macro and giving it a macro as a parameter breaks.

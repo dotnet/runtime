@@ -1549,8 +1549,7 @@ if test x$target_win32 = xno; then
 		AC_MSG_RESULT(ok)
 	], [
 		AC_MSG_RESULT(no)
-		AC_MSG_WARN(Using mono_mutex_t for recursive mutexes)
-		AC_DEFINE(USE_MONO_MUTEX, 1, [Use mono_mutex_t])
+		AC_ERROR(Posix system lacks support for recursive mutexes)
 	])
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 	AC_CHECK_FUNCS(pthread_attr_getstack pthread_attr_getstacksize)
