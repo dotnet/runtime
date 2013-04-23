@@ -20,6 +20,8 @@
 
 #include "mono-mutex.h"
 
+#ifndef HOST_WIN32
+
 #if defined(__APPLE__)
 #define _DARWIN_C_SOURCE
 // #include <pthread_spis.h>
@@ -63,8 +65,6 @@ pthread_mutex_timedlock (pthread_mutex_t *mutex, CONST_NEEDED struct timespec *t
 }
 #endif /* HAVE_PTHREAD_MUTEX_TIMEDLOCK */
 
-
-#ifndef HOST_WIN32
 
 int
 mono_once (mono_once_t *once, void (*once_init) (void))
