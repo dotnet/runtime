@@ -390,6 +390,10 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	/* if the thread is not in the hash it has been removed already */
 	if (!handle_remove (thread)) {
+		if (thread == mono_thread_internal_current ()) {
+			mono_domain_unset ();
+			mono_memory_barrier ();
+		}
 		/* This needs to be called even if handle_remove () fails */
 		if (mono_thread_cleanup_fn)
 			mono_thread_cleanup_fn (thread);
