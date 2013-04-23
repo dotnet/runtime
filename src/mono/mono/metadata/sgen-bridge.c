@@ -569,8 +569,20 @@ sgen_bridge_processing_stw_step (void)
 	dyn_array_int_init (&merge_array);
 
 	current_time = 0;
+	/*
+	First we insert all bridges into the hash table and then we do dfs1.
+
+	It must be done in 2 steps since the bridge arrays doesn't come in reverse topological order,
+	which means that we can have entry N pointing to entry N + 1.
+
+	If we dfs1 entry N before N + 1 is registered we'll not consider N + 1 for this bridge
+	pass and not create the required xref between the two.
+	*/
 	for (i = 0; i < registered_bridges.size; ++i)
-		dfs1 (register_bridge_object (DYN_ARRAY_PTR_REF (&registered_bridges, i)), NULL);
+		register_bridge_object (DYN_ARRAY_PTR_REF (&registered_bridges, i));
+
+	for (i = 0; i < registered_bridges.size; ++i)
+		dfs1 (get_hash_entry (DYN_ARRAY_PTR_REF (&registered_bridges, i), NULL), NULL);
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
