@@ -17,6 +17,10 @@
 #endif
 #include <time.h>
 
+#ifdef HOST_WIN32
+#include <windows.h>
+#endif
+
 G_BEGIN_DECLS
 
 #ifndef HOST_WIN32
@@ -31,7 +35,6 @@ typedef struct {
 int mono_once (mono_once_t *once, void (*once_init) (void));
 
 typedef pthread_mutex_t mono_mutex_t;
-typedef pthread_mutexattr_t mono_mutexattr_t;
 typedef pthread_cond_t mono_cond_t;
 
 #define mono_mutex_init(mutex) pthread_mutex_init (mutex, NULL)
