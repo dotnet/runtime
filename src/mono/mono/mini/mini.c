@@ -4447,7 +4447,7 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 	gboolean gsharedvt = FALSE;
 	MonoGenericContainer *class_container, *method_container = NULL;
 
-	if (method->is_generic || method->klass->generic_container) {
+	if (method->is_generic || (method->klass->generic_container && !method->is_inflated)) {
 		declaring_method = method;
 	} else {
 		declaring_method = mono_method_get_declaring_generic_method (method);
