@@ -4760,6 +4760,16 @@ resume_thread_internal (MonoInternalThread *thread)
 	return TRUE;
 }
 
+
+/*
+ * mono_thread_is_foreign:
+ * @thread: the thread to query
+ *
+ * This function allows one to determine if a thread was created by the mono runtime and has
+ * a well defined lifecycle or it's a foreigh one, created by the native environment.
+ *
+ * Returns: true if @thread was not created by the runtime.
+ */
 mono_bool
 mono_thread_is_foreign (MonoThread *thread)
 {
