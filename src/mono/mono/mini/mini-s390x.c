@@ -246,6 +246,9 @@ if (ins->inst_target_bb->native_offset) { 					\
 #define JUMP_SIZE	6
 #define ENABLE_WRONG_METHOD_CHECK 0
 
+#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
+#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
+
 /*========================= End of Defines =========================*/
 
 /*------------------------------------------------------------------*/
@@ -365,7 +368,7 @@ static gboolean is_regsize_var (MonoType *);
 static inline void add_general (guint *, size_data *, ArgInfo *);
 static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *);
-static CallInfo * get_call_info (MonoCompile *, MonoMemPool *, MonoMethodSignature *, gboolean);
+static CallInfo * get_call_info (MonoCompile *, MonoMemPool *, MonoMethodSignature *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 static guint8 * emit_load_volatile_arguments (guint8 *, MonoCompile *);
 static void catch_SIGILL(int, siginfo_t *, void *);
@@ -413,6 +416,11 @@ static gpointer ss_trigger_page;
 static gpointer bp_trigger_page;
 
 breakpoint_t breakpointCode;
+
+/* 
+ * This mutex protects architecture specific caches 
+ */
+static CRITICAL_SECTION mini_arch_mutex;
 
 /*====================== End of Global Variables ===================*/
 
@@ -916,7 +924,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	
 	sig = mono_method_signature (method);
 	
-	cinfo = get_call_info (NULL, NULL, sig, sig->pinvoke);
+	cinfo = get_call_info (NULL, NULL, sig);
 
 	if (cinfo->struct_ret) {
 		printf ("[STRUCTRET:%p], ", (gpointer) rParm->gr[0]);
@@ -1623,12 +1631,13 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 /*------------------------------------------------------------------*/
 
 static CallInfo *
-get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	guint i, fr, gr, size, pstart;
 	int nParm = sig->hasthis + sig->param_count;
 	MonoType *ret_type;
-	guint32 simpletype, align;
+	guint32 simpleType, align;
+	gboolean is_pinvoke = sig->pinvoke;
 	CallInfo *cinfo;
 	size_data *sz;
 	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
@@ -1659,11 +1668,11 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-	ret_type = mono_type_get_underlying_type (sig->ret);
+	ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
 	ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
-	simpletype = ret_type->type;
+	simpleType = ret_type->type;
 enum_retvalue:
-	switch (simpletype) {
+	switch (simpleType) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -1704,13 +1713,10 @@ enum_retvalue:
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
 			if (klass->enumtype) {
-				simpletype = mono_class_enum_basetype (klass)->type;
+				simpleType = mono_class_enum_basetype (klass)->type;
 				goto enum_retvalue;
 			}
-			if (sig->pinvoke)
-				size = mono_class_native_size (klass, &align);
-			else
-				size = mono_class_value_size (klass, &align);
+			size = mini_type_stack_size_full (gsctx, &klass->byval_arg, NULL, sig->pinvoke);
 	
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -1803,11 +1809,11 @@ enum_retvalue:
 			continue;
 		}
 
-		ptype = mono_type_get_underlying_type (sig->params [i]);
-		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
-		simpletype = ptype->type;
-		cinfo->args[nParm].type = simpletype;
-		switch (simpletype) {
+		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
+//		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
+		simpleType = ptype->type;
+		cinfo->args[nParm].type = simpleType;
+		switch (simpleType) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -1858,7 +1864,7 @@ enum_retvalue:
 			nParm++;
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+			if (!mono_type_generic_inst_is_valuetype (ptype)) {
 				cinfo->args[nParm].size = sizeof(gpointer);
 				add_general (&gr, sz, cinfo->args+nParm);
 				nParm++;
@@ -1867,30 +1873,29 @@ enum_retvalue:
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoMarshalType *info;
-			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
-			if (sig->pinvoke)
-				size = mono_class_native_size (klass, &align);
-			else
-				size = mono_class_value_size (klass, &align);
-	
-			info = mono_marshal_load_type_info (klass);
+			MonoClass *klass = mono_class_from_mono_type (ptype);
 
-			if ((info->native_size == sizeof(float)) &&
-			    (info->num_fields  == 1) &&
-			    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
-				cinfo->args[nParm].size = sizeof(float);
-				add_float(&fr, sz, cinfo->args+nParm);
-				nParm ++;
-				break;
-			}
+			size = mini_type_stack_size_full(gsctx, &klass->byval_arg, NULL, sig->pinvoke);
+			if (simpleType != MONO_TYPE_GENERICINST) {
+				info = mono_marshal_load_type_info(klass);
 
-			if ((info->native_size == sizeof(double)) &&
-			    (info->num_fields  == 1) &&
-			    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
-				cinfo->args[nParm].size = sizeof(double);
-				add_float(&fr, sz, cinfo->args+nParm);
-				nParm ++;
-				break;
+				if ((info->native_size == sizeof(float)) &&
+				    (info->num_fields  == 1) &&
+				    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
+					cinfo->args[nParm].size = sizeof(float);
+					add_float(&fr, sz, cinfo->args+nParm);
+					nParm ++;
+					break;
+				}
+
+				if ((info->native_size == sizeof(double)) &&
+				    (info->num_fields  == 1) &&
+				    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
+					cinfo->args[nParm].size = sizeof(double);
+					add_float(&fr, sz, cinfo->args+nParm);
+					nParm ++;
+					break;
+				}
 			}
 
 			cinfo->args[nParm].vtsize  = 0;
@@ -1949,7 +1954,7 @@ enum_retvalue:
 		}
 			break;
 		default:
-			g_error ("Can't trampoline 0x%x", sig->params [i]->type);
+			g_error ("Can't trampoline 0x%x", ptype);
 		}
 	}
 
@@ -2043,7 +2048,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	sig     = mono_method_signature (cfg->method);
 	
-	cinfo   = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
+	cinfo   = get_call_info (cfg, cfg->mempool, sig);
 
 	if (!cinfo->struct_ret) {
 		switch (mono_type_get_underlying_type (sig->ret)->type) {
@@ -2272,7 +2277,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig);
 
 	if (cinfo->struct_ret) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
@@ -2387,7 +2392,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	n = sig->param_count + sig->hasthis;
 	DEBUG (g_print ("Call requires: %d parameters\n",n));
 	
-	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig);
 
 	stackSize         = cinfo->sz.stack_size + cinfo->sz.local_size + 
 			    cinfo->sz.parm_size + cinfo->sz.offset;
@@ -5041,7 +5046,7 @@ emit_load_volatile_arguments (guint8 *code, MonoCompile *cfg)
 	int pos = 0, i;
 	CallInfo *cinfo;
 
-	cinfo = get_call_info (NULL, NULL, sig, sig->pinvoke);
+	cinfo = get_call_info (NULL, NULL, sig);
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -5224,7 +5229,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig);
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo     = &cinfo->ret;
