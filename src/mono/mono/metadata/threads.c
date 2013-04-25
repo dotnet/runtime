@@ -899,6 +899,7 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
+	MonoThreadInfo *info;
 	MonoInternalThread *thread;
 	MonoThread *current_thread;
 	HANDLE thread_handle;
@@ -947,6 +948,10 @@ mono_thread_attach (MonoDomain *domain)
 	InitializeCriticalSection (thread->synch_cs);
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
+
+	info = mono_thread_info_current ();
+	g_assert (info);
+	thread->thread_info = info;
 
 	current_thread = new_thread_with_internal (domain, thread);
 
