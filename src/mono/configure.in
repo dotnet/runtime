@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 #AC_PREREQ([2.62])
 
-AC_INIT(mono, [3.0.8],
+AC_INIT(mono, [3.0.10],
         [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 
 AC_CONFIG_SRCDIR([README])
@@ -743,7 +743,7 @@ DISABLED_FEATURES=none
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, 
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters, remoting,
-	 sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying.],
+	 security, sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -885,6 +885,11 @@ fi
 if test "x$mono_feature_disable_remoting" = "xyes"; then
 	AC_DEFINE(DISABLE_REMOTING, 1, [Disable remoting support (This disables type proxies and make com non-functional)])
 	AC_MSG_NOTICE([Disabled remoting])
+fi
+
+if test "x$mono_feature_disable_security" = "xyes"; then
+	AC_DEFINE(DISABLE_SECURITY, 1, [Disable CAS/CoreCLR security])
+	AC_MSG_NOTICE([Disabled CAS/CoreCLR security manager (used e.g. for Moonlight)])
 fi
 
 if test "x$mono_feature_disable_sgen_remset" = "xyes"; then
@@ -1073,6 +1078,8 @@ AC_TRY_COMPILE([
 	AC_MSG_RESULT(no)
 	AC_DEFINE_UNQUOTED(MONO_ZERO_LEN_ARRAY, 1, [Length of zero length arrays])
 ])
+
+AC_CHECK_HEADERS(nacl/nacl_dyncode.h)
 
 if test x$target_win32 = xno; then
 
@@ -1542,8 +1549,7 @@ if test x$target_win32 = xno; then
 		AC_MSG_RESULT(ok)
 	], [
 		AC_MSG_RESULT(no)
-		AC_MSG_WARN(Using mono_mutex_t for recursive mutexes)
-		AC_DEFINE(USE_MONO_MUTEX, 1, [Use mono_mutex_t])
+		AC_ERROR(Posix system lacks support for recursive mutexes)
 	])
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 	AC_CHECK_FUNCS(pthread_attr_getstack pthread_attr_getstacksize)
@@ -1784,11 +1790,13 @@ if test x$target_win32 = xno; then
 	dnl **********************************
 	dnl *** epoll			   ***
 	dnl **********************************
-	AC_CHECK_HEADERS(sys/epoll.h)
-	haveepoll=no
-	AC_CHECK_FUNCS(epoll_ctl, [haveepoll=yes], )
-	if test "x$haveepoll" = "xyes" -a "x$ac_cv_header_sys_epoll_h" = "xyes" ; then
-		AC_DEFINE(HAVE_EPOLL, 1, [epoll supported])
+	if test "x$ac_cv_header_nacl_nacl_dyncode_h" = "xno"; then
+		AC_CHECK_HEADERS(sys/epoll.h)
+		haveepoll=no
+		AC_CHECK_FUNCS(epoll_ctl, [haveepoll=yes], )
+		if test "x$haveepoll" = "xyes" -a "x$ac_cv_header_sys_epoll_h" = "xyes"; then
+			AC_DEFINE(HAVE_EPOLL, 1, [epoll supported])
+		fi
 	fi
 
 	havekqueue=no
@@ -2304,6 +2312,16 @@ AC_ARG_ENABLE(nacl_codegen, [  --enable-nacl-codegen      Enable Native Client c
 AC_ARG_ENABLE(nacl_gc, [  --enable-nacl-gc           Enable Native Client garbage collection], enable_nacl_gc=$enableval, enable_nacl_gc=no)
 
 AM_CONDITIONAL(NACL_CODEGEN, test x$enable_nacl_codegen != xno)
+
+dnl
+dnl Hack to use system mono for operations in build/install not allowed in NaCl.
+dnl
+nacl_self_host=""
+if test "x$ac_cv_header_nacl_nacl_dyncode_h" = "xyes"; then
+   nacl_self_host="nacl_self_host"
+fi
+AC_SUBST(nacl_self_host)
+
 if test "x$enable_nacl_codegen" = "xyes"; then
    MONO_NACL_ALIGN_MASK_OFF=1
    CPPFLAGS="$CPPFLAGS -D__native_client_codegen__"
@@ -2472,6 +2490,10 @@ case "$host" in
 		TARGET=AMD64;
 		arch_target=amd64;
 		JIT_SUPPORTED=yes
+		if test "x$ac_cv_sizeof_void_p" = "x4"; then
+			AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
+			sizeof_register=8
+		fi
 		case $host_os in
 		  linux*)
 			sgen_supported=true
@@ -2568,15 +2590,15 @@ case "$host" in
 		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
   		fi
 		;;
-	s390-*-linux*)
-		TARGET=S390;
-		arch_target=s390;
-		ACCESS_UNALIGNED="yes"
-		JIT_SUPPORTED=yes
-		sgen_supported=true
-		# Required CFLAGS for s390[x].  USE_STRING_INLINES is automatic with gcc 4.1
-		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
-		;;
+# TODO: make proper support for NaCl host.
+#        arm*-*nacl)
+#		TARGET=ARM;
+#		arch_target=arm;
+#		ACCESS_UNALIGNED="no"
+#		JIT_SUPPORTED=yes
+#		sgen_supported=true
+#		AOT_SUPPORTED="no"
+#		;;
 	s390x-*-linux*)
 		TARGET=S390x;
 		arch_target=s390x;
@@ -2632,7 +2654,29 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		;;
-   *-*-nacl)
+# TODO: make proper support for NaCl target.
+#   arm*-*nacl)
+#		TARGET=ARM
+#		arch_target=arm
+#		AC_DEFINE(TARGET_ARM, 1, [...])
+#		ACCESS_UNALIGNED="no"
+#		JIT_SUPPORTED=yes
+#		sizeof_register=4
+#               CPPFLAGS="$CPPFLAGS \
+#                    -DARM_FPU_VFP=1 -D__ARM_EABI__ \
+#                    -D__arm__ \
+#                    -D__portable_native_client__ \
+#                    -DARM_FPU_VFP=1 \
+#                    -Dtimezone=_timezone \
+#                    -DDISABLE_SOCKETS \
+#                    -DDISABLE_ATTACH \
+#                    -DUSE_NEWLIB"
+#		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+#		with_tls=pthread
+#		;;
+   i686-*-nacl)
 		TARGET=X86
 		arch_target=x86
 		AC_DEFINE(TARGET_X86, 1, [...])
@@ -2922,46 +2966,80 @@ if test "x$with_tls" = "x__thread"; then
 	])
 fi
 
-if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_build != xno; then
+if test ${TARGET} = ARM; then
 	dnl ******************************************
 	dnl *** Check to see what FPU is available ***
 	dnl ******************************************
 	AC_MSG_CHECKING(which FPU to use)
 
+	#
+	# This is a bit tricky:
+	#
+	# if (__ARM_PCS_VFP) {
+	# 	/* mfloat-abi=hard == VFP with hard ABI */
+	# } elif (!__SOFTFP__) {
+	# 	/* mfloat-abi=softfp == VFP with soft ABI */
+	# } else {
+	# 	/* mfloat-abi=soft == no VFP */
+	# }
+	#
+	# The exception is iOS (w/ GCC) where none of the above
+	# are defined (but iOS always uses the 'softfp' ABI).
+	#
+	# No support for FPA.
+	#
+
 	fpu=NONE
-	if gcc -v 2>&1 | grep -q -- '--with-float=hard'; then
-	   fpu=VFP_HARD
+
+	# iOS GCC always uses the 'softfp' ABI.
+	if test x"$GCC" = xyes && test x$platform_darwin = xyes; then
+		fpu=VFP
 	fi
 
-	if test x$fpu = xNONE; then
-	   ORIG_CFLAGS=$CFLAGS
-	   CFLAGS="$CFLAGS -mfpu=vfp -mfloat-abi=softfp"
-	   AC_TRY_RUN([
-				int main () { __asm__ ("faddd	d7, d6, d7"); return 0; }
-				], fpu=VFP, fpu=NONE)
-	   CFLAGS=$ORIG_CFLAGS
-	fi
-
+	# Are we using the 'hard' ABI?
 	if test x$fpu = xNONE; then
 		AC_TRY_COMPILE([], [
-			__asm__ ("ldfd f0, [r0]");
-			], fpu=FPA, fpu=NONE)
+			#ifndef __ARM_PCS_VFP
+			#error "Float ABI is not 'hard'"
+			#endif
+			return 0;
+		], [
+			fpu=VFP_HARD
+		], [
+			fpu=NONE
+		])
+	fi
+
+	# No 'hard' ABI. 'soft' or 'softfp'?
+	if test x$fpu = xNONE; then
+		AC_TRY_COMPILE([], [
+			#ifdef __SOFTFP__
+			#error "Float ABI is not 'softfp'"
+			#endif
+			return 0;
+		], [
+			fpu=VFP
+		], [
+			fpu=NONE
+		])
 	fi
 
 	AC_MSG_RESULT($fpu)
 	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu=1"
 	unset fpu
 
-	AC_MSG_CHECKING(for ARMV6)
-	AC_TRY_RUN([
-		int main () { __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); return 0; }
-			], armv6=yes, armv6=no)
+	if test x$cross_compiling = xno; then
+		AC_MSG_CHECKING(for ARMV6)
+		AC_TRY_RUN([
+			int main () { __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); return 0; }
+				], armv6=yes, armv6=no)
 
-	AC_MSG_RESULT($armv6)
-	if test ${armv6} = yes; then
-	   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
-	   # libgc's gc_locks.h depends on this
-	   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+		AC_MSG_RESULT($armv6)
+		if test ${armv6} = yes; then
+		   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
+		   # libgc's gc_locks.h depends on this
+		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+		fi
 	fi
 fi
 
@@ -3137,7 +3215,6 @@ AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(POWERPC64, test x$TARGET = xPOWERPC64)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
-AM_CONDITIONAL(S390, test x$TARGET = xS390)
 AM_CONDITIONAL(S390x, test x$TARGET = xS390x)
 AM_CONDITIONAL(HOST_X86, test x$HOST = xX86)
 AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
@@ -3330,7 +3407,6 @@ mono/arch/x86/Makefile
 mono/arch/amd64/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
-mono/arch/s390/Makefile
 mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
 mono/arch/ia64/Makefile

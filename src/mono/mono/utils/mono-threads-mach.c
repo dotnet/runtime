@@ -49,13 +49,18 @@ gboolean
 mono_threads_core_suspend (MonoThreadInfo *info)
 {
 	kern_return_t ret;
+	gboolean res;
+
 	g_assert (info);
 
 	ret = thread_suspend (info->native_handle);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
-	return mono_threads_get_runtime_callbacks ()->
+	res = mono_threads_get_runtime_callbacks ()->
 		thread_state_init_from_handle (&info->suspend_state, mono_thread_info_get_tid (info), info->native_handle);
+	if (!res)
+		thread_resume (info->native_handle);
+	return res;
 }
 
 gboolean

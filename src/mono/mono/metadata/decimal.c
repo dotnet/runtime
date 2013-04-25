@@ -552,11 +552,15 @@ DECINLINE static void rshift192(guint64* pclo, guint64* pcmi, guint64* pchi)
     *pchi >>= 1;
 }
 
+#if defined(__native_client__) && (defined(__i386__) || defined(__x86_64))
+#define USE_X86_32BIT_INSTRUCTIONS 1
+#endif
+
 static inline gint
 my_g_bit_nth_msf (gsize mask)
 {
 	/* Mask is expected to be != 0 */
-#if defined(__i386__) && defined(__GNUC__)
+#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
 	int r;
 
 	__asm__("bsrl %1,%0\n\t"
@@ -1580,4 +1584,3 @@ gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp)
 }
 
 #endif /* DISABLE_DECIMAL */
-

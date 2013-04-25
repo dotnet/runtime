@@ -91,7 +91,7 @@ struct _MonoCodeManager {
 	CodeChunk *current;
 	CodeChunk *full;
 #if defined(__native_client_codegen__) && defined(__native_client__)
-	MonoGHashTable *hash;
+	GHashTable *hash;
 #endif
 };
 
@@ -203,6 +203,87 @@ nacl_inverse_modify_patch_target (unsigned char *target)
 
 #endif /* __native_client_codegen && __native_client__ */
 
+#define VALLOC_FREELIST_SIZE 16
+
+static CRITICAL_SECTION valloc_mutex;
+static GHashTable *valloc_freelists;
+
+static void*
+codechunk_valloc (guint32 size)
+{
+	void *ptr;
+	GSList *freelist;
+
+	if (!valloc_freelists) {
+		InitializeCriticalSection (&valloc_mutex);
+		valloc_freelists = g_hash_table_new (NULL, NULL);
+	}
+
+	/*
+	 * Keep a small freelist of memory blocks to decrease pressure on the kernel memory subsystem to avoid #3321.
+	 */
+	EnterCriticalSection (&valloc_mutex);
+	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
+	if (freelist) {
+		ptr = freelist->data;
+		memset (ptr, 0, size);
+		freelist = g_slist_remove_link (freelist, freelist);
+		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
+	} else {
+		ptr = mono_valloc (NULL, size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+	}
+	LeaveCriticalSection (&valloc_mutex);
+	return ptr;
+}
+
+static void
+codechunk_vfree (void *ptr, guint32 size)
+{
+	GSList *freelist;
+
+	EnterCriticalSection (&valloc_mutex);
+	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
+	if (!freelist || g_slist_length (freelist) < VALLOC_FREELIST_SIZE) {
+		freelist = g_slist_prepend (freelist, ptr);
+		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
+	} else {
+		mono_vfree (ptr, size);
+	}
+	LeaveCriticalSection (&valloc_mutex);
+}		
+
+static void
+codechunk_cleanup (void)
+{
+	GHashTableIter iter;
+	gpointer key, value;
+
+	if (!valloc_freelists)
+		return;
+	g_hash_table_iter_init (&iter, valloc_freelists);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		GSList *freelist = value;
+		GSList *l;
+
+		for (l = freelist; l; l = l->next) {
+			mono_vfree (l->data, GPOINTER_TO_UINT (key));
+		}
+		g_slist_free (freelist);
+	}
+	g_hash_table_destroy (valloc_freelists);
+}
+
+void
+mono_code_manager_init (void)
+{
+}
+
+void
+mono_code_manager_cleanup (void)
+{
+	codechunk_cleanup ();
+}
+
 /**
  * mono_code_manager_new:
  *
@@ -228,14 +309,16 @@ mono_code_manager_new (void)
 	if (next_dynamic_code_addr == NULL) {
 		const guint kPageMask = 0xFFFF; /* 64K pages */
 		next_dynamic_code_addr = (uintptr_t)(etext + kPageMask) & ~kPageMask;
+#if defined (__GLIBC__)
+		/* TODO: For now, just jump 64MB ahead to avoid dynamic libraries. */
+		next_dynamic_code_addr += (uintptr_t)0x4000000;
+#else
 		/* Workaround bug in service runtime, unable to allocate */
 		/* from the first page in the dynamic code section.    */
-		/* TODO: remove */
 		next_dynamic_code_addr += (uintptr_t)0x10000;
+#endif
 	}
-	cman->hash =  mono_g_hash_table_new (NULL, NULL);
-	/* Keep the hash table from being collected */
-	mono_gc_register_root (&cman->hash, sizeof (void*), NULL);
+	cman->hash =  g_hash_table_new (NULL, NULL);
 	if (patch_source_base == NULL) {
 		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
 		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
@@ -282,7 +365,7 @@ free_chunklist (CodeChunk *chunk)
 		mono_profiler_code_chunk_destroy ((gpointer) dead->data);
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
-			mono_vfree (dead->data, dead->size);
+			codechunk_vfree (dead->data, dead->size);
 			/* valgrind_unregister(dead->data); */
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
 			dlfree (dead->data);
@@ -427,7 +510,7 @@ new_codechunk (int dynamic, int size)
 		/* Allocate MIN_ALIGN-1 more than we need so we can still */
 		/* guarantee MIN_ALIGN alignment for individual allocs    */
 		/* from mono_code_manager_reserve_align.                  */
-		ptr = mono_valloc (NULL, chunk_size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		ptr = codechunk_valloc (chunk_size);
 		if (!ptr)
 			return NULL;
 	}
@@ -546,7 +629,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	/* Allocate code space from the service runtime */
 	code_ptr = allocate_code (size);
 	/* Insert pointer to code space in hash, keyed by buffer ptr */
-	mono_g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
+	g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
 
 	nacl_jit_check_init ();
 
@@ -598,7 +681,7 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 	unsigned char *code;
 	int status;
 	g_assert (newsize <= size);
-	code = mono_g_hash_table_lookup (cman->hash, data);
+	code = g_hash_table_lookup (cman->hash, data);
 	g_assert (code != NULL);
 	/* Pad space after code with HLTs */
 	/* TODO: this is x86/amd64 specific */
@@ -608,9 +691,15 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 	}
 	status = nacl_dyncode_create (code, data, newsize);
 	if (status != 0) {
+		unsigned char *codep;
+		fprintf(stderr, "Error creating Native Client dynamic code section attempted to be\n"
+		                "emitted at %p (hex dissasembly of code follows):\n", code);
+		for (codep = data; codep < data + newsize; codep++)
+			fprintf(stderr, "%02x ", *codep);
+		fprintf(stderr, "\n");
 		g_assert_not_reached ();
 	}
-	mono_g_hash_table_remove (cman->hash, data);
+	g_hash_table_remove (cman->hash, data);
 	g_assert (data == patch_source_base[patch_current_depth]);
 	g_assert (code == patch_dest_base[patch_current_depth]);
 	patch_current_depth--;
@@ -623,7 +712,7 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 void *
 nacl_code_manager_get_code_dest (MonoCodeManager *cman, void *data)
 {
-	return mono_g_hash_table_lookup (cman->hash, data);
+	return g_hash_table_lookup (cman->hash, data);
 }
 #endif
 

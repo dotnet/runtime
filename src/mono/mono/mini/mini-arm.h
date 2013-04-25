@@ -9,6 +9,12 @@
 #include <mono/utils/mono-context.h>
 #include <glib.h>
 
+#ifdef __native_client_codegen__
+#define kNaClAlignmentARM 16
+#define kNaClAlignmentMaskARM (kNaClAlignmentARM - 1)
+#define kNaClLengthOfCallImm 4
+#endif
+
 #if defined(ARM_FPU_NONE) || (defined(__ARM_EABI__) && !defined(ARM_FPU_VFP) && !defined(ARM_FPU_VFP_HARD))
 #define MONO_ARCH_SOFT_FLOAT 1
 #endif
@@ -188,6 +194,11 @@ typedef struct MonoCompileArch {
 #define ARM_LAST_ARG_REG 3
 
 #define MONO_ARCH_USE_SIGACTION 1
+
+#if defined(__native_client__)
+#undef MONO_ARCH_USE_SIGACTION
+#endif
+
 #define MONO_ARCH_NEED_DIV_CHECK 1
 
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
@@ -221,8 +232,14 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
 
+#if defined(__native_client__)
+#undef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+#undef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
+#undef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
+#endif
+
 /* Matches the HAVE_AEABI_READ_TP define in mini-arm.c */
-#if defined(__ARM_EABI__) && defined(__linux__) && !defined(TARGET_ANDROID)
+#if defined(__ARM_EABI__) && defined(__linux__) && !defined(TARGET_ANDROID) && !defined(__native_client__)
 #define MONO_ARCH_HAVE_TLS_GET 1
 #endif
 
@@ -274,4 +291,3 @@ mono_arm_load_jumptable_entry (guint8 *code, gpointer *jte, ARMReg reg) MONO_INT
 #endif
 
 #endif /* __MONO_MINI_ARM_H__ */
-

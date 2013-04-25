@@ -708,6 +708,8 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 #endif
 
+/* Native Client has no ftruncate function, even in standalone sel_ldr. */
+#ifndef __native_client__
 	/* always truncate, because the extend write() adds an extra
 	 * byte to the end of the file
 	 */
@@ -722,6 +724,7 @@ static gboolean file_setendoffile(gpointer handle)
 		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
+#endif
 		
 	return(TRUE);
 }
@@ -1512,6 +1515,13 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		
 		return(INVALID_HANDLE_VALUE);
 	}
+#ifdef __native_client__
+	/* Workaround: Native Client currently returns the same fake inode
+	 * for all files, so do a simple hash on the filename so we don't
+	 * use the same share info for each file.
+	 */
+	statbuf.st_ino = g_str_hash(filename);
+#endif
 
 	if (share_check (&statbuf, sharemode, fileaccess,
 			 &file_handle.share_info, fd) == FALSE) {
@@ -2067,7 +2077,7 @@ replace_cleanup:
  * Return value: the handle, or %INVALID_HANDLE_VALUE on error
  */
 
-static mono_mutex_t stdhandle_mutex = MONO_MUTEX_INITIALIZER;
+static mono_mutex_t stdhandle_mutex;
 
 gpointer GetStdHandle(WapiStdHandle stdhandle)
 {
@@ -2746,6 +2756,7 @@ retry:
 		goto retry;
 	}
 
+#ifndef __native_client__
 	result = _wapi_lstat (filename, &linkbuf);
 	if (result != 0) {
 		DEBUG ("%s: lstat failed: %s", __func__, filename);
@@ -2753,6 +2764,7 @@ retry:
 		g_free (filename);
 		goto retry;
 	}
+#endif
 
 	utf8_filename = mono_utf8_from_external (filename);
 	if (utf8_filename == NULL) {
@@ -2776,7 +2788,11 @@ retry:
 	else
 		create_time = buf.st_ctime;
 	
+#ifdef __native_client__
+	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf, NULL);
+#else
 	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf, &linkbuf);
+#endif
 
 	_wapi_time_t_to_filetime (create_time, &find_data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
@@ -2999,14 +3015,20 @@ guint32 GetFileAttributes (const gunichar2 *name)
 		return (INVALID_FILE_ATTRIBUTES);
 	}
 
+#ifndef __native_client__
 	result = _wapi_lstat (utf8_name, &linkbuf);
 	if (result != 0) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
 		return (INVALID_FILE_ATTRIBUTES);
 	}
+#endif
 	
+#ifdef __native_client__
+	ret = _wapi_stat_to_file_attributes (utf8_name, &buf, NULL);
+#else
 	ret = _wapi_stat_to_file_attributes (utf8_name, &buf, &linkbuf);
+#endif
 	
 	g_free (utf8_name);
 
@@ -3203,6 +3225,12 @@ extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 	glong count;
 	gsize bytes;
 
+#ifdef __native_client__
+	gchar *path = g_get_current_dir ();
+	if (length < strlen(path) + 1 || path == NULL)
+		return 0;
+	memcpy (buffer, path, strlen(path) + 1);
+#else
 	if (getcwd ((char*)buffer, length) == NULL) {
 		if (errno == ERANGE) { /*buffer length is not big enough */ 
 			gchar *path = g_get_current_dir (); /*FIXME g_get_current_dir doesn't work with broken paths and calling it just to know the path length is silly*/
@@ -3216,6 +3244,7 @@ extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 		_wapi_set_last_error_from_errno ();
 		return 0;
 	}
+#endif
 
 	utf16_path = mono_unicode_from_external ((gchar*)buffer, &bytes);
 	count = (bytes/2)+1;
@@ -4227,3 +4256,10 @@ GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesi
 	return status;
 }
 #endif
+
+
+void
+_wapi_io_init (void)
+{
+	mono_mutex_init (&stdhandle_mutex);
+}

@@ -148,6 +148,12 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 	if (vasprintf (&msg, format, args) < 0)
 		return;
 
+#ifdef G_OS_WIN32
+	printf ("%s%s%s\n",
+            log_domain != NULL ? log_domain : "",
+            log_domain != NULL ? ": " : "",
+            msg);
+#else
 #if MONOTOUCH
 	FILE *target = stderr;
 #else
@@ -158,6 +164,7 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 		log_domain != NULL ? log_domain : "",
 		log_domain != NULL ? ": " : "",
 		msg);
+#endif
 	free (msg);
 	if (log_level & fatal){
 		fflush (stdout);

@@ -13,7 +13,7 @@
 # if defined(__s390x__)
 #  include "mini-s390x.h"
 # else
-#  include "mini-s390.h"
+#error "s390 is no longer supported."
 # endif
 #elif defined(__ia64__)
 #include "mini-ia64.h"

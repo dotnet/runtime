@@ -25,8 +25,8 @@ using System.Reflection;
 
 class Tests {
 
-	static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 	
 	public static int test_10_create () {

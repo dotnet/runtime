@@ -40,7 +40,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/atomic.h>
-#include <mono/io-layer/mono-mutex.h>
+#include <mono/utils/mono-mutex.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-conf.h>
@@ -136,7 +136,7 @@ struct _GCMemSection {
 #define LOCK_DECLARE(name) mono_mutex_t name
 /* if changing LOCK_INIT to something that isn't idempotent, look at
    its use in mono_gc_base_init in sgen-gc.c */
-#define LOCK_INIT(name)	mono_mutex_init (&(name), NULL)
+#define LOCK_INIT(name)	mono_mutex_init (&(name))
 #define LOCK_GC do {						\
 		mono_mutex_lock (&gc_mutex);			\
 		MONO_GC_LOCKED ();				\

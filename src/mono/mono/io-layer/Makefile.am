@@ -22,7 +22,6 @@ OTHER_H = \
 	io-portability.h	\
 	macros.h	\
 	messages.h	\
-	mono-mutex.h	\
 	mutexes.h	\
 	processes.h	\
 	security.h	\
@@ -70,8 +69,6 @@ OTHER_SRC = \
 	mutexes.c		\
 	mutexes.h		\
 	mutex-private.h		\
-	mono-mutex.c		\
-	mono-mutex.h		\
 	posix.c			\
 	processes.c		\
 	processes.h		\

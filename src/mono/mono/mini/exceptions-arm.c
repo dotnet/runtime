@@ -493,6 +493,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	return FALSE;
 }
 
+#if MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
@@ -504,6 +505,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
 	mono_monoctx_to_sigctx (mctx, ctx);
 }
+#endif /* MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX */
 
 /*
  * handle_exception:
@@ -546,7 +548,7 @@ get_handle_signal_exception_addr (void)
 gboolean
 mono_arch_handle_exception (void *ctx, gpointer obj)
 {
-#if defined(MONO_CROSS_COMPILE)
+#if defined(MONO_CROSS_COMPILE) || !defined(MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX)
 	g_assert_not_reached ();
 #elif defined(MONO_ARCH_USE_SIGACTION)
 	arm_ucontext *sigctx = ctx;
@@ -597,6 +599,8 @@ gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
 #ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif defined(__native_client__)
 	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;

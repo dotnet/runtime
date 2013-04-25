@@ -1086,4 +1086,18 @@ public class Tests
 		return 0;
 	}
 
+	public class TAbstractTableItem<TC> {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static void SetProperty<TV> () {    }
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static void Test () {
+			SetProperty<bool> ();
+		}
+	}
+
+	public static int test_0_gsharedvt_method_on_shared_class () {
+       TAbstractTableItem<object>.Test ();
+	   return 0;
+	}
 }

@@ -28,8 +28,8 @@ using System.Reflection;
 
 class Tests {
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 	
 	public static int test_0_beq () {

@@ -100,7 +100,7 @@ shutdown sequence.
 
 #ifndef DISABLE_DEBUGGER_AGENT
 
-#include <mono/io-layer/mono-mutex.h>
+#include <mono/utils/mono-mutex.h>
 
 /* Definitions to make backporting to 2.6 easier */
 //#define MonoInternalThread MonoThread
@@ -916,7 +916,7 @@ mono_debugger_agent_init (void)
 
 	event_requests = g_ptr_array_new ();
 
-	mono_mutex_init (&debugger_thread_exited_mutex, NULL);
+	mono_mutex_init (&debugger_thread_exited_mutex);
 	mono_cond_init (&debugger_thread_exited_cond, NULL);
 
 	mono_profiler_install ((MonoProfiler*)&debugger_profiler, runtime_shutdown);
@@ -2329,7 +2329,7 @@ static MonoSemType suspend_sem;
 static void
 suspend_init (void)
 {
-	mono_mutex_init (&suspend_mutex, NULL);
+	mono_mutex_init (&suspend_mutex);
 	mono_cond_init (&suspend_cond, NULL);	
 	MONO_SEM_INIT (&suspend_sem, 0);
 }
@@ -4038,11 +4038,13 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 
 		if (error) {
 			mono_error_set_error (error, MONO_ERROR_GENERIC, "%s", s);
+			g_warning ("%s", s);
 			g_free (s);
 			return;
 		} else {
-			g_error ("%s", s);
+			g_warning ("%s", s);
 			g_free (s);
+			return;
 		}
 	}
 
@@ -6389,7 +6391,9 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_EXIT: {
 		MonoInternalThread *thread;
 		DebuggerTlsData *tls;
+#ifdef TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 		MonoClass *env_class;
+#endif
 		MonoMethod *exit_method = NULL;
 		gpointer *args;
 		int exit_code;

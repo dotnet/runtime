@@ -25,7 +25,7 @@
 #include "mono/arch/arm/arm-fpa-codegen.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
-#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID)
+#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID) && !defined(__native_client__)
 #define HAVE_AEABI_READ_TP 1
 #endif
 
@@ -50,6 +50,29 @@
 #else
 #define IS_SOFT_FLOAT 0
 #endif
+
+#ifdef __native_client_codegen__
+const guint kNaClAlignment = kNaClAlignmentARM;
+const guint kNaClAlignmentMask = kNaClAlignmentMaskARM;
+gint8 nacl_align_byte = -1; /* 0xff */
+
+guint8 *
+mono_arch_nacl_pad (guint8 *code, int pad)
+{
+  /* Not yet properly implemented. */
+  g_assert_not_reached ();
+  return code;
+}
+
+guint8 *
+mono_arch_nacl_skip_nops (guint8 *code)
+{
+  /* Not yet properly implemented. */
+  g_assert_not_reached ();
+  return code;
+}
+
+#endif /* __native_client_codegen__ */
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -198,8 +221,8 @@ mono_arch_fregname (int reg)
 	return "unknown";
 }
 
-#ifndef DISABLE_JIT
 
+#ifndef DISABLE_JIT
 static guint8*
 emit_big_add (guint8 *code, int dreg, int sreg, int imm)
 {
@@ -762,11 +785,14 @@ void
 mono_arch_init (void)
 {
 	InitializeCriticalSection (&mini_arch_mutex);
-
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	if (mini_get_debug_options ()->soft_breakpoints) {
 		single_step_func_wrapper = create_function_wrapper (debugger_agent_single_step_from_context);
 		breakpoint_func_wrapper = create_function_wrapper (debugger_agent_breakpoint_from_context);
 	} else {
+#else
+	{
+#endif
 		ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
 		bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
 		mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
@@ -988,6 +1014,11 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
+#if defined(__native_client__)
+  // For Native Client we don't have to flush i-cache here,
+  // as it's being done by dyncode interface.
+#else
+
 #ifdef MONO_CROSS_COMPILE
 #elif __APPLE__
 	sys_icache_invalidate (code, size);
@@ -1014,6 +1045,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 			: "r" (code), "r" (code + size), "r" (0)
 			: "r0", "r1", "r3" );
 #endif
+#endif /* !__native_client__ */
 }
 
 typedef enum {
@@ -6353,6 +6385,8 @@ mono_arch_get_trampolines (gboolean aot)
 	return mono_arm_get_exception_trampolines (aot);
 }
 
+
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 /*
  * mono_arch_set_breakpoint:
  *
@@ -6538,6 +6572,8 @@ mono_arch_skip_single_step (MonoContext *ctx)
 {
 	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
 }
+
+#endif /* MONO_ARCH_SOFT_DEBUG_SUPPORTED */
 
 /*
  * mono_arch_get_seq_point_info:

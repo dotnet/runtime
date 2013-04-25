@@ -17,10 +17,9 @@
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/misc-private.h>
 
-#include <mono/io-layer/mono-mutex.h>
-
 #include <mono/io-layer/event-private.h>
 
+#include <mono/utils/mono-mutex.h>
 #if 0
 #define DEBUG(...) g_message(__VA_ARGS__)
 #else

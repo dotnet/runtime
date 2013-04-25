@@ -603,8 +603,12 @@ thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 	} else {
 		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 		if (sigctx) {
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 			mono_arch_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
 			tls->unwind_state.valid = TRUE;
+#else
+			tls->unwind_state.valid = FALSE;
+#endif
 		} else if (ctx) {
 			memcpy (&tls->unwind_state.ctx, ctx, sizeof (MonoContext));
 			tls->unwind_state.valid = TRUE;
@@ -2546,11 +2550,6 @@ mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType ty
 }
 
 #endif /* DISABLE_JIT */
-
-void
-mini_gc_enable_gc_maps_for_aot (void)
-{
-}
 
 #endif
 

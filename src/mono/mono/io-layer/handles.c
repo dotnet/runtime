@@ -32,13 +32,13 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
-#include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/critical-section-private.h>
 
+#include <mono/utils/mono-mutex.h>
 #undef DEBUG_REFS
 
 #if 0
@@ -173,7 +173,7 @@ pid_t _wapi_getpid (void)
 }
 
 
-static mono_mutex_t scan_mutex = MONO_MUTEX_INITIALIZER;
+static mono_mutex_t scan_mutex;
 
 static void handle_cleanup (void)
 {
@@ -279,11 +279,14 @@ wapi_init (void)
 	if (_wapi_shm_enabled ())
 		_wapi_collection_init ();
 #endif
+	_wapi_io_init ();
+	mono_mutex_init (&scan_mutex);
 
 	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
 
 	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_cond;
 	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_mutex;
+
 
 	/* Using g_atexit here instead of an explicit function call in
 	 * a cleanup routine lets us cope when a third-party library
@@ -300,7 +303,6 @@ wapi_cleanup (void)
 	
 	_wapi_has_shut_down = TRUE;
 
-	_wapi_critical_section_cleanup ();
 	_wapi_error_cleanup ();
 	_wapi_thread_cleanup ();
 }
@@ -336,7 +338,7 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 		thr_ret = pthread_cond_init (&handle->signal_cond, NULL);
 		g_assert (thr_ret == 0);
 				
-		thr_ret = mono_mutex_init (&handle->signal_mutex, NULL);
+		thr_ret = mono_mutex_init (&handle->signal_mutex);
 		g_assert (thr_ret == 0);
 
 		if (handle_specific != NULL) {

@@ -1336,6 +1336,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 		fprintf (acfg->fp, "add r0, r0, #%d\n", (int)sizeof (MonoObject));
 		fprintf (acfg->fp, "b %s\n", call_target);
 		fprintf (acfg->fp, ".arm\n");
+		fprintf (acfg->fp, ".align 2\n");
 		return;
 	}
 

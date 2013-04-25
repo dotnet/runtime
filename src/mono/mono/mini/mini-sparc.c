@@ -4361,8 +4361,10 @@ mono_arch_get_lmf_addr (void)
 #endif
 
 void
-mono_arch_finish_init (void)
+mono_arch_tls_init (void)
 {
+	MonoJitTlsData *jit_tls;
+
 	if (!lmf_addr_key_inited) {
 		int res;
 
@@ -4377,11 +4379,18 @@ mono_arch_finish_init (void)
 
 	}
 
+	jit_tls = pthread_getspecific (mono_get_jit_tls_key ());
+
 #ifdef MONO_SPARC_THR_TLS
-	thr_setspecific (lmf_addr_key, &tls->lmf);
+	thr_setspecific (lmf_addr_key, &jit_tls->lmf);
 #else
-	pthread_setspecific (lmf_addr_key, &tls->lmf);
+	pthread_setspecific (lmf_addr_key, &jit_tls->lmf);
 #endif
+}
+
+void
+mono_arch_finish_init (void)
+{
 }
 
 void

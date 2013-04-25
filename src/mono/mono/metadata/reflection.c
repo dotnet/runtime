@@ -11570,7 +11570,7 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			ref = resolve_object (mb->module->image, obj, &handle_class, NULL);
 			if (!ref)
 				ex = mono_get_exception_type_load (NULL, NULL);
-			else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+			else if (mono_security_core_clr_enabled ())
 				ex = mono_security_core_clr_ensure_dynamic_method_resolved_object (ref, handle_class);
 
 			if (ex) {

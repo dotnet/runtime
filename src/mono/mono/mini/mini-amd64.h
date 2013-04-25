@@ -15,7 +15,15 @@
 /* image-writer.c doesn't happen                       */
 #define kNaClLengthOfCallImm kNaClAlignmentAMD64
 
-int is_nacl_call_reg_sequence(guint8* code);
+int is_nacl_call_reg_sequence (guint8* code);
+void amd64_nacl_clear_legacy_prefix_tag ();
+void amd64_nacl_tag_legacy_prefix (guint8* code);
+void amd64_nacl_tag_rex (guint8* code);
+guint8* amd64_nacl_get_legacy_prefix_tag ();
+guint8* amd64_nacl_get_rex_tag ();
+void amd64_nacl_instruction_pre ();
+void amd64_nacl_instruction_post (guint8 **start, guint8 **end);
+void amd64_nacl_membase_handler (guint8** code, gint8 basereg, gint32 offset, gint8 dreg);
 #endif
 
 #ifdef HOST_WIN32

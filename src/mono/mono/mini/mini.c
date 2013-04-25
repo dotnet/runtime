@@ -54,6 +54,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-path.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/dtrace.h>
 
@@ -1525,7 +1526,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 		return FALSE;
 	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
 		return FALSE;
-	if (mono_security_get_mode () != MONO_SECURITY_MODE_NONE)
+	if (mono_security_enabled ())
 		return FALSE;
 	return mono_assembly_has_skip_verification (assembly);
 }
@@ -2754,6 +2755,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	mono_set_lmf_addr (&jit_tls->lmf);
 
 	jit_tls->lmf = lmf;
+#endif
+
+#ifdef MONO_ARCH_HAVE_TLS_INIT
+	mono_arch_tls_init ();
 #endif
 
 	mono_setup_altstack (jit_tls);
@@ -4060,7 +4065,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			printf ("Number of try block holes %d\n", num_holes);
 	}
 
-	if (mono_method_has_declsec (cfg->method_to_register)) {
+	if (mono_security_method_has_declsec (cfg->method_to_register)) {
 		cas_size = sizeof (MonoMethodCasInfo);
 	}
 
@@ -4442,7 +4447,7 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 	gboolean gsharedvt = FALSE;
 	MonoGenericContainer *class_container, *method_container = NULL;
 
-	if (method->is_generic || method->klass->generic_container) {
+	if (method->is_generic || (method->klass->generic_container && !method->is_inflated)) {
 		declaring_method = method;
 	} else {
 		declaring_method = mono_method_get_declaring_generic_method (method);
@@ -5697,6 +5702,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_FIELD_ACCESS:
 		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
 		break;
+#ifndef DISABLE_SECURITY
 	/* this can only be set if the security manager is active */
 	case MONO_EXCEPTION_SECURITY_LINKDEMAND: {
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
@@ -5710,6 +5716,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		ex = (MonoException*)exc;
 		break;
 	}
+#endif
 	case MONO_EXCEPTION_OBJECT_SUPPLIED: {
 		MonoException *exp = cfg->exception_ptr;
 		MONO_GC_UNREGISTER_ROOT (cfg->exception_ptr);
@@ -5798,8 +5805,15 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			patch_info.data.method = method;
 			g_hash_table_remove (domain_jit_info (target_domain)->jump_target_hash, method);
 
+#if defined(__native_client_codegen__) && defined(__native_client__)
+			/* These patches are applied after a method has been installed, no target munging is needed. */
+			nacl_allow_target_modification (FALSE);
+#endif
 			for (tmp = jlist->list; tmp; tmp = tmp->next)
 				mono_arch_patch_code (NULL, target_domain, tmp->data, &patch_info, NULL, TRUE);
+#if defined(__native_client_codegen__) && defined(__native_client__)
+			nacl_allow_target_modification (TRUE);
+#endif
 		}
 	}
 
@@ -6094,7 +6108,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	mono_domain_unlock (domain);		
 
 	if (!info) {
-		if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+		if (mono_security_core_clr_enabled ()) {
 			/* 
 			 * This might be redundant since mono_class_vtable () already does this,
 			 * but keep it just in case for moonlight.
@@ -6790,7 +6804,9 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
-	
+
+	mono_code_manager_init ();
+
 	mono_arch_cpu_init ();
 
 	mono_arch_init ();
@@ -6895,9 +6911,9 @@ mini_init (const char *filename, const char *runtime_version)
 			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 	}
 #endif
+
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();
-	
 
 	/* This must come after mono_init () in the aot-only case */
 	mono_exceptions_init ();
@@ -7205,7 +7221,7 @@ print_jit_stats (void)
 		g_print ("JIT info table lookups: %ld\n", mono_stats.jit_info_table_lookup_count);
 
 		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
-		if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
+		if (mono_security_cas_enabled ()) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
 			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
 			g_print ("LinkDemand (icall)    : %ld\n", mono_jit_stats.cas_linkdemand_icall);
@@ -7293,6 +7309,8 @@ mini_cleanup (MonoDomain *domain)
 	DeleteCriticalSection (&jit_mutex);
 
 	DeleteCriticalSection (&mono_delegate_section);
+
+	mono_code_manager_cleanup ();
 
 #ifdef USE_JUMP_TABLES
 	mono_jumptable_cleanup ();

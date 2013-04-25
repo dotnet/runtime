@@ -224,6 +224,9 @@ extern gboolean UnlockFile (gpointer handle, guint32 offset_low,
 			    guint32 length_high);
 extern gboolean GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize);
 
+
+extern void _wapi_io_init (void);
+
 G_END_DECLS
 
 #endif /* _WAPI_IO_H_ */

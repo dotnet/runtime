@@ -285,7 +285,11 @@ my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 	if ((mask == 0) || (nth_bit == BITS_PER_CHUNK))
 		return -1;
 
-#if defined(__i386__) && defined(__GNUC__)
+#if defined(__native_client__) && (defined(__i386__) || defined(__x86_64))
+#define USE_X86_32BIT_INSTRUCTIONS 1
+#endif
+
+#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
  {
 	 int r;
 	 /* This depends on mask != 0 */
@@ -315,7 +319,7 @@ static inline gint
 my_g_bit_nth_lsf_nomask (gsize mask)
 {
 	/* Mask is expected to be != 0 */
-#if defined(__i386__) && defined(__GNUC__)
+#if (defined(__i386__) && defined(__GNUC__)) || defined(USE_X86_32BIT_INSTRUCTIONS)
 	int r;
 
 	__asm__("bsfl %1,%0\n\t"
@@ -817,4 +821,3 @@ main() {
 }
 
 #endif
-
