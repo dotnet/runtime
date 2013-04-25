@@ -49,6 +49,7 @@ inner_start_thread (void *arg)
 	result = start_func (t_arg);
 	g_assert (!mono_domain_get ());
 
+	mono_thread_info_dettach ();
 
 	return result;
 }

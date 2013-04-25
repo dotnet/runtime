@@ -255,6 +255,7 @@ mono_thread_info_dettach (void)
 	if (info) {
 		THREADS_DEBUG ("detaching %p\n", info);
 		unregister_thread (info);
+		mono_native_tls_set_value (thread_info_key, NULL);
 	}
 }
 
