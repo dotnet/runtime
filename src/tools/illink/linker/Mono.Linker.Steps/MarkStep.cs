@@ -344,6 +344,15 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (provider);
 		}
 
+		protected virtual void MarkSerializable (TypeDefinition type)
+		{
+			if (!type.HasMethods)
+				return;
+
+			MarkMethodsIf (type.Methods, IsDefaultConstructorPredicate);
+			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructorPredicate);
+		}
+
 		protected virtual TypeDefinition MarkType (TypeReference reference)
 		{
 			if (reference == null)
@@ -374,10 +383,8 @@ namespace Mono.Linker.Steps {
 				MarkMethodCollection (type.Methods);
 			}
 
-			if (IsSerializable (type) && type.HasMethods) {
-				MarkMethodsIf (type.Methods, IsDefaultConstructorPredicate);
-				MarkMethodsIf (type.Methods, IsSpecialSerializationConstructorPredicate);
-			}
+			if (IsSerializable (type))
+				MarkSerializable (type);
 
 			MarkTypeSpecialCustomAttributes (type);
 
@@ -567,7 +574,7 @@ namespace Mono.Linker.Steps {
 
 		static bool IsDefaultConstructor (MethodDefinition method)
 		{
-			return IsConstructor (method) && method.Parameters.Count == 0;
+			return IsConstructor (method) && !method.HasParameters;
 		}
 
 		static bool IsConstructor (MethodDefinition method)
