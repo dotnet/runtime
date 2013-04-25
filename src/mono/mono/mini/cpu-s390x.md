@@ -70,7 +70,7 @@ call_reg: dest:o src1:i len:8 clob:c
 ceq: dest:i len:12
 cgt.un: dest:i len:12
 cgt: dest:i len:12
-checkthis: src1:b len:10
+checkthis: src1:b len:16
 ckfinite: dest:f src1:f len:22
 clt.un: dest:i len:12
 clt: dest:i len:12

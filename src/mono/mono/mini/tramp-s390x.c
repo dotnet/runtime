@@ -27,6 +27,9 @@
 #define CREATE_FP_OFFSET	CREATE_GR_OFFSET+GR_SAVE_SIZE
 #define CREATE_LMF_OFFSET	CREATE_FP_OFFSET+FP_SAVE_SIZE
 #define CREATE_STACK_SIZE	(CREATE_LMF_OFFSET+2*sizeof(long)+sizeof(MonoLMF))
+#define GENERIC_REG_OFFSET	CREATE_STACK_SIZE + \
+				S390_REG_SAVE_OFFSET + \
+				3*sizeof(long)
 
 /*------------------------------------------------------------------*/
 /* Method-specific trampoline code fragment sizes		    */
@@ -343,10 +346,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		s390_lg   (buf, s390_r3, 0, s390_r11, S390_RET_ADDR_OFFSET);
 	}
 
-	/* Arg 3: MonoMethod *method. It was put in r1 by the
-	   method-specific trampoline code, and then saved before the call
-	   to mono_get_lmf_addr()'. */
-	s390_lg  (buf, s390_r4, 0, STK_BASE, METHOD_SAVE_OFFSET);
+	/* Arg 3: Trampoline argument */
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+		s390_lg (buf, s390_r4, 0, STK_BASE, GENERIC_REG_OFFSET);
+	else
+		s390_lg (buf, s390_r4, 0, STK_BASE, METHOD_SAVE_OFFSET);
 
 	/* Arg 4: trampoline address. Ignore for now */
 		
@@ -387,10 +391,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	s390_lgr  (buf, STK_BASE, s390_r11);
 	s390_lmg  (buf, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT || tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		s390_br (buf, s390_r14);
-	else
-		s390_br (buf, s390_r1);
+	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN(tramp_type)) {
+		s390_lgr (buf, s390_r2, s390_r1);
+		s390_br  (buf, s390_r14);
+	} else {
+		s390_br  (buf, s390_r1);
+	}
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
@@ -435,7 +441,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	s390_llong(buf, arg1);
 	s390_lg   (buf, s390_r1, 0, s390_r1, 4);
 	displace = (tramp - buf) / 2;
-	s390_jcl  (buf, S390_CC_UN, displace);
+	s390_jg   (buf, displace);
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
@@ -462,9 +468,201 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
-	/* FIXME: implement! */
+#ifdef MONO_ARCH_VTABLE_REG
+	guint8 *tramp;
+	guint8 *code, *buf;
+	guint8 **rgctx_null_jumps;
+	gint32 displace;
+	int tramp_size,
+	    depth, 
+	    index, 
+	    iPatch = 0,
+	    i;
+	gboolean mrgctx;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	index = MONO_RGCTX_SLOT_INDEX (slot);
+	if (mrgctx)
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+	for (depth = 0; ; ++depth) {
+		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
+
+		if (index < size - 1)
+			break;
+		index -= size - 1;
+	}
+
+	tramp_size = 48 + 16 * depth;
+	if (mrgctx)
+		tramp_size += 4;
+	else
+		tramp_size += 12;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	rgctx_null_jumps = g_malloc (sizeof (guint8*) * (depth + 2));
+
+	if (mrgctx) {
+		/* get mrgctx ptr */
+		s390_lgr (code, s390_r1, s390_r2);
+	} else {
+		/* load rgctx ptr from vtable */
+		s390_lg (code, s390_r1, 0, s390_r2, G_STRUCT_OFFSET(MonoVTable, runtime_generic_context));
+		/* is the rgctx ptr null? */
+		s390_ltgr (code, s390_r1, s390_r1);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [iPatch++] = code;
+		s390_jge (code, 0);
+	}
+
+	for (i = 0; i < depth; ++i) {
+		/* load ptr to next array */
+		if (mrgctx && i == 0)
+			s390_lg (code, s390_r1, 0, s390_r1, MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT);
+		else
+			s390_lg (code, s390_r1, 0, s390_r1, 0);
+		s390_ltgr (code, s390_r1, s390_r1);
+		/* if the ptr is null then jump to actual trampoline */
+		rgctx_null_jumps [iPatch++] = code;
+		s390_jge (code, 0);
+	}
+
+	/* fetch slot */
+	s390_lg (code, s390_r1, 0, s390_r1, (sizeof (gpointer) * (index  + 1)));
+	/* is the slot null? */
+	s390_ltgr (code, s390_r1, s390_r1);
+	/* if yes, jump to actual trampoline */
+	rgctx_null_jumps [iPatch++] = code;
+	s390_jge (code, 0);
+	/* otherwise return r1 */
+	s390_lgr (code, s390_r2, s390_r1);
+	s390_br  (code, s390_r14);
+
+	for (i = 0; i < iPatch; i++) {
+		displace = ((uintptr_t) code - (uintptr_t) rgctx_null_jumps[i]) / 2;
+		s390_patch_rel ((rgctx_null_jumps [i] + 2), displace);
+	}
+
+	g_free (rgctx_null_jumps);
+
+	/* move the rgctx pointer to the VTABLE register */
+	s390_lgr (code, MONO_ARCH_VTABLE_REG, s390_r2);
+
+	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
+		MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+
+	/* jump to the actual trampoline */
+	displace = (tramp - code) / 2;
+	s390_jg (code, displace);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create (mono_get_rgctx_fetch_trampoline_name (slot), buf, code - buf, ji, unwind_ops);
+
+	return(buf);
+#else
 	g_assert_not_reached ();
-	return NULL;
+#endif
+	return(NULL);
 }	
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name    	- mono_arch_get_static_rgctx_trampoline		    */
+/*                                                                  */
+/* Function	- Create a trampoline which sets RGCTX_REG to MRGCTX*/
+/*		  then jumps to ADDR.				    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_static_rgctx_trampoline (MonoMethod *m, 
+					MonoMethodRuntimeGenericContext *mrgctx, 
+					gpointer addr)
+{
+	guint8 *code, *start;
+	gint32 displace;
+	int buf_len;
+
+	MonoDomain *domain = mono_domain_get ();
+
+	buf_len = 32;
+
+	start = code = mono_domain_code_reserve (domain, buf_len);
+
+	s390_basr (code, s390_r1, 0);
+	s390_j    (code, 6);
+	s390_llong(code, mrgctx);
+	s390_lg   (code, MONO_ARCH_RGCTX_REG, 0, s390_r1, 4);
+	displace = ((uintptr_t) addr - (uintptr_t) code) / 2;
+	s390_jg   (code, displace);
+	g_assert ((code - start) < buf_len);
+
+	mono_arch_flush_icache (start, code - start);
+
+	return(start);
+}	
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_generic_class_init_trampoline    */
+/*                                                                  */
+/* Function	- 						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	static int byte_offset = -1;
+	static guint8 bitmask;
+	guint8 *jump;
+	gint32 displace;
+	int tramp_size;
+	GSList *unwind_ops = NULL;
+	MonoJumpInfo *ji = NULL;
+
+	tramp_size = 48;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	if (byte_offset < 0)
+		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+	s390_llgc(code, s390_r0, 0, MONO_ARCH_VTABLE_REG, byte_offset);
+	s390_nill(code, s390_r0, bitmask);
+	s390_bnzr(code, s390_r14);
+
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT,
+		mono_get_root_domain (), NULL);
+
+	/* jump to the actual trampoline */
+	displace = (tramp - code) / 2;
+	s390_jg (code, displace);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("generic_class_init_trampoline"), buf, code - buf, ji, unwind_ops);
+
+	return(buf);
+}
 
 /*========================= End of Function ========================*/

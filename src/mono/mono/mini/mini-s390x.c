@@ -4161,6 +4161,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* ensure ins->sreg1 is not NULL */
 			s390_lg   (code, s390_r0, 0, ins->sreg1, 0);
 			s390_ltgr (code, s390_r0, s390_r0);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_ZR, "NullReferenceException");
 		}
 			break;
 		case OP_ARGLIST: {
@@ -4979,8 +4980,11 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 			case MONO_PATCH_INFO_EXC:
 			case MONO_PATCH_INFO_ABS:
 			case MONO_PATCH_INFO_METHOD:
+			case MONO_PATCH_INFO_RGCTX_FETCH:
 			case MONO_PATCH_INFO_INTERNAL_METHOD:
 			case MONO_PATCH_INFO_CLASS_INIT:
+			case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+			case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 				s390_patch_addr (ip, (guint64) target);
 				continue;
 			case MONO_PATCH_INFO_SWITCH: 
@@ -5190,6 +5194,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		s390_lgr (code, s390_r11, STK_BASE);
 
 	mono_emit_unwind_op_def_cfa_reg (cfg, code, cfg->frame_reg);
+
+	/* store runtime generic context */
+	if (cfg->rgctx_var) {
+		g_assert (cfg->rgctx_var->opcode == OP_REGOFFSET);
+
+		s390_stg  (code, MONO_ARCH_RGCTX_REG, 0, 
+			   cfg->rgctx_var->inst_basereg, 
+			   cfg->rgctx_var->inst_offset);
+	}
 
         /* compute max_offset in order to use short forward jumps
 	 * we always do it on s390 because the immediate displacement
@@ -6227,6 +6240,44 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 	MonoLMF *lmf = (MonoLMF *) ((gchar *) regs - sizeof(MonoLMF));
 
 	return ((MonoMethod *) lmf->gregs [MONO_ARCH_IMT_REG]);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_find_static_call_vtable                 */
+/*                                                                  */
+/* Function	- Find the static call vtable.                      */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+MonoVTable*
+mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
+{
+	mgreg_t *r = (mgreg_t*)regs;
+
+	return (MonoVTable*)(gsize) r [MONO_ARCH_RGCTX_REG];
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_get_cie_program                         */
+/*                                                                  */
+/* Function	- Find the static call vtable.                      */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, NULL, NULL, STK_BASE, 0);
+
+	return(l);
 }
 
 /*========================= End of Function ========================*/
