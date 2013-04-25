@@ -4759,3 +4759,10 @@ resume_thread_internal (MonoInternalThread *thread)
 	LeaveCriticalSection (thread->synch_cs);
 	return TRUE;
 }
+
+mono_bool
+mono_thread_is_foreign (MonoThread *thread)
+{
+	MonoThreadInfo *info = thread->internal_thread->thread_info;
+	return info->runtime_thread == FALSE;
+}
