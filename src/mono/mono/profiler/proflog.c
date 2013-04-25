@@ -1545,7 +1545,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
 		logbuffer = ensure_logbuf (20 + count * 8);
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, type);
-		emit_uvalue (logbuffer, (prof->startup_time + sample [2]) * 10000);
+		emit_uvalue (logbuffer, prof->startup_time + (uint64_t)sample [2] * (uint64_t)10000);
 		emit_value (logbuffer, count);
 		for (i = 0; i < count; ++i) {
 			emit_ptr (logbuffer, (void*)sample [i + 3]);
