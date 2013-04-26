@@ -24,7 +24,7 @@
 
 #if defined(__APPLE__)
 #define _DARWIN_C_SOURCE
-// #include <pthread_spis.h>
+#include <pthread_spis.h>
 #endif
 
 #ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
@@ -134,7 +134,7 @@ mono_mutex_init_suspend_safe (mono_mutex_t *mutex)
 
 	pthread_mutexattr_init (&attr);
 	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
-	// pthread_mutexattr_setpolicy_np (&attr, _PTHREAD_MUTEX_POLICY_FIRSTFIT);
+	pthread_mutexattr_setpolicy_np (&attr, _PTHREAD_MUTEX_POLICY_FIRSTFIT);
 	res = pthread_mutex_init (mutex, &attr);
 	pthread_mutexattr_destroy (&attr);
 
