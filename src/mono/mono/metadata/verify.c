@@ -6213,6 +6213,9 @@ verify_generic_parameters (MonoClass *class)
 			MonoClass *ctr = *constraints;
 			MonoType *constraint_type = &ctr->byval_arg;
 
+			if (!mono_class_can_access_class (class, ctr))
+				goto fail;
+
 			if (!mono_type_is_valid_type_in_context (constraint_type, &gc->context))
 				goto fail;
 
