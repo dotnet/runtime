@@ -4073,7 +4073,9 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	g_hash_table_insert (bp_locs, inst->ip, GINT_TO_POINTER (count + 1));
 	mono_loader_unlock ();
 
-	if (count == 0) {
+	if (sp->native_offset == SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
+		DEBUG (1, fprintf (log_file, "[dbg] Attempting to insert seq point at dead IL offset %d, ignoring.\n", (int)bp->il_offset));
+	} else if (count == 0) {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_set_breakpoint (ji, inst->ip);
 #else
@@ -4099,7 +4101,7 @@ remove_breakpoint (BreakpointInstance *inst)
 
 	g_assert (count > 0);
 
-	if (count == 1) {
+	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
 		mono_arch_clear_breakpoint (ji, ip);
 	}
 #else

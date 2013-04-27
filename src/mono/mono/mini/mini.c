@@ -3414,8 +3414,10 @@ mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int nat
 {
 	ins->inst_offset = native_offset;
 	g_ptr_array_add (cfg->seq_points, ins);
-	bb->seq_points = g_slist_prepend_mempool (cfg->mempool, bb->seq_points, ins);
-	bb->last_seq_point = ins;
+	if (bb) {
+		bb->seq_points = g_slist_prepend_mempool (cfg->mempool, bb->seq_points, ins);
+		bb->last_seq_point = ins;
+	}
 }
 
 void
@@ -3672,6 +3674,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 			if (ins->inst_imm == METHOD_ENTRY_IL_OFFSET || ins->inst_imm == METHOD_EXIT_IL_OFFSET)
 				/* Used to implement method entry/exit events */
+				continue;
+			if (ins->inst_offset == SEQ_POINT_NATIVE_OFFSET_DEAD_CODE)
 				continue;
 
 			if (last != NULL) {
