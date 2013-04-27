@@ -454,6 +454,7 @@ verify_image_file (const char *fname)
 	assembly->in_gac = FALSE;
 	assembly->image = image;
 	image->assembly = assembly;
+	mono_assembly_fill_assembly_name (image, &assembly->aname);
 
 	/*Finish initializing the runtime*/
 	mono_install_assembly_load_hook (pedump_assembly_load_hook, NULL);
