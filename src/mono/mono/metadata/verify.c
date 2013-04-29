@@ -2118,6 +2118,9 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 
 	if (mono_class_has_variant_generic_params (target)) {
 		if (MONO_CLASS_IS_INTERFACE (target)) {
+			if (MONO_CLASS_IS_INTERFACE (candidate) && mono_class_is_variant_compatible (target, candidate, TRUE))
+				return TRUE;
+
 			if (candidate->rank == 1) {
 				if (verifier_inflate_and_check_compat (target, mono_defaults.generic_ilist_class, candidate->element_class))
 					return TRUE;
