@@ -67,40 +67,79 @@ public class Tests
 	public static extern int mono_test_marshal_variant_out_sbyte([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_sbyte_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_byte([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_byte_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_short([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_short_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_ushort([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_ushort_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_int([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_int_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_uint([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_uint_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_long([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_long_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_ulong([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_ulong_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_float([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_float_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_double([MarshalAs(UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_double_byref([MarshalAs(UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_bstr ([MarshalAs (UnmanagedType.Struct)]out object obj);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_bstr_byref ([MarshalAs (UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_bool_true ([MarshalAs (UnmanagedType.Struct)]out object obj);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_variant_out_bool_true_byref ([MarshalAs (UnmanagedType.Struct)]out object obj);
 
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_variant_out_bool_false ([MarshalAs (UnmanagedType.Struct)]out object obj);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_variant_out_bool_false_byref ([MarshalAs (UnmanagedType.Struct)]out object obj);
 
 
 	public delegate int VarFunc (VarEnum vt, [MarshalAs (UnmanagedType.Struct)] object obj);
@@ -388,6 +427,29 @@ public class Tests
 				return 60;
 			if (mono_test_marshal_variant_out_bool_true_unmanaged (reffunc) != 0)
 				return 61;
+
+			if (mono_test_marshal_variant_out_sbyte_byref (out obj) != 0 || (sbyte)obj != 100)
+				return 97;
+			if (mono_test_marshal_variant_out_byte_byref (out obj) != 0 || (byte)obj != 100)
+				return 98;
+			if (mono_test_marshal_variant_out_short_byref (out obj) != 0 || (short)obj != 314)
+				return 99;
+			if (mono_test_marshal_variant_out_ushort_byref (out obj) != 0 || (ushort)obj != 314)
+				return 100;
+			if (mono_test_marshal_variant_out_int_byref (out obj) != 0 || (int)obj != 314)
+				return 101;
+			if (mono_test_marshal_variant_out_uint_byref (out obj) != 0 || (uint)obj != 314)
+				return 102;
+			if (mono_test_marshal_variant_out_long_byref (out obj) != 0 || (long)obj != 314)
+				return 103;
+			if (mono_test_marshal_variant_out_ulong_byref (out obj) != 0 || (ulong)obj != 314)
+				return 104;
+			if (mono_test_marshal_variant_out_float_byref (out obj) != 0 || ((float)obj - 3.14) / 3.14 > .001)
+				return 105;
+			if (mono_test_marshal_variant_out_double_byref (out obj) != 0 || ((double)obj - 3.14) / 3.14 > .001)
+				return 106;
+			if (mono_test_marshal_variant_out_bstr_byref (out obj) != 0 || (string)obj != "PI")
+				return 107;
 
 			#endregion // VARIANT Tests
 

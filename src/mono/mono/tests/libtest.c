@@ -2432,6 +2432,7 @@ typedef struct {
 		guint16 uiVal;
 		guint32 ulVal;
 		guint64 ullVal;
+		gpointer byref;
 		struct {
 			gpointer pvRecord;
 			gpointer pRecInfo;
@@ -2661,10 +2662,30 @@ mono_test_marshal_variant_out_sbyte(VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_sbyte_byref(VARIANT* variant)
+{
+	variant->vt = VT_I1|VT_BYREF;
+	variant->byref = marshal_alloc(1);
+	*((gint8*)variant->byref) = 100;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_byte(VARIANT* variant)
 {	
 	variant->vt = VT_UI1;
 	variant->bVal = 100;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_byte_byref(VARIANT* variant)
+{	
+	variant->vt = VT_UI1|VT_BYREF;
+	variant->byref = marshal_alloc(1);
+	*((gint8*)variant->byref) = 100;
 
 	return 0;
 }
@@ -2679,10 +2700,30 @@ mono_test_marshal_variant_out_short(VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_short_byref(VARIANT* variant)
+{
+	variant->vt = VT_I2|VT_BYREF;
+	variant->byref = marshal_alloc(2);
+	*((gint16*)variant->byref) = 314;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_ushort(VARIANT* variant)
 {
 	variant->vt = VT_UI2;
 	variant->uiVal = 314;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_ushort_byref(VARIANT* variant)
+{
+	variant->vt = VT_UI2|VT_BYREF;
+	variant->byref = marshal_alloc(2);
+	*((guint16*)variant->byref) = 314;
 
 	return 0;
 }
@@ -2697,10 +2738,30 @@ mono_test_marshal_variant_out_int(VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_int_byref(VARIANT* variant)
+{
+	variant->vt = VT_I4|VT_BYREF;
+	variant->byref = marshal_alloc(4);
+	*((gint32*)variant->byref) = 314;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_uint(VARIANT* variant)
 {
 	variant->vt = VT_UI4;
 	variant->ulVal = 314;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_uint_byref(VARIANT* variant)
+{
+	variant->vt = VT_UI4|VT_BYREF;
+	variant->byref = marshal_alloc(4);
+	*((guint32*)variant->byref) = 314;
 
 	return 0;
 }
@@ -2715,10 +2776,30 @@ mono_test_marshal_variant_out_long(VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_long_byref(VARIANT* variant)
+{
+	variant->vt = VT_I8|VT_BYREF;
+	variant->byref = marshal_alloc(8);
+	*((gint64*)variant->byref) = 314;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_ulong(VARIANT* variant)
 {
 	variant->vt = VT_UI8;
 	variant->ullVal = 314;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_ulong_byref(VARIANT* variant)
+{
+	variant->vt = VT_UI8|VT_BYREF;
+	variant->byref = marshal_alloc(8);
+	*((guint64*)variant->byref) = 314;
 
 	return 0;
 }
@@ -2733,10 +2814,30 @@ mono_test_marshal_variant_out_float(VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_float_byref(VARIANT* variant)
+{
+	variant->vt = VT_R4|VT_BYREF;
+	variant->byref = marshal_alloc(4);
+	*((float*)variant->byref) = 3.14;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_double(VARIANT* variant)
 {
 	variant->vt = VT_R8;
 	variant->dblVal = 3.14;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_double_byref(VARIANT* variant)
+{
+	variant->vt = VT_R8|VT_BYREF;
+	variant->byref = marshal_alloc(8);
+	*((double*)variant->byref) = 3.14;
 
 	return 0;
 }
@@ -2751,6 +2852,16 @@ mono_test_marshal_variant_out_bstr(VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_bstr_byref(VARIANT* variant)
+{
+	variant->vt = VT_BSTR|VT_BYREF;
+	variant->byref = marshal_alloc(sizeof(gpointer));
+	*((gunichar**)variant->byref) = marshal_bstr_alloc("PI");
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
@@ -2760,10 +2871,30 @@ mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 }
 
 LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_bool_true_byref (VARIANT* variant)
+{
+	variant->vt = VT_BOOL|VT_BYREF;
+	variant->byref = marshal_alloc(2);
+	*((gint16*)variant->byref) = VARIANT_TRUE;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bool_false (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
 	variant->boolVal = VARIANT_FALSE;
+
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_bool_false_byref (VARIANT* variant)
+{
+	variant->vt = VT_BOOL|VT_BYREF;
+	variant->byref = marshal_alloc(2);
+	*((gint16*)variant->byref) = VARIANT_FALSE;
 
 	return 0;
 }
