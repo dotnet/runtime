@@ -9721,6 +9721,21 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 	return TRUE;
 }
 
+/*
+ * mono_class_can_access_class:
+ * @source_class: The source class 
+ * @target_class: The accessed class
+ * 
+ * This function returns is @target_class is visible to @source_class
+ * 
+ * Returns: TRUE if source have proper visibility and acessibility to target
+ */
+gboolean
+mono_class_can_access_class (MonoClass *source_class, MonoClass *target_class)
+{
+	return can_access_type (source_class, target_class);
+}
+
 /**
  * mono_type_is_valid_enum_basetype:
  * @type: The MonoType to check

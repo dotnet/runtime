@@ -1283,6 +1283,9 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 gboolean
 mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, MonoClass *context_klass) MONO_INTERNAL;
 
+gboolean
+mono_class_can_access_class (MonoClass *access_class, MonoClass *target_class) MONO_INTERNAL;
+
 MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass) MONO_INTERNAL;
 

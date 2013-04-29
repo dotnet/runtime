@@ -83,7 +83,7 @@ inner_start_thread (LPVOID arg)
 	gboolean suspend = start_info->suspend;
 	HANDLE suspend_event = start_info->suspend_event;
 
-	mono_thread_info_attach (&result);
+	mono_thread_info_attach (&result)->runtime_thread = TRUE;
 
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
@@ -97,6 +97,8 @@ inner_start_thread (LPVOID arg)
 	result = start_func (t_arg);
 
 	g_assert (!mono_domain_get ());
+
+	mono_thread_info_dettach ();
 
 	return result;
 }

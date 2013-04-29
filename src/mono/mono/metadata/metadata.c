@@ -4068,7 +4068,7 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
  * 
  * Returns: the 1-based index into the TypeDef table of the type
  * where the type described by @index is nested.
- * Retruns 0 if @index describes a non-nested type.
+ * Returns 0 if @index describes a non-nested type.
  */
 guint32
 mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)

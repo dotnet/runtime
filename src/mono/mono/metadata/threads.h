@@ -46,6 +46,8 @@ extern uint32_t mono_threads_get_default_stacksize (void);
 
 void mono_threads_request_thread_dump (void);
 
+mono_bool mono_thread_is_foreign (MonoThread *thread);
+
 MONO_END_DECLS
 
 #endif /* _MONO_METADATA_THREADS_H_ */

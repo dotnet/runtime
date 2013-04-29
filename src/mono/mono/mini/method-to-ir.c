@@ -6182,6 +6182,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoInst *cached_tls_addr = NULL;
 	MonoDebugMethodInfo *minfo;
 	MonoBitSet *seq_point_locs = NULL;
+	MonoBitSet *seq_point_set_locs = NULL;
 
 	disable_inline = is_jit_optimizer_disabled (method);
 
@@ -6242,6 +6243,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			mono_debug_symfile_get_line_numbers_full (minfo, NULL, NULL, &n_il_offsets, &il_offsets, &line_numbers, NULL, NULL);
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
+			seq_point_set_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
 			for (i = 0; i < n_il_offsets; ++i) {
 				if (il_offsets [i] < header->code_size)
@@ -6721,6 +6723,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			//if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_SEQ_POINT)) {
 			NEW_SEQ_POINT (cfg, ins, ip - header->code, intr_loc);
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			if (sym_seq_points)
+				mono_bitset_set_fast (seq_point_set_locs, ip - header->code);
 		}
 
 		bblock->real_offset = cfg->real_offset;
@@ -11447,6 +11452,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_ADD_INS (init_localsbb, ins);
 		NEW_SEQ_POINT (cfg, ins, METHOD_EXIT_IL_OFFSET, FALSE);
 		MONO_ADD_INS (cfg->bb_exit, ins);
+	}
+
+	/*
+	 * Add seq points for IL offsets which have line number info, but wasn't generated a seq point during JITting because
+	 * the code they refer to was dead (#11880).
+	 */
+	if (sym_seq_points) {
+		for (i = 0; i < header->code_size; ++i) {
+			if (mono_bitset_test_fast (seq_point_locs, i) && !mono_bitset_test_fast (seq_point_set_locs, i)) {
+				MonoInst *ins;
+
+				NEW_SEQ_POINT (cfg, ins, i, FALSE);
+				mono_add_seq_point (cfg, NULL, ins, SEQ_POINT_NATIVE_OFFSET_DEAD_CODE);
+			}
+		}
 	}
 
 	cfg->ip = NULL;

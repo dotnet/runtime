@@ -96,6 +96,9 @@ typedef struct {
 	MonoNativeThreadHandle native_handle; /* Valid on mach and android */
 	int thread_state;
 
+	/*Tells if this thread was created by the runtime or not.*/
+	gboolean runtime_thread;
+
 	/* suspend machinery, fields protected by the suspend_lock */
 	mono_mutex_t suspend_lock;
 	int suspend_count;

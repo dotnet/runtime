@@ -159,6 +159,7 @@ static MonoClass *process_async_call_klass;
 
 static GPtrArray *wsqs;
 CRITICAL_SECTION wsqs_lock;
+static gboolean suspended;
 
 /* Hooks */
 static MonoThreadPoolFunc tp_start_func;
@@ -777,6 +778,9 @@ monitor_thread (gpointer unused)
 
 		if (mono_runtime_is_shutting_down ())
 			break;
+
+		if (suspended)
+			continue;
 
 		for (i = 0; i < 2; i++) {
 			ThreadPool *tp;
@@ -1675,4 +1679,22 @@ mono_internal_thread_unhandled_exception (MonoObject* exc)
 		if (klass == mono_defaults.threadabortexception_class)
 		 mono_thread_internal_reset_abort (mono_thread_internal_current ());
 	}
+}
+
+/*
+ * Suspend creation of new threads.
+ */
+void
+mono_thread_pool_suspend (void)
+{
+	suspended = TRUE;
+}
+
+/*
+ * Resume creation of new threads.
+ */
+void
+mono_thread_pool_resume (void)
+{
+	suspended = FALSE;
 }

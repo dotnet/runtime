@@ -41,7 +41,7 @@ inner_start_thread (void *arg)
 	void *(*start_func)(void*) = start_info->start_routine;
 	void *result;
 
-	mono_thread_info_attach (&result);
+	mono_thread_info_attach (&result)->runtime_thread = TRUE;
 
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
@@ -49,6 +49,7 @@ inner_start_thread (void *arg)
 	result = start_func (t_arg);
 	g_assert (!mono_domain_get ());
 
+	mono_thread_info_dettach ();
 
 	return result;
 }

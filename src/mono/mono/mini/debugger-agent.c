@@ -73,6 +73,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-stack-unwinding.h>
@@ -2681,6 +2682,12 @@ suspend_vm (void)
 
 	mono_mutex_unlock (&suspend_mutex);
 
+	if (suspend_count == 1)
+		/*
+		 * Suspend creation of new threadpool threads, since they cannot run
+		 */
+		mono_thread_pool_suspend ();
+
 	mono_loader_unlock ();
 }
 
@@ -2718,6 +2725,9 @@ resume_vm (void)
 
 	mono_mutex_unlock (&suspend_mutex);
 	//g_assert (err == 0);
+
+	if (suspend_count == 0)
+		mono_thread_pool_resume ();
 
 	mono_loader_unlock ();
 }
@@ -4063,7 +4073,9 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	g_hash_table_insert (bp_locs, inst->ip, GINT_TO_POINTER (count + 1));
 	mono_loader_unlock ();
 
-	if (count == 0) {
+	if (sp->native_offset == SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
+		DEBUG (1, fprintf (log_file, "[dbg] Attempting to insert seq point at dead IL offset %d, ignoring.\n", (int)bp->il_offset));
+	} else if (count == 0) {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_set_breakpoint (ji, inst->ip);
 #else
@@ -4089,7 +4101,7 @@ remove_breakpoint (BreakpointInstance *inst)
 
 	g_assert (count > 0);
 
-	if (count == 1) {
+	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
 		mono_arch_clear_breakpoint (ji, ip);
 	}
 #else

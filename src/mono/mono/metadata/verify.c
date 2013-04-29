@@ -2118,6 +2118,9 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 
 	if (mono_class_has_variant_generic_params (target)) {
 		if (MONO_CLASS_IS_INTERFACE (target)) {
+			if (MONO_CLASS_IS_INTERFACE (candidate) && mono_class_is_variant_compatible (target, candidate, TRUE))
+				return TRUE;
+
 			if (candidate->rank == 1) {
 				if (verifier_inflate_and_check_compat (target, mono_defaults.generic_ilist_class, candidate->element_class))
 					return TRUE;
@@ -4544,6 +4547,14 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 			continue;
 		}
 
+		/*Both slots are the same boxed valuetype. Simply copy it.*/
+		if (stack_slot_is_boxed_value (old_slot) && 
+			stack_slot_is_boxed_value (new_slot) &&
+			mono_metadata_type_equal (old_type, new_type)) {
+			copy_stack_value (new_slot, old_slot);
+			continue;
+		}
+
 		if (mono_type_is_generic_argument (old_type) || mono_type_is_generic_argument (new_type)) {
 			char *old_name = stack_slot_full_name (old_slot); 
 			char *new_name = stack_slot_full_name (new_slot);
@@ -6212,6 +6223,9 @@ verify_generic_parameters (MonoClass *class)
 		for (constraints = param_info->constraints; *constraints; ++constraints) {
 			MonoClass *ctr = *constraints;
 			MonoType *constraint_type = &ctr->byval_arg;
+
+			if (!mono_class_can_access_class (class, ctr))
+				goto fail;
 
 			if (!mono_type_is_valid_type_in_context (constraint_type, &gc->context))
 				goto fail;
