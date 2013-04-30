@@ -183,6 +183,25 @@ public class Tests
 		return 0;
 	}
 
+	interface IFaceUnbox {
+		T Unbox<T, T2> (T t, T2 t2, object o);
+	}
+
+	class ClassUnbox : IFaceUnbox {
+		public T Unbox<T, T2> (T t, T2 t2, object o) {
+			return (T)o;
+		}
+	}
+
+	// unbox.any on a ref type in a gsharedvt method
+	public static int test_0_ref_gsharedvt_aot_unbox_any () {
+		IFaceUnbox iface = new ClassUnbox ();
+		string s = iface.Unbox<string, int> ("A", 2, "A");
+		if (s != "A")
+			return 1;
+		return 0;
+	}
+
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static void ldfld_nongeneric<T> (GFoo<T>[] foo, int[] arr) {
 		arr [0] = foo [0].i;

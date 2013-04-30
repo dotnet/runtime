@@ -9085,8 +9085,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (mini_is_gsharedvt_klass (cfg, klass)) {
-				MonoInst *obj, *addr, *klass_inst, *args[16];
-				int dreg;
+				MonoInst *obj, *addr, *klass_inst, *is_ref, *args[16];
+				MonoBasicBlock *is_ref_bb, *end_bb;
+				int dreg, addr_reg;
 
 				/* Need to check for nullable types at runtime, but those are disabled in mini_is_gsharedvt_sharable_method*/
 				if (mono_class_is_nullable (klass))
@@ -9105,13 +9106,38 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* CASTCLASS */
 				obj = mono_emit_jit_icall (cfg, mono_object_castclass, args);
 
+				NEW_BBLOCK (cfg, is_ref_bb);
+				NEW_BBLOCK (cfg, end_bb);
+				is_ref = emit_get_rgctx_klass (cfg, context_used, klass,
+											   MONO_RGCTX_INFO_CLASS_IS_REF);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 1);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_ref_bb);
+
+				/* This will contain either the address of the unboxed vtype, or an address of the temporary where the ref is stored */
+				addr_reg = alloc_dreg (cfg, STACK_MP);
+
+				/* Non-ref case */
 				/* UNBOX */
-				dreg = alloc_dreg (cfg, STACK_MP);
-				NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, dreg, obj->dreg, sizeof (MonoObject));
+				NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, addr_reg, obj->dreg, sizeof (MonoObject));
 				MONO_ADD_INS (cfg->cbb, addr);
 
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+				/* Ref case */
+				MONO_START_BB (cfg, is_ref_bb);
+
+				/* Save the ref to a temporary */
+				dreg = alloc_ireg (cfg);
+				EMIT_NEW_VARLOADA_VREG (cfg, addr, dreg, &klass->byval_arg);
+				addr->dreg = addr_reg;
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, obj->dreg);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+				MONO_START_BB (cfg, end_bb);
+				bblock = cfg->cbb;
+
 				/* LDOBJ */
-				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0);
+				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr_reg, 0);
 				*sp++ = ins;
 
 				ip += 5;
