@@ -4593,15 +4593,6 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 				goto end_verify;
 			}
 
-			for (j = 0; j < old_class->interface_count; ++j) {
-				for (k = 0; k < new_class->interface_count; ++k) {
-					if (mono_metadata_type_equal (&old_class->interfaces [j]->byval_arg, &new_class->interfaces [k]->byval_arg)) {
-						match_class = old_class->interfaces [j];
-						goto match_found;
-					}
-				}
-			}
-
 			/* if old class is an interface that new class implements */
 			if (old_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				if (verifier_class_is_assignable_from (old_class, new_class)) {
