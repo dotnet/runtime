@@ -305,6 +305,8 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.dll
 %_prefix/lib/mono/4.5/cscompmgd.dll
 %_prefix/lib/mono/4.5/mscorlib.dll*
+%_prefix/lib/mono/4.5/Facades/*.dll
+%_prefix/lib/mono/4.5/Facades/*.dll.mdb
 %_prefix/lib/mono/compat-2.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/gac/Commons.Xml.Relaxng
 %_prefix/lib/mono/gac/CustomMarshalers
