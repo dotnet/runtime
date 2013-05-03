@@ -91,7 +91,9 @@ static CRITICAL_SECTION mini_arch_mutex;
 static int v5_supported = 0;
 static int v6_supported = 0;
 static int v7_supported = 0;
+static int v7s_supported = 0;
 static int thumb_supported = 0;
+static int thumb2_supported = 0;
 /*
  * Whenever to use the ARM EABI
  */
@@ -897,6 +899,23 @@ mono_arch_cpu_enumerate_simd_versions (void)
 
 
 #ifndef DISABLE_JIT
+
+gboolean
+mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
+{
+	if (COMPILE_LLVM (cfg) && v7s_supported && thumb2_supported) {
+		switch (opcode) {
+		case OP_IDIV:
+		case OP_IREM:
+		case OP_IDIV_UN:
+		case OP_IREM_UN:
+			return FALSE;
+		default:
+			break;
+		}
+	}
+	return TRUE;
+}
 
 static gboolean
 is_regsize_var (MonoGenericSharingContext *gsctx, MonoType *t) {
@@ -6627,6 +6646,10 @@ mono_arch_set_target (char *mtriple)
 	}
 	if (strstr (mtriple, "armv6")) {
 		v6_supported = TRUE;
+	}
+	if (strstr (mtriple, "thumbv7s")) {
+		v7s_supported = TRUE;
+		thumb2_supported = TRUE;
 	}
 	if (strstr (mtriple, "darwin") || strstr (mtriple, "ios")) {
 		v5_supported = TRUE;

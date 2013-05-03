@@ -269,6 +269,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	MonoInst *repl = NULL;
 	int type = ins->type;
 	int dreg = ins->dreg;
+	gboolean emulate = FALSE;
 
 	/* FIXME: Instead of = NOP, don't emit the original ins at all */
 
@@ -410,18 +411,55 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		cfg->exception_message = g_strdup_printf ("float conv.ovf.un opcodes not supported.");
 		break;
 
-	default: {
-		MonoJitICallInfo *info;
+#if defined(MONO_ARCH_EMULATE_DIV) && defined(MONO_ARCH_HAVE_OPCODE_NEEDS_EMULATION)
+	case OP_IDIV:
+	case OP_IREM:
+	case OP_IDIV_UN:
+	case OP_IREM_UN:
+		if (!mono_arch_opcode_needs_emulation (cfg, ins->opcode)) {
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+			int reg1 = alloc_ireg (cfg);
+			int reg2 = alloc_ireg (cfg);
+			/* b == 0 */
+			MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg2, 0);
+			MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "DivideByZeroException");
+			if (ins->opcode == OP_IDIV || ins->opcode == OP_IREM) {
+				/* b == -1 && a == 0x80000000 */
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg2, -1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg1, -1);
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg1, 0x80000000);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg2, -1);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, reg1, reg1, reg2);
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, reg1, 1);
+				MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "DivideByZeroException");
+			}
+#endif
+			MONO_EMIT_NEW_BIALU (cfg, ins->opcode, ins->dreg, ins->sreg1, ins->sreg2);
+			ins->opcode = OP_NOP;
+		} else {
+			emulate = TRUE;
+		}
+		break;
+#endif
+
+	default:
+		emulate = TRUE;
+		break;
+	}
+
+	if (emulate) {
+		MonoJitICallInfo *info = NULL;
 
 #if SIZEOF_REGISTER == 8
 		if (decompose_long_opcode (cfg, ins, &repl))
-			break;
+			emulate = FALSE;
 #else
 		if (COMPILE_LLVM (cfg) && decompose_long_opcode (cfg, ins, &repl))
-			break;
+			emulate = FALSE;
 #endif
 
-		info = mono_find_jit_opcode_emulation (ins->opcode);
+		if (emulate)
+			info = mono_find_jit_opcode_emulation (ins->opcode);
 		if (info) {
 			MonoInst **args;
 			MonoInst *call;
@@ -447,8 +485,6 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 
 			NULLIFY_INS (ins);
 		}
-		break;
-	}
 	}
 
 	if (ins->opcode == OP_NOP) {
