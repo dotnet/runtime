@@ -2572,7 +2572,7 @@ case "$host" in
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
 		# libgc's gc_locks.h depends on this
 	    NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
 		sgen_supported=true
@@ -2586,7 +2586,7 @@ case "$host" in
 		AOT_SUPPORTED="yes"
 		if test "x$cross_compiling" != "xno"; then
 		   # Provide sane defaults when cross-compiling
-		   CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		   CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
 		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
   		fi
 		;;
@@ -2620,7 +2620,7 @@ if test "x$host" != "x$target"; then
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
 		jit_wanted=true
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
@@ -2663,10 +2663,9 @@ if test "x$host" != "x$target"; then
 #		JIT_SUPPORTED=yes
 #		sizeof_register=4
 #               CPPFLAGS="$CPPFLAGS \
-#                    -DARM_FPU_VFP=1 -D__ARM_EABI__ \
+#                    -D__ARM_EABI__ \
 #                    -D__arm__ \
 #                    -D__portable_native_client__ \
-#                    -DARM_FPU_VFP=1 \
 #                    -Dtimezone=_timezone \
 #                    -DDISABLE_SOCKETS \
 #                    -DDISABLE_ATTACH \
@@ -2697,11 +2696,11 @@ if test "x$host" != "x$target"; then
 		case "$target" in
 		armv7l-unknown-linux-gnueabi*)
 			# TEGRA
-			CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1"
+			CPPFLAGS="$CPPFLAGS"
 			;;
    		armv5-*-linux-androideabi*)
 			AC_DEFINE(TARGET_ANDROID, 1, [...])
-			CPPFLAGS="$CPPFLAGS -DARM_FPU_NONE"
+			CPPFLAGS="$CPPFLAGS"
 			;;
 		esac
 		;;
