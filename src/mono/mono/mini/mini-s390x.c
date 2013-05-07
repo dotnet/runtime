@@ -1810,7 +1810,6 @@ enum_retvalue:
 		}
 
 		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
-//		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
 		simpleType = ptype->type;
 		cinfo->args[nParm].type = simpleType;
 		switch (simpleType) {
