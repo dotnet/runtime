@@ -310,6 +310,16 @@ class Tests {
 		public GenericClass<int> class_field;
 	}
 
+	public class MRO<T> : MarshalByRefObject {
+		public T gen_field;
+
+		public T stfld_ldfld (T t) {
+			var m = this;
+			m.gen_field = t;
+			return m.gen_field;
+		}
+	}
+
 	public static int test_0_ldfld_stfld_mro () {
 		MRO m = new MRO ();
 		GenericStruct<int> s = new GenericStruct<int> (5);
@@ -331,6 +341,11 @@ class Tests {
 		m.class_field = new GenericClass<int> (5);
 		if (m.class_field.t != 5)
 			return 4;
+
+		// gshared
+		var m2 = new MRO<string> ();
+		if (m2.stfld_ldfld ("A") != "A")
+			return 5;
 
 		return 0;
 	}
