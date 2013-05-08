@@ -10387,7 +10387,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							g_assert_not_reached ();
 						}
 					} else if (cfg->compile_aot) {
-						EMIT_NEW_LDTOKENCONST (cfg, ins, image, n);
+						EMIT_NEW_LDTOKENCONST (cfg, ins, image, n, generic_context);
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, handle);
 					}

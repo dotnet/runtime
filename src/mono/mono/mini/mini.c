@@ -3281,7 +3281,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		MonoClass *handle_class;
 		
 		handle = mono_ldtoken (patch_info->data.token->image,
-				       patch_info->data.token->token, &handle_class, NULL);
+							   patch_info->data.token->token, &handle_class, patch_info->data.token->has_context ? &patch_info->data.token->context : NULL);
 		mono_class_init (handle_class);
 		
 		target = handle;
