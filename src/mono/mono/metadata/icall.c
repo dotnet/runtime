@@ -6839,6 +6839,15 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 
 	mono_vtable_set_is_remote (vtable, enable);
 }
+
+#else /* DISABLE_REMOTING */
+
+ICALL_EXPORT void
+ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionType *type, MonoBoolean enable)
+{
+	g_assert_not_reached ();
+}
+
 #endif
 
 ICALL_EXPORT MonoObject *
