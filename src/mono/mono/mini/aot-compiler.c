@@ -7605,9 +7605,10 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_pointer (acfg, "method_info_offsets");
 	emit_pointer (acfg, "ex_info_offsets");
 	emit_pointer (acfg, "code_offsets");
-#ifdef MONOTOUCH
-	emit_pointer (acfg, "method_addresses");
-#endif
+	if (acfg->direct_method_addresses)
+		emit_pointer (acfg, "method_addresses");
+	else
+		emit_pointer (acfg, NULL);
 	emit_pointer (acfg, "extra_method_info_offsets");
 	emit_pointer (acfg, "extra_method_table");
 	emit_pointer (acfg, "got_info_offsets");
