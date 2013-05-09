@@ -2233,7 +2233,8 @@ printf("%s %4d cookine %x\n",__FUNCTION__,__LINE__,cfg->sig_cookie);
 	/*------------------------------------------------------*/
 	/* Allow space for the trace method stack area if needed*/
 	/*------------------------------------------------------*/
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) 
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) 
+	    || (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
 		offset += S390_TRACE_STACK_SIZE;
 
 	/*------------------------------------------------------*/
@@ -2765,9 +2766,20 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 {
 	guchar 	   *code = p;
 	int   	   save_mode = SAVE_NONE,
-		   saveOffset;
+		   saveOffset,
+		   offset;
 	MonoMethod *method = cfg->method;
 	int        rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
+
+	offset = code - cfg->native_code;
+	/*-----------------------------------------*/
+	/* We need about 128 bytes of instructions */
+	/*-----------------------------------------*/
+	if (offset > (cfg->code_size - 128)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		code = cfg->native_code + offset;
+	}
 
 	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
 	if (method->save_lmf)
@@ -5158,7 +5170,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
 		tracing         = 1;
 		cfg->code_size += 256;
-	}
+	} else if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		cfg->code_size += 256;
 
 	if (method->save_lmf)
 		cfg->code_size += 200;
@@ -5463,8 +5476,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (mono_jit_trace_calls != NULL)
 		max_epilog_size += 128;
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+	else if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		max_epilog_size += 128;
 	
 	while ((cfg->code_len + max_epilog_size) > (cfg->code_size - 16)) {
@@ -5484,8 +5496,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
-//		if (cfg->frame_reg != STK_BASE)
-//			s390_lgr (code, STK_BASE, cfg->frame_reg);
 		s390_lg  (code, STK_BASE, 0, STK_BASE, 0);
 	} else
 		code = backUpStackPtr(cfg, code);
