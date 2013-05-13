@@ -1495,6 +1495,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 static void*
 get_arm_bl_target (guint32 *ins_addr)
 {
+#ifdef TARGET_ARM
 	guint32 ins = *ins_addr;
 	gint32 offset;
 
@@ -1506,6 +1507,10 @@ get_arm_bl_target (guint32 *ins_addr)
 		offset = (((int)ins & 0xffffff) << 8) >> 8;
 		return (char*)ins_addr + (offset * 4) + 8;
 	}
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif
 }
 
 static void
