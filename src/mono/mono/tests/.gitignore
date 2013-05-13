@@ -26,3 +26,6 @@
 /tests-config
 /TAGS
 /runtime-invoke.gen.cs
+/*.exe.dylib
+/*.exe.dylib.dSYM
+
