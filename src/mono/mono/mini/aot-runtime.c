@@ -1491,6 +1491,13 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 	return usable;
 }
 
+static void*
+get_arm_bl_target (guint32 *ins)
+{
+	gint32 offset = (((int)*ins & 0xffffff) << 8) >> 8;
+	return (char*)ins + (offset * 4) + 8;
+}
+
 static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
@@ -1691,10 +1698,13 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		/* Compute code_offsets from the method addresses */
 		amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
 		for (i = 0; i < amodule->info.nmethods; ++i) {
-			if (!amodule->method_addresses [i])
+			/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
+			void *addr = get_arm_bl_target ((guint32*)(amodule->method_addresses + i));
+
+			if (addr == amodule->method_addresses)
 				amodule->code_offsets [i] = 0xffffffff;
 			else
-				amodule->code_offsets [i] = (char*)amodule->method_addresses [i] - (char*)amodule->code;
+				amodule->code_offsets [i] = (char*)addr - (char*)amodule->code;
 		}
 	}
 #endif
@@ -4375,7 +4385,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 			high = entry_index;
 		} else {
 			if (amodule->info.flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES)
-				code = (gpointer)(gsize)entry [1];
+				code = get_arm_bl_target (entry + 1);
 			else
 				code = amodule->code + entry [1];
 			break;

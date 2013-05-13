@@ -6653,6 +6653,8 @@ emit_code (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
+	/* To distinguish it from the next symbol */
+	emit_int32 (acfg, 0);
 
 	/* 
 	 * Add .no_dead_strip directives for all LLVM methods to prevent the OSX linker
@@ -6673,24 +6675,35 @@ emit_code (MonoAotCompile *acfg)
 	if (acfg->direct_method_addresses) {
 		acfg->flags |= MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES;
 
+		/*
+		 * To work around linker issues, we emit a table of branches, and disassemble them at runtime.
+		 * This is PIE code, and the linker can update it if needed.
+		 */
 		sprintf (symbol, "method_addresses");
 		emit_section_change (acfg, RODATA_SECT, 1);
 		emit_alignment (acfg, 8);
 		emit_label (acfg, symbol);
+		emit_local_symbol (acfg, symbol, "method_addresses_end", TRUE);
+		img_writer_emit_unset_mode (acfg->w);
+		if (acfg->need_no_dead_strip)
+			fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
 
 		for (i = 0; i < acfg->nmethods; ++i) {
-			if (acfg->cfgs [i]) {
-				emit_pointer (acfg, acfg->cfgs [i]->asm_symbol);
-			} else {
-				emit_pointer (acfg, NULL);
-			}
+			if (acfg->cfgs [i])
+				fprintf (acfg->fp, "\tbl %s\n", acfg->cfgs [i]->asm_symbol);
+			else
+				fprintf (acfg->fp, "\tbl method_addresses\n");
 		}
+
+		sprintf (symbol, "method_addresses_end");
+		emit_label (acfg, symbol);
 
 		/* Empty */
 		sprintf (symbol, "code_offsets");
 		emit_section_change (acfg, RODATA_SECT, 1);
 		emit_alignment (acfg, 8);
 		emit_label (acfg, symbol);
+		emit_int32 (acfg, 0);
 	} else {
 		sprintf (symbol, "code_offsets");
 		emit_section_change (acfg, RODATA_SECT, 1);
@@ -6751,10 +6764,12 @@ emit_code (MonoAotCompile *acfg)
 			sprintf (symbol, "ut_%d", index);
 
 			emit_int32 (acfg, index);
-			if (acfg->direct_method_addresses)
-				emit_pointer (acfg, symbol);
-			else
+			if (acfg->direct_method_addresses) {
+				img_writer_emit_unset_mode (acfg->w);
+				fprintf (acfg->fp, "\n\tbl %s\n", symbol);
+			} else {
 				emit_symbol_diff (acfg, symbol, end_symbol, 0);
+			}
 			/* Make sure the table is sorted by index */
 			g_assert (index > prev_index);
 			prev_index = index;
