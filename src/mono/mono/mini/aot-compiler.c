@@ -6689,10 +6689,14 @@ emit_code (MonoAotCompile *acfg)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
 
 		for (i = 0; i < acfg->nmethods; ++i) {
-			if (acfg->cfgs [i])
-				fprintf (acfg->fp, "\tbl %s\n", acfg->cfgs [i]->asm_symbol);
-			else
+			if (acfg->cfgs [i]) {
+				if (acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm)
+					fprintf (acfg->fp, "\tblx %s\n", acfg->cfgs [i]->asm_symbol);
+				else
+					fprintf (acfg->fp, "\tbl %s\n", acfg->cfgs [i]->asm_symbol);
+			} else {
 				fprintf (acfg->fp, "\tbl method_addresses\n");
+			}
 		}
 
 		sprintf (symbol, "method_addresses_end");
@@ -6766,7 +6770,10 @@ emit_code (MonoAotCompile *acfg)
 			emit_int32 (acfg, index);
 			if (acfg->direct_method_addresses) {
 				img_writer_emit_unset_mode (acfg->w);
-				fprintf (acfg->fp, "\n\tbl %s\n", symbol);
+				if (acfg->thumb_mixed && cfg->compile_llvm)
+					fprintf (acfg->fp, "\n\tblx %s\n", symbol);
+				else
+					fprintf (acfg->fp, "\n\tbl %s\n", symbol);
 			} else {
 				emit_symbol_diff (acfg, symbol, end_symbol, 0);
 			}

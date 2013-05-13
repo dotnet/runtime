@@ -1491,11 +1491,21 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 	return usable;
 }
 
+/* This returns an interop address */
 static void*
-get_arm_bl_target (guint32 *ins)
+get_arm_bl_target (guint32 *ins_addr)
 {
-	gint32 offset = (((int)*ins & 0xffffff) << 8) >> 8;
-	return (char*)ins + (offset * 4) + 8;
+	guint32 ins = *ins_addr;
+	gint32 offset;
+
+	if ((ins >> ARMCOND_SHIFT) == ARMCOND_NV) {
+		/* blx */
+		offset = (((int)(((ins & 0xffffff) << 1) | ((ins >> 24) & 0x1))) << 7) >> 7;
+		return (char*)ins_addr + (offset * 2) + 8 + 1;
+	} else {
+		offset = (((int)ins & 0xffffff) << 8) >> 8;
+		return (char*)ins_addr + (offset * 4) + 8;
+	}
 }
 
 static void
