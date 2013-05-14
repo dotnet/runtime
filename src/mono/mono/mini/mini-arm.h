@@ -33,16 +33,14 @@
 #define ARM_ARCHITECTURE "arm"
 #endif
 
-#if defined(ARM_FPU_FPA)
-#define ARM_FP_MODEL "fpa"
-#elif defined(ARM_FPU_VFP)
+#if defined(ARM_FPU_VFP)
 #define ARM_FP_MODEL "vfp"
 #elif defined(ARM_FPU_NONE)
 #define ARM_FP_MODEL "soft-float"
 #elif defined(ARM_FPU_VFP_HARD)
 #define ARM_FP_MODEL "vfp(hardfp-abi)"
 #else
-#error "At least one of ARM_FPU_NONE, ARM_FPU_FPA, ARM_FPU_VFP or ARM_FPU_VFP_HARD must be defined."
+#error "At least one of ARM_FPU_NONE, ARM_FPU_VFP or ARM_FPU_VFP_HARD must be defined."
 #endif
 
 #define MONO_ARCH_ARCHITECTURE ARM_ARCHITECTURE "," ARM_FP_MODEL
@@ -147,9 +145,8 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 
 typedef enum {
 	MONO_ARM_FPU_NONE = 0,
-	MONO_ARM_FPU_FPA = 1,
-	MONO_ARM_FPU_VFP = 2,
-	MONO_ARM_FPU_VFP_HARD = 3
+	MONO_ARM_FPU_VFP = 1,
+	MONO_ARM_FPU_VFP_HARD = 2
 } MonoArmFPU;
 
 /* keep the size of the structure a multiple of 8 */

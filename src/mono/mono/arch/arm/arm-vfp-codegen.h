@@ -8,7 +8,7 @@
 #include "arm-codegen.h"
 
 enum {
-	/* FPA registers */
+	/* VFP registers */
 	ARM_VFP_F0,
 	ARM_VFP_F1,
 	ARM_VFP_F2,

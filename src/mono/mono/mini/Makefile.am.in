@@ -457,7 +457,7 @@ arch_define=__mips__
 endif
 
 if ARM
-# pick up arm_dpimacros.h and arm_fpamacros.h
+# pick up arm_dpimacros.h
 ARCH_CFLAGS = -I../arch/arm
 arch_sources = $(arm_sources)
 arch_built=cpu-arm.h

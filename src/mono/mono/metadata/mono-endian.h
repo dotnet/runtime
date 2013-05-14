@@ -14,19 +14,6 @@ typedef union {
 	unsigned char cval [8];
 } mono_rdouble;
 
-#ifdef ARM_FPU_FPA
-#define MONO_DOUBLE_ASSERT_ENDIANITY(dbl_ptr) \
-	do { \
-		mono_rdouble r;	\
-		r.fval = *dbl_ptr;	\
-		r.ival = (guint64) *((guint32 *) r.cval) << 32 |	\
-				*((guint32 *) (r.cval + 4));	\
-		*dbl_ptr = r.fval;	\
-	} while (0)
-#else
-#define MONO_DOUBLE_ASSERT_ENDIANITY(dbl_ptr)
-#endif
-
 #if NO_UNALIGNED_ACCESS
 
 guint16 mono_read16 (const unsigned char *x);
@@ -56,7 +43,6 @@ guint64 mono_read64 (const unsigned char *x);
 	do {	\
 		mono_rdouble mf;	\
 		mf.ival = read64 ((x));	\
-		MONO_DOUBLE_ASSERT_ENDIANITY (&mf.fval);	\
 		*(dest) = mf.fval;	\
 	} while (0)
 
