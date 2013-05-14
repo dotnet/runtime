@@ -4802,8 +4802,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_EQ);
 			break;
 		case OP_FCLT:
-			ARM_CMPD (code, ins->sreg1, ins->sreg2);
-			ARM_FMSTAT (code);
+			if (IS_VFP) {
+				ARM_CMPD (code, ins->sreg1, ins->sreg2);
+				ARM_FMSTAT (code);
+			}
 			ARM_MOV_REG_IMM8 (code, ins->dreg, 0);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 1, ARMCOND_MI);
 			break;
