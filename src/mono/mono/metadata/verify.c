@@ -4503,7 +4503,7 @@ static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean start, gboolean external) 
 {
 	MonoError error;
-	int i, j, k;
+	int i, j;
 	stack_init (ctx, to);
 
 	if (start) {
