@@ -891,7 +891,7 @@ mono_arch_cpu_enumerate_simd_versions (void)
 gboolean
 mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 {
-	if (COMPILE_LLVM (cfg) && v7s_supported) {
+	if (v7s_supported) {
 		switch (opcode) {
 		case OP_IDIV:
 		case OP_IREM:
@@ -2947,6 +2947,16 @@ loop_start:
 				/* ARM sets the C flag to 1 if there was _no_ overflow */
 				ins->next->opcode = OP_COND_EXC_NC;
 			break;
+		case OP_IDIV_IMM:
+		case OP_IDIV_UN_IMM:
+		case OP_IREM_IMM:
+		case OP_IREM_UN_IMM:
+			ADD_NEW_INS (cfg, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_alloc_ireg (cfg);
+			ins->sreg2 = temp->dreg;
+			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			break;
 		case OP_LOCALLOC_IMM:
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
@@ -4099,12 +4109,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_AND_REG_IMM (code, ins->dreg, ins->sreg1, imm8, rot_amount);
 			break;
 		case OP_IDIV:
+			g_assert (v7s_supported);
+			ARM_SDIV (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_IDIV_UN:
-		case OP_DIV_IMM:
+			g_assert (v7s_supported);
+			ARM_UDIV (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_IREM:
+			g_assert (v7s_supported);
+			ARM_SDIV (code, ARMREG_IP, ins->sreg1, ins->sreg2);
+			ARM_MLS (code, ins->dreg, ARMREG_IP, ins->sreg2, ins->sreg1);
+			break;
 		case OP_IREM_UN:
+			g_assert (v7s_supported);
+			ARM_UDIV (code, ARMREG_IP, ins->sreg1, ins->sreg2);
+			ARM_MLS (code, ins->dreg, ARMREG_IP, ins->sreg2, ins->sreg1);
+			break;
+		case OP_DIV_IMM:
 		case OP_REM_IMM:
-			/* crappy ARM arch doesn't have a DIV instruction */
 			g_assert_not_reached ();
 		case OP_IOR:
 			ARM_ORR_REG_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -6481,6 +6504,9 @@ mono_arch_set_target (char *mtriple)
 	}
 	if (strstr (mtriple, "armv6")) {
 		v6_supported = TRUE;
+	}
+	if (strstr (mtriple, "armv7s")) {
+		v7s_supported = TRUE;
 	}
 	if (strstr (mtriple, "thumbv7s")) {
 		v7s_supported = TRUE;

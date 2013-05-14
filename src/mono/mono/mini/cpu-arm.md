@@ -212,10 +212,10 @@ tls_get: len:8 dest:i clob:c
 int_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
 int_mul: dest:i src1:i src2:i len:4
-int_div: dest:i src1:i src2:i len:40
-int_div_un: dest:i src1:i src2:i len:16
-int_rem: dest:i src1:i src2:i len:48
-int_rem_un: dest:i src1:i src2:i len:24
+int_div: dest:i src1:i src2:i len:4
+int_div_un: dest:i src1:i src2:i len:4
+int_rem: dest:i src1:i src2:i len:8
+int_rem_un: dest:i src1:i src2:i len:8
 int_and: dest:i src1:i src2:i len:4
 int_or: dest:i src1:i src2:i len:4
 int_xor: dest:i src1:i src2:i len:4

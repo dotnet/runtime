@@ -1037,6 +1037,7 @@ typedef struct {
 #define ARM_INC(p, reg) ARM_ADD_REG_IMM8(p, reg, reg, 1)
 #define ARM_DEC(p, reg) ARM_SUB_REG_IMM8(p, reg, reg, 1)
 
+#define ARM_MLS(p, rd, rn, rm, ra) ARM_EMIT((p), (ARMCOND_AL << 28) | (0x6 << 20) | ((rd) << 16) | ((ra) << 12) | ((rm) << 8) | (0x9 << 4) | ((rn) << 0))
 
 /* ARM V5 */
 
@@ -1094,6 +1095,13 @@ typedef union {
 
 #define ARM_MCR(p, coproc, opc1, rt, crn, crm, opc2) \
 	ARM_MCR_COND ((p), (coproc), (opc1), (rt), (crn), (crm), (opc2), ARMCOND_AL)
+
+/* ARMv7VE */
+#define ARM_SDIV_COND(p, rd, rn, rm, cond) ARM_EMIT (p, (((cond) << 28) | (0xe << 23) | (0x1 << 20) | ((rd) << 16) | (0xf << 12) | ((rm) << 8) | (0x0 << 5) | (0x1 << 4) | ((rn) << 0)))
+#define ARM_SDIV(p, rd, rn, rm) ARM_SDIV_COND ((p), (rd), (rn), (rm), ARMCOND_AL)
+
+#define ARM_UDIV_COND(p, rd, rn, rm, cond) ARM_EMIT (p, (((cond) << 28) | (0xe << 23) | (0x3 << 20) | ((rd) << 16) | (0xf << 12) | ((rm) << 8) | (0x0 << 5) | (0x1 << 4) | ((rn) << 0)))
+#define ARM_UDIV(p, rd, rn, rm) ARM_UDIV_COND ((p), (rd), (rn), (rm), ARMCOND_AL)
 
 #ifdef __cplusplus
 }
