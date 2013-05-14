@@ -903,7 +903,7 @@ mono_arch_cpu_enumerate_simd_versions (void)
 gboolean
 mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 {
-	if (COMPILE_LLVM (cfg) && v7s_supported && thumb2_supported) {
+	if (COMPILE_LLVM (cfg) && v7s_supported) {
 		switch (opcode) {
 		case OP_IDIV:
 		case OP_IREM:
