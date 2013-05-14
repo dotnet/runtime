@@ -578,12 +578,14 @@ typedef struct {
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
+typedef gboolean (*MonoInternalExceptionFrameWalk) (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data);
 
 typedef struct {
 	void (*mono_walk_stack_with_ctx) (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 	void (*mono_walk_stack_with_state) (MonoInternalStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions options, void *user_data);
 	void (*mono_raise_exception) (MonoException *ex);
 	void (*mono_raise_exception_with_ctx) (MonoException *ex, MonoContext *ctx);
+	gboolean (*mono_exception_walk_trace) (MonoException *ex, MonoInternalExceptionFrameWalk func, gpointer user_data);
 	gboolean (*mono_install_handler_block_guard) (MonoThreadUnwindState *unwind_state);
 } MonoRuntimeExceptionHandlingCallbacks;
 
@@ -1602,6 +1604,9 @@ mono_exception_get_native_backtrace (MonoException *exc) MONO_INTERNAL;
 
 MonoString *
 ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc) MONO_INTERNAL;
+
+char *
+mono_exception_get_managed_backtrace (MonoException *exc) MONO_INTERNAL;
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

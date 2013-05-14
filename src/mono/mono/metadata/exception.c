@@ -779,6 +779,36 @@ mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
    return (MonoException*)ex;
 }	
 
+static gboolean
+append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	GString *text = (GString*)user_data;
+
+	if (method) {
+		char *msg = mono_debug_print_stack_frame (method, native_offset, domain);
+		g_string_append_printf (text, "%s\n", msg);
+		g_free (msg);
+	} else {
+		g_string_append_printf (text, "<unknown native frame 0x%x>\n", ip);
+	}
+
+	return FALSE;
+}
+
+char *
+mono_exception_get_managed_backtrace (MonoException *exc)
+{
+	GString *text;
+
+	text = g_string_new_len (NULL, 20);
+
+	if (!mono_get_eh_callbacks ()->mono_exception_walk_trace (exc, append_frame_and_continue, text))
+		g_string_append (text, "managed backtrace not available\n");
+
+	return g_string_free (text, FALSE);
+}
+
 char *
 mono_exception_get_native_backtrace (MonoException *exc)
 {

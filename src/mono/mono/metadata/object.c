@@ -6094,7 +6094,9 @@ mono_print_unhandled_exception (MonoObject *exc)
 			MonoObject *other_exc = NULL;
 			str = mono_object_to_string (exc, &other_exc);
 			if (other_exc) {
-				message = g_strdup ("Nested exception, bailing out");
+				message = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
+					mono_exception_get_managed_backtrace ((MonoException*)exc),
+					mono_exception_get_managed_backtrace ((MonoException*)other_exc));
 			} else if (str) {
 				message = mono_string_to_utf8_checked (str, &error);
 				if (!mono_error_ok (&error)) {

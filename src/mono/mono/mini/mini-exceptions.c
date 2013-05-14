@@ -119,6 +119,7 @@ mono_exceptions_init (void)
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 	cbs.mono_raise_exception = mono_get_throw_exception ();
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
+	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
 	mono_install_eh_callbacks (&cbs);
 }
@@ -2720,8 +2721,13 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		
 		if (str)
 			msg = mono_string_to_utf8 (str);
-		else
+		else if (other) {
+			msg = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
+				mono_exception_get_managed_backtrace ((MonoException*)exc),
+				mono_exception_get_managed_backtrace ((MonoException*)other));
+		} else {
 			msg = g_strdup ("Nested exception trying to figure out what went wrong");
+		}
 		mono_runtime_printf_err ("[ERROR] FATAL UNHANDLED EXCEPTION: %s", msg);
 		g_free (msg);
 #if defined(__APPLE__) && defined(__arm__)
