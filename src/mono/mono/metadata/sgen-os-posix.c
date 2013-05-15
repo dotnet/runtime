@@ -232,7 +232,7 @@ sgen_thread_handshake (BOOL suspend)
 			g_assert (info->doing_handshake);
 			info->doing_handshake = FALSE;
 		}
-		result = pthread_kill (mono_thread_info_get_tid (info), signum);
+		result = mono_threads_pthread_kill (info, signum);
 		if (result == 0) {
 			count++;
 		} else {
