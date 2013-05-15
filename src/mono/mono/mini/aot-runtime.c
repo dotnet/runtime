@@ -3443,7 +3443,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	g_assert (klass->inited);
 
 	/* Find method index */
-	if (method->is_inflated && !method->wrapper_type && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE)) {
+	if (method->is_inflated && !method->wrapper_type && mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		/* 
 		 * For generic methods, we store the fully shared instance in place of the
 		 * original method.
@@ -3547,7 +3547,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 				return code;
 		}
 
-		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE, FALSE)) {
+		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE)) {
 			/* Partial sharing */
 			MonoMethod *shared;
 
@@ -3557,7 +3557,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 				method = shared;
 		}
 
-		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE)) {
+		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 			/* gsharedvt */
 			/* Use the all-vt shared method since this is what was AOTed */
 			method_index = find_extra_method (mini_get_shared_method_full (method, TRUE, TRUE), &amodule);
@@ -4382,9 +4382,9 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index;
 
-	if (method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE)) {
+	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_extra_method (method, &amodule);
-		if (method_index == 0xffffff && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE)) {
+		if (method_index == 0xffffff && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 			MonoMethod *shared = mini_get_shared_method_full (method, TRUE, TRUE);
 			method_index = find_extra_method (shared, &amodule);
 		}

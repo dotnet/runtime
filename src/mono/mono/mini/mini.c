@@ -4478,7 +4478,7 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		shared_context = declaring_method->klass->generic_container->context;
 
 	/* Handle gsharedvt/partial sharing */
-	if ((method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE)) ||
+	if ((method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) ||
 		is_gsharedvt || mini_is_gsharedvt_sharable_method (method)) {
 		MonoGenericContext *context = mono_method_get_context (method);
 		MonoGenericInst *inst;
@@ -4594,10 +4594,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 * FIXME: Remove the method->klass->generic_class limitation.
 		 */
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_impl_full (method, TRUE, FALSE, FALSE)));
+			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE)));
 	else
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method, FALSE);
+			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable (method, FALSE);
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
@@ -5465,7 +5465,7 @@ lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (ji)
 		return ji;
 
-	if (!mono_method_is_generic_sharable_impl (method, FALSE))
+	if (!mono_method_is_generic_sharable (method, FALSE))
 		return NULL;
 	return mono_domain_lookup_shared_generic (domain, method);
 }
@@ -5782,7 +5782,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_jit_code_hash_unlock (target_domain);
 		code = cfg->native_code;
 
-		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE))
+		if (cfg->generic_sharing_context && mono_method_is_generic_sharable (method, FALSE))
 			mono_stats.generics_shared_methods++;
 		if (cfg->gsharedvt)
 			mono_stats.gsharedvt_methods++;

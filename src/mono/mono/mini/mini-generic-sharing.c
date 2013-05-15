@@ -1937,7 +1937,7 @@ is_async_method (MonoMethod *method)
 }
 
 /*
- * mono_method_is_generic_sharable_impl_full:
+ * mono_method_is_generic_sharable_full:
  * @method: a method
  * @allow_type_vars: whether to regard type variables as reference types
  * @allow_partial: whether to allow partial sharing
@@ -1948,7 +1948,7 @@ is_async_method (MonoMethod *method)
  * type parameters.  Otherwise returns FALSE.
  */
 gboolean
-mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_type_vars,
+mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_vars,
 										   gboolean allow_partial, gboolean allow_gsharedvt)
 {
 	if (!mono_method_is_generic_impl (method))
@@ -2012,9 +2012,9 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 }
 
 gboolean
-mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars)
+mono_method_is_generic_sharable (MonoMethod *method, gboolean allow_type_vars)
 {
-	return mono_method_is_generic_sharable_impl_full (method, allow_type_vars, ALLOW_PARTIAL_SHARING, TRUE);
+	return mono_method_is_generic_sharable_full (method, allow_type_vars, ALLOW_PARTIAL_SHARING, TRUE);
 }
 
 gboolean
@@ -2023,7 +2023,7 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 	if (!mono_class_generic_sharing_enabled (method->klass))
 		return FALSE;
 
-	if (!mono_method_is_generic_sharable_impl (method, allow_type_vars))
+	if (!mono_method_is_generic_sharable (method, allow_type_vars))
 		return FALSE;
 
 	if (method->is_inflated && mono_method_get_context (method)->method_inst)

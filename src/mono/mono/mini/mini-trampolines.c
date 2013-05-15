@@ -652,7 +652,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			if (generic_shared) {
 				if (m->wrapper_type != MONO_WRAPPER_NONE)
 					m = mono_marshal_method_from_wrapper (m);
-				//g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
+				//g_assert (mono_method_is_generic_sharable (m, FALSE));
 			}
 
 			/* Patch calling code */

@@ -2953,7 +2953,7 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 static void
 add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
 {
-	if (mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE, FALSE))
+	if (mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE))
 		method = mini_get_shared_method (method);
 
 	if (acfg->aot_opts.log_generics)
@@ -3718,7 +3718,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE))
+		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE))
 			/* Already added */
 			continue;
 
@@ -3992,7 +3992,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		 * If the method is fully sharable, it was already added in place of its
 		 * generic definition.
 		 */
-		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, FALSE))
+		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE))
 			continue;
 
 		/*
@@ -6150,7 +6150,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				MonoMethod *m = patch_info->data.method;
 				if (m->is_inflated) {
 					if (!(mono_class_generic_sharing_enabled (m->klass) &&
-						  mono_method_is_generic_sharable_impl_full (m, FALSE, FALSE, FALSE)) &&
+						  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&
 						!method_has_type_vars (m)) {
 						if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 							if (acfg->aot_opts.full_aot)
