@@ -1954,6 +1954,9 @@ mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_ty
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
 
+	if (!ALLOW_PARTIAL_SHARING)
+		allow_partial = FALSE;
+
 	/*
 	 * Generic async methods have an associated state machine class which is a generic struct. This struct
 	 * is too large to be handled by gsharedvt so we make it visible to the AOT compiler by disabling sharing

@@ -2951,18 +2951,21 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 static void
-add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
-{
-	add_method_full (acfg, method, TRUE, 0);
-}
-
-static void
 add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
 {
+	if (mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE, FALSE))
+		method = mini_get_shared_method (method);
+
 	if (acfg->aot_opts.log_generics)
 		printf ("%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
 
 	add_method_full (acfg, method, TRUE, depth);
+}
+
+static void
+add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	add_extra_method_with_depth (acfg, method, 0);
 }
 
 static void

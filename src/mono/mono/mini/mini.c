@@ -4387,6 +4387,21 @@ is_gsharedvt_method (MonoMethod *method)
 }
 
 static gboolean
+is_open_method (MonoMethod *method)
+{
+	MonoGenericContext *context;
+
+	if (!method->is_inflated)
+		return FALSE;
+	context = mono_method_get_context (method);
+	if (context->class_inst && context->class_inst->is_open)
+		return TRUE;
+	if (context->method_inst && context->method_inst->is_open)
+		return TRUE;
+	return FALSE;
+}
+
+static gboolean
 has_ref_constraint (MonoGenericParamInfo *info)
 {
 	MonoClass **constraints;
@@ -4598,7 +4613,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			try_generic_shared = FALSE;
 	}
 
-	if (is_gsharedvt_method (method)) {
+	if (is_gsharedvt_method (method) || (compile_aot && is_open_method (method))) {
 		/* We are AOTing a gshared method directly */
 		method_is_gshared = TRUE;
 		g_assert (compile_aot);
