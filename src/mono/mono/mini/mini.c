@@ -4483,7 +4483,9 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		MonoGenericContext *context = mono_method_get_context (method);
 		MonoGenericInst *inst;
 
-		gsharedvt = is_gsharedvt || mini_is_gsharedvt_sharable_method (method);
+		partial = mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE);
+
+		gsharedvt = is_gsharedvt || (!partial && mini_is_gsharedvt_sharable_method (method));
 
 		class_container = declaring_method->klass->generic_container;
 		method_container = mono_method_get_generic_container (declaring_method);
@@ -4492,7 +4494,6 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		 * Create the shared context by replacing the ref type arguments with
 		 * type parameters, and keeping the rest.
 		 */
-		partial = TRUE;
 		if (context)
 			inst = context->class_inst;
 		else
@@ -4506,6 +4507,8 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 			inst = shared_context.method_inst;
 		if (inst)
 			shared_context.method_inst = get_shared_inst (inst, shared_context.method_inst, method_container, all_vt, gsharedvt);
+
+		partial = TRUE;
 	}
 
     res = mono_class_inflate_generic_method (declaring_method, &shared_context);
