@@ -4582,7 +4582,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_impl_full (method, TRUE, FALSE, FALSE)));
 	else
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE);
+			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method, FALSE);
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
@@ -5450,7 +5450,7 @@ lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (ji)
 		return ji;
 
-	if (!mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE))
+	if (!mono_method_is_generic_sharable_impl (method, FALSE))
 		return NULL;
 	return mono_domain_lookup_shared_generic (domain, method);
 }
@@ -5767,7 +5767,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_jit_code_hash_unlock (target_domain);
 		code = cfg->native_code;
 
-		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE, TRUE))
+		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE))
 			mono_stats.generics_shared_methods++;
 		if (cfg->gsharedvt)
 			mono_stats.gsharedvt_methods++;

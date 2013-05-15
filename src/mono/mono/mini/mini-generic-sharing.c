@@ -658,12 +658,15 @@ generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 						  gboolean allow_partial)
 {
 	int i;
+	gboolean has_ref = FALSE;
 
 	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *type = inst->type_argv [i];
 
-		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
+		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))) {
+			has_ref = TRUE;
 			continue;
+		}
  
 		/*
 		 * Allow non ref arguments, if there is at least one ref argument
@@ -676,7 +679,10 @@ generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 		return FALSE;
 	}
 
-	return TRUE;
+	if (allow_partial)
+		return has_ref;
+	else
+		return TRUE;
 }
 
 /*
@@ -704,9 +710,6 @@ mono_is_partially_sharable_inst (MonoGenericInst *inst)
  * get_shared_class:
  *
  *   Return the class used to store information when using generic sharing.
- * For fully shared classes, it is the generic definition, for partially shared
- * classes, it is an instance with all ref type arguments replaced by the type parameters
- * of its generic definition.
  */
 static MonoClass*
 get_shared_class (MonoClass *class)
@@ -718,9 +721,11 @@ get_shared_class (MonoClass *class)
 	 */
 	//g_assert_not_reached ();
 
+#if 0
 	/* The gsharedvt changes break this */
 	if (ALLOW_PARTIAL_SHARING)
 		g_assert_not_reached ();
+#endif
 
 #if 0
 	if (class->is_inflated) {
@@ -754,6 +759,7 @@ get_shared_class (MonoClass *class)
 	}
 #endif
 
+	// FIXME: Use this in all cases can be problematic wrt domain/assembly unloading
 	return class_uninstantiated (class);
 }
 
