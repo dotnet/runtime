@@ -2722,9 +2722,14 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		if (str)
 			msg = mono_string_to_utf8 (str);
 		else if (other) {
+			char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
+			char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other);
+
 			msg = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
-				mono_exception_get_managed_backtrace ((MonoException*)exc),
-				mono_exception_get_managed_backtrace ((MonoException*)other));
+				original_backtrace, nested_backtrace);
+
+			g_free (original_backtrace);
+			g_free (nested_backtrace);
 		} else {
 			msg = g_strdup ("Nested exception trying to figure out what went wrong");
 		}

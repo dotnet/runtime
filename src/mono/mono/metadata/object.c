@@ -6094,9 +6094,15 @@ mono_print_unhandled_exception (MonoObject *exc)
 			MonoObject *other_exc = NULL;
 			str = mono_object_to_string (exc, &other_exc);
 			if (other_exc) {
+				char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
+				char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other_exc);
+				
 				message = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
-					mono_exception_get_managed_backtrace ((MonoException*)exc),
-					mono_exception_get_managed_backtrace ((MonoException*)other_exc));
+					original_backtrace, nested_backtrace);
+
+				g_free (original_backtrace);
+				g_free (nested_backtrace);
+				free_message = TRUE;
 			} else if (str) {
 				message = mono_string_to_utf8_checked (str, &error);
 				if (!mono_error_ok (&error)) {
