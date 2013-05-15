@@ -8142,6 +8142,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
+#ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
+	opts &= ~MONO_OPT_GSHAREDVT;
+#endif
+
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 	acfg = acfg_create (ass, opts);
