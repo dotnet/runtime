@@ -138,6 +138,11 @@
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
 
+/* Remap printf to g_print (we use a mix of these in the mini code) */
+#ifdef PLATFORM_ANDROID
+#define printf g_print
+#endif
+
 /* Constants used to encode different types of methods in AOT */
 enum {
 	MONO_AOT_METHODREF_MIN = 240,
