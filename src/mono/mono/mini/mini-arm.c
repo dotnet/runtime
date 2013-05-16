@@ -862,7 +862,7 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 			}
 		}
 		fclose (file);
-		/*printf ("features: v5: %d, thumb: %d\n", v5_supported, thumb_supported);*/
+		/*g_print ("features: v5: %d, thumb: %d\n", v5_supported, thumb_supported);*/
 	}
 #endif
 	}
@@ -1210,7 +1210,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_general (&gr, &stack_size, &cinfo->ret, TRUE);
 	}
 
-	DEBUG(printf("params: %d\n", sig->param_count));
+	DEBUG(g_print("params: %d\n", sig->param_count));
 	for (i = pstart; i < sig->param_count; ++i) {
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* Prevent implicit arguments and sig_cookie from
@@ -1219,9 +1219,9 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			/* Emit the signature cookie just before the implicit arguments */
 			add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 		}
-		DEBUG(printf("param %d: ", i));
+		DEBUG(g_print("param %d: ", i));
 		if (sig->params [i]->byref) {
-                        DEBUG(printf("byref\n"));
+                        DEBUG(g_print("byref\n"));
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 			n++;
 			continue;
@@ -1287,7 +1287,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 				else
 					size = mini_type_stack_size_full (gsctx, simpletype, &align, FALSE);
 			}
-			DEBUG(printf ("load %d bytes struct\n", size));
+			DEBUG(g_print ("load %d bytes struct\n", size));
 			align_size = size;
 			nwords = 0;
 			align_size += (sizeof (gpointer) - 1);
@@ -1395,7 +1395,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	}
 
 	/* align stack size to 8 */
-	DEBUG (printf ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
+	DEBUG (g_print ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
 	stack_size = (stack_size + 7) & ~7;
 
 	cinfo->stack_usage = stack_size;
@@ -1575,7 +1575,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		ins->opcode = OP_REGOFFSET;
 		ins->inst_basereg = cfg->frame_reg;
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr =");
+			g_print ("vret_addr =");
 			mono_print_ins (cfg->vret_addr);
 		}
 		offset += sizeof(gpointer);
@@ -1762,7 +1762,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->vtype_retaddr) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr = ");
+			g_print ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
@@ -2682,7 +2682,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				} else {
-					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
+					//static int c = 0; g_print ("MATCHX %s %d\n", cfg->method->name,c++);
 					ins->opcode = OP_MOVE;
 					ins->sreg1 = last_ins->sreg1;
 				}
@@ -2723,7 +2723,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 						|| last_ins->opcode == OP_STORE_MEMBASE_IMM) &&
 				   ins->inst_basereg == last_ins->inst_destbasereg &&
 				   ins->inst_offset == last_ins->inst_offset) {
-				//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
+				//static int c = 0; g_print ("MATCHX %s %d\n", cfg->method->name,c++);
 				ins->opcode = OP_ICONST;
 				ins->inst_c0 = last_ins->inst_imm;
 				g_assert_not_reached (); // check this rule
@@ -5974,10 +5974,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	start = code;
 
 #if DEBUG_IMT
-	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
+	g_print ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		printf ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, item->key->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);
+		g_print ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, item->key->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);
 	}
 #endif
 
