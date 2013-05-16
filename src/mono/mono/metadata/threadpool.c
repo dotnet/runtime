@@ -770,6 +770,7 @@ monitor_thread (gpointer unused)
 	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threadpool monitor"));
 	while (1) {
 		ms = 500;
+		i = 10; //number of spurious awakes we tolerate before doing a round of rebalancing.
 		do {
 			guint32 ts;
 			ts = mono_msec_ticks ();
@@ -780,7 +781,7 @@ monitor_thread (gpointer unused)
 				break;
 			if (THREAD_WANTS_A_BREAK (thread))
 				mono_thread_interruption_checkpoint ();
-		} while (ms > 0);
+		} while (ms > 0 && i--);
 
 		if (mono_runtime_is_shutting_down ())
 			break;
