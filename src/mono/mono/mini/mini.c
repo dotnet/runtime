@@ -380,7 +380,7 @@ mono_print_method_from_ip (void *ip)
 		mono_domain_unlock (domain);
 		if (user_data.method) {
 			char *mname = mono_method_full_name (user_data.method, TRUE);
-			g_print ("IP %p is a JIT trampoline for %s\n", ip, mname);
+			printf ("IP %p is a JIT trampoline for %s\n", ip, mname);
 			g_free (mname);
 		}
 		else
@@ -1088,7 +1088,7 @@ mono_op_imm_to_op (int opcode)
 	case OP_LOCALLOC_IMM:
 		return OP_LOCALLOC;
 	default:
-		g_print ("%s\n", mono_inst_name (opcode));
+		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return -1;
 	}
@@ -1220,7 +1220,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		 */
 
 		if (cfg->verbose_level >= 4) {
-			g_print ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, inst->dreg + 1, inst->dreg + 2);
+			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, inst->dreg + 1, inst->dreg + 2);
 		}
 
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -1727,7 +1727,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 	int nvtypes;
 	gboolean reuse_slot;
 
-	LSCAN_DEBUG (g_print ("Allocate Stack Slots 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
+	LSCAN_DEBUG (printf ("Allocate Stack Slots 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
 
 	scalar_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
 	vtype_stack_slots = NULL;
@@ -1852,7 +1852,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			int pos;
 			gboolean changed;
 
-			//g_print ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
+			//printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
 
 			if (!current->interval->range) {
 				if (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))
@@ -1866,10 +1866,10 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			else
 				pos = current->interval->range->from;
 
-			LSCAN_DEBUG (g_print ("process R%d ", inst->dreg));
+			LSCAN_DEBUG (printf ("process R%d ", inst->dreg));
 			if (current->interval->range)
 				LSCAN_DEBUG (mono_linterval_print (current->interval));
-			LSCAN_DEBUG (g_print ("\n"));
+			LSCAN_DEBUG (printf ("\n"));
 
 			/* Check for intervals in active which expired or inactive */
 			changed = TRUE;
@@ -1882,14 +1882,14 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 					if (v->interval->last_range->to < pos) {
 						slot_info->active = g_list_delete_link (slot_info->active, l);
 						slot_info->slots = g_slist_prepend_mempool (cfg->mempool, slot_info->slots, GINT_TO_POINTER (offsets [v->idx]));
-						LSCAN_DEBUG (g_print ("Interval R%d has expired, adding 0x%x to slots\n", cfg->varinfo [v->idx]->dreg, offsets [v->idx]));
+						LSCAN_DEBUG (printf ("Interval R%d has expired, adding 0x%x to slots\n", cfg->varinfo [v->idx]->dreg, offsets [v->idx]));
 						changed = TRUE;
 						break;
 					}
 					else if (!mono_linterval_covers (v->interval, pos)) {
 						slot_info->inactive = g_list_append (slot_info->inactive, v);
 						slot_info->active = g_list_delete_link (slot_info->active, l);
-						LSCAN_DEBUG (g_print ("Interval R%d became inactive\n", cfg->varinfo [v->idx]->dreg));
+						LSCAN_DEBUG (printf ("Interval R%d became inactive\n", cfg->varinfo [v->idx]->dreg));
 						changed = TRUE;
 						break;
 					}
@@ -1908,14 +1908,14 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 						slot_info->inactive = g_list_delete_link (slot_info->inactive, l);
 						// FIXME: Enabling this seems to cause impossible to debug crashes
 						//slot_info->slots = g_slist_prepend_mempool (cfg->mempool, slot_info->slots, GINT_TO_POINTER (offsets [v->idx]));
-						LSCAN_DEBUG (g_print ("Interval R%d has expired, adding 0x%x to slots\n", cfg->varinfo [v->idx]->dreg, offsets [v->idx]));
+						LSCAN_DEBUG (printf ("Interval R%d has expired, adding 0x%x to slots\n", cfg->varinfo [v->idx]->dreg, offsets [v->idx]));
 						changed = TRUE;
 						break;
 					}
 					else if (mono_linterval_covers (v->interval, pos)) {
 						slot_info->active = g_list_append (slot_info->active, v);
 						slot_info->inactive = g_list_delete_link (slot_info->inactive, l);
-						LSCAN_DEBUG (g_print ("\tInterval R%d became active\n", cfg->varinfo [v->idx]->dreg));
+						LSCAN_DEBUG (printf ("\tInterval R%d became active\n", cfg->varinfo [v->idx]->dreg));
 						changed = TRUE;
 						break;
 					}
@@ -1949,7 +1949,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			count ++;
 
 			if (count == atoi (getenv ("COUNT3")))
-				g_print ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (getenv ("COUNT3")))
 				slot = 0xffffff;
 			else {
@@ -1958,7 +1958,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		}
 #endif
 
-		LSCAN_DEBUG (g_print ("R%d %s -> 0x%x\n", inst->dreg, mono_type_full_name (t), slot));
+		LSCAN_DEBUG (printf ("R%d %s -> 0x%x\n", inst->dreg, mono_type_full_name (t), slot));
 
 		if (inst->flags & MONO_INST_LMF) {
 			size = sizeof (MonoLMF);
@@ -2155,7 +2155,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 		slot = 0xffffff;
 		if (cfg->comp_done & MONO_COMP_LIVENESS) {
-			//g_print ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
+			//printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
 			
 			/* expire old intervals in active */
 			while (slot_info->active) {
@@ -2164,7 +2164,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 				if (amv->range.last_use.abs_pos > vmv->range.first_use.abs_pos)
 					break;
 
-				//g_print ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
+				//printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 
 				slot_info->active = g_list_delete_link (slot_info->active, slot_info->active);
 				slot_info->slots = g_slist_prepend_mempool (cfg->mempool, slot_info->slots, GINT_TO_POINTER (offsets [amv->idx]));
@@ -2195,7 +2195,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 			/*
 			if (count == atoi (getenv ("COUNT")))
-				g_print ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (getenv ("COUNT")))
 				slot = 0xffffff;
 			else {
@@ -3020,8 +3020,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SWITCH:
 		return (ji->type << 8) | ji->data.table->table_size;
 	default:
-		g_print ("info type: %d\n", ji->type);
-		mono_print_ji (ji); g_print ("\n");
+		printf ("info type: %d\n", ji->type);
+		mono_print_ji (ji); printf ("\n");
 		g_assert_not_reached ();
 		return 0;
 	}
@@ -3472,17 +3472,17 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	if (cfg->verbose_level > 2) {
 		if (cfg->ret) {
-			g_print ("\treturn : ");
+			printf ("\treturn : ");
 			mono_print_ins (cfg->ret);
 		}
 
 		if (sig->hasthis) {
-			g_print ("\tthis: ");
+			printf ("\tthis: ");
 			mono_print_ins (cfg->args [0]);
 		}
 
 		for (i = 0; i < sig->param_count; ++i) {
-			g_print ("\targ [%d]: ", i);
+			printf ("\targ [%d]: ", i);
 			mono_print_ins (cfg->args [i + sig->hasthis]);
 		}
 	}
@@ -3527,7 +3527,7 @@ mono_postprocess_patches (MonoCompile *cfg)
 			 * absolute address.
 			 */
 			if (info) {
-				//g_print ("TEST %s %p\n", info->name, patch_info->data.target);
+				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
 				/* for these array methods we currently register the same function pointer
 				 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
 				 * will return the incorrect one depending on the order they are registered.
@@ -3714,7 +3714,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	}
 
 	if (cfg->verbose_level > 2) {
-		g_print ("\nSEQ POINT MAP: \n");
+		printf ("\nSEQ POINT MAP: \n");
 	}
 
 	for (i = 0; i < cfg->seq_points->len; ++i) {
@@ -3726,12 +3726,12 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		sp->next = g_new (int, sp->next_len);
 		j = 0;
 		if (cfg->verbose_level > 2 && next [i]) {
-			g_print ("\tIL0x%x ->", sp->il_offset);
+			printf ("\tIL0x%x ->", sp->il_offset);
 			for (l = next [i]; l; l = l->next) {
 				next_index = GPOINTER_TO_UINT (l->data);
-				g_print (" IL0x%x", info->seq_points [next_index].il_offset);
+				printf (" IL0x%x", info->seq_points [next_index].il_offset);
 			}
-			g_print ("\n");
+			printf ("\n");
 		}
 		for (l = next [i]; l; l = l->next) {
 			next_index = GPOINTER_TO_UINT (l->data);
@@ -4066,7 +4066,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		if (num_holes)
 			holes_size = sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
 		if (G_UNLIKELY (cfg->verbose_level >= 4))
-			g_print ("Number of try block holes %d\n", num_holes);
+			printf ("Number of try block holes %d\n", num_holes);
 	}
 
 	if (mono_security_method_has_declsec (cfg->method_to_register)) {
@@ -4201,7 +4201,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			hole->length = (guint16)(hole_data->basic_block->native_length - start_bb_offset);
 
 			if (G_UNLIKELY (cfg->verbose_level >= 4))
-				g_print ("\tTry block hole at eh clause %d offset %x length %x\n", hole->clause, hole->offset, hole->length);
+				printf ("\tTry block hole at eh clause %d offset %x length %x\n", hole->clause, hole->offset, hole->length);
 		}
 		g_assert (i == num_holes);
 	}
@@ -4278,7 +4278,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				gpointer hole_end = cfg->native_code + (hole->basic_block->native_offset + hole->basic_block->native_length);
 				if (hole->clause == ec && hole_end == ei->try_end) {
 					if (G_UNLIKELY (cfg->verbose_level >= 4))
-						g_print ("\tShortening try block %d from %x to %x\n", i, (int)((guint8*)ei->try_end - cfg->native_code), hole->start_offset);
+						printf ("\tShortening try block %d from %x to %x\n", i, (int)((guint8*)ei->try_end - cfg->native_code), hole->start_offset);
 
 					ei->try_end = cfg->native_code + hole->start_offset;
 					break;
@@ -4307,7 +4307,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			int end = (guint8*)ei->try_end - cfg->native_code;
 			int handler = (guint8*)ei->handler_start - cfg->native_code;
 
-			g_print ("JitInfo EH clause %d flags %x try %x-%x handler %x\n", i, ei->flags, start, end, handler);
+			printf ("JitInfo EH clause %d flags %x try %x-%x handler %x\n", i, ei->flags, start, end, handler);
 		}
 	}
 
@@ -4743,7 +4743,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			if (cfg->disable_llvm) {
 				if (cfg->verbose_level >= 1) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
-					g_print ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
+					printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 					//g_free (nm);
 				}
 				mono_destroy_compile (cfg);
@@ -4868,7 +4868,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if (getenv ("COUNT2")) {
 			cfg->globalra = TRUE;
 			if (count == atoi (getenv ("COUNT2")))
-				g_print ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (getenv ("COUNT2")))
 				cfg->globalra = FALSE;
 		}
@@ -5333,7 +5333,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if (cfg->disable_llvm) {
 			if (cfg->verbose_level >= 1) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
-				g_print ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
+				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 				//g_free (nm);
 			}
 			mono_destroy_compile (cfg);
@@ -5392,7 +5392,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 #if 0
 	if (cfg->gsharedvt)
-		g_print ("GSHAREDVT: %s\n", mono_method_full_name (cfg->method, TRUE));
+		printf ("GSHAREDVT: %s\n", mono_method_full_name (cfg->method, TRUE));
 #endif
 
 	/* collect statistics */
@@ -5776,7 +5776,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		/* We can't use a domain specific method in another domain */
 		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
 			code = info->code_start;
-//			g_print("Discarding code for method %s\n", method->name);
+//			printf("Discarding code for method %s\n", method->name);
 		}
 	}
 	
@@ -6310,7 +6310,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			}
 		}
 
-		//g_print ("M: %s\n", mono_method_full_name (method, TRUE));
+		//printf ("M: %s\n", mono_method_full_name (method, TRUE));
 
 		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf, sizeof (buf));
 
@@ -6589,8 +6589,8 @@ mini_parse_debug_options (void)
 		else if (!strcmp (arg, "soft-breakpoints"))
 			debug_options.soft_breakpoints = TRUE;
 		else {
-			g_printerr ("Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			g_printerr ("Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'suspend-on-unhandled', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks'\n");
+			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'suspend-on-unhandled', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks'\n");
 			exit (1);
 		}
 	}
@@ -6851,7 +6851,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_use_llvm) {
 		if (!mono_llvm_load (NULL)) {
 			mono_use_llvm = FALSE;
-			g_printerr ("Mono Warning: llvm support could not be loaded.\n");
+			fprintf (stderr, "Mono Warning: llvm support could not be loaded.\n");
 		}
 	}
 	if (mono_use_llvm)
@@ -6882,7 +6882,7 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef MONO_ARCH_HAVE_NOTIFY_PENDING_EXC
 	// This is experimental code so provide an env var to switch it off
 	if (getenv ("MONO_DISABLE_PENDING_EXCEPTIONS")) {
-		g_print ("MONO_DISABLE_PENDING_EXCEPTIONS env var set.\n");
+		printf ("MONO_DISABLE_PENDING_EXCEPTIONS env var set.\n");
 	} else {
 		check_for_pending_exc = FALSE;
 		mono_threads_install_notify_pending_exc (mono_arch_notify_pending_exc);
@@ -7398,7 +7398,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 	g_hash_table_insert (assemblies, ass, ass);
 
 	if (mini_verbose > 0)
-		g_print ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
+		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);

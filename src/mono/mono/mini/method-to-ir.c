@@ -74,7 +74,7 @@
 #define INLINE_FAILURE(msg) do {									\
 	if ((cfg->method != method) && (method->wrapper_type == MONO_WRAPPER_NONE)) { \
 		if (cfg->verbose_level >= 2)									\
-			g_print ("inline failed: %s\n", msg);						\
+			printf ("inline failed: %s\n", msg);						\
 		goto inline_failure;											\
 	} \
 	} while (0)
@@ -103,7 +103,7 @@
 #define GENERIC_SHARING_FAILURE(opcode) do {		\
 		if (cfg->generic_sharing_context) {	\
             if (cfg->verbose_level > 2) \
-			    g_print ("sharing failed for method %s.%s.%s/%d opcode %s line %d\n", method->klass->name_space, method->klass->name, method->name, method->signature->param_count, mono_opcode_name ((opcode)), __LINE__); \
+			    printf ("sharing failed for method %s.%s.%s/%d opcode %s line %d\n", method->klass->name_space, method->klass->name, method->name, method->signature->param_count, mono_opcode_name ((opcode)), __LINE__); \
 			mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED); \
 			goto exception_exit;	\
 		}			\
@@ -112,7 +112,7 @@
 	if (cfg->gsharedvt) {												\
 		cfg->exception_message = g_strdup_printf ("gsharedvt failed for method %s.%s.%s/%d opcode %s %s:%d", method->klass->name_space, method->klass->name, method->name, method->signature->param_count, mono_opcode_name ((opcode)), __FILE__, __LINE__); \
 		if (cfg->verbose_level >= 2)									\
-			g_print ("%s\n", cfg->exception_message); \
+			printf ("%s\n", cfg->exception_message); \
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED); \
 		goto exception_exit;											\
 	}																	\
@@ -331,13 +331,13 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 	int i;
 	MonoInst *tree;
 
-	g_print ("\n%s %d: [IN: ", msg, bb->block_num);
+	printf ("\n%s %d: [IN: ", msg, bb->block_num);
 	for (i = 0; i < bb->in_count; ++i)
-		g_print (" BB%d(%d)", bb->in_bb [i]->block_num, bb->in_bb [i]->dfn);
-	g_print (", OUT: ");
+		printf (" BB%d(%d)", bb->in_bb [i]->block_num, bb->in_bb [i]->dfn);
+	printf (", OUT: ");
 	for (i = 0; i < bb->out_count; ++i)
-		g_print (" BB%d(%d)", bb->out_bb [i]->block_num, bb->out_bb [i]->dfn);
-	g_print (" ]\n");
+		printf (" BB%d(%d)", bb->out_bb [i]->block_num, bb->out_bb [i]->dfn);
+	printf (" ]\n");
 	for (tree = bb->code; tree; tree = tree->next)
 		mono_print_ins_index (-1, tree);
 }
@@ -361,7 +361,7 @@ mono_create_helper_signatures (void)
 #define UNVERIFIED do { \
 	if (cfg->gsharedvt) { \
 		if (cfg->verbose_level > 2)									\
-			g_print ("gsharedvt method failed to verify, falling back to instantiation.\n"); \
+			printf ("gsharedvt method failed to verify, falling back to instantiation.\n"); \
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED); \
 		goto exception_exit;											\
 	}																	\
@@ -483,14 +483,14 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 #if 0
 	if (from->cil_code) {
 		if (to->cil_code)
-			g_print ("edge from IL%04x to IL_%04x\n", from->cil_code - cfg->cil_code, to->cil_code - cfg->cil_code);
+			printf ("edge from IL%04x to IL_%04x\n", from->cil_code - cfg->cil_code, to->cil_code - cfg->cil_code);
 		else
-			g_print ("edge from IL%04x to exit\n", from->cil_code - cfg->cil_code);
+			printf ("edge from IL%04x to exit\n", from->cil_code - cfg->cil_code);
 	} else {
 		if (to->cil_code)
-			g_print ("edge from entry to IL_%04x\n", to->cil_code - cfg->cil_code);
+			printf ("edge from entry to IL_%04x\n", to->cil_code - cfg->cil_code);
 		else
-			g_print ("edge from entry to exit\n");
+			printf ("edge from entry to exit\n");
 	}
 #endif
 
@@ -1338,24 +1338,24 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 	if (!count)
 		return;
 	if (cfg->verbose_level > 3)
-		g_print ("%d item(s) on exit from B%d\n", count, bb->block_num);
+		printf ("%d item(s) on exit from B%d\n", count, bb->block_num);
 	if (!bb->out_scount) {
 		bb->out_scount = count;
-		//g_print ("bblock %d has out:", bb->block_num);
+		//printf ("bblock %d has out:", bb->block_num);
 		found = FALSE;
 		for (i = 0; i < bb->out_count; ++i) {
 			outb = bb->out_bb [i];
 			/* exception handlers are linked, but they should not be considered for stack args */
 			if (outb->flags & BB_EXCEPTION_HANDLER)
 				continue;
-			//g_print (" %d", outb->block_num);
+			//printf (" %d", outb->block_num);
 			if (outb->in_stack) {
 				found = TRUE;
 				bb->out_stack = outb->in_stack;
 				break;
 			}
 		}
-		//g_print ("\n");
+		//printf ("\n");
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
@@ -1402,7 +1402,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 		inst->cil_code = sp [i]->cil_code;
 		sp [i] = locals [i];
 		if (cfg->verbose_level > 3)
-			g_print ("storing %d to temp %d\n", i, (int)locals [i]->inst_c0);
+			printf ("storing %d to temp %d\n", i, (int)locals [i]->inst_c0);
 	}
 
 	/*
@@ -1429,7 +1429,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 					inst->cil_code = sp [i]->cil_code;
 					sp [i] = locals [i];
 					if (cfg->verbose_level > 3)
-						g_print ("storing %d to temp %d\n", i, (int)outb->in_stack [i]->inst_c0);
+						printf ("storing %d to temp %d\n", i, (int)outb->in_stack [i]->inst_c0);
 				}
 				locals = outb->in_stack;
 				found = TRUE;
@@ -3195,7 +3195,7 @@ save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg)
 		MonoInst *tls_get = mono_get_jit_tls_intrinsic (cfg);
 
 		if (!tls_get) {
-			g_printerr ("error: --debug=casts not supported on this platform.\n.");
+			fprintf (stderr, "error: --debug=casts not supported on this platform.\n.");
 			exit (1);
 		}
 
@@ -5322,7 +5322,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #endif
 
 	if (cfg->verbose_level > 2)
-		g_print ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
+		printf ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
 	if (!cmethod->inline_info) {
 		cfg->stat_inlineable_methods++;
@@ -5408,7 +5408,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 	if ((costs >= 0 && costs < 60) || inline_always) {
 		if (cfg->verbose_level > 2)
-			g_print ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
+			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 		
 		cfg->stat_inlined_methods++;
 
@@ -5473,7 +5473,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		return costs + 1;
 	} else {
 		if (cfg->verbose_level > 2)
-			g_print ("INLINE ABORTED %s (cost %d)\n", mono_method_full_name (cmethod, TRUE), costs);
+			printf ("INLINE ABORTED %s (cost %d)\n", mono_method_full_name (cmethod, TRUE), costs);
 		cfg->exception_type = MONO_EXCEPTION_NONE;
 		mono_loader_clear_error ();
 
@@ -6301,7 +6301,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	cfg->current_method = method;
 
 	if (cfg->verbose_level > 2)
-		g_print ("method to IR %s\n", mono_method_full_name (method, TRUE));
+		printf ("method to IR %s\n", mono_method_full_name (method, TRUE));
 
 	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * num_args);
 	if (sig->hasthis)
@@ -6376,9 +6376,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 
-			/*g_print ("clause try IL_%04x to IL_%04x handler %d at IL_%04x to IL_%04x\n", clause->try_offset, clause->try_offset + clause->try_len, clause->flags, clause->handler_offset, clause->handler_offset + clause->handler_len);
+			/*printf ("clause try IL_%04x to IL_%04x handler %d at IL_%04x to IL_%04x\n", clause->try_offset, clause->try_offset + clause->try_len, clause->flags, clause->handler_offset, clause->handler_offset + clause->handler_len);
 			  while (p < end) {
-			  g_print ("%s", mono_disasm_code_one (NULL, method, p, &p));
+			  printf ("%s", mono_disasm_code_one (NULL, method, p, &p));
 			  }*/
 			/* catch and filter blocks get the exception object on the stack */
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE ||
@@ -6386,7 +6386,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *dummy_use;
 
 				/* mostly like handle_stack_args (), but just sets the input args */
-				/* g_print ("handling clause at IL_%04x\n", clause->handler_offset); */
+				/* printf ("handling clause at IL_%04x\n", clause->handler_offset); */
 				tblock->in_scount = 1;
 				tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 				tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
@@ -6651,7 +6651,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 0;
 			for (i = 0; i < bblock->in_scount; ++i) {
 				if (cfg->verbose_level > 3)
-					g_print ("loading %d from temp %d\n", i, (int)bblock->in_stack [i]->inst_c0);						
+					printf ("loading %d from temp %d\n", i, (int)bblock->in_stack [i]->inst_c0);						
 				EMIT_NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 				*sp++ = ins;
 			}
@@ -6671,7 +6671,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cfg->cbb = bblock;
 				for (i = 0; i < bblock->in_scount; ++i) {
 					if (cfg->verbose_level > 3)
-						g_print ("loading %d from temp %d\n", i, (int)bblock->in_stack [i]->inst_c0);						
+						printf ("loading %d from temp %d\n", i, (int)bblock->in_stack [i]->inst_c0);						
 					EMIT_NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 					*sp++ = ins;
 				}
@@ -6690,7 +6690,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int op_size = mono_opcode_size (ip, end);
 				g_assert (op_size > 0); /*The BB formation pass must catch all bad ops*/
 
-				if (cfg->verbose_level > 3) g_print ("SKIPPING DEAD OP at %x\n", ip_offset);
+				if (cfg->verbose_level > 3) printf ("SKIPPING DEAD OP at %x\n", ip_offset);
 
 				if (ip_offset + op_size == bb->end) {
 					MONO_INST_NEW (cfg, ins, OP_NOP);
@@ -6747,7 +6747,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 
 		if (cfg->verbose_level > 3)
-			g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+			printf ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
 
 		switch (*ip) {
 		case CEE_NOP:
@@ -7155,7 +7155,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (constrained_call) {
 					if (method->wrapper_type != MONO_WRAPPER_NONE) {
 						if (cfg->verbose_level > 2)
-							g_print ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+							printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
 						if (!((constrained_call->byval_arg.type == MONO_TYPE_VAR ||
 							   constrained_call->byval_arg.type == MONO_TYPE_MVAR) &&
 							  cfg->generic_sharing_context)) {
@@ -7163,7 +7163,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						}
 					} else {
 						if (cfg->verbose_level > 2)
-							g_print ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+							printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
 
 						if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
 							/* 
@@ -7857,7 +7857,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
 				INLINE_FAILURE ("tail call");
 
-				//g_print ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
+				//printf ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
 #ifdef MONO_ARCH_USE_OP_TAIL_CALL
 				/* Handle tail calls similarly to calls */
@@ -8872,7 +8872,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
 						mono_emit_abs_call (cfg, MONO_PATCH_INFO_CLASS_INIT, vtable->klass, helper_sig_class_init_trampoline, NULL);
 						if (cfg->verbose_level > 2)
-							g_print ("class %s.%s needs init call for ctor\n", cmethod->klass->name_space, cmethod->klass->name);
+							printf ("class %s.%s needs init call for ctor\n", cmethod->klass->name_space, cmethod->klass->name);
 						class_inits = g_slist_prepend (class_inits, vtable);
 					}
 
@@ -9258,8 +9258,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 
 				if (cfg->verbose_level > 3) {
-					g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
-					g_print ("<box+brtrue opt>\n");
+					printf ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+					printf ("<box+brtrue opt>\n");
 				}
 
 				switch (*ip) {
@@ -9758,7 +9758,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (!(g_slist_find (class_inits, vtable))) {
 							mono_emit_abs_call (cfg, MONO_PATCH_INFO_CLASS_INIT, vtable->klass, helper_sig_class_init_trampoline, NULL);
 							if (cfg->verbose_level > 2)
-								g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, mono_field_get_name (field));
+								printf ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, mono_field_get_name (field));
 							class_inits = g_slist_prepend (class_inits, vtable);
 						}
 					} else {
@@ -9820,7 +9820,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					GSHAREDVT_FAILURE (op);
 
-					/* g_print ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, mono_field_get_name (field));*/
+					/* printf ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, mono_field_get_name (field));*/
 					is_const = TRUE;
 					switch (ro_type) {
 					case MONO_TYPE_BOOLEAN:
@@ -11504,7 +11504,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->spvars)
 				mono_create_spvar_for_region (cfg, bb->region);
 			if (cfg->verbose_level > 2)
-				g_print ("REGION BB%d IL_%04x ID_%08X\n", bb->block_num, bb->real_offset, bb->region);
+				printf ("REGION BB%d IL_%04x ID_%08X\n", bb->block_num, bb->real_offset, bb->region);
 		}
 	}
 
@@ -12056,7 +12056,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 		int block_num = bb->block_num;
 
 		if (cfg->verbose_level > 2)
-			g_print ("\nHANDLE-GLOBAL-VREGS BLOCK %d:\n", bb->block_num);
+			printf ("\nHANDLE-GLOBAL-VREGS BLOCK %d:\n", bb->block_num);
 
 		cfg->cbb = bb;
 		for (; ins; ins = ins->next) {
@@ -12106,7 +12106,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 						mono_compile_create_var_for_vreg (cfg, &mono_defaults.int64_class->byval_arg, OP_LOCAL, vreg);
 
 						if (cfg->verbose_level > 2)
-							g_print ("LONG VREG R%d made global.\n", vreg);
+							printf ("LONG VREG R%d made global.\n", vreg);
 					}
 
 					/*
@@ -12130,7 +12130,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 
 					if (!get_vreg_to_inst (cfg, vreg)) {
 						if (G_UNLIKELY (cfg->verbose_level > 2))
-							g_print ("VREG R%d used in BB%d and BB%d made global.\n", vreg, vreg_to_bb [vreg], block_num);
+							printf ("VREG R%d used in BB%d and BB%d made global.\n", vreg, vreg_to_bb [vreg], block_num);
 
 						switch (regtype) {
 						case 'i':
@@ -12222,7 +12222,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 #endif
 
 				if (G_UNLIKELY (cfg->verbose_level > 2))
-					g_print ("CONVERTED R%d(%d) TO VREG.\n", var->dreg, vmv->idx);
+					printf ("CONVERTED R%d(%d) TO VREG.\n", var->dreg, vmv->idx);
 				var->flags |= MONO_INST_IS_DEAD;
 				cfg->vreg_to_inst [var->dreg] = NULL;
 			}
@@ -12379,7 +12379,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 		MonoInst *ins;
 
 		if (cfg->verbose_level > 2)
-			g_print ("\nSPILL BLOCK %d:\n", bb->block_num);
+			printf ("\nSPILL BLOCK %d:\n", bb->block_num);
 
 		/* Clear vreg_to_lvreg array */
 		for (i = 0; i < lvregs_len; i++)
@@ -12459,11 +12459,11 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			no_lvreg = FALSE;
 
 			if (G_UNLIKELY (cfg->verbose_level > 2)) {
-				g_print ("\t %.3s %d", spec, ins->dreg);
+				printf ("\t %.3s %d", spec, ins->dreg);
 				num_sregs = mono_inst_get_src_registers (ins, sregs);
 				for (srcindex = 0; srcindex < num_sregs; ++srcindex)
-					g_print (" %d", sregs [srcindex]);
-				g_print ("\n");
+					printf (" %d", sregs [srcindex]);
+				printf ("\n");
 			}
 
 			/***************/
@@ -12564,7 +12564,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							ins->inst_offset = var->inst_offset;
 							spec = INS_INFO (ins->opcode);
 						} else {
-							/* g_print ("INS: "); mono_print_ins (ins); */
+							/* printf ("INS: "); mono_print_ins (ins); */
 							/* Create a store instruction */
 							NEW_STORE_MEMBASE (cfg, store_ins, store_opcode, var->inst_basereg, var->inst_offset, ins->dreg);
 
@@ -12642,7 +12642,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 						/* The variable is already loaded to an lvreg */
 						if (G_UNLIKELY (cfg->verbose_level > 2))
-							g_print ("\t\tUse lvreg R%d for R%d.\n", vreg_to_lvreg [sreg], sreg);
+							printf ("\t\tUse lvreg R%d for R%d.\n", vreg_to_lvreg [sreg], sreg);
 						sregs [srcindex] = vreg_to_lvreg [sreg];
 						//mono_inst_set_src_registers (ins, sregs);
 						continue;
@@ -12664,7 +12664,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							ins->opcode = OP_NOP;
 							sreg = ins->dreg;
 						} else {
-							//g_print ("%d ", srcindex); mono_print_ins (ins);
+							//printf ("%d ", srcindex); mono_print_ins (ins);
 
 							sreg = alloc_dreg (cfg, stacktypes [regtype]);
 
