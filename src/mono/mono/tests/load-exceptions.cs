@@ -325,6 +325,21 @@ public class Tests : LoadMissing {
 		return 0;
 	}
 
+	public static int test_0_reflection_on_field_with_missing_type () {
+		var t = typeof (BadOverridesDriver).Assembly.GetType ("FieldWithMissingType");
+		foreach (var f in t.GetFields (BindingFlags.Public | BindingFlags.Static)) {
+			try {
+				Console.WriteLine (f.Name);
+				f.GetValue (null);
+				return 1;
+			} catch (TypeLoadException) {
+				return 0;
+			}
+		}
+		return 2;
+	}
+
+
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
 	}
