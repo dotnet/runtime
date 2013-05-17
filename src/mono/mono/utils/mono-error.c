@@ -351,6 +351,53 @@ mono_error_set_from_loader_error (MonoError *oerror)
 	mono_loader_clear_error ();
 }
 
+static const char*
+get_type_name (MonoErrorInternal *error)
+{
+	if (error->type_name)
+		return error->type_name;
+	if (error->klass)
+		return error->klass->name;
+	return "<unknown type>";
+}
+
+static const char*
+get_assembly_name (MonoErrorInternal *error)
+{
+	if (error->assembly_name)
+		return error->assembly_name;
+	if (error->klass && error->klass->image)
+		return error->klass->image->name;
+	return "<unknown assembly>";
+}
+
+void
+mono_loader_set_error_from_mono_error (MonoError *oerror)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+
+	switch (error->error_code) {
+	case MONO_ERROR_MISSING_METHOD:
+		mono_loader_set_error_method_load (get_type_name (error), error->member_name);
+		break;
+	case MONO_ERROR_MISSING_FIELD:
+		mono_loader_set_error_field_load (error->klass, error->member_name);
+		break;
+	case MONO_ERROR_TYPE_LOAD:
+		mono_loader_set_error_type_load (get_type_name (error), get_assembly_name (error));
+		break;
+	case MONO_ERROR_FILE_NOT_FOUND:
+		/* XXX can't recover if it's ref only or not */
+		mono_loader_set_error_assembly_load (get_assembly_name (error), FALSE);
+		break;
+	case MONO_ERROR_BAD_IMAGE:
+		mono_loader_set_error_bad_image (g_strdup (mono_internal_error_get_message (error)));
+		break;
+	default:
+		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error: %s", mono_internal_error_get_message (error)));
+	}
+}
+
 void
 mono_error_set_out_of_memory (MonoError *oerror, const char *msg_format, ...)
 {

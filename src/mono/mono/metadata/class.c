@@ -220,6 +220,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 				if (strcmp (nname, name) == 0) {
 					MonoClass *res = mono_class_create_from_typedef (enclosing->image, MONO_TOKEN_TYPE_DEF | class_nested, &error);
 					if (!mono_error_ok (&error)) {
+						mono_loader_set_error_from_mono_error (&error);
 						mono_error_cleanup (&error); /*FIXME don't swallow error message.*/
 						return NULL;
 					}
@@ -7043,8 +7044,10 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	case MONO_TOKEN_TYPE_DEF:
 		class = mono_class_create_from_typedef (image, type_token, &error);
 		if (!mono_error_ok (&error)) {
+			mono_loader_set_error_from_mono_error (&error);
 			/*FIXME don't swallow the error message*/
 			mono_error_cleanup (&error);
+			return NULL;
 		}
 		break;		
 	case MONO_TOKEN_TYPE_REF:

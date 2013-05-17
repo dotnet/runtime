@@ -71,4 +71,7 @@ mono_error_prepare_exception (MonoError *error, MonoError *error_out) MONO_INTER
 void
 mono_error_raise_exception (MonoError *error) MONO_INTERNAL;
 
+void
+mono_loader_set_error_from_mono_error (MonoError *oerror) MONO_INTERNAL;
+
 #endif
