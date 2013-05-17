@@ -2584,11 +2584,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		sgen_supported=true
 		AOT_SUPPORTED="yes"
-		if test "x$cross_compiling" != "xno"; then
-		   # Provide sane defaults when cross-compiling
-		   CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
-		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS"
-  		fi
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		;;
 # TODO: make proper support for NaCl host.
 #        arm*-*nacl)
