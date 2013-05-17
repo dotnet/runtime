@@ -343,6 +343,7 @@ typedef struct _RefQueueEntry RefQueueEntry;
 struct _RefQueueEntry {
 	void *dis_link;
 	guint32 gchandle;
+	MonoDomain *domain;
 	void *user_data;
 	RefQueueEntry *next;
 };

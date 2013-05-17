@@ -1457,13 +1457,10 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 		RefQueueEntry *entry;
 		while ((entry = *iter)) {
 			MonoObject *obj;
+			if (entry->domain == domain) {
 #ifdef HAVE_SGEN_GC
-			obj = mono_gc_weak_link_get (&entry->dis_link);
-			if (obj && mono_object_domain (obj) == domain) {
 				mono_gc_weak_link_remove (&entry->dis_link, TRUE);
 #else
-			obj = mono_gchandle_get_target (entry->gchandle);
-			if (obj && mono_object_domain (obj) == domain) {
 				mono_gchandle_free ((guint32)entry->gchandle);
 #endif
 				ref_list_remove_element (iter, entry);
@@ -1523,6 +1520,7 @@ mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *u
 
 	entry = g_new0 (RefQueueEntry, 1);
 	entry->user_data = user_data;
+	entry->domain = mono_object_domain (obj);
 
 #ifdef HAVE_SGEN_GC
 	mono_gc_weak_link_add (&entry->dis_link, obj, TRUE);
