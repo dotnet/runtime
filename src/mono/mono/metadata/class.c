@@ -53,7 +53,7 @@ guint32 classes_size, class_ext_size;
 /* Function supplied by the runtime to find classes by name using information from the AOT file */
 static MonoGetClassFromName get_class_from_name = NULL;
 
-static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
+static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error);
 static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res);
 static gboolean can_access_type (MonoClass *access_klass, MonoClass *member_klass);
 static MonoMethod* find_method_in_metadata (MonoClass *klass, const char *name, int param_count, int flags);
@@ -217,8 +217,14 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 				guint32 string_offset = mono_metadata_decode_row_col (&enclosing->image->tables [MONO_TABLE_TYPEDEF], class_nested - 1, MONO_TYPEDEF_NAME);
 				const char *nname = mono_metadata_string_heap (enclosing->image, string_offset);
 
-				if (strcmp (nname, name) == 0)
-					return mono_class_create_from_typedef (enclosing->image, MONO_TOKEN_TYPE_DEF | class_nested);
+				if (strcmp (nname, name) == 0) {
+					MonoClass *res = mono_class_create_from_typedef (enclosing->image, MONO_TOKEN_TYPE_DEF | class_nested, &error);
+					if (!mono_error_ok (&error)) {
+						mono_error_cleanup (&error); /*FIXME don't swallow error message.*/
+						return NULL;
+					}
+					return res;
+				}
 
 				i = mono_metadata_nesting_typedef (enclosing->image, enclosing->type_token, i + 1);
 			}
@@ -5474,6 +5480,14 @@ fix_gclass_incomplete_instantiation (MonoClass *gclass, void *user_data)
 
 	return TRUE;
 }
+
+static void
+mono_class_set_failure_and_error (MonoClass *class, MonoError *error, const char *msg)
+{
+	mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup (msg));
+	mono_error_set_type_load_class (error, class, msg);
+}
+
 static void
 mono_class_set_failure_from_loader_error (MonoClass *class, MonoError *error, char *msg)
 {
@@ -5494,6 +5508,7 @@ mono_class_set_failure_from_loader_error (MonoClass *class, MonoError *error, ch
  * mono_class_create_from_typedef:
  * @image: image where the token is valid
  * @type_token:  typedef token
+ * @error:  used to return any error found while creating the type
  *
  * Create the MonoClass* representing the specified type token.
  * @type_token must be a TypeDef token.
@@ -5501,9 +5516,8 @@ mono_class_set_failure_from_loader_error (MonoClass *class, MonoError *error, ch
  * FIXME: don't return NULL on failure, just the the caller figure it out.
  */
 static MonoClass *
-mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
+mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error)
 {
-	MonoError error;
 	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 	MonoClass *class, *parent = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
@@ -5516,13 +5530,19 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint32 field_last, method_last;
 	guint32 nesting_tokeen;
 
-	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows)
+	mono_error_init (error);
+
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows) {
+		mono_error_set_bad_image (error, image, "Invalid typedef token %x", type_token);
+		g_assert (!mono_loader_get_last_error ());
 		return NULL;
+	}
 
 	mono_loader_lock ();
 
 	if ((class = mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		mono_loader_unlock ();
+		g_assert (!mono_loader_get_last_error ());
 		return class;
 	}
 
@@ -5574,17 +5594,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		parent = mono_class_get_full (image, parent_token, context);
 
 		if (parent == NULL) {
-			mono_class_set_failure_from_loader_error (class, &error, g_strdup_printf ("Could not load parent, token is %x", parent_token));
+			mono_class_set_failure_from_loader_error (class, error, g_strdup_printf ("Could not load parent, token is %x", parent_token));
 			goto parent_failure;
 		}
 
 		for (tmp = parent; tmp; tmp = tmp->parent) {
 			if (tmp == class) {
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cycle found while resolving parent"));
+				mono_class_set_failure_and_error (class, error, "Cycle found while resolving parent");
 				goto parent_failure;
 			}
 			if (class->generic_container && tmp->generic_class && tmp->generic_class->container_class == class) {
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Parent extends generic instance of this type"));
+				mono_class_set_failure_and_error (class, error, "Parent extends generic instance of this type");
 				goto parent_failure;
 			}
 		}
@@ -5603,11 +5623,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 * so it has to come after setup_mono_type ().
 	 */
 	if ((nesting_tokeen = mono_metadata_nested_in_typedef (image, type_token))) {
-		class->nested_in = mono_class_create_from_typedef (image, nesting_tokeen);
-		if (!class->nested_in) {
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load nestedin type"));
+		class->nested_in = mono_class_create_from_typedef (image, nesting_tokeen, error);
+		if (!mono_error_ok (error)) {
+			/*FIXME implement a mono_class_set_failure_from_mono_error */
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+			g_assert (!mono_loader_get_last_error ());
 			return NULL;
 		}
 	}
@@ -5625,9 +5647,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (!class->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (
 			    image, type_token, &interfaces, &icount, FALSE, context)){
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load interfaces"));
+			mono_class_set_failure_and_error (class, error, g_strdup ("Could not load interfaces"));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+			g_assert (!mono_loader_get_last_error ());
 			return NULL;
 		}
 
@@ -5675,9 +5698,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		if (!enum_basetype) {
 			/*set it to a default value as the whole runtime can't handle this to be null*/
 			class->cast_class = class->element_class = mono_defaults.int32_class;
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_class_set_failure_and_error (class, error, "Could not enum basetype");
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+			g_assert (!mono_loader_get_last_error ());
 			return NULL;
 		}
 		class->cast_class = class->element_class = mono_class_from_mono_type (enum_basetype);
@@ -5689,12 +5713,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 * work.
 	 */
 	if (class->generic_container && !mono_metadata_load_generic_param_constraints_full (image, type_token, class->generic_container)){
-		char *class_name = g_strdup_printf("%s.%s", class->name_space, class->name);
-		char *error = concat_two_strings_with_zero (class->image, class_name, class->image->assembly_name);
-		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, error);
-		g_free (class_name);
+		mono_class_set_failure_from_loader_error (class, error, g_strdup ("Could not load generic parameter constraints"));
 		mono_loader_unlock ();
 		mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+		g_assert (!mono_loader_get_last_error ());
 		return NULL;
 	}
 
@@ -5706,6 +5728,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	mono_loader_unlock ();
 
 	mono_profiler_class_loaded (class, MONO_PROFILE_OK);
+	g_assert (!mono_loader_get_last_error ());
 
 	return class;
 
@@ -5713,8 +5736,8 @@ parent_failure:
 	mono_class_setup_mono_type (class);
 	mono_loader_unlock ();
 	mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+	g_assert (!mono_loader_get_last_error ());
 	return NULL;
-
 }
 
 /** is klass Nullable<T>? */
@@ -7018,7 +7041,11 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
-		class = mono_class_create_from_typedef (image, type_token);
+		class = mono_class_create_from_typedef (image, type_token, &error);
+		if (!mono_error_ok (&error)) {
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (&error);
+		}
 		break;		
 	case MONO_TOKEN_TYPE_REF:
 		class = mono_class_from_typeref (image, type_token);
@@ -8746,6 +8773,7 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 MonoClass*
 mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 {
+	MonoError error;
 	GList *item;
 	int i;
 
@@ -8761,9 +8789,11 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 				MonoClass* nclass;
 				guint32 cols [MONO_NESTED_CLASS_SIZE];
 				mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-				if (!nclass) {
-					mono_loader_clear_error ();
+				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED], &error);
+				if (!mono_error_ok (&error)) {
+					/*FIXME don't swallow the error message*/
+					mono_error_cleanup (&error);
+
 					i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
 					continue;
 				}
