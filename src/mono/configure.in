@@ -2586,8 +2586,8 @@ case "$host" in
 		AOT_SUPPORTED="yes"
 		if test "x$cross_compiling" != "xno"; then
 		   # Provide sane defaults when cross-compiling
-		   CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
-		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+		   CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
+		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS"
   		fi
 		;;
 # TODO: make proper support for NaCl host.
