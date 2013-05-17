@@ -5474,6 +5474,21 @@ fix_gclass_incomplete_instantiation (MonoClass *gclass, void *user_data)
 
 	return TRUE;
 }
+static void
+mono_class_set_failure_from_loader_error (MonoClass *class, MonoError *error, char *msg)
+{
+	MonoLoaderError *lerror = mono_loader_get_last_error ();
+
+	if (lerror) {
+		set_failure_from_loader_error (class, lerror);
+		mono_error_set_from_loader_error (error);
+		if (msg)
+			g_free (msg);
+	} else {
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, msg);
+		mono_error_set_type_load_class (error, class, msg);
+	}
+}
 
 /**
  * mono_class_create_from_typedef:
@@ -5488,6 +5503,7 @@ fix_gclass_incomplete_instantiation (MonoClass *gclass, void *user_data)
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 {
+	MonoError error;
 	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 	MonoClass *class, *parent = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
@@ -5557,9 +5573,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		}
 		parent = mono_class_get_full (image, parent_token, context);
 
-		if (parent == NULL){
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load parent type"));
-			mono_loader_clear_error ();
+		if (parent == NULL) {
+			mono_class_set_failure_from_loader_error (class, &error, g_strdup_printf ("Could not load parent, token is %x", parent_token));
 			goto parent_failure;
 		}
 
@@ -9958,16 +9973,8 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
 		field->type = mono_metadata_parse_type_full (image, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
-		if (!field->type) {
-			MonoLoaderError *lerror = mono_loader_get_last_error ();
-
-			mono_error_set_type_load_class (error, class, "Could not load field %s type", field->name);
-			if (lerror)
-				set_failure_from_loader_error (class, lerror);
-			else
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			mono_loader_clear_error ();
-		}
+		if (!field->type)
+			mono_class_set_failure_from_loader_error (class, error, g_strdup_printf ("Could not load field %s type", field->name));
 	}
 }
 
