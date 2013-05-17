@@ -3178,14 +3178,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		is_static = TRUE;
 
 		if (!is_literal) {
-			vtable = mono_class_vtable (domain, field->parent);
-			if (!vtable) {
-				char *name = mono_type_get_full_name (field->parent);
-				/*FIXME extend this to use the MonoError api*/
-				g_warning ("Could not retrieve the vtable for type %s in mono_field_get_value_object", name);
-				g_free (name);
-				return NULL;
-			}
+			vtable = mono_class_vtable_full (domain, field->parent, TRUE);
 			if (!vtable->initialized)
 				mono_runtime_class_init (vtable);
 		}
