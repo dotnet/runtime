@@ -24,6 +24,11 @@
 #include "mini-gc.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
+/* Sanity check: This makes no sense */
+#ifdef ARM_FPU_NONE && (ARM_FPU_VFP || ARM_FPU_VFP_HARD)
+#error "ARM_FPU_NONE and is defined while ARM_FPU_VFP/ARM_FPU_VFP_HARD is defined"
+#endif
+
 #if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID) && !defined(__native_client__)
 #define HAVE_AEABI_READ_TP 1
 #endif
