@@ -30,6 +30,19 @@ mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_
 static MonoType*
 mini_get_gsharedvt_alloc_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t);
 
+static gboolean partial_supported;
+
+static inline gboolean
+partial_sharing_supported (void)
+{
+	if (!ALLOW_PARTIAL_SHARING)
+		return FALSE;
+	/* Enable this only when AOT compiling or running in full-aot mode */
+	if (partial_supported || mono_aot_only)
+		return TRUE;
+	return FALSE;
+}
+
 static int
 type_check_context_used (MonoType *type, gboolean recursive)
 {
@@ -1831,7 +1844,7 @@ mono_generic_context_is_sharable_full (MonoGenericContext *context,
 gboolean
 mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars)
 {
-	return mono_generic_context_is_sharable_full (context, allow_type_vars, ALLOW_PARTIAL_SHARING);
+	return mono_generic_context_is_sharable_full (context, allow_type_vars, partial_sharing_supported ());
 }
 
 /*
@@ -1954,7 +1967,7 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
 
-	if (!ALLOW_PARTIAL_SHARING)
+	if (!partial_sharing_supported ())
 		allow_partial = FALSE;
 
 	/*
@@ -2014,7 +2027,7 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 gboolean
 mono_method_is_generic_sharable (MonoMethod *method, gboolean allow_type_vars)
 {
-	return mono_method_is_generic_sharable_full (method, allow_type_vars, ALLOW_PARTIAL_SHARING, TRUE);
+	return mono_method_is_generic_sharable_full (method, allow_type_vars, partial_sharing_supported (), TRUE);
 }
 
 gboolean
@@ -2095,6 +2108,12 @@ void
 mono_set_generic_sharing_vt_supported (gboolean supported)
 {
 	gsharedvt_supported = supported;
+}
+
+void
+mono_set_partial_sharing_supported (gboolean supported)
+{
+	partial_supported = supported;
 }
 
 /*
