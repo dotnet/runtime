@@ -1913,7 +1913,7 @@ is_async_state_machine_class (MonoClass *klass)
 		iclass_set = TRUE;
 	}
 
-	if (iclass && klass->valuetype && strstr (klass->name, "c__async") && mono_class_is_assignable_from (iclass, klass))
+	if (iclass && klass->valuetype && mono_class_is_assignable_from (iclass, klass))
 		return TRUE;
 	return FALSE;
 }
