@@ -1298,6 +1298,7 @@ Mono development tools.
 %_prefix/lib/mono/4.0/Microsoft.Common.targets
 %_prefix/lib/mono/4.0/Microsoft.Common.tasks
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
+%_prefix/lib/mono/4.0/Microsoft.Portable.CSharp.targets
 %_prefix/lib/mono/4.0/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/4.0/PEAPI.dll
 %_prefix/lib/mono/4.5/Microsoft.Build.dll
@@ -1351,6 +1352,8 @@ Mono development tools.
 %_prefix/lib/mono/gac/Mono.Debugger.Soft
 %_prefix/lib/mono/gac/PEAPI
 %_prefix/lib/mono/xbuild
+%_prefix/lib/mono/xbuild/Microsoft/Portable/v4.0/Microsoft.Portable.CSharp.targets
+%_prefix/lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.CSharp.targets
 %_prefix/lib/mono/xbuild-frameworks
 
 %package -n monodoc-core
