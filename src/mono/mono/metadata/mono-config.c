@@ -564,7 +564,7 @@ mono_config_parse (const char *filename) {
 	mono_config_parse_file (mono_cfg);
 	g_free (mono_cfg);
 
-#ifndef TARGET_WIN32
+#if !defined(TARGET_WIN32) && !defined(__native_client__)
 	home = g_get_home_dir ();
 	user_cfg = g_strconcat (home, G_DIR_SEPARATOR_S, ".mono/config", NULL);
 	mono_config_parse_file (user_cfg);

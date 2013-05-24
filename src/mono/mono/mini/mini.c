@@ -156,6 +156,7 @@ mono_realloc_native_code (MonoCompile *cfg)
 
 	/* Save the old alignment offset so we can re-align after the realloc. */
 	old_padding = (guint)(cfg->native_code - cfg->native_code_alloc);
+	cfg->code_size = NACL_BUNDLE_ALIGN_UP (cfg->code_size);
 
 	cfg->native_code_alloc = g_realloc ( cfg->native_code_alloc,
 										 cfg->code_size + kNaClAlignment );
@@ -243,12 +244,14 @@ guint8 *mono_nacl_align(guint8 *code) {
 
 void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji)
 {
+#ifndef USE_JUMP_TABLES
   MonoJumpInfo *patch_info;
   for (patch_info = ji; patch_info; patch_info = patch_info->next) {
     unsigned char *ip = patch_info->ip.i + code;
     ip = mono_arch_nacl_skip_nops(ip);
     patch_info->ip.i = ip - code;
   }
+#endif
 }
 #endif  /* __native_client_codegen__ */
 
@@ -3133,25 +3136,33 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE);
 #if defined(__native_client__) && defined(__native_client_codegen__)
-#if defined(TARGET_AMD64)
+# if defined(TARGET_AMD64)
 		/* This target is an absolute address, not relative to the */
 		/* current code being emitted on AMD64. */
 		target = nacl_inverse_modify_patch_target(target);
-#endif
+# endif
 #endif
 		break;
 	case MONO_PATCH_INFO_METHOD:
+#if defined(__native_client_codegen__) && defined(USE_JUMP_TABLES)
+		/*
+		 * If we use jumptables, for recursive calls we cannot
+		 * avoid trampoline, as we not yet know where we will
+		 * be installed.
+		 */
+		target = mono_create_jit_trampoline_in_domain (domain, patch_info->data.method);
+#else
 		if (patch_info->data.method == method) {
 			target = code;
 		} else {
 			/* get the trampoline to the method from the domain */
 			target = mono_create_jit_trampoline_in_domain (domain, patch_info->data.method);
 		}
+#endif
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
 		gpointer *jump_table;
 		int i;
-
 #if defined(__native_client__) && defined(__native_client_codegen__)
 		/* This memory will leak, but we don't care if we're */
 		/* not deleting JIT'd methods anyway                 */
@@ -3844,6 +3855,9 @@ mono_codegen (MonoCompile *cfg)
 
 	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
+#ifdef __native_client_codegen__
+	cfg->code_size = NACL_BUNDLE_ALIGN_UP (cfg->code_size);
+#endif
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
 
 	if (cfg->method->dynamic) {

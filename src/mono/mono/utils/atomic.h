@@ -958,6 +958,9 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 #endif
 }
 
+#undef NACL_ALIGN
+#undef MASK_REGISTER
+
 #elif defined(__ia64__)
 
 #ifdef __INTEL_COMPILER

@@ -1,20 +1,55 @@
-
 #if defined(__native_client__)
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <eglib/src/glib.h>
-#include <errno.h>
-#include <sys/types.h>
+#include "nacl-stub.h"
 
-struct group *getgrnam(const char *name) { return NULL; }
-struct group *getgrgid(gid_t gid) { errno=EIO; return NULL; }
-int fsync(int fd) { errno=EINVAL; return -1; }
-dev_t makedev(guint32 maj, guint32 min) { return (maj)*256+(min); }
+struct group *getgrnam(const char *name)
+{
+	return NULL;
+}
+
+struct group *getgrgid(gid_t gid)
+{
+	errno = EIO;
+	return NULL;
+}
+
+int fsync(int fd)
+{
+	errno = EINVAL;
+	return -1;
+}
 
 #ifdef USE_NEWLIB
-int getdtablesize(void) {
+dev_t makedev(int maj, int min)
+{
+	return (maj)*256+(min);
+}
+
+int utime(const char *filename, const void *times)
+{
+	errno = EACCES;
+	return -1;
+}
+
+int kill(pid_t pid, int sig)
+{
+	errno = EACCES;
+	return -1;
+}
+
+int getrusage(int who, void *usage)
+{
+	errno = EACCES;
+	return -1;
+}
+
+int lstat(const char *path, struct stat *buf)
+{
+	return stat (path, buf);
+}
+
+int getdtablesize(void)
+{
 #ifdef OPEN_MAX
   return OPEN_MAX;
 #else
@@ -22,15 +57,14 @@ int getdtablesize(void) {
 #endif
 }
 
-size_t getpagesize(void) {
+size_t getpagesize(void)
+{
 #ifdef PAGE_SIZE
   return PAGE_SIZE;
 #else
   return 4096;
 #endif
 }
-
-#include <semaphore.h>
 
 int sem_trywait(sem_t *sem) {
   g_assert_not_reached ();

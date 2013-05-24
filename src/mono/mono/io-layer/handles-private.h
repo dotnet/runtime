@@ -13,7 +13,6 @@
 #include <config.h>
 #include <glib.h>
 #include <errno.h>
-#include <signal.h>
 #include <string.h>
 #include <sys/types.h>
 

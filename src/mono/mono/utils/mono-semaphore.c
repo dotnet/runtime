@@ -22,6 +22,9 @@
 #  ifdef USE_MACH_SEMA
 #    define TIMESPEC mach_timespec_t
 #    define WAIT_BLOCK(a,b) semaphore_timedwait (*(a), *(b))
+#  elif defined(__native_client__) && defined(USE_NEWLIB)
+#    define TIMESPEC struct timespec
+#    define WAIT_BLOCK(a, b) sem_trywait(a)
 #  elif defined(__OpenBSD__)
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a) sem_trywait(a)

@@ -74,8 +74,6 @@ mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
 
 #ifdef __native_client_codegen__
-const guint kNaClAlignment = kNaClAlignmentX86;
-const guint kNaClAlignmentMask = kNaClAlignmentMaskX86;
 
 /* Default alignment for Native Client is 32-byte. */
 gint8 nacl_align_byte = -32; /* signed version of 0xe0 */
@@ -711,7 +709,12 @@ static const guchar cpuid_impl [] = {
 	0x89, 0x02,                		/* mov    %eax,(%edx) */
 	0x5b,                   		/* pop    %ebx */
 	0xc9,                   		/* leave   */
-	0x59, 0x83, 0xe1, 0xe0, 0xff, 0xe1	/* naclret */
+	0x59, 0x83, 0xe1, 0xe0, 0xff, 0xe1,	/* naclret */
+	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,     /* padding, to provide bundle aligned version */
+	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,
+	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,
+	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,
+	0xf4
 };
 #endif
 
@@ -5088,6 +5091,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	code = cfg->native_code = g_malloc (cfg->code_size);
 #elif defined(__native_client_codegen__)
 	/* native_code_alloc is not 32-byte aligned, native_code is. */
+	cfg->code_size = NACL_BUNDLE_ALIGN_UP (cfg->code_size);
 	cfg->native_code_alloc = g_malloc (cfg->code_size + kNaClAlignment);
 
 	/* Align native_code to next nearest kNaclAlignment byte. */
@@ -5801,6 +5805,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #if defined(__native_client__) && defined(__native_client_codegen__)
 	/* In Native Client, we don't re-use thunks, allocate from the */
 	/* normal code manager paths. */
+	size = NACL_BUNDLE_ALIGN_UP (size);
 	code = mono_domain_code_reserve (domain, size);
 #else
 	if (fail_tramp)

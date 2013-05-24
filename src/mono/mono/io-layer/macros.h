@@ -12,6 +12,10 @@
 
 #include <glib.h>
 
+#if defined(__native_client__)
+#include <mono/metadata/nacl-stub.h>
+#endif
+
 #define MAKEWORD(low, high) ((guint16)(((guint8)(low)) | \
 				       ((guint16)((guint8)(high))) << 8))
 #define MAKELONG(low, high) ((guint32)(((guint16)(low)) | \

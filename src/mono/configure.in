@@ -2331,7 +2331,13 @@ else
    CPPFLAGS="$CPPFLAGS -D__default_codegen__"
 fi
 if test "x$enable_nacl_gc" = "xyes"; then
-   CPPFLAGS="$CPPFLAGS -finstrument-for-thread-suspension -D__native_client_gc__"
+   if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
+      INSTRUMENT_CFLAG="-finstrument-for-thread-suspension"
+   else
+      # Not yet implemented
+      INSTRUMENT_CFLAG=""
+   fi
+   CPPFLAGS="$CPPFLAGS $INSTRUMENT_CFLAG -D__native_client_gc__"
 fi
 AC_SUBST(MONO_NACL_ALIGN_MASK_OFF)
 

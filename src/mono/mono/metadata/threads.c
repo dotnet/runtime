@@ -831,6 +831,8 @@ __readfsdword (unsigned long long offset)
 void
 mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+	*staddr = NULL;
+	*stsize = 0;
 #if defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self ());
 	*stsize = pthread_get_stacksize_np (pthread_self ());
@@ -882,7 +884,10 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #  endif
 
 #  if !defined(sun)
-#    if !defined(__OpenBSD__)
+#    if defined(__native_client__)
+	*staddr = NULL;
+	pthread_attr_getstacksize (&attr, &stsize);
+#    elif !defined(__OpenBSD__)
 	pthread_attr_getstack (&attr, (void**)staddr, stsize);
 #    endif
 	if (*staddr)

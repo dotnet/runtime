@@ -677,8 +677,6 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 	return class1;
 }
 #ifdef __native_client_codegen__
-const guint kNaClAlignment = kNaClAlignmentAMD64;
-const guint kNaClAlignmentMask = kNaClAlignmentMaskAMD64;
 
 /* Default alignment for Native Client is 32-byte. */
 gint8 nacl_align_byte = -32; /* signed version of 0xe0 */

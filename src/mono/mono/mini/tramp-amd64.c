@@ -49,21 +49,21 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_reg;
+	int this_reg, size = NACL_SIZE (20, 32);
 
 	MonoDomain *domain = mono_domain_get ();
 
 	this_reg = mono_arch_get_this_arg_reg (NULL);
 
-	start = code = mono_domain_code_reserve (domain, 20);
+	start = code = mono_domain_code_reserve (domain, size);
 
 	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
 	/* FIXME: Optimize this */
 	amd64_mov_reg_imm (code, AMD64_RAX, addr);
 	amd64_jump_reg (code, AMD64_RAX);
-	g_assert ((code - start) < 20);
+	g_assert ((code - start) < size);
 
-	nacl_domain_code_validate (domain, &start, 20, &code);
+	nacl_domain_code_validate (domain, &start, size, &code);
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -88,9 +88,9 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 #else
 	/* AOTed code could still have a non-32 bit address */
 	if ((((guint64)addr) >> 32) == 0)
-		buf_len = 16;
+		buf_len = NACL_SIZE (16, 32);
 	else
-		buf_len = 30;
+		buf_len = NACL_SIZE (30, 32);
 #endif
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
@@ -734,11 +734,12 @@ gpointer
 mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 {
 	guint8 *code, *buf;
+	int size = NACL_SIZE (16, 32);
 
-	code = buf = mono_global_codeman_reserve (16);
+	code = buf = mono_global_codeman_reserve (size);
 	amd64_ret (code);
 
-	nacl_global_codeman_validate(&buf, 16, &code);
+	nacl_global_codeman_validate(&buf, size, &code);
 
 	mono_arch_flush_icache (buf, code - buf);
 
@@ -781,6 +782,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	/* Aligning the call site below could */
 	/* add up to kNaClAlignment-1 bytes   */
 	size += (kNaClAlignment-1);
+	size = NACL_BUNDLE_ALIGN_UP (size);
 	buf = mono_domain_code_reserve_align (domain, size, kNaClAlignment);
 	code = buf;
 #endif

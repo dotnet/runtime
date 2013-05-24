@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
@@ -1763,6 +1764,9 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
  */
 static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
 {
+#if defined(__native_client__)
+	g_assert_not_reached ();
+#else
 	if (kill (share_info->opened_by_pid, 0) == -1 &&
 	    (errno == ESRCH ||
 	     errno == EPERM)) {
@@ -1774,6 +1778,7 @@ static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
 
 		_wapi_free_share_info (share_info);
 	}
+#endif
 }
 
 #ifdef __linux__

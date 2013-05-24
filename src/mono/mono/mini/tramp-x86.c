@@ -40,16 +40,16 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_pos = 4;
+	int this_pos = 4, size = NACL_SIZE(16, 32);
 	MonoDomain *domain = mono_domain_get ();
 
-	start = code = mono_domain_code_reserve (domain, 16);
+	start = code = mono_domain_code_reserve (domain, size);
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
 	x86_jump_code (code, addr);
-	g_assert ((code - start) < 16);
+	g_assert ((code - start) < size);
 
-	nacl_domain_code_validate (domain, &start, 16, &code);
+	nacl_domain_code_validate (domain, &start, size, &code);
 
 	return start;
 }
@@ -62,7 +62,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	MonoDomain *domain = mono_domain_get ();
 
-	buf_len = 10;
+	buf_len = NACL_SIZE (10, 32);
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
 

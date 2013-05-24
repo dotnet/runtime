@@ -24,6 +24,7 @@
 #if defined(__native_client_codegen__) && defined(__native_client__)
 #include <malloc.h>
 #include <nacl/nacl_dyncode.h>
+#include <mono/mini/mini.h>
 #endif
 
 static uintptr_t code_memory_used = 0;
@@ -49,11 +50,13 @@ static uintptr_t code_memory_used = 0;
 #endif
 #ifdef __native_client_codegen__
 /* For Google Native Client, all targets of indirect control flow need to    */
-/* be aligned to a 32-byte boundary. MIN_ALIGN was updated to 32 to force    */
-/* alignment for calls from tramp-x86.c to mono_global_codeman_reserve()     */
+/* be aligned to bundle boundary. 16 bytes on ARM, 32 bytes on x86.
+ * MIN_ALIGN was updated to force alignment for calls from
+ * tramp-<arch>.c to mono_global_codeman_reserve()     */
 /* and mono_domain_code_reserve().                                           */
 #undef MIN_ALIGN
-#define MIN_ALIGN 32
+#define MIN_ALIGN kNaClBundleSize
+
 #endif
 
 /* if a chunk has less than this amount of free space it's considered full */
@@ -127,18 +130,17 @@ nacl_is_code_address (void *target)
 	return (char *)target < next_dynamic_code_addr;
 }
 
+/* Fill code buffer with arch-specific NOPs. */
+void
+mono_nacl_fill_code_buffer (guint8 *data, int size);
+
+#ifndef USE_JUMP_TABLES
 const int kMaxPatchDepth = 32;
 __thread unsigned char **patch_source_base = NULL;
 __thread unsigned char **patch_dest_base = NULL;
 __thread int *patch_alloc_size = NULL;
 __thread int patch_current_depth = -1;
 __thread int allow_target_modification = 1;
-
-void
-nacl_allow_target_modification (int val)
-{
-	allow_target_modification = val;
-}
 
 static void
 nacl_jit_check_init ()
@@ -149,7 +151,15 @@ nacl_jit_check_init ()
 		patch_alloc_size = g_malloc (kMaxPatchDepth * sizeof(int));
 	}
 }
+#endif
 
+void
+nacl_allow_target_modification (int val)
+{
+#ifndef USE_JUMP_TABLES
+        allow_target_modification = val;
+#endif /* USE_JUMP_TABLES */
+}
 
 /* Given a patch target, modify the target such that patching will work when
  * the code is copied to the data section.
@@ -157,6 +167,11 @@ nacl_jit_check_init ()
 void*
 nacl_modify_patch_target (unsigned char *target)
 {
+	/*
+	 * There's no need in patch tricks for jumptables,
+	 * as we always patch same jumptable.
+	 */
+#ifndef USE_JUMP_TABLES
 	/* This seems like a bit of an ugly way to do this but the advantage
 	 * is we don't have to worry about all the conditions in
 	 * mono_resolve_patch_target, and it can be used by all the bare uses
@@ -179,12 +194,18 @@ nacl_modify_patch_target (unsigned char *target)
 		int target_offset = target - db;
 		target = sb + target_offset;
 	}
+#endif
 	return target;
 }
 
 void*
 nacl_inverse_modify_patch_target (unsigned char *target)
 {
+	/*
+	 * There's no need in patch tricks for jumptables,
+	 * as we always patch same jumptable.
+	 */
+#ifndef USE_JUMP_TABLES
 	unsigned char *sb;
 	unsigned char *db;
 	int target_offset;
@@ -197,6 +218,7 @@ nacl_inverse_modify_patch_target (unsigned char *target)
 
 	target_offset = target - sb;
 	target = db + target_offset;
+#endif
 	return target;
 }
 
@@ -319,11 +341,13 @@ mono_code_manager_new (void)
 #endif
 	}
 	cman->hash =  g_hash_table_new (NULL, NULL);
+# ifndef USE_JUMP_TABLES
 	if (patch_source_base == NULL) {
 		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
 		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
 		patch_alloc_size = g_malloc (kMaxPatchDepth * sizeof(int));
 	}
+# endif
 #endif
 	return cman;
 }
@@ -631,6 +655,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	/* Insert pointer to code space in hash, keyed by buffer ptr */
 	g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
 
+#ifndef USE_JUMP_TABLES
 	nacl_jit_check_init ();
 
 	patch_current_depth++;
@@ -638,6 +663,8 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	patch_dest_base[patch_current_depth] = code_ptr;
 	patch_alloc_size[patch_current_depth] = size;
 	g_assert (patch_current_depth < kMaxPatchDepth);
+#endif
+
 	return temp_ptr;
 #endif
 }
@@ -680,15 +707,13 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 #else
 	unsigned char *code;
 	int status;
-	g_assert (newsize <= size);
+	g_assert (NACL_BUNDLE_ALIGN_UP(newsize) <= size);
 	code = g_hash_table_lookup (cman->hash, data);
 	g_assert (code != NULL);
-	/* Pad space after code with HLTs */
-	/* TODO: this is x86/amd64 specific */
-	while (newsize & kNaClBundleMask) {
-		*((char *)data + newsize) = 0xf4;
-		newsize++;
-	}
+	mono_nacl_fill_code_buffer ((uint8_t*)data + newsize, size - newsize);
+	newsize = NACL_BUNDLE_ALIGN_UP(newsize);
+	g_assert ((GPOINTER_TO_UINT (data) & kNaClBundleMask) == 0);
+	g_assert ((newsize & kNaClBundleMask) == 0);
 	status = nacl_dyncode_create (code, data, newsize);
 	if (status != 0) {
 		unsigned char *codep;
@@ -700,10 +725,12 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 		g_assert_not_reached ();
 	}
 	g_hash_table_remove (cman->hash, data);
+# ifndef USE_JUMP_TABLES
 	g_assert (data == patch_source_base[patch_current_depth]);
 	g_assert (code == patch_dest_base[patch_current_depth]);
 	patch_current_depth--;
 	g_assert (patch_current_depth >= -1);
+# endif
 	free (data);
 #endif
 }
@@ -746,3 +773,26 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 	return size;
 }
 
+#ifdef __native_client_codegen__
+# if defined(TARGET_ARM)
+/* Fill empty space with UDF instruction used as halt on ARM. */
+void
+mono_nacl_fill_code_buffer (guint8 *data, int size)
+{
+        guint32* data32 = (guint32*)data;
+        int i;
+        g_assert(size % 4 == 0);
+        for (i = 0; i < size / 4; i++)
+                data32[i] = 0xE7FEDEFF;
+}
+# elif (defined(TARGET_X86) || defined(TARGET_AMD64))
+/* Fill empty space with HLT instruction */
+void
+mono_nacl_fill_code_buffer(guint8 *data, int size)
+{
+        memset (data, 0xf4, size);
+}
+# else
+#  error "Not ported"
+# endif
+#endif
