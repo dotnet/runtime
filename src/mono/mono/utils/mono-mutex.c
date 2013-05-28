@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <mono/utils/mono-memory-model.h>
 
 #include "mono-mutex.h"
 
@@ -25,6 +26,7 @@
 #if defined(__APPLE__)
 #define _DARWIN_C_SOURCE
 #include <pthread_spis.h>
+#include <dlfcn.h>
 #endif
 
 #ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
@@ -131,10 +133,18 @@ mono_mutex_init_suspend_safe (mono_mutex_t *mutex)
 #if defined(__APPLE__)
 	int res;
 	pthread_mutexattr_t attr;
+	static gboolean inited;
+	static int (*setpolicy_np) (pthread_mutexattr_t *, int);
+
+	if (!inited) {
+		setpolicy_np = dlsym (RTLD_NEXT, "pthread_mutexattr_setpolicy_np");
+		mono_atomic_store_release (&inited, TRUE);
+	}
 
 	pthread_mutexattr_init (&attr);
 	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutexattr_setpolicy_np (&attr, _PTHREAD_MUTEX_POLICY_FIRSTFIT);
+	if (setpolicy_np)
+		setpolicy_np (&attr, _PTHREAD_MUTEX_POLICY_FIRSTFIT);
 	res = pthread_mutex_init (mutex, &attr);
 	pthread_mutexattr_destroy (&attr);
 
