@@ -1536,10 +1536,7 @@ mono_image_close_except_pools (MonoImage *image)
 	 * MonoImage might outlive its associated MonoAssembly.
 	 */
 	if (image->references && !image->dynamic) {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-		int i;
-
-		for (i = 0; i < t->rows; i++) {
+		for (i = 0; i < image->nreferences; i++) {
 			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
 				if (!mono_assembly_close_except_image_pools (image->references [i]))
 					image->references [i] = NULL;
@@ -1714,10 +1711,7 @@ mono_image_close_finish (MonoImage *image)
 	image->reflection_info_unregister_classes = NULL;
 
 	if (image->references && !image->dynamic) {
-		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-		int i;
-
-		for (i = 0; i < t->rows; i++) {
+		for (i = 0; i < image->nreferences; i++) {
 			if (image->references [i] && image->references [i] != REFERENCE_MISSING)
 				mono_assembly_close_finish (image->references [i]);
 		}

@@ -196,6 +196,7 @@ struct _MonoImage {
 	 * It is NULL terminated.
 	 */
 	MonoAssembly **references;
+	int nreferences;
 
 	MonoImage **modules;
 	guint32 module_count;

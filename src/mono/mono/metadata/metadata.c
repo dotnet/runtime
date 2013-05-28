@@ -2430,15 +2430,18 @@ collect_inflated_signature_images (MonoInflatedMethodSignature *sig, CollectData
 static void
 collect_method_images (MonoMethodInflated *method, CollectData *data)
 {
+	MonoMethod *m = method->declaring;
+
 	add_image (method->declaring->klass->image, data);
 	if (method->context.class_inst)
 		collect_ginst_images (method->context.class_inst, data);
 	if (method->context.method_inst)
 		collect_ginst_images (method->context.method_inst, data);
 	/*
-	if (((MonoMethod*)method)->signature)
-		collect_signature_images (mono_method_signature ((MonoMethod*)method), data);
-	*/
+	 * Dynamic assemblies have no references, so the images they depend on can be unloaded before them.
+	 */
+	if (m->klass->image->dynamic)
+		collect_signature_images (mono_method_signature (m), data);
 }
 
 static void

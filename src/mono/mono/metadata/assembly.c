@@ -1017,6 +1017,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	
 		image->references = g_new0 (MonoAssembly *, t->rows + 1);
+		image->nreferences = t->rows;
 	}
 	reference = image->references [index];
 	mono_assemblies_unlock ();
