@@ -4148,6 +4148,10 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 				direct_callable = FALSE;
 			}
 
+			if (callee_cfg->method->wrapper_type == MONO_WRAPPER_ALLOC)
+				/* sgen does some initialization when the allocator method is created */
+				direct_callable = FALSE;
+
 			if (direct_callable)
 				return TRUE;
 		}
