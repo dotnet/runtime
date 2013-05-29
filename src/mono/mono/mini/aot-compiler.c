@@ -3615,19 +3615,6 @@ has_type_vars (MonoClass *klass)
 }
 
 static gboolean
-is_vt_inst (MonoGenericInst *inst)
-{
-	int i;
-
-	for (i = 0; i < inst->type_argc; ++i) {
-		MonoType *t = inst->type_argv [i];
-		if (t->type == MONO_TYPE_VALUETYPE)
-			return TRUE;
-	}
-	return FALSE;
-}
-
-static gboolean
 method_has_type_vars (MonoMethod *method)
 {
 	if (has_type_vars (method->klass))
@@ -3697,7 +3684,6 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	MonoMethod *method;
 	MonoClassField *field;
 	gpointer iter;
-	gboolean use_gsharedvt = FALSE;
 
 	if (!acfg->ginst_hash)
 		acfg->ginst_hash = g_hash_table_new (NULL, NULL);
@@ -3730,16 +3716,9 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 	g_hash_table_insert (acfg->ginst_hash, klass, klass);
 
-	/*
-	 * Use gsharedvt for generic collections with vtype arguments to avoid code blowup.
-	 * Enable this only for some classes since gsharedvt might not support all methods.
-	 */
-	if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->image == mono_defaults.corlib && klass->generic_class && klass->generic_class->context.class_inst && is_vt_inst (klass->generic_class->context.class_inst) && (!strcmp (klass->name, "Dictionary`2") || !strcmp (klass->name, "List`1")))
-		use_gsharedvt = TRUE;
-
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt))
+		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE))
 			/* Already added */
 			continue;
 
