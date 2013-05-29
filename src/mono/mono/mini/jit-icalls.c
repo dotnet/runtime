@@ -1222,3 +1222,12 @@ mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass
 	p = mono_object_unbox (res);
 	return *(gboolean*)p;
 }
+
+void
+mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass)
+{
+	if (klass->valuetype)
+		mono_value_copy (dest, src, klass);
+	else
+        mono_gc_wbarrier_generic_store (dest, *(MonoObject**)src);
+}

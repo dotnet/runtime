@@ -2922,7 +2922,10 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 				}
 			}
 
-			mono_emit_jit_icall (cfg, mono_value_copy, iargs);
+			if (size_ins)
+				mono_emit_jit_icall (cfg, mono_gsharedvt_value_copy, iargs);
+			else
+				mono_emit_jit_icall (cfg, mono_value_copy, iargs);
 			return;
 		}
 	}

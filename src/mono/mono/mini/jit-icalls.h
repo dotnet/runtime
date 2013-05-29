@@ -181,5 +181,7 @@ int mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoCla
 
 gboolean mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass, MonoObject *arg) MONO_INTERNAL;
 
+void mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass) MONO_INTERNAL;
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 
