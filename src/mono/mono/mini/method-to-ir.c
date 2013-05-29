@@ -7291,22 +7291,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/*
 					 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
 					 */
-					/* Special case Object:ToString () as its easy to implement */
-					if (cmethod->klass == mono_defaults.object_class && !strcmp (cmethod->name, "ToString")) {
+					/* Special case Object methods as they are easy to implement */
+					if (cmethod->klass == mono_defaults.object_class) {
 						MonoInst *args [3];
 
 						args [0] = sp [0];
 						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
 						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
-						ins = mono_emit_jit_icall (cfg, mono_object_tostring_gsharedvt, args);
-						goto call_end;
-					} else if (cmethod->klass == mono_defaults.object_class && !strcmp (cmethod->name, "GetHashCode")) {
-						MonoInst *args [3];
 
-						args [0] = sp [0];
-						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
-						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
-						ins = mono_emit_jit_icall (cfg, mono_object_gethashcode_gsharedvt, args);
+						if (!strcmp (cmethod->name, "ToString")) {
+							ins = mono_emit_jit_icall (cfg, mono_object_tostring_gsharedvt, args);
+						} else if (!strcmp (cmethod->name, "Equals")) {
+							args [3] = sp [1];
+							ins = mono_emit_jit_icall (cfg, mono_object_equals_gsharedvt, args);
+						} else if (!strcmp (cmethod->name, "GetHashCode")) {
+							ins = mono_emit_jit_icall (cfg, mono_object_gethashcode_gsharedvt, args);
+						} else {
+							GSHAREDVT_FAILURE (*ip);
+						}
 						goto call_end;
 					} else if (constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */

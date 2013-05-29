@@ -920,6 +920,21 @@ public class Tests
 		return 0;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool equals<T, T2>(T t, T2 t2) {
+		return t.Equals (t);
+	}
+
+	public static int test_0_constrained_equals () {
+		if (equals<int, int> (1, 1) != true)
+			return 1;
+		if (equals<double, int> (1.0, 1) != true)
+			return 2;
+		if (equals<string, int> ("A", 1) != true)
+			return 3;
+		return 0;
+	}
+
 	struct Pair<T1, T2> {
 		public T1 First;
 		public T2 Second;

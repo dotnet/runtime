@@ -179,5 +179,7 @@ MonoObject* mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, Mo
 
 int mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass) MONO_INTERNAL;
 
+gboolean mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass, MonoObject *arg) MONO_INTERNAL;
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 
