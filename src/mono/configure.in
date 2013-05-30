@@ -177,8 +177,7 @@ case "$host" in
 		;;
 	*-*-*openbsd*)
 		host_win32=no
-		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DPLATFORM_BSD -D_REENTRANT"
-		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DGC_OPENBSD_THREADS -DUSE_MMAP"
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DPLATFORM_BSD -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 		CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
@@ -198,10 +197,9 @@ case "$host" in
 		AC_DEFINE(PLATFORM_ANDROID,1,[Targeting the Android platform])
 		AC_DEFINE(TARGET_ANDROID,1,[Targeting the Android platform])
 
-		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT"
-		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DGC_LINUX_THREADS -DUSE_MMAP"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
-			CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DUSE_MUNMAP"
+			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
 		libdl="-ldl"
@@ -231,10 +229,9 @@ case "$host" in
 		;;
 	*-*-linux*)
 		host_win32=no
-		CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE -D_REENTRANT"
-		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DGC_LINUX_THREADS -DUSE_MMAP"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
-			CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DUSE_MUNMAP"
+			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
 		libdl="-ldl"
@@ -248,10 +245,9 @@ case "$host" in
 		;;
 	*-*-nacl*)
 		host_win32=no
-		CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE -D_REENTRANT"
-		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DGC_LINUX_THREADS -DUSE_MMAP"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
-			CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DUSE_MUNMAP"
+			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
 		libdl=
@@ -283,8 +279,7 @@ case "$host" in
 		;;
 	*-*-solaris*)
 		host_win32=no
-		CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DPLATFORM_SOLARIS"
-		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -DUSE_MMAP -DUSE_MUNMAP"
+		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DPLATFORM_SOLARIS"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
 		libgc_threads=pthreads
@@ -299,14 +294,12 @@ case "$host" in
 		host_win32=no
 		platform_darwin=yes
 		target_mach=yes
-		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE"
+		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
 		CPPFLAGS="$CPPFLAGS -DGetCurrentProcess=MonoGetCurrentProcess -DGetCurrentThread=MonoGetCurrentThread -DCreateEvent=MonoCreateEvent"
-		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DGC_MACOSX_THREADS -DUSE_MMAP -DUSE_MUNMAP"
 		libmono_cflags="-D_THREAD_SAFE"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
-		AC_DEFINE(PLATFORM_MACOSX, 1, [...])
 		no_version_script=yes
 		libdl=
 		libgc_threads=pthreads
@@ -2332,11 +2325,11 @@ AC_SUBST(nacl_self_host)
 
 if test "x$enable_nacl_codegen" = "xyes"; then
    MONO_NACL_ALIGN_MASK_OFF=1
+   CPPFLAGS="$CPPFLAGS -D__native_client_codegen__"
    AC_DEFINE(TARGET_NACL, 1, [...])
-   AC_DEFINE(__native_client_codegen__, 1, [...])
 else
    MONO_NACL_ALIGN_MASK_OFF=0
-   AC_DEFINE(__default_codegen__, 1, [...])
+   CPPFLAGS="$CPPFLAGS -D__default_codegen__"
 fi
 if test "x$enable_nacl_gc" = "xyes"; then
    if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
@@ -2588,7 +2581,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
 		# libgc's gc_locks.h depends on this
-	    CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6"
+	    NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
 		sgen_supported=true
 		;;
 	arm*-linux*)
@@ -2933,7 +2926,7 @@ mono_debugger_supported=no
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
 if test "x$mono_debugger_supported" = "xyes"; then
 	BOEHM_DEFINES="$BOEHM_DEFINES -DMONO_DEBUGGER_SUPPORTED"
-	CPPFLAGS_FOR_LIBGC="-DMONO_DEBUGGER_SUPPORTED"
+	NESTED_LIBGC_FLAGS="-DMONO_DEBUGGER_SUPPORTED"
 fi
 AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 AC_MSG_RESULT($mono_debugger_supported)
@@ -3047,7 +3040,7 @@ if test ${TARGET} = ARM; then
 		if test ${armv6} = yes; then
 		   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
 		   # libgc's gc_locks.h depends on this
-		   CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6"
+		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
 		fi
 	fi
 fi
@@ -3076,7 +3069,7 @@ case "x$gc" in
 		# The problem with this approach, is that during a reconfigure, the main
 		# configure scripts gets invoked with these arguments, so we use separate
 		# variables understood by libgc's configure to pass CPPFLAGS and CFLAGS.
-		TMP_CPPFLAGS="$CPPFLAGS $CPPFLAGS_FOR_LIBGC"
+		TMP_CPPFLAGS="$CPPFLAGS $NESTED_LIBGC_FLAGS"
 		if test x$TARGET = xSPARC -o x$TARGET = xSPARC64; then
 			TMP_CPPFLAGS=`echo $TMP_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
 		fi
