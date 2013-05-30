@@ -3483,6 +3483,11 @@ if test x$host_win32 = xyes; then
    sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
 fi
 
+if test x$platform_darwin = xyes; then
+   # This doesn't seem to be required and it slows down parallel builds
+   sed -e 's,lock_old_archive_extraction=yes,lock_old_archive_extraction=no,g' < libtool > libtool.new && mv libtool.new libtool && chmod +x libtool
+fi
+
 (
   case $prefix in
   NONE) prefix=$ac_default_prefix ;;
