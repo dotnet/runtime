@@ -1119,7 +1119,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		gpointer addr;
 
 		addr = mono_compile_method (data);
-		return mini_add_method_trampoline (NULL, data, addr, mono_method_needs_static_rgctx_invoke (data, FALSE));
+		return mini_add_method_trampoline (NULL, data, addr, mono_method_needs_static_rgctx_invoke (data, FALSE), FALSE);
 	}
 #ifndef DISABLE_REMOTING
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
