@@ -2325,11 +2325,11 @@ AC_SUBST(nacl_self_host)
 
 if test "x$enable_nacl_codegen" = "xyes"; then
    MONO_NACL_ALIGN_MASK_OFF=1
-   CPPFLAGS="$CPPFLAGS -D__native_client_codegen__"
    AC_DEFINE(TARGET_NACL, 1, [...])
+   AC_DEFINE(__native_client_codegen__, 1, [...])
 else
    MONO_NACL_ALIGN_MASK_OFF=0
-   CPPFLAGS="$CPPFLAGS -D__default_codegen__"
+   AC_DEFINE(__default_codegen__, 1, [...])
 fi
 if test "x$enable_nacl_gc" = "xyes"; then
    if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
