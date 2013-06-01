@@ -2581,7 +2581,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
 		# libgc's gc_locks.h depends on this
-	    NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+	    CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6"
 		sgen_supported=true
 		;;
 	arm*-linux*)
@@ -2926,7 +2926,7 @@ mono_debugger_supported=no
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
 if test "x$mono_debugger_supported" = "xyes"; then
 	BOEHM_DEFINES="$BOEHM_DEFINES -DMONO_DEBUGGER_SUPPORTED"
-	NESTED_LIBGC_FLAGS="-DMONO_DEBUGGER_SUPPORTED"
+	CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DMONO_DEBUGGER_SUPPORTED"
 fi
 AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 AC_MSG_RESULT($mono_debugger_supported)
@@ -3040,7 +3040,7 @@ if test ${TARGET} = ARM; then
 		if test ${armv6} = yes; then
 		   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
 		   # libgc's gc_locks.h depends on this
-		   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
+		   CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6"
 		fi
 	fi
 fi
@@ -3069,7 +3069,7 @@ case "x$gc" in
 		# The problem with this approach, is that during a reconfigure, the main
 		# configure scripts gets invoked with these arguments, so we use separate
 		# variables understood by libgc's configure to pass CPPFLAGS and CFLAGS.
-		TMP_CPPFLAGS="$CPPFLAGS $NESTED_LIBGC_FLAGS"
+		TMP_CPPFLAGS="$CPPFLAGS $CPPFLAGS_FOR_LIBGC"
 		if test x$TARGET = xSPARC -o x$TARGET = xSPARC64; then
 			TMP_CPPFLAGS=`echo $TMP_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
 		fi
