@@ -3473,6 +3473,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	GSList *l;
 	MonoDomain *domain = mono_domain_get ();
 	MonoThread *thread = NULL;
+	MonoObject *keepalive_obj = NULL;
 	gboolean send_success = FALSE;
 	static int ecount;
 	int nevents;
@@ -3575,6 +3576,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		case EVENT_KIND_EXCEPTION: {
 			EventInfo *ei = arg;
 			buffer_add_objid (&buf, ei->exc);
+			/*
+			 * We are not yet suspending, so get_objref () will not keep this object alive. So we need to do it
+			 * later after the suspension. (#12494).
+			 */
+			keepalive_obj = ei->exc;
 			break;
 		}
 		case EVENT_KIND_USER_BREAK:
@@ -3616,6 +3622,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		 */
 		save_thread_context (ctx);
 		suspend_vm ();
+
+		if (keepalive_obj)
+			/* This will keep this object alive */
+			get_objref (keepalive_obj);
 	}
 
 	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
