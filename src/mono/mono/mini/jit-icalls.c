@@ -1154,22 +1154,33 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 	return mono_compile_method (m);
 }
 
-MonoObject*
-mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+static MonoMethod*
+constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg)
 {
 	MonoMethod *m;
 	int vt_slot;
-	gpointer this_arg;
 
 	/* Lookup the virtual method */
 	mono_class_setup_vtable (klass);
 	g_assert (klass->vtable);
 	vt_slot = mono_method_get_vtable_slot (cmethod);
 	m = klass->vtable [vt_slot];
-	if (klass->valuetype)
-		this_arg = mp;
+	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class))
+		*this_arg = mono_value_box (mono_domain_get (), klass, mp);
+	else if (klass->valuetype)
+		*this_arg = mp;
 	else
-		this_arg = *(gpointer*)mp;
+		*this_arg = *(gpointer*)mp;
+	return m;
+}
+
+MonoObject*
+mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	gpointer this_arg;
+
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
 	return mono_runtime_invoke (m, this_arg, NULL, NULL);
 }
 
@@ -1177,20 +1188,11 @@ int
 mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
 {
 	MonoMethod *m;
-	int vt_slot;
 	gpointer this_arg;
 	MonoObject *res;
 	gpointer p;
 
-	/* Lookup the virtual method */
-	mono_class_setup_vtable (klass);
-	g_assert (klass->vtable);
-	vt_slot = mono_method_get_vtable_slot (cmethod);
-	m = klass->vtable [vt_slot];
-	if (klass->valuetype)
-		this_arg = mp;
-	else
-		this_arg = *(gpointer*)mp;
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
 	// FIXME: This boxes the result
 	res = mono_runtime_invoke (m, this_arg, NULL, NULL);
 	p = mono_object_unbox (res);
@@ -1201,21 +1203,12 @@ gboolean
 mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass, MonoObject *arg)
 {
 	MonoMethod *m;
-	int vt_slot;
 	gpointer this_arg;
 	MonoObject *res;
 	gpointer p;
 	void **args;
 
-	/* Lookup the virtual method */
-	mono_class_setup_vtable (klass);
-	g_assert (klass->vtable);
-	vt_slot = mono_method_get_vtable_slot (cmethod);
-	m = klass->vtable [vt_slot];
-	if (klass->valuetype)
-		this_arg = mp;
-	else
-		this_arg = *(gpointer*)mp;
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
 	// FIXME: This boxes the result
 	args = (void**)&arg;
 	res = mono_runtime_invoke (m, this_arg, args, NULL);
