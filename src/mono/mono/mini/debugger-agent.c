@@ -4883,6 +4883,8 @@ stop_single_stepping (void)
 
 	if (val == 0)
 		mono_arch_stop_single_stepping ();
+	if (ss_req != NULL)
+		ss_invoke_addr = NULL;
 #else
 	g_assert_not_reached ();
 #endif
