@@ -12,6 +12,10 @@
 #include "mini.h"
 #include <string.h>
 
+#if !defined(__APPLE__) && !defined(PLATFORM_ANDROID)
+#include <sys/auxv.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
@@ -86,21 +90,21 @@ static gint lmf_addr_tls_offset = -1;
 #define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
 static CRITICAL_SECTION mini_arch_mutex;
 
-static int v5_supported = 0;
-static int v6_supported = 0;
-static int v7_supported = 0;
-static int v7s_supported = 0;
-static int thumb_supported = 0;
-static int thumb2_supported = 0;
+static gboolean v5_supported = FALSE;
+static gboolean v6_supported = FALSE;
+static gboolean v7_supported = FALSE;
+static gboolean v7s_supported = FALSE;
+static gboolean thumb_supported = FALSE;
+static gboolean thumb2_supported = FALSE;
 /*
  * Whenever to use the ARM EABI
  */
-static int eabi_supported = 0;
+static gboolean eabi_supported = FALSE;
 
 /*
  * Whenever we are on arm/darwin aka the iphone.
  */
-static int darwin = 0;
+static gboolean darwin = FALSE;
 /* 
  * Whenever to use the iphone ABI extensions:
  * http://developer.apple.com/library/ios/documentation/Xcode/Conceptual/iPhoneOSABIReference/index.html
@@ -108,7 +112,7 @@ static int darwin = 0;
  * This is required for debugging/profiling tools to work, but it has some overhead so it should
  * only be turned on in debug builds.
  */
-static int iphone_abi = 0;
+static gboolean iphone_abi = FALSE;
 
 /*
  * The FPU we are generating code for. This is NOT runtime configurable right now,
@@ -826,21 +830,28 @@ guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
+
+	/* Format: armv(5|6|7[s])[-thumb[2]] */
 	const char *cpu_arch = getenv ("MONO_CPU_ARCH");
 	if (cpu_arch != NULL) {
-		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
 		if (strncmp (cpu_arch, "armv", 4) == 0) {
 			v5_supported = cpu_arch [4] >= '5';
 			v6_supported = cpu_arch [4] >= '6';
 			v7_supported = cpu_arch [4] >= '7';
+			v7s_supported = strncmp (cpu_arch, "armv7s", 6) == 0;
 		}
+		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
+		thumb2_supported = strstr (cpu_arch, "thumb2") != NULL;
 	} else {
 #if __APPLE__
 	thumb_supported = TRUE;
 	v5_supported = TRUE;
 	darwin = TRUE;
 	iphone_abi = TRUE;
-#else
+#elif defined(PLATFORM_ANDROID)
+	/* Android is awesome and doesn't make most of /proc (including
+	 * /proc/self/auxv) available to regular processes. So we use
+	 * /proc/cpuinfo instead.... */
 	char buf [512];
 	char *line;
 	FILE *file = fopen ("/proc/cpuinfo", "r");
@@ -848,15 +859,19 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 		while ((line = fgets (buf, 512, file))) {
 			if (strncmp (line, "Processor", 9) == 0) {
 				char *ver = strstr (line, "(v");
-				if (ver && (ver [2] == '5' || ver [2] == '6' || ver [2] == '7'))
-					v5_supported = TRUE;
-				if (ver && (ver [2] == '6' || ver [2] == '7'))
-					v6_supported = TRUE;
-				if (ver && (ver [2] == '7'))
-					v7_supported = TRUE;
+				if (ver) {
+					if (ver [2] >= '5')
+						v5_supported = TRUE;
+					if (ver [2] >= '6')
+						v6_supported = TRUE;
+					if (ver [2] >= '7')
+						v7_supported = TRUE;
+					/* TODO: Find a way to detect v7s. */
+				}
 				continue;
 			}
 			if (strncmp (line, "Features", 8) == 0) {
+				/* TODO: Find a way to detect Thumb 2. */
 				char *th = strstr (line, "thumb");
 				if (th) {
 					thumb_supported = TRUE;
@@ -866,9 +881,57 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 				continue;
 			}
 		}
+
 		fclose (file);
 		/*printf ("features: v5: %d, thumb: %d\n", v5_supported, thumb_supported);*/
 	}
+#else
+	/* This solution is neat because it uses the dynamic linker
+	 * instead of the kernel. Thus, it works in QEMU chroots. */
+	unsigned long int hwcap;
+	unsigned long int platform;
+
+	if ((hwcap = getauxval(AT_HWCAP))) {
+		/* We use hardcoded values to avoid depending on a
+		 * specific version of the hwcap.h header. */
+
+		/* HWCAP_ARM_THUMB */
+		if ((hwcap & 4) != 0)
+			/* TODO: Find a way to detect Thumb 2. */
+			thumb_supported = TRUE;
+	}
+
+	if ((platform = getauxval(AT_PLATFORM))) {
+		/* Actually a pointer to the platform string. */
+		const char *str = (const char *) platform;
+
+		/* Possible CPU name values (from kernel sources):
+		 *
+		 * - v4
+		 * - v5
+		 * - v5t
+		 * - v6
+		 * - v7
+		 *
+		 * Value is suffixed with the endianness ('b' or 'l').
+		 * We only support little endian anyway.
+		*/
+
+		if (str [1] >= '5')
+			v5_supported = TRUE;
+
+		if (str [1] >= '6')
+			v6_supported = TRUE;
+
+		if (str [1] >= '7')
+			v7_supported = TRUE;
+
+		/* TODO: Find a way to detect v7s. */
+	}
+
+	/*printf ("hwcap = %i, platform = %s\n", (int) hwcap, (const char *) platform);
+	printf ("thumb = %i, thumb2 = %i, v5 = %i, v6 = %i, v7 = %i, v7s = %i\n",
+		thumb_supported, thumb2_supported, v5_supported, v6_supported, v7_supported, v7s_supported);*/
 #endif
 	}
 
