@@ -8272,8 +8272,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg->method_index = 1;
 
+	// FIXME:
+	/*
 	if (acfg->aot_opts.full_aot)
 		mono_set_partial_sharing_supported (TRUE);
+	*/
 
 	collect_methods (acfg);
 
