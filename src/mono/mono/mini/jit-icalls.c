@@ -1199,7 +1199,7 @@ mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *
 	return *(int*)p;
 }
 
-gboolean
+MonoBoolean
 mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass, MonoObject *arg)
 {
 	MonoMethod *m;
@@ -1213,7 +1213,7 @@ mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass
 	args = (void**)&arg;
 	res = mono_runtime_invoke (m, this_arg, args, NULL);
 	p = mono_object_unbox (res);
-	return *(gboolean*)p;
+	return *(MonoBoolean*)p;
 }
 
 void
