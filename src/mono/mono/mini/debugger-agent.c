@@ -74,6 +74,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/threadpool.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-stack-unwinding.h>
@@ -282,7 +283,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 23
+#define MINOR_VERSION 24
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -464,6 +465,7 @@ typedef enum {
 	CMD_METHOD_GET_BODY = 7,
 	CMD_METHOD_RESOLVE_TOKEN = 8,
 	CMD_METHOD_GET_CATTRS = 9,
+	CMD_METHOD_MAKE_GENERIC_METHOD = 10
 } CmdMethod;
 
 typedef enum {
@@ -8094,6 +8096,40 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		cinfo = mono_custom_attrs_from_method (method);
 
 		buffer_add_cattrs (buf, domain, method->klass->image, attr_klass, cinfo);
+		break;
+	}
+	case CMD_METHOD_MAKE_GENERIC_METHOD: {
+		MonoType **type_argv;
+		int i, type_argc;
+		MonoDomain *d;
+		MonoClass *klass;
+		MonoGenericInst *ginst;
+		MonoGenericContext tmp_context;
+		MonoMethod *inflated;
+
+		type_argc = decode_int (p, &p, end);
+		type_argv = g_new0 (MonoType*, type_argc);
+		for (i = 0; i < type_argc; ++i) {
+			klass = decode_typeid (p, &p, end, &d, &err);
+			if (err) {
+				g_free (type_argv);
+				return err;
+			}
+			if (domain != d) {
+				g_free (type_argv);
+				return ERR_INVALID_ARGUMENT;
+			}
+			type_argv [i] = &klass->byval_arg;
+		}
+		ginst = mono_metadata_get_generic_inst (type_argc, type_argv);
+		g_free (type_argv);
+		tmp_context.class_inst = method->klass->generic_class ? method->klass->generic_class->context.class_inst : NULL;
+		tmp_context.method_inst = ginst;
+
+		inflated = mono_class_inflate_generic_method (method, &tmp_context);
+		if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
+			return ERR_INVALID_ARGUMENT;
+		buffer_add_methodid (buf, domain, inflated);
 		break;
 	}
 	default:
