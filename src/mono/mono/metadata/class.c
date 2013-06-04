@@ -5648,10 +5648,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (!class->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (
 			    image, type_token, &interfaces, &icount, FALSE, context)){
-			mono_class_set_failure_and_error (class, error, g_strdup ("Could not load interfaces"));
+			mono_class_set_failure_from_loader_error (class, error, g_strdup ("Could not load interfaces"));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
-			g_assert (!mono_loader_get_last_error ());
 			return NULL;
 		}
 
