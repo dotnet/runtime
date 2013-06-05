@@ -18,6 +18,35 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
 
+static gboolean shutting_down = FALSE;
+
+/** 
+ * mono_runtime_set_shutting_down:
+ *
+ * Invoked by System.Environment.Exit to flag that the runtime
+ * is shutting down.
+ */
+void
+mono_runtime_set_shutting_down (void)
+{
+	shutting_down = TRUE;
+}
+
+/**
+ * mono_runtime_is_shutting_down:
+ *
+ * Returns whether the runtime has been flagged for shutdown.
+ *
+ * This is consumed by the P:System.Environment.HasShutdownStarted
+ * property.
+ *
+ */
+gboolean
+mono_runtime_is_shutting_down (void)
+{
+	return shutting_down;
+}
+
 static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 {

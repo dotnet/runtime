@@ -93,8 +93,6 @@ CRITICAL_SECTION mono_strtod_mutex;
 static gunichar2 process_guid [36];
 static gboolean process_guid_set = FALSE;
 
-static gboolean shutting_down = FALSE;
-
 static gboolean no_exec = FALSE;
 
 static MonoAssembly *
@@ -378,33 +376,6 @@ mono_runtime_quit ()
 {
 	if (quit_function != NULL)
 		quit_function (mono_get_root_domain (), NULL);
-}
-
-/** 
- * mono_runtime_set_shutting_down:
- *
- * Invoked by System.Environment.Exit to flag that the runtime
- * is shutting down.
- */
-void
-mono_runtime_set_shutting_down (void)
-{
-	shutting_down = TRUE;
-}
-
-/**
- * mono_runtime_is_shutting_down:
- *
- * Returns whether the runtime has been flagged for shutdown.
- *
- * This is consumed by the P:System.Environment.HasShutdownStarted
- * property.
- *
- */
-gboolean
-mono_runtime_is_shutting_down (void)
-{
-	return shutting_down;
 }
 
 /**
