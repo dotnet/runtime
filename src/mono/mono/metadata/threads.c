@@ -2934,10 +2934,12 @@ void mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
-	mono_runtime_shutdown ();
-
-	THREAD_DEBUG (g_message ("%s: threadpool cleanup", __func__));
-	mono_thread_pool_cleanup ();
+	/* Mono is shutting down, so just wait for the end */
+	if (!mono_runtime_try_shutdown ()) {
+		/*FIXME mono_thread_suspend probably should call mono_thread_execute_interruption when self interrupting. */
+		mono_thread_suspend (mono_thread_internal_current ());
+		mono_thread_execute_interruption (mono_thread_internal_current ());
+	}
 
 	/* 
 	 * Remove everything but the finalizer thread and self.

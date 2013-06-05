@@ -6484,7 +6484,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			while (suspend_count > 0)
 				resume_vm ();
 
-			mono_runtime_shutdown ();
+			if (!mono_runtime_try_shutdown ())
+				break;
 
 			/* Suspend all managed threads since the runtime is going away */
 			DEBUG(1, fprintf (log_file, "Suspending all threads...\n"));
@@ -8887,7 +8888,7 @@ debugger_thread (void *arg)
 		g_free (data);
 		buffer_free (&buf);
 
-		if (command_set == CMD_SET_VM && command == CMD_VM_DISPOSE)
+		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;
 	}
 

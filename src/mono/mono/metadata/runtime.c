@@ -17,7 +17,10 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/threadpool.h>
+#include <mono/utils/atomic.h>
 
+static gboolean shutting_down_inited = FALSE;
 static gboolean shutting_down = FALSE;
 
 /** 
@@ -25,6 +28,8 @@ static gboolean shutting_down = FALSE;
  *
  * Invoked by System.Environment.Exit to flag that the runtime
  * is shutting down.
+ *
+ * Deprecated. This function can break the shutdown sequence.
  */
 void
 mono_runtime_set_shutting_down (void)
@@ -74,15 +79,22 @@ mono_runtime_fire_process_exit_event (void)
 #endif
 }
 
-/*
-Initialize runtime shutdown.
-After this call completes the thread pool will stop accepting new jobs and
 
-*/
-void
-mono_runtime_shutdown (void)
+/*
+ * Try to initialize runtime shutdown.
+ * After this call completes the thread pool will stop accepting new jobs and no further threads will be created.
+ *
+ * @return true if shutdown was initiated by this call or false is other thread beat this one
+ */
+gboolean
+mono_runtime_try_shutdown (void)
 {
+	if (InterlockedCompareExchange (&shutting_down_inited, TRUE, FALSE))
+		return FALSE;
+
 	mono_runtime_fire_process_exit_event ();
+
+	shutting_down = TRUE;
 
 	mono_threads_set_shutting_down ();
 
@@ -90,6 +102,16 @@ mono_runtime_shutdown (void)
 
 	mono_runtime_set_shutting_down ();
 
+	/* This will kill the tp threads which cannot be suspended */
+	mono_thread_pool_cleanup ();
+
+	/*TODO move the follow to here:
+	mono_thread_suspend_all_other_threads (); OR  mono_thread_wait_all_other_threads
+
+	mono_runtime_quit ();
+	*/
+
+	return TRUE;
 }
 
 

@@ -6525,10 +6525,8 @@ ves_icall_System_Environment_Exit (int result)
  * NaCl exits anyway.
  */
 #ifndef __native_client__
-	mono_runtime_shutdown ();
-
-	/* This will kill the tp threads which cannot be suspended */
-	mono_thread_pool_cleanup ();
+	if (!mono_runtime_try_shutdown ())
+		mono_thread_exit ();
 
 	/* Suspend all managed threads since the runtime is going away */
 	mono_thread_suspend_all_other_threads ();
