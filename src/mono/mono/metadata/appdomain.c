@@ -348,8 +348,6 @@ mono_context_init (MonoDomain *domain)
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	shutting_down = TRUE;
-
 	mono_attach_cleanup ();
 
 	/* This ends up calling any pending pending (for at most 2 seconds) */
