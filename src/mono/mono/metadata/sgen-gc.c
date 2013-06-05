@@ -4231,6 +4231,7 @@ mono_gc_pthread_detach (pthread_t thread)
 void
 mono_gc_pthread_exit (void *retval) 
 {
+	mono_thread_info_dettach ();
 	pthread_exit (retval);
 }
 
