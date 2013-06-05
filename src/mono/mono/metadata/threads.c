@@ -2894,21 +2894,6 @@ mono_threads_set_shutting_down (void)
 	}
 }
 
-/** 
- * mono_threads_is_shutting_down:
- *
- * Returns whether a thread has commenced shutdown of Mono.  Note that
- * if the function returns FALSE the caller must not assume that
- * shutdown is not in progress, because the situation might have
- * changed since the function returned.  For that reason this function
- * is of very limited utility.
- */
-gboolean
-mono_threads_is_shutting_down (void)
-{
-	return shutting_down;
-}
-
 void mono_thread_manage (void)
 {
 	struct wait_data wait_data;
