@@ -1095,16 +1095,22 @@ static void
 threadpool_clear_queue (ThreadPool *tp, MonoDomain *domain)
 {
 	MonoObject *obj;
-	MonoMList *other;
+	MonoMList *other = NULL;
+	MonoCQ *queue = tp->queue;
 
-	other = NULL;
-	while (mono_cq_dequeue (tp->queue, &obj)) {
+	if (!queue)
+		return;
+
+	while (mono_cq_dequeue (queue, &obj)) {
 		if (obj == NULL)
 			continue;
 		if (obj->vtable->domain != domain)
 			other = mono_mlist_prepend (other, obj);
 		threadpool_jobs_dec (obj);
 	}
+
+	if (mono_runtime_is_shutting_down ())
+		return;
 
 	while (other) {
 		threadpool_append_job (tp, (MonoObject *) mono_mlist_get_data (other));
