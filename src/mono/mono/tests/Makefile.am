@@ -546,15 +546,11 @@ DISABLED_TESTS_WRENCH=	\
 	$(PLATFORM_DISABLED_TESTS_WRENCH)	\
 	main-returns-background-resetabort.exe \
 	main-returns-background-abort-resetabort.exe	\
-	main-returns-background.exe	\
 	thread6.exe	\
 	assemblyresolve_event3.exe \
 	delegate2.exe	\
-	finally_guard.exe  	\
-	finalizer-abort.exe	\
-	finalizer-exit.exe	\
-	finalizer-thread.exe \
-	appdomain-async-invoke.exe
+	finally_guard.exe
+
 
 AOT_DISABLED_TESTS=constraints-load.exe
 
