@@ -225,5 +225,6 @@ gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, gu
 
 MonoException* mono_thread_resume_interruption (void) MONO_INTERNAL;
 void mono_threads_perform_thread_dump (void) MONO_INTERNAL;
+MonoThread *mono_thread_attach_full (MonoDomain *domain, gboolean force_attach) MONO_INTERNAL;
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

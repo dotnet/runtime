@@ -245,7 +245,7 @@ mono_thread_get_tls_offset (void)
  * If handle_store() returns FALSE the thread must not be started
  * because Mono is shutting down.
  */
-static gboolean handle_store(MonoThread *thread)
+static gboolean handle_store(MonoThread *thread, gboolean force_attach)
 {
 	mono_threads_lock ();
 
@@ -254,7 +254,7 @@ static gboolean handle_store(MonoThread *thread)
 	if (threads_starting_up)
 		mono_g_hash_table_remove (threads_starting_up, thread);
 
-	if (shutting_down) {
+	if (shutting_down && !force_attach) {
 		mono_threads_unlock ();
 		return FALSE;
 	}
@@ -794,7 +794,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	if (threadpool_thread)
 		mono_thread_set_state (internal, ThreadState_Background);
 
-	if (handle_store (thread))
+	if (handle_store (thread, FALSE))
 		ResumeThread (thread_handle);
 
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
@@ -904,6 +904,12 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
+	return mono_thread_attach_full (domain, FALSE);
+}
+
+MonoThread *
+mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
+{
 	MonoThreadInfo *info;
 	MonoInternalThread *thread;
 	MonoThread *current_thread;
@@ -960,7 +966,7 @@ mono_thread_attach (MonoDomain *domain)
 
 	current_thread = new_thread_with_internal (domain, thread);
 
-	if (!handle_store (current_thread)) {
+	if (!handle_store (current_thread, force_attach)) {
 		/* Mono is shutting down, so just wait for the end */
 		for (;;)
 			Sleep (10000);
@@ -1170,7 +1176,7 @@ static void mono_thread_start (MonoThread *thread)
 	 * launched, to avoid the main thread deadlocking while trying
 	 * to clean up a thread that will never be signalled.
 	 */
-	if (!handle_store (thread))
+	if (!handle_store (thread, FALSE))
 		return;
 
 	ResumeThread (internal->handle);
