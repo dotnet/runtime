@@ -3007,7 +3007,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 				jinfo = g_hash_table_lookup (cfg->abs_patches, data);
 			if (jinfo) {
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					if ((((guint64)data) >> 32) == 0)
+					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (jinfo->data.name);
+					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;
 					no_patch = TRUE;
 				} else {
