@@ -23,11 +23,18 @@ using System.Reflection;
  * the IL code looks.
  */
 
-class Tests {
+#if MOBILE
+class BasicTests
+#else
+class Tests
+#endif
+{
 
+#if !MOBILE
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
+#endif
 	
 	public static int test_0_return () {
 		return 0;

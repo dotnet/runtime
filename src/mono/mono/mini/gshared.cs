@@ -40,11 +40,17 @@ class GFoo3<T> {
 
 // FIXME: Add mixed ref/noref tests, i.e. Dictionary<string, int>
 
+#if MOBILE
+public class GSharedTests
+#else
 public class Tests
+#endif
 {
+#if !MOBILE
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
+#endif
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static void gshared<T> (T [] array, int i, int j) {
@@ -405,7 +411,7 @@ public class Tests
 		var v2 = return_t<GFoo2<int>> (v);
 		if (v2.t != 55 || v2.t2 != 32)
 			return 6;
-		i = new Tests ().return_this_t<int> (42);
+		i = new GSharedTests ().return_this_t<int> (42);
 		if (i != 42)
 			return 7;
 		return 0;
@@ -1145,3 +1151,8 @@ public class Tests
 	   return 0;
 	}
 }
+
+#if !MOBILE
+public class GSharedTests : Tests {
+}
+#endif

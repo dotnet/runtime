@@ -26,11 +26,18 @@ using System.Reflection;
 /* A comparison made to same variable. */
 #pragma warning disable 1718
 
-class Tests {
+#if MOBILE
+class FloatTests
+#else
+class Tests
+#endif
+{
 
+#if !MOBILE
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
+#endif
 	
 	public static int test_0_beq () {
 		double a = 2.0;
