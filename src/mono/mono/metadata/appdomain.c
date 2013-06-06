@@ -61,6 +61,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-memory-model.h>
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -2169,6 +2170,7 @@ zero_static_data (MonoVTable *vtable)
 }
 
 typedef struct unload_data {
+	gboolean done;
 	MonoDomain *domain;
 	char *failure_reason;
 } unload_data;
@@ -2246,7 +2248,8 @@ unload_thread_main (void *arg)
 	int i;
 
 	/* Have to attach to the runtime so shutdown can wait for this thread */
-	thread = mono_thread_attach (mono_get_root_domain ());
+	/* Force it to be attached to avoid racing during shutdown. */
+	thread = mono_thread_attach_full (mono_get_root_domain (), TRUE);
 
 	/* 
 	 * FIXME: Abort our parent thread last, so we can return a failure 
@@ -2254,18 +2257,18 @@ unload_thread_main (void *arg)
 	 */
 	if (!mono_threads_abort_appdomain_threads (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Aborting of threads in domain %s timed out.", domain->friendly_name);
-		return 1;
+		goto failure;
 	}
 
 	if (!mono_thread_pool_remove_domain_jobs (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Cleanup of threadpool jobs of domain %s timed out.", domain->friendly_name);
-		return 1;
+		goto failure;
 	}
 
 	/* Finalize all finalizable objects in the doomed appdomain */
 	if (!mono_domain_finalize (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Finalization of domain %s timed out.", domain->friendly_name);
-		return 1;
+		goto failure;
 	}
 
 	/* Clear references to our vtables in class->runtime_info.
@@ -2311,9 +2314,14 @@ unload_thread_main (void *arg)
 
 	mono_gc_collect (mono_gc_max_generation ());
 
+	mono_atomic_store_release (&data->done, TRUE);
 	mono_thread_detach (thread);
-
 	return 0;
+
+failure:
+	mono_atomic_store_release (&data->done, TRUE);
+	mono_thread_detach (thread);
+	return 1;
 }
 
 /*
@@ -2401,6 +2409,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 
 	thread_data.domain = domain;
 	thread_data.failure_reason = NULL;
+	thread_data.done = FALSE;
 
 	/*The managed callback finished successfully, now we start tearing down the appdomain*/
 	domain->state = MONO_APPDOMAIN_UNLOADING;
@@ -2424,7 +2433,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 #endif
 
 	/* Wait for the thread */	
-	while ((res = WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION)) {
+	while (!thread_data.done && WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION) {
 		if (mono_thread_internal_has_appdomain_ref (mono_thread_internal_current (), domain) && (mono_thread_interruption_requested ())) {
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */
