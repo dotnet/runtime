@@ -388,7 +388,8 @@ BASE_TEST_CS_SRC=		\
 	bug-6148.cs	\
 	assembly_append_ordering.cs	\
 	bug-10127.cs	\
-	allow-synchronous-major.cs
+	allow-synchronous-major.cs	\
+	unload-appdomain-on-shutdown.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
