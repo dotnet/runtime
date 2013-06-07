@@ -1068,7 +1068,7 @@ class Tests
 }
 
 #if !MOBILE
-public class GenericsTests : Tests
+class GenericsTests : Tests
 {
 }
 #endif
