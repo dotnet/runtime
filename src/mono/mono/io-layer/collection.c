@@ -92,6 +92,9 @@ void _wapi_handle_collect (void)
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 	
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
+	g_assert (thr_ret == 0);
+	
 	DEBUG ("%s: (%d) Master set", __func__, _wapi_getpid ());
 	
 	/* If count has changed, someone else jumped in as master */
@@ -120,6 +123,9 @@ void _wapi_handle_collect (void)
 		InterlockedIncrement ((gint32 *)&_wapi_shared_layout->collection_count);
 	}
 	
+	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
+	g_assert (thr_ret == 0);
+        
 	_wapi_handle_unlock_shared_handles ();
 
 	DEBUG ("%s: (%d) Collection done", __func__, _wapi_getpid ());
