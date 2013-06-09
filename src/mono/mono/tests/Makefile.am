@@ -550,8 +550,8 @@ DISABLED_TESTS_WRENCH=	\
 	thread6.exe	\
 	assemblyresolve_event3.exe \
 	delegate2.exe	\
-	finally_guard.exe
-
+	finally_guard.exe \
+	gc-altstack.exe
 
 AOT_DISABLED_TESTS=constraints-load.exe
 
