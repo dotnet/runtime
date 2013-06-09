@@ -4666,6 +4666,18 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.gsharedvt->sig, p, &p);
 		encode_method_ref (acfg, patch_info->data.gsharedvt->method, p, &p);
 		break;
+	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+		MonoGSharedVtMethodInfo *info = patch_info->data.gsharedvt_method;
+		int i;
+
+		encode_method_ref (acfg, info->method, p, &p);
+		encode_value (info->nlocals, p, &p);
+		// FIXME: Improve the encoding
+		for (i = 0; i < info->nlocals; ++i) {
+			encode_type (acfg, info->locals_types [i], p, &p);
+		}
+		break;
+	}
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
 		g_assert_not_reached ();
@@ -7854,6 +7866,14 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method (acfg->image, token, NULL);
 		if (!method)
 			continue;
+		/*
+		if (strcmp (method->name, "gshared2"))
+			continue;
+		*/
+		/*
+		if (!strstr (method->klass->image->name, "mini"))
+			continue;
+		*/
 		if (method->is_generic || method->klass->generic_container) {
 			MonoMethod *gshared;
 

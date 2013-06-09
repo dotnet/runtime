@@ -27,9 +27,6 @@
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
-static MonoType*
-mini_get_gsharedvt_alloc_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t);
-
 static gboolean partial_supported;
 
 static inline gboolean
@@ -568,6 +565,20 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		mono_class_init (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
+	}
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: {
+		MonoGSharedVtMethodInfo *info = data;
+		MonoGSharedVtMethodInfo *res;
+		int i;
+
+		// FIXME:
+		res = g_new0 (MonoGSharedVtMethodInfo, 1);
+		res->nlocals = info->nlocals;
+		res->locals_types = g_new0 (MonoType*, info->nlocals);
+		for (i = 0; i < info->nlocals; ++i)
+			res->locals_types [i] = mono_class_inflate_generic_type (info->locals_types [i], context);
+
+		return res;
 	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: {
@@ -1302,6 +1313,36 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		return addr;
 	}
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: {
+		MonoGSharedVtMethodInfo *info = data;
+		MonoGSharedVtMethodRuntimeInfo *res;
+		MonoType *t;
+		int i, offset, align, size;
+
+		// FIXME:
+		res = g_malloc0 (sizeof (MonoGSharedVtMethodRuntimeInfo) + (info->nlocals * sizeof (int)));
+
+		offset = 0;
+		for (i = 0; i < info->nlocals; ++i) {
+			t = info->locals_types [i];
+
+			size = mono_type_size (t, &align);
+
+			if (align < sizeof (gpointer))
+				align = sizeof (gpointer);
+			if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
+				align = 2 * sizeof (gpointer);
+			
+			// FIXME: Do the same things as alloc_stack_slots
+			offset += align - 1;
+			offset &= ~(align - 1);
+			res->locals_offsets [i] = offset;
+			offset += size;
+		}
+		res->locals_size = offset;
+
+		return res;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -1351,6 +1392,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_TYPE: return "TYPE";
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: return "REFLECTION_TYPE";
 	case MONO_RGCTX_INFO_METHOD: return "METHOD";
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: return "GSHAREDVT_INFO";
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: return "GENERIC_METHOD_CODE";
 	case MONO_RGCTX_INFO_CLASS_FIELD: return "CLASS_FIELD";
 	case MONO_RGCTX_INFO_METHOD_RGCTX: return "METHOD_RGCTX";
@@ -1443,6 +1485,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_CLASS_IS_REF:
 		return mono_class_from_mono_type (data1) == mono_class_from_mono_type (data2);
 	case MONO_RGCTX_INFO_METHOD:
+	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET:
@@ -2314,7 +2357,7 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 		g_assert (gsctx);
 	*/
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
-		return mini_get_gsharedvt_alloc_type_gsctx (gsctx, type);
+		return type;
 	else
 		return mono_type_get_basic_type_from_generic (type);
 }
@@ -2330,6 +2373,8 @@ mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
 {
 	if (type->byref)
 		return &mono_defaults.int_class->byval_arg;
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
+		return type;
 	return mini_get_basic_type_from_generic (gsctx, mono_type_get_underlying_type (type));
 }
 
@@ -2367,8 +2412,7 @@ mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint3
 		g_assert (gsctx);
 	*/
 
-	if (mini_is_gsharedvt_type_gsctx (gsctx, t))
-		t = mini_get_gsharedvt_alloc_type_gsctx (gsctx, t);
+	//g_assert (!mini_is_gsharedvt_type_gsctx (gsctx, t));
 
 	if (pinvoke) {
 		size = mono_type_native_stack_size (t, align);
@@ -2510,18 +2554,6 @@ gboolean
 mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t)
 {
 	return FALSE;
-}
-
-static MonoType*
-mini_get_gsharedvt_alloc_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t)
-{
-	return NULL;
-}
-
-MonoType*
-mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t)
-{
-	return NULL;
 }
 
 gboolean

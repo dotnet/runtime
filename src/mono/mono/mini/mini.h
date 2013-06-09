@@ -133,7 +133,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 89
+#define MONO_AOT_FILE_VERSION 90
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1075,7 +1075,9 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT,
 	/* Same for calli, associated with a signature */
 	MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI,
-	MONO_RGCTX_INFO_CLASS_IS_REF
+	MONO_RGCTX_INFO_CLASS_IS_REF,
+	/* Resolves to a MonoGSharedVtMethodRuntimeInfo */
+	MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -1104,6 +1106,18 @@ typedef struct {
 #define MONO_RGCTX_SLOT_IS_MRGCTX(s)	(((s) & 0x80000000) ? TRUE : FALSE)
 
 #define MONO_GSHAREDVT_DEL_INVOKE_VT_OFFSET -2
+
+typedef struct {
+	MonoMethod *method;
+	int nlocals;
+	MonoType **locals_types;
+} MonoGSharedVtMethodInfo;
+
+/* This is used by gsharedvt methods to allocate locals and compute local offsets */
+typedef struct {
+	int locals_size;
+	int locals_offsets [MONO_ZERO_LEN_ARRAY];
+} MonoGSharedVtMethodRuntimeInfo;
 
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
@@ -1169,6 +1183,7 @@ struct MonoJumpInfo {
 		MonoJumpInfoRgctxEntry *rgctx_entry;
 		MonoJumpInfoImtTramp *imt_tramp;
 		MonoJumpInfoGSharedVtCall *gsharedvt;
+		MonoGSharedVtMethodInfo *gsharedvt_method;
 		MonoMethodSignature *sig;
 	} data;
 };
@@ -1326,6 +1341,14 @@ typedef struct {
 	MonoGenericSharingContext gsctx;
 
 	gboolean gsharedvt;
+
+	MonoGSharedVtMethodInfo *gsharedvt_info;
+
+	/* Points to the gsharedvt locals area at runtime */
+	MonoInst *gsharedvt_locals_var;
+
+	/* Points to a MonoGSharedVtMethodRuntimeInfo at runtime */
+	MonoInst *gsharedvt_info_var;
 
 	/* For native-to-managed wrappers, the saved old domain */
 	MonoInst *orig_domain_var;
@@ -2535,7 +2558,6 @@ gboolean mini_is_gsharedvt_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_signature (MonoCompile *cfg, MonoMethodSignature *sig) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_type_gsctx (MonoGenericSharingContext *gsctx, MonoType *t) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_type (MonoCompile *cfg, MonoType *t) MONO_INTERNAL;
-MonoType* mini_get_gsharedvt_alloc_type_for_type (MonoCompile *cfg, MonoType *t); /* should be internal but it's used by llvm */
 gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst) MONO_INTERNAL;

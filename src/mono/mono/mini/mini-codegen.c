@@ -498,6 +498,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			printf (" R%d", ((MonoInst*)ins->inst_p0)->dreg);
 			break;
 		case OP_REGOFFSET:
+		case OP_GSHAREDVT_ARG_REGOFFSET:
 			printf (" + 0x%lx", (long)ins->inst_offset);
 			break;
 		default:

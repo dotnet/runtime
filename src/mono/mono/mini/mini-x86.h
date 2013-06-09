@@ -298,7 +298,8 @@ typedef enum {
 	GSHAREDVT_RET_I1 = 5,
 	GSHAREDVT_RET_U1 = 6,
 	GSHAREDVT_RET_I2 = 7,
-	GSHAREDVT_RET_U2 = 8
+	GSHAREDVT_RET_U2 = 8,
+	GSHAREDVT_RET_IREG = 9
 } GSharedVtRetMarshal;
 
 typedef struct {

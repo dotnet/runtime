@@ -1131,7 +1131,11 @@ typedef enum {
 	RegTypeBaseGen,
 	RegTypeFP,
 	RegTypeStructByVal,
-	RegTypeStructByAddr
+	RegTypeStructByAddr,
+	/* gsharedvt argument passed by addr in greg */
+	RegTypeGSharedVtInReg,
+	/* gsharedvt argument passed by addr on stack */
+	RegTypeGSharedVtOnStack,
 } ArgStorage;
 
 typedef struct {
@@ -1236,7 +1240,6 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	cinfo->nargs = n;
 	gr = ARMREG_R0;
 
-	/* FIXME: handle returning a struct */
 	t = mini_type_get_underlying_type (gsctx, sig->ret);
 	if (MONO_TYPE_ISSTRUCT (t)) {
 		guint32 align;
@@ -1246,6 +1249,8 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		} else {
 			cinfo->vtype_retaddr = TRUE;
 		}
+	} else if (!(t->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (t)) && mini_is_gsharedvt_type_gsctx (gsctx, t)) {
+		cinfo->vtype_retaddr = TRUE;
 	}
 
 	pstart = 0;
@@ -1280,6 +1285,8 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 
 	DEBUG(printf("params: %d\n", sig->param_count));
 	for (i = pstart; i < sig->param_count; ++i) {
+		ArgInfo *ainfo = &cinfo->args [n];
+
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */
@@ -1290,7 +1297,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		DEBUG(printf("param %d: ", i));
 		if (sig->params [i]->byref) {
                         DEBUG(printf("byref\n"));
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			continue;
 		}
@@ -1300,20 +1307,20 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 			cinfo->args [n].size = 1;
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			break;
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 			cinfo->args [n].size = 2;
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 			cinfo->args [n].size = 4;
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			break;
 		case MONO_TYPE_I:
@@ -1327,13 +1334,30 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_R4:
 			cinfo->args [n].size = sizeof (gpointer);
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (simpletype)) {
 				cinfo->args [n].size = sizeof (gpointer);
-				add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+				add_general (&gr, &stack_size, ainfo, TRUE);
+				n++;
+				break;
+			}
+			if (mini_is_gsharedvt_type_gsctx (gsctx, simpletype)) {
+				/* gsharedvt arguments are passed by ref */
+				g_assert (mini_is_gsharedvt_type_gsctx (gsctx, simpletype));
+				add_general (&gr, &stack_size, ainfo, TRUE);
+				switch (ainfo->storage) {
+				case RegTypeGeneral:
+					ainfo->storage = RegTypeGSharedVtInReg;
+					break;
+				case RegTypeBase:
+					ainfo->storage = RegTypeGSharedVtOnStack;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
 				n++;
 				break;
 			}
@@ -1361,27 +1385,27 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			align_size += (sizeof (gpointer) - 1);
 			align_size &= ~(sizeof (gpointer) - 1);
 			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-			cinfo->args [n].storage = RegTypeStructByVal;
-			cinfo->args [n].struct_size = size;
+			ainfo->storage = RegTypeStructByVal;
+			ainfo->struct_size = size;
 			/* FIXME: align stack_size if needed */
 			if (eabi_supported) {
 				if (align >= 8 && (gr & 1))
 					gr ++;
 			}
 			if (gr > ARMREG_R3) {
-				cinfo->args [n].size = 0;
-				cinfo->args [n].vtsize = nwords;
+				ainfo->size = 0;
+				ainfo->vtsize = nwords;
 			} else {
 				int rest = ARMREG_R3 - gr + 1;
 				int n_in_regs = rest >= nwords? nwords: rest;
 
-				cinfo->args [n].size = n_in_regs;
-				cinfo->args [n].vtsize = nwords - n_in_regs;
-				cinfo->args [n].reg = gr;
+				ainfo->size = n_in_regs;
+				ainfo->vtsize = nwords - n_in_regs;
+				ainfo->reg = gr;
 				gr += n_in_regs;
 				nwords -= n_in_regs;
 			}
-			cinfo->args [n].offset = stack_size;
+			ainfo->offset = stack_size;
 			/*g_print ("offset for arg %d at %d\n", n, stack_size);*/
 			stack_size += nwords * sizeof (gpointer);
 			n++;
@@ -1390,8 +1414,25 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_R8:
-			cinfo->args [n].size = 8;
-			add_general (&gr, &stack_size, cinfo->args + n, FALSE);
+			ainfo->size = 8;
+			add_general (&gr, &stack_size, ainfo, FALSE);
+			n++;
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			/* gsharedvt arguments are passed by ref */
+			g_assert (mini_is_gsharedvt_type_gsctx (gsctx, simpletype));
+			add_general (&gr, &stack_size, ainfo, TRUE);
+			switch (ainfo->storage) {
+			case RegTypeGeneral:
+				ainfo->storage = RegTypeGSharedVtInReg;
+				break;
+			case RegTypeBase:
+				ainfo->storage = RegTypeGSharedVtOnStack;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 			n++;
 			break;
 		default:
@@ -1449,11 +1490,23 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 				cinfo->ret.reg = ARMREG_R0;
 				break;
 			}
+			// FIXME: Only for variable types
+			if (mini_is_gsharedvt_type_gsctx (gsctx, simpletype)) {
+				cinfo->ret.storage = RegTypeStructByAddr;
+				g_assert (cinfo->vtype_retaddr);
+				break;
+			}
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF:
 			if (cinfo->ret.storage != RegTypeStructByVal)
 				cinfo->ret.storage = RegTypeStructByAddr;
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			g_assert (mini_is_gsharedvt_type_gsctx (gsctx, simpletype));
+			cinfo->ret.storage = RegTypeStructByAddr;
+			g_assert (cinfo->vtype_retaddr);
 			break;
 		case MONO_TYPE_VOID:
 			break;
@@ -1722,7 +1775,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 		t = ins->inst_vtype;
 		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (cfg, t))
-			t = mini_get_gsharedvt_alloc_type_for_type (cfg, t);
+			continue;
 
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
@@ -2066,6 +2119,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 #endif
 			break;
 		case RegTypeStructByVal:
+		case RegTypeGSharedVtInReg:
+		case RegTypeGSharedVtOnStack:
 			MONO_INST_NEW (cfg, ins, OP_OUTARG_VT);
 			ins->opcode = OP_OUTARG_VT;
 			ins->sreg1 = in->dreg;
@@ -2170,6 +2225,17 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	int doffset = ainfo->offset;
 	int struct_size = ainfo->struct_size;
 	int i, soffset, dreg, tmpreg;
+
+	if (ainfo->storage == RegTypeGSharedVtInReg) {
+		/* Pass by addr */
+		mono_call_inst_add_outarg_reg (cfg, call, src->dreg, ainfo->reg, FALSE);
+		return;
+	}
+	if (ainfo->storage == RegTypeGSharedVtOnStack) {
+		/* Pass by addr on stack */
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, src->dreg);
+		return;
+	}
 
 	soffset = 0;
 	for (i = 0; i < ainfo->size; ++i) {
@@ -5352,7 +5418,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
 			/* the argument should be put on the stack: FIXME handle size != word  */
-			if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair) {
+			if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair || ainfo->storage == RegTypeGSharedVtInReg) {
 				switch (ainfo->size) {
 				case 1:
 					if (arm_is_imm12 (inst->inst_offset))
@@ -5399,7 +5465,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
 				ARM_STR_IMM (code, ARMREG_R3, inst->inst_basereg, inst->inst_offset);
-			} else if (ainfo->storage == RegTypeBase) {
+			} else if (ainfo->storage == RegTypeBase || ainfo->storage == RegTypeGSharedVtOnStack) {
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				} else {

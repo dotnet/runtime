@@ -154,10 +154,17 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 		var->index = inst->dreg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
 	else if (inst->flags & MONO_INST_IS_DEAD)
 		var->index = MONO_DEBUG_VAR_ADDRESS_MODE_DEAD;
-	else {
+	else if (inst->opcode == OP_REGOFFSET) {
 		/* the debug interface needs fixing to allow 0(%base) address */
 		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET;
 		var->offset = inst->inst_offset;
+	} else if (inst->opcode == OP_GSHAREDVT_ARG_REGOFFSET) {
+		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR;
+		var->offset = inst->inst_offset;
+	} else if (inst->opcode == OP_GSHAREDVT_LOCAL) {
+		var->index = inst->inst_imm | MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL;
+	} else {
+		g_assert_not_reached ();
 	}
 }
 
@@ -306,6 +313,13 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	for (i = 0; i < jit->num_params; i++)
 		write_variable (cfg->args [i + sig->hasthis], &jit->params [i]);
+
+	if (cfg->gsharedvt_info_var) {
+		jit->gsharedvt_info_var = g_new0 (MonoDebugVarInfo, 1);
+		jit->gsharedvt_locals_var = g_new0 (MonoDebugVarInfo, 1);
+		write_variable (cfg->gsharedvt_info_var, jit->gsharedvt_info_var);
+		write_variable (cfg->gsharedvt_locals_var, jit->gsharedvt_locals_var);
+	}
 
 	jit->num_line_numbers = info->line_numbers->len;
 	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
@@ -468,8 +482,10 @@ serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
 		encode_value (var->offset, p, &p);
 		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
@@ -508,6 +524,14 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 	for (i = 0; i < jit->num_locals; i++)
 		serialize_variable (&jit->locals [i], p, &p);
 
+	if (jit->gsharedvt_info_var) {
+		encode_value (1, p, &p);
+		serialize_variable (jit->gsharedvt_info_var, p, &p);
+		serialize_variable (jit->gsharedvt_locals_var, p, &p);
+	} else {
+		encode_value (0, p, &p);
+	}
+
 	encode_value (jit->num_line_numbers, p, &p);
 
 	prev_offset = 0;
@@ -540,8 +564,10 @@ deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
 		var->offset = decode_value (p, &p);
 		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
@@ -584,6 +610,13 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 
 	for (i = 0; i < jit->num_locals; i++)
 		deserialize_variable (&jit->locals [i], p, &p);
+
+	if (decode_value (p, &p)) {
+		jit->gsharedvt_info_var = g_new0 (MonoDebugVarInfo, 1);
+		jit->gsharedvt_locals_var = g_new0 (MonoDebugVarInfo, 1);
+		deserialize_variable (jit->gsharedvt_info_var, p, &p);
+		deserialize_variable (jit->gsharedvt_locals_var, p, &p);
+	}
 
 	jit->num_line_numbers = decode_value (p, &p);
 	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
@@ -653,6 +686,12 @@ print_var_info (MonoDebugVarInfo *info, int idx, const char *name, const char *t
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		g_print ("%s %s (%d) in memory: base register %s + %d\n", type, name, idx, mono_arch_regname (info->index & (~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS)), info->offset);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+		g_print ("%s %s (%d) in indir memory: base register %s + %d\n", type, name, idx, mono_arch_regname (info->index & (~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS)), info->offset);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
+		g_print ("%s %s (%d) gsharedvt local.\n", type, name, idx);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS:
 	default:

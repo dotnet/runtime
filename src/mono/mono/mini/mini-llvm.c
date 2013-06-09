@@ -330,10 +330,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* Because of generic sharing */
-		if (mini_type_var_is_vt (ctx->cfg, t))
-			return type_to_llvm_type (ctx, mini_get_gsharedvt_alloc_type_for_type (ctx->cfg, t));
-		else
-			return IntPtrType ();
+		return IntPtrType ();
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (t))
 			return IntPtrType ();
@@ -4231,6 +4228,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 	
 	module = ctx->module = ctx->lmodule->module;
+
+	if (cfg->gsharedvt)
+		LLVM_FAILURE (ctx, "gsharedvt");
 
 #if 1
 	{

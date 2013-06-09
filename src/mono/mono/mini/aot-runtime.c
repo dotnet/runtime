@@ -2993,6 +2993,19 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.target = info;
 		break;
 	}
+	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+		MonoGSharedVtMethodInfo *info = g_new0 (MonoGSharedVtMethodInfo, 1);
+		int i;
+		
+		info->method = decode_resolve_method_ref (aot_module, p, &p);
+		g_assert (info->method);
+		info->nlocals = decode_value (p, &p);
+		info->locals_types = g_new0 (MonoType*, info->nlocals);
+		for (i = 0; i < info->nlocals; ++i)
+			info->locals_types [i] = decode_type (aot_module, p, &p);
+		ji->data.target = info;
+		break;
+	}
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();
@@ -3443,6 +3456,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	g_assert (klass->inited);
 
 	/* Find method index */
+	method_index = 0xffffff;
 	if (method->is_inflated && !method->wrapper_type && mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		/* 
 		 * For generic methods, we store the fully shared instance in place of the

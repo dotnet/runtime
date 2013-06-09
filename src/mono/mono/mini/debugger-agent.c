@@ -5765,11 +5765,11 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 }
 
 static void
-add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, gboolean as_vtype)
+add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, gboolean as_vtype)
 {
 	guint32 flags;
 	int reg;
-	guint8 *addr;
+	guint8 *addr, *gaddr;
 	mgreg_t reg_val;
 
 	flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
@@ -5792,6 +5792,48 @@ add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, Mono
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		NOT_IMPLEMENTED;
 		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+		/* Same as regoffset, but with an indirection */
+		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+		addr += (gint32)var->offset;
+
+		gaddr = *(gpointer*)addr;
+		g_assert (gaddr);
+		buffer_add_value_full (buf, t, gaddr, domain, as_vtype);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL: {
+		MonoDebugVarInfo *info_var = jit->gsharedvt_info_var;
+		MonoDebugVarInfo *locals_var = jit->gsharedvt_locals_var;
+		MonoGSharedVtMethodRuntimeInfo *info;
+		guint8 *locals;
+		int idx;
+
+		idx = reg;
+
+		g_assert (info_var);
+		g_assert (locals_var);
+
+		flags = info_var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
+		reg = info_var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
+		g_assert (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET);
+		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+		addr += (gint32)info_var->offset;
+		info = *(gpointer*)addr;
+		g_assert (info);
+
+		flags = locals_var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
+		reg = locals_var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
+		g_assert (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET);
+		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+		addr += (gint32)locals_var->offset;
+		locals = *(gpointer*)addr;
+
+		addr = locals + info->locals_offsets [idx];
+
+		buffer_add_value_full (buf, t, addr, domain, as_vtype);
+		break;
+	}
+
 	default:
 		g_assert_not_reached ();
 	}
@@ -5802,7 +5844,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 {
 	guint32 flags;
 	int reg, size;
-	guint8 *addr;
+	guint8 *addr, *gaddr;
 
 	flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 	reg = var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
@@ -5875,6 +5917,16 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 			
 		// FIXME: Write barriers
 		mono_gc_memmove (addr, val, size);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+		/* Same as regoffset, but with an indirection */
+		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+		addr += (gint32)var->offset;
+
+		gaddr = *(gpointer*)addr;
+		g_assert (gaddr);
+		// FIXME: Write barriers
+		mono_gc_memmove (gaddr, val, size);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		NOT_IMPLEMENTED;
@@ -8344,13 +8396,13 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				var = &jit->params [pos];
 
-				add_var (buf, sig->params [pos], &jit->params [pos], &frame->ctx, frame->domain, FALSE);
+				add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->domain, FALSE);
 			} else {
 				g_assert (pos >= 0 && pos < jit->num_locals);
 
 				var = &jit->locals [pos];
 				
-				add_var (buf, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain, FALSE);
+				add_var (buf, jit, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain, FALSE);
 			}
 		}
 		mono_metadata_free_mh (header);
@@ -8362,14 +8414,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &p, frame->domain);
 			} else {
-				add_var (buf, &frame->actual_method->klass->this_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
+				add_var (buf, jit, &frame->actual_method->klass->this_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
 		} else {
 			if (!sig->hasthis) {
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &frame->actual_method->klass->byval_arg, &p, frame->domain);
 			} else {
-				add_var (buf, &frame->api_method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
+				add_var (buf, jit, &frame->api_method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
 		}
 		break;

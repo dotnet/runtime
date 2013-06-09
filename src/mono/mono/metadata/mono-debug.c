@@ -652,6 +652,12 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	for (i = 0; i < jit->num_locals; i++)
 		write_variable (&jit->locals [i], ptr, &ptr);
 
+	*ptr++ = jit->gsharedvt_info_var ? 1 : 0;
+	if (jit->gsharedvt_info_var) {
+		write_variable (jit->gsharedvt_info_var, ptr, &ptr);
+		write_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+	}
+
 	size = ptr - oldptr;
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
@@ -827,6 +833,8 @@ mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
 	g_free (jit->this_var);
 	g_free (jit->params);
 	g_free (jit->locals);
+	g_free (jit->gsharedvt_info_var);
+	g_free (jit->gsharedvt_locals_var);
 	g_free (jit);
 }
 
@@ -870,6 +878,13 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 	for (i = 0; i < jit->num_locals; i++)
 		read_variable (&jit->locals [i], ptr, &ptr);
+
+	if (*ptr++) {
+		jit->gsharedvt_info_var = g_new0 (MonoDebugVarInfo, 1);
+		jit->gsharedvt_locals_var = g_new0 (MonoDebugVarInfo, 1);
+		read_variable (jit->gsharedvt_info_var, ptr, &ptr);
+		read_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+	}
 
 	return jit;
 }

@@ -1775,7 +1775,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 
 		t = mono_type_get_underlying_type (inst->inst_vtype);
 		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (cfg, t))
-			t = mini_get_gsharedvt_alloc_type_for_type (cfg, t);
+			continue;
 
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
@@ -2071,7 +2071,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 		t = mono_type_get_underlying_type (inst->inst_vtype);
 		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (cfg, t))
-			t = mini_get_gsharedvt_alloc_type_for_type (cfg, t);
+			continue;
 
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
@@ -2964,6 +2964,16 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		res->data.gsharedvt = mono_mempool_alloc (mp, sizeof (MonoJumpInfoGSharedVtCall));
 		memcpy (res->data.gsharedvt, patch_info->data.gsharedvt, sizeof (MonoJumpInfoGSharedVtCall));
 		break;
+	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+		MonoGSharedVtMethodInfo *info;
+
+		info = mono_mempool_alloc (mp, sizeof (MonoGSharedVtMethodInfo));
+		res->data.gsharedvt_method = info;
+		memcpy (info, patch_info->data.gsharedvt_method, sizeof (MonoGSharedVtMethodInfo));
+		info->locals_types = mono_mempool_alloc0 (mp, info->nlocals * sizeof (MonoType*));
+		memcpy (info->locals_types, patch_info->data.gsharedvt_method->locals_types, info->nlocals * sizeof (MonoType*));
+		break;
+	}
 	default:
 		break;
 	}
@@ -3022,6 +3032,8 @@ mono_patch_info_hash (gconstpointer data)
 		return (ji->type << 8);
 	case MONO_PATCH_INFO_SWITCH:
 		return (ji->type << 8) | ji->data.table->table_size;
+	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
+		return (ji->type << 8) | (gssize)ji->data.gsharedvt_method->method;
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
@@ -3073,6 +3085,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 
 		return c1->sig == c2->sig && c1->method == c2->method;
 	}
+	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
+		return ji1->data.gsharedvt_method->method == ji2->data.gsharedvt_method->method;
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
@@ -3358,10 +3372,24 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.sig, entry->info_type, mono_method_get_context (entry->method));
 			break;
 		case MONO_PATCH_INFO_GSHAREDVT_CALL: {
-			MonoJumpInfoGSharedVtCall *call_info = mono_domain_alloc0 (domain, sizeof (MonoJumpInfoGSharedVtCall));
+			MonoJumpInfoGSharedVtCall *call_info = g_malloc0 (sizeof (MonoJumpInfoGSharedVtCall)); //mono_domain_alloc0 (domain, sizeof (MonoJumpInfoGSharedVtCall));
 
 			memcpy (call_info, entry->data->data.gsharedvt, sizeof (MonoJumpInfoGSharedVtCall));
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, call_info, entry->info_type, mono_method_get_context (entry->method));
+			break;
+		}
+		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+			MonoGSharedVtMethodInfo *info;
+			MonoGSharedVtMethodInfo *orig_info = entry->data->data.gsharedvt_method;
+
+			/* Make a copy into the domain mempool */
+			info = g_malloc0 (sizeof (MonoGSharedVtMethodInfo)); //mono_domain_alloc0 (domain, sizeof (MonoGSharedVtMethodInfo));
+			info->method = orig_info->method;
+			info->nlocals = orig_info->nlocals;
+			info->locals_types = g_malloc0 (info->nlocals * sizeof (MonoType*)); //mono_domain_alloc0 (domain, info->nlocals * sizeof (MonoType*));
+			memcpy (info->locals_types, orig_info->locals_types, info->nlocals * sizeof (MonoType*));
+
+			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
 			break;
 		}
 		default:

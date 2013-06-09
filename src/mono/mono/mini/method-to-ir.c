@@ -1916,6 +1916,10 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		/* gsharedvt */
+		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
 	default:
 		g_error ("unknown type 0x%02x in ret_type_to_call_opcode", type->type);
 	}
@@ -2126,7 +2130,12 @@ handle_enum:
 		case MONO_TYPE_GENERICINST:
 			simple_type = &simple_type->data.generic_class->container_class->byval_arg;
 			goto handle_enum;
-
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			/* gsharedvt */
+			if (args [i]->type != STACK_VTYPE)
+				return 1;
+			continue;
 		default:
 			g_error ("unknown type 0x%02x in check_call_signature",
 				 simple_type->type);
@@ -3096,6 +3105,20 @@ emit_get_rgctx_gsharedvt_call (MonoCompile *cfg, int context_used,
 	call_info->method = cmethod;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_GSHAREDVT_CALL, call_info, rgctx_type);
+	rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
+
+	return emit_rgctx_fetch (cfg, rgctx, entry);
+}
+
+
+static MonoInst*
+emit_get_rgctx_gsharedvt_method (MonoCompile *cfg, int context_used,
+								 MonoMethod *cmethod, MonoGSharedVtMethodInfo *info)
+{
+	MonoJumpInfoRgctxEntry *entry;
+	MonoInst *rgctx;
+
+	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_GSHAREDVT_METHOD, info, MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO);
 	rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
 
 	return emit_rgctx_fetch (cfg, rgctx, entry);
@@ -4772,7 +4795,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {
-		if (strcmp (cmethod->name + 1, "etGenericValueImpl") == 0)
+		if (!cfg->gsharedvt && strcmp (cmethod->name + 1, "etGenericValueImpl") == 0)
 			return emit_array_generic_access (cfg, fsig, args, *cmethod->name == 'S');
 
 #ifndef MONO_BIG_ARRAYS
@@ -6517,6 +6540,46 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	} else {
 		start_bblock->next_bb = bblock;
 		link_bblock (cfg, start_bblock, bblock);
+	}
+
+	if (cfg->gsharedvt && cfg->method == method) {
+		MonoGSharedVtMethodInfo *info;
+		MonoInst *var, *locals_var;
+		int dreg;
+
+		/* Initialized later in spill_global_vars () */
+		info = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoGSharedVtMethodInfo));
+		info->method = cfg->method;
+		cfg->gsharedvt_info = info;
+
+		var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		/* prevent it from being register allocated */
+		var->flags |= MONO_INST_INDIRECT;
+		cfg->gsharedvt_info_var = var;
+
+		ins = emit_get_rgctx_gsharedvt_method (cfg, mini_method_check_context_used (cfg, method), method, info);
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, var->dreg, ins->dreg);
+
+		/* Allocate locals */
+		locals_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		/* prevent it from being register allocated */
+		/* FIXME: */
+		locals_var->flags |= MONO_INST_INDIRECT;
+		cfg->gsharedvt_locals_var = locals_var;
+
+		dreg = alloc_ireg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, dreg, var->dreg, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, locals_size));
+
+		MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
+		ins->dreg = locals_var->dreg;
+		ins->sreg1 = dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		
+		cfg->flags |= MONO_CFG_HAS_ALLOCA;
+		/*
+		if (init_locals)
+			ins->flags |= MONO_INST_INIT;
+		*/
 	}
 
 	/* at this point we know, if security is TRUE, that some code needs to be generated */
@@ -12290,6 +12353,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	guint32 stacktypes [128];
 	MonoInst **live_range_start, **live_range_end;
 	MonoBasicBlock **live_range_start_bb, **live_range_end_bb;
+	int *gsharedvt_vreg_to_idx = NULL;
 
 	*need_local_opts = FALSE;
 
@@ -12347,6 +12411,35 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			if (ins->opcode == OP_REGVAR)
 				ins->flags |= MONO_INST_GC_TRACK;
 		}
+	}
+
+	if (cfg->gsharedvt) {
+		GPtrArray *types = g_ptr_array_new ();
+
+		gsharedvt_vreg_to_idx = g_new0 (int, cfg->next_vreg);
+
+		for (i = 0; i < cfg->num_varinfo; ++i) {
+			MonoInst *ins = cfg->varinfo [i];
+
+			if (mini_is_gsharedvt_variable_type (cfg, ins->inst_vtype)) {
+				if (i >= cfg->locals_start) {
+					/* Local */
+					gsharedvt_vreg_to_idx [ins->dreg] = types->len + 1;
+					g_ptr_array_add (types, ins->inst_vtype);
+					ins->opcode = OP_GSHAREDVT_LOCAL;
+					ins->inst_imm = types->len - 1;
+				} else {
+					/* Arg */
+					gsharedvt_vreg_to_idx [ins->dreg] = -1;
+					ins->opcode = OP_GSHAREDVT_ARG_REGOFFSET;
+				}
+			}
+		}
+
+		cfg->gsharedvt_info->nlocals = types->len;
+		cfg->gsharedvt_info->locals_types = mono_mempool_alloc0 (cfg->mempool, types->len * sizeof (MonoType*));
+		memcpy (cfg->gsharedvt_info->locals_types, types->pdata, types->len * sizeof (MonoType*));
+		g_ptr_array_free (types, TRUE);
 	}
 		
 	/* FIXME: widening and truncation */
@@ -12424,6 +12517,46 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						ins->inst_offset = vtaddr->inst_offset;
 					} else
 						NOT_IMPLEMENTED;
+				} else if (cfg->gsharedvt && gsharedvt_vreg_to_idx [var->dreg] < 0) {
+					/* gsharedvt arg passed by ref */
+					g_assert (var->opcode == OP_GSHAREDVT_ARG_REGOFFSET);
+
+					ins->opcode = OP_LOAD_MEMBASE;
+					ins->inst_basereg = var->inst_basereg;
+					ins->inst_offset = var->inst_offset;
+				} else if (cfg->gsharedvt && gsharedvt_vreg_to_idx [var->dreg]) {
+					MonoInst *load, *load2, *load3;
+					int idx = gsharedvt_vreg_to_idx [var->dreg] - 1;
+					int reg1, reg2, reg3;
+
+					/*
+					 * gsharedvt local.
+					 * Compute the address of the local as gsharedvt_locals_var + gsharedvt_info_var->locals_offsets [idx].
+					 */
+
+					g_assert (var->opcode == OP_GSHAREDVT_LOCAL);
+
+					g_assert (cfg->gsharedvt_info_var);
+					g_assert (cfg->gsharedvt_info_var->opcode == OP_REGOFFSET);
+					g_assert (cfg->gsharedvt_locals_var);
+					g_assert (cfg->gsharedvt_locals_var->opcode == OP_REGOFFSET);
+
+					/* Load the offset */
+					reg1 = alloc_ireg (cfg);
+					NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, reg1, cfg->gsharedvt_info_var->inst_basereg, cfg->gsharedvt_info_var->inst_offset);
+					reg2 = alloc_ireg (cfg);
+					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, locals_offsets) + (idx * sizeof (int)));
+					/* Load the locals area address */
+					reg3 = alloc_ireg (cfg);
+					NEW_LOAD_MEMBASE (cfg, load3, OP_LOAD_MEMBASE, reg3, cfg->gsharedvt_locals_var->inst_basereg, cfg->gsharedvt_locals_var->inst_offset);
+					/* Compute the address */
+					ins->opcode = OP_PADD;
+					ins->sreg1 = reg3;
+					ins->sreg2 = reg2;
+
+					mono_bblock_insert_before_ins (bb, ins, load3);
+					mono_bblock_insert_before_ins (bb, load3, load2);
+					mono_bblock_insert_before_ins (bb, load2, load);
 				} else {
 					g_assert (var->opcode == OP_REGOFFSET);
 
