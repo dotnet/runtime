@@ -6574,6 +6574,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		ins->dreg = locals_var->dreg;
 		ins->sreg1 = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
+		cfg->gsharedvt_locals_var_ins = ins;
 		
 		cfg->flags |= MONO_CFG_HAS_ALLOCA;
 		/*
@@ -12541,6 +12542,9 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					g_assert (cfg->gsharedvt_locals_var);
 					g_assert (cfg->gsharedvt_locals_var->opcode == OP_REGOFFSET);
 
+					/* Mark the instruction used to compute the locals var as used */
+					cfg->gsharedvt_locals_var_ins = NULL;
+
 					/* Load the offset */
 					reg1 = alloc_ireg (cfg);
 					NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, reg1, cfg->gsharedvt_info_var->inst_basereg, cfg->gsharedvt_info_var->inst_offset);
@@ -12941,6 +12945,12 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 		}
 	}
 #endif
+
+	if (cfg->gsharedvt_locals_var_ins) {
+		/* Nullify if unused */
+		cfg->gsharedvt_locals_var_ins->opcode = OP_PCONST;
+		cfg->gsharedvt_locals_var_ins->inst_imm = 0;
+	}
 
 	g_free (live_range_start);
 	g_free (live_range_end);
