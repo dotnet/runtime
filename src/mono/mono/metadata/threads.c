@@ -831,8 +831,6 @@ __readfsdword (unsigned long long offset)
 void
 mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-	*staddr = NULL;
-	*stsize = 0;
 #if defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self ());
 	*stsize = pthread_get_stacksize_np (pthread_self ());
@@ -899,7 +897,7 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 
 	/* When running under emacs, sometimes staddr is not aligned to a page size */
 	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
-}	
+}
 
 MonoThread *
 mono_thread_attach (MonoDomain *domain)

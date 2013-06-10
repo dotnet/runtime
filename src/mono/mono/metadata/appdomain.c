@@ -2364,7 +2364,6 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 {
 	HANDLE thread_handle;
 	gsize tid;
-	guint32 res;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	unload_data thread_data;
