@@ -4671,10 +4671,27 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		int i;
 
 		encode_method_ref (acfg, info->method, p, &p);
-		encode_value (info->nlocals, p, &p);
-		// FIXME: Improve the encoding
-		for (i = 0; i < info->nlocals; ++i) {
-			encode_type (acfg, info->locals_types [i], p, &p);
+		encode_value (info->entries->len, p, &p);
+		for (i = 0; i < info->entries->len; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *template = g_ptr_array_index (info->entries, i);
+
+			// FIXME: Code duplication
+			encode_value (template->info_type, p, &p);
+			switch (template->info_type) {
+			case MONO_RGCTX_INFO_VALUE_SIZE:
+			case MONO_RGCTX_INFO_MEMCPY:
+			case MONO_RGCTX_INFO_BZERO:
+			case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+			case MONO_RGCTX_INFO_LOCAL_OFFSET:
+				encode_klass_ref (acfg, mono_class_from_mono_type (template->data), p, &p);
+				break;
+			case MONO_RGCTX_INFO_FIELD_OFFSET:
+				encode_field_info (acfg, template->data, p, &p);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 		}
 		break;
 	}

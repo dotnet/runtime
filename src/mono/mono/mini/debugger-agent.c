@@ -5828,7 +5828,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 		addr += (gint32)locals_var->offset;
 		locals = *(gpointer*)addr;
 
-		addr = locals + info->locals_offsets [idx];
+		addr = locals + GPOINTER_TO_INT (info->entries [idx]);
 
 		buffer_add_value_full (buf, t, addr, domain, as_vtype);
 		break;

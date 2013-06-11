@@ -2995,14 +2995,40 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
 		MonoGSharedVtMethodInfo *info = g_new0 (MonoGSharedVtMethodInfo, 1);
-		int i;
+		int i, nentries;
 		
 		info->method = decode_resolve_method_ref (aot_module, p, &p);
 		g_assert (info->method);
-		info->nlocals = decode_value (p, &p);
-		info->locals_types = g_new0 (MonoType*, info->nlocals);
-		for (i = 0; i < info->nlocals; ++i)
-			info->locals_types [i] = decode_type (aot_module, p, &p);
+		nentries = decode_value (p, &p);
+		info->entries = g_ptr_array_new ();
+		for (i = 0; i < nentries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *template = g_new0 (MonoRuntimeGenericContextInfoTemplate, 1);
+
+			template->info_type = decode_value (p, &p);
+			switch (template->info_type) {
+			case MONO_RGCTX_INFO_VALUE_SIZE:
+			case MONO_RGCTX_INFO_MEMCPY:
+			case MONO_RGCTX_INFO_BZERO:
+			case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+			case MONO_RGCTX_INFO_LOCAL_OFFSET: {
+				MonoClass *klass = decode_klass_ref (aot_module, p, &p);
+				if (!klass)
+					goto cleanup;
+				template->data = &klass->byval_arg;
+				break;
+			}
+			case MONO_RGCTX_INFO_FIELD_OFFSET:
+				template->data = decode_field_info (aot_module, p, &p);
+				if (!template->data)
+					goto cleanup;
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+
+			g_ptr_array_add (info->entries, template);
+		}
 		ji->data.target = info;
 		break;
 	}

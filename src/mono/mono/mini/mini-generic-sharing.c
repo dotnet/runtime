@@ -531,7 +531,10 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
-	case MONO_RGCTX_INFO_CLASS_IS_REF: {
+	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_MEMCPY:
+	case MONO_RGCTX_INFO_BZERO:
+	case MONO_RGCTX_INFO_LOCAL_OFFSET: {
 		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
 			data, context, &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
@@ -573,11 +576,21 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		// FIXME:
 		res = g_new0 (MonoGSharedVtMethodInfo, 1);
+		/*
 		res->nlocals = info->nlocals;
 		res->locals_types = g_new0 (MonoType*, info->nlocals);
 		for (i = 0; i < info->nlocals; ++i)
 			res->locals_types [i] = mono_class_inflate_generic_type (info->locals_types [i], context);
+		*/
+		res->entries = g_ptr_array_new ();
+		for (i = 0; i < info->entries->len; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *otemplate = g_ptr_array_index (info->entries, i);
+			MonoRuntimeGenericContextInfoTemplate *template = g_new0 (MonoRuntimeGenericContextInfoTemplate, 1);
 
+			memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
+			template->data = inflate_info (template, context, class, FALSE);
+			g_ptr_array_add (res->entries, template);
+		}
 		return res;
 	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
@@ -939,6 +952,70 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 			return GUINT_TO_POINTER (1);
 		else
 			return GUINT_TO_POINTER (0);
+	case MONO_RGCTX_INFO_MEMCPY:
+	case MONO_RGCTX_INFO_BZERO: {
+		static MonoMethod *memcpy_method [17];
+		static MonoMethod *bzero_method [17];
+		MonoJitDomainInfo *domain_info;
+		int size;
+		guint32 align;
+
+		domain_info = domain_jit_info (domain);
+
+		if (MONO_TYPE_IS_REFERENCE (&class->byval_arg)) {
+			size = sizeof (gpointer);
+			align = sizeof (gpointer);
+		} else {
+			size = mono_class_value_size (class, &align);
+		}
+
+		if (size != 1 && size != 2 && size != 4 && size != 8)
+			size = 0;
+		if (align < size)
+			size = 0;
+
+		if (info_type == MONO_RGCTX_INFO_MEMCPY) {
+			if (!memcpy_method [size]) {
+				MonoMethod *m;
+				char name [32];
+
+				if (size == 0)
+					sprintf (name, "memcpy");
+				else
+					sprintf (name, "memcpy_aligned_%d", size);
+				m = mono_class_get_method_from_name (mono_defaults.string_class, name, 3);
+				g_assert (m);
+				mono_memory_barrier ();
+				memcpy_method [size] = m;
+			}
+			if (!domain_info->memcpy_addr [size]) {
+				gpointer addr = mono_compile_method (memcpy_method [size]);
+				mono_memory_barrier ();
+				domain_info->memcpy_addr [size] = addr;
+			}
+			return domain_info->memcpy_addr [size];
+		} else {
+			if (!bzero_method [size]) {
+				MonoMethod *m;
+				char name [32];
+
+				if (size == 0)
+					sprintf (name, "bzero");
+				else
+					sprintf (name, "bzero_aligned_%d", size);
+				m = mono_class_get_method_from_name (mono_defaults.string_class, name, 2);
+				g_assert (m);
+				mono_memory_barrier ();
+				bzero_method [size] = m;
+			}
+			if (!domain_info->bzero_addr [size]) {
+				gpointer addr = mono_compile_method (bzero_method [size]);
+				mono_memory_barrier ();
+				domain_info->bzero_addr [size] = addr;
+			}
+			return domain_info->bzero_addr [size];
+		}
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -1106,7 +1183,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
-	case MONO_RGCTX_INFO_CLASS_IS_REF: {
+	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_MEMCPY:
+	case MONO_RGCTX_INFO_BZERO: {
 		MonoClass *arg_class = mono_class_from_mono_type (data);
 
 		free_inflated_info (oti->info_type, data);
@@ -1320,24 +1399,33 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		int i, offset, align, size;
 
 		// FIXME:
-		res = g_malloc0 (sizeof (MonoGSharedVtMethodRuntimeInfo) + (info->nlocals * sizeof (int)));
+		res = g_malloc0 (sizeof (MonoGSharedVtMethodRuntimeInfo) + (info->entries->len * sizeof (gpointer)));
 
 		offset = 0;
-		for (i = 0; i < info->nlocals; ++i) {
-			t = info->locals_types [i];
+		for (i = 0; i < info->entries->len; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *template = g_ptr_array_index (info->entries, i);
 
-			size = mono_type_size (t, &align);
+			switch (template->info_type) {
+			case MONO_RGCTX_INFO_LOCAL_OFFSET:
+				t = template->data;
 
-			if (align < sizeof (gpointer))
-				align = sizeof (gpointer);
-			if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
-				align = 2 * sizeof (gpointer);
+				size = mono_type_size (t, &align);
+
+				if (align < sizeof (gpointer))
+					align = sizeof (gpointer);
+				if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
+					align = 2 * sizeof (gpointer);
 			
-			// FIXME: Do the same things as alloc_stack_slots
-			offset += align - 1;
-			offset &= ~(align - 1);
-			res->locals_offsets [i] = offset;
-			offset += size;
+				// FIXME: Do the same things as alloc_stack_slots
+				offset += align - 1;
+				offset &= ~(align - 1);
+				res->entries [i] = GINT_TO_POINTER (offset);
+				offset += size;
+				break;
+			default:
+				res->entries [i] = instantiate_info (domain, template, context, class, NULL);
+				break;
+			}
 		}
 		res->locals_size = offset;
 
@@ -1407,6 +1495,8 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE";
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT";
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: return "SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI";
+	case MONO_RGCTX_INFO_MEMCPY: return "MEMCPY";
+	case MONO_RGCTX_INFO_BZERO: return "BZERO";
 	default:
 		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
@@ -1483,6 +1573,8 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
 	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_MEMCPY:
+	case MONO_RGCTX_INFO_BZERO:
 		return mono_class_from_mono_type (data1) == mono_class_from_mono_type (data2);
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:

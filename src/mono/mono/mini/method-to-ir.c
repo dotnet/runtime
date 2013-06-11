@@ -2414,6 +2414,9 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 }
 
 static MonoInst*
+emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
+
+static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used, MonoMethod *cmethod, MonoRgctxInfoType rgctx_type);
 static MonoInst*
 emit_get_rgctx_klass (MonoCompile *cfg, int context_used, MonoClass *klass, MonoRgctxInfoType rgctx_type);
@@ -2887,6 +2890,7 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 	guint32 align = 0;
 	MonoMethod *memcpy_method;
 	MonoInst *size_ins = NULL;
+	MonoInst *memcpy_ins = NULL;
 
 	g_assert (klass);
 	/*
@@ -2897,7 +2901,8 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
 		g_assert (!native);
 		context_used = mini_class_check_context_used (cfg, klass);
-		size_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_VALUE_SIZE);
+		size_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_VALUE_SIZE);
+		memcpy_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_MEMCPY);
 	}
 
 	if (native)
@@ -2951,7 +2956,10 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 			EMIT_NEW_ICONST (cfg, iargs [2], n);
 		
 		memcpy_method = get_memcpy_method ();
-		mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
+		if (memcpy_ins)
+			mono_emit_calli (cfg, mono_method_signature (memcpy_method), iargs, memcpy_ins, NULL, NULL);
+		else
+			mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
 	}
 }
 
@@ -2975,29 +2983,35 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 	guint32 align;
 	MonoMethod *memset_method;
 	MonoInst *size_ins = NULL;
+	MonoInst *bzero_ins = NULL;
+	static MonoMethod *bzero_method;
 
 	/* FIXME: Optimize this for the case when dest is an LDADDR */
 
 	mono_class_init (klass);
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
 		context_used = mini_class_check_context_used (cfg, klass);
-		size_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_VALUE_SIZE);
-		n = -1;
-	} else {
-		n = mono_class_value_size (klass, &align);
+		size_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_VALUE_SIZE);
+		bzero_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_BZERO);
+		if (!bzero_method)
+			bzero_method = mono_class_get_method_from_name (mono_defaults.string_class, "bzero_aligned_1", 2);
+		g_assert (bzero_method);
+		iargs [0] = dest;
+		iargs [1] = size_ins;
+		mono_emit_calli (cfg, mono_method_signature (bzero_method), iargs, bzero_ins, NULL, NULL);
+		return;
 	}
 
-	if (!size_ins && n <= sizeof (gpointer) * 5) {
+	n = mono_class_value_size (klass, &align);
+
+	if (n <= sizeof (gpointer) * 5) {
 		mini_emit_memset (cfg, dest->dreg, 0, n, 0, align);
 	}
 	else {
 		memset_method = get_memset_method ();
 		iargs [0] = dest;
 		EMIT_NEW_ICONST (cfg, iargs [1], 0);
-		if (size_ins)
-			iargs [2] = size_ins;
-		else
-			EMIT_NEW_ICONST (cfg, iargs [2], n);
+		EMIT_NEW_ICONST (cfg, iargs [2], n);
 		mono_emit_method_call (cfg, memset_method, iargs, NULL);
 	}
 }
@@ -3163,6 +3177,58 @@ emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 	MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
 
 	return emit_rgctx_fetch (cfg, rgctx, entry);
+}
+
+static int
+get_gsharedvt_info_slot (MonoCompile *cfg, gpointer data, MonoRgctxInfoType rgctx_type)
+{
+	MonoGSharedVtMethodInfo *info = cfg->gsharedvt_info;
+	MonoRuntimeGenericContextInfoTemplate *template;
+	int i, idx;
+
+	g_assert (info);
+
+	for (i = 0; i < info->entries->len; ++i) {
+		MonoRuntimeGenericContextInfoTemplate *otemplate = g_ptr_array_index (info->entries, i);
+
+		if (otemplate->info_type == rgctx_type && otemplate->data == data && rgctx_type != MONO_RGCTX_INFO_LOCAL_OFFSET)
+			return i;
+	}
+
+	template = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoRuntimeGenericContextInfoTemplate));
+	template->info_type = rgctx_type;
+	template->data = data;
+
+	idx = info->entries->len;
+
+	g_ptr_array_add (info->entries, template);
+
+	return idx;
+}
+
+/*
+ * emit_get_gsharedvt_info:
+ *
+ *   This is similar to emit_get_rgctx_.., but loads the data from the gsharedvt info var instead of calling an rgctx fetch trampoline.
+ */
+static MonoInst*
+emit_get_gsharedvt_info (MonoCompile *cfg, gpointer data, MonoRgctxInfoType rgctx_type)
+{
+	MonoInst *ins;
+	int idx, dreg;
+
+	idx = get_gsharedvt_info_slot (cfg, data, rgctx_type);
+	/* Load info->entries [idx] */
+	dreg = alloc_preg (cfg);
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, cfg->gsharedvt_info_var->dreg, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
+
+	return ins;
+}
+
+static MonoInst*
+emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type)
+{
+	return emit_get_gsharedvt_info (cfg, &klass->byval_arg, rgctx_type);
 }
 
 /*
@@ -4342,7 +4408,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		g_assert (cfg->generic_sharing_context);
 		context_used = mini_class_check_context_used (cfg, klass);
 		g_assert (context_used);
-		rgctx_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
+		rgctx_ins = emit_get_gsharedvt_info (cfg, &klass->byval_arg, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IMUL, mult_reg, index2_reg, rgctx_ins->dreg);
 	} else {
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
@@ -6547,9 +6613,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MonoInst *var, *locals_var;
 		int dreg;
 
-		/* Initialized later in spill_global_vars () */
 		info = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoGSharedVtMethodInfo));
 		info->method = cfg->method;
+		// FIXME: Free this
+		info->entries = g_ptr_array_new ();
 		cfg->gsharedvt_info = info;
 
 		var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
@@ -9557,7 +9624,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						context_used = mini_class_check_context_used (cfg, klass);
 
-						offset_ins = emit_get_rgctx_field (cfg, context_used, field, MONO_RGCTX_INFO_FIELD_OFFSET);
+						offset_ins = emit_get_gsharedvt_info (cfg, field, MONO_RGCTX_INFO_FIELD_OFFSET);
 						dreg = alloc_ireg_mp (cfg);
 						EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, sp [0]->dreg, offset_ins->dreg);
 						/* The decomposition will call mini_emit_stobj () which will emit a wbarrier if needed */
@@ -9646,7 +9713,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (mini_is_gsharedvt_klass (cfg, klass)) {
 							MonoInst *offset_ins;
 
-							offset_ins = emit_get_rgctx_field (cfg, context_used, field, MONO_RGCTX_INFO_FIELD_OFFSET);
+							offset_ins = emit_get_gsharedvt_info (cfg, field, MONO_RGCTX_INFO_FIELD_OFFSET);
 							EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, sp [0]->dreg, offset_ins->dreg);
 						} else {
 							EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
@@ -9663,7 +9730,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (mini_is_gsharedvt_klass (cfg, klass)) {
 						MonoInst *offset_ins;
 
-						offset_ins = emit_get_rgctx_field (cfg, context_used, field, MONO_RGCTX_INFO_FIELD_OFFSET);
+						offset_ins = emit_get_gsharedvt_info (cfg, field, MONO_RGCTX_INFO_FIELD_OFFSET);
 						dreg = alloc_ireg_mp (cfg);
 						EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, sp [0]->dreg, offset_ins->dreg);
 						EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, dreg, 0);
@@ -12249,7 +12316,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 #endif
 			/* Arguments are implicitly global */
 			/* Putting R4 vars into registers doesn't work currently */
-			if ((var->opcode != OP_ARG) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && (vreg_to_bb [var->dreg] != -1) && (var->klass->byval_arg.type != MONO_TYPE_R4) && !cfg->disable_vreg_to_lvreg) {
+			if ((var->opcode != OP_ARG) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && (vreg_to_bb [var->dreg] != -1) && (var->klass->byval_arg.type != MONO_TYPE_R4) && !cfg->disable_vreg_to_lvreg && var != cfg->gsharedvt_info_var) {
 				/* 
 				 * Make that the variable's liveness interval doesn't contain a call, since
 				 * that would cause the lvreg to be spilled, making the whole optimization
@@ -12415,20 +12482,19 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	}
 
 	if (cfg->gsharedvt) {
-		GPtrArray *types = g_ptr_array_new ();
-
 		gsharedvt_vreg_to_idx = g_new0 (int, cfg->next_vreg);
 
 		for (i = 0; i < cfg->num_varinfo; ++i) {
 			MonoInst *ins = cfg->varinfo [i];
+			int idx;
 
 			if (mini_is_gsharedvt_variable_type (cfg, ins->inst_vtype)) {
 				if (i >= cfg->locals_start) {
 					/* Local */
-					gsharedvt_vreg_to_idx [ins->dreg] = types->len + 1;
-					g_ptr_array_add (types, ins->inst_vtype);
+					idx = get_gsharedvt_info_slot (cfg, ins->inst_vtype, MONO_RGCTX_INFO_LOCAL_OFFSET);
+					gsharedvt_vreg_to_idx [ins->dreg] = idx + 1;
 					ins->opcode = OP_GSHAREDVT_LOCAL;
-					ins->inst_imm = types->len - 1;
+					ins->inst_imm = idx;
 				} else {
 					/* Arg */
 					gsharedvt_vreg_to_idx [ins->dreg] = -1;
@@ -12436,11 +12502,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				}
 			}
 		}
-
-		cfg->gsharedvt_info->nlocals = types->len;
-		cfg->gsharedvt_info->locals_types = mono_mempool_alloc0 (cfg->mempool, types->len * sizeof (MonoType*));
-		memcpy (cfg->gsharedvt_info->locals_types, types->pdata, types->len * sizeof (MonoType*));
-		g_ptr_array_free (types, TRUE);
 	}
 		
 	/* FIXME: widening and truncation */
@@ -12529,6 +12590,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					MonoInst *load, *load2, *load3;
 					int idx = gsharedvt_vreg_to_idx [var->dreg] - 1;
 					int reg1, reg2, reg3;
+					MonoInst *info_var = cfg->gsharedvt_info_var;
 
 					/*
 					 * gsharedvt local.
@@ -12537,8 +12599,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 					g_assert (var->opcode == OP_GSHAREDVT_LOCAL);
 
-					g_assert (cfg->gsharedvt_info_var);
-					g_assert (cfg->gsharedvt_info_var->opcode == OP_REGOFFSET);
+					g_assert (info_var);
 					g_assert (cfg->gsharedvt_locals_var);
 					g_assert (cfg->gsharedvt_locals_var->opcode == OP_REGOFFSET);
 
@@ -12546,10 +12607,17 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					cfg->gsharedvt_locals_var_ins = NULL;
 
 					/* Load the offset */
-					reg1 = alloc_ireg (cfg);
-					NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, reg1, cfg->gsharedvt_info_var->inst_basereg, cfg->gsharedvt_info_var->inst_offset);
+					if (info_var->opcode == OP_REGOFFSET) {
+						reg1 = alloc_ireg (cfg);
+						NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, reg1, info_var->inst_basereg, info_var->inst_offset);
+					} else if (info_var->opcode == OP_REGVAR) {
+						load = NULL;
+						reg1 = info_var->dreg;
+					} else {
+						g_assert_not_reached ();
+					}
 					reg2 = alloc_ireg (cfg);
-					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, locals_offsets) + (idx * sizeof (int)));
+					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
 					/* Load the locals area address */
 					reg3 = alloc_ireg (cfg);
 					NEW_LOAD_MEMBASE (cfg, load3, OP_LOAD_MEMBASE, reg3, cfg->gsharedvt_locals_var->inst_basereg, cfg->gsharedvt_locals_var->inst_offset);
@@ -12560,7 +12628,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 					mono_bblock_insert_before_ins (bb, ins, load3);
 					mono_bblock_insert_before_ins (bb, load3, load2);
-					mono_bblock_insert_before_ins (bb, load2, load);
+					if (load)
+						mono_bblock_insert_before_ins (bb, load2, load);
 				} else {
 					g_assert (var->opcode == OP_REGOFFSET);
 

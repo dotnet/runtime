@@ -2966,12 +2966,25 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		break;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
 		MonoGSharedVtMethodInfo *info;
+		MonoGSharedVtMethodInfo *oinfo;
+		int i;
 
+		oinfo = patch_info->data.gsharedvt_method;
 		info = mono_mempool_alloc (mp, sizeof (MonoGSharedVtMethodInfo));
 		res->data.gsharedvt_method = info;
-		memcpy (info, patch_info->data.gsharedvt_method, sizeof (MonoGSharedVtMethodInfo));
-		info->locals_types = mono_mempool_alloc0 (mp, info->nlocals * sizeof (MonoType*));
-		memcpy (info->locals_types, patch_info->data.gsharedvt_method->locals_types, info->nlocals * sizeof (MonoType*));
+		memcpy (info, oinfo, sizeof (MonoGSharedVtMethodInfo));
+		info->entries = g_ptr_array_new ();
+		if (oinfo->entries) {
+			for (i = 0; i < oinfo->entries->len; ++i) {
+				MonoRuntimeGenericContextInfoTemplate *otemplate = g_ptr_array_index (oinfo->entries, i);
+				MonoRuntimeGenericContextInfoTemplate *template = mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate));
+
+				memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
+				g_ptr_array_add (info->entries, template);
+			}
+		}
+		//info->locals_types = mono_mempool_alloc0 (mp, info->nlocals * sizeof (MonoType*));
+		//memcpy (info->locals_types, oinfo->locals_types, info->nlocals * sizeof (MonoType*));
 		break;
 	}
 	default:
@@ -3380,15 +3393,20 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		}
 		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
 			MonoGSharedVtMethodInfo *info;
-			MonoGSharedVtMethodInfo *orig_info = entry->data->data.gsharedvt_method;
+			MonoGSharedVtMethodInfo *oinfo = entry->data->data.gsharedvt_method;
+			int i;
 
 			/* Make a copy into the domain mempool */
 			info = g_malloc0 (sizeof (MonoGSharedVtMethodInfo)); //mono_domain_alloc0 (domain, sizeof (MonoGSharedVtMethodInfo));
-			info->method = orig_info->method;
-			info->nlocals = orig_info->nlocals;
-			info->locals_types = g_malloc0 (info->nlocals * sizeof (MonoType*)); //mono_domain_alloc0 (domain, info->nlocals * sizeof (MonoType*));
-			memcpy (info->locals_types, orig_info->locals_types, info->nlocals * sizeof (MonoType*));
+			info->method = oinfo->method;
+			info->entries = g_ptr_array_new ();
+			for (i = 0; i < oinfo->entries->len; ++i) {
+				MonoRuntimeGenericContextInfoTemplate *otemplate = g_ptr_array_index (oinfo->entries, i);
+				MonoRuntimeGenericContextInfoTemplate *template = g_malloc0 (sizeof (MonoRuntimeGenericContextInfoTemplate));
 
+				memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
+				g_ptr_array_add (info->entries, template);
+			}
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
 			break;
 		}

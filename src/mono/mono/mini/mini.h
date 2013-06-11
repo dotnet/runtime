@@ -310,6 +310,9 @@ typedef struct
 	GHashTable *arch_seq_points;
 	/* Maps a GSharedVtTrampInfo structure to a trampoline address */
 	GHashTable *gsharedvt_arg_tramp_hash;
+	/* memcpy/bzero methods specialized for small constant sizes */
+	gpointer *memcpy_addr [17];
+	gpointer *bzero_addr [17];
 } MonoJitDomainInfo;
 
 typedef struct {
@@ -1077,7 +1080,10 @@ typedef enum {
 	MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI,
 	MONO_RGCTX_INFO_CLASS_IS_REF,
 	/* Resolves to a MonoGSharedVtMethodRuntimeInfo */
-	MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO
+	MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO,
+	MONO_RGCTX_INFO_LOCAL_OFFSET,
+	MONO_RGCTX_INFO_MEMCPY,
+	MONO_RGCTX_INFO_BZERO,
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -1109,14 +1115,19 @@ typedef struct {
 
 typedef struct {
 	MonoMethod *method;
-	int nlocals;
-	MonoType **locals_types;
+	/* Array of MonoRuntimeGenericContextInfoTemplate* entries */
+	GPtrArray *entries;
 } MonoGSharedVtMethodInfo;
 
 /* This is used by gsharedvt methods to allocate locals and compute local offsets */
 typedef struct {
 	int locals_size;
-	int locals_offsets [MONO_ZERO_LEN_ARRAY];
+	/*
+	 * The results of resolving the entries in MOonGSharedVtMethodInfo->entries.
+	 * We use this instead of rgctx slots since these can be loaded using a load instead
+	 * of a call to an rgctx fetch trampoline.
+	 */
+	gpointer entries [MONO_ZERO_LEN_ARRAY];
 } MonoGSharedVtMethodRuntimeInfo;
 
 typedef enum {

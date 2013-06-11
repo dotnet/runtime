@@ -318,6 +318,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (var)->klass;	\
         (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
+		if (G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_type ((cfg), (var)->inst_vtype)) { MonoInst *use; MONO_INST_NEW ((cfg), (use), OP_DUMMY_USE); (use)->sreg1 = (cfg)->gsharedvt_info_var->dreg; MONO_ADD_INS ((cfg)->cbb, (use)); } \
 		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
 	} while (0)
 
