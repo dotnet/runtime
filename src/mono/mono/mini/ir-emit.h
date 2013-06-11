@@ -311,6 +311,20 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 #define DECOMPOSE_INTO_REGPAIR(stack_type) ((stack_type) == STACK_I8)
 #endif
 
+static inline void
+handle_gsharedvt_ldaddr (MonoCompile *cfg)
+{
+	/* The decomposition of ldaddr makes use of these two variables, so add uses for them */
+	MonoInst *use;
+
+	MONO_INST_NEW (cfg, use, OP_DUMMY_USE);
+	use->sreg1 = cfg->gsharedvt_info_var->dreg;
+	MONO_ADD_INS (cfg->cbb, use);
+	MONO_INST_NEW (cfg, use, OP_DUMMY_USE);
+	use->sreg1 = cfg->gsharedvt_locals_var->dreg;
+	MONO_ADD_INS (cfg->cbb, use);
+}
+
 #define NEW_VARLOADA(cfg,dest,var,vartype) do {	\
         MONO_INST_NEW ((cfg), (dest), OP_LDADDR); \
 		(dest)->inst_p0 = (var); \
@@ -318,7 +332,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (var)->klass;	\
         (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
-		if (G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_type ((cfg), (var)->inst_vtype)) { MonoInst *use; MONO_INST_NEW ((cfg), (use), OP_DUMMY_USE); (use)->sreg1 = (cfg)->gsharedvt_info_var->dreg; MONO_ADD_INS ((cfg)->cbb, (use)); } \
+			  if (G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_type ((cfg), (var)->inst_vtype)) { handle_gsharedvt_ldaddr ((cfg)); } \
 		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
 	} while (0)
 

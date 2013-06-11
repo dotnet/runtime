@@ -5815,18 +5815,29 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 
 		flags = info_var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 		reg = info_var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
-		g_assert (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET);
-		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
-		addr += (gint32)info_var->offset;
-		info = *(gpointer*)addr;
+		if (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET) {
+			addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+			addr += (gint32)info_var->offset;
+			info = *(gpointer*)addr;
+		} else if (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER) {
+			info = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+		} else {
+			g_assert_not_reached ();
+		}
 		g_assert (info);
 
 		flags = locals_var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 		reg = locals_var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
-		g_assert (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET);
-		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
-		addr += (gint32)locals_var->offset;
-		locals = *(gpointer*)addr;
+		if (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET) {
+			addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+			addr += (gint32)locals_var->offset;
+			locals = *(gpointer*)addr;
+		} else if (flags == MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER) {
+			locals = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+		} else {
+			g_assert_not_reached ();
+		}
+		g_assert (locals);
 
 		addr = locals + GPOINTER_TO_INT (info->entries [idx]);
 

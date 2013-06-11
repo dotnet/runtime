@@ -6621,7 +6621,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		/* prevent it from being register allocated */
-		var->flags |= MONO_INST_INDIRECT;
+		//var->flags |= MONO_INST_INDIRECT;
 		cfg->gsharedvt_info_var = var;
 
 		ins = emit_get_rgctx_gsharedvt_method (cfg, mini_method_check_context_used (cfg, method), method, info);
@@ -6630,8 +6630,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		/* Allocate locals */
 		locals_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		/* prevent it from being register allocated */
-		/* FIXME: */
-		locals_var->flags |= MONO_INST_INDIRECT;
+		//locals_var->flags |= MONO_INST_INDIRECT;
 		cfg->gsharedvt_locals_var = locals_var;
 
 		dreg = alloc_ireg (cfg);
@@ -12316,7 +12315,8 @@ mono_handle_global_vregs (MonoCompile *cfg)
 #endif
 			/* Arguments are implicitly global */
 			/* Putting R4 vars into registers doesn't work currently */
-			if ((var->opcode != OP_ARG) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && (vreg_to_bb [var->dreg] != -1) && (var->klass->byval_arg.type != MONO_TYPE_R4) && !cfg->disable_vreg_to_lvreg && var != cfg->gsharedvt_info_var) {
+			/* The gsharedvt vars are implicitly referenced by ldaddr opcodes, but those opcodes are only generated later */
+			if ((var->opcode != OP_ARG) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && (vreg_to_bb [var->dreg] != -1) && (var->klass->byval_arg.type != MONO_TYPE_R4) && !cfg->disable_vreg_to_lvreg && var != cfg->gsharedvt_info_var && var != cfg->gsharedvt_locals_var) {
 				/* 
 				 * Make that the variable's liveness interval doesn't contain a call, since
 				 * that would cause the lvreg to be spilled, making the whole optimization
@@ -12591,6 +12591,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					int idx = gsharedvt_vreg_to_idx [var->dreg] - 1;
 					int reg1, reg2, reg3;
 					MonoInst *info_var = cfg->gsharedvt_info_var;
+					MonoInst *locals_var = cfg->gsharedvt_locals_var;
 
 					/*
 					 * gsharedvt local.
@@ -12600,8 +12601,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					g_assert (var->opcode == OP_GSHAREDVT_LOCAL);
 
 					g_assert (info_var);
-					g_assert (cfg->gsharedvt_locals_var);
-					g_assert (cfg->gsharedvt_locals_var->opcode == OP_REGOFFSET);
+					g_assert (locals_var);
 
 					/* Mark the instruction used to compute the locals var as used */
 					cfg->gsharedvt_locals_var_ins = NULL;
@@ -12620,7 +12620,13 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
 					/* Load the locals area address */
 					reg3 = alloc_ireg (cfg);
-					NEW_LOAD_MEMBASE (cfg, load3, OP_LOAD_MEMBASE, reg3, cfg->gsharedvt_locals_var->inst_basereg, cfg->gsharedvt_locals_var->inst_offset);
+					if (locals_var->opcode == OP_REGOFFSET) {
+						NEW_LOAD_MEMBASE (cfg, load3, OP_LOAD_MEMBASE, reg3, locals_var->inst_basereg, locals_var->inst_offset);
+					} else if (locals_var->opcode == OP_REGVAR) {
+						NEW_UNALU (cfg, load3, OP_MOVE, reg3, locals_var->dreg);
+					} else {
+						g_assert_not_reached ();
+					}
 					/* Compute the address */
 					ins->opcode = OP_PADD;
 					ins->sreg1 = reg3;
