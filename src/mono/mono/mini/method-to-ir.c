@@ -2272,6 +2272,66 @@ mini_method_check_context_used (MonoCompile *cfg, MonoMethod *method)
 		return 0;
 }
 
+/*
+ * check_method_sharing:
+ *
+ *   Check whenever the vtable or an mrgctx needs to be passed when calling CMETHOD.
+ */
+static void
+check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_vtable, gboolean *out_pass_mrgctx)
+{
+	gboolean pass_vtable = FALSE;
+	gboolean pass_mrgctx = FALSE;
+
+	if (((cmethod->flags & METHOD_ATTRIBUTE_STATIC) || cmethod->klass->valuetype) &&
+		(cmethod->klass->generic_class || cmethod->klass->generic_container)) {
+		gboolean sharable = FALSE;
+
+		if (mono_method_is_generic_sharable (cmethod, TRUE)) {
+			sharable = TRUE;
+		} else {
+			gboolean sharing_enabled = mono_class_generic_sharing_enabled (cmethod->klass);
+			MonoGenericContext *context = mini_class_get_context (cmethod->klass);
+			gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
+
+			sharable = sharing_enabled && context_sharable;
+		}
+
+		/*
+		 * Pass vtable iff target method might
+		 * be shared, which means that sharing
+		 * is enabled for its class and its
+		 * context is sharable (and it's not a
+		 * generic method).
+		 */
+		if (sharable && !(mini_method_get_context (cmethod) && mini_method_get_context (cmethod)->method_inst))
+			pass_vtable = TRUE;
+	}
+
+	if (mini_method_get_context (cmethod) &&
+		mini_method_get_context (cmethod)->method_inst) {
+		g_assert (!pass_vtable);
+
+		if (mono_method_is_generic_sharable (cmethod, TRUE)) {
+			pass_mrgctx = TRUE;
+		} else {
+			gboolean sharing_enabled = mono_class_generic_sharing_enabled (cmethod->klass);
+			MonoGenericContext *context = mini_method_get_context (cmethod);
+			gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
+
+			if (sharing_enabled && context_sharable)
+				pass_mrgctx = TRUE;
+			if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, mono_method_signature (cmethod)))
+				pass_mrgctx = TRUE;
+		}
+	}
+
+	if (out_pass_vtable)
+		*out_pass_vtable = pass_vtable;
+	if (out_pass_mrgctx)
+		*out_pass_mrgctx = pass_mrgctx;
+}
+
 inline static MonoCallInst *
 mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
 					 MonoInst **args, int calli, int virtual, int tail, int rgctx, int unbox_trampoline)
@@ -2434,6 +2494,9 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	MonoCallInst *call;
 	int rgctx_reg = 0;
 	gboolean need_unbox_trampoline;
+
+	if (!sig)
+		sig = mono_method_signature (method);
 
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
@@ -3389,7 +3452,20 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 
 		return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, NULL, rgctx);
 	} else {
-		return mono_emit_method_call (cfg, method, &val, NULL);
+		gboolean pass_vtable, pass_mrgctx;
+		MonoInst *rgctx_arg = NULL;
+
+		check_method_sharing (cfg, method, &pass_vtable, &pass_mrgctx);
+		g_assert (!pass_mrgctx);
+
+		if (pass_vtable) {
+			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+
+			g_assert (vtable);
+			EMIT_NEW_VTABLECONST (cfg, rgctx_arg, vtable);
+		}
+
+		return mono_emit_method_call_full (cfg, method, NULL, &val, NULL, NULL, rgctx_arg);
 	}
 }
 
@@ -3546,7 +3622,20 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 
 			return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, NULL, rgctx);
 		} else {
-			return mono_emit_method_call (cfg, method, &val, NULL);
+			gboolean pass_vtable, pass_mrgctx;
+			MonoInst *rgctx_arg = NULL;
+
+			check_method_sharing (cfg, method, &pass_vtable, &pass_mrgctx);
+			g_assert (!pass_mrgctx);
+
+			if (pass_vtable) {
+				MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+
+				g_assert (vtable);
+				EMIT_NEW_VTABLECONST (cfg, rgctx_arg, vtable);
+			}
+
+			return mono_emit_method_call_full (cfg, method, NULL, &val, NULL, NULL, rgctx_arg);
 		}
 	}
 
@@ -7532,48 +7621,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
-			if (cmethod && ((cmethod->flags & METHOD_ATTRIBUTE_STATIC) || cmethod->klass->valuetype) &&
-					(cmethod->klass->generic_class || cmethod->klass->generic_container)) {
-				gboolean sharable = FALSE;
-
-				if (mono_method_is_generic_sharable (cmethod, TRUE)) {
-					sharable = TRUE;
-				} else {
-					gboolean sharing_enabled = mono_class_generic_sharing_enabled (cmethod->klass);
-					MonoGenericContext *context = mini_class_get_context (cmethod->klass);
-					gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
-
-					sharable = sharing_enabled && context_sharable;
-				}
-
-				/*
-				 * Pass vtable iff target method might
-				 * be shared, which means that sharing
-				 * is enabled for its class and its
-				 * context is sharable (and it's not a
-				 * generic method).
-				 */
-				if (sharable && !(mini_method_get_context (cmethod) && mini_method_get_context (cmethod)->method_inst))
-					pass_vtable = TRUE;
-			}
-
-			if (cmethod && mini_method_get_context (cmethod) &&
-					mini_method_get_context (cmethod)->method_inst) {
-				g_assert (!pass_vtable);
-
-				if (mono_method_is_generic_sharable (cmethod, TRUE)) {
- 					pass_mrgctx = TRUE;
-				} else {
-					gboolean sharing_enabled = mono_class_generic_sharing_enabled (cmethod->klass);
-					MonoGenericContext *context = mini_method_get_context (cmethod);
-					gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
-
-					if (sharing_enabled && context_sharable)
-						pass_mrgctx = TRUE;
-					if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig))
-						pass_mrgctx = TRUE;
-				}
-			}
+			if (cmethod)
+				check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
 
 			if (cfg->generic_sharing_context && cmethod) {
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
