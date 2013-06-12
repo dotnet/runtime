@@ -2173,7 +2173,22 @@ typedef struct unload_data {
 	gboolean done;
 	MonoDomain *domain;
 	char *failure_reason;
+	gint32 refcount;
 } unload_data;
+
+static void
+unload_data_unref (unload_data *data)
+{
+	gint32 count;
+	do {
+		count = mono_atomic_load_acquire (&data->refcount);
+		g_assert (count >= 1 && count <= 2);
+		if (count == 1) {
+			g_free (data);
+			return;
+		}
+	} while (InterlockedCompareExchange (&data->refcount, count, count - 1) != count);
+}
 
 static void
 deregister_reflection_info_roots_nspace_table (gpointer key, gpointer value, gpointer image)
@@ -2315,11 +2330,13 @@ unload_thread_main (void *arg)
 	mono_gc_collect (mono_gc_max_generation ());
 
 	mono_atomic_store_release (&data->done, TRUE);
+	unload_data_unref (data);
 	mono_thread_detach (thread);
 	return 0;
 
 failure:
 	mono_atomic_store_release (&data->done, TRUE);
+	unload_data_unref (data);
 	mono_thread_detach (thread);
 	return 1;
 }
@@ -2366,7 +2383,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	gsize tid;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
-	unload_data thread_data;
+	unload_data *thread_data;
 	MonoDomain *caller_domain = mono_domain_get ();
 
 	/* printf ("UNLOAD STARTING FOR %s (%p) IN THREAD 0x%x.\n", domain->friendly_name, domain, GetCurrentThreadId ()); */
@@ -2406,9 +2423,11 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	}
 	mono_domain_set (caller_domain, FALSE);
 
-	thread_data.domain = domain;
-	thread_data.failure_reason = NULL;
-	thread_data.done = FALSE;
+	thread_data = g_new0 (unload_data, 1);
+	thread_data->domain = domain;
+	thread_data->failure_reason = NULL;
+	thread_data->done = FALSE;
+	thread_data->refcount = 2; /*Must be 2: unload thread + initiator */
 
 	/*The managed callback finished successfully, now we start tearing down the appdomain*/
 	domain->state = MONO_APPDOMAIN_UNLOADING;
@@ -2424,7 +2443,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 #if 0
 	thread_handle = mono_create_thread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
-	thread_handle = mono_create_thread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
+	thread_handle = mono_create_thread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, CREATE_SUSPENDED, &tid);
 	if (thread_handle == NULL) {
 		return;
 	}
@@ -2432,25 +2451,28 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 #endif
 
 	/* Wait for the thread */	
-	while (!thread_data.done && WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION) {
+	while (!thread_data->done && WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION) {
 		if (mono_thread_internal_has_appdomain_ref (mono_thread_internal_current (), domain) && (mono_thread_interruption_requested ())) {
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */
 			CloseHandle (thread_handle);
+			unload_data_unref (thread_data);
 			return;
 		}
 	}
 	CloseHandle (thread_handle);
 
-	if (thread_data.failure_reason) {
+	if (thread_data->failure_reason) {
 		/* Roll back the state change */
 		domain->state = MONO_APPDOMAIN_CREATED;
 
-		g_warning ("%s", thread_data.failure_reason);
+		g_warning ("%s", thread_data->failure_reason);
 
-		*exc = (MonoObject *) mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
+		*exc = (MonoObject *) mono_get_exception_cannot_unload_appdomain (thread_data->failure_reason);
 
-		g_free (thread_data.failure_reason);
-		thread_data.failure_reason = NULL;
+		g_free (thread_data->failure_reason);
+		thread_data->failure_reason = NULL;
 	}
+
+	unload_data_unref (thread_data);
 }
