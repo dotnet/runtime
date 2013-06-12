@@ -7630,7 +7630,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					/* Special case Object methods as they are easy to implement */
 					if (cmethod->klass == mono_defaults.object_class) {
-						MonoInst *args [3];
+						MonoInst *args [16];
 
 						args [0] = sp [0];
 						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
