@@ -852,6 +852,8 @@ static KeyRemapEntry key_remap_table[] = {
 	{ "System.ComponentModel.Composition", WINFX_KEY, ECMA_KEY },
 	{ "System.ComponentModel.DataAnnotations", "ddd0da4d3e678217", WINFX_KEY },
 	{ "System.Core", SILVERLIGHT_KEY, ECMA_KEY },
+	// FIXME: MS uses MSFINAL_KEY for .NET 4.5
+	{ "System.Net", SILVERLIGHT_KEY, ECMA_KEY },
 	{ "System.Numerics", WINFX_KEY, ECMA_KEY },
 	{ "System.Runtime.Serialization", SILVERLIGHT_KEY, ECMA_KEY },
 	{ "System.ServiceModel", WINFX_KEY, ECMA_KEY },
