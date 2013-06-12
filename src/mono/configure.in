@@ -511,7 +511,7 @@ if test x"$GCC" = xyes; then
 
 		ORIG_CFLAGS=$CFLAGS
 		# Check for the normal version, since gcc ignores unknown -Wno options
-		CFLAGS="$CFLAGS -Wunused-but-set-variable"
+		CFLAGS="$CFLAGS -Wunused-but-set-variable -Werror"
 		AC_MSG_CHECKING(for -Wno-unused-but-set-variable option to gcc)
 		AC_TRY_COMPILE([],[
 				return 0;
