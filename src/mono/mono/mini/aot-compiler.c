@@ -4644,7 +4644,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		}
 
 		encode_value (offset, p, &p);
-		g_assert (entry->info_type < 256);
+		g_assert ((int)entry->info_type < 256);
 		g_assert (entry->data->type < 256);
 		encode_value ((entry->in_mrgctx ? 1 : 0) | (entry->info_type << 1) | (entry->data->type << 9), p, &p);
 		encode_patch (acfg, entry->data, p, &p);

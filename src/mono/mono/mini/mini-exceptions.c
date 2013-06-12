@@ -356,7 +356,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	gboolean err;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	MonoJitInfo *ji;
-	MonoDomain *target_domain;
+	MonoDomain *target_domain = domain;
 
 	if (trace)
 		*trace = NULL;

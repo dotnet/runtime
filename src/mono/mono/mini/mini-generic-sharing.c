@@ -1313,7 +1313,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		gji = mono_jit_info_get_generic_jit_info (caller_ji);
 		g_assert (gji);
 
-		addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, gji->generic_sharing_context, -1, TRUE);
+		addr = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, gji->generic_sharing_context, -1, TRUE);
 
 		return addr;
 	}
