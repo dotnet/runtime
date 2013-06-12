@@ -100,4 +100,9 @@ mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
 	return *(void**)mono_mach_get_tls_address_from_thread (thread, key);
 }
 
+void
+mono_mach_init (pthread_key_t key)
+{
+}
+
 #endif

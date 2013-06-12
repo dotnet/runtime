@@ -18,6 +18,10 @@
 
 #include <errno.h>
 
+#if defined(__MACH__)
+#include <mono/utils/mach-support.h>
+#endif
+
 #define THREADS_DEBUG(...)
 //#define THREADS_DEBUG(...) g_message(__VA_ARGS__)
 
@@ -280,6 +284,10 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
 	mono_threads_init_platform ();
+
+#if defined(__MACH__)
+	mono_mach_init (thread_info_key);
+#endif
 
 	mono_threads_inited = TRUE;
 

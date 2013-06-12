@@ -70,4 +70,10 @@ mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
 {
 	g_assert_not_reached ();
 }
+
+void
+mono_mach_init (pthread_key_t key)
+{
+}
+
 #endif

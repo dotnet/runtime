@@ -23,6 +23,7 @@ extern pthread_t pthread_from_mach_thread_np(mach_port_t);
 
 void *mono_mach_arch_get_ip (thread_state_t state) MONO_INTERNAL;
 void *mono_mach_arch_get_sp (thread_state_t state) MONO_INTERNAL;
+void mono_mach_init (pthread_key_t key) MONO_INTERNAL;
 
 int mono_mach_arch_get_mcontext_size (void) MONO_INTERNAL;
 void mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context) MONO_INTERNAL;
