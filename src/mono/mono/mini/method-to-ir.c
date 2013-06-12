@@ -3518,6 +3518,89 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	return add;
 }
 
+static MonoInst*
+handle_unbox_gsharedvt (MonoCompile *cfg, int context_used, MonoClass *klass, MonoInst *obj, MonoBasicBlock **out_cbb)
+{
+	MonoInst *addr, *klass_inst, *is_ref, *args[16];
+	MonoBasicBlock *is_ref_bb, *is_nullable_bb, *end_bb;
+	MonoInst *ins;
+	int dreg, addr_reg;
+
+	klass_inst = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_KLASS);
+
+	/* obj */
+	args [0] = obj;
+
+	/* klass */
+	args [1] = klass_inst;
+
+	/* CASTCLASS */
+	obj = mono_emit_jit_icall (cfg, mono_object_castclass, args);
+
+	NEW_BBLOCK (cfg, is_ref_bb);
+	NEW_BBLOCK (cfg, is_nullable_bb);
+	NEW_BBLOCK (cfg, end_bb);
+	is_ref = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_CLASS_BOX_TYPE);
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 1);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_ref_bb);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 2);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_nullable_bb);
+
+	/* This will contain either the address of the unboxed vtype, or an address of the temporary where the ref is stored */
+	addr_reg = alloc_dreg (cfg, STACK_MP);
+
+	/* Non-ref case */
+	/* UNBOX */
+	NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, addr_reg, obj->dreg, sizeof (MonoObject));
+	MONO_ADD_INS (cfg->cbb, addr);
+
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+	/* Ref case */
+	MONO_START_BB (cfg, is_ref_bb);
+
+	/* Save the ref to a temporary */
+	dreg = alloc_ireg (cfg);
+	EMIT_NEW_VARLOADA_VREG (cfg, addr, dreg, &klass->byval_arg);
+	addr->dreg = addr_reg;
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, obj->dreg);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+	/* Nullable case */
+	MONO_START_BB (cfg, is_nullable_bb);
+
+	{
+		MonoInst *addr = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX);
+		MonoInst *unbox_call;
+		MonoMethodSignature *unbox_sig;
+		MonoInst *var;
+
+		var = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
+
+		unbox_sig = mono_mempool_alloc0 (cfg->mempool, MONO_SIZEOF_METHOD_SIGNATURE + (1 * sizeof (MonoType *)));
+		unbox_sig->ret = &klass->byval_arg;
+		unbox_sig->param_count = 1;
+		unbox_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		unbox_call = mono_emit_calli (cfg, unbox_sig, &obj, addr, NULL, NULL);
+
+		EMIT_NEW_VARLOADA_VREG (cfg, addr, unbox_call->dreg, &klass->byval_arg);
+		addr->dreg = addr_reg;
+	}
+
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+	/* End */
+	MONO_START_BB (cfg, end_bb);
+
+	/* LDOBJ */
+	EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr_reg, 0);
+
+	*out_cbb = cfg->cbb;
+
+	return ins;
+}
+
 /*
  * Returns NULL and set the cfg exception on error.
  */
@@ -3606,9 +3689,11 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
  * Returns NULL and set the cfg exception on error.
  */	
 static MonoInst*
-handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
+handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used, MonoBasicBlock **out_cbb)
 {
 	MonoInst *alloc, *ins;
+
+	*out_cbb = cfg->cbb;
 
 	if (mono_class_is_nullable (klass)) {
 		MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
@@ -3640,18 +3725,21 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 	}
 
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
-		MonoBasicBlock *is_ref_bb, *end_bb;
+		MonoBasicBlock *is_ref_bb, *is_nullable_bb, *end_bb;
 		MonoInst *res, *is_ref, *src_var, *addr;
 		int addr_reg, dreg;
 
 		dreg = alloc_ireg (cfg);
 
 		NEW_BBLOCK (cfg, is_ref_bb);
+		NEW_BBLOCK (cfg, is_nullable_bb);
 		NEW_BBLOCK (cfg, end_bb);
-		is_ref = emit_get_rgctx_klass (cfg, context_used, klass,
-									   MONO_RGCTX_INFO_CLASS_IS_REF);
+		is_ref = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_CLASS_BOX_TYPE);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 1);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_ref_bb);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 2);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_nullable_bb);
 
 		/* Non-ref case */
 		alloc = handle_alloc (cfg, klass, TRUE, context_used);
@@ -3677,7 +3765,34 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, addr->dreg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
+		/* Nullable case */
+		MONO_START_BB (cfg, is_nullable_bb);
+
+		{
+			MonoInst *addr = emit_get_gsharedvt_info_klass (cfg, klass,
+													MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
+			MonoInst *box_call;
+			MonoMethodSignature *box_sig;
+
+			/*
+			 * klass is Nullable<T>, need to call Nullable<T>.Box () using a gsharedvt signature, but we cannot
+			 * construct that method at JIT time, so have to do things by hand.
+			 */
+			box_sig = mono_mempool_alloc0 (cfg->mempool, MONO_SIZEOF_METHOD_SIGNATURE + (1 * sizeof (MonoType *)));
+			box_sig->ret = &mono_defaults.object_class->byval_arg;
+			box_sig->param_count = 1;
+			box_sig->params [0] = &klass->byval_arg;
+			box_call = mono_emit_calli (cfg, box_sig, &val, addr, NULL, NULL);
+			EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, box_call->dreg);
+			res->type = STACK_OBJ;
+			res->klass = klass;
+		}
+
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
 		MONO_START_BB (cfg, end_bb);
+
+		*out_cbb = cfg->cbb;
 
 		return res;
 	} else {
@@ -7549,8 +7664,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 					ins->klass = constrained_call;
-					sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
-					bblock = cfg->cbb;
+					sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call), &bblock);
 					CHECK_CFG_EXCEPTION;
 				} else if (!constrained_call->valuetype) {
 					int dreg = alloc_ireg_ref (cfg);
@@ -7584,8 +7698,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							/* Enum implements some interfaces, so treat this as the first case */
 							EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 							ins->klass = constrained_call;
-							sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
-							bblock = cfg->cbb;
+							sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call), &bblock);
 							CHECK_CFG_EXCEPTION;
 						}
 					}
@@ -9269,60 +9382,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (mini_is_gsharedvt_klass (cfg, klass)) {
-				MonoInst *obj, *addr, *klass_inst, *is_ref, *args[16];
-				MonoBasicBlock *is_ref_bb, *end_bb;
-				int dreg, addr_reg;
-
-				/* Need to check for nullable types at runtime, but those are disabled in mini_is_gsharedvt_sharable_method*/
-				if (mono_class_is_nullable (klass))
-					GSHAREDVT_FAILURE (*ip);
-
-				obj = *sp;
-
-				klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
-
-				/* obj */
-				args [0] = obj;
-
-				/* klass */
-				args [1] = klass_inst;
-
-				/* CASTCLASS */
-				obj = mono_emit_jit_icall (cfg, mono_object_castclass, args);
-
-				NEW_BBLOCK (cfg, is_ref_bb);
-				NEW_BBLOCK (cfg, end_bb);
-				is_ref = emit_get_rgctx_klass (cfg, context_used, klass,
-											   MONO_RGCTX_INFO_CLASS_IS_REF);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, is_ref->dreg, 1);
-				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_ref_bb);
-
-				/* This will contain either the address of the unboxed vtype, or an address of the temporary where the ref is stored */
-				addr_reg = alloc_dreg (cfg, STACK_MP);
-
-				/* Non-ref case */
-				/* UNBOX */
-				NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, addr_reg, obj->dreg, sizeof (MonoObject));
-				MONO_ADD_INS (cfg->cbb, addr);
-
-				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-
-				/* Ref case */
-				MONO_START_BB (cfg, is_ref_bb);
-
-				/* Save the ref to a temporary */
-				dreg = alloc_ireg (cfg);
-				EMIT_NEW_VARLOADA_VREG (cfg, addr, dreg, &klass->byval_arg);
-				addr->dreg = addr_reg;
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, obj->dreg);
-				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-
-				MONO_START_BB (cfg, end_bb);
-				bblock = cfg->cbb;
-
-				/* LDOBJ */
-				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr_reg, 0);
-				*sp++ = ins;
+				*sp = handle_unbox_gsharedvt (cfg, context_used, klass, *sp, &bblock);
+				sp ++;
 
 				ip += 5;
 				inline_costs += 2;
@@ -9500,8 +9561,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			*sp++ = handle_box (cfg, val, klass, context_used);
-			bblock = cfg->cbb;
+			*sp++ = handle_box (cfg, val, klass, context_used, &bblock);
 
 			CHECK_CFG_EXCEPTION;
 			ip += 5;

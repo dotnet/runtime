@@ -4675,17 +4675,12 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		for (i = 0; i < info->entries->len; ++i) {
 			MonoRuntimeGenericContextInfoTemplate *template = g_ptr_array_index (info->entries, i);
 
-			// FIXME: Code duplication
 			encode_value (template->info_type, p, &p);
-			switch (template->info_type) {
-			case MONO_RGCTX_INFO_VALUE_SIZE:
-			case MONO_RGCTX_INFO_MEMCPY:
-			case MONO_RGCTX_INFO_BZERO:
-			case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
-			case MONO_RGCTX_INFO_LOCAL_OFFSET:
+			switch (mini_rgctx_info_type_to_patch_info_type (template->info_type)) {
+			case MONO_PATCH_INFO_CLASS:
 				encode_klass_ref (acfg, mono_class_from_mono_type (template->data), p, &p);
 				break;
-			case MONO_RGCTX_INFO_FIELD_OFFSET:
+			case MONO_PATCH_INFO_FIELD:
 				encode_field_info (acfg, template->data, p, &p);
 				break;
 			default:

@@ -1078,12 +1078,20 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT,
 	/* Same for calli, associated with a signature */
 	MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI,
-	MONO_RGCTX_INFO_CLASS_IS_REF,
+	/*
+	 * 0 - vtype
+	 * 1 - ref
+	 * 2 - gsharedvt type
+	 */
+	MONO_RGCTX_INFO_CLASS_BOX_TYPE,
 	/* Resolves to a MonoGSharedVtMethodRuntimeInfo */
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO,
 	MONO_RGCTX_INFO_LOCAL_OFFSET,
 	MONO_RGCTX_INFO_MEMCPY,
 	MONO_RGCTX_INFO_BZERO,
+	/* The address of Nullable<T>.Box () */
+	MONO_RGCTX_INFO_NULLABLE_CLASS_BOX,
+	MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX,
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -2131,6 +2139,7 @@ gpointer          mini_get_vtable_trampoline (int slot_index) MONO_INTERNAL;
 char*             mono_get_generic_trampoline_name (MonoTrampolineType tramp_type) MONO_INTERNAL;
 char*             mono_get_rgctx_fetch_trampoline_name (int slot) MONO_INTERNAL;
 gpointer          mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp) MONO_INTERNAL;
+gboolean          mini_jit_info_is_gsharedvt (MonoJitInfo *ji) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;
@@ -2488,6 +2497,9 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 
 const char*
 mono_rgctx_info_type_to_str (MonoRgctxInfoType type) MONO_INTERNAL;
+
+MonoJumpInfoType
+mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type) MONO_INTERNAL;
 
 gboolean
 mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;

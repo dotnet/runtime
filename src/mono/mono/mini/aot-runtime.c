@@ -3005,19 +3005,15 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			MonoRuntimeGenericContextInfoTemplate *template = g_new0 (MonoRuntimeGenericContextInfoTemplate, 1);
 
 			template->info_type = decode_value (p, &p);
-			switch (template->info_type) {
-			case MONO_RGCTX_INFO_VALUE_SIZE:
-			case MONO_RGCTX_INFO_MEMCPY:
-			case MONO_RGCTX_INFO_BZERO:
-			case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
-			case MONO_RGCTX_INFO_LOCAL_OFFSET: {
+			switch (mini_rgctx_info_type_to_patch_info_type (template->info_type)) {
+			case MONO_PATCH_INFO_CLASS: {
 				MonoClass *klass = decode_klass_ref (aot_module, p, &p);
 				if (!klass)
 					goto cleanup;
 				template->data = &klass->byval_arg;
 				break;
 			}
-			case MONO_RGCTX_INFO_FIELD_OFFSET:
+			case MONO_PATCH_INFO_FIELD:
 				template->data = decode_field_info (aot_module, p, &p);
 				if (!template->data)
 					goto cleanup;

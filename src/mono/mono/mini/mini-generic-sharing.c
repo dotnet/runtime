@@ -531,10 +531,12 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
-	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_CLASS_BOX_TYPE:
 	case MONO_RGCTX_INFO_MEMCPY:
 	case MONO_RGCTX_INFO_BZERO:
-	case MONO_RGCTX_INFO_LOCAL_OFFSET: {
+	case MONO_RGCTX_INFO_LOCAL_OFFSET:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: {
 		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
 			data, context, &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
@@ -947,9 +949,11 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 			return GUINT_TO_POINTER (sizeof (gpointer));
 		else
 			return GUINT_TO_POINTER (mono_class_value_size (class, NULL));
-	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_CLASS_BOX_TYPE:
 		if (MONO_TYPE_IS_REFERENCE (&class->byval_arg))
 			return GUINT_TO_POINTER (1);
+		else if (mono_class_is_nullable (class))
+			return GUINT_TO_POINTER (2);
 		else
 			return GUINT_TO_POINTER (0);
 	case MONO_RGCTX_INFO_MEMCPY:
@@ -1014,6 +1018,47 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 				domain_info->bzero_addr [size] = addr;
 			}
 			return domain_info->bzero_addr [size];
+		}
+	}
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: {
+		MonoMethod *method;
+		gpointer addr;
+		MonoJitInfo *ji;
+		MonoGenericContext *ctx;
+
+		if (!mono_class_is_nullable (class))
+			/* This can happen since all the entries in MonoGSharedVtMethodInfo are inflated, even those which are not used */
+			return NULL;
+
+		if (info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_BOX)
+			method = mono_class_get_method_from_name (class, "Box", 1);
+		else
+			method = mono_class_get_method_from_name (class, "Unbox", 1);
+
+		addr = mono_compile_method (method);
+		// The caller uses the gsharedvt call signature
+		ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr), NULL);
+		g_assert (ji);
+		if (mini_jit_info_is_gsharedvt (ji))
+			return mono_create_static_rgctx_trampoline (method, addr);
+		else {
+			MonoGenericSharingContext gsctx;
+			MonoMethodSignature *sig, *gsig;
+			MonoMethod *gmethod;
+
+			/* Need to add an out wrapper */
+
+			/* FIXME: We have no access to the gsharedvt signature/gsctx used by the caller, so have to construct it ourselves */
+			gmethod = mini_get_shared_method (method);
+			sig = mono_method_signature (method);
+			gsig = mono_method_signature (gmethod);
+			ctx = mono_method_get_context (gmethod);
+			mini_init_gsctx (ctx, &gsctx);
+
+			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, &gsctx, -1, FALSE);
+			addr = mono_create_static_rgctx_trampoline (method, addr);
+			return addr;
 		}
 	}
 	default:
@@ -1183,9 +1228,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
-	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_CLASS_BOX_TYPE:
 	case MONO_RGCTX_INFO_MEMCPY:
-	case MONO_RGCTX_INFO_BZERO: {
+	case MONO_RGCTX_INFO_BZERO:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: {
 		MonoClass *arg_class = mono_class_from_mono_type (data);
 
 		free_inflated_info (oti->info_type, data);
@@ -1490,13 +1537,15 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_CAST_CACHE: return "CAST_CACHE";
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE: return "ARRAY_ELEMENT_SIZE";
 	case MONO_RGCTX_INFO_VALUE_SIZE: return "VALUE_SIZE";
-	case MONO_RGCTX_INFO_CLASS_IS_REF: return "CLASS_IS_REF";
+	case MONO_RGCTX_INFO_CLASS_BOX_TYPE: return "CLASS_BOX_TYPE";
 	case MONO_RGCTX_INFO_FIELD_OFFSET: return "FIELD_OFFSET";
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE";
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT: return "METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT";
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI: return "SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI";
 	case MONO_RGCTX_INFO_MEMCPY: return "MEMCPY";
 	case MONO_RGCTX_INFO_BZERO: return "BZERO";
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX: return "NULLABLE_CLASS_BOX";
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: return "NULLABLE_CLASS_UNBOX";
 	default:
 		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
@@ -1572,9 +1621,11 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
 	case MONO_RGCTX_INFO_VALUE_SIZE:
-	case MONO_RGCTX_INFO_CLASS_IS_REF:
+	case MONO_RGCTX_INFO_CLASS_BOX_TYPE:
 	case MONO_RGCTX_INFO_MEMCPY:
 	case MONO_RGCTX_INFO_BZERO:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX:
 		return mono_class_from_mono_type (data1) == mono_class_from_mono_type (data2);
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:
@@ -1594,6 +1645,38 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	}
 	/* never reached */
 	return FALSE;
+}
+
+/*
+ * mini_rgctx_info_type_to_patch_info_type:
+ *
+ *   Return the type of the runtime object referred to by INFO_TYPE.
+ */
+MonoJumpInfoType
+mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
+{
+	switch (info_type) {
+	case MONO_RGCTX_INFO_STATIC_DATA:
+	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_VTABLE:
+	case MONO_RGCTX_INFO_TYPE:
+	case MONO_RGCTX_INFO_REFLECTION_TYPE:
+	case MONO_RGCTX_INFO_CAST_CACHE:
+	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
+	case MONO_RGCTX_INFO_VALUE_SIZE:
+	case MONO_RGCTX_INFO_CLASS_BOX_TYPE:
+	case MONO_RGCTX_INFO_MEMCPY:
+	case MONO_RGCTX_INFO_BZERO:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
+	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX:
+	case MONO_RGCTX_INFO_LOCAL_OFFSET:
+		return MONO_PATCH_INFO_CLASS;
+	case MONO_RGCTX_INFO_FIELD_OFFSET:
+		return MONO_PATCH_INFO_FIELD;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
 }
 
 static int

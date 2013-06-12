@@ -1159,6 +1159,58 @@ public class Tests
        TAbstractTableItem<object>.Test ();
 	   return 0;
 	}
+
+	interface IFaceBox {
+		object box<T> (T t);
+	}
+
+	class ClassBox : IFaceBox {
+		public object box<T> (T t) {
+			object o = t;
+			return o;
+		}
+	}
+
+	public static int test_0_nullable_box () {
+		IFaceBox c = new ClassBox ();
+		int i = 5;
+		object o = c.box<int?> (i);
+		if ((int)o != i)
+			return 1;
+		if (c.box<int?> (null) != null)
+			return 2;
+		long l = Int64.MaxValue - 1;
+		o = c.box<long?> (l);
+		if ((long)o != l)
+			return 3;
+		if (c.box<long?> (null) != null)
+			return 4;
+		string s = "A";
+		if (c.box<string> (s) != (object)s)
+			return 5;
+		return 0;
+	}
+
+	interface IFaceUnbox2 {
+		T unbox<T> (object o);
+	}
+
+	class ClassUnbox2 : IFaceUnbox2 {
+		public T unbox<T> (object o) {
+			return (T)o;
+		}
+	}
+
+	public static int test_0_nullable_unbox () {	
+		IFaceUnbox2 c = new ClassUnbox2 ();
+		int? i = c.unbox<int?> (5);
+		if (i != 5)
+			return 1;
+		int? j = c.unbox<int?> (null);
+		if (j != null)
+			return 2;
+		return 0;
+	}
 }
 
 #if !MOBILE

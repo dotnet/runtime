@@ -266,8 +266,9 @@ is_generic_method_definition (MonoMethod *m)
 		return TRUE;
 	return FALSE;
 }
-static gboolean
-ji_is_gsharedvt (MonoJitInfo *ji)
+
+gboolean
+mini_jit_info_is_gsharedvt (MonoJitInfo *ji)
 {
 	if (ji && ji->has_generic_jit_info && (mono_jit_info_get_generic_sharing_context (ji)->var_is_vt ||
 										   mono_jit_info_get_generic_sharing_context (ji)->mvar_is_vt))
@@ -292,7 +293,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
 
 	// FIXME: This loads information from AOT
-	callee_gsharedvt = ji_is_gsharedvt (ji);
+	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 
 	callee_array_helper = FALSE;
 	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
