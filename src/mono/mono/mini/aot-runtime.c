@@ -1527,6 +1527,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	int i, version;
 	guint8 *blob;
 	gboolean do_load_image = TRUE;
+	int align_double, align_int64;
 
 	if (mono_compile_aot)
 		return;
@@ -1617,9 +1618,28 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
+#if defined (TARGET_ARM) && defined (TARGET_MACH)
+	{
+		MonoType t;
+		int align = 0;
+
+		memset (&t, 0, sizeof (MonoType));
+		t.type = MONO_TYPE_R8;
+		mono_type_size (&t, &align);
+		align_double = align;
+
+		memset (&t, 0, sizeof (MonoType));
+		t.type = MONO_TYPE_I8;
+		align_int64 = align;
+	}
+#else
+	align_double = __alignof__ (double);
+	align_int64 = __alignof__ (gint64);
+#endif
+
 	/* Sanity check */
-	g_assert (info->double_align == __alignof__ (double));
-	g_assert (info->long_align == __alignof__ (gint64));
+	g_assert (info->double_align == align_double);
+	g_assert (info->long_align == align_int64);
 
 	blob = info->blob;
 

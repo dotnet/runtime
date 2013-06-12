@@ -7744,7 +7744,6 @@ emit_file_info (MonoAotCompile *acfg)
 		memset (&t, 0, sizeof (MonoType));
 		t.type = MONO_TYPE_R8;
 		mono_type_size (&t, &align);
-
 		emit_int32 (acfg, align);
 
 		memset (&t, 0, sizeof (MonoType));
