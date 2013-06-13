@@ -2574,6 +2574,13 @@ ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value)
 	mono_gc_wbarrier_generic_nostore (ptr);
 }
 
+void
+mono_thread_init_tls (void)
+{
+	MONO_FAST_TLS_INIT (tls_current_object);
+	mono_native_tls_alloc (&current_object_key, NULL);
+}
+
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
@@ -2587,8 +2594,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
 
-	MONO_FAST_TLS_INIT (tls_current_object);
-	mono_native_tls_alloc (&current_object_key, NULL);
 	THREAD_DEBUG (g_message ("%s: Allocated current_object_key %d", __func__, current_object_key));
 
 	mono_thread_start_cb = start_cb;

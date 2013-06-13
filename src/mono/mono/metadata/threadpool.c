@@ -814,7 +814,13 @@ monitor_thread (gpointer unused)
 }
 
 void
-mono_thread_pool_init ()
+mono_thread_pool_init_tls (void)
+{
+	mono_wsq_init ();
+}
+
+void
+mono_thread_pool_init (void)
 {
 	gint threads_per_cpu = 1;
 	gint thread_count;
@@ -851,7 +857,6 @@ mono_thread_pool_init ()
 
 	InitializeCriticalSection (&wsqs_lock);
 	wsqs = g_ptr_array_sized_new (MAX (100 * cpu_count, thread_count));
-	mono_wsq_init ();
 
 #ifndef DISABLE_PERFCOUNTERS
 	async_tp.pc_nitems = init_perf_counter ("Mono Threadpool", "Work Items Added");

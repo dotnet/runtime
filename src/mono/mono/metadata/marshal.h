@@ -193,6 +193,9 @@ void
 mono_marshal_init (void) MONO_INTERNAL;
 
 void
+mono_marshal_init_tls (void) MONO_INTERNAL;
+
+void
 mono_marshal_cleanup (void) MONO_INTERNAL;
 
 gint32

@@ -35,6 +35,7 @@
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/runtime.h>
 #include <metadata/threads.h>
 #include <metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
@@ -1301,6 +1302,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_classes_init ();
 	mono_loader_init ();
 	mono_reflection_init ();
+	mono_runtime_init_tls ();
 
 	/* FIXME: When should we release this memory? */
 	MONO_GC_REGISTER_ROOT_FIXED (appdomains_list);

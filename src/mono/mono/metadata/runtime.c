@@ -18,6 +18,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/threadpool.h>
+#include <mono/metadata/marshal.h>
 #include <mono/utils/atomic.h>
 
 static gboolean shutting_down_inited = FALSE;
@@ -121,4 +122,18 @@ mono_runtime_is_critical_method (MonoMethod *method)
 	if (mono_monitor_is_il_fastpath_wrapper (method))
 		return TRUE;
 	return FALSE;
+}
+
+/*
+Coordinate the creation of all remaining TLS slots in the runtime.
+No further TLS slots should be created after this function finishes.
+This restriction exists because AOT requires offsets to be constant
+across runs.
+*/
+void
+mono_runtime_init_tls (void)
+{
+	mono_marshal_init_tls ();
+	mono_thread_pool_init_tls ();
+	mono_thread_init_tls ();
 }

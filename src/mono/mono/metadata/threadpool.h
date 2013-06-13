@@ -7,6 +7,7 @@
 
 /* No managed code here */
 void mono_thread_pool_init (void) MONO_INTERNAL;
+void mono_thread_pool_init_tls (void) MONO_INTERNAL;
 
 void icall_append_job (MonoObject *ar) MONO_INTERNAL;
 void icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state) MONO_INTERNAL;
