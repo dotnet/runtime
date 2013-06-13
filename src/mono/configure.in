@@ -72,6 +72,9 @@ no_version_script=no
 # Set to yes if Unix sockets cannot be created in an anonymous namespace
 need_link_unlink=no
 
+#Set to extra linker flags to be passed to the runtime binaries (mono /mono-sgen)
+extra_runtime_ldflags=""
+
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
@@ -323,6 +326,10 @@ case "$host" in
 				CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC $BROKEN_DARWIN_FLAGS"
 				CPPFLAGS_FOR_EGLIB="$CPPFLAGS_FOR_EGLIB $BROKEN_DARWIN_CPPFLAGS"
 				CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB $BROKEN_DARWIN_FLAGS"
+				extra_runtime_ldflags="-stack_size,0x800000"
+				;;
+			x*64-*-darwin*)
+				extra_runtime_ldflags="-stack_size,0x800000"
 				;;
 			arm*-darwin*)
 				has_dtrace=no
@@ -352,6 +359,7 @@ if test x$need_link_unlink = xyes; then
    AC_DEFINE(NEED_LINK_UNLINK, 1, [Define if Unix sockets cannot be created in an anonymous namespace])
 fi
 
+AC_SUBST(extra_runtime_ldflags)
 AM_CONDITIONAL(HOST_WIN32, test x$host_win32 = xyes)
 AM_CONDITIONAL(TARGET_WIN32, test x$target_win32 = xyes)
 AM_CONDITIONAL(PLATFORM_LINUX, echo x$target_os | grep -q linux)
