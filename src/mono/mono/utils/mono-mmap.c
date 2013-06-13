@@ -491,7 +491,8 @@ shared_area_disabled (void)
 	if (!use_shared_area) {
 		if (g_getenv ("MONO_DISABLE_SHARED_AREA"))
 			use_shared_area = -1;
-		use_shared_area = 1;
+		else
+			use_shared_area = 1;
 	}
 	return use_shared_area == -1;
 }
