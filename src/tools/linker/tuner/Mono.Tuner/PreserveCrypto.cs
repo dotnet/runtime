@@ -60,6 +60,13 @@ namespace Mono.Tuner {
 			AddPreserveInfo (corlib, "HMACSHA512", "SHA512Managed");
 
 			TryAddPreserveInfo (corlib, "Aes", "AesManaged");
+
+			var corlibAes = GetCryptoType (corlib, "Aes");
+			Preserve (corlibAes, GetCryptoType (corlib, "AesManaged"));
+
+			AssemblyDefinition syscore;
+			if (context.TryGetLinkedAssembly ("System.Core", out syscore))
+				Preserve (corlibAes, GetCryptoType (syscore, "AesCryptoServiceProvider"));
 		}
 
 		void ProcessSystemCore (LinkContext context)
@@ -101,6 +108,8 @@ namespace Mono.Tuner {
 
 		void Preserve (TypeDefinition marker, TypeDefinition implementation)
 		{
+			if (marker == null || implementation == null)
+				return;
 			foreach (var constructor in implementation.GetConstructors ())
 				annotations.AddPreservedMethod (marker, constructor);
 		}
