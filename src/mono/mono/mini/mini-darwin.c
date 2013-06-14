@@ -246,32 +246,46 @@ void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
 	const char *argv [5];
-	char gdb_template [] = "/tmp/mono-gdb-commands.XXXXXX";
+	char template [] = "/tmp/mono-gdb-commands.XXXXXX";
+	FILE *commands;
+	gboolean using_lldb = FALSE;
 
 	argv [0] = g_find_program_in_path ("gdb");
-	if (argv [0] == NULL) {
-		return;
+	if (!argv [0]) {
+		argv [0] = g_find_program_in_path ("lldb");
+		using_lldb = TRUE;
 	}
 
-	if (mkstemp (gdb_template) != -1) {
-		FILE *gdb_commands = fopen (gdb_template, "w");
+	if (argv [0] == NULL)
+		return;
 
-		fprintf (gdb_commands, "attach %ld\n", (long) crashed_pid);
-		fprintf (gdb_commands, "info threads\n");
-		fprintf (gdb_commands, "thread apply all bt\n");
+	if (mkstemp (template) == -1)
+		return;
 
-		fflush (gdb_commands);
-		fclose (gdb_commands);
-
+	commands = fopen (template, "w");
+	if (using_lldb) {
+		fprintf (commands, "process attach --pid %ld\n", (long) crashed_pid);
+		fprintf (commands, "script lldb.debugger.HandleCommand (\"thread list\")\n");
+		fprintf (commands, "script lldb.debugger.HandleCommand (\"thread backtrace all\")\n");
+		fprintf (commands, "quit\n");
+		argv [1] = "--source";
+		argv [2] = template;
+		argv [3] = 0;
+		
+	} else {
+		fprintf (commands, "attach %ld\n", (long) crashed_pid);
+		fprintf (commands, "info threads\n");
+		fprintf (commands, "thread apply all bt\n");
 		argv [1] = "-batch";
 		argv [2] = "-x";
-		argv [3] = gdb_template;
+		argv [3] = template;
 		argv [4] = 0;
-
-		execv (argv [0], (char**)argv);
-
-		unlink (gdb_template);
 	}
+	fflush (commands);
+	fclose (commands);
+
+	execv (argv [0], (char**)argv);
+	unlink (template);
 }
 
 gboolean
