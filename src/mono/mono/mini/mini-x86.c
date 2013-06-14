@@ -1471,6 +1471,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				linfo->args [i].pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
 			*/
 			break;
+		case ArgGSharedVt:
+			linfo->args [i].storage = LLVMArgGSharedVt;
+			break;
 		default:
 			cfg->exception_message = g_strdup ("ainfo->storage");
 			cfg->disable_llvm = TRUE;

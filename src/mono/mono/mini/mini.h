@@ -723,7 +723,8 @@ typedef enum {
 	LLVMArgInFPReg,
 	LLVMArgVtypeInReg,
 	LLVMArgVtypeByVal,
-	LLVMArgVtypeRetAddr /* On on cinfo->ret */
+	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
+	LLVMArgGSharedVt,
 } LLVMArgStorage;
 
 typedef struct {
