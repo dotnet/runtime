@@ -2722,4 +2722,16 @@ void SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
 gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+#define ARCH_HAVE_DELEGATE_TRAMPOLINES 1
+#else
+#define ARCH_HAVE_DELEGATE_TRAMPOLINES 0
+#endif
+
+#ifdef MONO_ARCH_USE_OP_TAIL_CALL
+#define ARCH_USE_OP_TAIL_CALL 1
+#else
+#define ARCH_USE_OP_TAIL_CALL 0
+#endif
+
 #endif /* __MONO_MINI_H__ */

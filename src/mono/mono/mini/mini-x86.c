@@ -3278,7 +3278,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* restore ESP/EBP */
 			x86_leave (code);
 			offset = code - cfg->native_code;
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, call->method);
 			x86_jump32 (code, 0);
 
 			ins->flags |= MONO_INST_GC_CALLSITE;
