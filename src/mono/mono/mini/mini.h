@@ -1046,6 +1046,16 @@ typedef struct {
 	gboolean orig_ex_ctx_set;
 } MonoJitTlsData;
 
+/* TLS entries used by JITted code */
+typedef enum {
+	/* mono_thread_internal_current () */
+	TLS_KEY_THREAD = 0,
+	TLS_KEY_JIT_TLS = 1,
+	/* mono_domain_get () */
+	TLS_KEY_DOMAIN = 2,
+	TLS_KEY_LMF = 3
+} MonoJitTlsKey;
+
 /*
  * This structure is an extension of MonoLMF and contains extra information.
  */
@@ -1955,6 +1965,7 @@ MonoNativeTlsKey mono_get_jit_tls_key       (void) MONO_INTERNAL;
 gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
+int       mini_get_tls_offset               (MonoJitTlsKey key) MONO_INTERNAL;
 MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
 MonoInst* mono_get_thread_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
@@ -2732,6 +2743,16 @@ gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define ARCH_USE_OP_TAIL_CALL 1
 #else
 #define ARCH_USE_OP_TAIL_CALL 0
+#endif
+
+#ifndef MONO_ARCH_HAVE_TLS_GET
+#define MONO_ARCH_HAVE_TLS_GET 0
+#endif
+
+#ifdef MONO_ARCH_HAVE_TLS_GET_REG
+#define ARCH_HAVE_TLS_GET_REG 1
+#else
+#define ARCH_HAVE_TLS_GET_REG 0
 #endif
 
 #endif /* __MONO_MINI_H__ */

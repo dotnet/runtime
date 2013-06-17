@@ -65,6 +65,7 @@
 #include <ctype.h>
 #include "trace.h"
 #include "version.h"
+#include "ir-emit.h"
 
 #include "jit-icalls.h"
 
@@ -2847,47 +2848,91 @@ mini_thread_cleanup (MonoInternalThread *thread)
 	}
 }
 
-static MonoInst*
-mono_create_tls_get (MonoCompile *cfg, int offset)
+int
+mini_get_tls_offset (MonoJitTlsKey key)
 {
-#ifdef MONO_ARCH_HAVE_TLS_GET
-	if (MONO_ARCH_HAVE_TLS_GET) {
-		MonoInst* ins;
+	int offset;
 
-		if (offset == -1)
-			return NULL;
+	switch (key) {
+	case TLS_KEY_THREAD:
+		offset = mono_thread_get_tls_offset ();
+		break;
+	case TLS_KEY_JIT_TLS:
+		offset = mono_get_jit_tls_offset ();
+		break;
+	case TLS_KEY_DOMAIN:
+		offset = mono_domain_get_tls_offset ();
+		break;
+	case TLS_KEY_LMF:
+		offset = mono_get_lmf_tls_offset ();
+		break;
+	default:
+		g_assert_not_reached ();
+		offset = -1;
+		break;
+	}
+	return offset;
+}
 
-		MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+static MonoInst*
+mono_create_tls_get_offset (MonoCompile *cfg, int offset)
+{
+	MonoInst* ins;
+
+	if (!MONO_ARCH_HAVE_TLS_GET)
+		return NULL;
+
+	if (offset == -1)
+		return NULL;
+
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->dreg = mono_alloc_preg (cfg);
+	ins->inst_offset = offset;
+	return ins;
+}
+
+static MonoInst*
+mono_create_tls_get (MonoCompile *cfg, MonoJitTlsKey key)
+{
+	/*
+	 * TLS offsets might be different at AOT time, so load them from a GOT slot and
+	 * use a different opcode.
+	 */
+	if (cfg->compile_aot && MONO_ARCH_HAVE_TLS_GET && ARCH_HAVE_TLS_GET_REG) {
+		MonoInst *ins, *c;
+
+		EMIT_NEW_TLS_OFFSETCONST (cfg, c, key);
+		MONO_INST_NEW (cfg, ins, OP_TLS_GET_REG);
 		ins->dreg = mono_alloc_preg (cfg);
-		ins->inst_offset = offset;
+		ins->sreg1 = c->dreg;
 		return ins;
 	}
-#endif
-	return NULL;
+
+	return mono_create_tls_get_offset (cfg, mini_get_tls_offset (key));
 }
 
 MonoInst*
 mono_get_jit_tls_intrinsic (MonoCompile *cfg)
 {
-	return mono_create_tls_get (cfg, mono_get_jit_tls_offset ());
+	return mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
 }
 
 MonoInst*
 mono_get_domain_intrinsic (MonoCompile* cfg)
 {
-	return mono_create_tls_get (cfg, mono_domain_get_tls_offset ());
+	return mono_create_tls_get (cfg, TLS_KEY_DOMAIN);
 }
 
 MonoInst*
 mono_get_thread_intrinsic (MonoCompile* cfg)
 {
-	return mono_create_tls_get (cfg, mono_thread_get_tls_offset ());
+	return mono_create_tls_get (cfg, TLS_KEY_THREAD);
 }
 
 MonoInst*
 mono_get_lmf_intrinsic (MonoCompile* cfg)
 {
-	return mono_create_tls_get (cfg, mono_get_lmf_tls_offset ());
+	return mono_create_tls_get (cfg, TLS_KEY_LMF);
 }
 
 void
@@ -3027,6 +3072,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 	case MONO_PATCH_INFO_SIGNATURE:
+	case MONO_PATCH_INFO_TLS_OFFSET:
 		return (ji->type << 8) | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return (ji->type << 8) | (gssize)ji->data.gsharedvt->method;
@@ -3459,6 +3505,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = (gpointer) (size_t) mono_jit_tls_id;
 		break;
 	}
+	case MONO_PATCH_INFO_TLS_OFFSET:
+		target = GINT_TO_POINTER (mini_get_tls_offset (GPOINTER_TO_INT (patch_info->data.target)));
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -6849,11 +6898,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 #endif
 
-#ifdef MONO_ARCH_HAVE_TLS_GET
 	mono_runtime_set_has_tls_get (MONO_ARCH_HAVE_TLS_GET);
-#else
-	mono_runtime_set_has_tls_get (FALSE);
-#endif
 
 	if (!global_codeman)
 		global_codeman = mono_code_manager_new ();

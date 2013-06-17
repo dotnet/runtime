@@ -263,6 +263,10 @@ typedef struct {
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
+#ifdef TARGET_OSX
+#define MONO_ARCH_HAVE_TLS_GET_REG 1
+#endif
+
 gboolean
 mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;
 

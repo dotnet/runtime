@@ -3191,11 +3191,9 @@ add_wrappers (MonoAotCompile *acfg)
  	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
-#ifdef MONO_ARCH_HAVE_TLS_GET
 		MonoMethodDesc *desc;
 		MonoMethod *orig_method;
 		int nallocators;
-#endif
 
 		/* Runtime invoke wrappers */
 
@@ -3267,34 +3265,34 @@ add_wrappers (MonoAotCompile *acfg)
 		/* stelemref */
 		add_method (acfg, mono_marshal_get_stelemref ());
 
-#ifdef MONO_ARCH_HAVE_TLS_GET
-		/* Managed Allocators */
-		nallocators = mono_gc_get_managed_allocator_types ();
-		for (i = 0; i < nallocators; ++i) {
-			m = mono_gc_get_managed_allocator_by_type (i);
-			if (m)
-				add_method (acfg, m);
-		}
+		if (MONO_ARCH_HAVE_TLS_GET) {
+			/* Managed Allocators */
+			nallocators = mono_gc_get_managed_allocator_types ();
+			for (i = 0; i < nallocators; ++i) {
+				m = mono_gc_get_managed_allocator_by_type (i);
+				if (m)
+					add_method (acfg, m);
+			}
 
-		/* Monitor Enter/Exit */
-		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		/* This is a v4 method */
-		if (orig_method) {
+			/* Monitor Enter/Exit */
+			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
+			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+			/* This is a v4 method */
+			if (orig_method) {
+				method = mono_monitor_get_fast_path (orig_method);
+				if (method)
+					add_method (acfg, method);
+			}
+			mono_method_desc_free (desc);
+
+			desc = mono_method_desc_new ("Monitor:Exit(object)", FALSE);
+			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+			g_assert (orig_method);
+			mono_method_desc_free (desc);
 			method = mono_monitor_get_fast_path (orig_method);
 			if (method)
-			add_method (acfg, method);
+				add_method (acfg, method);
 		}
-		mono_method_desc_free (desc);
-
-		desc = mono_method_desc_new ("Monitor:Exit(object)", FALSE);
-		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		g_assert (orig_method);
-		mono_method_desc_free (desc);
-		method = mono_monitor_get_fast_path (orig_method);
-		if (method)
-			add_method (acfg, method);
-#endif
 
 		/* Stelemref wrappers */
 		{
@@ -4661,6 +4659,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	case MONO_PATCH_INFO_SIGNATURE:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);
+		break;
+	case MONO_PATCH_INFO_TLS_OFFSET:
+		encode_value (GPOINTER_TO_INT (patch_info->data.target), p, &p);
 		break;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.gsharedvt->sig, p, &p);

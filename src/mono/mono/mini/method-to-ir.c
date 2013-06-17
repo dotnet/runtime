@@ -11105,7 +11105,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				lmf_ins = mono_get_lmf_intrinsic (cfg);
 #endif
 
-#ifdef MONO_ARCH_HAVE_TLS_GET
 				if (MONO_ARCH_HAVE_TLS_GET && ad_ins && lmf_ins) {
 					NEW_BBLOCK (cfg, next_bb);
 
@@ -11117,7 +11116,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, lmf_ins->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, next_bb);
 				}
-#endif
 
 				if (cfg->compile_aot) {
 					/* AOT code is only used in the root domain */

@@ -3003,6 +3003,9 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_SIGNATURE:
 		ji->data.target = decode_signature (aot_module, p, &p);
 		break;
+	case MONO_PATCH_INFO_TLS_OFFSET:
+		ji->data.target = GINT_TO_POINTER (decode_value (p, &p));
+		break;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL: {
 		MonoJumpInfoGSharedVtCall *info = g_new0 (MonoJumpInfoGSharedVtCall, 1);
 		info->sig = decode_signature (aot_module, p, &p);

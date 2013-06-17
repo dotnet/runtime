@@ -263,6 +263,15 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL)
 
+#define NEW_TLS_OFFSETCONST(cfg,dest,key) do { \
+	if (cfg->compile_aot) { \
+		NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (key)); \
+	} else {															\
+		int _offset = mini_get_tls_offset ((key));							\
+		NEW_PCONST ((cfg), (dest), GINT_TO_POINTER (_offset)); \
+		} \
+	} while (0)
+
 #define NEW_DECLSECCONST(cfg,dest,image,entry) do { \
 		if (cfg->compile_aot) { \
 			NEW_AOTCONST_TOKEN (cfg, dest, MONO_PATCH_INFO_DECLSEC, image, (entry).index, NULL, STACK_OBJ, NULL); \
@@ -442,6 +451,8 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 #define EMIT_NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
+#define EMIT_NEW_TLS_OFFSETCONST(cfg,dest,key) do { NEW_TLS_OFFSETCONST ((cfg), (dest), (key)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_DOMAINCONST(cfg,dest) do { NEW_DOMAINCONST ((cfg), (dest)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 

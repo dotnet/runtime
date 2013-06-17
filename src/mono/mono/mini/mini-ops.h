@@ -608,6 +608,7 @@ MINI_OP(OP_CARD_TABLE_WBARRIER, "card_table_wbarrier", NONE, IREG, IREG)
 
 /* arch-dep tls access */
 MINI_OP(OP_TLS_GET,            "tls_get", IREG, NONE, NONE)
+MINI_OP(OP_TLS_GET_REG,            "tls_get_reg", IREG, IREG, NONE)
 
 MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr", IREG, NONE, NONE)
 MINI_OP(OP_DUMMY_USE, "dummy_use", NONE, IREG, NONE)
