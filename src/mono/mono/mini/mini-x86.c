@@ -4202,9 +4202,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET_REG: {
-#ifndef __APPLE__
-			g_assert_not_reached ();
-#endif
+#ifdef __APPLE__
 			// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
 			if (ins->dreg != ins->sreg1)
 				x86_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
@@ -4213,6 +4211,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_alu_reg_imm (code, X86_ADD, ins->dreg, tls_gs_offset);
 			x86_prefix (code, X86_GS_PREFIX);
 			x86_mov_reg_membase (code, ins->dreg, ins->dreg, 0, sizeof (gpointer));
+#else
+			g_assert_not_reached ();
+#endif
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
