@@ -706,7 +706,7 @@ mono_arch_cpu_init (void)
 #if defined(__ARM_EABI__)
 	eabi_supported = TRUE;
 #endif
-#if defined(__APPLE__) && defined(MONO_CROSS_COMPILE)
+#if defined(__APPLE__)
 		i8_align = 4;
 #else
 		i8_align = __alignof__ (gint64);
