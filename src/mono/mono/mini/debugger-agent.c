@@ -8365,8 +8365,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	frame = tls->frames [frame_idx];
 
 	if (!frame->has_ctx)
-		// FIXME:
-		return ERR_INVALID_FRAMEID;
+		return ERR_ABSENT_INFORMATION;
 
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->api_method, frame->domain);
