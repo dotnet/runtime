@@ -267,6 +267,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 		fprintf (commands, "process attach --pid %ld\n", (long) crashed_pid);
 		fprintf (commands, "script lldb.debugger.HandleCommand (\"thread list\")\n");
 		fprintf (commands, "script lldb.debugger.HandleCommand (\"thread backtrace all\")\n");
+		fprintf (commands, "detach\n");
 		fprintf (commands, "quit\n");
 		argv [1] = "--source";
 		argv [2] = template;
