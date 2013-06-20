@@ -1097,13 +1097,6 @@ typedef struct {
 	MonoClass *internals_visible_class;
 	MonoClass *generic_ilist_class;
 	MonoClass *generic_nullable_class;
-#ifndef DISABLE_COM
-	MonoClass *variant_class;
-	MonoClass *com_object_class;
-	MonoClass *com_interop_proxy_class;
-	MonoClass *iunknown_class;
-	MonoClass *idispatch_class;
-#endif
 	MonoClass *safehandle_class;
 	MonoClass *handleref_class;
 	MonoClass *attribute_class;
@@ -1126,6 +1119,39 @@ mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
 #define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
 #define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
 #define mono_object_is_transparent_proxy(object) (((MonoObject*)object)->vtable->klass == mono_defaults.transparent_proxy_class)
+#endif
+
+
+#define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
+MonoClass* mono_class_get_##shortname##_class (void);
+
+#define GENERATE_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
+MonoClass*	\
+mono_class_get_##shortname##_class (void)	\
+{	\
+	static MonoClass *tmp_class;	\
+	MonoClass *class = tmp_class;	\
+	if (!class) {	\
+		class = mono_class_from_name (mono_defaults.corlib, #namespace, #name);	\
+		g_assert (class);	\
+		mono_memory_barrier ();	\
+		tmp_class = class;	\
+	}	\
+	return class;	\
+}
+
+#define GENERATE_STATIC_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
+static GENERATE_GET_CLASS_WITH_CACHE (shortname,namespace,name)
+
+
+#ifndef DISABLE_COM
+
+GENERATE_GET_CLASS_WITH_CACHE_DECL (interop_proxy)
+GENERATE_GET_CLASS_WITH_CACHE_DECL (idispatch)
+GENERATE_GET_CLASS_WITH_CACHE_DECL (iunknown)
+GENERATE_GET_CLASS_WITH_CACHE_DECL (com_object)
+GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
+
 #endif
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

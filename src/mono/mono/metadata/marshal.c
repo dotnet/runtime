@@ -1978,13 +1978,12 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 			}
 			case MONO_TYPE_OBJECT: {
 #ifndef DISABLE_COM
-				mono_init_com_types ();
 				if (to_object) {
 					static MonoMethod *variant_clear = NULL;
 					static MonoMethod *get_object_for_native_variant = NULL;
 
 					if (!variant_clear)
-						variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
+						variant_clear = mono_class_get_method_from_name (mono_class_get_variant_class (), "Clear", 0);
 					if (!get_object_for_native_variant)
 						get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
 					mono_mb_emit_ldloc (mb, 1);
@@ -3083,7 +3082,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
 #ifndef DISABLE_COM
-	if (mono_class_is_com_object (method->klass) || method->klass == mono_defaults.com_object_class) {
+	if (mono_class_is_com_object (method->klass) || method->klass == mono_class_get_com_object_class ()) {
 		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), method->klass);
 		g_assert (vtable); /*FIXME do proper error handling*/
 
@@ -7282,8 +7281,6 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod *get_object_for_native_variant = NULL;
 	static MonoMethod *get_native_variant_for_object = NULL;
 
-	mono_init_com_types ();
-	
 	if (!get_object_for_native_variant)
 		get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
 	g_assert (get_object_for_native_variant);
@@ -7294,12 +7291,12 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
-		conv_arg = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
+		conv_arg = mono_mb_add_local (mb, &mono_class_get_variant_class ()->byval_arg);
 		
 		if (t->byref)
-			*conv_arg_type = &mono_defaults.variant_class->this_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->this_arg;
 		else
-			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->byval_arg;
 
 		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
@@ -7316,7 +7313,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		static MonoMethod *variant_clear = NULL;
 
 		if (!variant_clear)
-			variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
+			variant_clear = mono_class_get_method_from_name (mono_class_get_variant_class (), "Clear", 0);
 		g_assert (variant_clear);
 
 
@@ -7349,9 +7346,9 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
 		if (t->byref)
-			*conv_arg_type = &mono_defaults.variant_class->this_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->this_arg;
 		else
-			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->byval_arg;
 
 		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;

@@ -5311,7 +5311,7 @@ mono_class_setup_mono_type (MonoClass *class)
 
 #ifndef DISABLE_COM
 /*
- * COM initialization (using mono_init_com_types) is delayed until needed. 
+ * COM initialization is delayed until needed.
  * However when a [ComImport] attribute is present on a type it will trigger
  * the initialization. This is not a problem unless the BCL being executed 
  * lacks the types that COM depends on (e.g. Variant on Silverlight).
@@ -5332,7 +5332,6 @@ init_com_from_comimport (MonoClass *class)
 	}
 
 	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
-	mono_init_com_types ();
 }
 #endif /*DISABLE_COM*/
 
@@ -5365,7 +5364,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		if (MONO_CLASS_IS_IMPORT (class)) {
 			init_com_from_comimport (class);
 			if (parent == mono_defaults.object_class)
-				parent = mono_defaults.com_object_class;
+				parent = mono_class_get_com_object_class ();
 		}
 #endif
 		if (!parent) {

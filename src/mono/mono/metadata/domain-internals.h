@@ -421,9 +421,6 @@ void
 mono_install_free_domain_hook (MonoFreeDomainFunc func) MONO_INTERNAL;
 
 void 
-mono_init_com_types (void) MONO_INTERNAL;
-
-void 
 mono_cleanup (void) MONO_INTERNAL;
 
 void
