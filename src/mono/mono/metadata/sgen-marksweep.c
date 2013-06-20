@@ -2297,6 +2297,9 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				 */
 				if (!card_data)
 					continue;
+#else
+				g_assert_not_reached ();
+				card_data = NULL;
 #endif
 			} else {
 				card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
