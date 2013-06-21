@@ -5247,25 +5247,27 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 	prev_sp_offset = 0;
 
+	if (iphone_abi) {
+		/* 
+		 * The iphone uses R7 as the frame pointer, and it points at the saved
+		 * r7+lr:
+		 *         <lr>
+		 * r7 ->   <r7>
+		 *         <rest of frame>
+		 * We can't use r7 as a frame pointer since it points into the middle of
+		 * the frame, so we keep using our own frame pointer.
+		 * FIXME: Optimize this.
+		 */
+		g_assert (darwin);
+		ARM_PUSH (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
+		ARM_MOV_REG_REG (code, ARMREG_R7, ARMREG_SP);
+		prev_sp_offset += 8; /* r7 and lr */
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
+		mono_emit_unwind_op_offset (cfg, code, ARMREG_R7, (- prev_sp_offset) + 0);
+	}
+
 	if (!method->save_lmf) {
 		if (iphone_abi) {
-			/* 
-			 * The iphone uses R7 as the frame pointer, and it points at the saved
-			 * r7+lr:
-			 *         <lr>
-			 * r7 ->   <r7>
-			 *         <rest of frame>
-			 * We can't use r7 as a frame pointer since it points into the middle of
-			 * the frame, so we keep using our own frame pointer.
-			 * FIXME: Optimize this.
-			 */
-			g_assert (darwin);
-			ARM_PUSH (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
-			ARM_MOV_REG_REG (code, ARMREG_R7, ARMREG_SP);
-			prev_sp_offset += 8; /* r7 and lr */
-			mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
-			mono_emit_unwind_op_offset (cfg, code, ARMREG_R7, (- prev_sp_offset) + 0);
-
 			/* No need to push LR again */
 			if (cfg->used_int_regs)
 				ARM_PUSH (code, cfg->used_int_regs);
