@@ -987,6 +987,7 @@ typedef enum {
 	ATYPE_NORMAL,
 	ATYPE_VECTOR,
 	ATYPE_SMALL,
+	ATYPE_STRING,
 	ATYPE_NUM
 } SgenAllocatorType;
 
