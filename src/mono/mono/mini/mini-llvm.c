@@ -5135,7 +5135,7 @@ mono_llvm_create_aot_module (const char *got_symbol)
 		LLVMValueRef personality;
 
 		personality = LLVMAddFunction (aot_module.module, "mono_aot_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
-		LLVMSetLinkage (personality, LLVMPrivateLinkage);
+		LLVMSetLinkage (personality, LLVMInternalLinkage);
 		lbb = LLVMAppendBasicBlock (personality, "BB0");
 		lbuilder = LLVMCreateBuilder ();
 		LLVMPositionBuilderAtEnd (lbuilder, lbb);
