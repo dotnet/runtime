@@ -73,7 +73,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
  * debug information.
  */
 MonoDwarfWriter*
-mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_start_line, gboolean appending)
+mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_start_line, gboolean appending, gboolean emit_line_numbers)
 {
 	MonoDwarfWriter *w = g_new0 (MonoDwarfWriter, 1);
 	
@@ -103,6 +103,11 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_st
 	} else {
 		/* Collect line number info and emit it at once */
 		w->collect_line_info = TRUE;
+	}
+
+	if (!emit_line_numbers) {
+		w->emit_line = FALSE;
+		w->collect_line_info = FALSE;
 	}
 
 	w->fp = img_writer_get_fp (w->w);
@@ -1732,6 +1737,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 			//printf ("FIRST: %d %d %d\n", prev_line, loc->row, il_offset);
 			emit_sleb128 (w, (gint32)loc->row - (gint32)prev_line);
 			prev_line = loc->row;
+			prev_native_offset = i;
 			first = FALSE;
 		}
 

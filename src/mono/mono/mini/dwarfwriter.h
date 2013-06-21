@@ -20,7 +20,7 @@
 
 typedef struct _MonoDwarfWriter MonoDwarfWriter;
 
-MonoDwarfWriter* mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_start_line, gboolean appending) MONO_INTERNAL;
+MonoDwarfWriter* mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_start_line, gboolean appending, gboolean emit_line_numbers) MONO_INTERNAL;
 
 void mono_dwarf_writer_destroy (MonoDwarfWriter *w) MONO_INTERNAL;
 

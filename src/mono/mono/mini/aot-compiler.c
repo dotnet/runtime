@@ -131,6 +131,7 @@ typedef struct MonoAotOptions {
 	gboolean no_direct_calls;
 	gboolean use_trampolines_page;
 	gboolean no_instances;
+	gboolean gnu_asm;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -200,6 +201,7 @@ typedef struct MonoAotCompile {
 	char *static_linking_symbol;
 	CRITICAL_SECTION mutex;
 	gboolean use_bin_writer;
+	gboolean gas_line_numbers;
 	MonoImageWriter *w;
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
@@ -226,6 +228,7 @@ typedef struct MonoAotCompile {
 	GHashTable *plt_entry_debug_sym_cache;
 	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
 	GHashTable *ginst_hash;
+	GHashTable *dwarf_ln_filenames;
 	gboolean global_symbols;
 	gboolean direct_method_addresses;
 } MonoAotCompile;
@@ -629,6 +632,7 @@ arch_init (MonoAotCompile *acfg)
 	acfg->user_symbol_prefix = "_";
 	acfg->llvm_label_prefix = "_";
 	acfg->need_no_dead_strip = TRUE;
+	acfg->aot_opts.gnu_asm = TRUE;
 #endif
 
 #if defined(__linux__) && !defined(TARGET_ARM)
@@ -4216,6 +4220,98 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 	return import;
 }
 
+static gint
+compare_lne (MonoDebugLineNumberEntry *a, MonoDebugLineNumberEntry *b)
+{
+	if (a->native_offset == b->native_offset)
+		return a->il_offset - b->il_offset;
+	else
+		return a->native_offset - b->native_offset;
+}
+
+/*
+ * compute_line_numbers:
+ *
+ * Returns a sparse array of size CODE_SIZE containing MonoDebugSourceLocation* entries for the native offsets which have a corresponding line number
+ * entry.
+ */
+static MonoDebugSourceLocation**
+compute_line_numbers (MonoMethod *method, int code_size, MonoDebugMethodJitInfo *debug_info)
+{
+	MonoDebugMethodInfo *minfo;
+	MonoDebugLineNumberEntry *ln_array;
+	MonoDebugSourceLocation *loc;
+	int i, prev_line, prev_il_offset;
+	int *native_to_il_offset = NULL;
+	MonoDebugSourceLocation **res;
+	gboolean first;
+
+	minfo = mono_debug_lookup_method (method);
+	if (!minfo)
+		return NULL;
+
+	g_assert (code_size);
+
+	/* Compute the native->IL offset mapping */
+
+	ln_array = g_new0 (MonoDebugLineNumberEntry, debug_info->num_line_numbers);
+	memcpy (ln_array, debug_info->line_numbers, debug_info->num_line_numbers * sizeof (MonoDebugLineNumberEntry));
+
+	qsort (ln_array, debug_info->num_line_numbers, sizeof (MonoDebugLineNumberEntry), (gpointer)compare_lne);
+
+	native_to_il_offset = g_new0 (int, code_size + 1);
+
+	for (i = 0; i < debug_info->num_line_numbers; ++i) {
+		int j;
+		MonoDebugLineNumberEntry *lne = &ln_array [i];
+
+		if (i == 0) {
+			for (j = 0; j < lne->native_offset; ++j)
+				native_to_il_offset [j] = -1;
+		}
+
+		if (i < debug_info->num_line_numbers - 1) {
+			MonoDebugLineNumberEntry *lne_next = &ln_array [i + 1];
+
+			for (j = lne->native_offset; j < lne_next->native_offset; ++j)
+				native_to_il_offset [j] = lne->il_offset;
+		} else {
+			for (j = lne->native_offset; j < code_size; ++j)
+				native_to_il_offset [j] = lne->il_offset;
+		}
+	}
+	g_free (ln_array);
+
+	/* Compute the native->line number mapping */
+	res = g_new0 (MonoDebugSourceLocation*, code_size);
+	prev_il_offset = -1;
+	prev_line = -1;
+	first = TRUE;
+	for (i = 0; i < code_size; ++i) {
+		int il_offset = native_to_il_offset [i];
+
+		if (il_offset == -1 || il_offset == prev_il_offset)
+			continue;
+		prev_il_offset = il_offset;
+		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
+		if (!(loc && loc->source_file))
+			continue;
+		if (loc->row == prev_line) {
+			mono_debug_symfile_free_location (loc);
+			continue;
+		}
+		prev_line = loc->row;
+		//printf ("D: %s:%d il=%x native=%x\n", loc->source_file, loc->row, il_offset, i);
+		if (first)
+			/* This will cover the prolog too */
+			res [0] = loc;
+		else
+			res [i] = loc;
+		first = FALSE;
+	}
+	return res;
+}
+
 /*
  * emit_and_reloc_code:
  *
@@ -4225,12 +4321,13 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
  * since trampolines are needed to make PTL work.
  */
 static void
-emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only)
+emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only, MonoDebugMethodJitInfo *debug_info)
 {
 	int i, pindex, start_index, method_index;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	MonoMethodHeader *header;
+	MonoDebugSourceLocation **locs = NULL;
 	gboolean skip, direct_call, external_call;
 	guint32 got_slot;
 	const char *direct_call_target;
@@ -4241,6 +4338,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 
 		method_index = get_method_index (acfg, method);
 	}
+
+	if (acfg->gas_line_numbers && method && debug_info)
+		locs = compute_line_numbers (method, code_len, debug_info);
 
 	/* Collect and sort relocations */
 	patches = g_ptr_array_new ();
@@ -4255,6 +4355,25 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 			patch_info = g_ptr_array_index (patches, pindex);
 			if (patch_info->ip.i >= i)
 				break;
+		}
+
+		if (locs && locs [i]) {
+			MonoDebugSourceLocation *loc = locs [i];
+			int findex;
+
+			// FIXME: Free these
+			if (!acfg->dwarf_ln_filenames)
+				acfg->dwarf_ln_filenames = g_hash_table_new (g_str_hash, g_str_equal);
+			findex = GPOINTER_TO_INT (g_hash_table_lookup (acfg->dwarf_ln_filenames, loc->source_file));
+			if (!findex) {
+				findex = g_hash_table_size (acfg->dwarf_ln_filenames) + 1;
+				g_hash_table_insert (acfg->dwarf_ln_filenames, g_strdup (loc->source_file), GINT_TO_POINTER (findex));
+				img_writer_emit_unset_mode (acfg->w);
+				fprintf (acfg->fp, ".file %d \"%s\"\n", findex, loc->source_file);
+			}
+			img_writer_emit_unset_mode (acfg->w);
+			fprintf (acfg->fp, ".loc %d %d 0\n", findex, loc->row);
+			mono_debug_symfile_free_location (loc);
 		}
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
@@ -4374,13 +4493,22 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 
 			/* Try to emit multiple bytes at once */
 			if (pindex < patches->len && patch_info->ip.i > i) {
-				emit_bytes (acfg, code + i, patch_info->ip.i - i);
-				i = patch_info->ip.i - 1;
+				int limit;
+
+				for (limit = i + 1; limit < patch_info->ip.i; ++limit) {
+					if (locs && locs [limit])
+						break;
+				}
+
+				emit_bytes (acfg, code + i, limit - i);
+				i = limit - 1;
 			} else {
 				emit_bytes (acfg, code + i, 1);
 			}
 		}
 	}
+
+	g_free (locs);
 }
 
 /*
@@ -4501,7 +4629,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	acfg->cfgs [method_index]->got_offset = acfg->got_offset;
 
-	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE);
+	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 
 	emit_line (acfg);
 
@@ -5430,7 +5558,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 	 * The code should access everything through the GOT, so we pass
 	 * TRUE here.
 	 */
-	emit_and_reloc_code (acfg, NULL, code, code_size, ji, TRUE);
+	emit_and_reloc_code (acfg, NULL, code, code_size, ji, TRUE, NULL);
 
 	emit_symbol_size (acfg, start_symbol, ".");
 
@@ -8439,12 +8567,19 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
+	if (acfg->aot_opts.dwarf_debug && acfg->aot_opts.asm_only && acfg->aot_opts.gnu_asm) {
+		/*
+		 * CLANG supports GAS .file/.loc directives, so emit line number information this way
+		 */
+		acfg->gas_line_numbers = TRUE;
+	}
+
 	if (!acfg->aot_opts.nodebug || acfg->aot_opts.dwarf_debug) {
 		if (acfg->aot_opts.dwarf_debug && mono_debug_format == MONO_DEBUG_FORMAT_NONE) {
 			fprintf (stderr, "The dwarf AOT option requires the --debug option.\n");
 			return 1;
 		}
-		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE);
+		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE, !acfg->gas_line_numbers);
 	}
 
 	img_writer_emit_start (acfg->w);
