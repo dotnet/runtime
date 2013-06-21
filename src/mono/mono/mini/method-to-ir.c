@@ -3616,13 +3616,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		int rgctx_info;
 		MonoInst *iargs [2];
 
-		/*
-		  FIXME: we cannot get managed_alloc here because we can't get
-		  the class's vtable (because it's not a closed class)
-
-		  MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-		  MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
-		*/
+		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (klass, for_box);
 
 		if (cfg->opt & MONO_OPT_SHARED)
 			rgctx_info = MONO_RGCTX_INFO_KLASS;
@@ -3638,6 +3632,9 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 			iargs [0] = data;
 			alloc_ftn = mono_object_new_specific;
 		}
+
+		if (managed_alloc && !(cfg->opt & MONO_OPT_SHARED))
+			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 
 		return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
 	}
@@ -3664,7 +3661,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		}
 
 #ifndef MONO_CROSS_COMPILE
-		managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
+		managed_alloc = mono_gc_get_managed_allocator (klass, for_box);
 #endif
 
 		if (managed_alloc) {
@@ -5452,7 +5449,7 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 
 			g_assert (vtable); /*Should not fail since it System.String*/
 #ifndef MONO_CROSS_COMPILE
-			managed_alloc = mono_gc_get_managed_allocator (vtable, FALSE);
+			managed_alloc = mono_gc_get_managed_allocator (method->klass, FALSE);
 #endif
 			if (!managed_alloc)
 				return NULL;
