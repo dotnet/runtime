@@ -4312,6 +4312,24 @@ compute_line_numbers (MonoMethod *method, int code_size, MonoDebugMethodJitInfo 
 	return res;
 }
 
+static int
+get_file_index (MonoAotCompile *acfg, const char *source_file)
+{
+	int findex;
+
+	// FIXME: Free these
+	if (!acfg->dwarf_ln_filenames)
+		acfg->dwarf_ln_filenames = g_hash_table_new (g_str_hash, g_str_equal);
+	findex = GPOINTER_TO_INT (g_hash_table_lookup (acfg->dwarf_ln_filenames, source_file));
+	if (!findex) {
+		findex = g_hash_table_size (acfg->dwarf_ln_filenames) + 1;
+		g_hash_table_insert (acfg->dwarf_ln_filenames, g_strdup (source_file), GINT_TO_POINTER (findex));
+		img_writer_emit_unset_mode (acfg->w);
+		fprintf (acfg->fp, ".file %d \"%s\"\n", findex, source_file);
+	}
+	return findex;
+}
+
 /*
  * emit_and_reloc_code:
  *
@@ -4339,8 +4357,14 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 		method_index = get_method_index (acfg, method);
 	}
 
-	if (acfg->gas_line_numbers && method && debug_info)
+	if (acfg->gas_line_numbers && method && debug_info) {
 		locs = compute_line_numbers (method, code_len, debug_info);
+		if (!locs) {
+			int findex = get_file_index (acfg, "<unknown>");
+			img_writer_emit_unset_mode (acfg->w);
+			fprintf (acfg->fp, ".loc %d %d 0\n", findex, 1);
+		}
+	}
 
 	/* Collect and sort relocations */
 	patches = g_ptr_array_new ();
@@ -4361,16 +4385,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 			MonoDebugSourceLocation *loc = locs [i];
 			int findex;
 
-			// FIXME: Free these
-			if (!acfg->dwarf_ln_filenames)
-				acfg->dwarf_ln_filenames = g_hash_table_new (g_str_hash, g_str_equal);
-			findex = GPOINTER_TO_INT (g_hash_table_lookup (acfg->dwarf_ln_filenames, loc->source_file));
-			if (!findex) {
-				findex = g_hash_table_size (acfg->dwarf_ln_filenames) + 1;
-				g_hash_table_insert (acfg->dwarf_ln_filenames, g_strdup (loc->source_file), GINT_TO_POINTER (findex));
-				img_writer_emit_unset_mode (acfg->w);
-				fprintf (acfg->fp, ".file %d \"%s\"\n", findex, loc->source_file);
-			}
+			findex = get_file_index (acfg, loc->source_file);
 			img_writer_emit_unset_mode (acfg->w);
 			fprintf (acfg->fp, ".loc %d %d 0\n", findex, loc->row);
 			mono_debug_symfile_free_location (loc);
