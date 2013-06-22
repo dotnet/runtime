@@ -5307,7 +5307,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				reg_offset += 4;
 			}
 		}
-		pos += sizeof (MonoLMF) - prev_sp_offset;
+		pos += sizeof (MonoLMF) - (4 * 10);
 		lmf_offset = pos;
 	}
 	alloc_size += pos;
@@ -5718,10 +5718,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			sp_adj += 4;
 			reg ++;
 		}
+		if (iphone_abi)
+			/* Restored later */
+			regmask &= ~(1 << ARMREG_PC);
 		/* point sp at the registers to restore: 10 is 14 -4, because we skip r0-r3 */
 		code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage - lmf_offset + sp_adj);
 		/* restore iregs */
 		ARM_POP (code, regmask); 
+		if (iphone_abi) {
+			/* Restore saved r7, restore LR to PC */
+			/* Skip lr from the lmf */
+			ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, sizeof (gpointer), 0);
+			ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_PC));
+		}
 	} else {
 		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
