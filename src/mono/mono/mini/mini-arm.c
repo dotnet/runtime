@@ -4256,13 +4256,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IREM:
 			g_assert (v7s_supported);
-			ARM_SDIV (code, ARMREG_IP, ins->sreg1, ins->sreg2);
-			ARM_MLS (code, ins->dreg, ARMREG_IP, ins->sreg2, ins->sreg1);
+			ARM_SDIV (code, ARMREG_LR, ins->sreg1, ins->sreg2);
+			ARM_MLS (code, ins->dreg, ARMREG_LR, ins->sreg2, ins->sreg1);
 			break;
 		case OP_IREM_UN:
 			g_assert (v7s_supported);
-			ARM_UDIV (code, ARMREG_IP, ins->sreg1, ins->sreg2);
-			ARM_MLS (code, ins->dreg, ARMREG_IP, ins->sreg2, ins->sreg1);
+			ARM_UDIV (code, ARMREG_LR, ins->sreg1, ins->sreg2);
+			ARM_MLS (code, ins->dreg, ARMREG_LR, ins->sreg2, ins->sreg1);
 			break;
 		case OP_DIV_IMM:
 		case OP_REM_IMM:
