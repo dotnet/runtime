@@ -101,15 +101,15 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-
 /* Return value marshalling for calls between gsharedvt and normal code */
 typedef enum {
 	GSHAREDVT_RET_NONE = 0,
-	GSHAREDVT_RET_IREGS = 1,
-	GSHAREDVT_RET_I1 = 5,
-	GSHAREDVT_RET_U1 = 6,
-	GSHAREDVT_RET_I2 = 7,
-	GSHAREDVT_RET_U2 = 8
+	GSHAREDVT_RET_IREG = 1,
+	GSHAREDVT_RET_IREGS = 2,
+	GSHAREDVT_RET_I1 = 3,
+	GSHAREDVT_RET_U1 = 4,
+	GSHAREDVT_RET_I2 = 5,
+	GSHAREDVT_RET_U2 = 6
 } GSharedVtRetMarshal;
 
 typedef struct {
