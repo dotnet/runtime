@@ -610,6 +610,11 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
 
+#if defined(TARGET_AMD64) && defined(TARGET_MACH)
+	/* osx contains an old as which doesn't support avx opcodes */
+	g_string_append (acfg->llc_args, "-mattr=-avx");
+#endif
+
 #ifdef TARGET_ARM
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
@@ -6268,6 +6273,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		mono_destroy_compile (cfg);
 		return;
 	}
+	cfg->method_index = index;
 
 	/* Nullify patches which need no aot processing */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
@@ -6636,6 +6642,13 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 #else
 	return g_strdup_printf (plt_entry->llvm_symbol);
 #endif
+}
+
+int
+mono_aot_get_method_index (MonoMethod *method)
+{
+	g_assert (llvm_acfg);
+	return get_method_index (llvm_acfg, method);
 }
 
 MonoJumpInfo*

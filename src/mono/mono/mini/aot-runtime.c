@@ -2147,14 +2147,10 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	/* Header */
 	version = *p;
-	g_assert (version == 1 || version == 2);
+	g_assert (version == 3);
 	p ++;
-	if (version == 2) {
-		func_encoding = *p;
-		p ++;
-	} else {
-		func_encoding = DW_EH_PE_pcrel;
-	}
+	func_encoding = *p;
+	p ++;
 	p = ALIGN_PTR_TO (p, 4);
 
 	fde_count = *(guint32*)p;
@@ -2165,31 +2161,20 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	cie = p + ((fde_count + 1) * 8);
 
 	/* Binary search in the table to find the entry for code */
-	if (func_encoding == DW_EH_PE_absptr) {
-		/*
-		 * Table entries are encoded as DW_EH_PE_absptr, because the ios linker can move functions inside object files to make thumb work,
-		 * so the offsets between two symbols in the text segment are not assembler constant.
-		 */
-		g_assert (sizeof(gpointer) == 4);
-		offset = GPOINTER_TO_INT (code);
-	} else {
-		/* Table entries are encoded as DW_EH_PE_pcrel relative to mono_eh_frame */
-		offset = code - amodule->mono_eh_frame;
-	}
-
+	offset = code - amodule->code;
 	left = 0;
 	right = fde_count;
 	while (TRUE) {
 		pos = (left + right) / 2;
 
-		offset1 = table [(pos * 2)];
+		/* The table contains method index/fde offset pairs */
+		g_assert (table [(pos * 2)] != -1);
+		offset1 = amodule->code_offsets [table [(pos * 2)]];
 		if (pos + 1 == fde_count) {
-			if (func_encoding == DW_EH_PE_absptr)
-				offset2 = GPOINTER_TO_INT (amodule->code_end);
-			else
-				offset2 = amodule->code_end - amodule->code;
+			offset2 = amodule->code_end - amodule->code;
 		} else {
-			offset2 = table [(pos + 1) * 2];
+			g_assert (table [(pos + 1) * 2] != -1);
+			offset2 = amodule->code_offsets [table [(pos + 1) * 2]];
 		}
 
 		if (offset < offset1)
@@ -2200,14 +2185,12 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 			break;
 	}
 
-	if (func_encoding == DW_EH_PE_absptr) {
-		code_start = (gpointer)(gsize)table [(pos * 2)];
-		code_end = (gpointer)(gsize)table [(pos * 2) + 2];
-	} else {
-		code_start = amodule->mono_eh_frame + table [(pos * 2)];
-		/* This won't overflow because there is +1 entry in the table */
-		code_end = amodule->mono_eh_frame + table [(pos * 2) + 2];
-	}
+	code_start = amodule->code + amodule->code_offsets [table [(pos * 2)]];
+	if (pos + 1 == fde_count)
+		/* End of table */
+		code_end = amodule->code_end;
+	else
+		code_end = amodule->code + amodule->code_offsets [table [(pos + 1) * 2]];
 	code_len = code_end - code_start;
 
 	g_assert (code >= code_start && code < code_end);

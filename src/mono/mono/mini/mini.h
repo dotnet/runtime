@@ -1531,7 +1531,7 @@ typedef struct {
 	GSList *headers_to_free;
 
 	/* Used by AOT */
-	guint32 got_offset, ex_info_offset, method_info_offset;
+	guint32 got_offset, ex_info_offset, method_info_offset, method_index;
 	/* Symbol used to refer to this method in generated assembly */
 	char *asm_symbol;
 	char *llvm_method_name;
@@ -2072,6 +2072,7 @@ MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method) MONO_INT
 guint32  mono_aot_get_got_offset            (MonoJumpInfo *ji) MONO_LLVM_INTERNAL;
 char*    mono_aot_get_method_name           (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 char*    mono_aot_get_plt_symbol            (MonoJumpInfoType type, gconstpointer data) MONO_LLVM_INTERNAL;
+int      mono_aot_get_method_index          (MonoMethod *method) MONO_LLVM_INTERNAL;
 MonoJumpInfo* mono_aot_patch_info_dup       (MonoJumpInfo* ji) MONO_LLVM_INTERNAL;
 void     mono_aot_set_make_unreadable       (gboolean unreadable) MONO_INTERNAL;
 gboolean mono_aot_is_pagefault              (void *ptr) MONO_INTERNAL;
