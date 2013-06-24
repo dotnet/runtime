@@ -6754,10 +6754,15 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
+#if defined(TARGET_MACH) && defined(TARGET_ARM)
+	/* ios requires PIC code now */
+	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
+#else
 	if (llvm_acfg->aot_opts.static_link)
 		g_string_append_printf (acfg->llc_args, " -relocation-model=static");
 	else
 		g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
+#endif
 	unlink (acfg->tmpfname);
 
 	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o %s %s.opt.bc", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpfname);
