@@ -297,6 +297,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.Json.Microsoft.dll
 %_prefix/lib/mono/4.5/System.Net.dll
 %_prefix/lib/mono/4.5/System.Net.Http.dll
+%_prefix/lib/mono/4.5/System.Net.Http.WebRequest.dll
 %_prefix/lib/mono/4.5/System.Numerics.dll
 %_prefix/lib/mono/4.5/System.Security.dll
 %_prefix/lib/mono/4.5/System.Threading.Tasks.Dataflow.dll
@@ -339,6 +340,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/System.IO.Compression.FileSystem
 %_prefix/lib/mono/gac/System.Net
 %_prefix/lib/mono/gac/System.Net.Http
+%_prefix/lib/mono/gac/System.Net.Http.WebRequest
 %_prefix/lib/mono/gac/System.Numerics
 %_prefix/lib/mono/gac/System.Security
 %_prefix/lib/mono/gac/System.Threading.Tasks.Dataflow
