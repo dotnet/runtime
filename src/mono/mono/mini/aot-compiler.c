@@ -4254,6 +4254,9 @@ compute_line_numbers (MonoMethod *method, int code_size, MonoDebugMethodJitInfo 
 	minfo = mono_debug_lookup_method (method);
 	if (!minfo)
 		return NULL;
+	// FIXME: This seems to happen when two methods have the same cfg->method_to_register
+	if (debug_info->code_size != code_size)
+		return NULL;
 
 	g_assert (code_size);
 
