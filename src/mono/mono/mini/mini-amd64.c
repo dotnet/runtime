@@ -5592,6 +5592,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_amd64_emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
 		}
+		case OP_TLS_GET_REG:
+#ifdef TARGET_OSX
+			// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
+			if (ins->dreg != ins->sreg1)
+				amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
+			amd64_shift_reg_imm (code, X86_SHL, ins->dreg, 3);
+			if (tls_gs_offset)
+				amd64_alu_reg_imm (code, X86_ADD, ins->dreg, tls_gs_offset);
+			x86_prefix (code, X86_GS_PREFIX);
+			amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, sizeof (gpointer));
+#else
+			g_assert_not_reached ();
+#endif
+			break;
 		case OP_MEMORY_BARRIER: {
 			switch (ins->backend.memory_barrier_kind) {
 			case StoreLoadBarrier:
