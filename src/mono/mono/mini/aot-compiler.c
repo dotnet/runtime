@@ -8357,6 +8357,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	int i, res;
 	MonoAotCompile *acfg;
 	char *outfile_name, *tmp_outfile_name, *p;
+	char llvm_stats_msg [256];
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
@@ -8688,9 +8689,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->llvm)
 		g_assert (acfg->got_offset <= acfg->final_got_size);
 
+	if (acfg->llvm)
+		sprintf (llvm_stats_msg, ", LLVM: %d (%d%%)", acfg->stats.llvm_count, acfg->stats.mcount ? (acfg->stats.llvm_count * 100) / acfg->stats.mcount : 100);
+	else
+		strcpy (llvm_stats_msg, "");
 	printf ("Code: %d Info: %d Ex Info: %d Unwind Info: %d Class Info: %d PLT: %d GOT Info: %d GOT: %d Offsets: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.unwind_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, (int)(acfg->got_offset * sizeof (gpointer)), acfg->stats.offsets_size);
-	printf ("Compiled: %d/%d (%d%%), No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
+	printf ("Compiled: %d/%d (%d%%)%s, No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
 			acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100,
+			llvm_stats_msg,
 			acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100,
 			acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
 	if (acfg->stats.genericcount)
@@ -8701,8 +8707,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.ocount)
 		printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
-	if (acfg->llvm)
-		printf ("Methods compiled with LLVM: %d (%d%%)\n", acfg->stats.llvm_count, acfg->stats.mcount ? (acfg->stats.llvm_count * 100) / acfg->stats.mcount : 100);
 
 	TV_GETTIME (atv);
 	res = img_writer_emit_writeout (acfg->w);
