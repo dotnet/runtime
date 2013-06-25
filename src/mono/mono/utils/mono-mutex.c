@@ -16,8 +16,11 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <sys/time.h>
 #include <mono/utils/mono-memory-model.h>
+
+#ifndef HOST_WIN32
+#include <sys/time.h>
+#endif
 
 #include "mono-mutex.h"
 
