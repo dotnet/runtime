@@ -42,6 +42,7 @@
     <ClCompile Include="..\mono\utils\mono-math.c" />
     <ClCompile Include="..\mono\utils\mono-md5.c" />
     <ClCompile Include="..\mono\utils\mono-mmap.c" />
+    <ClCompile Include="..\mono\utils\mono-mutex.c" />
     <ClCompile Include="..\mono\utils\mono-networkinterfaces.c" />
     <ClCompile Include="..\mono\utils\mono-path.c" />
     <ClCompile Include="..\mono\utils\mono-poll.c" />
@@ -99,6 +100,7 @@
     <ClInclude Include="..\mono\utils\mono-membar.h" />
     <ClInclude Include="..\mono\utils\mono-memory-model.h" />
     <ClInclude Include="..\mono\utils\mono-mmap.h" />
+    <ClInclude Include="..\mono\utils\mono-mutex.h" />
     <ClInclude Include="..\mono\utils\mono-networkinterfaces.h" />
     <ClInclude Include="..\mono\utils\mono-path.h" />
     <ClInclude Include="..\mono\utils\mono-poll.h" />
