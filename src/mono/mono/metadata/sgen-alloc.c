@@ -800,12 +800,10 @@ create_allocator (int atype)
 		/* bytes = (sizeof (MonoString) + ((len + 1) * 2)); */
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_icon (mb, 1);
-		mono_mb_emit_byte (mb, MONO_CEE_ADD);
-		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CEE_SHL);
-		// sizeof (MonoString) might include padding
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoString, chars));
-		mono_mb_emit_byte (mb, MONO_CEE_ADD);
+		//WE manually fold the above + 2 here
+		mono_mb_emit_icon (mb, sizeof (MonoString) + 2);
+		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_stloc (mb, size_var);
 	} else {
 		g_assert_not_reached ();
