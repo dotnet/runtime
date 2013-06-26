@@ -3167,7 +3167,7 @@ fi
 if test "x$enable_shared" = "xno" -a "x$enable_executables" = "xyes"; then
    LIBMONO_LA=libmini-static.la
 else
-   LIBMONO_LA=libmono-$API_VER.la
+   LIBMONO_LA=libmonosgen-$API_VER.la
 fi
 AC_SUBST(LIBMONO_LA)
 
