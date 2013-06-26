@@ -4334,7 +4334,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 	g_free (names);
 
-	{
+	if (cfg->compile_aot) {
 		LLVMValueRef md_args [16];
 		LLVMValueRef md_node;
 		int method_index;
