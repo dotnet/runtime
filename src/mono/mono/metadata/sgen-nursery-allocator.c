@@ -70,6 +70,7 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
+#include "metadata/sgen-memory-governor.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
@@ -151,6 +152,8 @@ static AllocRecord *alloc_records;
 static volatile int next_record;
 static volatile int alloc_count;
 
+void dump_alloc_records (void);
+void verify_alloc_records (void);
 
 static const char*
 get_reason_name (AllocRecord *rec)
