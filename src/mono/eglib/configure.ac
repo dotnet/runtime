@@ -137,9 +137,15 @@ AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 
 #
+# Mono currently supports 10.6, but strndup is not available prior to 10.7; avoiding
+# the detection of strndup on OS X so Mono built on 10.7+ still runs on 10.6. This can be
+# removed once support for 10.6 is dropped.
+#
 # iOS detection of strndup and getpwuid_r is faulty for some reason so let's simply avoid it
 #
-if test x$target_ios = xno; then
+if test x$target_osx = xyes; then
+AC_CHECK_FUNCS(getpwuid_r)
+elif test x$target_ios = xno; then
 AC_CHECK_FUNCS(strndup getpwuid_r)
 fi
 
