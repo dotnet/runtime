@@ -1166,10 +1166,19 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 	vt_slot = mono_method_get_vtable_slot (cmethod);
 	m = klass->vtable [vt_slot];
 	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class))
+		/*
+		 * Calling a non-vtype method with a vtype receiver, has to box.
+		 */
 		*this_arg = mono_value_box (mono_domain_get (), klass, mp);
 	else if (klass->valuetype)
+		/*
+		 * Calling a vtype method with a vtype receiver
+		 */
 		*this_arg = mp;
 	else
+		/*
+		 * Calling a non-vtype method
+		 */
 		*this_arg = *(gpointer*)mp;
 	return m;
 }
