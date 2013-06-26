@@ -188,7 +188,7 @@ mono_sgen_CFLAGS = $(AM_CFLAGS)
 if SUPPORT_BOEHM
 buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-static.la
 	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
-mono_boehm-main-boehm.$(OBJEXT): buildver-boehm.h
+mono_boehm-main.$(OBJEXT): buildver-boehm.h
 endif
 
 buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la

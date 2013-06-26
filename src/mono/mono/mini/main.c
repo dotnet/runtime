@@ -2,7 +2,7 @@
 #include "mini.h"
 #ifndef HOST_WIN32
 #ifndef BUILDVER_INCLUDED
-#include "buildver.h"
+#include "buildver-boehm.h"
 #endif
 #endif
 
