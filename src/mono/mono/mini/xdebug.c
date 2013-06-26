@@ -109,12 +109,20 @@ void MONO_NOINLINE __jit_debug_register_code(void);
    debugger may check the version before we can set it.  */
 struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
 
+#if !defined(MONO_LLVM_LOADED) && defined(ENABLE_LLVM) && ((LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION >= 7) || LLVM_MAJOR_VERSION > 2)
+
+/* LLVM already defines these */
+
+#else
+
 /* gcc seems to inline/eliminate calls to noinline functions, thus the asm () */
 void MONO_NOINLINE __jit_debug_register_code(void) {
 #if defined(__GNUC__)
 	asm ("");
 #endif
 }
+
+#endif
 
 static MonoImageWriter *xdebug_w;
 static MonoDwarfWriter *xdebug_writer;

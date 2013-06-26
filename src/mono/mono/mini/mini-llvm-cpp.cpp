@@ -36,7 +36,6 @@
 #include <llvm/ExecutionEngine/JITMemoryManager.h>
 #include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/Target/TargetOptions.h>
-#include <llvm/Target/TargetData.h>
 #include <llvm/Target/TargetRegisterInfo.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Analysis/Passes.h>
@@ -441,7 +440,7 @@ force_pass_linking (void)
       (void) llvm::createLCSSAPass();
       (void) llvm::createLICMPass();
       (void) llvm::createLazyValueInfoPass();
-      (void) llvm::createLoopDependenceAnalysisPass();
+      //(void) llvm::createLoopDependenceAnalysisPass();
 	  /*
       (void) llvm::createLoopExtractorPass();
 	  */
@@ -567,7 +566,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   fpm = new FunctionPassManager (unwrap (MP));
 
-  fpm->add(new TargetData(*EE->getTargetData()));
+  fpm->add(new DataLayout(*EE->getDataLayout()));
 
   PassRegistry &Registry = *PassRegistry::getPassRegistry();
   initializeCore(Registry);
@@ -580,7 +579,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   //initializeInstrumentation(Registry);
   initializeTarget(Registry);
 
-  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
+  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "");
 
   if (PassList.size() > 0) {
 	  /* Use the passes specified by the env variable */
@@ -602,7 +601,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	  args = g_strsplit (opts, " ", 1000);
 	  for (i = 0; args [i]; i++)
 		  ;
-	  llvm::cl::ParseCommandLineOptions (i, args, "", false);
+	  llvm::cl::ParseCommandLineOptions (i, args, "");
 	  g_strfreev (args);
 
 	  for (unsigned i = 0; i < PassList.size(); ++i) {
