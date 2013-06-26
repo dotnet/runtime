@@ -595,14 +595,14 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
  * mono_tramp_info_create:
  *
  *   Create a MonoTrampInfo structure from the arguments. This function assumes ownership
- * of NAME, JI, and UNWIND_OPS.
+ * of JI, and UNWIND_OPS.
  */
 MonoTrampInfo*
 mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops)
 {
 	MonoTrampInfo *info = g_new0 (MonoTrampInfo, 1);
 
-	info->name = (char*)name;
+	info->name = g_strdup ((char*)name);
 	info->code = code;
 	info->code_size = code_size;
 	info->ji = ji;
