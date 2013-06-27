@@ -734,9 +734,9 @@ clean-local:
 pkgconfigdir = $(libdir)/pkgconfig
 
 if JIT_SUPPORTED
-BUILT_SOURCES = version.h $(arch_built) mono mono-boehm
+BUILT_SOURCES = version.h $(arch_built) mono
 else
-BUILT_SOURCES = version.h mono mono-boehm
+BUILT_SOURCES = version.h mono
 endif
 
 if SUPPORT_SGEN
