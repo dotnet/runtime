@@ -499,6 +499,20 @@ AC_CHECK_HEADERS(linux/magic.h)
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
+AC_CACHE_CHECK([for clang],
+	mono_cv_clang,[
+	AC_TRY_COMPILE([], [
+		#ifdef __clang__
+		#else
+		#error "FAILED"
+		#endif
+		return 0;
+	],
+	[mono_cv_clang=yes],
+	[mono_cv_clang=no],
+	[])
+])
+
 WARN=''
 if test x"$GCC" = xyes; then
         WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value'
@@ -530,6 +544,12 @@ if test x"$GCC" = xyes; then
 		   AC_MSG_RESULT(no)
 		   CFLAGS=$ORIG_CFLAGS
 		])
+
+		if test "x$mono_cv_clang" = "xyes"; then
+	   	   # https://bugzilla.samba.org/show_bug.cgi?id=8118
+	   	   WARN="$WARN -Qunused-arguments"
+	   	   WARN="$WARN -Wno-unused-function -Wno-tautological-compare"
+		fi
 else
 	# The Sun Forte compiler complains about inline functions that access static variables
 	# so disable all inlining.
@@ -541,20 +561,6 @@ else
 fi
 CFLAGS="$CFLAGS -g $WARN"
 CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
-
-AC_CACHE_CHECK([for clang],
-	mono_cv_clang,[
-	AC_TRY_COMPILE([], [
-		#ifdef __clang__
-		#else
-		#error "FAILED"
-		#endif
-		return 0;
-	],
-	[mono_cv_clang=yes],
-	[mono_cv_clang=no],
-	[])
-])
 
 # Where's the 'mcs' source tree?
 if test -d $srcdir/mcs; then
