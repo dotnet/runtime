@@ -47,7 +47,7 @@ sgenstatic_libs = \
 
 CLASS=$(mcs_topdir)/class/lib/net_4_5
 
-RUNTIME_EXECUTABLE = $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_builddir)/runtime/mono-wrapper)
+RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_builddir)/runtime/mono-wrapper)
 
 RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(RUNTIME_EXECUTABLE)
@@ -108,7 +108,7 @@ mono_bin_suffix = sgen
 libmono_suffix = boehm
 
 mono: mono-$(mono_bin_suffix)
-	ln -f $< $@
+	ln -sf $< $@
 
 install-exec-hook:
 	ln -sf $(DESTDIR)$(bindir)/mono-$(libmono_suffix) $(DESTDIR)$(bindir)/mono
@@ -179,6 +179,9 @@ mono_boehm_CFLAGS = $(AM_CFLAGS)
 AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 
 mono_sgen_SOURCES = \
+	main-sgen.c
+
+mono_SOURCES = \
 	main-sgen.c
 
 mono_sgen_CFLAGS = $(AM_CFLAGS)
@@ -731,9 +734,13 @@ clean-local:
 pkgconfigdir = $(libdir)/pkgconfig
 
 if JIT_SUPPORTED
-BUILT_SOURCES = version.h $(arch_built) mono
+BUILT_SOURCES = version.h $(arch_built) mono mono-boehm
 else
-BUILT_SOURCES = version.h mono
+BUILT_SOURCES = version.h mono mono-boehm
+endif
+
+if SUPPORT_SGEN
+BUILT_SOURCES += mono-sgen
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
