@@ -421,6 +421,8 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 		ret = t_info.virtual_size;
 	else if (strcmp (item, "Threads") == 0)
 		ret = th_count;
+	else
+		ret = 0;
 
 	mach_port_deallocate (mach_task_self (), task);
 	
