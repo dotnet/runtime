@@ -82,11 +82,13 @@ monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags) $(e
 endif
 
 if HOST_WIN32
-libmonoboehm_2_0_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
-libmonosgen_2_0_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
+libmonoldflags=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
 else
-libmonoboehm_2_0_la_LDFLAGS=$(monoldflags) -version-info 1:0:0
-libmonosgen_2_0_la_LDFLAGS=$(monoldflags) -version-info 1:0:0
+if PLATFORM_ANDROID
+libmonoldflags= -avoid-version $(monoldflags)
+else
+libmonoldflags=$(monoldflags) -version-info 1:0:0
+endif
 endif
 
 if JIT_SUPPORTED
@@ -539,23 +541,12 @@ libmini_la_CFLAGS = $(mono_CFLAGS)
 libmonoboehm_2_0_la_SOURCES =
 libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
 libmonoboehm_2_0_la_LIBADD = libmini.la $(libs) $(LIBMONO_DTRACE_OBJECT)
-libmonoboehm_2_0_la_LDFLAGS = $(monoldflags)
+libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags)
 
 libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
-libmonosgen_2_0_la_LDFLAGS = $(monoldflags)
-
-# if SUPPORT_SGEN
-# libmono_2_0_la_SOURCES =
-# libmono_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
-# libmono_2_0_la_LIBADD = libmonosgen-2.0.la libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
-# endif
-
-
-if PLATFORM_ANDROID
-libmonosgen_2_0_la_LDFLAGS = -avoid-version
-endif
+libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags)
 
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmini_la_SOURCES)
