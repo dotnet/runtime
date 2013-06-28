@@ -3088,6 +3088,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
+	case MONO_PATCH_INFO_GOT_OFFSET:
 		return (ji->type << 8);
 	case MONO_PATCH_INFO_SWITCH:
 		return (ji->type << 8) | ji->data.table->table_size;
