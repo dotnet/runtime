@@ -1389,9 +1389,7 @@ switch_gc (char* argv[], const char* target_gc)
 {
 	GString *path;
 
-	printf ("current gc is %s\n", mono_gc_get_gc_name ());
 	if (!strcmp (mono_gc_get_gc_name (), target_gc)) {
-		printf ("same gc\n");
 		return;
 	}
 
@@ -1406,7 +1404,6 @@ switch_gc (char* argv[], const char* target_gc)
 	g_string_append_c (path, '-');
 	g_string_append (path, target_gc);
 
-	printf ("executing %s\n", path->str);
 #ifdef HAVE_EXECVP
 	execvp (path->str, argv);
 #else
