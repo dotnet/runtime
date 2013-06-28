@@ -109,6 +109,9 @@ endif
 mono_bin_suffix = sgen
 libmono_suffix = boehm
 
+bin_SCRIPTS = mono
+noinst_SCRIPTS = mono
+
 mono: mono-$(mono_bin_suffix)
 	ln -sf $< $@
 
@@ -725,9 +728,9 @@ clean-local:
 pkgconfigdir = $(libdir)/pkgconfig
 
 if JIT_SUPPORTED
-BUILT_SOURCES = version.h $(arch_built) mono
+BUILT_SOURCES = version.h $(arch_built)
 else
-BUILT_SOURCES = version.h mono
+BUILT_SOURCES = version.h
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
