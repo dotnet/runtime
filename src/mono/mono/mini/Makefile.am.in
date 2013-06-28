@@ -739,10 +739,6 @@ else
 BUILT_SOURCES = version.h mono
 endif
 
-if SUPPORT_SGEN
-BUILT_SOURCES += mono-sgen
-endif
-
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	genmdesc.pl				\
