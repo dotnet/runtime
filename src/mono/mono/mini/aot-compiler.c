@@ -924,13 +924,23 @@ arch_emit_llvm_plt_entry (MonoAotCompile *acfg, int index)
 	/* LLVM calls the PLT entries using bl, so these have to be thumb2 */
 	/* The caller already transitioned to thumb */
 	/* The code below should be 12 bytes long */
+	/* clang has trouble encoding these instructions, so emit the binary */
+#if 0
 	fprintf (acfg->fp, "ldr ip, [pc, #8]\n");
 	/* thumb can't encode ld pc, [pc, ip] */
 	fprintf (acfg->fp, "add ip, pc, ip\n");
 	fprintf (acfg->fp, "ldr ip, [ip, #0]\n");
 	fprintf (acfg->fp, "bx ip\n");
+#endif
+	fprintf (acfg->fp, ".code 16\n");
+	fprintf (acfg->fp, ".4byte 0xc008f8df\n");
+	fprintf (acfg->fp, ".2byte 0x44fc\n");
+	fprintf (acfg->fp, ".4byte 0xc000f8dc\n");
+	fprintf (acfg->fp, ".2byte 0x4760\n");
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) + 4);
 	emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+	img_writer_emit_unset_mode (acfg->w);
+	fprintf (acfg->fp, ".code 32\n");
 #else
 	g_assert_not_reached ();
 #endif
