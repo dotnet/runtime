@@ -109,6 +109,8 @@ endif
 mono_bin_suffix = sgen
 libmono_suffix = boehm
 
+if DISABLE_EXECUTABLES
+else
 bin_SCRIPTS = mono
 noinst_SCRIPTS = mono
 
@@ -118,7 +120,7 @@ mono: mono-$(mono_bin_suffix)
 install-exec-hook:
 	ln -sf $(DESTDIR)$(bindir)/mono-$(libmono_suffix) $(DESTDIR)$(bindir)/mono
 	(cd $(DESTDIR)$(libdir); for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
-
+endif
 
 if DISABLE_EXECUTABLES
 else
@@ -129,7 +131,11 @@ bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries)
 endif
 endif
 
+if DISABLE_EXECUTABLES
+noinst_PROGRAMS = genmdesc
+else
 noinst_PROGRAMS = genmdesc mono
+endif
 
 if DISABLE_EXECUTABLES
 shared_libraries = $(boehm_libraries) $(sgen_libraries)
@@ -194,12 +200,20 @@ mono_sgen_CFLAGS = $(AM_CFLAGS)
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
+if DISABLE_EXECUTABLES
+buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime.la
+else
 buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-static.la
+endif
 	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
 mono_boehm-main.$(OBJEXT): buildver-boehm.h
 endif
 
+if DISABLE_EXECUTABLES
+buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.la
+else
 buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la
+endif
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
 
