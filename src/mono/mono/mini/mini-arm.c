@@ -5303,10 +5303,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
 			if ((i > ARMREG_R3) && (i != ARMREG_SP) && (i != ARMREG_PC)) {
-				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
+				/* The original r7 is saved at the start */
+				if (!(iphone_abi && i == ARMREG_R7))
+					mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				reg_offset += 4;
 			}
 		}
+		g_assert (reg_offset == 4 * 10);
 		pos += sizeof (MonoLMF) - (4 * 10);
 		lmf_offset = pos;
 	}
