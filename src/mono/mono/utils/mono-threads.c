@@ -13,6 +13,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/domain-internals.h>
 
@@ -434,8 +435,15 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 
 	mono_mutex_unlock (&info->suspend_lock);
 	mono_hazard_pointer_clear (hp, 1);
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
 
 	return result;
+}
+
+void
+mono_thread_info_finish_suspend (void)
+{
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
 }
 
 /*
@@ -446,7 +454,12 @@ static gboolean
 is_thread_in_critical_region (MonoThreadInfo *info)
 {
 	MonoMethod *method;
-	MonoJitInfo *ji = mono_jit_info_table_find (
+	MonoJitInfo *ji;
+
+	if (info->inside_critical_region)
+		return TRUE;
+
+	ji = mono_jit_info_table_find (
 		info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN],
 		MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
 
@@ -504,6 +517,8 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 		}
 		sleep_duration += 10;
 	}
+
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, TRUE);
 
 	mono_thread_info_suspend_unlock ();
 	return info;

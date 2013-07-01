@@ -119,6 +119,13 @@ typedef struct {
 	/*async call machinery, thread MUST be suspended before accessing those fields*/
 	void (*async_target)(void*);
 	void *user_data;
+
+	/*
+	If true, this thread is running a critical region of code and cannot be suspended.
+	A critical session is implicitly started when you call mono_thread_info_safe_suspend_sync
+	and is ended when you call either mono_thread_info_resume or mono_thread_info_finish_suspend.
+	*/
+	gboolean inside_critical_region;
 } MonoThreadInfo;
 
 typedef struct {
@@ -198,6 +205,9 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_k
 
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid) MONO_INTERNAL;
+
+void
+mono_thread_info_finish_suspend (void) MONO_INTERNAL;
 
 void
 mono_thread_info_self_suspend (void) MONO_INTERNAL;

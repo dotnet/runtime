@@ -4636,6 +4636,7 @@ transition_to_suspended (MonoInternalThread *thread)
 	} else {
 		thread->state &= ~ThreadState_SuspendRequested;
 		thread->state |= ThreadState_Suspended;
+		mono_thread_info_finish_suspend ();
 	}
 	LeaveCriticalSection (thread->synch_cs);
 }
