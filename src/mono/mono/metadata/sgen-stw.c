@@ -233,6 +233,7 @@ sgen_stop_world (int generation)
 	MONO_GC_WORLD_STOP_END ();
 
 	sgen_memgov_collection_start (generation);
+	sgen_bridge_reset_data ();
 
 	return count;
 }
@@ -248,6 +249,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	unsigned long usec, bridge_usec;
 
 	/* notify the profiler of the leftovers */
+	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
 		sgen_gc_event_moves ();
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
