@@ -28,7 +28,7 @@
       <library_output>./../../class/lib/basic/tmp/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/basic_System.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-basic">
       <boot>true</boot>
@@ -48,7 +48,7 @@
       <library_output>./../../class/lib/basic/tmp/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
-      <response>System.dll.sources</response>
+      <response>./../../build/deps/basic_System.dll.sources</response>
     </project>
     <project dir="class/Mono.Security" library="Mono.Security-basic">
       <boot>true</boot>
@@ -182,7 +182,7 @@
     </project>
     <project dir="class/corlib" library="corlib-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -debug -optimize -r:./../../class/lib/net_2_0/mscorlib.dll -debug+ -debug:full -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -debug -optimize -r:./../../class/lib/net_2_0/mscorlib.dll -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
       <output>corlib_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>corlib_test_net_2_0.dll</library_output>
@@ -192,7 +192,7 @@
     </project>
     <project dir="class/System" library="System-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/tmp/System.dll</library_output>
@@ -202,7 +202,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_2_0.dll</library_output>
@@ -302,7 +302,7 @@
     </project>
     <project dir="class/System" library="System-net_2_0-1">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/tmp/System.dll</library_output>
@@ -312,7 +312,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_2_0.dll</library_output>
@@ -362,7 +362,7 @@
     </project>
     <project dir="class/System" library="System-net_2_0-2">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/tmp/System.dll</library_output>
@@ -372,7 +372,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_2_0.dll</library_output>
@@ -1672,7 +1672,7 @@
     </project>
     <project dir="class/System.Net" library="System.Net-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_2_1 -d:NET_2_0 -d:NET_1_1 -d:NET_3_5 -nowarn:1720</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
       <output>System.Net.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/System.Net.dll</library_output>
@@ -1942,7 +1942,7 @@
     </project>
     <project dir="tools/mkbundle" library="mkbundle-net_2_0">
       <boot></boot>
-      <flags>/codepage:65001 -r:Mono.Posix.dll -r:ICSharpCode.SharpZipLib.dll -resource:template.c -resource:template_z.c -resource:template_main.c -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -resource:template.c -resource:template_z.c -resource:template_main.c -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>mkbundle.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/mkbundle.exe</library_output>
@@ -2122,7 +2122,7 @@
     </project>
     <project dir="class/corlib" library="corlib-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -optimize -r:./../../class/lib/net_4_0/mscorlib.dll -debug+ -debug:full -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -optimize -r:./../../class/lib/net_4_0/mscorlib.dll -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
       <output>corlib_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>corlib_test_net_4_0.dll</library_output>
@@ -2132,7 +2132,7 @@
     </project>
     <project dir="class/System" library="System-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/tmp/System.dll</library_output>
@@ -2142,7 +2142,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_0.dll</library_output>
@@ -2242,7 +2242,7 @@
     </project>
     <project dir="class/System" library="System-net_4_0-1">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/tmp/System.dll</library_output>
@@ -2252,7 +2252,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_0.dll</library_output>
@@ -2302,7 +2302,7 @@
     </project>
     <project dir="class/System" library="System-net_4_0-2">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/tmp/System.dll</library_output>
@@ -2312,7 +2312,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_0.dll</library_output>
@@ -3622,7 +3622,7 @@
     </project>
     <project dir="class/System.Net" library="System.Net-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_2_1 -d:NET_2_0 -d:NET_1_1 -d:NET_3_5 -nowarn:1720</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
       <output>System.Net.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/System.Net.dll</library_output>
@@ -4042,7 +4042,7 @@
     </project>
     <project dir="class/monodoc" library="monodoc-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 /nowarn:618,612,672,809 /define:LEGACY_MODE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/monodoc.dll /r:System.Core.dll /r:System.Xml.dll</flags>
+      <flags>/codepage:65001 /nowarn:618,612,672,809 /define:LEGACY_MODE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/monodoc.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll</flags>
       <output>monodoc_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>monodoc_test_net_4_0.dll</library_output>
@@ -4082,7 +4082,7 @@
     </project>
     <project dir="class/corlib" library="corlib-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize -r:./../../class/lib/net_4_5/mscorlib.dll -debug+ -debug:full -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize -r:./../../class/lib/net_4_5/mscorlib.dll -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
       <output>corlib_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>corlib_test_net_4_5.dll</library_output>
@@ -4092,7 +4092,7 @@
     </project>
     <project dir="class/System" library="System-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/tmp/System.dll</library_output>
@@ -4102,7 +4102,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_5.dll</library_output>
@@ -4202,7 +4202,7 @@
     </project>
     <project dir="class/System" library="System-net_4_5-1">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/tmp/System.dll</library_output>
@@ -4212,7 +4212,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_5.dll</library_output>
@@ -4262,7 +4262,7 @@
     </project>
     <project dir="class/System" library="System-net_4_5-2">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/tmp/System.dll</library_output>
@@ -4272,7 +4272,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:0618 -nowarn:219 -nowarn:67 -nowarn:169 -nowarn:612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_5.dll</library_output>
@@ -5582,7 +5582,7 @@
     </project>
     <project dir="class/System.Net" library="System.Net-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_2_1 -d:NET_2_0 -d:NET_1_1 -d:NET_3_5 -nowarn:1720</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
       <output>System.Net.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Net.dll</library_output>
@@ -5812,7 +5812,7 @@
     </project>
     <project dir="class/System.Reactive.Interfaces" library="System.Reactive.Interfaces-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Interfaces.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Interfaces.dll</library_output>
@@ -5822,7 +5822,7 @@
     </project>
     <project dir="class/System.Reactive.Core" library="System.Reactive.Core-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Core.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Core.dll</library_output>
@@ -5832,7 +5832,7 @@
     </project>
     <project dir="class/System.Reactive.Linq" library="System.Reactive.Linq-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Linq.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Linq.dll</library_output>
@@ -5842,7 +5842,7 @@
     </project>
     <project dir="class/System.Reactive.PlatformServices" library="System.Reactive.PlatformServices-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.PlatformServices.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.PlatformServices.dll</library_output>
@@ -5852,7 +5852,7 @@
     </project>
     <project dir="class/System.Reactive.Providers" library="System.Reactive.Providers-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Providers.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Providers.dll</library_output>
@@ -5862,7 +5862,7 @@
     </project>
     <project dir="class/System.Reactive.Runtime.Remoting" library="System.Reactive.Runtime.Remoting-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Runtime.Remoting.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Runtime.Remoting.dll</library_output>
@@ -5872,7 +5872,7 @@
     </project>
     <project dir="class/System.Reactive.Windows.Forms" library="System.Reactive.Windows.Forms-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -r:System.Windows.Forms.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -r:System.Windows.Forms.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Windows.Forms.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Windows.Forms.dll</library_output>
@@ -5882,7 +5882,7 @@
     </project>
     <project dir="class/System.Reactive.Windows.Threading" library="System.Reactive.Windows.Threading-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -r:WindowsBase.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -r:WindowsBase.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Windows.Threading.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Windows.Threading.dll</library_output>
@@ -5892,7 +5892,7 @@
     </project>
     <project dir="class/System.Reactive.Experimental" library="System.Reactive.Experimental-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Experimental.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Experimental.dll</library_output>
@@ -5902,7 +5902,7 @@
     </project>
     <project dir="class/System.Reactive.Debugger" library="System.Reactive.Debugger-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
       <output>System.Reactive.Debugger.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Reactive.Debugger.dll</library_output>
@@ -6002,7 +6002,7 @@
     </project>
     <project dir="class/monodoc" library="monodoc-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 /nowarn:618,612,672,809 /define:LEGACY_MODE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/monodoc.dll /r:System.Core.dll /r:System.Xml.dll</flags>
+      <flags>/codepage:65001 /nowarn:618,612,672,809 /define:LEGACY_MODE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/monodoc.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll</flags>
       <output>monodoc_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>monodoc_test_net_4_5.dll</library_output>
@@ -6059,6 +6059,16 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/System.Net.Http_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/System.Net.Http.WebRequest" library="System.Net.Http.WebRequest-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.Net.Http.dll -r:System.dll</flags>
+      <output>System.Net.Http.WebRequest.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.Net.Http.WebRequest.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Net.Http.WebRequest.dll.sources</response>
     </project>
     <project dir="class/System.Web.Razor" library="System.Web.Razor-net_4_5">
       <boot>false</boot>
@@ -6140,6 +6150,26 @@
       <profile>net_4_5</profile>
       <response>System.Web.Http.SelfHost.dll.sources</response>
     </project>
+    <project dir="class/System.Web.Http.WebHost" library="">
+      <boot></boot>
+      <flags></flags>
+      <output></output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <fx_version></fx_version>
+      <profile></profile>
+      <response></response>
+    </project>
+    <project dir="System.Web.Http.WebHost-net_4_5" library="">
+      <boot></boot>
+      <flags></flags>
+      <output></output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <fx_version></fx_version>
+      <profile></profile>
+      <response></response>
+    </project>
     <project dir="class/EntityFramework" library="EntityFramework-net_4_5">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.Data.dll -r:System.Transactions.dll -r:System.Xml.Linq.dll -r:System.Configuration.dll -r:System.ComponentModel.DataAnnotations.dll -r:System.Runtime.Serialization.dll -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:Microsoft.CSharp.dll -keyfile:../ecma.pub -delaysign -warn:1 -resource:System.Data.Entity.Properties.Resources.resources -resource:System.Data.Entity.Properties.Resources.Migrate.resources -resource:System.Data.Entity.Properties.Resources.PowerShell.resources -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinition.csdl -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.DbProviderServices.ConceptualSchemaDefinitionVersion3.csdl -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/System.Data.Resources.ProviderServices.ProviderManifest.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.AnnotationSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CodeGenerationSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_1_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.CSDLSchema_3.xsd -resource:System.Data.Resources.EntityStoreSchemaGenerator.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/EntityModel/System.Data.Resources.SSDLSchema_3.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_1.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_2.xsd -resource:../../../external/entityframework/src/EntityFramework/Resources/System/Data/MappingSpecification/System.Data.Resources.CSMSL_3.xsd</flags>
@@ -6179,6 +6209,466 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/Mono.CodeContracts_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/System.IO.Compression" library="System.IO.Compression-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.IO.Compression.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.IO.Compression.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.IO.Compression.dll.sources</response>
+    </project>
+    <project dir="class/System.IO.Compression.FileSystem" library="System.IO.Compression.FileSystem-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System /r:System.IO.Compression.dll</flags>
+      <output>System.IO.Compression.FileSystem.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.IO.Compression.FileSystem.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.IO.Compression.FileSystem.dll.sources</response>
+    </project>
+    <project dir="class/System.Windows" library="System.Windows-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Windows.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.Windows.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Windows.dll.sources</response>
+    </project>
+    <project dir="class/System.Xml.Serialization" library="System.Xml.Serialization-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml /r:System.ServiceModel</flags>
+      <output>System.Xml.Serialization.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.Xml.Serialization.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.Serialization.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime" library="System.Runtime-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System /r:System.Core /r:System.ComponentModel.Composition</flags>
+      <output>System.Runtime.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Linq" library="System.Linq-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <output>System.Linq.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.XmlSerializer" library="System.Xml.XmlSerializer-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml</flags>
+      <output>System.Xml.XmlSerializer.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.XmlSerializer.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.XmlSerializer.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.ServiceModel.Primitives" library="System.ServiceModel.Primitives-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.ServiceModel /r:System.Xml</flags>
+      <output>System.ServiceModel.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ServiceModel.Primitives.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ServiceModel.Primitives.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.ReaderWriter" library="System.Xml.ReaderWriter-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml</flags>
+      <output>System.Xml.ReaderWriter.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.ReaderWriter.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.ReaderWriter.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Diagnostics.Debug" library="System.Diagnostics.Debug-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Diagnostics.Debug.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Debug.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Diagnostics.Debug.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Extensions" library="System.Runtime.Extensions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Runtime.Extensions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Extensions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Extensions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Diagnostics.Tools" library="System.Diagnostics.Tools-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Diagnostics.Tools.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Tools.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Diagnostics.Tools.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Collections" library="System.Collections-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System /r:System.Core</flags>
+      <output>System.Collections.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Collections.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Collections.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.ComponentModel.EventBasedAsync" library="System.ComponentModel.EventBasedAsync-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.ComponentModel.EventBasedAsync.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.EventBasedAsync.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ComponentModel.EventBasedAsync.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.ComponentModel" library="System.ComponentModel-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.ComponentModel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ComponentModel.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.ObjectModel" library="System.ObjectModel-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.ObjectModel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ObjectModel.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ObjectModel.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Text.RegularExpressions" library="System.Text.RegularExpressions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Text.RegularExpressions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.RegularExpressions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Text.RegularExpressions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Threading" library="System.Threading-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <output>System.Threading.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Threading.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.InteropServices" library="System.Runtime.InteropServices-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Runtime.InteropServices.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.InteropServices.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.InteropServices.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection" library="System.Reflection-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Reflection.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Globalization" library="System.Globalization-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Globalization.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Globalization.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Globalization.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.IO" library="System.IO-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.IO.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.IO.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.IO.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Primitives" library="System.Reflection.Primitives-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Reflection.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Primitives.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Primitives.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Resources.ResourceManager" library="System.Resources.ResourceManager-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Resources.ResourceManager.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Resources.ResourceManager.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Resources.ResourceManager.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Security.Principal" library="System.Security.Principal-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Security.Principal.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Security.Principal.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Security.Principal.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Text.Encoding" library="System.Text.Encoding-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Text.Encoding.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.Encoding.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Text.Encoding.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Text.Encoding.Extensions" library="System.Text.Encoding.Extensions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Text.Encoding.Extensions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.Encoding.Extensions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Text.Encoding.Extensions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Linq.Queryable" library="System.Linq.Queryable-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <output>System.Linq.Queryable.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Queryable.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.Queryable.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Linq.Expressions" library="System.Linq.Expressions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <output>System.Linq.Expressions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Expressions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.Expressions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Net.Primitives" library="System.Net.Primitives-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Net.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Net.Primitives.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Net.Primitives.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Net.Requests" library="System.Net.Requests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Net.Requests.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Net.Requests.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Net.Requests.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Net.NetworkInformation" library="System.Net.NetworkInformation-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Net.NetworkInformation.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Net.NetworkInformation.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Net.NetworkInformation.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Serialization.Primitives" library="System.Runtime.Serialization.Primitives-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Runtime.Serialization /r:System.Xml</flags>
+      <output>System.Runtime.Serialization.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Primitives.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Serialization.Primitives.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Serialization.Xml" library="System.Runtime.Serialization.Xml-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Runtime.Serialization /r:System.Xml</flags>
+      <output>System.Runtime.Serialization.Xml.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Xml.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Serialization.Xml.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Serialization.Json" library="System.Runtime.Serialization.Json-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Runtime.Serialization /r:System.Xml</flags>
+      <output>System.Runtime.Serialization.Json.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Json.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Serialization.Json.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.ServiceModel.Http" library="System.ServiceModel.Http-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.ServiceModel</flags>
+      <output>System.ServiceModel.Http.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ServiceModel.Http.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ServiceModel.Http.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.XDocument" library="System.Xml.XDocument-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml.Linq /r:System.Xml</flags>
+      <output>System.Xml.XDocument.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.XDocument.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.XDocument.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Threading.Tasks" library="System.Threading.Tasks-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <output>System.Threading.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.Tasks.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Threading.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Diagnostics.Contracts" library="System.Diagnostics.Contracts-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Diagnostics.Contracts.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Contracts.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Diagnostics.Contracts.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Dynamic.Runtime" library="System.Dynamic.Runtime-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Dynamic.Runtime.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Dynamic.Runtime.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Dynamic.Runtime.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.ComponentModel.Annotations" library="System.ComponentModel.Annotations-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.ComponentModel.DataAnnotations</flags>
+      <output>System.ComponentModel.Annotations.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.Annotations.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ComponentModel.Annotations.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Numerics" library="System.Runtime.Numerics-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Numerics</flags>
+      <output>System.Runtime.Numerics.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Numerics.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Numerics.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Linq.Parallel" library="System.Linq.Parallel-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <output>System.Linq.Parallel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Parallel.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.Parallel.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Collections.Concurrent" library="System.Collections.Concurrent-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <output>System.Collections.Concurrent.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Collections.Concurrent.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Collections.Concurrent.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Threading.Tasks.Parallel" library="System.Threading.Tasks.Parallel-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Threading.Tasks.Parallel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.Tasks.Parallel.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Threading.Tasks.Parallel.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Extensions" library="System.Reflection.Extensions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>System.Reflection.Extensions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Extensions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Extensions.dll.sources</response>
     </project>
     <project dir="nunit24/NUnit.Framework/framework" library="NUnit.Framework-net_4_5">
       <boot>false</boot>
@@ -6332,7 +6822,7 @@
     </project>
     <project dir="tools/mkbundle" library="mkbundle-net_4_5">
       <boot></boot>
-      <flags>/codepage:65001 -r:Mono.Posix.dll -r:ICSharpCode.SharpZipLib.dll -resource:template.c -resource:template_z.c -resource:template_main.c -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -resource:template.c -resource:template_z.c -resource:template_main.c -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>mkbundle.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/mkbundle.exe</library_output>
