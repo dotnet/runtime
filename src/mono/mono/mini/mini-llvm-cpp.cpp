@@ -47,6 +47,9 @@
 #include <llvm/CodeGen/MachineFunctionPass.h>
 #include <llvm/CodeGen/MachineFunction.h>
 #include <llvm/CodeGen/MachineFrameInfo.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
 //#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
@@ -125,11 +128,16 @@ public:
 		return NULL;
 	}
 
-	virtual uint8_t *allocateDataSection(uintptr_t Size, unsigned Alignment,
-										 unsigned SectionID) {
+	virtual uint8_t* allocateDataSection(uintptr_t, unsigned int, unsigned int, bool) {
 		// FIXME:
 		assert(0);
 		return NULL;
+	}
+
+	virtual bool applyPermissions(std::string*) {
+		// FIXME:
+		assert(0);
+		return false;
 	}
 
 	virtual void* getPointerToNamedFunction(const std::string &Name, bool AbortOnFailure) {
