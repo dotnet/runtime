@@ -99,8 +99,8 @@ typedef struct {
 	/*Tells if this thread was created by the runtime or not.*/
 	gboolean runtime_thread;
 
-	/* suspend machinery, fields protected by the suspend_lock */
-	mono_mutex_t suspend_lock;
+	/* suspend machinery, fields protected by suspend_semaphore */
+	MonoSemType suspend_semaphore;
 	int suspend_count;
 
 	MonoSemType finish_resume_semaphore;

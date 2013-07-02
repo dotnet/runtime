@@ -46,6 +46,12 @@ typedef HANDLE MonoSemType;
 #define MONO_SEM_TIMEDWAIT(sem, timeout_ms) MONO_SEM_TIMEDWAIT_ALERTABLE(sem, timeout_ms, FALSE)
 #define MONO_SEM_TIMEDWAIT_ALERTABLE(sem, timeout_ms, alertable) mono_sem_timedwait ((sem), (timeout_ms), alertable) 
 
+#define MONO_SEM_WAIT_UNITERRUPTIBLE(sem) do { \
+	while (MONO_SEM_WAIT ((sem)) != 0) {	\
+		/*if (EINTR != errno) ABORT("sem_wait failed"); */	\
+	}	\
+} while (0)
+
 G_BEGIN_DECLS
 
 int mono_sem_wait (MonoSemType *sem, gboolean alertable);
