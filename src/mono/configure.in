@@ -512,6 +512,21 @@ AC_CACHE_CHECK([for clang],
 	[])
 ])
 
+if test "x$mono_cv_clang" = "xyes"; then
+	AC_CACHE_CHECK([Whether -Wno-tautological-compare is supported],
+		mono_cv_warn_autological_compare, [
+		ORIG_CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS -Wno-tautological-compare"
+		AC_TRY_COMPILE([], [
+			return 0;
+		],
+		[mono_cv_warn_autological_compare=yes],
+		[mono_cv_warn_autological_compare=no],
+		[])
+		CFLAGS="$ORIG_CFLAGS"
+	])
+fi
+
 WARN=''
 if test x"$GCC" = xyes; then
         WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value'
@@ -547,7 +562,10 @@ if test x"$GCC" = xyes; then
 		if test "x$mono_cv_clang" = "xyes"; then
 	   	   # https://bugzilla.samba.org/show_bug.cgi?id=8118
 	   	   WARN="$WARN -Qunused-arguments"
-	   	   WARN="$WARN -Wno-unused-function -Wno-tautological-compare"
+	   	   WARN="$WARN -Wno-unused-function"
+		   if test "x$mono_cv_warn_autological_compare" = "xyes"; then
+	   	     WARN="$WARN -Wno-unused-function -Wno-tautological-compare"
+		   fi
 		fi
 else
 	# The Sun Forte compiler complains about inline functions that access static variables
