@@ -6023,8 +6023,14 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
 		g_assert (info);
-		if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER)
+		if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+			MonoGenericContext *ctx = NULL;
+			if (method->is_inflated)
+				ctx = mono_method_get_context (method);
 			method = info->d.synchronized_inner.method;
+			if (ctx)
+				method = mono_class_inflate_generic_method (method, ctx);
+		}
 	}
 
 	info = lookup_method (target_domain, method);

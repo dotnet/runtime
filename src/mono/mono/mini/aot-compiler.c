@@ -3484,8 +3484,26 @@ add_wrappers (MonoAotCompile *acfg)
 		token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
 
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED && !method->is_generic)
-			add_method (acfg, mono_marshal_get_synchronized_wrapper (method));
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
+			if (method->is_generic) {
+				// FIXME:
+			} else if (method->klass->generic_container) {
+				MonoGenericContext ctx;
+				MonoMethod *inst, *gshared, *m;
+
+				/*
+				 * Create a generic wrapper for a generic instance, and AOT that.
+				 */
+				create_gsharedvt_inst (acfg, method, &ctx);
+				inst = mono_class_inflate_generic_method (method, &ctx);	
+				m = mono_marshal_get_synchronized_wrapper (inst);
+				g_assert (m->is_inflated);
+				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+				add_method (acfg, gshared);
+			} else {
+				add_method (acfg, mono_marshal_get_synchronized_wrapper (method));
+			}
+		}
 	}
 
 	/* pinvoke wrappers */
@@ -6165,6 +6183,7 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_DELEGATE_INVOKE:
 			case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 			case MONO_WRAPPER_DELEGATE_END_INVOKE:
+			case MONO_WRAPPER_SYNCHRONIZED:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
 			case MONO_WRAPPER_CASTCLASS: {
@@ -7325,6 +7344,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		value = get_method_index (acfg, method);
 
 		hash = mono_aot_method_hash (method) % table_size;
+		//printf ("X: %s %d\n", mono_method_full_name (method, 1), hash);
 
 		chain_lengths [hash] ++;
 		max_chain_length = MAX (max_chain_length, chain_lengths [hash]);
