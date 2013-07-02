@@ -2326,7 +2326,7 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 
 	*error = 0;
 	
-	if (code == FIONBIO) {
+	if ((guint32)code == FIONBIO) {
 		/* Invalid command. Must use Socket.Blocking */
 		return -1;
 	}
