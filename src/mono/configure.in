@@ -174,9 +174,8 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
 		libdl=
 		libgc_threads=pthreads
-		# This doesn't seem to work as of 7.0 on amd64
-		with_sigaltstack=no
 		use_sigposix=yes
+		has_dtrace=yes
 		;;
 	*-*-*openbsd*)
 		host_win32=no
