@@ -71,6 +71,8 @@
 
 #if defined(__linux__) || defined(__native_client_codegen__)
 #define RODATA_SECT ".rodata"
+#elif defined(TARGET_MACH)
+#define RODATA_SECT ".section __TEXT, __const"
 #else
 #define RODATA_SECT ".text"
 #endif
