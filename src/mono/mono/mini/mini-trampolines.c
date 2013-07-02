@@ -525,7 +525,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			actual_method = vt->klass->vtable [displacement];
 		}
 
-		if (method_inst || m->wrapper_type) {
+		if (method_inst) {
 			MonoGenericContext context = { NULL, NULL };
 
 			if (m->is_inflated)

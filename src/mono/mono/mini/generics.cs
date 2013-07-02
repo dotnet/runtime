@@ -906,20 +906,6 @@ class Tests
 		return result;
 	}
 
-	class SyncClass<T> {
-		[MethodImpl(MethodImplOptions.Synchronized)]
-		public Type getInstance() {
-			return typeof (T);
-		}
-	}
-
-	static int test_0_synchronized_gshared () {
-		var c = new SyncClass<string> ();
-		if (c.getInstance () != typeof (string))
-			return 1;
-		return 0;
-	}
-
 	class Response {
 	}
 
