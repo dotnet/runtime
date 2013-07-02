@@ -89,7 +89,7 @@ typedef struct {
 
 	gint event_system;
 	gpointer event_data;
-	void (*modify) (gpointer event_data, int fd, int operation, int events, gboolean is_new);
+	void (*modify) (gpointer p, int fd, int operation, int events, gboolean is_new);
 	void (*wait) (gpointer sock_data);
 	void (*shutdown) (gpointer event_data);
 } SocketIOData;
@@ -557,8 +557,7 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 
 	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
 	ievt = get_events_from_list (list);
-	LeaveCriticalSection (&data->io_lock);
-	data->modify (data->event_data, fd, state->operation, ievt, is_new);
+	data->modify (data, fd, state->operation, ievt, is_new);
 }
 
 #ifndef DISABLE_SOCKETS
