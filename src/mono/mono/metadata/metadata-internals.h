@@ -588,7 +588,7 @@ mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
 void
 mono_metadata_clean_generic_classes_for_image (MonoImage *image) MONO_INTERNAL;
 
-void
+MONO_API void
 mono_metadata_cleanup (void);
 
 const char *   mono_meta_table_name              (int table) MONO_INTERNAL;
@@ -608,7 +608,7 @@ mono_metadata_parse_array_full              (MonoImage             *image,
 					     const char            *ptr,
 					     const char           **rptr) MONO_INTERNAL;
 
-MonoType *
+MONO_API MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     MonoParseTypeMode      mode,
@@ -621,14 +621,14 @@ mono_metadata_parse_signature_full          (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
 					     guint32                token) MONO_INTERNAL;
 
-MonoMethodSignature *
+MONO_API MonoMethodSignature *
 mono_metadata_parse_method_signature_full   (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
 					     int                     def,
 					     const char             *ptr,
 					     const char            **rptr);
 
-MonoMethodHeader *
+MONO_API MonoMethodHeader *
 mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     const char            *ptr);
@@ -687,7 +687,7 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 					      gboolean *is_version_defined,
 						  gboolean *is_token_defined) MONO_INTERNAL;
 
-guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
+MONO_API guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 
 void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
 
@@ -702,7 +702,7 @@ mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
 int
 mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open) MONO_INTERNAL;
 
-void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
+MONO_API void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
 
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;
@@ -713,7 +713,7 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, const char *ptr) MONO_I
 guint	       mono_metadata_generic_inst_hash (gconstpointer data) MONO_INTERNAL;
 gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb) MONO_INTERNAL;
 
-void
+MONO_API void
 mono_metadata_field_info_with_mempool (
 					  MonoImage *meta, 
 				      guint32       table_index,

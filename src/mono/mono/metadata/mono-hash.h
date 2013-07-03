@@ -34,6 +34,7 @@
  */
 
 #include <glib.h>
+#include <mono/utils/mono-publib.h>
 
 G_BEGIN_DECLS
 
@@ -52,51 +53,51 @@ typedef enum {
 
 /* Hash tables
  */
-MonoGHashTable* mono_g_hash_table_new		   (GHashFunc	    hash_func,
+MONO_API MonoGHashTable* mono_g_hash_table_new		   (GHashFunc	    hash_func,
 					    GEqualFunc	    key_equal_func);
-MonoGHashTable* mono_g_hash_table_new_type		   (GHashFunc	    hash_func,
+MONO_API MonoGHashTable* mono_g_hash_table_new_type		   (GHashFunc	    hash_func,
 					    GEqualFunc	    key_equal_func,
 					    MonoGHashGCType type);
-MonoGHashTable* mono_g_hash_table_new_full      	   (GHashFunc	    hash_func,
+MONO_API MonoGHashTable* mono_g_hash_table_new_full      	   (GHashFunc	    hash_func,
 					    GEqualFunc	    key_equal_func,
 					    GDestroyNotify  key_destroy_func,
 					    GDestroyNotify  value_destroy_func);
-void	    mono_g_hash_table_destroy	   (MonoGHashTable	   *hash_table);
-void	    mono_g_hash_table_insert		   (MonoGHashTable	   *hash_table,
+MONO_API void	    mono_g_hash_table_destroy	   (MonoGHashTable	   *hash_table);
+MONO_API void	    mono_g_hash_table_insert		   (MonoGHashTable	   *hash_table,
 					    gpointer	    key,
 					    gpointer	    value);
-void        mono_g_hash_table_replace           (MonoGHashTable     *hash_table,
+MONO_API void        mono_g_hash_table_replace           (MonoGHashTable     *hash_table,
 					    gpointer	    key,
 					    gpointer	    value);
-gboolean    mono_g_hash_table_remove		   (MonoGHashTable	   *hash_table,
+MONO_API gboolean    mono_g_hash_table_remove		   (MonoGHashTable	   *hash_table,
 					    gconstpointer   key);
-gboolean    mono_g_hash_table_steal             (MonoGHashTable     *hash_table,
+MONO_API gboolean    mono_g_hash_table_steal             (MonoGHashTable     *hash_table,
 					    gconstpointer   key);
-gpointer    mono_g_hash_table_lookup		   (MonoGHashTable	   *hash_table,
+MONO_API gpointer    mono_g_hash_table_lookup		   (MonoGHashTable	   *hash_table,
 					    gconstpointer   key);
-gboolean    mono_g_hash_table_lookup_extended   (MonoGHashTable	   *hash_table,
+MONO_API gboolean    mono_g_hash_table_lookup_extended   (MonoGHashTable	   *hash_table,
 					    gconstpointer   lookup_key,
 					    gpointer	   *orig_key,
 					    gpointer	   *value);
-void	    mono_g_hash_table_foreach	   (MonoGHashTable	   *hash_table,
+MONO_API void	    mono_g_hash_table_foreach	   (MonoGHashTable	   *hash_table,
 					    GHFunc	    func,
 					    gpointer	    user_data);
-guint	    mono_g_hash_table_foreach_remove	   (MonoGHashTable	   *hash_table,
+MONO_API guint	    mono_g_hash_table_foreach_remove	   (MonoGHashTable	   *hash_table,
 					    GHRFunc	    func,
 					    gpointer	    user_data);
-guint	    mono_g_hash_table_foreach_steal	   (MonoGHashTable	   *hash_table,
+MONO_API guint	    mono_g_hash_table_foreach_steal	   (MonoGHashTable	   *hash_table,
 					    GHRFunc	    func,
 					    gpointer	    user_data);
-gpointer    mono_g_hash_table_find (MonoGHashTable *hash_table,
+MONO_API gpointer    mono_g_hash_table_find (MonoGHashTable *hash_table,
 									GHRFunc predicate,
 									gpointer user_data);
-guint	    mono_g_hash_table_size		   (MonoGHashTable	   *hash_table);
+MONO_API guint	    mono_g_hash_table_size		   (MonoGHashTable	   *hash_table);
 
-void        mono_g_hash_table_remap (MonoGHashTable *hash_table,
+MONO_API void        mono_g_hash_table_remap (MonoGHashTable *hash_table,
 									 MonoGRemapperFunc func,
 									 gpointer user_data);
 
-void        mono_g_hash_table_print_stats (MonoGHashTable *table);
+MONO_API void        mono_g_hash_table_print_stats (MonoGHashTable *table);
 
 G_END_DECLS
 

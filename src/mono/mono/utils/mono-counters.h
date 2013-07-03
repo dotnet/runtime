@@ -25,21 +25,21 @@ enum {
 	MONO_COUNTER_LAST_SECTION
 };
 
-void mono_counters_enable (int section_mask);
+MONO_API void mono_counters_enable (int section_mask);
 
 /* 
  * register addr as the address of a counter of type type.
  * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
  */
-void mono_counters_register (const char* descr, int type, void *addr);
+MONO_API void mono_counters_register (const char* descr, int type, void *addr);
 
 /* 
  * Create a readable dump of the counters for section_mask sections (ORed section values)
  */
-void mono_counters_dump (int section_mask, FILE *outfile);
+MONO_API void mono_counters_dump (int section_mask, FILE *outfile);
 
-void mono_counters_cleanup (void);
+MONO_API void mono_counters_cleanup (void);
 
 typedef enum {
 	MONO_RESOURCE_JIT_CODE, /* bytes */
@@ -50,9 +50,9 @@ typedef enum {
 
 typedef void (*MonoResourceCallback) (int resource_type, uintptr_t value, int is_soft);
 
-int  mono_runtime_resource_limit        (int resource_type, uintptr_t soft_limit, uintptr_t hard_limit);
-void mono_runtime_resource_set_callback (MonoResourceCallback callback);
-void mono_runtime_resource_check_limit  (int resource_type, uintptr_t value);
+MONO_API int  mono_runtime_resource_limit        (int resource_type, uintptr_t soft_limit, uintptr_t hard_limit);
+MONO_API void mono_runtime_resource_set_callback (MonoResourceCallback callback);
+MONO_API void mono_runtime_resource_check_limit  (int resource_type, uintptr_t value);
 
 #endif /* __MONO_COUNTERS_H__ */
 

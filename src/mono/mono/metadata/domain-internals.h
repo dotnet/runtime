@@ -608,7 +608,7 @@ MonoImage *mono_assembly_open_from_bundle (const char *filename,
 					   MonoImageOpenStatus *status,
 					   gboolean refonly) MONO_INTERNAL;
 
-void
+MONO_API void
 mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointer data, guint32 *bitmap);
 
 MonoReflectionAssembly *

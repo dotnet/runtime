@@ -18,7 +18,9 @@
 MONO_BEGIN_DECLS
 
 /* VS 2010 and later have stdint.h */
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if defined(_MSC_VER)
+
+#if _MSC_VER < 1600
 
 typedef __int8			int8_t;
 typedef unsigned __int8		uint8_t;
@@ -33,7 +35,25 @@ typedef unsigned __int64	uint64_t;
 
 #include <stdint.h>
 
+#endif
+
+#define MONO_API_EXPORT __declspec(dllexport)
+#define MONO_API_IMPORT __declspec(dllimport)
+
+#else
+
+#define MONO_API_EXPORT
+#define MONO_API_IMPORT
+
 #endif /* end of compiler-specific stuff */
+
+#if !defined(MONO_STATIC_BUILD) && defined(MONO_DLL_EXPORT)
+	#define MONO_API MONO_API_EXPORT
+#elif !defined(MONO_STATIC_BUILD)
+	#define MONO_API MONO_API_IMPORT
+#else
+	#define MONO_API
+#endif
 
 typedef int32_t		mono_bool;
 typedef uint8_t		mono_byte;
@@ -42,7 +62,7 @@ typedef uint16_t	mono_unichar2;
 typedef void	(*MonoFunc)	(void* data, void* user_data);
 typedef void	(*MonoHFunc)	(void* key, void* value, void* user_data);
 
-void mono_free (void *);
+MONO_API void mono_free (void *);
 
 #define MONO_CONST_RETURN const
 

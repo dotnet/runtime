@@ -514,16 +514,16 @@ ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropPr
 MonoComInteropProxy*
 ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk) MONO_INTERNAL;
 
-void
+MONO_API void
 mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length);
 
-void
+MONO_API void
 mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill);
 
-void
+MONO_API void
 mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length);
 
-void
+MONO_API void
 mono_win32_compat_ZeroMemory (gpointer dest, gsize length);
 
 void

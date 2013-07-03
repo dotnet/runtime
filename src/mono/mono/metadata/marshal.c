@@ -98,7 +98,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 static void 
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
-void *
+MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
 static void *
@@ -145,7 +145,7 @@ mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image);
 static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params);
 
-void
+MONO_API void
 mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
 
 #endif

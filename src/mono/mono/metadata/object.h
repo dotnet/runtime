@@ -65,231 +65,231 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
 		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
-mono_unichar2 *mono_string_chars  (MonoString *s);
-int            mono_string_length (MonoString *s);
+MONO_API mono_unichar2 *mono_string_chars  (MonoString *s);
+MONO_API int            mono_string_length (MonoString *s);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_new_specific    (MonoVTable *vtable);
 
 /* can be used for classes without finalizer in non-profiling mode */
-MonoObject *
+MONO_API MonoObject *
 mono_object_new_fast	    (MonoVTable *vtable);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t token);
 
-MonoArray*
+MONO_API MonoArray*
 mono_array_new		    (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
 
-MonoArray*
+MONO_API MonoArray*
 mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
 			     uintptr_t *lengths, intptr_t *lower_bounds);
 
-MonoArray *
+MONO_API MonoArray *
 mono_array_new_specific	    (MonoVTable *vtable, uintptr_t n);
 
-MonoArray*
+MONO_API MonoArray*
 mono_array_clone	    (MonoArray *array);
 
-char*
+MONO_API char*
 mono_array_addr_with_size   (MonoArray *array, int size, uintptr_t idx);
 
-uintptr_t
+MONO_API uintptr_t
 mono_array_length           (MonoArray *array);
 
-MonoString*
+MONO_API MonoString*
 mono_string_new_utf16	    (MonoDomain *domain, const mono_unichar2 *text, int32_t len);
 
-MonoString*
+MONO_API MonoString*
 mono_string_new_size	    (MonoDomain *domain, int32_t len);
 
-MonoString*
+MONO_API MonoString*
 mono_ldstr		    (MonoDomain *domain, MonoImage *image, uint32_t str_index);
 
-MonoString*
+MONO_API MonoString*
 mono_string_is_interned	    (MonoString *str);
 
-MonoString*
+MONO_API MonoString*
 mono_string_intern	    (MonoString *str);
 
-MonoString*
+MONO_API MonoString*
 mono_string_new		    (MonoDomain *domain, const char *text);
 
-MonoString*
+MONO_API MonoString*
 mono_string_new_wrapper	    (const char *text);
 
-MonoString*
+MONO_API MonoString*
 mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int length);
 
-char *
+MONO_API char *
 mono_string_to_utf8	    (MonoString *string_obj);
 
-char *
+MONO_API char *
 mono_string_to_utf8_checked (MonoString *string_obj, MonoError *error);
 
-mono_unichar2 *
+MONO_API mono_unichar2 *
 mono_string_to_utf16	    (MonoString *string_obj);
 
-MonoString *
+MONO_API MonoString *
 mono_string_from_utf16	    (mono_unichar2 *data);
 
-mono_bool
+MONO_API mono_bool
 mono_string_equal           (MonoString *s1, MonoString *s2);
 
-unsigned int
+MONO_API unsigned int
 mono_string_hash            (MonoString *s);
 
-int
+MONO_API int
 mono_object_hash            (MonoObject* obj);
 
-MonoString *
+MONO_API MonoString *
 mono_object_to_string (MonoObject *obj, MonoObject **exc);
 
-MonoObject *
+MONO_API MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);
 
-void
+MONO_API void
 mono_value_copy             (void* dest, void* src, MonoClass *klass);
 
-void
+MONO_API void
 mono_value_copy_array       (MonoArray *dest, int dest_idx, void* src, int count);
 
-MonoDomain*
+MONO_API MonoDomain*
 mono_object_get_domain      (MonoObject *obj);
 
-MonoClass*
+MONO_API MonoClass*
 mono_object_get_class       (MonoObject *obj);
 
-void*
+MONO_API void*
 mono_object_unbox	    (MonoObject *obj);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_clone	    (MonoObject *obj);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_isinst	    (MonoObject *obj, MonoClass *klass);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
 
-MonoObject *
+MONO_API MonoObject *
 mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
 
-mono_bool 
+MONO_API mono_bool 
 mono_monitor_try_enter       (MonoObject *obj, uint32_t ms);
 
-mono_bool
+MONO_API mono_bool
 mono_monitor_enter           (MonoObject *obj);
 
-unsigned int
+MONO_API unsigned int
 mono_object_get_size         (MonoObject *o);
 
-void 
+MONO_API void 
 mono_monitor_exit            (MonoObject *obj);
 
-void
+MONO_API void
 mono_raise_exception	    (MonoException *ex);
 
-void
+MONO_API void
 mono_runtime_object_init    (MonoObject *this_obj);
 
-void
+MONO_API void
 mono_runtime_class_init	    (MonoVTable *vtable);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);
 
-MonoObject*
+MONO_API MonoObject*
 mono_runtime_invoke	    (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
 
-MonoMethod *
+MONO_API MonoMethod *
 mono_get_delegate_invoke    (MonoClass *klass);
 
-MonoMethod *
+MONO_API MonoMethod *
 mono_get_delegate_begin_invoke (MonoClass *klass);
 
-MonoMethod *
+MONO_API MonoMethod *
 mono_get_delegate_end_invoke (MonoClass *klass);
 
-MonoObject*
+MONO_API MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, 
 			      MonoObject **exc);
 
-MonoObject*
+MONO_API MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);
 
-void*
+MONO_API void*
 mono_method_get_unmanaged_thunk (MonoMethod *method);
 
-MonoArray*
+MONO_API MonoArray*
 mono_runtime_get_main_args  (void);
 
-void
+MONO_API void
 mono_runtime_exec_managed_code (MonoDomain *domain,
 				MonoMainThreadFunc main_func,
 				void* main_args);
 
-int
+MONO_API int
 mono_runtime_run_main	    (MonoMethod *method, int argc, char* argv[], 
 			     MonoObject **exc);
 
-int
+MONO_API int
 mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
 /* The following functions won't be available with mono was configured with remoting disabled. */
 /*#ifndef DISABLE_REMOTING */
-void*
+MONO_API void*
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res);
 
-MonoObject *
+MONO_API MonoObject *
 mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
 
-void
+MONO_API void
 mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val);
 
-void
+MONO_API void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
 
 /* #endif */
 
-void
+MONO_API void
 mono_unhandled_exception    (MonoObject *exc);
 
-void
+MONO_API void
 mono_print_unhandled_exception (MonoObject *exc);
 
-void* 
+MONO_API void* 
 mono_compile_method	   (MonoMethod *method);
 
 /* accessors for fields and properties */
-void
+MONO_API void
 mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value);
 
-void
+MONO_API void
 mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value);
 
-void
+MONO_API void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value);
 
-void
+MONO_API void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value);
 
-MonoObject *
+MONO_API MonoObject *
 mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObject *obj);
 
-void
+MONO_API void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
-MonoObject*
+MONO_API MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
 /* GC handles support 
@@ -306,19 +306,19 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_gchandle_get_target () can be used to get the object referenced by both kinds
  * of handle: for a weakref handle, if an object has been collected, it will return NULL.
  */
-uint32_t      mono_gchandle_new         (MonoObject *obj, mono_bool pinned);
-uint32_t      mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection);
-MonoObject*  mono_gchandle_get_target  (uint32_t gchandle);
-void         mono_gchandle_free        (uint32_t gchandle);
+MONO_API uint32_t      mono_gchandle_new         (MonoObject *obj, mono_bool pinned);
+MONO_API uint32_t      mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection);
+MONO_API MonoObject*  mono_gchandle_get_target  (uint32_t gchandle);
+MONO_API void         mono_gchandle_free        (uint32_t gchandle);
 
 /* GC write barriers support */
-void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, MonoObject* value);
-void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
-void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
-void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
-void mono_gc_wbarrier_generic_nostore (void* ptr);
-void mono_gc_wbarrier_value_copy    (void* dest, void* src, int count, MonoClass *klass);
-void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);
+MONO_API void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, MonoObject* value);
+MONO_API void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
+MONO_API void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
+MONO_API void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
+MONO_API void mono_gc_wbarrier_generic_nostore (void* ptr);
+MONO_API void mono_gc_wbarrier_value_copy    (void* dest, void* src, int count, MonoClass *klass);
+MONO_API void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);
 
 MONO_END_DECLS
 

@@ -130,7 +130,7 @@ static int stind_to_store_membase (int opcode);
 int mono_op_to_op_imm (int opcode);
 int mono_op_to_op_imm_noemul (int opcode);
 
-MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature *sig, MonoInst **args);
+MONO_API MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature *sig, MonoInst **args);
 
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;

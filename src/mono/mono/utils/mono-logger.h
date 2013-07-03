@@ -4,10 +4,10 @@
 #include <mono/utils/mono-publib.h>
 MONO_BEGIN_DECLS
 
-void 
+MONO_API void 
 mono_trace_set_level_string (const char *value);
 
-void 
+MONO_API void 
 mono_trace_set_mask_string (const char *value);
 
 MONO_END_DECLS

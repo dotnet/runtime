@@ -16,7 +16,7 @@
 
 G_BEGIN_DECLS
 
-void mono_locks_dump (gboolean include_untaken);
+MONO_API void mono_locks_dump (gboolean include_untaken);
 
 void mono_monitor_init (void) MONO_INTERNAL;
 void mono_monitor_cleanup (void) MONO_INTERNAL;

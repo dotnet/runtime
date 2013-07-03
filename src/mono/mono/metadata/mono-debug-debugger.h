@@ -50,42 +50,42 @@ extern volatile gint32 _mono_debugger_interruption_request;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_initialize                    (gboolean use_debugger);
-void            mono_debugger_cleanup                       (void);
+MONO_API void            mono_debugger_initialize                    (gboolean use_debugger);
+MONO_API void            mono_debugger_cleanup                       (void);
 
-void            mono_debugger_lock                          (void);
-void            mono_debugger_unlock                        (void);
-void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
+MONO_API void            mono_debugger_lock                          (void);
+MONO_API void            mono_debugger_unlock                        (void);
+MONO_API void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-gchar *
+MONO_API gchar *
 mono_debugger_check_runtime_version (const char *filename);
 
-void
+MONO_API void
 mono_debugger_class_initialized (MonoClass *klass);
 
-void
+MONO_API void
 mono_debugger_check_interruption (void);
 
-void
+MONO_API void
 mono_debugger_event_create_appdomain (MonoDomain *domain, gchar *shadow_path);
 
-void
+MONO_API void
 mono_debugger_event_unload_appdomain (MonoDomain *domain);
 
-MonoDebugMethodAddressList *
+MONO_API MonoDebugMethodAddressList *
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);
 
-int
+MONO_API int
 mono_debugger_remove_method_breakpoint (guint64 index);
 
-void
+MONO_API void
 mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
 
-MonoClass *
+MONO_API MonoClass *
 mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_name,
 					    guint32 token, guint32 index);
 
-void
+MONO_API void
 mono_debugger_remove_class_init_callback (int index);
 
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */

@@ -320,6 +320,6 @@ typedef struct {
 	MonoCLIHeader     cli_cli_header;
 } MonoCLIImageInfo;
 
-guint32       mono_cli_rva_image_map (MonoImage *image, guint32 rva);
+MONO_API guint32       mono_cli_rva_image_map (MonoImage *image, guint32 rva);
 
 #endif /* __MONO_CIL_COFF_H__ */

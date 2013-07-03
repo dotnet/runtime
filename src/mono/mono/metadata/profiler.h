@@ -151,47 +151,47 @@ typedef void (*MonoProfilerCodeBufferNew) (MonoProfiler *prof, void* buffer, int
 /*
  * Function the profiler may call.
  */
-void mono_profiler_install       (MonoProfiler *prof, MonoProfileFunc shutdown_callback);
-void mono_profiler_set_events    (MonoProfileFlags events);
+MONO_API void mono_profiler_install       (MonoProfiler *prof, MonoProfileFunc shutdown_callback);
+MONO_API void mono_profiler_set_events    (MonoProfileFlags events);
 
-MonoProfileFlags mono_profiler_get_events (void);
+MONO_API MonoProfileFlags mono_profiler_get_events (void);
 
-void mono_profiler_install_appdomain   (MonoProfileAppDomainFunc start_load, MonoProfileAppDomainResult end_load,
+MONO_API void mono_profiler_install_appdomain   (MonoProfileAppDomainFunc start_load, MonoProfileAppDomainResult end_load,
                                         MonoProfileAppDomainFunc start_unload, MonoProfileAppDomainFunc end_unload);
-void mono_profiler_install_assembly    (MonoProfileAssemblyFunc start_load, MonoProfileAssemblyResult end_load,
+MONO_API void mono_profiler_install_assembly    (MonoProfileAssemblyFunc start_load, MonoProfileAssemblyResult end_load,
                                         MonoProfileAssemblyFunc start_unload, MonoProfileAssemblyFunc end_unload);
-void mono_profiler_install_module      (MonoProfileModuleFunc start_load, MonoProfileModuleResult end_load,
+MONO_API void mono_profiler_install_module      (MonoProfileModuleFunc start_load, MonoProfileModuleResult end_load,
                                         MonoProfileModuleFunc start_unload, MonoProfileModuleFunc end_unload);
-void mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoProfileClassResult end_load,
+MONO_API void mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoProfileClassResult end_load,
                                         MonoProfileClassFunc start_unload, MonoProfileClassFunc end_unload);
 
-void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end);
-void mono_profiler_install_jit_end (MonoProfileJitResult end);
-void mono_profiler_install_method_free (MonoProfileMethodFunc callback);
-void mono_profiler_install_method_invoke (MonoProfileMethodFunc start, MonoProfileMethodFunc end);
-void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
-void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
-void mono_profiler_install_thread_name (MonoProfileThreadNameFunc thread_name_cb);
-void mono_profiler_install_transition  (MonoProfileMethodResult callback);
-void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
-void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback);
-void mono_profiler_install_statistical (MonoProfileStatFunc callback);
-void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth, MonoProfilerCallChainStrategy call_chain_strategy);
-void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback);
-void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
-void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
-void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
-void mono_profiler_install_gc_moves    (MonoProfileGCMoveFunc callback);
-void mono_profiler_install_gc_roots    (MonoProfileGCHandleFunc handle_callback, MonoProfileGCRootFunc roots_callback);
-void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
+MONO_API void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end);
+MONO_API void mono_profiler_install_jit_end (MonoProfileJitResult end);
+MONO_API void mono_profiler_install_method_free (MonoProfileMethodFunc callback);
+MONO_API void mono_profiler_install_method_invoke (MonoProfileMethodFunc start, MonoProfileMethodFunc end);
+MONO_API void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
+MONO_API void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
+MONO_API void mono_profiler_install_thread_name (MonoProfileThreadNameFunc thread_name_cb);
+MONO_API void mono_profiler_install_transition  (MonoProfileMethodResult callback);
+MONO_API void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
+MONO_API void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback);
+MONO_API void mono_profiler_install_statistical (MonoProfileStatFunc callback);
+MONO_API void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth, MonoProfilerCallChainStrategy call_chain_strategy);
+MONO_API void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback);
+MONO_API void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
+MONO_API void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
+MONO_API void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
+MONO_API void mono_profiler_install_gc_moves    (MonoProfileGCMoveFunc callback);
+MONO_API void mono_profiler_install_gc_roots    (MonoProfileGCHandleFunc handle_callback, MonoProfileGCRootFunc roots_callback);
+MONO_API void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
 
-void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);
-void mono_profiler_install_code_chunk_destroy (MonoProfilerCodeChunkDestroy callback);
-void mono_profiler_install_code_buffer_new (MonoProfilerCodeBufferNew callback);
+MONO_API void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);
+MONO_API void mono_profiler_install_code_chunk_destroy (MonoProfilerCodeChunkDestroy callback);
+MONO_API void mono_profiler_install_code_buffer_new (MonoProfilerCodeBufferNew callback);
 
-void mono_profiler_install_iomap (MonoProfileIomapFunc callback);
+MONO_API void mono_profiler_install_iomap (MonoProfileIomapFunc callback);
 
-void mono_profiler_load             (const char *desc);
+MONO_API void mono_profiler_load             (const char *desc);
 
 MONO_END_DECLS
 
