@@ -100,14 +100,15 @@ typedef struct {
 	gboolean runtime_thread;
 
 	/* suspend machinery, fields protected by suspend_semaphore */
+	MonoSemType suspend_semaphore;
 	int suspend_count;
 
-	MonoSemType suspend_semaphore;
-	MonoSemType resume_semaphore;
 	MonoSemType finish_resume_semaphore;
+	MonoSemType resume_semaphore; 
 
 	/* only needed by the posix backend */ 
 #if (defined(_POSIX_VERSION) || defined(__native_client__)) && !defined (__MACH__)
+	MonoSemType suspend_semaphore;
 	gboolean syscall_break_signal;
 	gboolean suspend_can_continue;
 #endif
