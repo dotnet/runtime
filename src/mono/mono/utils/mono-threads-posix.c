@@ -97,7 +97,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	/* thread_state_init_from_sigctx return FALSE if the current thread is detaching and suspend can't continue. */
 	current->suspend_can_continue = ret;
 
-	MONO_SEM_POST (&current->suspend_semaphore);
+	MONO_SEM_POST (&current->begin_suspend_semaphore);
 
 	/* This thread is doomed, all we can do is give up and let the suspender recover. */
 	if (!ret)
@@ -201,7 +201,7 @@ mono_threads_core_suspend (MonoThreadInfo *info)
 {
 	/*FIXME, check return value*/
 	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
-	while (MONO_SEM_WAIT (&info->suspend_semaphore) != 0) {
+	while (MONO_SEM_WAIT (&info->begin_suspend_semaphore) != 0) {
 		/* g_assert (errno == EINTR); */
 	}
 	return info->suspend_can_continue;
@@ -221,7 +221,7 @@ mono_threads_core_resume (MonoThreadInfo *info)
 void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
-	MONO_SEM_INIT (&info->suspend_semaphore, 0);
+	MONO_SEM_INIT (&info->begin_suspend_semaphore, 0);
 
 #if defined (PLATFORM_ANDROID)
 	info->native_handle = (gpointer) gettid ();
@@ -231,7 +231,7 @@ mono_threads_platform_register (MonoThreadInfo *info)
 void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
-	MONO_SEM_DESTROY (&info->suspend_semaphore);
+	MONO_SEM_DESTROY (&info->begin_suspend_semaphore);
 }
 
 MonoNativeThreadId
