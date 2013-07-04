@@ -123,8 +123,13 @@ static void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
 
 static void
+mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum);
+
+static void
 mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *eltype, guint32 elnum);
 
+static void
+mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum);
 
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
@@ -239,7 +244,9 @@ mono_marshal_init (void)
 		register_icall (mono_array_to_lparray, "mono_array_to_lparray", "ptr object", FALSE);
 		register_icall (mono_free_lparray, "mono_free_lparray", "void object ptr", FALSE);
 		register_icall (mono_byvalarray_to_array, "mono_byvalarray_to_array", "void object ptr ptr int32", FALSE);
+		register_icall (mono_byvalarray_to_byte_array, "mono_byvalarray_to_byte_array", "void object ptr int32", FALSE);
 		register_icall (mono_array_to_byvalarray, "mono_array_to_byvalarray", "void ptr object ptr int32", FALSE);
+		register_icall (mono_array_to_byte_byvalarray, "mono_array_to_byte_byvalarray", "void ptr object int32", FALSE);
 		register_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", "ptr object", FALSE);
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32 int32", FALSE);
@@ -693,6 +700,12 @@ mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclas
 }
 
 static void
+mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum)
+{
+	mono_byvalarray_to_array (arr, native_arr, mono_defaults.byte_class, elnum);
+}
+
+static void
 mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclass, guint32 elnum)
 {
 	g_assert (arr->obj.vtable->klass->element_class == mono_defaults.char_class);
@@ -713,6 +726,12 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 	} else {
 		g_assert_not_reached ();
 	}
+}
+
+static void
+mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum)
+{
+	mono_array_to_byvalarray (native_arr, arr, mono_defaults.byte_class, elnum);
 }
 
 void
@@ -1346,9 +1365,8 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_icall (mb, mono_byvalarray_to_array);
+		mono_mb_emit_icall (mb, mono_byvalarray_to_byte_array);
 		break;
 	}
 	case MONO_MARSHAL_CONV_STR_BYVALSTR: 
@@ -1721,9 +1739,8 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);	
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
-		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_icall (mb, mono_array_to_byvalarray);
+		mono_mb_emit_icall (mb, mono_array_to_byte_byvalarray);
 		mono_mb_patch_short_branch (mb, pos);
 		break;
 	}
