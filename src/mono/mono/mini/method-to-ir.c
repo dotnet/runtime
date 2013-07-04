@@ -8178,8 +8178,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * change the called method to a dummy wrapper, and resolve that wrapper
 			 * to the real method in mono_jit_compile_method ().
 			 */
-			if (cfg->method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED && mono_marshal_method_from_wrapper (cfg->method) == cmethod)
-				cmethod = mono_marshal_get_synchronized_inner_wrapper (cmethod);
+			if (cfg->method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
+				MonoMethod *orig = mono_marshal_method_from_wrapper (cfg->method);
+				if (cmethod == orig || (cmethod->is_inflated && mono_method_get_declaring_generic_method (cmethod) == orig))
+					cmethod = mono_marshal_get_synchronized_inner_wrapper (cmethod);
+			}
 
 			/* Common call */
 			INLINE_FAILURE ("call");

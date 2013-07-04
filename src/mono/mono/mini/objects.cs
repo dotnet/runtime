@@ -1589,7 +1589,7 @@ ncells ) {
 	public static int test_0_llvm_inline_throw () {
 		try {
 			empty ();
-		} catch (Exception ex) {
+		} catch (Exception) {
 			do_throw ();
 		}
 
