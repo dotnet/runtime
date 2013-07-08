@@ -4511,26 +4511,6 @@ is_open_method (MonoMethod *method)
 	return FALSE;
 }
 
-static gboolean
-has_ref_constraint (MonoGenericParamInfo *info)
-{
-	MonoClass **constraints;
-
-	//return FALSE;
-
-	if (info && info->constraints) {
-		constraints = info->constraints;
-
-		while (*constraints) {
-			MonoClass *cklass = *constraints;
-			if (!(cklass == mono_defaults.object_class || (cklass->image == mono_defaults.corlib && !strcmp (cklass->name, "ValueType")) || MONO_CLASS_IS_INTERFACE (cklass)))
-				return TRUE;
-			constraints ++;
-		}
-	}
-	return FALSE;
-}
-
 static MonoGenericInst*
 get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGenericContainer *container, gboolean all_vt, gboolean gsharedvt)
 {
@@ -4543,10 +4523,7 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 		if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
 			type_argv [i] = shared_inst->type_argv [i];
 		} else if (all_vt) {
-			if (container && has_ref_constraint (&container->type_params [i].info))
-				type_argv [i] = shared_inst->type_argv [i];
-			else
-				type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
+			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else if (gsharedvt) {
 			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else {
