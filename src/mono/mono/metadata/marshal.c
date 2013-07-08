@@ -10502,6 +10502,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if (ctx) {
 		MonoMethod *def;
 		def = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
+		if (method->flags & METHOD_ATTRIBUTE_STATIC)
+			def->flags |= METHOD_ATTRIBUTE_STATIC;
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
 	} else {
 		res = mono_mb_create_and_cache (cache, method,
