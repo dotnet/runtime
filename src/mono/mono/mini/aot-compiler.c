@@ -6957,7 +6957,7 @@ emit_code (MonoAotCompile *acfg)
 		 * This is PIE code, and the linker can update it if needed.
 		 */
 		sprintf (symbol, "method_addresses");
-		emit_section_change (acfg, RODATA_SECT, 1);
+		emit_section_change (acfg, ".text", 1);
 		emit_alignment (acfg, 8);
 		emit_label (acfg, symbol);
 		emit_local_symbol (acfg, symbol, "method_addresses_end", TRUE);
