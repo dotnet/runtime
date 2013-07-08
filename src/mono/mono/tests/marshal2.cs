@@ -42,6 +42,17 @@ public class Tests {
 		[MarshalAs (UnmanagedType.ByValTStr, SizeConst=4)] public string s1;
 		public int i;
 	}
+
+	[StructLayout (LayoutKind.Sequential, Pack=1)]
+	public struct PackStruct1 {
+		float f;
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct PackStruct2 {
+		byte b;
+		PackStruct1 s;
+	}
 	
 	public unsafe static int Main (String[] args) {
 		if (TestDriver.RunTests (typeof (Tests), args) != 0)
@@ -212,6 +223,13 @@ public class Tests {
 			return 2;
 		if (data.Field3 != "12345678901234")
 			return 3;
+		return 0;
+	}
+
+	// Check that the 'Pack' directive on a struct changes the min alignment of the struct as well (#12110)
+	public static int test_0_struct_pack () {
+		if (Marshal.OffsetOf (typeof (PackStruct2), "s") != new IntPtr (1))
+			return 1;
 		return 0;
 	}
 }
