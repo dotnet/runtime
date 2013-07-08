@@ -28,5 +28,6 @@
 /buildver.h
 /TAGS
 /mono-sgen
+/mono-boehm
 /buildver-sgen.h
-
+/buildver-boehm.h
