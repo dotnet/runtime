@@ -118,7 +118,7 @@ mono: mono-$(mono_bin_suffix)
 	ln -sf $< $@
 
 install-exec-hook:
-	ln -sf $(DESTDIR)$(bindir)/mono-$(mono_bin_suffix) $(DESTDIR)$(bindir)/mono
+	(cd $(DESTDIR)$(bindir) && ln -sf mono-$(libmono_suffix) mono)
 	(cd $(DESTDIR)$(libdir); for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
 endif
 
