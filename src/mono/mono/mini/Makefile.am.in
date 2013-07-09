@@ -787,3 +787,9 @@ patch-automake:
 
 tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`
+
+if HAS_EXTENSION_MODULE
+else
+Makefile.am: Makefile.am.in
+	cp $< $@
+endif
