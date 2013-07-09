@@ -398,12 +398,12 @@ Development files for libmono.
 %_libdir/pkgconfig/mono-2.pc
 
 %if %sgen == yes
-%package -n libmonosgen-2_0-0
+%package -n libmonosgen-2_0-1
 License:        LGPL v2.1 only
 Summary:	A Library for embedding Mono in your Application (sgen version)
 Group:          Development/Libraries/C and C++
 
-%description -n libmonosgen-2_0-0
+%description -n libmonosgen-2_0-1
 The Mono Project is an open development initiative that is working to
 develop an open source, Unix version of the .NET development platform.
 Its objective is to enable Unix developers to build and deploy
@@ -412,13 +412,13 @@ technologies that have been submitted to the ECMA for standardization.
 
 A Library for embedding Mono in your Application (sgen version).
 
-%files -n libmonosgen-2_0-0
+%files -n libmonosgen-2_0-1
 %defattr(-, root, root)
-%_libdir/libmonosgen-2.0.so.0*
+%_libdir/libmonosgen-2.0.so.1*
 
-%post -n libmonosgen-2_0-0 -p /sbin/ldconfig
+%post -n libmonosgen-2_0-1 -p /sbin/ldconfig
 
-%postun -n libmonosgen-2_0-0 -p /sbin/ldconfig
+%postun -n libmonosgen-2_0-1 -p /sbin/ldconfig
 
 %package -n libmonosgen-2_0-devel
 License:        LGPL v2.1 only
@@ -1419,7 +1419,7 @@ Requires:       libmono-2_0-devel = %version-%release
 Requires:       libmono-llvm0 = %version-%release
 %endif
 %if %sgen == yes
-Requires:       libmonosgen-2_0-0 = %version-%release
+Requires:       libmonosgen-2_0-1 = %version-%release
 Requires:       libmonosgen-2_0-devel = %version-%release
 %endif
 Requires:       mono-data = %version-%release
