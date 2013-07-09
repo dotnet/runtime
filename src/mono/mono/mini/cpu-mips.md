@@ -177,7 +177,7 @@ not_null: src1:i len:0
 # 32 bit opcodes
 int_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
-int_mul: dest:i src1:i src2:i len:4
+int_mul: dest:i src1:i src2:i len:16
 int_div: dest:i src1:i src2:i len:84
 int_div_un: dest:i src1:i src2:i len:40
 int_rem: dest:i src1:i src2:i len:84
@@ -278,7 +278,7 @@ icompare_imm: src1:i len:12
 # 64 bit opcodes
 long_add: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
-long_mul: dest:i src1:i src2:i len:8
+long_mul: dest:i src1:i src2:i len:32
 long_mul_imm: dest:i src1:i len:4
 long_div: dest:i src1:i src2:i len:40
 long_div_un: dest:i src1:i src2:i len:16
