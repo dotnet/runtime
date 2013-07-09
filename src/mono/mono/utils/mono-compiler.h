@@ -226,6 +226,8 @@
 
 #ifdef __GNUC__
 #define MONO_ALWAYS_INLINE __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define MONO_ALWAYS_INLINE __forceinline
 #else
 #define MONO_ALWAYS_INLINE
 #endif
