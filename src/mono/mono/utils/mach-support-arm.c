@@ -16,6 +16,7 @@
 #include <glib.h>
 #include <pthread.h>
 #include "utils/mono-sigcontext.h"
+#include "utils/mono-compiler.h"
 #include "mach-support.h"
 
 /* Known offsets used for TLS storage*/
@@ -94,6 +95,7 @@ mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mac
 void *
 mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key)
 {
+#ifdef MONO_HAVE_FAST_TLS
 	/* Mach stores TLS values in a hidden array inside the pthread_t structure
 	 * They are keyed off a giant array from a known offset into the pointer. This value
 	 * is baked into their pthread_getspecific implementation
@@ -102,6 +104,9 @@ mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key)
 	intptr_t **tsd = (intptr_t **) ((char*)p + tls_vector_offset);
 
 	return (void *) &tsd [key];
+#else
+	g_error ("fast tls not supported on this target");
+#endif
 }
 
 void *
@@ -113,6 +118,7 @@ mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
 void
 mono_mach_init (pthread_key_t key)
 {
+#ifdef MONO_HAVE_FAST_TLS
 	void *old_value = pthread_getspecific (key);
 	void *canary = (void*)0xDEADBEEFu;
 
@@ -133,6 +139,7 @@ mono_mach_init (pthread_key_t key)
 	g_error ("could not discover the mach TLS offset");
 ok:
 	pthread_setspecific (key, old_value);
+#endif
 }
 
 #endif
