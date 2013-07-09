@@ -73,6 +73,13 @@
 #include "mini-gc.h"
 #include "debugger-agent.h"
 
+/* this macro is used for a runtime check done in mini_init () */
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+#define EMUL_MUL_DIV 1
+#else
+#define EMUL_MUL_DIV 0
+#endif
+
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
 
@@ -7121,19 +7128,9 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
-
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
-#define EMUL_MUL_DIV 1
-#else
-#define EMUL_MUL_DIV 0
-#endif
-
 	if (EMUL_MUL_DIV || mono_arch_is_soft_float ()) {
 		register_opcode_emulation (OP_FDIV, "__emul_fdiv", "double double double", mono_fdiv, "mono_fdiv", FALSE);
 	}
-
-#undef EMUL_MUL_DIV
-
 #endif
 
 	register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", "ulong double", mono_fconv_u8, "mono_fconv_u8", FALSE);
