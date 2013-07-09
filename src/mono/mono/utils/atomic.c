@@ -10,11 +10,12 @@
 
 #include <config.h>
 #include <glib.h>
-#include <pthread.h>
 
 #include <mono/utils/atomic.h>
 
 #ifdef WAPI_NO_ATOMIC_ASM
+
+#include <pthread.h>
 
 static pthread_mutex_t spin = PTHREAD_MUTEX_INITIALIZER;
 static mono_once_t spin_once=MONO_ONCE_INIT;
