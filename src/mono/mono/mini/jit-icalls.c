@@ -429,7 +429,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 }
 #endif
 
-#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT)
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
 double
 mono_fdiv (double a, double b)
 {
@@ -439,7 +439,7 @@ mono_fdiv (double a, double b)
 }
 #endif
 
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 
 double
 mono_fsub (double a, double b)
@@ -915,7 +915,7 @@ mono_fconv_ovf_u8 (double v)
  * 
  * To work around this issue we test for value boundaries instead. 
  */
-#if defined(__arm__) && MONO_ARCH_SOFT_FLOAT 
+#if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
 	if (isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
 		mono_raise_exception (mono_get_exception_overflow ());
 	}

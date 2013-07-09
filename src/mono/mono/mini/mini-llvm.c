@@ -934,12 +934,12 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind)
 			return LLVMBuildPtrToInt (ctx->builder, v, dtype, "");
 
-#ifdef MONO_ARCH_SOFT_FLOAT
-		if (stype == LLVMInt32Type () && dtype == LLVMFloatType ())
-			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
-		if (stype == LLVMInt32Type () && dtype == LLVMDoubleType ())
-			return LLVMBuildBitCast (ctx->builder, LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), ""), dtype, "");
-#endif
+		if (mono_arch_is_soft_float ()) {
+			if (stype == LLVMInt32Type () && dtype == LLVMFloatType ())
+				return LLVMBuildBitCast (ctx->builder, v, dtype, "");
+			if (stype == LLVMInt32Type () && dtype == LLVMDoubleType ())
+				return LLVMBuildBitCast (ctx->builder, LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), ""), dtype, "");
+		}
 
 		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind)
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");

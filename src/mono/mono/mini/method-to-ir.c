@@ -2337,7 +2337,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 					 MonoInst **args, int calli, int virtual, int tail, int rgctx, int unbox_trampoline)
 {
 	MonoCallInst *call;
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	int i;
 #endif
 
@@ -2384,7 +2384,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	} else if (!MONO_TYPE_IS_VOID (sig->ret))
 		call->inst.dreg = alloc_dreg (cfg, call->inst.type);
 
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	if (COMPILE_SOFT_FLOAT (cfg)) {
 		/* 
 		 * If the call has a float argument, we would need to do an r8->r4 conversion using 
@@ -4399,7 +4399,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
 	MonoMethodHeaderSummary header;
 	MonoVTable *vtable;
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	MonoMethodSignature *sig = mono_method_signature (method);
 	int i;
 #endif
@@ -4490,13 +4490,15 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (mono_security_method_has_declsec (method))
 		return FALSE;
 
-#ifdef MONO_ARCH_SOFT_FLOAT
-	/* FIXME: */
-	if (sig->ret && sig->ret->type == MONO_TYPE_R4)
-		return FALSE;
-	for (i = 0; i < sig->param_count; ++i)
-		if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_R4)
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
+	if (mono_arch_is_soft_float ()) {
+		/* FIXME: */
+		if (sig->ret && sig->ret->type == MONO_TYPE_R4)
 			return FALSE;
+		for (i = 0; i < sig->param_count; ++i)
+			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_R4)
+				return FALSE;
+	}
 #endif
 
 	return TRUE;
@@ -8297,7 +8299,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							ins->klass = mono_class_from_mono_type (ret_type);
 						}
 					} else {
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 						if (COMPILE_SOFT_FLOAT (cfg) && !ret_type->byref && ret_type->type == MONO_TYPE_R4) {
 							MonoInst *iargs [1];
 							MonoInst *conv;
@@ -12408,10 +12410,13 @@ mono_handle_global_vregs (MonoCompile *cfg)
 #if SIZEOF_REGISTER == 8
 		case STACK_I8:
 #endif
-#if !defined(TARGET_X86) && !defined(MONO_ARCH_SOFT_FLOAT)
+#if !defined(TARGET_X86)
 		/* Enabling this screws up the fp stack on x86 */
 		case STACK_R8:
 #endif
+			if (mono_arch_is_soft_float ())
+				break;
+
 			/* Arguments are implicitly global */
 			/* Putting R4 vars into registers doesn't work currently */
 			/* The gsharedvt vars are implicitly referenced by ldaddr opcodes, but those opcodes are only generated later */

@@ -44,13 +44,13 @@ alloc_lreg (MonoCompile *cfg)
 static inline guint32
 alloc_freg (MonoCompile *cfg)
 {
-#ifdef MONO_ARCH_SOFT_FLOAT
-	/* Allocate an lvreg so float ops can be decomposed into long ops */
-	return alloc_lreg (cfg);
-#else
-	/* Allocate these from the same pool as the int regs */
-	return cfg->next_vreg ++;
-#endif
+	if (mono_arch_is_soft_float ()) {
+		/* Allocate an lvreg so float ops can be decomposed into long ops */
+		return alloc_lreg (cfg);
+	} else {
+		/* Allocate these from the same pool as the int regs */
+		return cfg->next_vreg ++;
+	}
 }
 
 static inline guint32
@@ -314,11 +314,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         if ((dest)->opcode == OP_VMOVE) (dest)->klass = mono_class_from_mono_type ((vartype)); \
 	} while (0)
 
-#ifdef MONO_ARCH_SOFT_FLOAT
-#define DECOMPOSE_INTO_REGPAIR(stack_type) ((stack_type) == STACK_I8 || (stack_type) == STACK_R8)
-#else
-#define DECOMPOSE_INTO_REGPAIR(stack_type) ((stack_type) == STACK_I8)
-#endif
+#define DECOMPOSE_INTO_REGPAIR(stack_type) (mono_arch_is_soft_float () ? ((stack_type) == STACK_I8 || (stack_type) == STACK_R8) : ((stack_type) == STACK_I8))
 
 static inline void
 handle_gsharedvt_ldaddr (MonoCompile *cfg)
@@ -468,7 +464,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define EMIT_NEW_VARLOADA(cfg,dest,var,vartype) do { NEW_VARLOADA ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 
 /*
  * Since the IL stack (and our vregs) contain double values, we have to do a conversion
@@ -476,33 +472,61 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
  */
 
 #define EMIT_NEW_VARLOAD_SFLOAT(cfg,dest,var,vartype) do { \
-		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
-             MonoInst *iargs [1]; \
-             EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
-             (dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
-        } else { \
-             EMIT_NEW_VARLOAD ((cfg), (dest), (var), (vartype)); \
-        } \
-    } while (0)
+		if (!COMPILE_LLVM ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+			MonoInst *iargs [1]; \
+			EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
+			(dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
+		} else { \
+			EMIT_NEW_VARLOAD ((cfg), (dest), (var), (vartype)); \
+		} \
+	} while (0)
 
 #define EMIT_NEW_VARSTORE_SFLOAT(cfg,dest,var,vartype,inst) do {	\
 		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
-             MonoInst *iargs [2]; \
-             iargs [0] = (inst); \
-             EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
-             mono_emit_jit_icall (cfg, mono_fstore_r4, iargs); \
-        } else { \
-             EMIT_NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); \
-        } \
-    } while (0)
+			MonoInst *iargs [2]; \
+			iargs [0] = (inst); \
+			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
+			mono_emit_jit_icall (cfg, mono_fstore_r4, iargs); \
+		} else { \
+			EMIT_NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); \
+		} \
+	} while (0)
 
-#define EMIT_NEW_ARGLOAD(cfg,dest,num) EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)])
+#define EMIT_NEW_ARGLOAD(cfg,dest,num) do {	\
+		if (mono_arch_is_soft_float ()) {	\
+			EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)]);	\
+		} else {	\
+			NEW_ARGLOAD ((cfg), (dest), (num));	\
+			MONO_ADD_INS ((cfg)->cbb, (dest));	\
+		}	\
+	} while (0)
 
-#define EMIT_NEW_LOCLOAD(cfg,dest,num) EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), cfg->locals [(num)], header->locals [(num)])
+#define EMIT_NEW_LOCLOAD(cfg,dest,num) do {	\
+		if (mono_arch_is_soft_float ()) {	\
+			EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), cfg->locals [(num)], header->locals [(num)]);	\
+		} else {	\
+			NEW_LOCLOAD ((cfg), (dest), (num));	\
+			MONO_ADD_INS ((cfg)->cbb, (dest));	\
+		}	\
+	} while (0)
 
-#define EMIT_NEW_LOCSTORE(cfg,dest,num,inst) EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), (cfg)->locals [(num)], (cfg)->locals [(num)]->inst_vtype, (inst))
+#define EMIT_NEW_LOCSTORE(cfg,dest,num,inst) do {	\
+		if (mono_arch_is_soft_float ()) {	\
+			EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), (cfg)->locals [(num)], (cfg)->locals [(num)]->inst_vtype, (inst));	\
+		} else {	\
+			NEW_LOCSTORE ((cfg), (dest), (num), (inst));	\
+			MONO_ADD_INS ((cfg)->cbb, (dest));	\
+		}	\
+	} while (0)
 
-#define EMIT_NEW_ARGSTORE(cfg,dest,num,inst) EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)], (inst))
+#define EMIT_NEW_ARGSTORE(cfg,dest,num,inst) do {	\
+		if (mono_arch_is_soft_float ()) {	\
+			EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)], (inst));	\
+		} else {	\
+			NEW_ARGSTORE ((cfg), (dest), (num), (inst));	\
+			MONO_ADD_INS ((cfg)->cbb, (dest));	\
+		}	\
+	} while (0)
 
 #else
 

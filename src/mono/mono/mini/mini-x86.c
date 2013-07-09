@@ -916,6 +916,12 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 #endif
 }
 
+gboolean
+mono_arch_is_soft_float (void)
+{
+	return FALSE;
+}
+
 /*
  * This function test for all SSE functions supported.
  *

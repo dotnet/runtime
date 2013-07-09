@@ -1483,7 +1483,7 @@ typedef union {
 	double vald;
 } DVal;
 
-#ifdef MONO_ARCH_SOFT_FLOAT
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 
 /**
  * mono_decompose_soft_float:

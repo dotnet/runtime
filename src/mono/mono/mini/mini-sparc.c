@@ -207,6 +207,12 @@ mono_arch_cpu_init (void)
 	mono_arch_cpu_optimizations(&dummy);
 }
 
+gboolean
+mono_arch_is_soft_float (void)
+{
+	return FALSE;
+}
+
 /*
  * Initialize architecture specific code.
  */

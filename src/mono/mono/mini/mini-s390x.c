@@ -1382,6 +1382,12 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	return opts;
 }
 
+gboolean
+mono_arch_is_soft_float (void)
+{
+	return FALSE;
+}
+
 /*========================= End of Function ========================*/
 
 /*------------------------------------------------------------------*/

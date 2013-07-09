@@ -1386,6 +1386,12 @@ mono_arch_cpu_enumerate_simd_versions (void)
 	return sse_opts;	
 }
 
+gboolean
+mono_arch_is_soft_float (void)
+{
+	return FALSE;
+}
+
 #ifndef DISABLE_JIT
 
 GList *
