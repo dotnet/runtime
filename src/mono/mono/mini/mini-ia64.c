@@ -610,12 +610,6 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	return 0;
 }
 
-gboolean
-mono_arch_is_soft_float (void)
-{
-        return FALSE;
-}
-
 /*
  * This function test for all SIMD functions supported.
  *

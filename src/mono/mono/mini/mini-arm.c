@@ -33,8 +33,13 @@
 #error "ARM_FPU_NONE is defined while one of ARM_FPU_VFP/ARM_FPU_VFP_HARD is defined"
 #endif
 
-#define IS_VFP (!mono_arch_is_soft_float ())
+#if defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
 #define IS_SOFT_FLOAT (mono_arch_is_soft_float ())
+#define IS_VFP (!mono_arch_is_soft_float ())
+#else
+#define IS_SOFT_FLOAT (FALSE)
+#define IS_VFP (TRUE)
+#endif
 
 #if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID) && !defined(__native_client__)
 #define HAVE_AEABI_READ_TP 1
@@ -979,15 +984,13 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 	return TRUE;
 }
 
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 gboolean
 mono_arch_is_soft_float (void)
 {
-#ifndef MONO_ARCH_SOFT_FLOAT_FALLBACK
-	return FALSE;
-#else
 	return arm_fpu == MONO_ARM_FPU_NONE;
-#endif
 }
+#endif
 
 static gboolean
 is_regsize_var (MonoGenericSharingContext *gsctx, MonoType *t) {
