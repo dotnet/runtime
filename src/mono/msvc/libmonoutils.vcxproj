@@ -61,6 +61,7 @@
     <ClCompile Include="..\mono\utils\monobitset.c" />
     <ClCompile Include="..\mono\utils\strenc.c" />
     <ClCompile Include="..\mono\utils\strtod.c" />
+    <ClCompile Include="..\mono\utils\atomic.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\utils\dlmalloc.h" />
@@ -116,6 +117,7 @@
     <ClInclude Include="..\mono\utils\strenc.h" />
     <ClInclude Include="..\mono\utils\strtod.h" />
     <ClInclude Include="..\mono\utils\valgrind.h" />
+    <ClInclude Include="..\mono\utils\atomic.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8FC2B0C8-51AD-49DF-851F-5D01A77A75E4}</ProjectGuid>
