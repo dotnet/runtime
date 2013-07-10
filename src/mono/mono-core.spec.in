@@ -444,6 +444,50 @@ Development files for libmonosgen.
 %_libdir/pkgconfig/monosgen-2.pc
 %endif
 
+%package -n libmonoboehm-2_0-1
+License:        LGPL v2.1 only
+Summary:	A Library for embedding Mono in your Application (boehm version)
+Group:          Development/Libraries/C and C++
+
+%description -n libmonoboehm-2_0-1
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+A Library for embedding Mono in your Application (boehm version).
+
+%files -n libmonoboehm-2_0-1
+%defattr(-, root, root)
+%_libdir/libmonoboehm-2.0.so.1*
+
+%post -n libmonoboehm-2_0-1 -p /sbin/ldconfig
+
+%postun -n libmonoboehm-2_0-1 -p /sbin/ldconfig
+
+%package -n libmonoboehm-2_0-devel
+License:        LGPL v2.1 only
+Summary:	Development files for libmonosgen
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+Requires:       libmono-2_0-devel
+
+%description -n libmonoboehm-2_0-devel
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Development files for libmonoboehm.
+
+%files -n libmonoboehm-2_0-devel
+%defattr(-, root, root)
+%_libdir/libmonoboehm-2.0.a
+%_libdir/libmonoboehm-2.0.so
+%endif
+
 %if %llvm == yes
 %package -n libmono-llvm0
 License:        LGPL v2.1 only
