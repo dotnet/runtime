@@ -2616,7 +2616,7 @@ case "$host" in
 #		AOT_SUPPORTED="no"
 #		;;
 	s390x-*-linux*)
-		TARGET=S390x;
+		TARGET=S390X;
 		arch_target=s390x;
 		ACCESS_UNALIGNED="yes"
 		JIT_SUPPORTED=yes
