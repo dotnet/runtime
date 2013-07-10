@@ -486,7 +486,6 @@ Development files for libmonoboehm.
 %defattr(-, root, root)
 %_libdir/libmonoboehm-2.0.a
 %_libdir/libmonoboehm-2.0.so
-%endif
 
 %if %llvm == yes
 %package -n libmono-llvm0
