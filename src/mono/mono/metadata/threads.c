@@ -929,7 +929,7 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #else
 	/* FIXME:   It'd be better to use the 'error' preprocessor macro here so we know
 		    at compile-time if the target platform isn't supported. */
-#warning Unable to determine how to retrieve a thread's stack-bounds for this platform in 'mono_thread_get_stack_bounds()'.
+#warning "Unable to determine how to retrieve a thread's stack-bounds for this platform in 'mono_thread_get_stack_bounds()'."
 	*staddr = NULL;
 	*stsize = 0;
 	return;
