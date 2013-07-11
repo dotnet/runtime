@@ -2592,9 +2592,9 @@ case "$host" in
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		# libgc's gc_locks.h depends on this
-	    CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6"
+	    CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC"
 		sgen_supported=true
 		;;
 	arm*-linux*)
@@ -2636,7 +2636,7 @@ if test "x$host" != "x$target"; then
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__ -DHAVE_ARMV6=1"
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		jit_wanted=true
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
@@ -3044,18 +3044,54 @@ if test ${TARGET} = ARM; then
 	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu=1"
 	unset fpu
 
-	if test x$cross_compiling = xno; then
-		AC_MSG_CHECKING(for ARMV6)
-		AC_TRY_RUN([
-			int main () { __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); return 0; }
-				], armv6=yes, armv6=no)
+	dnl *********************************************
+	dnl *** Check which ARM version(s) we can use ***
+	dnl *********************************************
+	AC_MSG_CHECKING(which ARM version to use)
 
-		AC_MSG_RESULT($armv6)
-		if test ${armv6} = yes; then
-		   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
-		   # libgc's gc_locks.h depends on this
-		   CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6"
-		fi
+	AC_TRY_COMPILE([], [
+		#if !defined(__ARM_ARCH_5T__) && !defined(__ARM_ARCH_5TE__) && !defined(__ARM_ARCH_5TEJ__)
+		#error Not on ARM v5.
+		#endif
+		return 0;
+	], [
+		arm_v5=yes
+	], [])
+
+	AC_TRY_COMPILE([], [
+		#if !defined(__ARM_ARCH_6J__) && !defined(__ARM_ARCH_6ZK__) && !defined(__ARM_ARCH_6K__) && !defined(__ARM_ARCH_6T2__) && !defined(__ARM_ARCH_6M__)
+		#error Not on ARM v6.
+		#endif
+		return 0;
+	], [
+		arm_v5=yes
+		arm_v6=yes
+	], [])
+
+	AC_TRY_COMPILE([], [
+		#if !defined(__ARM_ARCH_7A__) && !defined(__ARM_ARCH_7R__) && !defined(__ARM_ARCH_7EM__) && !defined(__ARM_ARCH_7M__)
+		#error Not on ARM v7.
+		#endif
+		return 0;
+	], [
+		arm_v5=yes
+		arm_v6=yes
+		arm_v7=yes
+	], [])
+
+	if test x$arm_v5 = xyes; then
+		AC_DEFINE(HAVE_ARMV5, 1, [ARM v5])
+		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV5=1"
+	fi
+
+	if test x$arm_v6 = xyes; then
+		AC_DEFINE(HAVE_ARMV6, 1, [ARM v6])
+		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV6=1"
+	fi
+
+	if test x$arm_v7 = xyes; then
+		AC_DEFINE(HAVE_ARMV7, 1, [ARM v7])
+		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV7=1"
 	fi
 fi
 

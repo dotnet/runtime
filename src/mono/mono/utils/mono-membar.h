@@ -132,7 +132,7 @@ static inline void mono_memory_write_barrier (void)
 static inline void mono_memory_barrier (void)
 {
 #ifdef HAVE_ARMV6
-#ifdef __native_client__
+#if defined(__native_client__) || defined(HAVE_ARMV7)
 	/* NaCl requires ARMv7 CPUs. */
 	__asm__ __volatile__("dsb" : : : "memory");
 #else
