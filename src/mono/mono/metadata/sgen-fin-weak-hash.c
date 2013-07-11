@@ -31,6 +31,7 @@
 #include "metadata/sgen-gray.h"
 #include "metadata/sgen-protocol.h"
 #include "utils/dtrace.h"
+#include "utils/mono-counters.h"
 
 #define ptr_in_nursery sgen_ptr_in_nursery
 
@@ -230,12 +231,66 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 	}
 }
 
+/*
+ * We're using (mostly) non-locking staging queues for finalizers and weak links to speed
+ * up registering them.  Otherwise we'd have to take the GC lock.
+ *
+ * The queues are arrays of `StageEntry`, plus a `next_entry` index.  Threads add entries to
+ * the queue via `add_stage_entry()` in a linear fashion until it fills up, in which case
+ * `process_stage_entries()` is called to drain it.  A garbage collection will also drain
+ * the queues via the same function.  That implies that `add_stage_entry()`, since it
+ * doesn't take a lock, must be able to run concurrently with `process_stage_entries()`,
+ * though it doesn't have to make progress while the queue is drained.  In fact, once it
+ * detects that the queue is being drained, it blocks until the draining is done.
+ *
+ * The protocol must guarantee that entries in the queue are causally ordered, otherwise two
+ * entries for the same location might get switched, resulting in the earlier one being
+ * committed and the later one ignored.
+ *
+ * `next_entry` is the index of the next entry to be filled, or `-1` if the queue is
+ * currently being drained.  Each entry has a state:
+ *
+ * `STAGE_ENTRY_FREE`: The entry is free.  Its data fields must be `NULL`.
+ *
+ * `STAGE_ENTRY_BUSY`: The entry is currently being filled in.
+ *
+ * `STAGE_ENTRY_USED`: The entry is completely filled in and must be processed in the next
+ * draining round.
+ *
+ * `STAGE_ENTRY_INVALID`: The entry was busy during queue draining and therefore
+ * invalidated.  Entries that are `BUSY` can obviously not be processed during a drain, but
+ * we can't leave them in place because new entries might be inserted before them, including
+ * from the same thread, violating causality.  An alternative would be not to reset
+ * `next_entry` to `0` after a drain, but to the index of the last `BUSY` entry plus one,
+ * but that can potentially waste the whole queue.
+ *
+ * State transitions:
+ *
+ * | from    | to      | filler? | drainer? |
+ * +---------+---------+---------+----------+
+ * | FREE    | BUSY    | X       |          |
+ * | BUSY    | FREE    | X       |          |
+ * | BUSY    | USED    | X       |          |
+ * | BUSY    | INVALID |         | X        |
+ * | USED    | FREE    |         | X        |
+ * | INVALID | FREE    | X       |          |
+ *
+ * `next_entry` can be incremented either by the filler thread that set the corresponding
+ * entry to `BUSY`, or by another filler thread that's trying to get a `FREE` slot.  If that
+ * other thread wasn't allowed to increment, it would block on the first filler thread.
+ *
+ * An entry's state, once it's set from `FREE` to `BUSY` by a filler thread, can only be
+ * changed by that same thread or by the drained.  The drainer can only set a `BUSY` thread
+ * to `INVALID`, so it needs to be set to `FREE` again by the original filler thread.
+ */
+
 #define STAGE_ENTRY_FREE	0
 #define STAGE_ENTRY_BUSY	1
 #define STAGE_ENTRY_USED	2
+#define STAGE_ENTRY_INVALID	3
 
 typedef struct {
-	gint32 state;
+	volatile gint32 state;
 	MonoObject *obj;
 	void *user_data;
 } StageEntry;
@@ -245,75 +300,217 @@ typedef struct {
 static volatile gint32 next_fin_stage_entry = 0;
 static StageEntry fin_stage_entries [NUM_FIN_STAGE_ENTRIES];
 
+/*
+ * This is used to lock the stage when processing is forced, i.e. when it's triggered by a
+ * garbage collection.  In that case, the world is already stopped and there's only one
+ * thread operating on the queue.
+ */
+static void
+lock_stage_for_processing (volatile gint32 *next_entry)
+{
+	*next_entry = -1;
+}
+
+/*
+ * When processing is triggered by an overflow, we don't want to take the GC lock
+ * immediately, and then set `next_index` to `-1`, because another thread might have drained
+ * the queue in the mean time.  Instead, we make sure the overflow is still there, we
+ * atomically set `next_index`, and only once that happened do we take the GC lock.
+ */
+static gboolean
+try_lock_stage_for_processing (int num_entries, volatile gint32 *next_entry)
+{
+	gint32 old = *next_entry;
+	if (old < num_entries)
+		return FALSE;
+	return InterlockedCompareExchange (next_entry, -1, old) == old;
+}
+
 /* LOCKING: requires that the GC lock is held */
 static void
-process_stage_entries (int num_entries, volatile gint32 *next_entry, StageEntry *entries, void (*process_func) (MonoObject*, void*))
+process_stage_entries (int num_entries, volatile gint32 *next_entry, StageEntry *entries, void (*process_func) (MonoObject*, void*, int))
 {
 	int i;
-	int num_registered = 0;
-	int num_busy = 0;
+
+	/*
+	 * This can happen if after setting `next_index` to `-1` in
+	 * `try_lock_stage_for_processing()`, a GC was triggered, which then drained the
+	 * queue and reset `next_entry`.
+	 *
+	 * We have the GC lock now, so if it's still `-1`, we can't be interrupted by a GC.
+	 */
+	if (*next_entry != -1)
+		return;
 
 	for (i = 0; i < num_entries; ++i) {
-		gint32 state = entries [i].state;
+		gint32 state;
 
-		if (state == STAGE_ENTRY_BUSY)
-			++num_busy;
+	retry:
+		state = entries [i].state;
 
-		if (state != STAGE_ENTRY_USED ||
-				InterlockedCompareExchange (&entries [i].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_USED) != STAGE_ENTRY_USED) {
+		switch (state) {
+		case STAGE_ENTRY_FREE:
+		case STAGE_ENTRY_INVALID:
 			continue;
+		case STAGE_ENTRY_BUSY:
+			/* BUSY -> INVALID */
+			/*
+			 * This must be done atomically, because the filler thread can set
+			 * the entry to `USED`, in which case we must process it, so we must
+			 * detect that eventuality.
+			 */
+			if (InterlockedCompareExchange (&entries [i].state, STAGE_ENTRY_INVALID, STAGE_ENTRY_BUSY) != STAGE_ENTRY_BUSY)
+				goto retry;
+			continue;
+		case STAGE_ENTRY_USED:
+			break;
+		default:
+			SGEN_ASSERT (0, FALSE, "Invalid stage entry state");
+			break;
 		}
 
-		process_func (entries [i].obj, entries [i].user_data);
+		/* state is USED */
+
+		process_func (entries [i].obj, entries [i].user_data, i);
 
 		entries [i].obj = NULL;
 		entries [i].user_data = NULL;
 
 		mono_memory_write_barrier ();
 
+		/* USED -> FREE */
+		/*
+		 * This transition only happens here, so we don't have to do it atomically.
+		 */
 		entries [i].state = STAGE_ENTRY_FREE;
-
-		++num_registered;
 	}
 
-	*next_entry = 0;
+	mono_memory_write_barrier ();
 
-	/* g_print ("stage busy %d reg %d\n", num_busy, num_registered); */
+	*next_entry = 0;
 }
 
-static gboolean
+#ifdef HEAVY_STATISTICS
+static long long stat_overflow_abort = 0;
+static long long stat_wait_for_processing = 0;
+static long long stat_increment_other_thread = 0;
+static long long stat_index_decremented = 0;
+static long long stat_entry_invalidated = 0;
+static long long stat_success = 0;
+#endif
+
+static int
 add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entries, MonoObject *obj, void *user_data)
 {
-	gint32 index;
+	gint32 index, new_next_entry, old_next_entry;
+	gint32 previous_state;
 
-	do {
-		do {
-			index = *next_entry;
-			if (index >= num_entries)
-				return FALSE;
-		} while (InterlockedCompareExchange (next_entry, index + 1, index) != index);
-
+ retry:
+	for (;;) {
+		index = *next_entry;
+		if (index >= num_entries) {
+			HEAVY_STAT (++stat_overflow_abort);
+			return -1;
+		}
+		if (index < 0) {
+			/*
+			 * Backed-off waiting is way more efficient than even using a
+			 * dedicated lock for this.
+			 */
+			while ((index = *next_entry) < 0) {
+				/*
+				 * This seems like a good value.  Determined by timing
+				 * sgen-weakref-stress.exe.
+				 */
+				g_usleep (200);
+				HEAVY_STAT (++stat_wait_for_processing);
+			}
+			continue;
+		}
+		/* FREE -> BUSY */
+		if (entries [index].state != STAGE_ENTRY_FREE ||
+				InterlockedCompareExchange (&entries [index].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_FREE) != STAGE_ENTRY_FREE) {
+			/*
+			 * If we can't get the entry it must be because another thread got
+			 * it first.  We don't want to wait for that thread to increment
+			 * `next_entry`, so we try to do it ourselves.  Whether we succeed
+			 * or not, we start over.
+			 */
+			if (*next_entry == index) {
+				InterlockedCompareExchange (next_entry, index + 1, index);
+				//g_print ("tried increment for other thread\n");
+				HEAVY_STAT (++stat_increment_other_thread);
+			}
+			continue;
+		}
+		/* state is BUSY now */
+		mono_memory_write_barrier ();
 		/*
-		 * We don't need a write barrier here.  *next_entry is just a
-		 * help for finding an index, its value is irrelevant for
-		 * correctness.
+		 * Incrementing `next_entry` must happen after setting the state to `BUSY`.
+		 * If it were the other way around, it would be possible that after a filler
+		 * incremented the index, other threads fill up the queue, the queue is
+		 * drained, the original filler finally fills in the slot, but `next_entry`
+		 * ends up at the start of the queue, and new entries are written in the
+		 * queue in front of, not behind, the original filler's entry.
+		 *
+		 * We don't actually require that the CAS succeeds, but we do require that
+		 * the value of `next_entry` is not lower than our index.  Since the drainer
+		 * sets it to `-1`, that also takes care of the case that the drainer is
+		 * currently running.
 		 */
-	} while (entries [index].state != STAGE_ENTRY_FREE ||
-			InterlockedCompareExchange (&entries [index].state, STAGE_ENTRY_BUSY, STAGE_ENTRY_FREE) != STAGE_ENTRY_FREE);
+		old_next_entry = InterlockedCompareExchange (next_entry, index + 1, index);
+		if (old_next_entry < index) {
+			/* BUSY -> FREE */
+			/* INVALID -> FREE */
+			/*
+			 * The state might still be `BUSY`, or the drainer could have set it
+			 * to `INVALID`.  In either case, there's no point in CASing.  Set
+			 * it to `FREE` and start over.
+			 */
+			entries [index].state = STAGE_ENTRY_FREE;
+			HEAVY_STAT (++stat_index_decremented);
+			continue;
+		}
+		break;
+	}
+
+	SGEN_ASSERT (0, index >= 0 && index < num_entries, "Invalid index");
 
 	entries [index].obj = obj;
 	entries [index].user_data = user_data;
 
 	mono_memory_write_barrier ();
 
-	entries [index].state = STAGE_ENTRY_USED;
+	new_next_entry = *next_entry;
+	mono_memory_read_barrier ();
+	/* BUSY -> USED */
+	/*
+	 * A `BUSY` entry will either still be `BUSY` or the drainer will have set it to
+	 * `INVALID`.  In the former case, we set it to `USED` and we're finished.  In the
+	 * latter case, we reset it to `FREE` and start over.
+	 */
+	previous_state = InterlockedCompareExchange (&entries [index].state, STAGE_ENTRY_USED, STAGE_ENTRY_BUSY);
+	if (previous_state == STAGE_ENTRY_BUSY) {
+		SGEN_ASSERT (0, new_next_entry >= index || new_next_entry < 0, "Invalid next entry index - as long as we're busy, other thread can only increment or invalidate it");
+		HEAVY_STAT (++stat_success);
+		return index;
+	}
 
-	return TRUE;
+	SGEN_ASSERT (0, previous_state == STAGE_ENTRY_INVALID, "Invalid state transition - other thread can only make busy state invalid");
+	entries [index].obj = NULL;
+	entries [index].user_data = NULL;
+	mono_memory_write_barrier ();
+	/* INVALID -> FREE */
+	entries [index].state = STAGE_ENTRY_FREE;
+
+	HEAVY_STAT (++stat_entry_invalidated);
+
+	goto retry;
 }
 
 /* LOCKING: requires that the GC lock is held */
 static void
-process_fin_stage_entry (MonoObject *obj, void *user_data)
+process_fin_stage_entry (MonoObject *obj, void *user_data, int index)
 {
 	if (ptr_in_nursery (obj))
 		register_for_finalization (obj, user_data, GENERATION_NURSERY);
@@ -325,16 +522,19 @@ process_fin_stage_entry (MonoObject *obj, void *user_data)
 void
 sgen_process_fin_stage_entries (void)
 {
+	lock_stage_for_processing (&next_fin_stage_entry);
 	process_stage_entries (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, process_fin_stage_entry);
 }
 
 void
 mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 {
-	while (!add_stage_entry (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, obj, user_data)) {
-		LOCK_GC;
-		sgen_process_fin_stage_entries ();
-		UNLOCK_GC;
+	while (add_stage_entry (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, obj, user_data) == -1) {
+		if (try_lock_stage_for_processing (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry)) {
+			LOCK_GC;
+			process_stage_entries (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, process_fin_stage_entry);
+			UNLOCK_GC;
+		}
 	}
 }
 
@@ -478,7 +678,7 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 			if (!major_collector.is_object_live (object)) {
 				if (sgen_gc_is_object_ready_for_finalization (object)) {
 					*link = NULL;
-					binary_protocol_dislink_update (link, NULL, 0);
+					binary_protocol_dislink_update (link, NULL, 0, 0);
 					SGEN_LOG (5, "Dislink nullified at %p to GCed object %p", link, object);
 					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 					continue;
@@ -500,14 +700,14 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 						g_assert (copy);
 						*link = HIDE_POINTER (copy, track);
 						add_or_remove_disappearing_link ((MonoObject*)copy, link, GENERATION_OLD);
-						binary_protocol_dislink_update (link, copy, track);
+						binary_protocol_dislink_update (link, copy, track, 0);
 
 						SGEN_LOG (5, "Upgraded dislink at %p to major because object %p moved to %p", link, object, copy);
 
 						continue;
 					} else {
 						*link = HIDE_POINTER (copy, track);
-						binary_protocol_dislink_update (link, copy, track);
+						binary_protocol_dislink_update (link, copy, track, 0);
 						SGEN_LOG (5, "Updated dislink at %p to %p", link, DISLINK_OBJECT (link));
 					}
 				}
@@ -530,7 +730,7 @@ sgen_null_links_for_domain (MonoDomain *domain, int generation)
 
 			if (*link) {
 				*link = NULL;
-				binary_protocol_dislink_update (link, NULL, 0);
+				binary_protocol_dislink_update (link, NULL, 0, 0);
 				free = FALSE;
 				/*
 				 * This can happen if finalizers are not ran, i.e. Environment.Exit ()
@@ -563,7 +763,7 @@ sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predi
 
 		if (!is_alive) {
 			*link = NULL;
-			binary_protocol_dislink_update (link, NULL, 0);
+			binary_protocol_dislink_update (link, NULL, 0, 0);
 			SGEN_LOG (5, "Dislink nullified by predicate at %p to GCed object %p", link, object);
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;
@@ -592,9 +792,12 @@ sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-process_dislink_stage_entry (MonoObject *obj, void *_link)
+process_dislink_stage_entry (MonoObject *obj, void *_link, int index)
 {
 	void **link = _link;
+
+	if (index >= 0)
+		binary_protocol_dislink_process_staged (link, obj, index);
 
 	add_or_remove_disappearing_link (NULL, link, GENERATION_NURSERY);
 	add_or_remove_disappearing_link (NULL, link, GENERATION_OLD);
@@ -615,6 +818,7 @@ static StageEntry dislink_stage_entries [NUM_DISLINK_STAGE_ENTRIES];
 void
 sgen_process_dislink_stage_entries (void)
 {
+	lock_stage_for_processing (&next_dislink_stage_entry);
 	process_stage_entries (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry, dislink_stage_entries, process_dislink_stage_entry);
 }
 
@@ -640,24 +844,42 @@ sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, g
 	else
 		*link = NULL;
 
-	binary_protocol_dislink_update (link, obj, track);
-
 #if 1
 	if (in_gc) {
-		process_dislink_stage_entry (obj, link);
+		binary_protocol_dislink_update (link, obj, track, 0);
+		process_dislink_stage_entry (obj, link, -1);
 	} else {
-		while (!add_stage_entry (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry, dislink_stage_entries, obj, link)) {
-			LOCK_GC;
-			sgen_process_dislink_stage_entries ();
-			UNLOCK_GC;
+		int index;
+		binary_protocol_dislink_update (link, obj, track, 1);
+		while ((index = add_stage_entry (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry, dislink_stage_entries, obj, link)) == -1) {
+			if (try_lock_stage_for_processing (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry)) {
+				LOCK_GC;
+				process_stage_entries (NUM_DISLINK_STAGE_ENTRIES, &next_dislink_stage_entry, dislink_stage_entries, process_dislink_stage_entry);
+				UNLOCK_GC;
+			}
 		}
+		binary_protocol_dislink_update_staged (link, obj, track, index);
 	}
 #else
 	if (!in_gc)
 		LOCK_GC;
-	process_dislink_stage_entry (obj, link);
+	binary_protocol_dislink_update (link, obj, track, 0);
+	process_dislink_stage_entry (obj, link, -1);
 	if (!in_gc)
 		UNLOCK_GC;
+#endif
+}
+
+void
+sgen_init_fin_weak_hash (void)
+{
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("FinWeak Successes", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_success);
+	mono_counters_register ("FinWeak Overflow aborts", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_overflow_abort);
+	mono_counters_register ("FinWeak Wait for processing", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wait_for_processing);
+	mono_counters_register ("FinWeak Increment other thread", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_increment_other_thread);
+	mono_counters_register ("FinWeak Index decremented", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_index_decremented);
+	mono_counters_register ("FinWeak Entry invalidated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_entry_invalidated);
 #endif
 }
 
