@@ -2749,6 +2749,15 @@ S390x)
 MIPS)
 	AC_DEFINE(TARGET_MIPS, 1, [...])
 	;;
+IA64)
+	AC_DEFINE(TARGET_IA64, 1, [...])
+	;;
+SPARC)
+	AC_DEFINE(TARGET_SPARC, 1, [...])
+	;;
+SPARC64)
+	AC_DEFINE(TARGET_SPARC64, 1, [...])
+	;;
 esac
 
 if test "x$target_mach" = "xyes"; then
