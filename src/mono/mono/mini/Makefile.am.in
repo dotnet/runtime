@@ -524,7 +524,7 @@ arch_built=cpu-sparc.h
 arch_define=__sparc__
 endif
 
-if S390x
+if S390X
 arch_sources = $(s390x_sources)
 arch_built=cpu-s390x.h
 arch_define=__s390__
