@@ -442,7 +442,7 @@ if MIPS
 PLATFORM_DISABLED_TESTS=filter-stack.exe monitor.exe
 endif
 
-if S390x
+if S390X
 PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe
 #PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe exception17.exe
 endif
@@ -716,7 +716,7 @@ else
 if ARM
 test-sgen : sgen-tests
 else
-if S390x
+if S390X
 test-sgen : sgen-regular-tests
 endif
 endif
