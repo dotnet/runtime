@@ -56,6 +56,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/mono-hwcap.h>
 #include <mono/utils/dtrace.h>
 
 #include "mini.h"
@@ -6920,6 +6921,9 @@ mini_init (const char *filename, const char *runtime_version)
 		mini_parse_debug_options ();
 
 	mono_code_manager_init ();
+
+	if (!mono_aot_only)
+		mono_hwcap_init ();
 
 	mono_arch_cpu_init ();
 
