@@ -4383,7 +4383,7 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
 		findex = g_hash_table_size (acfg->dwarf_ln_filenames) + 1;
 		g_hash_table_insert (acfg->dwarf_ln_filenames, g_strdup (source_file), GINT_TO_POINTER (findex));
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, ".file %d \"%s\"\n", findex, source_file);
+		fprintf (acfg->fp, ".file %d \"%s\"\n", findex, mono_dwarf_escape_path (source_file));
 	}
 	return findex;
 }

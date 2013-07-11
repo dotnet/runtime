@@ -35,4 +35,7 @@ void mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_na
 void
 mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info) MONO_INTERNAL;
 
+char *
+mono_dwarf_escape_path (char *name);
+
 #endif
