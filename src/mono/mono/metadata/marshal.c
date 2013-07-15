@@ -10325,8 +10325,6 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 #endif
 	sig = signature_dup (method->klass->image, mono_method_signature (method));
 	res = mono_mb_create_method (mb, sig, 0);
-	if (method->flags & METHOD_ATTRIBUTE_STATIC)
-		res->flags |= METHOD_ATTRIBUTE_STATIC;
 	mono_mb_free (mb);
 	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
 	info->d.synchronized_inner.method = method;
@@ -10504,8 +10502,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if (ctx) {
 		MonoMethod *def;
 		def = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
-		if (method->flags & METHOD_ATTRIBUTE_STATIC)
-			def->flags |= METHOD_ATTRIBUTE_STATIC;
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
 	} else {
 		res = mono_mb_create_and_cache (cache, method,

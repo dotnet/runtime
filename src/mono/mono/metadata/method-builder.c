@@ -179,6 +179,8 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	}
 
 	method->signature = signature;
+	if (!signature->hasthis)
+		method->flags |= METHOD_ATTRIBUTE_STATIC;
 
 #ifndef DISABLE_JIT
 	if (max_stack < 8)
