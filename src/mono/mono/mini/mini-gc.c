@@ -590,7 +590,6 @@ thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 
 	if (!tls) {
 		/* Happens during startup */
-		tls->unwind_state.valid = FALSE;
 		return;
 	}
 
