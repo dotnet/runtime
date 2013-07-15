@@ -7023,7 +7023,10 @@ emit_code (MonoAotCompile *acfg)
 
 	/* Emit a sorted table mapping methods to their unbox trampolines */
 	sprintf (symbol, "unbox_trampolines");
-	emit_section_change (acfg, RODATA_SECT, 1);
+	if (acfg->direct_method_addresses)
+		emit_section_change (acfg, ".text", 0);
+	else
+		emit_section_change (acfg, RODATA_SECT, 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
