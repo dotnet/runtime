@@ -30,6 +30,11 @@ static const int known_tls_offsets[] = {
 
 #define TLS_PROBE_COUNT (sizeof (known_tls_offsets) / sizeof (int))
 
+/* This is 2 slots less than the known low */
+#define TLS_PROBE_LOW_WATERMARK 0x40
+/* This is 24 slots above the know high, which is the same diff as the knowns high-low*/
+#define TLS_PROBE_HIGH_WATERMARK 0x108
+
 static int tls_vector_offset;
 
 void *
@@ -133,6 +138,15 @@ mono_mach_init (pthread_key_t key)
 		tls_vector_offset = known_tls_offsets [i];
 		if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
 			goto ok;
+	}
+
+	/*Fallback to scanning a large range of offsets*/
+	for (i = TLS_PROBE_LOW_WATERMARK; i <= TLS_PROBE_HIGH_WATERMARK; i += 4) {
+		tls_vector_offset = i;
+		if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary) {
+			g_warning ("Found new TLS offset at %d", i);
+			goto ok;
+		}
 	}
 
 	g_error ("could not discover the mach TLS offset");
