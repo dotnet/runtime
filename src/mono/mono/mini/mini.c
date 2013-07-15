@@ -3800,7 +3800,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 			last = ins;
 		}
 
-		if (bb->last_ins && bb->last_ins->opcode == OP_ENDFINALLY) {
+		if (bb->last_ins && bb->last_ins->opcode == OP_ENDFINALLY && bb->seq_points) {
 			MonoBasicBlock *bb2;
 			MonoInst *endfinally_seq_point = NULL;
 
