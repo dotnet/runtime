@@ -3386,6 +3386,9 @@ sgen_ensure_free_space (size_t size)
 	sgen_perform_collection (size, generation_to_collect, reason, FALSE);
 }
 
+/*
+ * LOCKING: Assumes the GC lock is held.
+ */
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish)
 {
