@@ -661,7 +661,7 @@ handle_enum:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8: {
 		double f = va_arg (ap, double);
-		printf ("FP=%f\n", f);
+		printf ("FP=%f", f);
 		break;
 	}
 	case MONO_TYPE_VALUETYPE: 
