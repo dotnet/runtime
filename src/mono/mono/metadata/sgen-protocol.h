@@ -51,7 +51,9 @@ enum {
 	SGEN_PROTOCOL_CEMENT_RESET,
 	SGEN_PROTOCOL_DISLINK_UPDATE,
 	SGEN_PROTOCOL_DISLINK_UPDATE_STAGED,
-	SGEN_PROTOCOL_DISLINK_PROCESS_STAGED
+	SGEN_PROTOCOL_DISLINK_PROCESS_STAGED,
+	SGEN_PROTOCOL_DOMAIN_UNLOAD_BEGIN,
+	SGEN_PROTOCOL_DOMAIN_UNLOAD_END
 };
 
 typedef struct {
@@ -185,6 +187,10 @@ typedef struct {
 	int index;
 } SGenProtocolDislinkProcessStaged;
 
+typedef struct {
+	gpointer domain;
+} SGenProtocolDomainUnload;
+
 /* missing: finalizers, dislinks, roots, non-store wbarriers */
 
 void binary_protocol_init (const char *filename) MONO_INTERNAL;
@@ -220,6 +226,8 @@ void binary_protocol_cement_reset (void) MONO_INTERNAL;
 void binary_protocol_dislink_update (gpointer link, gpointer obj, int track, int staged) MONO_INTERNAL;
 void binary_protocol_dislink_update_staged (gpointer link, gpointer obj, int track, int index) MONO_INTERNAL;
 void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index) MONO_INTERNAL;
+void binary_protocol_domain_unload_begin (gpointer domain) MONO_INTERNAL;
+void binary_protocol_domain_unload_end (gpointer domain) MONO_INTERNAL;
 
 #else
 
@@ -253,5 +261,7 @@ void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int in
 #define binary_protocol_dislink_update(link,obj,track,staged)
 #define binary_protocol_dislink_update_staged(link,obj,track,index)
 #define binary_protocol_dislink_process_staged(link,obj,index)
+#define binary_protocol_domain_unload_begin(domain)
+#define binary_protocol_domain_unload_end(domain)
 
 #endif

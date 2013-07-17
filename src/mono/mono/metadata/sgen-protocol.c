@@ -388,6 +388,20 @@ binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index)
 	protocol_entry (SGEN_PROTOCOL_DISLINK_PROCESS_STAGED, &entry, sizeof (SGenProtocolDislinkProcessStaged));
 }
 
+void
+binary_protocol_domain_unload_begin (gpointer domain)
+{
+	SGenProtocolDomainUnload entry = { domain };
+	protocol_entry (SGEN_PROTOCOL_DOMAIN_UNLOAD_BEGIN, &entry, sizeof (SGenProtocolDomainUnload));
+}
+
+void
+binary_protocol_domain_unload_end (gpointer domain)
+{
+	SGenProtocolDomainUnload entry = { domain };
+	protocol_entry (SGEN_PROTOCOL_DOMAIN_UNLOAD_END, &entry, sizeof (SGenProtocolDomainUnload));
+}
+
 #endif
 
 #endif /* HAVE_SGEN_GC */

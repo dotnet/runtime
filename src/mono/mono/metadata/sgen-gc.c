@@ -1048,6 +1048,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 
 	LOCK_GC;
 
+	binary_protocol_domain_unload_begin (domain);
+
 	sgen_stop_world (0);
 
 	if (concurrent_collection_in_progress)
@@ -1115,6 +1117,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 	}
 
 	sgen_restart_world (0, NULL);
+
+	binary_protocol_domain_unload_end (domain);
 
 	UNLOCK_GC;
 }
