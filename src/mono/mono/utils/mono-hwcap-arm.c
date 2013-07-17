@@ -24,6 +24,10 @@
 #include <stdio.h>
 #elif defined(__linux__)
 #include <sys/auxv.h>
+#elif defined(__APPLE__)
+#include <mach/machine.h>
+#include <sys/sysctl.h>
+#include <sys/types.h>
 #endif
 
 gboolean mono_hwcap_arm_is_v5 = FALSE;
@@ -117,5 +121,23 @@ mono_hwcap_init (void)
 
 		/* TODO: Find a way to detect v7s. */
 	}
+#elif defined(__APPLE__)
+	cpu_subtype_t sub_type;
+	size_t length = sizeof (sub_type);
+
+	sysctlbyname ("hw.cpusubtype", &sub_type, &length, NULL, 0);
+
+	if (sub_type == CPU_SUBTYPE_ARM_V5TEJ || sub_type == CPU_SUBTYPE_ARM_XSCALE) {
+		mono_hwcap_arm_is_v5 = TRUE;
+	} else if (sub_type == CPU_SUBTYPE_ARM_V6) {
+		mono_hwcap_arm_is_v5 = TRUE;
+		mono_hwcap_arm_is_v6 = TRUE;
+	} else if (sub_type == CPU_SUBTYPE_ARM_V7 || sub_type == CPU_SUBTYPE_ARM_V7F || sub_type == CPU_SUBTYPE_ARM_V7K) {
+		mono_hwcap_arm_is_v5 = TRUE;
+		mono_hwcap_arm_is_v6 = TRUE;
+		mono_hwcap_arm_is_v7 = TRUE;
+	}
+
+	/* TODO: Find a way to detect features like Thumb and VFP. */
 #endif
 }
