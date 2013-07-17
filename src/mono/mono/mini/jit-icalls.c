@@ -1237,12 +1237,9 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 {
 	MonoMethod *m;
 	gpointer this_arg;
-	MonoObject *res;
-	gpointer p;
-	void **args;
 
 	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
-	res = mono_runtime_invoke (m, this_arg, NULL, NULL);
+	mono_runtime_invoke (m, this_arg, NULL, NULL);
 }
 
 void
