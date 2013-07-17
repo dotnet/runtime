@@ -1232,14 +1232,20 @@ mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass
 	return *(MonoBoolean*)p;
 }
 
+/*
+ * mono_gsharedvt_constrained_call:
+ *
+ *   Make a call to CMETHOD using the receiver MP, which is assumed to be of type KLASS. ARGS contains
+ * the arguments to the method in the format used by mono_runtime_invoke ().
+ */
 void
-mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *args)
 {
 	MonoMethod *m;
 	gpointer this_arg;
 
 	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
-	mono_runtime_invoke (m, this_arg, NULL, NULL);
+	mono_runtime_invoke (m, this_arg, args, NULL);
 }
 
 void

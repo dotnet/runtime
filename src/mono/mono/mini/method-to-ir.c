@@ -7622,13 +7622,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						goto call_end;
 					} else if (constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
-					} else if ((cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && fsig->param_count == 0 && MONO_TYPE_IS_VOID (fsig->ret)) {
-						/* Simple case with no parameters/return values */
+					} else if ((cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && MONO_TYPE_IS_VOID (fsig->ret) && (fsig->param_count == 0 || (fsig->param_count == 1 && MONO_TYPE_IS_REFERENCE (fsig->params [0])))) {
 						MonoInst *args [16];
 
 						args [0] = sp [0];
 						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
 						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
+
+						if (fsig->param_count) {
+							/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
+							MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+							ins->dreg = alloc_preg (cfg);
+							ins->inst_imm = fsig->param_count * sizeof (mgreg_t);
+							MONO_ADD_INS (cfg->cbb, ins);
+							args [3] = ins;
+
+							EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [3]->dreg, 0, sp [1]->dreg);
+						} else {
+							EMIT_NEW_ICONST (cfg, args [3], 0);
+						}
+
 						ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
 						goto call_end;
 					} else {
