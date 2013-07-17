@@ -1164,6 +1164,13 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 	mono_class_setup_vtable (klass);
 	g_assert (klass->vtable);
 	vt_slot = mono_method_get_vtable_slot (cmethod);
+	if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		int iface_offset;
+
+		iface_offset = mono_class_interface_offset (klass, cmethod->klass);
+		g_assert (iface_offset);
+		vt_slot += iface_offset;
+	}
 	m = klass->vtable [vt_slot];
 	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class))
 		/*
@@ -1223,6 +1230,19 @@ mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass
 	res = mono_runtime_invoke (m, this_arg, args, NULL);
 	p = mono_object_unbox (res);
 	return *(MonoBoolean*)p;
+}
+
+void
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	gpointer this_arg;
+	MonoObject *res;
+	gpointer p;
+	void **args;
+
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
+	res = mono_runtime_invoke (m, this_arg, NULL, NULL);
 }
 
 void

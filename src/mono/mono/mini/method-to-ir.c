@@ -7622,6 +7622,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						goto call_end;
 					} else if (constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
+					} else if ((cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && fsig->param_count == 0 && MONO_TYPE_IS_VOID (fsig->ret)) {
+						/* Simple case with no parameters/return values */
+						MonoInst *args [16];
+
+						args [0] = sp [0];
+						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
+						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
+						ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
+						goto call_end;
 					} else {
 						GSHAREDVT_FAILURE (*ip);
 					}

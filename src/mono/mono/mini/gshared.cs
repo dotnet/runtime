@@ -1211,6 +1211,55 @@ public class Tests
 			return 2;
 		return 0;
 	}
+
+	interface IConstrained {
+		void foo ();
+	}
+
+	static object constrained_res;
+
+	struct ConsStruct : IConstrained {
+		public int i;
+
+		public void foo () {
+			constrained_res = i;
+		}
+	}
+
+	class ConsClass : IConstrained {
+		public int i;
+
+		public void foo () {
+			constrained_res = i;
+		}
+	}
+
+	interface IFaceConstrained {
+		void constrained_void_iface_call<T, T2>(T t, T2 t2) where T2 : IConstrained;
+	}
+
+	class ClassConstrained : IFaceConstrained {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public void constrained_void_iface_call<T, T2>(T t, T2 t2) where T2 : IConstrained {
+			t2.foo ();
+		}
+	}
+
+	public static int test_0_constrained_void_iface_call () {
+		IFaceConstrained c = new ClassConstrained ();
+		var s = new ConsStruct () { i = 42 };
+		constrained_res = null;
+		c.constrained_void_iface_call<int, ConsStruct> (1, s);
+		if (!(constrained_res is int) || ((int)constrained_res) != 42)
+			return 1;
+		var s2 = new ConsClass () { i = 43 };
+		constrained_res = null;
+		c.constrained_void_iface_call<int, ConsClass> (1, s2);
+		if (!(constrained_res is int) || ((int)constrained_res) != 43)
+			return 1;
+		return 0;
+	}
+
 }
 
 #if !MOBILE
