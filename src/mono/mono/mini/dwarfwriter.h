@@ -36,6 +36,6 @@ void
 mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info) MONO_INTERNAL;
 
 char *
-mono_dwarf_escape_path (char *name);
+mono_dwarf_escape_path (const char *name);
 
 #endif
