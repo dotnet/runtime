@@ -347,6 +347,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	TLAB_ACCESS_INIT;
 
 	size = ALIGN_UP (size);
+	SGEN_ASSERT (9, size >= sizeof (MonoObject), "Object too small");
 
 	g_assert (vtable->gc_descr);
 	if (size > SGEN_MAX_SMALL_OBJ_SIZE)
