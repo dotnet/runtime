@@ -3759,7 +3759,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	if (!cfg->seq_points)
 		return;
 
-	info = g_malloc0 (sizeof (MonoSeqPointInfo) + (cfg->seq_points->len - MONO_ZERO_LEN_ARRAY) * sizeof (SeqPoint));
+	info = g_malloc0 (sizeof (MonoSeqPointInfo) + (cfg->seq_points->len * sizeof (SeqPoint)));
 	info->len = cfg->seq_points->len;
 	for (i = 0; i < cfg->seq_points->len; ++i) {
 		SeqPoint *sp = &info->seq_points [i];
