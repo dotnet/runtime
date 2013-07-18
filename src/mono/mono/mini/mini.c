@@ -7395,7 +7395,9 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_runtime_cleanup_handlers ();
 
+#ifndef MONO_CROSS_COMPILE
 	mono_domain_free (domain, TRUE);
+#endif
 
 	mono_debugger_cleanup ();
 
