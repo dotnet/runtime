@@ -22,7 +22,7 @@
 
 #if defined(PLATFORM_ANDROID)
 #include <stdio.h>
-#elif defined(__linux__)
+#elif defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 #include <sys/auxv.h>
 #elif defined(__APPLE__)
 #include <mach/machine.h>
@@ -91,7 +91,7 @@ mono_hwcap_arch_init (void)
 
 		fclose (file);
 	}
-#elif defined(__linux__)
+#elif defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 	unsigned long hwcap;
 	unsigned long platform;
 

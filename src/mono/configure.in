@@ -1150,6 +1150,8 @@ if test x$target_win32 = xno; then
 
 	AC_CHECK_HEADERS(execinfo.h)
 
+	AC_CHECK_HEADERS(sys/auxv.h)
+
 	AC_CHECK_FUNCS(getgrgid_r)
 	AC_CHECK_FUNCS(getgrnam_r)
 	AC_CHECK_FUNCS(getpwnam_r)

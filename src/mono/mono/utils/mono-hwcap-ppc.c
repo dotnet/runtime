@@ -20,7 +20,7 @@
 
 #include "mono/utils/mono-hwcap-ppc.h"
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 #include <string.h>
 #include <sys/auxv.h>
 #endif
@@ -34,7 +34,7 @@ gboolean mono_hwcap_ppc_has_multiple_ls_units = FALSE;
 void
 mono_hwcap_arch_init (void)
 {
-#if defined(__linux__)
+#if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 	unsigned long hwcap;
 	unsigned long platform;
 
