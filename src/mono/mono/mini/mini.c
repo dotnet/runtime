@@ -6922,8 +6922,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_code_manager_init ();
 
-	if (!mono_aot_only)
-		mono_hwcap_init ();
+	mono_hwcap_init ();
 
 	mono_arch_cpu_init ();
 
