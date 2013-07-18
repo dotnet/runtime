@@ -104,7 +104,8 @@ monoutils_sources = \
 	mono-memory-model.h	\
 	atomic.h	\
 	atomic.c	\
-	mono-hwcap.h
+	mono-hwcap.h	\
+	mono-hwcap.c
 
 arch_sources = 
 

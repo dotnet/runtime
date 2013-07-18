@@ -39,7 +39,7 @@ gboolean mono_hwcap_arm_has_thumb = FALSE;
 gboolean mono_hwcap_arm_has_thumb2 = FALSE;
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 #if defined(PLATFORM_ANDROID)
 	/* We can't use the auxiliary vector on Android due to

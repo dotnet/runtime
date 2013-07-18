@@ -21,7 +21,7 @@
 #include "mono/utils/mono-hwcap-mips.h"
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 	/* Nothing needed here yet. */
 }

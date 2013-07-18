@@ -32,7 +32,7 @@ gboolean mono_hwcap_ppc_has_move_fpr_gpr = FALSE;
 gboolean mono_hwcap_ppc_has_multiple_ls_units = FALSE;
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 #if defined(__linux__)
 	unsigned long hwcap;

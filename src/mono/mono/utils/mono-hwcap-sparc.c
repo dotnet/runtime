@@ -31,7 +31,7 @@
 gboolean mono_hwcap_sparc_is_v9 = FALSE;
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 	char buf [1024];
 

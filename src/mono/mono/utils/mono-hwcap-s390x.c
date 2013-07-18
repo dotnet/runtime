@@ -31,7 +31,7 @@ catch_sigill (int sig_no, siginfo_t *info, gpointer act)
 }
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 	mono_hwcap_s390x_has_ld = TRUE;
 

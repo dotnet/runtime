@@ -22,6 +22,9 @@
  */
 void mono_hwcap_init (void) MONO_INTERNAL;
 
+/* Implemented in mono-hwcap-$TARGET.c. Do not call. */
+void mono_hwcap_arch_init (void) MONO_INTERNAL;
+
 /* Please note: If you're going to use the Linux auxiliary vector
  * to detect CPU features, don't use any of the constant names in
  * the hwcap.h header. This ties us to a particular version of the

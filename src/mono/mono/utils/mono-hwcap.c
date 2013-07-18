@@ -1,5 +1,5 @@
 /*
- * mono-hwcap-ia64.c: Itanium hardware feature detection
+ * mono-hwcap.c: Hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)
@@ -18,10 +18,15 @@
  * Copyright 2011-2013 Xamarin Inc
  */
 
-#include "mono/utils/mono-hwcap-ia64.h"
+#include "mono/utils/mono-hwcap.h"
+
+static gboolean hwcap_inited = FALSE;
 
 void
-mono_hwcap_arch_init (void)
+mono_hwcap_init (void)
 {
-	/* Nothing needed here yet. */
+	if (hwcap_inited)
+		return;
+
+	mono_hwcap_arch_init ();
 }

@@ -62,6 +62,7 @@
     <ClCompile Include="..\mono\utils\strenc.c" />
     <ClCompile Include="..\mono\utils\strtod.c" />
     <ClCompile Include="..\mono\utils\atomic.c" />
+    <ClCompile Include="..\mono\utils\mono-hwcap.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap-x86.c" />
   </ItemGroup>
   <ItemGroup>

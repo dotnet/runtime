@@ -170,7 +170,7 @@ cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 }
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 #if defined(TARGET_X86)
 	code_man = mono_code_manager_new ();

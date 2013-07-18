@@ -21,7 +21,7 @@
 #include "mono/utils/mono-hwcap.h"
 
 void
-mono_hwcap_init (void)
+mono_hwcap_arch_init (void)
 {
 	/* When the runtime is built as a cross compiler, we don't want to do
 	 * any CPU feature detection since we're most likely not running on the
