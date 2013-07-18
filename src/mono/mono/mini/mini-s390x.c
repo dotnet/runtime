@@ -263,6 +263,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-hwcap-s390x.h>
 
 #include "mini-s390x.h"
 #include "cpu-s390x.h"
@@ -383,8 +384,6 @@ static __inline__ void emit_unwind_regs(MonoCompile *, guint8 *, int, int, long)
 int mono_exc_esp_offset = 0;
 
 static int indent_level = 0;
-
-int has_ld = 0;
 
 static gint appdomain_tls_offset = -1,
 	    lmf_tls_offset = -1,
@@ -1243,24 +1242,6 @@ handle_enum:
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- catch_SIGILL					    */
-/*                                                                  */
-/* Function	- Catch SIGILL as a result of testing for long      */
-/*		  displacement facility.      			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-void
-catch_SIGILL(int sigNo, siginfo_t *info, void *act) {
-
-	has_ld = 0;
-
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_cpu_init                                */
 /*                                                                  */
 /* Function	- Perform CPU specific initialization to execute    */
@@ -1271,35 +1252,6 @@ catch_SIGILL(int sigNo, siginfo_t *info, void *act) {
 void
 mono_arch_cpu_init (void)
 {
-	struct sigaction sa,
-			 *oldSa = NULL;
-	guint mode = 1;
-
-	/*--------------------------------------*/	
-	/* Set default rounding mode for FP	*/
-	/*--------------------------------------*/	
-	__asm__ ("SRNM\t%0\n\t"
-		: : "m" (mode));
-
-	/*--------------------------------------*/	
-	/* Determine if we have long displace-  */
-	/* ment facility on this processor	*/
-	/*--------------------------------------*/	
-	sa.sa_sigaction = catch_SIGILL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
-
-	sigaction (SIGILL, &sa, oldSa);
-
-	/*--------------------------------------*/
-	/* We test by executing the STY inst    */
-	/*--------------------------------------*/
-	__asm__ ("LGHI\t0,1\n\t"
-		 "LA\t1,%0\n\t"
-		 ".byte\t0xe3,0x00,0x10,0x00,0x00,0x50\n\t"
-		: "=m" (has_ld) : : "0", "1");
-
-	sigaction (SIGILL, oldSa, NULL);
 }
 
 /*========================= End of Function ========================*/
@@ -2697,7 +2649,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 	if (cfg->method->save_lmf)
 		parmOffset -= sizeof(MonoLMF);
 	fpOffset   = parmOffset + (5*sizeof(gpointer));
-	if ((!has_ld) && (fpOffset > 4096)) {
+	if ((!mono_hwcap_s390x_has_ld) && (fpOffset > 4096)) {
 		s390_lgr (code, s390_r12, STK_BASE);
 		baseReg = s390_r12;
 		while (fpOffset > 4096) {
@@ -2710,7 +2662,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 	}	
 
 	s390_stmg (code, s390_r2, s390_r6, STK_BASE, parmOffset);
-	if (has_ld) {
+	if (mono_hwcap_s390x_has_ld) {
 		s390_stdy (code, s390_f0, 0, STK_BASE, fpOffset);
 		s390_stdy (code, s390_f2, 0, STK_BASE, fpOffset+sizeof(gdouble));
 		s390_stdy (code, s390_f4, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
@@ -2726,7 +2678,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 	s390_llong(code, cfg->method);
 	s390_llong(code, func);
 	s390_lg   (code, s390_r2, 0, s390_r13, 4);
-	if (has_ld)
+	if (mono_hwcap_s390x_has_ld)
 		s390_lay  (code, s390_r3, 0, STK_BASE, parmOffset);
 	else
 		s390_la   (code, s390_r3, 0, baseReg, parmOffset);
@@ -2734,7 +2686,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 	s390_aghi (code, s390_r4, cfg->stack_usage);
 	s390_lg   (code, s390_r1, 0, s390_r13, 12);
 	s390_basr (code, s390_r14, s390_r1);
-	if (has_ld) {
+	if (mono_hwcap_s390x_has_ld) {
 		s390_ldy  (code, s390_f6, 0, STK_BASE, fpOffset+3*sizeof(gdouble));
 		s390_ldy  (code, s390_f4, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
 		s390_ldy  (code, s390_f2, 0, STK_BASE, fpOffset+sizeof(gdouble));

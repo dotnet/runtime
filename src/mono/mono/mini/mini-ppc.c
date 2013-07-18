@@ -16,6 +16,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-hwcap-ppc.h>
 
 #include "mini-ppc.h"
 #ifdef TARGET_POWERPC64
@@ -520,32 +521,6 @@ typedef struct {
 	long int value;
 } AuxVec;
 
-#ifdef USE_ENVIRON_HACK
-static AuxVec*
-linux_find_auxv (int *count)
-{
-	AuxVec *vec;
-	int c = 0;
-	char **result = __environ;
-	/* Scan over the env vector looking for the ending NULL */
-	for (; *result != NULL; ++result) {
-	}
-	/* Bump the pointer one more step, which should be the auxv. */
-	++result;
-	vec = (AuxVec *)result;
-	if (vec->type != 22 /*AT_IGNOREPPC*/) {
-		*count = 0;
-		return NULL;
-	}
-	while (vec->type != 0 /*AT_NULL*/) {
-		vec++;
-		c++;
-	}
-	*count = c;
-	return (AuxVec *)result;
-}
-#endif
-
 #define MAX_AUX_ENTRIES 128
 /* 
  * PPC_FEATURE_POWER4, PPC_FEATURE_POWER5, PPC_FEATURE_POWER5_PLUS, PPC_FEATURE_CELL,
@@ -575,11 +550,12 @@ mono_arch_init (void)
 #if defined(MONO_CROSS_COMPILE)
 #elif defined(__APPLE__)
 	int mib [3];
-	size_t len;
+	size_t len = sizeof (cachelinesize);
+
 	mib [0] = CTL_HW;
 	mib [1] = HW_CACHELINE;
-	len = sizeof (cachelinesize);
-	if (sysctl (mib, 2, &cachelinesize, (size_t*)&len, NULL, 0) == -1) {
+
+	if (sysctl (mib, 2, &cachelinesize, &len, NULL, 0) == -1) {
 		perror ("sysctl");
 		cachelinesize = 128;
 	} else {
@@ -590,37 +566,17 @@ mono_arch_init (void)
 	int i, vec_entries = 0;
 	/* sadly this will work only with 2.6 kernels... */
 	FILE* f = fopen ("/proc/self/auxv", "rb");
+
 	if (f) {
 		vec_entries = fread (&vec, sizeof (AuxVec), MAX_AUX_ENTRIES, f);
 		fclose (f);
-#ifdef USE_ENVIRON_HACK
-	} else {
-		AuxVec *evec = linux_find_auxv (&vec_entries);
-		if (vec_entries)
-			memcpy (&vec, evec, sizeof (AuxVec) * MIN (vec_entries, MAX_AUX_ENTRIES));
-#endif
 	}
+
 	for (i = 0; i < vec_entries; i++) {
 		int type = vec [i].type;
+
 		if (type == 19) { /* AT_DCACHEBSIZE */
 			cachelinesize = vec [i].value;
-			continue;
-		} else if (type == 16) { /* AT_HWCAP */
-			if (vec [i].value & 0x00002000 /*PPC_FEATURE_ICACHE_SNOOP*/)
-				cpu_hw_caps |= PPC_ICACHE_SNOOP;
-			if (vec [i].value & ISA_2X)
-				cpu_hw_caps |= PPC_ISA_2X;
-			if (vec [i].value & ISA_64)
-				cpu_hw_caps |= PPC_ISA_64;
-			if (vec [i].value & ISA_MOVE_FPR_GPR)
-				cpu_hw_caps |= PPC_MOVE_FPR_GPR;
-			continue;
-		} else if (type == 15) { /* AT_PLATFORM */
-			const char *arch = (char*)vec [i].value;
-			if (strcmp (arch, "ppc970") == 0 ||
-					(strncmp (arch, "power", 5) == 0 && arch [5] >= '4' && arch [5] <= '7'))
-				cpu_hw_caps |= PPC_MULTIPLE_LS_UNITS;
-			/*printf ("cpu: %s\n", (char*)vec [i].value);*/
 			continue;
 		}
 	}
@@ -630,13 +586,31 @@ mono_arch_init (void)
 #else
 //#error Need a way to get cache line size
 #endif
+
+	if (mono_hwcap_ppc_has_icache_snoop)
+		cpu_hw_caps |= PPC_ICACHE_SNOOP;
+
+	if (mono_hwcap_ppc_is_isa_2x)
+		cpu_hw_caps |= PPC_ISA_2X;
+
+	if (mono_hwcap_ppc_is_isa_64)
+		cpu_hw_caps |= PPC_ISA_64;
+
+	if (mono_hwcap_ppc_has_move_fpr_gpr)
+		cpu_hw_caps |= PPC_MOVE_FPR_GPR;
+
+	if (mono_hwcap_ppc_has_multiple_ls_units)
+		cpu_hw_caps |= PPC_MULTIPLE_LS_UNITS;
+
 	if (!cachelinesize)
 		cachelinesize = 32;
+
 	if (!cachelineinc)
 		cachelineinc = cachelinesize;
 
 	if (mono_cpu_count () > 1)
 		cpu_hw_caps |= PPC_SMP_CAPABLE;
+
 	InitializeCriticalSection (&mini_arch_mutex);
 
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);

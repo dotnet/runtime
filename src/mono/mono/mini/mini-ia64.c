@@ -21,6 +21,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-hwcap-ia64.h>
 
 #include "trace.h"
 #include "mini-ia64.h"

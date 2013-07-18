@@ -18,7 +18,6 @@
 #include <unistd.h>
 
 #ifndef __linux__
-#include <sys/systeminfo.h>
 #include <thread.h>
 #endif
 
@@ -29,6 +28,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-hwcap-sparc.h>
 
 #include "mini-sparc.h"
 #include "trace.h"
@@ -150,9 +150,6 @@
 
 #endif
 
-/* Whenever the CPU supports v9 instructions */
-static gboolean sparcv9 = FALSE;
-
 /* Whenever this is a 64bit executable */
 #if SPARCV9
 static gboolean v64 = TRUE;
@@ -202,9 +199,6 @@ mono_arch_fregname (int reg) {
 void
 mono_arch_cpu_init (void)
 {
-	guint32 dummy;
-	/* make sure sparcv9 is initialized for embedded use */
-	mono_arch_cpu_optimizations(&dummy);
 }
 
 /*
@@ -229,35 +223,16 @@ mono_arch_cleanup (void)
 guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
-	char buf [1024];
 	guint32 opts = 0;
 
 	*exclude_mask = 0;
 
-#ifndef __linux__
-	if (!sysinfo (SI_ISALIST, buf, 1024))
-		g_assert_not_reached ();
-#else
-	/* From glibc.  If the getpagesize is 8192, we're on sparc64, which
-	 * (in)directly implies that we're a v9 or better.
-	 * Improvements to this are greatly accepted...
-	 * Also, we don't differentiate between v7 and v8.  I sense SIGILL
-	 * sniffing in my future.  
-	 */
-	if (getpagesize() == 8192)
-		strcpy (buf, "sparcv9");
-	else
-		strcpy (buf, "sparcv8");
-#endif
-
-	/* 
+	/*
 	 * On some processors, the cmov instructions are even slower than the
 	 * normal ones...
 	 */
-	if (strstr (buf, "sparcv9")) {
+	if (mono_hwcap_sparc_is_v9)
 		opts |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
-		sparcv9 = TRUE;
-	}
 	else
 		*exclude_mask |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
 
@@ -306,7 +281,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	 *
 	 * Sparcv8 needs a flush every 8 bytes.
 	 */
-	align = (sparcv9 ? 32 : 8);
+	align = (mono_hwcap_sparc_is_v9 ? 32 : 8);
 
 	start &= ~(align - 1);
 	end = (end + (align - 1)) & ~(align - 1);
@@ -370,7 +345,7 @@ mono_arch_is_inst_imm (gint64 imm)
 
 gboolean 
 mono_sparc_is_v9 (void) {
-	return sparcv9;
+	return mono_hwcap_sparc_is_v9;
 }
 
 gboolean 
@@ -1510,7 +1485,7 @@ else { \
 #define EMIT_COND_SYSTEM_EXCEPTION_GENERAL(ins,cond,sexc_name,filldelay,icc) do {     \
 		mono_add_patch_info (cfg, (guint8*)(code) - (cfg)->native_code,   \
 				    MONO_PATCH_INFO_EXC, sexc_name);  \
-        if (sparcv9 && ((icc) != sparc_icc_short)) {          \
+        if (mono_hwcap_sparc_is_v9 && ((icc) != sparc_icc_short)) {          \
            sparc_branchp (code, 0, (cond), (icc), 0, 0); \
         } \
         else { \
@@ -1741,7 +1716,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 				((ins->inst_offset == last_ins->inst_offset - 4)) &&
 				(ins->inst_imm == 0) &&
 				(last_ins->inst_imm == 0)) {
-				if (sparcv9) {
+				if (mono_hwcap_sparc_is_v9) {
 					last_ins->opcode = OP_STOREI8_MEMBASE_IMM;
 					last_ins->inst_offset = ins->inst_offset;
 					MONO_DELETE_INS (bb, ins);
@@ -3020,10 +2995,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_branch (code, 0, sparc_be, 0);
 				/* delay slot */
 				sparc_set (code, 0, sparc_o7);
-				sparc_sub_imm (code, 0, size_reg, sparcv9 ? 8 : 4, size_reg);
+				sparc_sub_imm (code, 0, size_reg, mono_hwcap_sparc_is_v9 ? 8 : 4, size_reg);
 				/* start of loop */
 				br [1] = code;
-				if (sparcv9)
+				if (mono_hwcap_sparc_is_v9)
 					sparc_stx (code, sparc_g0, ins->dreg, sparc_o7);
 				else
 					sparc_st (code, sparc_g0, ins->dreg, sparc_o7);
@@ -3032,7 +3007,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_branch (code, 0, sparc_bl, 0);
 				sparc_patch (br [2], br [1]);
 				/* delay slot */
-				sparc_add_imm (code, 0, sparc_o7, sparcv9 ? 8 : 4, sparc_o7);
+				sparc_add_imm (code, 0, sparc_o7, mono_hwcap_sparc_is_v9 ? 8 : 4, sparc_o7);
 				sparc_patch (br [0], code);
 			}
 			break;
@@ -3066,7 +3041,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (offset <= 16) {
 					i = 0;
 					while (i < offset) {
-						if (sparcv9) {
+						if (mono_hwcap_sparc_is_v9) {
 							sparc_stx_imm (code, sparc_g0, ins->dreg, i);
 							i += 8;
 						}
@@ -3078,10 +3053,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				else {
 					sparc_set (code, offset, sparc_o7);
-					sparc_sub_imm (code, 0, sparc_o7, sparcv9 ? 8 : 4, sparc_o7);
+					sparc_sub_imm (code, 0, sparc_o7, mono_hwcap_sparc_is_v9 ? 8 : 4, sparc_o7);
 					/* beginning of loop */
 					br [0] = code;
-					if (sparcv9)
+					if (mono_hwcap_sparc_is_v9)
 						sparc_stx (code, sparc_g0, ins->dreg, sparc_o7);
 					else
 						sparc_st (code, sparc_g0, ins->dreg, sparc_o7);
@@ -3089,7 +3064,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					br [1] = code;
 					sparc_branch (code, 0, sparc_bne, 0);
 					/* delay slot */
-					sparc_sub_imm (code, 0, sparc_o7, sparcv9 ? 8 : 4, sparc_o7);
+					sparc_sub_imm (code, 0, sparc_o7, mono_hwcap_sparc_is_v9 ? 8 : 4, sparc_o7);
 					sparc_patch (br [1], br [0]);
 				}
 			}
@@ -3284,7 +3259,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IBGE_UN:
 		case OP_IBLE:
 		case OP_IBLE_UN: {
-			if (sparcv9)
+			if (mono_hwcap_sparc_is_v9)
 				EMIT_COND_BRANCH_PREDICTED (ins, opcode_to_sparc_cond (ins->opcode), 1, 1);
 			else
 				EMIT_COND_BRANCH (ins, opcode_to_sparc_cond (ins->opcode), 1, 1);

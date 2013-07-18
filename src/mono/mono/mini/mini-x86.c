@@ -27,6 +27,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-hwcap-x86.h>
 
 #include "trace.h"
 #include "mini-x86.h"
@@ -698,129 +699,6 @@ mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignatu
 	return res;
 }
 
-#if !defined(__native_client__)
-static const guchar cpuid_impl [] = {
-	0x55,                   	/* push   %ebp */
-	0x89, 0xe5,                	/* mov    %esp,%ebp */
-	0x53,                   	/* push   %ebx */
-	0x8b, 0x45, 0x08,             	/* mov    0x8(%ebp),%eax */
-	0x0f, 0xa2,                	/* cpuid   */
-	0x50,                   	/* push   %eax */
-	0x8b, 0x45, 0x10,             	/* mov    0x10(%ebp),%eax */
-	0x89, 0x18,                	/* mov    %ebx,(%eax) */
-	0x8b, 0x45, 0x14,             	/* mov    0x14(%ebp),%eax */
-	0x89, 0x08,                	/* mov    %ecx,(%eax) */
-	0x8b, 0x45, 0x18,             	/* mov    0x18(%ebp),%eax */
-	0x89, 0x10,                	/* mov    %edx,(%eax) */
-	0x58,                   	/* pop    %eax */
-	0x8b, 0x55, 0x0c,             	/* mov    0xc(%ebp),%edx */
-	0x89, 0x02,                	/* mov    %eax,(%edx) */
-	0x5b,                   	/* pop    %ebx */
-	0xc9,                   	/* leave   */
-	0xc3,                   	/* ret     */
-};
-#else
-static const guchar cpuid_impl [] = {
-	0x55,                   		/* push   %ebp */
-	0x89, 0xe5,                		/* mov    %esp,%ebp */
-	0x53,                   		/* push   %ebx */
-	0x8b, 0x45, 0x08,             		/* mov    0x8(%ebp),%eax */
-	0x0f, 0xa2,                		/* cpuid   */
-	0x50,                   		/* push   %eax */
-	0x8b, 0x45, 0x10,             		/* mov    0x10(%ebp),%eax */
-	0x89, 0x18,                		/* mov    %ebx,(%eax) */
-	0x8b, 0x45, 0x14,             		/* mov    0x14(%ebp),%eax */
-	0x89, 0x08,                		/* mov    %ecx,(%eax) */
-	0x8b, 0x45, 0x18,             		/* mov    0x18(%ebp),%eax */
-	0x89, 0x10,                		/* mov    %edx,(%eax) */
-	0x58,                   		/* pop    %eax */
-	0x8b, 0x55, 0x0c,             		/* mov    0xc(%ebp),%edx */
-	0x89, 0x02,                		/* mov    %eax,(%edx) */
-	0x5b,                   		/* pop    %ebx */
-	0xc9,                   		/* leave   */
-	0x59, 0x83, 0xe1, 0xe0, 0xff, 0xe1,	/* naclret */
-	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,     /* padding, to provide bundle aligned version */
-	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,
-	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,
-	0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4,
-	0xf4
-};
-#endif
-
-typedef void (*CpuidFunc) (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx);
-
-static int 
-cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
-{
-#if defined(__native_client__)
-	static CpuidFunc func = NULL;
-	void *ptr, *end_ptr;
-	if (!func) {
-		ptr = mono_global_codeman_reserve (sizeof (cpuid_impl));
-		memcpy(ptr, cpuid_impl, sizeof(cpuid_impl));
-		end_ptr = ptr + sizeof(cpuid_impl);
-		nacl_global_codeman_validate (&ptr, sizeof(cpuid_impl), &end_ptr);
-		func = (CpuidFunc)ptr;
-	}
-	func (id, p_eax, p_ebx, p_ecx, p_edx);
-#else
-	int have_cpuid = 0;
-#ifndef _MSC_VER
-	__asm__  __volatile__ (
-		"pushfl\n"
-		"popl %%eax\n"
-		"movl %%eax, %%edx\n"
-		"xorl $0x200000, %%eax\n"
-		"pushl %%eax\n"
-		"popfl\n"
-		"pushfl\n"
-		"popl %%eax\n"
-		"xorl %%edx, %%eax\n"
-		"andl $0x200000, %%eax\n"
-		"movl %%eax, %0"
-		: "=r" (have_cpuid)
-		:
-		: "%eax", "%edx"
-	);
-#else
-	__asm {
-		pushfd
-		pop eax
-		mov edx, eax
-		xor eax, 0x200000
-		push eax
-		popfd
-		pushfd
-		pop eax
-		xor eax, edx
-		and eax, 0x200000
-		mov have_cpuid, eax
-	}
-#endif
-	if (have_cpuid) {
-		/* Have to use the code manager to get around WinXP DEP */
-		static CpuidFunc func = NULL;
-		void *ptr;
-		if (!func) {
-			ptr = mono_global_codeman_reserve (sizeof (cpuid_impl));
-			memcpy (ptr, cpuid_impl, sizeof (cpuid_impl));
-			func = (CpuidFunc)ptr;
-		}
-		func (id, p_eax, p_ebx, p_ecx, p_edx);
-
-		/*
-		 * We use this approach because of issues with gcc and pic code, see:
-		 * http://gcc.gnu.org/cgi-bin/gnatsweb.pl?cmd=view%20audit-trail&database=gcc&pr=7329
-		__asm__ __volatile__ ("cpuid"
-			: "=a" (*p_eax), "=b" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
-			: "a" (id));
-		*/
-		return 1;
-	}
-	return 0;
-#endif
-}
-
 /*
  * Initialize the cpu to execute managed code.
  */
@@ -880,36 +758,32 @@ guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 #if !defined(__native_client__)
-	int eax, ebx, ecx, edx;
 	guint32 opts = 0;
-	
+
 	*exclude_mask = 0;
 
-	if (mono_aot_only)
-		/* The cpuid function allocates from the global codeman */
-		return opts;
+	if (mono_hwcap_x86_has_cmov) {
+		opts |= MONO_OPT_CMOV;
 
-	/* Feature Flags function, flags returned in EDX. */
-	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
-		if (edx & (1 << 15)) {
-			opts |= MONO_OPT_CMOV;
-			if (edx & 1)
-				opts |= MONO_OPT_FCMOV;
-			else
-				*exclude_mask |= MONO_OPT_FCMOV;
-		} else
-			*exclude_mask |= MONO_OPT_CMOV;
-		if (edx & (1 << 26))
-			opts |= MONO_OPT_SSE2;
+		if (mono_hwcap_x86_has_fcmov)
+			opts |= MONO_OPT_FCMOV;
 		else
-			*exclude_mask |= MONO_OPT_SSE2;
+			*exclude_mask |= MONO_OPT_FCMOV;
+	} else {
+		*exclude_mask |= MONO_OPT_CMOV;
+	}
+
+	if (mono_hwcap_x86_has_sse2)
+		opts |= MONO_OPT_SSE2;
+	else
+		*exclude_mask |= MONO_OPT_SSE2;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 		/*SIMD intrinsics require at least SSE2.*/
-		if (!(opts & MONO_OPT_SSE2))
+		if (!mono_hwcap_x86_has_sse2)
 			*exclude_mask |= MONO_OPT_SIMD;
 #endif
-	}
+
 	return opts;
 #else
 	return MONO_OPT_CMOV | MONO_OPT_FCMOV | MONO_OPT_SSE2;
@@ -925,42 +799,30 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 guint32
 mono_arch_cpu_enumerate_simd_versions (void)
 {
-	int eax, ebx, ecx, edx;
 	guint32 sse_opts = 0;
 
-	if (mono_aot_only)
-		/* The cpuid function allocates from the global codeman */
-		return sse_opts;
+	if (mono_hwcap_x86_has_sse1)
+		sse_opts |= SIMD_VERSION_SSE1;
 
-	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
-		if (edx & (1 << 25))
-			sse_opts |= SIMD_VERSION_SSE1;
-		if (edx & (1 << 26))
-			sse_opts |= SIMD_VERSION_SSE2;
-		if (ecx & (1 << 0))
-			sse_opts |= SIMD_VERSION_SSE3;
-		if (ecx & (1 << 9))
-			sse_opts |= SIMD_VERSION_SSSE3;
-		if (ecx & (1 << 19))
-			sse_opts |= SIMD_VERSION_SSE41;
-		if (ecx & (1 << 20))
-			sse_opts |= SIMD_VERSION_SSE42;
-	}
+	if (mono_hwcap_x86_has_sse2)
+		sse_opts |= SIMD_VERSION_SSE2;
 
-	/* Yes, all this needs to be done to check for sse4a.
-	   See: "Amd: CPUID Specification"
-	 */
-	if (cpuid (0x80000000, &eax, &ebx, &ecx, &edx)) {
-		/* eax greater or equal than 0x80000001, ebx = 'htuA', ecx = DMAc', edx = 'itne'*/
-		if ((((unsigned int) eax) >= 0x80000001) && (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65)) {
-			cpuid (0x80000001, &eax, &ebx, &ecx, &edx);
-			if (ecx & (1 << 6))
-				sse_opts |= SIMD_VERSION_SSE4a;
-		}
-	}
+	if (mono_hwcap_x86_has_sse3)
+		sse_opts |= SIMD_VERSION_SSE3;
 
+	if (mono_hwcap_x86_has_ssse3)
+		sse_opts |= SIMD_VERSION_SSSE3;
 
-	return sse_opts;	
+	if (mono_hwcap_x86_has_sse41)
+		sse_opts |= SIMD_VERSION_SSE41;
+
+	if (mono_hwcap_x86_has_sse42)
+		sse_opts |= SIMD_VERSION_SSE42;
+
+	if (mono_hwcap_x86_has_sse4a)
+		sse_opts |= SIMD_VERSION_SSE4a;
+
+	return sse_opts;
 }
 
 /*
