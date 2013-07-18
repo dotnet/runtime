@@ -47,6 +47,7 @@
 #include <mono/metadata/coree.h>
 #include <mono/metadata/attach.h>
 #include "mono/utils/mono-counters.h"
+#include "mono/utils/mono-hwcap.h"
 
 #include "mini.h"
 #include "jit.h"
@@ -148,6 +149,9 @@ parse_optimizations (const char* p)
 	guint32 exclude = 0;
 	const char *n;
 	int i, invert, len;
+
+	/* Initialize the hwcap module if necessary. */
+	mono_hwcap_init ();
 
 	/* call out to cpu detection code here that sets the defaults ... */
 	opt |= mono_arch_cpu_optimizations (&exclude);
@@ -351,6 +355,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	MonoDomain *domain = mono_domain_get ();
 	guint32 exclude = 0;
 
+	/* Note: mono_hwcap_init () called in mono_init () before we get here. */
 	mono_arch_cpu_optimizations (&exclude);
 
 	if (mini_stats_fd) {
