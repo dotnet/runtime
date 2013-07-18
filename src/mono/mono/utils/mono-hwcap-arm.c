@@ -141,3 +141,15 @@ mono_hwcap_arch_init (void)
 	/* TODO: Find a way to detect features like Thumb and VFP. */
 #endif
 }
+
+void
+mono_hwcap_print(FILE *f)
+{
+	g_fprintf (f, "mono_hwcap_arm_is_v5 = %i\n", mono_hwcap_arm_is_v5);
+	g_fprintf (f, "mono_hwcap_arm_is_v6 = %i\n", mono_hwcap_arm_is_v6);
+	g_fprintf (f, "mono_hwcap_arm_is_v7 = %i\n", mono_hwcap_arm_is_v7);
+	g_fprintf (f, "mono_hwcap_arm_is_v7s = %i\n", mono_hwcap_arm_is_v7s);
+	g_fprintf (f, "mono_hwcap_arm_has_vfp = %i\n", mono_hwcap_arm_has_vfp);
+	g_fprintf (f, "mono_hwcap_arm_has_thumb = %i\n", mono_hwcap_arm_has_thumb);
+	g_fprintf (f, "mono_hwcap_arm_has_thumb2 = %i\n", mono_hwcap_arm_has_thumb2);
+}

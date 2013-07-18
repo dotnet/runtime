@@ -50,3 +50,9 @@ mono_hwcap_arch_init (void)
 
 	mono_hwcap_sparc_is_v9 = strstr (buf, "sparcv9");
 }
+
+void
+mono_hwcap_print (FILE *f)
+{
+	g_fprintf (f, "mono_hwcap_sparc_is_v9 = %i\n", mono_hwcap_sparc_is_v9);
+}

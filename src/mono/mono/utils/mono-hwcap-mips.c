@@ -25,3 +25,8 @@ mono_hwcap_arch_init (void)
 {
 	/* Nothing needed here yet. */
 }
+
+void
+mono_hwcap_print (FILE *f)
+{
+}

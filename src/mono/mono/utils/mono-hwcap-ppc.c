@@ -65,3 +65,13 @@ mono_hwcap_arch_init (void)
 	}
 #endif
 }
+
+void
+mono_hwcap_print (FILE* f)
+{
+	g_fprintf (f, "mono_hwcap_ppc_has_icache_snoop = %i\n", mono_hwcap_ppc_has_icache_snoop);
+	g_fprintf (f, "mono_hwcap_ppc_is_isa_2x = %i\n", mono_hwcap_ppc_is_isa_2x);
+	g_fprintf (f, "mono_hwcap_ppc_is_isa_64 = %i\n", mono_hwcap_ppc_is_isa_64);
+	g_fprintf (f, "mono_hwcap_ppc_has_move_fpr_gpr = %i\n", mono_hwcap_ppc_has_move_fpr_gpr);
+	g_fprintf (f, "mono_hwcap_ppc_has_multiple_ls_units = %i\n", mono_hwcap_ppc_has_multiple_ls_units);
+}

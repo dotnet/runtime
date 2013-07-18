@@ -158,3 +158,18 @@ mono_hwcap_arch_init (void)
 	mono_hwcap_x86_is_xen = !access ("/proc/xen", F_OK);
 #endif
 }
+
+void
+mono_hwcap_print (FILE *f)
+{
+	g_fprintf (f, "mono_hwcap_x86_is_xen = %i\n", mono_hwcap_x86_is_xen);
+	g_fprintf (f, "mono_hwcap_x86_has_cmov = %i\n", mono_hwcap_x86_has_cmov);
+	g_fprintf (f, "mono_hwcap_x86_has_fcmov = %i\n", mono_hwcap_x86_has_fcmov);
+	g_fprintf (f, "mono_hwcap_x86_has_sse1 = %i\n", mono_hwcap_x86_has_sse1);
+	g_fprintf (f, "mono_hwcap_x86_has_sse2 = %i\n", mono_hwcap_x86_has_sse2);
+	g_fprintf (f, "mono_hwcap_x86_has_sse3 = %i\n", mono_hwcap_x86_has_sse3);
+	g_fprintf (f, "mono_hwcap_x86_has_ssse3 = %i\n", mono_hwcap_x86_has_ssse3);
+	g_fprintf (f, "mono_hwcap_x86_has_sse41 = %i\n", mono_hwcap_x86_has_sse41);
+	g_fprintf (f, "mono_hwcap_x86_has_sse42 = %i\n", mono_hwcap_x86_has_sse42);
+	g_fprintf (f, "mono_hwcap_x86_has_sse4a = %i\n", mono_hwcap_x86_has_sse4a);
+}

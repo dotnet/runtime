@@ -1,6 +1,7 @@
 #ifndef __MONO_UTILS_HWCAP_H__
 #define __MONO_UTILS_HWCAP_H__
 
+#include <stdio.h>
 #include <glib.h>
 
 #include "config.h"
@@ -24,6 +25,9 @@ void mono_hwcap_init (void) MONO_INTERNAL;
 
 /* Implemented in mono-hwcap-$TARGET.c. Do not call. */
 void mono_hwcap_arch_init (void) MONO_INTERNAL;
+
+/* Print detected features to the given file. */
+void mono_hwcap_print (FILE *f) MONO_INTERNAL;
 
 /* Please note: If you're going to use the Linux auxiliary vector
  * to detect CPU features, don't use any of the constant names in

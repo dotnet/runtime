@@ -31,3 +31,8 @@ mono_hwcap_arch_init (void)
 	 * mono-hwcap-$TARGET.c file in Makefile.am.
 	 */
 }
+
+void
+mono_hwcap_print (FILE *f)
+{
+}

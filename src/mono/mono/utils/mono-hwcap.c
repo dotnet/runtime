@@ -18,6 +18,8 @@
  * Copyright 2011-2013 Xamarin Inc
  */
 
+#include <stdlib.h>
+
 #include "mono/utils/mono-hwcap.h"
 
 static gboolean hwcap_inited = FALSE;
@@ -25,8 +27,13 @@ static gboolean hwcap_inited = FALSE;
 void
 mono_hwcap_init (void)
 {
+	const char *verbose = getenv ("MONO_VERBOSE_HWCAP");
+
 	if (hwcap_inited)
 		return;
 
 	mono_hwcap_arch_init ();
+
+	if (verbose)
+		mono_hwcap_print (stdout);
 }

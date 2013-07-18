@@ -58,3 +58,9 @@ mono_hwcap_arch_init (void)
 
 	sigaction (SIGILL, old_sa, NULL);
 }
+
+void
+mono_hwcap_print (FILE *f)
+{
+	g_fprintf (f, "mono_hwcap_s390x_has_ld = %i\n", mono_hwcap_s390x_has_ld);
+}
