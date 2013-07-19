@@ -2727,7 +2727,6 @@ if test "x$host" != "x$target"; then
 	esac
 fi
 
-# FIXME: Define the others as well
 case "$TARGET" in
 X86)
 	AC_DEFINE(TARGET_X86, 1, [...])
