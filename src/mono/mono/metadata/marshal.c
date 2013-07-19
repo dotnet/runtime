@@ -4520,9 +4520,12 @@ mono_marshal_get_string_ctor_signature (MonoMethod *method)
 static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
-	if (t->byref)
+	if (t->byref) {
+		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+			return t;
 		/* Can't share this with 'I' as that needs another indirection */
-		return t;
+		return &mono_defaults.int_class->this_arg;
+	}
 
 	if (MONO_TYPE_IS_REFERENCE (t))
 		return &mono_defaults.object_class->byval_arg;
@@ -4947,8 +4950,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 			 * Create a new signature to reflect this.
 			 */
 			callsig = signature_dup_add_this (method->klass->image, mono_method_signature (method), method->klass);
-			/* Can't share this as it would be shared with static methods taking an IntPtr argument */
-			need_direct_wrapper = TRUE;
 		} else {
 			if (method->dynamic)
 				callsig = signature_dup (method->klass->image, mono_method_signature (method));
