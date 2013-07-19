@@ -2764,7 +2764,7 @@ esac
 dnl Use GCC atomic ops if they work on the target.
 if test x$GCC = "xyes"; then
 	case $TARGET in
-	X86 | AMD64 | ARM | POWERPC | POWERPC64)
+	X86 | AMD64 | ARM | POWERPC | POWERPC64 | MIPS)
 		AC_DEFINE(USE_GCC_ATOMIC_OPS, 1, [...])
 		;;
 	esac
