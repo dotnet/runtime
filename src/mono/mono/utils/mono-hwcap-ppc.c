@@ -60,7 +60,7 @@ mono_hwcap_arch_init (void)
 	if ((platform = getauxval(AT_PLATFORM))) {
 		const char *str = (const char *) platform;
 
-		if (!strcmp (str, "ppc970") || (!strncmp (str, "power", 5) && arch [5] >= '4' && arch [5] <= '7'))
+		if (!strcmp (str, "ppc970") || (!strncmp (str, "power", 5) && str [5] >= '4' && str [5] <= '7'))
 			mono_hwcap_ppc_has_multiple_ls_units = TRUE;
 	}
 #endif
