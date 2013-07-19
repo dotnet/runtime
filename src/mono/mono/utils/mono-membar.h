@@ -46,36 +46,6 @@ static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
-#elif defined(__x86_64__) || defined(TARGET_AMD64)
-static inline void mono_memory_barrier (void)
-{
-	__asm__ __volatile__ ("mfence" : : : "memory");
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	__asm__ __volatile__ ("lfence" : : : "memory");
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	__asm__ __volatile__ ("sfence" : : : "memory");
-}
-#elif defined(__i386__) || defined(TARGET_X86)
-static inline void mono_memory_barrier (void)
-{
-	__asm__ __volatile__ ("lock; addl $0,0(%%esp)" : : : "memory");
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	mono_memory_barrier ();
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	mono_memory_barrier ();
-}
 #elif defined(sparc) || defined(__sparc__)
 static inline void mono_memory_barrier (void)
 {
