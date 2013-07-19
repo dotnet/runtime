@@ -14,8 +14,39 @@
 
 #include <glib.h>
 
-#if defined(__x86_64__) || defined(TARGET_AMD64)
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+#include <intrin.h>
+
+static inline void mono_memory_barrier (void)
+{
+	_ReadWriteBarrier ();
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+	_ReadBarrier ();
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+	_WriteBarrier ();
+}
+#elif defined(USE_GCC_ATOMIC_OPS)
+static inline void mono_memory_barrier (void)
+{
+	__sync_synchronize ();
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+	mono_memory_barrier ();
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+	mono_memory_barrier ();
+}
+#elif defined(__x86_64__) || defined(TARGET_AMD64)
 static inline void mono_memory_barrier (void)
 {
 	__asm__ __volatile__ ("mfence" : : : "memory");
@@ -30,26 +61,7 @@ static inline void mono_memory_write_barrier (void)
 {
 	__asm__ __volatile__ ("sfence" : : : "memory");
 }
-#else
-#include <intrin.h>
-
-static inline void mono_memory_barrier (void)
-{
-	_ReadWriteBarrier ();
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	_ReadBarrier ();
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	_WriteBarrier ();
-}
-#endif
 #elif defined(__i386__) || defined(TARGET_X86)
-#ifndef _MSC_VER
 static inline void mono_memory_barrier (void)
 {
 	__asm__ __volatile__ ("lock; addl $0,0(%%esp)" : : : "memory");
@@ -64,24 +76,6 @@ static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
-#else
-#include <intrin.h>
-
-static inline void mono_memory_barrier (void)
-{
-	_ReadWriteBarrier ();
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	_ReadBarrier ();
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	_WriteBarrier ();
-}
-#endif
 #elif defined(sparc) || defined(__sparc__)
 static inline void mono_memory_barrier (void)
 {
