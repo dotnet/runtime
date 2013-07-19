@@ -2125,6 +2125,8 @@ is_async_state_machine_class (MonoClass *klass)
 	static MonoClass *iclass;
 	static gboolean iclass_set;
 
+	return FALSE;
+
 	if (!iclass_set) {
 		iclass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "IAsyncStateMachine");
 		mono_memory_barrier ();
@@ -2144,6 +2146,8 @@ is_async_method (MonoMethod *method)
 	gboolean res = FALSE;
 	static MonoClass *attr_class;
 	static gboolean attr_class_set;
+
+	return FALSE;
 
 	if (!attr_class_set) {
 		attr_class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "AsyncStateMachineAttribute");

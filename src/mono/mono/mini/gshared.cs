@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 struct Foo {
 	public int i, j, k, l, m, n;
@@ -1283,6 +1284,23 @@ public class Tests
 		return 0;
 	}
 
+	public static async Task<T> FooAsync<T> (int i, int j) {
+		Task<int> t = new Task<int> (delegate () { return 42; });
+		var response = await t;
+		return default(T);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void call_async<T> (int i, int j) {
+		Task<T> t = FooAsync<T> (1, 2);
+		t.RunSynchronously ();
+	}
+
+	// In AOT mode, the async infrastructure depends on gsharedvt methods
+	public static int test_0_async_call_from_generic () {
+		call_async<string> (1, 2);
+		return 0;
+	}
 }
 
 #if !MOBILE
