@@ -203,7 +203,6 @@ typedef struct MonoCompileArch {
 #endif
 	gpointer seq_point_info_var;
 	gpointer ss_trigger_page_var;
-	gpointer lmf_var;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
@@ -396,6 +395,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK 1
+#define MONO_ARCH_ENABLE_LMF_IR 1
 
 #ifdef TARGET_OSX
 #define MONO_ARCH_HAVE_TLS_GET_REG 1

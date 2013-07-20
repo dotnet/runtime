@@ -2870,6 +2870,9 @@ mini_get_tls_offset (MonoJitTlsKey key)
 	case TLS_KEY_LMF:
 		offset = mono_get_lmf_tls_offset ();
 		break;
+	case TLS_KEY_LMF_ADDR:
+		offset = mono_get_lmf_addr_tls_offset ();
+		break;
 	default:
 		g_assert_not_reached ();
 		offset = -1;
@@ -2937,6 +2940,12 @@ MonoInst*
 mono_get_lmf_intrinsic (MonoCompile* cfg)
 {
 	return mono_create_tls_get (cfg, TLS_KEY_LMF);
+}
+
+MonoInst*
+mono_get_lmf_addr_intrinsic (MonoCompile* cfg)
+{
+	return mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
 }
 
 void
@@ -3609,6 +3618,13 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
+
+	if (cfg->method->save_lmf && ARCH_ENABLE_LMF_IR) {
+		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		lmf_var->flags |= MONO_INST_VOLATILE;
+		lmf_var->flags |= MONO_INST_LMF;
+		cfg->lmf_var = lmf_var;
+	}
 
 	mono_arch_create_vars (cfg);
 }

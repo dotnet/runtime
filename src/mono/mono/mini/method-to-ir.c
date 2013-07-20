@@ -1868,6 +1868,82 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	}
 }
 
+/*
+ * emit_push_lmf:
+ *
+ *   Emit IR to push the current LMF onto the LMF stack.
+ */
+static void
+emit_push_lmf (MonoCompile *cfg)
+{
+#if defined(MONO_ARCH_ENABLE_LMF_IR)
+	/*
+	 * Emit IR to push the LMF:
+	 * lmf_addr = <lmf_addr from tls>
+	 * lmf->lmf_addr = lmf_addr
+	 * lmf->prev_lmf = *lmf_addr
+	 * *lmf_addr = lmf
+	 */
+	int lmf_reg, lmf_addr_reg, prev_lmf_reg;
+	MonoInst *ins, *lmf_ins;
+
+	if (!mono_arch_enable_lmf_ir (cfg))
+		return;
+
+	lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
+	if (lmf_ins)
+		MONO_ADD_INS (cfg->cbb, lmf_ins);
+	else
+		lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
+	lmf_addr_reg = lmf_ins->dreg;
+
+	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+	lmf_reg = ins->dreg;
+	/* Save lmf_addr */
+	if (!cfg->lmf_addr_var)
+		cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, cfg->lmf_addr_var->dreg, lmf_ins->dreg);
+	prev_lmf_reg = alloc_preg (cfg);
+	/* Save previous_lmf */
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_addr_reg, 0);
+	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
+	/* Set new lmf */
+	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, lmf_reg);
+#endif
+}
+
+/*
+ * emit_push_lmf:
+ *
+ *   Emit IR to pop the current LMF from the LMF stack.
+ */
+static void
+emit_pop_lmf (MonoCompile *cfg)
+{
+#if defined(MONO_ARCH_ENABLE_LMF_IR)
+	int lmf_reg, lmf_addr_reg, prev_lmf_reg;
+	MonoInst *ins;
+
+	if (!mono_arch_enable_lmf_ir (cfg))
+		return;
+
+	/*
+	 * Emit IR to pop the LMF:
+	 * *(lmf->lmf_addr) = lmf->prev_lmf
+	 */
+	cfg->cbb = cfg->bb_exit;
+	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+	lmf_reg = ins->dreg;
+	/* This could be called before emit_push_lmf () */
+	if (!cfg->lmf_addr_var)
+		cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+	lmf_addr_reg = cfg->lmf_addr_var->dreg;
+	prev_lmf_reg = alloc_preg (cfg);
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
+#endif
+}
+
 static int
 ret_type_to_call_opcode (MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
 {
@@ -8282,6 +8358,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cfg->ret_var_set = TRUE;
 				} 
 			} else {
+				if (cfg->lmf_var && cfg->cbb->in_count)
+					emit_pop_lmf (cfg);
+
 				if (cfg->ret) {
 					MonoType *ret_type = mono_method_signature (method)->ret;
 
@@ -11641,6 +11720,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		bb->next_bb = end_bblock;
 	} else {
 		bblock->next_bb = end_bblock;
+	}
+
+	if (cfg->lmf_var) {
+		cfg->cbb = init_localsbb;
+		emit_push_lmf (cfg);
 	}
 
 	if (cfg->method == method && cfg->domainvar) {
