@@ -76,28 +76,6 @@ static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
-#elif defined(__arm__)
-static inline void mono_memory_barrier (void)
-{
-#if defined(__native_client__) || defined(HAVE_ARMV7)
-	/* NaCl requires ARMv7 CPUs. */
-	__asm__ __volatile__("dsb" : : : "memory");
-#elif defined(HAVE_ARMV6)
-	__asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory");
-#else
-	/* No barrier required on pre-v6. */
-#endif
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	mono_memory_barrier ();
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	mono_memory_barrier ();
-}
 #elif defined(__ia64__)
 static inline void mono_memory_barrier (void)
 {
