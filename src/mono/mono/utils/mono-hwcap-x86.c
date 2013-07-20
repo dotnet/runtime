@@ -42,6 +42,10 @@ gboolean mono_hwcap_x86_has_sse4a = FALSE;
 static gboolean
 cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 {
+#if defined(_MSC_VER)
+	int info [4];
+#endif
+
 	/* First, make sure we can use cpuid if we're on 32-bit. */
 #if defined(TARGET_X86)
 	gboolean have_cpuid = FALSE;
@@ -86,7 +90,6 @@ cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 	/* Now issue the actual cpuid instruction. We can use
 	   MSVC's __cpuid on both 32-bit and 64-bit. */
 #if defined(_MSC_VER)
-	int info [4];
 	__cpuid (info, id);
 	*p_eax = info [0];
 	*p_ebx = info [1];
