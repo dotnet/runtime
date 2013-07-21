@@ -46,7 +46,8 @@ ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return (GetFileType (handle) == FILE_TYPE_CHAR);
+	DWORD mode;
+	return GetConsoleMode (handle, &mode) != 0;
 }
 
 MonoBoolean
