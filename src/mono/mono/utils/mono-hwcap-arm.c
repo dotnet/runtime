@@ -73,16 +73,12 @@ mono_hwcap_arch_init (void)
 			}
 
 			if (!strncmp (line, "Features", 8)) {
-				char *thumb = strstr (line, "thumb");
-
-				if (thumb)
+				if (strstr (line, "thumb"))
 					mono_hwcap_arm_has_thumb = TRUE;
 
 				/* TODO: Find a way to detect Thumb 2. */
 
-				char *vfp = strstr (line, "vfp")
-
-				if (vfp)
+				if (strstr (line, "vfp"))
 					mono_hwcap_arm_has_vfp = TRUE;
 
 				continue;
