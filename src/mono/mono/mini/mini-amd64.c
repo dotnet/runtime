@@ -2013,6 +2013,11 @@ mono_arch_create_vars (MonoCompile *cfg)
 #ifndef MONO_AMD64_NO_PUSHES
 	cfg->arch_eh_jit_info = 1;
 #endif
+
+	cfg->create_lmf_var = 1;
+#if !defined(TARGET_WIN32) && !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	cfg->lmf_ir = 1;
+#endif
 }
 
 static void
@@ -3757,7 +3762,7 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 		amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
 		amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
 #else
-		/* Already handled by the MONO_ARCH_ENABLE_LMF_IR code in method-to-ir.c */
+		/* Already handled by emit_push_lmf () in method-to-ir.c */
 		/* FIXME: Use this on win32 as well */
 		return code;
 #endif
@@ -3796,16 +3801,6 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	}
 
 	return code;
-}
-
-gboolean
-mono_arch_enable_lmf_ir (MonoCompile *cfg)
-{
-#if !defined(TARGET_WIN32) && !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	return TRUE;
-#else
-	return FALSE;
-#endif
 }
 
 #define REAL_PRINT_REG(text,reg) \

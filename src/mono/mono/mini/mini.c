@@ -3619,14 +3619,14 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
 
-	if (cfg->method->save_lmf && ARCH_ENABLE_LMF_IR) {
+	mono_arch_create_vars (cfg);
+
+	if (cfg->method->save_lmf && cfg->create_lmf_var) {
 		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		lmf_var->flags |= MONO_INST_VOLATILE;
 		lmf_var->flags |= MONO_INST_LMF;
 		cfg->lmf_var = lmf_var;
 	}
-
-	mono_arch_create_vars (cfg);
 }
 
 void

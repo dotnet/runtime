@@ -1876,7 +1876,6 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 static void
 emit_push_lmf (MonoCompile *cfg)
 {
-#if defined(MONO_ARCH_ENABLE_LMF_IR)
 	/*
 	 * Emit IR to push the LMF:
 	 * lmf_addr = <lmf_addr from tls>
@@ -1887,7 +1886,7 @@ emit_push_lmf (MonoCompile *cfg)
 	int lmf_reg, lmf_addr_reg, prev_lmf_reg;
 	MonoInst *ins, *lmf_ins;
 
-	if (!mono_arch_enable_lmf_ir (cfg))
+	if (!cfg->lmf_ir)
 		return;
 
 	lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
@@ -1909,7 +1908,6 @@ emit_push_lmf (MonoCompile *cfg)
 	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
 	/* Set new lmf */
 	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, lmf_reg);
-#endif
 }
 
 /*
@@ -1920,11 +1918,10 @@ emit_push_lmf (MonoCompile *cfg)
 static void
 emit_pop_lmf (MonoCompile *cfg)
 {
-#if defined(MONO_ARCH_ENABLE_LMF_IR)
 	int lmf_reg, lmf_addr_reg, prev_lmf_reg;
 	MonoInst *ins;
 
-	if (!mono_arch_enable_lmf_ir (cfg))
+	if (!cfg->lmf_ir)
 		return;
 
 	/*
@@ -1941,7 +1938,6 @@ emit_pop_lmf (MonoCompile *cfg)
 	prev_lmf_reg = alloc_preg (cfg);
 	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
-#endif
 }
 
 static int

@@ -1178,6 +1178,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	}
 
 	cfg->arch_eh_jit_info = 1;
+	cfg->create_lmf_var = 1;
 }
 
 /*
@@ -2495,12 +2496,6 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 		x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
 	}
 	return code;
-}
-
-gboolean
-mono_arch_enable_lmf_ir (MonoCompile *cfg)
-{
-	return FALSE;
 }
 
 #define REAL_PRINT_REG(text,reg) \
