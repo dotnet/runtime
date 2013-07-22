@@ -1889,25 +1889,42 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_ir)
 		return;
 
-	lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
-	if (lmf_ins)
+	if (cfg->lmf_ir_mono_lmf) {
+		g_assert (!cfg->compile_aot);
+		/* Load current lmf */
+		lmf_ins = mono_get_lmf_intrinsic (cfg);
+		g_assert (lmf_ins);
 		MONO_ADD_INS (cfg->cbb, lmf_ins);
-	else
-		lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
-	lmf_addr_reg = lmf_ins->dreg;
+		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+		lmf_reg = ins->dreg;
+		/* Save previous_lmf */
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
+		/* Set new LMF */
+		MONO_INST_NEW (cfg, ins, OP_TLS_SET);
+		ins->sreg1 = lmf_reg;
+		ins->inst_offset = mono_get_lmf_tls_offset ();
+		MONO_ADD_INS (cfg->cbb, ins);
+	} else {
+		lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
+		if (lmf_ins)
+			MONO_ADD_INS (cfg->cbb, lmf_ins);
+		else
+			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
+		lmf_addr_reg = lmf_ins->dreg;
 
-	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
-	lmf_reg = ins->dreg;
-	/* Save lmf_addr */
-	if (!cfg->lmf_addr_var)
-		cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, cfg->lmf_addr_var->dreg, lmf_ins->dreg);
-	prev_lmf_reg = alloc_preg (cfg);
-	/* Save previous_lmf */
-	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_addr_reg, 0);
-	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
-	/* Set new lmf */
-	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, lmf_reg);
+		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+		lmf_reg = ins->dreg;
+		/* Save lmf_addr */
+		if (!cfg->lmf_addr_var)
+			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, cfg->lmf_addr_var->dreg, lmf_ins->dreg);
+		prev_lmf_reg = alloc_preg (cfg);
+		/* Save previous_lmf */
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_addr_reg, 0);
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
+		/* Set new lmf */
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, lmf_reg);
+	}
 }
 
 /*
@@ -1924,19 +1941,31 @@ emit_pop_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_ir)
 		return;
 
-	/*
-	 * Emit IR to pop the LMF:
-	 * *(lmf->lmf_addr) = lmf->prev_lmf
-	 */
 	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 	lmf_reg = ins->dreg;
-	/* This could be called before emit_push_lmf () */
-	if (!cfg->lmf_addr_var)
-		cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-	lmf_addr_reg = cfg->lmf_addr_var->dreg;
-	prev_lmf_reg = alloc_preg (cfg);
-	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
+
+	if (cfg->lmf_ir_mono_lmf) {
+		/* Load previous_lmf */
+		prev_lmf_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		/* Set new LMF */
+		MONO_INST_NEW (cfg, ins, OP_TLS_SET);
+		ins->sreg1 = prev_lmf_reg;
+		ins->inst_offset = mono_get_lmf_tls_offset ();
+		MONO_ADD_INS (cfg->cbb, ins);
+	} else {
+		/*
+		 * Emit IR to pop the LMF:
+		 * *(lmf->lmf_addr) = lmf->prev_lmf
+		 */
+		/* This could be called before emit_push_lmf () */
+		if (!cfg->lmf_addr_var)
+			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		lmf_addr_reg = cfg->lmf_addr_var->dreg;
+		prev_lmf_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
+	}
 }
 
 static int
