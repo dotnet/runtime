@@ -1928,7 +1928,6 @@ emit_pop_lmf (MonoCompile *cfg)
 	 * Emit IR to pop the LMF:
 	 * *(lmf->lmf_addr) = lmf->prev_lmf
 	 */
-	cfg->cbb = cfg->bb_exit;
 	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 	lmf_reg = ins->dreg;
 	/* This could be called before emit_push_lmf () */
