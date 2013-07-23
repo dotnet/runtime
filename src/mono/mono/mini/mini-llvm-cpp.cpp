@@ -67,6 +67,8 @@
 
 using namespace llvm;
 
+#ifndef MONO_CROSS_COMPILE
+
 class MonoJITMemoryManager : public JITMemoryManager
 {
 private:
@@ -234,6 +236,8 @@ MonoJITMemoryManager::endExceptionTable(const Function *F, unsigned char *TableS
 {
 }
 
+#endif /* !MONO_CROSS_COMPILE */
+
 class MonoJITEventListener : public JITEventListener {
 
 public:
@@ -273,7 +277,9 @@ public:
 	}
 };
 
+#ifndef MONO_CROSS_COMPILE
 static MonoJITMemoryManager *mono_mm;
+#endif
 static MonoJITEventListener *mono_event_listener;
 
 static FunctionPassManager *fpm;
@@ -518,6 +524,8 @@ force_pass_linking (void)
       (void) llvm::createSinkingPass();
 }
 
+#ifndef MONO_CROSS_COMPILE
+
 LLVMExecutionEngineRef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb)
 {
@@ -640,3 +648,35 @@ mono_llvm_dispose_ee (LLVMExecutionEngineRef ee)
 
 	delete fpm;
 }
+
+#else
+
+LLVMExecutionEngineRef
+mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_llvm_dispose_ee (LLVMExecutionEngineRef ee)
+{
+	g_assert_not_reached ();
+}
+
+/* Not linked in */
+void
+LLVMAddGlobalMapping(LLVMExecutionEngineRef EE, LLVMValueRef Global,
+					 void* Addr)
+{
+	g_assert_not_reached ();
+}
+
+void*
+LLVMGetPointerToGlobal(LLVMExecutionEngineRef EE, LLVMValueRef Global)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif /* !MONO_CROSS_COMPILE */
