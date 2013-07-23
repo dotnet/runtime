@@ -39,6 +39,12 @@ gboolean mono_hwcap_x86_has_sse41 = FALSE;
 gboolean mono_hwcap_x86_has_sse42 = FALSE;
 gboolean mono_hwcap_x86_has_sse4a = FALSE;
 
+#if defined(MONO_CROSS_COMPILE)
+void
+mono_hwcap_arch_init (void)
+{
+}
+#else
 static gboolean
 cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 {
@@ -161,6 +167,7 @@ mono_hwcap_arch_init (void)
 	mono_hwcap_x86_is_xen = !access ("/proc/xen", F_OK);
 #endif
 }
+#endif
 
 void
 mono_hwcap_print (FILE *f)
