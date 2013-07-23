@@ -1441,11 +1441,6 @@ typedef struct {
 	 * instead of being generated in emit_prolog ()/emit_epilog ().
 	 */
 	guint            lmf_ir : 1;
-	/*
-	 * Whenever to use the mono_lmf TLS variable instead of indirection through the
-	 * mono_lmf_addr TLS variable.
-	 */
-	guint            lmf_ir_mono_lmf : 1;
 	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;

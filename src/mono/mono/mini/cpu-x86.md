@@ -301,7 +301,6 @@ sext_i1: dest:i src1:y len:3
 sext_i2: dest:i src1:y len:3
 tls_get: dest:i len:20
 tls_get_reg: dest:i src1:i len:20
-tls_set: src1:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:16
 atomic_add_new_i4: src1:b src2:i dest:i len:16
 atomic_exchange_i4: src1:b src2:i dest:a len:24

@@ -1179,11 +1179,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	cfg->arch_eh_jit_info = 1;
 	cfg->create_lmf_var = 1;
-#ifndef TARGET_WIN32
-	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen)
-		cfg->lmf_ir_mono_lmf = TRUE;
-	cfg->lmf_ir = TRUE;
-#endif
 }
 
 /*
@@ -2413,10 +2408,18 @@ static guint8*
 emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
 	if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
-		/* Already emitted by emit_push_lmf () in method-to-ir.c */
-		return code;
+		/*
+		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
+		 * through the mono_lmf_addr TLS variable.
+		 */
+		/* %eax = previous_lmf */
+		code = mono_x86_emit_tls_get (code, X86_EAX, lmf_tls_offset);
+		/* set previous_lmf */
+		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_EAX, sizeof (mgreg_t));
+		x86_lea_membase (code, X86_EAX, cfg->frame_reg, lmf_offset);
+		/* set new LMF */
+		code = mono_x86_emit_tls_set (code, X86_EAX, lmf_tls_offset);
 	} else {
-#ifdef TARGET_WIN32
 		/* get the address of lmf for the current thread */
 		/* 
 		 * This is performance critical so we try to use some tricks to make
@@ -2444,9 +2447,6 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 		/* set new LMF */
 		x86_lea_membase (code, X86_ECX, cfg->frame_reg, lmf_offset);
 		x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
-#else
-		/* Already emitted by emit_push_lmf () in method-to-ir.c */
-#endif
 	}
 	return code;
 }
@@ -2460,14 +2460,20 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 static guint8*
 emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
-	if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
-		/* Already emitted by emit_push_lmf () in method-to-ir.c */
-		return code;
-	} else {
-#ifdef TARGET_WIN32
-		MonoMethodSignature *sig = mono_method_signature (cfg->method);
-		int prev_lmf_reg;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+	int prev_lmf_reg;
 
+	if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
+		/*
+		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
+		 * through the mono_lmf_addr TLS variable.
+		 */
+		/* reg = previous_lmf */
+		x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
+
+		/* lmf = previous_lmf */
+		code = mono_x86_emit_tls_set (code, X86_ECX, lmf_tls_offset);
+	} else {
 		/* Find a spare register */
 		switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
 		case MONO_TYPE_I8:
@@ -2488,9 +2494,6 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 
 		/* *(lmf) = previous_lmf */
 		x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
-#else
-		/* Already emitted by emit_push_lmf () in method-to-ir.c */
-#endif
 	}
 	return code;
 }
@@ -4211,10 +4214,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #else
 			g_assert_not_reached ();
 #endif
-			break;
-		}
-		case OP_TLS_SET: {
-			code = mono_x86_emit_tls_set (code, ins->sreg1, ins->inst_offset);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
