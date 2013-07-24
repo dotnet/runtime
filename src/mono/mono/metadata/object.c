@@ -6050,6 +6050,7 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 {
 	static MonoMethod *to_string = NULL;
 	MonoMethod *method;
+	void *target = obj;
 
 	g_assert (obj);
 
@@ -6058,7 +6059,12 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 
 	method = mono_object_get_virtual_method (obj, to_string);
 
-	return (MonoString *) mono_runtime_invoke (method, obj, NULL, exc);
+	// Unbox value type if needed
+	if (mono_class_is_valuetype (mono_method_get_class (method))) {
+		target = mono_object_unbox (obj);
+	}
+
+	return (MonoString *) mono_runtime_invoke (method, target, NULL, exc);
 }
 
 /**
