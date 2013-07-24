@@ -412,6 +412,7 @@ stack_unaligned (MonoTrampolineType tramp_type)
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
+	char *tramp_name;
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
 	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, saved_regs_offset;
 	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset, cfa_offset;
@@ -724,8 +725,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (NULL);
 	}
 
-	if (info)
-		*info = mono_tramp_info_create (mono_get_generic_trampoline_name (tramp_type), buf, code - buf, ji, unwind_ops);
+	if (info) {
+		tramp_name = mono_get_generic_trampoline_name (tramp_type);
+		*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+		g_free (tramp_name);
+	}
 
 	return buf;
 }

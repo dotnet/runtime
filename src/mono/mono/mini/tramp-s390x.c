@@ -219,6 +219,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
+	char *tramp_name;
 	guint8 *buf, *tramp, *code;
 	int i, offset, lmfOffset;
 	GSList *unwind_ops = NULL;
@@ -401,9 +402,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 	
-	if (info)
-		*info = mono_tramp_info_create (mono_get_generic_trampoline_name(tramp_type),
-						buf, buf - code, ji, unwind_ops);
+	if (info) {
+		tramp_name = mono_get_generic_trampoline_name (tramp_type);
+		*info = mono_tramp_info_create (tramp_name, buf, buf - code, ji, unwind_ops);
+		g_free (tramp_name);
+	}
 
 	/* Sanity check */
 	g_assert ((buf - code) <= 512);
