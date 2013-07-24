@@ -1459,18 +1459,27 @@ static gboolean
 private_file_needs_copying (const char *src, struct stat *sbuf_src, char *dest)
 {
 	struct stat sbuf_dest;
+	gchar *stat_src;
 	gchar *real_src = mono_portability_find_file (src, TRUE);
 
 	if (!real_src)
-		real_src = (gchar*)src;
-	
-	if (stat (real_src, sbuf_src) == -1) {
+		stat_src = (gchar*)src;
+	else
+		stat_src = real_src;
+
+	if (stat (stat_src, sbuf_src) == -1) {
+		if (real_src)
+			g_free (real_src);
+
 		time_t tnow = time (NULL);
 		memset (sbuf_src, 0, sizeof (*sbuf_src));
 		sbuf_src->st_mtime = tnow;
 		sbuf_src->st_atime = tnow;
 		return TRUE;
 	}
+
+	if (real_src)
+		g_free (real_src);
 
 	if (stat (dest, &sbuf_dest) == -1)
 		return TRUE;
