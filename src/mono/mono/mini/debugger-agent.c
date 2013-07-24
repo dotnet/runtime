@@ -4383,6 +4383,42 @@ clear_breakpoints_for_domain (MonoDomain *domain)
 	mono_loader_unlock ();
 }
 
+/*
+ * ss_update:
+ *
+ * Return FALSE if single stepping needs to continue because we are at the same line.
+ */
+static gboolean
+ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp)
+{
+	MonoDebugMethodInfo *minfo;
+	MonoDebugSourceLocation *loc = NULL;
+	gboolean hit = TRUE;
+
+	if (req->size != STEP_SIZE_LINE)
+		return TRUE;
+
+	/* Have to check whenever a different source line was reached */
+	minfo = mono_debug_lookup_method (ji->method);
+
+	if (minfo)
+		loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
+
+	if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line)) {
+		/* Have to continue single stepping */
+		DEBUG(1, fprintf (log_file, "[%p] Same source line, continuing single stepping.\n", (gpointer)GetCurrentThreadId ()));
+		hit = FALSE;
+	}
+				
+	if (loc) {
+		ss_req->last_method = ji->method;
+		ss_req->last_line = loc->row;
+		mono_debug_free_source_location (loc);
+	}
+
+	return hit;
+}
+
 static gboolean
 breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 {
@@ -4470,31 +4506,9 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	for (i = 0; i < ss_reqs_orig->len; ++i) {
 		EventRequest *req = g_ptr_array_index (ss_reqs_orig, i);
 		SingleStepReq *ss_req = req->info;
-		gboolean hit = TRUE;
+		gboolean hit;
 
-		if (ss_req->size == STEP_SIZE_LINE) {
-			/* Have to check whenever a different source line was reached */
-			MonoDebugMethodInfo *minfo;
-			MonoDebugSourceLocation *loc = NULL;
-
-			minfo = mono_debug_lookup_method (ji->method);
-
-			if (minfo)
-				loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
-
-			if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line)) {
-				/* Have to continue single stepping */
-				DEBUG(1, fprintf (log_file, "[%p] Same source line, continuing single stepping.\n", (gpointer)GetCurrentThreadId ()));
-				hit = FALSE;
-			}
-				
-			if (loc) {
-				ss_req->last_method = ji->method;
-				ss_req->last_line = loc->row;
-				mono_debug_free_source_location (loc);
-			}
-		}
-
+		hit = ss_update (ss_req, ji, sp);
 		if (hit)
 			g_ptr_array_add (ss_reqs, req);
 
@@ -4713,41 +4727,8 @@ process_single_step_inner (DebuggerTlsData *tls)
 		return;
 	il_offset = sp->il_offset;
 
-	// FIXME: No tests fail if this is disabled
-#if 0
-	if (ss_req->size == STEP_SIZE_LINE) {
-		// FIXME:
-		NOT_IMPLEMENTED;
-
-		/* Step until a different source line is reached */
-		MonoDebugMethodInfo *minfo;
-
-		minfo = mono_debug_lookup_method (ji->method);
-
-		if (minfo) {
-			MonoDebugSourceLocation *loc = mono_debug_symfile_lookup_location (minfo, il_offset);
-
-			if (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line) {
-				mono_debug_free_source_location (loc);
-				return;
-			}
-			if (!loc)
-				/*
-				 * Step until we reach a location with line number info, 
-				 * otherwise the client can't show a location.
-				 * This can happen for example with statics initialized inline
-				 * outside of a cctor.
-				 */
-				return;
-
-			if (loc) {
-				ss_req->last_method = ji->method;
-				ss_req->last_line = loc->row;
-				mono_debug_free_source_location (loc);
-			}
-		}
-	}
-#endif
+	if (!ss_update (ss_req, ji, sp))
+		return;
 
 	/* Start single stepping again from the current sequence point */
 	ss_start (ss_req, ji->method, sp, info, ctx, tls, FALSE);
