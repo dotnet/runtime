@@ -7669,29 +7669,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/*
 					 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
 					 */
-					/* Special case Object methods as they are easy to implement */
-					if (cmethod->klass == mono_defaults.object_class) {
-						MonoInst *args [16];
-
-						args [0] = sp [0];
-						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
-						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
-
-						if (!strcmp (cmethod->name, "ToString")) {
-							ins = mono_emit_jit_icall (cfg, mono_object_tostring_gsharedvt, args);
-						} else if (!strcmp (cmethod->name, "Equals")) {
-							args [3] = sp [1];
-							ins = mono_emit_jit_icall (cfg, mono_object_equals_gsharedvt, args);
-						} else if (!strcmp (cmethod->name, "GetHashCode")) {
-							ins = mono_emit_jit_icall (cfg, mono_object_gethashcode_gsharedvt, args);
-						} else {
-							GSHAREDVT_FAILURE (*ip);
-						}
-						goto call_end;
-					} else if (constrained_call->valuetype && cmethod->klass->valuetype) {
+					if ((cmethod->klass != mono_defaults.object_class) && constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
-					} else if ((cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && MONO_TYPE_IS_VOID (fsig->ret) && (fsig->param_count == 0 || (fsig->param_count == 1 && MONO_TYPE_IS_REFERENCE (fsig->params [0])))) {
+					} else if (((cmethod->klass == mono_defaults.object_class) || (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) &&
+							   (MONO_TYPE_IS_VOID (fsig->ret) || fsig->ret->type == MONO_TYPE_I4 || fsig->ret->type == MONO_TYPE_BOOLEAN || fsig->ret->type == MONO_TYPE_STRING) &&
+							   (fsig->param_count == 0 || (fsig->param_count == 1 && MONO_TYPE_IS_REFERENCE (fsig->params [0])))) {
 						MonoInst *args [16];
+
+						/*
+						 * This case handles calls to object:ToString()/Equals()/GetHashCode(), plus some simple interface calls enough to support
+						 * AsyncTaskMethodBuilder.
+						 */
 
 						args [0] = sp [0];
 						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
@@ -7709,8 +7697,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						} else {
 							EMIT_NEW_ICONST (cfg, args [3], 0);
 						}
-
 						ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
+						emit_widen = FALSE;
+
+						if (fsig->ret->type == MONO_TYPE_I4 || fsig->ret->type == MONO_TYPE_BOOLEAN) {
+							MonoInst *add;
+							int dreg;
+
+							/* Unbox */
+							NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, sizeof (MonoObject));
+							MONO_ADD_INS (cfg->cbb, add);
+							dreg = alloc_ireg (cfg);
+							/* Load value */
+							if (fsig->ret->type == MONO_TYPE_BOOLEAN)
+								NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU1_MEMBASE, dreg, add->dreg, 0);
+							else
+								NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg, add->dreg, 0);
+							MONO_ADD_INS (cfg->cbb, ins);
+							/* ins represents the call result */
+						}
+
 						goto call_end;
 					} else {
 						GSHAREDVT_FAILURE (*ip);

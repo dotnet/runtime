@@ -7265,10 +7265,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_array_new_4, "mono_array_new_4", "object ptr int int int int", FALSE);
 	register_icall (mono_get_native_calli_wrapper, "mono_get_native_calli_wrapper", "ptr ptr ptr ptr", FALSE);
 	register_icall (mono_resume_unwind, "mono_resume_unwind", "void", TRUE);
-	register_icall (mono_object_tostring_gsharedvt, "mono_object_tostring_gsharedvt", "object ptr ptr ptr", TRUE);
-	register_icall (mono_object_gethashcode_gsharedvt, "mono_object_gethashcode_gsharedvt", "int ptr ptr ptr", TRUE);
-	register_icall (mono_object_equals_gsharedvt, "mono_object_equals_gsharedvt", "int ptr ptr ptr object", TRUE);
-	register_icall (mono_gsharedvt_constrained_call, "mono_gsharedvt_constrained_call", "void ptr ptr ptr ptr", TRUE);
+	register_icall (mono_gsharedvt_constrained_call, "mono_gsharedvt_constrained_call", "object ptr ptr ptr ptr", TRUE);
 	register_icall (mono_gsharedvt_value_copy, "mono_gsharedvt_value_copy", "void ptr ptr ptr", TRUE);
 
 	register_icall (mono_gc_wbarrier_value_copy_bitmap, "mono_gc_wbarrier_value_copy_bitmap", "void ptr ptr int int", FALSE);
