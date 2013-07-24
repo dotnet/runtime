@@ -81,7 +81,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	mono_arch_flush_icache (start, code - start);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -127,7 +127,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	mono_arch_flush_icache (start, code - start);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -279,7 +279,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	mono_arch_flush_icache (start, code - start);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf (tramp_name), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
 
 	return start;
 }

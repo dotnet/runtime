@@ -213,7 +213,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	g_assert ((code - start) < SZ_THROW); 
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf("call_filter"),
+		*info = mono_tramp_info_create ("call_filter",
 						start, code - start, ji,
 						unwind_ops);
 
@@ -364,9 +364,9 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	g_assert ((code - start) < size);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf(corlib ? "throw_corlib_exception" 
+		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" 
 								       : (rethrow ? "rethrow_exception" 
-								       : "throw_exception")), 
+								       : "throw_exception"), 
 						start, code - start, ji, unwind_ops);
 
 	return start;

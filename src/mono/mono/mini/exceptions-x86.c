@@ -316,7 +316,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate(&start, 128, &code);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -393,7 +393,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
 	else {
 		GSList *l;
 
