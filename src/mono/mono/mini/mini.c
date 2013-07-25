@@ -3824,17 +3824,18 @@ mono_save_seq_point_info (MonoCompile *cfg)
 			 * The ENDFINALLY branches are not represented in the cfg, so link it with all seq points starting bbs.
 			 */
 			l = g_slist_last (bb->seq_points);
-			g_assert (l);
-			endfinally_seq_point = l->data;
+			if (l) {
+				endfinally_seq_point = l->data;
 
-			for (bb2 = cfg->bb_entry; bb2; bb2 = bb2->next_bb) {
-				GSList *l = g_slist_last (bb2->seq_points);
+				for (bb2 = cfg->bb_entry; bb2; bb2 = bb2->next_bb) {
+					GSList *l = g_slist_last (bb2->seq_points);
 
-				if (l) {
-					MonoInst *ins = l->data;
+					if (l) {
+						MonoInst *ins = l->data;
 
-					if (!(ins->inst_imm == METHOD_ENTRY_IL_OFFSET || ins->inst_imm == METHOD_EXIT_IL_OFFSET) && ins != endfinally_seq_point)
-						next [endfinally_seq_point->backend.size] = g_slist_append (next [endfinally_seq_point->backend.size], GUINT_TO_POINTER (ins->backend.size));
+						if (!(ins->inst_imm == METHOD_ENTRY_IL_OFFSET || ins->inst_imm == METHOD_EXIT_IL_OFFSET) && ins != endfinally_seq_point)
+							next [endfinally_seq_point->backend.size] = g_slist_append (next [endfinally_seq_point->backend.size], GUINT_TO_POINTER (ins->backend.size));
+					}
 				}
 			}
 		}
