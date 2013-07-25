@@ -316,7 +316,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate(&start, 128, &code);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -393,7 +393,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -636,7 +636,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	g_assert ((code - start) < kMaxCodeSize);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup (name), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (name, start, code - start, ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -981,7 +981,7 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert ((code - start) < 128);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup ("x86_signal_exception_trampoline"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("x86_signal_exception_trampoline", start, code - start, ji, unwind_ops);
 	else {
 		GSList *l;
 

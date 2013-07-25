@@ -305,6 +305,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
+	char *tramp_name;
 	guint8 *buf, *code, *tramp;
 	int pushed_args, pushed_args_caller_saved;
 	GSList *unwind_ops = NULL;
@@ -529,8 +530,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	nacl_global_codeman_validate (&buf, 256, &code);
 	g_assert ((code - buf) <= 256);
 
-	if (info)
-		*info = mono_tramp_info_create (mono_get_generic_trampoline_name (tramp_type), buf, code - buf, ji, unwind_ops);
+	if (info) {
+		tramp_name = mono_get_generic_trampoline_name (tramp_type);
+		*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+		g_free (tramp_name);
+	}
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
 		/* Initialize the nullified class init trampoline used in the AOT case */

@@ -209,7 +209,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	mono_arch_flush_icache (start, code - start);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -296,7 +296,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	mono_arch_flush_icache (start, code - start);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -508,7 +508,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup (tramp_name), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -1042,7 +1042,7 @@ mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("throw_pending_exception"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("throw_pending_exception", start, code - start, ji, unwind_ops);
 
 	return start;
 }

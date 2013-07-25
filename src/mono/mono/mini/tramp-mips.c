@@ -176,6 +176,7 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
+	char *tramp_name;
 	guint8 *buf, *tramp, *code = NULL;
 	int i, lmf;
 	GSList *unwind_ops = NULL;
@@ -317,8 +318,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		/* Initialize the nullified class init trampoline used in the AOT case */
 		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (NULL);
 
-	if (info)
-		*info = mono_tramp_info_create (mono_get_generic_trampoline_name (tramp_type), buf, code - buf, ji, unwind_ops);
+	if (info) {
+		tramp_name = mono_get_generic_trampoline_name (tramp_type);
+		*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+		g_free (tramp_name);
+	}
 
 	return buf;
 }
