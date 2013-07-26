@@ -240,7 +240,7 @@ class Tests
 		int[,,] arr = new int [10, 10, 10];
 		arr [0, 1, 2] = 42;
 		var gm = arr.GetType ().GetMethod ("Get");
-		int i = gm.Invoke (arr, new object [] { 0, 1, 2 });
+		int i = (int) gm.Invoke (arr, new object [] { 0, 1, 2 });
 		if (i != 42)
 			return 1;
 		var sm = arr.GetType ().GetMethod ("Set");
