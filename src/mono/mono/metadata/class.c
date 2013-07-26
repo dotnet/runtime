@@ -42,6 +42,8 @@
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/bsearch.h>
+
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -2692,7 +2694,7 @@ compare_interface_ids (const void *p_key, const void *p_element) {
 /*FIXME verify all callers if they should switch to mono_class_interface_offset_with_variance*/
 int
 mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
-	MonoClass **result = bsearch (
+	MonoClass **result = mono_binary_search (
 			itf,
 			klass->interfaces_packed,
 			klass->interface_offsets_count,

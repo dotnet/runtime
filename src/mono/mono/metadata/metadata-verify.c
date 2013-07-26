@@ -24,6 +24,7 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/bsearch.h>
 #include <string.h>
 //#include <signal.h>
 #include <ctype.h>
@@ -1069,7 +1070,7 @@ search_sorted_table (VerifyContext *ctx, int table, int column, guint32 coded_to
 	base = tinfo->base;
 
 	VERIFIER_DEBUG ( printf ("looking token %x table %d col %d rsize %d roff %d\n", coded_token, table, column, locator.col_size, locator.col_offset) );
-	res = bsearch (&locator, base, tinfo->rows, tinfo->row_size, token_locator);
+	res = mono_binary_search (&locator, base, tinfo->rows, tinfo->row_size, token_locator);
 	if (!res)
 		return -1;
 

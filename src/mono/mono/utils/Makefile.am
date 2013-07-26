@@ -105,7 +105,9 @@ monoutils_sources = \
 	atomic.h	\
 	atomic.c	\
 	mono-hwcap.h	\
-	mono-hwcap.c
+	mono-hwcap.c	\
+	bsearch.h	\
+	bsearch.c
 
 arch_sources = 
 

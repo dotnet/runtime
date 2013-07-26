@@ -24,6 +24,7 @@
 #include <mono/metadata/locales.h>
 #include <mono/metadata/culture-info.h>
 #include <mono/metadata/culture-info-tables.h>
+#include <mono/utils/bsearch.h>
 
 #ifndef DISABLE_NORMALIZATION
 #include <mono/metadata/normalization-tables.h>
@@ -313,7 +314,7 @@ construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 
 	MONO_ARCH_SAVE_REGS;
 
-	ne = bsearch (name, culture_name_entries, NUM_CULTURE_ENTRIES,
+	ne = mono_binary_search (name, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
 	if (ne == NULL)
@@ -332,7 +333,7 @@ culture_info_entry_from_lcid (int lcid)
 {
 	const CultureInfoEntry *ci;
 
-	ci = bsearch (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
+	ci = mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
 
 	return ci;
 }
@@ -345,7 +346,7 @@ region_info_entry_from_lcid (int lcid)
 
 	MONO_ARCH_SAVE_REGS;
 
-	ne = bsearch (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
+	ne = mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
 
 	if (ne == NULL)
 		return FALSE;
@@ -537,7 +538,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 	MONO_ARCH_SAVE_REGS;
 
 	n = mono_string_to_utf8 (name);
-	ne = bsearch (n, culture_name_entries, NUM_CULTURE_ENTRIES,
+	ne = mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
 	if (ne == NULL) {
@@ -591,7 +592,7 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (M
 	MONO_ARCH_SAVE_REGS;
 
 	n = mono_string_to_utf8 (name);
-	ne = bsearch (n, region_name_entries, NUM_REGION_ENTRIES,
+	ne = mono_binary_search (n, region_name_entries, NUM_REGION_ENTRIES,
 		sizeof (RegionInfoNameEntry), region_name_locator);
 
 	if (ne == NULL) {

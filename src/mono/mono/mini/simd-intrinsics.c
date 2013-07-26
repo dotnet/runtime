@@ -12,6 +12,7 @@
 
 #include "mini.h"
 #include "ir-emit.h"
+#include "mono/utils/bsearch.h"
 
 /*
 General notes on SIMD intrinsics
@@ -1477,7 +1478,7 @@ simd_version_name (guint32 version)
 static MonoInst*
 emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, const SimdIntrinsc *intrinsics, guint32 size)
 {
-	const SimdIntrinsc * result = bsearch (cmethod->name, intrinsics, size, sizeof (SimdIntrinsc), &simd_intrinsic_compare_by_name);
+	const SimdIntrinsc * result = mono_binary_search (cmethod->name, intrinsics, size, sizeof (SimdIntrinsc), &simd_intrinsic_compare_by_name);
 	if (!result) {
 		DEBUG (printf ("function doesn't have a simd intrinsic %s::%s/%d\n", cmethod->klass->name, cmethod->name, fsig->param_count));
 		return NULL;

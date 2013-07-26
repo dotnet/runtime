@@ -65,6 +65,7 @@
     <ClCompile Include="..\mono\utils\atomic.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap-x86.c" />
+    <ClCompile Include="..\mono\utils\bsearch.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\utils\dlmalloc.h" />
@@ -124,6 +125,7 @@
     <ClInclude Include="..\mono\utils\atomic.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap-x86.h" />
+    <ClInclude Include="..\mono\utils\bsearch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8FC2B0C8-51AD-49DF-851F-5D01A77A75E4}</ProjectGuid>

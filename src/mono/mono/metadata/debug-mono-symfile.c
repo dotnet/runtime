@@ -30,6 +30,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/bsearch.h>
 
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
@@ -731,7 +732,7 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	first_ie = (MonoSymbolFileMethodEntry *)
 		(symfile->raw_contents + read32(&(symfile->offset_table->_method_table_offset)));
 
-	ie = bsearch (GUINT_TO_POINTER (mono_method_get_token (method)), first_ie,
+	ie = mono_binary_search (GUINT_TO_POINTER (mono_method_get_token (method)), first_ie,
 				   read32(&(symfile->offset_table->_method_count)),
 				   sizeof (MonoSymbolFileMethodEntry), compare_method);
 

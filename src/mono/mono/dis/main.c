@@ -30,6 +30,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/utils/bsearch.h>
 
 static void     setup_filter          (MonoImage *image);
 static gboolean should_include_type   (int idx);
@@ -1109,7 +1110,7 @@ dis_interfaces (MonoImage *m, guint32 typedef_row, MonoGenericContainer *contain
 	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
 	loc.idx = typedef_row;
 
-	if (!bsearch (&loc, table->base, table->rows, table->row_size, table_locator))
+	if (!mono_binary_search (&loc, table->base, table->rows, table->row_size, table_locator))
 		return;
 
 	start = loc.result;
@@ -1680,7 +1681,7 @@ table_includes (TableFilter *tf, int idx)
 {
 	if (!tf->count)
 		return FALSE;
-	return bsearch (&idx, tf->elems, tf->count, sizeof (int), int_cmp) != NULL;
+	return mono_binary_search (&idx, tf->elems, tf->count, sizeof (int), int_cmp) != NULL;
 }
 
 static gboolean 
