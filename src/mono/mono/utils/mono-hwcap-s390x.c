@@ -53,7 +53,7 @@ mono_hwcap_arch_init (void)
 
 	sigaction (SIGILL, &sa, old_sa);
 
-	__asm__ (
+	__asm__ __volatile__ (
 		"LGHI\t0,1\n\t"
 		"LA\t1,%0\n\t"
 		".byte\t0xe3,0x00,0x10,0x00,0x00,0x50\n\t"
