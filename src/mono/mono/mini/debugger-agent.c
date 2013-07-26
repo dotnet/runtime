@@ -2207,7 +2207,17 @@ buffer_add_ptr_id (Buffer *buf, MonoDomain *domain, IdType type, gpointer val)
 static inline MonoClass*
 decode_typeid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, int *err)
 {
-	return decode_ptr_id (buf, endbuf, limit, ID_TYPE, domain, err);
+	MonoClass *klass;
+
+	klass = decode_ptr_id (buf, endbuf, limit, ID_TYPE, domain, err);
+	if (G_UNLIKELY (log_level >= 2) && klass) {
+		char *s;
+
+		s = mono_type_full_name (&klass->byval_arg);
+		DEBUG(2, fprintf (log_file, "[dbg]   recv class [%s]\n", s));
+		g_free (s);
+	}
+	return klass;
 }
 
 static inline MonoAssembly*
@@ -2250,12 +2260,29 @@ static inline void
 buffer_add_typeid (Buffer *buf, MonoDomain *domain, MonoClass *klass)
 {
 	buffer_add_ptr_id (buf, domain, ID_TYPE, klass);
+	if (G_UNLIKELY (log_level >= 2) && klass) {
+		char *s;
+
+		s = mono_type_full_name (&klass->byval_arg);
+		if (GetCurrentThreadId () == debugger_thread_id)
+			DEBUG(2, fprintf (log_file, "[dbg]   send class [%s]\n", s));
+		else
+			DEBUG(2, fprintf (log_file, "[%p]   send class [%s]\n", (gpointer)GetCurrentThreadId (), s));
+		g_free (s);
+	}
 }
 
 static inline void
 buffer_add_methodid (Buffer *buf, MonoDomain *domain, MonoMethod *method)
 {
 	buffer_add_ptr_id (buf, domain, ID_METHOD, method);
+	if (G_UNLIKELY (log_level >= 2) && method) {
+		char *s;
+
+		s = mono_method_full_name (method, 1);
+		DEBUG(2, fprintf (log_file, "[dbg]   send method [%s]\n", s));
+		g_free (s);
+	}
 }
 
 static inline void
@@ -8725,41 +8752,188 @@ command_set_to_string (CommandSet command_set)
 	}
 }
 
+static const char* vm_cmds_str [] = {
+	"VERSION",
+	"ALL_THREADS",
+	"SUSPEND",
+	"RESUME",
+	"EXIT",
+	"DISPOSE",
+	"INVOKE_METHOD",
+	"SET_PROTOCOL_VERSION",
+	"ABORT_INVOKE",
+	"SET_KEEPALIVE"
+	"GET_TYPES_FOR_SOURCE_FILE",
+	"GET_TYPES",
+	"INVOKE_METHODS"
+};
+
+static const char* thread_cmds_str[] = {
+	"GET_FRAME_INFO",
+	"GET_NAME",
+	"GET_STATE",
+	"GET_INFO",
+	"GET_ID",
+	"GET_TID"
+};
+
+static const char* event_cmds_str[] = {
+	"REQUEST_SET",
+	"REQUEST_CLEAR",
+	"REQUEST_CLEAR_ALL_BREAKPOINTS"
+};
+
+static const char* appdomain_cmds_str[] = {
+	"GET_ROOT_DOMAIN",
+	"GET_FRIENDLY_NAME",
+	"GET_ASSEMBLIES",
+	"GET_ENTRY_ASSEMBLY",
+	"CREATE_STRING",
+	"GET_CORLIB",
+	"CREATE_BOXED_VALUE"
+};
+
+static const char* assembly_cmds_str[] = {
+	"GET_LOCATION",
+	"GET_ENTRY_POINT",
+	"GET_MANIFEST_MODULE",
+	"GET_OBJECT",
+	"GET_TYPE",
+	"GET_NAME"
+};
+
+static const char* module_cmds_str[] = {
+	"GET_INFO",
+};
+
+static const char* method_cmds_str[] = {
+	"GET_NAME",
+	"GET_DECLARING_TYPE",
+	"GET_DEBUG_INFO",
+	"GET_PARAM_INFO",
+	"GET_LOCALS_INFO",
+	"GET_INFO",
+	"GET_BODY",
+	"RESOLVE_TOKEN",
+	"GET_CATTRS ",
+	"MAKE_GENERIC_METHOD"
+};
+
+static const char* type_cmds_str[] = {
+	"GET_INFO",
+	"GET_METHODS",
+	"GET_FIELDS",
+	"GET_VALUES",
+	"GET_OBJECT",
+	"GET_SOURCE_FILES",
+	"SET_VALUES",
+	"IS_ASSIGNABLE_FROM",
+	"GET_PROPERTIES ",
+	"GET_CATTRS",
+	"GET_FIELD_CATTRS",
+	"GET_PROPERTY_CATTRS",
+	"GET_SOURCE_FILES_2",
+	"GET_VALUES_2",
+	"GET_METHODS_BY_NAME_FLAGS",
+	"GET_INTERFACES",
+	"GET_INTERFACE_MAP",
+	"IS_INITIALIZED"
+};
+
+static const char* stack_frame_cmds_str[] = {
+	"GET_VALUES",
+	"GET_THIS",
+	"SET_VALUES"
+};
+
+static const char* array_cmds_str[] = {
+	"GET_LENGTH",
+	"GET_VALUES",
+	"SET_VALUES",
+};
+
+static const char* string_cmds_str[] = {
+	"GET_VALUE",
+	"GET_LENGTH",
+	"GET_CHARS"
+};
+
+static const char* object_cmds_str[] = {
+	"GET_TYPE",
+	"GET_VALUES",
+	"IS_COLLECTED",
+	"GET_ADDRESS",
+	"GET_DOMAIN",
+	"SET_VALUES",
+	"GET_INFO",
+};
+
 static const char*
 cmd_to_string (CommandSet set, int command)
 {
+	const char **cmds;
+	int cmds_len = 0;
+
 	switch (set) {
-	case CMD_SET_VM: {
-		switch (command) {
-		case CMD_VM_VERSION:
-			return "VERSION";
-		case CMD_VM_ALL_THREADS:
-			return "ALL_THREADS";
-		case CMD_VM_SUSPEND:
-			return "SUSPEND";
-		case CMD_VM_RESUME:
-			return "RESUME";
-		case CMD_VM_EXIT:
-			return "EXIT";
-		case CMD_VM_DISPOSE:
-			return "DISPOSE";
-		case CMD_VM_INVOKE_METHOD:
-			return "INVOKE_METHOD";
-		case CMD_VM_SET_PROTOCOL_VERSION:
-			return "SET_PROTOCOL_VERSION";
-		case CMD_VM_ABORT_INVOKE:
-			return "ABORT_INVOKE";
-		case CMD_VM_SET_KEEPALIVE:
-			return "SET_KEEPALIVE";
-		default:
-			break;
-		}
+	case CMD_SET_VM:
+		cmds = vm_cmds_str;
+		cmds_len = G_N_ELEMENTS (vm_cmds_str);
 		break;
-	}
+	case CMD_SET_OBJECT_REF:
+		cmds = object_cmds_str;
+		cmds_len = G_N_ELEMENTS (object_cmds_str);
+		break;
+	case CMD_SET_STRING_REF:
+		cmds = string_cmds_str;
+		cmds_len = G_N_ELEMENTS (string_cmds_str);
+		break;
+	case CMD_SET_THREAD:
+		cmds = thread_cmds_str;
+		cmds_len = G_N_ELEMENTS (thread_cmds_str);
+		break;
+	case CMD_SET_ARRAY_REF:
+		cmds = array_cmds_str;
+		cmds_len = G_N_ELEMENTS (array_cmds_str);
+		break;
+	case CMD_SET_EVENT_REQUEST:
+		cmds = event_cmds_str;
+		cmds_len = G_N_ELEMENTS (event_cmds_str);
+		break;
+	case CMD_SET_STACK_FRAME:
+		cmds = stack_frame_cmds_str;
+		cmds_len = G_N_ELEMENTS (stack_frame_cmds_str);
+		break;
+	case CMD_SET_APPDOMAIN:
+		cmds = appdomain_cmds_str;
+		cmds_len = G_N_ELEMENTS (appdomain_cmds_str);
+		break;
+	case CMD_SET_ASSEMBLY:
+		cmds = assembly_cmds_str;
+		cmds_len = G_N_ELEMENTS (assembly_cmds_str);
+		break;
+	case CMD_SET_METHOD:
+		cmds = method_cmds_str;
+		cmds_len = G_N_ELEMENTS (method_cmds_str);
+		break;
+	case CMD_SET_TYPE:
+		cmds = type_cmds_str;
+		cmds_len = G_N_ELEMENTS (type_cmds_str);
+		break;
+	case CMD_SET_MODULE:
+		cmds = module_cmds_str;
+		cmds_len = G_N_ELEMENTS (module_cmds_str);
+		break;
+	case CMD_SET_EVENT:
+		cmds = event_cmds_str;
+		cmds_len = G_N_ELEMENTS (event_cmds_str);
+		break;
 	default:
 		break;
 	}
-	return NULL;
+	if (command > 0 && command <= cmds_len)
+		return cmds [command - 1];
+	else
+		return NULL;
 }
 
 static gboolean
@@ -8859,7 +9033,7 @@ debugger_thread (void *arg)
 				cmd_str = cmd_num;
 			}
 			
-			DEBUG (1, fprintf (log_file, "[dbg] Received command %s(%s), id=%d.\n", command_set_to_string (command_set), cmd_str, id));
+			DEBUG (1, fprintf (log_file, "[dbg] Command %s(%s) [%d].\n", command_set_to_string (command_set), cmd_str, id));
 		}
 
 		data = g_malloc (len - HEADER_LENGTH);
