@@ -112,6 +112,9 @@
     <ClCompile Include="..\mono\metadata\sgen-split-nursery.c" />
     <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />
     <ClCompile Include="..\mono\metadata\sgen-workers.c" />
+    <ClCompile Include="..\mono\metadata\sgen-fin-weak-hash.c" />
+    <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
+    <ClCompile Include="..\mono\metadata\sgen-stw.c" />
     <ClCompile Include="..\mono\metadata\socket-io.c" />
     <ClCompile Include="..\mono\metadata\string-icalls.c" />
     <ClCompile Include="..\mono\metadata\sysmath.c" />
