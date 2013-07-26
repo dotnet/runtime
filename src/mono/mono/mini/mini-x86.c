@@ -67,9 +67,9 @@ static CRITICAL_SECTION mini_arch_mutex;
 
 #ifdef TARGET_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
-#define CALLCONV_IS_STDCALL(sig) ((((sig)->call_convention) == MONO_CALL_STDCALL) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_DEFAULT))
+#define CALLCONV_IS_STDCALL(sig) ((((sig)->call_convention) == MONO_CALL_STDCALL) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_DEFAULT) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_THISCALL))
 #else
-#define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL)
+#define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_THISCALL))
 #endif
 
 #define X86_IS_CALLEE_SAVED_REG(reg) (((reg) == X86_EBX) || ((reg) == X86_EDI) || ((reg) == X86_ESI))
@@ -233,11 +233,22 @@ typedef struct {
 	ArgInfo args [1];
 } CallInfo;
 
-#define PARAM_REGS 0
-
 #define FLOAT_PARAM_REGS 0
 
-static X86_Reg_No param_regs [] = { 0 };
+static const guint32 thiscall_param_regs [] = { X86_ECX, X86_NREG };
+
+static const guint32 *callconv_param_regs(MonoMethodSignature *sig)
+{
+	if (!sig->pinvoke)
+		return NULL;
+
+	switch (sig->call_convention) {
+	case MONO_CALL_THISCALL:
+		 return thiscall_param_regs;
+	default:
+		 return NULL;
+	}
+}
 
 #if defined(TARGET_WIN32) || defined(__APPLE__) || defined(__FreeBSD__)
 #define SMALL_STRUCTS_IN_REGS
@@ -245,11 +256,11 @@ static X86_Reg_No return_regs [] = { X86_EAX, X86_EDX };
 #endif
 
 static void inline
-add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
+add_general (guint32 *gr, const guint32 *param_regs, guint32 *stack_size, ArgInfo *ainfo)
 {
     ainfo->offset = *stack_size;
 
-    if (*gr >= PARAM_REGS) {
+    if (!param_regs || param_regs [*gr] == X86_NREG) {
 		ainfo->storage = ArgOnStack;
 		ainfo->nslots = 1;
 		(*stack_size) += sizeof (gpointer);
@@ -262,12 +273,12 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 }
 
 static void inline
-add_general_pair (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
+add_general_pair (guint32 *gr, const guint32 *param_regs , guint32 *stack_size, ArgInfo *ainfo)
 {
 	ainfo->offset = *stack_size;
 
-	g_assert (PARAM_REGS == 0);
-	
+	g_assert(!param_regs || param_regs[*gr] == X86_NREG);
+
 	ainfo->storage = ArgOnStack;
 	(*stack_size) += sizeof (gpointer) * 2;
 	ainfo->nslots = 2;
@@ -298,7 +309,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 static void
 add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	       gboolean is_return,
-	       guint32 *gr, guint32 *fr, guint32 *stack_size)
+	       guint32 *gr, const guint32 *param_regs, guint32 *fr, guint32 *stack_size)
 {
 	guint32 size;
 	MonoClass *klass;
@@ -343,6 +354,14 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	}
 #endif
 
+	if (param_regs && param_regs [*gr] != X86_NREG && !is_return) {
+		g_assert (size <= 4);
+		ainfo->storage = ArgValuetypeInReg;
+		ainfo->reg = param_regs [*gr];
+		(*gr)++;
+		return;
+	}
+
 	ainfo->offset = *stack_size;
 	ainfo->storage = ArgOnStack;
 	*stack_size += ALIGN_TO (size, sizeof (gpointer));
@@ -362,6 +381,7 @@ static CallInfo*
 get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoMethodSignature *sig)
 {
 	guint32 i, gr, fr, pstart;
+	const guint32 *param_regs;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
@@ -370,6 +390,8 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 	gr = 0;
 	fr = 0;
 	cinfo->nargs = n;
+
+	param_regs = callconv_param_regs(sig);
 
 	/* return value */
 	{
@@ -423,7 +445,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, NULL, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack) {
 				cinfo->vtype_retaddr = TRUE;
 				/* The caller passes the address where the value is stored */
@@ -454,29 +476,28 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 	 */
 	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (gsctx, sig->params [0]))))) {
 		if (sig->hasthis) {
-			add_general (&gr, &stack_size, cinfo->args + 0);
+			add_general (&gr, param_regs, &stack_size, cinfo->args + 0);
 		} else {
-			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0]);
+			add_general (&gr, param_regs, &stack_size, &cinfo->args [sig->hasthis + 0]);
 			pstart = 1;
 		}
 		cinfo->vret_arg_offset = stack_size;
-		add_general (&gr, &stack_size, &cinfo->ret);
+		add_general (&gr, NULL, &stack_size, &cinfo->ret);
 		cinfo->vret_arg_index = 1;
 	} else {
 		/* this */
 		if (sig->hasthis)
-			add_general (&gr, &stack_size, cinfo->args + 0);
+			add_general (&gr, param_regs, &stack_size, cinfo->args + 0);
 
 		if (cinfo->vtype_retaddr)
-			add_general (&gr, &stack_size, &cinfo->ret);
+			add_general (&gr, NULL, &stack_size, &cinfo->ret);
 	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
-		gr = PARAM_REGS;
 		fr = FLOAT_PARAM_REGS;
 		
 		/* Emit the signature cookie just before the implicit arguments */
-		add_general (&gr, &stack_size, &cinfo->sig_cookie);
+		add_general (&gr, param_regs, &stack_size, &cinfo->sig_cookie);
 	}
 
 	for (i = pstart; i < sig->param_count; ++i) {
@@ -489,15 +510,14 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			 * Prevent implicit arguments + the sig cookie from being passed 
 			 * in registers.
 			 */
-			gr = PARAM_REGS;
 			fr = FLOAT_PARAM_REGS;
 
 			/* Emit the signature cookie just before the implicit arguments */
-			add_general (&gr, &stack_size, &cinfo->sig_cookie);
+			add_general (&gr, param_regs, &stack_size, &cinfo->sig_cookie);
 		}
 
 		if (sig->params [i]->byref) {
-			add_general (&gr, &stack_size, ainfo);
+			add_general (&gr, param_regs, &stack_size, ainfo);
 			continue;
 		}
 		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
@@ -505,16 +525,16 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			add_general (&gr, &stack_size, ainfo);
+			add_general (&gr, param_regs, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
-			add_general (&gr, &stack_size, ainfo);
+			add_general (&gr, param_regs, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
-			add_general (&gr, &stack_size, ainfo);
+			add_general (&gr, param_regs, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
@@ -525,16 +545,16 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-			add_general (&gr, &stack_size, ainfo);
+			add_general (&gr, param_regs, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (ptype)) {
-				add_general (&gr, &stack_size, ainfo);
+				add_general (&gr, param_regs, &stack_size, ainfo);
 				break;
 			}
 			if (mini_is_gsharedvt_type_gsctx (gsctx, ptype)) {
 				/* gsharedvt arguments are passed by ref */
-				add_general (&gr, &stack_size, ainfo);
+				add_general (&gr, param_regs, &stack_size, ainfo);
 				g_assert (ainfo->storage == ArgOnStack);
 				ainfo->storage = ArgGSharedVt;
 				break;
@@ -542,11 +562,11 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF:
-			add_valuetype (gsctx, sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
+			add_valuetype (gsctx, sig, ainfo, ptype, FALSE, &gr, param_regs, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			add_general_pair (&gr, &stack_size, ainfo);
+			add_general_pair (&gr, param_regs, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_R4:
 			add_float (&fr, &stack_size, ainfo, FALSE);
@@ -558,7 +578,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_MVAR:
 			/* gsharedvt arguments are passed by ref */
 			g_assert (mini_is_gsharedvt_type_gsctx (gsctx, ptype));
-			add_general (&gr, &stack_size, ainfo);
+			add_general (&gr, param_regs, &stack_size, ainfo);
 			g_assert (ainfo->storage == ArgOnStack);
 			ainfo->storage = ArgGSharedVt;
 			break;
@@ -569,11 +589,10 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n > 0) && (sig->sentinelpos == sig->param_count)) {
-		gr = PARAM_REGS;
 		fr = FLOAT_PARAM_REGS;
 		
 		/* Emit the signature cookie just before the implicit arguments */
-		add_general (&gr, &stack_size, &cinfo->sig_cookie);
+		add_general (&gr, param_regs, &stack_size, &cinfo->sig_cookie);
 	}
 
 	if (mono_do_x86_stack_align && (stack_size % MONO_ARCH_FRAME_ALIGNMENT) != 0) {
@@ -1474,10 +1493,15 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				arg->sreg1 = in->dreg;
 				arg->klass = in->klass;
 				arg->backend.size = size;
+				arg->inst_p0 = call;
+				arg->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
+				memcpy (arg->inst_p1, ainfo, sizeof (ArgInfo));
 
 				MONO_ADD_INS (cfg->cbb, arg);
-				sp_offset += size;
-				emit_gc_param_slot_def (cfg, sp_offset, orig_type);
+				if (ainfo->storage != ArgValuetypeInReg) {
+					sp_offset += size;
+					emit_gc_param_slot_def (cfg, sp_offset, orig_type);
+				}
 			}
 		} else {
 			argsize = 4;
@@ -1504,6 +1528,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						sp_offset += 4;
 					}
 				}
+				break;
+			case ArgInIReg:
+				arg->opcode = OP_MOVE;
+				arg->dreg = ainfo->reg;
+				argsize = 0;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -1580,29 +1609,51 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 void
 mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 {
+	MonoCallInst *call = (MonoCallInst*)ins->inst_p0;
+	ArgInfo *ainfo = ins->inst_p1;
 	MonoInst *arg;
 	int size = ins->backend.size;
 
-	if (cfg->gsharedvt && mini_is_gsharedvt_klass (cfg, ins->klass)) {
-		/* Pass by addr */
-		MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
-		arg->sreg1 = src->dreg;
-		MONO_ADD_INS (cfg->cbb, arg);
-	} else if (size <= 4) {
-		MONO_INST_NEW (cfg, arg, OP_X86_PUSH_MEMBASE);
-		arg->sreg1 = src->dreg;
+	if (ainfo->storage == ArgValuetypeInReg) {
+		int dreg = mono_alloc_ireg (cfg);
+		switch (size) {
+		case 1:
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, dreg, src->dreg, 0);
+			break;
+		case 2:
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, dreg, src->dreg, 0);
+			break;
+		case 4:
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, src->dreg, 0);
+			break;
+		case 3: /* FIXME */
+		default:
+			g_assert_not_reached ();
+		}
+		mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, FALSE);
+	}
+	else {
+		if (cfg->gsharedvt && mini_is_gsharedvt_klass (cfg, ins->klass)) {
+			/* Pass by addr */
+			MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
+			arg->sreg1 = src->dreg;
+			MONO_ADD_INS (cfg->cbb, arg);
+		} else if (size <= 4) {
+			MONO_INST_NEW (cfg, arg, OP_X86_PUSH_MEMBASE);
+			arg->sreg1 = src->dreg;
 
-		MONO_ADD_INS (cfg->cbb, arg);
-	} else if (size <= 20) {	
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, ALIGN_TO (size, 4));
-		mini_emit_memcpy (cfg, X86_ESP, 0, src->dreg, 0, size, 4);
-	} else {
-		MONO_INST_NEW (cfg, arg, OP_X86_PUSH_OBJ);
-		arg->inst_basereg = src->dreg;
-		arg->inst_offset = 0;
-		arg->inst_imm = size;
+			MONO_ADD_INS (cfg->cbb, arg);
+		} else if (size <= 20) {	
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, ALIGN_TO (size, 4));
+			mini_emit_memcpy (cfg, X86_ESP, 0, src->dreg, 0, size, 4);
+		} else {
+			MONO_INST_NEW (cfg, arg, OP_X86_PUSH_OBJ);
+			arg->inst_basereg = src->dreg;
+			arg->inst_offset = 0;
+			arg->inst_imm = size;
 					
-		MONO_ADD_INS (cfg->cbb, arg);
+			MONO_ADD_INS (cfg->cbb, arg);
+		}
 	}
 }
 
