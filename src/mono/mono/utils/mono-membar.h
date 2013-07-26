@@ -15,21 +15,60 @@
 #include <glib.h>
 
 #ifdef _MSC_VER
+#include <Windows.h>
 #include <intrin.h>
 
 static inline void mono_memory_barrier (void)
 {
+	/* NOTE: _ReadWriteBarrier and friends only prevent the
+	   compiler from reordering loads and stores. To prevent
+	   the CPU from doing the same, we have to use the
+	   MemoryBarrier macro which expands to e.g. a serializing
+	   XCHG instruction on x86. Also note that the MemoryBarrier
+	   macro does *not* imply _ReadWriteBarrier, so that call
+	   cannot be eliminated. */
 	_ReadWriteBarrier ();
+	MemoryBarrier ();
 }
 
 static inline void mono_memory_read_barrier (void)
 {
 	_ReadBarrier ();
+	MemoryBarrier ();
 }
 
 static inline void mono_memory_write_barrier (void)
 {
 	_WriteBarrier ();
+	MemoryBarrier ();
+}
+#elif defined(__WIN32__) || defined(_WIN32)
+#include <Windows.h>
+
+/* Since we only support GCC 3.x in Cygwin for
+   some arcane reason, we have to use inline
+   assembly to get fences (__sync_synchronize
+   is not available). */
+
+static inline void mono_memory_barrier (void)
+{
+	__asm__ __volatile__ (
+		"lock\n\t"
+		"addl\t$0,0(%%esp)\n\t"
+		:
+		:
+		: "memory"
+	);
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+	mono_memory_barrier ();
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+	mono_memory_barrier ();
 }
 #elif defined(USE_GCC_ATOMIC_OPS)
 static inline void mono_memory_barrier (void)
