@@ -108,6 +108,7 @@ typedef enum {
 	WRAPPER_SUBTYPE_SYNCHRONIZED_INNER,
 	WRAPPER_SUBTYPE_GSHAREDVT_IN,
 	WRAPPER_SUBTYPE_GSHAREDVT_OUT,
+	WRAPPER_SUBTYPE_ARRAY_ACCESSOR,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_MANAGED */
 	WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER
 } WrapperSubtype;
@@ -151,6 +152,10 @@ typedef struct {
 	gpointer func;
 } ICallWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+} ArrayAccessorWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -177,6 +182,8 @@ typedef struct {
 		GenericArrayHelperWrapperInfo generic_array_helper;
 		/* ICALL_WRAPPER */
 		ICallWrapperInfo icall;
+		/* ARRAY_ACCESSOR */
+		ArrayAccessorWrapperInfo array_accessor;
 	} d;
 } WrapperInfo;
 
@@ -352,6 +359,9 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers) MONO_INTERNAL;
 
 MonoMethod*
 mono_marshal_get_array_address (int rank, int elem_size) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_array_accessor_wrapper (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface,

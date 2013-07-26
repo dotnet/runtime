@@ -2596,6 +2596,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_klass_ref (acfg, method->klass, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER)
 				encode_method_ref (acfg, info->d.synchronized_inner.method, p, &p);
+			else if (info->subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR)
+				encode_method_ref (acfg, info->d.array_accessor.method, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
@@ -3160,6 +3162,8 @@ create_gsharedvt_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericCont
 	}
 }
 
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
@@ -3476,6 +3480,37 @@ add_wrappers (MonoAotCompile *acfg)
 			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
 			add_extra_method (acfg, gshared);
 
+		}
+	}
+
+	/* array access wrappers */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
+		MonoClass *klass;
+		
+		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
+		klass = mono_class_get (acfg->image, token);
+
+		if (!klass) {
+			mono_loader_clear_error ();
+			continue;
+		}
+
+		if (klass->rank && MONO_TYPE_IS_PRIMITIVE (&klass->element_class->byval_arg)) {
+			MonoMethod *m, *wrapper;
+
+			/* Add runtime-invoke wrappers too */
+
+			m = mono_class_get_method_from_name (klass, "Get", -1);
+			g_assert (m);
+			wrapper = mono_marshal_get_array_accessor_wrapper (m);
+			add_extra_method (acfg, wrapper);
+			add_extra_method (acfg, mono_marshal_get_runtime_invoke (wrapper, FALSE));
+
+			m = mono_class_get_method_from_name (klass, "Set", -1);
+			g_assert (m);
+			wrapper = mono_marshal_get_array_accessor_wrapper (m);
+			add_extra_method (acfg, wrapper);
+			add_extra_method (acfg, mono_marshal_get_runtime_invoke (wrapper, FALSE));
 		}
 	}
 

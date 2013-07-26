@@ -235,4 +235,18 @@ class Tests
 			return 1;
 		return 0;
 	}
+
+	public static int test_0_array_get_set () {
+		int[,,] arr = new int [10, 10, 10];
+		arr [0, 1, 2] = 42;
+		var gm = arr.GetType ().GetMethod ("Get");
+		int i = gm.Invoke (arr, new object [] { 0, 1, 2 });
+		if (i != 42)
+			return 1;
+		var sm = arr.GetType ().GetMethod ("Set");
+		sm.Invoke (arr, new object [] { 0, 1, 2, 33 });
+		if (arr [0, 1, 2] != 33)
+			return 2;
+		return 0;
+	}
 }

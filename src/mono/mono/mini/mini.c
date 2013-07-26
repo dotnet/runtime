@@ -6226,7 +6226,7 @@ typedef struct {
 static MonoObject*
 mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
-	MonoMethod *invoke;
+	MonoMethod *invoke, *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *domain_info;
@@ -6265,17 +6265,31 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		info->vtable = mono_class_vtable_full (domain, method->klass, TRUE);
 		g_assert (info->vtable);
 
+		callee = method;
 		if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 			(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 			/* 
 			 * Array Get/Set/Address methods. The JIT implements them using inline code 
 			 * inside the runtime invoke wrappers, so no need to compile them.
 			 */
-			info->compiled_method = NULL;
-		} else {
+			if (mono_aot_only) {
+				/*
+				 * Call a wrapper, since the runtime invoke wrapper was not generated.
+				 */
+				MonoMethod *wrapper;
+
+				wrapper = mono_marshal_get_array_accessor_wrapper (method);
+				invoke = mono_marshal_get_runtime_invoke (wrapper, FALSE);
+				callee = wrapper;
+			} else {
+				callee = NULL;
+			}
+		}
+
+		if (callee) {
 			MonoException *jit_ex = NULL;
 
-			info->compiled_method = mono_jit_compile_method_with_opt (method, default_opt, &jit_ex);
+			info->compiled_method = mono_jit_compile_method_with_opt (callee, default_opt, &jit_ex);
 			if (!info->compiled_method) {
 				g_free (info);
 				g_assert (jit_ex);
@@ -6287,7 +6301,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				}
 			}
 
-			info->compiled_method = mini_add_method_trampoline (NULL, method, info->compiled_method, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
+			info->compiled_method = mini_add_method_trampoline (NULL, callee, info->compiled_method, mono_method_needs_static_rgctx_invoke (callee, FALSE), FALSE);
+		} else {
+			info->compiled_method = NULL;
 		}
 
 		/*
