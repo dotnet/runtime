@@ -1468,10 +1468,11 @@ private_file_needs_copying (const char *src, struct stat *sbuf_src, char *dest)
 		stat_src = real_src;
 
 	if (stat (stat_src, sbuf_src) == -1) {
+		time_t tnow = time (NULL);
+
 		if (real_src)
 			g_free (real_src);
 
-		time_t tnow = time (NULL);
 		memset (sbuf_src, 0, sizeof (*sbuf_src));
 		sbuf_src->st_mtime = tnow;
 		sbuf_src->st_atime = tnow;
