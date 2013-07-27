@@ -1168,7 +1168,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		int iface_offset;
 
 		iface_offset = mono_class_interface_offset (klass, cmethod->klass);
-		g_assert (iface_offset);
+		g_assert (iface_offset != -1);
 		vt_slot += iface_offset;
 	}
 	m = klass->vtable [vt_slot];
