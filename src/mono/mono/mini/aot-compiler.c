@@ -5766,6 +5766,14 @@ emit_trampolines (MonoAotCompile *acfg)
 		 */
 		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
 			/* we overload the boolean here to indicate the slightly different trampoline needed, see mono_arch_create_generic_trampoline() */
+#ifdef DISABLE_REMOTING
+			if (tramp_type == MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING)
+				continue;
+#endif
+#ifndef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
+			if (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
+				continue;
+#endif
 			mono_arch_create_generic_trampoline (tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
@@ -8020,6 +8028,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, __alignof__ (double));
 	emit_int32 (acfg, __alignof__ (gint64));
 #endif
+	emit_int32 (acfg, MONO_TRAMPOLINE_NUM);
 
 	if (acfg->aot_opts.static_link) {
 		char *p;

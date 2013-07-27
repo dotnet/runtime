@@ -1646,6 +1646,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	/* Sanity check */
 	g_assert (info->double_align == align_double);
 	g_assert (info->long_align == align_int64);
+	g_assert (info->generic_tramp_num == MONO_TRAMPOLINE_NUM);
 
 	blob = info->blob;
 
