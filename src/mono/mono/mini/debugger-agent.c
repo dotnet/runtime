@@ -5590,6 +5590,49 @@ static ErrorCode
 decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit);
 
 static ErrorCode
+decode_vtype (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
+{
+	gboolean is_enum;
+	MonoClass *klass;
+	MonoClassField *f;
+	int nfields;
+	gpointer iter = NULL;
+	MonoDomain *d;
+	int err;
+
+	is_enum = decode_byte (buf, &buf, limit);
+	/* Enums are sent as a normal vtype */
+	if (is_enum)
+		return ERR_NOT_IMPLEMENTED;
+	klass = decode_typeid (buf, &buf, limit, &d, &err);
+	if (err)
+		return err;
+
+	if (t && klass != mono_class_from_mono_type (t)) {
+		char *name = mono_type_full_name (t);
+		char *name2 = mono_type_full_name (&klass->byval_arg);
+		DEBUG(1, fprintf (log_file, "[%p] Expected value of type %s, got %s.\n", (gpointer)GetCurrentThreadId (), name, name2));
+		g_free (name);
+		g_free (name2);
+		return ERR_INVALID_ARGUMENT;
+	}
+
+	nfields = decode_int (buf, &buf, limit);
+	while ((f = mono_class_get_fields (klass, &iter))) {
+		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (f))
+			continue;
+		err = decode_value (f->type, domain, (guint8*)addr + f->offset - sizeof (MonoObject), buf, &buf, limit);
+		if (err)
+			return err;
+		nfields --;
+	}
+	g_assert (nfields == 0);
+	return 0;
+}
+
+static ErrorCode
 decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	int err;
@@ -5661,38 +5704,11 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		g_assert (type == MONO_TYPE_VALUETYPE);
 		/* Fall through */
 		handle_vtype:
-	case MONO_TYPE_VALUETYPE: {
-		gboolean is_enum = decode_byte (buf, &buf, limit);
-		MonoClass *klass;
-		MonoClassField *f;
-		int nfields;
-		gpointer iter = NULL;
-		MonoDomain *d;
-
-		/* Enums are sent as a normal vtype */
-		if (is_enum)
-			return ERR_NOT_IMPLEMENTED;
-		klass = decode_typeid (buf, &buf, limit, &d, &err);
+	case MONO_TYPE_VALUETYPE:
+		err = decode_vtype (t, domain, addr,buf, &buf, limit);
 		if (err)
 			return err;
-
-		if (klass != mono_class_from_mono_type (t))
-			return ERR_INVALID_ARGUMENT;
-
-		nfields = decode_int (buf, &buf, limit);
-		while ((f = mono_class_get_fields (klass, &iter))) {
-			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
-				continue;
-			if (mono_field_is_deleted (f))
-				continue;
-			err = decode_value (f->type, domain, (guint8*)addr + f->offset - sizeof (MonoObject), buf, &buf, limit);
-			if (err)
-				return err;
-			nfields --;
-		}
-		g_assert (nfields == 0);
 		break;
-	}
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
@@ -5717,7 +5733,44 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				mono_gc_wbarrier_generic_store (addr, obj);
 			} else if (type == VALUE_TYPE_ID_NULL) {
 				*(MonoObject**)addr = NULL;
+			} else if (type == MONO_TYPE_VALUETYPE) {
+				guint8 *buf2;
+				gboolean is_enum;
+				MonoClass *klass;
+				MonoDomain *d;
+				guint8 *vtype_buf;
+				int vtype_buf_size;
+
+				/* This can happen when round-tripping boxed vtypes */
+				/*
+				 * Obtain vtype class.
+				 * Same as the beginning of the handle_vtype case above.
+				 */
+				buf2 = buf;
+				is_enum = decode_byte (buf, &buf, limit);
+				if (is_enum)
+					return ERR_NOT_IMPLEMENTED;
+				klass = decode_typeid (buf, &buf, limit, &d, &err);
+				if (err)
+					return err;
+
+				/* Decode the vtype into a temporary buffer, then box it. */
+				vtype_buf_size = mono_class_value_size (klass, NULL);
+				vtype_buf = g_malloc0 (vtype_buf_size);
+				g_assert (vtype_buf);
+
+				buf = buf2;
+				err = decode_vtype (NULL, domain, vtype_buf, buf, &buf, limit);
+				if (err) {
+					g_free (vtype_buf);
+					return err;
+				}
+				*(MonoObject**)addr = mono_value_box (d, klass, vtype_buf);
+				g_free (vtype_buf);
 			} else {
+				char *name = mono_type_full_name (t);
+				DEBUG(1, fprintf (log_file, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type));
+				g_free (name);
 				return ERR_INVALID_ARGUMENT;
 			}
 		} else {
@@ -6109,8 +6162,10 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	if (m->klass->valuetype && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		/* Should be null */
 		int type = decode_byte (p, &p, end);
-		if (type != VALUE_TYPE_ID_NULL)
+		if (type != VALUE_TYPE_ID_NULL) {
+			DEBUG (1, fprintf (log_file, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer)GetCurrentThreadId ()));
 			return ERR_INVALID_ARGUMENT;
+		}
 		memset (this_buf, 0, mono_class_instance_size (m->klass));
 	} else {
 		err = decode_value (&m->klass->byval_arg, domain, this_buf, p, &p, end);
@@ -6354,7 +6409,7 @@ invoke_method (void)
 		tls->resume_count -= invoke->suspend_count;
 	}
 
-	DEBUG (1, fprintf (log_file, "[%p] Invoke finished, resume_count = %d.\n", (gpointer)GetCurrentThreadId (), tls->resume_count));
+	DEBUG (1, fprintf (log_file, "[%p] Invoke finished (%d), resume_count = %d.\n", (gpointer)GetCurrentThreadId (), err, tls->resume_count));
 
 	/*
 	 * Take the loader lock to avoid race conditions with CMD_VM_ABORT_INVOKE:
