@@ -9476,9 +9476,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			MonoBoolean set_last_error = 0;
 			MonoBoolean best_fit_mapping = 0;
 			MonoBoolean throw_on_unmappable = 0;
+			MonoError error;
 
-			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo);
-
+			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
+			g_assert (mono_error_ok (&error));
 			g_assert (mono_array_length (typed_args) == 1);
 
 			/* typed args */

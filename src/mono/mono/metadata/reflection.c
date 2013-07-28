@@ -8233,7 +8233,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
  * NAMED_ARG_INFO will contain information about the named arguments.
  */
 void
-mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArray **typed_args, MonoArray **named_args, CattrNamedArg **named_arg_info)
+mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArray **typed_args, MonoArray **named_args, CattrNamedArg **named_arg_info, MonoError *error)
 {
 	MonoArray *typedargs, *namedargs;
 	MonoClass *attrklass;
@@ -8243,14 +8243,18 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	guint32 i, j, num_named;
 	CattrNamedArg *arginfo = NULL;
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL))
-		return;
-
-	mono_class_init (method->klass);
-
 	*typed_args = NULL;
 	*named_args = NULL;
 	*named_arg_info = NULL;
+
+	mono_error_init (error);
+
+	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL)) {
+		mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
+		return;
+	}
+
+	mono_class_init (method->klass);
 	
 	domain = mono_domain_get ();
 
@@ -8352,6 +8356,7 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 	MonoImage *image;
 	MonoMethod *method;
 	CattrNamedArg *arginfo;
+	MonoError error;
 	int i;
 
 	*ctor_args = NULL;
@@ -8367,7 +8372,9 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 	if (!mono_class_init (method->klass))
 		mono_raise_exception (mono_class_get_exception_for_failure (method->klass));
 
-	mono_reflection_create_custom_attr_data_args (image, method, data, len, &typedargs, &namedargs, &arginfo);
+	mono_reflection_create_custom_attr_data_args (image, method, data, len, &typedargs, &namedargs, &arginfo, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
 	if (mono_loader_get_last_error ())
 		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 

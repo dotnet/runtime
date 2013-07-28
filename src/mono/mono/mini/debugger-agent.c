@@ -7313,8 +7313,10 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			MonoArray *typed_args, *named_args;
 			MonoType *t;
 			CattrNamedArg *arginfo;
+			MonoError error;
 
-			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo);
+			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
+			g_assert (mono_error_ok (&error));
 
 			buffer_add_methodid (buf, domain, attr->ctor);
 
