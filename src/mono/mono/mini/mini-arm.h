@@ -19,10 +19,6 @@
 #define MONO_ARCH_SOFT_FLOAT_FALLBACK 1
 #endif
 
-#ifdef ARM_FPU_VFP_HARD
-#error "hardfp-abi not yet supported."
-#endif
-
 #if defined(__ARM_EABI__)
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define ARM_ARCHITECTURE "armel"
