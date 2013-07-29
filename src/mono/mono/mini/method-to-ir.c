@@ -10277,7 +10277,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (sp [0]->type == STACK_I8 || (SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
-				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_I4);
+				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_I4;
 				ins->dreg = alloc_ireg (cfg);

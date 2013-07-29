@@ -766,7 +766,31 @@ class Tests
             test[x+100,y+100] = true;
         }
 		return 0;
-	}		
+	}
+
+	static bool alloc_long (long l) {
+		try {
+			var arr = new byte[l];
+			return false;
+		} catch (Exception e) {
+			return true;
+		}
+	}
+
+	// #13544
+	public static int test_0_newarr_ovf () {
+		if (!alloc_long (5000000000))
+			return 1;
+		if (!alloc_long (4000000000))
+			return 2;
+		if (!alloc_long (-1))
+			return 3;
+		if (!alloc_long (-4000000000))
+			return 4;
+		if (!alloc_long (-6000000000))
+			return 5;
+		return 0;
+	}
 }
 
 
