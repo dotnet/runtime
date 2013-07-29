@@ -2010,13 +2010,15 @@ mono_arch_create_vars (MonoCompile *cfg)
 	cfg->arch.no_pushes = TRUE;
 #endif
 
+	if (cfg->method->save_lmf) {
+		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		lmf_var->flags |= MONO_INST_VOLATILE;
+		lmf_var->flags |= MONO_INST_LMF;
+		cfg->arch.lmf_var = lmf_var;
+	}
+
 #ifndef MONO_AMD64_NO_PUSHES
 	cfg->arch_eh_jit_info = 1;
-#endif
-
-	cfg->create_lmf_var = 1;
-#if !defined(TARGET_WIN32) && !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	cfg->lmf_ir = 1;
 #endif
 }
 
@@ -3734,13 +3736,14 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 			amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
 		}
 	} else {
-#ifdef HOST_WIN32
 		if (lmf_addr_tls_offset != -1) {
 			/* Load lmf quicky using the FS register */
 			code = mono_amd64_emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
+#ifdef HOST_WIN32
 			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 			/* FIXME: Add a separate key for LMF to avoid this */
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
 		}
 		else {
 			/* 
@@ -3761,18 +3764,13 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 		/* Set new lmf */
 		amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
 		amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
-#else
-		/* Already handled by emit_push_lmf () in method-to-ir.c */
-		/* FIXME: Use this on win32 as well */
-		return code;
-#endif
 	}
 
 	return code;
 }
 
 /*
- * emit_restore_lmf:
+ * emit_save_lmf:
  *
  *   Emit code to pop an LMF structure from the LMF stack.
  */
@@ -3789,15 +3787,10 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 		x86_prefix (code, X86_FS_PREFIX);
 		amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
 	} else {
-#ifdef HOST_WIN32
 		/* Restore previous lmf */
 		amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
 		amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
 		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
-#else
-		/* Already done in IR */
-		return code;
-#endif
 	}
 
 	return code;
@@ -4949,7 +4942,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_AMD64_SAVE_SP_TO_LMF: {
-			MonoInst *lmf_var = cfg->lmf_var;
+			MonoInst *lmf_var = cfg->arch.lmf_var;
 			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_var->inst_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
 		}
@@ -6568,7 +6561,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, i, cfa_offset, quad, max_epilog_size;
 	guint8 *code;
 	CallInfo *cinfo;
-	MonoInst *lmf_var = cfg->lmf_var;
+	MonoInst *lmf_var = cfg->arch.lmf_var;
 	gboolean args_clobbered = FALSE;
 	gboolean trace = FALSE;
 #ifdef __native_client_codegen__
@@ -7132,7 +7125,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint8 *code;
 	int max_epilog_size;
 	CallInfo *cinfo;
-	gint32 lmf_offset = cfg->lmf_var ? ((MonoInst*)cfg->lmf_var)->inst_offset : -1;
+	gint32 lmf_offset = cfg->arch.lmf_var ? ((MonoInst*)cfg->arch.lmf_var)->inst_offset : -1;
 	
 	max_epilog_size = get_max_epilog_size (cfg);
 

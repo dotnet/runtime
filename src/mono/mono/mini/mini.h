@@ -1053,8 +1053,7 @@ typedef enum {
 	TLS_KEY_JIT_TLS = 1,
 	/* mono_domain_get () */
 	TLS_KEY_DOMAIN = 2,
-	TLS_KEY_LMF = 3,
-	TLS_KEY_LMF_ADDR = 4
+	TLS_KEY_LMF = 3
 } MonoJitTlsKey;
 
 /*
@@ -1383,9 +1382,6 @@ typedef struct {
 	/* For native-to-managed wrappers, the saved old domain */
 	MonoInst *orig_domain_var;
 
-	MonoInst *lmf_var;
-	MonoInst *lmf_addr_var;
-
 	unsigned char   *cil_start;
 #ifdef __native_client_codegen__
 	/* this alloc is not aligned, native_code */
@@ -1431,12 +1427,6 @@ typedef struct {
 	guint            disable_vreg_to_lvreg : 1;
 	guint            disable_deadce_vars : 1;
 	guint            disable_out_of_line_bblocks : 1;
-	guint            create_lmf_var : 1;
-	/*
-	 * When this is set, the code to push/pop the LMF from the LMF stack is generated as IR
-	 * instead of being generated in emit_prolog ()/emit_epilog ().
-	 */
-	guint            lmf_ir : 1;
 	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;
@@ -1976,7 +1966,6 @@ MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
 MonoInst* mono_get_thread_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
 MonoInst* mono_get_lmf_intrinsic            (MonoCompile* cfg) MONO_INTERNAL;
-MonoInst* mono_get_lmf_addr_intrinsic       (MonoCompile* cfg) MONO_INTERNAL;
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type) MONO_INTERNAL;
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type) MONO_INTERNAL;
 void      mono_analyze_liveness             (MonoCompile *cfg) MONO_INTERNAL;

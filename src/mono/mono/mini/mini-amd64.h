@@ -203,6 +203,7 @@ typedef struct MonoCompileArch {
 #endif
 	gpointer seq_point_info_var;
 	gpointer ss_trigger_page_var;
+	gpointer lmf_var;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
