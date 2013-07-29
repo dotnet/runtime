@@ -30,11 +30,25 @@
 #error "ARM_FPU_NONE is defined while one of ARM_FPU_VFP/ARM_FPU_VFP_HARD is defined"
 #endif
 
-#if defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
+/* IS_SOFT_FLOAT: Is full software floating point used?
+ * IS_HARD_FLOAT: Is full hardware floating point used?
+ * IS_VFP: Is hardware floating point with software ABI used?
+ *
+ * These are not necessarily constants, e.g. IS_SOFT_FLOAT and
+ * IS_VFP may delegate to mono_arch_is_soft_float ().
+ */
+
+#if defined(ARM_FPU_VFP_HARD)
+#define IS_SOFT_FLOAT (FALSE)
+#define IS_HARD_FLOAT (TRUE)
+#define IS_VFP (TRUE)
+#elif defined(ARM_FPU_NONE)
 #define IS_SOFT_FLOAT (mono_arch_is_soft_float ())
+#define IS_HARD_FLOAT (FALSE)
 #define IS_VFP (!mono_arch_is_soft_float ())
 #else
 #define IS_SOFT_FLOAT (FALSE)
+#define IS_HARD_FLOAT (FALSE)
 #define IS_VFP (TRUE)
 #endif
 
