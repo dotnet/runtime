@@ -20,14 +20,14 @@
 
 #include "mono/utils/mono-hwcap-arm.h"
 
-#if defined(PLATFORM_ANDROID)
-#include <stdio.h>
-#elif defined(__linux__) && defined(HAVE_SYS_AUXV_H)
+#if defined(HAVE_SYS_AUXV_H) && !defined(PLATFORM_ANDROID)
 #include <sys/auxv.h>
 #elif defined(__APPLE__)
 #include <mach/machine.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
+#else
+#include <stdio.h>
 #endif
 
 gboolean mono_hwcap_arm_is_v5 = FALSE;
@@ -47,53 +47,7 @@ mono_hwcap_arch_init (void)
 void
 mono_hwcap_arch_init (void)
 {
-#if defined(PLATFORM_ANDROID)
-	/* We can't use the auxiliary vector on Android due to
-	 * permissions, so fall back to /proc/cpuinfo.
-	 */
-
-	char buf [512];
-	char *line;
-
-	FILE *file = fopen ("/proc/cpuinfo", "r");
-
-	if (file) {
-		while ((line = fgets (buf, 512, file))) {
-			if (!strncmp (line, "Processor", 9)) {
-				char *ver = strstr (line, "(v");
-
-				if (ver) {
-					if (ver [2] >= '5')
-						mono_hwcap_arm_is_v5 = TRUE;
-
-					if (ver [2] >= '6')
-						mono_hwcap_arm_is_v6 = TRUE;
-
-					if (ver [2] >= '7')
-						mono_hwcap_arm_is_v7 = TRUE;
-
-					/* TODO: Find a way to detect v7s. */
-				}
-
-				continue;
-			}
-
-			if (!strncmp (line, "Features", 8)) {
-				if (strstr (line, "thumb"))
-					mono_hwcap_arm_has_thumb = TRUE;
-
-				/* TODO: Find a way to detect Thumb 2. */
-
-				if (strstr (line, "vfp"))
-					mono_hwcap_arm_has_vfp = TRUE;
-
-				continue;
-			}
-		}
-
-		fclose (file);
-	}
-#elif defined(__linux__) && defined(HAVE_SYS_AUXV_H)
+#if defined(HAVE_SYS_AUXV_H) && !defined(PLATFORM_ANDROID)
 	unsigned long hwcap;
 	unsigned long platform;
 
@@ -141,6 +95,53 @@ mono_hwcap_arch_init (void)
 	}
 
 	/* TODO: Find a way to detect features like Thumb and VFP. */
+#else
+	/* We can't use the auxiliary vector on Android due to
+	 * permissions, so fall back to /proc/cpuinfo. We also
+	 * hit this path if the target doesn't have sys/auxv.h.
+	 */
+
+	char buf [512];
+	char *line;
+
+	FILE *file = fopen ("/proc/cpuinfo", "r");
+
+	if (file) {
+		while ((line = fgets (buf, 512, file))) {
+			if (!strncmp (line, "Processor", 9)) {
+				char *ver = strstr (line, "(v");
+
+				if (ver) {
+					if (ver [2] >= '5')
+						mono_hwcap_arm_is_v5 = TRUE;
+
+					if (ver [2] >= '6')
+						mono_hwcap_arm_is_v6 = TRUE;
+
+					if (ver [2] >= '7')
+						mono_hwcap_arm_is_v7 = TRUE;
+
+					/* TODO: Find a way to detect v7s. */
+				}
+
+				continue;
+			}
+
+			if (!strncmp (line, "Features", 8)) {
+				if (strstr (line, "thumb"))
+					mono_hwcap_arm_has_thumb = TRUE;
+
+				/* TODO: Find a way to detect Thumb 2. */
+
+				if (strstr (line, "vfp"))
+					mono_hwcap_arm_has_vfp = TRUE;
+
+				continue;
+			}
+		}
+
+		fclose (file);
+	}
 #endif
 }
 #endif
