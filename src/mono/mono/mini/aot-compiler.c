@@ -6837,7 +6837,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	opts = g_strdup ("-instcombine -simplifycfg");
 	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -domfrontier -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -iv-users -indvars -loop-deletion -loop-simplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -simplifycfg -preverify -domtree -verify");
 #if 1
-	command = g_strdup_printf ("%sopt -f %s -o %s.opt.bc %s.bc", acfg->aot_opts.llvm_path, opts, acfg->tmpfname, acfg->tmpfname);
+	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpfname, acfg->tmpfname);
 	printf ("Executing opt: %s\n", command);
 	if (system (command) != 0) {
 		exit (1);
@@ -6865,7 +6865,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	unlink (acfg->tmpfname);
 
-	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o %s %s.opt.bc", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpfname);
+	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpfname);
 
 	printf ("Executing llc: %s\n", command);
 
