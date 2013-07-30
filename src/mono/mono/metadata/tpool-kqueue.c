@@ -12,7 +12,7 @@ struct _tp_kqueue_data {
 };
 
 typedef struct _tp_kqueue_data tp_kqueue_data;
-static void tp_kqueue_modify (gpointer event_data, int fd, int operation, int events, gboolean is_new);
+static void tp_kqueue_modify (gpointer p, int fd, int operation, int events, gboolean is_new);
 static void tp_kqueue_shutdown (gpointer event_data);
 static void tp_kqueue_wait (gpointer event_data);
 
@@ -42,9 +42,11 @@ kevent_change (int kfd, struct kevent *evt, const char *error_str)
 }
 
 static void
-tp_kqueue_modify (gpointer event_data, int fd, int operation, int events, gboolean is_new)
+tp_kqueue_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 {
-	tp_kqueue_data *data = event_data;
+	SocketIOData *socket_io_data;
+	socket_io_data = p;
+	tp_kqueue_data *data = socket_io_data->event_data;
 	struct kevent evt;
 
 	memset (&evt, 0, sizeof (evt));
@@ -57,6 +59,7 @@ tp_kqueue_modify (gpointer event_data, int fd, int operation, int events, gboole
 		EV_SET (&evt, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
 		kevent_change (data->fd, &evt, "ADD write");
 	}
+	LeaveCriticalSection (&socket_io_data->io_lock);
 }
 
 static void

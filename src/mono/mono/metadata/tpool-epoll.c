@@ -15,7 +15,7 @@ struct _tp_epoll_data {
 };
 
 typedef struct _tp_epoll_data tp_epoll_data;
-static void tp_epoll_modify (gpointer event_data, int fd, int operation, int events, gboolean is_new);
+static void tp_epoll_modify (gpointer p, int fd, int operation, int events, gboolean is_new);
 static void tp_epoll_shutdown (gpointer event_data);
 static void tp_epoll_wait (gpointer event_data);
 
@@ -51,9 +51,11 @@ tp_epoll_init (SocketIOData *data)
 }
 
 static void
-tp_epoll_modify (gpointer event_data, int fd, int operation, int events, gboolean is_new)
+tp_epoll_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 {
-	tp_epoll_data *data = event_data;
+	SocketIOData *socket_io_data;
+	socket_io_data = p;
+	tp_epoll_data *data = socket_io_data->event_data;
 	struct epoll_event evt;
 	int epoll_op;
 
@@ -74,6 +76,7 @@ tp_epoll_modify (gpointer event_data, int fd, int operation, int events, gboolea
 			}
 		}
 	}
+	LeaveCriticalSection (&socket_io_data->io_lock);
 }
 
 static void
