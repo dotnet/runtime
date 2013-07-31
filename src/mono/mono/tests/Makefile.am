@@ -875,6 +875,11 @@ test-type-load: TestDriver.dll
 	@echo "Testing load-exception.exe..."
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
 
+EXTRA_DIST += debug-casts.cs
+# This depends on TLS, so its not ran by default
+debug-casts:
+	@$(MCS) -r:TestDriver.dll $(srcdir)/debug-casts.cs
+	@$(RUNTIME) --debug=casts debug-casts.exe
 
 EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-bridge-major-fragmentation.cs sgen-domain-unload.cs sgen-weakref-stress.cs sgen-cementing-stress.cs sgen-case-23400.cs 	finalizer-wait.cs critical-finalizers.cs sgen-domain-unload-2.cs sgen-suspend.cs
 

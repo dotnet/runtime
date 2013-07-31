@@ -9295,7 +9295,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
 
 				/*The wrapper doesn't inline well so the bloat of inlining doesn't pay off.*/
+				save_cast_details (cfg, klass, sp [0]->dreg);
 				*sp++ = mono_emit_method_call (cfg, mono_castclass, args, NULL);
+				reset_cast_details (cfg);
 				ip += 5;
 				inline_costs += 2;
 			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
@@ -9306,8 +9308,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_castclass = mono_marshal_get_castclass (klass); 
 				iargs [0] = sp [0];
 				
+				save_cast_details (cfg, klass, sp [0]->dreg);
 				costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), 
 							   iargs, ip, cfg->real_offset, dont_inline, TRUE);
+				reset_cast_details (cfg);
 				CHECK_CFG_EXCEPTION;
 				g_assert (costs > 0);
 				
