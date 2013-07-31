@@ -77,10 +77,12 @@ static void
 tp_poll_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 {
 	SocketIOData *socket_io_data;
-	socket_io_data = p;
-	tp_poll_data *data = socket_io_data->event_data;
+	tp_poll_data *data;
 	char msg [1];
 	int unused;
+
+	socket_io_data = p;
+	data = socket_io_data->event_data;
 
 	LeaveCriticalSection (&socket_io_data->io_lock);
 	
