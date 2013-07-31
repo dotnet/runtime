@@ -10,7 +10,9 @@ public class FinalizerException {
 	 * We allocate the exception object deep down the stack so
 	 * that it doesn't get pinned.
 	 */
-	public static void MakeException (int depth) {
+	public static unsafe void MakeException (int depth) {
+		// Avoid tail calls
+		int* values = stackalloc int [20];
 		if (depth <= 0) {
 			new FinalizerException ();
 			return;
@@ -24,7 +26,7 @@ public class FinalizerException {
 			Environment.Exit (0);
 		};
 
-		MakeException (100);
+		MakeException (1024);
 
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();
