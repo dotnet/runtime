@@ -165,7 +165,7 @@ MonoException *mono_create_corlib_exception_1 (guint32 token, MonoString *arg) M
 
 MonoException *mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2) MONO_INTERNAL;
 
-MonoObject* mono_object_castclass (MonoObject *obj, MonoClass *klass) MONO_INTERNAL;
+MonoObject* mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass) MONO_INTERNAL;
 
 gpointer mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func) MONO_INTERNAL;
 

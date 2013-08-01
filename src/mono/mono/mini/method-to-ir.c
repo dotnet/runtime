@@ -3533,7 +3533,7 @@ handle_unbox_gsharedvt (MonoCompile *cfg, int context_used, MonoClass *klass, Mo
 	args [1] = klass_inst;
 
 	/* CASTCLASS */
-	obj = mono_emit_jit_icall (cfg, mono_object_castclass, args);
+	obj = mono_emit_jit_icall (cfg, mono_object_castclass_unbox, args);
 
 	NEW_BBLOCK (cfg, is_ref_bb);
 	NEW_BBLOCK (cfg, is_nullable_bb);
