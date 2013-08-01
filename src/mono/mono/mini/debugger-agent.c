@@ -4433,7 +4433,10 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp)
 
 	if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line)) {
 		/* Have to continue single stepping */
-		DEBUG(1, fprintf (log_file, "[%p] Same source line, continuing single stepping.\n", (gpointer)GetCurrentThreadId ()));
+		if (!loc)
+			DEBUG(1, fprintf (log_file, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset));
+		else
+			DEBUG(1, fprintf (log_file, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer)GetCurrentThreadId (), loc->row));
 		hit = FALSE;
 	}
 				
