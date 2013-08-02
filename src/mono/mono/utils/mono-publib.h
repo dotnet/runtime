@@ -42,6 +42,8 @@ typedef unsigned __int64	uint64_t;
 
 #else
 
+#include <stdint.h>
+
 #define MONO_API_EXPORT
 #define MONO_API_IMPORT
 
