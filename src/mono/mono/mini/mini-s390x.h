@@ -15,7 +15,7 @@
 /*-------------------------------------------*/
 
 #define S390_LONG(loc, opy, op, r, ix, br, off)					\
-	if (has_ld) {								\
+	if (mono_hwcap_s390x_has_ld) {						\
 		if (s390_is_imm20(off)) {					\
 			s390_##opy (loc, r, ix, br, off);			\
 		} else {							\
