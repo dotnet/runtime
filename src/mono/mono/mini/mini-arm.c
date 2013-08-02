@@ -918,6 +918,12 @@ mono_arch_is_soft_float (void)
 }
 #endif
 
+gboolean
+mono_arm_is_hard_float (void)
+{
+	return arm_fpu == MONO_ARM_FPU_VFP_HARD;
+}
+
 static gboolean
 is_regsize_var (MonoGenericSharingContext *gsctx, MonoType *t) {
 	if (t->byref)
