@@ -215,7 +215,7 @@ log_timming (GGTimingInfo *info)
 	full_timing_buff [0] = '\0';
 
 	if (!info->is_overflow)
-	        sprintf (full_timing_buff, "total %.2fms, bridge %.2f", info->stw_time / 1000.0f, (int)info->bridge_time / 1000.0f);
+	        sprintf (full_timing_buff, "total %.2fms, bridge %.2fms", info->stw_time / 1000.0f, (int)info->bridge_time / 1000.0f);
 	if (info->generation == GENERATION_OLD)
 	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) pause %.2fms, %s major %dK/%dK los %dK/%dK",
 	                info->is_overflow ? "_OVERFLOW" : "",
