@@ -173,6 +173,10 @@ struct MonoLMF {
 	mgreg_t    sp;
 	mgreg_t    ip;
 	mgreg_t    fp;
+	/* Currently only used in trampolines on armhf to hold d0-d15. We don't really
+	 * need to put d0-d7 in the LMF, but it simplifies the trampoline code.
+	 */
+	double     fregs [16];
 	/* all but sp and pc: matches the PUSH instruction layout in the trampolines
 	 * 0-4 should be considered undefined (execpt in the magic tramp)
 	 * sp is saved at IP.
