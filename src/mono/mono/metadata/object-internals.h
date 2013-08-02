@@ -1584,7 +1584,7 @@ void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value) MONO_INTERNAL;
 
 /* exported, used by the debugger */
-void *
+MONO_API void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
 
 char *

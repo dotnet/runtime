@@ -13,7 +13,7 @@ typedef struct {
 	void *addr;
 } MonoDlMapping;
 
-void mono_dl_register_library (const char *name, MonoDlMapping *mappings);
+MONO_API void mono_dl_register_library (const char *name, MonoDlMapping *mappings);
 
 MONO_END_DECLS
 

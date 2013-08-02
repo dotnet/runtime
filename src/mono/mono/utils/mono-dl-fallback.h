@@ -23,10 +23,10 @@ typedef void* (*MonoDlFallbackLoad) (const char *name, int flags, char **err, vo
 typedef void* (*MonoDlFallbackSymbol) (void *handle, const char *name, char **err, void *user_data);
 typedef void* (*MonoDlFallbackClose) (void *handle, void *user_data);
 
-MonoDlFallbackHandler *mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func,
+MONO_API MonoDlFallbackHandler *mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func,
 						  MonoDlFallbackClose close_func, void *user_data);
 
-void                   mono_dl_fallback_unregister (MonoDlFallbackHandler *handler);
+MONO_API void                   mono_dl_fallback_unregister (MonoDlFallbackHandler *handler);
 
 MONO_END_DECLS
 

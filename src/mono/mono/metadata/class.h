@@ -13,249 +13,249 @@ typedef struct _MonoClassField MonoClassField;
 typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
-MonoClass *
+MONO_API MonoClass *
 mono_class_get             (MonoImage *image, uint32_t type_token);
 
-MonoClass *
+MONO_API MonoClass *
 mono_class_get_full        (MonoImage *image, uint32_t type_token, MonoGenericContext *context);
 
-mono_bool
+MONO_API mono_bool
 mono_class_init            (MonoClass *klass);
 
-MonoVTable *
+MONO_API MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *klass);
 
-MonoClass *
+MONO_API MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);
 
-MonoClass *
+MONO_API MonoClass *
 mono_class_from_name_case  (MonoImage *image, const char* name_space, const char *name);
 
-MonoMethod *
+MONO_API MonoMethod *
 mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int param_count, int flags);
 
-MonoClass * 
+MONO_API MonoClass * 
 mono_class_from_typeref    (MonoImage *image, uint32_t type_token);
 
-MonoClass *
+MONO_API MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, mono_bool is_mvar);
 
-MonoType*
+MONO_API MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context) /* MONO_DEPRECATED */;
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context);
 
-MonoMethod *
+MONO_API MonoMethod *
 mono_get_inflated_method (MonoMethod *method);
 
-MonoClassField*
+MONO_API MonoClassField*
 mono_field_from_token      (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context);
 
-MonoClass *
+MONO_API MonoClass *
 mono_bounded_array_class_get (MonoClass *element_class, uint32_t rank, mono_bool bounded);
 
-MonoClass *
+MONO_API MonoClass *
 mono_array_class_get       (MonoClass *element_class, uint32_t rank);
 
-MonoClass *
+MONO_API MonoClass *
 mono_ptr_class_get         (MonoType *type);
 
-MonoClassField *
+MONO_API MonoClassField *
 mono_class_get_field       (MonoClass *klass, uint32_t field_token);
 
-MonoClassField *
+MONO_API MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name);
 
-uint32_t
+MONO_API uint32_t
 mono_class_get_field_token (MonoClassField *field);
 
-uint32_t
+MONO_API uint32_t
 mono_class_get_event_token (MonoEvent *event);
 
-MonoProperty*
+MONO_API MonoProperty*
 mono_class_get_property_from_name (MonoClass *klass, const char *name);
 
-uint32_t
+MONO_API uint32_t
 mono_class_get_property_token (MonoProperty *prop);
 
-int32_t
+MONO_API int32_t
 mono_array_element_size    (MonoClass *ac);
 
-int32_t
+MONO_API int32_t
 mono_class_instance_size   (MonoClass *klass);
 
-int32_t
+MONO_API int32_t
 mono_class_array_element_size (MonoClass *klass);
 
-int32_t
+MONO_API int32_t
 mono_class_data_size       (MonoClass *klass);
 
-int32_t
+MONO_API int32_t
 mono_class_value_size      (MonoClass *klass, uint32_t *align);
 
-int32_t
+MONO_API int32_t
 mono_class_min_align       (MonoClass *klass);
 
-MonoClass *
+MONO_API MonoClass *
 mono_class_from_mono_type  (MonoType *type);
 
-mono_bool
+MONO_API mono_bool
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
 						   mono_bool check_interfaces);
 
-mono_bool
+MONO_API mono_bool
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
 
-void*
+MONO_API void*
 mono_ldtoken               (MonoImage *image, uint32_t token, MonoClass **retclass, MonoGenericContext *context);
 
-char*         
+MONO_API char*         
 mono_type_get_name         (MonoType *type);
 
-MonoType*
+MONO_API MonoType*
 mono_type_get_underlying_type (MonoType *type);
 
 /* MonoClass accessors */
-MonoImage*
+MONO_API MonoImage*
 mono_class_get_image         (MonoClass *klass);
 
-MonoClass*
+MONO_API MonoClass*
 mono_class_get_element_class (MonoClass *klass);
 
-mono_bool
+MONO_API mono_bool
 mono_class_is_valuetype      (MonoClass *klass);
 
-mono_bool
+MONO_API mono_bool
 mono_class_is_enum          (MonoClass *klass);
 
-MonoType*
+MONO_API MonoType*
 mono_class_enum_basetype    (MonoClass *klass);
 
-MonoClass*
+MONO_API MonoClass*
 mono_class_get_parent        (MonoClass *klass);
 
-MonoClass*
+MONO_API MonoClass*
 mono_class_get_nesting_type  (MonoClass *klass);
 
-int
+MONO_API int
 mono_class_get_rank          (MonoClass *klass);
 
-uint32_t
+MONO_API uint32_t
 mono_class_get_flags         (MonoClass *klass);
 
-const char*
+MONO_API const char*
 mono_class_get_name          (MonoClass *klass);
 
-const char*
+MONO_API const char*
 mono_class_get_namespace     (MonoClass *klass);
 
-MonoType*
+MONO_API MonoType*
 mono_class_get_type          (MonoClass *klass);
 
-uint32_t
+MONO_API uint32_t
 mono_class_get_type_token    (MonoClass *klass);
 
-MonoType*
+MONO_API MonoType*
 mono_class_get_byref_type    (MonoClass *klass);
 
-int
+MONO_API int
 mono_class_num_fields        (MonoClass *klass);
 
-int
+MONO_API int
 mono_class_num_methods       (MonoClass *klass);
 
-int
+MONO_API int
 mono_class_num_properties    (MonoClass *klass);
 
-int
+MONO_API int
 mono_class_num_events        (MonoClass *klass);
 
-MonoClassField*
+MONO_API MonoClassField*
 mono_class_get_fields        (MonoClass* klass, void **iter);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_class_get_methods       (MonoClass* klass, void **iter);
 
-MonoProperty*
+MONO_API MonoProperty*
 mono_class_get_properties    (MonoClass* klass, void **iter);
 
-MonoEvent*
+MONO_API MonoEvent*
 mono_class_get_events        (MonoClass* klass, void **iter);
 
-MonoClass*
+MONO_API MonoClass*
 mono_class_get_interfaces    (MonoClass* klass, void **iter);
 
-MonoClass*
+MONO_API MonoClass*
 mono_class_get_nested_types  (MonoClass* klass, void **iter);
 
 /* MonoClassField accessors */
-const char*
+MONO_API const char*
 mono_field_get_name   (MonoClassField *field);
 
-MonoType*
+MONO_API MonoType*
 mono_field_get_type   (MonoClassField *field);
 
-MonoClass*
+MONO_API MonoClass*
 mono_field_get_parent (MonoClassField *field);
 
-uint32_t
+MONO_API uint32_t
 mono_field_get_flags  (MonoClassField *field);
 
-uint32_t
+MONO_API uint32_t
 mono_field_get_offset  (MonoClassField *field);
 
-const char *
+MONO_API const char *
 mono_field_get_data  (MonoClassField *field);
 
 /* MonoProperty acessors */
-const char*
+MONO_API const char*
 mono_property_get_name       (MonoProperty *prop);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_property_get_set_method (MonoProperty *prop);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_property_get_get_method (MonoProperty *prop);
 
-MonoClass*
+MONO_API MonoClass*
 mono_property_get_parent     (MonoProperty *prop);
 
-uint32_t
+MONO_API uint32_t
 mono_property_get_flags      (MonoProperty *prop);
 
 /* MonoEvent accessors */
-const char*
+MONO_API const char*
 mono_event_get_name          (MonoEvent *event);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_event_get_add_method    (MonoEvent *event);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_event_get_remove_method (MonoEvent *event);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_event_get_remove_method (MonoEvent *event);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_event_get_raise_method  (MonoEvent *event);
 
-MonoClass*
+MONO_API MonoClass*
 mono_event_get_parent        (MonoEvent *event);
 
-uint32_t
+MONO_API uint32_t
 mono_event_get_flags         (MonoEvent *event);
 
-MonoMethod *
+MONO_API MonoMethod *
 mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count);
 
-char *
+MONO_API char *
 mono_class_name_from_token (MonoImage *image, uint32_t type_token);
 
-mono_bool
+MONO_API mono_bool
 mono_method_can_access_field (MonoMethod *method, MonoClassField *field);
 
-mono_bool
+MONO_API mono_bool
 mono_method_can_access_method (MonoMethod *method, MonoMethod *called);
 
 MONO_END_DECLS

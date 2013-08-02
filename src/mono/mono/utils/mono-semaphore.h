@@ -17,6 +17,7 @@
 #include <semaphore.h>
 #endif
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-publib.h>
 
 #if (defined (HAVE_SEMAPHORE_H) || defined (USE_MACH_SEMA)) && !defined(HOST_WIN32)
 #  define MONO_HAS_SEMAPHORES
@@ -54,9 +55,9 @@ typedef HANDLE MonoSemType;
 
 G_BEGIN_DECLS
 
-int mono_sem_wait (MonoSemType *sem, gboolean alertable);
-int mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable);
-int mono_sem_post (MonoSemType *sem);
+MONO_API int mono_sem_wait (MonoSemType *sem, gboolean alertable);
+MONO_API int mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable);
+MONO_API int mono_sem_post (MonoSemType *sem);
 
 G_END_DECLS
 #endif /* _MONO_SEMAPHORE_H_ */

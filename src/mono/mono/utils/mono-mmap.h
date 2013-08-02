@@ -2,6 +2,7 @@
 #define __MONO_UTILS_MMAP_H__
 
 #include <glib.h>
+#include <mono/utils/mono-publib.h>
 
 enum {
 	/* protection */
@@ -24,28 +25,28 @@ enum {
  */
 typedef struct _MonoFileMap MonoFileMap;
 
-MonoFileMap *mono_file_map_open  (const char* name);
-guint64      mono_file_map_size  (MonoFileMap *fmap);
-int          mono_file_map_fd    (MonoFileMap *fmap);
-int          mono_file_map_close (MonoFileMap *fmap);
+MONO_API MonoFileMap *mono_file_map_open  (const char* name);
+MONO_API guint64      mono_file_map_size  (MonoFileMap *fmap);
+MONO_API int          mono_file_map_fd    (MonoFileMap *fmap);
+MONO_API int          mono_file_map_close (MonoFileMap *fmap);
 
-int   mono_pagesize   (void);
-void* mono_valloc     (void *addr, size_t length, int flags);
-void* mono_valloc_aligned (size_t length, size_t alignment, int flags);
-int   mono_vfree      (void *addr, size_t length);
-void* mono_file_map   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
-int   mono_file_unmap (void *addr, void *handle);
+MONO_API int   mono_pagesize   (void);
+MONO_API void* mono_valloc     (void *addr, size_t length, int flags);
+MONO_API void* mono_valloc_aligned (size_t length, size_t alignment, int flags);
+MONO_API int   mono_vfree      (void *addr, size_t length);
+MONO_API void* mono_file_map   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
+MONO_API int   mono_file_unmap (void *addr, void *handle);
 #ifndef HOST_WIN32
-void* mono_file_map_fileio   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
-int   mono_file_unmap_fileio (void *addr, void *handle);
+MONO_API void* mono_file_map_fileio   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
+MONO_API int   mono_file_unmap_fileio (void *addr, void *handle);
 #endif
-int   mono_mprotect   (void *addr, size_t length, int flags);
+MONO_API int   mono_mprotect   (void *addr, size_t length, int flags);
 
-void* mono_shared_area         (void);
-void  mono_shared_area_remove  (void);
-void* mono_shared_area_for_pid (void *pid);
-void  mono_shared_area_unload  (void *area);
-int   mono_shared_area_instances (void **array, int count);
+MONO_API void* mono_shared_area         (void);
+MONO_API void  mono_shared_area_remove  (void);
+MONO_API void* mono_shared_area_for_pid (void *pid);
+MONO_API void  mono_shared_area_unload  (void *area);
+MONO_API int   mono_shared_area_instances (void **array, int count);
 
 /*
  * On systems where we have to load code into memory instead of mmaping
@@ -55,7 +56,7 @@ int   mono_shared_area_instances (void **array, int count);
 typedef void *(*mono_file_map_alloc_fn)   (size_t length);
 typedef void  (*mono_file_map_release_fn) (void *addr);
 
-void mono_file_map_set_allocator (mono_file_map_alloc_fn alloc, mono_file_map_release_fn release);
+MONO_API void mono_file_map_set_allocator (mono_file_map_alloc_fn alloc, mono_file_map_release_fn release);
 				  
 #endif /* __MONO_UTILS_MMAP_H__ */
 

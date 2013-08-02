@@ -47,10 +47,10 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum,
 										int conv_arg, MonoType **conv_arg_type,
 										MarshalAction action) MONO_INTERNAL;
 
-MonoString * 
+MONO_API MonoString * 
 mono_string_from_bstr (gpointer bstr);
 
-void 
+MONO_API void 
 mono_free_bstr (gpointer bstr);
 
 #endif /* __MONO_COMINTEROP_H__ */

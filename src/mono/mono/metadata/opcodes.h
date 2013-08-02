@@ -64,10 +64,10 @@ typedef struct {
 
 extern const MonoOpcode mono_opcodes [];
 
-const char*
+MONO_API const char*
 mono_opcode_name (int opcode);
 
-MonoOpcodeEnum
+MONO_API MonoOpcodeEnum
 mono_opcode_value (const mono_byte **ip, const mono_byte *end);
 
 MONO_END_DECLS

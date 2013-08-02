@@ -47,10 +47,10 @@ ves_icall_System_Threading_ThreadPool_SetMaxThreads (gint workerThreads,
 								gint completionPortThreads) MONO_INTERNAL;
 
 typedef void  (*MonoThreadPoolFunc) (gpointer user_data);
-void mono_install_threadpool_thread_hooks (MonoThreadPoolFunc start_func, MonoThreadPoolFunc finish_func, gpointer user_data);
+MONO_API void mono_install_threadpool_thread_hooks (MonoThreadPoolFunc start_func, MonoThreadPoolFunc finish_func, gpointer user_data);
 
 typedef void  (*MonoThreadPoolItemFunc) (gpointer user_data);
-void mono_install_threadpool_item_hooks (MonoThreadPoolItemFunc begin_func, MonoThreadPoolItemFunc end_func, gpointer user_data);
+MONO_API void mono_install_threadpool_item_hooks (MonoThreadPoolItemFunc begin_func, MonoThreadPoolItemFunc end_func, gpointer user_data);
 
 #endif
 

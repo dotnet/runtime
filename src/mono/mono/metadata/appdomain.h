@@ -26,190 +26,190 @@ typedef struct _MonoJitInfo MonoJitInfo;
 
 typedef void (*MonoDomainFunc) (MonoDomain *domain, void* user_data);
 
-MonoDomain*
+MONO_API MonoDomain*
 mono_init                  (const char *filename);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_init_from_assembly    (const char *domain_name, const char *filename);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_init_version          (const char *domain_name, const char *version);
 
-MonoDomain*
+MONO_API MonoDomain*
 mono_get_root_domain       (void);
 
-void
+MONO_API void
 mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb,
 			    MonoThreadAttachCB attach_cb);
 
-void
+MONO_API void
 mono_runtime_cleanup       (MonoDomain *domain);
 
-void
+MONO_API void
 mono_install_runtime_cleanup (MonoDomainFunc func);
 
-void
+MONO_API void
 mono_runtime_quit (void);
 
-void
+MONO_API void
 mono_runtime_set_shutting_down (void);
 
-mono_bool
+MONO_API mono_bool
 mono_runtime_is_shutting_down (void);
 
-const char*
+MONO_API const char*
 mono_check_corlib_version (void);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_domain_create         (void);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_domain_create_appdomain (char *friendly_name, char *configuration_file);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_domain_get            (void);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_domain_get_by_id      (int32_t domainid);
 
-int32_t
+MONO_API int32_t
 mono_domain_get_id         (MonoDomain *domain);
 
-mono_bool
+MONO_API mono_bool
 mono_domain_set            (MonoDomain *domain, mono_bool force);
 
-void
+MONO_API void
 mono_domain_set_internal   (MonoDomain *domain);
 
-void
+MONO_API void
 mono_domain_unload (MonoDomain *domain);
 
-void
+MONO_API void
 mono_domain_try_unload (MonoDomain *domain, MonoObject **exc);
 
-mono_bool
+MONO_API mono_bool
 mono_domain_is_unloading   (MonoDomain *domain);
 
-MonoDomain *
+MONO_API MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain);
 
-void
+MONO_API void
 mono_domain_foreach        (MonoDomainFunc func, void* user_data);
 
-MonoAssembly *
+MONO_API MonoAssembly *
 mono_domain_assembly_open  (MonoDomain *domain, const char *name);
 
-mono_bool
+MONO_API mono_bool
 mono_domain_finalize       (MonoDomain *domain, uint32_t timeout);
 
-void
+MONO_API void
 mono_domain_free           (MonoDomain *domain, mono_bool force);
 
-mono_bool
+MONO_API mono_bool
 mono_domain_has_type_resolve (MonoDomain *domain);
 
-MonoReflectionAssembly *
+MONO_API MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 
-mono_bool
+MONO_API mono_bool
 mono_domain_owns_vtable_slot (MonoDomain *domain, void* vtable_slot);
 
-void
+MONO_API void
 mono_context_init 				   (MonoDomain *domain);
 
-void 
+MONO_API void 
 mono_context_set				   (MonoAppContext *new_context);
 
-MonoAppContext * 
+MONO_API MonoAppContext * 
 mono_context_get				   (void);
 
-MonoJitInfo *
+MONO_API MonoJitInfo *
 mono_jit_info_table_find   (MonoDomain *domain, char *addr);
 
 /* MonoJitInfo accessors */
 
-void*
+MONO_API void*
 mono_jit_info_get_code_start (MonoJitInfo* ji);
 
-int
+MONO_API int
 mono_jit_info_get_code_size (MonoJitInfo* ji);
 
-MonoMethod*
+MONO_API MonoMethod*
 mono_jit_info_get_method (MonoJitInfo* ji);
 
 
-MonoImage*
+MONO_API MonoImage*
 mono_get_corlib            (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_object_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_byte_class        (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_void_class        (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_boolean_class     (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_sbyte_class       (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_int16_class       (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_uint16_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_int32_class       (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_uint32_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_intptr_class         (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_uintptr_class        (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_int64_class       (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_uint64_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_single_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_double_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_char_class        (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_string_class      (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_enum_class        (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_array_class       (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_thread_class       (void);
 
-MonoClass*
+MONO_API MonoClass*
 mono_get_exception_class    (void);
 
-void
+MONO_API void
 mono_security_enable_core_clr (void);
 
 typedef mono_bool (*MonoCoreClrPlatformCB) (const char *image_name);
 
-void
+MONO_API void
 mono_security_set_core_clr_platform_callback (MonoCoreClrPlatformCB callback);
 
 MONO_END_DECLS

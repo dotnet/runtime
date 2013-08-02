@@ -187,7 +187,7 @@ void mono_threads_set_shutting_down (void) MONO_INTERNAL;
 
 gunichar2* mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len) MONO_INTERNAL;
 
-MonoException* mono_thread_get_undeniable_exception (void);
+MONO_API MonoException* mono_thread_get_undeniable_exception (void);
 
 MonoException* mono_thread_get_and_clear_pending_exception (void) MONO_INTERNAL;
 

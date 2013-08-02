@@ -148,59 +148,59 @@ extern MonoDebugFormat mono_debug_format;
 extern int32_t mono_debug_debugger_version;
 extern int32_t _mono_debug_using_mono_debugger;
 
-void mono_debug_list_add (MonoDebugList **list, const void* data);
-void mono_debug_list_remove (MonoDebugList **list, const void* data);
+MONO_API void mono_debug_list_add (MonoDebugList **list, const void* data);
+MONO_API void mono_debug_list_remove (MonoDebugList **list, const void* data);
 
-void mono_debug_init (MonoDebugFormat format);
-void mono_debug_open_image_from_memory (MonoImage *image, const mono_byte *raw_contents, int size);
-void mono_debug_cleanup (void);
+MONO_API void mono_debug_init (MonoDebugFormat format);
+MONO_API void mono_debug_open_image_from_memory (MonoImage *image, const mono_byte *raw_contents, int size);
+MONO_API void mono_debug_cleanup (void);
 
-void mono_debug_close_image (MonoImage *image);
+MONO_API void mono_debug_close_image (MonoImage *image);
 
-void mono_debug_domain_unload (MonoDomain *domain);
-void mono_debug_domain_create (MonoDomain *domain);
+MONO_API void mono_debug_domain_unload (MonoDomain *domain);
+MONO_API void mono_debug_domain_create (MonoDomain *domain);
 
-mono_bool mono_debug_using_mono_debugger (void);
+MONO_API mono_bool mono_debug_using_mono_debugger (void);
 
-MonoDebugMethodAddress *
+MONO_API MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);
 
-void
+MONO_API void
 mono_debug_remove_method (MonoMethod *method, MonoDomain *domain);
 
-MonoDebugMethodInfo *
+MONO_API MonoDebugMethodInfo *
 mono_debug_lookup_method (MonoMethod *method);
 
-MonoDebugMethodAddressList *
+MONO_API MonoDebugMethodAddressList *
 mono_debug_lookup_method_addresses (MonoMethod *method);
 
-MonoDebugMethodJitInfo*
+MONO_API MonoDebugMethodJitInfo*
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain);
 
-void
+MONO_API void
 mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
 
 
-void
+MONO_API void
 mono_debug_add_delegate_trampoline (void* code, int size);
 
-MonoDebugLocalsInfo*
+MONO_API MonoDebugLocalsInfo*
 mono_debug_lookup_locals (MonoMethod *method);
 
 /*
  * Line number support.
  */
 
-MonoDebugSourceLocation *
+MONO_API MonoDebugSourceLocation *
 mono_debug_lookup_source_location (MonoMethod *method, uint32_t address, MonoDomain *domain);
 
-int32_t
+MONO_API int32_t
 mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, uint32_t native_offset);
 
-void
+MONO_API void
 mono_debug_free_source_location (MonoDebugSourceLocation *location);
 
-char *
+MONO_API char *
 mono_debug_print_stack_frame (MonoMethod *method, uint32_t native_offset, MonoDomain *domain);
 
 /*
@@ -209,11 +209,11 @@ mono_debug_print_stack_frame (MonoMethod *method, uint32_t native_offset, MonoDo
  * These methods are used by the JIT while running inside the Mono Debugger.
  */
 
-int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
-int             mono_debugger_insert_breakpoint           (const char *method_name, mono_bool include_namespace);
+MONO_API int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
+MONO_API int             mono_debugger_insert_breakpoint           (const char *method_name, mono_bool include_namespace);
 
-void mono_set_is_debugger_attached (mono_bool attached);
-mono_bool mono_is_debugger_attached (void);
+MONO_API void mono_set_is_debugger_attached (mono_bool attached);
+MONO_API mono_bool mono_is_debugger_attached (void);
 
 MONO_END_DECLS
 
