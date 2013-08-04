@@ -256,6 +256,7 @@ struct _MonoImage {
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *delegate_invoke_cache;
 	GHashTable *runtime_invoke_cache;
+	GHashTable *runtime_invoke_vtype_cache;
 
 	/*
 	 * indexed by SignatureMethodPair

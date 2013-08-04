@@ -4968,9 +4968,15 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
 
-		cache = get_cache (&target_klass->image->runtime_invoke_cache, 
-						   (GHashFunc)mono_signature_hash, 
-						   (GCompareFunc)runtime_invoke_signature_equal);
+		if (method->klass->valuetype && mono_method_signature (method)->hasthis)
+			/* These have a different csig */
+			cache = get_cache (&target_klass->image->runtime_invoke_vtype_cache,
+							   (GHashFunc)mono_signature_hash,
+							   (GCompareFunc)runtime_invoke_signature_equal);
+		else
+			cache = get_cache (&target_klass->image->runtime_invoke_cache,
+							   (GHashFunc)mono_signature_hash,
+							   (GCompareFunc)runtime_invoke_signature_equal);
 
 		/* from mono_marshal_find_in_cache */
 		mono_marshal_lock ();
@@ -12951,6 +12957,8 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
                g_hash_table_remove (method->klass->image->delegate_invoke_cache, sig);
        if (sig && method->klass->image->runtime_invoke_cache)
                g_hash_table_remove (method->klass->image->runtime_invoke_cache, sig);
+       if (sig && method->klass->image->runtime_invoke_vtype_cache)
+               g_hash_table_remove (method->klass->image->runtime_invoke_vtype_cache, sig);
 
         /*
          * indexed by SignatureMethodPair

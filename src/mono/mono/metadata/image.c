@@ -1625,6 +1625,7 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->synchronized_generic_cache);
 	free_hash (image->remoting_invoke_cache);
 	free_hash (image->runtime_invoke_cache);
+	free_hash (image->runtime_invoke_vtype_cache);
 	free_hash (image->runtime_invoke_direct_cache);
 	free_hash (image->runtime_invoke_vcall_cache);
 	free_hash (image->synchronized_cache);
