@@ -1225,6 +1225,10 @@ public class Tests
 		void foo_ref_arg (string s);
 	}
 
+	interface IConstrained<T3> {
+		void foo_gsharedvt_arg (T3 s);
+	}
+
 	static object constrained_res;
 
 	struct ConsStruct : IConstrained {
@@ -1251,9 +1255,16 @@ public class Tests
 		}
 	}
 
+	struct ConsStruct<T> : IConstrained<T> {
+		public void foo_gsharedvt_arg (T s) {
+			constrained_res = s;
+		}
+	}
+
 	interface IFaceConstrained {
 		void constrained_void_iface_call<T, T2>(T t, T2 t2) where T2 : IConstrained;
 		void constrained_void_iface_call_ref_arg<T, T2>(T t, T2 t2) where T2 : IConstrained;
+		void constrained_void_iface_call_gsharedvt_arg<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T>;
 	}
 
 	class ClassConstrained : IFaceConstrained {
@@ -1265,6 +1276,11 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public void constrained_void_iface_call_ref_arg<T, T2>(T t, T2 t2) where T2 : IConstrained {
 			t2.foo_ref_arg ("A");
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public void constrained_void_iface_call_gsharedvt_arg<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T> {
+			t2.foo_gsharedvt_arg (t);
 		}
 	}
 
@@ -1288,6 +1304,25 @@ public class Tests
 		c.constrained_void_iface_call_ref_arg<int, ConsClass> (1, s2);
 		if (!(constrained_res is int) || ((int)constrained_res) != 43)
 			return 4;
+		return 0;
+	}
+
+	public static int test_0_constraine_void_iface_call_gsharedvt_arg () {
+		// This tests constrained calls through interfaces with one gsharedvt arg, like IComparable<T>.CompareTo ()
+		IFaceConstrained c = new ClassConstrained ();
+
+		var s = new ConsStruct<int> ();
+		constrained_res = null;
+		c.constrained_void_iface_call_gsharedvt_arg<int, ConsStruct<int>, int> (42, s, 55);
+		if (!(constrained_res is int) || ((int)constrained_res) != 42)
+			return 1;
+
+		var s2 = new ConsStruct<string> ();
+		constrained_res = null;
+		c.constrained_void_iface_call_gsharedvt_arg<string, ConsStruct<string>, int> ("A", s2, 55);
+		if (!(constrained_res is string) || ((string)constrained_res) != "A")
+			return 2;
+
 		return 0;
 	}
 

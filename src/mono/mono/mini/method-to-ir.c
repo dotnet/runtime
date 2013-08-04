@@ -7602,16 +7602,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						/* The 'Own method' case below */
 					} else if (((cmethod->klass == mono_defaults.object_class) || (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) &&
 							   (MONO_TYPE_IS_VOID (fsig->ret) || fsig->ret->type == MONO_TYPE_I4 || fsig->ret->type == MONO_TYPE_BOOLEAN || fsig->ret->type == MONO_TYPE_STRING) &&
-							   (fsig->param_count == 0 || (fsig->param_count == 1 && MONO_TYPE_IS_REFERENCE (fsig->params [0])))) {
+							   (fsig->param_count == 0 || (fsig->param_count == 1 && (MONO_TYPE_IS_REFERENCE (fsig->params [0]) || mini_is_gsharedvt_type (cfg, fsig->params [0]))))) {
 						MonoInst *args [16];
 
 						/*
-						 * This case handles calls to object:ToString()/Equals()/GetHashCode(), plus some simple interface calls enough to support
-						 * AsyncTaskMethodBuilder.
+						 * This case handles calls to
+						 * - object:ToString()/Equals()/GetHashCode(),
+						 * - System.IComparable<T>:CompareTo()
+						 * - System.IEquatable<T>:Equals ()
+						 * plus some simple interface calls enough to support AsyncTaskMethodBuilder.
 						 */
 
 						args [0] = sp [0];
-						EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
+						if (mono_method_check_context_used (cmethod))
+							args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
+						else
+							EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
 						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
 
 						if (fsig->param_count) {
@@ -7620,11 +7626,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							ins->dreg = alloc_preg (cfg);
 							ins->inst_imm = fsig->param_count * sizeof (mgreg_t);
 							MONO_ADD_INS (cfg->cbb, ins);
-							args [3] = ins;
+							args [4] = ins;
 
-							EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [3]->dreg, 0, sp [1]->dreg);
+							if (mini_is_gsharedvt_type (cfg, fsig->params [0])) {
+								int addr_reg;
+
+								args [3] = emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type (fsig->params [0]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
+
+								EMIT_NEW_VARLOADA_VREG (cfg, ins, sp [1]->dreg, fsig->params [0]);
+								addr_reg = ins->dreg;
+								EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, 0, addr_reg);
+							} else {
+								EMIT_NEW_ICONST (cfg, args [3], 0);
+								EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, 0, sp [1]->dreg);
+							}
 						} else {
 							EMIT_NEW_ICONST (cfg, args [3], 0);
+							EMIT_NEW_ICONST (cfg, args [4], 0);
 						}
 						ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
 						emit_widen = FALSE;

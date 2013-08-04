@@ -1164,6 +1164,9 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 	MonoMethod *m;
 	int vt_slot;
 
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+		mono_raise_exception (mono_get_exception_execution_engine ("Not yet supported."));
+
 	/* Lookup the virtual method */
 	mono_class_setup_vtable (klass);
 	g_assert (klass->vtable);
@@ -1201,12 +1204,17 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  * the arguments to the method in the format used by mono_runtime_invoke ().
  */
 MonoObject*
-mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *args)
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args)
 {
 	MonoMethod *m;
 	gpointer this_arg;
+	gpointer new_args [16];
 
 	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
+	if (args && deref_arg) {
+		new_args [0] = *(gpointer*)args [0];
+		args = new_args;
+	}
 	return mono_runtime_invoke (m, this_arg, args, NULL);
 }
 
