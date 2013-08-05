@@ -15,7 +15,7 @@
 #include <glib.h>
 
 #ifdef _MSC_VER
-#include <Windows.h>
+#include <windows.h>
 #include <intrin.h>
 
 static inline void mono_memory_barrier (void)
@@ -43,7 +43,7 @@ static inline void mono_memory_write_barrier (void)
 	MemoryBarrier ();
 }
 #elif defined(__WIN32__) || defined(_WIN32)
-#include <Windows.h>
+#include <windows.h>
 
 /* Since we only support GCC 3.x in Cygwin for
    some arcane reason, we have to use inline
