@@ -156,13 +156,10 @@ tp_poll_wait (gpointer p)
 	gint maxfd = 1;
 	gint allocated;
 	gint i;
-	MonoInternalThread *thread;
 	tp_poll_data *data;
 	SocketIOData *socket_io_data = p;
 	MonoPtrArray async_results;
 	gint nresults;
-
-	thread = mono_thread_internal_current ();
 
 	data = socket_io_data->event_data;
 	allocated = INITIAL_POLLFD_SIZE;
@@ -183,8 +180,7 @@ tp_poll_wait (gpointer p)
 
 		do {
 			if (nsock == -1) {
-				if (THREAD_WANTS_A_BREAK (thread))
-					mono_thread_interruption_checkpoint ();
+				check_for_interruption_critical ();
 			}
 
 			nsock = mono_poll (pfds, maxfd, -1);

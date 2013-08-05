@@ -152,6 +152,7 @@ static void socket_io_cleanup (SocketIOData *data);
 static MonoObject *get_io_event (MonoMList **list, gint event);
 static int get_events_from_list (MonoMList *list);
 static int get_event_from_state (MonoSocketAsyncResult *state);
+static void check_for_interruption_critical (void);
 
 static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
@@ -1391,25 +1392,62 @@ should_i_die (ThreadPool *tp)
 }
 
 static void
+set_tp_thread_info (ThreadPool *tp)
+{
+	const gchar *name;
+	MonoInternalThread *thread = mono_thread_internal_current ();
+
+	mono_profiler_thread_start (thread->tid);
+	name = (tp->is_io) ? "IO Threadpool worker" : "Threadpool worker";
+	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), name), FALSE);
+}
+
+static void
+clear_thread_state (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	/* If the callee changes the background status, set it back to TRUE */
+	mono_thread_clr_state (thread , ~ThreadState_Background);
+	if (!mono_thread_test_state (thread , ThreadState_Background))
+		ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
+}
+
+static void
+check_for_interruption_critical (void)
+{
+	MonoInternalThread *thread;
+	/*RULE NUMBER ONE OF SKIP_THREAD: NEVER POKE MANAGED STATE.*/
+	mono_gc_set_skip_thread (FALSE);
+
+	thread = mono_thread_internal_current ();
+	if (THREAD_WANTS_A_BREAK (thread))
+		mono_thread_interruption_checkpoint ();
+
+	/*RULE NUMBER TWO OF SKIP_THREAD: READ RULE NUMBER ONE.*/
+	mono_gc_set_skip_thread (TRUE);
+}
+
+static void
+fire_profiler_thread_end (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	mono_profiler_thread_end (thread->tid);
+}
+
+static void
 async_invoke_thread (gpointer data)
 {
 	MonoDomain *domain;
-	MonoInternalThread *thread;
 	MonoWSQ *wsq;
 	ThreadPool *tp;
 	gboolean must_die;
-	const gchar *name;
   
 	tp = data;
 	wsq = NULL;
 	if (!tp->is_io)
 		wsq = add_wsq ();
 
-	thread = mono_thread_internal_current ();
-
-	mono_profiler_thread_start (thread->tid);
-	name = (tp->is_io) ? "IO Threadpool worker" : "Threadpool worker";
-	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), name), FALSE);
+	set_tp_thread_info (tp);
 
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
@@ -1491,10 +1529,7 @@ async_invoke_thread (gpointer data)
 				}
 				mono_thread_pop_appdomain_ref ();
 				InterlockedDecrement (&tp->busy_threads);
-				/* If the callee changes the background status, set it back to TRUE */
-				mono_thread_clr_state (thread , ~ThreadState_Background);
-				if (!mono_thread_test_state (thread , ThreadState_Background))
-					ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
+				clear_thread_state ();
 			}
 		}
 
@@ -1527,8 +1562,7 @@ async_invoke_thread (gpointer data)
 #endif
 				if (mono_runtime_is_shutting_down ())
 					break;
-				if (THREAD_WANTS_A_BREAK (thread))
-					mono_thread_interruption_checkpoint ();
+				check_for_interruption_critical ();
 			}
 			InterlockedDecrement (&tp->waiting);
 
@@ -1565,7 +1599,7 @@ async_invoke_thread (gpointer data)
 						remove_wsq (wsq);
 					}
 
-					mono_profiler_thread_end (thread->tid);
+					fire_profiler_thread_end ();
 
 					if (tp_finish_func)
 						tp_finish_func (tp_hooks_user_data);
