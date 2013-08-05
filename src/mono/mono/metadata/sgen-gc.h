@@ -72,11 +72,46 @@ NurseryClearPolicy sgen_get_nursery_clear_policy (void) MONO_INTERNAL;
  */
 struct _SgenThreadInfo {
 	MonoThreadInfo info;
+	/*
+	This is set to TRUE when STW fails to suspend a thread, most probably because the
+	underlying thread is dead.
+	*/
 	int skip;
 	volatile int in_critical_region;
+
+	/*
+	Since threads can be created concurrently during STW, it's possible to reach a stable
+	state where we find that the world is stopped but there are registered threads that have
+	not been suspended.
+
+	Our hope is that those threads are harmlesly blocked in the GC lock trying to finish registration.
+
+	To handle this scenario we set this field on each thread that have joined the current STW phase.
+	The GC should ignore unjoined threads.
+	*/
 	gboolean joined_stw;
+
+	/*
+	This is set to TRUE by STW when it initiates suspension of a thread.
+	It's used so async suspend can catch the case where a thread is in the middle of unregistering
+	and need to cooperatively suspend itself.
+	*/
 	gboolean doing_handshake;
+
+	/*
+	This is set to TRUE when a thread start to dettach.
+	This gives STW the oportunity to ignore a thread that started to
+	unregister.
+	*/
 	gboolean thread_is_dying;
+
+	/*
+	This is set the argument of mono_gc_set_skip_thread.
+
+	A thread that knowingly holds no managed state can call this
+	function around blocking loops to reduce the GC burden by not
+	been scanned.
+	*/
 	gboolean gc_disabled;
 	void *stack_end;
 	void *stack_start;
@@ -90,11 +125,13 @@ struct _SgenThreadInfo {
 	/* Only used on POSIX platforms */
 	int signal;
 	/* Ditto */
-	unsigned int stop_count; /* to catch duplicate signals */
+	/* FIXME: kill this, we only use signals on systems that have rt-posix, which doesn't have issues with duplicates. */
+	unsigned int stop_count; /* to catch duplicate signals. */
 
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
-	MonoDomain *stopped_domain; /* ditto */
+	MonoDomain *stopped_domain; /* dsto */
 
+	/*FIXME pretty please finish killing ARCH_NUM_REGS */
 #ifdef USE_MONO_CTX
 	MonoContext ctx;		/* ditto */
 #else
