@@ -4334,19 +4334,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 	g_free (names);
 
-	if (cfg->compile_aot) {
-		LLVMValueRef md_args [16];
-		LLVMValueRef md_node;
-		int method_index;
-
-		method_index = mono_aot_get_method_index (cfg->orig_method);
-		md_args [0] = LLVMMDString (method_name, strlen (method_name));
-		md_args [1] = LLVMConstInt (LLVMInt32Type (), method_index, FALSE);
-		md_node = LLVMMDNode (md_args, 2);
-		LLVMAddNamedMetadataOperand (module, "mono.function_indexes", md_node);
-		//LLVMSetMetadata (method, md_kind, LLVMMDNode (&md_arg, 1));
-	}
-
 	max_block_num = 0;
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
 		max_block_num = MAX (max_block_num, bb->block_num);
@@ -4519,6 +4506,19 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		mono_llvm_dump_value (method);
 
 	mark_as_used (module, method);
+
+	if (cfg->compile_aot) {
+		LLVMValueRef md_args [16];
+		LLVMValueRef md_node;
+		int method_index;
+
+		method_index = mono_aot_get_method_index (cfg->orig_method);
+		md_args [0] = LLVMMDString (method_name, strlen (method_name));
+		md_args [1] = LLVMConstInt (LLVMInt32Type (), method_index, FALSE);
+		md_node = LLVMMDNode (md_args, 2);
+		LLVMAddNamedMetadataOperand (module, "mono.function_indexes", md_node);
+		//LLVMSetMetadata (method, md_kind, LLVMMDNode (&md_arg, 1));
+	}
 
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
