@@ -2235,7 +2235,17 @@ decode_moduleid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domai
 static inline MonoMethod*
 decode_methodid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain, int *err)
 {
-	return decode_ptr_id (buf, endbuf, limit, ID_METHOD, domain, err);
+	MonoMethod *m;
+
+	m = decode_ptr_id (buf, endbuf, limit, ID_METHOD, domain, err);
+	if (G_UNLIKELY (log_level >= 2) && m) {
+		char *s;
+
+		s = mono_method_full_name (m, TRUE);
+		DEBUG(2, fprintf (log_file, "[dbg]   recv method [%s]\n", s));
+		g_free (s);
+	}
+	return m;
 }
 
 static inline MonoClassField*
