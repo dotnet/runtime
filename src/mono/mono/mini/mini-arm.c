@@ -2258,6 +2258,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			}
 			break;
 		case MONO_ARM_FPU_VFP:
+		case MONO_ARM_FPU_VFP_HARD:
 			if (ret->type == MONO_TYPE_R8 || ret->type == MONO_TYPE_R4) {
 				MonoInst *ins;
 
