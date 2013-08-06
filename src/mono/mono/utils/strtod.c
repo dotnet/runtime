@@ -2568,6 +2568,7 @@ quorem
  static char *dtoa_result;
 #endif
 
+#if 0
  static char *
 #ifdef KR_headers
 rv_alloc(i) int i;
@@ -2591,7 +2592,6 @@ rv_alloc(int i)
 		(char *)(r+1);
 	}
 
-#if 0
  static char *
 #ifdef KR_headers
 nrv_alloc(s, rve, n) char *s, **rve; int n;
