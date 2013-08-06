@@ -1715,9 +1715,10 @@ mono_main (int argc, char* argv[])
 			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {
 			mono_gc_set_desktop_mode ();
-			/* Put desktop-specific optimizations here */
+			/* Put more desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
-			/* Put server-specific optimizations here */
+			mono_config_set_server_mode (TRUE);
+			/* Put more server-specific optimizations here */
 		} else if (strcmp (argv [i], "--inside-mdb") == 0) {
 			action = DO_DEBUGGER;
 		} else if (strncmp (argv [i], "--wapi=", 7) == 0) {
