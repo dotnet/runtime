@@ -55,11 +55,11 @@ tp_epoll_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 {
 	SocketIOData *socket_io_data;
 	tp_epoll_data *data;
+	struct epoll_event evt;
+	int epoll_op;
 
 	socket_io_data = p;
 	data = socket_io_data->event_data;
-	struct epoll_event evt;
-	int epoll_op;
 
 	memset (&evt, 0, sizeof (evt));
 	evt.data.fd = fd;
