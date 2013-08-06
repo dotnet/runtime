@@ -2444,6 +2444,7 @@ mono_strtod
 	return sign ? -dval(rv) : dval(rv);
 	}
 
+#if 0
  static int
 quorem
 #ifdef KR_headers
@@ -2561,6 +2562,7 @@ quorem
 		}
 	return q;
 	}
+#endif
 
 #ifndef MULTIPLE_THREADS
  static char *dtoa_result;
@@ -2589,6 +2591,7 @@ rv_alloc(int i)
 		(char *)(r+1);
 	}
 
+#if 0
  static char *
 #ifdef KR_headers
 nrv_alloc(s, rve, n) char *s, **rve; int n;
@@ -2629,7 +2632,6 @@ freedtoa(char *s)
 #endif
 	}
 
-#if 0
 /* dtoa for IEEE arithmetic (dmg): convert double to ASCII string.
  *
  * Inspired by "How to Print Floating-Point Numbers Accurately" by
