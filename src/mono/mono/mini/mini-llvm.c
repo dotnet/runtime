@@ -1865,6 +1865,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				LLVMAddGlobalMapping (ee, callee, target);
 			}
 		}
+
+		if (call->method && strstr (call->method->klass->name, "AsyncVoidMethodBuilder"))
+			/* LLVM miscompiles async methods */
+			LLVM_FAILURE (ctx, "#13734");
 	} else if (calli) {
 	} else {
 		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
