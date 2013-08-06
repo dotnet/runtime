@@ -2511,6 +2511,7 @@ static int init_mparams(void) {
   return 0;
 }
 
+#if 0
 /* support for mallopt */
 static int change_mparam(int param_number, int value) {
   size_t val = (size_t)value;
@@ -2533,6 +2534,7 @@ static int change_mparam(int param_number, int value) {
     return 0;
   }
 }
+#endif
 
 #if DEBUG
 /* ------------------------- Debugging Support --------------------------- */
@@ -2844,6 +2846,7 @@ static struct mallinfo internal_mallinfo(mstate m) {
 }
 #endif /* !NO_MALLINFO */
 
+#if 0
 static void internal_malloc_stats(mstate m) {
   if (!PREACTION(m)) {
     size_t maxfp = 0;
@@ -2875,6 +2878,7 @@ static void internal_malloc_stats(mstate m) {
     POSTACTION(m);
   }
 }
+#endif
 
 /* ----------------------- Operations on smallbins ----------------------- */
 
