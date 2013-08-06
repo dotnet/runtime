@@ -4441,7 +4441,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	MonoDebugSourceLocation **locs = NULL;
 	gboolean skip, direct_call, external_call;
 	guint32 got_slot;
-	const char *direct_call_target;
+	const char *direct_call_target = 0;
 	const char *direct_pinvoke;
 
 	if (method) {

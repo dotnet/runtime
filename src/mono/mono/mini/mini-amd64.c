@@ -5713,7 +5713,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CARD_TABLE_WBARRIER: {
 			int ptr = ins->sreg1;
 			int value = ins->sreg2;
-			guchar *br;
+			guchar *br = 0;
 			int nursery_shift, card_table_shift;
 			gpointer card_table_mask;
 			size_t nursery_size;
@@ -5778,6 +5778,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_membase (code, X86_ADD, AMD64_RDX, AMD64_RIP, 0);
 
 			amd64_mov_membase_imm (code, AMD64_RDX, 0, 1, 1);
+
 			if (mono_gc_card_table_nursery_check ())
 				x86_patch (br, code);
 			break;
