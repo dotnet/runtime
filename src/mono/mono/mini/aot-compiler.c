@@ -8473,8 +8473,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	TV_DECLARE (btv);
 
 #if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED) || !defined(MONO_EXTENSIONS)
-	fprintf (stderr, "-O=gsharedvt not supported on this platform.\n");
-	exit (1);
+	if (acfg->opts & MONO_OPT_GSHAREDVT) {
+		fprintf (stderr, "-O=gsharedvt not supported on this platform.\n");
+		exit (1);
+	}
 #endif
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
