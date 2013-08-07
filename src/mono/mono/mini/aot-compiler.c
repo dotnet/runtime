@@ -3703,6 +3703,8 @@ has_type_vars (MonoClass *klass)
 					return TRUE;
 		}
 	}
+	if (klass->generic_container)
+		return TRUE;
 	return FALSE;
 }
 
@@ -3831,6 +3833,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
+		if ((acfg->opts & MONO_OPT_GSHAREDVT) && method->is_inflated && mono_method_get_context (method)->method_inst) {
+			/*
+			 * This is partial sharing, and we can't handle it yet
+			 */
+			continue;
+		}
+		
 		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt))
 			/* Already added */
 			continue;

@@ -1345,6 +1345,21 @@ public class Tests
 	}
 }
 
+// #13191
+public class MobileServiceCollection<TTable, TCol>
+{
+	public async Task<int> LoadMoreItemsAsync(int count = 0) {
+		await Task.Delay (1000);
+		int results = await ProcessQueryAsync ();
+		return results;
+	}
+
+	protected async virtual Task<int> ProcessQueryAsync() {
+		await Task.Delay (1000);
+		throw new Exception ();
+	}
+}
+
 #if !MOBILE
 public class GSharedTests : Tests {
 }
