@@ -814,10 +814,12 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 static __inline__ __attribute__((always_inline))
 /* This is not defined by gcc */
 unsigned long long
-__readfsdword (unsigned long long offset)
+__readfsdword (unsigned long offset)
 {
-	unsigned long long value;
-	__asm__("movl %%fs:%a[offset], %k[value]" : [value] "=q" (value) : [offset] "irm" (offset));
+	unsigned long value;
+	//	__asm__("movl %%fs:%a[offset], %k[value]" : [value] "=q" (value) : [offset] "irm" (offset));
+   __asm__ volatile ("movl    %%fs:%1,%0"
+     : "=r" (value) ,"=m" ((*(volatile long *) offset)));
 	return value;
 }
 #endif

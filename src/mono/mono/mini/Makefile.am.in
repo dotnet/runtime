@@ -117,6 +117,9 @@ noinst_SCRIPTS = mono
 mono: mono-$(mono_bin_suffix)
 	ln -sf $< $@
 
+mono.exe: mono-$(mono_bin_suffix).exe
+	ln -sf $< $@
+
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && ln -sf mono-$(mono_bin_suffix) mono)
 	(cd $(DESTDIR)$(libdir); for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
@@ -236,7 +239,7 @@ MONO_LIB=$(boehm_static_libraries)
 MONO_SGEN_LIB=$(sgen_static_libraries)
 else 
 MONO_LIB=libmonoboehm-2.0.la
-MONO_LIBLIB=libmonosgen-2.0.la
+MONO_SGEN_LIB=libmonosgen-2.0.la
 endif
 
 if LOADED_LLVM

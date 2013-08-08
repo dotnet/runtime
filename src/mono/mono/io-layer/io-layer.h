@@ -24,7 +24,13 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <winbase.h>
+/*
+ * The mingw version says:
+ * /usr/i686-pc-mingw32/sys-root/mingw/include/ws2tcpip.h:38:2: error: #error "ws2tcpip.h is not compatible with winsock.h. Include winsock2.h instead."
+ */
+#ifdef _MSC_VER
 #include <ws2tcpip.h>
+#endif
 #include <psapi.h>
 #include <shlobj.h>
 #include <mswsock.h>
