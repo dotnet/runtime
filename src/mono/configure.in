@@ -105,22 +105,6 @@ case "$host" in
 			if test "x$host" == "x$build" -a "x$host" == "x$target"; then
 				AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 			fi
-			#
-			# gcc-3/g++-3 are from the gcc-core/gcc-g++ cygwin packages.
-			# Other gcc packages will not work:
-			# - the gcc-4 packages no longer support -mno-cygwin
-			# - the mingw-gcc packages produce executables which depends on a libgcc<...>
-			# dll, which means we would have to distribute that file too.
-			#
-			if test "x$CC" != "x"; then
-				AC_ERROR(Don't set CC. mono can only be compiled with gcc-3 from the 'gcc-core' package)
-			fi
-			CC="gcc-3.exe -mno-cygwin -g"
-			CXX="g++-3.exe -mno-cygwin -g"
-			# So libgc configure gets -mno-cygwin
-			export CC
-			export CXX
-			CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -mno-cygwin"
 		else
 			target_win32=yes
 			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32/MinGW])
@@ -491,6 +475,12 @@ AC_TRY_LINK([#include <math.h>], [
 	# We'll have to use signals
 	AC_MSG_RESULT(no)
 ])
+# mingw
+AC_CHECK_FUNCS(_finite, , AC_MSG_CHECKING(for _finite in math.h)
+	AC_TRY_LINK([#include <math.h>], 
+	[ _finite(0.0); ], 
+	AC_DEFINE(HAVE__FINITE, 1, [Have _finite in -lm]) AC_MSG_RESULT(yes),
+	AC_MSG_RESULT(no)))
 
 # for Linux statfs support
 AC_CHECK_HEADERS(linux/magic.h)
@@ -2492,7 +2482,7 @@ case "$host" in
 			have_visibility_hidden=no
 			sgen_supported=true
 			;;
-		  cygwin*)
+		  mingw*|cygwin*)
 			sgen_supported=true
 			have_visibility_hidden=no		  
 			;;
