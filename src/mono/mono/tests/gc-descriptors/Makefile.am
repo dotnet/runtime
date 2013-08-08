@@ -14,3 +14,6 @@ descriptor-tests.cs : descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-
 	$(srcdir)/gen-descriptor-tests.py >descriptor-tests.cs
 
 EXTRA_DIST = descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-descriptor-tests.py
+
+.DELETE_ON_ERROR:
+
