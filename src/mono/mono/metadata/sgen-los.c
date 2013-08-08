@@ -568,7 +568,11 @@ sgen_los_object_size (LOSObject *obj)
 LOSObject*
 sgen_los_header_for_object (char *data)
 {
+#if _MSC_VER
+	return (LOSObject*)(data - (int)(&(((LOSObject*)0)->data)));
+#else
 	return (LOSObject*)(data - sizeof (LOSObject));
+#endif
 }
 
 void
