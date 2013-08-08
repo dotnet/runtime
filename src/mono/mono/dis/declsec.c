@@ -17,6 +17,7 @@
 #include "mono/utils/mono-compiler.h"
 
 #include "declsec.h"
+#include "util.h"
 
 static char*
 declsec_20_get_classname (const char* p, const char **rptr)
@@ -113,12 +114,12 @@ declsec_20_write_value (GString *str, char type, const char *value)
 		float val;
 		int inf;
 		readr4 (value, &val);
-		inf = isinf (val);
+		inf = dis_isinf (val);
 		if (inf == -1) 
 			g_string_append_printf (str, "0xFF800000"); /* negative infinity */
 		else if (inf == 1)
 			g_string_append_printf (str, "0x7F800000"); /* positive infinity */
-		else if (isnan (val))
+		else if (dis_isnan (val))
 			g_string_append_printf (str, "0xFFC00000"); /* NaN */
 		else
 			g_string_append_printf (str, "%.8g", val);
@@ -128,7 +129,7 @@ declsec_20_write_value (GString *str, char type, const char *value)
 		double val;
 		int inf;
 		readr8 (value, &val);
-		inf = isinf (val);
+		inf = dis_isinf (val);
 		if (inf == -1) 
 			g_string_append_printf (str, "0xFFF00000000000000"); /* negative infinity */
 		else if (inf == 1)

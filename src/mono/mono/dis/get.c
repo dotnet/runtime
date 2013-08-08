@@ -2310,7 +2310,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 #ifdef HAVE_ISFINITE
 		normal = isfinite (r);
 #else
-		normal = isnormal (r);
+		normal = !dis_isinf (r) && !dis_isnan (r);
 #endif
 		if (!normal) {
 			return g_strdup_printf ("float32(0x%08x)", read32 (ptr));

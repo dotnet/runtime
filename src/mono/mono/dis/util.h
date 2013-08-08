@@ -8,3 +8,5 @@ const char *flags     (guint32 code, dis_map_t *table);
 void        hex_dump  (const char *buffer, int base, int count);
 char*       data_dump (const char *data, int len, const char* prefix);
 
+extern int dis_isinf (double num);
+extern int dis_isnan (double num);

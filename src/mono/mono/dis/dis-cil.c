@@ -17,34 +17,10 @@
 #include "get.h"
 #include "dump.h"
 #include "dis-cil.h"
+#include "util.h"
 #include "mono/metadata/opcodes.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-compiler.h"
-
-#ifndef HAVE_ISINF
-
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-int isinf (double);
-int
-isinf (double num)
-{
-	fpclass_t klass;
-
-	klass = fpclass (num);
-	if (klass == FP_NINF)
-		return -1;
-
-	if (klass == FP_PINF)
-		return 1;
-
-	return 0;
-}
-#else
-#error "Don't know how to implement isinf for this platform."
-#endif
-
-#endif
 
 #define CODE_INDENT g_assert (indent_level < 512); \
 	indent[indent_level*2] = ' ';	\
@@ -191,12 +167,12 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContainer *conta
 			double r;
 			int inf;
 			readr8 (ptr, &r);
-			inf = isinf (r);
+			inf = dis_isinf (r);
 			if (inf == -1) 
 				fprintf (output, "(00 00 00 00 00 00 f0 ff)"); /* negative infinity */
 			else if (inf == 1)
 				fprintf (output, "(00 00 00 00 00 00 f0 7f)"); /* positive infinity */
-			else if (isnan (r))
+			else if (dis_isnan (r))
 				fprintf (output, "(00 00 00 00 00 00 f8 ff)"); /* NaN */
 			else {
 				char *str = stringify_double (r);
@@ -300,12 +276,12 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContainer *conta
 			
 			readr4 (ptr, &f);
 
-			inf = isinf (f);
+			inf = dis_isinf (f);
 			if (inf == -1) 
 				fprintf (output, "(00 00 80 ff)"); /* negative infinity */
 			else if (inf == 1)
 				fprintf (output, "(00 00 80 7f)"); /* positive infinity */
-			else if (isnan (f))
+			else if (dis_isnan (f))
 				fprintf (output, "(00 00 c0 ff)"); /* NaN */
 			else {
 				char *str = stringify_double ((double) f);

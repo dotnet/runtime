@@ -21,14 +21,6 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-compiler.h"
 
-#ifndef HAVE_ISINF
-
-#ifdef HAVE_IEEEFP_H
-extern int isinf (double);
-#endif
-
-#endif
-
 #if defined(__native_client__) && defined(__GLIBC__)
 volatile int __nacl_thread_suspension_needed = 0;
 void __nacl_suspend_thread_if_needed() {}
@@ -870,12 +862,12 @@ handle_enum:
 			float val;
 			int inf;
 			readr4 (p, &val);
-			inf = isinf (val);
+			inf = dis_isinf (val);
 			if (inf == -1) 
 				g_string_append_printf (res, "(00 00 80 ff)"); /* negative infinity */
 			else if (inf == 1)
 				g_string_append_printf (res, "(00 00 80 7f)"); /* positive infinity */
-			else if (isnan (val))
+			else if (dis_isnan (val))
 				g_string_append_printf (res, "(00 00 c0 ff)"); /* NaN */
 			else
 				g_string_append_printf (res, "%g", val);
@@ -887,7 +879,7 @@ handle_enum:
 			int inf;
 			
 			readr8 (p, &val);
-			inf = isinf (val);
+			inf = dis_isinf (val);
 			if (inf == -1) 
 				g_string_append_printf (res, "(00 00 00 00 00 00 f0 ff)"); /* negative infinity */
 			else if (inf == 1)
