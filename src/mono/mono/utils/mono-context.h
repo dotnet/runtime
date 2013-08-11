@@ -121,7 +121,7 @@ typedef struct {
 	: "a" (&(ctx))  \
 	: "memory")
 
-#if !defined(HOST_WIN32)
+#ifndef _MSC_VER
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 #endif
 

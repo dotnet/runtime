@@ -60,6 +60,17 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->stopped_ip = (gpointer)context.Eip;
 	info->stack_start = (char*)context.Esp - REDZONE_SIZE;
 
+#ifdef USE_MONO_CTX
+	memset (&info->ctx, 0, sizeof (MonoContext));
+	info->ctx.edi = context.Edi;
+	info->ctx.esi = context.Esi;
+	info->ctx.ebx = context.Ebx;
+	info->ctx.edx = context.Edx;
+	info->ctx.ecx = context.Ecx;
+	info->ctx.eax = context.Eax;
+	info->ctx.ebp = context.Ebp;
+	info->ctx.esp = context.Esp;
+#else
 	info->regs [0] = context.Edi;
 	info->regs [1] = context.Esi;
 	info->regs [2] = context.Ebx;
@@ -68,6 +79,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->regs [5] = context.Eax;
 	info->regs [6] = context.Ebp;
 	info->regs [7] = context.Esp;
+#endif
 
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
