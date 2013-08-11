@@ -34,6 +34,7 @@ $| = 0;
 print "Testing $test... ";
 
 foreach $disabled (split (/ /, $disabled_tests)) {
+	$disabled =~ s/^\s+|\s+$//g;
 	if ($disabled eq $test) {
 		print "disabled.\n";
 		exit (0);
