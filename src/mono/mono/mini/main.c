@@ -94,7 +94,7 @@ mono_main_with_options (int argc, char *argv [])
 #ifdef HOST_WIN32
 
 int
-main ()
+main (void)
 {
 	int argc;
 	gunichar2** argvw;

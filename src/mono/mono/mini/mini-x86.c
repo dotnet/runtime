@@ -37,7 +37,10 @@
 
 /* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
+static gint jit_tls_offset = -1;
+#ifndef TARGET_WIN32
 static gint lmf_addr_tls_offset = -1;
+#endif
 static gint appdomain_tls_offset = -1;
 
 #ifdef MONO_XEN_OPT
@@ -5127,16 +5130,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			 * This is performance critical so we try to use some tricks to make
 			 * it fast.
 			 */									   
+			gboolean have_fastpath = FALSE;
 
-			if (lmf_addr_tls_offset != -1) {
-				/* Load lmf quicky using the GS register */
-				code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
 #ifdef TARGET_WIN32
-				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
-				/* FIXME: Add a separate key for LMF to avoid this */
+			if (jit_tls_offset != -1) {
+				code = mono_x86_emit_tls_get (code, X86_EAX, jit_tls_offset);				
 				x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+				have_fastpath = TRUE;
+			}
+#else
+			if (lmf_addr_tls_offset != -1) {
+				code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
+				have_fastpath = TRUE;
+			}
 #endif
-			} else {
+			if (!have_fastpath) {
 				if (cfg->compile_aot)
 					code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
 				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
@@ -5634,13 +5642,13 @@ mono_arch_finish_init (void)
 		 * be initialized yet.
 		 */
 		appdomain_tls_offset = mono_domain_get_tls_key ();
-		lmf_tls_offset = mono_get_jit_tls_key ();
+		jit_tls_offset = mono_get_jit_tls_key ();
 
 		/* Only 64 tls entries can be accessed using inline code */
 		if (appdomain_tls_offset >= 64)
 			appdomain_tls_offset = -1;
-		if (lmf_tls_offset >= 64)
-			lmf_tls_offset = -1;
+		if (jit_tls_offset >= 64)
+			jit_tls_offset = -1;
 #else
 #if MONO_XEN_OPT
 		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
@@ -6610,7 +6618,7 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 #ifdef TARGET_WIN32
 	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;	/* Sometimes the address is off by 4 */
 
-	if ((einfo->ExceptionInformation[1] >= ss_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)ss_trigger_page + 128))
+	if (((gpointer)einfo->ExceptionInformation[1] >= ss_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)ss_trigger_page + 128))
 		return TRUE;
 	else
 		return FALSE;
@@ -6629,7 +6637,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
 #ifdef TARGET_WIN32
 	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;	/* Sometimes the address is off by 4 */
-	if ((einfo->ExceptionInformation[1] >= bp_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)bp_trigger_page + 128))
+	if (((gpointer)einfo->ExceptionInformation[1] >= bp_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)bp_trigger_page + 128))
 		return TRUE;
 	else
 		return FALSE;
