@@ -28,7 +28,7 @@ class Program
         // ThreadPool has been shutdown, thus `a.BeginInvoke()` has no effect.
         Action a = () => {
             int i = 0;
-            while (true)
+			while (i < 1024)
                 Console.WriteLine ("Ha! {0}", i++);
         };
         a.BeginInvoke (null, null);
