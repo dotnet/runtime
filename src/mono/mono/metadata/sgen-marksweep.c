@@ -1893,6 +1893,14 @@ major_have_computer_minor_collection_allowance (void)
 		void **empty_block_arr;
 		void **rebuild_next;
 
+#ifdef TARGET_WIN32
+		/*
+		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
+		 * a VirtualAlloc ()-ed block.
+		 */
+		return;
+#endif
+
 		if (num_empty_blocks <= section_reserve)
 			return;
 		SGEN_ASSERT (0, num_empty_blocks > 0, "section reserve can't be negative");
