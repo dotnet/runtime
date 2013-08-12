@@ -61,6 +61,7 @@ namespace Mono.Linker.Steps {
 			CopyConfigFileIfNeeded (assembly, directory);
 
 			switch (Annotations.GetAction (assembly)) {
+			case AssemblyAction.Save:
 			case AssemblyAction.Link:
 				assembly.Write (GetAssemblyFileName (assembly, directory), SaveSymbols (assembly));
 				break;

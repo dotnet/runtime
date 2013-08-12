@@ -100,6 +100,13 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				references.RemoveAt (i);
+				// Removing the reference does not mean it will be saved back to disk!
+				// That depends on the AssemblyAction set for the `assembly`
+				if (Annotations.GetAction (assembly) == AssemblyAction.Copy) {
+					// Copy means even if "unlinked" we still want that assembly to be saved back 
+					// to disk (OutputStep) without the (removed) reference
+					Annotations.SetAction (assembly, AssemblyAction.Save);
+				}
 				return;
 			}
 		}

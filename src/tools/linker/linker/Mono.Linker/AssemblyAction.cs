@@ -29,9 +29,18 @@
 namespace Mono.Linker {
 
 	public enum AssemblyAction {
+		// Ignore the assembly
 		Skip,
+		// Copy the existing files, assembly and symbols, into the output destination. E.g. .dll and .mdb
+		// The linker still analyze the assemblies (to know what they require) but does not modify them
 		Copy,
+		// Link the assembly
 		Link,
+		// Remove the assembly from the output
 		Delete,
+		// Save the assembly/symbols in memory without linking it. 
+		// E.g. useful to remove unneeded assembly references (as done in SweepStep), 
+		//  resolving [TypeForwardedTo] attributes (like PCL) to their final location
+		Save
 	}
 }
