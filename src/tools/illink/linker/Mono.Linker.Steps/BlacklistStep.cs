@@ -26,7 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections;
 using System.IO;
 using System.Reflection;
 using System.Xml.XPath;
@@ -54,7 +53,7 @@ namespace Mono.Linker.Steps {
 
 		static string GetAssemblyName (string descriptor)
 		{
-			int pos = descriptor.LastIndexOf (".");
+			int pos = descriptor.LastIndexOf ('.');
 			if (pos == -1)
 				return descriptor;
 
