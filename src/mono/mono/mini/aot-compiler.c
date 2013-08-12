@@ -8057,6 +8057,7 @@ emit_file_info (MonoAotCompile *acfg)
 		}
 		acfg->static_linking_symbol = g_strdup (symbol);
 		emit_global_inner (acfg, symbol, FALSE);
+		emit_alignment (acfg, sizeof (gpointer));
 		emit_label (acfg, symbol);
 		emit_pointer_2 (acfg, acfg->user_symbol_prefix, "mono_aot_file_info");
 	}
