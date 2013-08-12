@@ -396,7 +396,12 @@ get_darwin_locale (void)
 {
 	static gchar *darwin_locale = NULL;
 	CFLocaleRef locale = NULL;
+	CFStringRef locale_language = NULL;
+	CFStringRef locale_country = NULL;
+	CFStringRef locale_script = NULL;
 	CFStringRef locale_cfstr = NULL;
+	CFIndex bytes_converted;
+	CFIndex bytes_written;
 	CFIndex len;
 	int i;
 
@@ -406,21 +411,51 @@ get_darwin_locale (void)
 	locale = CFLocaleCopyCurrent ();
 
 	if (locale) {
-		locale_cfstr = CFLocaleGetIdentifier (locale);
+		locale_language = CFLocaleGetValue (locale, kCFLocaleLanguageCode);
+		if (locale_language != NULL && CFStringGetBytes(locale_language, CFRangeMake (0, CFStringGetLength (locale_language)), kCFStringEncodingMacRoman, 0, FALSE, NULL, 0, &bytes_converted) > 0) {
+			len = bytes_converted + 1;
 
-		if (locale_cfstr) {
-			len = CFStringGetMaximumSizeForEncoding (CFStringGetLength (locale_cfstr), kCFStringEncodingMacRoman) + 1;
-			darwin_locale = (char *) malloc (len);
-			if (!CFStringGetCString (locale_cfstr, darwin_locale, len, kCFStringEncodingMacRoman)) {
-				free (darwin_locale);
-				CFRelease (locale);
-				darwin_locale = NULL;
-				return NULL;
+			locale_country = CFLocaleGetValue (locale, kCFLocaleCountryCode);
+			if (locale_country != NULL && CFStringGetBytes (locale_country, CFRangeMake (0, CFStringGetLength (locale_country)), kCFStringEncodingMacRoman, 0, FALSE, NULL, 0, &bytes_converted) > 0) {
+				len += bytes_converted + 1;
+
+				locale_script = CFLocaleGetValue (locale, kCFLocaleScriptCode);
+				if (locale_script != NULL && CFStringGetBytes (locale_script, CFRangeMake (0, CFStringGetLength (locale_script)), kCFStringEncodingMacRoman, 0, FALSE, NULL, 0, &bytes_converted) > 0) {
+					len += bytes_converted + 1;
+				}
+
+				darwin_locale = (char *) malloc (len + 1);
+				CFStringGetBytes (locale_language, CFRangeMake (0, CFStringGetLength (locale_language)), kCFStringEncodingMacRoman, 0, FALSE, (UInt8 *) darwin_locale, len, &bytes_converted);
+
+				darwin_locale[bytes_converted] = '-';
+				bytes_written = bytes_converted + 1;
+				if (locale_script != NULL && CFStringGetBytes (locale_script, CFRangeMake (0, CFStringGetLength (locale_script)), kCFStringEncodingMacRoman, 0, FALSE, (UInt8 *) &darwin_locale[bytes_written], len - bytes_written, &bytes_converted) > 0) {
+					darwin_locale[bytes_written + bytes_converted] = '-';
+					bytes_written += bytes_converted + 1;
+				}
+
+				CFStringGetBytes (locale_country, CFRangeMake (0, CFStringGetLength (locale_country)), kCFStringEncodingMacRoman, 0, FALSE, (UInt8 *) &darwin_locale[bytes_written], len - bytes_written, &bytes_converted);
+				darwin_locale[bytes_written + bytes_converted] = NULL;
 			}
+		}
 
-			for (i = 0; i < strlen (darwin_locale); i++)
-				if (darwin_locale [i] == '_')
-					darwin_locale [i] = '-';
+		if (darwin_locale == NULL) {
+			locale_cfstr = CFLocaleGetIdentifier (locale);
+
+			if (locale_cfstr) {
+				len = CFStringGetMaximumSizeForEncoding (CFStringGetLength (locale_cfstr), kCFStringEncodingMacRoman) + 1;
+				darwin_locale = (char *) malloc (len);
+				if (!CFStringGetCString (locale_cfstr, darwin_locale, len, kCFStringEncodingMacRoman)) {
+					free (darwin_locale);
+					CFRelease (locale);
+					darwin_locale = NULL;
+					return NULL;
+				}
+
+				for (i = 0; i < strlen (darwin_locale); i++)
+					if (darwin_locale [i] == '_')
+						darwin_locale [i] = '-';
+			}			
 		}
 
 		CFRelease (locale);
