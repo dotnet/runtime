@@ -378,10 +378,18 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_FCALL_MEMBASE:
 		if (IS_VFP) {
 			if (((MonoCallInst*)ins)->signature->ret->type == MONO_TYPE_R4) {
-				ARM_FMSR (code, ins->dreg, ARMREG_R0);
-				ARM_CVTS (code, ins->dreg, ins->dreg);
+				if (IS_HARD_FLOAT) {
+					ARM_CVTS (code, ins->dreg, ARM_VFP_F0);
+				} else {
+					ARM_FMSR (code, ins->dreg, ARMREG_R0);
+					ARM_CVTS (code, ins->dreg, ins->dreg);
+				}
 			} else {
-				ARM_FMDRR (code, ARMREG_R0, ARMREG_R1, ins->dreg);
+				if (IS_HARD_FLOAT) {
+					ARM_CPYD (code, ins->dreg, ARM_VFP_D0);
+				} else {
+					ARM_FMDRR (code, ARMREG_R0, ARMREG_R1, ins->dreg);
+				}
 			}
 		}
 		break;
@@ -1431,9 +1439,13 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			cinfo->ret.storage = RegTypeFP;
-			cinfo->ret.reg = ARMREG_R0;
-			/* FIXME: cinfo->ret.reg = ???;
-			cinfo->ret.storage = RegTypeFP;*/
+
+			if (IS_HARD_FLOAT) {
+				cinfo->ret.reg = ARM_VFP_F0;
+			} else {
+				cinfo->ret.reg = ARMREG_R0;
+			}
+
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (simpletype)) {
@@ -4816,9 +4828,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SETFRET:
 			if (mono_method_signature (cfg->method)->ret->type == MONO_TYPE_R4) {
 				ARM_CVTD (code, ARM_VFP_F0, ins->sreg1);
-				ARM_FMRS (code, ARMREG_R0, ARM_VFP_F0);
+
+				if (!IS_HARD_FLOAT) {
+					ARM_FMRS (code, ARMREG_R0, ARM_VFP_F0);
+				}
 			} else {
-				ARM_FMRRD (code, ARMREG_R0, ARMREG_R1, ins->sreg1);
+				if (IS_HARD_FLOAT) {
+					ARM_CPYD (code, ARM_VFP_D0, ins->sreg1);
+				} else {
+					ARM_FMRRD (code, ARMREG_R0, ARMREG_R1, ins->sreg1);
+				}
 			}
 			break;
 		case OP_FCONV_TO_I1:
