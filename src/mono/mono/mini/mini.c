@@ -5972,6 +5972,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
 	gpointer code, p;
+	MonoJitInfo *ji;
 	MonoJitICallInfo *callinfo = NULL;
 	WrapperInfo *winfo = NULL;
 
@@ -6037,6 +6038,16 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 	code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
 	if (!code)
 		return NULL;
+
+	if (method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER || method->wrapper_type == MONO_WRAPPER_ALLOC) {
+		MonoDomain *d;
+
+		/*
+		 * SGEN requires the JIT info for these methods to be registered, see is_ip_in_managed_allocator ().
+		 */
+		ji = mini_jit_info_table_find (mono_domain_get (), code, &d);
+		g_assert (ji);
+	}
 
 	p = mono_create_ftnptr (target_domain, code);
 

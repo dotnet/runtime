@@ -625,6 +625,8 @@ int mono_framework_version (void) MONO_INTERNAL;
 
 void mono_reflection_cleanup_domain (MonoDomain *domain) MONO_INTERNAL;
 
-void mono_assembly_cleanup_domain_bindings (guint32 domain_id) MONO_INTERNAL;;
+void mono_assembly_cleanup_domain_bindings (guint32 domain_id) MONO_INTERNAL;
+
+MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
