@@ -4493,8 +4493,8 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 			mono_debug_symfile_free_location (loc);
 		}
 
-#ifdef MONO_ARCH_AOT_SUPPORTED
 		skip = FALSE;
+#ifdef MONO_ARCH_AOT_SUPPORTED
 		if (patch_info && (patch_info->ip.i == i) && (pindex < patches->len)) {
 			start_index = pindex;
 

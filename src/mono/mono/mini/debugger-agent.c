@@ -3494,6 +3494,7 @@ event_to_string (EventKind event)
 	case EVENT_KIND_USER_LOG: return "USER_LOG";
 	default:
 		g_assert_not_reached ();
+		return "";
 	}
 }
 
