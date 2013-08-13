@@ -174,7 +174,7 @@ gsize
 g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
 	 gchar **outbytes, gsize *outbytesleft)
 {
-	size_t inleft, outleft;
+	gsize inleft, outleft;
 	char *inptr, *outptr;
 	gunichar c;
 	int rc = 0;
@@ -183,18 +183,24 @@ g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
 	if (cd->cd != (iconv_t) -1) {
 		/* Note: gsize may have a different size than size_t, so we need to
 		   remap inbytesleft and outbytesleft to size_t's. */
-		size_t *outleftptr;
+		size_t *outleftptr, *inleftptr;
+		size_t n_outleft, n_inleft;
+		
+		if (inbytesleft) {
+			n_inleft = *inbytesleft;
+			inleftptr = &n_inleft;
+		} else {
+			inleftptr = NULL;
+		}
 		
 		if (outbytesleft) {
-			outleft = *outbytesleft;
-			outleftptr = &outleft;
+			n_outleft = *outbytesleft;
+			outleftptr = &n_outleft;
 		} else {
 			outleftptr = NULL;
 		}
 		
-		inleft = inbytesleft ? *inbytesleft : 0;
-		
-		return iconv (cd->cd, inbytes, &inleft, outbytes, outleftptr);
+		return iconv (cd->cd, inbytes, inleftptr, outbytes, outleftptr);
 	}
 #endif
 	
@@ -654,7 +660,7 @@ gchar *
 g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *from_charset,
 	   gsize *bytes_read, gsize *bytes_written, GError **err)
 {
-	size_t outsize, outused, outleft, inleft, grow, rc;
+	gsize outsize, outused, outleft, inleft, grow, rc;
 	char *result, *outbuf, *inbuf;
 	gboolean flush = FALSE;
 	gboolean done = FALSE;
@@ -690,7 +696,7 @@ g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *f
 		else
 			rc = g_iconv (cd, NULL, NULL, &outbuf, &outleft);
 		
-		if (rc == (size_t) -1) {
+		if (rc == (gsize) -1) {
 			switch (errno) {
 			case E2BIG:
 				/* grow our result buffer */
