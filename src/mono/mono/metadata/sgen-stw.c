@@ -58,7 +58,7 @@ static void
 update_current_thread_stack (void *start)
 {
 	int stack_guard = 0;
-#if !defined(USE_MONO_CTX) && !defined(_MSC_VER)
+#if !defined(USE_MONO_CTX)
 	void *reg_ptr = cur_thread_regs;
 #endif
 	SgenThreadInfo *info = mono_thread_info_current ();
@@ -71,13 +71,8 @@ update_current_thread_stack (void *start)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, NULL, &info->ctx);
 #else
-#ifdef _MSC_VER
-	ARCH_STORE_REGS (cur_thread_regs);
-	memcpy (&info->regs, cur_thread_regs, sizeof (info->regs));
-#else
 	ARCH_STORE_REGS (reg_ptr);
 	memcpy (&info->regs, reg_ptr, sizeof (info->regs));
-#endif
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, NULL, NULL);
 #endif

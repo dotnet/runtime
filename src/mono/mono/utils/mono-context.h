@@ -105,6 +105,24 @@ typedef struct {
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
 /*We set EAX to zero since we are clobering it anyway*/
+#ifdef _MSC_VER
+#define MONO_CONTEXT_GET_CURRENT(ctx) do { \
+	void *_ptr = &(ctx);												\
+	__asm {																\
+	 __asm mov eax, _ptr												\
+	 __asm mov [eax+0x00], eax											\
+	 __asm mov [eax+0x04], ebx											\
+	 __asm mov [eax+0x08], ecx											\
+	 __asm mov [eax+0x0c], edx											\
+	 __asm mov [eax+0x10], ebp											\
+	 __asm mov [eax+0x14], esp											\
+	 __asm mov [eax+0x18], esi											\
+	 __asm mov [eax+0x1c], edi											\
+	 __asm call $+5														\
+	 __asm pop dword ptr [eax+0x20]										\
+		 }																\
+	} while (0)
+#else
 #define MONO_CONTEXT_GET_CURRENT(ctx) \
 	__asm__ __volatile__(   \
 	"movl $0x0, 0x00(%0)\n" \
@@ -120,10 +138,9 @@ typedef struct {
 	:	\
 	: "a" (&(ctx))  \
 	: "memory")
-
-#ifndef _MSC_VER
-#define MONO_ARCH_HAS_MONO_CONTEXT 1
 #endif
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
 
 #elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
 

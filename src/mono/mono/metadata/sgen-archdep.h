@@ -44,32 +44,7 @@
 #ifdef MONO_ARCH_HAS_MONO_CONTEXT
 #define USE_MONO_CTX
 #else
-#ifdef _MSC_VER
-#define ARCH_STORE_REGS(ptr) __asm {	\
-		__asm mov [ptr], edi \
-		__asm mov [ptr+4], esi \
-		__asm mov [ptr+8], ebx \
-		__asm mov [ptr+12], edx \
-		__asm mov [ptr+16], ecx \
-		__asm mov [ptr+20], eax \
-		__asm mov [ptr+24], ebp \
-		__asm mov [ptr+28], esp \
-	}
-#else
-#define ARCH_STORE_REGS(ptr)	\
-	__asm__ __volatile__(	\
-		"mov %%edi,0(%0)\n"	\
-		"mov %%esi,4(%0)\n"	\
-		"mov %%ebx,8(%0)\n"	\
-		"mov %%edx,12(%0)\n"	\
-		"mov %%ecx,16(%0)\n"	\
-		"mov %%eax,20(%0)\n"	\
-		"mov %%ebp,24(%0)\n"	\
-		"mov %%esp,28(%0)\n"	\
-		:			\
-		: "r" (ptr)	\
-	)
-#endif
+#error 0
 #endif
 
 /*FIXME, move this to mono-sigcontext as this is generaly useful.*/
