@@ -235,9 +235,8 @@ g_string_truncate (GString *string, gsize len)
 	g_return_val_if_fail (string != NULL, string);
 
 	/* Silent return */
-	if (len < 0 || len >= string->len) {
+	if (len >= string->len)
 		return string;
-	}
 	
 	string->len = len;
 	string->str[len] = 0;

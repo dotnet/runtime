@@ -180,8 +180,22 @@ g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
 	int rc = 0;
 	
 #ifdef HAVE_ICONV
-	if (cd->cd != (iconv_t) -1)
-		return iconv (cd->cd, inbytes, inbytesleft, outbytes, outbytesleft);
+	if (cd->cd != (iconv_t) -1) {
+		/* Note: gsize may have a different size than size_t, so we need to
+		   remap inbytesleft and outbytesleft to size_t's. */
+		size_t *outleftptr;
+		
+		if (outbytesleft) {
+			outleft = *outbytesleft;
+			outleftptr = &outleft;
+		} else {
+			outleftptr = NULL;
+		}
+		
+		inleft = inbytesleft ? *inbytesleft : 0;
+		
+		return iconv (cd->cd, inbytes, &inleft, outbytes, outleftptr);
+	}
 #endif
 	
 	if (outbytes == NULL || outbytesleft == NULL) {
