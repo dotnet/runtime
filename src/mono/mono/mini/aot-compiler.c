@@ -8482,7 +8482,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
-#if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED) || !defined(MONO_EXTENSIONS)
+#if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED) || (!defined(MONO_EXTENSIONS) && !defined(MONOTOUCH))
 	if (opts & MONO_OPT_GSHAREDVT) {
 		fprintf (stderr, "-O=gsharedvt not supported on this platform.\n");
 		exit (1);
