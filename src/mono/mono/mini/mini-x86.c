@@ -37,8 +37,9 @@
 
 /* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
+#ifdef TARGET_WIN32
 static gint jit_tls_offset = -1;
-#ifndef TARGET_WIN32
+#else
 static gint lmf_addr_tls_offset = -1;
 #endif
 static gint appdomain_tls_offset = -1;
