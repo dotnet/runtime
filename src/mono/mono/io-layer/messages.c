@@ -23,7 +23,7 @@
 
 typedef struct {
 	int id;
-	const char const *txt;
+	const char *txt;
 } ErrorDesc;
 
 static ErrorDesc common_messages [] = {

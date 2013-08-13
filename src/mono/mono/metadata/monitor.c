@@ -161,7 +161,7 @@ void
 mono_monitor_init_tls (void)
 {
 #if !defined(HOST_WIN32) && defined(HAVE_KW_THREAD)
-	tls_pthread_self = pthread_self ();
+	tls_pthread_self = (gsize) pthread_self ();
 #endif
 }
 
