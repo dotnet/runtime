@@ -1575,6 +1575,10 @@ if test x$target_win32 = xno; then
 		AC_MSG_RESULT(disabled)
 	else
 		AC_TRY_RUN([
+			#ifdef __clang__
+			#error "__thread does not currently work with clang"
+			#endif
+			
 			#include <pthread.h>
 			__thread int i;
 			static int res1, res2;
