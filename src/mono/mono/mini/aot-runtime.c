@@ -1048,6 +1048,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 		case MONO_WRAPPER_DELEGATE_END_INVOKE: {
 			gboolean is_inflated = decode_value (p, &p);
+			WrapperSubtype subtype;
 
 			if (is_inflated) {
 				MonoClass *klass;
@@ -1085,6 +1086,19 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!target)
 					return FALSE;
 
+				if (wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
+					WrapperInfo *info;
+
+					subtype = decode_value (p, &p);
+					info = mono_marshal_get_wrapper_info (target);
+					if (info) {
+						if (info->subtype != subtype)
+							return FALSE;
+					} else {
+						if (subtype != WRAPPER_SUBTYPE_NONE)
+							return FALSE;
+					}
+				}
 				if (sig_matches_target (module, target, p, &p))
 					ref->method = target;
 				else

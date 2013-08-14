@@ -4191,6 +4191,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	MonoGenericContext *ctx = NULL;
 	MonoGenericContainer *container = NULL;
 	MonoMethod *orig_method = NULL;
+	WrapperInfo *info;
 
 	/*
 	 * If the delegate target is null, and the target method is not static, a virtual 
@@ -4282,7 +4283,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	if (!static_method_with_first_arg_bound)
 		invoke_sig = static_sig;
 
-	name = mono_signature_to_name (sig, "invoke");
+	if (static_method_with_first_arg_bound)
+		name = mono_signature_to_name (sig, "invoke_bound_");
+	else
+		name = mono_signature_to_name (sig, "invoke");
 	if (ctx)
 		mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_INVOKE);
 	else
@@ -4416,7 +4420,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 			if (static_method_with_first_arg_bound)
 				new_key->sig = signature_dup (del->method->klass->image, key.sig);
 			g_hash_table_insert (cache, new_key, res);
-			mono_marshal_set_wrapper_info (res, new_key);
+
+			info = mono_wrapper_info_create (res, callvirt ? WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND);
+			mono_marshal_set_wrapper_info (res, info);
+
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -4424,6 +4431,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		}
 	} else {
 		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
+		mono_marshal_set_wrapper_info (res, info);
 	}
 	mono_mb_free (mb);
 
