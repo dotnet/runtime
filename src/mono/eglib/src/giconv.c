@@ -921,7 +921,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	size_t inleft;
 	char *inptr;
 	gunichar c;
-	int n;
+	int u, n;
 	
 	g_return_val_if_fail (str != NULL, NULL);
 	
@@ -930,6 +930,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 			g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED, "Conversions with embedded nulls must pass the string length");
 			return NULL;
 		}
+		
 		len = strlen (str);
 	}
 	
@@ -937,29 +938,18 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	inleft = len;
 	
 	while (inleft > 0) {
-		if ((n = decode_utf8 (inptr, inleft, &c)) < 0) {
-			if (errno == EILSEQ) {
-				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encounted in the input.");
-			} else if (items_read) {
-				/* partial input is ok if we can let our caller know... */
-				break;
-			} else {
-				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_PARTIAL_INPUT,
-					     "Partial byte sequence encountered in the input.");
-			}
-			
-			if (items_read)
-				*items_read = inptr - str;
-			
-			if (items_written)
-				*items_written = 0;
-			
-			return NULL;
-		} else if (c == 0 && !include_nuls)
+		if ((n = decode_utf8 (inptr, inleft, &c)) < 0)
+			goto error;
+		
+		if (c == 0 && !include_nuls)
 			break;
 		
-		outlen += g_unichar_to_utf16 (c, NULL);
+		if ((u = g_unichar_to_utf16 (c, NULL)) < 0) {
+			errno = EILSEQ;
+			goto error;
+		}
+		
+		outlen += u;
 		inleft -= n;
 		inptr += n;
 	}
@@ -977,7 +967,8 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	while (inleft > 0) {
 		if ((n = decode_utf8 (inptr, inleft, &c)) < 0)
 			break;
-		else if (c == 0 && !include_nuls)
+		
+		if (c == 0 && !include_nuls)
 			break;
 		
 		outptr += g_unichar_to_utf16 (c, outptr);
@@ -988,6 +979,26 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	*outptr = '\0';
 	
 	return outbuf;
+	
+ error:
+	if (errno == EILSEQ) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+			     "Illegal byte sequence encounted in the input.");
+	} else if (items_read) {
+		/* partial input is ok if we can let our caller know... */
+		break;
+	} else {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_PARTIAL_INPUT,
+			     "Partial byte sequence encountered in the input.");
+	}
+	
+	if (items_read)
+		*items_read = inptr - str;
+	
+	if (items_written)
+		*items_written = 0;
+	
+	return NULL;
 }
 
 gunichar2 *
