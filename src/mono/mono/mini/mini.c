@@ -4404,8 +4404,20 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				int end_offset;
 				if (ec->handler_offset + ec->handler_len < header->code_size) {
 					tblock = cfg->cil_offset_to_bb [ec->handler_offset + ec->handler_len];
-					g_assert (tblock);
-					end_offset = tblock->native_offset;
+					if (tblock->native_offset) {
+						end_offset = tblock->native_offset;
+					} else {
+						int j, end;
+
+						for (j = ec->handler_offset + ec->handler_len, end = ec->handler_offset; j >= end; --j) {
+							MonoBasicBlock *bb = cfg->cil_offset_to_bb [j];
+							if (bb && bb->native_offset) {
+								tblock = bb;
+								break;
+							}
+						}
+						end_offset = tblock->native_offset +  tblock->native_length;
+					}
 				} else {
 					end_offset = cfg->epilog_begin;
 				}
@@ -4421,8 +4433,9 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			int start = (guint8*)ei->try_start - cfg->native_code;
 			int end = (guint8*)ei->try_end - cfg->native_code;
 			int handler = (guint8*)ei->handler_start - cfg->native_code;
+			int handler_end = (guint8*)ei->data.handler_end - cfg->native_code;
 
-			printf ("JitInfo EH clause %d flags %x try %x-%x handler %x\n", i, ei->flags, start, end, handler);
+			printf ("JitInfo EH clause %d flags %x try %x-%x handler %x-%x\n", i, ei->flags, start, end, handler, handler_end);
 		}
 	}
 
