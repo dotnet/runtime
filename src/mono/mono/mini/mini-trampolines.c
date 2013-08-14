@@ -12,6 +12,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-membar.h>
 
 #include "mini.h"
 #include "debug-mini.h"
@@ -1129,6 +1130,11 @@ gpointer
 mono_create_handler_block_trampoline (void)
 {
 	static gpointer code;
+	if (code) {
+		mono_memory_barrier ();
+		return code;
+	}
+
 
 	if (mono_aot_only) {
 		g_assert (0);
@@ -1137,9 +1143,11 @@ mono_create_handler_block_trampoline (void)
 
 	mono_trampolines_lock ();
 
-	if (!code)
-		code = mono_arch_create_handler_block_trampoline ();
-
+	if (!code) {
+		gpointer tmp = mono_arch_create_handler_block_trampoline ();
+		mono_memory_barrier ();
+		code = tmp;
+	}
 	mono_trampolines_unlock ();
 
 	return code;
