@@ -389,7 +389,9 @@ BASE_TEST_CS_SRC=		\
 	assembly_append_ordering.cs	\
 	bug-10127.cs	\
 	allow-synchronous-major.cs	\
-	unload-appdomain-on-shutdown.cs
+	unload-appdomain-on-shutdown.cs	\
+	block_guard_restore_aligment_on_exit.cs	\
+	finally_block_ending_in_dead_bb.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
