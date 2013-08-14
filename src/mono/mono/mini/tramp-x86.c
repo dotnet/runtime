@@ -525,7 +525,14 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		g_assert (pushed_args == -1);
 	}
 
-	x86_ret (code);
+	/*block guard trampolines are called with the stack aligned but must exit with the stack unaligned. */
+	if (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD) {
+		x86_pop_reg (code, X86_EAX);
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 0x8);
+		x86_jump_reg (code, X86_EAX);
+	} else {
+		x86_ret (code);
+	}
 
 	nacl_global_codeman_validate (&buf, 256, &code);
 	g_assert ((code - buf) <= 256);
