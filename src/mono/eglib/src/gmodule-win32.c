@@ -141,6 +141,7 @@ g_module_error (void)
 	TCHAR* buf = NULL;
 	DWORD code = GetLastError ();
 
+	/* FIXME: buf must not be NULL! */
 	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, 
 		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
 

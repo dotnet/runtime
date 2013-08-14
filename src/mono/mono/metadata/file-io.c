@@ -482,7 +482,7 @@ ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint3
 	WIN32_FIND_DATA data;
 	MonoString *result;
 
-	error = ERROR_SUCCESS;
+	*error = ERROR_SUCCESS;
 	do {
 		if (FindNextFile (ifh->find_handle, &data) == FALSE){
 			int e = GetLastError ();
@@ -607,6 +607,7 @@ ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *
 	if (ignoreMetadataErrors)
 		replaceFlags |= REPLACEFILE_IGNORE_MERGE_ERRORS;
 
+	/* FIXME: source and destination file names must not be NULL, but apparently they might be! */
 	ret = ReplaceFile (utf16_destinationFileName, utf16_sourceFileName, utf16_destinationBackupFileName,
 			 replaceFlags, NULL, NULL);
 	if (ret == FALSE)

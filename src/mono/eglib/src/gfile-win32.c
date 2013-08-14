@@ -61,6 +61,7 @@ int mkstemp (char *tmp_template)
 		fd = _wopen( utf16_template, _O_BINARY | _O_CREAT /*| _O_TEMPORARY*/ | _O_EXCL, _S_IREAD | _S_IWRITE);
 	}
 
+	/* FIXME: this will crash if utf16_template == NULL */
 	sprintf (tmp_template + strlen (tmp_template) - 6, "%S", utf16_template + wcslen (utf16_template) - 6);
 
 	g_free (utf16_template);

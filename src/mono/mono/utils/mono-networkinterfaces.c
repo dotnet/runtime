@@ -55,6 +55,8 @@ mono_networkinterface_list (int *size)
 	if (size)
 		*size = i;
 
+	if (!nilist)
+		nilist = g_malloc (sizeof (void*));
 	nilist [i] = NULL;
 	return nilist;
 }
@@ -79,8 +81,7 @@ mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error
 		rx_fifo, rx_frame, tx_bytes, tx_packets, tx_errs, tx_drops,
 		tx_fifo, tx_colls, tx_carrier, rx_multi;
 
-	if (error)
-		*error = MONO_NETWORK_ERROR_OTHER;
+	*error = MONO_NETWORK_ERROR_OTHER;
 
 	f = fopen ("/proc/net/dev", "r");
 	if (!f) 
@@ -96,6 +97,7 @@ mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error
 
 		char *ptr;
 		buf [sizeof (buf) - 1] = 0;
+		/* FIXME: This might potentially cause a buffer overflow for cname. */
 		if ((ptr = strchr (buf, ':')) == NULL ||
 				(*ptr++ = 0, sscanf (buf, "%s", cname) != 1))
 			goto out;

@@ -6928,7 +6928,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 #endif
 
-			if (t->byref && !t->attrs & PARAM_ATTRIBUTE_IN && t->attrs & PARAM_ATTRIBUTE_OUT)
+			if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))
 				break;
 
 			if (conv == -1) {

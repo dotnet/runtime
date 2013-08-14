@@ -558,6 +558,7 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 
 	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
 	ievt = get_events_from_list (list);
+	/* The modify function leaves the io_lock critical section. */
 	data->modify (data, fd, state->operation, ievt, is_new);
 }
 
