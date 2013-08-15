@@ -986,7 +986,6 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 			     "Illegal byte sequence encounted in the input.");
 	} else if (items_read) {
 		/* partial input is ok if we can let our caller know... */
-		break;
 	} else {
 		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_PARTIAL_INPUT,
 			     "Partial byte sequence encountered in the input.");
