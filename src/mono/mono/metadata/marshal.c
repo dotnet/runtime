@@ -4222,8 +4222,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		closed_over_null = sig->param_count == mono_method_signature (del->method)->param_count;
 
 	if (del && del->method && mono_method_signature (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC)) {
+		g_assert (!callvirt);
 		invoke_sig = mono_method_signature (del->method);
-		target_method = del->method;
+		target_method = NULL;
 		static_method_with_first_arg_bound = TRUE;
 	}
 
@@ -4251,12 +4252,20 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
-	} else if (callvirt || static_method_with_first_arg_bound) {
+	} else if (static_method_with_first_arg_bound) {
+		cache = get_cache (&method->klass->image->delegate_bound_static_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
+		/*
+		 * The wrapper is based on sig+invoke_sig, but sig can be derived from invoke_sig.
+		 */
+		res = mono_marshal_find_in_cache (cache, invoke_sig);
+		if (res)
+			return res;
+	} else if (callvirt) {
 		GHashTable **cache_ptr;
-		if (static_method_with_first_arg_bound)
-			cache_ptr = &method->klass->image->delegate_bound_static_invoke_cache;
-		else
-			cache_ptr = &method->klass->image->delegate_abstract_invoke_cache;
+
+		cache_ptr = &method->klass->image->delegate_abstract_invoke_cache;
 
 		/* We need to cache the signature+method pair */
 		mono_marshal_lock ();
@@ -4284,7 +4293,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		invoke_sig = static_sig;
 
 	if (static_method_with_first_arg_bound)
-		name = mono_signature_to_name (sig, "invoke_bound_");
+		name = mono_signature_to_name (invoke_sig, "invoke_bound_");
 	else
 		name = mono_signature_to_name (sig, "invoke");
 	if (ctx)
@@ -4406,7 +4415,12 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 
 		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
 		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
-	} else if (static_method_with_first_arg_bound || callvirt) {
+	} else if (static_method_with_first_arg_bound) {
+		res = mono_mb_create_and_cache (cache, invoke_sig, mb, sig, sig->param_count + 16);
+
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND);
+		mono_marshal_set_wrapper_info (res, info);
+	} else if (callvirt) {
 		// From mono_mb_create_and_cache
 		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);
 		/*We perform double checked locking, so must fence before publishing*/
@@ -4421,7 +4435,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 				new_key->sig = signature_dup (del->method->klass->image, key.sig);
 			g_hash_table_insert (cache, new_key, res);
 
-			info = mono_wrapper_info_create (res, callvirt ? WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND);
+			info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL);
 			mono_marshal_set_wrapper_info (res, info);
 
 			mono_marshal_unlock ();
@@ -12915,8 +12929,6 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 */
 	if (image->runtime_invoke_direct_cache)
 		g_hash_table_remove (image->runtime_invoke_direct_cache, method);
-	if (image->delegate_bound_static_invoke_cache)
-		g_hash_table_foreach_remove (image->delegate_bound_static_invoke_cache, signature_method_pair_matches_method, method);
 	if (image->delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->delegate_abstract_invoke_cache, signature_method_pair_matches_method, method);
 
@@ -12976,10 +12988,6 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
        if (sig && method->klass->image->delegate_abstract_invoke_cache)
                g_hash_table_foreach_remove (method->klass->image->delegate_abstract_invoke_cache,
                                             signature_method_pair_matches_signature, (gpointer)sig);
-
-       if (sig && method->klass->image->delegate_bound_static_invoke_cache)
-                g_hash_table_foreach_remove (method->klass->image->delegate_bound_static_invoke_cache,
-                                             signature_method_pair_matches_signature, (gpointer)sig);
 
         /*
          * indexed by MonoMethod pointers
