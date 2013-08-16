@@ -871,6 +871,13 @@ guint32
 mono_fconv_u4 (double v)
 {
 	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+
+	/* MS.NET behaves like this for some reason */
+#ifdef HAVE_ISINF
+	if (isinf (v) || isnan (v))
+		return 0;
+#endif
+
 	return (guint32)v;
 }
 

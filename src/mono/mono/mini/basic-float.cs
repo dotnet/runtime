@@ -80,6 +80,20 @@ class Tests
 		sbyte sb = (sbyte)a;
 		if (sb != 2)
 			return 6;
+		/* MS.NET special cases these */
+		double d = Double.NaN;
+		ui = (uint)d;
+		if (ui != 0)
+			return 7;
+		d = Double.PositiveInfinity;
+		ui = (uint)d;
+		if (ui != 0)
+			return 8;
+		d = Double.NegativeInfinity;
+		ui = (uint)d;
+		if (ui != 0)
+			return 9;
+
 		return 0;
 	}
 
