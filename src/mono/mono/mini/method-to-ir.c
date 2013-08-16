@@ -6514,6 +6514,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (il_offsets [i] < header->code_size)
 					mono_bitset_set_fast (seq_point_locs, il_offsets [i]);
 			}
+			g_free (il_offsets);
+			g_free (line_numbers);
 		}
 	}
 
