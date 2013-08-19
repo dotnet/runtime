@@ -4791,7 +4791,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 	MonoMethodSignature *sig;
 
 	klass = obj->vtable->klass;
-	if (strcmp (klass->name, "MonoMethod") == 0) {
+	if (strcmp (klass->name, "MonoMethod") == 0 || strcmp (klass->name, "MonoCMethod") == 0) {
 		MonoMethod *method = ((MonoReflectionMethod *)obj)->method;
 		MonoMethodSignature *old;
 		guint32 sig_token, parent;
