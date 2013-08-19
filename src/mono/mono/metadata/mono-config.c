@@ -790,15 +790,15 @@ mono_config_parse_assembly_bindings (const char *filename, int amajor, int amino
 	mono_config_parse_file_with_context (&state, filename);
 }
 
-static gboolean mono_server_mode = FALSE;
+static mono_bool mono_server_mode = FALSE;
 
 void
-mono_config_set_server_mode (gboolean server_mode)
+mono_config_set_server_mode (mono_bool server_mode)
 {
 	mono_server_mode = server_mode;
 }
 
-gboolean
+mono_bool
 mono_config_is_server_mode (void)
 {
 	return mono_server_mode;

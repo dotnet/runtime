@@ -25,8 +25,8 @@ MONO_API void mono_config_parse_memory (const char *buffer);
 
 MONO_API const char* mono_config_string_for_assembly_file (const char *filename);
 
-void mono_config_set_server_mode (gboolean server_mode);
-gboolean mono_config_is_server_mode (void);
+MONO_API void mono_config_set_server_mode (mono_bool server_mode);
+MONO_API mono_bool mono_config_is_server_mode (void);
 
 MONO_END_DECLS
 
