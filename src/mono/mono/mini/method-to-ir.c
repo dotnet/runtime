@@ -7603,7 +7603,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if ((cmethod->klass != mono_defaults.object_class) && constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
 					} else if (((cmethod->klass == mono_defaults.object_class) || (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) &&
-							   (MONO_TYPE_IS_VOID (fsig->ret) || fsig->ret->type == MONO_TYPE_I4 || fsig->ret->type == MONO_TYPE_BOOLEAN || fsig->ret->type == MONO_TYPE_STRING) &&
+							   (mono_method_signature (cmethod) == fsig) &&
+							   (MONO_TYPE_IS_VOID (fsig->ret) || fsig->ret->type == MONO_TYPE_I4 || fsig->ret->type == MONO_TYPE_BOOLEAN || MONO_TYPE_IS_REFERENCE (fsig->ret)) &&
 							   (fsig->param_count == 0 || (fsig->param_count == 1 && (MONO_TYPE_IS_REFERENCE (fsig->params [0]) || mini_is_gsharedvt_type (cfg, fsig->params [0]))))) {
 						MonoInst *args [16];
 
@@ -7613,6 +7614,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						 * - System.IComparable<T>:CompareTo()
 						 * - System.IEquatable<T>:Equals ()
 						 * plus some simple interface calls enough to support AsyncTaskMethodBuilder.
+						 * The mono_method_signature (cmethod) == fsig check is for icalls like Object.GetType () where fsig is for the wrapper.
 						 */
 
 						args [0] = sp [0];
