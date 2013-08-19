@@ -1575,8 +1575,8 @@ if test x$target_win32 = xno; then
 		AC_MSG_RESULT(disabled)
 	else
 		AC_TRY_RUN([
-			#ifdef __clang__
-			#error "__thread does not currently work with clang"
+			#if defined(__APPLE__) && defined(__clang__)
+			#error "__thread does not currently work with clang on Mac OS X"
 			#endif
 			
 			#include <pthread.h>
