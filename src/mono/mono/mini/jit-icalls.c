@@ -1172,18 +1172,23 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 		mono_raise_exception (mono_get_exception_execution_engine ("Not yet supported."));
 
-	/* Lookup the virtual method */
-	mono_class_setup_vtable (klass);
-	g_assert (klass->vtable);
-	vt_slot = mono_method_get_vtable_slot (cmethod);
-	if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		int iface_offset;
+	if (mono_method_signature (cmethod)->pinvoke) {
+		/* Object.GetType () */
+		m = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
+	} else {
+		/* Lookup the virtual method */
+		mono_class_setup_vtable (klass);
+		g_assert (klass->vtable);
+		vt_slot = mono_method_get_vtable_slot (cmethod);
+		if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			int iface_offset;
 
-		iface_offset = mono_class_interface_offset (klass, cmethod->klass);
-		g_assert (iface_offset != -1);
-		vt_slot += iface_offset;
+			iface_offset = mono_class_interface_offset (klass, cmethod->klass);
+			g_assert (iface_offset != -1);
+			vt_slot += iface_offset;
+		}
+		m = klass->vtable [vt_slot];
 	}
-	m = klass->vtable [vt_slot];
 	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class))
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
@@ -1219,6 +1224,12 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	if (args && deref_arg) {
 		new_args [0] = *(gpointer*)args [0];
 		args = new_args;
+	}
+	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		/* Object.GetType () */
+		args = new_args;
+		args [0] = this_arg;
+		this_arg = NULL;
 	}
 	return mono_runtime_invoke (m, this_arg, args, NULL);
 }

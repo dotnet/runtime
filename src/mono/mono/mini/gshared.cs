@@ -973,6 +973,26 @@ public class Tests
 		return 0;
 	}
 
+	interface IGetType {
+		Type gettype<T, T2>(T t, T2 t2);
+	}
+
+	public class CGetType : IGetType {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public Type gettype<T, T2>(T t, T2 t2) {
+			return t.GetType ();
+		}
+	}
+
+	public static int test_0_constrained_gettype () {
+		IGetType c = new CGetType ();
+		if (c.gettype<int, int> (1, 1) != typeof (int))
+			return 1;
+		if (c.gettype<string, int> ("A", 1) != typeof (string))
+			return 2;
+		return 0;
+	}
+
 	struct Pair<T1, T2> {
 		public T1 First;
 		public T2 Second;
