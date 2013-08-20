@@ -65,12 +65,12 @@
 #endif
 
 /* the architecture needs a memory fence */
-#if defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
+#if defined(__linux__) && (defined(__i386__) || defined(__x86_64__) || defined(__arm__))
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "perf_event.h"
 #define USE_PERF_EVENTS 1
-static int read_perf_mmap (MonoProfiler* prof);
+static int read_perf_mmap (MonoProfiler* prof, int cpu);
 #endif
 
 #define BUFFER_SIZE (4096 * 16)
@@ -1558,15 +1558,74 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
 
 #if USE_PERF_EVENTS
 #ifndef __NR_perf_event_open
+#ifdef __arm__
+#define __NR_perf_event_open 364
+#else
 #define __NR_perf_event_open 241
 #endif
+#endif
 
-static int perf_fd = -1;
-static void *mmap_base;
-static struct perf_event_mmap_page *page_desc = NULL;
-static int num_pages = 64;
+static int
+mono_cpu_count (void)
+{
+	int count = 0;
+#ifdef PLATFORM_ANDROID
+	/* Android tries really hard to save power by powering off CPUs on SMP phones which
+	 * means the normal way to query cpu count returns a wrong value with userspace API.
+	 * Instead we use /sys entries to query the actual hardware CPU count.
+	 */
+	char buffer[8] = {'\0'};
+	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
+	/* Format of the /sys entry is a cpulist of indexes which in the case
+	 * of present is always of the form "0-(n-1)" when there is more than
+	 * 1 core, n being the number of CPU cores in the system. Otherwise
+	 * the value is simply 0
+	 */
+	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
+		count = strtol (((char*)buffer) + 2, NULL, 10);
+	if (present != -1)
+		close (present);
+	if (count > 0)
+		return count + 1;
+#endif
+#ifdef _SC_NPROCESSORS_ONLN
+	count = sysconf (_SC_NPROCESSORS_ONLN);
+	if (count > 0)
+		return count;
+#endif
+#ifdef USE_SYSCTL
+	{
+		int mib [2];
+		size_t len = sizeof (int);
+		mib [0] = CTL_HW;
+		mib [1] = HW_NCPU;
+		if (sysctl (mib, 2, &count, &len, NULL, 0) == 0)
+			return count;
+	}
+#endif
+#ifdef HOST_WIN32
+	{
+		SYSTEM_INFO info;
+		GetSystemInfo (&info);
+		return info.dwNumberOfProcessors;
+	}
+#endif
+	/* FIXME: warn */
+	return 1;
+}
+
+typedef struct {
+	int perf_fd;
+	unsigned int prev_pos;
+	void *mmap_base;
+	struct perf_event_mmap_page *page_desc;
+} PerfData ;
+
+static PerfData *perf_data = NULL;
+static int num_perf;
+#define PERF_PAGES_SHIFT 4
+static int num_pages = 1 << PERF_PAGES_SHIFT;
 static unsigned int mmap_mask;
-static unsigned int prev_pos = 0;
 
 typedef struct {
 	struct perf_event_header h;
@@ -1587,24 +1646,25 @@ perf_event_syscall (struct perf_event_attr *attr, pid_t pid, int cpu, int group_
 	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
 #elif defined(__i386__)
 	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
+#elif defined(__arm__)
+	return syscall(/*__NR_perf_event_open*/ 364, attr, pid, cpu, group_fd, flags);
 #else
 	return -1;
 #endif
 }
 
 static int
-setup_perf_map (void)
+setup_perf_map (PerfData *perf)
 {
-	mmap_mask = num_pages * getpagesize () - 1;
-	mmap_base = mmap (NULL, (num_pages + 1) * getpagesize (), PROT_READ|PROT_WRITE, MAP_SHARED, perf_fd, 0);
-	if (mmap_base == MAP_FAILED) {
+	perf->mmap_base = mmap (NULL, (num_pages + 1) * getpagesize (), PROT_READ|PROT_WRITE, MAP_SHARED, perf->perf_fd, 0);
+	if (perf->mmap_base == MAP_FAILED) {
 		if (do_debug)
 			printf ("failed mmap\n");
 		return 0;
 	}
-	page_desc = mmap_base;
+	perf->page_desc = perf->mmap_base;
 	if (do_debug)
-		printf ("mmap version: %d\n", page_desc->version);
+		printf ("mmap version: %d\n", perf->page_desc->version);
 	return 1;
 }
 
@@ -1646,11 +1706,12 @@ dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 
 /* read events from the ring buffer */
 static int
-read_perf_mmap (MonoProfiler* prof)
+read_perf_mmap (MonoProfiler* prof, int cpu)
 {
+	PerfData *perf = perf_data + cpu;
 	unsigned char *buf;
-	unsigned char *data = (unsigned char*)mmap_base + getpagesize ();
-	unsigned int head = page_desc->data_head;
+	unsigned char *data = (unsigned char*)perf->mmap_base + getpagesize ();
+	unsigned int head = perf->page_desc->data_head;
 	int diff, size;
 	unsigned int old;
 
@@ -1658,9 +1719,13 @@ read_perf_mmap (MonoProfiler* prof)
 	asm volatile("lock; addl $0,0(%%esp)":::"memory");
 #elif defined (__x86_64__)
 	asm volatile("lfence":::"memory");
+#elif defined (__arm__)
+	((void(*)(void))0xffff0fa0)();
+#else
+	asm volatile("":::"memory");
 #endif
 
-	old = prev_pos;
+	old = perf->prev_pos;
 	diff = head - old;
 	if (diff < 0) {
 		if (do_debug)
@@ -1684,13 +1749,13 @@ read_perf_mmap (MonoProfiler* prof)
 		printf ("found bytes of events: %d\n", size);
 	dump_perf_hits (prof, buf, size);
 	old += size;
-	prev_pos = old;
-	page_desc->data_tail = old;
+	perf->prev_pos = old;
+	perf->page_desc->data_tail = old;
 	return 0;
 }
 
 static int
-setup_perf_event (void)
+setup_perf_event_for_cpu (PerfData *perf, int cpu)
 {
 	struct perf_event_attr attr;
 	memset (&attr, 0, sizeof (attr));
@@ -1711,11 +1776,11 @@ setup_perf_event (void)
 	attr.freq = 1;
 	attr.sample_freq = sample_freq;
 
-	perf_fd = perf_event_syscall (&attr, getpid (), -1, -1, 0);
+	perf->perf_fd = perf_event_syscall (&attr, getpid (), cpu, -1, 0);
 	if (do_debug)
-		printf ("perf fd: %d, freq: %d, event: %llu\n", perf_fd, sample_freq, attr.config);
-	if (perf_fd < 0) {
-		if (perf_fd == -EPERM) {
+		printf ("perf fd: %d, freq: %d, event: %llu\n", perf->perf_fd, sample_freq, attr.config);
+	if (perf->perf_fd < 0) {
+		if (perf->perf_fd == -EPERM) {
 			fprintf (stderr, "Perf syscall denied, do \"echo 1 > /proc/sys/kernel/perf_event_paranoid\" as root to enable.\n");
 		} else {
 			if (do_debug)
@@ -1723,12 +1788,29 @@ setup_perf_event (void)
 		}
 		return 0;
 	}
-	if (!setup_perf_map ()) {
-		close (perf_fd);
-		perf_fd = -1;
+	if (!setup_perf_map (perf)) {
+		close (perf->perf_fd);
+		perf->perf_fd = -1;
 		return 0;
 	}
 	return 1;
+}
+
+static int
+setup_perf_event (void)
+{
+	int i, count = 0;
+	mmap_mask = num_pages * getpagesize () - 1;
+	num_perf = mono_cpu_count ();
+	perf_data = calloc (num_perf, sizeof (PerfData));
+	for (i = 0; i < num_perf; ++i) {
+		count += setup_perf_event_for_cpu (perf_data + i, i);
+	}
+	if (count)
+		return 1;
+	free (perf_data);
+	perf_data = NULL;
+	return 0;
 }
 
 #endif /* USE_PERF_EVENTS */
@@ -1746,8 +1828,11 @@ log_shutdown (MonoProfiler *prof)
 	}
 #endif
 #if USE_PERF_EVENTS
-	if (page_desc)
-		read_perf_mmap (prof);
+	if (perf_data) {
+		int i;
+		for (i = 0; i < num_perf; ++i)
+			read_perf_mmap (prof, i);
+	}
 #endif
 	dump_sample_hits (prof, prof->stat_buffers, 1);
 	take_lock ();
@@ -1853,10 +1938,15 @@ helper_thread (void* arg)
 				max_fd = command_socket;
 		}
 #if USE_PERF_EVENTS
-		if (perf_fd >= 0) {
-			FD_SET (perf_fd, &rfds);
-			if (max_fd < perf_fd)
-				max_fd = perf_fd;
+		if (perf_data) {
+			int i;
+			for ( i = 0; i < num_perf; ++i) {
+				if (perf_data [i].perf_fd < 0)
+					continue;
+				FD_SET (perf_data [i].perf_fd, &rfds);
+				if (max_fd < perf_data [i].perf_fd)
+					max_fd = perf_data [i].perf_fd;
+			}
 		}
 #endif
 		tv.tv_sec = 1;
@@ -1889,16 +1979,30 @@ helper_thread (void* arg)
 			if (do_debug)
 				fprintf (stderr, "helper shutdown\n");
 #if USE_PERF_EVENTS
-			if (perf_fd >= 0)
-				read_perf_mmap (prof);
+			if (perf_data) {
+				int i;
+				for ( i = 0; i < num_perf; ++i) {
+					if (perf_data [i].perf_fd < 0)
+						continue;
+					if (FD_ISSET (perf_data [i].perf_fd, &rfds))
+						read_perf_mmap (prof, i);
+				}
+			}
 #endif
 			safe_dump (prof, ensure_logbuf (0));
 			return NULL;
 		}
 #if USE_PERF_EVENTS
-		if (perf_fd >= 0 && FD_ISSET (perf_fd, &rfds)) {
-			read_perf_mmap (prof);
-			safe_dump (prof, ensure_logbuf (0));
+		if (perf_data) {
+			int i;
+			for ( i = 0; i < num_perf; ++i) {
+				if (perf_data [i].perf_fd < 0)
+					continue;
+				if (FD_ISSET (perf_data [i].perf_fd, &rfds)) {
+					read_perf_mmap (prof, i);
+					safe_dump (prof, ensure_logbuf (0));
+				}
+			}
 		}
 #endif
 		if (command_socket >= 0 && FD_ISSET (command_socket, &rfds)) {
@@ -2041,7 +2145,7 @@ create_profiler (const char *filename)
 #if USE_PERF_EVENTS
 	if (sample_type && !do_mono_sample)
 		need_helper_thread = setup_perf_event ();
-	if (perf_fd < 0) {
+	if (!perf_data) {
 		/* FIXME: warn if different freq or sample type */
 		do_mono_sample = 1;
 	}
