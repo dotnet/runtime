@@ -215,7 +215,12 @@ public class Tests
 	public static int test_0_unbox_any_enum () {
 		IFaceUnbox iface = new ClassUnbox ();
 		AnEnum res = iface.Unbox<AnEnum, int> (AnEnum.One, 0, 1);
-		return res == AnEnum.Two ? 0 : 1;
+		if (res != AnEnum.Two)
+			return 1;
+		res = iface.Unbox<AnEnum, int> (AnEnum.One, 0, AnEnum.Two);
+		if (res != AnEnum.Two)
+			return 2;
+		return 0;
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]

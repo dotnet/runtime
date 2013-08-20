@@ -1071,12 +1071,10 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 	if (!obj)
 		return NULL;
 
-	if (klass->enumtype) {
-		if (obj->vtable->klass == klass->element_class)
-			return obj;
-	} else if (mono_object_isinst (obj, klass)) {
+	if (klass->enumtype && obj->vtable->klass == klass->element_class)
 		return obj;
-	}
+	if (mono_object_isinst (obj, klass))
+		return obj;
 
 	if (mini_get_debug_options ()->better_cast_details) {
 		jit_tls->class_cast_from = obj->vtable->klass;
