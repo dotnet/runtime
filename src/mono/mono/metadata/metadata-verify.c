@@ -2660,8 +2660,8 @@ verify_method_table (VerifyContext *ctx)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but not Static", i));
 			if (flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_VIRTUAL))
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but is Abstract or Virtual", i));
-			if (!(access == METHOD_ATTRIBUTE_COMPILER_CONTROLLED || access == METHOD_ATTRIBUTE_PUBLIC || access == METHOD_ATTRIBUTE_PRIVATE))
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but not CompilerControled, Public or Private", i));
+			if (access == METHOD_ATTRIBUTE_FAMILY || access == METHOD_ATTRIBUTE_FAM_AND_ASSEM || access == METHOD_ATTRIBUTE_FAM_OR_ASSEM)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but not CompilerControled, Public, Private or Assembly", i));
 		}
 
 		//TODO check valuetype for synchronized
