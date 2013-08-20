@@ -1252,6 +1252,7 @@ public class Tests
 
 	interface IConstrained<T3> {
 		void foo_gsharedvt_arg (T3 s);
+		T3 foo_gsharedvt_ret (T3 s);
 	}
 
 	static object constrained_res;
@@ -1284,12 +1285,17 @@ public class Tests
 		public void foo_gsharedvt_arg (T s) {
 			constrained_res = s;
 		}
+
+		public T foo_gsharedvt_ret (T s) {
+			return s;
+		}
 	}
 
 	interface IFaceConstrained {
 		void constrained_void_iface_call<T, T2>(T t, T2 t2) where T2 : IConstrained;
 		void constrained_void_iface_call_ref_arg<T, T2>(T t, T2 t2) where T2 : IConstrained;
 		void constrained_void_iface_call_gsharedvt_arg<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T>;
+		T constrained_iface_call_gsharedvt_ret<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T>;
 	}
 
 	class ClassConstrained : IFaceConstrained {
@@ -1306,6 +1312,11 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public void constrained_void_iface_call_gsharedvt_arg<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T> {
 			t2.foo_gsharedvt_arg (t);
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public T constrained_iface_call_gsharedvt_ret<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T> {
+			return t2.foo_gsharedvt_ret (t);
 		}
 	}
 
@@ -1332,7 +1343,7 @@ public class Tests
 		return 0;
 	}
 
-	public static int test_0_constraine_void_iface_call_gsharedvt_arg () {
+	public static int test_0_constrained_void_iface_call_gsharedvt_arg () {
 		// This tests constrained calls through interfaces with one gsharedvt arg, like IComparable<T>.CompareTo ()
 		IFaceConstrained c = new ClassConstrained ();
 
@@ -1346,6 +1357,22 @@ public class Tests
 		constrained_res = null;
 		c.constrained_void_iface_call_gsharedvt_arg<string, ConsStruct<string>, int> ("A", s2, 55);
 		if (!(constrained_res is string) || ((string)constrained_res) != "A")
+			return 2;
+
+		return 0;
+	}
+
+	public static int test_0_constrained_iface_call_gsharedvt_ret () {
+		IFaceConstrained c = new ClassConstrained ();
+
+		var s = new ConsStruct<int> ();
+		int ires = c.constrained_iface_call_gsharedvt_ret<int, ConsStruct<int>, int> (42, s, 55);
+		if (ires != 42)
+			return 1;
+
+		var s2 = new ConsStruct<string> ();
+		string sres = c.constrained_iface_call_gsharedvt_ret<string, ConsStruct<string>, int> ("A", s2, 55);
+		if (sres != "A")
 			return 2;
 
 		return 0;
