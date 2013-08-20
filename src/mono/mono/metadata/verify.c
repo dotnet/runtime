@@ -2089,6 +2089,28 @@ get_icollection_class (void)
 }
 
 static MonoClass*
+get_ireadonlylist_class (void)
+{
+	static MonoClass* generic_ireadonlylist_class = NULL;
+
+	if (generic_ireadonlylist_class == NULL)
+		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IReadOnlyList`1");
+	return generic_ireadonlylist_class;
+}
+
+static MonoClass*
+get_ireadonlycollection_class (void)
+{
+	static MonoClass* generic_ireadonlycollection_class = NULL;
+
+	if (generic_ireadonlycollection_class == NULL)
+		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IReadOnlyCollection`1");
+	return generic_ireadonlycollection_class;
+}
+
+static MonoClass*
 inflate_class_one_arg (MonoClass *gtype, MonoClass *arg0)
 {
 	MonoType *args [1];
@@ -2127,6 +2149,12 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 				if (verifier_inflate_and_check_compat (target, get_icollection_class (), candidate->element_class))
 					return TRUE;
 				if (verifier_inflate_and_check_compat (target, get_ienumerable_class (), candidate->element_class))
+					return TRUE;
+				if (verifier_inflate_and_check_compat (target, get_ienumerable_class (), candidate->element_class))
+					return TRUE;
+				if (verifier_inflate_and_check_compat (target, get_ireadonlylist_class (), candidate->element_class))
+					return TRUE;
+				if (verifier_inflate_and_check_compat (target, get_ireadonlycollection_class (), candidate->element_class))
 					return TRUE;
 			} else {
 				MonoError error;
