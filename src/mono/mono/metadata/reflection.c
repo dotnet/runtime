@@ -7774,6 +7774,23 @@ mono_reflection_get_token (MonoObject *obj)
 	return token;
 }
 
+static MonoClass*
+load_cattr_enum_type (MonoImage *image, const char *p, const char **end)
+{
+	char *n;
+	MonoType *t;
+	int slen = mono_metadata_decode_value (p, &p);
+	n = g_memdup (p, slen + 1);
+	n [slen] = 0;
+	t = mono_reflection_type_from_name (n, image);
+	if (!t)
+		g_error ("Cannot load type '%s'", n);
+	g_free (n);
+	p += slen;
+	*end = p;
+	return mono_class_from_mono_type (t);
+}
+
 static void*
 load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end)
 {
@@ -7892,6 +7909,8 @@ handle_type:
 			type = MONO_TYPE_SZARRAY;
 			if (etype == 0x50) {
 				tklass = mono_defaults.systemtype_class;
+			} else if (etype == 0x55) {
+				tklass = load_cattr_enum_type (image, p, &p);
 			} else {
 				if (etype == 0x51)
 					/* See Partition II, Appendix B3 */
