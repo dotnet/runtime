@@ -2785,6 +2785,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	 */
 	MonoMethod *m = method->method;
 	MonoMethodSignature *sig = mono_method_signature (m);
+	MonoImage *image;
 	int pcount;
 	void *obj = this;
 
@@ -2838,8 +2839,14 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		return NULL;
 	}
 
-	if (m->klass->image->assembly->ref_only) {
+	image = m->klass->image;
+	if (image->assembly->ref_only) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api."));
+		return NULL;
+	}
+
+	if (image->dynamic && !((MonoDynamicImage*)image)->run) {
+		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_get_exception_not_supported ("Cannot invoke a method in a dynamic assembly without run access."));
 		return NULL;
 	}
 	
