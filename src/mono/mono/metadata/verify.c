@@ -2150,8 +2150,6 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 					return TRUE;
 				if (verifier_inflate_and_check_compat (target, get_ienumerable_class (), candidate->element_class))
 					return TRUE;
-				if (verifier_inflate_and_check_compat (target, get_ienumerable_class (), candidate->element_class))
-					return TRUE;
 				if (verifier_inflate_and_check_compat (target, get_ireadonlylist_class (), candidate->element_class))
 					return TRUE;
 				if (verifier_inflate_and_check_compat (target, get_ireadonlycollection_class (), candidate->element_class))
