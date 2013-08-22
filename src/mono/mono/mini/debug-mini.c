@@ -163,6 +163,9 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 		var->offset = inst->inst_offset;
 	} else if (inst->opcode == OP_GSHAREDVT_LOCAL) {
 		var->index = inst->inst_imm | MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL;
+	} else if (inst->opcode == OP_VTARG_ADDR) {
+		var->offset = inst->inst_offset;
+		var->index  = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR;
 	} else {
 		g_assert_not_reached ();
 	}
@@ -486,6 +489,7 @@ serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 		encode_value (var->offset, p, &p);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
@@ -568,6 +572,7 @@ deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 		var->offset = decode_value (p, &p);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
@@ -692,6 +697,9 @@ print_var_info (MonoDebugVarInfo *info, int idx, const char *name, const char *t
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
 		g_print ("%s %s (%d) gsharedvt local.\n", type, name, idx);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
+		g_print ("%s %s (%d) vt address: base register %s + %d\n", type, name, idx, mono_arch_regname (info->index & (~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS)), info->offset);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS:
 	default:

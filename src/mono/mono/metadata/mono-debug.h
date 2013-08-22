@@ -130,6 +130,9 @@ struct _MonoDebugSourceLocation {
 /* gsharedvt local */
 #define MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL		0x50000000
 
+/* variable is a vt address */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR		0x60000000
+
 struct _MonoDebugVarInfo {
 	uint32_t index;
 	uint32_t offset;
