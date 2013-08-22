@@ -6782,9 +6782,13 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	if (!System_Reflection_ParameterInfo_array) {
 		MonoClass *klass;
 
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoParameterInfo");
+		if (!klass)
+			klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+
 		mono_memory_barrier ();
 		System_Reflection_ParameterInfo = klass; 
+
 	
 		klass = mono_array_class_get (klass, 1);
 		mono_memory_barrier ();
@@ -7765,7 +7769,7 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionMonoEvent *p = (MonoReflectionMonoEvent*)obj;
 
 		token = mono_class_get_event_token (p->event);
-	} else if (strcmp (klass->name, "ParameterInfo") == 0) {
+	} else if (strcmp (klass->name, "ParameterInfo") == 0 || strcmp (klass->name, "MonoParameterInfo") == 0) {
 		MonoReflectionParameter *p = (MonoReflectionParameter*)obj;
 		MonoClass *member_class = mono_object_class (p->MemberImpl);
 		g_assert (mono_class_is_reflection_method_or_constructor (member_class));
@@ -8869,7 +8873,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 	} else if ((strcmp ("MonoGenericMethod", klass->name) == 0) || (strcmp ("MonoGenericCMethod", klass->name) == 0)) {
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
 		cinfo = mono_custom_attrs_from_method (rmethod->method);
-	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
+	} else if (strcmp ("ParameterInfo", klass->name) == 0 || strcmp ("MonoParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
 		MonoClass *member_class = mono_object_class (param->MemberImpl);
 		if (mono_class_is_reflection_method_or_constructor (member_class)) {
