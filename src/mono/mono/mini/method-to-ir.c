@@ -4428,8 +4428,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	/* also consider num_locals? */
 	/* Do the size check early to avoid creating vtables */
 	if (!inline_limit_inited) {
-		if (getenv ("MONO_INLINELIMIT"))
-			inline_limit = atoi (getenv ("MONO_INLINELIMIT"));
+		if (g_getenv ("MONO_INLINELIMIT"))
+			inline_limit = atoi (g_getenv ("MONO_INLINELIMIT"));
 		else
 			inline_limit = INLINE_LENGTH_LIMIT;
 		inline_limit_inited = TRUE;
@@ -5469,7 +5469,7 @@ check_inline_called_method_name_limit (MonoMethod *called_method)
 	static char *limit = NULL;
 	
 	if (limit == NULL) {
-		char *limit_string = getenv ("MONO_INLINE_CALLED_METHOD_NAME_LIMIT");
+		char *limit_string = g_getenv ("MONO_INLINE_CALLED_METHOD_NAME_LIMIT");
 
 		if (limit_string != NULL)
 			limit = limit_string;
@@ -5499,7 +5499,7 @@ check_inline_caller_method_name_limit (MonoMethod *caller_method)
 	static char *limit = NULL;
 	
 	if (limit == NULL) {
-		char *limit_string = getenv ("MONO_INLINE_CALLER_METHOD_NAME_LIMIT");
+		char *limit_string = g_getenv ("MONO_INLINE_CALLER_METHOD_NAME_LIMIT");
 		if (limit_string != NULL) {
 			limit = limit_string;
 		} else {

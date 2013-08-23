@@ -828,7 +828,7 @@ mono_arch_init (void)
 #endif
 
 	/* Format: armv(5|6|7[s])[-thumb[2]] */
-	cpu_arch = getenv ("MONO_CPU_ARCH");
+	cpu_arch = g_getenv ("MONO_CPU_ARCH");
 
 	/* Do this here so it overrides any detection. */
 	if (cpu_arch) {

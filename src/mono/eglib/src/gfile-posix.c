@@ -156,7 +156,7 @@ g_get_current_dir (void)
 {
 #ifdef __native_client__
 	char *buffer;
-	if ((buffer = getenv("NACL_PWD"))) {
+	if ((buffer = g_getenv("NACL_PWD"))) {
 		buffer = g_strdup(buffer);
 	} else {
 		buffer = g_strdup(".");

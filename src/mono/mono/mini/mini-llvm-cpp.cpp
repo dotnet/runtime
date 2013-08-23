@@ -400,7 +400,7 @@ static void
 force_pass_linking (void)
 {
 	// Make sure the rest is linked in, but never executed
-	if (getenv ("FOO") != (char*)-1)
+	if (g_getenv ("FOO") != (char*)-1)
 		return;
 
 	// This is a subset of the passes in LinkAllPasses.h

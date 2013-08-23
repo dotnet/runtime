@@ -529,7 +529,7 @@ mono_cominterop_init (void)
 
 	InitializeCriticalSection (&cominterop_mutex);
 
-	com_provider_env = getenv ("MONO_COM");
+	com_provider_env = g_getenv ("MONO_COM");
 	if (com_provider_env && !strcmp(com_provider_env, "MS"))
 		com_provider = MONO_COM_MS;
 

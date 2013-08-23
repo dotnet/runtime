@@ -848,7 +848,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	MonoInst **reverse;
 
 	if (disabled == -1)
-		disabled = getenv ("DISABLED") != NULL;
+		disabled = g_getenv ("DISABLED") != NULL;
 
 	if (disabled)
 		return;

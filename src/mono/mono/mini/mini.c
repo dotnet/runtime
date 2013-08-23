@@ -648,14 +648,14 @@ mono_debug_count (void)
 	static int count = 0;
 	count ++;
 
-	if (!getenv ("COUNT"))
+	if (!g_getenv ("COUNT"))
 		return TRUE;
 
-	if (count == atoi (getenv ("COUNT"))) {
+	if (count == atoi (g_getenv ("COUNT"))) {
 		break_count ();
 	}
 
-	if (count > atoi (getenv ("COUNT"))) {
+	if (count > atoi (g_getenv ("COUNT"))) {
 		return FALSE;
 	}
 
@@ -1956,9 +1956,9 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			static int count = 0;
 			count ++;
 
-			if (count == atoi (getenv ("COUNT3")))
+			if (count == atoi (g_getenv ("COUNT3")))
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			if (count > atoi (getenv ("COUNT3")))
+			if (count > atoi (g_getenv ("COUNT3")))
 				slot = 0xffffff;
 			else {
 				mono_print_ins (inst);
@@ -2202,9 +2202,9 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			count ++;
 
 			/*
-			if (count == atoi (getenv ("COUNT")))
+			if (count == atoi (g_getenv ("COUNT")))
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			if (count > atoi (getenv ("COUNT")))
+			if (count > atoi (g_getenv ("COUNT")))
 				slot = 0xffffff;
 			else {
 				mono_print_ins (inst);
@@ -4913,8 +4913,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->opt |= MONO_OPT_ABCREM;
 	}
 
-	if (getenv ("MONO_VERBOSE_METHOD")) {
-		char *name = getenv ("MONO_VERBOSE_METHOD");
+	if (g_getenv ("MONO_VERBOSE_METHOD")) {
+		const char *name = g_getenv ("MONO_VERBOSE_METHOD");
 
 		if ((strchr (name, '.') > name) || strchr (name, ':')) {
 			MonoMethodDesc *desc;
@@ -4925,7 +4925,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			}
 			mono_method_desc_free (desc);
 		} else {
-			if (strcmp (cfg->method->name, getenv ("MONO_VERBOSE_METHOD")) == 0)
+			if (strcmp (cfg->method->name, g_getenv ("MONO_VERBOSE_METHOD")) == 0)
 				cfg->verbose_level = 4;
 		}
 	}
@@ -4970,11 +4970,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		count ++;
 
 		/*
-		if (getenv ("COUNT2")) {
+		if (g_getenv ("COUNT2")) {
 			cfg->globalra = TRUE;
-			if (count == atoi (getenv ("COUNT2")))
+			if (count == atoi (g_getenv ("COUNT2")))
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			if (count > atoi (getenv ("COUNT2")))
+			if (count > atoi (g_getenv ("COUNT2")))
 				cfg->globalra = FALSE;
 		}
 		*/
@@ -6683,7 +6683,7 @@ mini_get_imt_trampoline (int slot_index)
 static void
 mini_parse_debug_options (void)
 {
-	char *options = getenv ("MONO_DEBUG");
+	const char *options = g_getenv ("MONO_DEBUG");
 	gchar **args, **ptr;
 	
 	if (!options)
@@ -6972,7 +6972,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_threads_runtime_init (&ticallbacks);
 
 
-	if (getenv ("MONO_DEBUG") != NULL)
+	if (g_getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
 
 	mono_code_manager_init ();
@@ -6985,8 +6985,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
-	if (getenv ("MONO_XDEBUG")) {
-		char *xdebug_opts = getenv ("MONO_XDEBUG");
+	if (g_getenv ("MONO_XDEBUG")) {
+		const char *xdebug_opts = g_getenv ("MONO_XDEBUG");
 		mono_xdebug_init (xdebug_opts);
 		/* So methods for multiple domains don't have the same address */
 		mono_dont_free_domains = TRUE;
@@ -7031,7 +7031,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef MONO_ARCH_HAVE_NOTIFY_PENDING_EXC
 	// This is experimental code so provide an env var to switch it off
-	if (getenv ("MONO_DISABLE_PENDING_EXCEPTIONS")) {
+	if (g_getenv ("MONO_DISABLE_PENDING_EXCEPTIONS")) {
 		printf ("MONO_DISABLE_PENDING_EXCEPTIONS env var set.\n");
 	} else {
 		check_for_pending_exc = FALSE;

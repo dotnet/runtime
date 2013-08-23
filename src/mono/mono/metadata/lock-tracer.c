@@ -64,7 +64,7 @@ mono_locks_tracer_init (void)
 {
 	char *name;
 	InitializeCriticalSection (&tracer_lock);
-	if (!getenv ("MONO_ENABLE_LOCK_TRACER"))
+	if (!g_getenv ("MONO_ENABLE_LOCK_TRACER"))
 		return;
 	name = g_strdup_printf ("locks.%d", getpid ());
 	trace_file = fopen (name, "w+");

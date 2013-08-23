@@ -28,8 +28,8 @@ mono_trace_init (void)
 	if(level_stack == NULL) {
 		level_stack = g_queue_new();
 
-		mono_trace_set_mask_string(getenv("MONO_LOG_MASK"));
-		mono_trace_set_level_string(getenv("MONO_LOG_LEVEL"));
+		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
+		mono_trace_set_level_string(g_getenv("MONO_LOG_LEVEL"));
 	}
 }
 

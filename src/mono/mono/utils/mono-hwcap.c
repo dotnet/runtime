@@ -27,7 +27,7 @@ static gboolean hwcap_inited = FALSE;
 void
 mono_hwcap_init (void)
 {
-	const char *verbose = getenv ("MONO_VERBOSE_HWCAP");
+	const char *verbose = g_getenv ("MONO_VERBOSE_HWCAP");
 
 	if (hwcap_inited)
 		return;

@@ -147,7 +147,7 @@ mono_gc_base_init (void)
 	GC_allow_register_threads();
 #endif
 
-	if ((env = getenv ("MONO_GC_PARAMS"))) {
+	if ((env = g_getenv ("MONO_GC_PARAMS"))) {
 		char **ptr, **opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
@@ -564,9 +564,9 @@ mono_gc_alloc_fixed (size_t size, void *descr)
 	/*
 	static int count;
 	count ++;
-	if (count == atoi (getenv ("COUNT2")))
+	if (count == atoi (g_getenv ("COUNT2")))
 		printf ("HIT!\n");
-	if (count > atoi (getenv ("COUNT2")))
+	if (count > atoi (g_getenv ("COUNT2")))
 		return GC_MALLOC (size);
 	*/
 

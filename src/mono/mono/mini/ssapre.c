@@ -658,7 +658,7 @@ check_ssapre_expression_name (MonoSsapreWorkArea *area, MonoSsapreExpressionDesc
 		return TRUE;
 	}
 	if (mono_ssapre_expression_name == NULL) {
-		mono_ssapre_expression_name = getenv ("MONO_SSAPRE_EXPRESSION_NAME");
+		mono_ssapre_expression_name = g_getenv ("MONO_SSAPRE_EXPRESSION_NAME");
 	}
 	if (mono_ssapre_expression_name != NULL) {
 		GString *expression_name = g_string_new_len ("", 256);
@@ -2058,7 +2058,7 @@ static char*
 mono_ssapre_method_name = NULL;
 static gboolean check_ssapre_method_name (MonoCompile *cfg) {
 	if (mono_ssapre_method_name == NULL) {
-		mono_ssapre_method_name = getenv ("MONO_SSAPRE_METHOD_NAME");
+		mono_ssapre_method_name = g_getenv ("MONO_SSAPRE_METHOD_NAME");
 	}
 	if (mono_ssapre_method_name != NULL) {
 		char *method_name = mono_method_full_name (cfg->method, TRUE);

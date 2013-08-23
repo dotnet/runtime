@@ -4241,13 +4241,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		static int count = 0;
 		count ++;
 
-		if (getenv ("LLVM_COUNT")) {
-			if (count == atoi (getenv ("LLVM_COUNT"))) {
+		if (g_getenv ("LLVM_COUNT")) {
+			if (count == atoi (g_getenv ("LLVM_COUNT"))) {
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 				fflush (stdout);
 				last = TRUE;
 			}
-			if (count > atoi (getenv ("LLVM_COUNT")))
+			if (count > atoi (g_getenv ("LLVM_COUNT")))
 				LLVM_FAILURE (ctx, "");
 		}
 	}

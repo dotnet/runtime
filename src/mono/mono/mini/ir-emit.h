@@ -767,8 +767,8 @@ static int ccount = 0;
             ins->inst_false_bb = NULL; \
             mono_link_bblock ((cfg), (cfg)->cbb, (truebb)); \
             MONO_ADD_INS ((cfg)->cbb, ins); \
-            if (getenv ("COUNT2") && ccount == atoi (getenv ("COUNT2")) - 1) { printf ("HIT: %d\n", cfg->cbb->block_num); } \
-            if (getenv ("COUNT2") && ccount < atoi (getenv ("COUNT2"))) { \
+            if (g_getenv ("COUNT2") && ccount == atoi (g_getenv ("COUNT2")) - 1) { printf ("HIT: %d\n", cfg->cbb->block_num); } \
+            if (g_getenv ("COUNT2") && ccount < atoi (g_getenv ("COUNT2"))) { \
                  cfg->cbb->extended = TRUE; \
             } else { NEW_BBLOCK ((cfg), falsebb); ins->inst_false_bb = (falsebb); mono_link_bblock ((cfg), (cfg)->cbb, (falsebb)); MONO_START_BB ((cfg), falsebb); } \
         } \

@@ -4870,7 +4870,7 @@ mono_gc_base_init (void)
 
 	init_user_copy_or_mark_key ();
 
-	if ((env = getenv (MONO_GC_PARAMS_NAME))) {
+	if ((env = g_getenv (MONO_GC_PARAMS_NAME))) {
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
@@ -5161,7 +5161,7 @@ mono_gc_base_init (void)
 
 	sgen_cement_init (cement_enabled);
 
-	if ((env = getenv (MONO_GC_DEBUG_NAME))) {
+	if ((env = g_getenv (MONO_GC_DEBUG_NAME))) {
 		gboolean usage_printed = FALSE;
 
 		opts = g_strsplit (env, ",", -1);

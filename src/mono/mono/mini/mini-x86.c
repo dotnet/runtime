@@ -5636,7 +5636,7 @@ mono_arch_is_inst_imm (gint64 imm)
 void
 mono_arch_finish_init (void)
 {
-	if (!getenv ("MONO_NO_TLS")) {
+	if (!g_getenv ("MONO_NO_TLS")) {
 #ifdef TARGET_WIN32
 		/* 
 		 * We need to init this multiple times, since when we are first called, the key might not
