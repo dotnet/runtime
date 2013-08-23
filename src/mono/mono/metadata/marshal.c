@@ -9191,6 +9191,16 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 		}
 	}
+
+	if (!sig->ret->byref) {
+		switch (sig->ret->type) {
+		case MONO_TYPE_STRING:
+			csig->ret = &mono_defaults.int_class->byval_arg;
+			break;
+		default:
+			break;
+		}
+	}
 #else
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
