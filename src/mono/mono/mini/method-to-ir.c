@@ -5466,15 +5466,15 @@ static gboolean
 check_inline_called_method_name_limit (MonoMethod *called_method)
 {
 	int strncmp_result;
-	static char *limit = NULL;
+	static const char *limit = NULL;
 	
 	if (limit == NULL) {
-		char *limit_string = g_getenv ("MONO_INLINE_CALLED_METHOD_NAME_LIMIT");
+		const char *limit_string = g_getenv ("MONO_INLINE_CALLED_METHOD_NAME_LIMIT");
 
 		if (limit_string != NULL)
 			limit = limit_string;
 		else
-			limit = (char *) "";
+			limit = "";
 	}
 
 	if (limit [0] != '\0') {
@@ -5496,14 +5496,14 @@ static gboolean
 check_inline_caller_method_name_limit (MonoMethod *caller_method)
 {
 	int strncmp_result;
-	static char *limit = NULL;
+	static const char *limit = NULL;
 	
 	if (limit == NULL) {
-		char *limit_string = g_getenv ("MONO_INLINE_CALLER_METHOD_NAME_LIMIT");
+		const char *limit_string = g_getenv ("MONO_INLINE_CALLER_METHOD_NAME_LIMIT");
 		if (limit_string != NULL) {
 			limit = limit_string;
 		} else {
-			limit = (char *) "";
+			limit = "";
 		}
 	}
 
