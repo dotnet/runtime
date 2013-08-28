@@ -10625,7 +10625,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if ((ip + 5 < end) && ip_in_bb (cfg, bblock, ip + 5) && 
 					((ip [5] == CEE_CALL) || (ip [5] == CEE_CALLVIRT)) && 
 					(cmethod = mini_get_method (cfg, method, read32 (ip + 6), NULL, generic_context)) &&
-					(cmethod->klass == mono_defaults.monotype_class->parent) &&
+					(cmethod->klass == mono_defaults.systemtype_class) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 

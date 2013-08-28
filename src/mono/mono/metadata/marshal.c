@@ -10471,7 +10471,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_method_desc_free (desc);
 
 		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
-		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.monotype_class->parent);
+		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
 		g_assert (gettypefromhandle_method);
 		mono_method_desc_free (desc);
 	}
