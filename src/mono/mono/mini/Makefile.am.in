@@ -106,14 +106,15 @@ boehm_binaries  = mono-boehm
 endif
 
 #The mono uses sgen, while libmono remains boehm
+if SUPPORT_SGEN
 mono_bin_suffix = sgen
+else
+mono_bin_suffix = boehm
+endif
 libmono_suffix = boehm
 
 if DISABLE_EXECUTABLES
 else
-bin_SCRIPTS = mono
-noinst_SCRIPTS = mono
-
 mono: mono-$(mono_bin_suffix)
 	ln -sf $< $@
 
