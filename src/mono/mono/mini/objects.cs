@@ -26,6 +26,11 @@ using System.Runtime.CompilerServices;
  * the IL code looks.
  */
 
+#if MOBILE
+namespace ObjectTests
+{
+#endif
+
 struct Simple {
 	public int a;
 	public byte b;
@@ -114,9 +119,11 @@ struct Gamma {
 
 class Tests {
 
+#if !MOBILE
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
+#endif
 	
 	public static int test_0_return () {
 		Simple s;
@@ -1595,5 +1602,31 @@ ncells ) {
 
 		return 0;
 	}
+
+	enum ByteEnum : byte {
+        Zero = 0
+    }
+
+    struct BugStruct {
+        public ByteEnum f1;
+        public ByteEnum f2;
+        public ByteEnum f3;
+        public byte f4;
+        public byte f5;
+        public byte f6;
+        public byte f7;
+    }
+
+	public static int test_0_14217 () {
+		t_14217_inner (new BugStruct ());
+		return 0;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void t_14217_inner (BugStruct bug) {
+    }
 }
 
+#if MOBILE
+}
+#endif
