@@ -13,7 +13,7 @@ AC_CANONICAL_HOST
 # The extra brackets are to foil regex-based scans.
 m4_ifdef([_A][M_PROG_TAR],[_A][M_SET_OPTION([tar-ustar])])
 
-AM_INIT_AUTOMAKE([1.9 dist-bzip2 tar-ustar no-dist-gzip foreign])
+AM_INIT_AUTOMAKE([1.9 dist-bzip2 tar-ustar no-dist-gzip foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
 AM_MAINTAINER_MODE
 
