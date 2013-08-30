@@ -721,8 +721,8 @@ endif
 endif
 endif
 
-test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-messages rm-empty-logs
-test-wrench: assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen test-messages rm-empty-logs
+test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test-process-exit test-messages rm-empty-logs
+test-wrench: assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test-process-exit test-sgen test-messages rm-empty-logs
 
 # Remove empty .stdout and .stderr files for wrench
 rm-empty-logs:
