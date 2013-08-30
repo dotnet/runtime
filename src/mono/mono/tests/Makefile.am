@@ -14,10 +14,8 @@ JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mon
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_5
-with_mono_path_moonlight = MONO_PATH=$(mcs_topdir)/class/lib/moonlight_raw
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
-RUNTIME_MOONLIGHT = $(with_mono_path_moonlight) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
@@ -703,12 +701,6 @@ test-messages: w32message.exe
 	$(with_mono_path) $(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
 endif
 
-if MOONLIGHT
-test_2_1 : test-coreclr-security
-else
-test_2_1 :
-endif
-
 if AMD64
 test-sgen : sgen-tests
 else
@@ -1060,14 +1052,12 @@ bug-382986.exe: bug-382986.cs bug-382986-lib.dll
 
 EXTRA_DIST += coreclr-security.cs
 
-if MOONLIGHT
 coreclr-security.exe : coreclr-security.cs
 	$(SMCS) -out:coreclr-security.exe $(srcdir)/coreclr-security.cs
 
 test-coreclr-security : coreclr-security.exe
 	@echo "Testing coreclr-security.exe..."
 	@$(RUNTIME_MOONLIGHT) --security=core-clr-test coreclr-security.exe
-endif
 
 EXTRA_DIST += generic-unboxing.2.il
 generic-unboxing.2.dll : generic-unboxing.2.il

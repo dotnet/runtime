@@ -3180,20 +3180,6 @@ if test x$with_profile4 != xyes; then
 	DISABLE_MCS_DOCS=yes
 fi
 
-MOONLIGHT_DEFINES=
-AC_ARG_WITH(moonlight, [  --with-moonlight=yes|no|only         If you want to build Mono for Moonlight (defaults to no)],[
-	if test x$with_moonlight != xno; then
-        MOONLIGHT_DEFINES="-DMOONLIGHT -DDISABLE_ASSEMBLY_REMAPPING "
-	fi
-], [with_moonlight=no])
-AC_SUBST(MOONLIGHT_DEFINES)
-
-AC_ARG_WITH(moon_gc, [  --with-moon-gc=boehm,sgen		Select the gc to use with Moonlight (defaults to boehm)],[
-	if test "x$with_moon_gc" != "xsgen"; then
-		with_moon_gc=boehm
-	fi
-], [with_moon_gc=boehm])
-
 AC_ARG_WITH(lazy_gc_thread_creation, [  --with-lazy-gc-thread-creation=yes|no      Enable lazy runtime thread creation, embedding host must do it explicitly (defaults to no)],[
 	if test x$with_lazy_gc_thread_creation != xno ; then
 		AC_DEFINE(LAZY_GC_THREAD_CREATION,1,[Enable lazy gc thread creation by the embedding host.])
@@ -3252,12 +3238,6 @@ AC_SUBST(OPROFILE_CFLAGS)
 AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
-
-AM_CONDITIONAL(MOONLIGHT, [test "x$with_moonlight" != "xno"])
-
-AM_CONDITIONAL(ONLY_MOONLIGHT, [test "x$with_moonlight" = "xonly"])
-AM_CONDITIONAL(MOONLIGHT_BOEHM, [test "x$with_moon_gc" = "xboehm"])
-AM_CONDITIONAL(MOONLIGHT_SGEN, [test "x$with_moon_gc" = "xsgen"])
 
 AM_CONDITIONAL(INSTALL_2_0, [test "x$with_profile2" = xyes])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
@@ -3612,10 +3592,6 @@ fi
 
     if test x$DISABLE_MCS_DOCS = xyes; then
       echo "DISABLE_MCS_DOCS = yes" >> $mcs_topdir/build/config.make
-    fi
-
-    if test x$with_moonlight != xno; then
-      echo "MOONLIGHT = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
     if test x$has_extension_module != xno; then

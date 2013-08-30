@@ -60,18 +60,10 @@ endif
 boehm_libraries = $(shared_boehm_libraries) libmonoruntime-static.la
 endif
 
-if MOONLIGHT
-moonlight_libraries = libmonoruntimemoon.la
-moon-do-build: libmonoruntime-static.la libmonoruntimemoon.la
-moon-do-clean:
-	-test -z "libmonoruntime-static.la" || rm -f libmonoruntime-static.la
-	-test -z "libmonoruntimemoon.la" || rm -f libmonoruntimemoon.la
-endif
-
 if DISABLE_EXECUTABLES
 noinst_LTLIBRARIES = $(shared_sgen_libraries) $(shared_boehm_libraries)
 else
-noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries) $(moonlight_libraries)
+noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries)
 endif
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
@@ -265,15 +257,6 @@ sgen_sources = \
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
-
-if MOONLIGHT
-libmonoruntimemoon_la_SOURCES = $(libmonoruntime_la_SOURCES)
-if MOONLIGHT_BOEHM
-libmonoruntimemoon_la_CFLAGS = $(MOONLIGHT_DEFINES) $(BOEHM_DEFINES)
-else
-libmonoruntimemoon_la_CFLAGS = $(MOONLIGHT_DEFINES) $(SGEN_DEFINES)
-endif
-endif
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(sgen_sources)
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)

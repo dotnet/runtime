@@ -24,14 +24,6 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 
-if MOONLIGHT
-moon_libs = \
-	$(monodir)/mono/metadata/libmonoruntimemoon.la	\
-	$(monodir)/mono/io-layer/libwapi.la	\
-	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV)
-endif
-
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
@@ -161,14 +153,6 @@ if DISABLE_EXECUTABLES
 noinst_LTLIBRARIES = $(mini_common_lib)
 else
 noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la
-endif
-
-if MOONLIGHT
-noinst_LTLIBRARIES += libmono-moon.la
-moon-do-build: $(BUILT_SOURCES) mono libmono-moon.la
-moon-do-clean: maintainer-clean-generic
-	-test -z "mono$(EXEEXT)" || rm -f mono$(EXEEXT)
-	-test -z "libmono-moon.la" || rm -f libmono-moon.la
 endif
 
 if LOADED_LLVM
@@ -568,17 +552,6 @@ libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags)
-
-if MOONLIGHT
-libmono_moon_la_SOURCES = $(libmini_la_SOURCES)
-if MOONLIGHT_BOEHM
-libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
-libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
-else
-libmono_moon_la_CFLAGS = $(mono_sgen_CFLAGS) $(MOONLIGHT_DEFINES)
-libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
-endif
-endif
 
 #
 # This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
