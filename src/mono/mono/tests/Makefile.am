@@ -713,7 +713,11 @@ if AMD64
 test-sgen : sgen-tests
 else
 if X86
+if HOST_WIN32
+test-sgen :
+else
 test-sgen : sgen-tests
+endif
 else
 if ARM
 test-sgen : sgen-tests
