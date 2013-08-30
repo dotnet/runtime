@@ -6879,6 +6879,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
+	CHECK_CFG_EXCEPTION;
+
 	if (header->code_size == 0)
 		UNVERIFIED;
 
