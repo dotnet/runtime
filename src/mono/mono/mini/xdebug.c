@@ -134,7 +134,7 @@ static int il_file_line_index;
 static GHashTable *xdebug_syms;
 
 void
-mono_xdebug_init (char *options)
+mono_xdebug_init (const char *options)
 {
 	MonoImageWriter *w;
 	char **args, **ptr;

@@ -820,7 +820,7 @@ mono_debugger_agent_parse_options (char *options)
 	char **args, **ptr;
 	char *host;
 	int port;
-	char *extra;
+	const char *extra;
 
 #ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	fprintf (stderr, "--debugger-agent is not supported on this platform.\n");

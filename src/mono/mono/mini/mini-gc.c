@@ -2443,7 +2443,7 @@ static void
 parse_debug_options (void)
 {
 	char **opts, **ptr;
-	char *env;
+	const char *env;
 
 	env = g_getenv ("MONO_GCMAP_DEBUG");
 	if (!env)
