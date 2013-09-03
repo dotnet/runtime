@@ -357,6 +357,7 @@ AC_PROG_CXX
 AM_PROG_AS
 AC_PROG_INSTALL
 AC_PROG_AWK
+AM_PROG_CC_C_O
 dnl We should use AM_PROG_AS, but it's not available on automake/aclocal 1.4
 : ${CCAS='$(CC)'}
 # Set ASFLAGS if not already set.
