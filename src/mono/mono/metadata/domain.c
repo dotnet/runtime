@@ -102,22 +102,9 @@ typedef struct {
 	int startup_count;
 } AppConfigInfo;
 
-/*
- * AotModuleInfo: Contains information about AOT modules.
- */
-typedef struct {
-	MonoImage *image;
-	gpointer start, end;
-} AotModuleInfo;
-
 static const MonoRuntimeInfo *current_runtime = NULL;
 
 static MonoJitInfoFindInAot jit_info_find_in_aot_func = NULL;
-
-/*
- * Contains information about AOT loaded code.
- */
-static MonoAotModuleInfoTable *aot_modules = NULL;
 
 /* This is the list of runtime versions supported by this JIT.
  */
@@ -146,9 +133,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRu
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
-
-static MonoImage*
-mono_jit_info_find_aot_module (guint8* addr);
 
 MonoNativeTlsKey
 mono_domain_get_tls_key (void)
@@ -392,9 +376,8 @@ MonoJitInfo*
 mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot)
 {
 	MonoJitInfoTable *table;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, *module_ji;
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
-	MonoImage *image;
 
 	++mono_stats.jit_info_table_lookup_count;
 
@@ -415,10 +398,13 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 		return ji;
 
 	/* Maybe its an AOT module */
-	if (try_aot) {
-		image = mono_jit_info_find_aot_module ((guint8*)addr);
-		if (image)
-			ji = jit_info_find_in_aot_func (domain, image, addr);
+	if (try_aot && mono_root_domain && mono_root_domain->aot_modules) {
+		table = get_hazardous_pointer ((gpointer volatile*)&mono_root_domain->aot_modules, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+		module_ji = jit_info_table_find (table, hp, (gint8*)addr);
+		if (module_ji)
+			ji = jit_info_find_in_aot_func (domain, module_ji->d.image, addr);
+		if (hp)
+			mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
 	}
 	
 	return ji;
@@ -849,84 +835,30 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 	mono_domain_unlock (domain);
 }
 
-static MonoAotModuleInfoTable*
-mono_aot_module_info_table_new (void)
-{
-	return g_array_new (FALSE, FALSE, sizeof (gpointer));
-}
-
-static int
-aot_info_table_index (MonoAotModuleInfoTable *table, char *addr)
-{
-	int left = 0, right = table->len;
-
-	while (left < right) {
-		int pos = (left + right) / 2;
-		AotModuleInfo *ainfo = g_array_index (table, gpointer, pos);
-		char *start = ainfo->start;
-		char *end = ainfo->end;
-
-		if (addr < start)
-			right = pos;
-		else if (addr >= end) 
-			left = pos + 1;
-		else
-			return pos;
-	}
-
-	return left;
-}
-
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 {
-	AotModuleInfo *ainfo = g_new0 (AotModuleInfo, 1);
-	int pos;
-
-	ainfo->image = image;
-	ainfo->start = start;
-	ainfo->end = end;
+	MonoJitInfo *ji;
 
 	mono_appdomains_lock ();
 
-	if (!aot_modules)
-		aot_modules = mono_aot_module_info_table_new ();
-
-	pos = aot_info_table_index (aot_modules, start);
-
-	g_array_insert_val (aot_modules, pos, ainfo);
-
-	mono_appdomains_unlock ();
-}
-
-static MonoImage*
-mono_jit_info_find_aot_module (guint8* addr)
-{
-	guint left = 0, right;
-
-	if (!aot_modules)
-		return NULL;
-
-	mono_appdomains_lock ();
-
-	right = aot_modules->len;
-	while (left < right) {
-		guint pos = (left + right) / 2;
-		AotModuleInfo *ai = g_array_index (aot_modules, gpointer, pos);
-
-		if (addr < (guint8*)ai->start)
-			right = pos;
-		else if (addr >= (guint8*)ai->end)
-			left = pos + 1;
-		else {
-			mono_appdomains_unlock ();
-			return ai->image;
-		}
+	/*
+	 * We reuse MonoJitInfoTable to store AOT module info,
+	 * this gives us async-safe lookup.
+	 */
+	g_assert (mono_root_domain);
+	if (!mono_root_domain->aot_modules) {
+		mono_root_domain->num_jit_info_tables ++;
+		mono_root_domain->aot_modules = jit_info_table_new (mono_root_domain);
 	}
 
-	mono_appdomains_unlock ();
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->d.image = image;
+	ji->code_start = start;
+	ji->code_size = (guint8*)end - (guint8*)start;
+	jit_info_table_add (mono_root_domain, &mono_root_domain->aot_modules, ji);
 
-	return NULL;
+	mono_appdomains_unlock ();
 }
 
 void
@@ -2036,6 +1968,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	 * this will free them.
 	 */
 	mono_thread_hazardous_try_free_all ();
+	if (domain->aot_modules)
+		jit_info_table_free (domain->aot_modules);
 	g_assert (domain->num_jit_info_tables == 1);
 	jit_info_table_free (domain->jit_info_table);
 	domain->jit_info_table = NULL;

@@ -193,6 +193,7 @@ struct _MonoJitInfo {
 	union {
 		MonoMethod *method;
 		gpointer method_info;
+		MonoImage *image;
 	} d;
 	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
@@ -318,6 +319,12 @@ struct _MonoDomain {
 	int		    num_jit_info_tables;
 	MonoJitInfoTable * 
 	  volatile          jit_info_table;
+	/*
+	 * Contains information about AOT loaded code.
+	 * Only used in the root domain.
+	 */
+	MonoJitInfoTable *
+	  volatile          aot_modules;
 	GSList		   *jit_info_free_queue;
 	/* Used when loading assemblies */
 	gchar **search_path;
