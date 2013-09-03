@@ -2519,7 +2519,11 @@ ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr)
 gint64
 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr)
 {
+#if SIZEOF_VOID_P == 8
 	return *((volatile gint64 *) (ptr));
+#else
+	return InterlockedCompareExchange64 (ptr, 0, 0); /*Must ensure atomicity of the operation. */
+#endif
 }
 
 void *
