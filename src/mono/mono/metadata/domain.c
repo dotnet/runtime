@@ -331,32 +331,11 @@ jit_info_table_chunk_index (MonoJitInfoTableChunk *chunk, MonoThreadHazardPointe
 	return left;
 }
 
-/*
- * mono_jit_info_table_find_internal:
- *
- * If TRY_AOT is FALSE, avoid loading information for missing methods from AOT images, which is currently not async safe.
- * In this case, only those AOT methods will be found whose jit info is already loaded.
- */
-MonoJitInfo*
-mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot)
+static MonoJitInfo*
+jit_info_table_find (MonoJitInfoTable *table, MonoThreadHazardPointers *hp, gint8 *addr)
 {
-	MonoJitInfoTable *table;
 	MonoJitInfo *ji;
 	int chunk_pos, pos;
-	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
-	MonoImage *image;
-
-	++mono_stats.jit_info_table_lookup_count;
-
-	/* First we have to get the domain's jit_info_table.  This is
-	   complicated by the fact that a writer might substitute a
-	   new table and free the old one.  What the writer guarantees
-	   us is that it looks at the hazard pointers after it has
-	   changed the jit_info_table pointer.  So, if we guard the
-	   table by a hazard pointer and make sure that the pointer is
-	   still there after we've made it hazardous, we don't have to
-	   worry about the writer freeing the table. */
-	table = get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
 
 	chunk_pos = jit_info_table_index (table, (gint8*)addr);
 	g_assert (chunk_pos < table->num_chunks);
@@ -382,7 +361,6 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 			}
 			if ((gint8*)addr >= (gint8*)ji->code_start
 					&& (gint8*)addr < (gint8*)ji->code_start + ji->code_size) {
-				mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
 				mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
 				return ji;
 			}
@@ -399,13 +377,42 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 	} while (chunk_pos < table->num_chunks);
 
  not_found:
-	if (!hp)
-		return NULL;
+	if (hp)
+		mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
+	return NULL;
+}
 
-	mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
-	mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
+/*
+ * mono_jit_info_table_find_internal:
+ *
+ * If TRY_AOT is FALSE, avoid loading information for missing methods from AOT images, which is currently not async safe.
+ * In this case, only those AOT methods will be found whose jit info is already loaded.
+ */
+MonoJitInfo*
+mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot)
+{
+	MonoJitInfoTable *table;
+	MonoJitInfo *ji;
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+	MonoImage *image;
 
-	ji = NULL;
+	++mono_stats.jit_info_table_lookup_count;
+
+	/* First we have to get the domain's jit_info_table.  This is
+	   complicated by the fact that a writer might substitute a
+	   new table and free the old one.  What the writer guarantees
+	   us is that it looks at the hazard pointers after it has
+	   changed the jit_info_table pointer.  So, if we guard the
+	   table by a hazard pointer and make sure that the pointer is
+	   still there after we've made it hazardous, we don't have to
+	   worry about the writer freeing the table. */
+	table = get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+
+	ji = jit_info_table_find (table, hp, (gint8*)addr);
+	if (hp)
+		mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
+	if (ji)
+		return ji;
 
 	/* Maybe its an AOT module */
 	if (try_aot) {
@@ -679,22 +686,16 @@ jit_info_table_chunk_overflow (MonoJitInfoTable *table, MonoJitInfoTableChunk *c
  * the one we're looking for (i.e. we either find the element directly
  * or we end up to the left of it).
  */
-void
-mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
+static void
+jit_info_table_add (MonoDomain *domain, MonoJitInfoTable *volatile *table_ptr, MonoJitInfo *ji)
 {
 	MonoJitInfoTable *table;
-	int chunk_pos, pos;
 	MonoJitInfoTableChunk *chunk;
+	int chunk_pos, pos;
 	int num_elements;
 	int i;
 
-	g_assert (ji->d.method != NULL);
-
-	mono_domain_lock (domain);
-
-	++mono_stats.jit_info_table_insert_count;
-
-	table = domain->jit_info_table;
+	table = *table_ptr;
 
  restart:
 	chunk_pos = jit_info_table_index (table, (gint8*)ji->code_start + ji->code_size);
@@ -707,7 +708,7 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 		/* Debugging code, should be removed. */
 		//jit_info_table_check (new_table);
 
-		domain->jit_info_table = new_table;
+		*table_ptr = new_table;
 		mono_memory_barrier ();
 		domain->num_jit_info_tables++;
 		mono_thread_hazardous_free_or_queue (table, (MonoHazardousFreeFunc)jit_info_table_free, TRUE, FALSE);
@@ -749,6 +750,18 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 
 	/* Debugging code, should be removed. */
 	//jit_info_table_check (table);
+}
+
+void
+mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
+{
+	g_assert (ji->d.method != NULL);
+
+	mono_domain_lock (domain);
+
+	++mono_stats.jit_info_table_insert_count;
+
+	jit_info_table_add (domain, &domain->jit_info_table, ji);
 
 	mono_domain_unlock (domain);
 }
@@ -780,18 +793,12 @@ mono_jit_info_free_or_queue (MonoDomain *domain, MonoJitInfo *ji)
 	}
 }
 
-void
-mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
+static void
+jit_info_table_remove (MonoJitInfoTable *table, MonoJitInfo *ji)
 {
-	MonoJitInfoTable *table;
 	MonoJitInfoTableChunk *chunk;
 	gpointer start = ji->code_start;
 	int chunk_pos, pos;
-
-	mono_domain_lock (domain);
-	table = domain->jit_info_table;
-
-	++mono_stats.jit_info_table_remove_count;
 
 	chunk_pos = jit_info_table_index (table, start);
 	g_assert (chunk_pos < table->num_chunks);
@@ -823,6 +830,19 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 
 	/* Debugging code, should be removed. */
 	//jit_info_table_check (table);
+}
+
+void
+mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
+{
+	MonoJitInfoTable *table;
+
+	mono_domain_lock (domain);
+	table = domain->jit_info_table;
+
+	++mono_stats.jit_info_table_remove_count;
+
+	jit_info_table_remove (table, ji);
 
 	mono_jit_info_free_or_queue (domain, ji);
 
