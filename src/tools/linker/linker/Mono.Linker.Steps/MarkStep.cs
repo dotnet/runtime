@@ -868,7 +868,7 @@ namespace Mono.Linker.Steps {
 				(Annotations.GetAction (assembly) == AssemblyAction.Link && Annotations.GetAction (method) == MethodAction.Parse));
 		}
 
-		static bool IsPropertyMethod (MethodDefinition md)
+		static internal bool IsPropertyMethod (MethodDefinition md)
 		{
 			return (md.SemanticsAttributes & MethodSemanticsAttributes.Getter) != 0 ||
 				(md.SemanticsAttributes & MethodSemanticsAttributes.Setter) != 0;
@@ -881,7 +881,7 @@ namespace Mono.Linker.Steps {
 				(md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
 		}
 
-		static PropertyDefinition GetProperty (MethodDefinition md)
+		static internal PropertyDefinition GetProperty (MethodDefinition md)
 		{
 			TypeDefinition declaringType = (TypeDefinition) md.DeclaringType;
 			foreach (PropertyDefinition prop in declaringType.Properties)
