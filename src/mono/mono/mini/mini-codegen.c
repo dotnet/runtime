@@ -409,7 +409,7 @@ typedef struct {
 	regmask_t preferred_mask; /* the hreg where the register should be allocated, or 0 */
 } RegTrack;
 
-#ifndef DISABLE_LOGGING
+#if !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT)
 
 static const char* const patch_info_str[] = {
 #define PATCH_INFO(a,b) "" #a,
@@ -716,7 +716,7 @@ void
 mono_print_ins_index (int i, MonoInst *ins)
 {
 }
-#endif /* DISABLE_LOGGING */
+#endif /* !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) */
 
 void
 mono_print_ins (MonoInst *ins)
