@@ -452,7 +452,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (dims == -1){
 		int cols = 0, rows = 0;
 				      
-		char *str = g_getenv ("COLUMNS");
+		const char *str = g_getenv ("COLUMNS");
 		if (str != NULL)
 			cols = atoi (str);
 		str = g_getenv ("LINES");

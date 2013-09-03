@@ -525,7 +525,7 @@ cominterop_type_from_handle (MonoType *handle)
 void
 mono_cominterop_init (void)
 {
-	char* com_provider_env = NULL;
+	const char* com_provider_env;
 
 	InitializeCriticalSection (&cominterop_mutex);
 

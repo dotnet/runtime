@@ -61,7 +61,7 @@ void
 mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
-	char *env;
+	const char *env;
 
 	if (gc_initialized)
 		return;
