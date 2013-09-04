@@ -3513,6 +3513,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_TLS_OFFSET:
 		target = GINT_TO_POINTER (mini_get_tls_offset (GPOINTER_TO_INT (patch_info->data.target)));
 		break;
+	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: {
+		target = NULL;
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}

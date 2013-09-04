@@ -233,6 +233,9 @@ typedef struct MonoAotCompile {
 	GHashTable *dwarf_ln_filenames;
 	gboolean global_symbols;
 	gboolean direct_method_addresses;
+	int objc_selector_index, objc_selector_index_2;
+	GPtrArray *objc_selectors;
+	GHashTable *objc_selector_to_index;
 } MonoAotCompile;
 
 typedef struct {
@@ -833,6 +836,35 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 }
 
 #endif
+
+/*
+ * arch_emit_objc_selector_ref:
+ *
+ *   Emit the implementation of OP_OBJC_GET_SELECTOR, which itself implements @selector(foo:) in objective-c.
+ */
+static void
+arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int *code_size)
+{
+#if defined(TARGET_ARM)
+	char symbol1 [256];
+	char symbol2 [256];
+	int lindex = acfg->objc_selector_index_2 ++;
+
+	/* Emit ldr.imm/b */
+	emit_bytes (acfg, code, 8);
+
+	sprintf (symbol1, "L_OBJC_SELECTOR_%d", lindex);
+	sprintf (symbol2, "L_OBJC_SELECTOR_REFERENCES_%d", index);
+
+	emit_label (acfg, symbol1);
+	img_writer_emit_unset_mode (acfg->w);
+	fprintf (acfg->fp, ".long %s-(%s+12)", symbol2, symbol1);
+
+	*code_size = 12;
+#else
+	g_assert_not_reached ();
+#endif
+}
 
 /*
  * arch_emit_plt_entry:
@@ -4511,6 +4543,30 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				patch_info->type = MONO_PATCH_INFO_NONE;
 				break;
 			}
+			case MONO_PATCH_INFO_OBJC_SELECTOR_REF: {
+				int code_size, index;
+				char *selector = (void*)patch_info->data.target;
+
+				if (!acfg->objc_selector_to_index)
+					acfg->objc_selector_to_index = g_hash_table_new (g_str_hash, g_str_equal);
+				if (!acfg->objc_selectors)
+					acfg->objc_selectors = g_ptr_array_new ();
+				index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->objc_selector_to_index, selector));
+				if (index)
+					index --;
+				else {
+					index = acfg->objc_selector_index;
+					g_ptr_array_add (acfg->objc_selectors, (void*)patch_info->data.target);
+					g_hash_table_insert (acfg->objc_selector_to_index, selector, GUINT_TO_POINTER (index + 1));
+					acfg->objc_selector_index ++;
+				}
+
+				arch_emit_objc_selector_ref (acfg, code + i, index, &code_size);
+				i += code_size - 1;
+				skip = TRUE;
+				patch_info->type = MONO_PATCH_INFO_NONE;
+				break;
+			}
 			default: {
 				/*
 				 * If this patch is a call, try emitting a direct call instead of
@@ -8078,6 +8134,45 @@ emit_blob (MonoAotCompile *acfg)
 }
 
 static void
+emit_objc_selectors (MonoAotCompile *acfg)
+{
+	int i;
+
+	if (!acfg->objc_selectors || acfg->objc_selectors->len == 0)
+		return;
+
+	/*
+	 * From
+	 * cat > foo.m << EOF
+	 * void *ret ()
+	 * {
+	 * return @selector(print:);
+	 * }
+	 * EOF
+	 */
+
+	img_writer_emit_unset_mode (acfg->w);
+	g_assert (acfg->fp);
+	fprintf (acfg->fp, ".section	__DATA,__objc_selrefs,literal_pointers,no_dead_strip\n");
+	fprintf (acfg->fp, ".align	2\n");
+	for (i = 0; i < acfg->objc_selectors->len; ++i) {
+		fprintf (acfg->fp, "L_OBJC_SELECTOR_REFERENCES_%d:\n", i);
+		fprintf (acfg->fp, ".long	L_OBJC_METH_VAR_NAME_%d\n", i);
+	}
+	fprintf (acfg->fp, ".section	__TEXT,__cstring,cstring_literals\n");
+	for (i = 0; i < acfg->objc_selectors->len; ++i) {
+		fprintf (acfg->fp, "L_OBJC_METH_VAR_NAME_%d:\n", i);
+		fprintf (acfg->fp, ".asciz \"%s\"\n", (char*)g_ptr_array_index (acfg->objc_selectors, i));
+	}
+
+	fprintf (acfg->fp, ".section	__DATA,__objc_imageinfo,regular,no_dead_strip\n");
+	fprintf (acfg->fp, ".align	2\n");
+	fprintf (acfg->fp, "L_OBJC_IMAGE_INFO:\n");
+	fprintf (acfg->fp, ".long	0\n");
+	fprintf (acfg->fp, ".long	16\n");
+}
+
+static void
 emit_dwarf_info (MonoAotCompile *acfg)
 {
 #ifdef EMIT_DWARF_INFO
@@ -8788,6 +8883,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_file_info (acfg);
 
 	emit_blob (acfg);
+
+	emit_objc_selectors (acfg);
 
 	emit_globals (acfg);
 

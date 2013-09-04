@@ -49,6 +49,7 @@ PATCH_INFO(GSHAREDVT_CALL, "gsharedvt_call")
 PATCH_INFO(GSHAREDVT_METHOD, "gsharedvt_method")
 PATCH_INFO(JIT_TLS_ID, "jit_tls_id")
 PATCH_INFO(TLS_OFFSET, "tls_offset")
+PATCH_INFO(OBJC_SELECTOR_REF, "objc_selector_ref")
 PATCH_INFO(NONE, "none")
 
 

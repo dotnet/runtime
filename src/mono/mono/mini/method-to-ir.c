@@ -5384,6 +5384,35 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 * all inputs:
 		 * http://everything2.com/?node_id=1051618
 		 */
+	} else if ((!strcmp (cmethod->klass->image->assembly->aname.name, "MonoMac") || !strcmp (cmethod->klass->image->assembly->aname.name, "monotouch")) && !strcmp (cmethod->klass->name, "Selector") && !strcmp (cmethod->name, "GetHandle") && cfg->compile_aot && (args [0]->opcode == OP_GOT_ENTRY || args[0]->opcode == OP_AOTCONST)) {
+#ifdef MONO_ARCH_HAVE_OBJC_GET_SELECTOR
+		MonoInst *pi;
+		MonoJumpInfoToken *ji;
+		MonoString *s;
+
+		cfg->disable_llvm = TRUE;
+
+		if (args [0]->opcode == OP_GOT_ENTRY) {
+			pi = args [0]->inst_p1;
+			g_assert (pi->opcode == OP_PATCH_INFO);
+			g_assert ((int)pi->inst_p1 == MONO_PATCH_INFO_LDSTR);
+			ji = pi->inst_p0;
+		} else {
+			g_assert ((int)args [0]->inst_p1 == MONO_PATCH_INFO_LDSTR);
+			ji = args [0]->inst_p0;
+		}
+
+		NULLIFY_INS (args [0]);
+
+		// FIXME: Ugly
+		s = mono_ldstr (cfg->domain, ji->image, mono_metadata_token_index (ji->token));
+		MONO_INST_NEW (cfg, ins, OP_OBJC_GET_SELECTOR);
+		ins->dreg = mono_alloc_ireg (cfg);
+		// FIXME: Leaks
+		ins->inst_p0 = mono_string_to_utf8 (s);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+#endif
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS

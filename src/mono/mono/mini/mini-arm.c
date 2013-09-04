@@ -4284,6 +4284,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Load the value from the GOT */
 			ARM_LDR_REG_REG (code, ins->dreg, ARMREG_PC, ins->dreg);
 			break;
+		case OP_OBJC_GET_SELECTOR:
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_OBJC_SELECTOR_REF, ins->inst_p0);
+			ARM_LDR_IMM (code, ins->dreg, ARMREG_PC, 0);
+			ARM_B (code, 0);
+			*(gpointer*)code = NULL;
+			code += 4;
+			ARM_LDR_REG_REG (code, ins->dreg, ARMREG_PC, ins->dreg);
+			break;
 		case OP_ICONV_TO_I4:
 		case OP_ICONV_TO_U4:
 		case OP_MOVE:

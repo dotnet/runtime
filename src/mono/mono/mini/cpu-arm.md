@@ -194,6 +194,7 @@ float_clt_un: dest:i src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 setfret: src1:f len:12
 aot_const: dest:i len:16
+objc_get_selector: dest:i len:32
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4

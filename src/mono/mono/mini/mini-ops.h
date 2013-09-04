@@ -1231,3 +1231,5 @@ MINI_OP(OP_MIPS_COND_EXC_INC, "mips_cond_exc_inc", NONE, IREG, IREG)
 MINI_OP(OP_LLVM_OUTARG_VT,	"llvm_outarg_vt", IREG, VREG, NONE)
 #endif
 
+MINI_OP(OP_OBJC_GET_SELECTOR, "objc_get_selector", IREG, NONE, NONE)
+
