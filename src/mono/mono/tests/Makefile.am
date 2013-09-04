@@ -722,11 +722,11 @@ endif
 endif
 
 # Precompile the test assemblies in parallel
-compile:
+compile-tests:
 	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 
 test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test-process-exit test-messages rm-empty-logs
-test-wrench: compile assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test-process-exit test-sgen test-messages rm-empty-logs
+test-wrench: compile-tests assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test-process-exit test-sgen test-messages rm-empty-logs
 
 # Remove empty .stdout and .stderr files for wrench
 rm-empty-logs:
