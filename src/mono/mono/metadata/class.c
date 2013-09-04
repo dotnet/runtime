@@ -7558,11 +7558,31 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	return class;
 }
 
-/*FIXME test for interfaces with variant generic arguments*/
+/**
+ * mono_class_is_subclass_of:
+ * @klass: class to probe if it is a subclass of another one
+ * @klassc: the class we suspect is the base class
+ * @check_interfaces: whether we should perform interface checks
+ *
+ * This method determines whether @klass is a subclass of @klassc.
+ *
+ * If the @check_interfaces flag is set, then if @klassc is an interface
+ * this method return true if the @klass implements the interface or
+ * if @klass is an interface, if one of its base classes is @klass.
+ *
+ * If @check_interfaces is false then, then if @klass is not an interface
+ * then it returns true if the @klass is a subclass of @klassc.
+ *
+ * if @klass is an interface and @klassc is System.Object, then this function
+ * return true.
+ *
+ */
 gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
 			   gboolean check_interfaces)
 {
+/*FIXME test for interfaces with variant generic arguments*/
+	
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && !MONO_CLASS_IS_INTERFACE (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, klassc->interface_id))
 			return TRUE;
