@@ -369,7 +369,7 @@ mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 #else /* !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
 
 void
-mono_xdebug_init (char *options)
+mono_xdebug_init (const char *options)
 {
 }
 
