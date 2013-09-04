@@ -3098,11 +3098,9 @@ mono_patch_info_hash (gconstpointer data)
 		return (ji->type << 8) | ji->data.table->table_size;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 		return (ji->type << 8) | (gssize)ji->data.gsharedvt_method->method;
-#ifdef MONO_ARCH_HAVE_OBJC_GET_SELECTOR
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF:
-		// Hash on the selector name
+		/* Hash on the selector name */
 		return g_str_hash (ji->data.target);
-#endif
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
