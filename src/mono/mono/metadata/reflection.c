@@ -8727,6 +8727,15 @@ mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 	return mono_custom_attrs_from_index (klass->image, idx);
 }
 
+/**
+ * mono_custom_attrs_from_param:
+ * @method: handle to the method that we want to retrieve custom parameter information from
+ * @param: parameter number, where zero represent the return value, and one is the first parameter in the method
+ *
+ * The result must be released with mono_custom_attrs_free().
+ *
+ * Returns: the custom attribute object for the specified parameter, or NULL if there are none.
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 {
