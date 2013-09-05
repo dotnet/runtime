@@ -199,7 +199,7 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 
 #endif
 
-#ifndef HAS_64BITS_ATOMICS
+#if defined(HAS_64BITS_ATOMICS) && !defined(_WIN32)
 
 #if defined (TARGET_MACH) && defined (TARGET_ARM) && (defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7S__))
 
