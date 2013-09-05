@@ -1874,6 +1874,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 {
 	int code_size, code_alloc;
 	GSList *tmp;
+	gpointer *p;
+
 	if ((domain == mono_root_domain) && !force) {
 		g_warning ("cant unload root domain");
 		return;
@@ -1936,6 +1938,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		MonoAssembly *ass = tmp->data;
 		mono_assembly_release_gc_roots (ass);
 	}
+
+	/* Have to zero out reference fields since they will be invalidated by the clear_domain () call below */
+	for (p = (gpointer*)&domain->MONO_DOMAIN_FIRST_OBJECT; p < (gpointer*)&domain->MONO_DOMAIN_FIRST_GC_TRACKED; ++p)
+		*p = NULL;
 
 	/* This needs to be done before closing assemblies */
 	mono_gc_clear_domain (domain);
