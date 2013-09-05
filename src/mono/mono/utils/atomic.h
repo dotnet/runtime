@@ -28,6 +28,7 @@
 #if defined(__WIN32__) || defined(_WIN32)
 
 #include <windows.h>
+#define HAS_64BITS_ATOMICS 1
 
 /* Prefer GCC atomic ops if the target supports it (see configure.in). */
 #elif defined(USE_GCC_ATOMIC_OPS)
