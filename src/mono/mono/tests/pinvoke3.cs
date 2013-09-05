@@ -66,6 +66,19 @@ public class Tests {
 		return 0;
 	}
 
+	public static int delegate_test_struct_in (int a, [In] ref SimpleStruct ss, int b)
+	{
+		if (a == 1 && b == 2 && ss.a && !ss.b && ss.c && ss.d == "TEST2") {
+			ss.a = true;
+			ss.b = true;
+			ss.c = true;
+			ss.d = "TEST3";
+			return 0;
+		}
+
+		return 1;
+	}
+
 	public static SimpleClass delegate_test_class (SimpleClass ss)
 	{
 		if (ss == null)
@@ -134,8 +147,13 @@ public class Tests {
 
 	public delegate int OutStructDelegate (int a, out SimpleStruct ss, int b);
 
+	public delegate int InStructDelegate (int a, [In] ref SimpleStruct ss, int b);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_struct")]
 	public static extern int mono_test_marshal_out_struct (int a, out SimpleStruct ss, int b, OutStructDelegate d);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_in_struct")]
+	public static extern int mono_test_marshal_in_struct (int a, ref SimpleStruct ss, int b, InStructDelegate d);
 	
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate2")]
 	public static extern int mono_test_marshal_delegate2 (SimpleDelegate2 d);
@@ -226,6 +244,14 @@ public class Tests {
 		OutStructDelegate d = new OutStructDelegate (delegate_test_struct_out);
 
 		return mono_test_marshal_out_struct (1, out ss, 2, d);
+	}
+
+	/* Test structures as in arguments of delegates */
+	public static int test_0_marshal_in_struct_delegate () {
+		SimpleStruct ss = new SimpleStruct () { a = true, b = false, c = true, d = "TEST2" };
+		InStructDelegate d = new InStructDelegate (delegate_test_struct_in);
+
+		return mono_test_marshal_in_struct (1, ref ss, 2, d);
 	}
 
 	/* Test classes as arguments and return values of delegates */

@@ -581,6 +581,27 @@ mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate f
 		return 1;
 }
 
+typedef int (STDCALL *InVTypeDelegate) (int a, simplestruct *ss, int b);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_in_struct (int a, simplestruct *ss, int b, InVTypeDelegate func)
+{
+	simplestruct *ss2;
+	int res;
+
+	memcpy (ss2, ss, sizeof (simplestruct));
+
+	res = func (a, ss, b);
+	if (res)
+		return 1;
+
+	/* Check that no modifications is made to the struct */
+	if (memcmp (ss, ss2, sizeof (simplestruct)) == 0)
+		return 0;
+	else
+		return 1;
+}
+
 typedef struct {
 	int a;
 	SimpleDelegate func, func2, func3;
@@ -2856,7 +2877,7 @@ mono_test_marshal_variant_out_bstr_byref(VARIANT* variant)
 {
 	variant->vt = VT_BSTR|VT_BYREF;
 	variant->byref = marshal_alloc(sizeof(gpointer));
-	*((gunichar**)variant->byref) = marshal_bstr_alloc("PI");
+	*((gunichar**)variant->byref) = (gunichar*)marshal_bstr_alloc("PI");
 
 	return 0;
 }
