@@ -230,6 +230,14 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	);
 }
 
+#elif defined (TARGET_MACH) && (defined (TARGET_X86) || defined (TARGET_AMD64))
+
+gint64
+InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+{
+	return __sync_val_compare_and_swap (dest, comp, exch);
+}
+
 #else
 
 gint64

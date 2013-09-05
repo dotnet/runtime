@@ -78,7 +78,8 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	return __sync_fetch_and_add (val, add);
 }
 
-#if defined (TARGET_ARM) && defined (TARGET_MACH)
+/*All Apple targets have broken compilers*/
+#if defined (TARGET_MACH)
 #define BROKEN_64BIT_ATOMICS_INTRINSIC 1
 #endif
 
