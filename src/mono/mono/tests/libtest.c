@@ -592,14 +592,18 @@ mono_test_marshal_in_struct (int a, simplestruct *ss, int b, InVTypeDelegate fun
 	memcpy (ss2, ss, sizeof (simplestruct));
 
 	res = func (a, ss, b);
-	if (res)
+	if (res) {
+		printf ("mono_test_marshal_in_struct () failed: %d\n", res);
 		return 1;
+	}
 
 	/* Check that no modifications is made to the struct */
-	if (ss2->a == ss->a && ss2->b == ss->b && ss2->c == ss->c && ss2->d == ss->d)
+	if (ss2->a == ss->a && ss2->b == ss->b && ss2->c == ss->c && ss2->d == ss->d) {
 		return 0;
-	else
+	} else {
+		printf ("mono_test_marshal_in_struct () failed: %d %d %d %d %d %d %p %p\n", ss->a, ss2->a, ss->b, ss2->b, ss->c, ss2->c, ss->d, ss2->d);
 		return 1;
+	}
 }
 
 typedef struct {
