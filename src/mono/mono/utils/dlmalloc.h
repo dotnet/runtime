@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #include <stddef.h>   /* for size_t */
+#include <mono/utils/mono-compiler.h>
 
 #if !ONLY_MSPACES
 
@@ -51,6 +52,9 @@ extern "C" {
 #define dlindependent_comalloc independent_comalloc
 #endif /* USE_DL_PREFIX */
 
+#ifdef ENABLE_EXTENSION_MODULE
+#include "../../../mono-extensions/mono/utils/dlmalloc.h"
+#endif
 
 /*
   malloc(size_t n)
