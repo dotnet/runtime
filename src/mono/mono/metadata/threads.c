@@ -48,6 +48,7 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-memory-model.h>
 
 #include <mono/metadata/gc-internal.h>
 
@@ -2395,114 +2396,120 @@ void mono_thread_stop (MonoThread *thread)
 gint8
 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr)
 {
-	return *((volatile gint8 *) (ptr));
+	gint8 tmp;
+	mono_atomic_load_acquire (tmp, gint8, (volatile gint8 *) ptr);
+	return tmp;
 }
 
 gint16
 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr)
 {
-	return *((volatile gint16 *) (ptr));
+	gint16 tmp;
+	mono_atomic_load_acquire (tmp, gint16, (volatile gint16 *) ptr);
+	return tmp;
 }
 
 gint32
 ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr)
 {
-	return *((volatile gint32 *) (ptr));
+	gint32 tmp;
+	mono_atomic_load_acquire (tmp, gint32, (volatile gint32 *) ptr);
+	return tmp;
 }
 
 gint64
 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr)
 {
-#if SIZEOF_VOID_P == 8
-	return *((volatile gint64 *) (ptr));
-#else
-	if ((size_t)ptr & 0x7) {
-		gint64 value;
-		mono_interlocked_lock ();
-		value = *(gint64 *)ptr;
-		mono_interlocked_unlock ();
-		return value;
-	}
-	return InterlockedCompareExchange64 (ptr, 0, 0); /*Must ensure atomicity of the operation. */
-#endif
+	gint64 tmp;
+	mono_atomic_load_acquire (tmp, gint64, (volatile gint64 *) ptr);
+	return tmp;
 }
 
 void *
 ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr)
 {
-	return (void *)  *((volatile void **) ptr);
+	volatile void *tmp;
+	mono_atomic_load_acquire (tmp, volatile void *, (volatile void **) ptr);
+	return (void *) tmp;
 }
 
 double
 ves_icall_System_Threading_Thread_VolatileReadDouble (void *ptr)
 {
-	return *((volatile double *) (ptr));
+	double tmp;
+	mono_atomic_load_acquire (tmp, double, (volatile double *) ptr);
+	return tmp;
 }
 
 float
 ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr)
 {
-	return *((volatile float *) (ptr));
+	float tmp;
+	mono_atomic_load_acquire (tmp, float, (volatile float *) ptr);
+	return tmp;
 }
 
 MonoObject*
 ves_icall_System_Threading_Volatile_Read_T (void *ptr)
 {
-	return (MonoObject*)*((volatile MonoObject**)ptr);
+	volatile MonoObject *tmp;
+	mono_atomic_load_acquire (tmp, volatile MonoObject *, (volatile MonoObject **) ptr);
+	return (MonoObject *) tmp;
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8 value)
 {
-	*((volatile gint8 *) ptr) = value;
+	mono_atomic_store_release ((volatile gint8 *) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16 value)
 {
-	*((volatile gint16 *) ptr) = value;
+	mono_atomic_store_release ((volatile gint16 *) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32 value)
 {
-	*((volatile gint32 *) ptr) = value;
+	mono_atomic_store_release ((volatile gint32 *) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64 value)
 {
-	*((volatile gint64 *) ptr) = value;
+	mono_atomic_store_release ((volatile gint64 *) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
 {
-	*((volatile void **) ptr) = value;
+	mono_atomic_store_release ((volatile void **) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *value)
 {
-	mono_gc_wbarrier_generic_store (ptr, value);
+	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
+	mono_gc_wbarrier_generic_nostore (ptr);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double value)
 {
-	*((volatile double *) ptr) = value;
+	mono_atomic_store_release ((volatile double *) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float value)
 {
-	*((volatile float *) ptr) = value;
+	mono_atomic_store_release ((volatile float *) ptr, value);
 }
 
 void
 ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value)
 {
-	*((volatile MonoObject **) ptr) = value;
+	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
 	mono_gc_wbarrier_generic_nostore (ptr);
 }
 
