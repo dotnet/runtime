@@ -3725,12 +3725,22 @@ mono_free_static_data (gpointer* static_data, gboolean threadlocal)
 {
 	int i;
 	for (i = 1; i < NUM_STATIC_DATA_IDX; ++i) {
-		if (!static_data [i])
+		gpointer p = static_data [i];
+		if (!p)
 			continue;
+		/*
+		 * At this point, the static data pointer array is still registered with the
+		 * GC, so must ensure that mark_tls_slots() will not encounter any invalid
+		 * data.  Freeing the individual arrays without first nulling their slots
+		 * would make it possible for mark_tls_slots() to encounter a pointer to
+		 * such an already freed array.  See bug #13813.
+		 */
+		static_data [i] = NULL;
+		mono_memory_write_barrier ();
 		if (mono_gc_user_markers_supported () && threadlocal)
-			g_free (static_data [i]);
+			g_free (p);
 		else
-			mono_gc_free_fixed (static_data [i]);
+			mono_gc_free_fixed (p);
 	}
 	mono_gc_free_fixed (static_data);
 }
