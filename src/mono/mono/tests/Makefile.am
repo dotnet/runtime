@@ -790,7 +790,7 @@ runtest-wrench: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+	  for i in $${failed_tests}; do echo $${i}; cat $${i}.stdout; cat $${i}.stderr; done; exit 1; fi
 
 runtest-managed-wrench: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS_WRENCH)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
