@@ -24,6 +24,12 @@ AC_PROG_LN_S
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+case $host_os in
+*cygwin* )
+		 echo "Run configure using ./configure --host=i686-pc-mingw32"
+		 exit 1
+esac
+
 # In case of cygwin, override LN_S, irrespective of what it determines.
 # The build uses cygwin, but the actual runtime doesn't.
 case $host_os in
