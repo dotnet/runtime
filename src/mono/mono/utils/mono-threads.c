@@ -206,6 +206,33 @@ mono_thread_info_current (void)
 	return mono_native_tls_get_value (thread_info_key);
 }
 
+static MonoThreadInfo*
+mono_thread_info_current_slow (void)
+{
+	MonoThreadInfo *info = mono_thread_info_current ();
+	if (info)
+		return info;
+
+	info = mono_thread_info_lookup (mono_native_thread_id_get ()); /*info on HP1*/
+
+	/*
+	We might be called during thread cleanup, but we cannot be called after cleanup as happened.
+	The way to distinguish between before, during and after cleanup is the following:
+
+	-If the TLS key is set, cleanup has not begun;
+	-If the TLS key is clean, but the thread remains registered, cleanup is in progress;
+	-If the thread is nowhere to be found, cleanup has finished.
+
+	We cannot function after cleanup since there's no way to ensure what will happen.
+	*/
+	g_assert (info);
+
+	/*We're looking up the current thread which will not be freed until we finish running, so no need to keep it on a HP */
+	mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
+
+	return info;
+}
+
 int
 mono_thread_info_get_small_id (void)
 {
@@ -430,7 +457,7 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 
 	MONO_SEM_POST (&info->suspend_semaphore);
 	mono_hazard_pointer_clear (hp, 1);
-	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
+	mono_atomic_store_release (&mono_thread_info_current_slow ()->inside_critical_region, FALSE);
 
 	return result;
 }
@@ -438,7 +465,7 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 void
 mono_thread_info_finish_suspend (void)
 {
-	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
+	mono_atomic_store_release (&mono_thread_info_current_slow ()->inside_critical_region, FALSE);
 }
 
 /*
@@ -513,7 +540,7 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 		sleep_duration += 10;
 	}
 
-	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, TRUE);
+	mono_atomic_store_release (&mono_thread_info_current_slow ()->inside_critical_region, TRUE);
 
 	mono_thread_info_suspend_unlock ();
 	return info;
