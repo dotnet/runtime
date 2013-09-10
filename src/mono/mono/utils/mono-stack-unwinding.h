@@ -46,16 +46,22 @@ typedef struct {
 	MonoJitInfo *ji;
 	/*
 	 * Same as ji->method.
+	 * Not valid if ASYNC_CONTEXT is true.
 	 */
 	MonoMethod *method;
 	/*
 	 * If ji->method is a gshared method, this is the actual method instance.
 	 * This is only filled if lookup for actual method was requested (MONO_UNWIND_LOOKUP_ACTUAL_METHOD)
+	 * Not valid if ASYNC_CONTEXT is true.
 	 */
 	MonoMethod *actual_method;
 	/* The domain containing the code executed by this frame */
 	MonoDomain *domain;
 	gboolean managed;
+	/*
+	 * Whenever this frame was loaded in async context.
+	 */
+	gboolean async_context;
 	int native_offset;
 	/*
 	 * IL offset of this frame.
@@ -64,7 +70,7 @@ typedef struct {
 	 */
 	int il_offset;
 
-	/*The next fields are only usefull for the jit*/
+	/* The next fields are only useful for the jit */
 	gpointer lmf;
 	guint32 unwind_info_len;
 	guint8 *unwind_info;

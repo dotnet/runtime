@@ -349,6 +349,8 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  * On return, it will be filled with the locations where callee saved registers are saved
  * by the current frame. This is returned outside of StackFrameInfo because it can be
  * quite large on some platforms.
+ * If ASYNC true, this function will be async safe, but some fields of frame and frame->ji will
+ * not be set.
  */
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
@@ -362,6 +364,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	MonoJitInfo *ji;
 	MonoDomain *target_domain = domain;
 	MonoMethod *method = NULL;
+	gboolean async = mono_thread_info_is_async_context ();
 
 	if (trace)
 		*trace = NULL;
@@ -382,10 +385,10 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (!err)
 		return FALSE;
 
-	if (frame->ji)
+	if (frame->ji && !frame->ji->async)
 		method = jinfo_get_method (frame->ji);
 
-	if (frame->type == FRAME_TYPE_MANAGED) {
+	if (frame->type == FRAME_TYPE_MANAGED && method) {
 		if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 			frame->managed = TRUE;
 	}
@@ -401,13 +404,14 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 	frame->native_offset = -1;
 	frame->domain = target_domain;
+	frame->async_context = async;
 
 	ji = frame->ji;
 
 	if (frame->type == FRAME_TYPE_MANAGED)
 		frame->method = method;
 
-	if (ji && (frame->managed || method->wrapper_type)) {
+	if (ji && (frame->managed || (method && method->wrapper_type))) {
 		const char *real_ip, *start;
 
 		start = (const char *)ji->code_start;
@@ -774,6 +778,7 @@ mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state,
 {
 	MonoThreadUnwindState extra_state;
 	if (!state) {
+		g_assert (!mono_thread_info_is_async_context ());
 		if (!mono_thread_state_init_from_current (&extra_state))
 			return;
 		state = &extra_state;
@@ -823,12 +828,16 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	mgreg_t *reg_locations [MONO_MAX_IREGS];
 	mgreg_t *new_reg_locations [MONO_MAX_IREGS];
 	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
+	gboolean async = mono_thread_info_is_async_context ();
 
 	g_assert (start_ctx);
 	g_assert (domain);
 	g_assert (jit_tls);
 	/*The LMF will be null if the target have no managed frames.*/
  	/* g_assert (lmf); */
+
+	if (async)
+		g_assert (unwind_options == MONO_UNWIND_NONE);
 
 	memcpy (&ctx, start_ctx, sizeof (MonoContext));
 	memset (reg_locations, 0, sizeof (reg_locations));
