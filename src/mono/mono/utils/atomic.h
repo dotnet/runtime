@@ -34,6 +34,14 @@
 #include <windows.h>
 #define HAS_64BITS_ATOMICS 1
 
+/* mingw is missing InterlockedCompareExchange64 () from winbase.h */
+#ifdef __MINGW32__
+static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
+{
+	return __sync_val_compare_and_swap (dest, comp, exch);
+}
+#endif
+
 /* Prefer GCC atomic ops if the target supports it (see configure.in). */
 #elif defined(USE_GCC_ATOMIC_OPS)
 
@@ -81,6 +89,11 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 {
 	return __sync_fetch_and_add (val, add);
 }
+
+#if defined (TARGET_OSX)
+#define BROKEN_64BIT_ATOMICS_INTRINSIC 1
+#endif
+
 
 #if !defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
 #define HAS_64BITS_ATOMICS 1
