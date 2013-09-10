@@ -3076,6 +3076,8 @@ if test ${TARGET} = ARM; then
 		return 0;
 	], [
 		arm_v5=yes
+
+		arm_ver=ARMv5
 	], [])
 
 	AC_TRY_COMPILE([], [
@@ -3086,6 +3088,8 @@ if test ${TARGET} = ARM; then
 	], [
 		arm_v5=yes
 		arm_v6=yes
+
+		arm_ver=ARMv6
 	], [])
 
 	AC_TRY_COMPILE([], [
@@ -3097,7 +3101,11 @@ if test ${TARGET} = ARM; then
 		arm_v5=yes
 		arm_v6=yes
 		arm_v7=yes
+
+		arm_ver=ARMv7
 	], [])
+
+	AC_MSG_RESULT($arm_ver)
 
 	if test x$arm_v5 = xyes; then
 		AC_DEFINE(HAVE_ARMV5, 1, [ARM v5])
