@@ -17,12 +17,14 @@
 
 #include <mono/metadata/gc-internal.h>
 
+#include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/mono-mmap.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -1000,6 +1002,94 @@ mono_jit_info_get_cas_info (MonoJitInfo *ji)
 	}
 }
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
+
+static LockFreeMempool*
+lock_free_mempool_new (void)
+{
+	return g_new0 (LockFreeMempool, 1);
+}
+
+static void
+lock_free_mempool_free (LockFreeMempool *mp)
+{
+	LockFreeMempoolChunk *chunk, *next;
+
+	chunk = mp->chunks;
+	while (chunk) {
+		next = chunk->prev;
+		mono_vfree (chunk, mono_pagesize ());
+		chunk = next;
+	}
+}
+
+/*
+ * This is async safe
+ */
+static LockFreeMempoolChunk*
+lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
+{
+	LockFreeMempoolChunk *chunk, *prev;
+	int size;
+
+	size = mono_pagesize ();
+	while (size - sizeof (LockFreeMempoolChunk) < len)
+		size += mono_pagesize ();
+	chunk = mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE);
+	g_assert (chunk);
+	chunk->mem = ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
+	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
+	chunk->pos = 0;
+
+	/* Add to list of chunks lock-free */
+	while (TRUE) {
+		prev = mp->chunks;
+		if (InterlockedCompareExchangePointer ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
+			break;
+	}
+	chunk->prev = prev;
+
+	return chunk;
+}
+
+/*
+ * This is async safe
+ */
+static gpointer
+lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
+{
+	LockFreeMempoolChunk *chunk;
+	gpointer res;
+	int oldpos;
+
+	// FIXME: Free the allocator
+
+	size = ALIGN_TO (size, 8);
+	chunk = mp->current;
+	if (!chunk) {
+		chunk = lock_free_mempool_chunk_new (mp, size);
+		mono_memory_barrier ();
+		/* Publish */
+		mp->current = chunk;
+	}
+
+	/* The code below is lock-free, 'chunk' is shared state */
+	oldpos = InterlockedExchangeAdd (&chunk->pos, size);
+	if (oldpos + size > chunk->size) {
+		chunk = lock_free_mempool_chunk_new (mp, size);
+		g_assert (chunk->pos + size <= chunk->size);
+		res = chunk->mem;
+		chunk->pos += size;
+		mono_memory_barrier ();
+		mp->current = chunk;
+	} else {
+		res = (char*)chunk->mem + oldpos;
+	}
+
+	return res;
+}
+
 void
 mono_install_create_domain_hook (MonoCreateDomainFunc func)
 {
@@ -1172,6 +1262,7 @@ mono_domain_create (void)
 
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
+	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC);
 	domain->domain_assemblies = NULL;
 	domain->assembly_bindings = NULL;
@@ -1993,6 +2084,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_code_manager_destroy (domain->code_mp);
 	domain->code_mp = NULL;
 #endif	
+	lock_free_mempool_free (domain->lock_free_mp);
+	domain->lock_free_mp = NULL;
 
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
@@ -2098,6 +2191,12 @@ mono_domain_alloc0 (MonoDomain *domain, guint size)
 	mono_domain_unlock (domain);
 
 	return res;
+}
+
+gpointer
+mono_domain_alloc0_lock_free (MonoDomain *domain, guint size)
+{
+	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
 }
 
 /*

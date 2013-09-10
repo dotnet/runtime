@@ -230,6 +230,17 @@ struct _MonoAppContext {
 	gpointer *static_data;
 };
 
+/* Lock-free allocator */
+typedef struct {
+	guint8 *mem;
+	gpointer prev;
+	int size, pos;
+} LockFreeMempoolChunk;
+
+typedef struct {
+	LockFreeMempoolChunk *current, *chunks;
+} LockFreeMempool;
+
 /*
  * We have two unloading states because the domain
  * must remain fully functional while AppDomain::DomainUnload is
@@ -329,6 +340,7 @@ struct _MonoDomain {
 	/* Used when loading assemblies */
 	gchar **search_path;
 	gchar *private_bin_path;
+	LockFreeMempool *lock_free_mp;
 	
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
@@ -468,6 +480,9 @@ mono_domain_alloc  (MonoDomain *domain, guint size) MONO_INTERNAL;
 
 gpointer
 mono_domain_alloc0 (MonoDomain *domain, guint size) MONO_INTERNAL;
+
+gpointer
+mono_domain_alloc0_lock_free (MonoDomain *domain, guint size) MONO_INTERNAL;
 
 void*
 mono_domain_code_reserve (MonoDomain *domain, int size) MONO_LLVM_INTERNAL;
