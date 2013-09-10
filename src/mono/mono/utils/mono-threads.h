@@ -126,6 +126,12 @@ typedef struct {
 	and is ended when you call either mono_thread_info_resume or mono_thread_info_finish_suspend.
 	*/
 	gboolean inside_critical_region;
+
+	/*
+	 * If TRUE, the thread is in async context. Code can use this information to avoid async-unsafe
+	 * operations like locking without having to pass an 'async' parameter around.
+	 */
+	gboolean is_async_context;
 } MonoThreadInfo;
 
 typedef struct {
@@ -232,6 +238,12 @@ mono_thread_info_disable_new_interrupt (gboolean disable) MONO_INTERNAL;
 
 void
 mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid) MONO_INTERNAL;
+
+void
+mono_thread_info_set_is_async_context (gboolean async_context) MONO_INTERNAL;
+
+gboolean
+mono_thread_info_is_async_context (void) MONO_INTERNAL;
 
 #if !defined(HOST_WIN32)
 
