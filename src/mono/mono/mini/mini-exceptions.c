@@ -2527,9 +2527,6 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	if (!ji)
 		return FALSE;
 
-	if (jinfo_get_method (ji)->wrapper_type)
-		return FALSE;
-
 	ip = MONO_CONTEXT_GET_IP (ctx);
 
 	for (i = 0; i < ji->num_clauses; ++i) {
@@ -2598,7 +2595,10 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
-	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
+	/* Do an async safe stack walk */
+	mono_thread_info_set_is_async_context (TRUE);
+	mono_walk_stack_with_state (find_last_handler_block, ctx, MONO_UNWIND_NONE, &data);
+	mono_thread_info_set_is_async_context (FALSE);
 
 	if (!data.ji)
 		return FALSE;
