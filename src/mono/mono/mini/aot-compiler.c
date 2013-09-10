@@ -4805,7 +4805,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	acfg->cfgs [method_index]->got_offset = acfg->got_offset;
 
-	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
 
 	emit_line (acfg);
 
@@ -5311,15 +5311,15 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * Need to encode jinfo->method too, since it is not equal to 'method'
 		 * when using generic sharing.
 		 */
-		encode_method_ref (acfg, jinfo->method, p, &p);
+		encode_method_ref (acfg, jinfo->d.method, p, &p);
 
 		if (gsctx && (gsctx->var_is_vt || gsctx->mvar_is_vt)) {
 			MonoMethodInflated *inflated;
 			MonoGenericContext *context;
 			MonoGenericInst *inst;
 
-			g_assert (jinfo->method->is_inflated);
-			inflated = (MonoMethodInflated*)jinfo->method;
+			g_assert (jinfo->d.method->is_inflated);
+			inflated = (MonoMethodInflated*)jinfo->d.method;
 			context = &inflated->context;
 
 			encode_value (1, p, &p);
@@ -8194,7 +8194,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 
 		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
-		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
 	}
 #endif
 }

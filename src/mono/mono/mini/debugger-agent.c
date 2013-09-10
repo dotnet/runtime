@@ -2457,7 +2457,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 
 	if (ji) {
 		/* Running managed code, will be suspended by the single step code */
-		DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)(gsize)tid, ji->method->name, ip));
+		DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)(gsize)tid, jinfo_get_method (ji)->name, ip));
 		return TRUE;
 	} else {
 		/* 
@@ -2656,6 +2656,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 {
 	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
 	MonoJitInfo *ji;
+	MonoMethod *method;
 
 	if (mono_loader_lock_is_owned_by_self ()) {
 		/*
@@ -2688,7 +2689,8 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
 
 	/* Can't suspend in these methods */
-	if (ji->method->klass == mono_defaults.string_class && (!strcmp (ji->method->name, "memset") || strstr (ji->method->name, "memcpy")))
+	method = jinfo_get_method (ji);
+	if (method->klass == mono_defaults.string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		return;
 
 	save_thread_context (ctx);
@@ -3102,7 +3104,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	}
 
 	if (info->ji)
-		method = info->ji->method;
+		method = jinfo_get_method (info->ji);
 	else
 		method = info->method;
 	actual_method = info->actual_method;
@@ -3376,7 +3378,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 
 					if (assemblies) {
 						for (k = 0; assemblies [k]; ++k)
-							if (assemblies [k] == ji->method->klass->image->assembly)
+							if (assemblies [k] == jinfo_get_method (ji)->klass->image->assembly)
 								found = TRUE;
 					}
 					if (!found)
@@ -3429,8 +3431,8 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 					g_free (s);
 				} else if (mod->kind == MOD_KIND_STEP) {
 					if ((mod->data.filter & STEP_FILTER_STATIC_CTOR) && ji &&
-						(ji->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
-						!strcmp (ji->method->name, ".cctor"))
+						(jinfo_get_method (ji)->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
+						!strcmp (jinfo_get_method (ji)->name, ".cctor"))
 						filtered = TRUE;
 					if ((mod->data.filter & STEP_FILTER_DEBUGGER_HIDDEN) && ji) {
 						MonoCustomAttrInfo *ainfo;
@@ -3441,7 +3443,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 							g_assert (klass);
 						}
 						if (!ji->dbg_hidden_inited) {
-							ainfo = mono_custom_attrs_from_method (ji->method);
+							ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
 							if (ainfo) {
 								if (mono_custom_attrs_has_attr (ainfo, klass))
 									ji->dbg_hidden = TRUE;
@@ -4091,7 +4093,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	}
 
 	if (i == seq_points->len) {
-		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (ji->method, TRUE), bp->il_offset, seq_points->len);
+		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (jinfo_get_method (ji), TRUE), bp->il_offset, seq_points->len);
 
 		for (i = 0; i < seq_points->len; ++i)
 			DEBUG (1, fprintf (log_file, "%d\n", seq_points->seq_points [i].il_offset));
@@ -4133,7 +4135,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 #endif
 	}
 
-	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x.\n", mono_method_full_name (ji->method, TRUE), (int)sp->il_offset));	
+	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x.\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (int)sp->il_offset));	
 }
 
 static void
@@ -4202,6 +4204,7 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 	int i, j;
 	MonoSeqPointInfo *seq_points;
 	MonoDomain *domain;
+	MonoMethod *jmethod;
 
 	if (!breakpoints)
 		return;
@@ -4225,10 +4228,11 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 		}
 
 		if (!found) {
+			jmethod = jinfo_get_method (ji);
 			mono_domain_lock (domain);
-			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, ji->method);
-			if (!seq_points && ji->method->is_inflated)
-				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (ji->method));
+			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, jmethod);
+			if (!seq_points && jmethod->is_inflated)
+				seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (jmethod));
 			mono_domain_unlock (domain);
 			if (!seq_points)
 				/* Could be AOT code */
@@ -4432,17 +4436,19 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp)
 	MonoDebugMethodInfo *minfo;
 	MonoDebugSourceLocation *loc = NULL;
 	gboolean hit = TRUE;
+	MonoMethod *method;
 
 	if (req->size != STEP_SIZE_LINE)
 		return TRUE;
 
 	/* Have to check whenever a different source line was reached */
-	minfo = mono_debug_lookup_method (ji->method);
+	method = jinfo_get_method (ji);
+	minfo = mono_debug_lookup_method (method);
 
 	if (minfo)
 		loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
 
-	if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line)) {
+	if (!loc || (loc && method == ss_req->last_method && loc->row == ss_req->last_line)) {
 		/* Have to continue single stepping */
 		if (!loc)
 			DEBUG(1, fprintf (log_file, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset));
@@ -4452,7 +4458,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp)
 	}
 				
 	if (loc) {
-		ss_req->last_method = ji->method;
+		ss_req->last_method = method;
 		ss_req->last_line = loc->row;
 		mono_debug_free_source_location (loc);
 	}
@@ -4479,6 +4485,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
 	MonoContext *ctx = &tls->restore_ctx;
+	MonoMethod *method;
 	MonoSeqPointInfo *info;
 	SeqPoint *sp;
 
@@ -4487,7 +4494,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	ip = MONO_CONTEXT_GET_IP (ctx);
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
 	g_assert (ji);
-	g_assert (ji->method);
+	method = jinfo_get_method (ji);
 
 	/* Compute the native offset of the breakpoint from the ip */
 	native_offset = ip - (guint8*)ji->code_start;	
@@ -4497,7 +4504,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 */
 	mono_arch_skip_breakpoint (ctx, ji);
 
-	if (ji->method->wrapper_type || tls->disable_breakpoints)
+	if (method->wrapper_type || tls->disable_breakpoints)
 		return;
 
 	bp_reqs = g_ptr_array_new ();
@@ -4510,12 +4517,12 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 * The ip points to the instruction causing the breakpoint event, which is after
 	 * the offset recorded in the seq point map, so find the prev seq point before ip.
 	 */
-	sp = find_prev_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
+	sp = find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info);
 	if (!sp)
-		no_seq_points_found (ji->method);
+		no_seq_points_found (method);
 	g_assert (sp);
 
-	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, ip, native_offset, sp ? sp->il_offset : -1));
+	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), method->name, ip, native_offset, sp ? sp->il_offset : -1));
 
 	bp = NULL;
 	for (i = 0; i < breakpoints->len; ++i) {
@@ -4554,7 +4561,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 			g_ptr_array_add (ss_reqs, req);
 
 		/* Start single stepping again from the current sequence point */
-		ss_start (ss_req, ji->method, sp, info, ctx, tls, FALSE);
+		ss_start (ss_req, method, sp, info, ctx, tls, FALSE);
 	}
 	
 	if (ss_reqs->len > 0)
@@ -4574,11 +4581,11 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	 * resume.
 	 */
 	if (ss_events)
-		process_event (EVENT_KIND_STEP, ji->method, 0, ctx, ss_events, suspend_policy);
+		process_event (EVENT_KIND_STEP, method, 0, ctx, ss_events, suspend_policy);
 	if (bp_events)
-		process_event (kind, ji->method, 0, ctx, bp_events, suspend_policy);
+		process_event (kind, method, 0, ctx, bp_events, suspend_policy);
 	if (enter_leave_events)
-		process_event (kind, ji->method, 0, ctx, enter_leave_events, suspend_policy);
+		process_event (kind, method, 0, ctx, enter_leave_events, suspend_policy);
 }
 
 /* Process a breakpoint/single step event after resuming from a signal handler */
@@ -4718,6 +4725,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 	MonoDomain *domain;
 	GSList *events;
 	MonoContext *ctx = &tls->restore_ctx;
+	MonoMethod *method;
 	SeqPoint *sp;
 	MonoSeqPointInfo *info;
 
@@ -4741,29 +4749,30 @@ process_single_step_inner (DebuggerTlsData *tls)
 	if (log_level > 0) {
 		ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 
-		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (ji->method, TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
+		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (jinfo_get_method (ji), TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
 	}
 
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 	g_assert (ji);
-	g_assert (ji->method);
+	method = jinfo_get_method (ji);
+	g_assert (method);
 
-	if (ji->method->wrapper_type && ji->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
+	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		return;
 
 	/* 
-	 * FIXME: 
+	 * FIXME:
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
-	if (ji->method->klass == mono_defaults.string_class && (!strcmp (ji->method->name, "memset") || strstr (ji->method->name, "memcpy")))
+	if (method->klass == mono_defaults.string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		return;
 
 	/*
 	 * The ip points to the instruction causing the single step event, which is before
 	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-	sp = find_next_seq_point_for_native_offset (domain, ji->method, (guint8*)ip - (guint8*)ji->code_start, &info);
+	sp = find_next_seq_point_for_native_offset (domain, method, (guint8*)ip - (guint8*)ji->code_start, &info);
 	if (!sp)
 		return;
 	il_offset = sp->il_offset;
@@ -4772,11 +4781,11 @@ process_single_step_inner (DebuggerTlsData *tls)
 		return;
 
 	/* Start single stepping again from the current sequence point */
-	ss_start (ss_req, ji->method, sp, info, ctx, tls, FALSE);
+	ss_start (ss_req, method, sp, info, ctx, tls, FALSE);
 
 	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR) &&
-		(ji->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
-		!strcmp (ji->method->name, ".cctor"))
+		(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
+		!strcmp (method->name, ".cctor"))
 		return;
 
 	// FIXME: Has to lock earlier
@@ -4793,7 +4802,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 
 	mono_loader_unlock ();
 
-	process_event (EVENT_KIND_STEP, ji->method, il_offset, ctx, events, suspend_policy);
+	process_event (EVENT_KIND_STEP, jinfo_get_method (ji), il_offset, ctx, events, suspend_policy);
 }
 
 static void
@@ -5343,7 +5352,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 
 				if (assemblies) {
 					for (k = 0; assemblies [k]; ++k)
-						if (assemblies [k] == catch_ji->method->klass->image->assembly)
+						if (assemblies [k] == jinfo_get_method (catch_ji)->klass->image->assembly)
 							found = TRUE;
 				}
 				if (!found)

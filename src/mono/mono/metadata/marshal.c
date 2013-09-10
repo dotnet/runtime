@@ -555,10 +555,13 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 	if (ptr) {
 		uint32_t gchandle;
 		void **method_data;
+		MonoMethod *method;
+
 		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
 		g_assert (ji);
 
-		method_data = ((MonoMethodWrapper*)ji->method)->method_data;
+		method = mono_jit_info_get_method (ji);
+		method_data = ((MonoMethodWrapper*)method)->method_data;
 
 		/*the target gchandle is the first entry after size and the wrapper itself.*/
 		gchandle = GPOINTER_TO_UINT (method_data [2]);
@@ -566,7 +569,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		if (gchandle)
 			mono_gchandle_free (gchandle);
 
-		mono_runtime_free_method (mono_object_domain (delegate), ji->method);
+		mono_runtime_free_method (mono_object_domain (delegate), method);
 	}
 }
 

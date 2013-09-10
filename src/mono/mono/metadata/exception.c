@@ -831,7 +831,7 @@ mono_exception_get_native_backtrace (MonoException *exc)
 		gpointer ip = mono_array_get (arr, gpointer, i);
 		MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), ip);
 		if (ji) {
-			char *msg = mono_debug_print_stack_frame (ji->method, (char*)ip - (char*)ji->code_start, domain);
+			char *msg = mono_debug_print_stack_frame (mono_jit_info_get_method (ji), (char*)ip - (char*)ji->code_start, domain);
 			g_string_append_printf (text, "%s\n", msg);
 			g_free (msg);
 		} else {

@@ -1424,7 +1424,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			if (call_sig == mono_method_signature (method)) {
 			} else {
 				sig = mono_method_signature (method);
-				gsig = mono_method_signature (callee_ji->method); 
+				gsig = mono_method_signature (jinfo_get_method (callee_ji)); 
 
 				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, callee_gji->generic_sharing_context, -1, FALSE);
 

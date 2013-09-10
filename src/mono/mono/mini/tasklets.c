@@ -69,7 +69,7 @@ continuation_mark_frame (MonoContinuation *cont)
 		ctx = new_ctx;
 		if (endloop)
 			break;
-		if (strcmp (ji->method->name, "Mark") == 0)
+		if (strcmp (jinfo_get_method (ji)->name, "Mark") == 0)
 			endloop = TRUE;
 	} while (1);
 

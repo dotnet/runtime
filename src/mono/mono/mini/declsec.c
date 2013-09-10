@@ -47,19 +47,21 @@ void
 mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo)
 {
 	MonoMethodCasInfo *info = mono_jit_info_get_cas_info (jinfo);
+	MonoMethod *method;
 	guint32 flags;
 
 	if (!info)
 		return;
 
+	method = jinfo_get_method (jinfo);
 	/* first find the stack modifiers applied to the method */
-	flags = mono_declsec_flags_from_method (jinfo->method);
+	flags = mono_declsec_flags_from_method (method);
 	info->cas_method_assert = (flags & MONO_DECLSEC_FLAG_ASSERT) != 0;
 	info->cas_method_deny = (flags & MONO_DECLSEC_FLAG_DENY) != 0;
 	info->cas_method_permitonly = (flags & MONO_DECLSEC_FLAG_PERMITONLY) != 0;
 
 	/* then find the stack modifiers applied to the class */
-	flags = mono_declsec_flags_from_class (jinfo->method->klass);
+	flags = mono_declsec_flags_from_class (method->klass);
 	info->cas_class_assert = (flags & MONO_DECLSEC_FLAG_ASSERT) != 0;
 	info->cas_class_deny = (flags & MONO_DECLSEC_FLAG_DENY) != 0;
 	info->cas_class_permitonly = (flags & MONO_DECLSEC_FLAG_PERMITONLY) != 0;
@@ -71,41 +73,43 @@ mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo)
 {
 	MonoSecurityFrame *frame = (MonoSecurityFrame*) mono_object_new (domain, mono_defaults.runtimesecurityframe_class);
 	MonoMethodCasInfo *info;
+	MonoMethod *method;
 
+	method = jinfo_get_method (jinfo);
 	info = mono_jit_info_get_cas_info (jinfo);
 	if (info && !info->cas_inited) {
-		if (mono_method_has_declsec (jinfo->method)) {
+		if (mono_method_has_declsec (method)) {
 			/* Cache the stack modifiers into the MonoJitInfo structure to speed up future stack walks */
 			mono_declsec_cache_stack_modifiers (jinfo);
 		}
 		info->cas_inited = TRUE;
 	}
 
-	MONO_OBJECT_SETREF (frame, method, mono_method_get_object (domain, jinfo->method, NULL));
+	MONO_OBJECT_SETREF (frame, method, mono_method_get_object (domain, method, NULL));
 	MONO_OBJECT_SETREF (frame, domain, domain->domain);
 
 	/* stack modifiers on methods have priority on (i.e. replaces) modifiers on class */
 
 	if (info && info->cas_method_assert) {
-		mono_declsec_get_method_action (jinfo->method, SECURITY_ACTION_ASSERT, &frame->assert);
+		mono_declsec_get_method_action (method, SECURITY_ACTION_ASSERT, &frame->assert);
 	} else if (info && info->cas_class_assert) {
-		mono_declsec_get_class_action (jinfo->method->klass, SECURITY_ACTION_ASSERT, &frame->assert);
+		mono_declsec_get_class_action (method->klass, SECURITY_ACTION_ASSERT, &frame->assert);
 	}
 
 	if (info && info->cas_method_deny) {
-		mono_declsec_get_method_action (jinfo->method, SECURITY_ACTION_DENY, &frame->deny);
+		mono_declsec_get_method_action (method, SECURITY_ACTION_DENY, &frame->deny);
 	} else if (info && info->cas_class_deny) {
-		mono_declsec_get_class_action (jinfo->method->klass, SECURITY_ACTION_DENY, &frame->deny);
+		mono_declsec_get_class_action (method->klass, SECURITY_ACTION_DENY, &frame->deny);
 	}
 
 	if (info && info->cas_method_permitonly) {
-		mono_declsec_get_method_action (jinfo->method, SECURITY_ACTION_PERMITONLY, &frame->permitonly);
+		mono_declsec_get_method_action (method, SECURITY_ACTION_PERMITONLY, &frame->permitonly);
 	} else if (info && info->cas_class_permitonly) {
-		mono_declsec_get_class_action (jinfo->method->klass, SECURITY_ACTION_PERMITONLY, &frame->permitonly);
+		mono_declsec_get_class_action (method->klass, SECURITY_ACTION_PERMITONLY, &frame->permitonly);
 	}
 
 	/* g_warning ("FRAME %s A(%p,%d) D(%p,%d) PO(%p,%d)", 
-	jinfo->method->name, frame->assert.blob, frame->assert.size, frame->deny.blob, frame->deny.size, frame->permitonly.blob,frame->permitonly.size); */
+	method->name, frame->assert.blob, frame->assert.size, frame->deny.blob, frame->deny.size, frame->permitonly.blob,frame->permitonly.size); */
 
 	return frame;
 }

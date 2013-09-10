@@ -729,14 +729,14 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 	if (!ji)
 		return;
 
-	jit = mono_debug_find_method (mono_jit_info_get_method (ji), domain);
+	jit = mono_debug_find_method (jinfo_get_method (ji), domain);
 	if (!jit)
 		return;
 
 	if (only_arguments) {
 		char **names;
 		names = g_new (char *, jit->num_params);
-		mono_method_get_param_names (mono_jit_info_get_method (ji), (const char **) names);
+		mono_method_get_param_names (jinfo_get_method (ji), (const char **) names);
 		if (jit->this_var)
 			print_var_info (jit->this_var, 0, "this", "Arg");
 		for (i = 0; i < jit->num_params; ++i) {

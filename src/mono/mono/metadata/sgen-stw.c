@@ -101,7 +101,7 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 	if (!ji)
 		return FALSE;
 
-	return sgen_is_critical_method (ji->method);
+	return sgen_is_critical_method (mono_jit_info_get_method (ji));
 }
 
 static int

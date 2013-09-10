@@ -702,6 +702,7 @@ static void
 conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 {
 	MonoJitInfo *ji;
+	MonoMethod *method;
 	MonoContext ctx, new_ctx;
 	MonoLMF *lmf;
 	guint8 *stack_limit;
@@ -811,10 +812,15 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			continue;
 		}
 
+		if (ji)
+			method = jinfo_get_method (ji);
+		else
+			method = NULL;
+
 		/* The last frame can be in any state so mark conservatively */
 		if (last) {
 			if (ji) {
-				DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+				DEBUG (char *fname = mono_method_full_name (method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
 			}
 			DEBUG (fprintf (logfile, "\t <Last frame>\n"));
 			last = FALSE;
@@ -841,8 +847,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 
 		/* These frames are very problematic */
-		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			DEBUG (char *fname = mono_method_full_name (method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
 			DEBUG (fprintf (logfile, "\tSkip.\n"));
 			continue;
 		}
@@ -892,7 +898,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				
 		if (precise_frame_limit != -1) {
 			if (precise_frame_count [FALSE] == precise_frame_limit)
-				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (ji->method, TRUE));
+				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (method, TRUE));
 			if (precise_frame_count [FALSE] > precise_frame_limit)
 				continue;
 		}
@@ -935,7 +941,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					break;
 		}
 		if (i == map->ncallsites) {
-			printf ("Unable to find ip offset 0x%x in callsite list of %s.\n", pc_offset + 1, mono_method_full_name (ji->method, TRUE));
+			printf ("Unable to find ip offset 0x%x in callsite list of %s.\n", pc_offset + 1, mono_method_full_name (method, TRUE));
 			g_assert_not_reached ();
 		}
 		cindex = i;

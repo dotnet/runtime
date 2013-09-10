@@ -190,7 +190,10 @@ struct _MonoJitInfo {
 	   next_jit_code_hash) must be in the same order and at the
 	   same offset as in RuntimeMethod, because of the jit_code_hash
 	   internal hash table in MonoDomain. */
-	MonoMethod *method;
+	union {
+		MonoMethod *method;
+		gpointer method_info;
+	} d;
 	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
 	/* This might contain an id for the unwind info instead of a register mask */

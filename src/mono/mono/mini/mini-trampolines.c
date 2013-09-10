@@ -290,6 +290,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 {
 	gpointer addr = compiled_method;
 	gboolean callee_gsharedvt, callee_array_helper;
+	MonoMethod *jmethod = NULL;
 	MonoJitInfo *ji = 
 		mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
 
@@ -338,7 +339,9 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		}
 	}
 
-	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (ji->method))) {
+	if (ji)
+		jmethod = jinfo_get_method (ji);
+	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod))) {
 		MonoGenericSharingContext *gsctx;
 		MonoMethodSignature *sig, *gsig;
 
@@ -348,7 +351,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		gsctx = mono_jit_info_get_generic_sharing_context (ji);
 
 		sig = mono_method_signature (m);
-		gsig = mono_method_signature (ji->method); 
+		gsig = mono_method_signature (jmethod);
 
 		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, gsctx, -1, FALSE);
 
@@ -1021,7 +1024,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	} else {
 		ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
 		if (ji)
-			method = ji->method;
+			method = jinfo_get_method (ji);
 	}
 
 	if (method) {
@@ -1388,7 +1391,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	ji = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
 	ji->code_start = code;
 	ji->code_size = code_size;
-	ji->method = method;
+	ji->d.method = method;
 
 	/*
 	 * mono_delegate_ctor needs to find the method metadata from the 

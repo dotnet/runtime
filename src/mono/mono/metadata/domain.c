@@ -174,7 +174,7 @@ mono_domain_get_tls_offset (void)
 #define JIT_INFO_TABLE_HIGH_WATERMARK(n)	((n) * 5 / 6)
 
 #define JIT_INFO_TOMBSTONE_MARKER	((MonoMethod*)NULL)
-#define IS_JIT_INFO_TOMBSTONE(ji)	((ji)->method == JIT_INFO_TOMBSTONE_MARKER)
+#define IS_JIT_INFO_TOMBSTONE(ji)	((ji)->d.method == JIT_INFO_TOMBSTONE_MARKER)
 
 #define JIT_INFO_TABLE_HAZARD_INDEX		0
 #define JIT_INFO_HAZARD_INDEX			1
@@ -688,7 +688,7 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 	int num_elements;
 	int i;
 
-	g_assert (ji->method != NULL);
+	g_assert (ji->d.method != NULL);
 
 	mono_domain_lock (domain);
 
@@ -760,7 +760,7 @@ mono_jit_info_make_tombstone (MonoJitInfo *ji)
 
 	tombstone->code_start = ji->code_start;
 	tombstone->code_size = ji->code_size;
-	tombstone->method = JIT_INFO_TOMBSTONE_MARKER;
+	tombstone->d.method = JIT_INFO_TOMBSTONE_MARKER;
 
 	return tombstone;
 }
@@ -930,7 +930,7 @@ mono_jit_info_get_code_size (MonoJitInfo* ji)
 MonoMethod*
 mono_jit_info_get_method (MonoJitInfo* ji)
 {
-	return ji->method;
+	return ji->d.method;
 }
 
 static gpointer
@@ -938,7 +938,7 @@ jit_info_key_extract (gpointer value)
 {
 	MonoJitInfo *info = (MonoJitInfo*)value;
 
-	return info->method;
+	return info->d.method;
 }
 
 static gpointer*

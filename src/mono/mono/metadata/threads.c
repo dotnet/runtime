@@ -3247,7 +3247,7 @@ print_stack_frame_to_string (MonoStackFrameInfo *frame, MonoContext *ctx, gpoint
 	GString *p = (GString*)data;
 	MonoMethod *method = NULL;
 	if (frame->ji)
-		method = frame->ji->method;
+		method = mono_jit_info_get_method (frame->ji);
 
 	if (method) {
 		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, frame->domain);
@@ -4649,7 +4649,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 	InterlockedIncrement (&thread_interruption_requested);
 
 	ji = mono_thread_info_get_last_managed (info);
-	protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
+	protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
 	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
 
 	if (!protected_wrapper && running_managed) {
@@ -4718,7 +4718,7 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		}
 
 		ji = mono_thread_info_get_last_managed (info);
-		protected_wrapper = ji && mono_threads_is_critical_method (ji->method);
+		protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
 		running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
 
 		if (running_managed && !protected_wrapper) {

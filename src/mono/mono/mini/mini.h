@@ -2041,6 +2041,12 @@ void mono_nacl_gc(void);
 #define NACL_SIZE(a, b) (a)
 #endif
 
+static inline MonoMethod*
+jinfo_get_method (MonoJitInfo *ji)
+{
+	return mono_jit_info_get_method (ji);
+}
+
 /* AOT */
 void      mono_aot_init                     (void) MONO_INTERNAL;
 void      mono_aot_cleanup                  (void) MONO_INTERNAL;

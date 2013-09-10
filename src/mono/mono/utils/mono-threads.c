@@ -488,7 +488,7 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	if (!ji)
 		return FALSE;
 
-	method = ji->method;
+	method = mono_jit_info_get_method (ji);
 
 	return threads_callbacks.mono_method_is_critical (method);
 }

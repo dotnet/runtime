@@ -2261,7 +2261,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = mono_cache_unwind_info (info.unw_info, info.unw_info_len);
-	jinfo->method = method;
+	jinfo->d.method = method;
 	jinfo->code_start = code;
 	jinfo->domain_neutral = 0;
 	/* This signals that used_regs points to a normal cached unwind info */
@@ -2442,7 +2442,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 		jinfo->code_size = code_len;
 		jinfo->used_regs = used_int_regs;
-		jinfo->method = method;
+		jinfo->d.method = method;
 		jinfo->code_start = code;
 		jinfo->domain_neutral = 0;
 		jinfo->from_aot = 1;
@@ -2482,7 +2482,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			}
 		}
 
-		jinfo->method = decode_resolve_method_ref (amodule, p, &p);
+		jinfo->d.method = decode_resolve_method_ref (amodule, p, &p);
 
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 		if (decode_value (p, &p)) {
@@ -2576,7 +2576,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		p += map_size;
 	}
 
-	if (amodule != jinfo->method->klass->image->aot_module) {
+	if (amodule != jinfo->d.method->klass->image->aot_module) {
 		mono_aot_lock ();
 		if (!ji_to_amodule)
 			ji_to_amodule = g_hash_table_new (NULL, NULL);
@@ -2595,10 +2595,11 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 guint8*
 mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 {
-	MonoAotModule *amodule = ji->method->klass->image->aot_module;
+	MonoAotModule *amodule;
 	guint8 *p;
 	guint8 *code = ji->code_start;
 
+	amodule = jinfo_get_method (ji)->klass->image->aot_module;
 	g_assert (amodule);
 	g_assert (ji->from_aot);
 
