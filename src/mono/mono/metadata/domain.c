@@ -373,6 +373,9 @@ jit_info_table_find (MonoJitInfoTable *table, MonoThreadHazardPointers *hp, gint
  *
  * If TRY_AOT is FALSE, avoid loading information for missing methods from AOT images, which is currently not async safe.
  * In this case, only those AOT methods will be found whose jit info is already loaded.
+ * ASYNC SAFETY: When called in an async context (mono_thread_info_is_async_context ()), this is async safe.
+ * In this case, the returned MonoJitInfo might not have metadata information, in particular,
+ * mono_jit_info_get_method () could fail.
  */
 MonoJitInfo*
 mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot)
@@ -884,6 +887,7 @@ mono_jit_info_get_code_size (MonoJitInfo* ji)
 MonoMethod*
 mono_jit_info_get_method (MonoJitInfo* ji)
 {
+	g_assert (!ji->async);
 	return ji->d.method;
 }
 

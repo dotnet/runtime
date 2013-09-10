@@ -192,8 +192,8 @@ struct _MonoJitInfo {
 	   internal hash table in MonoDomain. */
 	union {
 		MonoMethod *method;
-		gpointer method_info;
 		MonoImage *image;
+		gpointer aot_info;
 	} d;
 	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
@@ -211,6 +211,8 @@ struct _MonoJitInfo {
 	gboolean    from_llvm:1;
 	gboolean    dbg_hidden_inited:1;
 	gboolean    dbg_hidden:1;
+	/* Whenever this jit info was loaded in async context */
+	gboolean    async:1;
 
 	/* FIXME: Embed this after the structure later*/
 	gpointer    gc_info; /* Currently only used by SGen */

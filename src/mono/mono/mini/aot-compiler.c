@@ -5265,8 +5265,18 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 				encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);
 			else {
 				if (ei->data.catch_class) {
-					encode_value (1, p, &p);
-					encode_klass_ref (acfg, ei->data.catch_class, p, &p);
+					guint8 *buf2, *p2;
+					int len;
+
+					buf2 = g_malloc (4096);
+					p2 = buf2;
+					encode_klass_ref (acfg, ei->data.catch_class, p2, &p2);
+					len = p2 - buf2;
+					g_assert (len < 4096);
+					encode_value (len, p, &p);
+					memcpy (p, buf2, len);
+					p += p2 - buf2;
+					g_free (buf2);
 				} else {
 					encode_value (0, p, &p);
 				}
@@ -5278,10 +5288,29 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
+	if (jinfo->has_try_block_holes) {
+		MonoTryBlockHoleTableJitInfo *table = mono_jit_info_get_try_block_hole_table_info (jinfo);
+		for (i = 0; i < table->num_holes; ++i) {
+			MonoTryBlockHoleJitInfo *hole = &table->holes [i];
+			encode_value (hole->clause, p, &p);
+			encode_value (hole->length, p, &p);
+			encode_value (hole->offset, p, &p);
+		}
+	}
+
+	if (jinfo->has_arch_eh_info) {
+		MonoArchEHJitInfo *eh_info;
+
+		eh_info = mono_jit_info_get_arch_eh_info (jinfo);
+		encode_value (eh_info->stack_size, p, &p);
+	}
+
 	if (jinfo->has_generic_jit_info) {
 		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (jinfo);
 		MonoGenericSharingContext* gsctx = gi->generic_sharing_context;
 		guint8 *p1;
+		guint8 *buf2, *p2;
+		int len;
 
 		p1 = p;
 		encode_value (gi->nlocs, p, &p);
@@ -5311,7 +5340,15 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * Need to encode jinfo->method too, since it is not equal to 'method'
 		 * when using generic sharing.
 		 */
-		encode_method_ref (acfg, jinfo->d.method, p, &p);
+		buf2 = g_malloc (4096);
+		p2 = buf2;
+		encode_method_ref (acfg, jinfo->d.method, p2, &p2);
+		len = p2 - buf2;
+		g_assert (len < 4096);
+		encode_value (len, p, &p);
+		memcpy (p, buf2, len);
+		p += p2 - buf2;
+		g_free (buf2);
 
 		if (gsctx && (gsctx->var_is_vt || gsctx->mvar_is_vt)) {
 			MonoMethodInflated *inflated;
@@ -5344,23 +5381,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		} else {
 			encode_value (0, p, &p);
 		}
-	}
-
-	if (jinfo->has_try_block_holes) {
-		MonoTryBlockHoleTableJitInfo *table = mono_jit_info_get_try_block_hole_table_info (jinfo);
-		for (i = 0; i < table->num_holes; ++i) {
-			MonoTryBlockHoleJitInfo *hole = &table->holes [i];
-			encode_value (hole->clause, p, &p);
-			encode_value (hole->length, p, &p);
-			encode_value (hole->offset, p, &p);
-		}
-	}
-
-	if (jinfo->has_arch_eh_info) {
-		MonoArchEHJitInfo *eh_info;
-
-		eh_info = mono_jit_info_get_arch_eh_info (jinfo);
-		encode_value (eh_info->stack_size, p, &p);
 	}
 
 	if (seq_points) {
