@@ -1405,19 +1405,13 @@ extern void ves_icall_System_Net_Sockets_Socket_Disconnect_internal(SOCKET sock,
 		 */
 		_wapi_disconnectex = NULL;
 
-		/* Look up the TransmitFile extension function pointer
-		 * instead of calling TransmitFile() directly, because
-		 * apparently "Several of the extension functions have
-		 * been available since WinSock 1.1 and are exported
-		 * from MSWsock.dll, however it's not advisable to
-		 * link directly to this dll as this ties you to the
-		 * Microsoft WinSock provider. A provider neutral way
-		 * of accessing these extension functions is to load
-		 * them dynamically via WSAIoctl using the
-		 * SIO_GET_EXTENSION_FUNCTION_POINTER op code. This
-		 * should, theoretically, allow you to access these
-		 * functions from any provider that supports them..." 
-		 * (http://www.codeproject.com/internet/jbsocketserver3.asp)
+		/*
+		 * Use the SIO_GET_EXTENSION_FUNCTION_POINTER to
+		 * determine the address of the disconnect method without
+		 * taking a hard dependency on a single provider
+		 * 
+		 * For an explanation of why this is done, you can read
+		 * the article at http://www.codeproject.com/internet/jbsocketserver3.asp
 		 */
 		ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER,
 				(void *)&trans_guid, sizeof(GUID),
