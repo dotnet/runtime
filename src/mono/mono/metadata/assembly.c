@@ -870,7 +870,7 @@ static KeyRemapEntry key_remap_table[] = {
 	{ "System.Windows", SILVERLIGHT_KEY, MSFINAL_KEY },
 	{ "System.Xml", SILVERLIGHT_KEY, ECMA_KEY },
 	{ "System.Xml.Linq", WINFX_KEY, ECMA_KEY },
-	{ "System.Xml.Serialization", WINFX_KEY, MSFINAL_KEY }
+	{ "System.Xml.Serialization", WINFX_KEY, ECMA_KEY }
 };
 
 static void
