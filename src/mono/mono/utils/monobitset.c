@@ -210,25 +210,14 @@ mono_bitset_count (const MonoBitSet *set) {
 	count = 0;
 	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		d = set->data [i];
-		/* there is probably some asm code that can do this much faster */
-		if (d) {
-#if SIZEOF_VOID_P == 8
-			/* http://www.jjj.de/bitwizardry/bitwizardrypage.html */
-			d -=  (d>>1) & 0x5555555555555555;
-			d  = ((d>>2) & 0x3333333333333333) + (d & 0x3333333333333333);
-			d  = ((d>>4) + d) & 0x0f0f0f0f0f0f0f0f;
-			d *= 0x0101010101010101;
-			count += d >> 56;
+#ifdef __GNUC__
+		count += __builtin_popcount (d);
 #else
-			/* http://aggregate.org/MAGIC/ */
-			d -= ((d >> 1) & 0x55555555);
-			d = (((d >> 2) & 0x33333333) + (d & 0x33333333));
-			d = (((d >> 4) + d) & 0x0f0f0f0f);
-			d += (d >> 8);
-			d += (d >> 16);
-			count += (d & 0x0000003f);
-#endif
+		while (d) {
+			count ++;
+			d &= (d - 1);
 		}
+#endif
 	}
 	return count;
 }
