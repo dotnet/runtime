@@ -15,6 +15,13 @@
 
 #ifdef __APPLE__
 #define __APPLE_USE_RFC_3542
+
+/*
+ * We remove this until we have a Darwin implementation
+ * that can walk the result of struct ifconf.  The current
+ * implementation only works for Linux
+ */
+#undef HAVE_SIOCGIFCONF
 #endif
 
 #include <glib.h>
