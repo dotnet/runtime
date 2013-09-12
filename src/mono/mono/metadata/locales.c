@@ -356,40 +356,6 @@ region_info_entry_from_lcid (int lcid)
 	return entry;
 }
 
-/*
- * The following two methods are modified from the ICU source code. (http://oss.software.ibm.com/icu)
- * Copyright (c) 1995-2003 International Business Machines Corporation and others
- * All rights reserved.
- */
-static gchar*
-get_posix_locale (void)
-{
-	const gchar* posix_locale = NULL;
-
-	posix_locale = g_getenv("LC_ALL");
-	if (posix_locale == 0) {
-		posix_locale = g_getenv("LANG");
-		if (posix_locale == 0) {
-			posix_locale = setlocale(LC_ALL, NULL);
-		}
-	}
-
-	if (posix_locale == NULL)
-		return NULL;
-
-	if ((strcmp ("C", posix_locale) == 0) || (strchr (posix_locale, ' ') != NULL)
-			|| (strchr (posix_locale, '/') != NULL)) {
-		/*
-		 * HPUX returns 'C C C C C C C'
-		 * Solaris can return /en_US/C/C/C/C/C on the second try.
-		 * Maybe we got some garbage.
-		 */
-		return NULL;
-	}
-
-	return g_strdup (posix_locale);
-}
-
 #if defined (__APPLE__)
 static gchar*
 get_darwin_locale (void)
@@ -430,14 +396,34 @@ get_darwin_locale (void)
 }
 #endif
 
-static gchar*
+static char *
+get_posix_locale ()
+{
+	const char *locale;
+
+	locale = g_getenv ("LC_ALL");
+	if (locale != NULL){
+		locale = g_getenv ("LANG");
+		if (locale == NULL)
+			locale = setlocale (LC_ALL, NULL);
+	}
+	if (locale == NULL)
+		return NULL;
+
+	/* Skip English-only locale 'C' */
+	if (strcmp (locale, "C") == 0)
+		return NULL;
+
+	return g_strdup (locale);
+}
+
+
+static gchar *
 get_current_locale_name (void)
 {
-	gchar *locale;
-	gchar *corrected = NULL;
-	const gchar *p;
-	gchar *c;
-
+	char *locale;
+	char *p, *ret;
+		
 #ifdef HOST_WIN32
 	locale = g_win32_getlocale ();
 #elif defined (__APPLE__)	
@@ -446,52 +432,23 @@ get_current_locale_name (void)
 		locale = get_posix_locale ();
 #else
 	locale = get_posix_locale ();
-#endif	
+#endif
 
 	if (locale == NULL)
 		return NULL;
 
-	if ((p = strchr (locale, '.')) != NULL) {
-		/* assume new locale can't be larger than old one? */
-		corrected = g_malloc (strlen (locale));
-		strncpy (corrected, locale, p - locale);
-		corrected [p - locale] = 0;
+	p = strchr (locale, '.');
+	if (p != NULL)
+		*p = 0;
+	p = strchr (locale, '@');
+	if (p != NULL)
+		*p = 0;
 
-		/* do not copy after the @ */
-		if ((p = strchr (corrected, '@')) != NULL)
-			corrected [p - corrected] = 0;
-	}
+	ret = g_ascii_strdown (locale, -1);
+	g_free (locale);
 
-	/* Note that we scan the *uncorrected* ID. */
-	if ((p = strrchr (locale, '@')) != NULL) {
-
-		/*
-		 * In Mono we dont handle the '@' modifier because we do
-		 * not have any cultures that use it. We just trim it
-		 * off of the end of the name.
-		 */
-
-		if (corrected == NULL) {
-			corrected = g_malloc (strlen (locale));
-			strncpy (corrected, locale, p - locale);
-			corrected [p - locale] = 0;
-		}
-	}
-
-	if (corrected == NULL)
-		corrected = locale;
-	else
-		g_free (locale);
-
-	if ((c = strchr (corrected, '_')) != NULL)
-		*c = '-';
-
-	c = corrected;
-	corrected = g_ascii_strdown (c, -1);
-	g_free (c);
-
-	return corrected;
-}	 
+	return ret;
+}
 
 MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale (MonoCultureInfo *ci)
