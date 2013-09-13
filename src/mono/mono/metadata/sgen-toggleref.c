@@ -136,7 +136,7 @@ ensure_toggleref_capacity (int capacity)
 		MonoGCToggleRef *tmp;
 		int old_capacity = toggleref_array_capacity;
 		while (toggleref_array_capacity < toggleref_array_size + capacity)
-			toggleref_array_size *= 2;
+			toggleref_array_capacity *= 2;
 
 		tmp = sgen_alloc_internal_dynamic (
 			toggleref_array_capacity * sizeof (MonoGCToggleRef),
