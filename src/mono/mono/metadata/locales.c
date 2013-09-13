@@ -397,7 +397,7 @@ get_darwin_locale (void)
 #endif
 
 static char *
-get_posix_locale ()
+get_posix_locale (void)
 {
 	const char *locale;
 
