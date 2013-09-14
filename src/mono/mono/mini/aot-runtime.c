@@ -2599,6 +2599,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			sp->il_offset = il_offset;
 			sp->native_offset = native_offset;
 			
+			sp->flags = decode_value (p, &p);
 			sp->next_len = decode_value (p, &p);
 			sp->next = g_new (int, sp->next_len);
 			for (j = 0; j < sp->next_len; ++j)

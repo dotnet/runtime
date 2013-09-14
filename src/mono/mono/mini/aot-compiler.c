@@ -5397,6 +5397,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			last_il_offset = il_offset;
 			last_native_offset = native_offset;
 
+			encode_value (sp->flags, p, &p);
 			encode_value (sp->next_len, p, &p);
 			for (j = 0; j < sp->next_len; ++j)
 				encode_value (sp->next [j], p, &p);
