@@ -3328,12 +3328,14 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 }
 
 static void
-emit_seq_point (MonoCompile *cfg, MonoMethod *method, guint8* ip, gboolean intr_loc)
+emit_seq_point (MonoCompile *cfg, MonoMethod *method, guint8* ip, gboolean intr_loc, gboolean nonempty_stack)
 {
 	MonoInst *ins;
 
 	if (cfg->gen_seq_points && cfg->method == method) {
 		NEW_SEQ_POINT (cfg, ins, ip - cfg->header->code, intr_loc);
+		if (nonempty_stack)
+			ins->flags |= MONO_INST_NONEMPTY_STACK;
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 }
@@ -7076,6 +7078,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			// FIXME: Enable this
 			//if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_SEQ_POINT)) {
 			NEW_SEQ_POINT (cfg, ins, ip - header->code, intr_loc);
+			if (sp != stack_start)
+				ins->flags |= MONO_INST_NONEMPTY_STACK;
 			MONO_ADD_INS (cfg->cbb, ins);
 
 			if (sym_seq_points)
@@ -7594,7 +7598,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				mono_save_token_info (cfg, image, token, cil_method);
 
-				if (!MONO_TYPE_IS_VOID (fsig->ret) && !sym_seq_points) {
+				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					/*
 					 * Need to emit an implicit seq point after every non-void call so single stepping through nested calls like
 					 * foo (bar (), baz ())
@@ -7605,7 +7609,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * int i = foo ();
 					 */
 					/* Special case a few common successor opcodes */
-					if (!(ip + 5 < end && ip [5] == CEE_POP))
+					if (!(ip + 5 < end && (ip [5] == CEE_POP || ip [5] == CEE_NOP)) && !(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
 						need_seq_point = TRUE;
 				}
 
@@ -8325,7 +8329,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins_flag = 0;
 			constrained_call = NULL;
 			if (need_seq_point)
-				emit_seq_point (cfg, method, ip, FALSE);
+				emit_seq_point (cfg, method, ip, FALSE, TRUE);
 			break;
 		}
 		case CEE_RET:
@@ -10751,7 +10755,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_ENDFINALLY:
 			/* mono_save_seq_point_info () depends on this */
 			if (sp != stack_start)
-				emit_seq_point (cfg, method, ip, FALSE);
+				emit_seq_point (cfg, method, ip, FALSE, FALSE);
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (bblock, ins);
 			ip++;

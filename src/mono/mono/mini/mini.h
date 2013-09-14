@@ -340,8 +340,10 @@ typedef struct {
  */
 typedef MonoStackFrameInfo StackFrameInfo;
 
+#define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
+
 typedef struct {
-	int il_offset, native_offset;
+	int il_offset, native_offset, flags;
 	/* Indexes of successor sequence points */
 	int *next;
 	/* Number of entries in next */
@@ -868,6 +870,7 @@ enum {
 	MONO_INST_TAILCALL   = 4,
 	MONO_INST_VOLATILE   = 4,
 	MONO_INST_NOTYPECHECK    = 4,
+	MONO_INST_NONEMPTY_STACK = 4, /* in SEQ_POINT */
 	MONO_INST_UNALIGNED  = 8,
     MONO_INST_CFOLD_TAKEN = 8, /* On branches */
     MONO_INST_CFOLD_NOT_TAKEN = 16, /* On branches */

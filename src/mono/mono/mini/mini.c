@@ -3777,6 +3777,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 		sp->il_offset = ins->inst_imm;
 		sp->native_offset = ins->inst_offset;
+		if (ins->flags & MONO_INST_NONEMPTY_STACK)
+			sp->flags |= MONO_SEQ_POINT_FLAG_NONEMPTY_STACK;
 
 		/* Used below */
 		ins->backend.size = i;
