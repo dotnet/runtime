@@ -1296,6 +1296,7 @@ public class Tests
 		void constrained_void_iface_call_ref_arg<T, T2>(T t, T2 t2) where T2 : IConstrained;
 		void constrained_void_iface_call_gsharedvt_arg<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T>;
 		T constrained_iface_call_gsharedvt_ret<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T>;
+		T2 constrained_normal_call<T, T2>(T t, T2 t2) where T2 : VClass;
 	}
 
 	class ClassConstrained : IFaceConstrained {
@@ -1317,6 +1318,18 @@ public class Tests
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public T constrained_iface_call_gsharedvt_ret<T, T2, T3>(T t, T2 t2, T3 t3) where T2 : IConstrained<T> {
 			return t2.foo_gsharedvt_ret (t);
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public T2 constrained_normal_call<T, T2>(T t, T2 t2) where T2 : VClass {
+			/* This becomes a constrained call even through 't2' is forced to be a reference type by the constraint */
+			return (T2)t2.foo (5);
+		}
+	}
+
+	class VClass {
+		public virtual VClass foo (int i) {
+			return this;
 		}
 	}
 
@@ -1376,6 +1389,14 @@ public class Tests
 			return 2;
 
 		return 0;
+	}
+
+	public static int test_0_constrained_normal_call () {
+		IFaceConstrained c = new ClassConstrained ();
+
+		var o = new VClass ();
+		var res = c.constrained_normal_call<int, VClass> (1, o);
+		return res == o ? 0 : 1;
 	}
 
 	public static async Task<T> FooAsync<T> (int i, int j) {
