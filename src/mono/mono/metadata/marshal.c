@@ -8880,13 +8880,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		pinvoke = TRUE;
 
 	if (!piinfo->addr) {
-		if (pinvoke)
+		if (pinvoke) {
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
 				exc_arg = "Method contains unsupported native code";
-			else
+			else if (!aot)
 				mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
-		else
+		} else {
 			piinfo->addr = mono_lookup_internal_call (method);
+		}
 	}
 
 	/* hack - redirect certain string constructors to CreateString */

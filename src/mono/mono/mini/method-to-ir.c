@@ -7587,7 +7587,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					if (fsig->pinvoke) {
 						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
-							check_for_pending_exc, FALSE);
+							check_for_pending_exc, cfg->compile_aot);
 						fsig = mono_method_signature (wrapper);
 					} else if (constrained_call) {
 						fsig = mono_method_signature (cmethod);
