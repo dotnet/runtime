@@ -6464,8 +6464,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		unsigned char *ip = patch_info->ip.i + code;
 		unsigned char *target;
 
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
-
 		if (compile_aot) {
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_BB:
@@ -6476,6 +6474,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				continue;
 			}
 		}
+
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_NONE:
