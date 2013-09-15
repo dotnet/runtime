@@ -879,7 +879,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		emap = ji->gc_info;
 
 		if (!emap) {
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+			DEBUG (char *fname = mono_method_full_name (jinfo_get_method (ji), TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
 			DEBUG (fprintf (logfile, "\tNo GC Map.\n"));
 			continue;
 		}
@@ -919,7 +919,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		frame_start = fp + map->start_offset + map->map_offset;
 		frame_end = fp + map->end_offset;
 
-		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (jinfo_get_method (ji), TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
 		/* Find the callsite index */
 		if (map->callsite_entry_size == 1) {
@@ -1120,7 +1120,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		fi = &tls->frames [findex];
 		frame_start = stack_start + fi->frame_start_offset;
 
-		DEBUG (char *fname = mono_method_full_name (fi->ji->method, TRUE); fprintf (logfile, "Mark(1): %s\n", fname); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (jinfo_get_method (fi->ji), TRUE); fprintf (logfile, "Mark(1): %s\n", fname); g_free (fname));
 
 		/* 
 		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 

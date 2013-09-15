@@ -595,7 +595,7 @@ alloc_random_data (Region *region)
 	g_assert (d->start >= prev_end && d->start + d->length <= next_start);
 
 	d->ji = g_new0 (MonoJitInfo, 1);
-	d->ji->method = (MonoMethod*) 0xABadBabe;
+	d->ji->d.method = (MonoMethod*) 0xABadBabe;
 	d->ji->code_start = (gpointer)(gulong) d->start;
 	d->ji->code_size = d->length;
 	d->ji->cas_inited = 1;	/* marks an allocated jit info */

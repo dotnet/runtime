@@ -540,7 +540,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
-		if (ji->method->save_lmf) {
+		if (jinfo_get_method (ji)->save_lmf) {
 			/* sframe->sp points just past the end of the LMF */
 			guint8 *lmf_addr = (guint8*)sframe->sp - sizeof (MonoLMF);
 			memcpy (&new_ctx->fregs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);
@@ -695,8 +695,8 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 		const char *method;
 		/* we don't do much now, but we can warn the user with a useful message */
 		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", mono_arch_ip_from_context (sigctx), (gpointer)UCONTEXT_REG_Rn(uc, 1));
-		if (ji && ji->method)
-			method = mono_method_full_name (ji->method, TRUE);
+		if (ji && jinfo_get_method (ji))
+			method = mono_method_full_name (jinfo_get_method (ji), TRUE);
 		else
 			method = "Unmanaged";
 		fprintf (stderr, "At %s\n", method);

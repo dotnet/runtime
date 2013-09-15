@@ -266,7 +266,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 
 		ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)ip, NULL);
 
-		//printf ("UN: %s %lx %lx\n", ji ? ji->method->name : "", ip, sp);
+		//printf ("UN: %s %lx %lx\n", ji ? jinfo_get_method (ji)->name : "", ip, sp);
 
 		if (ji)
 			break;

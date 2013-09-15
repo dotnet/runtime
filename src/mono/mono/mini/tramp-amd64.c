@@ -165,11 +165,11 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				/* Print some diagnostics */
 				MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (char*)orig_code);
 				if (ji)
-					fprintf (stderr, "At %s, offset 0x%zx\n", mono_method_full_name (ji->method, TRUE), (guint8*)orig_code - (guint8*)ji->code_start);
+					fprintf (stderr, "At %s, offset 0x%zx\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (guint8*)orig_code - (guint8*)ji->code_start);
 				fprintf (stderr, "Addr: %p\n", addr);
 				ji = mono_jit_info_table_find (mono_domain_get (), (char*)addr);
 				if (ji)
-					fprintf (stderr, "Callee: %s\n", mono_method_full_name (ji->method, TRUE));
+					fprintf (stderr, "Callee: %s\n", mono_method_full_name (jinfo_get_method (ji), TRUE));
 				g_assert_not_reached ();
 #else
 				/* 

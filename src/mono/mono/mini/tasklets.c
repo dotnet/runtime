@@ -74,7 +74,7 @@ continuation_mark_frame (MonoContinuation *cont)
 	} while (1);
 
 	cont->top_sp = MONO_CONTEXT_GET_SP (&ctx);
-	/*g_print ("method: %s, sp: %p\n", ji->method->name, cont->top_sp);*/
+	/*g_print ("method: %s, sp: %p\n", jinfo_get_method (ji)->name, cont->top_sp);*/
 
 	return NULL;
 }
