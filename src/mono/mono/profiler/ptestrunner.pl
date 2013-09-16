@@ -16,6 +16,7 @@ my $minibuilddir = $builddir . "/mono/mini";
 # for the profiler module
 append_path ("LD_LIBRARY_PATH", $profbuilddir . "/.libs");
 append_path ("DYLD_LIBRARY_PATH", $profbuilddir . "/.libs");
+append_path ("DYLD_LIBRARY_PATH", $minibuilddir . "/.libs");
 # for mprof-report
 append_path ("PATH", $profbuilddir);
 
@@ -56,20 +57,20 @@ report_errors ();
 $report = run_test_sgen ("test-heapshot.exe", "report,heapshot");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
-	check_report_heapshot ($report, 0, {"T" => 5000});
-	check_report_heapshot ($report, 1, {"T" => 5023});
+	check_report_heapshot ($report, 1, {"T" => 5000});
+	check_report_heapshot ($report, 2, {"T" => 5023});
 	report_errors ();
 }
 # test heapshot traces
 $report = run_test_sgen ("test-heapshot.exe", "heapshot,output=-traces.mlpd", "--traces traces.mlpd");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
-	check_report_heapshot ($report, 0, {"T" => 5000});
-	check_report_heapshot ($report, 1, {"T" => 5023});
-	check_heapshot_traces ($report, 0,
+	check_report_heapshot ($report, 1, {"T" => 5000});
+	check_report_heapshot ($report, 2, {"T" => 5023});
+	check_heapshot_traces ($report, 1,
 		T => [4999, "T"]
 	);
-	check_heapshot_traces ($report, 1,
+	check_heapshot_traces ($report, 2,
 		T => [5022, "T"]
 	);
 	report_errors ();
@@ -344,9 +345,9 @@ sub check_report_heapshot
 	$section = get_heap_shot ($section, $hshot);
 	foreach my $type (keys %allocs) {
 		if ($section =~ /\d+\s+(\d+)\s+\d+\s+\Q$type\E(\s+\(bytes.*\))?$/m) {
-			push @errors, "Wrong heapshot for type $type." unless $1 >= $allocs{$type};
+			push @errors, "Wrong heapshot for type $type at $hshot ($1, $allocs{$type})." unless $1 >= $allocs{$type};
 		} else {
-			push @errors, "No heapshot for type $type.";
+			push @errors, "No heapshot for type $type at heapshot $hshot.";
 		}
 	}
 }
