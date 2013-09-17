@@ -80,13 +80,6 @@ struct _SgenThreadInfo {
 	volatile int in_critical_region;
 
 	/*
-	This is set to TRUE by STW when it initiates suspension of a thread.
-	It's used so async suspend can catch the case where a thread is in the middle of unregistering
-	and need to cooperatively suspend itself.
-	*/
-	gboolean doing_handshake;
-
-	/*
 	This is set to TRUE when a thread start to dettach.
 	This gives STW the oportunity to ignore a thread that started to
 	unregister.

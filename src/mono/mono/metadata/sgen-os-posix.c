@@ -57,15 +57,6 @@ suspend_thread (SgenThreadInfo *info, void *context)
 #endif
 	gpointer stack_start;
 
-	/*
-	 * It's possible that a dying thread is parked via
-	 * sgen_park_current_thread_if_doing_handshake(), and, while parked, STW tries to
-	 * suspend it again.  In that case doing_handshake will not be set anymore, and the
-	 * "nested" suspend must be ignored.
-	 */
-	if (!info->doing_handshake)
-		return;
-
 	info->stopped_domain = mono_domain_get ();
 	info->stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
 	stop_count = sgen_global_stop_count;
@@ -118,7 +109,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	do {
 		info->signal = 0;
 		sigsuspend (&suspend_signal_mask);
-	} while (info->signal != restart_signal_num && info->doing_handshake);
+	} while (info->signal != restart_signal_num);
 
 	/* Unblock the restart signal. */
 	pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
@@ -136,13 +127,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-
-	if (info) {
-		suspend_thread (info, context);
-	} else {
-		/* This can happen while a thread is dying */
-		//g_print ("no thread info in suspend\n");
-	}
+	suspend_thread (info, context);
 
 	errno = old_errno;
 }
@@ -154,24 +139,8 @@ restart_handler (int sig)
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-	/*
-	If the thread info is null is means we're currently in the process of cleaning up,
-	the pthread destructor has already kicked in and it has explicitly invoked the suspend handler.
-	
-	This means this thread has been suspended, TLS is dead, so the only option we have is to
-	rely on pthread_self () and seatch over the thread list.
-	*/
-	if (!info)
-		info = (SgenThreadInfo*)mono_thread_info_lookup (pthread_self ());
-
-	/*
-	 * If a thread is dying there might be no thread info.  In
-	 * that case we rely on info->doing_handshake.
-	 */
-	if (info) {
-		info->signal = restart_signal_num;
-		SGEN_LOG (4, "Restart handler in %p %p", info, (gpointer)mono_native_thread_id_get ());
-	}
+	info->signal = restart_signal_num;
+	SGEN_LOG (4, "Restart handler in %p %p", info, (gpointer)mono_native_thread_id_get ());
 	errno = old_errno;
 }
 
@@ -219,13 +188,6 @@ sgen_thread_handshake (BOOL suspend)
 			continue;
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/
-		if (suspend) {
-			g_assert (!info->doing_handshake);
-			info->doing_handshake = TRUE;
-		} else {
-			g_assert (info->doing_handshake);
-			info->doing_handshake = FALSE;
-		}
 		result = mono_threads_pthread_kill (info, signum);
 		if (result == 0) {
 			count++;
