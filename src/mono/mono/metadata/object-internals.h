@@ -194,6 +194,27 @@ struct _MonoString {
 #define mono_array_length_fast(array) ((array)->max_length)
 #define mono_array_addr_with_size_fast(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
 
+#define mono_array_addr_fast(array,type,index) ((type*)(void*) mono_array_addr_with_size_fast (array, sizeof (type), index))
+#define mono_array_get_fast(array,type,index) ( *(type*)mono_array_addr_fast ((array), type, (index)) ) 
+#define mono_array_set_fast(array,type,index,value)	\
+	do {	\
+		type *__p = (type *) mono_array_addr_fast ((array), type, (index));	\
+		*__p = (value);	\
+	} while (0)
+#define mono_array_setref_fast(array,index,value)	\
+	do {	\
+		void **__p = (void **) mono_array_addr_fast ((array), void*, (index));	\
+		mono_gc_wbarrier_set_arrayref ((array), __p, (MonoObject*)(value));	\
+		/* *__p = (value);*/	\
+	} while (0)
+#define mono_array_memcpy_refs_fast(dest,destidx,src,srcidx,count)	\
+	do {	\
+		void **__p = (void **) mono_array_addr_fast ((dest), void*, (destidx));	\
+		void **__s = mono_array_addr_fast ((src), void*, (srcidx));	\
+		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
+	} while (0)
+
+
 typedef struct {
 	MonoObject obj;
 	MonoObject *identity;

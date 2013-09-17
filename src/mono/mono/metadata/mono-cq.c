@@ -132,9 +132,9 @@ mono_cqitem_try_enqueue (MonoCQ *cq, MonoObject *obj)
 		}
 
 		if (InterlockedCompareExchange (&queue->last, pos + 1, pos) == pos) {
-			mono_array_setref (queue->array, pos, obj);
+			mono_array_setref_fast (queue->array, pos, obj);
 			STORE_STORE_FENCE;
-			mono_array_set (queue->array_state, char, pos, TRUE);
+			mono_array_set_fast (queue->array_state, char, pos, TRUE);
 			if ((pos + 1) == CQ_ARRAY_SIZE) {
 				CQ_DEBUG ("enqueue(): pos + 1 == CQ_ARRAY_SIZE, %d. Adding node.", CQ_ARRAY_SIZE);
 				mono_cq_add_node (cq);
