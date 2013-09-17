@@ -4001,11 +4001,6 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
-
-		if (!info->joined_stw) {
-			SGEN_LOG (3, "Skipping thread not seen in STW %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
-			continue;
-		}
 		
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
 		if (!info->thread_is_dying) {
@@ -4063,7 +4058,6 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	info->signal = 0;
 #endif
 	info->skip = 0;
-	info->joined_stw = FALSE;
 	info->doing_handshake = FALSE;
 	info->thread_is_dying = FALSE;
 	info->stack_start = NULL;

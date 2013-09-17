@@ -116,25 +116,15 @@ sgen_thread_handshake (BOOL suspend)
 	int count = 0;
 
 	FOREACH_THREAD_SAFE (info) {
-		if (info->joined_stw == suspend)
-			continue;
-		info->joined_stw = suspend;
-
 		if (info == cur_thread || sgen_is_worker_thread (mono_thread_info_get_tid (info)))
 			continue;
 		if (info->gc_disabled)
 			continue;
 
 		if (suspend) {
-			g_assert (!info->doing_handshake);
-			info->doing_handshake = TRUE;
-
 			if (!sgen_suspend_thread (info))
 				continue;
 		} else {
-			g_assert (info->doing_handshake);
-			info->doing_handshake = FALSE;
-
 			ret = thread_resume (info->info.native_handle);
 			if (ret != KERN_SUCCESS)
 				continue;

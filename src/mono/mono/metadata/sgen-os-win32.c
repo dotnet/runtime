@@ -102,9 +102,6 @@ sgen_thread_handshake (BOOL suspend)
 	int count = 0;
 
 	FOREACH_THREAD_SAFE (info) {
-		if (info->joined_stw == suspend)
-			continue;
-		info->joined_stw = suspend;
 		if (info == current)
 			continue;
 		if (info->gc_disabled)

@@ -117,7 +117,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		   allocator */
 		FOREACH_THREAD_SAFE (info) {
 			gboolean result;
-			if (info->skip || info->gc_disabled || !info->joined_stw)
+			if (info->skip || info->gc_disabled)
 				continue;
 			if (!info->thread_is_dying && (!info->stack_start || info->in_critical_region || info->info.inside_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {

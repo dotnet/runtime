@@ -80,18 +80,6 @@ struct _SgenThreadInfo {
 	volatile int in_critical_region;
 
 	/*
-	Since threads can be created concurrently during STW, it's possible to reach a stable
-	state where we find that the world is stopped but there are registered threads that have
-	not been suspended.
-
-	Our hope is that those threads are harmlesly blocked in the GC lock trying to finish registration.
-
-	To handle this scenario we set this field on each thread that have joined the current STW phase.
-	The GC should ignore unjoined threads.
-	*/
-	gboolean joined_stw;
-
-	/*
 	This is set to TRUE by STW when it initiates suspension of a thread.
 	It's used so async suspend can catch the case where a thread is in the middle of unregistering
 	and need to cooperatively suspend itself.
