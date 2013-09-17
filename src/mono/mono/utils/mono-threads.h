@@ -76,10 +76,10 @@ and reduce the number of casts drastically.
 #endif
 
 enum {
-	STATE_STARTING			= 0x01,
-	STATE_RUNNING			= 0x02,
-	STATE_SHUTTING_DOWN		= 0x03,
-	STATE_DEAD				= 0x04,
+	STATE_STARTING			= 0x00,
+	STATE_RUNNING			= 0x01,
+	STATE_SHUTTING_DOWN		= 0x02,
+	STATE_DEAD				= 0x03,
 	RUN_STATE_MASK			= 0x0F,
 
 	STATE_SUSPENDED			= 0x10,
@@ -87,8 +87,8 @@ enum {
 	SUSPEND_STATE_MASK		= 0xF0,
 };
 
-#define mono_thread_info_run_state(info) ((info)->thread_state & RUN_STATE_MASK)
-#define mono_thread_info_suspend_state(info) ((info)->thread_state & SUSPEND_STATE_MASK)
+#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & RUN_STATE_MASK)
+#define mono_thread_info_suspend_state(info) (((MonoThreadInfo*)info)->thread_state & SUSPEND_STATE_MASK)
 
 typedef struct {
 	MonoLinkedListSetNode node;

@@ -152,6 +152,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	}
 
 	mono_threads_platform_register (info);
+	info->thread_state = STATE_RUNNING;
 	mono_thread_info_suspend_lock ();
 	/*If this fail it means a given thread has been registered twice, which doesn't make sense. */
 	result = mono_thread_info_insert (info);
@@ -175,10 +176,13 @@ unregister_thread (void *arg)
 	 */
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
 
+	info->thread_state = STATE_SHUTTING_DOWN;
 	mono_thread_info_suspend_lock ();
 	if (threads_callbacks.thread_unregister)
 		threads_callbacks.thread_unregister (info);
 	mono_threads_unregister_current_thread (info);
+
+	info->thread_state = STATE_DEAD;
 	mono_thread_info_suspend_unlock ();
 
 	/*now it's safe to free the thread info.*/
