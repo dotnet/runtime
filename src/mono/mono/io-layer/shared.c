@@ -254,7 +254,8 @@ static gchar *
 _wapi_shm_file (_wapi_shm_t type)
 {
 	static gchar file[_POSIX_PATH_MAX];
-	gchar *name = NULL, *filename, *wapi_dir;
+	gchar *name = NULL, *filename;
+	const gchar *wapi_dir;
 
 	name = _wapi_shm_base_name (type);
 
