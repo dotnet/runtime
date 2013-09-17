@@ -201,16 +201,6 @@ sgen_wait_for_suspend_ack (int count)
 	}
 }
 
-gboolean
-sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p)
-{
-    if (!p->doing_handshake)
-	    return FALSE;
-
-    suspend_thread (p, NULL);
-    return TRUE;
-}
-
 int
 sgen_thread_handshake (BOOL suspend)
 {

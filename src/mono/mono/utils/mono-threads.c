@@ -48,6 +48,9 @@ static MonoLinkedListSet thread_list;
 static gboolean disable_new_interrupt = FALSE;
 static gboolean mono_threads_inited = FALSE;
 
+static void mono_threads_unregister_current_thread (MonoThreadInfo *info);
+
+
 static inline void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
 {
@@ -149,10 +152,11 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	}
 
 	mono_threads_platform_register (info);
-
+	mono_thread_info_suspend_lock ();
 	/*If this fail it means a given thread has been registered twice, which doesn't make sense. */
 	result = mono_thread_info_insert (info);
 	g_assert (result);
+	mono_thread_info_suspend_unlock ();
 	return info;
 }
 
@@ -171,14 +175,11 @@ unregister_thread (void *arg)
 	 */
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
 
-	/*
-	The unregister callback is reposible for calling mono_threads_unregister_current_thread
-	since it usually needs to be done in sync with the GC does a stop-the-world.
-	*/
+	mono_thread_info_suspend_lock ();
 	if (threads_callbacks.thread_unregister)
 		threads_callbacks.thread_unregister (info);
-	else
-		mono_threads_unregister_current_thread (info);
+	mono_threads_unregister_current_thread (info);
+	mono_thread_info_suspend_unlock ();
 
 	/*now it's safe to free the thread info.*/
 	mono_thread_hazardous_free_or_queue (info, free_thread_info, TRUE, FALSE);
@@ -190,26 +191,19 @@ unregister_thread (void *arg)
  * This must be called from the thread unregister callback and nowhere else.
  * The current thread must be passed as TLS might have already been cleaned up.
 */
-void
+static void
 mono_threads_unregister_current_thread (MonoThreadInfo *info)
 {
 	gboolean result;
 	g_assert (mono_thread_info_get_tid (info) == mono_native_thread_id_get ());
 	result = mono_thread_info_remove (info);
 	g_assert (result);
-
 }
 
 MonoThreadInfo*
 mono_thread_info_current (void)
 {
-	return mono_native_tls_get_value (thread_info_key);
-}
-
-static MonoThreadInfo*
-mono_thread_info_current_slow (void)
-{
-	MonoThreadInfo *info = mono_thread_info_current ();
+	MonoThreadInfo *info = (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key);
 	if (info)
 		return info;
 
@@ -457,7 +451,7 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 
 	MONO_SEM_POST (&info->suspend_semaphore);
 	mono_hazard_pointer_clear (hp, 1);
-	mono_atomic_store_release (&mono_thread_info_current_slow ()->inside_critical_region, FALSE);
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
 
 	return result;
 }
@@ -465,7 +459,7 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 void
 mono_thread_info_finish_suspend (void)
 {
-	mono_atomic_store_release (&mono_thread_info_current_slow ()->inside_critical_region, FALSE);
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
 }
 
 /*
@@ -540,7 +534,7 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 		sleep_duration += 10;
 	}
 
-	mono_atomic_store_release (&mono_thread_info_current_slow ()->inside_critical_region, TRUE);
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, TRUE);
 
 	mono_thread_info_suspend_unlock ();
 	return info;

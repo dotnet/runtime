@@ -231,9 +231,6 @@ void
 mono_thread_info_suspend_unlock (void) MONO_INTERNAL;
 
 void
-mono_threads_unregister_current_thread (THREAD_INFO_TYPE *info) MONO_INTERNAL;
-
-void
 mono_thread_info_disable_new_interrupt (gboolean disable) MONO_INTERNAL;
 
 void

@@ -4049,7 +4049,6 @@ ptr_on_stack (void *ptr)
 static void*
 sgen_thread_register (SgenThreadInfo* info, void *addr)
 {
-	LOCK_GC;
 #ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
 
@@ -4124,8 +4123,6 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 
 	if (gc_callbacks.thread_attach_func)
 		info->runtime_data = gc_callbacks.thread_attach_func ();
-
-	UNLOCK_GC;
 	return info;
 }
 
@@ -4143,44 +4140,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 
 	p->thread_is_dying = TRUE;
 
-	/*
-	There is a race condition between a thread finishing executing and been removed
-	from the GC thread set.
-	This happens on posix systems when TLS data is been cleaned-up, libpthread will
-	set the thread_info slot to NULL before calling the cleanup function. This
-	opens a window in which the thread is registered but has a NULL TLS.
-
-	The suspend signal handler needs TLS data to know where to store thread state
-	data or otherwise it will simply ignore the thread.
-
-	This solution works because the thread doing STW will wait until all threads been
-	suspended handshake back, so there is no race between the doing_hankshake test
-	and the suspend_thread call.
-
-	This is not required on systems that do synchronous STW as those can deal with
-	the above race at suspend time.
-
-	FIXME: I believe we could avoid this by using mono_thread_info_lookup when
-	mono_thread_info_current returns NULL. Or fix mono_thread_info_lookup to do so.
-	*/
-#if (defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED) || !defined(HAVE_PTHREAD_KILL)
-	LOCK_GC;
-#else
-	while (!TRYLOCK_GC) {
-		SgenThreadInfo *current = mono_thread_info_current ();
-		if (current)
-			SGEN_ASSERT (0, current == p, "If there's a current thread info, it must be correct.");
-		/*
-		 * If we have a current thread info, the signal
-		 * handler will eventually suspend us.  If not, we
-		 * need to do it by hand.
-		 */
-		if (current || !sgen_park_current_thread_if_doing_handshake (p))
-			g_usleep (50);
-	}
-	MONO_GC_LOCKED ();
-#endif
-
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)mono_thread_info_get_tid (p));
 
@@ -4188,9 +4147,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 		gc_callbacks.thread_detach_func (p->runtime_data);
 		p->runtime_data = NULL;
 	}
-
-	mono_threads_unregister_current_thread (p);
-	UNLOCK_GC;
 }
 
 

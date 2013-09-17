@@ -413,7 +413,6 @@ int sgen_thread_handshake (BOOL suspend) MONO_INTERNAL;
 gboolean sgen_suspend_thread (SgenThreadInfo *info) MONO_INTERNAL;
 gboolean sgen_resume_thread (SgenThreadInfo *info) MONO_INTERNAL;
 void sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
-gboolean sgen_park_current_thread_if_doing_handshake (SgenThreadInfo *p) MONO_INTERNAL;
 void sgen_os_init (void) MONO_INTERNAL;
 
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread) MONO_INTERNAL;
