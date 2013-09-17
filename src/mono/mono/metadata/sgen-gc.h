@@ -80,13 +80,6 @@ struct _SgenThreadInfo {
 	volatile int in_critical_region;
 
 	/*
-	This is set to TRUE when a thread start to dettach.
-	This gives STW the oportunity to ignore a thread that started to
-	unregister.
-	*/
-	gboolean thread_is_dying;
-
-	/*
 	This is set the argument of mono_gc_set_skip_thread.
 
 	A thread that knowingly holds no managed state can call this
