@@ -2533,6 +2533,13 @@ ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr)
 #if SIZEOF_VOID_P == 8
 	return *((volatile gint64 *) (ptr));
 #else
+	if ((size_t)ptr & 0x7) {
+		gint64 value;
+		mono_interlocked_lock ();
+		value = *(gint64 *)ptr;
+		mono_interlocked_unlock ();
+		return value;
+	}
 	return InterlockedCompareExchange64 (ptr, 0, 0); /*Must ensure atomicity of the operation. */
 #endif
 }
