@@ -898,7 +898,7 @@ SGEN_TESTS =	\
 	sgen-weakref-stress.exe	\
 	sgen-cementing-stress.exe	\
 	sgen-case-23400.exe	\
-	sgen-new-threads-dont-join-stw.cs
+	sgen-new-threads-dont-join-stw.exe
 
 SGEN_CONFIGURATIONS =	\
 	"|plain"	\
