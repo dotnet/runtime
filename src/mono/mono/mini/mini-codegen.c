@@ -1790,7 +1790,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 							continue;
 
 						s = regmask (j);
-						if ((clob_mask & s) && !(rs->free_mask [cur_bank] & s) && (j != ins->sreg1)) {
+						if ((clob_mask & s) && !(rs->free_mask [cur_bank] & s)) {
 							if (j != dreg)
 								free_up_hreg (cfg, bb, tmp, ins, j, cur_bank);
 							else if (rs->symbolic [cur_bank] [j])
