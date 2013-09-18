@@ -2881,6 +2881,8 @@ mini_get_tls_offset (MonoJitTlsKey key)
 	return offset;
 }
 
+#ifndef DISABLE_JIT
+
 static MonoInst*
 mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 {
@@ -2941,6 +2943,8 @@ mono_get_lmf_intrinsic (MonoCompile* cfg)
 {
 	return mono_create_tls_get (cfg, TLS_KEY_LMF);
 }
+
+#endif /* !DISABLE_JIT */
 
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
