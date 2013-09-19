@@ -118,7 +118,7 @@ LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 		break;
 	}
 
-	if (win32_chained_exception_needs_run) {
+	if (mono_win_chained_exception_needs_run) {
 		/* Don't copy context back if we chained exception
 		* as the handler may have modfied the EXCEPTION_POINTERS
 		* directly. We don't pass sigcontext to chained handlers.
@@ -164,8 +164,6 @@ void win32_seh_cleanup()
 	if (mono_old_win_toplevel_exception_filter) SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
 
 	guint32 ret = 0;
-	if (old_win32_toplevel_exception_filter)
-		SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
 
 	ret = RemoveVectoredExceptionHandler (mono_win_vectored_exception_handle);
 	g_assert (ret);
