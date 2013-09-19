@@ -908,8 +908,10 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %config %_sysconfdir/mono/2.0/Browsers
 %config %_sysconfdir/mono/2.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/2.0/web.config
+%config %_sysconfdir/mono/4.0/Browsers
 %config %_sysconfdir/mono/4.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/4.0/web.config
+%config %_sysconfdir/mono/4.5/Browsers
 %config %_sysconfdir/mono/4.5/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/4.5/web.config
 %config %_sysconfdir/mono/browscap.ini

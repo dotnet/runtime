@@ -17,7 +17,9 @@
 	<Copy source="{sourcedir}\mono\data\net_2_0\DefaultWsdlHelpGenerator.aspx" destination="{destdir}\etc\mono\2.0\DefaultWsdlHelpGenerator.aspx" />
 	<Copy source="{sourcedir}\mono\data\net_2_0\settings.map" destination="{destdir}\etc\mono\2.0\settings.map" />
 	<Copy source="{sourcedir}\mono\data\net_2_0\web.config" destination="{destdir}\etc\mono\2.0\web.config" />
-	<Copy source="{sourcedir}\mono\data\net_2_0\Browsers\Compat.browser" destination="{destdir}\etc\mono\2.0\Browsers\Compat.browser" />
+	<Copy source="{sourcedir}\mono\data\Browsers\Compat.browser" destination="{destdir}\etc\mono\2.0\Browsers\Compat.browser" />
+	<Copy source="{sourcedir}\mono\data\Browsers\Compat.browser" destination="{destdir}\etc\mono\4.0\Browsers\Compat.browser" />
+	<Copy source="{sourcedir}\mono\data\Browsers\Compat.browser" destination="{destdir}\etc\mono\4.5\Browsers\Compat.browser" />
 	<Copy source="{sourcedir}\mono\data\browscap.ini" destination="{destdir}\etc\mono\browscap.ini" />
 
 	<!-- Bring in xulrunner -->
