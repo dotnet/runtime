@@ -964,6 +964,43 @@ sgen-bridge-tests: sgen-bridge.exe sgen-bridge-major-fragmentation.exe
 
 sgen-tests: sgen-regular-tests sgen-bridge-tests
 
+AOT_CONFIGURATIONS=	\
+	"|regular"	\
+	"--gc=boehm|boehm"
+
+#LLVM crashes, got to fix it first.
+#	"--llvm|llvm"	\
+#	"--llvm --gc=boehm|llvm+boehm"
+
+
+test-aot:
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	profile=net_4_5;	\
+	tmpfile=`mktemp -t mono_aot_output` || exit 1;	\
+	for assembly in $(mcs_topdir)/class/lib/$$profile/*.dll	; do	\
+		asm_name=`basename $$assembly`;	\
+		echo "... $$asm_name";	\
+		for conf in $(AOT_CONFIGURATIONS); do	\
+			name=`echo $$conf | cut -d\| -f 2`;	\
+			params=`echo $$conf | cut -d\| -f 1`;	\
+			test_name="$${asm_name}|$${name}";	\
+			echo "testing $$test_name";	\
+			if MONO_PATH=$(mcs_topdir)/class/lib/$$profile $(JITTEST_PROG_RUN) $$params --aot=outfile=$$tmpfile $$assembly;	\
+			then \
+				passed=`expr $${passed} + 1`; \
+			else \
+				failed=`expr $${failed} + 1`; \
+				failed_tests="$${failed_tests} $$test_name"; \
+			fi \
+		done;	\
+	done;	\
+	rm	$$tmpfile;	\
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
 
 # Generated tests for runtime invoke
 EXTRA_DIST += gen-runtime-invoke.cs
