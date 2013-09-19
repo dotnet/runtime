@@ -13,7 +13,7 @@
 
 #include <mono/utils/atomic.h>
 
-#if defined (WAPI_NO_ATOMIC_ASM) || !defined (HAS_64BITS_ATOMIC)
+#if defined (WAPI_NO_ATOMIC_ASM) || !defined (HAS_64BITS_ATOMICS)
 
 #include <pthread.h>
 
