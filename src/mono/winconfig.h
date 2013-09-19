@@ -92,6 +92,10 @@
 /* Define to 1 if you have the <curses.h> header file. */
 /* #undef HAVE_CURSES_H */
 
+/* Define to 1 if you have the declaration of `InterlockedCompareExchange64',
+   and to 0 if you don't. */
+#define HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64 1
+
 /* Define to 1 if you have the <dirent.h> header file. */
 /* #define HAVE_DIRENT_H 1 */
 
