@@ -8816,10 +8816,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 				int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
 				acfg->fp = fdopen (i, "w+");
 			}
-			if (acfg->fp == 0) {
-				fprintf (stderr, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
-				return 1;
-			}
+		}
+		if (acfg->fp == 0) {
+			fprintf (stderr, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
+			return 1;
 		}
 		acfg->w = img_writer_create (acfg->fp, FALSE);
 		
