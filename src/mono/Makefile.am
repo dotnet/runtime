@@ -155,3 +155,9 @@ package-inputs:
 	done
 	echo "</root>" >> msvc/scripts/order.xml
 
+# Update llvm version in configure.in to the output of $LLVM_DIR/bin/llvm-config --version
+update-llvm-version:
+	if test "x$$LLVM_DIR" = "x"; then echo "Set the make variable LLVM_DIR to the directory containing the LLVM installation."; exit 1; fi
+	REV=`$(LLVM_DIR)/bin/llvm-config --version` && sed -e "s,expected_llvm_version=.*,expected_llvm_version=\"$$REV\"," < configure.in > tmp && mv tmp configure.in && echo "Version set to $$REV."
+
+
