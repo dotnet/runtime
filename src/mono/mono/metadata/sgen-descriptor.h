@@ -153,6 +153,12 @@ sgen_gc_descr_has_references (mword desc)
 #define PREFETCH(addr)
 #endif
 
+#if defined(__GNUC__) && SIZEOF_VOID_P==4
+#define GNUC_BUILTIN_CTZ(bmap)	__builtin_ctz(bmap)
+#elif defined(__GNUC__) && SIZEOF_VOID_P==8
+#define GNUC_BUILTIN_CTZ(bmap)	__builtin_ctzl(bmap)
+#endif
+
 /* code using these macros must define a HANDLE_PTR(ptr) macro that does the work */
 #define OBJ_RUN_LEN_FOREACH_PTR(desc,obj)	do {	\
 		if ((desc) & 0xffff0000) {	\
@@ -170,43 +176,21 @@ sgen_gc_descr_has_references (mword desc)
 		}	\
 	} while (0)
 
-#if defined(__GNUC__) && SIZEOF_VOID_P==4
+#if defined(__GNUC__)
 #define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
 		/* there are pointers */        \
 		void **_objptr = (void**)(obj); \
 		gsize _bmap = (desc) >> 16;     \
 		_objptr += OBJECT_HEADER_WORDS; \
 		{ \
-			int _index = __builtin_ctz (_bmap);		\
+			int _index = GNUC_BUILTIN_CTZ (_bmap);		\
 			_objptr += _index; \
 			_bmap >>= (_index + 1);				\
 			HANDLE_PTR (_objptr, (obj));		\
 			_objptr ++;							\
 			} \
 		while (_bmap) { \
-			int _index = __builtin_ctz (_bmap);		\
-			_objptr += _index; \
-			_bmap >>= (_index + 1);				\
-			HANDLE_PTR (_objptr, (obj));		\
-			_objptr ++;							\
-		}										\
-	} while (0)
-#elif defined(__GNUC__) && SIZEOF_VOID_P==8
-/* Same as above, but use _builtin_ctzl () */
-#define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
-		/* there are pointers */        \
-		void **_objptr = (void**)(obj); \
-		gsize _bmap = (desc) >> 16;     \
-		_objptr += OBJECT_HEADER_WORDS; \
-		{ \
-			int _index = __builtin_ctzl (_bmap);		\
-			_objptr += _index; \
-			_bmap >>= (_index + 1);				\
-			HANDLE_PTR (_objptr, (obj));		\
-			_objptr ++;							\
-			} \
-		while (_bmap) { \
-			int _index = __builtin_ctzl (_bmap);		\
+			int _index = GNUC_BUILTIN_CTZ (_bmap);		\
 			_objptr += _index; \
 			_bmap >>= (_index + 1);				\
 			HANDLE_PTR (_objptr, (obj));		\
