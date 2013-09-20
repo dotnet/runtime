@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 
 public struct SmallMixed
 {
@@ -47,6 +48,13 @@ public class HugePtrFree {
 	public LargeStruct2 c;
 }
 
+[StructLayout (LayoutKind.Sequential)]
+public class Non32bitBitmap {
+	public object o;
+	public long i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12, i13, i14, i15, i16, i17, i18, i19, i20, i21, i22, i23, i24, i25, i26, i27, i28, i29, i30, i31, i32, i33, i34, i35;
+	public object o2;
+}
+
 /*
 This is a stress test for descriptors.
 */
@@ -54,10 +62,10 @@ class Driver {
 	static char[] FOO = new char[] { 'f', 'o', 'b' };
 
 	static void Fill (int cycles) {
-		object[] root = new object [12];
+		object[] root = new object [13];
 		object[] current = root;
 		for (int i = 0; i < cycles; ++i) {
-			current [0] = new object [12];
+			current [0] = new object [13];
 			current [1] = new int [6];
 			current [2] = new int [2,3];
 			current [3] = new string (FOO);
@@ -72,6 +80,9 @@ class Driver {
 				current [10] = new HugePtrFree ();
 			if ((i %  10000) == 0)
 				current [11] = new LargeStruct2 [1];
+
+			/* Test for 64 bit bitmap descriptors (#14834) */
+			current [12] = new Non32bitBitmap () { o = new object (), i32 = 1, i33 = 1, i34 = 1, i35 = 1, o2 = new object () };
 	
 			current = (object[])current [0];
 		}
