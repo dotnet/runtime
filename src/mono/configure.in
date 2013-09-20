@@ -3388,7 +3388,35 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/Browsers/Compat.browser],
     $ac_aux_dir/install-sh -d runtime/etc/mono/2.0/Browsers/
     cd runtime/etc/mono/2.0/Browsers
     rm -f Compat.browser
-    $LN_S $reldir/data/net_2_0/Browsers/Compat.browser Compat.browser
+    $LN_S $reldir/data/Browsers/Compat.browser Compat.browser
+    cd $depth
+],[LN_S='$LN_S'])
+
+AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/Browsers/Compat.browser],
+[   depth=../../../../..
+    case $srcdir in
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+    .) reldir=$depth ;;
+    *) reldir=$depth/$srcdir ;;
+    esac
+    $ac_aux_dir/install-sh -d runtime/etc/mono/4.0/Browsers/
+    cd runtime/etc/mono/4.0/Browsers
+    rm -f Compat.browser
+    $LN_S $reldir/data/Browsers/Compat.browser Compat.browser
+    cd $depth
+],[LN_S='$LN_S'])
+
+AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/Browsers/Compat.browser],
+[   depth=../../../../..
+    case $srcdir in
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+    .) reldir=$depth ;;
+    *) reldir=$depth/$srcdir ;;
+    esac
+    $ac_aux_dir/install-sh -d runtime/etc/mono/4.5/Browsers/
+    cd runtime/etc/mono/4.5/Browsers
+    rm -f Compat.browser
+    $LN_S $reldir/data/Browsers/Compat.browser Compat.browser
     cd $depth
 ],[LN_S='$LN_S'])
 
@@ -3496,6 +3524,8 @@ data/net_2_0/Makefile
 data/net_4_0/Makefile
 data/net_4_5/Makefile
 data/net_2_0/Browsers/Makefile
+data/net_4_0/Browsers/Makefile
+data/net_4_5/Browsers/Makefile
 data/mint.pc
 data/mono-2.pc
 data/monosgen-2.pc
