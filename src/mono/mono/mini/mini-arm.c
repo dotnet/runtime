@@ -1209,7 +1209,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double)
 static CallInfo*
 get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig)
 {
-	guint i, gr, pstart;
+	guint i, gr, fpr, pstart;
 	int n = sig->hasthis + sig->param_count;
 	MonoType *simpletype;
 	guint32 stack_size = 0;
@@ -1224,6 +1224,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 
 	cinfo->nargs = n;
 	gr = ARMREG_R0;
+	fpr = ARM_VFP_F0;
 
 	t = mini_type_get_underlying_type (gsctx, sig->ret);
 	if (MONO_TYPE_ISSTRUCT (t)) {
@@ -1398,9 +1399,18 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		}
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-		case MONO_TYPE_R8:
 			ainfo->size = 8;
 			add_general (&gr, &stack_size, ainfo, FALSE);
+			n++;
+			break;
+		case MONO_TYPE_R8:
+			ainfo->size = 8;
+
+			if (IS_HARD_FLOAT)
+				add_float (&fpr, &stack_size, ainfo, TRUE);
+			else
+				add_general (&gr, &stack_size, ainfo, FALSE);
+
 			n++;
 			break;
 		case MONO_TYPE_VAR:
@@ -2162,19 +2172,21 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			break;
 		case RegTypeFP: {
-			/* FIXME: */
-			NOT_IMPLEMENTED;
-#if 0
-			arg->backend.reg3 = ainfo->reg;
-			/* FP args are passed in int regs */
-			call->used_iregs |= 1 << ainfo->reg;
+			int fdreg = mono_alloc_freg (cfg);
+
 			if (ainfo->size == 8) {
-				arg->opcode = OP_OUTARG_R8;
-				call->used_iregs |= 1 << (ainfo->reg + 1);
+				MONO_INST_NEW (cfg, ins, OP_FMOVE);
+				ins->sreg1 = in->dreg;
+				ins->dreg = fdreg;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, TRUE);
 			} else {
-				arg->opcode = OP_OUTARG_R4;
+				/* FIXME: single-precision args */
+				g_assert_not_reached ();
 			}
-#endif
+
+			call->used_iregs |= 1 << ainfo->reg;
 			cfg->flags |= MONO_CFG_HAS_FPOUT;
 			break;
 		}
@@ -5523,7 +5535,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->storage == RegTypeFP) {
-				g_assert_not_reached ();
+				if (ainfo->size == 8) {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+					ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+					ARM_FSTD (code, ainfo->reg, ARMREG_IP, 0);
+				} else {
+					/* FIXME: single-precision args */
+					g_assert_not_reached ();
+				}
 			} else if (ainfo->storage == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int soffset = 0;
