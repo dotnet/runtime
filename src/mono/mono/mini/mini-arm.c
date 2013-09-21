@@ -1277,6 +1277,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			/* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */
 			gr = ARMREG_R3 + 1;
+			fpr = ARM_VFP_F16;
 			/* Emit the signature cookie just before the implicit arguments */
 			add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 		}
@@ -1440,6 +1441,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		/* Prevent implicit arguments and sig_cookie from
 		   being passed in registers */
 		gr = ARMREG_R3 + 1;
+		fpr = ARM_VFP_F16;
 		/* Emit the signature cookie just before the implicit arguments */
 		add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 	}
