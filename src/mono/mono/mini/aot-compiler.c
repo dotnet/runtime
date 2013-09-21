@@ -640,6 +640,10 @@ arch_init (MonoAotCompile *acfg)
 	g_string_append (acfg->llc_args, "-mattr=-avx");
 #endif
 
+#if defined(TARGET_AMD64)
+	g_string_append (acfg->llc_args, " -march=x86-64");
+#endif
+
 #ifdef TARGET_ARM
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
