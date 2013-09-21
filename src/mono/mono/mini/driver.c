@@ -1351,6 +1351,8 @@ mono_jit_parse_options (int argc, char * argv[])
 		} else if (strcmp (argv [i], "--llvm") == 0) {
 #ifndef MONO_ARCH_LLVM_SUPPORTED
 			fprintf (stderr, "Mono Warning: --llvm not supported on this platform.\n");
+#elif !defined(ENABLE_LLVM)
+			fprintf (stderr, "Mono Warning: --llvm not enabled in this runtime.\n");
 #else
 			mono_use_llvm = TRUE;
 #endif
@@ -1749,6 +1751,8 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--llvm") == 0) {
 #ifndef MONO_ARCH_LLVM_SUPPORTED
 			fprintf (stderr, "Mono Warning: --llvm not supported on this platform.\n");
+#elif !defined(ENABLE_LLVM)
+			fprintf (stderr, "Mono Warning: --llvm not enabled in this runtime.\n");
 #else
 			mono_use_llvm = TRUE;
 #endif
