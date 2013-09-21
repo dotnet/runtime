@@ -1180,6 +1180,32 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 	(*gr) ++;
 }
 
+static void inline
+add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double)
+{
+	/* FIXME: single-precision args */
+	g_assert (is_double);
+
+	if (*fpr < ARM_VFP_F16) {
+		ainfo->storage = RegTypeFP;
+
+		if (*fpr & 1)
+			*fpr += 1;
+
+		ainfo->reg = *fpr;
+		*fpr += 2;
+	} else {
+		*stack_size += 7;
+		*stack_size &= ~7;
+
+		ainfo->offset = *stack_size;
+		ainfo->reg = ARMREG_SP;
+		ainfo->storage = RegTypeBase;
+
+		*stack_size += 8;
+	}
+}
+
 static CallInfo*
 get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig)
 {
