@@ -1916,7 +1916,8 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	We must reset the gathered bridges since their original block might be evacuated due to major
 	fragmentation in the meanwhile and the bridge code should not have to deal with that.
 	*/
-	sgen_bridge_reset_data ();
+	if (sgen_need_bridge_processing ())
+		sgen_bridge_reset_data ();
 
 	/*
 	 * Walk the ephemeron tables marking all values with reachable keys. This must be completely done
@@ -1933,9 +1934,25 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	sgen_scan_togglerefs (start_addr, end_addr, ctx);
 
 	if (sgen_need_bridge_processing ()) {
+		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
+		sgen_drain_gray_stack (-1, ctx);
 		sgen_collect_bridge_objects (generation, ctx);
 		if (generation == GENERATION_OLD)
 			sgen_collect_bridge_objects (GENERATION_NURSERY, ctx);
+
+		/*
+		Do the first bridge step here, as the collector liveness state will become useless after that.
+
+		An important optimization is to only proccess the possibly dead part of the object graph and skip
+		over all live objects as we transitively know everything they point must be alive too.
+
+		The above invariant is completely wrong if we let the gray queue be drained and mark/copy everything.
+
+		This has the unfortunate side effect of making overflow collections perform the first step twice, but
+		given we now have heuristics that perform major GC in anticipation of minor overflows this should not
+		be a big deal.
+		*/
+		sgen_bridge_processing_stw_step ();
 	}
 
 	/*

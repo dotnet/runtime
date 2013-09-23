@@ -558,7 +558,6 @@ sgen_bridge_processing_stw_step (void)
 	 * bridge_processing_in_progress must be set with the world
 	 * stopped.  If not there would be race conditions.
 	 */
-	g_assert (!bridge_processing_in_progress);
 	bridge_processing_in_progress = TRUE;
 
 	SGEN_TV_GETTIME (btv);

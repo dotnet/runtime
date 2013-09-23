@@ -195,18 +195,6 @@ release_gc_locks (void)
 	UNLOCK_INTERRUPTION;
 }
 
-static void
-stw_bridge_process (void)
-{
-	sgen_bridge_processing_stw_step ();
-}
-
-static void
-bridge_process (int generation)
-{
-	sgen_bridge_processing_finish (generation);
-}
-
 static TV_DECLARE (stop_world_time);
 static unsigned long max_pause_usec = 0;
 
@@ -269,7 +257,6 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 #endif
 	} END_FOREACH_THREAD
 
-	stw_bridge_process ();
 	release_gc_locks ();
 
 	count = sgen_thread_handshake (FALSE);
@@ -282,7 +269,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 
 	mono_thread_hazardous_try_free_some ();
 
-	bridge_process (generation);
+	sgen_bridge_processing_finish (generation);
 
 	TV_GETTIME (end_bridge);
 	bridge_usec = TV_ELAPSED (end_sw, end_bridge);
