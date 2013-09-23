@@ -840,7 +840,7 @@ bridge_test_cross_reference (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs
 		for (j = 0; j < sccs [i]->num_objs; ++j) {
 	//		g_print ("  %s\n", sgen_safe_name (sccs [i]->objs [j]));
 			if (i & 1) /*retain half of the bridged objects */
-				sccs [i]->objs [0] = NULL;
+				sccs [i]->is_alive = TRUE;
 		}
 	}
 	for (i = 0; i < num_xrefs; ++i) {
@@ -850,6 +850,84 @@ bridge_test_cross_reference (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs
 	}
 }
 
+static MonoClassField *mono_bridge_test_field;
+
+enum {
+	BRIDGE_DEAD,
+	BRIDGE_ROOT,
+	BRIDGE_SAME_SCC,
+	BRIDGE_XREF,
+};
+
+static gboolean
+test_scc (MonoGCBridgeSCC *scc, int i)
+{
+	int status = BRIDGE_DEAD;
+	mono_field_get_value (scc->objs [i], mono_bridge_test_field, &status);
+	return status > 0;
+}
+
+static void
+mark_scc (MonoGCBridgeSCC *scc, int value)
+{
+	int i;
+	for (i = 0; i < scc->num_objs; ++i) {
+		if (!test_scc (scc, i)) {
+			int status = value;
+			mono_field_set_value (scc->objs [i], mono_bridge_test_field, &status);
+		}
+	}
+}
+
+static void
+bridge_test_cross_reference2 (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs)
+{
+	int i;
+	gboolean modified;
+
+	if (!mono_bridge_test_field) {
+		mono_bridge_test_field = mono_class_get_field_from_name (mono_object_get_class (sccs[0]->objs [0]), "__test");
+		g_assert (mono_bridge_test_field);
+	}
+
+	/*We mark all objects in a scc with live objects as reachable by scc*/
+	for (i = 0; i < num_sccs; ++i) {
+		int j;
+		gboolean live = FALSE;
+		for (j = 0; j < sccs [i]->num_objs; ++j) {
+			if (test_scc (sccs [i], j)) {
+				live = TRUE;
+				break;
+			}
+		}
+		if (!live)
+			continue;
+		for (j = 0; j < sccs [i]->num_objs; ++j) {
+			if (!test_scc (sccs [i], j)) {
+				int status = BRIDGE_SAME_SCC;
+				mono_field_set_value (sccs [i]->objs [j], mono_bridge_test_field, &status);
+			}
+		}
+	}
+
+	/*Now we mark the transitive closure of reachable objects from the xrefs*/
+	modified = TRUE;
+	while (modified) {
+		modified = FALSE;
+		/* Mark all objects that are brought to life due to xrefs*/
+		for (i = 0; i < num_xrefs; ++i) {
+			MonoGCBridgeXRef ref = xrefs [i];
+			if (test_scc (sccs [ref.src_scc_index], 0) && !test_scc (sccs [ref.dst_scc_index], 0)) {
+				modified = TRUE;
+				mark_scc (sccs [ref.dst_scc_index], BRIDGE_XREF);
+			}
+		}
+	}
+
+	/* keep everything in memory, all we want to do is test persistence */
+	for (i = 0; i < num_sccs; ++i)
+		sccs [i]->is_alive = TRUE;
+}
 
 void
 sgen_register_test_bridge_callbacks (const char *bridge_class_name)
@@ -858,9 +936,9 @@ sgen_register_test_bridge_callbacks (const char *bridge_class_name)
 	callbacks.bridge_version = SGEN_BRIDGE_VERSION;
 	callbacks.is_bridge_class = bridge_test_is_bridge_class;
 	callbacks.is_bridge_object = bridge_test_is_bridge_object;
-	callbacks.cross_references = bridge_test_cross_reference;
+	callbacks.cross_references = bridge_class_name[0] == '2' ? bridge_test_cross_reference2 : bridge_test_cross_reference;
 	mono_gc_register_bridge_callbacks (&callbacks);
-	bridge_class = bridge_class_name;
+	bridge_class = bridge_class_name + (bridge_class_name[0] == '2' ? 1 : 0);
 }
 
 #endif
