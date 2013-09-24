@@ -4071,9 +4071,9 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	sgen_thread_info = info;
 #endif
 
-#if !defined(__MACH__)
+#ifdef SGEN_POSIX_STW
 	info->stop_count = -1;
-	info->signal = 0;
+	info->signal = -1;
 #endif
 	info->skip = 0;
 	info->stack_start = NULL;
