@@ -4,6 +4,7 @@ This is Mono.
 	2. Using Mono
 	3. Directory Roadmap
 	4. git submodules maintenance
+	5. Reporting bugs
 
 1. Compilation and Installation
 ===============================
@@ -590,3 +591,17 @@ This is Mono.
 =============================
 
 Read documentation at http://mono-project.com/Git_Submodule_Maintenance
+
+
+5. Reporting bugs
+=================
+
+To submit bug reports, please use Xamarin's Bugzilla:
+
+    https://bugzilla.xamarin.com/
+
+Please use the search facility to ensure the same bug hasn't already
+been submitted and follow our guidelines on how to make a good bug
+report:
+
+    http://mono-project.com/Bugs#How_to_make_a_good_bug_report
