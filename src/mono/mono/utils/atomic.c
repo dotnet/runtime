@@ -203,7 +203,7 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 
 #if defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
 
-#if defined (TARGET_MACH) && defined (TARGET_ARM) && defined (HAVE_ARMV7)
+#if defined (TARGET_MACH) && defined (__arm__) && defined (HAVE_ARMV7)
 
 gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)  __attribute__ ((naked));
 
@@ -232,7 +232,7 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	);
 }
 
-#elif defined (TARGET_MACH) && (defined (TARGET_X86) || defined (TARGET_AMD64))
+#elif defined (TARGET_MACH) && (defined (__i386__) || defined (__x86_64__))
 
 gint64
 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
