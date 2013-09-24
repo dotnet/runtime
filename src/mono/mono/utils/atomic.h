@@ -22,7 +22,6 @@
 #if defined(__WIN32__) || defined(_WIN32)
 
 #include <windows.h>
-#define HAS_64BITS_ATOMICS 1
 
 /* mingw is missing InterlockedCompareExchange64 () from winbase.h */
 #if HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64==0
@@ -84,9 +83,7 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 #define BROKEN_64BIT_ATOMICS_INTRINSIC 1
 #endif
 
-
 #if !defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
-#define HAS_64BITS_ATOMICS 1
 
 static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
@@ -505,8 +502,10 @@ extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 
 #endif
 
-#ifndef HAS_64BITS_ATOMICS
+#if defined (WAPI_NO_ATOMIC_ASM) || defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
+
 extern gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp);
+
 #endif
 
 #endif /* _WAPI_ATOMIC_H_ */
