@@ -1182,8 +1182,6 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 
 void ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThread *this, HANDLE thread)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, thread));
 
 	if (thread)
@@ -1273,8 +1271,6 @@ void ves_icall_System_Threading_Thread_SpinWait_nop (void)
 gint32
 ves_icall_System_Threading_Thread_GetDomainID (void) 
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return mono_domain_get()->domain_id;
 }
 
@@ -1640,8 +1636,6 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	guint32 ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
-	MONO_ARCH_SAVE_REGS;
-
 	if (ms == -1)
 		ms = INFINITE;
 
@@ -1660,8 +1654,6 @@ HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,
 { 
 	HANDLE mutex;
 	
-	MONO_ARCH_SAVE_REGS;
-   
 	*created = TRUE;
 	
 	if (name == NULL) {
@@ -1678,8 +1670,6 @@ HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,
 }                                                                   
 
 MonoBoolean ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
-	MONO_ARCH_SAVE_REGS;
-
 	return(ReleaseMutex (handle));
 }
 
@@ -1688,8 +1678,6 @@ HANDLE ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name,
 							    gint32 *error)
 {
 	HANDLE ret;
-	
-	MONO_ARCH_SAVE_REGS;
 	
 	*error = ERROR_SUCCESS;
 	
@@ -1706,8 +1694,6 @@ HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 ini
 { 
 	HANDLE sem;
 	
-	MONO_ARCH_SAVE_REGS;
-   
 	*created = TRUE;
 	
 	if (name == NULL) {
@@ -1728,8 +1714,6 @@ gint32 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE ha
 { 
 	gint32 prevcount;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*fail = !ReleaseSemaphore (handle, releaseCount, &prevcount);
 
 	return (prevcount);
@@ -1738,8 +1722,6 @@ gint32 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE ha
 HANDLE ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error)
 {
 	HANDLE ret;
-	
-	MONO_ARCH_SAVE_REGS;
 	
 	*error = ERROR_SUCCESS;
 	
@@ -1755,8 +1737,6 @@ HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manua
 {
 	HANDLE event;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*created = TRUE;
 
 	if (name == NULL) {
@@ -1774,21 +1754,15 @@ HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manua
 }
 
 gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle) {
-	MONO_ARCH_SAVE_REGS;
-
 	return (SetEvent(handle));
 }
 
 gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle) {
-	MONO_ARCH_SAVE_REGS;
-
 	return (ResetEvent(handle));
 }
 
 void
 ves_icall_System_Threading_Events_CloseEvent_internal (HANDLE handle) {
-	MONO_ARCH_SAVE_REGS;
-
 	CloseHandle (handle);
 }
 
@@ -1797,8 +1771,6 @@ HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name,
 							     gint32 *error)
 {
 	HANDLE ret;
-	
-	MONO_ARCH_SAVE_REGS;
 	
 	*error = ERROR_SUCCESS;
 	
@@ -1812,16 +1784,12 @@ HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name,
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedIncrement (location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
 	gint64 ret;
-
-	MONO_ARCH_SAVE_REGS;
 
 	mono_interlocked_lock ();
 
@@ -1835,16 +1803,12 @@ gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 
 gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedDecrement(location);
 }
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
 	gint64 ret;
-
-	MONO_ARCH_SAVE_REGS;
 
 	mono_interlocked_lock ();
 
@@ -1857,8 +1821,6 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedExchange(location, value);
 }
 
@@ -1878,8 +1840,6 @@ gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr (gpointer *locat
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
 {
 	IntFloatUnion val, ret;
-
-	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
 	ret.ival = InterlockedExchange((gint32 *) location, val.ival);
@@ -1936,8 +1896,6 @@ ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdoub
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return InterlockedCompareExchange(location, value, comparand);
 }
 
@@ -1957,8 +1915,6 @@ gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer 
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
 {
 	IntFloatUnion val, ret, cmp;
-
-	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
 	cmp.fval = comparand;
