@@ -2040,8 +2040,7 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 void
 ves_icall_System_Threading_Thread_MemoryBarrier (void)
 {
-	mono_threads_lock ();
-	mono_threads_unlock ();
+	mono_memory_barrier ();
 }
 
 void
