@@ -1799,15 +1799,7 @@ gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
-	gint64 ret;
-
-	mono_interlocked_lock ();
-
-	ret = -- *location;
-	
-	mono_interlocked_unlock ();
-
-	return ret;
+	return InterlockedDecrement64 (location);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
