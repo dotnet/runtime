@@ -81,7 +81,7 @@ static inline gint32 InterlockedIncrement(volatile gint32 *val)
 
 static inline gint32 InterlockedDecrement(volatile gint32 *val)
 {
-	return __sync_add_and_fetch (val, -1);
+	return __sync_sub_and_fetch (val, 1);
 }
 
 static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
