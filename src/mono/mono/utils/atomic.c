@@ -19,6 +19,8 @@
 
 static pthread_mutex_t spin = PTHREAD_MUTEX_INITIALIZER;
 
+#define NEED_64BIT_CMPXCHG_FALLBACK
+
 #endif
 
 #ifdef WAPI_NO_ATOMIC_ASM
@@ -416,8 +418,6 @@ void InterlockedWrite64(volatile gint64 *dst, gint64 val)
 	
 	pthread_cleanup_pop (0);
 }
- 
-#define NEED_64BIT_CMPXCHG_FALLBACK
 
 #endif
 
@@ -432,8 +432,6 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 }
 
 #else
-
-#define NEED_64BIT_CMPXCHG_FALLBACK
 
 #endif
 
