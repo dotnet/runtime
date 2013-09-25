@@ -335,6 +335,88 @@ gint64 InterlockedExchangeAdd64(volatile gint64 *dest, gint64 add)
 	return(ret);
 }
 
+gint32 InterlockedRead(volatile gint32 *src)
+{
+	gint32 ret;
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	ret= *src;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+
+	pthread_cleanup_pop (0);
+
+	return(ret);
+}
+
+gint64 InterlockedRead64(volatile gint64 *src)
+{
+	gint64 ret;
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	ret= *src;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+
+	pthread_cleanup_pop (0);
+
+	return(ret);
+}
+
+void InterlockedWrite(volatile gint32 *dst, gint32 val)
+{
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	*dst=val;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
+}
+
+void InterlockedWrite64(volatile gint64 *dst, gint64 val)
+{
+	int thr_ret;
+	
+	mono_once(&spin_once, spin_init);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
+
+	*dst=val;
+	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
+}
+ 
 #define NEED_64BIT_CMPXCHG_FALLBACK
 
 #endif

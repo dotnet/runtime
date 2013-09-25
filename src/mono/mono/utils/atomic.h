@@ -31,6 +31,30 @@ static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 
 }
 #endif
 
+/* And now for some dirty hacks... The Windows API doesn't
+ * provide any useful primitives for this (other than getting
+ * into architecture-specific madness), so use CAS. */
+
+static inline gint32 InterlockedRead(volatile gint32 *src)
+{
+	return InterlockedCompareExchange (src, 0, 0);
+}
+
+static inline gint64 InterlockedRead64(volatile gint64 *src)
+{
+	return InterlockedCompareExchange64 (src, 0, 0);
+}
+
+static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
+{
+	InterlockedExchange (dst, val);
+}
+
+static inline void InterlockedWrite64(volatile gint64 *dst, gint64 val)
+{
+	InterlockedExchange64 (dst, val);
+}
+
 /* Prefer GCC atomic ops if the target supports it (see configure.in). */
 #elif defined(USE_GCC_ATOMIC_OPS)
 
@@ -84,6 +108,19 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	return __sync_fetch_and_add (val, add);
 }
 
+static inline gint32 InterlockedRead(volatile gint32 *src)
+{
+	/* Kind of a hack, but GCC doesn't give us anything better, and it's
+	   certainly not as bad as using a CAS loop. */
+	return __sync_fetch_and_add (src, 0);
+}
+
+static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
+{
+	/* Nothing useful from GCC at all, so fall back to CAS. */
+	InterlockedExchange (dst, val);
+}
+
 #if defined (TARGET_OSX)
 #define BROKEN_64BIT_ATOMICS_INTRINSIC 1
 #endif
@@ -113,6 +150,12 @@ static inline gint64 InterlockedDecrement64(volatile gint64 *val)
 static inline gint64 InterlockedExchangeAdd64(volatile gint64 *val, gint64 add)
 {
 	return __sync_fetch_and_add (val, add);
+}
+
+static inline gint64 InterlockedRead64(volatile gint64 *src)
+{
+	/* Kind of a hack, but GCC doesn't give us anything better. */
+	return __sync_fetch_and_add (src, 0);
 }
 
 #else
@@ -482,6 +525,10 @@ extern gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 extern gint64 InterlockedExchangeAdd64(volatile gint64 *dest, gint64 add);
+extern gint32 InterlockedRead(volatile gint32 *src);
+extern gint64 InterlockedRead64(volatile gint64 *src);
+extern void InterlockedWrite(volatile gint32 *dst, gint32 val);
+extern void InterlockedWrite64(volatile gint64 *dst, gint64 val);
 
 #endif
 
