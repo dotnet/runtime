@@ -1034,6 +1034,11 @@ case "x$gc" in
 
 		BOEHM_DEFINES="-DHAVE_BOEHM_GC -DHAVE_GC_H -DUSE_INCLUDED_LIBGC -DHAVE_GC_GCJ_MALLOC -DHAVE_GC_ENABLE"
 
+		if test x$target_win32 = xyes; then
+			BOEHM_DEFINES="$BOEHM_DEFINES -DGC_NOT_DLL"
+			CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DGC_BUILD -DGC_NOT_DLL"
+		fi
+
 		gc_msg="bundled Boehm GC with typed GC"
 		if test x$enable_parallel_mark = xyes; then
 			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
