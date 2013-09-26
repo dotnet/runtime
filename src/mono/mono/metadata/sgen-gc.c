@@ -4073,7 +4073,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 
 #ifdef SGEN_POSIX_STW
 	info->stop_count = -1;
-	info->signal = -1;
+	info->signal = 0;
 #endif
 	info->skip = 0;
 	info->stack_start = NULL;
