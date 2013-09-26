@@ -187,6 +187,7 @@
 /* Deal with Microsoft C compiler differences */
 #ifdef _MSC_VER
 
+#include <math.h>
 #include <float.h>
 #define isnan(x)	_isnan(x)
 #define trunc(x)	(((x) < 0) ? ceil((x)) : floor((x)))

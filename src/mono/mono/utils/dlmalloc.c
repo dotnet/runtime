@@ -24,7 +24,7 @@
 /* Use mmap for allocating memory */
 #define HAVE_MORECORE 0
 #define NO_MALLINFO 1
-#include <dlmalloc.h>
+#include <mono/utils/dlmalloc.h>
 
 /*
 * Quickstart
