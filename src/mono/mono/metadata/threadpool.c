@@ -771,7 +771,7 @@ monitor_thread (gpointer unused)
 	thread = mono_thread_internal_current ();
 	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threadpool monitor"));
 	while (1) {
-		ms = 2000;
+		ms = 500;
 		i = 10; //number of spurious awakes we tolerate before doing a round of rebalancing.
 		do {
 			guint32 ts;
@@ -1041,7 +1041,6 @@ pulse_on_new_job (ThreadPool *tp)
 {
 	if (tp->waiting)
 		MONO_SEM_POST (&tp->new_job);
-	threadpool_start_thread (tp);
 }
 
 void
@@ -1097,7 +1096,7 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 		mono_cq_enqueue (tp->queue, ar);
 	}
 
-	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
+	for (i = 0; tp->waiting > 0 && i < MIN(njobs, tp->max_threads); i++)
 		pulse_on_new_job (tp);
 }
 
