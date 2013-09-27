@@ -5658,6 +5658,9 @@ decode_vtype (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 		nfields --;
 	}
 	g_assert (nfields == 0);
+
+	*endbuf = buf;
+
 	return 0;
 }
 
