@@ -321,27 +321,53 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* load ctx */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 
-	/* get return address, stored in ECX */
-	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eip), 4);
 	/* restore EBX */
 	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebx), 4);
+
 	/* restore EDI */
 	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, edi), 4);
+
 	/* restore ESI */
 	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esi), 4);
-	/* restore ESP */
-	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esp), 4);
-	/* save the return addr to the restored stack */
-	x86_push_reg (code, X86_ECX);
-	/* restore EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebp), 4);
-	/* restore ECX */
-	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ecx), 4);
+
 	/* restore EDX */
 	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, edx), 4);
-	/* restore EAX */
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eax), 4);
 
+	/*
+	 * The context resides on the stack, in the stack frame of the
+	 * caller of this function.  The stack pointer that we need to
+	 * restore is potentially many stack frames higher up, so the
+	 * distance between them can easily be more than the red zone
+	 * size.  Hence the stack pointer can be restored only after
+	 * we have finished loading everything from the context.
+	 */
+
+	/* load ESP into EBP */
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esp), 4);
+	/* load return address into ECX */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eip), 4);
+	/* save the return addr to the restored stack - 4 */
+	x86_mov_membase_reg (code, X86_EBP, -4, X86_ECX, 4);
+
+	/* load EBP into ECX */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebp), 4);
+	/* save EBP to the restored stack - 8 */
+	x86_mov_membase_reg (code, X86_EBP, -8, X86_ECX, 4);
+
+	/* load EAX into ECX */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eax), 4);
+	/* save EAX to the restored stack - 12 */
+	x86_mov_membase_reg (code, X86_EBP, -12, X86_ECX, 4);
+
+	/* restore ECX */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ecx), 4);
+
+	/* restore ESP - 12 */
+	x86_lea_membase (code, X86_ESP, X86_EBP, -12);
+	/* restore EAX */
+	x86_pop_reg (code, X86_EAX);
+	/* restore EBP */
+	x86_pop_reg (code, X86_EBP);
 	/* jump to the saved IP */
 	x86_ret (code);
 
