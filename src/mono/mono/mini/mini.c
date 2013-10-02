@@ -153,6 +153,8 @@ gboolean disable_vtypes_in_regs = FALSE;
 
 gboolean mono_dont_free_global_codeman;
 
+static GSList *tramp_infos;
+
 gpointer
 mono_realloc_native_code (MonoCompile *cfg)
 {
@@ -382,6 +384,7 @@ mono_print_method_from_ip (void *ip)
 	FindTrampUserData user_data;
 	MonoGenericSharingContext*gsctx;
 	const char *shared_type;
+	GSList *l;
 	
 	ji = mini_jit_info_table_find (domain, ip, &target_domain);
 	if (!ji) {
@@ -394,9 +397,18 @@ mono_print_method_from_ip (void *ip)
 			char *mname = mono_method_full_name (user_data.method, TRUE);
 			printf ("IP %p is a JIT trampoline for %s\n", ip, mname);
 			g_free (mname);
+			return;
 		}
-		else
-			g_print ("No method at %p\n", ip);
+		for (l = tramp_infos; l; l = l->next) {
+			MonoTrampInfo *tinfo = l->data;
+
+			if ((guint8*)ip >= tinfo->code && (guint8*)ip <= tinfo->code + tinfo->code_size) {
+				printf ("IP %p is at offset 0x%x of trampoline '%s'.\n", ip, (int)((guint8*)ip - tinfo->code), tinfo->name);
+				return;
+			}
+		}
+
+		g_print ("No method at %p\n", ip);
 		fflush (stdout);
 		return;
 	}
@@ -634,6 +646,26 @@ mono_tramp_info_free (MonoTrampInfo *info)
 		g_free (l->data);
 	g_slist_free (info->unwind_ops);
 	g_free (info);
+}
+
+/*
+ * mono_tramp_info_register:
+ *
+ * Remember INFO for use by mono_print_method_from_ip ().
+ */
+void
+mono_tramp_info_register (MonoTrampInfo *info)
+{
+	MonoTrampInfo *copy;
+
+	copy = g_new0 (MonoTrampInfo, 1);
+	copy->code = info->code;
+	copy->code_size = info->code_size;
+	copy->name = g_strdup (info->name);
+
+	mono_loader_lock_if_inited ();
+	tramp_infos = g_slist_prepend (tramp_infos, copy);
+	mono_loader_unlock_if_inited ();
 }
 
 G_GNUC_UNUSED static void
