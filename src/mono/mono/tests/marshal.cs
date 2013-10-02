@@ -29,12 +29,7 @@ public class Tests {
 	public static extern IntPtr mono_test_marshal_return_delegate_2 ();
 
 	static int test_0_get_function_pointer_for_delegate () {
-		// This is a 2.0 feature
-		MethodInfo mi = typeof (Marshal).GetMethod ("GetFunctionPointerForDelegate");
-		if (mi == null)
-			return 0;
-
-		IntPtr fnPtr = (IntPtr)mi.Invoke (null, new object [] { new SimpleDelegate (delegate_test)});
+		IntPtr fnPtr = Marshal.GetFunctionPointerForDelegate (new SimpleDelegate (delegate_test));
 
 		if (mono_test_marshal_delegate (fnPtr) != 3)
 			return 1;
@@ -43,28 +38,18 @@ public class Tests {
 	}
 
 	static int test_0_get_delegate_for_function_pointer () {
-		// This is a 2.0 feature
-		MethodInfo mi = typeof (Marshal).GetMethod ("GetDelegateForFunctionPointer");
-		if (mi == null)
-			return 0;
-
 		IntPtr ptr = mono_test_marshal_return_delegate (new SimpleDelegate (delegate_test));
-		
-		SimpleDelegate d = (SimpleDelegate)mi.Invoke (null, new object [] { ptr, typeof (SimpleDelegate) });
+
+		SimpleDelegate d = (SimpleDelegate)Marshal.GetDelegateForFunctionPointer (ptr, typeof (SimpleDelegate));
 
 		return d (5) == 6 ? 0 : 1;
 	}
 
 	/* Obtain a delegate from a native function pointer */
 	static int test_0_get_delegate_for_ftnptr_native () {
-		// This is a 2.0 feature
-		MethodInfo mi = typeof (Marshal).GetMethod ("GetDelegateForFunctionPointer");
-		if (mi == null)
-			return 0;
-
 		IntPtr ptr = mono_test_marshal_return_delegate_2 ();
 
-		SimpleDelegate d = (SimpleDelegate)mi.Invoke (null, new object [] { ptr, typeof (SimpleDelegate) });
+		SimpleDelegate d = (SimpleDelegate)Marshal.GetDelegateForFunctionPointer (ptr, typeof (SimpleDelegate));
 
 		return d (5) == 6 ? 0 : 1;
 	}
