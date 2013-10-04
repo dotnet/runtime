@@ -1574,22 +1574,20 @@ sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 static inline int
 bitcount (mword d)
 {
-#if SIZEOF_VOID_P == 8
-	/* http://www.jjj.de/bitwizardry/bitwizardrypage.html */
-	d -=  (d>>1) & 0x5555555555555555;
-	d  = ((d>>2) & 0x3333333333333333) + (d & 0x3333333333333333);
-	d  = ((d>>4) + d) & 0x0f0f0f0f0f0f0f0f;
-	d *= 0x0101010101010101;
-	return d >> 56;
+	int count = 0;
+
+#ifdef __GNUC__
+	if (sizeof (mword) == sizeof (unsigned long))
+		count += __builtin_popcountl (d);
+	else
+		count += __builtin_popcount (d);
 #else
-	/* http://aggregate.org/MAGIC/ */
-	d -= ((d >> 1) & 0x55555555);
-	d = (((d >> 2) & 0x33333333) + (d & 0x33333333));
-	d = (((d >> 4) + d) & 0x0f0f0f0f);
-	d += (d >> 8);
-	d += (d >> 16);
-	return (d & 0x0000003f);
+	while (d) {
+		count ++;
+		d &= (d - 1);
+	}
 #endif
+	return count;
 }
 
 static void
