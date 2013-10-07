@@ -402,7 +402,7 @@ get_posix_locale (void)
 	const char *locale;
 
 	locale = g_getenv ("LC_ALL");
-	if (locale != NULL){
+	if (locale == NULL) {
 		locale = g_getenv ("LANG");
 		if (locale == NULL)
 			locale = setlocale (LC_ALL, NULL);
