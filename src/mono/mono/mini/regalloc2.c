@@ -707,6 +707,17 @@ compute_live_in_out_sets (MonoCompile *cfg, MonoRegallocContext *ctx)
 #endif
 }
 
+static MonoLiveInterval*
+get_var_interval (MonoCompile *cfg, MonoRegallocContext *ctx, int idx)
+{
+	MonoLiveInterval *interval = ctx->varinfo [idx].interval;
+	if (interval)
+		return interval;
+	interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+	ctx->varinfo [idx].interval = interval;
+	return interval;
+}
+
 static inline void
 update_liveness (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst *ins, int inst_num, gint32 *last_use)
 {
@@ -730,9 +741,9 @@ update_liveness (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst *ins, int 
 					 * Avoid a hole in the liveness range, since the allocation code
 					 * could think the register is free there.
 					 */
-					mono_linterval_add_range (ctx->cfg, ctx->varinfo [ins->dreg].interval, inst_num, last_use [ins->dreg]);
+					mono_linterval_add_range (ctx->cfg, get_var_interval (cfg, ctx, ins->dreg), inst_num, last_use [ins->dreg]);
 				} else {
-					mono_linterval_add_range (ctx->cfg, ctx->varinfo [ins->dreg].interval, inst_num + INS_POS_DEF, last_use [ins->dreg]);
+					mono_linterval_add_range (ctx->cfg, get_var_interval (cfg, ctx, ins->dreg), inst_num + INS_POS_DEF, last_use [ins->dreg]);
 				}
 				last_use [ins->dreg] = 0;
 			}
@@ -743,7 +754,7 @@ update_liveness (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst *ins, int 
 					spec = INS_INFO (ins->opcode);
 				} else {
 					LIVENESS_DEBUG (printf ("\tdead def of R%d, add range to R%d: [%x, %x]\n", ins->dreg, ins->dreg, inst_num + INS_POS_DEF, inst_num + INS_POS_DEF));
-					mono_linterval_add_range (ctx->cfg, ctx->varinfo [ins->dreg].interval, inst_num + INS_POS_DEF, inst_num + INS_POS_DEF);
+					mono_linterval_add_range (ctx->cfg, get_var_interval (cfg, ctx, ins->dreg), inst_num + INS_POS_DEF, inst_num + INS_POS_DEF);
 				}
 			}
 		}
@@ -830,15 +841,15 @@ update_liveness (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst *ins, int 
 		if (clob == 'c') {
 			/* A call clobbers some int/fp registers */
 			for (l = mono_arch_get_iregs_clobbered_by_call ((MonoCallInst*)ins); l; l = l->next)
-				mono_linterval_add_range (ctx->cfg, ctx->varinfo [GPOINTER_TO_INT (l->data)].interval, inst_num + INS_POS_CLOB, inst_num + INS_POS_CLOB);
+				mono_linterval_add_range (ctx->cfg, get_var_interval (cfg, ctx, GPOINTER_TO_INT (l->data)), inst_num + INS_POS_CLOB, inst_num + INS_POS_CLOB);
 			for (l = mono_arch_get_fregs_clobbered_by_call ((MonoCallInst*)ins); l; l = l->next)
-				mono_linterval_add_range (ctx->cfg, ctx->varinfo [GPOINTER_TO_INT (l->data)].interval, inst_num + INS_POS_CLOB, inst_num + INS_POS_CLOB);
+				mono_linterval_add_range (ctx->cfg, get_var_interval (cfg, ctx, GPOINTER_TO_INT (l->data)), inst_num + INS_POS_CLOB, inst_num + INS_POS_CLOB);
 		}
 		else {
 			int clob_reg = MONO_ARCH_INST_FIXED_REG (clob);
 
 			if (clob_reg != -1)
-				mono_linterval_add_range (ctx->cfg, ctx->varinfo [clob_reg].interval, inst_num + INS_POS_CLOB, inst_num + INS_POS_CLOB);
+				mono_linterval_add_range (ctx->cfg, get_var_interval (cfg, ctx, clob_reg), inst_num + INS_POS_CLOB, inst_num + INS_POS_CLOB);
 		}
 	}
 }
@@ -860,10 +871,6 @@ compute_intervals (MonoCompile *cfg, MonoRegallocContext *ctx)
 
 	reverse_len = 1024;
 	reverse = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * reverse_len);
-
-	for (idx = 0; idx < max_vars; ++idx) {
-		ctx->varinfo [idx].interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-	}
 
 	/*
 	 * Process bblocks in reverse order, so the addition of new live ranges
@@ -931,7 +938,7 @@ compute_intervals (MonoCompile *cfg, MonoRegallocContext *ctx)
 			if (last_use [idx] != 0) {
 				/* Live at exit, not written -> live on enter */
 				LIVENESS_DEBUG (printf ("Var R%d live at enter, add range to R%d: [%x, %x)\n", idx, idx, block_from, last_use [idx]));
-				mono_linterval_add_range (cfg, ctx->varinfo [idx].interval, block_from, last_use [idx]);
+				mono_linterval_add_range (cfg, get_var_interval (cfg, ctx, idx), block_from, last_use [idx]);
 			}
 		}
 	}
@@ -946,14 +953,14 @@ compute_intervals (MonoCompile *cfg, MonoRegallocContext *ctx)
 	for (i = 0; i < cfg->num_varinfo; i ++) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, i);
 		if ((cfg->varinfo [vi->idx]->opcode == OP_ARG) && (cfg->varinfo [vi->idx] != cfg->ret))
-			mono_linterval_add_range (cfg, ctx->varinfo [cfg->varinfo [i]->dreg].interval, 0, 1);
+			mono_linterval_add_range (cfg, get_var_interval (cfg, ctx, cfg->varinfo [i]->dreg), 0, 1);
 	}
 #endif
 
 #if 0
 		for (idx = 0; idx < max_vars; ++idx) {
 			printf ("LIVENESS R%d: ", idx);
-			mono_linterval_print (ctx->varinfo [idx].interval);
+			mono_linterval_print (get_var_interval (cfg, ctx, idx));
 			printf ("\n");
 		}
 	}
@@ -1204,7 +1211,7 @@ linear_scan (MonoCompile *cfg, MonoRegallocContext *ctx)
 	/* Create list of allocatable variables */
 	vars = NULL;
 	for (i = MONO_FIRST_VREG; i < cfg->next_vreg; ++i) {
-		if (ctx->varinfo [i].interval->range)
+		if (get_var_interval (cfg, ctx, i)->range)
 			vars = g_list_prepend (vars, &ctx->varinfo [i]);
 	}
 
@@ -1222,7 +1229,7 @@ linear_scan (MonoCompile *cfg, MonoRegallocContext *ctx)
 	/* The hard registers are assigned to themselves */
 	for (i = 0; i < MONO_MAX_IREGS + MONO_MAX_FREGS; ++i) {
 		ctx->varinfo [i].hreg = i;
-		if (ctx->varinfo [i].interval->range)
+		if (get_var_interval (cfg, ctx, i)->range)
 			inactive = g_list_append (inactive, &ctx->varinfo [i]);		
 	}
 
