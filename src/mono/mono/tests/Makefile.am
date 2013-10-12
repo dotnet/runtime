@@ -802,7 +802,9 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
+	rm -f testlist testlist.sorted; \
+	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do echo $${i} >> testlist; sort testlist > testlist.sorted; done; \
+	for i in `cat testlist.sorted`; do \
 		rm -f $${i}.so; \
 		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
 		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS); \
@@ -815,6 +817,7 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	rm -f testlist testlist.sorted; \
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
