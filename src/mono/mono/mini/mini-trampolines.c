@@ -149,7 +149,7 @@ static gpointer*
  */
 __attribute__ ((noinline))
 #endif
-mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp, gboolean *variance_used, gpointer *aot_addr)
+	mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, gboolean lookup_aot, MonoMethod **impl_method, gboolean *need_rgctx_tramp, gboolean *variance_used, gpointer *aot_addr)
 {
 	MonoObject *this_argument = mono_arch_get_this_arg_from_call (regs, code);
 	MonoVTable *vt = this_argument->vtable;
@@ -191,7 +191,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 			impl = mono_class_inflate_generic_method (impl, &context);
 		} else {
 			/* Avoid loading metadata or creating a generic vtable if possible */
-			if (!vt->klass->valuetype)
+			if (lookup_aot && !vt->klass->valuetype)
 				*aot_addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, interface_offset + mono_method_get_vtable_slot (imt_method));
 			else
 				*aot_addr = NULL;
@@ -410,14 +410,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		    m = mono_object_get_virtual_method (this_arg, m);
 			vtable_slot_to_patch = NULL;
 		} else {
-			addr = NULL;
-			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, &impl_method, &need_rgctx_tramp, &variance_used, &addr);
-			/* This is the vcall slot which gets called through the IMT thunk */
-			vtable_slot_to_patch = vtable_slot;
-			/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
-			 * to be called, so we compile it and go ahead as usual.
-			 */
-			/*g_print ("imt found method %p (%s) at %p\n", impl_method, impl_method->name, code);*/
+			gboolean lookup_aot;
+
 			if (m->is_inflated && ((MonoMethodInflated*)m)->context.method_inst) {
 				/* Generic virtual method */
 				generic_virtual = m;
@@ -426,7 +420,18 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 				variant_iface = m;
 			}
 
-			if (addr && !generic_virtual && !variant_iface) {
+			addr = NULL;
+			/* We can only use the AOT compiled code if we don't require further processing */
+			lookup_aot = !generic_virtual & !variant_iface;
+			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, lookup_aot, &impl_method, &need_rgctx_tramp, &variance_used, &addr);
+			/* This is the vcall slot which gets called through the IMT thunk */
+			vtable_slot_to_patch = vtable_slot;
+			/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
+			 * to be called, so we compile it and go ahead as usual.
+			 */
+			/*g_print ("imt found method %p (%s) at %p\n", impl_method, impl_method->name, code);*/
+
+			if (addr) {
 				/*
 				 * We found AOT compiled code for the method, skip the rest.
 				 */
