@@ -143,7 +143,7 @@ struct _GCMemSection {
 	/* in major collections indexes in the pin_queue for objects that pin this section */
 	void **pin_queue_start;
 	int pin_queue_num_entries;
-	unsigned short num_scan_start;
+	unsigned int num_scan_start;
 };
 
 /*
