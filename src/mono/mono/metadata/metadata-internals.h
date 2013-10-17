@@ -44,6 +44,7 @@ struct _MonoType {
 #define MONO_PROCESSOR_ARCHITECTURE_X86 2
 #define MONO_PROCESSOR_ARCHITECTURE_IA64 3
 #define MONO_PROCESSOR_ARCHITECTURE_AMD64 4
+#define MONO_PROCESSOR_ARCHITECTURE_ARM 5
 
 struct _MonoAssemblyName {
 	const char *name;
