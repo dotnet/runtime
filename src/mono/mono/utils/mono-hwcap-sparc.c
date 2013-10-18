@@ -49,9 +49,9 @@ mono_hwcap_arch_init (void)
 	 * in turn means a v9 or better.
 	 */
 	if (getpagesize () == 8192)
-		strcpy (buf, "sparcv9")
+		strcpy (buf, "sparcv9");
 	else
-		strcpy (buf, "sparcv8")
+		strcpy (buf, "sparcv8");
 #endif
 
 	mono_hwcap_sparc_is_v9 = strstr (buf, "sparcv9");
