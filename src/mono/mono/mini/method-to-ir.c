@@ -11123,17 +11123,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				bblock->out_of_line = TRUE;
 				ip += 2;
 				break;
-			case CEE_MONO_TLS:
+			case CEE_MONO_TLS: {
+				int key;
+
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
-				MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-				ins->dreg = alloc_preg (cfg);
-				ins->inst_offset = (gint32)read32 (ip + 2);
+				key = (gint32)read32 (ip + 2);
+				g_assert (key < TLS_KEY_NUM);
+
+				ins = mono_create_tls_get (cfg, key);
+				if (!ins) {
+					if (cfg->compile_aot) {
+						cfg->disable_aot = TRUE;
+						MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+						ins->dreg = alloc_preg (cfg);
+						ins->type = STACK_PTR;
+					} else {
+						g_assert_not_reached ();
+					}
+				}
 				ins->type = STACK_PTR;
 				MONO_ADD_INS (bblock, ins);
 				*sp++ = ins;
 				ip += 6;
 				break;
+			}
 			case CEE_MONO_DYN_CALL: {
 				MonoCallInst *call;
 

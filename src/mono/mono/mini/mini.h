@@ -1051,16 +1051,6 @@ typedef struct {
 	gboolean orig_ex_ctx_set;
 } MonoJitTlsData;
 
-/* TLS entries used by JITted code */
-typedef enum {
-	/* mono_thread_internal_current () */
-	TLS_KEY_THREAD = 0,
-	TLS_KEY_JIT_TLS = 1,
-	/* mono_domain_get () */
-	TLS_KEY_DOMAIN = 2,
-	TLS_KEY_LMF = 3
-} MonoJitTlsKey;
-
 /*
  * This structure is an extension of MonoLMF and contains extra information.
  */
@@ -1966,7 +1956,8 @@ MonoNativeTlsKey mono_get_jit_tls_key       (void) MONO_INTERNAL;
 gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
-int       mini_get_tls_offset               (MonoJitTlsKey key) MONO_INTERNAL;
+int       mini_get_tls_offset               (MonoTlsKey key) MONO_INTERNAL;
+MonoInst* mono_create_tls_get               (MonoCompile *cfg, MonoTlsKey key) MONO_INTERNAL;
 MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
 MonoInst* mono_get_thread_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;

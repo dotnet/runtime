@@ -11,6 +11,22 @@
 #ifndef __MONO_TLS_H__
 #define __MONO_TLS_H__
 
+#include <glib.h>
+
+/* TLS entries used by the runtime */
+typedef enum {
+	/* mono_thread_internal_current () */
+	TLS_KEY_THREAD = 0,
+	TLS_KEY_JIT_TLS = 1,
+	/* mono_domain_get () */
+	TLS_KEY_DOMAIN = 2,
+	TLS_KEY_LMF = 3,
+	TLS_KEY_SGEN_THREAD_INFO = 4,
+	TLS_KEY_SGEN_TLAB_NEXT_ADDR = 5,
+	TLS_KEY_SGEN_TLAB_TEMP_END = 6,
+	TLS_KEY_BOEHM_GC_THREAD = 7,
+	TLS_KEY_NUM = 8
+} MonoTlsKey;
 
 #ifdef HOST_WIN32
 
@@ -49,5 +65,7 @@ mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 
 #endif /* HOST_WIN32 */
 
+int mono_tls_key_get_offset (MonoTlsKey key);
+void mono_tls_key_set_offset (MonoTlsKey key, int offset);
 
 #endif /* __MONO_TLS_H__ */

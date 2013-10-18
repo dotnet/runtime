@@ -947,7 +947,7 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_TLS);
-	mono_mb_emit_i4 (mb, thread_tls_offset);
+	mono_mb_emit_i4 (mb, TLS_KEY_THREAD);
 	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoInternalThread, tid));
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -1109,7 +1109,7 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_TLS);
-	mono_mb_emit_i4 (mb, thread_tls_offset);
+	mono_mb_emit_i4 (mb, TLS_KEY_THREAD);
 	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoInternalThread, tid));
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);

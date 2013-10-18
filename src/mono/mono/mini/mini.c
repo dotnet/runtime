@@ -2888,7 +2888,7 @@ mini_thread_cleanup (MonoInternalThread *thread)
 }
 
 int
-mini_get_tls_offset (MonoJitTlsKey key)
+mini_get_tls_offset (MonoTlsKey key)
 {
 	int offset;
 
@@ -2906,8 +2906,8 @@ mini_get_tls_offset (MonoJitTlsKey key)
 		offset = mono_get_lmf_tls_offset ();
 		break;
 	default:
-		g_assert_not_reached ();
-		offset = -1;
+		offset = mono_tls_key_get_offset (key);
+		g_assert (offset != -1);
 		break;
 	}
 	return offset;
@@ -2932,21 +2932,25 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 	return ins;
 }
 
-static MonoInst*
-mono_create_tls_get (MonoCompile *cfg, MonoJitTlsKey key)
+MonoInst*
+mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
 	/*
 	 * TLS offsets might be different at AOT time, so load them from a GOT slot and
 	 * use a different opcode.
 	 */
-	if (cfg->compile_aot && MONO_ARCH_HAVE_TLS_GET && ARCH_HAVE_TLS_GET_REG) {
-		MonoInst *ins, *c;
+	if (cfg->compile_aot) {
+		if (MONO_ARCH_HAVE_TLS_GET && ARCH_HAVE_TLS_GET_REG) {
+			MonoInst *ins, *c;
 
-		EMIT_NEW_TLS_OFFSETCONST (cfg, c, key);
-		MONO_INST_NEW (cfg, ins, OP_TLS_GET_REG);
-		ins->dreg = mono_alloc_preg (cfg);
-		ins->sreg1 = c->dreg;
-		return ins;
+			EMIT_NEW_TLS_OFFSETCONST (cfg, c, key);
+			MONO_INST_NEW (cfg, ins, OP_TLS_GET_REG);
+			ins->dreg = mono_alloc_preg (cfg);
+			ins->sreg1 = c->dreg;
+			return ins;
+		} else {
+			return NULL;
+		}
 	}
 
 	return mono_create_tls_get_offset (cfg, mini_get_tls_offset (key));

@@ -100,6 +100,7 @@ monoutils_sources = \
 	mono-threads-windows.c	\
 	mono-threads.h	\
 	mono-tls.h	\
+	mono-tls.c	\
 	linux_magic.h	\
 	mono-memory-model.h	\
 	atomic.h	\
