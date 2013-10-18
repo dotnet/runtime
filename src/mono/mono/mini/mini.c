@@ -6138,7 +6138,7 @@ mono_jit_compile_method (MonoMethod *method)
 	MonoException *ex = NULL;
 	gpointer code;
 
-	code = mono_jit_compile_method_with_opt (method, default_opt, &ex);
+	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), &ex);
 	if (!code) {
 		g_assert (ex);
 		mono_raise_exception (ex);
@@ -6349,7 +6349,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (callee) {
 			MonoException *jit_ex = NULL;
 
-			info->compiled_method = mono_jit_compile_method_with_opt (callee, default_opt, &jit_ex);
+			info->compiled_method = mono_jit_compile_method_with_opt (callee, mono_get_optimizations_for_method (callee, default_opt), &jit_ex);
 			if (!info->compiled_method) {
 				g_free (info);
 				g_assert (jit_ex);

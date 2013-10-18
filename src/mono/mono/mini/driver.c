@@ -342,18 +342,128 @@ domain_dump_native_code (MonoDomain *domain) {
 }
 #endif
 
+static gboolean do_single_method_regression = FALSE;
+static guint32 single_method_regression_opt;
+static MonoMethod *current_single_method = NULL;
+static GSList *single_method_list = NULL;
+static GHashTable *single_method_hash = NULL;
+
+guint32
+mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
+{
+	g_assert (method);
+
+	if (!do_single_method_regression)
+		return default_opt;
+	if (!current_single_method) {
+		if (!single_method_hash)
+			single_method_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
+		if (!g_hash_table_lookup (single_method_hash, method)) {
+			g_hash_table_insert (single_method_hash, method, method);
+			single_method_list = g_slist_prepend (single_method_list, method);
+		}
+		return default_opt;
+	}
+	if (method == current_single_method)
+		return single_method_regression_opt;
+	return default_opt;
+}
+
+static void
+mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
+		guint32 opt_flags,
+		GTimer *timer, MonoDomain *domain)
+{
+	int result, expected, failed, cfailed, run, code_size;
+	TestMethod func;
+	double elapsed, comp_time, start_time;
+	char *n;
+	int i;
+
+	mono_set_defaults (verbose, opt_flags);
+	n = opt_descr (opt_flags);
+	g_print ("Test run: image=%s, opts=%s\n", mono_image_get_filename (image), n);
+	g_free (n);
+	cfailed = failed = run = code_size = 0;
+	comp_time = elapsed = 0.0;
+
+	/* fixme: ugly hack - delete all previously compiled methods */
+	g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
+	domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+	mono_jit_code_hash_init (&(domain->jit_code_hash));
+
+	g_timer_start (timer);
+	if (mini_stats_fd)
+		fprintf (mini_stats_fd, "[");
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoMethod *method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		if (!method)
+			continue;
+		if (strncmp (method->name, "test_", 5) == 0) {
+			MonoCompile *cfg;
+
+			expected = atoi (method->name + 5);
+			run++;
+			start_time = g_timer_elapsed (timer, NULL);
+			comp_time -= start_time;
+			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), mono_get_root_domain (), TRUE, FALSE, 0);
+			comp_time += g_timer_elapsed (timer, NULL);
+			if (cfg->exception_type == MONO_EXCEPTION_NONE) {
+				if (verbose >= 2)
+					g_print ("Running '%s' ...\n", method->name);
+#ifdef MONO_USE_AOT_COMPILER
+				if ((func = mono_aot_get_method (mono_get_root_domain (), method)))
+					;
+				else
+#endif
+					func = (TestMethod)(gpointer)cfg->native_code;
+				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
+				result = func ();
+				if (result != expected) {
+					failed++;
+					g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
+				}
+				code_size += cfg->code_len;
+				mono_destroy_compile (cfg);
+
+			} else {
+				cfailed++;
+				if (verbose)
+					g_print ("Test '%s' failed compilation.\n", method->name);
+			}
+			if (mini_stats_fd)
+				fprintf (mini_stats_fd, "%f, ",
+						g_timer_elapsed (timer, NULL) - start_time);
+		}
+	}
+	if (mini_stats_fd)
+		fprintf (mini_stats_fd, "],\n");
+	g_timer_stop (timer);
+	elapsed = g_timer_elapsed (timer, NULL);
+	if (failed > 0 || cfailed > 0){
+		g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n",
+				run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
+	} else {
+		g_print ("Results: total tests: %d, all pass \n",  run);
+	}
+
+	g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed,
+			elapsed - comp_time, comp_time, code_size);
+	*total += failed + cfailed;
+	*total_run += run;
+}
+
 static int
 mini_regression (MonoImage *image, int verbose, int *total_run)
 {
-	guint32 i, opt, opt_flags;
+	guint32 i, opt;
 	MonoMethod *method;
-	MonoCompile *cfg;
 	char *n;
-	int result, expected, failed, cfailed, run, code_size, total;
-	TestMethod func;
 	GTimer *timer = g_timer_new ();
 	MonoDomain *domain = mono_domain_get ();
 	guint32 exclude = 0;
+	int total;
 
 	/* Note: mono_hwcap_init () called in mono_init () before we get here. */
 	mono_arch_cpu_optimizations (&exclude);
@@ -363,7 +473,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 
 		fprintf (mini_stats_fd, "$graph->set_legend(qw(");
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); opt++) {
-			opt_flags = opt_sets [opt];
+			guint32 opt_flags = opt_sets [opt];
 			n = opt_descr (opt_flags);
 			if (!n [0])
 				n = (char *)"none";
@@ -396,80 +506,37 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 
 	total = 0;
 	*total_run = 0;
-	for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
-		double elapsed, comp_time, start_time;
+	if (do_single_method_regression) {
+		GSList *iter;
 
-		opt_flags = opt_sets [opt] & ~exclude;
-		mono_set_defaults (verbose, opt_flags);
-		n = opt_descr (opt_flags);
-		g_print ("Test run: image=%s, opts=%s\n", mono_image_get_filename (image), n);
-		g_free (n);
-		cfailed = failed = run = code_size = 0;
-		comp_time = elapsed = 0.0;
+		mini_regression_step (image, verbose, total_run, &total,
+				0,
+				timer, domain);
+		if (total)
+			return total;
+		g_print ("Single method regression: %d methods\n", g_slist_length (single_method_list));
 
-		/* fixme: ugly hack - delete all previously compiled methods */
-		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
-		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
-		mono_jit_code_hash_init (&(domain->jit_code_hash));
+		for (iter = single_method_list; iter; iter = g_slist_next (iter)) {
+			char *method_name;
 
-		g_timer_start (timer);
-		if (mini_stats_fd)
-			fprintf (mini_stats_fd, "[");
-		for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
-			if (!method)
-				continue;
-			if (strncmp (method->name, "test_", 5) == 0) {
-				expected = atoi (method->name + 5);
-				run++;
-				start_time = g_timer_elapsed (timer, NULL);
-				comp_time -= start_time; 
-				cfg = mini_method_compile (method, opt_flags, mono_get_root_domain (), TRUE, FALSE, 0);
-				comp_time += g_timer_elapsed (timer, NULL);
-				if (cfg->exception_type == MONO_EXCEPTION_NONE) {
-					if (verbose >= 2)
-						g_print ("Running '%s' ...\n", method->name);
-#ifdef MONO_USE_AOT_COMPILER
-					if ((func = mono_aot_get_method (mono_get_root_domain (), method)))
-						;
-					else
-#endif
-						func = (TestMethod)(gpointer)cfg->native_code;
-					func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
-					result = func ();
-					if (result != expected) {
-						failed++;
-						g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
-					}
-					code_size += cfg->code_len;
-					mono_destroy_compile (cfg);
+			current_single_method = iter->data;
 
-				} else {
-					cfailed++;
-					if (verbose)
-						g_print ("Test '%s' failed compilation.\n", method->name);
-				}
-				if (mini_stats_fd)
-					fprintf (mini_stats_fd, "%f, ", 
-						 g_timer_elapsed (timer, NULL) - start_time);
-			}
+			method_name = mono_method_full_name (current_single_method, TRUE);
+			g_print ("Current single method: %s\n", method_name);
+			g_free (method_name);
+
+			mini_regression_step (image, verbose, total_run, &total,
+					0,
+					timer, domain);
+			if (total)
+				return total;
 		}
-		if (mini_stats_fd)
-			fprintf (mini_stats_fd, "],\n");
-		g_timer_stop (timer);
-		elapsed = g_timer_elapsed (timer, NULL);
-		if (failed > 0 || cfailed > 0){
-			g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n", 
-				 run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
-		} else {
-			g_print ("Results: total tests: %d, all pass \n",  run);
+	} else {
+		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
+			mini_regression_step (image, verbose, total_run, &total,
+					opt_sets [opt] & ~exclude,
+					timer, domain);
 		}
-		
-		g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed, 
-			 elapsed - comp_time, comp_time, code_size);
-		total += failed + cfailed;
-		*total_run += run;
 	}
 
 	if (mini_stats_fd) {
@@ -829,6 +896,7 @@ jit_info_table_test (MonoDomain *domain)
 enum {
 	DO_BENCH,
 	DO_REGRESSION,
+	DO_SINGLE_METHOD_REGRESSION,
 	DO_COMPILE,
 	DO_EXEC,
 	DO_DRAW,
@@ -888,7 +956,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		cfg = mini_method_compile (method, args->opts, mono_get_root_domain (), FALSE, FALSE, 0);
+		cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), FALSE, FALSE, 0);
 		if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 			printf ("Compilation of %s failed with exception '%s':\n", mono_method_full_name (cfg->method, TRUE), cfg->exception_message);
 			fail_count ++;
@@ -1100,6 +1168,7 @@ mini_usage_jitdeveloper (void)
 		 "    --ncompile N           Number of times to compile METHOD (default: 1)\n"
 		 "    --print-vtable         Print the vtable of all used classes\n"
 		 "    --regression           Runs the regression test contained in the assembly\n"
+		 "    --single-method=OPTS   Runs regressions with only one method optimized with OPTS at any time\n"
 		 "    --statfile FILE        Sets the stat file to FILE\n"
 		 "    --stats                Print statistics about the JIT operations\n"
 		 "    --wapi=hps|semdel|seminfo IO-layer maintenance\n"
@@ -1486,6 +1555,11 @@ mono_main (int argc, char* argv[])
 			break;
 		if (strcmp (argv [i], "--regression") == 0) {
 			action = DO_REGRESSION;
+		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
+			char *full_opts = g_strdup_printf ("-all,%s", argv [i] + 16);
+			action = DO_SINGLE_METHOD_REGRESSION;
+			single_method_regression_opt = parse_optimizations (full_opts);
+			g_free (full_opts);
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
@@ -1878,6 +1952,8 @@ mono_main (int argc, char* argv[])
 	}
 	
 	switch (action) {
+	case DO_SINGLE_METHOD_REGRESSION:
+		do_single_method_regression = TRUE;
 	case DO_REGRESSION:
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
 			g_print ("Regression ERRORS!\n");

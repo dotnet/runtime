@@ -1875,6 +1875,7 @@ MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
 /* helper methods */
 void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;
 void      mono_set_optimizations           (guint32 opts) MONO_INTERNAL;
+guint32   mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt) MONO_INTERNAL;
 void      mono_set_verbose_level           (guint32 level) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context) MONO_INTERNAL;
