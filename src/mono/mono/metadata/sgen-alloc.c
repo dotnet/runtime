@@ -704,9 +704,6 @@ create_allocator (int atype)
 	MONO_THREAD_VAR_OFFSET (tlab_next_addr, tlab_next_addr_offset);
 	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
 
-	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_addr_offset);
-	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
-
 	g_assert (tlab_next_addr_offset != -1);
 	g_assert (tlab_temp_end_offset != -1);
 #endif
@@ -989,7 +986,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
 	if (tlab_next_offset == -1 || tlab_temp_end_offset == -1)
 		return NULL;
 
-	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT, tlab_next_offset);
+	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_offset);
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
 #endif
 	if (collect_before_allocs)
