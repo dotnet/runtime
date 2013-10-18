@@ -3340,10 +3340,6 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_runtime_invoke_dynamic ());
 #endif
 
-		/* JIT icall wrappers */
-		/* FIXME: locking */
-		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
-
 		/* stelemref */
 		add_method (acfg, mono_marshal_get_stelemref ());
 
@@ -3407,6 +3403,10 @@ add_wrappers (MonoAotCompile *acfg)
 			}
 		}
 #endif
+
+		/* JIT icall wrappers */
+		/* FIXME: locking */
+		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
 	}
 
 	/* 
