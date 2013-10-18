@@ -421,7 +421,7 @@ void InterlockedWrite64(volatile gint64 *dst, gint64 val)
 
 #endif
 
-#if defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
+#if defined (NEED_64BIT_CMPXCHG_FALLBACK)
 
 #if defined (TARGET_OSX)
 
@@ -431,13 +431,13 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	return __sync_val_compare_and_swap (dest, comp, exch);
 }
 
+#elif defined (HAVE_64BIT_CMPXCHG_FALLBACK)
+
+#ifdef ENABLE_EXTENSION_MODULE
+#include "../../../mono-extensions/mono/utils/atomic.c"
+#endif
+
 #else
-
-#endif
-
-#endif
-
-#if defined (NEED_64BIT_CMPXCHG_FALLBACK)
 
 gint64
 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
@@ -453,5 +453,7 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	pthread_mutex_unlock (&spin);
 	return old;
 }
+
+#endif
 
 #endif
