@@ -121,7 +121,7 @@ static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 	InterlockedExchange (dst, val);
 }
 
-#if defined (TARGET_OSX)
+#if defined (TARGET_OSX) || defined (__arm__) || (defined (__mips__) && !defined (__mips64)) || (defined (__powerpc__) && !defined (__powerpc64__))
 #define BROKEN_64BIT_ATOMICS_INTRINSIC 1
 #endif
 
