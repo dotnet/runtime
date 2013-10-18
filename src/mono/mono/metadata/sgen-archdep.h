@@ -201,6 +201,10 @@
 	)
 #endif
 
+#ifndef REG_SP
+#define REG_SP REG_O6
+#endif
+
 #define ARCH_SIGCTX_SP(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_SP])
 #define ARCH_SIGCTX_IP(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_PC])
 #define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
