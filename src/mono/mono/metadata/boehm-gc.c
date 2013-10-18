@@ -758,7 +758,7 @@ create_allocator (int atype, int tls_key)
 	my_entry_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	/* my_fl = ((GC_thread)tsd) -> ptrfree_freelists + index; */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_TLS);
+	mono_mb_emit_byte (mb, 0x0D); /* CEE_MONO_TLS */
 	mono_mb_emit_i4 (mb, tls_key);
 	if (atype == ATYPE_FREEPTR || atype == ATYPE_FREEPTR_FOR_BOX || atype == ATYPE_STRING)
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, ptrfree_freelists));
