@@ -331,6 +331,7 @@ mono_gc_walk_heap
 mono_gc_wbarrier_arrayref_copy
 mono_gc_wbarrier_generic_nostore
 mono_gc_wbarrier_generic_store
+mono_gc_wbarrier_generic_store_atomic
 mono_gc_wbarrier_object_copy
 mono_gc_wbarrier_set_arrayref
 mono_gc_wbarrier_set_field

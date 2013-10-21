@@ -316,6 +316,7 @@ MONO_API void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, 
 MONO_API void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
 MONO_API void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
 MONO_API void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
+MONO_API void mono_gc_wbarrier_generic_store_atomic (void *ptr, MonoObject *value);
 MONO_API void mono_gc_wbarrier_generic_nostore (void* ptr);
 MONO_API void mono_gc_wbarrier_value_copy    (void* dest, void* src, int count, MonoClass *klass);
 MONO_API void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);

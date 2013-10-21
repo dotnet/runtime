@@ -2490,8 +2490,7 @@ ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
 void
 ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *value)
 {
-	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
-	mono_gc_wbarrier_generic_nostore (ptr);
+	mono_gc_wbarrier_generic_store_atomic (ptr, value);
 }
 
 void
@@ -2509,8 +2508,7 @@ ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float value)
 void
 ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value)
 {
-	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
-	mono_gc_wbarrier_generic_nostore (ptr);
+	mono_gc_wbarrier_generic_store_atomic (ptr, value);
 }
 
 void

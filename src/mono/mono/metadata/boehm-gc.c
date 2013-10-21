@@ -22,6 +22,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
 #include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
@@ -621,6 +622,12 @@ void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	*(void**)ptr = value;
+}
+
+void
+mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
+{
+	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
 }
 
 void

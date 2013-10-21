@@ -193,6 +193,12 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 }
 
 void
+mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
+{
+	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
+}
+
+void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
 }
