@@ -2748,7 +2748,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	int method_index, table_len;
 	guint32 token;
 	MonoAotModule *amodule = image->aot_module;
-	MonoMethod *method;
+	MonoMethod *method = NULL;
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
 	guint32 *table;

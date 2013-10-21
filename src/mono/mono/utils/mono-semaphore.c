@@ -33,7 +33,10 @@
 #    define WAIT_BLOCK(a,b) sem_timedwait (a, b)
 #  endif
 
+#ifndef NSEC_PER_SEC
 #define NSEC_PER_SEC 1000000000
+#endif
+
 int
 mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
