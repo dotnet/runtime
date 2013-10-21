@@ -425,6 +425,8 @@ void InterlockedWrite64(volatile gint64 *dst, gint64 val)
 
 #if defined (TARGET_OSX)
 
+/* The compiler breaks if this code is in the header... */
+
 gint64
 InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 {
