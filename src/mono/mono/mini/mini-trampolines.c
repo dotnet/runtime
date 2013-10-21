@@ -1517,9 +1517,6 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 
 	gpointer tramp, ptr;
 
-	if (mono_aot_only)
-		return mono_aot_get_lazy_fetch_trampoline (offset);
-
 	mono_trampolines_lock ();
 	if (rgctx_lazy_fetch_trampoline_hash)
 		tramp = g_hash_table_lookup (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset));
@@ -1529,14 +1526,18 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	if (tramp)
 		return tramp;
 
-	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, FALSE);
-	if (info) {
-		mono_save_trampoline_xdebug_info (info);
-		if (mono_jit_map_is_enabled ())
-			mono_emit_jit_tramp (info->code, info->code_size, info->name);
-		mono_tramp_info_free (info);
+	if (mono_aot_only) {
+		ptr = mono_aot_get_lazy_fetch_trampoline (offset);
+	} else {
+		tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, FALSE);
+		if (info) {
+			mono_save_trampoline_xdebug_info (info);
+			if (mono_jit_map_is_enabled ())
+				mono_emit_jit_tramp (info->code, info->code_size, info->name);
+			mono_tramp_info_free (info);
+		}
+		ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 	}
-	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 
 	mono_trampolines_lock ();
 	if (!rgctx_lazy_fetch_trampoline_hash) {
