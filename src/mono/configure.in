@@ -2457,10 +2457,6 @@ jit_wanted=true
 interp_wanted=false
 sgen_supported=false
 case "$host" in
-#	mips-sgi-irix5.* | mips-sgi-irix6.*)
-#		TARGET=MIPS;
-#		ACCESS_UNALIGNED="no"
-#		;;
 	mips*)
 		TARGET=MIPS;
 		arch_target=mips;
