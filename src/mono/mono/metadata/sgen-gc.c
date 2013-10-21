@@ -4043,7 +4043,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			conservatively_pin_objects_from ((void**)&info->ctx, (void**)&info->ctx + ARCH_NUM_REGS,
 				start_nursery, end_nursery, PIN_TYPE_STACK);
 #else
-			conservatively_pin_objects_from (&info->regs, &info->regs + ARCH_NUM_REGS,
+			conservatively_pin_objects_from ((void**)&info->regs, (void**)&info->regs + ARCH_NUM_REGS,
 					start_nursery, end_nursery, PIN_TYPE_STACK);
 #endif
 		}
