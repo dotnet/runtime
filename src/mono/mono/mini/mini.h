@@ -1258,6 +1258,13 @@ typedef enum {
 	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||	\
 	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT)
 
+/* These trampolines receive an argument directly in a register */
+#define MONO_TRAMPOLINE_TYPE_HAS_ARG(t)		\
+	((t) == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||	\
+	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||		\
+	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT ||			\
+	 (t) == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
+
 /* optimization flags */
 #define OPTFLAG(id,shift,name,descr) MONO_OPT_ ## id = 1 << shift,
 enum {
