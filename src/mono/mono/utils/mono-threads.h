@@ -157,13 +157,13 @@ typedef struct {
 /*
 Requires the world to be stoped
 */
-#define FOREACH_THREAD(thread) MONO_LLS_FOREACH (mono_thread_info_list_head (), thread, SgenThreadInfo*)
+#define FOREACH_THREAD(thread) MONO_LLS_FOREACH (mono_thread_info_list_head (), thread, THREAD_INFO_TYPE*)
 #define END_FOREACH_THREAD MONO_LLS_END_FOREACH
 
 /*
 Snapshot iteration.
 */
-#define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_SAFE (mono_thread_info_list_head (), thread, SgenThreadInfo*)
+#define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_SAFE (mono_thread_info_list_head (), thread, THREAD_INFO_TYPE*)
 #define END_FOREACH_THREAD_SAFE MONO_LLS_END_FOREACH_SAFE
 
 #define mono_thread_info_get_tid(info) ((MonoNativeThreadId)((MonoThreadInfo*)info)->node.key)
@@ -203,10 +203,10 @@ mono_thread_info_get_small_id (void) MONO_INTERNAL;
 MonoLinkedListSet*
 mono_thread_info_list_head (void) MONO_INTERNAL;
 
-MonoThreadInfo*
+THREAD_INFO_TYPE*
 mono_thread_info_lookup (MonoNativeThreadId id) MONO_INTERNAL;
 
-MonoThreadInfo*
+THREAD_INFO_TYPE*
 mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel) MONO_INTERNAL;
 
 gboolean
@@ -222,7 +222,7 @@ gboolean
 mono_thread_info_new_interrupt_enabled (void) MONO_INTERNAL;
 
 void
-mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data) MONO_INTERNAL;
+mono_thread_info_setup_async_call (THREAD_INFO_TYPE *info, void (*target_func)(void*), void *user_data) MONO_INTERNAL;
 
 void
 mono_thread_info_suspend_lock (void) MONO_INTERNAL;
@@ -263,12 +263,12 @@ HANDLE
 
 /* Plartform specific functions DON'T use them */
 void mono_threads_init_platform (void) MONO_INTERNAL; //ok
-gboolean mono_threads_core_suspend (MonoThreadInfo *info) MONO_INTERNAL;
-gboolean mono_threads_core_resume (MonoThreadInfo *info) MONO_INTERNAL;
-void mono_threads_platform_register (MonoThreadInfo *info) MONO_INTERNAL; //ok
-void mono_threads_platform_free (MonoThreadInfo *info) MONO_INTERNAL;
-void mono_threads_core_interrupt (MonoThreadInfo *info) MONO_INTERNAL;
-void mono_threads_core_abort_syscall (MonoThreadInfo *info) MONO_INTERNAL;
+gboolean mono_threads_core_suspend (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+gboolean mono_threads_core_resume (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+void mono_threads_platform_register (THREAD_INFO_TYPE *info) MONO_INTERNAL; //ok
+void mono_threads_platform_free (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+void mono_threads_core_interrupt (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 gboolean mono_threads_core_needs_abort_syscall (void) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
