@@ -1727,3 +1727,21 @@ mono_get_rgctx_fetch_trampoline_name (int slot)
 	return g_strdup_printf ("rgctx_fetch_trampoline_%s_%d", mrgctx ? "mrgctx" : "rgctx", index);
 }
 
+gpointer
+mini_get_nullified_class_init_trampoline (void)
+{
+	static gpointer nullified_class_init_trampoline;
+
+	if (!nullified_class_init_trampoline) {
+		gpointer tramp;
+
+		if (mono_aot_only)
+			tramp = mono_aot_get_trampoline ("nullified_class_init_trampoline");
+		else
+			tramp = mono_arch_get_nullified_class_init_trampoline (NULL);
+		mono_memory_barrier ();
+		nullified_class_init_trampoline = tramp;
+	}
+
+	return nullified_class_init_trampoline;
+}
