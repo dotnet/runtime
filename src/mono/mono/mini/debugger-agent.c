@@ -283,7 +283,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 24
+#define MINOR_VERSION 25
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -528,7 +528,7 @@ typedef struct {
 		GHashTable *type_names; /* For kind == MONO_KIND_TYPE_NAME_ONLY */
 		StepFilter filter; /* For kind == MOD_KIND_STEP */
 	} data;
-	gboolean caught, uncaught; /* For kind == MOD_KIND_EXCEPTION_ONLY */
+	gboolean caught, uncaught, subclasses; /* For kind == MOD_KIND_EXCEPTION_ONLY */
 } Modifier;
 
 typedef struct{
@@ -3363,7 +3363,9 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 					if (mod->data.thread != mono_thread_internal_current ())
 						filtered = TRUE;
 				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && ei) {
-					if (mod->data.exc_class && !mono_class_is_assignable_from (mod->data.exc_class, ei->exc->vtable->klass))
+					if (mod->data.exc_class && mod->subclasses && !mono_class_is_assignable_from (mod->data.exc_class, ei->exc->vtable->klass))
+						filtered = TRUE;
+					if (mod->data.exc_class && !mod->subclasses && mod->data.exc_class != ei->exc->vtable->klass)
 						filtered = TRUE;
 					if (ei->caught && !mod->caught)
 						filtered = TRUE;
@@ -6993,7 +6995,11 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					return err;
 				req->modifiers [i].caught = decode_byte (p, &p, end);
 				req->modifiers [i].uncaught = decode_byte (p, &p, end);
-				DEBUG(1, fprintf (log_file, "[dbg] \tEXCEPTION_ONLY filter (%s%s%s).\n", exc_class ? exc_class->name : "all", req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : ""));
+				if (CHECK_PROTOCOL_VERSION (2, 25))
+					req->modifiers [i].subclasses = decode_byte (p, &p, end);
+				else
+					req->modifiers [i].subclasses = TRUE;
+				DEBUG(1, fprintf (log_file, "[dbg] \tEXCEPTION_ONLY filter (%s%s%s%s).\n", exc_class ? exc_class->name : "all", req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : "", req->modifiers [i].subclasses ? ", include-subclasses" : ""));
 				if (exc_class) {
 					req->modifiers [i].data.exc_class = exc_class;
 
