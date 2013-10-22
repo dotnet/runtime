@@ -2780,3 +2780,20 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 
 	g_assert_not_reached ();
 }
+
+/*
+ * mono_restore_context:
+ *
+ *   Call the architecture specific restore context function.
+ */
+void
+mono_restore_context (MonoContext *ctx)
+{
+	static void (*restore_context) (MonoContext *);
+
+	if (!restore_context)
+		restore_context = mono_get_restore_context ();
+	restore_context (ctx);
+	g_assert_not_reached ();
+}
+
