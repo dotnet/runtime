@@ -183,7 +183,7 @@ static inline gint64 InterlockedIncrement64(volatile gint64 *val)
 	do {
 		get = *val;
 		set = get + 1;
-	} while (InterlockedCompareExchange64 (val, set, get) != set);
+	} while (InterlockedCompareExchange64 (val, set, get) != get);
 	return set;
 }
 
@@ -193,7 +193,7 @@ static inline gint64 InterlockedDecrement64(volatile gint64 *val)
 	do {
 		get = *val;
 		set = get - 1;
-	} while (InterlockedCompareExchange64 (val, set, get) != set);
+	} while (InterlockedCompareExchange64 (val, set, get) != get);
 	return set;
 }
 
@@ -203,7 +203,7 @@ static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
 	do {
 		get = *dest;
 		set = get + add;
-	} while (InterlockedCompareExchange64 (dest, set, get) != set);
+	} while (InterlockedCompareExchange64 (dest, set, get) != get);
 	return set;
 }
 
