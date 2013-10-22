@@ -593,6 +593,22 @@ mono_emit_unwind_op (MonoCompile *cfg, int when, int tag, int reg, int val)
 	op->when = when;
 	
 	cfg->unwind_ops = g_slist_append_mempool (cfg->mempool, cfg->unwind_ops, op);
+	if (cfg->verbose_level > 1) {
+		switch (tag) {
+		case DW_CFA_def_cfa:
+			printf ("CFA: [%x] def_cfa: %s+0x%x\n", when, mono_arch_regname (reg), val);
+			break;
+		case DW_CFA_def_cfa_register:
+			printf ("CFA: [%x] def_cfa_reg: %s\n", when, mono_arch_regname (reg));
+			break;
+		case DW_CFA_def_cfa_offset:
+			printf ("CFA: [%x] def_cfa_offset: 0x%x\n", when, val);
+			break;
+		case DW_CFA_offset:
+			printf ("CFA: [%x] offset: %s at cfa-0x%x\n", when, mono_arch_regname (reg), -val);
+			break;
+		}
+	}
 }
 
 MonoJumpInfoToken *
