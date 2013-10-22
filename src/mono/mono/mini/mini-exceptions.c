@@ -1176,6 +1176,9 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 		}
 	}
 
+	if (!t)
+		return NULL;
+
 	refs = (t->appdomain_refs) ? *(gpointer *) t->appdomain_refs : NULL;
 	for (; refs && *refs; refs++) {
 		if (*refs != domain && *refs != mono_get_root_domain ()) {
