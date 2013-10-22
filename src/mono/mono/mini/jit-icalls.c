@@ -82,7 +82,7 @@ mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 		mono_raise_exception (mono_get_exception_array_type_mismatch ());
 }
 
-#ifndef MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
+#if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
 
 gint64 
 mono_llmult (gint64 a, gint64 b)

@@ -7211,6 +7211,8 @@ mini_init (const char *filename, const char *runtime_version)
 	register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", "long long long", mono_lldiv_un, "mono_lldiv_un", FALSE);
 	register_opcode_emulation (OP_LREM, "__emul_lrem", "long long long", mono_llrem, "mono_llrem", FALSE);
 	register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", "long long long", mono_llrem_un, "mono_llrem_un", FALSE);
+#endif
+#if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
 	register_opcode_emulation (OP_LMUL_OVF_UN, "__emul_lmul_ovf_un", "long long long", mono_llmult_ovf_un, "mono_llmult_ovf_un", FALSE);
 	register_opcode_emulation (OP_LMUL_OVF, "__emul_lmul_ovf", "long long long", mono_llmult_ovf, "mono_llmult_ovf", FALSE);
 #endif
