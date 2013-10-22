@@ -8901,6 +8901,32 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+
+/**
+ * mono_class_is_delegate
+ * @klass: the MonoClass to act on
+ *
+ * Returns: true if the MonoClass represents a System.Delegate.
+ */
+mono_bool
+mono_class_is_delegate (MonoClass *klass)
+{
+	return klass->delegate;
+}
+
+/**
+ * mono_class_implements_interface
+ * @klass: The MonoClass to act on
+ * @interface: The interface to check if @klass implements.
+ *
+ * Returns: true if @klass implements @interface.
+ */
+mono_bool
+mono_class_implements_interface (MonoClass* klass, MonoClass* interface)
+{
+	return mono_class_is_assignable_from (interface, klass);
+}
+
 /**
  * mono_field_get_name:
  * @field: the MonoClassField to act on

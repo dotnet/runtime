@@ -6204,6 +6204,21 @@ mono_signature_is_instance (MonoMethodSignature *sig)
 }
 
 /**
+ * mono_signature_param_is_out
+ * @sig: the method signature inspected
+ * @param_num: the 0-based index of the inspected parameter
+ * 
+ * Returns: #TRUE if the parameter is an out parameter, #FALSE
+ * otherwise.
+ */
+mono_bool
+mono_signature_param_is_out (MonoMethodSignature *sig, int param_num)
+{
+	g_assert (param_num >= 0 && param_num < sig->param_count);
+	return (sig->params [param_num]->attrs & PARAM_ATTRIBUTE_OUT) != 0;
+}
+
+/**
  * mono_signature_explicit_this:
  * @sig: the method signature inspected
  *

@@ -189,6 +189,12 @@ mono_class_get_interfaces    (MonoClass* klass, void **iter);
 MONO_API MonoClass*
 mono_class_get_nested_types  (MonoClass* klass, void **iter);
 
+MONO_API mono_bool
+mono_class_is_delegate       (MonoClass* klass);
+
+MONO_API mono_bool
+mono_class_implements_interface (MonoClass* klass, MonoClass* interface);
+
 /* MonoClassField accessors */
 MONO_API const char*
 mono_field_get_name   (MonoClassField *field);

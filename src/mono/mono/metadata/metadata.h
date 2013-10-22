@@ -379,6 +379,9 @@ mono_signature_is_instance     (MonoMethodSignature *sig);
 MONO_API mono_bool
 mono_signature_explicit_this   (MonoMethodSignature *sig);
 
+MONO_API mono_bool
+mono_signature_param_is_out    (MonoMethodSignature *sig, int param_num);
+
 MONO_API uint32_t     mono_metadata_parse_typedef_or_ref (MonoImage      *m,
                                                 const char      *ptr,
                                                 const char     **rptr);
