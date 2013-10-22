@@ -174,16 +174,12 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 static void
 throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean rethrow)
 {
-	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
 
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("throw_exception: exc=%p eip=%p esp=%p rethrow=%d\n",
 		 exc, (void *)eip, (void *) esp, rethrow);
 #endif
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	/* adjust eip so that it point into the call instruction */
 	eip -= 8;
@@ -207,7 +203,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 		 (void *) ctx.sc_pc, (void *) ctx.sc_regs[mips_sp],
 		 (void *) ctx.sc_regs[mips_fp], &ctx);
 #endif
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 
 	g_assert_not_reached ();
 }
@@ -518,16 +514,12 @@ handle_signal_exception (gpointer obj)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
-	static void (*restore_context) (MonoContext *);
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
 	mono_handle_exception (&ctx, obj);
 
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 }
 
 /*

@@ -4602,10 +4602,6 @@ process_signal_event (void (*func) (DebuggerTlsData*))
 {
 	DebuggerTlsData *tls;
 	MonoContext orig_restore_ctx, ctx;
-	static void (*restore_context) (void *);
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
@@ -4617,7 +4613,7 @@ process_signal_event (void (*func) (DebuggerTlsData*))
 	/* This is called when resuming from a signal handler, so it shouldn't return */
 	memcpy (&ctx, &tls->restore_ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 	g_assert_not_reached ();
 }
 
@@ -6388,12 +6384,8 @@ invoke_method (void)
 	int id;
 	int i, err, mindex;
 	Buffer buf;
-	static void (*restore_context) (void *);
 	MonoContext restore_ctx;
 	guint8 *p;
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);

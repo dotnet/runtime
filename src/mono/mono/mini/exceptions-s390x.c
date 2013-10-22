@@ -237,11 +237,7 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 {
 	MonoContext ctx;
 	int iReg;
-	static void (*restore_context) (MonoContext *);
 
-	if (!restore_context)
-		restore_context = mono_get_restore_context();
-	
 	memset(&ctx, 0, sizeof(ctx));
 
 	setup_context(&ctx);
@@ -267,7 +263,7 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 	}
 //	mono_arch_handle_exception (&ctx, exc, FALSE);
 	mono_handle_exception (&ctx, exc);
-	restore_context(&ctx);
+	mono_restore_context(&ctx);
 
 	g_assert_not_reached ();
 }

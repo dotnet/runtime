@@ -473,11 +473,7 @@ void
 mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
 						  mgreg_t eip, gboolean rethrow)
 {
-	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	ctx.esp = regs [X86_ESP];
 	ctx.eip = eip;
@@ -511,7 +507,7 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 			ctx_cp.eip = eip - 5;
 
 			if (mono_debugger_handle_exception (&ctx_cp, exc)) {
-				restore_context (&ctx_cp);
+				mono_restore_context (&ctx_cp);
 				g_assert_not_reached ();
 			}
 		}
@@ -522,7 +518,7 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 
 	mono_handle_exception (&ctx, exc);
 
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 
 	g_assert_not_reached ();
 }
@@ -989,10 +985,6 @@ handle_signal_exception (gpointer obj)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
-	static void (*restore_context) (MonoContext *);
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
@@ -1001,7 +993,7 @@ handle_signal_exception (gpointer obj)
 
 	mono_handle_exception (&ctx, obj);
 
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 }
 
 /*
@@ -1149,22 +1141,20 @@ prepare_for_guard_pages (MonoContext *mctx)
 static void
 altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 {
-	void (*restore_context) (MonoContext *);
 	MonoContext mctx;
 
-	restore_context = mono_get_restore_context ();
 	mctx = *ctx;
 
 	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj)) {
 		if (stack_ovf)
 			prepare_for_guard_pages (&mctx);
-		restore_context (&mctx);
+		mono_restore_context (&mctx);
 	}
 
 	mono_handle_exception (&mctx, obj);
 	if (stack_ovf)
 		prepare_for_guard_pages (&mctx);
-	restore_context (&mctx);
+	mono_restore_context (&mctx);
 }
 
 void

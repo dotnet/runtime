@@ -135,12 +135,8 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 void
 mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
 {
-	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
 	gboolean rethrow = pc & 1;
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	pc &= ~1; /* clear the optional rethrow bit */
 	/* adjust eip so that it point into the call instruction */
@@ -159,7 +155,7 @@ mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_
 			mono_ex->stack_trace = NULL;
 	}
 	mono_handle_exception (&ctx, exc);
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 	g_assert_not_reached ();
 }
 
@@ -517,16 +513,12 @@ handle_signal_exception (gpointer obj)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
-	static void (*restore_context) (MonoContext *);
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
 	mono_handle_exception (&ctx, obj);
 
-	restore_context (&ctx);
+	mono_restore_context (&ctx);
 }
 
 /*

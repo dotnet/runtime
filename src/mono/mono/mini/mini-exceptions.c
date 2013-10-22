@@ -1520,7 +1520,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, *prev_ji;
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
-	static void (*restore_context) (void *);
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoException *mono_ex;
@@ -1590,9 +1589,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 
 	if (!call_filter)
 		call_filter = mono_get_call_filter ();
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
 
 	g_assert (jit_tls->end_of_stack);
 	g_assert (jit_tls->abort_func);
@@ -2496,7 +2492,6 @@ void
 mono_resume_unwind (MonoContext *ctx)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
-	static void (*restore_context) (MonoContext *);
 	MonoContext new_ctx;
 
 	MONO_CONTEXT_SET_IP (ctx, MONO_CONTEXT_GET_IP (&jit_tls->resume_state.ctx));
@@ -2505,10 +2500,7 @@ mono_resume_unwind (MonoContext *ctx)
 
 	mono_handle_exception_internal (&new_ctx, jit_tls->resume_state.ex_obj, TRUE, NULL);
 
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
-
-	restore_context (&new_ctx);
+	mono_restore_context (&new_ctx);
 }
 
 #ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
@@ -2717,11 +2709,8 @@ mono_thread_state_init_from_current (MonoThreadUnwindState *ctx)
 static void
 mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx)
 {
-	void (*restore_context) (MonoContext *);
-	restore_context = mono_get_restore_context ();
-
 	mono_handle_exception (ctx, exc);
-	restore_context (ctx);
+	mono_restore_context (ctx);
 }
 
 /*FIXME Move all monoctx -> sigctx conversion to signal handlers once all archs support utils/mono-context */
