@@ -1585,6 +1585,8 @@ if test x$target_win32 = xno; then
 	AC_MSG_CHECKING(for working __thread)
 	if test "x$with_tls" != "x__thread"; then
 		AC_MSG_RESULT(disabled)
+	elif test "x$cross_compiling" = "xyes"; then
+		AC_MSG_RESULT(cross compiling, assuming yes)
 	else
 		AC_TRY_RUN([
 			#if defined(__APPLE__) && defined(__clang__)
@@ -1632,6 +1634,8 @@ if test x$target_win32 = xno; then
 	AC_MSG_CHECKING(for working sigaltstack)
 	if test "x$with_sigaltstack" != "xyes"; then
 		AC_MSG_RESULT(disabled)
+	elif test "x$cross_compiling" = "xyes"; then
+		AC_MSG_RESULT(cross compiling, assuming yes)
 	else
 		AC_TRY_RUN([
 			#include <stdio.h>
