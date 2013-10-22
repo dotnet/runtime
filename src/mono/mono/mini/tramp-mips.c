@@ -24,8 +24,6 @@
 #include "mini.h"
 #include "mini-mips.h"
 
-static guint8* nullified_class_init_trampoline;
-
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -116,10 +114,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 void
 mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
-	if (mono_aot_only && !nullified_class_init_trampoline)
-		nullified_class_init_trampoline = mono_aot_get_trampoline ("nullified_class_init_trampoline");
-
-	mono_arch_patch_plt_entry (code, NULL, regs, nullified_class_init_trampoline);
+	mono_arch_patch_plt_entry (code, NULL, regs, mini_get_nullified_class_init_trampoline ());
 }
 
 void
@@ -313,10 +308,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	
 	/* Sanity check */
 	g_assert ((code - buf) <= max_code_len);
-
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		/* Initialize the nullified class init trampoline used in the AOT case */
-		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (NULL);
 
 	if (info) {
 		tramp_name = mono_get_generic_trampoline_name (tramp_type);
