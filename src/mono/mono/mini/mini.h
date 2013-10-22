@@ -2193,6 +2193,7 @@ void              mono_emit_unwind_op (MonoCompile *cfg, int when,
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops) MONO_INTERNAL;
 void              mono_tramp_info_free (MonoTrampInfo *info) MONO_INTERNAL;
 void              mono_tramp_info_register (MonoTrampInfo *info) MONO_INTERNAL;
+int               mini_exception_id_by_name (const char *name) MONO_INTERNAL;
 
 int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 									 MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 

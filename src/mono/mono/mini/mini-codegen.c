@@ -2697,4 +2697,27 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 	}
 }
 
+int
+mini_exception_id_by_name (const char *name)
+{
+	if (strcmp (name, "IndexOutOfRangeException") == 0)
+		return MONO_EXC_INDEX_OUT_OF_RANGE;
+	if (strcmp (name, "OverflowException") == 0)
+		return MONO_EXC_OVERFLOW;
+	if (strcmp (name, "ArithmeticException") == 0)
+		return MONO_EXC_ARITHMETIC;
+	if (strcmp (name, "DivideByZeroException") == 0)
+		return MONO_EXC_DIVIDE_BY_ZERO;
+	if (strcmp (name, "InvalidCastException") == 0)
+		return MONO_EXC_INVALID_CAST;
+	if (strcmp (name, "NullReferenceException") == 0)
+		return MONO_EXC_NULL_REF;
+	if (strcmp (name, "ArrayTypeMismatchException") == 0)
+		return MONO_EXC_ARRAY_TYPE_MISMATCH;
+	if (strcmp (name, "ArgumentException") == 0)
+		return MONO_EXC_ARGUMENT;
+	g_error ("Unknown intrinsic exception %s\n", name);
+	return -1;
+}
+
 #endif /* DISABLE_JIT */
