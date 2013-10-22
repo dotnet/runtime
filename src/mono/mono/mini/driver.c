@@ -388,10 +388,12 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	comp_time = elapsed = 0.0;
 
 	/* fixme: ugly hack - delete all previously compiled methods */
-	g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
-	domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	mono_internal_hash_table_destroy (&(domain->jit_code_hash));
-	mono_jit_code_hash_init (&(domain->jit_code_hash));
+	if (domain_jit_info (domain)) {
+		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
+		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+		mono_jit_code_hash_init (&(domain->jit_code_hash));
+	}
 
 	g_timer_start (timer);
 	if (mini_stats_fd)
