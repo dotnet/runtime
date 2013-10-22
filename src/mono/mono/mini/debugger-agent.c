@@ -5888,6 +5888,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 		NOT_IMPLEMENTED;
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 		/* Same as regoffset, but with an indirection */
 		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
 		addr += (gint32)var->offset;

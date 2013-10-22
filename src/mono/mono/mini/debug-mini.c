@@ -164,8 +164,12 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 	} else if (inst->opcode == OP_GSHAREDVT_LOCAL) {
 		var->index = inst->inst_imm | MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL;
 	} else if (inst->opcode == OP_VTARG_ADDR) {
-		var->offset = inst->inst_offset;
-		var->index  = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR;
+		MonoInst *vtaddr;
+
+		vtaddr = inst->inst_left;
+		g_assert (vtaddr->opcode == OP_REGOFFSET);
+		var->offset = vtaddr->inst_offset;
+		var->index  = vtaddr->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR;
 	} else {
 		g_assert_not_reached ();
 	}
