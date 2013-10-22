@@ -2933,6 +2933,9 @@ mini_get_tls_offset (MonoTlsKey key)
 	case TLS_KEY_LMF:
 		offset = mono_get_lmf_tls_offset ();
 		break;
+	case TLS_KEY_LMF_ADDR:
+		offset = mono_get_lmf_addr_tls_offset ();
+		break;
 	default:
 		offset = mono_tls_key_get_offset (key);
 		g_assert (offset != -1);
