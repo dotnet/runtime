@@ -741,9 +741,6 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 	if (info)
 		*info = mono_tramp_info_create ("nullified_class_init_trampoline", buf, code - buf, NULL, NULL);
 
-	if (mono_jit_map_is_enabled ())
-		mono_emit_jit_tramp (buf, code - buf, "nullified_class_init_trampoline");
-
 	return buf;
 }
 

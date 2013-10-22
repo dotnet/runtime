@@ -341,8 +341,6 @@ mono_save_xdebug_info (MonoCompile *cfg)
 void
 mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 {
-	mono_tramp_info_register (info);
-
 	if (use_gdb_interface) {
 		MonoImageWriter *w;
 		MonoDwarfWriter *dw;
@@ -383,7 +381,6 @@ mono_save_xdebug_info (MonoCompile *cfg)
 void
 mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 {
-	mono_tramp_info_register (info);
 }
 
 #endif

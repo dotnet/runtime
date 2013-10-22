@@ -667,12 +667,17 @@ mono_tramp_info_free (MonoTrampInfo *info)
 /*
  * mono_tramp_info_register:
  *
- * Remember INFO for use by mono_print_method_from_ip ().
+ * Remember INFO for use by xdebug, mono_print_method_from_ip (), jit maps, etc.
+ * INFO can be NULL.
+ * Frees INFO.
  */
 void
 mono_tramp_info_register (MonoTrampInfo *info)
 {
 	MonoTrampInfo *copy;
+
+	if (!info)
+		return;
 
 	copy = g_new0 (MonoTrampInfo, 1);
 	copy->code = info->code;
@@ -682,6 +687,13 @@ mono_tramp_info_register (MonoTrampInfo *info)
 	mono_loader_lock_if_inited ();
 	tramp_infos = g_slist_prepend (tramp_infos, copy);
 	mono_loader_unlock_if_inited ();
+
+	mono_save_trampoline_xdebug_info (info);
+
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (info->code, info->code_size, info->name);
+
+	mono_tramp_info_free (info);
 }
 
 G_GNUC_UNUSED static void
