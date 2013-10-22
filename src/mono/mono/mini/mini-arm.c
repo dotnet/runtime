@@ -5691,30 +5691,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 }
 
-/* remove once throw_exception_by_name is eliminated */
-static int
-exception_id_by_name (const char *name)
-{
-	if (strcmp (name, "IndexOutOfRangeException") == 0)
-		return MONO_EXC_INDEX_OUT_OF_RANGE;
-	if (strcmp (name, "OverflowException") == 0)
-		return MONO_EXC_OVERFLOW;
-	if (strcmp (name, "ArithmeticException") == 0)
-		return MONO_EXC_ARITHMETIC;
-	if (strcmp (name, "DivideByZeroException") == 0)
-		return MONO_EXC_DIVIDE_BY_ZERO;
-	if (strcmp (name, "InvalidCastException") == 0)
-		return MONO_EXC_INVALID_CAST;
-	if (strcmp (name, "NullReferenceException") == 0)
-		return MONO_EXC_NULL_REF;
-	if (strcmp (name, "ArrayTypeMismatchException") == 0)
-		return MONO_EXC_ARRAY_TYPE_MISMATCH;
-	if (strcmp (name, "ArgumentException") == 0)
-		return MONO_EXC_ARGUMENT;
-	g_error ("Unknown intrinsic exception %s\n", name);
-	return -1;
-}
-
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
@@ -5737,7 +5713,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC) {
-			i = exception_id_by_name (patch_info->data.target);
+			i = mini_exception_id_by_name (patch_info->data.target);
 			if (!exc_throw_found [i]) {
 				max_epilog_size += 32;
 				exc_throw_found [i] = TRUE;
@@ -5760,7 +5736,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			MonoClass *exc_class;
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
 
-			i = exception_id_by_name (patch_info->data.target);
+			i = mini_exception_id_by_name (patch_info->data.target);
 			if (exc_throw_pos [i]) {
 				arm_patch (ip, exc_throw_pos [i]);
 				patch_info->type = MONO_PATCH_INFO_NONE;
