@@ -2457,12 +2457,60 @@ ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr)
 	return tmp;
 }
 
+gint8
+ves_icall_System_Threading_Volatile_Read1 (void *ptr)
+{
+	return InterlockedRead8 (ptr);
+}
+
+gint16
+ves_icall_System_Threading_Volatile_Read2 (void *ptr)
+{
+	return InterlockedRead16 (ptr);
+}
+
+gint32
+ves_icall_System_Threading_Volatile_Read4 (void *ptr)
+{
+	return InterlockedRead (ptr);
+}
+
+gint64
+ves_icall_System_Threading_Volatile_Read8 (void *ptr)
+{
+	return InterlockedRead64 (ptr);
+}
+
+void *
+ves_icall_System_Threading_Volatile_ReadIntPtr (void *ptr)
+{
+	return InterlockedReadPointer (ptr);
+}
+
+double
+ves_icall_System_Threading_Volatile_ReadDouble (void *ptr)
+{
+	LongDoubleUnion u;
+
+	u.ival = InterlockedRead64 (ptr);
+
+	return u.fval;
+}
+
+float
+ves_icall_System_Threading_Volatile_ReadFloat (void *ptr)
+{
+	IntFloatUnion u;
+
+	u.ival = InterlockedRead (ptr);
+
+	return u.fval;
+}
+
 MonoObject*
 ves_icall_System_Threading_Volatile_Read_T (void *ptr)
 {
-	volatile MonoObject *tmp;
-	mono_atomic_load_acquire (tmp, volatile MonoObject *, (volatile MonoObject **) ptr);
-	return (MonoObject *) tmp;
+	return InterlockedReadPointer (ptr);
 }
 
 void
@@ -2511,6 +2559,56 @@ void
 ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float value)
 {
 	mono_atomic_store_release ((volatile float *) ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_Write1 (void *ptr, gint8 value)
+{
+	InterlockedWrite8 (ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_Write2 (void *ptr, gint16 value)
+{
+	InterlockedWrite16 (ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_Write4 (void *ptr, gint32 value)
+{
+	InterlockedWrite (ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64 value)
+{
+	InterlockedWrite64 (ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_WriteIntPtr (void *ptr, void *value)
+{
+	InterlockedWritePointer (ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_WriteDouble (void *ptr, double value)
+{
+	LongDoubleUnion u;
+
+	u.fval = value;
+
+	InterlockedWrite64 (ptr, u.ival);
+}
+
+void
+ves_icall_System_Threading_Volatile_WriteFloat (void *ptr, float value)
+{
+	IntFloatUnion u;
+
+	u.fval = value;
+
+	InterlockedWrite (ptr, u.ival);
 }
 
 void
