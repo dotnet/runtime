@@ -31,6 +31,18 @@ static inline gint64 InterlockedCompareExchange64(volatile gint64 *dest, gint64 
 }
 #endif
 
+/* mingw is missing InterlockedExchange64 () from winbase.h */
+#if HAVE_DECL_INTERLOCKEDEXCHANGE64==0
+static inline gint64 InterlockedExchange64(volatile gint64 *val, gint64 new_val)
+{
+	gint64 old_val;
+	do {
+		old_val = *val;
+	} while (InterlockedCompareExchange64 (val, new_val, old_val) != old_val);
+	return old_val;
+}
+#endif
+
 /* And now for some dirty hacks... The Windows API doesn't
  * provide any useful primitives for this (other than getting
  * into architecture-specific madness), so use CAS. */
