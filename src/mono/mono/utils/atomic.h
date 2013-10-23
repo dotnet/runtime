@@ -22,6 +22,7 @@
 #if defined(__WIN32__) || defined(_WIN32)
 
 #include <windows.h>
+#include <mono/utils/mono-membar.h>
 
 /* mingw is missing InterlockedCompareExchange64 () from winbase.h */
 #if HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64==0
@@ -89,6 +90,11 @@ static inline gint64 InterlockedRead64(volatile gint64 *src)
 	return InterlockedCompareExchange64 (src, 0, 0);
 }
 
+static inline gpointer InterlockedReadPointer(volatile gpointer *src)
+{
+	return InterlockedCompareExchangePointer (src, NULL, NULL);
+}
+
 static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 {
 	InterlockedExchange (dst, val);
@@ -97,6 +103,36 @@ static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 static inline void InterlockedWrite64(volatile gint64 *dst, gint64 val)
 {
 	InterlockedExchange64 (dst, val);
+}
+
+static inline void InterlockedWritePointer(volatile gpointer *dst, gpointer val)
+{
+	InterlockedExchangePointer (dst, val);
+}
+
+/* We can't even use CAS for these, so write them out
+ * explicitly according to x86(_64) semantics... */
+
+static inline gint8 InterlockedRead8(volatile gint8 *src)
+{
+	return *src;
+}
+
+static inline gint16 InterlockedRead16(volatile gint16 *src)
+{
+	return *src;
+}
+
+static inline void InterlockedWrite8(volatile gint8 *dst, gint8 val)
+{
+	*dst = val;
+	mono_memory_barrier ();
+}
+
+static inline void InterlockedWrite16(volatile gint16 *dst, gint16 val)
+{
+	*dst = val;
+	mono_memory_barrier ();
 }
 
 /* Prefer GCC atomic ops if the target supports it (see configure.in). */
@@ -152,17 +188,47 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	return __sync_fetch_and_add (val, add);
 }
 
-static inline gint32 InterlockedRead(volatile gint32 *src)
+static inline gint8 InterlockedRead8(volatile gint8 *src)
 {
 	/* Kind of a hack, but GCC doesn't give us anything better, and it's
-	   certainly not as bad as using a CAS loop. */
+	 * certainly not as bad as using a CAS loop. */
 	return __sync_fetch_and_add (src, 0);
+}
+
+static inline gint16 InterlockedRead16(volatile gint16 *src)
+{
+	return __sync_fetch_and_add (src, 0);
+}
+
+static inline gint32 InterlockedRead(volatile gint32 *src)
+{
+	return __sync_fetch_and_add (src, 0);
+}
+
+static inline void InterlockedWrite8(volatile gint8 *dst, gint8 val)
+{
+	/* Nothing useful from GCC at all, so fall back to CAS. */
+	gint8 old_val;
+	do {
+		old_val = *dst;
+	} while (__sync_val_compare_and_swap (dst, old_val, val) != old_val);
+}
+
+static inline void InterlockedWrite16(volatile gint16 *dst, gint16 val)
+{
+	gint16 old_val;
+	do {
+		old_val = *dst;
+	} while (__sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
 static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 {
 	/* Nothing useful from GCC at all, so fall back to CAS. */
-	InterlockedExchange (dst, val);
+	gint32 old_val;
+	do {
+		old_val = *dst;
+	} while (__sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
 #if defined (TARGET_OSX) || defined (__arm__) || (defined (__mips__) && !defined (__mips64)) || (defined (__powerpc__) && !defined (__powerpc64__))
@@ -257,6 +323,16 @@ static inline gint64 InterlockedRead64(volatile gint64 *src)
 }
 
 #endif
+
+static inline gpointer InterlockedReadPointer(volatile gpointer *src)
+{
+	return InterlockedCompareExchangePointer (src, NULL, NULL);
+}
+
+static inline void InterlockedWritePointer(volatile gpointer *dst, gpointer val)
+{
+	InterlockedExchangePointer (dst, val);
+}
 
 /* We always implement this in terms of a 64-bit cmpxchg since
  * GCC doesn't have an intrisic to model it anyway. */
@@ -569,10 +645,16 @@ extern gint64 InterlockedExchange64(volatile gint64 *dest, gint64 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
 extern gint64 InterlockedExchangeAdd64(volatile gint64 *dest, gint64 add);
+extern gint8 InterlockedRead8(volatile gint8 *src);
+extern gint16 InterlockedRead16(volatile gint16 *src);
 extern gint32 InterlockedRead(volatile gint32 *src);
 extern gint64 InterlockedRead64(volatile gint64 *src);
+extern gpointer InterlockedReadPointer(volatile gpointer *src);
+extern void InterlockedWrite8(volatile gint8 *dst, gint8 val);
+extern void InterlockedWrite16(volatile gint16 *dst, gint16 val);
 extern void InterlockedWrite(volatile gint32 *dst, gint32 val);
 extern void InterlockedWrite64(volatile gint64 *dst, gint64 val);
+extern void InterlockedWritePointer(volatile gpointer *dst, gpointer val);
 
 #endif
 
