@@ -4400,7 +4400,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
 
 	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? safe_name (value) : "null");
 
-	mono_atomic_store_release ((volatile MonoObject **) ptr, value);
+	InterlockedWritePointer (ptr, value);
 
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
