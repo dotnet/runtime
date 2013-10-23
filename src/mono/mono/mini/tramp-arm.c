@@ -918,6 +918,13 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	g_assert_not_reached ();
 	return NULL;
 }
+
+gpointer
+mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
 	
 #endif /* DISABLE_JIT */
 
