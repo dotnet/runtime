@@ -43,6 +43,38 @@ static inline gint64 InterlockedExchange64(volatile gint64 *val, gint64 new_val)
 }
 #endif
 
+/* mingw is missing InterlockedIncrement64 () from winbase.h */
+#if HAVE_DECL_INTERLOCKEDINCREMENT64==0
+static inline gint64 InterlockedIncrement64(volatile gint64 *val)
+{
+	return __sync_add_and_fetch (val, 1);
+}
+#endif
+
+/* mingw is missing InterlockedDecrement64 () from winbase.h */
+#if HAVE_DECL_INTERLOCKEDDECREMENT64==0
+static inline gint64 InterlockedDecrement64(volatile gint64 *val)
+{
+	return __sync_sub_and_fetch (val, 1);
+}
+#endif
+
+/* mingw is missing InterlockedAdd () from winbase.h */
+#if HAVE_DECL_INTERLOCKEDADD==0
+static inline gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
+{
+	return __sync_add_and_fetch (dest, add);
+}
+#endif
+
+/* mingw is missing InterlockedAdd64 () from winbase.h */
+#if HAVE_DECL_INTERLOCKEDADD64==0
+static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+{
+	return __sync_add_and_fetch (dest, add);
+}
+#endif
+
 /* And now for some dirty hacks... The Windows API doesn't
  * provide any useful primitives for this (other than getting
  * into architecture-specific madness), so use CAS. */
