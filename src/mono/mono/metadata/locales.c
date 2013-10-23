@@ -401,7 +401,7 @@ get_darwin_locale (void)
 				}
 
 				CFStringGetBytes (locale_country, CFRangeMake (0, CFStringGetLength (locale_country)), kCFStringEncodingMacRoman, 0, FALSE, (UInt8 *) &darwin_locale[bytes_written], len - bytes_written, &bytes_converted);
-				darwin_locale[bytes_written + bytes_converted] = NULL;
+				darwin_locale[bytes_written + bytes_converted] = '\0';
 			}
 		}
 
