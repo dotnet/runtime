@@ -149,7 +149,7 @@ void ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16) MONO_I
 void ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *) MONO_INTERNAL;
-void ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *) MONO_INTERNAL;
+void ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, MonoObject *) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double) MONO_INTERNAL;
 
