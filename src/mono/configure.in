@@ -2380,10 +2380,19 @@ AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the LLVM back-end], enable_llvm=$enab
 AC_ARG_ENABLE(loadedllvm,[  --enable-loadedllvm	Load the LLVM back-end dynamically], enable_llvm=$enableval && enable_loadedllvm=$enableval, enable_loadedllvm=no)
 AC_ARG_ENABLE(llvm-version-check,[  --enable-llvm-version-check Check that the LLVM matches the version expected by mono], enable_llvm_version_check=$enableval, enable_llvm_version_check=no)
 
+AC_ARG_WITH(llvm, [  --with-llvm=<llvm prefix>    Enable the LLVM back-end], enable_llvm=yes,)
+
 if test "x$enable_llvm" = "xyes"; then
-   AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
-   if test "x$LLVM_CONFIG" = "xno"; then
-   	  AC_MSG_ERROR([llvm-config not found.])
+   if test "x$with_llvm" != "x"; then
+   	  LLVM_CONFIG=$with_llvm/bin/llvm-config
+	  if test ! -x $LLVM_CONFIG; then
+	  	 AC_MSG_ERROR([LLVM executable $LLVM_CONFIG not found.])
+      fi
+   else
+      AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
+      if test "x$LLVM_CONFIG" = "xno"; then
+   	     AC_MSG_ERROR([llvm-config not found.])
+      fi
    fi
 
    llvm_codegen="x86codegen"
