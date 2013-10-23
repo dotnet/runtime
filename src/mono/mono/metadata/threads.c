@@ -2433,6 +2433,14 @@ ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr)
 	return (void *) tmp;
 }
 
+void *
+ves_icall_System_Threading_Thread_VolatileReadObject (void *ptr)
+{
+	volatile MonoObject *tmp;
+	mono_atomic_load_acquire (tmp, volatile MonoObject *, (volatile MonoObject **) ptr);
+	return (MonoObject *) tmp;
+}
+
 double
 ves_icall_System_Threading_Thread_VolatileReadDouble (void *ptr)
 {
@@ -2488,7 +2496,7 @@ ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
 }
 
 void
-ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *value)
+ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, MonoObject *value)
 {
 	mono_gc_wbarrier_generic_store_atomic (ptr, value);
 }

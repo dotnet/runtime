@@ -140,6 +140,7 @@ gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr) MONO_INTERNAL
 gint32 ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr) MONO_INTERNAL;
 gint64 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr) MONO_INTERNAL;
 void * ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr) MONO_INTERNAL;
+void * ves_icall_System_Threading_Thread_VolatileReadObject (void *ptr) MONO_INTERNAL;
 double ves_icall_System_Threading_Thread_VolatileReadDouble (void *ptr) MONO_INTERNAL;
 float ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr) MONO_INTERNAL;
 
