@@ -273,3 +273,20 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	g_assert_not_reached ();
 	return NULL;
 }
+
+gpointer
+mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
+{
+	guint8 *buf, *code;
+
+	code = buf = mono_global_codeman_reserve (16);
+
+	sparc_ret (code);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	if (info)
+		*info = mono_tramp_info_create ("nullified_class_init_trampoline", buf, code - buf, NULL, NULL);
+
+	return buf;
+}
