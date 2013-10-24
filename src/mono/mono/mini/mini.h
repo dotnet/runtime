@@ -526,11 +526,11 @@ extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_use_llvm;
-extern gboolean do_single_method_regression;
-extern guint32 single_method_regression_opt;
-extern MonoMethod *current_single_method;
-extern GSList *single_method_list;
-extern GHashTable *single_method_hash;
+extern gboolean mono_do_single_method_regression;
+extern guint32 mono_single_method_regression_opt;
+extern MonoMethod *mono_current_single_method;
+extern GSList *mono_single_method_list;
+extern GHashTable *mono_single_method_hash;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])
 

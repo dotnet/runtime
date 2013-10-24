@@ -481,7 +481,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 
 	total = 0;
 	*total_run = 0;
-	if (do_single_method_regression) {
+	if (mono_do_single_method_regression) {
 		GSList *iter;
 
 		mini_regression_step (image, verbose, total_run, &total,
@@ -489,14 +489,14 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 				timer, domain);
 		if (total)
 			return total;
-		g_print ("Single method regression: %d methods\n", g_slist_length (single_method_list));
+		g_print ("Single method regression: %d methods\n", g_slist_length (mono_single_method_list));
 
-		for (iter = single_method_list; iter; iter = g_slist_next (iter)) {
+		for (iter = mono_single_method_list; iter; iter = g_slist_next (iter)) {
 			char *method_name;
 
-			current_single_method = iter->data;
+			mono_current_single_method = iter->data;
 
-			method_name = mono_method_full_name (current_single_method, TRUE);
+			method_name = mono_method_full_name (mono_current_single_method, TRUE);
 			g_print ("Current single method: %s\n", method_name);
 			g_free (method_name);
 
@@ -1533,7 +1533,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
 			char *full_opts = g_strdup_printf ("-all,%s", argv [i] + 16);
 			action = DO_SINGLE_METHOD_REGRESSION;
-			single_method_regression_opt = parse_optimizations (full_opts);
+			mono_single_method_regression_opt = parse_optimizations (full_opts);
 			g_free (full_opts);
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
@@ -1928,7 +1928,7 @@ mono_main (int argc, char* argv[])
 	
 	switch (action) {
 	case DO_SINGLE_METHOD_REGRESSION:
-		do_single_method_regression = TRUE;
+		mono_do_single_method_regression = TRUE;
 	case DO_REGRESSION:
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
 			g_print ("Regression ERRORS!\n");
