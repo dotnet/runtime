@@ -193,7 +193,7 @@ MONO_API mono_bool
 mono_class_is_delegate       (MonoClass* klass);
 
 MONO_API mono_bool
-mono_class_implements_interface (MonoClass* klass, MonoClass* interface);
+mono_class_implements_interface (MonoClass* klass, MonoClass* iface);
 
 /* MonoClassField accessors */
 MONO_API const char*

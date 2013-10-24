@@ -8922,9 +8922,9 @@ mono_class_is_delegate (MonoClass *klass)
  * Returns: true if @klass implements @interface.
  */
 mono_bool
-mono_class_implements_interface (MonoClass* klass, MonoClass* interface)
+mono_class_implements_interface (MonoClass* klass, MonoClass* iface)
 {
-	return mono_class_is_assignable_from (interface, klass);
+	return mono_class_is_assignable_from (iface, klass);
 }
 
 /**
