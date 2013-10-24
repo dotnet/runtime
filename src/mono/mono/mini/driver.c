@@ -342,33 +342,6 @@ domain_dump_native_code (MonoDomain *domain) {
 }
 #endif
 
-static gboolean do_single_method_regression = FALSE;
-static guint32 single_method_regression_opt;
-static MonoMethod *current_single_method = NULL;
-static GSList *single_method_list = NULL;
-static GHashTable *single_method_hash = NULL;
-
-guint32
-mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
-{
-	g_assert (method);
-
-	if (!do_single_method_regression)
-		return default_opt;
-	if (!current_single_method) {
-		if (!single_method_hash)
-			single_method_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
-		if (!g_hash_table_lookup (single_method_hash, method)) {
-			g_hash_table_insert (single_method_hash, method, method);
-			single_method_list = g_slist_prepend (single_method_list, method);
-		}
-		return default_opt;
-	}
-	if (method == current_single_method)
-		return single_method_regression_opt;
-	return default_opt;
-}
-
 static void
 mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 		guint32 opt_flags,

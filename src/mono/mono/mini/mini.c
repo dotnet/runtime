@@ -6306,6 +6306,33 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 	return NULL;
 }
 
+gboolean do_single_method_regression = FALSE;
+guint32 single_method_regression_opt = 0;
+MonoMethod *current_single_method = NULL;
+GSList *single_method_list = NULL;
+GHashTable *single_method_hash = NULL;
+
+guint32
+mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
+{
+	g_assert (method);
+
+	if (!do_single_method_regression)
+		return default_opt;
+	if (!current_single_method) {
+		if (!single_method_hash)
+			single_method_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
+		if (!g_hash_table_lookup (single_method_hash, method)) {
+			g_hash_table_insert (single_method_hash, method, method);
+			single_method_list = g_slist_prepend (single_method_list, method);
+		}
+		return default_opt;
+	}
+	if (method == current_single_method)
+		return single_method_regression_opt;
+	return default_opt;
+}
+
 gpointer
 mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 {
