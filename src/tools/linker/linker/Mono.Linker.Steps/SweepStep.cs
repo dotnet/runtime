@@ -128,10 +128,23 @@ namespace Mono.Linker.Steps {
 				return;
 			resolvedTypeReferences.Add (assembly);
 
+			var hash = new Dictionary<TypeReference,IMetadataScope> ();
+
 			foreach (TypeReference tr in assembly.MainModule.GetTypeReferences ()) {
+				if (hash.ContainsKey (tr))
+					continue;
 				var td = tr.Resolve ();
 				// at this stage reference might include things that can't be resolved
-				tr.Scope = td == null ? null : assembly.MainModule.Import (td).Scope;
+				var scope = td == null ? null : assembly.MainModule.Import (td).Scope;
+				hash.Add (tr, scope);
+			}
+
+			// Resolve everything first before updating scopes.
+			// If we set the scope to null, then calling Resolve() on any of its
+			// nested types would crash.
+
+			foreach (var e in hash) {
+				e.Key.Scope = e.Value;
 			}
 		}
 
