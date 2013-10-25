@@ -37,6 +37,7 @@ namespace Mono.Linker.Steps {
 	public class SweepStep : BaseStep {
 
 		AssemblyDefinition [] assemblies;
+		HashSet<AssemblyDefinition> resolvedTypeReferences;
 
 		protected override void Process ()
 		{
@@ -102,18 +103,35 @@ namespace Mono.Linker.Steps {
 				references.RemoveAt (i);
 				// Removing the reference does not mean it will be saved back to disk!
 				// That depends on the AssemblyAction set for the `assembly`
-				if (Annotations.GetAction (assembly) == AssemblyAction.Copy) {
+				switch (Annotations.GetAction (assembly)) {
+				case AssemblyAction.Copy:
 					// Copy means even if "unlinked" we still want that assembly to be saved back 
 					// to disk (OutputStep) without the (removed) reference
 					Annotations.SetAction (assembly, AssemblyAction.Save);
-					// note: we only enter here (Copy->Save once) so we nned to do the complete job
-					foreach (TypeReference tr in assembly.MainModule.GetTypeReferences ()) {
-						var td = tr.Resolve ();
-						// at this stage reference might include things that can't be resolved
-						tr.Scope = td == null ? null : assembly.MainModule.Import (td).Scope;
-					}
+					ResolveAllTypeReferences (assembly);
+					break;
+
+				case AssemblyAction.Save:
+				case AssemblyAction.Link:
+					ResolveAllTypeReferences (assembly);
+					break;
 				}
 				return;
+			}
+		}
+
+		void ResolveAllTypeReferences (AssemblyDefinition assembly)
+		{
+			if (resolvedTypeReferences == null)
+				resolvedTypeReferences = new HashSet<AssemblyDefinition> ();
+			if (resolvedTypeReferences.Contains (assembly))
+				return;
+			resolvedTypeReferences.Add (assembly);
+
+			foreach (TypeReference tr in assembly.MainModule.GetTypeReferences ()) {
+				var td = tr.Resolve ();
+				// at this stage reference might include things that can't be resolved
+				tr.Scope = td == null ? null : assembly.MainModule.Import (td).Scope;
 			}
 		}
 
