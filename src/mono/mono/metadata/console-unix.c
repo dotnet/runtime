@@ -31,6 +31,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threadpool.h>
+#include <mono/utils/mono-signal-handler.h>
 
 /* On solaris, curses.h must come before both termios.h and term.h */
 #ifdef HAVE_CURSES_H
@@ -272,8 +273,8 @@ mono_console_handle_async_ops (void)
 }
 
 static gboolean in_sigint;
-static void
-sigint_handler (int signo)
+
+MONO_SIGNAL_HANDLER_FUNC (static, sigint_handler, (int signo))
 {
 	int save_errno;
 	MONO_ARCH_SAVE_REGS;
@@ -291,8 +292,7 @@ sigint_handler (int signo)
 
 static struct sigaction save_sigcont, save_sigint, save_sigwinch;
 
-static void
-sigcont_handler (int signo, void *the_siginfo, void *data)
+MONO_SIGNAL_HANDLER_FUNC (static, sigcont_handler, (int signo, void *the_siginfo, void *data))
 {
 	int unused;
 	// Ignore error, there is not much we can do in the sigcont handler.
@@ -308,8 +308,7 @@ sigcont_handler (int signo, void *the_siginfo, void *data)
 		(*save_sigcont.sa_sigaction) (signo, the_siginfo, data);
 }
 
-static void
-sigwinch_handler (int signo, void *the_siginfo, void *data)
+MONO_SIGNAL_HANDLER_FUNC (static, sigwinch_handler, (int signo, void *the_siginfo, void *data))
 {
 	int dims = terminal_get_dimensions ();
 	if (dims != -1)
@@ -358,7 +357,7 @@ console_set_signal_handlers ()
 	sigaction (SIGCONT, &sigcont, &save_sigcont);
 	
 	// Interrupt handler
-	sigint.sa_handler = sigint_handler;
+	sigint.sa_handler = (void *) sigint_handler;
 	sigint.sa_flags = 0;
 	sigemptyset (&sigint.sa_mask);
 	sigaction (SIGINT, &sigint, &save_sigint);

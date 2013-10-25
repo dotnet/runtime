@@ -34,6 +34,7 @@
 #include "metadata/gc-internal.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/object-internals.h"
+#include "utils/mono-signal-handler.h"
 
 #if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)
 const static int suspend_signal_num = SIGXFSZ;
@@ -121,8 +122,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 }
 
 /* LOCKING: assumes the GC lock is held (by the stopping thread) */
-static void
-suspend_handler (int sig, siginfo_t *siginfo, void *context)
+MONO_SIGNAL_HANDLER_FUNC (static, suspend_handler, (int sig, siginfo_t *siginfo, void *context))
 {
 	SgenThreadInfo *info;
 	int old_errno = errno;
@@ -133,8 +133,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	errno = old_errno;
 }
 
-static void
-restart_handler (int sig)
+MONO_SIGNAL_HANDLER_FUNC (static, restart_handler, (int sig))
 {
 	SgenThreadInfo *info;
 	int old_errno = errno;
@@ -219,7 +218,7 @@ sgen_os_init (void)
 		g_error ("failed sigaction");
 	}
 
-	sinfo.sa_handler = restart_handler;
+	sinfo.sa_handler = (void*) restart_handler;
 	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
 		g_error ("failed sigaction");
 	}

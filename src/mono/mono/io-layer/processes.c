@@ -76,6 +76,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-signal-handler.h>
 
 /* The process' environment strings */
 #if defined(__APPLE__) && !defined (__arm__)
@@ -2828,8 +2829,7 @@ process_close (gpointer handle, gpointer data)
 }
 
 #if HAVE_SIGACTION
-static void
-mono_sigchld_signal_handler (int _dummy, siginfo_t *info, void *context)
+MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, siginfo_t *info, void *context))
 {
 	int status;
 	int pid;
@@ -2870,6 +2870,7 @@ mono_sigchld_signal_handler (int _dummy, siginfo_t *info, void *context)
 	fprintf (stdout, "SIG CHILD handler: done looping.");
 #endif
 }
+
 #endif
 
 static void process_add_sigchld_handler (void)

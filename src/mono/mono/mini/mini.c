@@ -58,6 +58,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/dtrace.h>
+#include <mono/utils/mono-signal-handler.h>
 
 #include "mini.h"
 #include "mini-llvm.h"
@@ -6590,8 +6591,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	return runtime_invoke (obj, params, exc, info->compiled_method);
 }
 
-void
-SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
+SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
 	MonoJitInfo *ji;
@@ -6625,8 +6625,7 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 	mono_arch_handle_exception (ctx, exc);
 }
 
-void
-SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)
+SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT;
@@ -6640,8 +6639,7 @@ SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)
 #define HAVE_SIG_INFO
 #endif
 
-void
-SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
+SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 {
 	MonoJitInfo *ji;
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
@@ -6720,8 +6718,7 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 #endif
 }
 
-void
-SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)
+SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT;
