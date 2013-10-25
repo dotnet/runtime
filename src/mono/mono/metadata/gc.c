@@ -1473,16 +1473,20 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 }
 /**
  * mono_gc_reference_queue_new:
- * @callback callback used when processing dead entries.
+ * @callback callback used when processing collected entries.
  *
  * Create a new reference queue used to process collected objects.
- * A reference queue let you queue a pair (managed object, user data)
+ * A reference queue let you add a pair of (managed object, user data)
  * using the mono_gc_reference_queue_add method.
  *
  * Once the managed object is collected @callback will be called
  * in the finalizer thread with 'user data' as argument.
  *
- * The callback is called without any locks held.
+ * The callback is called from the finalizer thread without any locks held.
+ * When a AppDomain is unloaded, all callbacks for objects belonging to it
+ * will be invoked.
+ *
+ * @returns the new queue.
  */
 MonoReferenceQueue*
 mono_gc_reference_queue_new (mono_reference_queue_callback callback)
@@ -1506,7 +1510,7 @@ mono_gc_reference_queue_new (mono_reference_queue_callback callback)
  *
  * Queue an object to be watched for collection, when the @obj is
  * collected, the callback that was registered for the @queue will
- * be invoked with the @obj and @user_data arguments.
+ * be invoked with @user_data as argument.
  *
  * @returns false if the queue is scheduled to be freed.
  */
@@ -1534,9 +1538,9 @@ mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *u
 
 /**
  * mono_gc_reference_queue_free:
- * @queue the queue that should be deleted.
+ * @queue the queue that should be freed.
  *
- * This operation signals that @queue should be deleted. This operation is deferred
+ * This operation signals that @queue should be freed. This operation is deferred
  * as it happens on the finalizer thread.
  *
  * After this call, no further objects can be queued. It's the responsibility of the
