@@ -57,7 +57,7 @@ mono_hwcap_arch_init (void)
 			mono_hwcap_arm_has_thumb = TRUE;
 
 		/* HWCAP_ARM_VFP */
-		if (hwcap & 0x00000064)
+		if (hwcap & 0x00000040)
 			mono_hwcap_arm_has_vfp = TRUE;
 
 		/* TODO: Find a way to detect Thumb 2. */
