@@ -335,9 +335,6 @@ gboolean mono_gc_precise_stack_mark_enabled (void) MONO_INTERNAL;
 
 FILE *mono_gc_get_logfile (void) MONO_INTERNAL;
 
-typedef void (*mono_reference_queue_callback) (void *user_data);
-
-typedef struct _MonoReferenceQueue MonoReferenceQueue;
 typedef struct _RefQueueEntry RefQueueEntry;
 
 struct _RefQueueEntry {
@@ -354,10 +351,6 @@ struct _MonoReferenceQueue {
 	MonoReferenceQueue *next;
 	gboolean should_be_deleted;
 };
-
-MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_callback callback) MONO_INTERNAL;
-void mono_gc_reference_queue_free (MonoReferenceQueue *queue) MONO_INTERNAL;
-gboolean mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data) MONO_INTERNAL;
 
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved) MONO_INTERNAL;
