@@ -1939,25 +1939,13 @@ ves_icall_System_Threading_Interlocked_Exchange_T (MonoObject **location, MonoOb
 gint32 
 ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 {
-#if SIZEOF_VOID_P == 8
-	/* Should be implemented as a JIT intrinsic */
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
-	return 0;
-#else
 	return InterlockedAdd (location, value);
-#endif
 }
 
 gint64 
 ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 {
-#if SIZEOF_VOID_P == 8
-	/* Should be implemented as a JIT intrinsic */
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
-	return 0;
-#else
 	return InterlockedAdd64 (location, value);
-#endif
 }
 
 gint64 
