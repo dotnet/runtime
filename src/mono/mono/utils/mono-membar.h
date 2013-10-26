@@ -60,21 +60,6 @@ static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
-#elif defined(__s390__)
-static inline void mono_memory_barrier (void)
-{
-	__asm__ __volatile__ ("bcr 15,0" : : : "memory");
-}
-
-static inline void mono_memory_read_barrier (void)
-{
-	mono_memory_barrier ();
-}
-
-static inline void mono_memory_write_barrier (void)
-{
-	mono_memory_barrier ();
-}
 #elif defined(__ia64__)
 static inline void mono_memory_barrier (void)
 {
