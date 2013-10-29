@@ -188,10 +188,12 @@ typedef struct MonoAotCompile {
 	guint32 final_got_size;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
+	guint32 tramp_page_size;
 
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
+	guint32 tramp_page_code_offsets [MONO_AOT_TRAMP_NUM];
 
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
@@ -686,7 +688,7 @@ arch_init (MonoAotCompile *acfg)
  * calling code.
  */
 static void
-arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean external, int *call_size)
+arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean external, MonoJumpInfo *ji, int *call_size)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
@@ -1033,6 +1035,8 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 
 	if (!acfg->aot_opts.use_trampolines_page)
 		return;
+
+	acfg->tramp_page_size = mono_pagesize ();
 
 	sprintf (symbol, "%sspecific_trampolines_page", acfg->user_symbol_prefix);
 	emit_alignment (acfg, mono_pagesize ());
@@ -4646,7 +4650,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				if (direct_call) {
 					int call_size;
 
-					arch_emit_direct_call (acfg, direct_call_target, external_call, &call_size);
+					arch_emit_direct_call (acfg, direct_call_target, external_call, patch_info, &call_size);
 					i += call_size - 1;
 				} else {
 					int code_size;
@@ -5734,6 +5738,8 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 	MonoJumpInfo *ji;
 	GSList *unwind_ops;
 
+	g_assert (info);
+
 	name = info->name;
 	code = info->code;
 	code_size = info->code_size;
@@ -6048,6 +6054,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			}
 
 			emit_label (acfg, end_symbol);
+			emit_int32 (acfg, 0);
 		}
 
 		arch_emit_specific_trampoline_pages (acfg);
@@ -7200,6 +7207,7 @@ emit_code (MonoAotCompile *acfg)
 	}
 	sprintf (symbol, "unbox_trampolines_end");
 	emit_label (acfg, symbol);
+	emit_int32 (acfg, 0);
 }
 
 static void
@@ -8122,6 +8130,9 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, __alignof__ (gint64));
 #endif
 	emit_int32 (acfg, MONO_TRAMPOLINE_NUM);
+	emit_int32 (acfg, acfg->tramp_page_size);
+	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
+		emit_int32 (acfg, acfg->tramp_page_code_offsets [i]);
 
 	if (acfg->aot_opts.static_link) {
 		char *p;
@@ -8624,7 +8635,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.nrgctx_fetch_trampolines = 128;
 	acfg->aot_opts.ngsharedvt_arg_trampolines = 128;
 	acfg->aot_opts.llvm_path = g_strdup ("");
-#if MONOTOUCH
+#ifdef MONOTOUCH
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
 
