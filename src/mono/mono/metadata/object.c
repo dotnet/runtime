@@ -2013,7 +2013,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 					bitmap = default_bitmap;
 				} else if (mono_type_is_struct (field->type)) {
 					fclass = mono_class_from_mono_type (field->type);
-					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
+					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
 					numbits = max_set + 1;
 				} else {
 					default_bitmap [0] = 0;
