@@ -5930,9 +5930,11 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 	struct tm start, tt;
 	time_t t;
 
-	long int gmtoff;
-	int is_daylight = 0, day;
+	long int gmtoff, gmtoff_st, gmtoff_ds;
+	int day, transitioned;
 	char tzone [64];
+
+	gmtoff_st = gmtoff_ds = transitioned = 0;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -5974,8 +5976,10 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 		t += 3600*24;
 		tt = *localtime (&t);
 
+        long int gmtoff_after = gmt_offset(&tt, t);
+
 		/* Daylight saving starts or ends here. */
-		if (gmt_offset (&tt, t) != gmtoff) {
+		if (gmtoff_after != gmtoff) {
 			struct tm tt1;
 			time_t t1;
 
@@ -5995,36 +5999,37 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 			strftime (tzone, sizeof (tzone), "%Z", &tt);
 			
 			/* Write data, if we're already in daylight saving, we're done. */
-			if (is_daylight) {
-				mono_array_setref ((*names), 0, mono_string_new (domain, tzone));
-				mono_array_set ((*data), gint64, 1, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
-				return 1;
-			} else {
-				struct tm end;
-				time_t te;
-				
-				memset (&end, 0, sizeof (end));
-				end.tm_year = year-1900 + 1;
-				end.tm_mday = 1;
-				
-				te = mktime (&end);
-				
+			if (tt.tm_isdst) {
 				mono_array_setref ((*names), 1, mono_string_new (domain, tzone));
 				mono_array_set ((*data), gint64, 0, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
+				if (gmtoff_ds == 0) {
+					gmtoff_st = gmtoff;
+					gmtoff_ds = gmtoff_after;
+				}
+				transitioned++;
+			} else {
+				time_t te;
+				te = mktime (&tt);
+				
 				mono_array_setref ((*names), 0, mono_string_new (domain, tzone));
-				mono_array_set ((*data), gint64, 1, ((gint64)te + EPOCH_ADJUST) * 10000000L);
-				is_daylight = 1;
+				mono_array_set ((*data), gint64, 1, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
+				if (gmtoff_ds == 0) {
+					gmtoff_st = gmtoff_after;
+					gmtoff_ds = gmtoff;
+				}
+				transitioned++;
 			}
 
 			/* This is only set once when we enter daylight saving. */
-			mono_array_set ((*data), gint64, 2, (gint64)gmtoff * 10000000L);
-			mono_array_set ((*data), gint64, 3, (gint64)(gmt_offset (&tt, t) - gmtoff) * 10000000L);
-
+			if (tt1.tm_isdst) {
+				mono_array_set ((*data), gint64, 2, (gint64)gmtoff_st * 10000000L);
+				mono_array_set ((*data), gint64, 3, (gint64)(gmtoff_ds - gmtoff_st) * 10000000L);
+			}
 			gmtoff = gmt_offset (&tt, t);
 		}
 	}
 
-	if (!is_daylight) {
+	if (transitioned < 2) {
 		strftime (tzone, sizeof (tzone), "%Z", &tt);
 		mono_array_setref ((*names), 0, mono_string_new (domain, tzone));
 		mono_array_setref ((*names), 1, mono_string_new (domain, tzone));
