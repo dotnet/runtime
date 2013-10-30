@@ -8359,12 +8359,7 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	case AMD64_RBP: return ctx->rbp;
 	case AMD64_RSP: return ctx->rsp;
 	default:
-		if (reg < 8)
-			return _CTX_REG (ctx, rax, reg);
-		else if (reg >= 12)
-			return _CTX_REG (ctx, r12, reg - 12);
-		else
-			g_assert_not_reached ();
+		return _CTX_REG (ctx, rax, reg);
 	}
 }
 
@@ -8388,12 +8383,7 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
 		ctx->rsp = val;
 		break;
 	default:
-		if (reg < 8)
-			_CTX_REG (ctx, rax, reg) = val;
-		else if (reg >= 12)
-			_CTX_REG (ctx, r12, reg - 12) = val;
-		else
-			g_assert_not_reached ();
+		_CTX_REG (ctx, rax, reg) = val;
 	}
 }
 
