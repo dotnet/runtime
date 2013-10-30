@@ -1597,7 +1597,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
 
 			if (!sofile) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed to load AOT module %s: %s\n", aot_name, err);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module '%s' not found %s: %s\n", aot_name, err);
 				g_free (err);
 			}
 		}
