@@ -2838,9 +2838,9 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	MonoMethodSignature *sig = dinfo->sig;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
 	mgreg_t res = ((DynCallArgs*)buf)->res;
-	MonoType *sig_ret = sig->ret;
+	MonoType *sig_ret = mono_type_get_underlying_type (sig->ret);
 
-	switch (mono_type_get_underlying_type (sig_ret)->type) {
+	switch (sig_ret->type) {
 	case MONO_TYPE_VOID:
 		*(gpointer*)ret = NULL;
 		break;
