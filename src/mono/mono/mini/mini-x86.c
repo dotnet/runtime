@@ -445,7 +445,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, NULL, &tmp_fr, &tmp_stacksize);
+			add_valuetype (gsctx, sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, NULL, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack) {
 				cinfo->vtype_retaddr = TRUE;
 				/* The caller passes the address where the value is stored */
@@ -462,7 +462,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			cinfo->ret.storage = ArgNone;
 			break;
 		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+			g_error ("Can't handle as return value 0x%x", ret_type->type);
 		}
 	}
 
@@ -706,13 +706,15 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 gboolean
 mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
+	MonoType *callee_ret;
 	CallInfo *c1, *c2;
 	gboolean res;
 
 	c1 = get_call_info (NULL, NULL, caller_sig);
 	c2 = get_call_info (NULL, NULL, callee_sig);
 	res = c1->stack_usage >= c2->stack_usage;
-	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret) && c2->ret.storage != ArgValuetypeInReg)
+	callee_ret = callee_sig->ret;
+	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != ArgValuetypeInReg)
 		/* An address on the callee's stack is passed as the first argument */
 		res = FALSE;
 
@@ -1187,16 +1189,18 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
+	MonoType *sig_ret;
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	sig_ret = sig->ret;
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
-	if ((cinfo->ret.storage != ArgValuetypeInReg) && (MONO_TYPE_ISSTRUCT (sig->ret) || mini_is_gsharedvt_variable_type (cfg, sig->ret))) {
+	if ((cinfo->ret.storage != ArgValuetypeInReg) && (MONO_TYPE_ISSTRUCT (sig_ret) || mini_is_gsharedvt_variable_type (cfg, sig_ret))) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 	}
 
@@ -1264,11 +1268,12 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	LLVMCallInfo *linfo;
-	MonoType *t;
+	MonoType *t, *sig_ret;
 
 	n = sig->param_count + sig->hasthis;
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
+	sig_ret = sig->ret;
 
 	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
 
@@ -1294,13 +1299,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		*/
 	}
 
-	if (mini_type_is_vtype (cfg, sig->ret) && cinfo->ret.storage == ArgInIReg) {
+	if (mini_type_is_vtype (cfg, sig_ret) && cinfo->ret.storage == ArgInIReg) {
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
 	}
 
-	if (mini_type_is_vtype (cfg, sig->ret) && cinfo->ret.storage != ArgInIReg) {
+	if (mini_type_is_vtype (cfg, sig_ret) && cinfo->ret.storage != ArgInIReg) {
 		// FIXME:
 		cfg->exception_message = g_strdup ("vtype ret in call");
 		cfg->disable_llvm = TRUE;
@@ -1386,6 +1391,7 @@ emit_gc_param_slot_def (MonoCompile *cfg, int sp_offset, MonoType *t)
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
+	MonoType *sig_ret;
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
 	int i, j, n;
@@ -1394,6 +1400,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
+	sig_ret = sig->ret;
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
@@ -1413,7 +1420,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
-	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (sig_ret && MONO_TYPE_ISSTRUCT (sig_ret)) {
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/*
 			 * Tell the JIT to use a more efficient calling convention: call using
@@ -1571,7 +1578,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
-	if (sig->ret && (MONO_TYPE_ISSTRUCT (sig->ret) || cinfo->vtype_retaddr)) {
+	if (sig_ret && (MONO_TYPE_ISSTRUCT (sig_ret) || cinfo->vtype_retaddr)) {
 		MonoInst *vtarg;
 
 		if (cinfo->ret.storage == ArgValuetypeInReg) {

@@ -6448,6 +6448,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		 */
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 		if (mono_aot_only || debug_options.dyn_runtime_invoke) {
+			MonoType *ret_type;
 			MonoMethodSignature *sig = mono_method_signature (method);
 			gboolean supported = TRUE;
 			int i;
@@ -6468,8 +6469,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			if (supported)
 				info->dyn_call_info = mono_arch_dyn_call_prepare (sig);
 
+			ret_type = sig->ret;
 			if (info->dyn_call_info) {
-				switch (sig->ret->type) {
+				switch (ret_type->type) {
 				case MONO_TYPE_VOID:
 					break;
 				case MONO_TYPE_I1:
@@ -6486,7 +6488,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				case MONO_TYPE_CHAR:
 				case MONO_TYPE_R4:
 				case MONO_TYPE_R8:
-					info->ret_box_class = mono_class_from_mono_type (sig->ret);
+					info->ret_box_class = mono_class_from_mono_type (ret_type);
 					break;
 				case MONO_TYPE_PTR:
 					info->ret_box_class = mono_defaults.int_class;
@@ -6498,11 +6500,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				case MONO_TYPE_OBJECT:
 					break;
 				case MONO_TYPE_GENERICINST:
-					if (!MONO_TYPE_IS_REFERENCE (sig->ret))
-						info->ret_box_class = mono_class_from_mono_type (sig->ret);
+					if (!MONO_TYPE_IS_REFERENCE (ret_type))
+						info->ret_box_class = mono_class_from_mono_type (ret_type);
 					break;
 				case MONO_TYPE_VALUETYPE:
-					info->ret_box_class = mono_class_from_mono_type (sig->ret);
+					info->ret_box_class = mono_class_from_mono_type (ret_type);
 					break;
 				default:
 					g_assert_not_reached ();

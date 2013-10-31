@@ -2336,6 +2336,7 @@ inline static MonoCallInst *
 mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
 					 MonoInst **args, int calli, int virtual, int tail, int rgctx, int unbox_trampoline)
 {
+	MonoType *sig_ret;
 	MonoCallInst *call;
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	int i;
@@ -2349,16 +2350,17 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	call->args = args;
 	call->signature = sig;
 	call->rgctx_reg = rgctx;
+	sig_ret = sig->ret;
 
-	type_to_eval_stack_type ((cfg), sig->ret, &call->inst);
+	type_to_eval_stack_type ((cfg), sig_ret, &call->inst);
 
 	if (tail) {
-		if (mini_type_is_vtype (cfg, sig->ret)) {
+		if (mini_type_is_vtype (cfg, sig_ret)) {
 			call->vret_var = cfg->vret_addr;
 			//g_assert_not_reached ();
 		}
-	} else if (mini_type_is_vtype (cfg, sig->ret)) {
-		MonoInst *temp = mono_compile_create_var (cfg, sig->ret, OP_LOCAL);
+	} else if (mini_type_is_vtype (cfg, sig_ret)) {
+		MonoInst *temp = mono_compile_create_var (cfg, sig_ret, OP_LOCAL);
 		MonoInst *loada;
 
 		temp->backend.is_pinvoke = sig->pinvoke;
@@ -2381,7 +2383,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		call->inst.dreg = temp->dreg;
 
 		call->vret_var = loada;
-	} else if (!MONO_TYPE_IS_VOID (sig->ret))
+	} else if (!MONO_TYPE_IS_VOID (sig_ret))
 		call->inst.dreg = alloc_dreg (cfg, call->inst.type);
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK

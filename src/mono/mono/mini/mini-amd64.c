@@ -1004,7 +1004,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (gsctx, sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack) {
 				cinfo->vtype_retaddr = TRUE;
 				/* The caller passes the address where the value is stored */
@@ -1020,7 +1020,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_VOID:
 			break;
 		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
+			g_error ("Can't handle as return value 0x%x", ret_type->type);
 		}
 	}
 
@@ -1212,7 +1212,8 @@ mono_amd64_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSigna
 	c1 = get_call_info (NULL, NULL, caller_sig);
 	c2 = get_call_info (NULL, NULL, callee_sig);
 	res = c1->stack_usage >= c2->stack_usage;
-	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret) && c2->ret.storage != ArgValuetypeInReg)
+	MonoType *callee_ret = callee_sig->ret;
+	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != ArgValuetypeInReg)
 		/* An address on the callee's stack is passed as the first argument */
 		res = FALSE;
 
@@ -1608,6 +1609,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_fill_argument_info (MonoCompile *cfg)
 {
+	MonoType *sig_ret;
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	MonoInst *ins;
@@ -1619,19 +1621,19 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = cfg->arch.cinfo;
-
+	sig_ret = sig->ret;
 	/*
 	 * Contrary to mono_arch_allocate_vars (), the information should describe
 	 * where the arguments are at the beginning of the method, not where they can be 
 	 * accessed during the execution of the method. The later makes no sense for the 
 	 * global register allocator, since a variable can be in more than one location.
 	 */
-	if (sig->ret->type != MONO_TYPE_VOID) {
+	if (sig_ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || ((sig->ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
+			if ((MONO_TYPE_ISSTRUCT (sig_ret) && !mono_class_from_mono_type (sig_ret)->enumtype) || ((sig_ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
 				cfg->vret_addr->opcode = OP_REGVAR;
 				cfg->vret_addr->inst_c0 = cinfo->ret.reg;
 			}
@@ -1686,6 +1688,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 void
 mono_arch_allocate_vars (MonoCompile *cfg)
 {
+	MonoType *sig_ret;
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	MonoInst *ins;
@@ -1699,6 +1702,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = cfg->arch.cinfo;
+	sig_ret = sig->ret;
 
 	mono_arch_compute_omit_fp (cfg);
 
@@ -1740,12 +1744,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			}
 	}
 
-	if (sig->ret->type != MONO_TYPE_VOID) {
+	if (sig_ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || ((sig->ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
+			if ((MONO_TYPE_ISSTRUCT (sig_ret) && !mono_class_from_mono_type (sig_ret)->enumtype) || ((sig_ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->vtype_retaddr)) {
 				if (cfg->globalra) {
 					cfg->vret_addr->opcode = OP_REGVAR;
 					cfg->vret_addr->inst_c0 = cinfo->ret.reg;
@@ -2136,10 +2140,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	ArgInfo *ainfo;
 	int j;
 	LLVMCallInfo *linfo;
-	MonoType *t;
+	MonoType *t, *sig_ret;
 
 	n = sig->param_count + sig->hasthis;
-
+	sig_ret = sig->ret;
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
 	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
@@ -2162,7 +2166,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, cinfo->ret.pair_storage [j]);
 	}
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage == ArgInIReg) {
+	if (MONO_TYPE_ISSTRUCT (sig_ret) && cinfo->ret.storage == ArgInIReg) {
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
@@ -2394,7 +2398,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos))
 		emit_sig_cookie (cfg, call, cinfo);
 
-	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (sig_ret && MONO_TYPE_ISSTRUCT (sig_ret)) {
 		MonoInst *vtarg;
 
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
@@ -2834,8 +2838,9 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	MonoMethodSignature *sig = dinfo->sig;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
 	mgreg_t res = ((DynCallArgs*)buf)->res;
+	MonoType *sig_ret = sig->ret;
 
-	switch (mono_type_get_underlying_type (sig->ret)->type) {
+	switch (mono_type_get_underlying_type (sig_ret)->type) {
 	case MONO_TYPE_VOID:
 		*(gpointer*)ret = NULL;
 		break;
@@ -2876,7 +2881,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		*(guint64*)ret = res;
 		break;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
+		if (MONO_TYPE_IS_REFERENCE (sig_ret)) {
 			*(gpointer*)ret = GREG_TO_PTR(res);
 			break;
 		} else {
