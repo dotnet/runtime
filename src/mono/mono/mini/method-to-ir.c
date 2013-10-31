@@ -4463,7 +4463,13 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	 * inside the inlined code
 	 */
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
-		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+		/* The AggressiveInlining hint is a good excuse to force that cctor to run. */
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) {
+			vtable = mono_class_vtable (cfg->domain, method->klass);
+			if (!vtable)
+				return FALSE;
+			mono_runtime_class_init (vtable);
+		} if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
 				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
 				if (!method->klass->runtime_info)
