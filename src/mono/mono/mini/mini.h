@@ -2518,6 +2518,8 @@ extern void
 mono_local_cprop (MonoCompile *cfg);
 extern void
 mono_local_deadce (MonoCompile *cfg);
+void
+mono_local_alias_analysis (MonoCompile *cfg) MONO_INTERNAL;
 
 /* CAS - stack walk */
 MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip) MONO_INTERNAL;
