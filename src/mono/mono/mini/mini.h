@@ -284,6 +284,10 @@ typedef struct MonoAotFileInfo
 
 	/* These are used for sanity checking object layout problems when cross-compiling */
 	guint32 double_align, long_align, generic_tramp_num;
+	/* The page size used by trampoline pages */
+	guint32 tramp_page_size;
+	/* The offset where the trampolines begin on a trampoline page */
+	guint32 tramp_page_code_offsets [MONO_AOT_TRAMP_NUM];
 } MonoAotFileInfo;
 
 /* Per-domain information maintained by the JIT */
