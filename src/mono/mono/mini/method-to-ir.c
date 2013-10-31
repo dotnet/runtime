@@ -608,7 +608,7 @@ mono_create_spvar_for_region (MonoCompile *cfg, int region)
 
 	var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 	/* prevent it from being register allocated */
-	var->flags |= MONO_INST_INDIRECT;
+	var->flags |= MONO_INST_VOLATILE;
 
 	g_hash_table_insert (cfg->spvars, GINT_TO_POINTER (region), var);
 }
@@ -630,7 +630,7 @@ mono_create_exvar_for_offset (MonoCompile *cfg, int offset)
 
 	var = mono_compile_create_var (cfg, &mono_defaults.object_class->byval_arg, OP_LOCAL);
 	/* prevent it from being register allocated */
-	var->flags |= MONO_INST_INDIRECT;
+	var->flags |= MONO_INST_VOLATILE;
 
 	g_hash_table_insert (cfg->exvars, GINT_TO_POINTER (offset), var);
 
@@ -1155,7 +1155,7 @@ mono_get_vtable_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		/* force the var to be stack allocated */
-		cfg->rgctx_var->flags |= MONO_INST_INDIRECT;
+		cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 	}
 
 	return cfg->rgctx_var;
@@ -6845,7 +6845,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		/* prevent it from being register allocated */
-		//var->flags |= MONO_INST_INDIRECT;
+		//var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_info_var = var;
 
 		ins = emit_get_rgctx_gsharedvt_method (cfg, mini_method_check_context_used (cfg, method), method, info);
@@ -6854,7 +6854,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		/* Allocate locals */
 		locals_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		/* prevent it from being register allocated */
-		//locals_var->flags |= MONO_INST_INDIRECT;
+		//locals_var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_locals_var = locals_var;
 
 		dreg = alloc_ireg (cfg);
@@ -6959,7 +6959,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: Is there a better way to do this?
 			   We need the variable live for the duration
 			   of the whole method. */
-			cfg->args [0]->flags |= MONO_INST_INDIRECT;
+			cfg->args [0]->flags |= MONO_INST_VOLATILE;
 		}
 	}
 
@@ -11159,7 +11159,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!cfg->dyn_call_var) {
 					cfg->dyn_call_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 					/* prevent it from being register allocated */
-					cfg->dyn_call_var->flags |= MONO_INST_INDIRECT;
+					cfg->dyn_call_var->flags |= MONO_INST_VOLATILE;
 				}
 
 				/* Has to use a call inst since it local regalloc expects it */
