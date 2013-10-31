@@ -2494,6 +2494,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		g_assert (!cfg->arch.no_pushes);
 
 		MONO_INST_NEW (cfg, load, OP_LDADDR);
+		cfg->has_indirection = TRUE;
 		load->inst_p0 = vtaddr;
 		vtaddr->flags |= MONO_INST_INDIRECT;
 		load->type = STACK_MP;

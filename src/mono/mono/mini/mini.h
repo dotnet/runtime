@@ -1455,6 +1455,7 @@ typedef struct {
 	guint            compute_gc_maps : 1;
 	guint            soft_breakpoints : 1;
 	guint            arch_eh_jit_info : 1;
+	guint            has_indirection : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;
