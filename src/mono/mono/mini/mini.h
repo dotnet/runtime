@@ -1625,6 +1625,10 @@ typedef struct {
 	gint32 cas_linkdemand;
 	gint32 cas_demand_generation;
 	gint32 generic_virtual_invocations;
+	gint32 alias_found;
+	gint32 alias_removed;
+	gint32 loads_eliminated;
+	gint32 stores_eliminated;
 	int methods_with_llvm;
 	int methods_without_llvm;
 	char *max_ratio_method;
