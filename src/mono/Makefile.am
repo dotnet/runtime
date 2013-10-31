@@ -27,6 +27,7 @@ update_submodules:
 .PHONY: update_submodules
 
 EXTRA_DIST= \
+		README.md \
 	    LICENSE \
 	    autogen.sh \
 	    build-mingw32.sh \
