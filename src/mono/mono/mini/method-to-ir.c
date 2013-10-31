@@ -5573,35 +5573,34 @@ check_inline_caller_method_name_limit (MonoMethod *caller_method)
 #endif
 
 static void
-emit_init_rvar (MonoCompile *cfg, MonoInst *rvar, MonoType *rtype)
+emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 {
 	static double r8_0 = 0.0;
 	MonoInst *ins;
 
-	switch (rvar->type) {
-	case STACK_I4:
-		MONO_EMIT_NEW_ICONST (cfg, rvar->dreg, 0);
-		break;
-	case STACK_I8:
-		MONO_EMIT_NEW_I8CONST (cfg, rvar->dreg, 0);
-		break;
-	case STACK_PTR:
-	case STACK_MP:
-	case STACK_OBJ:
-		MONO_EMIT_NEW_PCONST (cfg, rvar->dreg, 0);
-		break;
-	case STACK_R8:
+	int t = rtype->type;
+
+	if (t == MONO_TYPE_VALUETYPE && rtype->data.klass->enumtype)
+		t = mono_class_enum_basetype (rtype->data.klass)->type;
+	if (rtype->byref) {
+		MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
+	} else if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
+		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
+	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
+		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
+	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_INST_NEW (cfg, ins, OP_R8CONST);
 		ins->type = STACK_R8;
 		ins->inst_p0 = (void*)&r8_0;
-		ins->dreg = rvar->dreg;
+		ins->dreg = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
-		break;
-	case STACK_VTYPE:
-		MONO_EMIT_NEW_VZERO (cfg, rvar->dreg, mono_class_from_mono_type (rtype));
-		break;
-	default:
-		g_assert_not_reached ();
+	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
+		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {
+		MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (rtype));
+	} else if (((t == MONO_TYPE_VAR) || (t == MONO_TYPE_MVAR)) && mini_type_var_is_vt (cfg, rtype)) {
+		MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (rtype));
+	} else {
+		MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
 	}
 }
 
@@ -5766,7 +5765,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 					if (bb->last_ins && bb->last_ins->opcode == OP_NOT_REACHED) {
 						cfg->cbb = bb;
 
-						emit_init_rvar (cfg, rvar, fsig->ret);
+						emit_init_rvar (cfg, rvar->dreg, fsig->ret);
 					}
 				}
 			}
@@ -5780,7 +5779,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			 * set, so set it to a dummy value.
 			 */
 			if (!ret_var_set)
-				emit_init_rvar (cfg, rvar, fsig->ret);
+				emit_init_rvar (cfg, rvar->dreg, fsig->ret);
 
 			EMIT_NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
 			*sp++ = ins;
@@ -6478,7 +6477,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoClass *klass;
 	MonoClass *constrained_call = NULL;
 	unsigned char *ip, *end, *target, *err_pos;
-	static double r8_0 = 0.0;
 	MonoMethodSignature *sig;
 	MonoGenericContext *generic_context = NULL;
 	MonoGenericContainer *generic_container = NULL;
@@ -9237,7 +9235,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				
 				if (cmethod->klass->valuetype) {
 					iargs [0] = mono_compile_create_var (cfg, &cmethod->klass->byval_arg, OP_LOCAL);
-					MONO_EMIT_NEW_VZERO (cfg, iargs [0]->dreg, cmethod->klass);
+					emit_init_rvar (cfg, iargs [0]->dreg, &cmethod->klass->byval_arg);
 					EMIT_NEW_TEMPLOADA (cfg, *sp, iargs [0]->inst_c0);
 
 					alloc = NULL;
@@ -11777,37 +11775,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_load_got_addr (cfg);
 
 	if (init_locals) {
-		MonoInst *store;
-
 		cfg->cbb = init_localsbb;
 		cfg->ip = NULL;
 		for (i = 0; i < header->num_locals; ++i) {
-			MonoType *ptype = header->locals [i];
-			int t = ptype->type;
-			dreg = cfg->locals [i]->dreg;
-
-			if (t == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype)
-				t = mono_class_enum_basetype (ptype->data.klass)->type;
-			if (ptype->byref) {
-				MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
-			} else if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
-				MONO_EMIT_NEW_ICONST (cfg, cfg->locals [i]->dreg, 0);
-			} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
-				MONO_EMIT_NEW_I8CONST (cfg, cfg->locals [i]->dreg, 0);
-			} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
-				MONO_INST_NEW (cfg, ins, OP_R8CONST);
-				ins->type = STACK_R8;
-				ins->inst_p0 = (void*)&r8_0;
-				ins->dreg = alloc_dreg (cfg, STACK_R8);
-				MONO_ADD_INS (init_localsbb, ins);
-				EMIT_NEW_LOCSTORE (cfg, store, i, ins);
-			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
-				   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (ptype))) {
-				MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (ptype));
-			} else if (((t == MONO_TYPE_VAR) || (t == MONO_TYPE_MVAR)) && mini_type_var_is_vt (cfg, ptype)) {
-				MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (ptype));
+			MonoInst *var = cfg->locals [i];
+			if (COMPILE_SOFT_FLOAT (cfg)) {
+				MonoInst *store;
+				int reg = alloc_dreg (cfg, var->type);
+				emit_init_rvar (cfg, reg, header->locals [i]);
+				EMIT_NEW_LOCSTORE (cfg, store, i, cfg->cbb->last_ins);
 			} else {
-				MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
+				emit_init_rvar (cfg, var->dreg, header->locals [i]);
 			}
 		}
 	}
