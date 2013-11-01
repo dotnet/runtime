@@ -878,7 +878,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoJitInfo *ji = NULL;
 	MonoContext ctx, new_ctx;
 	MonoDebugSourceLocation *location;
-	MonoMethod *jmethod, *actual_method;
+	MonoMethod *jmethod = NULL, *actual_method;
 	StackFrameInfo frame;
 	gboolean res;
 

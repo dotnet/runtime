@@ -260,9 +260,11 @@ recompute_aliased_variables (MonoCompile *cfg)
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		for (ins = bb->code; ins; ins = ins->next) {
 			if (ins->opcode == OP_LDADDR) {
+				MonoInst *var;
+
 				if (cfg->verbose_level > 2) { printf ("Found op :"); mono_print_ins (ins); }
 
-				MonoInst *var = (MonoInst*)ins->inst_p0;
+				var = (MonoInst*)ins->inst_p0;
 				if (!(var->flags & MONO_INST_INDIRECT)) {
 					if (cfg->verbose_level) { printf ("Restoring :"); mono_print_ins (var); }
 					++adds;
