@@ -5610,6 +5610,20 @@ emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 	}
 }
 
+static void
+emit_init_local (MonoCompile *cfg, int local, MonoType *type)
+{
+	MonoInst *var = cfg->locals [local];
+	if (COMPILE_SOFT_FLOAT (cfg)) {
+		MonoInst *store;
+		int reg = alloc_dreg (cfg, var->type);
+		emit_init_rvar (cfg, reg, type);
+		EMIT_NEW_LOCSTORE (cfg, store, local, cfg->cbb->last_ins);
+	} else {
+		emit_init_rvar (cfg, var->dreg, type);
+	}
+}
+
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
 		guchar *ip, guint real_offset, GList *dont_inline, gboolean inline_always)
@@ -6239,6 +6253,7 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 {
 	int local, token;
 	MonoClass *klass;
+	MonoType *type;
 
 	if (size == 1) {
 		local = ip [1];
@@ -6249,22 +6264,13 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 	}
 	
 	if (ip + 6 < end && (ip [0] == CEE_PREFIX1) && (ip [1] == CEE_INITOBJ) && ip_in_bb (cfg, cfg->cbb, ip + 1)) {
-		gboolean skip = FALSE;
-
 		/* From the INITOBJ case */
 		token = read32 (ip + 2);
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
 		CHECK_TYPELOAD (klass);
-		if (mini_type_is_reference (cfg, &klass->byval_arg)) {
-			MONO_EMIT_NEW_PCONST (cfg, cfg->locals [local]->dreg, NULL);
-		} else if (MONO_TYPE_ISSTRUCT (&klass->byval_arg)) {
-			MONO_EMIT_NEW_VZERO (cfg, cfg->locals [local]->dreg, klass);
-		} else {
-			skip = TRUE;
-		}
-			
-		if (!skip)
-			return ip + 6;
+		type = &klass->byval_arg;
+		emit_init_local (cfg, local, type);
+		return ip + 6;
 	}
 load_error:
 	return NULL;
@@ -11784,15 +11790,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->cbb = init_localsbb;
 		cfg->ip = NULL;
 		for (i = 0; i < header->num_locals; ++i) {
-			MonoInst *var = cfg->locals [i];
-			if (COMPILE_SOFT_FLOAT (cfg)) {
-				MonoInst *store;
-				int reg = alloc_dreg (cfg, var->type);
-				emit_init_rvar (cfg, reg, header->locals [i]);
-				EMIT_NEW_LOCSTORE (cfg, store, i, cfg->cbb->last_ins);
-			} else {
-				emit_init_rvar (cfg, var->dreg, header->locals [i]);
-			}
+			emit_init_local (cfg, i, header->locals [i]);
 		}
 	}
 
