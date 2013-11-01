@@ -3646,6 +3646,39 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
+static guint8*
+emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
+{
+#ifdef TARGET_OSX
+	// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
+	if (dreg != offset_reg)
+		amd64_mov_reg_reg (code, dreg, offset_reg, sizeof (gpointer));
+	amd64_shift_reg_imm (code, X86_SHL, dreg, 3);
+	if (tls_gs_offset)
+		amd64_alu_reg_imm (code, X86_ADD, dreg, tls_gs_offset);
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_reg_membase (code, dreg, dreg, 0, sizeof (gpointer));
+#elif defined(__linux__)
+	int tmpreg = -1;
+
+	if (dreg == offset_reg) {
+		/* Use a temporary reg by saving it to the redzone */
+		tmpreg = dreg == AMD64_RAX ? AMD64_RCX : AMD64_RAX;
+		amd64_mov_membase_reg (code, AMD64_RSP, -8, tmpreg, 8);
+		amd64_mov_reg_reg (code, tmpreg, offset_reg, sizeof (gpointer));
+		offset_reg = tmpreg;
+	}
+	x86_prefix (code, X86_FS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, 0, 8);
+	amd64_mov_reg_memindex (code, dreg, dreg, 0, offset_reg, 0, 8);
+	if (tmpreg != -1)
+		amd64_mov_reg_membase (code, tmpreg, AMD64_RSP, -8, 8);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
 /*
  * emit_setup_lmf:
  *
@@ -5573,18 +5606,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET_REG:
-#ifdef TARGET_OSX
-			// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
-			if (ins->dreg != ins->sreg1)
-				amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
-			amd64_shift_reg_imm (code, X86_SHL, ins->dreg, 3);
-			if (tls_gs_offset)
-				amd64_alu_reg_imm (code, X86_ADD, ins->dreg, tls_gs_offset);
-			x86_prefix (code, X86_GS_PREFIX);
-			amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, sizeof (gpointer));
-#else
-			g_assert_not_reached ();
-#endif
+			code = emit_tls_get_reg (code, ins->dreg, ins->sreg1);
+			break;
 			break;
 		case OP_MEMORY_BARRIER: {
 			switch (ins->backend.memory_barrier_kind) {
