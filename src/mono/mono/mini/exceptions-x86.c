@@ -855,9 +855,19 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Adjust IP */
 		new_ctx->eip --;
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
-			/* remove any unused lmf */
-			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
+		if (*lmf && ((*lmf) != jit_tls->first_lmf)) {
+			gboolean is_tramp = ((guint32)((*lmf)->previous_lmf) & 1);
+			gpointer lmf_esp;
+
+			if (is_tramp)
+				/* lmf->esp is only set in trampoline frames */
+				lmf_esp = (gpointer)(*lmf)->esp;
+			else
+				/* In non-trampoline frames, ebp is the frame pointer */
+				lmf_esp = (gpointer)(*lmf)->ebp;
+			if (!is_tramp && MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)
+				/* remove any unused lmf */
+				*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
 		/* Pop arguments off the stack */
