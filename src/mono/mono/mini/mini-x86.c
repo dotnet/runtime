@@ -1479,6 +1479,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			arg->opcode = OP_OUTARG_VT;
 			arg->sreg1 = in->dreg;
 			arg->klass = in->klass;
+			arg->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
+			memcpy (arg->inst_p1, ainfo, sizeof (ArgInfo));
 			sp_offset += 4;
 			MONO_ADD_INS (cfg->cbb, arg);
 		} else if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
