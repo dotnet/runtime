@@ -896,7 +896,7 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 	/* The object could be a proxy for an object in the domain
 	   we're deleting. */
 #ifndef DISABLE_REMOTING
-	if (mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
+	if (mono_class_has_parent (vt->klass, mono_defaults.real_proxy_class)) {
 		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
 
 		/* The server could already have been zeroed out, so
