@@ -348,7 +348,7 @@ PASS:	ldc.i4.0
         IL_000a:  ret
     }
 
-	// Check that localloc can't be inlined
+	// Check that localloc cannot be inlined
 	.method static public int32 test_0_localloc_inline () cil managed {
 		.maxstack 16
 		.locals init (
