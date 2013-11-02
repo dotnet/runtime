@@ -2288,6 +2288,7 @@ gboolean  mono_arch_gsharedvt_sig_supported     (MonoMethodSignature *sig) MONO_
 gpointer  mono_arch_get_gsharedvt_trampoline    (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_get_gsharedvt_call_info     (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli) MONO_INTERNAL;
 gboolean  mono_arch_opcode_needs_emulation      (MonoCompile *cfg, int opcode) MONO_INTERNAL;
+gboolean  mono_arch_tail_call_supported         (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 gboolean  mono_arch_is_soft_float               (void) MONO_INTERNAL;
@@ -2784,10 +2785,10 @@ gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define ARCH_HAVE_DELEGATE_TRAMPOLINES 0
 #endif
 
-#ifdef MONO_ARCH_USE_OP_TAIL_CALL
-#define ARCH_USE_OP_TAIL_CALL 1
+#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
+#define ARCH_HAVE_OP_TAIL_CALL 1
 #else
-#define ARCH_USE_OP_TAIL_CALL 0
+#define ARCH_HAVE_OP_TAIL_CALL 0
 #endif
 
 #ifndef MONO_ARCH_HAVE_TLS_GET

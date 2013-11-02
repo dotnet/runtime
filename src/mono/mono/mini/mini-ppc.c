@@ -1255,7 +1255,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
 }
 
 gboolean
-mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	CallInfo *c1, *c2;
 	gboolean res;

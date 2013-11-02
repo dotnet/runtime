@@ -704,7 +704,7 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 }
 
 gboolean
-mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	MonoType *callee_ret;
 	CallInfo *c1, *c2;

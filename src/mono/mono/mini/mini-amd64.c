@@ -1204,7 +1204,7 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 }
 
 gboolean
-mono_amd64_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	CallInfo *c1, *c2;
 	gboolean res;

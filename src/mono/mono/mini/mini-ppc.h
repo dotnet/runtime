@@ -195,6 +195,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
 #define MONO_ARCH_THIS_AS_FIRST_ARG 1
+#define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
@@ -303,8 +304,6 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 
 gboolean
 mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;
-
-#define MONO_ARCH_USE_OP_TAIL_CALL(caller_sig, callee_sig) mono_ppc_tail_call_supported (caller_sig, callee_sig)
 
 void
 mono_ppc_patch (guchar *code, const guchar *target) MONO_INTERNAL;

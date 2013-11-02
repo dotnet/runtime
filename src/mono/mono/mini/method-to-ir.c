@@ -6351,13 +6351,13 @@ is_jit_optimizer_disabled (MonoMethod *m)
 }
 
 static gboolean
-is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmethod, MonoMethodSignature *fsig)
+is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmethod, MonoMethodSignature *fsig, int call_opcode)
 {
 	gboolean supported_tail_call;
 	int i;
 
-#ifdef MONO_ARCH_USE_OP_TAIL_CALL
-	supported_tail_call = MONO_ARCH_USE_OP_TAIL_CALL (mono_method_signature (method), mono_method_signature (cmethod));
+#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
+	supported_tail_call = mono_arch_tail_call_supported (mono_method_signature (method), mono_method_signature (cmethod));
 #else
 	supported_tail_call = mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret);
 #endif
@@ -6375,6 +6375,8 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 	if (cfg->method->save_lmf)
 		supported_tail_call = FALSE;
 	if (cmethod->wrapper_type && cmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
+		supported_tail_call = FALSE;
+	if (call_opcode != CEE_CALL)
 		supported_tail_call = FALSE;
 
 	/* Debugging support */
@@ -7437,8 +7439,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_security_cas_enabled ())
 				CHECK_CFG_EXCEPTION;
 
-#ifdef MONO_ARCH_USE_OP_TAIL_CALL
-			{
+			if (ARCH_HAVE_OP_TAIL_CALL) {
 				MonoMethodSignature *fsig = mono_method_signature (cmethod);
 				int i, n;
 
@@ -7456,17 +7457,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				mono_arch_emit_call (cfg, call);
 				MONO_ADD_INS (bblock, (MonoInst*)call);
-			}
-#else
-			for (i = 0; i < num_args; ++i)
-				/* Prevent arguments from being optimized away */
-				arg_array [i]->flags |= MONO_INST_VOLATILE;
+			} else {
+				for (i = 0; i < num_args; ++i)
+					/* Prevent arguments from being optimized away */
+					arg_array [i]->flags |= MONO_INST_VOLATILE;
 
-			MONO_INST_NEW_CALL (cfg, call, OP_JMP);
-			ins = (MonoInst*)call;
-			ins->inst_p0 = cmethod;
-			MONO_ADD_INS (bblock, ins);
-#endif
+				MONO_INST_NEW_CALL (cfg, call, OP_JMP);
+				ins = (MonoInst*)call;
+				ins->inst_p0 = cmethod;
+				MONO_ADD_INS (bblock, ins);
+			}
 
 			ip += 5;
 			start_new_bblock = 1;
@@ -8231,12 +8231,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
 			if (cmethod && (ins_flag & MONO_INST_TAILCALL) &&
-				!vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig))
+				!vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
 				supported_tail_call = TRUE;
-			if (supported_tail_call) {
-				if (call_opcode != CEE_CALL)
-					supported_tail_call = FALSE;
-			}
 
 			if (supported_tail_call) {
 				MonoCallInst *call;
@@ -8246,7 +8242,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				//printf ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
-				if (ARCH_USE_OP_TAIL_CALL) {
+				if (ARCH_HAVE_OP_TAIL_CALL) {
 					/* Handle tail calls similarly to normal calls */
 					tail_call = TRUE;
 				} else {
