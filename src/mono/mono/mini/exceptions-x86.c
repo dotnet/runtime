@@ -865,7 +865,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			else
 				/* In non-trampoline frames, ebp is the frame pointer */
 				lmf_esp = (gpointer)(*lmf)->ebp;
-			if (!is_tramp && MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)
+			if (MONO_CONTEXT_GET_SP (ctx) >= lmf_esp)
 				/* remove any unused lmf */
 				*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
