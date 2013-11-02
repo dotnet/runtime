@@ -3119,48 +3119,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MOVE:
 			x86_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
 			break;
-		case OP_JMP: {
-			/*
-			 * Note: this 'frame destruction' logic is useful for tail calls, too.
-			 * Keep in sync with the code in emit_epilog.
-			 */
-			int pos = 0;
-
-			/* FIXME: no tracing support... */
-			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
-			/* reset offset to make max_len work */
-			offset = code - cfg->native_code;
-
-			g_assert (!cfg->method->save_lmf);
-
-			code = emit_load_volatile_arguments (cfg, code);
-
-			if (cfg->used_int_regs & (1 << X86_EBX))
-				pos -= 4;
-			if (cfg->used_int_regs & (1 << X86_EDI))
-				pos -= 4;
-			if (cfg->used_int_regs & (1 << X86_ESI))
-				pos -= 4;
-			if (pos)
-				x86_lea_membase (code, X86_ESP, X86_EBP, pos);
-	
-			if (cfg->used_int_regs & (1 << X86_ESI))
-				x86_pop_reg (code, X86_ESI);
-			if (cfg->used_int_regs & (1 << X86_EDI))
-				x86_pop_reg (code, X86_EDI);
-			if (cfg->used_int_regs & (1 << X86_EBX))
-				x86_pop_reg (code, X86_EBX);
-	
-			/* restore ESP/EBP */
-			x86_leave (code);
-			offset = code - cfg->native_code;
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			x86_jump32 (code, 0);
-
-			cfg->disable_aot = TRUE;
-			break;
-		}
 		case OP_TAILCALL: {
 			MonoCallInst *call = (MonoCallInst*)ins;
 			int pos = 0, i;
@@ -5421,7 +5379,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
-	/* the code restoring the registers must be kept in sync with OP_JMP */
+	/* the code restoring the registers must be kept in sync with OP_TAILCALL */
 	pos = 0;
 	
 	if (method->save_lmf) {

@@ -2447,7 +2447,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 #ifdef HOST_WIN32
-	if (call->inst.opcode != OP_JMP && OP_TAILCALL != call->inst.opcode) {
+	if (call->inst.opcode != OP_TAILCALL) {
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 0x20);
 	}
 #endif
@@ -7174,7 +7174,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
-	/* the code restoring the registers must be kept in sync with OP_JMP */
+	/* the code restoring the registers must be kept in sync with OP_TAILCALL */
 	pos = 0;
 	
 	if (method->save_lmf) {
