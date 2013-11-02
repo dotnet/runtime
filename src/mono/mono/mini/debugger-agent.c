@@ -283,7 +283,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 25
+#define MINOR_VERSION 26
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -367,7 +367,8 @@ typedef enum {
 typedef enum {
 	STEP_FILTER_NONE = 0,
 	STEP_FILTER_STATIC_CTOR = 1,
-	STEP_FILTER_DEBUGGER_HIDDEN = 2
+	STEP_FILTER_DEBUGGER_HIDDEN = 2,
+	STEP_FILTER_DEBUGGER_STEP_THROUGH = 4
 } StepFilter;
 
 typedef enum {
@@ -3452,6 +3453,32 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 							ji->dbg_hidden_inited = TRUE;
 						}
 						if (ji->dbg_hidden)
+							filtered = TRUE;
+					}
+					if ((mod->data.filter & STEP_FILTER_DEBUGGER_STEP_THROUGH) && ji) {
+						MonoCustomAttrInfo *ainfo;
+						static MonoClass *klass;
+
+						if (!klass) {
+							klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
+							g_assert (klass);
+						}
+						if (!ji->dbg_step_through_inited) {
+							ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
+							if (ainfo) {
+								if (mono_custom_attrs_has_attr (ainfo, klass))
+									ji->dbg_step_through = TRUE;
+								mono_custom_attrs_free (ainfo);
+							}
+							ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
+							if (ainfo) {
+								if (mono_custom_attrs_has_attr (ainfo, klass))
+									ji->dbg_step_through = TRUE;
+								mono_custom_attrs_free (ainfo);
+							}
+							ji->dbg_step_through_inited = TRUE;
+						}
+						if (ji->dbg_step_through)
 							filtered = TRUE;
 					}
 				}
@@ -6976,6 +7003,9 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				if (CHECK_PROTOCOL_VERSION (2, 16))
 					filter = decode_int (p, &p, end);
 				req->modifiers [i].data.filter = filter;
+				if (!CHECK_PROTOCOL_VERSION (2, 26) && (req->modifiers [i].data.filter & STEP_FILTER_DEBUGGER_HIDDEN))
+					/* Treat STEP_THOUGH the same as HIDDEN */
+					req->modifiers [i].data.filter |= STEP_FILTER_DEBUGGER_STEP_THROUGH;
 			} else if (mod == MOD_KIND_THREAD_ONLY) {
 				int id = decode_id (p, &p, end);
 

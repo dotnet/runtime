@@ -213,6 +213,8 @@ struct _MonoJitInfo {
 	gboolean    dbg_hidden:1;
 	/* Whenever this jit info was loaded in async context */
 	gboolean    async:1;
+	gboolean    dbg_step_through_inited:1;
+	gboolean    dbg_step_through:1;
 
 	/* FIXME: Embed this after the structure later*/
 	gpointer    gc_info; /* Currently only used by SGen */
