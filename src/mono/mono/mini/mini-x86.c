@@ -712,6 +712,10 @@ mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignat
 
 	c1 = get_call_info (NULL, NULL, caller_sig);
 	c2 = get_call_info (NULL, NULL, callee_sig);
+	/*
+	 * Tail calls with more callee stack usage than the caller cannot be supported, since
+	 * the extra stack space would be left on the stack after the tail call.
+	 */
 	res = c1->stack_usage >= c2->stack_usage;
 	callee_ret = callee_sig->ret;
 	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != ArgValuetypeInReg)
