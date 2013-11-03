@@ -6687,7 +6687,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * Linking the try block with the EH block hinders inlining as we won't be able to 
 			 * merge the bblocks from inlining and produce an artificial hole for no good reason.
 			 */
-			// link_bblock (cfg, try_bb, tblock);
+			if (COMPILE_LLVM (cfg))
+				link_bblock (cfg, try_bb, tblock);
 
 			if (*(ip + clause->handler_offset) == CEE_POP)
 				tblock->flags |= BB_EXCEPTION_DEAD_OBJ;
