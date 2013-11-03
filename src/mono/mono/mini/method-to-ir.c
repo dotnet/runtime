@@ -1984,13 +1984,13 @@ static int
 ret_type_to_call_opcode (MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
 {
 	if (type->byref)
-		return calli? OP_CALL_REG: virt? OP_CALLVIRT: OP_CALL;
+		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
 
 handle_enum:
 	type = mini_get_basic_type_from_generic (gsctx, type);
 	switch (type->type) {
 	case MONO_TYPE_VOID:
-		return calli? OP_VOIDCALL_REG: virt? OP_VOIDCALLVIRT: OP_VOIDCALL;
+		return calli? OP_VOIDCALL_REG: virt? OP_VOIDCALL_MEMBASE: OP_VOIDCALL;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -1999,39 +1999,39 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-		return calli? OP_CALL_REG: virt? OP_CALLVIRT: OP_CALL;
+		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
-		return calli? OP_CALL_REG: virt? OP_CALLVIRT: OP_CALL;
+		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
-		return calli? OP_CALL_REG: virt? OP_CALLVIRT: OP_CALL;
+		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		return calli? OP_LCALL_REG: virt? OP_LCALLVIRT: OP_LCALL;
+		return calli? OP_LCALL_REG: virt? OP_LCALL_MEMBASE: OP_LCALL;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
-		return calli? OP_FCALL_REG: virt? OP_FCALLVIRT: OP_FCALL;
+		return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
 			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		} else
-			return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
+			return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
 	case MONO_TYPE_TYPEDBYREF:
-		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
+		return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
 	case MONO_TYPE_GENERICINST:
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* gsharedvt */
-		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
+		return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
 	default:
 		g_error ("unknown type 0x%02x in ret_type_to_call_opcode", type->type);
 	}
@@ -2260,37 +2260,16 @@ static int
 callvirt_to_call (int opcode)
 {
 	switch (opcode) {
-	case OP_CALLVIRT:
+	case OP_CALL_MEMBASE:
 		return OP_CALL;
-	case OP_VOIDCALLVIRT:
+	case OP_VOIDCALL_MEMBASE:
 		return OP_VOIDCALL;
-	case OP_FCALLVIRT:
+	case OP_FCALL_MEMBASE:
 		return OP_FCALL;
-	case OP_VCALLVIRT:
+	case OP_VCALL_MEMBASE:
 		return OP_VCALL;
-	case OP_LCALLVIRT:
+	case OP_LCALL_MEMBASE:
 		return OP_LCALL;
-	default:
-		g_assert_not_reached ();
-	}
-
-	return -1;
-}
-
-static int
-callvirt_to_call_membase (int opcode)
-{
-	switch (opcode) {
-	case OP_CALLVIRT:
-		return OP_CALL_MEMBASE;
-	case OP_VOIDCALLVIRT:
-		return OP_VOIDCALL_MEMBASE;
-	case OP_FCALLVIRT:
-		return OP_FCALL_MEMBASE;
-	case OP_LCALLVIRT:
-		return OP_LCALL_MEMBASE;
-	case OP_VCALLVIRT:
-		return OP_VCALL_MEMBASE;
 	default:
 		g_assert_not_reached ();
 	}
@@ -2670,7 +2649,6 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			MONO_EMIT_NULL_CHECK (cfg, this_reg);
 
 			/* Make a call to delegate->invoke_impl */
-			call->inst.opcode = callvirt_to_call_membase (call->inst.opcode);
 			call->inst.inst_basereg = this_reg;
 			call->inst.inst_offset = G_STRUCT_OFFSET (MonoDelegate, invoke_impl);
 			MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
@@ -2725,8 +2703,6 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
 		} else {
-			call->inst.opcode = callvirt_to_call_membase (call->inst.opcode);
-
 			vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 			if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {

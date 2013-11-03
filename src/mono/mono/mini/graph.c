@@ -195,15 +195,15 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 		mono_print_label (fp, tree->inst_newa_len);
 		break;
 	case OP_CALL:
-	case OP_CALLVIRT:
+	case OP_CALL_MEMBASE:
 	case OP_FCALL:
-	case OP_FCALLVIRT:
+	case OP_FCALL_MEMBASE:
 	case OP_LCALL:
-	case OP_LCALLVIRT:
+	case OP_LCALL_MEMBASE:
 	case OP_VCALL:
-	case OP_VCALLVIRT:
+	case OP_VCALL_MEMBASE:
 	case OP_VOIDCALL:
-	case OP_VOIDCALLVIRT: {
+	case OP_VOIDCALL_MEMBASE: {
 		MonoCallInst *call = (MonoCallInst*)tree;
 		if (call->method) {
 			if (mono_method_signature (call->method)->hasthis && tree->inst_left) {
