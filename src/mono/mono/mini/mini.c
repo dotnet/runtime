@@ -3012,6 +3012,12 @@ mono_get_lmf_intrinsic (MonoCompile* cfg)
 	return mono_create_tls_get (cfg, TLS_KEY_LMF);
 }
 
+MonoInst*
+mono_get_lmf_addr_intrinsic (MonoCompile* cfg)
+{
+	return mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
+}
+
 #endif /* !DISABLE_JIT */
 
 void
@@ -3707,6 +3713,13 @@ mono_compile_create_vars (MonoCompile *cfg)
 		g_print ("locals done\n");
 
 	mono_arch_create_vars (cfg);
+
+	if (cfg->method->save_lmf && cfg->create_lmf_var) {
+		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		lmf_var->flags |= MONO_INST_VOLATILE;
+		lmf_var->flags |= MONO_INST_LMF;
+		cfg->lmf_var = lmf_var;
+	}
 }
 
 void
