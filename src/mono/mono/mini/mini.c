@@ -75,13 +75,6 @@
 #include "mini-gc.h"
 #include "debugger-agent.h"
 
-/* this macro is used for a runtime check done in mini_init () */
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
-#define EMUL_MUL_DIV 1
-#else
-#define EMUL_MUL_DIV 0
-#endif
-
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
 
@@ -94,20 +87,12 @@ MonoNativeTlsKey mono_jit_tls_id;
 MONO_FAST_TLS_DECLARE(mono_jit_tls);
 #endif
 
-#ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
-#define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 1
-#endif
-
 MonoTraceSpec *mono_jit_trace_calls = NULL;
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
 /* Whenever to use IMT */
-#ifdef MONO_ARCH_HAVE_IMT
-gboolean mono_use_imt = TRUE;
-#else
-gboolean mono_use_imt = FALSE;
-#endif
+gboolean mono_use_imt = ARCH_HAVE_IMT;
 MonoMethodDesc *mono_inject_async_exc_method = NULL;
 int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method = NULL;
@@ -1535,10 +1520,9 @@ mono_get_array_new_va_signature (int arity)
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
 	res->pinvoke = 1;
-#ifdef MONO_ARCH_VARARG_ICALLS
-	/* Only set this only some archs since not all backends can handle varargs+pinvoke */
-	res->call_convention = MONO_CALL_VARARG;
-#endif
+	if (ARCH_VARARG_ICALLS)
+		/* Only set this only some archs since not all backends can handle varargs+pinvoke */
+		res->call_convention = MONO_CALL_VARARG;
 
 #ifdef TARGET_WIN32
 	res->call_convention = MONO_CALL_C;
@@ -4554,7 +4538,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	 * Its possible to generate dwarf unwind info for xdebug etc, but not actually
 	 * using it during runtime, hence the define.
 	 */
-#ifdef MONO_ARCH_HAVE_XP_UNWIND
 	if (cfg->encoded_unwind_ops) {
 		jinfo->used_regs = mono_cache_unwind_info (cfg->encoded_unwind_ops, cfg->encoded_unwind_ops_len);
 		g_free (cfg->encoded_unwind_ops);
@@ -4565,7 +4548,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		jinfo->used_regs = mono_cache_unwind_info (unwind_info, info_len);
 		g_free (unwind_info);
 	}
-#endif
 
 	return jinfo;
 }
@@ -7329,7 +7311,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
-	if (EMUL_MUL_DIV || mono_arch_is_soft_float ()) {
+	if (ARCH_EMULATE_MUL_DIV || mono_arch_is_soft_float ()) {
 		register_opcode_emulation (OP_FDIV, "__emul_fdiv", "double double double", mono_fdiv, "mono_fdiv", FALSE);
 	}
 #endif

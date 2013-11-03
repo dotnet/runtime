@@ -5194,9 +5194,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + (seq_points ? (seq_points->len * 64) : 0) + cfg->gc_map_size;
 	p = buf = g_malloc (buf_size);
 
-#ifdef MONO_ARCH_HAVE_XP_UNWIND
 	use_unwind_ops = cfg->unwind_ops != NULL;
-#endif
 
 	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0) | (jinfo->has_arch_eh_info ? 128 : 0);
 

@@ -6255,9 +6255,6 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		case MONO_TYPE_R4:
 			size = 4; break;
 		case MONO_TYPE_R8:
-#ifdef ARM_FPU_FPA
-			return NULL; /* stupid ARM FP swapped format */
-#endif
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			size = 8; break;
@@ -11274,9 +11271,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->sreg2 = sp [1]->dreg;
 				MONO_ADD_INS (bblock, ins);
 
-#ifdef MONO_ARCH_DYN_CALL_PARAM_AREA
 				cfg->param_area = MAX (cfg->param_area, MONO_ARCH_DYN_CALL_PARAM_AREA);
-#endif
 
 				ip += 2;
 				inline_costs += 10 * num_calls++;

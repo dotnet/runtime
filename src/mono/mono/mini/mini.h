@@ -2816,4 +2816,30 @@ gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define ARCH_HAVE_TLS_GET_REG 0
 #endif
 
+#ifdef MONO_ARCH_EMULATE_MUL_DIV
+#define ARCH_EMULATE_MUL_DIV 1
+#else
+#define ARCH_EMULATE_MUL_DIV 0
+#endif
+
+#ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
+#define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 1
+#endif
+
+#ifndef MONO_ARCH_DYN_CALL_PARAM_AREA
+#define MONO_ARCH_DYN_CALL_PARAM_AREA 0
+#endif
+
+#ifdef MONO_ARCH_HAVE_IMT
+#define ARCH_HAVE_IMT 1
+#else
+#define ARCH_HAVE_IMT 0
+#endif
+
+#ifdef MONO_ARCH_VARARG_ICALLS
+#define ARCH_VARARG_ICALLS 1
+#else
+#define ARCH_VARARG_ICALLS 0
+#endif
+
 #endif /* __MONO_MINI_H__ */
