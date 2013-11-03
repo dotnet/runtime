@@ -5930,7 +5930,7 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 	struct tm start, tt;
 	time_t t;
 
-	long int gmtoff, gmtoff_st, gmtoff_ds;
+	long int gmtoff, gmtoff_after, gmtoff_st, gmtoff_ds;
 	int day, transitioned;
 	char tzone [64];
 
@@ -5971,12 +5971,12 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 	gmtoff = gmt_offset (&start, t);
 
 	/* For each day of the year, calculate the tm_gmtoff. */
-	for (day = 0; day < 365; day++) {
+	for (day = 0; day < 365 && transitioned < 2; day++) {
 
 		t += 3600*24;
 		tt = *localtime (&t);
 
-        long int gmtoff_after = gmt_offset(&tt, t);
+        gmtoff_after = gmt_offset(&tt, t);
 
 		/* Daylight saving starts or ends here. */
 		if (gmtoff_after != gmtoff) {
