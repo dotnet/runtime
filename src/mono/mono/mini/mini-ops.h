@@ -421,6 +421,12 @@ MINI_OP(OP_ICGT_UN,"int_cgt_un", IREG, NONE, NONE)
 MINI_OP(OP_ICLT,   "int_clt", IREG, NONE, NONE)
 MINI_OP(OP_ICLT_UN,"int_clt_un", IREG, NONE, NONE)
 
+MINI_OP(OP_ICNEQ,  "int_cneq", IREG, NONE, NONE)
+MINI_OP(OP_ICGE,   "int_cge", IREG, NONE, NONE)
+MINI_OP(OP_ICLE,   "int_cle", IREG, NONE, NONE)
+MINI_OP(OP_ICGE_UN,"int_cge_un", IREG, NONE, NONE)
+MINI_OP(OP_ICLE_UN,"int_cle_un", IREG, NONE, NONE)
+
 MINI_OP(OP_IBEQ,    "int_beq", NONE, NONE, NONE)
 MINI_OP(OP_IBGE,    "int_bge", NONE, NONE, NONE)
 MINI_OP(OP_IBGT,    "int_bgt", NONE, NONE, NONE)
@@ -503,6 +509,10 @@ MINI_OP(OP_FCGT,   "float_cgt", IREG, FREG, FREG)
 MINI_OP(OP_FCGT_UN,"float_cgt_un", IREG, FREG, FREG)
 MINI_OP(OP_FCLT,   "float_clt", IREG, FREG, FREG)
 MINI_OP(OP_FCLT_UN,"float_clt_un", IREG, FREG, FREG)
+
+MINI_OP(OP_FCNEQ,  "float_cneq", IREG, FREG, FREG)
+MINI_OP(OP_FCGE,   "float_cge", IREG, FREG, FREG)
+MINI_OP(OP_FCLE,   "float_cle", IREG, FREG, FREG)
 
 MINI_OP(OP_FCEQ_MEMBASE,   "float_ceq_membase", IREG, FREG, IREG)
 MINI_OP(OP_FCGT_MEMBASE,   "float_cgt_membase", IREG, FREG, IREG)
