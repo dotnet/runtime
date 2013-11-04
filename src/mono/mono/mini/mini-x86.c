@@ -331,16 +331,19 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
 
 		/* Special case structs with only a float member */
-		if ((info->native_size == 8) && (info->num_fields == 1) && (info->fields [0].field->type->type == MONO_TYPE_R8)) {
-			ainfo->storage = ArgValuetypeInReg;
-			ainfo->pair_storage [0] = ArgOnDoubleFpStack;
-			return;
+		if (info->num_fields == 1) {
+			int ftype = info->fields [0].field->type->type;
+			if ((info->native_size == 8) && (ftype == MONO_TYPE_R8)) {
+				ainfo->storage = ArgValuetypeInReg;
+				ainfo->pair_storage [0] = ArgOnDoubleFpStack;
+				return;
+			}
+			if ((info->native_size == 4) && (ftype == MONO_TYPE_R4)) {
+				ainfo->storage = ArgValuetypeInReg;
+				ainfo->pair_storage [0] = ArgOnFloatFpStack;
+				return;
+			}
 		}
-		if ((info->native_size == 4) && (info->num_fields == 1) && (info->fields [0].field->type->type == MONO_TYPE_R4)) {
-			ainfo->storage = ArgValuetypeInReg;
-			ainfo->pair_storage [0] = ArgOnFloatFpStack;
-			return;
-		}		
 		if ((info->native_size == 1) || (info->native_size == 2) || (info->native_size == 4) || (info->native_size == 8)) {
 			ainfo->storage = ArgValuetypeInReg;
 			ainfo->pair_storage [0] = ArgInIReg;
