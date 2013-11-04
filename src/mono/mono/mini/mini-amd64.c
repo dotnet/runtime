@@ -5146,6 +5146,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BR_REG:
 			amd64_jump_reg (code, ins->sreg1);
 			break;
+		case OP_ICNEQ:
+		case OP_ICGE:
+		case OP_ICLE:
+		case OP_ICGE_UN:
+		case OP_ICLE_UN:
+
 		case OP_CEQ:
 		case OP_LCEQ:
 		case OP_ICEQ:
@@ -5414,6 +5420,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			amd64_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
 			break;
+		case OP_FCNEQ:
 		case OP_FCEQ: {
 			/* zeroing the register at the start results in 
 			 * shorter and faster code (we can also remove the widening op)
@@ -5423,8 +5430,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
 			unordered_check = code;
 			x86_branch8 (code, X86_CC_P, 0, FALSE);
-			amd64_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
-			amd64_patch (unordered_check, code);
+
+			if (ins->opcode == OP_FCEQ) {
+				amd64_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
+				amd64_patch (unordered_check, code);
+			} else {
+				guchar *jump_to_end;
+				amd64_set_reg (code, X86_CC_NE, ins->dreg, FALSE);
+				jump_to_end = code;
+				x86_jump8 (code, 0);
+				amd64_patch (unordered_check, code);
+				amd64_inc_reg (code, ins->dreg);
+				amd64_patch (jump_to_end, code);
+			}
 			break;
 		}
 		case OP_FCLT:
@@ -5448,6 +5466,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
 			}
 			break;
+		case OP_FCLE: {
+			guchar *unordered_check;
+			amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			amd64_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			amd64_set_reg (code, X86_CC_NB, ins->dreg, FALSE);
+			amd64_patch (unordered_check, code);
+			break;
+		}
 		case OP_FCGT:
 		case OP_FCGT_UN: {
 			/* zeroing the register at the start results in 
@@ -5466,6 +5494,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_FCGE: {
+			guchar *unordered_check;
+			amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			amd64_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			amd64_set_reg (code, X86_CC_NA, ins->dreg, FALSE);
+			amd64_patch (unordered_check, code);
+			break;
+		}
+		
 		case OP_FCLT_MEMBASE:
 		case OP_FCGT_MEMBASE:
 		case OP_FCLT_UN_MEMBASE:

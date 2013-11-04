@@ -246,6 +246,9 @@ float_cgt: dest:i src1:f src2:f len:35
 float_cgt_un: dest:i src1:f src2:f len:48
 float_clt: dest:i src1:f src2:f len:35
 float_clt_un: dest:i src1:f src2:f len:42
+float_cneq: dest:i src1:f src2:f len:42
+float_cge: dest:i src1:f src2:f len:35
+float_cle: dest:i src1:f src2:f len:35
 float_ceq_membase: dest:i src1:f src2:b len:35
 float_cgt_membase: dest:i src1:f src2:b len:35
 float_cgt_un_membase: dest:i src1:f src2:b len:48
@@ -370,6 +373,13 @@ int_cgt: dest:c len:8
 int_cgt_un: dest:c len:8
 int_clt: dest:c len:8
 int_clt_un: dest:c len:8
+
+int_cneq: dest:c len:8
+int_cge: dest:c len:8
+int_cle: dest:c len:8
+int_cge_un: dest:c len:8
+int_cle_un: dest:c len:8
+
 int_beq: len:8
 int_bne_un: len:8
 int_blt: len:8
