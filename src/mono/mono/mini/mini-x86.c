@@ -3384,6 +3384,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BR_REG:
 			x86_jump_reg (code, ins->sreg1);
 			break;
+		case OP_ICNEQ:
+		case OP_ICGE:
+		case OP_ICLE:
+		case OP_ICGE_UN:
+		case OP_ICLE_UN:
+
 		case OP_CEQ:
 		case OP_CLT:
 		case OP_CLT_UN:
@@ -3818,6 +3824,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
 			break;
 		case OP_FCEQ:
+		case OP_FCNEQ:
 			if (cfg->opt & MONO_OPT_FCMOV) {
 				/* zeroing the register at the start results in 
 				 * shorter and faster code (we can also remove the widening op)
@@ -3828,8 +3835,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_fstp (code, 0);
 				unordered_check = code;
 				x86_branch8 (code, X86_CC_P, 0, FALSE);
-				x86_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
-				x86_patch (unordered_check, code);
+				if (ins->opcode == OP_FCEQ) {
+					x86_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
+					x86_patch (unordered_check, code);
+				} else {
+					guchar *jump_to_end;
+					x86_set_reg (code, X86_CC_NE, ins->dreg, FALSE);
+					jump_to_end = code;
+					x86_jump8 (code, 0);
+					x86_patch (unordered_check, code);
+					x86_inc_reg (code, ins->dreg);
+					x86_patch (jump_to_end, code);
+				}
+
 				break;
 			}
 			if (ins->dreg != X86_EAX) 
@@ -3838,7 +3856,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_FPCOMPARE(code);
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
-			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
+			x86_set_reg (code, ins->opcode == OP_FCEQ ? X86_CC_EQ : X86_CC_NE, ins->dreg, TRUE);
 			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
 
 			if (ins->dreg != X86_EAX) 
@@ -3890,6 +3908,44 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != X86_EAX) 
 				x86_pop_reg (code, X86_EAX);
 			break;
+		case OP_FCLE: {
+			guchar *unordered_check;
+			guchar *jump_to_end;
+			if (cfg->opt & MONO_OPT_FCMOV) {
+				/* zeroing the register at the start results in
+				 * shorter and faster code (we can also remove the widening op)
+				 */
+				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+				x86_fcomip (code, 1);
+				x86_fstp (code, 0);
+				unordered_check = code;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				x86_set_reg (code, X86_CC_NB, ins->dreg, FALSE);
+				x86_patch (unordered_check, code);
+				break;
+			}
+			if (ins->dreg != X86_EAX)
+				x86_push_reg (code, X86_EAX);
+
+			EMIT_FPCOMPARE(code);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_EQ, 0, FALSE);
+
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
+			x86_set_reg (code, X86_CC_NE, ins->dreg, TRUE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			jump_to_end = code;
+			x86_jump8 (code, 0);
+			x86_patch (unordered_check, code);
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			x86_patch (jump_to_end, code);
+
+			if (ins->dreg != X86_EAX)
+				x86_pop_reg (code, X86_EAX);
+			break;
+		}
 		case OP_FCGT:
 		case OP_FCGT_UN:
 			if (cfg->opt & MONO_OPT_FCMOV) {
@@ -3933,6 +3989,44 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != X86_EAX) 
 				x86_pop_reg (code, X86_EAX);
 			break;
+		case OP_FCGE: {
+			guchar *unordered_check;
+			guchar *jump_to_end;
+			if (cfg->opt & MONO_OPT_FCMOV) {
+				/* zeroing the register at the start results in
+				 * shorter and faster code (we can also remove the widening op)
+				 */
+				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+				x86_fcomip (code, 1);
+				x86_fstp (code, 0);
+				unordered_check = code;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				x86_set_reg (code, X86_CC_NA, ins->dreg, FALSE);
+				x86_patch (unordered_check, code);
+				break;
+			}
+			if (ins->dreg != X86_EAX)
+				x86_push_reg (code, X86_EAX);
+
+			EMIT_FPCOMPARE(code);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_EQ, 0, FALSE);
+
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
+			x86_set_reg (code, X86_CC_GE, ins->dreg, TRUE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			jump_to_end = code;
+			x86_jump8 (code, 0);
+			x86_patch (unordered_check, code);
+			x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			x86_patch (jump_to_end, code);
+
+			if (ins->dreg != X86_EAX)
+				x86_pop_reg (code, X86_EAX);
+			break;
+		}
 		case OP_FBEQ:
 			if (cfg->opt & MONO_OPT_FCMOV) {
 				guchar *jump = code;
