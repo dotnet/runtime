@@ -107,15 +107,19 @@ fi
 # Plug in the extension module
 #
 has_ext_mod=false
+ext_mod_args=''
 for PARAM; do
-    if test "$PARAM" = "--enable-extension-module" ; then
-		has_ext_mod=true
-	fi
+    if [[ $PARAM =~ "--enable-extension-module" ]] ; then
+        has_ext_mod=true
+        if [[ $PARAM =~ "=" ]] ; then
+            ext_mod_args=`echo $PARAM | cut -d= -f2`
+        fi
+    fi
 done
 
 if test x$has_ext_mod = xtrue; then
 	pushd ../mono-extensions/scripts
-	sh ./prepare-repo.sh || exit 1
+	sh ./prepare-repo.sh $ext_mod_args || exit 1
 	popd
 else
 	cat mono/mini/Makefile.am.in > mono/mini/Makefile.am
