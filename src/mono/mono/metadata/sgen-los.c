@@ -510,10 +510,10 @@ mono_sgen_los_describe_pointer (char *ptr)
 		vtable = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
 
 		if (obj->data == ptr) {
-			SGEN_LOG (0, "%s (size %td pin %d)\n", los_kind, size, pinned ? 1 : 0);
+			SGEN_LOG (0, "%s (size %d pin %d)\n", los_kind, (int)size, pinned ? 1 : 0);
 		} else {
-			SGEN_LOG (0, "%s (interior-ptr offset %td size %td pin %d)",
-					los_kind, ptr - obj->data, size, pinned ? 1 : 0);
+			SGEN_LOG (0, "%s (interior-ptr offset %td size %d pin %d)",
+					  los_kind, ptr - obj->data, (int)size, pinned ? 1 : 0);
 		}
 
 		return TRUE;

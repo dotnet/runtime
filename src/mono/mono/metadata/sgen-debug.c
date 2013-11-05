@@ -133,7 +133,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
 
 	size = sgen_safe_object_get_size ((MonoObject*)ptr);
-	printf ("Size: %td\n", size);
+	printf ("Size: %d\n", (int)size);
 }
 
 void

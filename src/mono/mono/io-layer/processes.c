@@ -1715,10 +1715,11 @@ static GSList *load_modules (void)
 
 		slide = _dyld_get_image_vmaddr_slide (i);
 		name = _dyld_get_image_name (i);
-		hdr = _dyld_get_image_header (i);
 #if SIZEOF_VOID_P == 8
+		hdr = (const struct mach_header_64*)_dyld_get_image_header (i);
 		sec = getsectbynamefromheader_64 (hdr, SEG_DATA, SECT_DATA);
 #else
+		hdr = _dyld_get_image_header (i);
 		sec = getsectbynamefromheader (hdr, SEG_DATA, SECT_DATA);
 #endif
 
@@ -2119,9 +2120,11 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	size_t size;
 	struct kinfo_proc2 *pi;
 #elif defined(PLATFORM_MACOSX)
+#if !(!defined (__mono_ppc__) && defined (TARGET_OSX))
 	size_t size;
 	struct kinfo_proc *pi;
 	int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
+#endif
 #else
 	FILE *fp;
 	gchar *filename = NULL;
