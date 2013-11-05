@@ -296,7 +296,7 @@ namespace Mono.Linker.Steps {
 				MarkCustomAttributes (module);
 		}
 
-		void MarkField (FieldReference reference)
+		protected void MarkField (FieldReference reference)
 		{
 //			if (IgnoreScope (reference.DeclaringType.Scope))
 //				return;
@@ -901,12 +901,12 @@ namespace Mono.Linker.Steps {
 			return null;
 		}
 
-		void MarkProperty (PropertyDefinition prop)
+		protected void MarkProperty (PropertyDefinition prop)
 		{
 			MarkCustomAttributes (prop);
 		}
 
-		void MarkEvent (EventDefinition evt)
+		protected void MarkEvent (EventDefinition evt)
 		{
 			MarkCustomAttributes (evt);
 			MarkMethodIfNotNull (evt.AddMethod);
