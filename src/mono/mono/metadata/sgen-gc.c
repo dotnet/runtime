@@ -4139,7 +4139,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 }
 
 static void
-sgen_thread_unregister (SgenThreadInfo *p)
+sgen_thread_detach (SgenThreadInfo *p)
 {
 	/* If a delegate is passed to native code and invoked on a thread we dont
 	 * know about, the jit will register it with mono_jit_thread_attach, but
@@ -4149,7 +4149,11 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	 */
 	if (mono_domain_get ())
 		mono_thread_detach (mono_thread_current ());
+}
 
+static void
+sgen_thread_unregister (SgenThreadInfo *p)
+{
 	binary_protocol_thread_unregister ((gpointer)mono_thread_info_get_tid (p));
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)mono_thread_info_get_tid (p));
 
@@ -4840,6 +4844,7 @@ mono_gc_base_init (void)
 	gc_debug_file = stderr;
 
 	cb.thread_register = sgen_thread_register;
+	cb.thread_detach = sgen_thread_detach;
 	cb.thread_unregister = sgen_thread_unregister;
 	cb.thread_attach = sgen_thread_attach;
 	cb.mono_method_is_critical = (gpointer)is_critical_method;

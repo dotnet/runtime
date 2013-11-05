@@ -137,10 +137,19 @@ typedef struct {
 typedef struct {
 	void* (*thread_register)(THREAD_INFO_TYPE *info, void *baseaddr);
 	/*
-	This callback is called after @info is removed from the thread list.
+	This callback is called with @info still on the thread list.
+	This call is made while holding the suspend lock, so don't do callbacks.
 	SMR remains functional as its small_id has not been reclaimed.
 	*/
 	void (*thread_unregister)(THREAD_INFO_TYPE *info);
+	/*
+	This callback is called right before thread_unregister. This is called
+	without any locks held so it's the place for complicated cleanup.
+
+	The thread must remain operational between this call and thread_unregister.
+	It must be possible to successfully suspend it after thread_unregister completes.
+	*/
+	void (*thread_detach)(THREAD_INFO_TYPE *info);
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 	gboolean (*mono_method_is_critical) (void *method);
 #ifndef HOST_WIN32
