@@ -1790,6 +1790,16 @@ gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)location & 0x7)) {
+		gint64 ret;
+		mono_interlocked_lock ();
+		(*location)++;
+		ret = *location;
+		mono_interlocked_unlock ();
+		return ret;
+	}
+#endif
 	return InterlockedIncrement64 (location);
 }
 
@@ -1800,6 +1810,16 @@ gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)location & 0x7)) {
+		gint64 ret;
+		mono_interlocked_lock ();
+		(*location)--;
+		ret = *location;
+		mono_interlocked_unlock ();
+		return ret;
+	}
+#endif
 	return InterlockedDecrement64 (location);
 }
 
@@ -1834,6 +1854,16 @@ gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location,
 gint64 
 ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 value)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)location & 0x7)) {
+		gint64 ret;
+		mono_interlocked_lock ();
+		ret = *location;
+		*location = value;
+		mono_interlocked_unlock ();
+		return ret;
+	}
+#endif
 	return InterlockedExchange64 (location, value);
 }
 
@@ -1905,7 +1935,7 @@ gint64
 ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, gint64 value, gint64 comparand)
 {
 #if SIZEOF_VOID_P == 4
-	if ((size_t)location & 0x7) {
+	if (G_UNLIKELY ((size_t)location & 0x7)) {
 		gint64 old;
 		mono_interlocked_lock ();
 		old = *location;
@@ -1945,12 +1975,31 @@ ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 gint64 
 ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)location & 0x7)) {
+		gint64 ret;
+		mono_interlocked_lock ();
+		*location += value;
+		ret = *location;
+		mono_interlocked_unlock ();
+		return ret;
+	}
+#endif
 	return InterlockedAdd64 (location, value);
 }
 
 gint64 
 ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)location & 0x7)) {
+		gint64 ret;
+		mono_interlocked_lock ();
+		ret = *location;
+		mono_interlocked_unlock ();
+		return ret;
+	}
+#endif
 	return InterlockedRead64 (location);
 }
 
