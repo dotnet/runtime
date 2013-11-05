@@ -850,6 +850,17 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self());
 	*stsize = pthread_get_stacksize_np (pthread_self());
 
+
+#ifdef TARGET_OSX
+	/*
+	 * Mavericks reports stack sizes as 512kb:
+	 * http://permalink.gmane.org/gmane.comp.java.openjdk.hotspot.devel/11590
+	 * https://bugs.openjdk.java.net/browse/JDK-8020753
+	 */
+	if (*stsize == 512 * 1024)
+		*stsize = 2048 * mono_pagesize ();
+#endif
+
 	/* staddr points to the start of the stack, not the end */
 	*staddr -= *stsize;
 
