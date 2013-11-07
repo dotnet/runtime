@@ -33,6 +33,8 @@
 			<method name="InternalArray__IndexOf" />
 			<method name="InternalArray__get_Item" />
 			<method name="InternalArray__set_Item" />
+			<method name="InternalArray__IReadOnlyList_get_Item" />
+			<method name="InternalArray__IReadOnlyCollection_get_Count" />
 		</type>
 		<type fullname="System.ArrayTypeMismatchException" />
 		<type fullname="System.Attribute" />
