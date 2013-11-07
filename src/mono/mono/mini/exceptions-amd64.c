@@ -775,6 +775,8 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	/* The stack should be unaligned */
 	if ((sp % 16) == 0)
 		sp -= 8;
+	/* Preserve the call chain to prevent crashes in the libgcc unwinder (#15969) */
+	*(guint64*)sp = ctx->rip;
 	ctx->rsp = sp;
 	ctx->rip = (guint64)async_cb;
 }
