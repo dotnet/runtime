@@ -262,17 +262,8 @@ public:
 		 * install a profiler hook and reset the code model here.
 		 * This should be inside an ifdef, but we can't include our config.h either,
 		 * since its definitions conflict with LLVM's config.h.
-		 *
+		 * The LLVM mono branch contains a workaround.
 		 */
-		//#if defined(TARGET_X86) || defined(TARGET_AMD64)
-#ifndef LLVM_MONO_BRANCH
-		/* The LLVM mono branch contains a workaround, so this is not needed */
-		if (Details.MF->getTarget ().getCodeModel () == CodeModel::Large) {
-			Details.MF->getTarget ().setCodeModel (CodeModel::Default);
-		}
-#endif
-		//#endif
-
 		emitted_cb (wrap (&F), Code, (char*)Code + Size);
 	}
 };
@@ -547,7 +538,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   mono_mm->alloc_cb = alloc_cb;
   mono_mm->dlsym_cb = dlsym_cb;
 
-  //JITExceptionHandling = true;
   // PrettyStackTrace installs signal handlers which trip up libgc
   DisablePrettyStackTrace = true;
 
@@ -568,14 +558,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 #endif
   g_assert (EE);
 
-#if 0
-  ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, CodeGenOpt::Default, true, Reloc::Default, CodeModel::Large);
-  if (!EE) {
-	  errs () << "Unable to create LLVM ExecutionEngine: " << Error << "\n";
-	  g_assert_not_reached ();
-  }
-#endif
-
   EE->InstallExceptionTableRegister (exception_cb);
   mono_event_listener = new MonoJITEventListener (emitted_cb);
   EE->RegisterJITEventListener (mono_event_listener);
@@ -587,12 +569,10 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   PassRegistry &Registry = *PassRegistry::getPassRegistry();
   initializeCore(Registry);
   initializeScalarOpts(Registry);
-  //initializeIPO(Registry);
   initializeAnalysis(Registry);
   initializeIPA(Registry);
   initializeTransformUtils(Registry);
   initializeInstCombine(Registry);
-  //initializeInstrumentation(Registry);
   initializeTarget(Registry);
 
   llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "");

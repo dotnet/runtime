@@ -835,8 +835,6 @@ static int ccount = 0;
 
 /* Loads/Stores which can fault are handled correctly by the LLVM mono branch */
 #define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
-	if (COMPILE_LLVM (cfg) && !IS_LLVM_MONO_BRANCH)			\
-		MONO_EMIT_NEW_IMPLICIT_EXCEPTION ((cfg));			\
     } while (0)
 
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */

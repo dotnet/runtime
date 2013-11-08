@@ -102,17 +102,6 @@
 #define LLVM_CHECK_VERSION(major,minor) 0
 #endif
 
-/* 
- * Whenever we are using mono's LLVM branch.
- * This can be used in if statements, code which references new definitions from the branch
- * still needs an #ifdef LLVM_MONO_BRANCH.
- */
-#ifdef LLVM_MONO_BRANCH
-#define IS_LLVM_MONO_BRANCH 1
-#else
-#define IS_LLVM_MONO_BRANCH 0
-#endif
-
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
 
 /* for 32 bit systems */
