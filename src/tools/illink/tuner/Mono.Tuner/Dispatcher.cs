@@ -46,7 +46,7 @@ namespace Mono.Tuner {
 
 		public abstract SubStepTargets Targets { get; }
 
-		void ISubStep.Initialize (LinkContext context)
+		public virtual void Initialize (LinkContext context)
 		{
 			this.context = context;
 		}
