@@ -989,8 +989,8 @@ remove_abc_from_inst (MonoInst *ins, MonoVariableRelationsEvaluationArea *area)
 		if (REPORT_ABC_REMOVAL) {
 			printf ("ARRAY-ACCESS: removed bounds check on array %d with index %d\n",
 					array_variable, index_variable);
-			NULLIFY_INS (ins);
 		}
+		NULLIFY_INS (ins);
 	} else {
 		if (TRACE_ABC_REMOVAL) {
 			if (index_context->ranges.zero.lower >= 0) {
