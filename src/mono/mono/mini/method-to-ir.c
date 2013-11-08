@@ -2901,7 +2901,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 	has_card_table_wb = TRUE;
 #endif
 
-	if (has_card_table_wb && !cfg->compile_aot && card_table && nursery_shift_bits > 0) {
+	if (has_card_table_wb && !cfg->compile_aot && card_table && nursery_shift_bits > 0 && !COMPILE_LLVM (cfg)) {
 		MonoInst *wbarrier;
 
 		MONO_INST_NEW (cfg, wbarrier, OP_CARD_TABLE_WBARRIER);
