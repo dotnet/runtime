@@ -753,8 +753,6 @@ handle_signal_exception (gpointer obj)
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
 
-	while (TRUE)
-		;
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
 	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
