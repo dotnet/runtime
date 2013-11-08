@@ -753,6 +753,8 @@ handle_signal_exception (gpointer obj)
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
 
+	while (TRUE)
+		;
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
 	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
@@ -775,8 +777,10 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	/* The stack should be unaligned */
 	if ((sp % 16) == 0)
 		sp -= 8;
+#ifdef __linux__
 	/* Preserve the call chain to prevent crashes in the libgcc unwinder (#15969) */
 	*(guint64*)sp = ctx->rip;
+#endif
 	ctx->rsp = sp;
 	ctx->rip = (guint64)async_cb;
 }
