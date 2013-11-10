@@ -5362,6 +5362,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #endif
 
 	if (cfg->comp_done & MONO_COMP_SSA && COMPILE_LLVM (cfg)) {
+		mono_ssa_loop_invariant_code_motion (cfg);
 		/* This removes MONO_INST_FAULT flags too so perform it unconditionally */
 		if (cfg->opt & MONO_OPT_ABCREM)
 			mono_perform_abc_removal (cfg);

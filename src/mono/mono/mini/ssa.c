@@ -1350,4 +1350,114 @@ mono_ssa_strength_reduction (MonoCompile *cfg)
 }
 #endif
 
+void
+mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb, *h, *idom;
+	MonoInst *ins, *n, *tins;
+	int i;
+
+	g_assert (cfg->comp_done & MONO_COMP_SSA);
+	if (!(cfg->comp_done & MONO_COMP_LOOPS) || !(cfg->comp_done & MONO_COMP_SSA_DEF_USE))
+		return;
+
+	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+		GList *lp = bb->loop_blocks;
+
+		if (!lp)
+			continue;
+		h = (MonoBasicBlock *)lp->data;
+		if (bb != h)
+			continue;
+		MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
+			gboolean is_class_init = FALSE;
+
+			/*
+			 * Try to move instructions out of loop headers into the preceeding bblock.
+			 */
+			if (ins->opcode == OP_VOIDCALL) {
+				MonoCallInst *call = (MonoCallInst*)ins;
+
+				if (call->fptr_is_patch) {
+					MonoJumpInfo *ji = (MonoJumpInfo*)call->fptr;
+
+					if (ji->type == MONO_PATCH_INFO_CLASS_INIT)
+						is_class_init = TRUE;
+				}
+			}
+			if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS || ins->opcode == OP_AOTCONST || is_class_init) {
+				gboolean skip;
+				int sreg;
+
+				idom = h->idom;
+				/*
+				 * h->nesting is needed to work around:
+				 * http://llvm.org/bugs/show_bug.cgi?id=17868
+				 */
+				if (!(idom && idom->last_ins && idom->last_ins->opcode == OP_BR && idom->last_ins->inst_target_bb == h && h->nesting == 1)) {
+					continue;
+				}
+
+				/*
+				 * Make sure there are no instructions with side effects before ins.
+				 */
+				skip = FALSE;
+				MONO_BB_FOR_EACH_INS (bb, tins) {
+					if (tins == ins)
+						break;
+					if (!MONO_INS_HAS_NO_SIDE_EFFECT (tins)) {
+						skip = TRUE;
+						break;
+					}
+				}
+				if (skip) {
+					/*
+					  printf ("%s\n", mono_method_full_name (cfg->method, TRUE));
+					  mono_print_ins (tins);
+					*/
+					continue;
+				}
+
+				/* Make sure we don't move the instruction before the def of its sreg */
+				if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS)
+					sreg = ins->sreg1;
+				else
+					sreg = -1;
+				if (sreg != -1) {
+					skip = FALSE;
+					MONO_BB_FOR_EACH_INS (bb, tins) {
+						const char *spec = INS_INFO (tins->opcode);
+
+						if (tins->opcode == OP_MOVE && tins->dreg == sreg) {
+							sreg = tins->sreg1;
+						} else if (spec [MONO_INST_DEST] != ' ' && tins->dreg == ins->sreg1) {
+							skip = TRUE;
+							break;
+						}
+					}
+					if (skip)
+						continue;
+				}
+
+				if (cfg->verbose_level > 1) {
+					printf ("licm in BB%d on ", bb->block_num);
+					mono_print_ins (ins);
+				}
+				//{ static int count = 0; count ++; printf ("%d\n", count); }
+				MONO_REMOVE_INS (bb, ins);
+				mono_bblock_insert_before_ins (idom, idom->last_ins, ins);
+				if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN)
+					idom->has_array_access = TRUE;
+			}
+		}
+	}
+
+	cfg->comp_done &=  ~MONO_COMP_SSA_DEF_USE;
+	for (i = 0; i < cfg->num_varinfo; i++) {
+		MonoMethodVar *info = MONO_VARINFO (cfg, i);
+		info->def = NULL;
+		info->uses = NULL;
+	}
+}
+
 #endif /* DISABLE_JIT */

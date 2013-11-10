@@ -791,6 +791,21 @@ class Tests
 			return 5;
 		return 0;
 	}
+
+	static int llvm_ldlen_licm (int[] arr) {
+		int sum = 0;
+		// The ldlen should be moved out of the loop
+		for (int i = 0; i < arr.Length; ++i)
+			sum += arr [i];
+		return sum;
+	}
+
+	public static int test_10_llvm_ldlen_licm () {
+		int[] arr = new int [10];
+		for (int i = 0; i < 10; ++i)
+			arr [i] = 1;
+		return llvm_ldlen_licm (arr);
+	}
 }
 
 
