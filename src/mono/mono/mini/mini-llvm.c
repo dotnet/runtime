@@ -205,6 +205,12 @@ IntPtrType (void)
 	return sizeof (gpointer) == 8 ? LLVMInt64Type () : LLVMInt32Type ();
 }
 
+static LLVMTypeRef
+ObjRefType (void)
+{
+	return sizeof (gpointer) == 8 ? LLVMPointerType (LLVMInt64Type (), 0) : LLVMPointerType (LLVMInt32Type (), 0);
+}
+
 /*
  * get_vtype_size:
  *
@@ -326,14 +332,14 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		return IntPtrType ();
+		return ObjRefType ();
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* Because of generic sharing */
-		return IntPtrType ();
+		return ObjRefType ();
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (t))
-			return IntPtrType ();
+			return ObjRefType ();
 		/* Fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
