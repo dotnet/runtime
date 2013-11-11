@@ -209,6 +209,7 @@ typedef struct MonoAotCompile {
 	MonoImageWriter *w;
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
+	char *tmpbasename;
 	char *tmpfname;
 	GSList *cie_program;
 	GHashTable *unwind_info_offsets;
@@ -6915,7 +6916,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	}
 
 
-	tempbc = g_strdup_printf ("%s.bc", acfg->tmpfname);
+	tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
 	mono_llvm_emit_aot_module (tempbc, acfg->final_got_size);
 	g_free (tempbc);
 
@@ -6938,7 +6939,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	//opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -domfrontier -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -iv-users -indvars -loop-deletion -loop-simplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -simplifycfg -preverify -domtree -verify");
 	opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -sroa -domtree -early-cse -simplify-libcalls -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -dse -adce -simplifycfg -instcombine -strip-dead-prototypes -preverify -domtree -verify");
 #if 1
-	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpfname, acfg->tmpfname);
+	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
 	printf ("Executing opt: %s\n", command);
 	if (system (command) != 0) {
 		exit (1);
@@ -6966,7 +6967,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	unlink (acfg->tmpfname);
 
-	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpfname);
+	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpbasename);
 
 	printf ("Executing llc: %s\n", command);
 
@@ -8781,12 +8782,16 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		if (acfg->aot_opts.asm_only) {
-			if (acfg->aot_opts.outfile)
+			if (acfg->aot_opts.outfile) {
 				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
-			else
-				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
+				acfg->tmpbasename = g_strdup (acfg->tmpfname);
+			} else {
+				acfg->tmpbasename = g_strdup_printf ("%s", acfg->image->name);
+				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+			}
 		} else {
-			acfg->tmpfname = g_strdup ("temp.s");
+			acfg->tmpbasename = g_strdup_printf ("%s", "temp");
+			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 		}
 
 		emit_llvm_file (acfg);
