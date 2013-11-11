@@ -778,6 +778,7 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	const void *tmp_val;
+	int bufsize = 0;
 	struct timeval tv;
 	
 	if (startup_count == 0) {
@@ -805,7 +806,7 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 		 * buffer sizes "to allow space for bookkeeping
 		 * overhead."
 		 */
-		int bufsize = *((int *) optval);
+		bufsize = *((int *) optval);
 
 		bufsize /= 2;
 		tmp_val = &bufsize;
