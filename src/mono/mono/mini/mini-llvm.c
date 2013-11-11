@@ -3110,6 +3110,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			got_entry_addr = LLVMBuildGEP (builder, ctx->lmodule->got_var, indexes, 2, "");
 
 			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, dname);
+			set_invariant_load_flag (values [ins->dreg]);
 			break;
 		}
 		case OP_NOT_REACHED:
