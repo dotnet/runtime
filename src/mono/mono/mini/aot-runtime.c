@@ -2918,7 +2918,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 				len = old_table[0].method_index;
 			else
 				len = 1;
-			new_table = alloc0_jit_info_data (domain, (len * 1) * sizeof (JitInfoMap), async);
+			new_table = alloc0_jit_info_data (domain, (len + 1) * sizeof (JitInfoMap), async);
 			if (old_table)
 				memcpy (new_table, old_table, len * sizeof (JitInfoMap));
 			new_table [0].method_index = len + 1;
