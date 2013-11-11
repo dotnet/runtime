@@ -639,11 +639,6 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
 
-#if defined(TARGET_AMD64) && defined(TARGET_MACH)
-	/* osx contains an old as which doesn't support avx opcodes */
-	g_string_append (acfg->llc_args, "-mattr=-avx");
-#endif
-
 #if defined(TARGET_AMD64)
 	g_string_append (acfg->llc_args, " -march=x86-64");
 #endif
