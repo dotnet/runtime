@@ -217,6 +217,7 @@ typedef struct MonoAotCompile {
 	char *got_symbol_base;
 	char *got_symbol;
 	char *plt_symbol;
+	char *methods_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
 	const char *user_symbol_prefix;
@@ -6979,7 +6980,6 @@ emit_code (MonoAotCompile *acfg)
 {
 	int oindex, i, prev_index;
 	char symbol [256];
-	char end_symbol [256];
 
 #if defined(TARGET_POWERPC64)
 	sprintf (symbol, ".Lgot_addr");
@@ -6994,21 +6994,20 @@ emit_code (MonoAotCompile *acfg)
 	 * code_offsets array. It is also used to compute the memory ranges occupied by
 	 * AOT code, so it must be equal to the address of the first emitted method.
 	 */
-	sprintf (symbol, "methods");
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment (acfg, 8);
 	if (acfg->llvm) {
 		for (i = 0; i < acfg->nmethods; ++i) {
 			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm) {
-				fprintf (acfg->fp, "\n.set methods, %s\n", acfg->cfgs [i]->asm_symbol);
+				acfg->methods_symbol = g_strdup (acfg->cfgs [i]->asm_symbol);
 				break;
 			}
 		}
-		if (i == acfg->nmethods)
-			/* No LLVM compiled methods */
-			emit_label (acfg, symbol);
-	} else {
+	}
+	if (!acfg->methods_symbol) {
+		sprintf (symbol, "methods");
 		emit_label (acfg, symbol);
+		acfg->methods_symbol = g_strdup (symbol);
 	}
 
 	/* 
@@ -7135,10 +7134,9 @@ emit_code (MonoAotCompile *acfg)
 
 		acfg->stats.offsets_size += acfg->nmethods * 4;
 
-		sprintf (end_symbol, "methods");
 		for (i = 0; i < acfg->nmethods; ++i) {
 			if (acfg->cfgs [i]) {
-				emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, end_symbol, 0);
+				emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, acfg->methods_symbol, 0);
 			} else {
 				emit_int32 (acfg, 0xffffffff);
 			}
@@ -7152,10 +7150,9 @@ emit_code (MonoAotCompile *acfg)
 
 	acfg->stats.offsets_size += acfg->nmethods * 4;
 
-	sprintf (end_symbol, "methods");
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, end_symbol, 0);
+			emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, acfg->methods_symbol, 0);
 		} else {
 			emit_int32 (acfg, 0xffffffff);
 		}
@@ -7172,7 +7169,6 @@ emit_code (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	sprintf (end_symbol, "methods");
 	prev_index = -1;
 	for (i = 0; i < acfg->nmethods; ++i) {
 		MonoCompile *cfg;
@@ -7197,7 +7193,7 @@ emit_code (MonoAotCompile *acfg)
 				else
 					fprintf (acfg->fp, "\n\tbl %s\n", symbol);
 			} else {
-				emit_symbol_diff (acfg, symbol, end_symbol, 0);
+				emit_symbol_diff (acfg, symbol, acfg->methods_symbol, 0);
 			}
 			/* Make sure the table is sorted by index */
 			g_assert (index > prev_index);
@@ -8036,7 +8032,7 @@ emit_file_info (MonoAotCompile *acfg)
 	 * various problems (i.e. arm/thumb).
 	 */
 	emit_pointer (acfg, acfg->got_symbol);
-	emit_pointer (acfg, "methods");
+	emit_pointer (acfg, acfg->methods_symbol);
 	if (acfg->llvm) {
 		/*
 		 * Emit a reference to the mono_eh_frame table created by our modified LLVM compiler.
