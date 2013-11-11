@@ -8410,7 +8410,17 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS ""
 #endif
 
-#define EH_LD_OPTIONS ""
+#if defined(sparc)
+#define LD_NAME "ld -shared -G"
+#elif defined(__ppc__) && defined(TARGET_MACH)
+#define LD_NAME "gcc -dynamiclib"
+#elif defined(TARGET_AMD64) && defined(TARGET_MACH)
+#define LD_NAME "clang --shared"
+#elif defined(HOST_WIN32)
+#define LD_NAME "gcc -shared --dll"
+#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
+#define LD_NAME "clang -m32 -dynamiclib"
+#endif
 
 	if (acfg->aot_opts.asm_only) {
 		printf ("Output file: '%s'.\n", acfg->tmpfname);
@@ -8451,18 +8461,10 @@ compile_asm (MonoAotCompile *acfg)
 
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
-#if defined(sparc)
-	command = g_strdup_printf ("ld -shared -G -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(__ppc__) && defined(TARGET_MACH)
-	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(TARGET_AMD64) && defined(TARGET_MACH)
-	command = g_strdup_printf ("clang --shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(HOST_WIN32)
-	command = g_strdup_printf ("gcc -shared --dll -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
-	command = g_strdup_printf ("clang -m32 -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
+#ifdef LD_NAME
+	command = g_strdup_printf ("%s -o %s %s.o", LD_NAME, tmp_outfile_name, acfg->tmpfname);
 #else
-	command = g_strdup_printf ("%sld %s %s -shared -o %s %s.o", tool_prefix, EH_LD_OPTIONS, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("%sld %s -shared -o %s %s.o", tool_prefix, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
 #endif
 	printf ("Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
@@ -8500,7 +8502,7 @@ compile_asm (MonoAotCompile *acfg)
 
 #if defined(TARGET_MACH)
 	command = g_strdup_printf ("dsymutil %s", outfile_name);
-	printf ("Generating debug symbols: %s\n", command);
+	printf ("Executing dsymutil: %s\n", command);
 	if (system (command) != 0) {
 		return 1;
 	}
