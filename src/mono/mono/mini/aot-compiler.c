@@ -8398,6 +8398,8 @@ compile_asm (MonoAotCompile *acfg)
 #else
 #define AS_NAME "nacl-as"
 #endif
+#elif defined(TARGET_OSX)
+#define AS_NAME "clang -c -x assembler"
 #else
 #define AS_NAME "as"
 #endif
@@ -8452,11 +8454,11 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(__ppc__) && defined(TARGET_MACH)
 	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
-	command = g_strdup_printf ("gcc --shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("clang --shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(HOST_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
-	command = g_strdup_printf ("gcc -m32 -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("clang -m32 -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
 	command = g_strdup_printf ("%sld %s %s -shared -o %s %s.o", tool_prefix, EH_LD_OPTIONS, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
 #endif
