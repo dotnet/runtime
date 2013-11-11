@@ -896,6 +896,12 @@ static int ccount = 0;
 
 #define MONO_EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
 
+#define NEW_LOAD_MEMBASE_INVARIANT(cfg,dest,op,dr,base,offset) NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_INVARIANT_LOAD)
+
+#define MONO_EMIT_NEW_LOAD_MEMBASE_OP_INVARIANT(cfg,op,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS ((cfg), (op), (dr), (base), (offset), MONO_INST_INVARIANT_LOAD)
+
+#define MONO_EMIT_NEW_LOAD_MEMBASE_INVARIANT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_INVARIANT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
+
 /*Object Model related macros*/
 
 /* Default bounds check implementation for most architectures + llvm */
@@ -904,7 +910,7 @@ static int ccount = 0;
 			if (fault) \
 				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
 			else \
-				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset, MONO_INST_CONSTANT_LOAD); \
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset, MONO_INST_INVARIANT_LOAD); \
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, _length_reg, index_reg); \
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 	} while (0)

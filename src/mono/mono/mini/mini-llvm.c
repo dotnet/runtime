@@ -2986,7 +2986,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			values [ins->dreg] = emit_load (ctx, bb, &builder, size, addr, dname, is_volatile);
 
-			if (!is_volatile && (ins->flags & MONO_INST_CONSTANT_LOAD)) {
+			if (!is_volatile && (ins->flags & MONO_INST_INVARIANT_LOAD)) {
 				/*
 				 * These will signal LLVM that these loads do not alias any stores, and
 				 * they can't fail, allowing them to be hoisted out of loops.

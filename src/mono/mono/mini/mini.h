@@ -885,7 +885,7 @@ enum {
 	 */
 	MONO_INST_LMF = 32,
 	/* On loads, the source address points to a constant value */
-	MONO_INST_CONSTANT_LOAD = 64,
+	MONO_INST_INVARIANT_LOAD = 64,
 	/* On variables, the variable needs GC tracking */
 	MONO_INST_GC_TRACK = 128,
 	/*
