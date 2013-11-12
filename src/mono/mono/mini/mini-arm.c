@@ -6264,15 +6264,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #ifdef USE_JUMP_TABLES
 			code = load_element_with_regbase_cond (code, ARMREG_R1, ARMREG_R2, IMT_METHOD_JTI (i), ARMCOND_AL);
 			ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
-			code = load_element_with_regbase_cond (code, ARMREG_R1, ARMREG_R2, JUMP_CODE_JTI (i), ARMCOND_GE);
-			ARM_BX_COND (code, ARMCOND_GE, ARMREG_R1);
+			code = load_element_with_regbase_cond (code, ARMREG_R1, ARMREG_R2, JUMP_CODE_JTI (i), ARMCOND_HS);
+			ARM_BX_COND (code, ARMCOND_HS, ARMREG_R1);
 			item->jmp_code = GUINT_TO_POINTER (JUMP_CODE_JTI (i));
 #else
 			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 			ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
 
 			item->jmp_code = (guint8*)code;
-			ARM_B_COND (code, ARMCOND_GE, 0);
+			ARM_B_COND (code, ARMCOND_HS, 0);
 			++extra_space;
 #endif
 		}
