@@ -5929,7 +5929,7 @@ mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 #define CMP_SIZE (3 * 4)
 #define BRANCH_SIZE (1 * 4)
 #define CALL_SIZE (2 * 4)
-#define WMC_SIZE (5 * 4)
+#define WMC_SIZE (8 * 4)
 #define DISTANCE(A, B) (((gint32)(B)) - ((gint32)(A)))
 
 #ifdef USE_JUMP_TABLES
@@ -5965,6 +5965,15 @@ arm_emit_value_and_patch_ldr (arminstr_t *code, arminstr_t *target, guint32 valu
 }
 #endif
 
+#ifdef ENABLE_WRONG_METHOD_CHECK
+void
+mini_dump_bad_imt (int input_imt, int compared_imt, int pc)
+{
+	g_print ("BAD IMT comparing %x with expected %x at ip %x", input_imt, compared_imt, pc);
+	g_assert (0);
+}
+#endif
+
 gpointer
 mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
 	gpointer fail_tramp)
@@ -5978,6 +5987,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	guint32 **constant_pool_starts;
 	arminstr_t *vtable_target = NULL;
 	int extra_space = 0;
+#endif
+#ifdef ENABLE_WRONG_METHOD_CHECK
+	char * cond;
 #endif
 
 	size = BASE_SIZE;
@@ -6033,11 +6045,11 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		code = mono_domain_code_reserve (domain, size);
 	start = code;
 
-#if DEBUG_IMT
-	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
+#ifdef DEBUG_IMT
+	g_print ("Building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p fail_tramp %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable, fail_tramp);
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		printf ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, item->key->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);
+		g_print ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, ((MonoMethod*)item->key)->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);
 	}
 #endif
 
@@ -6121,9 +6133,18 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 #endif
 				ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
-				ARM_B_COND (code, ARMCOND_NE, 1);
+				cond = code;
+				ARM_B_COND (code, ARMCOND_EQ, 0);
 
+/* Define this if your system is so bad that gdb is failing. */
+#ifdef BROKEN_DEV_ENV
+				ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_PC);
+				ARM_BL (code, 0);
+				arm_patch (code - 1, mini_dump_bad_imt);
+#else
 				ARM_DBRK (code);
+#endif
+				arm_patch (cond, code);
 #endif
 			}
 
@@ -6281,7 +6302,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 	}
 
-#if DEBUG_IMT
+#ifdef DEBUG_IMT
 	{
 		char *buff = g_strdup_printf ("thunk_for_class_%s_%s_entries_%d", vtable->klass->name_space, vtable->klass->name, count);
 		mono_disassemble_code (NULL, (guint8*)start, size, buff);
