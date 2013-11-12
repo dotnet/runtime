@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -11,17 +9,21 @@ namespace Mono.Tuner {
 
 	public class RemoveResources : IStep {
 
-		I18nAssemblies assemblies;
+		readonly I18nAssemblies assemblies;
 
 		public RemoveResources (I18nAssemblies assemblies)
 		{
 			this.assemblies = assemblies;
 		}
 
-		public void Process (LinkContext context)
+		public virtual void Process (LinkContext context)
 		{
 			AssemblyDefinition assembly;
 			if (!context.TryGetLinkedAssembly ("mscorlib", out assembly))
+				return;
+
+			// skip this if we're not linking mscorlib, e.g. --linkskip=mscorlib
+			if (context.Annotations.GetAction (assembly) != AssemblyAction.Link)
 				return;
 
 			var resources = assembly.MainModule.Resources;
