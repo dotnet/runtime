@@ -87,10 +87,12 @@ g_unsetenv(const gchar *variable)
 gchar*
 g_win32_getlocale(void)
 {
-	/* FIXME: Use GetThreadLocale
-	 * and convert LCID to standard 
-	 * string form, "en_US" */
-	return strdup ("en_US");
+	LCID lcid = GetThreadLocale();
+	gchar buf[19];
+	gint ccBuf = GetLocaleInfo(lcid, LOCALE_SISO639LANGNAME, buf, 9);
+	buf[ccBuf - 1] = '-';
+	ccBuf += GetLocaleInfo(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
+	return strdup(buf);
 }
 
 gboolean
