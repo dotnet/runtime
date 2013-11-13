@@ -2923,9 +2923,12 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 	 * We collect the types needed to build the
 	 * instantiations in interfaces at intervals of 3/5, because 3/5 are
 	 * the generic interfaces needed to implement.
+	 *
+	 * On 4.5, as an optimization, we don't expand ref classes for the variant generic interfaces
+	 * (IEnumerator, IReadOnlyList and IReadOnlyColleciton). The regular dispatch code can handle those cases.
 	 */
-	nifaces = generic_ireadonlylist_class ? 5 : 3;
 	if (eclass->valuetype) {
+		nifaces = generic_ireadonlylist_class ? 5 : 3;
 		fill_valuetype_array_derived_types (valuetype_types, eclass, original_rank);
 
 		/* IList, ICollection, IEnumerable, IReadOnlyList`1 */
@@ -2947,6 +2950,7 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 		int idepth = eclass->idepth;
 		if (!internal_enumerator)
 			idepth--;
+		nifaces = generic_ireadonlylist_class ? 2 : 3;
 
 		// FIXME: This doesn't seem to work/required for generic params
 		if (!(eclass->this_arg.type == MONO_TYPE_VAR || eclass->this_arg.type == MONO_TYPE_MVAR || (eclass->image->dynamic && !eclass->wastypebuilder)))
@@ -3010,10 +3014,16 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 
 		interfaces [i + 0] = inflate_class_one_arg (mono_defaults.generic_ilist_class, iface);
 		interfaces [i + 1] = inflate_class_one_arg (generic_icollection_class, iface);
-		interfaces [i + 2] = inflate_class_one_arg (generic_ienumerable_class, iface);
-		if (generic_ireadonlylist_class) {
-			interfaces [i + 3] = inflate_class_one_arg (generic_ireadonlylist_class, iface);
-			interfaces [i + 4] = inflate_class_one_arg (generic_ireadonlycollection_class, iface);
+
+		if (eclass->valuetype) {
+			interfaces [i + 2] = inflate_class_one_arg (generic_ienumerable_class, iface);
+			if (generic_ireadonlylist_class) {
+				interfaces [i + 3] = inflate_class_one_arg (generic_ireadonlylist_class, iface);
+				interfaces [i + 4] = inflate_class_one_arg (generic_ireadonlycollection_class, iface);
+			}
+		} else {
+			if (!generic_ireadonlylist_class)
+				interfaces [i + 2] = inflate_class_one_arg (generic_ienumerable_class, iface);
 		}
 	}
 	if (internal_enumerator) {
