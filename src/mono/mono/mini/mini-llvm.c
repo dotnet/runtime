@@ -3215,44 +3215,38 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
 			break;
 		}
-		case OP_ATOMIC_EXCHANGE_I4: {
-			LLVMValueRef args [2];
-
-			g_assert (ins->inst_offset == 0);
-
-			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
-			args [1] = rhs;
-
-			values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_XCHG, args [0], args [1]);
-			break;
-		}
+		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
 			LLVMValueRef args [2];
+			LLVMTypeRef t;
+				
+			if (ins->opcode == OP_ATOMIC_EXCHANGE_I4)
+				t = LLVMInt32Type ();
+			else
+				t = LLVMInt64Type ();
 
 			g_assert (ins->inst_offset == 0);
 
-			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
-			args [1] = convert (ctx, rhs, LLVMInt64Type ());
+			args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
+			args [1] = convert (ctx, rhs, t);
+
 			values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_XCHG, args [0], args [1]);
 			break;
 		}
-		case OP_ATOMIC_ADD_NEW_I4: {
-			LLVMValueRef args [2];
-
-			g_assert (ins->inst_offset == 0);
-
-			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
-			args [1] = rhs;
-			values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
-			break;
-		}
+		case OP_ATOMIC_ADD_NEW_I4:
 		case OP_ATOMIC_ADD_NEW_I8: {
 			LLVMValueRef args [2];
+			LLVMTypeRef t;
+				
+			if (ins->opcode == OP_ATOMIC_ADD_NEW_I4)
+				t = LLVMInt32Type ();
+			else
+				t = LLVMInt64Type ();
 
 			g_assert (ins->inst_offset == 0);
 
-			args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
-			args [1] = convert (ctx, rhs, LLVMInt64Type ());
+			args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
+			args [1] = convert (ctx, rhs, t);
 			values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
 			break;
 		}
@@ -3261,11 +3255,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef args [3];
 			LLVMTypeRef t;
 				
-			if (ins->opcode == OP_ATOMIC_CAS_I4) {
+			if (ins->opcode == OP_ATOMIC_CAS_I4)
 				t = LLVMInt32Type ();
-			} else {
+			else
 				t = LLVMInt64Type ();
-			}
 
 			args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
 			/* comparand */
