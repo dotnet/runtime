@@ -811,9 +811,8 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	mono_thread_create_internal (domain, func, arg, FALSE, FALSE, 0);
 }
 
-#if defined(HOST_WIN32) && defined(__GNUC__)
+#if defined(HOST_WIN32) && HAVE_DECL___READFSDWORD==0
 static __inline__ __attribute__((always_inline))
-/* This is not defined by gcc */
 unsigned long long
 __readfsdword (unsigned long offset)
 {
