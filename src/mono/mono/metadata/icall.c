@@ -6500,6 +6500,8 @@ ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	mono_environment_exitcode_set (result);
+
 /* FIXME: There are some cleanup hangs that should be worked out, but
  * if the program is going to exit, everything will be cleaned up when
  * NaCl exits anyway.
