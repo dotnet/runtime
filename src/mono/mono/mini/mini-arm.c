@@ -154,7 +154,7 @@ int mono_exc_esp_offset = 0;
 
 #define ADD_LR_PC_4 ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 25) | (1 << 23) | (ARMREG_PC << 16) | (ARMREG_LR << 12) | 4)
 #define MOV_LR_PC ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 24) | (0xa << 20) |  (ARMREG_LR << 12) | ARMREG_PC)
-#define DEBUG_IMT 0
+//#define DEBUG_IMT 0
  
 /* A variant of ARM_LDR_IMM which can handle large offsets */
 #define ARM_LDR_IMM_GENERAL(code, dreg, basereg, offset, scratch_reg) do { \
