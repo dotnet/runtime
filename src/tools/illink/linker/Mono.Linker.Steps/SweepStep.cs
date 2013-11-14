@@ -94,6 +94,9 @@ namespace Mono.Linker.Steps {
 
 		void SweepReferences (AssemblyDefinition assembly, AssemblyDefinition target)
 		{
+			if (assembly == target)
+				return;
+
 			var references = assembly.MainModule.AssemblyReferences;
 			for (int i = 0; i < references.Count; i++) {
 				var reference = references [i];
@@ -134,8 +137,11 @@ namespace Mono.Linker.Steps {
 				if (hash.ContainsKey (tr))
 					continue;
 				var td = tr.Resolve ();
+				IMetadataScope scope = tr.Scope;
 				// at this stage reference might include things that can't be resolved
-				var scope = td == null ? null : assembly.MainModule.Import (td).Scope;
+				// and if it is (resolved) it needs to be kept only if marked (#16213)
+				if ((td != null) && Annotations.IsMarked (td))
+					scope = assembly.MainModule.Import (td).Scope;
 				hash.Add (tr, scope);
 			}
 
