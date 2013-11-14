@@ -7228,9 +7228,9 @@ static int
 _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 			     MonoTypeNameParse *info)
 {
-	char *start, *p, *w, *temp, *last_point, *startn;
+	char *start, *p, *w, *last_point, *startn;
 	int in_modifiers = 0;
-	int isbyref = 0, rank, arity = 0, i;
+	int isbyref = 0, rank = 0;
 
 	start = p = w = name;
 
@@ -7277,14 +7277,6 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 		case ']':
 			in_modifiers = 1;
 			break;
-		case '`':
-			++p;
-			i = strtol (p, &temp, 10);
-			arity += i;
-			if (p == temp)
-				return 0;
-			p = temp-1;
-			break;
 		default:
 			break;
 		}
@@ -7318,10 +7310,32 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 			*p++ = 0;
 			break;
 		case '[':
-			if (arity != 0) {
-				*p++ = 0;
+			//Decide if it's an array of a generic argument list
+			*p++ = 0;
+
+			if (!*p) //XXX test
+				return 0;
+			if (*p  == ',' || *p == '*' || *p == ']') { //array
+				rank = 1;
+				while (*p) {
+					if (*p == ']')
+						break;
+					if (*p == ',')
+						rank++;
+					else if (*p == '*') /* '*' means unknown lower bound */
+						info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-2));
+					else
+						return 0;
+					++p;
+				}
+				if (*p++ != ']')
+					return 0;
+				info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (rank));
+			} else {
+				if (rank) /* generic args after array spec*/ //XXX test
+					return 0;
 				info->type_arguments = g_ptr_array_new ();
-				for (i = 0; i < arity; i++) {
+				while (*p) {
 					MonoTypeNameParse *subinfo = g_new0 (MonoTypeNameParse, 1);
 					gboolean fqname = FALSE;
 
@@ -7364,36 +7378,15 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 					} else if (fqname && (*p == ']')) {
 						*p++ = 0;
 					}
-
-					if (i + 1 < arity) {
-						if (*p != ',')
-							return 0;
-					} else {
-						if (*p != ']')
-							return 0;
+					if (*p == ']') {
+						*p++ = 0;
+						break;
+					} else if (!*p) {
+						return 0;
 					}
 					*p++ = 0;
 				}
-
-				arity = 0;
-				break;
 			}
-			rank = 1;
-			*p++ = 0;
-			while (*p) {
-				if (*p == ']')
-					break;
-				if (*p == ',')
-					rank++;
-				else if (*p == '*') /* '*' means unknown lower bound */
-					info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-2));
-				else
-					return 0;
-				++p;
-			}
-			if (*p++ != ']')
-				return 0;
-			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (rank));
 			break;
 		case ']':
 			if (is_recursed)
