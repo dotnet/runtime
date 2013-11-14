@@ -129,6 +129,7 @@ mono_loader_cleanup (void)
 static void
 set_loader_error (MonoLoaderError *error)
 {
+	mono_loader_clear_error ();
 	mono_native_tls_set_value (loader_error_thread_id, error);
 }
 
