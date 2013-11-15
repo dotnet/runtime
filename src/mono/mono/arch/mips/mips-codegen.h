@@ -334,7 +334,7 @@ enum {
 /* misc and coprocessor ops */
 #define mips_move(c,dest,src) mips_addu(c,dest,src,mips_zero)
 #define mips_dmove(c,dest,src) mips_daddu(c,dest,src,mips_zero)
-#define mips_nop(c) mips_sll(c,0,0,0)
+#define mips_nop(c) mips_or(c,mips_at,mips_at,0)
 #define mips_break(c,code) mips_emit32(c, ((code)<<6)|13)
 #define mips_mfhi(c,dest) mips_format_r(c,0,0,0,dest,0,16)
 #define mips_mflo(c,dest) mips_format_r(c,0,0,0,dest,0,18)
