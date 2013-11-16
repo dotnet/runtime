@@ -2526,6 +2526,15 @@ ves_icall_System_Threading_Volatile_Read4 (void *ptr)
 gint64
 ves_icall_System_Threading_Volatile_Read8 (void *ptr)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)ptr & 0x7)) {
+		gint64 val;
+		mono_interlocked_lock ();
+		val = *(gint64*)ptr;
+		mono_interlocked_unlock ();
+		return val;
+	}
+#endif
 	return InterlockedRead64 (ptr);
 }
 
@@ -2539,6 +2548,16 @@ double
 ves_icall_System_Threading_Volatile_ReadDouble (void *ptr)
 {
 	LongDoubleUnion u;
+
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)ptr & 0x7)) {
+		double val;
+		mono_interlocked_lock ();
+		val = *(double*)ptr;
+		mono_interlocked_unlock ();
+		return val;
+	}
+#endif
 
 	u.ival = InterlockedRead64 (ptr);
 
@@ -2630,6 +2649,15 @@ ves_icall_System_Threading_Volatile_Write4 (void *ptr, gint32 value)
 void
 ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64 value)
 {
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)ptr & 0x7)) {
+		mono_interlocked_lock ();
+		*(gint64*)ptr = value;
+		mono_interlocked_unlock ();
+		return;
+	}
+#endif
+
 	InterlockedWrite64 (ptr, value);
 }
 
@@ -2643,6 +2671,15 @@ void
 ves_icall_System_Threading_Volatile_WriteDouble (void *ptr, double value)
 {
 	LongDoubleUnion u;
+
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)ptr & 0x7)) {
+		mono_interlocked_lock ();
+		*(double*)ptr = value;
+		mono_interlocked_unlock ();
+		return;
+	}
+#endif
 
 	u.fval = value;
 
