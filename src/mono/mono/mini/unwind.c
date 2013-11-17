@@ -49,8 +49,9 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (AMD64_RIP))
 #elif defined(TARGET_ARM)
 // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0040a/IHI0040A_aadwarf.pdf
-static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-#define NUM_REGS 16
+/* Assign d8..d15 to hregs 16..24 */
+static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 264, 265, 266, 267, 268, 269, 270, 271 };
+#define NUM_REGS 272
 #define DWARF_DATA_ALIGN (-4)
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (ARMREG_LR))
 #elif defined (TARGET_X86)
@@ -330,14 +331,14 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 #endif
 
 static G_GNUC_UNUSED void
-print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *locations)
+print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *locations, guint8 *reg_saved)
 {
 	int i;
 
 	printf ("\t%x: cfa=r%d+%d ", ip, cfa_reg, cfa_offset);
 
 	for (i = 0; i < nregs; ++i)
-		if (locations [i].loc_type == LOC_OFFSET)
+		if (reg_saved [i] && locations [i].loc_type == LOC_OFFSET)
 			printf ("r%d@%d(cfa) ", i, locations [i].offset);
 	printf ("\n");
 }
@@ -358,12 +359,12 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   guint8 **out_cfa)
 {
 	Loc locations [NUM_REGS];
-	int i, pos, reg, cfa_reg, cfa_offset;
+	guint8 reg_saved [NUM_REGS];
+	int i, pos, reg, cfa_reg, cfa_offset, offset;
 	guint8 *p;
 	guint8 *cfa_val;
 
-	for (i = 0; i < NUM_REGS; ++i)
-		locations [i].loc_type = LOC_SAME;
+	memset (reg_saved, 0, sizeof (reg_saved));
 
 	p = unwind_info;
 	pos = 0;
@@ -381,6 +382,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 		case DW_CFA_offset:
 			reg = *p & 0x3f;
 			p ++;
+			reg_saved [reg] = TRUE;
 			locations [reg].loc_type = LOC_OFFSET;
 			locations [reg].offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
 			break;
@@ -400,8 +402,19 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				break;
 			case DW_CFA_offset_extended_sf:
 				reg = decode_uleb128 (p, &p);
+				offset = decode_sleb128 (p, &p);
+				g_assert (reg < NUM_REGS);
+				reg_saved [reg] = TRUE;
 				locations [reg].loc_type = LOC_OFFSET;
-				locations [reg].offset = decode_sleb128 (p, &p) * DWARF_DATA_ALIGN;
+				locations [reg].offset = offset * DWARF_DATA_ALIGN;
+				break;
+			case DW_CFA_offset_extended:
+				reg = decode_uleb128 (p, &p);
+				offset = decode_uleb128 (p, &p);
+				g_assert (reg < NUM_REGS);
+				reg_saved [reg] = TRUE;
+				locations [reg].loc_type = LOC_OFFSET;
+				locations [reg].offset = offset * DWARF_DATA_ALIGN;
 				break;
 			case DW_CFA_advance_loc4:
 				pos += read32 (p);
@@ -422,7 +435,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (i = 0; i < NUM_REGS; ++i) {
-		if (locations [i].loc_type == LOC_OFFSET) {
+		if (reg_saved [i] && locations [i].loc_type == LOC_OFFSET) {
 			int hreg = mono_dwarf_reg_to_hw_reg (i);
 			g_assert (hreg < nregs);
 			regs [hreg] = *(mgreg_t*)(cfa_val + locations [i].offset);
