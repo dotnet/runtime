@@ -862,8 +862,6 @@ static int ccount = 0;
 		int __ins_flags = ins_flags; \
 		if (__ins_flags & MONO_INST_FAULT) {								\
 			MONO_EMIT_NULL_CHECK ((cfg), (base));						\
-			if (cfg->explicit_null_checks)								\
-				__ins_flags &= ~MONO_INST_FAULT;							\
 		}																\
 		NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset));	\
 		(dest)->flags = (__ins_flags);									\
@@ -874,8 +872,6 @@ static int ccount = 0;
 		int __ins_flags = ins_flags; \
 	    if (__ins_flags & MONO_INST_FAULT) {									\
 			MONO_EMIT_NULL_CHECK ((cfg), (base));						\
-			if (cfg->explicit_null_checks)								\
-				__ins_flags &= ~MONO_INST_FAULT;							\
 		}																\
 		NEW_LOAD_MEMBASE ((cfg), (inst), (op), (dr), (base), (offset)); \
 		inst->flags = (__ins_flags); \
