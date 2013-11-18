@@ -165,7 +165,7 @@ typedef struct MonoAotCompile {
 	GHashTable *method_depth;
 	MonoCompile **cfgs;
 	int cfgs_size;
-	GHashTable *patch_to_plt_entry;
+	GHashTable **patch_to_plt_entry;
 	GHashTable *plt_offset_to_entry;
 	GHashTable *patch_to_got_offset;
 	GHashTable **patch_to_got_offset_by_type;
@@ -2906,7 +2906,9 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	if (!is_plt_patch (patch_info))
 		return NULL;
 
-	res = g_hash_table_lookup (acfg->patch_to_plt_entry, patch_info);
+	if (!acfg->patch_to_plt_entry [patch_info->type])
+		acfg->patch_to_plt_entry [patch_info->type] = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+	res = g_hash_table_lookup (acfg->patch_to_plt_entry [patch_info->type], patch_info);
 
 	// FIXME: This breaks the calculation of final_got_size		
 	if (!acfg->llvm && patch_info->type == MONO_PATCH_INFO_METHOD && (patch_info->data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -2936,7 +2938,7 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		else
 			res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
 
-		g_hash_table_insert (acfg->patch_to_plt_entry, new_ji, res);
+		g_hash_table_insert (acfg->patch_to_plt_entry [new_ji->type], new_ji, res);
 
 		g_hash_table_insert (acfg->plt_offset_to_entry, GUINT_TO_POINTER (res->plt_offset), res);
 
@@ -8530,7 +8532,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->method_indexes = g_hash_table_new (NULL, NULL);
 	acfg->method_depth = g_hash_table_new (NULL, NULL);
 	acfg->plt_offset_to_entry = g_hash_table_new (NULL, NULL);
-	acfg->patch_to_plt_entry = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+	acfg->patch_to_plt_entry = g_new0 (GHashTable*, MONO_PATCH_INFO_NUM);
 	acfg->patch_to_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->patch_to_got_offset_by_type = g_new0 (GHashTable*, MONO_PATCH_INFO_NUM);
 	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
@@ -8582,7 +8584,11 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_indexes);
 	g_hash_table_destroy (acfg->method_depth);
 	g_hash_table_destroy (acfg->plt_offset_to_entry);
-	g_hash_table_destroy (acfg->patch_to_plt_entry);
+	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i) {
+		if (acfg->patch_to_plt_entry [i])
+			g_hash_table_destroy (acfg->patch_to_plt_entry [i]);
+	}
+	g_free (acfg->patch_to_plt_entry);
 	g_hash_table_destroy (acfg->patch_to_got_offset);
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);

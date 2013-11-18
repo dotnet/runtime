@@ -35,6 +35,8 @@ typedef struct {
 	LLVMValueRef got_var;
 	const char *got_symbol;
 	GHashTable *plt_entries;
+	char **bb_names;
+	GPtrArray *used;
 } MonoLLVMModule;
 
 /*
@@ -845,14 +847,28 @@ simd_op_to_llvm_type (int opcode)
 static LLVMBasicBlockRef
 get_bb (EmitContext *ctx, MonoBasicBlock *bb)
 {
-	char bb_name [128];
+	char bb_name_buf [128];
+	char *bb_name;
 
 	if (ctx->bblocks [bb->block_num].bblock == NULL) {
 		if (bb->flags & BB_EXCEPTION_HANDLER) {
 			int clause_index = (mono_get_block_region_notry (ctx->cfg, bb->region) >> 8) - 1;
-			sprintf (bb_name, "EH_CLAUSE%d_BB%d", clause_index, bb->block_num);
+			sprintf (bb_name_buf, "EH_CLAUSE%d_BB%d", clause_index, bb->block_num);
+			bb_name = bb_name_buf;
+		} else if (bb->block_num < 256) {
+			if (!ctx->lmodule->bb_names)
+				ctx->lmodule->bb_names = g_new0 (char*, 256);
+			if (!ctx->lmodule->bb_names [bb->block_num]) {
+				char *n;
+
+				n = g_strdup_printf ("BB%d", bb->block_num);
+				mono_memory_barrier ();
+				ctx->lmodule->bb_names [bb->block_num] = n;
+			}
+			bb_name = ctx->lmodule->bb_names [bb->block_num];
 		} else {
-			sprintf (bb_name, "BB%d", bb->block_num);
+			sprintf (bb_name_buf, "BB%d", bb->block_num);
+			bb_name = bb_name_buf;
 		}
 
 		ctx->bblocks [bb->block_num].bblock = LLVMAppendBasicBlock (ctx->lmethod, bb_name);
@@ -1669,15 +1685,30 @@ build_alloca (EmitContext *ctx, MonoType *t)
  * Put the global into the 'llvm.used' array to prevent it from being optimized away.
  */
 static void
-mark_as_used (LLVMModuleRef module, LLVMValueRef global)
+mark_as_used (MonoLLVMModule *lmodule, LLVMValueRef global)
 {
+	if (!lmodule->used)
+		lmodule->used = g_ptr_array_sized_new (16);
+	g_ptr_array_add (lmodule->used, global);
+}
+
+static void
+emit_llvm_used (MonoLLVMModule *lmodule)
+{
+	LLVMModuleRef module = lmodule->module;
 	LLVMTypeRef used_type;
-	LLVMValueRef used, used_elem;
+	LLVMValueRef used, *used_elem;
+	int i;
 		
-	used_type = LLVMArrayType (LLVMPointerType (LLVMInt8Type (), 0), 1);
+	if (!lmodule->used)
+		return;
+
+	used_type = LLVMArrayType (LLVMPointerType (LLVMInt8Type (), 0), lmodule->used->len);
 	used = LLVMAddGlobal (module, used_type, "llvm.used");
-	used_elem = LLVMConstBitCast (global, LLVMPointerType (LLVMInt8Type (), 0));
-	LLVMSetInitializer (used, LLVMConstArray (LLVMPointerType (LLVMInt8Type (), 0), &used_elem, 1));
+	used_elem = g_new0 (LLVMValueRef, lmodule->used->len);
+	for (i = 0; i < lmodule->used->len; ++i)
+		used_elem [i] = LLVMConstBitCast (g_ptr_array_index (lmodule->used, i), LLVMPointerType (LLVMInt8Type (), 0));
+	LLVMSetInitializer (used, LLVMConstArray (LLVMPointerType (LLVMInt8Type (), 0), used_elem, lmodule->used->len));
 	LLVMSetLinkage (used, LLVMAppendingLinkage);
 	LLVMSetSection (used, "llvm.metadata");
 }
@@ -4217,7 +4248,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	ctx->addresses = g_new0 (LLVMValueRef, cfg->next_vreg);
 	ctx->vreg_types = g_new0 (LLVMTypeRef, cfg->next_vreg);
 	ctx->vreg_cli_types = g_new0 (MonoType*, cfg->next_vreg);
-	phi_values = g_ptr_array_new ();
+	phi_values = g_ptr_array_sized_new (256);
 	/* 
 	 * This signals whenever the vreg was defined by a phi node with no input vars
 	 * (i.e. all its input bblocks end with NOT_REACHABLE).
@@ -4226,7 +4257,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	/* Whenever the bblock is unreachable */
 	ctx->unreachable = g_new0 (gboolean, cfg->max_block_num);
 
-	bblock_list = g_ptr_array_new ();
+	bblock_list = g_ptr_array_sized_new (256);
 
 	ctx->values = values;
 	ctx->region_to_handler = g_hash_table_new (NULL, NULL);
@@ -4517,7 +4548,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->verbose_level > 1)
 		mono_llvm_dump_value (method);
 
-	mark_as_used (module, method);
+	mark_as_used (ctx->lmodule, method);
 
 	if (cfg->compile_aot) {
 		LLVMValueRef md_args [16];
@@ -5185,10 +5216,12 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
 
 	mono_llvm_replace_uses_of (aot_module.got_var, real_got);
 
-	mark_as_used (aot_module.module, real_got);
+	mark_as_used (&aot_module, real_got);
 
 	/* Delete the dummy got so it doesn't become a global */
 	LLVMDeleteGlobal (aot_module.got_var);
+
+	emit_llvm_used (&aot_module);
 
 #if 0
 	{
