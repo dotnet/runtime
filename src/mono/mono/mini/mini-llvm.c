@@ -4548,7 +4548,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->verbose_level > 1)
 		mono_llvm_dump_value (method);
 
-	mark_as_used (ctx->lmodule, method);
+	if (cfg->compile_aot)
+		mark_as_used (ctx->lmodule, method);
 
 	if (cfg->compile_aot) {
 		LLVMValueRef md_args [16];
