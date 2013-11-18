@@ -2426,7 +2426,7 @@ if test "x$enable_llvm" = "xyes"; then
    fi
    LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"
 
-   expected_llvm_version="3.3svn-mono/2c9642d"
+   expected_llvm_version="3.4svn-mono-mono4/e656cac"
 
    # Should be something like '2.6' or '2.7svn'
    llvm_version=`$LLVM_CONFIG --version`
