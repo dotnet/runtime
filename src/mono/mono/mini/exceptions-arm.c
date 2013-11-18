@@ -406,6 +406,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		else
 			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
 
+		/*
+		printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);
+		mono_print_unwind_info (unwind_info, unwind_info_len);
+		*/
+
 		for (i = 0; i < 16; ++i)
 			regs [i] = new_ctx->regs [i];
 #ifdef TARGET_IOS

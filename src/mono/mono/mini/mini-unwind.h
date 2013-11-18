@@ -158,4 +158,6 @@ mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 
 
 GSList* mono_unwind_get_cie_program (void) MONO_INTERNAL;
 
+void mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len) MONO_INTERNAL;
+
 #endif
