@@ -1425,18 +1425,21 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 					sreg = -1;
 				if (sreg != -1) {
 					skip = FALSE;
-					MONO_BB_FOR_EACH_INS (bb, tins) {
+					MonoInst *tins;
+
+					for (tins = ins->prev; tins; tins = tins->prev) {
 						const char *spec = INS_INFO (tins->opcode);
 
 						if (tins->opcode == OP_MOVE && tins->dreg == sreg) {
 							sreg = tins->sreg1;
-						} else if (spec [MONO_INST_DEST] != ' ' && tins->dreg == ins->sreg1) {
+						} if (spec [MONO_INST_DEST] != ' ' && tins->dreg == sreg) {
 							skip = TRUE;
 							break;
 						}
 					}
 					if (skip)
 						continue;
+					ins->sreg1 = sreg;
 				}
 
 				if (cfg->verbose_level > 1) {
