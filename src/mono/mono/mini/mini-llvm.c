@@ -1085,7 +1085,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (cinfo && cinfo->rgctx_arg) {
 		if (sinfo)
 			sinfo->rgctx_arg_pindex = pindex;
-		param_types [pindex] = IntPtrType ();
+		param_types [pindex] = ctx->lmodule->ptr_type;
 		pindex ++;
 	}
 	if (cinfo && cinfo->imt_arg) {
@@ -1819,7 +1819,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		g_assert (ctx->addresses [cfg->rgctx_var->dreg]);
 		rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg];
 		/* This volatile store will keep the alloca alive */
-		store = mono_llvm_build_store (builder, ctx->rgctx_arg, rgctx_alloc, TRUE);
+		store = mono_llvm_build_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE);
 
 		set_metadata_flag (rgctx_alloc, "mono.this");
 	}
@@ -2014,7 +2014,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->rgctx_arg_reg) {
 		g_assert (values [call->rgctx_arg_reg]);
 		g_assert (sinfo.rgctx_arg_pindex < nargs);
-		args [sinfo.rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], IntPtrType ());
+		args [sinfo.rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], ctx->lmodule->ptr_type);
 	}
 	if (call->imt_arg_reg) {
 		g_assert (values [call->imt_arg_reg]);
