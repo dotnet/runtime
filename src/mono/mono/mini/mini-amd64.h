@@ -167,8 +167,6 @@ struct MonoLMF {
 	 */
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
-	/* This is only set in trampoline LMF frames */
-	MonoMethod *method;
 #if defined(__default_codegen__) || defined(HOST_WIN32)
 	guint64     rip;
 #elif defined(__native_client_codegen__)
