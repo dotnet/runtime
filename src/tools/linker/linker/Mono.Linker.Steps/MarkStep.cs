@@ -189,7 +189,7 @@ namespace Mono.Linker.Steps {
 				MarkCustomAttribute (ca);
 		}
 
-		void MarkCustomAttribute (CustomAttribute ca)
+		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
 			MarkMethod (ca.Constructor);
 
@@ -346,10 +346,7 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkSerializable (TypeDefinition type)
 		{
-			if (!type.HasMethods)
-				return;
-
-			MarkMethodsIf (type.Methods, IsDefaultConstructorPredicate);
+			MarkDefaultConstructor (type);
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructorPredicate);
 		}
 
@@ -580,6 +577,14 @@ namespace Mono.Linker.Steps {
 		static bool IsConstructor (MethodDefinition method)
 		{
 			return method.IsConstructor && !method.IsStatic;
+		}
+
+		protected void MarkDefaultConstructor (TypeDefinition type)
+		{
+			if ((type == null) || !type.HasMethods)
+				return;
+
+			MarkMethodsIf (type.Methods, IsDefaultConstructorPredicate);
 		}
 
 		static MethodPredicate IsStaticConstructorPredicate = new MethodPredicate (IsStaticConstructor);
