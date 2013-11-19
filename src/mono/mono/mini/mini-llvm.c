@@ -37,6 +37,7 @@ typedef struct {
 	GHashTable *plt_entries;
 	char **bb_names;
 	GPtrArray *used;
+	LLVMTypeRef ptr_type;
 } MonoLLVMModule;
 
 /*
@@ -1090,7 +1091,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (cinfo && cinfo->imt_arg) {
 		if (sinfo)
 			sinfo->imt_arg_pindex = pindex;
-		param_types [pindex] = IntPtrType ();
+		param_types [pindex] = ctx->lmodule->ptr_type;
 		pindex ++;
 	}
 	if (vretaddr) {
@@ -1517,7 +1518,8 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		throw_sig->ret = &mono_get_void_class ()->byval_arg;
 		throw_sig->params [0] = &mono_get_int32_class ()->byval_arg;
 		icall_name = "llvm_throw_corlib_exception_abs_trampoline";
-		throw_sig->params [1] = &mono_get_intptr_class ()->byval_arg;
+		/* This will become i8* */
+		throw_sig->params [1] = &mono_get_byte_class ()->this_arg;
 		sig = sig_to_llvm_sig (ctx, throw_sig);
 
 		if (ctx->cfg->compile_aot) {
@@ -1528,8 +1530,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 			/*
 			 * Differences between the LLVM/non-LLVM throw corlib exception trampoline:
 			 * - On x86, LLVM generated code doesn't push the arguments
-			 * - When using the LLVM mono branch, the trampoline takes the throw address as an
-			 *   arguments, not a pc offset.
+			 * - The trampoline takes the throw address as an arguments, not a pc offset.
 			 */
 			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
 		}
@@ -1547,7 +1548,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	 * The LLVM mono branch contains changes so a block address can be passed as an
 	 * argument to a call.
 	 */
-	args [1] = LLVMBuildPtrToInt (builder, LLVMBlockAddress (ctx->lmethod, ex_bb), IntPtrType (), "");
+	args [1] = LLVMBlockAddress (ctx->lmethod, ex_bb);
 	emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
 
 	LLVMBuildUnreachable (builder);
@@ -2013,12 +2014,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->rgctx_arg_reg) {
 		g_assert (values [call->rgctx_arg_reg]);
 		g_assert (sinfo.rgctx_arg_pindex < nargs);
-		args [sinfo.rgctx_arg_pindex] = values [call->rgctx_arg_reg];
+		args [sinfo.rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], IntPtrType ());
 	}
 	if (call->imt_arg_reg) {
 		g_assert (values [call->imt_arg_reg]);
 		g_assert (sinfo.imt_arg_pindex < nargs);
-		args [sinfo.imt_arg_pindex] = values [call->imt_arg_reg];
+		args [sinfo.imt_arg_pindex] = convert (ctx, values [call->imt_arg_reg], ctx->lmodule->ptr_type);
 	}
 
 	if (vretaddr) {
@@ -2472,9 +2473,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* We use COMPARE+SETcc/Bcc, llvm uses SETcc+br cond */
 			if (ins->opcode == OP_FCOMPARE)
 				cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], convert (ctx, lhs, LLVMDoubleType ()), convert (ctx, rhs, LLVMDoubleType ()), "");
-			else if (ins->opcode == OP_COMPARE_IMM)
-				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
-			else if (ins->opcode == OP_LCOMPARE_IMM) {
+			else if (ins->opcode == OP_COMPARE_IMM) {
+				if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind && ins->inst_imm == 0)
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, LLVMConstNull (LLVMTypeOf (lhs)), "");
+				else
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
+			} else if (ins->opcode == OP_LCOMPARE_IMM) {
 				if (SIZEOF_REGISTER == 4 && COMPILE_LLVM (cfg))  {
 					/* The immediate is encoded in two fields */
 					guint64 l = ((guint64)(guint32)ins->inst_offset << 32) | ((guint32)ins->inst_imm);
@@ -2483,9 +2487,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, LLVMInt64Type ()), LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE), "");
 				}
 			}
-			else if (ins->opcode == OP_COMPARE)
-				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
-			else
+			else if (ins->opcode == OP_COMPARE) {
+				if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind && LLVMTypeOf (lhs) == LLVMTypeOf (rhs))
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
+				else
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
+			} else
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
 
 			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
@@ -5096,6 +5103,12 @@ add_intrinsics (LLVMModuleRef module)
 	}
 }
 
+static void
+add_types (MonoLLVMModule *lmodule)
+{
+	lmodule->ptr_type = LLVMPointerType (sizeof (gpointer) == 8 ? LLVMInt64Type () : LLVMInt32Type (), 0);
+}
+
 void
 mono_llvm_init (void)
 {
@@ -5122,6 +5135,7 @@ init_jit_module (void)
 	ee = mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (jit_module.module), alloc_cb, emitted_cb, exception_cb, dlsym_cb);
 
 	add_intrinsics (jit_module.module);
+	add_types (&jit_module);
 
 	jit_module.llvm_types = g_hash_table_new (NULL, NULL);
 
@@ -5164,6 +5178,7 @@ mono_llvm_create_aot_module (const char *got_symbol)
 	aot_module.got_symbol = got_symbol;
 
 	add_intrinsics (aot_module.module);
+	add_types (&aot_module);
 
 	/* Add GOT */
 	/*
@@ -5173,7 +5188,7 @@ mono_llvm_create_aot_module (const char *got_symbol)
 	 * its size is known in mono_llvm_emit_aot_module ().
 	 */
 	{
-		LLVMTypeRef got_type = LLVMArrayType (IntPtrType (), 0);
+		LLVMTypeRef got_type = LLVMArrayType (aot_module.ptr_type, 0);
 
 		aot_module.got_var = LLVMAddGlobal (aot_module.module, got_type, "mono_dummy_got");
 		LLVMSetInitializer (aot_module.got_var, LLVMConstNull (got_type));
@@ -5210,7 +5225,7 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
 	 * Create the real got variable and replace all uses of the dummy variable with
 	 * the real one.
 	 */
-	got_type = LLVMArrayType (IntPtrType (), got_size);
+	got_type = LLVMArrayType (aot_module.ptr_type, got_size);
 	real_got = LLVMAddGlobal (aot_module.module, got_type, aot_module.got_symbol);
 	LLVMSetInitializer (real_got, LLVMConstNull (got_type));
 	LLVMSetLinkage (real_got, LLVMInternalLinkage);
