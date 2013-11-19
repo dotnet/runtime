@@ -428,7 +428,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	code = buf = mono_global_codeman_reserve (kMaxCodeSize);
 
-	framesize = kMaxCodeSize + sizeof (MonoLMF);
+	framesize = kMaxCodeSize + sizeof (MonoLMFTramp);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	orig_rsp_to_rbp_offset = 0;
@@ -583,7 +583,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Save LMF begin */
 
-	offset += sizeof (MonoLMF);
+	offset += sizeof (MonoLMFTramp);
 	lmf_offset = - offset;
 
 	/* Save ip */
@@ -599,16 +599,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, sizeof(mgreg_t));
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, framesize + 16);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_R11, sizeof(mgreg_t));
-	/* Save callee saved regs */
-#ifdef TARGET_WIN32
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), AMD64_RDI, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), AMD64_RSI, sizeof(mgreg_t));
-#endif
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, sizeof(mgreg_t));
+	/* Save pointer to registers */
+	amd64_lea_membase (code, AMD64_R11, AMD64_RBP, saved_regs_offset);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMFTramp, regs), AMD64_R11, sizeof(mgreg_t));
 
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
@@ -620,9 +613,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Save lmf_addr */
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
 	/* Save previous_lmf */
-	/* Set the lowest bit to 1 to signal that this LMF has the ip field set */
+	/* Set the lowest bit to signal that this LMF has the ip field set */
+	/* Set the third lowest bit to signal that this is a MonoLMFTramp structure */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
-	amd64_alu_reg_imm_size (code, X86_ADD, AMD64_R11, 1, sizeof(gpointer));
+	amd64_alu_reg_imm_size (code, X86_ADD, AMD64_R11, 0x5, sizeof(gpointer));
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
 	/* Set new lmf */
 	amd64_lea_membase (code, AMD64_R11, AMD64_RBP, lmf_offset);
@@ -670,9 +664,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, res_offset, sizeof(mgreg_t));	
 
 	/* Restore LMF */
-
 	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-	amd64_alu_reg_imm_size (code, X86_SUB, AMD64_RCX, 1, sizeof(gpointer));
+	amd64_alu_reg_imm_size (code, X86_SUB, AMD64_RCX, 0x5, sizeof(gpointer));
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
 

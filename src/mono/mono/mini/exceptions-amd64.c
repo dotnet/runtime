@@ -664,7 +664,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
 			/* remove any unused lmf */
-			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~3);
+			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~7);
 		}
 
 #ifndef MONO_AMD64_NO_PUSHES
@@ -688,7 +688,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 			memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
 
-			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~3);
+			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~7);
 
 			frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
 
@@ -729,17 +729,36 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->rbp = (*lmf)->rbp;
 		new_ctx->rsp = (*lmf)->rsp;
 
-		new_ctx->rbx = (*lmf)->rbx;
-		new_ctx->r12 = (*lmf)->r12;
-		new_ctx->r13 = (*lmf)->r13;
-		new_ctx->r14 = (*lmf)->r14;
-		new_ctx->r15 = (*lmf)->r15;
-#ifdef TARGET_WIN32
-		new_ctx->rdi = (*lmf)->rdi;
-		new_ctx->rsi = (*lmf)->rsi;
-#endif
+		if (((guint64)(*lmf)->previous_lmf) & 4) {
+			MonoLMFTramp *ext = (MonoLMFTramp*)(*lmf);
 
-		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~3);
+			/* Trampoline frame */
+			new_ctx->rbx = ext->regs [AMD64_RBX];
+			new_ctx->r12 = ext->regs [AMD64_R12];
+			new_ctx->r13 = ext->regs [AMD64_R13];
+			new_ctx->r14 = ext->regs [AMD64_R14];
+			new_ctx->r15 = ext->regs [AMD64_R15];
+#ifdef TARGET_WIN32
+			new_ctx->rdi = ext->regs [AMD64_RDI];
+			new_ctx->rsi = ext->regs [AMD64_RSI];
+#endif
+		} else {
+			/*
+			 * The registers saved in the LMF will be restored using the normal unwind info,
+			 * when the wrapper frame is processed.
+			 */
+			new_ctx->rbx = 0;
+			new_ctx->r12 = 0;
+			new_ctx->r13 = 0;
+			new_ctx->r14 = 0;
+			new_ctx->r15 = 0;
+#ifdef TARGET_WIN32
+			new_ctx->rdi = 0;
+			new_ctx->rsi = 0;
+#endif
+		}
+
+		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~7);
 
 		return TRUE;
 	}

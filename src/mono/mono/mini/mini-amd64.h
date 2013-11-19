@@ -159,11 +159,12 @@ struct sigcontext {
 
 struct MonoLMF {
 	/* 
-	 * If the lowest bit is set to 1, then this LMF has the rip field set. Otherwise,
+	 * If the lowest bit is set, then this LMF has the rip field set. Otherwise,
 	 * the rip field is not set, and the rsp field points to the stack location where
 	 * the caller ip is saved.
-	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
+	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
+	 * If the third lowest bit is set, then this is a MonoLMFTramp structure.
 	 */
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
@@ -186,6 +187,12 @@ struct MonoLMF {
 	guint64     rsi;
 #endif
 };
+
+/* LMF structure used by the JIT trampolines */
+typedef struct {
+	struct MonoLMF lmf;
+	guint64 *regs;
+} MonoLMFTramp;
 
 typedef struct MonoCompileArch {
 	gint32 localloc_offset;
