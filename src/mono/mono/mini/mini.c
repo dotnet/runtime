@@ -5379,7 +5379,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (COMPILE_SOFT_FLOAT (cfg))
 		mono_decompose_soft_float (cfg);
 #endif
-	if (!COMPILE_LLVM (cfg))
+	if (COMPILE_LLVM (cfg))
+		mono_decompose_vtype_opts_llvm (cfg);
+	else
 		mono_decompose_vtype_opts (cfg);
 	if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
 		mono_decompose_array_access_opts (cfg);

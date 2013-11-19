@@ -453,9 +453,22 @@ mono_print_ins_index (int i, MonoInst *ins)
 	else
 		printf (" %s", mono_inst_name (ins->opcode));
 	if (spec == MONO_ARCH_CPU_SPEC) {
+		gboolean dest_base = FALSE;
+		switch (ins->opcode) {
+		case OP_STOREV_MEMBASE:
+			dest_base = TRUE;
+			break;
+		default:
+			break;
+		}
+
 		/* This is a lowered opcode */
-		if (ins->dreg != -1)
-			printf (" R%d <-", ins->dreg);
+		if (ins->dreg != -1) {
+			if (dest_base)
+				printf (" [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
+			else
+				printf (" R%d <-", ins->dreg);
+		}
 		if (ins->sreg1 != -1)
 			printf (" R%d", ins->sreg1);
 		if (ins->sreg2 != -1)

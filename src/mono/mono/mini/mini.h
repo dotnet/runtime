@@ -2221,6 +2221,7 @@ int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoB
 MonoInst         *mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void              mono_decompose_long_opts (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_vtype_opts (MonoCompile *cfg) MONO_INTERNAL;
+void              mono_decompose_vtype_opts_llvm (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_array_access_opts (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_soft_float (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_handle_global_vregs (MonoCompile *cfg) MONO_INTERNAL;

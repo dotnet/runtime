@@ -3454,9 +3454,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			switch (ins->opcode) {
 			case OP_STOREV_MEMBASE:
-				if (cfg->gen_write_barriers && klass->has_references && ins->inst_destbasereg != cfg->frame_reg) {
-					/* FIXME: Emit write barriers like in mini_emit_stobj () */
-					LLVM_FAILURE (ctx, "storev_membase + write barriers");
+				if (cfg->gen_write_barriers && klass->has_references && ins->inst_destbasereg != cfg->frame_reg &&
+					LLVMGetInstructionOpcode (values [ins->inst_destbasereg]) != LLVMAlloca) {
+					/* Decomposed earlier */
+					g_assert_not_reached ();
 					break;
 				}
 				if (!addresses [ins->sreg1]) {
@@ -4210,7 +4211,7 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 #if 1
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		
+
 		if (i > 0 && clause->try_offset <= header->clauses [i - 1].handler_offset + header->clauses [i - 1].handler_len) {
 			/*
 			 * FIXME: Some tests still fail with nested clauses.
