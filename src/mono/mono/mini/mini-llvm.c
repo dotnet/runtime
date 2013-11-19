@@ -148,6 +148,12 @@ llvm_ins_info[] = {
 #define IS_TARGET_X86 0
 #endif
 
+#ifdef TARGET_AMD64
+#define IS_TARGET_AMD64 1
+#else
+#define IS_TARGET_AMD64 0
+#endif
+
 #define LLVM_FAILURE(ctx, reason) do { \
 	TRACE_FAILURE (reason); \
 	(ctx)->cfg->exception_message = g_strdup (reason); \
@@ -1539,7 +1545,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		ctx->lmodule->throw_corlib_exception = callee;
 	}
 
-	if (IS_TARGET_X86)
+	if (IS_TARGET_X86 || IS_TARGET_AMD64)
 		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
 	else
 		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
