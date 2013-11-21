@@ -1918,7 +1918,7 @@ emit_push_lmf (MonoCompile *cfg)
 		/* Save previous_lmf */
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
 		/* Set new LMF */
-		emit_tls_set (cfg, lmf_reg, OP_TLS_SET_REG);
+		emit_tls_set (cfg, lmf_reg, TLS_KEY_LMF);
 	} else {
 		/*
 		 * Store lmf_addr in a variable, so it can be allocated to a global register.
@@ -1967,7 +1967,7 @@ emit_pop_lmf (MonoCompile *cfg)
 		prev_lmf_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* Set new LMF */
-		emit_tls_set (cfg, prev_lmf_reg, OP_TLS_SET_REG);
+		emit_tls_set (cfg, prev_lmf_reg, TLS_KEY_LMF);
 	} else {
 		/*
 		 * Emit IR to pop the LMF:
