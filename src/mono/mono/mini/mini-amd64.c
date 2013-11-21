@@ -2018,9 +2018,14 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf)
 		cfg->create_lmf_var = TRUE;
 
-#if !defined(HOST_WIN32) && !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	if (cfg->method->save_lmf)
+#if !defined(HOST_WIN32)
+	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
+#if defined(__APPLE__)
+		if (!optimize_for_xen)
+			cfg->lmf_ir_mono_lmf = TRUE;
+#endif
+	}
 #endif
 
 #ifndef MONO_AMD64_NO_PUSHES
@@ -3686,6 +3691,40 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 	amd64_mov_reg_memindex (code, dreg, dreg, 0, offset_reg, 0, 8);
 	if (tmpreg != -1)
 		amd64_mov_reg_membase (code, tmpreg, AMD64_RSP, -8, 8);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
+static guint8*
+amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
+{
+#ifdef HOST_WIN32
+	g_assert_not_reached ();
+#elif defined(__APPLE__)
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_mem_reg (code, tls_gs_offset + (tls_offset * 8), sreg, 8);
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
+static guint8*
+amd64_emit_tls_set_reg (guint8 *code, int sreg, int offset_reg)
+{
+#ifdef HOST_WIN32
+	g_assert_not_reached ();
+#elif defined(__APPLE__)
+	// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
+	g_assert (sreg != AMD64_R11);
+	amd64_mov_reg_reg (code, AMD64_R11, offset_reg, sizeof (gpointer));
+	amd64_shift_reg_imm (code, X86_SHL, AMD64_R11, 3);
+	if (tls_gs_offset)
+		amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, tls_gs_offset);
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_membase_reg (code, AMD64_R11, 0, sreg, sizeof (gpointer));
 #else
 	g_assert_not_reached ();
 #endif
@@ -5667,7 +5706,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_TLS_GET_REG:
 			code = emit_tls_get_reg (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_TLS_SET: {
+			code = amd64_emit_tls_set (code, ins->sreg1, ins->inst_offset);
 			break;
+		}
+		case OP_TLS_SET_REG: {
+			code = amd64_emit_tls_set_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		}
 		case OP_MEMORY_BARRIER: {
 			switch (ins->backend.memory_barrier_kind) {
 			case StoreLoadBarrier:
