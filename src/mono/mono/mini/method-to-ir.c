@@ -1902,7 +1902,7 @@ emit_push_lmf (MonoCompile *cfg)
 	 * lmf->prev_lmf = *lmf_addr
 	 * *lmf_addr = lmf
 	 */
-	int lmf_reg, lmf_addr_reg, prev_lmf_reg;
+	int lmf_reg, prev_lmf_reg;
 	MonoInst *ins, *lmf_ins;
 
 	if (!cfg->lmf_ir)
@@ -1920,25 +1920,28 @@ emit_push_lmf (MonoCompile *cfg)
 		/* Set new LMF */
 		emit_tls_set (cfg, lmf_reg, OP_TLS_SET_REG);
 	} else {
+		/*
+		 * Store lmf_addr in a variable, so it can be allocated to a global register.
+		 */
+		if (!cfg->lmf_addr_var)
+			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+
 		lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
-		if (lmf_ins)
+		if (lmf_ins) 
 			MONO_ADD_INS (cfg->cbb, lmf_ins);
 		else
 			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
-		lmf_addr_reg = lmf_ins->dreg;
+		lmf_ins->dreg = cfg->lmf_addr_var->dreg;
 
 		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 		lmf_reg = ins->dreg;
-		/* Save lmf_addr */
-		if (!cfg->lmf_addr_var)
-			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, cfg->lmf_addr_var->dreg, lmf_ins->dreg);
+
 		prev_lmf_reg = alloc_preg (cfg);
 		/* Save previous_lmf */
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_addr_reg, 0);
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, cfg->lmf_addr_var->dreg, 0);
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
 		/* Set new lmf */
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, lmf_reg);
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, cfg->lmf_addr_var->dreg, 0, lmf_reg);
 	}
 }
 
@@ -1974,6 +1977,7 @@ emit_pop_lmf (MonoCompile *cfg)
 		if (!cfg->lmf_addr_var)
 			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 		lmf_addr_reg = cfg->lmf_addr_var->dreg;
+
 		prev_lmf_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
@@ -11847,11 +11851,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		bblock->next_bb = end_bblock;
 	}
 
-	if (cfg->lmf_var) {
-		cfg->cbb = init_localsbb;
-		emit_push_lmf (cfg);
-	}
-
 	if (cfg->method == method && cfg->domainvar) {
 		MonoInst *store;
 		MonoInst *get_domain;
@@ -11895,6 +11894,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (ins->opcode == OP_LOCAL && ins->type == STACK_OBJ)
 				MONO_EMIT_NEW_PCONST (cfg, ins->dreg, NULL);
 		}
+	}
+
+	if (cfg->lmf_var && cfg->method == method) {
+		cfg->cbb = init_localsbb;
+		emit_push_lmf (cfg);
 	}
 
 	if (seq_points) {
@@ -12620,7 +12624,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 			/* Arguments are implicitly global */
 			/* Putting R4 vars into registers doesn't work currently */
 			/* The gsharedvt vars are implicitly referenced by ldaddr opcodes, but those opcodes are only generated later */
-			if ((var->opcode != OP_ARG) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && (vreg_to_bb [var->dreg] != -1) && (var->klass->byval_arg.type != MONO_TYPE_R4) && !cfg->disable_vreg_to_lvreg && var != cfg->gsharedvt_info_var && var != cfg->gsharedvt_locals_var) {
+			if ((var->opcode != OP_ARG) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && (vreg_to_bb [var->dreg] != -1) && (var->klass->byval_arg.type != MONO_TYPE_R4) && !cfg->disable_vreg_to_lvreg && var != cfg->gsharedvt_info_var && var != cfg->gsharedvt_locals_var && var != cfg->lmf_addr_var) {
 				/* 
 				 * Make that the variable's liveness interval doesn't contain a call, since
 				 * that would cause the lvreg to be spilled, making the whole optimization
