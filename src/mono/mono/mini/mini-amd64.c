@@ -2015,12 +2015,13 @@ mono_arch_create_vars (MonoCompile *cfg)
 	cfg->arch.no_pushes = TRUE;
 #endif
 
-	if (cfg->method->save_lmf) {
-		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-		lmf_var->flags |= MONO_INST_VOLATILE;
-		lmf_var->flags |= MONO_INST_LMF;
-		cfg->arch.lmf_var = lmf_var;
-	}
+	if (cfg->method->save_lmf)
+		cfg->create_lmf_var = TRUE;
+
+#if !defined(HOST_WIN32) && !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	if (cfg->method->save_lmf)
+		cfg->lmf_ir = TRUE;
+#endif
 
 #ifndef MONO_AMD64_NO_PUSHES
 	cfg->arch_eh_jit_info = 1;
@@ -3761,13 +3762,18 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 }
 
 /*
- * emit_save_lmf:
+ * emit_push_lmf:
  *
  *   Emit code to push an LMF structure on the LMF stack.
  */
 static guint8*
-emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args_clobbered)
+emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args_clobbered)
 {
+	if (cfg->lmf_ir) {
+		*args_clobbered = TRUE;
+		return code;
+	}
+
 	if ((lmf_tls_offset != -1) && !optimize_for_xen) {
 		/*
 		 * Optimized version which uses the mono_lmf TLS variable instead of 
@@ -3823,13 +3829,16 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 }
 
 /*
- * emit_save_lmf:
+ * emit_pop_lmf:
  *
  *   Emit code to pop an LMF structure from the LMF stack.
  */
 static guint8*
-emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
+emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
+	if (cfg->lmf_ir)
+		return code;
+
 	if ((lmf_tls_offset != -1) && !optimize_for_xen) {
 		/*
 		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
@@ -4995,8 +5004,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_AMD64_SAVE_SP_TO_LMF: {
-			MonoInst *lmf_var = cfg->arch.lmf_var;
-			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_var->inst_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+			MonoInst *lmf_var = cfg->lmf_var;
+			amd64_mov_membase_reg (code, lmf_var->inst_basereg, lmf_var->inst_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
 		}
 		case OP_X86_PUSH:
@@ -6644,7 +6653,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, i, cfa_offset, quad, max_epilog_size;
 	guint8 *code;
 	CallInfo *cinfo;
-	MonoInst *lmf_var = cfg->arch.lmf_var;
+	MonoInst *lmf_var = cfg->lmf_var;
 	gboolean args_clobbered = FALSE;
 	gboolean trace = FALSE;
 #ifdef __native_client_codegen__
@@ -7088,7 +7097,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
-		code = emit_save_lmf (cfg, code, lmf_var->inst_offset, &args_clobbered);
+		code = emit_push_lmf (cfg, code, lmf_var->inst_offset, &args_clobbered);
 	}
 
 	if (trace) {
@@ -7208,7 +7217,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint8 *code;
 	int max_epilog_size;
 	CallInfo *cinfo;
-	gint32 lmf_offset = cfg->arch.lmf_var ? ((MonoInst*)cfg->arch.lmf_var)->inst_offset : -1;
+	gint32 lmf_offset = cfg->lmf_var ? ((MonoInst*)cfg->lmf_var)->inst_offset : -1;
 	
 	max_epilog_size = get_max_epilog_size (cfg);
 
@@ -7227,6 +7236,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	pos = 0;
 	
 	if (method->save_lmf) {
+		code = emit_pop_lmf (cfg, code, lmf_offset);
+
 		/* check if we need to restore protection of the stack after a stack overflow */
 		if (mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
@@ -7244,8 +7255,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
-
-		code = emit_restore_lmf (cfg, code, lmf_offset);
 
 		/* Restore caller saved regs */
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
