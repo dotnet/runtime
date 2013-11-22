@@ -368,7 +368,6 @@ mono_arm_load_jumptable_entry (guint8 *code, gpointer* jte, ARMReg reg)
 }
 #endif
 
-
 static guint8*
 emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
@@ -483,6 +482,27 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 
 	for (i = 0; i < sizeof (MonoLMF); i += sizeof (mgreg_t))
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + i, SLOT_NOREF);
+
+	return code;
+}
+
+typedef struct {
+	gint32 vreg;
+	gint32 hreg;
+} FloatArgData;
+
+static guint8 *
+emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code)
+{
+	GSList *list;
+
+	for (list = inst->float_args; list; list = list->next) {
+		FloatArgData *fad = list->data;
+		MonoInst *var = get_vreg_to_inst (cfg, fad->vreg);
+
+		code = emit_big_add (code, ARMREG_IP, var->inst_basereg, var->inst_offset);
+		ARM_FLDS (code, fad->hreg, ARMREG_IP, 0);
+	}
 
 	return code;
 }
@@ -1181,22 +1201,78 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 }
 
 static void inline
-add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double)
+add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gint *float_spare)
 {
-	/* FIXME: single-precision args */
-	g_assert (is_double);
+	/* If we're calling a function like this:
+	 *
+	 * void foo(float a, double b, float c)
+	 *
+	 * We pass a in s0 and b in d1. That leaves us
+	 * with s1 being unused. The armhf ABI recognizes
+	 * this and requires register assignment to then
+	 * use that for the next single-precision arg,
+	 * i.e. c in this example. So float_spare either
+	 * tells us which reg to use for the next single-
+	 * precision arg, or it's -1, meaning use *fpr.
+	 */
 
-	if (*fpr < ARM_VFP_F16) {
+	/* Note that even though most of the JIT speaks
+	 * double-precision, fpr represents single-
+	 * precision registers.
+	 */
+
+	/* See parts 5.5 and 6.1.2 of the AAPCS for how
+	 * this all works.
+	 */
+
+	if (*fpr < ARM_VFP_F16 || (!is_double && *float_spare >= 0)) {
 		ainfo->storage = RegTypeFP;
 
-		if (*fpr & 1)
-			*fpr += 1;
+		if (is_double) {
+			/* If we're passing a double-precision value
+			 * and *fpr is odd (e.g. it's s1, s3, ...)
+			 * we need to use the next even register. So
+			 * we mark the current *fpr as a spare that
+			 * can be used for the next single-precision
+			 * value.
+			 */
+			if (*fpr % 2) {
+				*float_spare = *fpr;
+				(*fpr)++;
+			}
 
-		ainfo->reg = *fpr;
-		*fpr += 2;
+			/* At this point, we have an even register
+			 * so we assign that and move along.
+			 */
+			ainfo->reg = *fpr;
+			*fpr += 2;
+		} else if (*float_spare >= 0) {
+			/* We're passing a single-precision value
+			 * and it looks like a spare single-
+			 * precision register is available. Let's
+			 * use it.
+			 */
+
+			ainfo->reg = *float_spare;
+			*float_spare = -1;
+		} else {
+			/* If we hit this branch, we're passing a
+			 * single-precision value and we can simply
+			 * use the next available register.
+			 */
+
+			ainfo->reg = *fpr;
+			(*fpr)++;
+		}
 	} else {
-		*stack_size += 7;
-		*stack_size &= ~7;
+		/* We've exhausted available floating point
+		 * regs, so pass the rest on the stack.
+		 */
+
+		if (is_double) {
+			*stack_size += 7;
+			*stack_size &= ~7;
+		}
 
 		ainfo->offset = *stack_size;
 		ainfo->reg = ARMREG_SP;
@@ -1210,6 +1286,7 @@ static CallInfo*
 get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	guint i, gr, fpr, pstart;
+	gint float_spare;
 	int n = sig->hasthis + sig->param_count;
 	MonoType *simpletype;
 	guint32 stack_size = 0;
@@ -1225,6 +1302,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	cinfo->nargs = n;
 	gr = ARMREG_R0;
 	fpr = ARM_VFP_F0;
+	float_spare = -1;
 
 	t = mini_type_get_underlying_type (gsctx, sig->ret);
 	if (MONO_TYPE_ISSTRUCT (t)) {
@@ -1319,7 +1397,6 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_R4:
 			cinfo->args [n].size = sizeof (gpointer);
 			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
@@ -1404,11 +1481,21 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			n++;
 			break;
+		case MONO_TYPE_R4:
+			ainfo->size = 4;
+
+			if (IS_HARD_FLOAT)
+				add_float (&fpr, &stack_size, ainfo, FALSE, &float_spare);
+			else
+				add_general (&gr, &stack_size, ainfo, TRUE);
+
+			n++;
+			break;
 		case MONO_TYPE_R8:
 			ainfo->size = 8;
 
 			if (IS_HARD_FLOAT)
-				add_float (&fpr, &stack_size, ainfo, TRUE);
+				add_float (&fpr, &stack_size, ainfo, TRUE, &float_spare);
 			else
 				add_general (&gr, &stack_size, ainfo, FALSE);
 
@@ -2184,8 +2271,36 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, TRUE);
 			} else {
-				/* FIXME: single-precision args */
-				g_assert_not_reached ();
+				FloatArgData *fad;
+
+				/* Mono's register allocator doesn't speak single-precision registers that
+				 * overlap double-precision registers (i.e. armhf). So we have to work around
+				 * the register allocator and load the value from memory manually.
+				 *
+				 * So we create a variable for the float argument and an instruction to store
+				 * the argument into the variable. We then store the list of these arguments
+				 * in cfg->float_args. This list is then used by emit_float_args later to
+				 * pass the arguments in the various call opcodes.
+				 *
+				 * This is not very nice, and we should really try to fix the allocator.
+				 */
+
+				MonoInst *float_arg = mono_compile_create_var (cfg, &mono_defaults.single_class->byval_arg, OP_LOCAL);
+
+				/* Make sure the instruction isn't seen as pointless and removed.
+				 */
+				float_arg->flags |= MONO_INST_VOLATILE;
+
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, float_arg->dreg, in->dreg);
+
+				/* We use the dreg to look up the instruction later. The hreg is used to
+				 * emit the instruction that loads the value into the FP reg.
+				 */
+				fad = mono_mempool_alloc0 (cfg->mempool, sizeof (FloatArgData));
+				fad->vreg = float_arg->dreg;
+				fad->hreg = ainfo->reg;
+
+				call->float_args = g_slist_append_mempool (cfg->mempool, call->float_args, fad);
 			}
 
 			call->used_iregs |= 1 << ainfo->reg;
@@ -4437,6 +4552,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL:
 		case OP_CALL:
 			call = (MonoCallInst*)ins;
+
+			if (IS_HARD_FLOAT) {
+				code = emit_float_args (cfg, call, code);
+				offset = code - cfg->native_code;
+			}
+
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else
@@ -4452,6 +4573,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
+			if (IS_HARD_FLOAT) {
+				code = emit_float_args (cfg, (MonoCallInst *)ins, code);
+				offset = code - cfg->native_code;
+			}
+
 			code = emit_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
@@ -4467,6 +4593,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			g_assert (ins->sreg1 != ARMREG_LR);
 			call = (MonoCallInst*)ins;
+
+			if (IS_HARD_FLOAT) {
+				code = emit_float_args (cfg, call, code);
+				offset = code - cfg->native_code;
+			}
+
 			if (call->dynamic_imt_arg || call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 				imt_arg = TRUE;
 			if (!arm_is_imm12 (ins->inst_offset))
@@ -5537,14 +5669,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->storage == RegTypeFP) {
-				if (ainfo->size == 8) {
-					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
-					ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+				code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+				ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+
+				if (ainfo->size == 8)
 					ARM_FSTD (code, ainfo->reg, ARMREG_IP, 0);
-				} else {
-					/* FIXME: single-precision args */
-					g_assert_not_reached ();
-				}
+				else
+					ARM_FSTS (code, ainfo->reg, ARMREG_IP, 0);
 			} else if (ainfo->storage == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int soffset = 0;

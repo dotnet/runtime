@@ -847,6 +847,10 @@ struct MonoCallInst {
 	LLVMCallInfo *cinfo;
 	int rgctx_arg_reg, imt_arg_reg;
 #endif
+#ifdef TARGET_ARM
+	/* See the comment in mini-arm.c!mono_arch_emit_call for RegTypeFP. */
+	GSList *float_args;
+#endif
 };
 
 struct MonoCallArgParm {
