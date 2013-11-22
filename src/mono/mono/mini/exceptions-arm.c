@@ -60,10 +60,10 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	ctx_reg = ARMREG_R0;
 
-#if defined(ARM_FPU_VFP)
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, fregs));
-	ARM_FLDMD (code, ARM_VFP_D0, 16, ARMREG_IP);
-#endif
+	if (!mono_arch_is_soft_float ()) {
+		ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, fregs));
+		ARM_FLDMD (code, ARM_VFP_D0, 16, ARMREG_IP);
+	}
 
 	/* move pc to PC */
 	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, pc));
@@ -216,12 +216,12 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, - sizeof (mgreg_t));
 
 	/* Save fp regs */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * 16);
-	cfa_offset += sizeof (double) * 16;
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
-#if defined(ARM_FPU_VFP)
-	ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP);
-#endif
+	if (!mono_arch_is_soft_float ()) {
+		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (double) * 16);
+		cfa_offset += sizeof (double) * 16;
+		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
+		ARM_FSTMD (code, ARM_VFP_D0, 16, ARMREG_SP);
+	}
 
 	/* Param area */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
