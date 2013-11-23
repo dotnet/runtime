@@ -72,15 +72,15 @@
 
 #if defined(ARM_FPU_VFP_HARD)
 #define MONO_SAVED_FREGS 16
-/* d8-d15 must be preserved across function calls. We use d0-d1 as
+/* d8-d15 must be preserved across function calls. We use d14-d15 as
  * scratch registers in the JIT. The rest have no meaning tied to them. */
-#define MONO_ARCH_CALLEE_FREGS 0x00005550
+#define MONO_ARCH_CALLEE_FREGS 0x00005555
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0x55550000
 #else
 #define MONO_SAVED_FREGS 0
-/* No registers need to be preserved across function calls. We use d0-d1
+/* No registers need to be preserved across function calls. We use d14-d15
  * as scratch registers in the JIT. The rest have no meaning tied to them. */
-#define MONO_ARCH_CALLEE_FREGS 0x55555550
+#define MONO_ARCH_CALLEE_FREGS 0x05555555
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0x00000000
 #endif
 

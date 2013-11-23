@@ -119,6 +119,9 @@ static gboolean iphone_abi = FALSE;
  */
 static MonoArmFPU arm_fpu;
 
+static int vfp_scratch1 = ARM_VFP_F28;
+static int vfp_scratch2 = ARM_VFP_F30;
+
 static int i8_align;
 
 static volatile int ss_trigger_var = 0;
@@ -3397,10 +3400,10 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 	/* sreg is a float, dreg is an integer reg  */
 	if (IS_VFP) {
 		if (is_signed)
-			ARM_TOSIZD (code, ARM_VFP_F0, sreg);
+			ARM_TOSIZD (code, vfp_scratch1, sreg);
 		else
-			ARM_TOUIZD (code, ARM_VFP_F0, sreg);
-		ARM_FMRS (code, dreg, ARM_VFP_F0);
+			ARM_TOUIZD (code, vfp_scratch1, sreg);
+		ARM_FMRS (code, dreg, vfp_scratch1);
 	}
 	if (!is_signed) {
 		if (size == 1)
@@ -4975,26 +4978,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORER4_MEMBASE_REG:
 			g_assert (arm_is_fpimm8 (ins->inst_offset));
-			ARM_CVTD (code, ARM_VFP_F0, ins->sreg1);
-			ARM_FSTS (code, ARM_VFP_F0, ins->inst_destbasereg, ins->inst_offset);
+			ARM_CVTD (code, vfp_scratch1, ins->sreg1);
+			ARM_FSTS (code, vfp_scratch1, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_LOADR4_MEMBASE:
 			g_assert (arm_is_fpimm8 (ins->inst_offset));
-			ARM_FLDS (code, ARM_VFP_F0, ins->inst_basereg, ins->inst_offset);
-			ARM_CVTS (code, ins->dreg, ARM_VFP_F0);
+			ARM_FLDS (code, vfp_scratch1, ins->inst_basereg, ins->inst_offset);
+			ARM_CVTS (code, ins->dreg, vfp_scratch1);
 			break;
 		case OP_ICONV_TO_R_UN: {
 			g_assert_not_reached ();
 			break;
 		}
 		case OP_ICONV_TO_R4:
-			ARM_FMSR (code, ARM_VFP_F0, ins->sreg1);
-			ARM_FSITOS (code, ARM_VFP_F0, ARM_VFP_F0);
-			ARM_CVTS (code, ins->dreg, ARM_VFP_F0);
+			ARM_FMSR (code, vfp_scratch1, ins->sreg1);
+			ARM_FSITOS (code, vfp_scratch1, vfp_scratch1);
+			ARM_CVTS (code, ins->dreg, vfp_scratch1);
 			break;
 		case OP_ICONV_TO_R8:
-			ARM_FMSR (code, ARM_VFP_F0, ins->sreg1);
-			ARM_FSITOD (code, ins->dreg, ARM_VFP_F0);
+			ARM_FMSR (code, vfp_scratch1, ins->sreg1);
+			ARM_FSITOD (code, ins->dreg, vfp_scratch1);
 			break;
 
 		case OP_SETFRET:
@@ -5187,18 +5190,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					jte [0] = GUINT_TO_POINTER (0xffffffff);
 					jte [1] = GUINT_TO_POINTER (0x7fefffff);
 					code = mono_arm_load_jumptable_entry_addr (code, jte, ARMREG_IP);
-					ARM_FLDD (code, ARM_VFP_D0, ARMREG_IP, 0);
+					ARM_FLDD (code, vfp_scratch1, ARMREG_IP, 0);
 				}
 #else
-				ARM_ABSD (code, ARM_VFP_D1, ins->sreg1);
-				ARM_FLDD (code, ARM_VFP_D0, ARMREG_PC, 0);
+				ARM_ABSD (code, vfp_scratch2, ins->sreg1);
+				ARM_FLDD (code, vfp_scratch1, ARMREG_PC, 0);
 				ARM_B (code, 1);
 				*(guint32*)code = 0xffffffff;
 				code += 4;
 				*(guint32*)code = 0x7fefffff;
 				code += 4;
 #endif
-				ARM_CMPD (code, ARM_VFP_D1, ARM_VFP_D0);
+				ARM_CMPD (code, vfp_scratch2, vfp_scratch1);
 				ARM_FMSTAT (code);
 				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_GT, "ArithmeticException");
 				ARM_CMPD (code, ins->sreg1, ins->sreg1);
