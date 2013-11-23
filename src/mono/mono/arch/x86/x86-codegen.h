@@ -1039,7 +1039,7 @@ typedef union {
 		} else {	\
 			x86_codegen_pre(&(inst), 6); \
 			*(inst)++ = (unsigned char)0x69;	\
-			x86_reg_emit ((inst), (reg), (mem));	\
+			x86_mem_emit ((inst), (reg), (mem));	\
 			x86_imm_emit32 ((inst), (imm));	\
 		}	\
 	} while (0)
