@@ -57,11 +57,27 @@ sgen_suspend_thread (SgenThreadInfo *info)
 
 	CloseHandle (handle);
 
-	info->stopped_ip = (gpointer)context.Eip;
-	info->stack_start = (char*)context.Esp - REDZONE_SIZE;
-
 #ifdef USE_MONO_CTX
 	memset (&info->ctx, 0, sizeof (MonoContext));
+#ifdef TARGET_AMD64
+	info->ctx.rip = context.Rip;
+	info->ctx.rax = context.Rax;
+	info->ctx.rcx = context.Rcx;
+	info->ctx.rdx = context.Rdx;
+	info->ctx.rbx = context.Rbx;
+	info->ctx.rsp = context.Rsp;
+	info->ctx.rbp = context.Rbp;
+	info->ctx.rsi = context.Rsi;
+	info->ctx.rdi = context.Rdi;
+	info->ctx.r8 = context.R8;
+	info->ctx.r9 = context.R9;
+	info->ctx.r10 = context.R10;
+	info->ctx.r11 = context.R11;
+	info->ctx.r12 = context.R12;
+	info->ctx.r13 = context.R13;
+	info->ctx.r14 = context.R14;
+	info->ctx.r15 = context.R15;
+#else
 	info->ctx.edi = context.Edi;
 	info->ctx.esi = context.Esi;
 	info->ctx.ebx = context.Ebx;
@@ -70,6 +86,10 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->ctx.eax = context.Eax;
 	info->ctx.ebp = context.Ebp;
 	info->ctx.esp = context.Esp;
+#endif
+	info->stopped_ip = info->ctx.rip;
+	info->stack_start = (char*)info->ctx.rsp - REDZONE_SIZE;
+
 #else
 	info->regs [0] = context.Edi;
 	info->regs [1] = context.Esi;
@@ -79,6 +99,8 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->regs [5] = context.Eax;
 	info->regs [6] = context.Ebp;
 	info->regs [7] = context.Esp;
+	info->stopped_ip = (gpointer)context.Eip;
+	info->stack_start = (char*)context.Esp - REDZONE_SIZE;
 #endif
 
 	/* Notify the JIT */
