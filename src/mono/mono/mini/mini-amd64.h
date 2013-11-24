@@ -167,7 +167,9 @@ struct MonoLMF {
 	 * If the third lowest bit is set, then this is a MonoLMFTramp structure.
 	 */
 	gpointer    previous_lmf;
+#ifdef HOST_WIN32
 	gpointer    lmf_addr;
+#endif
 #if defined(__default_codegen__) || defined(HOST_WIN32)
 	guint64     rip;
 #elif defined(__native_client_codegen__)
@@ -192,6 +194,7 @@ struct MonoLMF {
 typedef struct {
 	struct MonoLMF lmf;
 	guint64 *regs;
+	gpointer lmf_addr;
 } MonoLMFTramp;
 
 typedef struct MonoCompileArch {

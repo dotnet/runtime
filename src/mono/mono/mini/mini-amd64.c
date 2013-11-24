@@ -39,8 +39,9 @@
 #include "debugger-agent.h"
 #include "mini-gc.h"
 
-static gint lmf_tls_offset = -1;
-static gint lmf_addr_tls_offset = -1;
+#ifdef HOST_WIN32
+static gint jit_tls_offset = -1;
+#endif
 static gint appdomain_tls_offset = -1;
 
 #ifdef MONO_XEN_OPT
@@ -2021,10 +2022,8 @@ mono_arch_create_vars (MonoCompile *cfg)
 #if !defined(HOST_WIN32)
 	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
-#if defined(__APPLE__)
-		if (!optimize_for_xen)
+		if (mono_get_lmf_tls_offset () != -1 && !optimize_for_xen)
 			cfg->lmf_ir_mono_lmf = TRUE;
-#endif
 	}
 #endif
 
@@ -3706,7 +3705,9 @@ amd64_emit_tls_set (guint8 *code, int sreg, int tls_offset)
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_mem_reg (code, tls_gs_offset + (tls_offset * 8), sreg, 8);
 #else
-	g_assert_not_reached ();
+	g_assert (!optimize_for_xen);
+	x86_prefix (code, X86_FS_PREFIX);
+	amd64_mov_mem_reg (code, tls_offset, sreg, 8);
 #endif
 	return code;
 }
@@ -3725,8 +3726,10 @@ amd64_emit_tls_set_reg (guint8 *code, int sreg, int offset_reg)
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, tls_gs_offset);
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_membase_reg (code, AMD64_R11, 0, sreg, sizeof (gpointer));
+	int tmpreg = -1;
 #else
-	g_assert_not_reached ();
+	x86_prefix (code, X86_FS_PREFIX);
+	amd64_mov_membase_reg (code, offset_reg, 0, sreg, 8);
 #endif
 	return code;
 }
@@ -3781,7 +3784,9 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 
 	/* These can't contain refs */
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
+#ifdef HOST_WIN32
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
+#endif
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
 
@@ -3813,56 +3818,32 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 		return code;
 	}
 
-	if ((lmf_tls_offset != -1) && !optimize_for_xen) {
-		/*
-		 * Optimized version which uses the mono_lmf TLS variable instead of 
-		 * indirection through the mono_lmf_addr TLS variable.
-		 */
-		/* %rax = previous_lmf */
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_reg_mem (code, AMD64_RAX, lmf_tls_offset, 8);
-
-		/* Save previous_lmf */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_RAX, 8);
-		/* Set new lmf */
-		if (lmf_offset == 0) {
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_mem_reg (code, lmf_tls_offset, cfg->frame_reg, 8);
-		} else {
-			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
-		}
-	} else {
-		if (lmf_addr_tls_offset != -1) {
-			/* Load lmf quicky using the FS register */
-			code = mono_amd64_emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
 #ifdef HOST_WIN32
-			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
-			/* FIXME: Add a separate key for LMF to avoid this */
-			amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-#endif
-		}
-		else {
-			/* 
-			 * The call might clobber argument registers, but they are already
-			 * saved to the stack/global regs.
-			 */
-			if (args_clobbered)
-				*args_clobbered = TRUE;
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-							  (gpointer)"mono_get_lmf_addr", TRUE);		
-		}
-
-		/* Save lmf_addr */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
-		/* Save previous_lmf */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
-		/* Set new lmf */
-		amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
-		amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
+	if (jit_tls_offset != -1) {
+		code = mono_amd64_emit_tls_get (code, AMD64_RAX, jit_tls_offset);
+		amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+	} else {
+		/* 
+		 * The call might clobber argument registers, but they are already
+		 * saved to the stack/global regs.
+		 */
+		if (args_clobbered)
+			*args_clobbered = TRUE;
+		code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+						  (gpointer)"mono_get_lmf_addr", TRUE);		
 	}
+
+	/* Save lmf_addr */
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
+	/* Save previous_lmf */
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
+	/* Set new lmf */
+	amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
+	amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
+#else
+	g_assert_not_reached ();
+#endif
 
 	return code;
 }
@@ -3878,21 +3859,14 @@ emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	if (cfg->lmf_ir)
 		return code;
 
-	if ((lmf_tls_offset != -1) && !optimize_for_xen) {
-		/*
-		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-		 * through the mono_lmf_addr TLS variable.
-		 */
-		/* reg = previous_lmf */
-		amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-		x86_prefix (code, X86_FS_PREFIX);
-		amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
-	} else {
-		/* Restore previous lmf */
-		amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-		amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
-		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
-	}
+#ifdef HOST_WIN32
+	/* Restore previous lmf */
+	amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
+	amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
+	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
+#else
+	g_assert_not_reached ();
+#endif
 
 	return code;
 }
@@ -8143,23 +8117,18 @@ mono_arch_finish_init (void)
 	 * be initialized yet.
 	 */
 	appdomain_tls_offset = mono_domain_get_tls_key ();
-	lmf_tls_offset = mono_get_jit_tls_key ();
-	lmf_addr_tls_offset = mono_get_jit_tls_key ();
+	jit_tls_offset = mono_get_jit_tls_key ();
 
 	/* Only 64 tls entries can be accessed using inline code */
 	if (appdomain_tls_offset >= 64)
 		appdomain_tls_offset = -1;
-	if (lmf_tls_offset >= 64)
-		lmf_tls_offset = -1;
-	if (lmf_addr_tls_offset >= 64)
-		lmf_addr_tls_offset = -1;
+	if (jit_tls_offset >= 64)
+		jit_tls_offset = -1;
 #else
 #ifdef MONO_XEN_OPT
 	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
 	appdomain_tls_offset = mono_domain_get_tls_offset ();
- 	lmf_tls_offset = mono_get_lmf_tls_offset ();
-	lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 #endif
 }
 
