@@ -1424,9 +1424,9 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 				else
 					sreg = -1;
 				if (sreg != -1) {
-					skip = FALSE;
 					MonoInst *tins;
 
+					skip = FALSE;
 					for (tins = ins->prev; tins; tins = tins->prev) {
 						const char *spec = INS_INFO (tins->opcode);
 
