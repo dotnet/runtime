@@ -3726,7 +3726,6 @@ amd64_emit_tls_set_reg (guint8 *code, int sreg, int offset_reg)
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, tls_gs_offset);
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_membase_reg (code, AMD64_R11, 0, sreg, sizeof (gpointer));
-	int tmpreg = -1;
 #else
 	x86_prefix (code, X86_FS_PREFIX);
 	amd64_mov_membase_reg (code, offset_reg, 0, sreg, 8);
