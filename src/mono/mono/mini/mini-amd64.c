@@ -3812,11 +3812,6 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 static guint8*
 emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args_clobbered)
 {
-	if (cfg->lmf_ir) {
-		*args_clobbered = TRUE;
-		return code;
-	}
-
 #ifdef HOST_WIN32
 	if (jit_tls_offset != -1) {
 		code = mono_amd64_emit_tls_get (code, AMD64_RAX, jit_tls_offset);
@@ -3855,9 +3850,6 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 static guint8*
 emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
-	if (cfg->lmf_ir)
-		return code;
-
 #ifdef HOST_WIN32
 	/* Restore previous lmf */
 	amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
@@ -7115,9 +7107,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
+#ifdef HOST_WIN32
 	if (method->save_lmf) {
 		code = emit_push_lmf (cfg, code, lmf_var->inst_offset, &args_clobbered);
 	}
+#else
+	args_clobbered = TRUE;
+#endif
 
 	if (trace) {
 		args_clobbered = TRUE;
@@ -7255,7 +7251,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	pos = 0;
 	
 	if (method->save_lmf) {
+#ifdef HOST_WIN32
 		code = emit_pop_lmf (cfg, code, lmf_offset);
+#endif
 
 		/* check if we need to restore protection of the stack after a stack overflow */
 		if (mono_get_jit_tls_offset () != -1) {
