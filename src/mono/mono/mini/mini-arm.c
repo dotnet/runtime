@@ -495,7 +495,7 @@ typedef struct {
 } FloatArgData;
 
 static guint8 *
-emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code)
+emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_len, guint *offset)
 {
 	GSList *list;
 
@@ -503,8 +503,22 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code)
 		FloatArgData *fad = list->data;
 		MonoInst *var = get_vreg_to_inst (cfg, fad->vreg);
 
+		/* Potentially 4 instructions for an immediate load, one
+		 * instruction for the add, then one for the float load.
+		 */
+		*max_len += 6 * 4;
+
+		if (*offset + *max_len > cfg->code_size) {
+			cfg->code_size += *max_len;
+			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+
+			code = cfg->native_code + *offset;
+		}
+
 		code = emit_big_add (code, ARMREG_IP, var->inst_basereg, var->inst_offset);
 		ARM_FLDS (code, fad->hreg, ARMREG_IP, 0);
+
+		*offset = code - cfg->native_code;
 	}
 
 	return code;
@@ -4556,10 +4570,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL:
 			call = (MonoCallInst*)ins;
 
-			if (IS_HARD_FLOAT) {
-				code = emit_float_args (cfg, call, code);
-				offset = code - cfg->native_code;
-			}
+			if (IS_HARD_FLOAT)
+				code = emit_float_args (cfg, call, code, &max_len, &offset);
 
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
@@ -4576,10 +4588,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
-			if (IS_HARD_FLOAT) {
-				code = emit_float_args (cfg, (MonoCallInst *)ins, code);
-				offset = code - cfg->native_code;
-			}
+			if (IS_HARD_FLOAT)
+				code = emit_float_args (cfg, (MonoCallInst *)ins, code, &max_len, &offset);
 
 			code = emit_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
@@ -4597,10 +4607,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->sreg1 != ARMREG_LR);
 			call = (MonoCallInst*)ins;
 
-			if (IS_HARD_FLOAT) {
-				code = emit_float_args (cfg, call, code);
-				offset = code - cfg->native_code;
-			}
+			if (IS_HARD_FLOAT)
+				code = emit_float_args (cfg, call, code, &max_len, &offset);
 
 			if (call->dynamic_imt_arg || call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 				imt_arg = TRUE;
