@@ -35,64 +35,6 @@ typedef struct
 	guint32 breakpoint_id;
 } MiniDebugMethodInfo;
 
-typedef struct {
-	MonoObject *last_exception;
-	guint32 stopped_on_exception : 1;
-	guint32 stopped_on_unhandled : 1;
-} MonoDebuggerExceptionState;
-
-typedef enum {
-	MONO_DEBUGGER_THREAD_FLAGS_NONE		= 0,
-	MONO_DEBUGGER_THREAD_FLAGS_INTERNAL	= 1,
-	MONO_DEBUGGER_THREAD_FLAGS_THREADPOOL	= 2
-} MonoDebuggerThreadFlags;
-
-typedef enum {
-	MONO_DEBUGGER_INTERNAL_THREAD_FLAGS_NONE		= 0,
-	MONO_DEBUGGER_INTERNAL_THREAD_FLAGS_IN_RUNTIME_INVOKE	= 1,
-	MONO_DEBUGGER_INTERNAL_THREAD_FLAGS_ABORT_REQUESTED	= 2
-} MonoDebuggerInternalThreadFlags;
-
-struct _MonoDebuggerThreadInfo {
-	guint64 tid;
-	guint64 lmf_addr;
-	guint64 end_stack;
-
-	guint64 extended_notifications;
-
-	/* Next pointer. */
-	MonoDebuggerThreadInfo *next;
-
-	/*
-	 * The stack bounds are only used when reading a core file.
-	 */
-	guint64 stack_start;
-	guint64 signal_stack_start;
-	guint32 stack_size;
-	guint32 signal_stack_size;
-
-	guint32 thread_flags;
-
-	/*
-	 * The debugger doesn't access anything beyond this point.
-	 */
-	MonoDebuggerExceptionState exception_state;
-
-	guint32 internal_flags;
-
-	MonoJitTlsData *jit_tls;
-	MonoInternalThread *thread;
-};
-
-typedef struct {
-	gpointer stack_pointer;
-	MonoObject *exception_obj;
-	guint32 stop;
-	guint32 stop_unhandled;
-} MonoDebuggerExceptionInfo;
-
-MonoDebuggerThreadInfo *mono_debugger_thread_table = NULL;
-
 static inline void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 {
