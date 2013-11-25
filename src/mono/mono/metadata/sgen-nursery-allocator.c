@@ -202,7 +202,7 @@ void
 dump_alloc_records (void)
 {
 	int i;
-	qsort (alloc_records, next_record, sizeof (AllocRecord), comp_alloc_record);
+	sgen_qsort (alloc_records, next_record, sizeof (AllocRecord), comp_alloc_record);
 
 	printf ("------------------------------------DUMP RECORDS----------------------------\n");
 	for (i = 0; i < next_record; ++i) {
@@ -220,7 +220,7 @@ verify_alloc_records (void)
 	int max_hole = 0;
 	AllocRecord *prev = NULL;
 
-	qsort (alloc_records, next_record, sizeof (AllocRecord), comp_alloc_record);
+	sgen_qsort (alloc_records, next_record, sizeof (AllocRecord), comp_alloc_record);
 	printf ("------------------------------------DUMP RECORDS- %d %d---------------------------\n", next_record, alloc_count);
 	for (i = 0; i < next_record; ++i) {
 		AllocRecord *rec = alloc_records + i;

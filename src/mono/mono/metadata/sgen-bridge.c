@@ -636,7 +636,7 @@ sgen_bridge_processing_finish (int generation)
 
 	/* sort array according to decreasing finishing time */
 
-	qsort (all_entries, hash_table.num_entries, sizeof (HashEntry*), compare_hash_entries);
+	sgen_qsort (all_entries, hash_table.num_entries, sizeof (HashEntry*), compare_hash_entries);
 
 	SGEN_TV_GETTIME (btv);
 	step_3 = SGEN_TV_ELAPSED (atv, btv);

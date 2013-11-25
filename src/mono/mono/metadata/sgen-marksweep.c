@@ -1914,7 +1914,7 @@ major_have_computer_minor_collection_allowance (void)
 			empty_block_arr [i++] = block;
 		SGEN_ASSERT (0, i == num_empty_blocks, "empty block count wrong");
 
-		qsort (empty_block_arr, num_empty_blocks, sizeof (void*), compare_pointers);
+		sgen_qsort (empty_block_arr, num_empty_blocks, sizeof (void*), compare_pointers);
 
 		/*
 		 * We iterate over the free blocks, trying to find MS_BLOCK_ALLOC_NUM
