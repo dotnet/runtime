@@ -29,7 +29,6 @@
 
 static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
-static gboolean mono_debugger_use_debugger = FALSE;
 static MonoObject *last_exception = NULL;
 volatile gint32 _mono_debugger_interruption_request = 0;
 
@@ -79,14 +78,11 @@ mono_debugger_unlock (void)
 }
 
 void
-mono_debugger_initialize (gboolean use_debugger)
+mono_debugger_initialize ()
 {
 	MONO_GC_REGISTER_ROOT_SINGLE (last_exception);
 	
-	g_assert (!mono_debugger_use_debugger);
-
 	InitializeCriticalSection (&debugger_lock_mutex);
-	mono_debugger_use_debugger = use_debugger;
 	initialized = 1;
 }
 

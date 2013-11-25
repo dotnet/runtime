@@ -50,7 +50,7 @@ extern volatile gint32 _mono_debugger_interruption_request;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-MONO_API void            mono_debugger_initialize                    (gboolean use_debugger);
+MONO_API void            mono_debugger_initialize                    (void);
 MONO_API void            mono_debugger_cleanup                       (void);
 
 MONO_API void            mono_debugger_lock                          (void);

@@ -149,7 +149,6 @@ struct _MonoDebugVarInfo {
 extern MonoSymbolTable *mono_symbol_table;
 extern MonoDebugFormat mono_debug_format;
 extern int32_t mono_debug_debugger_version;
-extern int32_t _mono_debug_using_mono_debugger;
 
 MONO_API void mono_debug_list_add (MonoDebugList **list, const void* data);
 MONO_API void mono_debug_list_remove (MonoDebugList **list, const void* data);
@@ -162,8 +161,6 @@ MONO_API void mono_debug_close_image (MonoImage *image);
 
 MONO_API void mono_debug_domain_unload (MonoDomain *domain);
 MONO_API void mono_debug_domain_create (MonoDomain *domain);
-
-MONO_API mono_bool mono_debug_using_mono_debugger (void);
 
 MONO_API MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);

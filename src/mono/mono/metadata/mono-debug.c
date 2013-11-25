@@ -109,7 +109,6 @@ typedef struct {
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 gint32 mono_debug_debugger_version = 5;
-gint32 _mono_debug_using_mono_debugger = 0;
 
 static gboolean mono_debug_initialized = FALSE;
 static GHashTable *mono_debug_handles = NULL;
@@ -229,9 +228,6 @@ mono_debug_init (MonoDebugFormat format)
 {
 	g_assert (!mono_debug_initialized);
 
-	if (_mono_debug_using_mono_debugger)
-		format = MONO_DEBUG_FORMAT_DEBUGGER;
-
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
 
@@ -241,7 +237,7 @@ mono_debug_init (MonoDebugFormat format)
 	 */
 	mono_gc_base_init ();
 
-	mono_debugger_initialize (_mono_debug_using_mono_debugger);
+	mono_debugger_initialize ();
 
 	mono_debugger_lock ();
 
@@ -286,13 +282,6 @@ mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents,
 		return;
 
 	mono_debug_open_image (image, raw_contents, size);
-}
-
-
-gboolean
-mono_debug_using_mono_debugger (void)
-{
-	return _mono_debug_using_mono_debugger;
 }
 
 void
@@ -420,7 +409,7 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	handle->type_table = create_data_table (NULL);
 
 	handle->symfile = mono_debug_open_mono_symbols (
-		handle, raw_contents, size, _mono_debug_using_mono_debugger);
+		handle, raw_contents, size, FALSE);
 
 	mono_debug_list_add (&mono_symbol_table->symbol_files, handle);
 
