@@ -9,9 +9,6 @@
 typedef struct _MonoDebuggerThreadInfo MonoDebuggerThreadInfo;
 extern MonoDebuggerThreadInfo *mono_debugger_thread_table;
 
-MONO_API gboolean
-mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj);
-
 /*
  * Internal exception API.
  */

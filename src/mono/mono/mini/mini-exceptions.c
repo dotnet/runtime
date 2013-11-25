@@ -1860,22 +1860,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 	g_assert_not_reached ();
 }
 
-/*
- * mono_debugger_handle_exception:
- *
- *  Notify the debugger about exceptions.  Returns TRUE if the debugger wants us to stop
- *  at the exception and FALSE to resume with the normal exception handling.
- *
- *  The arch code is responsible to setup @ctx in a way that MONO_CONTEXT_GET_IP () and
- *  MONO_CONTEXT_GET_SP () point to the throw instruction; ie. before executing the
- *  `callq throw' instruction.
- */
-gboolean
-mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
-{
-	return FALSE;
-}
-
 /**
  * mono_debugger_run_finally:
  * @start_ctx: saved processor state

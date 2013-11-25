@@ -496,23 +496,6 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 			mono_ex->stack_trace = NULL;
 	}
 
-	if (mono_debug_using_mono_debugger ()) {
-		guint8 buf [16], *code;
-
-		mono_breakpoint_clean_code (NULL, (gpointer)eip, 8, buf, sizeof (buf));
-		code = buf + 8;
-
-		if (buf [3] == 0xe8) {
-			MonoContext ctx_cp = ctx;
-			ctx_cp.eip = eip - 5;
-
-			if (mono_debugger_handle_exception (&ctx_cp, exc)) {
-				mono_restore_context (&ctx_cp);
-				g_assert_not_reached ();
-			}
-		}
-	}
-
 	/* adjust eip so that it point into the call instruction */
 	ctx.eip -= 1;
 
@@ -998,9 +981,6 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
-	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
-		return;
-
 	mono_handle_exception (&ctx, obj);
 
 	mono_restore_context (&ctx);
@@ -1111,9 +1091,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 
-	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj))
-		return TRUE;
-
 	mono_handle_exception (&mctx, obj);
 
 	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
@@ -1154,12 +1131,6 @@ altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 	MonoContext mctx;
 
 	mctx = *ctx;
-
-	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj)) {
-		if (stack_ovf)
-			prepare_for_guard_pages (&mctx);
-		mono_restore_context (&mctx);
-	}
 
 	mono_handle_exception (&mctx, obj);
 	if (stack_ovf)
