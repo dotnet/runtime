@@ -9,17 +9,8 @@
 typedef struct _MonoDebuggerThreadInfo MonoDebuggerThreadInfo;
 extern MonoDebuggerThreadInfo *mono_debugger_thread_table;
 
-MONO_API void
-mono_debugger_call_exception_handler (gpointer addr, gpointer stack, MonoObject *exc);
-
 MONO_API gboolean
 mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj);
-
-MONO_API MonoObject *
-mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc);
-
-MONO_API gboolean
-mono_debugger_abort_runtime_invoke (void);
 
 /*
  * Internal exception API.
@@ -30,12 +21,6 @@ typedef enum {
 	MONO_DEBUGGER_EXCEPTION_ACTION_STOP		= 1,
 	MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED	= 2
 } MonoDebuggerExceptionAction;
-
-MonoDebuggerExceptionAction
-_mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc);
-
-gboolean
-_mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc);
 
 /*
  * This is the old breakpoint interface.
