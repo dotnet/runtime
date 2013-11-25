@@ -1744,6 +1744,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				offset += sizeof(mgreg_t);
 			}
+		if (!cfg->arch.omit_fp)
+			cfg->arch.reg_save_area_offset = -offset;
 	}
 
 	if (sig_ret->type != MONO_TYPE_VOID) {
@@ -6741,23 +6743,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 	}
 
-	/* Save callee saved registers */
-	if (!cfg->arch.omit_fp && !method->save_lmf) {
-		int offset = cfa_offset;
-
-		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-				amd64_push_reg (code, i);
-				pos += 8; /* AMD64 push inst is always 8 bytes, no way to change it */
-				offset += 8;
-				mono_emit_unwind_op_offset (cfg, code, i, - offset);
-				async_exc_point (code);
-
-				/* These are handled automatically by the stack marking code */
-				mini_gc_set_slot_type_from_cfa (cfg, - offset, SLOT_NOREF);
-			}
-	}
-
 	/* The param area is always at offset 0 from sp */
 	/* This needs to be allocated here, since it has to come after the spill area */
 	if (cfg->arch.no_pushes && cfg->param_area) {
@@ -6894,19 +6879,31 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Save callee saved registers */
-	if (cfg->arch.omit_fp && !method->save_lmf) {
-		gint32 save_area_offset = cfg->arch.reg_save_area_offset;
+	if (!method->save_lmf) {
+		gint32 save_area_offset;
 
-		/* Save caller saved registers after sp is adjusted */
-		/* The registers are saved at the bottom of the frame */
-		/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
+		if (cfg->arch.omit_fp) {
+			save_area_offset = cfg->arch.reg_save_area_offset;
+			/* Save caller saved registers after sp is adjusted */
+			/* The registers are saved at the bottom of the frame */
+			/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
+		} else {
+			/* The registers are saved just below the saved rbp */
+			save_area_offset = cfg->arch.reg_save_area_offset;
+		}
+
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
-				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
+				amd64_mov_membase_reg (code, cfg->frame_reg, save_area_offset, i, 8);
 
-				/* These are handled automatically by the stack marking code */
-				mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
+				if (cfg->arch.omit_fp) {
+					mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
+					/* These are handled automatically by the stack marking code */
+					mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
+				} else {
+					mono_emit_unwind_op_offset (cfg, code, i, - (-save_area_offset + (2 * 8)));
+					// FIXME: GC
+				}
 
 				save_area_offset += 8;
 				async_exc_point (code);
@@ -7305,40 +7302,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 #endif
 	} else {
+		gint32 save_area_offset = cfg->arch.reg_save_area_offset;
 
-		if (cfg->arch.omit_fp) {
-			gint32 save_area_offset = cfg->arch.reg_save_area_offset;
-
-			for (i = 0; i < AMD64_NREG; ++i)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-					amd64_mov_reg_membase (code, i, AMD64_RSP, save_area_offset, 8);
-					save_area_offset += 8;
-				}
-		}
-		else {
-			for (i = 0; i < AMD64_NREG; ++i)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
-					pos -= sizeof(mgreg_t);
-
-			if (pos) {
-				if (pos == - sizeof(mgreg_t)) {
-					/* Only one register, so avoid lea */
-					for (i = AMD64_NREG - 1; i > 0; --i)
-						if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-							amd64_mov_reg_membase (code, i, AMD64_RBP, pos, 8);
-						}
-				}
-				else {
-					amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
-
-					/* Pop registers in reverse order */
-					for (i = AMD64_NREG - 1; i > 0; --i)
-						if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-							amd64_pop_reg (code, i);
-						}
-				}
+		for (i = 0; i < AMD64_NREG; ++i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
+				save_area_offset += 8;
 			}
-		}
 	}
 
 	/* Load returned vtypes into registers if needed */
