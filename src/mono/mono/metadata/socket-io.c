@@ -2234,15 +2234,13 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				if(address) {
 					mreq.imr_address = ipaddress_to_struct_in_addr (address);
 				}
+
+				field = mono_class_get_field_from_name(obj_val->vtable->klass, "iface_index");
+				mreq.imr_ifindex = *(gint32 *)(((char *)obj_val)+field->offset);
 #else
 				if(address) {
 					mreq.imr_interface = ipaddress_to_struct_in_addr (address);
 				}
-#endif /* HAVE_STRUCT_IP_MREQN */
-
-#ifdef HAVE_STRUCT_IP_MREQN
-				field = mono_class_get_field_from_name(obj_val->vtable->klass, "iface_index");
-				mreq.imr_ifindex = *(gint32 *)(((char *)obj_val)+field->offset);
 #endif /* HAVE_STRUCT_IP_MREQN */
 
 				ret = _wapi_setsockopt (sock, system_level,
