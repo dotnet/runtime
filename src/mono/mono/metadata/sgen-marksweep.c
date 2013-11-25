@@ -947,7 +947,7 @@ major_is_valid_object (char *object)
 }
 
 
-static gboolean
+static MonoVTable*
 major_describe_pointer (char *ptr)
 {
 	MSBlockInfo *block;
@@ -989,10 +989,10 @@ major_describe_pointer (char *ptr)
 
 		SGEN_LOG (0, " marked %d)\n", marked ? 1 : 0);
 
-		return TRUE;
+		return vtable;
 	} END_FOREACH_BLOCK;
 
-	return FALSE;
+	return NULL;
 }
 
 static void

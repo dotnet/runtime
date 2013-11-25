@@ -816,6 +816,28 @@ sgen_bridge_processing_finish (int generation)
 	bridge_processing_in_progress = FALSE;
 }
 
+void
+sgen_bridge_describe_pointer (MonoObject *obj)
+{
+	HashEntry *entry;
+	int i;
+
+	for (i = 0; i < registered_bridges.size; ++i) {
+		if (obj == DYN_ARRAY_PTR_REF (&registered_bridges, i)) {
+			printf ("Pointer is a registered bridge object.\n");
+			break;
+		}
+	}
+
+	entry = sgen_hash_table_lookup (&hash_table, obj);
+	if (!entry)
+		return;
+
+	printf ("Bridge hash table entry %p:\n", entry);
+	printf ("  is bridge: %d\n", (int)entry->is_bridge);
+	printf ("  is visited: %d\n", (int)entry->is_visited);
+}
+
 static const char *bridge_class;
 
 static gboolean

@@ -77,6 +77,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 		if (!start)
 			return;
 		ptr = start;
+		vtable = (MonoVTable*)LOAD_VTABLE (ptr);
 	} else {
 		if (sgen_ptr_is_in_los (ptr, &start)) {
 			if (ptr == start)
@@ -85,6 +86,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
 			ptr = start;
 			mono_sgen_los_describe_pointer (ptr);
+			vtable = (MonoVTable*)LOAD_VTABLE (ptr);
 		} else if (major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
 			if (ptr == start)
 				printf ("Pointer is the start of object %p in oldspace.\n", start);
@@ -94,9 +96,11 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer inside oldspace.\n");
 			if (start)
 				ptr = start;
-			major_collector.describe_pointer (ptr);
+			vtable = major_collector.describe_pointer (ptr);
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
+			// FIXME: Handle pointers to the inside of objects
 			printf ("Pointer is inside a pinned chunk.\n");
+			vtable = (MonoVTable*)LOAD_VTABLE (ptr);
 		} else {
 			printf ("Pointer unknown.\n");
 			return;
@@ -112,17 +116,14 @@ describe_pointer (char *ptr, gboolean need_setup)
 		goto restart;
 	}
 
-	// FIXME: Handle pointers to the inside of objects
-	vtable = (MonoVTable*)LOAD_VTABLE (ptr);
-
 	printf ("VTable: %p\n", vtable);
 	if (vtable == NULL) {
 		printf ("VTable is invalid (empty).\n");
-		return;
+		goto bridge;
 	}
 	if (sgen_ptr_in_nursery (vtable)) {
 		printf ("VTable is invalid (points inside nursery).\n");
-		return;
+		goto bridge;
 	}
 	printf ("Class: %s\n", vtable->klass->name);
 
@@ -134,6 +135,9 @@ describe_pointer (char *ptr, gboolean need_setup)
 
 	size = sgen_safe_object_get_size ((MonoObject*)ptr);
 	printf ("Size: %d\n", (int)size);
+
+ bridge:
+	sgen_bridge_describe_pointer ((MonoObject*)ptr);
 }
 
 void
