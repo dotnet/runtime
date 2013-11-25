@@ -389,7 +389,6 @@ common_sources = \
 	local-propagation.c	\
 	driver.c		\
 	debug-mini.c		\
-	debug-mini.h		\
 	linear-scan.c		\
 	aot-compiler.c		\
 	aot-runtime.c		\

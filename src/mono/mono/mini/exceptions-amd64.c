@@ -37,7 +37,6 @@
 #include "mini.h"
 #include "mini-amd64.h"
 #include "tasklets.h"
-#include "debug-mini.h"
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 

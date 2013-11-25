@@ -50,7 +50,6 @@
 #include <mono/utils/mono-logger-internal.h>
 
 #include "mini.h"
-#include "debug-mini.h"
 #include "trace.h"
 #include "debugger-agent.h"
 

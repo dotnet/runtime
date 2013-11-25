@@ -49,6 +49,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -71,7 +72,6 @@
 
 #include "jit-icalls.h"
 
-#include "debug-mini.h"
 #include "mini-gc.h"
 #include "debugger-agent.h"
 

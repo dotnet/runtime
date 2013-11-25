@@ -15,7 +15,6 @@
 #include <mono/utils/mono-membar.h>
 
 #include "mini.h"
-#include "debug-mini.h"
 
 /*
  * Address of the trampoline code.  This is used by the debugger to check

@@ -18,7 +18,6 @@
 
 #define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
-#include "debug-mini.h"
 
 #include <mono/utils/valgrind.h>
 
