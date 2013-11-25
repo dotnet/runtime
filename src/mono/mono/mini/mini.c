@@ -2838,7 +2838,6 @@ mono_thread_start_cb (intptr_t tid, gpointer stack_start, gpointer func)
 	MonoInternalThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
 	thread = mono_thread_internal_current ();
-	mono_debugger_thread_created (tid, thread->root_domain_thread, jit_tls, func);
 	if (thread)
 		thread->jit_data = jit_tls;
 
@@ -2862,7 +2861,6 @@ mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 	MonoInternalThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
 	thread = mono_thread_internal_current ();
-	mono_debugger_thread_created (tid, thread->root_domain_thread, (MonoJitTlsData *) jit_tls, NULL);
 	if (thread)
 		thread->jit_data = jit_tls;
 	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
@@ -2877,8 +2875,6 @@ mini_thread_cleanup (MonoInternalThread *thread)
 	MonoJitTlsData *jit_tls = thread->jit_data;
 
 	if (jit_tls) {
-		mono_debugger_thread_cleanup (jit_tls);
-
 		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
 		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
 		 * not a trivial thing.

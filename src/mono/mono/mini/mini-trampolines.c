@@ -577,8 +577,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	addr = compiled_method = mono_compile_method (m);
 	g_assert (addr);
 
-	mono_debugger_trampoline_compiled (code, m, addr);
-
 	if (generic_virtual || variant_iface) {
 		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
 			need_unbox_tramp = TRUE;
@@ -808,8 +806,6 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
-
-	mono_debugger_trampoline_compiled (NULL, m, addr);
 
 	return addr;
 }
@@ -1068,7 +1064,6 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			delegate->method_ptr = addr;
 			if (enable_caching && delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
-			mono_debugger_trampoline_compiled (NULL, method, delegate->method_ptr);
 		}
 	} else {
 		if (need_rgctx_tramp)
@@ -1094,7 +1089,6 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	code = mono_compile_method (m);
 	code = mini_add_method_trampoline (NULL, m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
-	mono_debugger_trampoline_compiled (NULL, m, delegate->invoke_impl);
 
 	return code;
 }
