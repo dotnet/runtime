@@ -761,7 +761,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 
 static GPtrArray *breakpoints = NULL;
 
-int
+static int
 mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc)
 {
 	static int last_breakpoint_id = 0;
@@ -779,29 +779,7 @@ mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc)
 	return info->index;
 }
 
-int
-mono_debugger_remove_breakpoint (int breakpoint_id)
-{
-	int i;
-
-	if (!breakpoints)
-		return 0;
-
-	for (i = 0; i < breakpoints->len; i++) {
-		MiniDebugBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
-
-		if (info->index != breakpoint_id)
-			continue;
-
-		mono_method_desc_free (info->desc);
-		g_ptr_array_remove (breakpoints, info);
-		g_free (info);
-		return 1;
-	}
-
-	return 0;
-}
-
+/*FIXME This is part of the public API by accident, remove it from there when possible. */
 int
 mono_debugger_insert_breakpoint (const gchar *method_name, gboolean include_namespace)
 {
@@ -814,6 +792,7 @@ mono_debugger_insert_breakpoint (const gchar *method_name, gboolean include_name
 	return mono_debugger_insert_breakpoint_full (desc);
 }
 
+/*FIXME This is part of the public API by accident, remove it from there when possible. */
 int
 mono_debugger_method_has_breakpoint (MonoMethod *method)
 {
@@ -832,10 +811,4 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 	}
 
 	return 0;
-}
-
-void
-mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
-{
-	mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT, (guint64) (gsize) method, index);
 }

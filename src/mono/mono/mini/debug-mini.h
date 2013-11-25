@@ -19,14 +19,4 @@ typedef enum {
 	MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED	= 2
 } MonoDebuggerExceptionAction;
 
-/*
- * This is the old breakpoint interface.
- * It isn't used by the debugger anymore, but still when using the `--break' command
- * line argument.
- */
-
-int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
-int             mono_debugger_remove_breakpoint           (int breakpoint_id);
-void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
-
 #endif
