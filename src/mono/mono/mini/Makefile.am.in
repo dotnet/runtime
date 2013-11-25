@@ -417,8 +417,6 @@ common_sources = \
 	mini-gc.c		\
 	debugger-agent.h 	\
 	debugger-agent.c	\
-	debug-debugger.c	\
-	debug-debugger.h	\
 	xdebug.c			\
 	mini-llvm.h			\
 	mini-llvm-cpp.h	\
