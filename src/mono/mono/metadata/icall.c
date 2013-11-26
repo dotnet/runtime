@@ -8265,20 +8265,24 @@ type_from_typename (char *typename)
 	return &klass->byval_arg;
 }
 
+/**
+ * LOCKING: Take the corlib image lock.
+ */
 MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr)
 {
 	gchar **parts;
 	int i, len;
 	gchar **tmp;
-	MonoMethodSignature *res;
+	MonoMethodSignature *res, *res2;
+	MonoImage *corlib = mono_defaults.corlib;
 
-	mono_loader_lock ();
-	res = g_hash_table_lookup (mono_defaults.corlib->helper_signatures, sigstr);
-	if (res) {
-		mono_loader_unlock ();
+	mono_image_lock (corlib);
+	res = g_hash_table_lookup (corlib->helper_signatures, sigstr);
+	mono_image_unlock (corlib);
+
+	if (res)
 		return res;
-	}
 
 	parts = g_strsplit (sigstr, " ", 256);
 
@@ -8289,7 +8293,7 @@ mono_create_icall_signature (const char *sigstr)
 		tmp ++;
 	}
 
-	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
+	res = mono_metadata_signature_alloc (corlib, len - 1);
 	res->pinvoke = 1;
 
 #ifdef HOST_WIN32
@@ -8307,9 +8311,13 @@ mono_create_icall_signature (const char *sigstr)
 
 	g_strfreev (parts);
 
-	g_hash_table_insert (mono_defaults.corlib->helper_signatures, (gpointer)sigstr, res);
-
-	mono_loader_unlock ();
+	mono_image_lock (corlib);
+	res2 = g_hash_table_lookup (corlib->helper_signatures, sigstr);
+	if (res2)
+		res = res2; /*Value is allocated in the image pool*/
+	else
+		g_hash_table_insert (corlib->helper_signatures, (gpointer)sigstr, res);
+	mono_image_unlock (corlib);
 
 	return res;
 }

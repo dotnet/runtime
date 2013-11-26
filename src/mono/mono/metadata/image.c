@@ -1653,9 +1653,7 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->pinvoke_scope_filenames);
 
 	/* The ownership of signatures is not well defined */
-	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->memberref_signatures);
-	//g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->helper_signatures);
 	g_hash_table_destroy (image->method_signatures);
 
