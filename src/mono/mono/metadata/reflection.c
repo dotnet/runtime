@@ -9843,8 +9843,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		if (!tb->nesting_type) {
 			mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
 		} else {
-			klass->image->reflection_info_unregister_classes =
-				g_slist_prepend (klass->image->reflection_info_unregister_classes, klass);
+			mono_image_append_class_to_reflection_info_set (klass);
 		}
 	} else {
 		g_assert (mono_class_get_ref_info (klass) == tb);
@@ -11458,9 +11457,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	gparam->type.type = &pklass->byval_arg;
 
 	mono_class_set_ref_info (pklass, gparam);
-	mono_image_lock (image);
-	image->reflection_info_unregister_classes = g_slist_prepend (image->reflection_info_unregister_classes, pklass);
-	mono_image_unlock (image);
+	mono_image_append_class_to_reflection_info_set (pklass);
 }
 
 MonoArray *

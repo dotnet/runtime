@@ -2229,7 +2229,6 @@ deregister_reflection_info_roots_from_list (MonoImage *image)
 		list = list->next;
 	}
 
-	g_slist_free (image->reflection_info_unregister_classes);
 	image->reflection_info_unregister_classes = NULL;
 }
 

@@ -1662,7 +1662,11 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->property_hash)
 		mono_property_hash_destroy (image->property_hash);
 
-	g_slist_free (image->reflection_info_unregister_classes);
+	/*
+	reflection_info_unregister_classes is only required by dynamic images, which will not be properly
+	cleared during shutdown as we don't perform regular appdomain unload for the root one.
+	*/
+	g_assert (!image->reflection_info_unregister_classes || mono_runtime_is_shutting_down ());
 	image->reflection_info_unregister_classes = NULL;
 
 	if (image->interface_bitset) {
@@ -1707,12 +1711,6 @@ void
 mono_image_close_finish (MonoImage *image)
 {
 	int i;
-	GSList *l;
-
-	for (l = image->reflection_info_unregister_classes; l; l = l->next)
-		g_free (l->data);
-	g_slist_free (image->reflection_info_unregister_classes);
-	image->reflection_info_unregister_classes = NULL;
 
 	if (image->references && !image->dynamic) {
 		for (i = 0; i < image->nreferences; i++) {
@@ -2359,4 +2357,13 @@ mono_image_property_remove (MonoImage *image, gpointer subject)
 	mono_image_lock (image);
 	mono_property_hash_remove_object (image->property_hash, subject);
  	mono_image_unlock (image);
+}
+
+void
+mono_image_append_class_to_reflection_info_set (MonoClass *class)
+{
+	MonoImage *image = class->image;
+	mono_image_lock (image);
+	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, class);
+	mono_image_unlock (image);
 }
