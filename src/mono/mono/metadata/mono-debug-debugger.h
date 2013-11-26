@@ -12,6 +12,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-compiler.h>
 
 typedef enum {
 	MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE	= 1,
@@ -50,42 +51,42 @@ extern volatile gint32 _mono_debugger_interruption_request;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-MONO_API void            mono_debugger_initialize                    (void);
-MONO_API void            mono_debugger_cleanup                       (void);
+void            mono_debugger_initialize                    (void) MONO_INTERNAL;
+void            mono_debugger_cleanup                       (void) MONO_INTERNAL;
 
-MONO_API void            mono_debugger_lock                          (void);
-MONO_API void            mono_debugger_unlock                        (void);
-MONO_API void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
+void            mono_debugger_lock                          (void) MONO_INTERNAL;
+void            mono_debugger_unlock                        (void) MONO_INTERNAL;
+void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg) MONO_INTERNAL;
 
-MONO_API gchar *
-mono_debugger_check_runtime_version (const char *filename);
+gchar *
+mono_debugger_check_runtime_version (const char *filename) MONO_INTERNAL;
 
-MONO_API void
-mono_debugger_class_initialized (MonoClass *klass);
+void
+mono_debugger_class_initialized (MonoClass *klass) MONO_INTERNAL;
 
-MONO_API void
-mono_debugger_check_interruption (void);
+void
+mono_debugger_check_interruption (void) MONO_INTERNAL;
 
-MONO_API void
-mono_debugger_event_create_appdomain (MonoDomain *domain, gchar *shadow_path);
+void
+mono_debugger_event_create_appdomain (MonoDomain *domain, gchar *shadow_path) MONO_INTERNAL;
 
-MONO_API void
-mono_debugger_event_unload_appdomain (MonoDomain *domain);
+void
+mono_debugger_event_unload_appdomain (MonoDomain *domain) MONO_INTERNAL;
 
-MONO_API MonoDebugMethodAddressList *
-mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);
+MonoDebugMethodAddressList *
+mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx) MONO_INTERNAL;
 
-MONO_API int
-mono_debugger_remove_method_breakpoint (guint64 index);
+int
+mono_debugger_remove_method_breakpoint (guint64 index) MONO_INTERNAL;
 
-MONO_API void
-mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
+void
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info) MONO_INTERNAL;
 
-MONO_API MonoClass *
+MonoClass *
 mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_name,
-					    guint32 token, guint32 index);
+					    guint32 token, guint32 index) MONO_INTERNAL;
 
-MONO_API void
-mono_debugger_remove_class_init_callback (int index);
+void
+mono_debugger_remove_class_init_callback (int index) MONO_INTERNAL;
 
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */
