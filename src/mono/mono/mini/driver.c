@@ -1286,9 +1286,6 @@ static const char info[] =
 #ifdef MONO_BIG_ARRAYS
 	"bigarrays "
 #endif
-#ifdef MONO_DEBUGGER_SUPPORTED
-	"debugger "
-#endif
 #if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && !defined(DISABLE_SOFT_DEBUG)
 	"softdebug "
 #endif
@@ -1885,22 +1882,10 @@ mono_main (int argc, char* argv[])
 
 	if (action == DO_DEBUGGER) {
 		enable_debugging = TRUE;
-
-#ifdef MONO_DEBUGGER_SUPPORTED
-		mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
-#else
-		g_print ("The Mono Debugger is not supported on this platform.\n");
+		g_print ("The Mono Debugger is no longer supported.\n");
 		return 1;
-#endif
 	} else if (enable_debugging)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-
-#ifdef MONO_DEBUGGER_SUPPORTED
-	if (enable_debugging) {
-		if ((opt & MONO_OPT_GSHARED) == 0)
-			mini_debugger_set_attach_ok ();
-	}
-#endif
 
 #ifdef HOST_WIN32
 	if (mixed_mode)
@@ -2060,22 +2045,7 @@ mono_main (int argc, char* argv[])
 		mini_cleanup (domain);
 		return 0;
 	} else if (action == DO_DEBUGGER) {
-#ifdef MONO_DEBUGGER_SUPPORTED
-		const char *error;
-
-		error = mono_check_corlib_version ();
-		if (error) {
-			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-			fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.go-mono.com/daily.\n");
-			exit (1);
-		}
-
-		mini_debugger_main (domain, assembly, argc - i, argv + i);
-		mini_cleanup (domain);
-		return 0;
-#else
 		return 1;
-#endif
 	}
 	desc = mono_method_desc_new (mname, 0);
 	if (!desc) {

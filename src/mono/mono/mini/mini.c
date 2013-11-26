@@ -7050,11 +7050,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	InitializeCriticalSection (&jit_mutex);
 
-#ifdef MONO_DEBUGGER_SUPPORTED
-	if (mini_debug_running_inside_mdb ())
-		mini_debugger_init ();
-#endif
-
 #ifdef MONO_HAVE_FAST_TLS
 	MONO_FAST_TLS_INIT (mono_jit_tls);
 	MONO_FAST_TLS_INIT (mono_lmf_addr);
