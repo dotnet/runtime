@@ -8669,7 +8669,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		opt->mdb_optimizations = TRUE;
 		opt->gen_seq_points = TRUE;
 
-		if (mono_debug_format == MONO_DEBUG_FORMAT_NONE) {
+		if (!mono_debug_enabled ()) {
 			fprintf (stderr, "The soft-debug AOT option requires the --debug option.\n");
 			return 1;
 		}
@@ -8873,7 +8873,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 
 	if (!acfg->aot_opts.nodebug || acfg->aot_opts.dwarf_debug) {
-		if (acfg->aot_opts.dwarf_debug && mono_debug_format == MONO_DEBUG_FORMAT_NONE) {
+		if (acfg->aot_opts.dwarf_debug && !mono_debug_enabled ()) {
 			fprintf (stderr, "The dwarf AOT option requires the --debug option.\n");
 			return 1;
 		}

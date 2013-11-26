@@ -106,9 +106,9 @@ typedef struct {
 	guint32 size;
 } MonoDebugDelegateTrampolineEntry;
 
-MonoSymbolTable *mono_symbol_table = NULL;
-MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
-gint32 mono_debug_debugger_version = 5;
+static MonoSymbolTable *mono_symbol_table = NULL;
+static MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
+static gint32 mono_debug_debugger_version = 5;
 
 static gboolean mono_debug_initialized = FALSE;
 static GHashTable *mono_debug_handles = NULL;
@@ -227,6 +227,9 @@ void
 mono_debug_init (MonoDebugFormat format)
 {
 	g_assert (!mono_debug_initialized);
+	if (format == MONO_DEBUG_FORMAT_DEBUGGER)
+		g_error ("The mdb debugger is no longer supported.");
+
 
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
@@ -1289,4 +1292,15 @@ open_symfile_from_bundle (MonoImage *image)
 	}
 
 	return NULL;
+}
+
+/**
+ * mono_debug_enabled:
+ *
+ * Returns true is debug information is enabled. This doesn't relate if a debugger is present or not.
+ */
+mono_bool
+mono_debug_enabled (void)
+{
+	return mono_debug_format != MONO_DEBUG_FORMAT_NONE;
 }

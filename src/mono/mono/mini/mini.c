@@ -5778,9 +5778,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		if (jinfo)
 			mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
 		return code;
-
-		//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
-		//mono_debug_add_wrapper (method, nm);
 	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		const char *name = method->name;
 		char *full_name, *msg;

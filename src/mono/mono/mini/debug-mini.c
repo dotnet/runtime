@@ -51,7 +51,7 @@ mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block, guint32 b
 {
 	MiniDebugMethodInfo *info;
 
-	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+	if (!mono_debug_enabled ())
 		return;
 
 	info = g_new0 (MiniDebugMethodInfo, 1);
@@ -592,7 +592,7 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 {
 	MonoDebugMethodJitInfo *jit;
 
-	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+	if (!mono_debug_enabled ())
 		return;
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
@@ -617,7 +617,7 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 void
 mono_debug_add_icall_wrapper (MonoMethod *method, MonoJitICallInfo* callinfo)
 {
-	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+	if (!mono_debug_enabled ())
 		return;
 
 	// mono_debug_add_wrapper (method, callinfo->wrapper, callinfo->func);

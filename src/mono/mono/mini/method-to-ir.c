@@ -6876,7 +6876,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (cfg->method == method) {
 		breakpoint_id = mono_debugger_method_has_breakpoint (method);
-		if (breakpoint_id && (mono_debug_format != MONO_DEBUG_FORMAT_DEBUGGER)) {
+		if (breakpoint_id) {
 			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			MONO_ADD_INS (bblock, ins);
 		}
