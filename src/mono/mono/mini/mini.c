@@ -6162,7 +6162,6 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 		if (!callinfo->wrapper) {
 			callinfo->wrapper = p;
 			mono_register_jit_icall_wrapper (callinfo, p);
-			mono_debug_add_icall_wrapper (method, callinfo);
 		}
 		mono_jit_unlock ();
 		mono_loader_unlock ();

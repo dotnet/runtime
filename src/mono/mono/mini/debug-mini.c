@@ -614,15 +614,6 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 	mono_debug_free_method_jit_info (jit);
 }
 
-void
-mono_debug_add_icall_wrapper (MonoMethod *method, MonoJitICallInfo* callinfo)
-{
-	if (!mono_debug_enabled ())
-		return;
-
-	// mono_debug_add_wrapper (method, callinfo->wrapper, callinfo->func);
-}
-
 static void
 print_var_info (MonoDebugVarInfo *info, int idx, const char *name, const char *type)
 {

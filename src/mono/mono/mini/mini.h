@@ -2491,7 +2491,6 @@ void      mono_debug_serialize_debug_info       (MonoCompile *cfg, guint8 **out_
 void      mono_debug_add_aot_method             (MonoDomain *domain,
 						 MonoMethod *method, guint8 *code_start, 
 						 guint8 *debug_info, guint32 debug_info_len) MONO_INTERNAL;
-void      mono_debug_add_icall_wrapper          (MonoMethod *method, MonoJitICallInfo* info) MONO_INTERNAL;
 MONO_API void      mono_debug_print_vars                 (gpointer ip, gboolean only_arguments);
 MONO_API void      mono_debugger_run_finally             (MonoContext *start_ctx);
 
