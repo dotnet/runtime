@@ -1510,10 +1510,8 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 		mono_class_init_or_throw (klass);
 		mono_class_init_or_throw (klassc);
 	} else if (!klass->supertypes || !klassc->supertypes) {
-		mono_loader_lock ();
 		mono_class_setup_supertypes (klass);
 		mono_class_setup_supertypes (klassc);
-		mono_loader_unlock ();
 	}
 
 	if (type->type->byref)
