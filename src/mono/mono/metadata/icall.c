@@ -2668,9 +2668,9 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 		 * FIXME: Why is this stuff needed at all ? Why can't the code below work for
 		 * the dynamic case as well ?
 		 */
-		mono_loader_lock ();
+		mono_image_lock ((MonoImage*)image);
 		res = mono_g_hash_table_lookup (image->generic_def_objects, imethod);
-		mono_loader_unlock ();
+		mono_image_unlock ((MonoImage*)image);
 
 		if (res)
 			return res;

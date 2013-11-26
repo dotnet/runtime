@@ -10571,9 +10571,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		 * This table maps metadata structures representing inflated methods/fields
 		 * to the reflection objects representing their generic definitions.
 		 */
-		mono_loader_lock ();
+		mono_image_lock ((MonoImage*)image);
 		mono_g_hash_table_insert (image->generic_def_objects, imethod, rmethod);
-		mono_loader_unlock ();
+		mono_image_unlock ((MonoImage*)image);
 	}
 
 	if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
@@ -10617,9 +10617,9 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 	if (method->is_generic && method->klass->image->dynamic) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 
-		mono_loader_lock ();
+		mono_image_lock ((MonoImage*)image);
 		mono_g_hash_table_insert (image->generic_def_objects, imethod, obj);
-		mono_loader_unlock ();
+		mono_image_unlock ((MonoImage*)image);
 	}
 	return (MonoMethod *) imethod;
 }
