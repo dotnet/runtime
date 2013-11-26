@@ -2609,11 +2609,11 @@ check_image_sets (MonoImage *image)
 	}
 }
 
-GSList*
+void
 mono_metadata_clean_for_image (MonoImage *image)
 {
 	CleanForImageUserData ginst_data, gclass_data;
-	GSList *l, *set_list, *free_list = NULL;
+	GSList *l, *set_list;
 
 	//check_image_sets (image);
 
@@ -2653,8 +2653,6 @@ mono_metadata_clean_for_image (MonoImage *image)
 	g_slist_free (set_list);
 
 	mono_loader_unlock ();
-
-	return free_list;
 }
 
 static void
