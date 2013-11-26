@@ -3408,7 +3408,7 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 
 		/* JIT icall wrappers */
-		/* FIXME: locking */
+		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall hash*/
 		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
 	}
 
