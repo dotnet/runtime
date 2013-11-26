@@ -2089,8 +2089,6 @@ void mono_thread_current_check_pending_interrupt ()
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean throw = FALSE;
 
-	mono_debugger_check_interruption ();
-
 	ensure_synch_cs_set (thread);
 	
 	EnterCriticalSection (thread->synch_cs);
@@ -4407,8 +4405,6 @@ static void mono_thread_interruption_checkpoint_request (gboolean bypass_abort_p
 	/* The thread may already be stopping */
 	if (thread == NULL)
 		return;
-
-	mono_debugger_check_interruption ();
 
 	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
 		MonoException* exc = mono_thread_execute_interruption (thread);

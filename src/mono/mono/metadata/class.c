@@ -71,7 +71,6 @@ static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gklass
 
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
-void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass) = NULL;
 
 
 /*
@@ -2168,9 +2167,6 @@ mono_class_setup_methods (MonoClass *class)
 	mono_memory_barrier ();
 
 	class->methods = methods;
-
-	if (mono_debugger_class_loaded_methods_func)
-		mono_debugger_class_loaded_methods_func (class);
 
 	mono_loader_unlock ();
 }

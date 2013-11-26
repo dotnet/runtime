@@ -7565,8 +7565,6 @@ mini_cleanup (MonoDomain *domain)
 	mono_domain_free (domain, TRUE);
 #endif
 
-	mono_debugger_cleanup ();
-
 #ifdef ENABLE_LLVM
 	if (mono_use_llvm)
 		mono_llvm_cleanup ();

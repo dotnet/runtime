@@ -128,7 +128,6 @@ static MonoDebugHandle     *open_symfile_from_bundle   (MonoImage *image);
 void _mono_debug_init_corlib (MonoDomain *domain);
 
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
-extern void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass);
 
 static MonoDebugDataTable *
 create_data_table (MonoDomain *domain)
@@ -255,8 +254,8 @@ mono_debug_init (MonoDebugFormat format)
 	data_table_hash = g_hash_table_new_full (
 		NULL, NULL, NULL, (GDestroyNotify) free_data_table);
 
+	/* FIXME this is a disgusting hack. Kill it */
 	mono_debugger_class_init_func = mono_debug_add_type;
-	mono_debugger_class_loaded_methods_func = mono_debugger_class_initialized;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
 	mono_symbol_table->global_data_table = create_data_table (NULL);
@@ -266,6 +265,7 @@ mono_debug_init (MonoDebugFormat format)
 
 /*
  * INTERNAL USE ONLY !
+ * FIXME this can have a decent name and exist in an internal header
  */
 void
 _mono_debug_init_corlib (MonoDomain *domain)
@@ -274,8 +274,6 @@ _mono_debug_init_corlib (MonoDomain *domain)
 		return;
 
 	mono_symbol_table->corlib = mono_debug_open_image (mono_defaults.corlib, NULL, 0);
-	mono_debugger_event (MONO_DEBUGGER_EVENT_INITIALIZE_CORLIB,
-			     (guint64) (gsize) mono_symbol_table->corlib, 0);
 }
 
 void
@@ -320,9 +318,6 @@ mono_debug_domain_create (MonoDomain *domain)
 
 	table = create_data_table (domain);
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_DOMAIN_CREATE, (guint64) (gsize) table,
-			     mono_domain_get_id (domain));
-
 	mono_debugger_unlock ();
 }
 
@@ -343,9 +338,6 @@ mono_debug_domain_unload (MonoDomain *domain)
 		mono_debugger_unlock ();
 		return;
 	}
-
-	mono_debugger_event (MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD, (guint64) (gsize) table,
-			     mono_domain_get_id (domain));
 
 	g_hash_table_remove (data_table_hash, domain);
 
@@ -376,9 +368,6 @@ mono_debug_close_image (MonoImage *image)
 		mono_debugger_unlock ();
 		return;
 	}
-
-	mono_debugger_event (MONO_DEBUGGER_EVENT_UNLOAD_MODULE, (guint64) (gsize) handle,
-			     handle->index);
 
 	mono_debug_list_remove (&mono_symbol_table->symbol_files, handle);
 	g_hash_table_remove (mono_debug_handles, image);
@@ -417,10 +406,6 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	mono_debug_list_add (&mono_symbol_table->symbol_files, handle);
 
 	g_hash_table_insert (mono_debug_handles, image, handle);
-
-	if (mono_symbol_table->corlib)
-		mono_debugger_event (MONO_DEBUGGER_EVENT_LOAD_MODULE,
-				     (guint64) (gsize) handle, 0);
 
 	mono_debugger_unlock ();
 

@@ -476,7 +476,6 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	shadow_location = get_shadow_assembly_location_base (data, &error);
 	if (!mono_error_ok (&error))
 		mono_error_raise_exception (&error);
-	mono_debugger_event_create_appdomain (data, shadow_location);
 	g_free (shadow_location);
 #endif
 
@@ -2416,8 +2415,6 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 			g_assert_not_reached ();
 		}
 	}
-
-	mono_debugger_event_unload_appdomain (domain);
 
 	mono_domain_set (domain, FALSE);
 	/* Notify OnDomainUnload listeners */
