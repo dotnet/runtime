@@ -77,6 +77,8 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->ctx.r13 = context.R13;
 	info->ctx.r14 = context.R14;
 	info->ctx.r15 = context.R15;
+	info->stopped_ip = info->ctx.rip;
+	info->stack_start = (char*)info->ctx.rsp - REDZONE_SIZE;
 #else
 	info->ctx.edi = context.Edi;
 	info->ctx.esi = context.Esi;
@@ -86,9 +88,9 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->ctx.eax = context.Eax;
 	info->ctx.ebp = context.Ebp;
 	info->ctx.esp = context.Esp;
+	info->stopped_ip = (gpointer)context.Eip;
+	info->stack_start = (char*)context.Esp - REDZONE_SIZE
 #endif
-	info->stopped_ip = info->ctx.rip;
-	info->stack_start = (char*)info->ctx.rsp - REDZONE_SIZE;
 
 #else
 	info->regs [0] = context.Edi;
