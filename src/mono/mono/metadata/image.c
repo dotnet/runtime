@@ -2363,6 +2363,7 @@ void
 mono_image_append_class_to_reflection_info_set (MonoClass *class)
 {
 	MonoImage *image = class->image;
+	g_assert (image->dynamic);
 	mono_image_lock (image);
 	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, class);
 	mono_image_unlock (image);

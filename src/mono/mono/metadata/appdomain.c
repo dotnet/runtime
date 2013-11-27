@@ -2237,20 +2237,24 @@ deregister_reflection_info_roots (MonoDomain *domain)
 {
 	GSList *list;
 
-	mono_loader_lock ();
 	mono_domain_assemblies_lock (domain);
 	for (list = domain->domain_assemblies; list; list = list->next) {
 		MonoAssembly *assembly = list->data;
 		MonoImage *image = assembly->image;
 		int i;
-		/*No need to take the image lock here since dynamic images are appdomain bound and at this point the mutator is gone.*/
-		if (image->dynamic && image->name_cache)
-			g_hash_table_foreach (image->name_cache, deregister_reflection_info_roots_name_space, image);
-		deregister_reflection_info_roots_from_list (image);
+		/*
+		No need to take the image lock here since dynamic images are appdomain bound and at this point the mutator is gone.
+		Taking the image lock here would mean promoting it from a simple lock to a complex lock, which we better avoid if possible.
+		*/
+		if (image->dynamic) {
+			if (image->name_cache)
+				g_hash_table_foreach (image->name_cache, deregister_reflection_info_roots_name_space, image);
+			deregister_reflection_info_roots_from_list (image);
+		}
 		for (i = 0; i < image->module_count; ++i) {
 			MonoImage *module = image->modules [i];
-			if (module) {
-				if (module->dynamic && module->name_cache) {
+			if (module && module->dynamic) {
+				if (module->name_cache) {
 					g_hash_table_foreach (module->name_cache,
 							deregister_reflection_info_roots_name_space, module);
 				}
@@ -2259,7 +2263,6 @@ deregister_reflection_info_roots (MonoDomain *domain)
 		}
 	}
 	mono_domain_assemblies_unlock (domain);
-	mono_loader_unlock ();
 }
 
 static guint32 WINAPI
