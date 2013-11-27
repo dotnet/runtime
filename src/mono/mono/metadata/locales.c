@@ -478,6 +478,9 @@ get_current_locale_name (void)
 	p = strchr (locale, '@');
 	if (p != NULL)
 		*p = 0;
+	p = strchr (locale, '_');
+	if (p != NULL)
+		*p = '-';
 
 	ret = g_ascii_strdown (locale, -1);
 	g_free (locale);
