@@ -2,6 +2,7 @@
 /Makefile.in
 /Makefile.am
 /*.o
+/*.g.c
 /*.so
 /*.exe
 /*.dll
