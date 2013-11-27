@@ -89,7 +89,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->ctx.ebp = context.Ebp;
 	info->ctx.esp = context.Esp;
 	info->stopped_ip = (gpointer)context.Eip;
-	info->stack_start = (char*)context.Esp - REDZONE_SIZE
+	info->stack_start = (char*)context.Esp - REDZONE_SIZE;
 #endif
 
 #else
