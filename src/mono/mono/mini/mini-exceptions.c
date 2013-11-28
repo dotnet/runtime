@@ -2233,9 +2233,14 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 
 	if (mini_get_debug_options ()->suspend_on_sigsegv) {
 		mono_runtime_printf_err ("Received SIGSEGV, suspending...");
+#ifdef HOST_WIN32
+		while (1)
+			;
+#else
 		while (1) {
 			sleep (0);
 		}
+#endif
 	}
 
 	/* To prevent infinite loops when the stack walk causes a crash */
