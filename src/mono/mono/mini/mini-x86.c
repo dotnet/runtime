@@ -77,6 +77,8 @@ static CRITICAL_SECTION mini_arch_mutex;
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
+static guint8*
+emit_load_aotconst (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji, int dreg, int tramp_type, gconstpointer target);
 
 #ifdef __native_client_codegen__
 
@@ -2387,6 +2389,25 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
+static guint8*
+emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
+{
+#if defined(__APPLE__)
+	// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
+	if (dreg != offset_reg)
+		x86_mov_reg_reg (code, dreg, offset_reg, sizeof (mgreg_t));
+	x86_shift_reg_imm (code, X86_SHL, dreg, 2);
+	if (tls_gs_offset)
+		x86_alu_reg_imm (code, X86_ADD, dreg, tls_gs_offset);
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
+#else
+	// FIXME:
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
 /*
  * emit_load_volatile_arguments:
  *
@@ -4336,18 +4357,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET_REG: {
-#ifdef __APPLE__
-			// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
-			if (ins->dreg != ins->sreg1)
-				x86_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
-			x86_shift_reg_imm (code, X86_SHL, ins->dreg, 2);
-			if (tls_gs_offset)
-				x86_alu_reg_imm (code, X86_ADD, ins->dreg, tls_gs_offset);
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_reg_membase (code, ins->dreg, ins->dreg, 0, sizeof (gpointer));
-#else
-			g_assert_not_reached ();
-#endif
+			code = emit_tls_get_reg (code, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -5538,11 +5548,27 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (method->save_lmf) {
 		gint32 lmf_offset = cfg->lmf_var->inst_offset;
+		guint8 *patch;
+		gboolean supported = FALSE;
+
+		if (cfg->compile_aot) {
+#ifdef __APPLE__
+			supported = TRUE;
+#endif
+		} else if (mono_get_jit_tls_offset () != -1) {
+			supported = TRUE;
+		}
 
 		/* check if we need to restore protection of the stack after a stack overflow */
-		if (mono_get_jit_tls_offset () != -1) {
-			guint8 *patch;
-			code = mono_x86_emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+		if (supported) {
+			if (cfg->compile_aot) {
+				code = emit_load_aotconst (NULL, code, cfg, NULL, X86_ECX, MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (TLS_KEY_JIT_TLS));
+
+				code = emit_tls_get_reg (code, X86_ECX, X86_ECX);
+			} else {
+				code = mono_x86_emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+			}
+
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */
@@ -6635,8 +6661,19 @@ mono_arch_emit_load_got_addr (guint8 *start, guint8 *code, MonoCompile *cfg, Mon
 	return code;
 }
 
+static guint8*
+emit_load_aotconst (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji, int dreg, int tramp_type, gconstpointer target)
+{
+	if (cfg)
+		mono_add_patch_info (cfg, code - cfg->native_code, tramp_type, target);
+	else
+		g_assert_not_reached ();
+	x86_mov_reg_membase (code, dreg, MONO_ARCH_GOT_REG, 0xf0f0f0f0, 4);
+	return code;
+}
+
 /*
- * mono_ppc_emit_load_aotconst:
+ * mono_arch_emit_load_aotconst:
  *
  *   Emit code to load the contents of the GOT slot identified by TRAMP_TYPE and
  * TARGET from the mscorlib GOT in full-aot code.
