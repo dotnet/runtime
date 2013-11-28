@@ -3357,14 +3357,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_TLS_GET_REG: {
 #if defined(TARGET_AMD64) && defined(TARGET_OSX)
 			/* See emit_tls_get_reg () */
-			LLVMValueRef base, shifted_offset, offset;
-			
-			base = LLVMConstInt (LLVMInt32Type (), mono_amd64_get_tls_gs_offset (), TRUE);
-			shifted_offset = LLVMBuildMul (builder, convert (ctx, lhs, LLVMInt32Type ()), LLVMConstInt (LLVMInt32Type (), 8, TRUE), "");
-			offset = LLVMBuildAdd (builder, base, shifted_offset, "");
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
-			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, offset, ptrtype, ""), "");
+			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, convert (ctx, lhs, LLVMInt32Type ()), ptrtype, ""), "");
 #else
 			LLVM_FAILURE (ctx, "opcode tls-get");
 #endif
