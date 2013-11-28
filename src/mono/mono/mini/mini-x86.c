@@ -5339,15 +5339,29 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 
 	if (!method->save_lmf) {
-		for (i = 0; i < X86_NREG; ++i) {
-			if ((cfg->used_int_regs & X86_CALLER_REGS & (1 << i)) && (i != X86_EBP)) {
-				x86_push_reg (code, i);
-				pos += 4;
-				cfa_offset += sizeof (gpointer);
-				mono_emit_unwind_op_offset (cfg, code, i, - cfa_offset);
-				/* These are handled automatically by the stack marking code */
-				mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
-			}
+		if (cfg->used_int_regs & (1 << X86_EBX)) {
+			x86_push_reg (code, X86_EBX);
+			pos += 4;
+			cfa_offset += sizeof (gpointer);
+			mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
+			/* These are handled automatically by the stack marking code */
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
+		}
+
+		if (cfg->used_int_regs & (1 << X86_EDI)) {
+			x86_push_reg (code, X86_EDI);
+			pos += 4;
+			cfa_offset += sizeof (gpointer);
+			mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
+		}
+
+		if (cfg->used_int_regs & (1 << X86_ESI)) {
+			x86_push_reg (code, X86_ESI);
+			pos += 4;
+			cfa_offset += sizeof (gpointer);
+			mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 	}
 
@@ -5595,9 +5609,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			x86_lea_membase (code, X86_ESP, X86_EBP, pos);
 		}
 
-		for (i = X86_NREG - 1; i >= 0; --i) {
-			if ((cfg->used_int_regs & X86_CALLER_REGS & (1 << i)) && (i != X86_EBP))
-				x86_pop_reg (code, i);
+		if (pos) {
+			g_assert (need_stack_frame);
+			x86_lea_membase (code, X86_ESP, X86_EBP, pos);
+		}
+
+		if (cfg->used_int_regs & (1 << X86_ESI)) {
+			x86_pop_reg (code, X86_ESI);
+		}
+		if (cfg->used_int_regs & (1 << X86_EDI)) {
+			x86_pop_reg (code, X86_EDI);
+		}
+		if (cfg->used_int_regs & (1 << X86_EBX)) {
+			x86_pop_reg (code, X86_EBX);
 		}
 	}
 
