@@ -36,7 +36,6 @@
 #include "mini-gc.h"
 
 /* On windows, these hold the key returned by TlsAlloc () */
-static gint lmf_tls_offset = -1;
 #ifdef TARGET_WIN32
 static gint jit_tls_offset = -1;
 #else
@@ -47,12 +46,6 @@ static gint lmf_addr_tls_offset = -1;
 static gboolean optimize_for_xen = TRUE;
 #else
 #define optimize_for_xen 0
-#endif
-
-#ifdef TARGET_WIN32
-static gboolean is_win32 = TRUE;
-#else
-static gboolean is_win32 = FALSE;
 #endif
 
 /* This mutex protects architecture specific caches */
@@ -2489,53 +2482,40 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 static guint8*
 emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
-	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
-		/*
-		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-		 * through the mono_lmf_addr TLS variable.
-		 */
-		/* %eax = previous_lmf */
-		code = mono_x86_emit_tls_get (code, X86_EAX, lmf_tls_offset);
-		/* set previous_lmf */
-		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_EAX, sizeof (mgreg_t));
-		x86_lea_membase (code, X86_EAX, cfg->frame_reg, lmf_offset);
-		/* set new LMF */
-		code = mono_x86_emit_tls_set (code, X86_EAX, lmf_tls_offset);
-	} else {
-		/* get the address of lmf for the current thread */
-		/* 
-		 * This is performance critical so we try to use some tricks to make
-		 * it fast.
-		 */
-		gboolean have_fastpath = FALSE;
+	/* get the address of lmf for the current thread */
+	/* 
+	 * This is performance critical so we try to use some tricks to make
+	 * it fast.
+	 */
+	gboolean have_fastpath = FALSE;
 
 #ifdef TARGET_WIN32
-		if (jit_tls_offset != -1) {
-			code = mono_x86_emit_tls_get (code, X86_EAX, jit_tls_offset);				
-			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-			have_fastpath = TRUE;
-		}
-#else
-		if (!cfg->compile_aot && lmf_addr_tls_offset != -1) {
-			code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
-			have_fastpath = TRUE;
-		}
-#endif
-		if (!have_fastpath) {
-			if (cfg->compile_aot)
-				code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
-		}
-
-		/* save lmf_addr */
-		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), X86_EAX, sizeof (mgreg_t));
-		/* save previous_lmf */
-		x86_mov_reg_membase (code, X86_ECX, X86_EAX, 0, sizeof (mgreg_t));
-		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_ECX, sizeof (mgreg_t));
-		/* set new LMF */
-		x86_lea_membase (code, X86_ECX, cfg->frame_reg, lmf_offset);
-		x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
+	if (jit_tls_offset != -1) {
+		code = mono_x86_emit_tls_get (code, X86_EAX, jit_tls_offset);				
+		x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+		have_fastpath = TRUE;
 	}
+#else
+	if (!cfg->compile_aot && lmf_addr_tls_offset != -1) {
+		code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
+		have_fastpath = TRUE;
+	}
+#endif
+	if (!have_fastpath) {
+		if (cfg->compile_aot)
+			code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
+		code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
+	}
+
+	/* save lmf_addr */
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), X86_EAX, sizeof (mgreg_t));
+	/* save previous_lmf */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX, 0, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_ECX, sizeof (mgreg_t));
+	/* set new LMF */
+	x86_lea_membase (code, X86_ECX, cfg->frame_reg, lmf_offset);
+	x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
+
 	return code;
 }
 
@@ -2551,38 +2531,27 @@ emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 	int prev_lmf_reg;
 
-	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
-		/*
-		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-		 * through the mono_lmf_addr TLS variable.
-		 */
-		/* reg = previous_lmf */
-		x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
-
-		/* lmf = previous_lmf */
-		code = mono_x86_emit_tls_set (code, X86_ECX, lmf_tls_offset);
-	} else {
-		/* Find a spare register */
-		switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			prev_lmf_reg = X86_EDI;
-			cfg->used_int_regs |= (1 << X86_EDI);
-			break;
-		default:
-			prev_lmf_reg = X86_EDX;
-			break;
-		}
-
-		/* reg = previous_lmf */
-		x86_mov_reg_membase (code, prev_lmf_reg, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
-
-		/* ecx = lmf */
-		x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
-
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
+	/* Find a spare register */
+	switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		prev_lmf_reg = X86_EDI;
+		cfg->used_int_regs |= (1 << X86_EDI);
+		break;
+	default:
+		prev_lmf_reg = X86_EDX;
+		break;
 	}
+
+	/* reg = previous_lmf */
+	x86_mov_reg_membase (code, prev_lmf_reg, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
+
+	/* ecx = lmf */
+	x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
+
+	/* *(lmf) = previous_lmf */
+	x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
+
 	return code;
 }
 
@@ -5826,7 +5795,6 @@ mono_arch_finish_init (void)
 #if MONO_XEN_OPT
 		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
-		lmf_tls_offset = mono_get_lmf_tls_offset ();
 		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 #endif
 	}		
