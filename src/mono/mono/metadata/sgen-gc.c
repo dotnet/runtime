@@ -3106,6 +3106,13 @@ major_start_collection (gboolean concurrent, int *old_next_pin_slot)
 static void
 wait_for_workers_to_finish (void)
 {
+	while (!sgen_workers_all_done ())
+		g_usleep (200);
+}
+
+static void
+join_workers (void)
+{
 	if (concurrent_collection_in_progress || major_collector.is_parallel) {
 		gray_queue_redirect (&gray_queue);
 		sgen_workers_join ();
@@ -3128,13 +3135,13 @@ major_finish_collection (const char *reason, int old_next_pin_slot, gboolean sca
 	TV_GETTIME (btv);
 
 	if (concurrent_collection_in_progress || major_collector.is_parallel)
-		wait_for_workers_to_finish ();
+		join_workers ();
 
 	if (concurrent_collection_in_progress) {
 		current_object_ops = major_collector.major_concurrent_ops;
 
 		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
-		wait_for_workers_to_finish ();
+		join_workers ();
 
 		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
@@ -3341,18 +3348,29 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
-	major_collector.update_cardtable_mod_union ();
-	sgen_los_update_cardtable_mod_union ();
-
 	if (!force_finish && !sgen_workers_all_done ()) {
+		major_collector.update_cardtable_mod_union ();
+		sgen_los_update_cardtable_mod_union ();
+
 		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 		return FALSE;
 	}
 
-	if (mod_union_consistency_check)
-		sgen_check_mod_union_consistency ();
+	/*
+	 * The major collector can add global remsets which are processed in the finishing
+	 * nursery collection, below.  That implies that the workers must have finished
+	 * marking before the nursery collection is allowed to run, otherwise we might miss
+	 * some remsets.
+	 */
+	wait_for_workers_to_finish ();
+
+	major_collector.update_cardtable_mod_union ();
+	sgen_los_update_cardtable_mod_union ();
 
 	collect_nursery (&unpin_queue, TRUE);
+
+	if (mod_union_consistency_check)
+		sgen_check_mod_union_consistency ();
 
 	current_collection_generation = GENERATION_OLD;
 	major_finish_collection ("finishing", -1, TRUE);
