@@ -2398,13 +2398,7 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 		x86_mov_reg_reg (code, dreg, offset_reg, sizeof (mgreg_t));
 	x86_prefix (code, X86_GS_PREFIX);
 	x86_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
-#elif defined(__linux__)
-	if (dreg != offset_reg)
-		x86_mov_reg_reg (code, dreg, offset_reg, sizeof (mgreg_t));
-	x86_prefix (code, X86_GS_PREFIX);
-	x86_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
 #else
-	// FIXME:
 	g_assert_not_reached ();
 #endif
 	return code;
