@@ -1213,8 +1213,13 @@ mono_arch_create_vars (MonoCompile *cfg)
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 	}
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
+#ifdef __APPLE__
+		cfg->lmf_ir = TRUE;
+		cfg->lmf_ir_mono_lmf = TRUE;
+#endif
+	}
 
 	cfg->arch_eh_jit_info = 1;
 }
@@ -5488,7 +5493,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (method->save_lmf) {
 		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset, cfa_offset);
-		code = emit_push_lmf (cfg, code, cfg->lmf_var->inst_offset);
+		if (!cfg->lmf_ir)
+			code = emit_push_lmf (cfg, code, cfg->lmf_var->inst_offset);
 	}
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
@@ -5582,7 +5588,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
 
-		code = emit_pop_lmf (cfg, code, lmf_offset);
+		if (!cfg->lmf_ir)
+			code = emit_pop_lmf (cfg, code, lmf_offset);
 
 		/* restore caller saved regs */
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
