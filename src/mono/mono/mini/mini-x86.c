@@ -2462,7 +2462,7 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 static guint8*
 emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
-	if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
+	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
 		/*
 		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
 		 * through the mono_lmf_addr TLS variable.
@@ -2489,7 +2489,7 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 			have_fastpath = TRUE;
 		}
 #else
-		if (lmf_addr_tls_offset != -1) {
+		if (!cfg->compile_aot && lmf_addr_tls_offset != -1) {
 			code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
 			have_fastpath = TRUE;
 		}
@@ -2524,7 +2524,7 @@ emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 	int prev_lmf_reg;
 
-	if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
+	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
 		/*
 		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
 		 * through the mono_lmf_addr TLS variable.
