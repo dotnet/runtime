@@ -1185,6 +1185,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 				MS_CALC_MARK_BIT (word, bit, obj);
 				SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p already marked", obj);
 				MS_PAR_SET_MARK_BIT (was_marked, block, word, bit);
+				binary_protocol_mark (obj, vt, sgen_safe_object_get_size ((MonoObject*)obj));
 			}
 		} else {
 			/*
