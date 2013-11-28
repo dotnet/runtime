@@ -1215,9 +1215,11 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
-#ifdef __APPLE__
-		cfg->lmf_ir = TRUE;
-		cfg->lmf_ir_mono_lmf = TRUE;
+#ifndef HOST_WIN32
+		if (!optimize_for_xen) {
+			cfg->lmf_ir = TRUE;
+			cfg->lmf_ir_mono_lmf = TRUE;
+		}
 #endif
 	}
 
