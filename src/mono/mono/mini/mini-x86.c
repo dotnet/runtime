@@ -2392,13 +2392,10 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 static guint8*
 emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 {
-#if defined(__APPLE__)
-	// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
+	/* offset_reg contains a value translated by mono_arch_translate_tls_offset () */
+#if defined(__APPLE__) || defined(__linux__)
 	if (dreg != offset_reg)
 		x86_mov_reg_reg (code, dreg, offset_reg, sizeof (mgreg_t));
-	x86_shift_reg_imm (code, X86_SHL, dreg, 2);
-	if (tls_gs_offset)
-		x86_alu_reg_imm (code, X86_ADD, dreg, tls_gs_offset);
 	x86_prefix (code, X86_GS_PREFIX);
 	x86_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
 #elif defined(__linux__)
@@ -2416,22 +2413,31 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 static guint8*
 emit_tls_set_reg (guint8* code, int sreg, int offset_reg)
 {
+	/* offset_reg contains a value translated by mono_arch_translate_tls_offset () */
 #ifdef HOST_WIN32
 	g_assert_not_reached ();
-#elif defined(__APPLE__)
-	// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
-	x86_shift_reg_imm (code, X86_SHL, offset_reg, 2);
-	if (tls_gs_offset)
-		x86_alu_reg_imm (code, X86_ADD, offset_reg, tls_gs_offset);
-	x86_prefix (code, X86_GS_PREFIX);
-	x86_mov_membase_reg (code, offset_reg, 0, sreg, sizeof (mgreg_t));
-#elif defined(__linux__)
+#elif defined(__APPLE__) || defined(__linux__)
 	x86_prefix (code, X86_GS_PREFIX);
 	x86_mov_membase_reg (code, offset_reg, 0, sreg, sizeof (mgreg_t));
 #else
 	g_assert_not_reached ();
 #endif
 	return code;
+}
+ 
+ /*
+ * mono_arch_translate_tls_offset:
+ *
+ *   Translate the TLS offset OFFSET computed by MONO_THREAD_VAR_OFFSET () into a format usable by OP_TLS_GET_REG/OP_TLS_SET_REG.
+ */
+int
+mono_arch_translate_tls_offset (int offset)
+{
+#ifdef __APPLE__
+	return tls_gs_offset + (offset * 4);
+#else
+	return offset;
+#endif
 }
 
 /*

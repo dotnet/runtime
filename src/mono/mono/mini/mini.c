@@ -2922,6 +2922,7 @@ mini_get_tls_offset (MonoTlsKey key)
 		g_assert (offset != -1);
 		break;
 	}
+
 	return offset;
 }
 
@@ -3588,9 +3589,16 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = (gpointer) (size_t) mono_jit_tls_id;
 		break;
 	}
-	case MONO_PATCH_INFO_TLS_OFFSET:
-		target = GINT_TO_POINTER (mini_get_tls_offset (GPOINTER_TO_INT (patch_info->data.target)));
+	case MONO_PATCH_INFO_TLS_OFFSET: {
+		int offset;
+
+		offset = mini_get_tls_offset (GPOINTER_TO_INT (patch_info->data.target));
+#ifdef MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET
+		offset = mono_arch_translate_tls_offset (offset);
+#endif
+		target = GINT_TO_POINTER (offset);
 		break;
+	}
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: {
 		target = NULL;
 		break;
