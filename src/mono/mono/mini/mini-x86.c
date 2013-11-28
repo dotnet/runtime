@@ -2413,6 +2413,27 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 	return code;
 }
 
+static guint8*
+emit_tls_set_reg (guint8* code, int sreg, int offset_reg)
+{
+#ifdef HOST_WIN32
+	g_assert_not_reached ();
+#elif defined(__APPLE__)
+	// FIXME: tls_gs_offset can change too, do these when calculating the tls offset
+	x86_shift_reg_imm (code, X86_SHL, offset_reg, 2);
+	if (tls_gs_offset)
+		x86_alu_reg_imm (code, X86_ADD, offset_reg, tls_gs_offset);
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_membase_reg (code, offset_reg, 0, sreg, sizeof (mgreg_t));
+#elif defined(__linux__)
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_membase_reg (code, offset_reg, 0, sreg, sizeof (mgreg_t));
+#else
+	g_assert_not_reached ();
+#endif
+	return code;
+}
+
 /*
  * emit_setup_lmf:
  *
@@ -4314,6 +4335,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_TLS_GET_REG: {
 			code = emit_tls_get_reg (code, ins->dreg, ins->sreg1);
+			break;
+		}
+		case OP_TLS_SET: {
+			code = mono_x86_emit_tls_set (code, ins->sreg1, ins->inst_offset);
+			break;
+		}
+		case OP_TLS_SET_REG: {
+			code = emit_tls_set_reg (code, ins->sreg1, ins->sreg2);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
