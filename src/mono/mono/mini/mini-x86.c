@@ -2401,6 +2401,11 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 		x86_alu_reg_imm (code, X86_ADD, dreg, tls_gs_offset);
 	x86_prefix (code, X86_GS_PREFIX);
 	x86_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
+#elif defined(__linux__)
+	if (dreg != offset_reg)
+		x86_mov_reg_reg (code, dreg, offset_reg, sizeof (mgreg_t));
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_reg_membase (code, dreg, dreg, 0, sizeof (mgreg_t));
 #else
 	// FIXME:
 	g_assert_not_reached ();
@@ -5552,7 +5557,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		gboolean supported = FALSE;
 
 		if (cfg->compile_aot) {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 			supported = TRUE;
 #endif
 		} else if (mono_get_jit_tls_offset () != -1) {
