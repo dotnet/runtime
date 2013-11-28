@@ -8149,7 +8149,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/*
 			 * Making generic calls out of gsharedvt methods.
 			 */
-			if (cmethod && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
+			if (cmethod && cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
 				MonoRgctxInfoType info_type;
 
 				if (virtual) {
