@@ -27,6 +27,7 @@
 #include "sgen-protocol.h"
 #include "sgen-memory-governor.h"
 #include "utils/mono-mmap.h"
+#include "utils/mono-threads.h"
 
 #ifdef SGEN_BINARY_PROTOCOL
 
@@ -179,6 +180,9 @@ protocol_entry (unsigned char type, gpointer data, int size)
 
 	if (!binary_protocol_file)
 		return;
+
+	if (sgen_is_worker_thread (mono_native_thread_id_get ()))
+		type |= 0x80;
 
 	lock_recursive ();
 
