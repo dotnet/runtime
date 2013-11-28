@@ -42,7 +42,6 @@
 #ifdef HOST_WIN32
 static gint jit_tls_offset = -1;
 #endif
-static gint appdomain_tls_offset = -1;
 
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;
@@ -8090,19 +8089,15 @@ mono_arch_finish_init (void)
 	 * We need to init this multiple times, since when we are first called, the key might not
 	 * be initialized yet.
 	 */
-	appdomain_tls_offset = mono_domain_get_tls_key ();
 	jit_tls_offset = mono_get_jit_tls_key ();
 
 	/* Only 64 tls entries can be accessed using inline code */
-	if (appdomain_tls_offset >= 64)
-		appdomain_tls_offset = -1;
 	if (jit_tls_offset >= 64)
 		jit_tls_offset = -1;
 #else
 #ifdef MONO_XEN_OPT
 	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
-	appdomain_tls_offset = mono_domain_get_tls_offset ();
 #endif
 }
 
@@ -8413,18 +8408,6 @@ gboolean
 mono_arch_print_tree (MonoInst *tree, int arity)
 {
 	return 0;
-}
-
-MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
-{
-	MonoInst* ins;
-	
-	if (appdomain_tls_offset == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = appdomain_tls_offset;
-	return ins;
 }
 
 #define _CTX_REG(ctx,fld,i) ((&ctx->fld)[i])

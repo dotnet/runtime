@@ -68,7 +68,6 @@ static CRITICAL_SECTION mini_arch_mutex;
 int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
 static int lmf_pthread_key = -1;
-static int monodomain_key = -1;
 
 /*
  * The code generated for sequence points reads from this location, which is
@@ -5504,17 +5503,6 @@ setup_tls_access (void)
 		tls_mode = TLS_MODE_FAILED;
 	if (tls_mode == TLS_MODE_FAILED)
 		return;
-	if ((monodomain_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
-		monodomain_key = mono_domain_get_tls_offset();
- 	}
-	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
-	   mono_domain_get_tls_offset returning -1) then use keyed access. */
-	if (monodomain_key == -1) {
-		ptk = mono_domain_get_tls_key ();
-		if (ptk < 1024)
-		    monodomain_key = ptk;
-	}
-
 	if ((lmf_pthread_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
 		lmf_pthread_key = mono_get_lmf_addr_tls_offset();
 	}
@@ -5737,19 +5725,6 @@ gboolean
 mono_arch_print_tree (MonoInst *tree, int arity)
 {
 	return 0;
-}
-
-MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
-{
-	MonoInst* ins;
-
-	setup_tls_access ();
-	if (monodomain_key == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = monodomain_key;
-	return ins;
 }
 
 mgreg_t

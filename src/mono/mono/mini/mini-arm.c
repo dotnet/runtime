@@ -5814,12 +5814,6 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 
 #ifndef DISABLE_JIT
 
-MonoInst*
-mono_arch_get_domain_intrinsic (MonoCompile* cfg)
-{
-	return mono_get_domain_intrinsic (cfg);
-}
-
 #endif
 
 guint32

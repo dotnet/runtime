@@ -11858,13 +11858,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		cfg->cbb = init_localsbb;
 
-		if (! (get_domain = mono_arch_get_domain_intrinsic (cfg))) {
+		if ((get_domain = mono_get_domain_intrinsic (cfg))) {
+			MONO_ADD_INS (cfg->cbb, get_domain);
+		} else {
 			get_domain = mono_emit_jit_icall (cfg, mono_domain_get, NULL);
 		}
-		else {
-			get_domain->dreg = alloc_preg (cfg);
-			MONO_ADD_INS (cfg->cbb, get_domain);
-		}		
 		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (cfg->cbb, store);
 	}
