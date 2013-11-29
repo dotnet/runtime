@@ -465,9 +465,6 @@ static int subprogram_attr [] = {
 
 static int tramp_subprogram_attr [] = {
 	DW_AT_name         , DW_FORM_string,
-#ifndef TARGET_IOS
-	DW_AT_description  , DW_FORM_string,
-#endif
     DW_AT_low_pc       , DW_FORM_addr,
     DW_AT_high_pc      , DW_FORM_addr,
 };
