@@ -761,7 +761,7 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 		*this_offset = -1;
 	}
 	ncall_sites = decode_uleb128 (p, &p);
-	p = (guint8*)ALIGN_TO ((guint64)p, 4);
+	p = (guint8*)ALIGN_TO ((mgreg_t)p, 4);
 
 	if (ex_info) {
 		*ex_info = g_malloc0 (ncall_sites * sizeof (MonoJitExceptionInfo));
