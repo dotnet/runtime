@@ -559,6 +559,8 @@ typedef struct {
 	gboolean global;
 	/* The list of breakpoints used to implement step-over */
 	GSList *bps;
+	/* The number of frames at the start of a step-over */
+	int nframes;
 } SingleStepReq;
 
 /*
@@ -4461,7 +4463,7 @@ clear_breakpoints_for_domain (MonoDomain *domain)
  * Return FALSE if single stepping needs to continue.
  */
 static gboolean
-ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp)
+ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *tls, MonoContext *ctx)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugSourceLocation *loc = NULL;
@@ -4474,6 +4476,17 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp)
 		 */
 		DEBUG (1, fprintf (log_file, "[%p] Seq point at nonempty stack %x while stepping over, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset));
 		return FALSE;
+	}
+
+	if (req->depth == STEP_DEPTH_OVER && hit) {
+		if (!tls->context.valid)
+			mono_thread_state_init_from_monoctx (&tls->context, ctx);
+		compute_frame_info (tls->thread, tls);
+		if (req->nframes && tls->frame_count && tls->frame_count > req->nframes) {
+			/* Hit the breakpoint in a recursive call */
+			DEBUG (1, fprintf (log_file, "[%p] Breakpoint at lower frame while stepping over, continuing single stepping.\n", (gpointer)GetCurrentThreadId ()));
+			return FALSE;
+		}
 	}
 
 	if (req->size != STEP_SIZE_LINE)
@@ -4597,7 +4610,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 		if (mono_thread_internal_current () != ss_req->thread)
 			continue;
 
-		hit = ss_update (ss_req, ji, sp);
+		hit = ss_update (ss_req, ji, sp, tls, ctx);
 		if (hit)
 			g_ptr_array_add (ss_reqs, req);
 
@@ -4814,7 +4827,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 		return;
 	il_offset = sp->il_offset;
 
-	if (!ss_update (ss_req, ji, sp))
+	if (!ss_update (ss_req, ji, sp, tls, ctx))
 		return;
 
 	/* Start single stepping again from the current sequence point */
@@ -5061,6 +5074,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 		}
 
 		if (ss_req->depth == STEP_DEPTH_OVER) {
+			if (ss_req->nframes == 0)
+				ss_req->nframes = tls->frame_count;
 			/* Need to stop in catch clauses as well */
 			for (i = 0; i < tls->frame_count; ++i) {
 				StackFrame *frame = tls->frames [i];
