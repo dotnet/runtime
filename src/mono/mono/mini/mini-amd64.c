@@ -4815,7 +4815,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_TAILCALL: {
 			MonoCallInst *call = (MonoCallInst*)ins;
-			int pos = 0, i;
+			int i, save_area_offset;
 
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
@@ -4823,41 +4823,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			g_assert (!cfg->method->save_lmf);
 
-			if (cfg->arch.omit_fp) {
-				guint32 save_offset = 0;
-				/* Pop callee-saved registers */
-				for (i = 0; i < AMD64_NREG; ++i)
-					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-						amd64_mov_reg_membase (code, i, AMD64_RSP, save_offset, 8);
-						save_offset += 8;
-					}
-				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
+			/* Restore callee saved registers */
+			save_area_offset = cfg->arch.reg_save_area_offset;
+			for (i = 0; i < AMD64_NREG; ++i)
+				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+					amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
+					save_area_offset += 8;
+				}
 
+			if (cfg->arch.omit_fp) {
+				if (cfg->arch.stack_alloc_size)
+					amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
 				// FIXME:
 				if (call->stack_usage)
 					NOT_IMPLEMENTED;
-			}
-			else {
-				for (i = 0; i < AMD64_NREG; ++i)
-					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
-						pos -= sizeof(mgreg_t);
-
-				/* Restore callee-saved registers */
-				for (i = AMD64_NREG - 1; i > 0; --i) {
-					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-						amd64_mov_reg_membase (code, i, AMD64_RBP, pos, sizeof(mgreg_t));
-						pos += sizeof(mgreg_t);
-					}
-				}
-
+			} else {
 				/* Copy arguments on the stack to our argument area */
 				for (i = 0; i < call->stack_usage; i += sizeof(mgreg_t)) {
 					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i, sizeof(mgreg_t));
 					amd64_mov_membase_reg (code, AMD64_RBP, 16 + i, AMD64_RAX, sizeof(mgreg_t));
 				}
-			
-				if (pos)
-					amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
 
 				amd64_leave (code);
 			}
