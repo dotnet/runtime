@@ -7391,6 +7391,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 #if SIZEOF_REGISTER == 4
 	register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "uint32 double", mono_fconv_u4, "mono_fconv_u4", TRUE);
+#else
+	register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "ulong double", mono_fconv_u8, "mono_fconv_u8", TRUE);
 #endif
 
 	/* other jit icalls */
