@@ -92,7 +92,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx, NULL);
 
-	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)info->info.native_handle, info->stopped_ip, info->stack_start);
+	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->info.native_handle, info->stopped_ip, info->stack_start);
 
 	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->stopped_ip);
 
