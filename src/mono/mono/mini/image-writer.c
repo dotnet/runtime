@@ -126,7 +126,7 @@
 #endif
 
 #if defined(TARGET_X86) && defined(__APPLE__)
-//#define USE_MACH_WRITER
+#define USE_MACH_WRITER
 #endif
 
 #if defined(USE_ELF_WRITER) || defined(USE_MACH_WRITER)
@@ -642,7 +642,8 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	for (s = acfg->sections; s; s = s->next) {
 		s->file_offset = file_offset;
 
-		sprintf (sections [sindex].sectname, "%s", s->name);
+		/* .debug_line -> __debug_line */
+		sprintf (sections [sindex].sectname, "__%s", s->name + 1);
 		sprintf (sections [sindex].segname, "%s", "__DWARF");
 		sections [sindex].addr = s->virt_offset;
 		sections [sindex].size = s->cur_offset;
