@@ -66,20 +66,29 @@
 #define MONO_ARCH_CALLEE_REGS ((1<<ARMREG_R0) | (1<<ARMREG_R1) | (1<<ARMREG_R2) | (1<<ARMREG_R3) | (1<<ARMREG_IP))
 #define MONO_ARCH_CALLEE_SAVED_REGS ((1<<ARMREG_V1) | (1<<ARMREG_V2) | (1<<ARMREG_V3) | (1<<ARMREG_V4) | (1<<ARMREG_V5) | (1<<ARMREG_V6) | (1<<ARMREG_V7))
 
-/* TODO: Make use of VFP v3 registers d16-d31. */
-/* TODO: We can't use registers d8-d15 in hard float mode because the
- * register allocator doesn't allocate floating point registers globally. */
+/*
+ * TODO: Make use of VFP v3 registers d16-d31.
+ */
+
+/*
+ * TODO: We can't use registers d8-d15 in hard float mode because the
+ * register allocator doesn't allocate floating point registers globally.
+ */
 
 #if defined(ARM_FPU_VFP_HARD)
 #define MONO_SAVED_FREGS 16
-/* d8-d15 must be preserved across function calls. We use d14-d15 as
- * scratch registers in the JIT. The rest have no meaning tied to them. */
+/*
+ * d8-d15 must be preserved across function calls. We use d14-d15 as
+ * scratch registers in the JIT. The rest have no meaning tied to them.
+ */
 #define MONO_ARCH_CALLEE_FREGS 0x00005555
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0x55550000
 #else
 #define MONO_SAVED_FREGS 0
-/* No registers need to be preserved across function calls. We use d14-d15
- * as scratch registers in the JIT. The rest have no meaning tied to them. */
+/*
+ * No registers need to be preserved across function calls. We use d14-d15
+ * as scratch registers in the JIT. The rest have no meaning tied to them.
+ */
 #define MONO_ARCH_CALLEE_FREGS 0x05555555
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0x00000000
 #endif

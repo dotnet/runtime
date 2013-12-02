@@ -332,7 +332,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Save VFP registers. */
 	if (mono_arm_is_hard_float ()) {
-		/* Strictly speaking, we don't have to save d0-d7 in the LMF, but
+		/*
+		 * Strictly speaking, we don't have to save d0-d7 in the LMF, but
 		 * it's easier than attempting to store them on the stack since
 		 * this trampoline code is pretty messy.
 		 */

@@ -30,7 +30,8 @@
 #error "ARM_FPU_NONE is defined while one of ARM_FPU_VFP/ARM_FPU_VFP_HARD is defined"
 #endif
 
-/* IS_SOFT_FLOAT: Is full software floating point used?
+/*
+ * IS_SOFT_FLOAT: Is full software floating point used?
  * IS_HARD_FLOAT: Is full hardware floating point used?
  * IS_VFP: Is hardware floating point with software ABI used?
  *
@@ -1216,7 +1217,8 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 static void inline
 add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gint *float_spare)
 {
-	/* If we're calling a function like this:
+	/*
+	 * If we're calling a function like this:
 	 *
 	 * void foo(float a, double b, float c)
 	 *
@@ -1227,14 +1229,12 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 	 * i.e. c in this example. So float_spare either
 	 * tells us which reg to use for the next single-
 	 * precision arg, or it's -1, meaning use *fpr.
-	 */
-
-	/* Note that even though most of the JIT speaks
+	 *
+	 * Note that even though most of the JIT speaks
 	 * double-precision, fpr represents single-
 	 * precision registers.
-	 */
-
-	/* See parts 5.5 and 6.1.2 of the AAPCS for how
+	 *
+	 * See parts 5.5 and 6.1.2 of the AAPCS for how
 	 * this all works.
 	 */
 
@@ -1242,7 +1242,8 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 		ainfo->storage = RegTypeFP;
 
 		if (is_double) {
-			/* If we're passing a double-precision value
+			/*
+			 * If we're passing a double-precision value
 			 * and *fpr is odd (e.g. it's s1, s3, ...)
 			 * we need to use the next even register. So
 			 * we mark the current *fpr as a spare that
@@ -1254,13 +1255,15 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 				(*fpr)++;
 			}
 
-			/* At this point, we have an even register
+			/*
+			 * At this point, we have an even register
 			 * so we assign that and move along.
 			 */
 			ainfo->reg = *fpr;
 			*fpr += 2;
 		} else if (*float_spare >= 0) {
-			/* We're passing a single-precision value
+			/*
+			 * We're passing a single-precision value
 			 * and it looks like a spare single-
 			 * precision register is available. Let's
 			 * use it.
@@ -1269,7 +1272,8 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			ainfo->reg = *float_spare;
 			*float_spare = -1;
 		} else {
-			/* If we hit this branch, we're passing a
+			/*
+			 * If we hit this branch, we're passing a
 			 * single-precision value and we can simply
 			 * use the next available register.
 			 */
@@ -1278,7 +1282,8 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			(*fpr)++;
 		}
 	} else {
-		/* We've exhausted available floating point
+		/*
+		 * We've exhausted available floating point
 		 * regs, so pass the rest on the stack.
 		 */
 
@@ -2286,7 +2291,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			} else {
 				FloatArgData *fad;
 
-				/* Mono's register allocator doesn't speak single-precision registers that
+				/*
+				 * Mono's register allocator doesn't speak single-precision registers that
 				 * overlap double-precision registers (i.e. armhf). So we have to work around
 				 * the register allocator and load the value from memory manually.
 				 *
