@@ -1,9 +1,6 @@
 /*
  * sgen-qsort.c: Quicksort.
  *
- * Author:
- * 	Mark Probst <mark.probst@gmail.com>
- *
  * Copyright (C) 2013 Xamarin Inc
  *
  * This library is free software; you can redistribute it and/or
@@ -77,88 +74,5 @@ sgen_qsort (void *base, size_t nel, size_t width, int (*compar) (const void*, co
 
 	qsort_rec (base, nel, width, compar, pivot_tmp, swap_tmp);
 }
-
-#ifdef SGEN_QSORT_TEST
-
-static int
-compare_ints (const void *pa, const void *pb)
-{
-	int a = *(const int*)pa;
-	int b = *(const int*)pb;
-	if (a < b)
-		return -1;
-	if (a == b)
-		return 0;
-	return 1;
-}
-
-typedef struct {
-	int key;
-	int val;
-} teststruct_t;
-
-static int
-compare_teststructs (const void *pa, const void *pb)
-{
-	int a = ((const teststruct_t*)pa)->key;
-	int b = ((const teststruct_t*)pb)->key;
-	if (a < b)
-		return -1;
-	if (a == b)
-		return 0;
-	return 1;
-}
-
-#include <stdlib.h>
-#include <assert.h>
-
-static void
-compare_sorts (void *base, size_t nel, size_t width, int (*compar) (const void*, const void*))
-{
-	size_t len = nel * width;
-	void *b1 = malloc (len);
-	void *b2 = malloc (len);
-
-	memcpy (b1, base, len);
-	memcpy (b2, base, len);
-
-	qsort (b1, nel, width, compar);
-	sgen_qsort (b2, nel, width, compar);
-
-	assert (!memcmp (b1, b2, len));
-
-	free (b1);
-	free (b2);
-}
-
-int
-main (void)
-{
-	int i;
-	for (i = 0; i < 4000; ++i) {
-		int a [i];
-		int j;
-
-		for (j = 0; j < i; ++j)
-			a [j] = i - j - 1;
-		compare_sorts (a, i, sizeof (int), compare_ints);
-	}
-
-	srandomdev ();
-	for (i = 0; i < 2000; ++i) {
-		teststruct_t a [200];
-		int j;
-		for (j = 0; j < 200; ++j) {
-			a [j].key = random ();
-			a [j].val = random ();
-		}
-
-		compare_sorts (a, 200, sizeof (teststruct_t), compare_teststructs);
-	}
-
-	return 0;
-}
-
-#endif
 
 #endif

@@ -332,3 +332,11 @@ else
 Makefile.am: Makefile.am.in
 	cp $< $@
 endif
+
+test_sgen_qsort_SOURCES = test-sgen-qsort.c
+test_sgen_qsort_CFLAGS = $(SGEN_DEFINES)
+test_sgen_qsort_LDADD = libmonoruntimesgen-static.la
+
+noinst_PROGRAMS = test-sgen-qsort
+
+TESTS = test-sgen-qsort
