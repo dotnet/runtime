@@ -125,6 +125,7 @@ typedef struct {
 	gboolean embedding;
 	gboolean defer;
 	int keepalive;
+	gboolean setpgid;
 } AgentConfig;
 
 typedef struct
@@ -801,6 +802,7 @@ print_usage (void)
 	fprintf (stderr, "  timeout=<n>\t\t\tTimeout for connecting in milliseconds.\n");
 	fprintf (stderr, "  server=y/n\t\t\tWhether to listen for a client connection.\n");
 	fprintf (stderr, "  keepalive=<n>\t\t\tSend keepalive events every n milliseconds.\n");
+	fprintf (stderr, "  setpgid=y/n\t\t\tWhether to call setpid(0, 0) after startup.\n");
 	fprintf (stderr, "  help\t\t\t\tPrint this help.\n");
 }
 
@@ -875,6 +877,8 @@ mono_debugger_agent_parse_options (char *options)
 			agent_config.embedding = atoi (arg + 10) == 1;
 		} else if (strncmp (arg, "keepalive=", 10) == 0) {
 			agent_config.keepalive = atoi (arg + 10);
+		} else if (strncmp (arg, "setpgid=", 8) == 0) {
+			agent_config.setpgid = parse_flag ("setpgid", arg + 8);
 		} else {
 			print_usage ();
 			exit (1);
@@ -987,6 +991,11 @@ mono_debugger_agent_init (void)
 	 * workaround.
 	 */
 	mini_get_debug_options ()->load_aot_jit_info_eagerly = TRUE;
+
+#ifdef HAVE_SETPGID
+	if (agent_config.setpgid)
+		setpgid (0, 0);
+#endif
 
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
