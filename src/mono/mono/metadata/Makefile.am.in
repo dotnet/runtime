@@ -117,6 +117,7 @@ common_sources = \
 	filewatcher.c		\
 	filewatcher.h		\
 	gc-internal.h		\
+	gc-memfuncs.c		\
 	icall.c			\
 	icall-def.h		\
 	image.c			\
@@ -337,6 +338,10 @@ test_sgen_qsort_SOURCES = test-sgen-qsort.c
 test_sgen_qsort_CFLAGS = $(SGEN_DEFINES)
 test_sgen_qsort_LDADD = libmonoruntimesgen-static.la
 
-noinst_PROGRAMS = test-sgen-qsort
+test_gc_memfuncs_SOURCES = test-gc-memfuncs.c
+test_gc_memfuncs_CFLAGS = $(SGEN_DEFINES)
+test_gc_memfuncs_LDADD = libmonoruntimesgen-static.la
 
-TESTS = test-sgen-qsort
+noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs
+
+TESTS = test-sgen-qsort test-gc-memfuncs
