@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <assert.h>
 
 static int
@@ -86,7 +87,7 @@ main (void)
 		compare_sorts (a, i, sizeof (int), compare_ints);
 	}
 
-	srandomdev ();
+	srandom (time (NULL));
 	for (i = 0; i < 2000; ++i) {
 		teststruct_t a [200];
 		int j;
