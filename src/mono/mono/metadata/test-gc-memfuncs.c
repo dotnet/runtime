@@ -43,17 +43,19 @@ main (void)
 	unsigned char *random_mem = malloc (POOL_SIZE);
 	unsigned char *reference = malloc (POOL_SIZE);
 	unsigned char *playground = malloc (POOL_SIZE);
+	long *long_random_mem;
+	int i, offset, size, src_offset, dest_offset;
 
 	srandom (time (NULL));
 
 	/* init random memory */
-	long *long_random_mem = (long*)random_mem;
-	for (int i = 0; i < POOL_SIZE / sizeof (long); ++i)
+	long_random_mem = (long*)random_mem;
+	for (i = 0; i < POOL_SIZE / sizeof (long); ++i)
 		long_random_mem [i] = random ();
 
 	/* test bzero */
-	for (int offset = 0; offset <= BZERO_OFFSETS; ++offset) {
-		for (int size = 0; size <= BZERO_SIZES; ++size) {
+	for (offset = 0; offset <= BZERO_OFFSETS; ++offset) {
+		for (size = 0; size <= BZERO_SIZES; ++size) {
 			memcpy (reference, random_mem, POOL_SIZE);
 			memcpy (playground, random_mem, POOL_SIZE);
 
@@ -65,9 +67,9 @@ main (void)
 	}
 
 	/* test memmove */
-	for (int src_offset = -MEMMOVE_SRC_OFFSETS; src_offset <= MEMMOVE_SRC_OFFSETS; ++src_offset) {
-		for (int dest_offset = -MEMMOVE_DEST_OFFSETS; dest_offset <= MEMMOVE_DEST_OFFSETS; ++dest_offset) {
-			for (int size = 0; size <= MEMMOVE_SIZES; ++size) {
+	for (src_offset = -MEMMOVE_SRC_OFFSETS; src_offset <= MEMMOVE_SRC_OFFSETS; ++src_offset) {
+		for (dest_offset = -MEMMOVE_DEST_OFFSETS; dest_offset <= MEMMOVE_DEST_OFFSETS; ++dest_offset) {
+			for (size = 0; size <= MEMMOVE_SIZES; ++size) {
 				/* overlapping */
 				memcpy (reference, random_mem, POOL_SIZE);
 				memcpy (playground, random_mem, POOL_SIZE);
