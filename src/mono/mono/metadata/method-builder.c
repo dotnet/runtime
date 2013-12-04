@@ -116,7 +116,6 @@ mono_mb_free (MonoMethodBuilder *mb)
  * Create a MonoMethod from this method builder.
  * Returns: the newly created method.
  *
- * LOCKING: Takes the loader lock.
  */
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
@@ -134,7 +133,6 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	image = mb->method->klass->image;
 
-	mono_loader_lock (); /*FIXME I think this lock can go.*/
 #ifndef DISABLE_JIT
 	if (mb->dynamic) {
 		method = mb->method;
@@ -245,7 +243,6 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	}
 #endif
 
-	mono_loader_unlock ();
 	return method;
 }
 

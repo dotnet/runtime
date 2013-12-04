@@ -1060,11 +1060,21 @@ mono_gc_get_managed_allocator_by_type (int atype)
 	if (!mono_runtime_has_tls_get ())
 		return NULL;
 
-	mono_loader_lock ();
 	res = alloc_method_cache [atype];
-	if (!res)
-		res = alloc_method_cache [atype] = create_allocator (atype);
-	mono_loader_unlock ();
+	if (res)
+		return res;
+
+	res = create_allocator (atype);
+	LOCK_GC;
+	if (alloc_method_cache [atype]) {
+		mono_free_method (res);
+		res = alloc_method_cache [atype];
+	} else {
+		mono_memory_barrier ();
+		alloc_method_cache [atype] = res;
+	}
+	UNLOCK_GC;
+
 	return res;
 #else
 	return NULL;

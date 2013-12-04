@@ -5511,7 +5511,7 @@ mono_gc_get_write_barrier (void)
 	res = mono_mb_create_method (mb, sig, 16);
 	mono_mb_free (mb);
 
-	mono_loader_lock ();
+	LOCK_GC;
 	if (write_barrier_method) {
 		/* Already created */
 		mono_free_method (res);
@@ -5520,7 +5520,7 @@ mono_gc_get_write_barrier (void)
 		mono_memory_barrier ();
 		write_barrier_method = res;
 	}
-	mono_loader_unlock ();
+	UNLOCK_GC;
 
 	return write_barrier_method;
 }
