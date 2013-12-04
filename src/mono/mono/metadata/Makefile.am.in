@@ -334,6 +334,8 @@ Makefile.am: Makefile.am.in
 	cp $< $@
 endif
 
+if !HOST_WIN32
+
 test_sgen_qsort_SOURCES = test-sgen-qsort.c
 test_sgen_qsort_CFLAGS = $(SGEN_DEFINES)
 test_sgen_qsort_LDADD = libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
@@ -353,3 +355,5 @@ endif
 noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs
 
 TESTS = test-sgen-qsort test-gc-memfuncs
+
+endif !HOST_WIN32
