@@ -336,11 +336,19 @@ endif
 
 test_sgen_qsort_SOURCES = test-sgen-qsort.c
 test_sgen_qsort_CFLAGS = $(SGEN_DEFINES)
-test_sgen_qsort_LDADD = libmonoruntimesgen-static.la
+test_sgen_qsort_LDADD = libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
+if PLATFORM_DARWIN
+test_sgen_qsort_LDFLAGS=-framework CoreFoundation
+endif
 
 test_gc_memfuncs_SOURCES = test-gc-memfuncs.c
 test_gc_memfuncs_CFLAGS = $(SGEN_DEFINES)
-test_gc_memfuncs_LDADD = libmonoruntimesgen-static.la
+test_gc_memfuncs_LDADD = libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
+if PLATFORM_DARWIN
+test_gc_memfuncs_LDFLAGS=-framework CoreFoundation
+endif
 
 noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs
 
