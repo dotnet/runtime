@@ -6148,7 +6148,7 @@ mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
 
-#define ENABLE_WRONG_METHOD_CHECK 0
+/* #define ENABLE_WRONG_METHOD_CHECK 1 */
 #define BASE_SIZE (6 * 4)
 #define BSEARCH_ENTRY_SIZE (4 * 4)
 #define CMP_SIZE (3 * 4)
@@ -6191,7 +6191,7 @@ arm_emit_value_and_patch_ldr (arminstr_t *code, arminstr_t *target, guint32 valu
 #endif
 
 #ifdef ENABLE_WRONG_METHOD_CHECK
-void
+static void
 mini_dump_bad_imt (int input_imt, int compared_imt, int pc)
 {
 	g_print ("BAD IMT comparing %x with expected %x at ip %x", input_imt, compared_imt, pc);
@@ -6244,7 +6244,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					item->chunk_size += CMP_SIZE;
 				item->chunk_size += BRANCH_SIZE;
 			} else {
-#if ENABLE_WRONG_METHOD_CHECK
+#ifdef ENABLE_WRONG_METHOD_CHECK
 				item->chunk_size += WMC_SIZE;
 #endif
 			}
@@ -6349,7 +6349,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			} else {
 				/*Enable the commented code to assert on wrong method*/
-#if ENABLE_WRONG_METHOD_CHECK
+#ifdef ENABLE_WRONG_METHOD_CHECK
 #ifdef USE_JUMP_TABLES
 				imt_method_jti = IMT_METHOD_JTI (i);
 				code = load_element_with_regbase_cond (code, ARMREG_R1, ARMREG_R2, imt_method_jti, ARMCOND_AL);
