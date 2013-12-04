@@ -1227,7 +1227,7 @@ handle_enum:
 			mono_method_signature (method)->ret->type);
 	}
 
-	ip = ((gint64) __builtin_return_address (0));
+	ip = ((gint64) __builtin_extract_return_addr (__builtin_return_address (0)));
 	printf (" ip: %p\n", (gpointer) ip);
 }
 

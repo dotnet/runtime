@@ -95,7 +95,7 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 	}
 
 	cont->lmf = lmf;
-	cont->return_ip = __builtin_return_address (0);
+	cont->return_ip = __builtin_extract_return_addr (__builtin_return_address (0));
 	cont->return_sp = __builtin_frame_address (0);
 
 	num_bytes = (char*)cont->top_sp - (char*)cont->return_sp;
