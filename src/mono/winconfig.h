@@ -537,9 +537,6 @@
 /* Enable the allocation and indexing of arrays greater than Int32.MaxValue */
 /* #undef MONO_BIG_ARRAYS */
 
-/* The Mono Debugger is supported on this platform */
-/* #undef MONO_DEBUGGER_SUPPORTED */
-
 /* Sizeof sock_un.sun_path */
 /* #undef MONO_SIZEOF_SUNPATH */
 
