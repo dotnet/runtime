@@ -12212,12 +12212,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	mono_loader_lock ();
-
-	if (klass->marshal_info) {
-		mono_loader_unlock ();
+	if (klass->marshal_info)
 		return klass->marshal_info;
-	}
 
 	/*
 	 * This function can recursively call itself, so we keep the list of classes which are
@@ -12332,12 +12328,13 @@ mono_marshal_load_type_info (MonoClass* klass)
 	loads_list = g_slist_remove (loads_list, klass);
 	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
 
-	/*We do double-checking locking on marshal_info */
-	mono_memory_barrier ();
-
-	klass->marshal_info = info;
-
-	mono_loader_unlock ();
+	mono_marshal_lock ();
+	if (!klass->marshal_info) {
+		/*We do double-checking locking on marshal_info */
+		mono_memory_barrier ();
+		klass->marshal_info = info;
+	}
+	mono_marshal_unlock ();
 
 	return klass->marshal_info;
 }
