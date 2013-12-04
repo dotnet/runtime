@@ -545,7 +545,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 
 	return construct_culture (this, &culture_entries [ne->culture_entry_index]);
 }
-
+/*
 MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci,
 		MonoString *name)
@@ -561,7 +561,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specif
 
 	return ret;
 }
-
+*/
 MonoBoolean
 ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid (MonoRegionInfo *this,
 		gint lcid)
