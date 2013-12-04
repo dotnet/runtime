@@ -286,11 +286,10 @@ ICALL(COMPINF_6, "internal_index(string,int,int,string,System.Globalization.Comp
 
 ICALL_TYPE(CULINF, "System.Globalization.CultureInfo", CULINF_2)
 ICALL(CULINF_2, "construct_datetime_format", ves_icall_System_Globalization_CultureInfo_construct_datetime_format)
-ICALL(CULINF_4, "construct_internal_locale_from_current_locale", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale)
 ICALL(CULINF_5, "construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid)
 ICALL(CULINF_6, "construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name)
-//ICALL(CULINF_7, "construct_internal_locale_from_specific_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name)
 ICALL(CULINF_8, "construct_number_format", ves_icall_System_Globalization_CultureInfo_construct_number_format)
+ICALL(CULINF_7, "get_current_locale_name", ves_icall_System_Globalization_CultureInfo_get_current_locale_name)
 ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures)
 //ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
 
