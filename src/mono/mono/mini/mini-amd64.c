@@ -3812,6 +3812,7 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	return code;
 }
 
+#ifdef HOST_WIN32
 /*
  * emit_push_lmf:
  *
@@ -3820,7 +3821,6 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 static guint8*
 emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args_clobbered)
 {
-#ifdef HOST_WIN32
 	if (jit_tls_offset != -1) {
 		code = mono_amd64_emit_tls_get (code, AMD64_RAX, jit_tls_offset);
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
@@ -3843,13 +3843,12 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 	/* Set new lmf */
 	amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
 	amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
-#else
-	g_assert_not_reached ();
-#endif
 
 	return code;
 }
+#endif
 
+#ifdef HOST_WIN32
 /*
  * emit_pop_lmf:
  *
@@ -3858,17 +3857,14 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 static guint8*
 emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
-#ifdef HOST_WIN32
 	/* Restore previous lmf */
 	amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
 	amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
-#else
-	g_assert_not_reached ();
-#endif
 
 	return code;
 }
+#endif
 
 #define REAL_PRINT_REG(text,reg) \
 mono_assert (reg >= 0); \
