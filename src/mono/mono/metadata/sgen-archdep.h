@@ -89,7 +89,7 @@
 #define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
 	int __i;	\
 	for (__i = 0; __i < 32; ++__i)	\
-		((a)[__i]) = UCONTEXT_REG_Rn((ctx), __i);	\
+		((a)[__i]) = (gpointer) UCONTEXT_REG_Rn((ctx), __i);	\
 	} while (0)
 
 #elif defined(TARGET_ARM)
