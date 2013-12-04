@@ -9840,11 +9840,16 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 		/* Put into cache so mono_class_get () will find it.
 		Skip nested types as those should not be available on the global scope. */
-		if (!tb->nesting_type) {
+		if (!tb->nesting_type)
 			mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
-		} else {
-			mono_image_append_class_to_reflection_info_set (klass);
-		}
+
+		/*
+		We must register all types as we cannot rely on the name_cache hashtable since we find the class
+		by performing a mono_class_get which does the full resolution.
+
+		Working around this semantics would require us to write a lot of code for no clear advantage.
+		*/
+		mono_image_append_class_to_reflection_info_set (klass);
 	} else {
 		g_assert (mono_class_get_ref_info (klass) == tb);
 	}
