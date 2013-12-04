@@ -4574,6 +4574,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_ABS:
 		case MONO_PATCH_INFO_CLASS_INIT:
 		case MONO_PATCH_INFO_RGCTX_FETCH:
+		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 			is_fd = TRUE;
 			break;
 #endif
