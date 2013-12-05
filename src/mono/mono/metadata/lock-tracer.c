@@ -24,6 +24,7 @@
 
 #include "lock-tracer.h"
 
+
 /*
  * This is a very simple lock trace implementation. It can be used to verify that the runtime is
  * correctly following all locking rules.
@@ -48,8 +49,13 @@
 
 #ifdef LOCK_TRACER
 
+#ifdef TARGET_OSX
+#include <dlfcn.h>
+#endif
+
 static FILE *trace_file;
 static CRITICAL_SECTION tracer_lock;
+static size_t base_address;
 
 typedef enum {
 	RECORD_MUST_NOT_HOLD_ANY,
@@ -62,6 +68,8 @@ typedef enum {
 void
 mono_locks_tracer_init (void)
 {
+	Dl_info info;
+	int res;
 	char *name;
 	InitializeCriticalSection (&tracer_lock);
 	if (!g_getenv ("MONO_ENABLE_LOCK_TRACER"))
@@ -69,6 +77,13 @@ mono_locks_tracer_init (void)
 	name = g_strdup_printf ("locks.%d", getpid ());
 	trace_file = fopen (name, "w+");
 	g_free (name);
+
+#ifdef TARGET_OSX
+	res = dladdr ((void*)&mono_locks_tracer_init, &info);
+	/* The 0x1000 offset was found by empirically trying it. */
+	if (res)
+		base_address = (size_t)info.dli_fbase - 0x1000;
+#endif
 }
 
 
@@ -93,6 +108,7 @@ mono_backtrace (gpointer array[], int traces)
 static void
 add_record (RecordType record_kind, RuntimeLocks kind, gpointer lock)
 {
+	int i = 0;
 	gpointer frames[10];
 	char *msg;
  	if (!trace_file)
@@ -100,6 +116,8 @@ add_record (RecordType record_kind, RuntimeLocks kind, gpointer lock)
 
 	memset (frames, 0, sizeof (gpointer));
 	mono_backtrace (frames, 6);
+	for (i = 0; i < 6; ++i)
+		frames [i] = (gpointer)((size_t)frames[i] - base_address);
 
 	/*We only dump 5 frames, which should be more than enough to most analysis.*/
 	msg = g_strdup_printf ("%x,%d,%d,%p,%p,%p,%p,%p,%p\n", (guint32)GetCurrentThreadId (), record_kind, kind, lock, frames [1], frames [2], frames [3], frames [4], frames [5]);
