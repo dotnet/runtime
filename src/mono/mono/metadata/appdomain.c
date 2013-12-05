@@ -2225,9 +2225,10 @@ deregister_reflection_info_roots (MonoDomain *domain)
 		MonoAssembly *assembly = list->data;
 		MonoImage *image = assembly->image;
 		int i;
+
 		/*
-		No need to take the image lock here since dynamic images are appdomain bound and at this point the mutator is gone.
-		Taking the image lock here would mean promoting it from a simple lock to a complex lock, which we better avoid if possible.
+		 * No need to take the image lock here since dynamic images are appdomain bound and at this point the mutator is gone.
+		 * Taking the image lock here would mean promoting it from a simple lock to a complex lock, which we better avoid if possible.
 		*/
 		if (image->dynamic)
 			deregister_reflection_info_roots_from_list (image);
