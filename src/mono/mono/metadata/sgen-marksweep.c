@@ -1539,6 +1539,7 @@ static void
 sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 {
 	int count;
+	void *reversed = NULL;
 
 	if (!during_major_collection)
 		g_assert (!sgen_concurrent_collection_in_progress ());
@@ -1564,10 +1565,15 @@ sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 	/* reset mark bits */
 	memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
 
-	/*
-	 * FIXME: reverse free list so that it's in address
-	 * order
-	 */
+	/* Reverse free list so that it's in address order */
+	reversed = NULL;
+	while (block->free_list) {
+		void *next = *(void**)block->free_list;
+		*(void**)block->free_list = reversed;
+		reversed = block->free_list;
+		block->free_list = next;
+	}
+	block->free_list = reversed;
 
 	block->swept = 1;
 }
