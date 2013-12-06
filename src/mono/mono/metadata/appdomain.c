@@ -1944,7 +1944,9 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	if (!parsed) {
 		/* This is a parse error... */
-		return NULL;
+		if (!refOnly)
+			refass = mono_try_assembly_resolve (domain, assRef, refOnly);
+		return refass;
 	}
 
 	ass = mono_assembly_load_full_nosearch (&aname, NULL, &status, refOnly);
