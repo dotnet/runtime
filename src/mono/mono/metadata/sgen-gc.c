@@ -401,6 +401,7 @@ sgen_safe_name (void* obj)
  * ######################################################################
  */
 LOCK_DECLARE (gc_mutex);
+gboolean sgen_try_free_some_memory;
 
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
@@ -5597,7 +5598,12 @@ sgen_gc_lock (void)
 void
 sgen_gc_unlock (void)
 {
-	UNLOCK_GC;
+	gboolean try_free = sgen_try_free_some_memory;
+	sgen_try_free_some_memory = FALSE;
+	mono_mutex_unlock (&gc_mutex);
+	MONO_GC_UNLOCKED ();
+	if (try_free)
+		mono_thread_hazardous_try_free_some ();
 }
 
 void
