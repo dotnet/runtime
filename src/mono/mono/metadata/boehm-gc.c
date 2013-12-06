@@ -987,7 +987,7 @@ mono_gc_get_managed_allocator_by_type (int atype)
 	mono_mutex_lock (&mono_gc_lock);
 	if (alloc_method_cache [atype]) {
 		mono_free_method (res);
-		res = alloc_method_cache [atype]
+		res = alloc_method_cache [atype];
 	} else {
 		mono_memory_barrier ();
 		alloc_method_cache [atype] = res;
