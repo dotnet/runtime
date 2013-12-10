@@ -564,7 +564,13 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->pinned = pinned;
 	info->has_references = has_references;
 	info->has_pinned = pinned;
-	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD); /*FIXME WHY??? */
+	/*
+	 * Blocks that are to-space are not evacuated from.  During an major collection
+	 * blocks are allocated for two reasons: evacuating objects from the nursery and
+	 * evacuating them from major blocks marked for evacuation.  In both cases we don't
+	 * want further evacuation.
+	 */
+	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
 	info->swept = 1;
 #ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
