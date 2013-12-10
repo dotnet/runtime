@@ -3153,6 +3153,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_TLS_OFFSET:
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 		return (ji->type << 8) | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return (ji->type << 8) | (gssize)ji->data.gsharedvt->method;
@@ -3317,6 +3318,21 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		}
 #endif
 		break;
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
+		gpointer code_slot;
+
+		mono_domain_lock (domain);
+		if (!domain_jit_info (domain)->method_code_hash)
+			domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
+		code_slot = g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, patch_info->data.method);
+		if (!code_slot) {
+			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
+			g_hash_table_insert (domain_jit_info (domain)->method_code_hash, patch_info->data.method, code_slot);
+		}
+		mono_domain_unlock (domain);
+		target = code_slot;
+		break;
+	}
 	case MONO_PATCH_INFO_SWITCH: {
 		gpointer *jump_table;
 		int i;
