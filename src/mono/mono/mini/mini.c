@@ -2945,6 +2945,18 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 	return ins;
 }
 
+gboolean
+mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
+{
+	if (!MONO_ARCH_HAVE_TLS_GET)
+		return FALSE;
+
+	if (cfg->compile_aot)
+		return ARCH_HAVE_TLS_GET_REG;
+	else
+		return mini_get_tls_offset (key) != -1;
+}
+
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {

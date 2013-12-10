@@ -1990,6 +1990,7 @@ gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
 int       mini_get_tls_offset               (MonoTlsKey key) MONO_INTERNAL;
+gboolean  mini_tls_get_supported            (MonoCompile *cfg, MonoTlsKey key) MONO_INTERNAL;
 MonoInst* mono_create_tls_get               (MonoCompile *cfg, MonoTlsKey key) MONO_INTERNAL;
 MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;

@@ -1908,7 +1908,7 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_ir)
 		return;
 
-	if (cfg->lmf_ir_mono_lmf) {
+	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
 		/* Load current lmf */
 		lmf_ins = mono_get_lmf_intrinsic (cfg);
 		g_assert (lmf_ins);
@@ -1962,7 +1962,7 @@ emit_pop_lmf (MonoCompile *cfg)
  	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
  	lmf_reg = ins->dreg;
 
-	if (cfg->lmf_ir_mono_lmf) {
+	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
 		/* Load previous_lmf */
 		prev_lmf_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
