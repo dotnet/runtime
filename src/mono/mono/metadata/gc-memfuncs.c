@@ -17,6 +17,23 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*
+ * SGen cannot deal with invalid pointers on the heap or in registered roots.  Sometimes we
+ * need to copy or zero out memory in code that might be interrupted by collections.  To
+ * guarantee that those operations will not result in invalid pointers, we must do it
+ * word-atomically.
+ *
+ * libc's bzero() and memcpy()/memmove() functions do not guarantee word-atomicity, even in
+ * cases where one would assume so.  For instance, some implementations (like Darwin's on
+ * x86) have variants of memcpy() using vector instructions.  Those may copy bytewise for
+ * the region preceding the first vector-aligned address.  That region could be
+ * word-aligned, but it would still be copied byte-wise.
+ *
+ * All our memory writes here are to "volatile" locations.  This is so that C compilers
+ * don't "optimize" our code back to calls to bzero()/memmove().  LLVM, specifically, will
+ * do that.
+ */
+
 #include <config.h>
 
 #include "metadata/gc-internal.h"
@@ -35,7 +52,7 @@
 #endif
 
 #define BZERO_WORDS(dest,words) do {			\
-		void **__d = (void**)(dest);		\
+		void * volatile *__d = (void* volatile*)(dest);		\
 		int __n = (words);			\
 		int __i;				\
 		for (__i = 0; __i < __n; ++__i)		\
@@ -56,7 +73,7 @@
 void
 mono_gc_bzero (void *dest, size_t size)
 {
-	char *d = (char*)dest;
+	volatile char *d = (char*)dest;
 	size_t tail_bytes, word_bytes;
 
 	/*
@@ -105,7 +122,7 @@ mono_gc_bzero (void *dest, size_t size)
 }
 
 #define MEMMOVE_WORDS_UPWARD(dest,src,words) do {	\
-		void **__d = (void**)(dest);		\
+		void * volatile *__d = (void* volatile*)(dest);		\
 		void **__s = (void**)(src);		\
 		int __n = (int)(words);			\
 		int __i;				\
@@ -114,7 +131,7 @@ mono_gc_bzero (void *dest, size_t size)
 	} while (0)
 
 #define MEMMOVE_WORDS_DOWNWARD(dest,src,words) do {	\
-		void **__d = (void**)(dest);		\
+		void * volatile *__d = (void* volatile*)(dest);		\
 		void **__s = (void**)(src);		\
 		int __n = (int)(words);			\
 		int __i;				\
@@ -153,7 +170,7 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 	 * using memmove, which must handle it.
 	 */
 	if (dest > src && ((size_t)((char*)dest - (char*)src) < size)) { /*backward copy*/
-		char *p = (char*)dest + size;
+		volatile char *p = (char*)dest + size;
 			char *s = (char*)src + size;
 			char *start = (char*)dest;
 			char *align_end = MAX((char*)dest, (char*)align_down (p));
@@ -172,7 +189,7 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 			while (p > start)
 				*--p = *--s;
 	} else {
-		char *d = (char*)dest;
+		volatile char *d = (char*)dest;
 		const char *s = (const char*)src;
 		size_t tail_bytes;
 
