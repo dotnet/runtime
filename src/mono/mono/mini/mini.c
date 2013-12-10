@@ -897,6 +897,8 @@ mono_type_to_store_membase (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_STORE_MEMBASE_REG;
 
+	type = mini_type_get_underlying_type (NULL, type);
+
 handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -959,7 +961,7 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_LOAD_MEMBASE;
 
-	type = mono_type_get_underlying_type (type);
+	type = mini_type_get_underlying_type (NULL, type);
 
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -1037,6 +1039,8 @@ mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
+	type = mini_type_get_underlying_type (NULL, type);
+
 	if (cfg->generic_sharing_context && !type->byref) {
 		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
 			if (mini_type_var_is_vt (cfg, type))
@@ -1216,6 +1220,8 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	int num = cfg->num_varinfo;
 	gboolean regpair;
 
+	type = mini_type_get_underlying_type (NULL, type);
+
 	if ((num + 1) >= cfg->varinfo_count) {
 		int orig_count = cfg->varinfo_count;
 		cfg->varinfo_count = cfg->varinfo_count ? (cfg->varinfo_count * 2) : 64;
@@ -1324,6 +1330,7 @@ MonoInst*
 mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
+	type = mini_type_get_underlying_type (NULL, type);
 
 	if (mono_type_is_long (type))
 		dreg = mono_alloc_dreg (cfg, STACK_I8);
@@ -6495,7 +6502,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			if (supported)
 				info->dyn_call_info = mono_arch_dyn_call_prepare (sig);
 
-			ret_type = sig->ret;
+			ret_type = mini_type_get_underlying_type (NULL, sig->ret);
 			if (info->dyn_call_info) {
 				switch (ret_type->type) {
 				case MONO_TYPE_VOID:
@@ -6592,7 +6599,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (sig->hasthis)
 			args [pindex ++] = &obj;
 		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = sig->params [i];
+			MonoType *t = mini_type_get_underlying_type (NULL, sig->params [i]);
 
 			if (t->byref) {
 				args [pindex ++] = &params [i];
