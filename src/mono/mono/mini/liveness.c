@@ -219,7 +219,8 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoMethodVar *vars = cfg->vars;
 	guint32 abs_pos = (bb->dfn << 16);
 	
-	for (inst_num = 0, ins = bb->code; ins; ins = ins->next, inst_num += 2) {
+	/* Start inst_num from > 0, so last_use.abs_pos is only 0 for dead variables */
+	for (inst_num = 2, ins = bb->code; ins; ins = ins->next, inst_num += 2) {
 		const char *spec = INS_INFO (ins->opcode);
 		int num_sregs, i;
 		int sregs [MONO_MAX_SRC_REGS];
