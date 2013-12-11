@@ -36,6 +36,7 @@
   </ItemGroup>
   <Import Project="mono.props" />
   <ItemGroup>
+    <ClCompile Include="..\mono\mini\alias-analysis.c" />
     <ClCompile Include="..\mono\mini\exceptions-amd64.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">true</ExcludedFromBuild>
@@ -101,7 +102,6 @@
     <ClCompile Include="..\mono\mini\local-propagation.c" />
     <ClCompile Include="..\mono\mini\driver.c" />
     <ClCompile Include="..\mono\mini\debug-mini.c" />
-    <ClInclude Include="..\mono\mini\debug-mini.h" />
     <ClCompile Include="..\mono\mini\linear-scan.c" />
     <ClCompile Include="..\mono\mini\aot-compiler.c" />
     <ClCompile Include="..\mono\mini\aot-runtime.c" />
@@ -141,8 +141,6 @@
     <ClCompile Include="..\mono\mini\mini-gc.c" />
     <ClInclude Include="..\mono\mini\debugger-agent.h " />
     <ClCompile Include="..\mono\mini\debugger-agent.c" />
-    <ClCompile Include="..\mono\mini\debug-debugger.c" />
-    <ClInclude Include="..\mono\mini\debug-debugger.h" />
     <ClCompile Include="..\mono\mini\xdebug.c" />
     <ClInclude Include="..\mono\mini\mini-llvm.h" />
     <ClInclude Include="..\mono\mini\mini-llvm-cpp.h" />
