@@ -4,6 +4,8 @@
  * Copyright 2013 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <config.h>
+
 #include "mono-tls.h"
 
 static int tls_offsets [TLS_KEY_NUM];
