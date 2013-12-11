@@ -86,7 +86,7 @@ long_conv_to_i1: dest:i src1:i len:4
 long_conv_to_i2: dest:i src1:i len:4
 long_conv_to_i4: dest:i src1:i len:3
 long_conv_to_i8: dest:i src1:i len:3
-long_conv_to_r4: dest:f src1:i len:9
+long_conv_to_r4: dest:f src1:i len:15
 long_conv_to_r8: dest:f src1:i len:9
 long_conv_to_u4: dest:i src1:i len:3
 long_conv_to_u8: dest:i src1:i len:3
@@ -368,7 +368,7 @@ int_max_un: dest:i src1:i src2:i len:16 clob:1
 
 int_neg: dest:i src1:i clob:1 len:4
 int_not: dest:i src1:i clob:1 len:4
-int_conv_to_r4: dest:f src1:i len:9
+int_conv_to_r4: dest:f src1:i len:15
 int_conv_to_r8: dest:f src1:i len:9
 int_ceq: dest:c len:8
 int_cgt: dest:c len:8
@@ -504,7 +504,7 @@ amd64_or_membase_reg: src1:b src2:i len:13
 amd64_xor_membase_reg: src1:b src2:i len:13
 amd64_mul_membase_reg: src1:b src2:i len:15
 
-float_conv_to_r4: dest:f src1:f
+float_conv_to_r4: dest:f src1:f len:17
 
 vcall2: len:64 clob:c
 vcall2_reg: src1:i len:64 clob:c

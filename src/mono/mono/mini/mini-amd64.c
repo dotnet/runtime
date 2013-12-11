@@ -5265,16 +5265,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
-		case OP_ICONV_TO_R4: /* FIXME: change precision */
+		case OP_ICONV_TO_R4:
+			amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			break;
 		case OP_ICONV_TO_R8:
 			amd64_sse_cvtsi2sd_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
-		case OP_LCONV_TO_R4: /* FIXME: change precision */
+		case OP_LCONV_TO_R4:
+			amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			break;
 		case OP_LCONV_TO_R8:
 			amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
-			/* FIXME: nothing to do ?? */
+			amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
+			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
