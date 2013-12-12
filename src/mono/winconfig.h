@@ -92,9 +92,29 @@
 /* Define to 1 if you have the <curses.h> header file. */
 /* #undef HAVE_CURSES_H */
 
+/* Define to 1 if you have the declaration of `InterlockedAdd',
+   and to 0 if you don't. */
+#define HAVE_DECL_INTERLOCKEDADD 1
+
+/* Define to 1 if you have the declaration of `InterlockedAdd64',
+   and to 0 if you don't. */
+#define HAVE_DECL_INTERLOCKEDADD64 1
+
 /* Define to 1 if you have the declaration of `InterlockedCompareExchange64',
    and to 0 if you don't. */
 #define HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64 1
+
+/* Define to 1 if you have the declaration of `InterlockedDecrement64',
+   and to 0 if you don't. */
+#define HAVE_DECL_INTERLOCKEDDECREMENT64 1
+
+/* Define to 1 if you have the declaration of `InterlockedExchange64',
+   and to 0 if you don't. */
+#define HAVE_DECL_INTERLOCKEDEXCHANGE64 1
+
+/* Define to 1 if you have the declaration of `InterlockedIncrement64',
+   and to 0 if you don't. */
+#define HAVE_DECL_INTERLOCKEDINCREMENT64 1
 
 /* Define to 1 if you have the declaration of `__readfsdword',
    and to 0 if you don't. */
