@@ -13,6 +13,9 @@ my $cmd = "nm -D $soname";
 	mono_class_setup_vtable_general_new mono_debugger_init mono_debugger_main
 	mono_once mono_pthread_key_for_tls
 	mono_gc_pthread_create mono_gc_pthread_detach mono_gc_pthread_join
+	mono_gc_pthread_exit
+	mono_file_map_fileio mono_file_unmap_fileio
+	mono_file_map_set_allocator 
 )} = ();
 
 open (SYMS, "$cmd |") || die "Cannot run \$cmd': $!\n";
