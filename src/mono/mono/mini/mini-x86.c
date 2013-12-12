@@ -326,7 +326,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 
 		/* Special case structs with only a float member */
 		if (info->num_fields == 1) {
-			int ftype = mini_type_get_underlying_type (NULL, info->fields [0].field->type)->type;
+			int ftype = mini_replace_type (info->fields [0].field->type)->type;
 			if ((info->native_size == 8) && (ftype == MONO_TYPE_R8)) {
 				ainfo->storage = ArgValuetypeInReg;
 				ainfo->pair_storage [0] = ArgOnDoubleFpStack;
@@ -714,7 +714,7 @@ mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignat
 	 * the extra stack space would be left on the stack after the tail call.
 	 */
 	res = c1->stack_usage >= c2->stack_usage;
-	callee_ret = mini_type_get_underlying_type (NULL, callee_sig->ret);
+	callee_ret = mini_replace_type (callee_sig->ret);
 	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != ArgValuetypeInReg)
 		/* An address on the callee's stack is passed as the first argument */
 		res = FALSE;
@@ -1197,7 +1197,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
-	sig_ret = mini_type_get_underlying_type (NULL, sig->ret);
+	sig_ret = mini_replace_type (sig->ret);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
@@ -1234,7 +1234,7 @@ collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_set
 	MonoType *t;
 
 	for (; start_arg < sig->param_count; ++start_arg) {
-		t = mini_type_get_underlying_type (NULL, sig->params [start_arg]);
+		t = mini_replace_type (sig->params [start_arg]);
 		if (!t->byref && t->type == MONO_TYPE_R8) {
 			fp_space += sizeof (double);
 			*fp_arg_setup = start_arg;
@@ -1411,7 +1411,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
-	sig_ret = mini_type_get_underlying_type (NULL, sig->ret);
+	sig_ret = mini_replace_type (sig->ret);
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
