@@ -603,12 +603,12 @@ typedef enum ArgumentClass {
 } ArgumentClass;
 
 static ArgumentClass
-merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
+merge_argument_class_from_type (MonoGenericSharingContext *gsctx, MonoType *type, ArgumentClass class1)
 {
 	ArgumentClass class2 = ARG_CLASS_NO_CLASS;
 	MonoType *ptype;
 
-	ptype = mini_type_get_underlying_type (NULL, type);
+	ptype = mini_type_get_underlying_type (gsctx, type);
 	switch (ptype->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
@@ -655,7 +655,7 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 
 		for (i = 0; i < info->num_fields; ++i) {
 			class2 = class1;
-			class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
+			class2 = merge_argument_class_from_type (gsctx, info->fields [i].field->type, class2);
 		}
 		break;
 	}
@@ -861,7 +861,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 				/* (8 is size of quad) */
 				quadsize [quad] = info->fields [i].offset + size - (quad * 8);
 
-				class1 = merge_argument_class_from_type (info->fields [i].field->type, class1);
+				class1 = merge_argument_class_from_type (gsctx, info->fields [i].field->type, class1);
 			}
 			g_assert (class1 != ARG_CLASS_NO_CLASS);
 			args [quad] = class1;
