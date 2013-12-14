@@ -322,6 +322,9 @@ typedef struct {
 guint8*
 mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
 
+guint8*
+mono_x86_emit_tls_get_reg (guint8* code, int dreg, int offset_reg) MONO_INTERNAL;
+
 guint32
 mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig) MONO_INTERNAL;
 

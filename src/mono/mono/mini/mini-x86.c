@@ -2403,6 +2403,12 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 	return code;
 }
 
+guint8*
+mono_x86_emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
+{
+	return emit_tls_get_reg (code, dreg, offset_reg);
+}
+
 static guint8*
 emit_tls_set_reg (guint8* code, int sreg, int offset_reg)
 {
