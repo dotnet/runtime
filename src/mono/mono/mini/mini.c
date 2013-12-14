@@ -4596,6 +4596,7 @@ static MonoType*
 get_gsharedvt_type (MonoType *t)
 {
 	MonoGenericParam *par = t->data.generic_param;
+	MonoGenericParam *copy;
 	MonoType *res;
 
 	/* 
@@ -4603,13 +4604,18 @@ get_gsharedvt_type (MonoType *t)
 	 * a different instantiation.
 	 */
 	g_assert (mono_generic_param_info (par));
-	par = g_memdup (par, sizeof (MonoGenericParamFull));
-	par->owner = NULL;
+	if (par->owner) {
+		copy = mono_image_alloc0 (par->owner->image, sizeof (MonoGenericParamFull));
+		memcpy (copy, par, sizeof (MonoGenericParamFull));
+	} else {
+		copy = g_memdup (par, sizeof (MonoGenericParamFull));
+	}
+	copy->owner = NULL;
 	// FIXME:
-	par->image = mono_defaults.corlib;
-	par->serial = 1;
+	copy->image = mono_defaults.corlib;
+	copy->serial = 1;
 	res = mono_metadata_type_dup (NULL, t);
-	res->data.generic_param = par;
+	res->data.generic_param = copy;
 
 	return res;
 }
