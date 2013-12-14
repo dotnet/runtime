@@ -126,7 +126,7 @@
 #endif
 
 #if defined(TARGET_X86) && defined(__APPLE__)
-#define USE_MACH_WRITER
+//#define USE_MACH_WRITER
 #endif
 
 #if defined(USE_ELF_WRITER) || defined(USE_MACH_WRITER)
