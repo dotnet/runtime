@@ -4598,6 +4598,7 @@ get_gsharedvt_type (MonoType *t)
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGenericParam *copy;
 	MonoType *res;
+	MonoImage *image = NULL;
 
 	/* 
 	 * Create an anonymous gparam with a different serial so normal gshared and gsharedvt methods have
@@ -4605,7 +4606,16 @@ get_gsharedvt_type (MonoType *t)
 	 */
 	g_assert (mono_generic_param_info (par));
 	if (par->owner) {
-		copy = mono_image_alloc0 (par->owner->image, sizeof (MonoGenericParamFull));
+		image = par->owner->image;
+
+		mono_image_lock (image);
+		if (!image->gsharedvt_types)
+			image->gsharedvt_types = g_hash_table_new (NULL, NULL);
+		res = g_hash_table_lookup (image->gsharedvt_types, par);
+		mono_image_unlock (image);
+		if (res)
+			return res;
+		copy = mono_image_alloc0 (image, sizeof (MonoGenericParamFull));
 		memcpy (copy, par, sizeof (MonoGenericParamFull));
 	} else {
 		copy = g_memdup (par, sizeof (MonoGenericParamFull));
@@ -4616,6 +4626,13 @@ get_gsharedvt_type (MonoType *t)
 	copy->serial = 1;
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = copy;
+
+	if (par->owner) {
+		mono_image_lock (image);
+		/* Duplicates are ok */
+		g_hash_table_insert (image->gsharedvt_types, par, res);
+		mono_image_unlock (image);
+	}
 
 	return res;
 }

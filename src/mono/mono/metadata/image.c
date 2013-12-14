@@ -1650,6 +1650,7 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->native_wrapper_aot_cache);
 	free_hash (image->pinvoke_scopes);
 	free_hash (image->pinvoke_scope_filenames);
+	free_hash (image->gsharedvt_types);
 
 	/* The ownership of signatures is not well defined */
 	g_hash_table_destroy (image->memberref_signatures);

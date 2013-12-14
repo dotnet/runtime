@@ -337,6 +337,9 @@ struct _MonoImage {
 	/* Maps malloc-ed char* pinvoke scope -> malloced-ed char* filename */
 	GHashTable *pinvoke_scope_filenames;
 
+	/* Indexed by MonoGenericParam pointers */
+	GHashTable *gsharedvt_types;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.
