@@ -927,7 +927,7 @@ remap_keys (MonoAssemblyName *aname)
 
 		memcpy (aname->public_key_token, entry->to, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		     
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 			    "Remapped public key token of retargetable assembly %s from %s to %s",
 			    aname->name, entry->from, entry->to);
 		return;
@@ -963,7 +963,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		
 		remap_keys (dest_aname);
 
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
 					aname->name,
 					aname->major, aname->minor, aname->build, aname->revision,
