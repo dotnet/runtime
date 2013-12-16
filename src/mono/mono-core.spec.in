@@ -1113,6 +1113,7 @@ desktop-specific features.
 %_prefix/lib/mono/4.5/System.Reactive.Experimental.dll
 %_prefix/lib/mono/4.5/System.Reactive.Interfaces.dll
 %_prefix/lib/mono/4.5/System.Reactive.Linq.dll
+%_prefix/lib/mono/4.5/System.Reactive.Observable.Aliases.dll
 %_prefix/lib/mono/4.5/System.Reactive.PlatformServices.dll
 %_prefix/lib/mono/4.5/System.Reactive.Providers.dll
 %_prefix/lib/mono/4.5/System.Reactive.Runtime.Remoting.dll
@@ -1121,6 +1122,7 @@ desktop-specific features.
 %_prefix/lib/mono/gac/System.Reactive.Experimental
 %_prefix/lib/mono/gac/System.Reactive.Interfaces
 %_prefix/lib/mono/gac/System.Reactive.Linq
+%_prefix/lib/mono/gac/System.Reactive.Observable.Aliases.dll
 %_prefix/lib/mono/gac/System.Reactive.PlatformServices
 %_prefix/lib/mono/gac/System.Reactive.Providers
 %_prefix/lib/mono/gac/System.Reactive.Runtime.Remoting
