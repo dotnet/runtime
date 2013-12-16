@@ -8880,7 +8880,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	img_writer_emit_start (acfg->w);
 
 	if (acfg->dwarf)
-		mono_dwarf_writer_emit_base_info (acfg->dwarf, mono_unwind_get_cie_program ());
+		mono_dwarf_writer_emit_base_info (acfg->dwarf, g_path_get_basename (acfg->image->name), mono_unwind_get_cie_program ());
 
 	if (acfg->thumb_mixed) {
 		char symbol [256];

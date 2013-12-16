@@ -24,7 +24,7 @@ MonoDwarfWriter* mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_fil
 
 void mono_dwarf_writer_destroy (MonoDwarfWriter *w) MONO_INTERNAL;
 
-void mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_program) MONO_INTERNAL;
+void mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSList *base_unwind_program) MONO_INTERNAL;
 
 void mono_dwarf_writer_close (MonoDwarfWriter *w) MONO_INTERNAL;
 

@@ -916,7 +916,7 @@ emit_debug_info_end (MonoDwarfWriter *w)
 }
 
 void
-mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_program)
+mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSList *base_unwind_program)
 {
 	char *s, *build_info;
 	int i;
@@ -985,7 +985,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_string (w, s);
 	g_free (build_info);
 	g_free (s);
-	emit_string (w, "JITted code");
+	emit_string (w, cu_name);
 	emit_string (w, "");
 	emit_byte (w, DW_LANG_C);
 	emit_pointer_value (w, 0);
