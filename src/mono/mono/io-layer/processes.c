@@ -330,10 +330,7 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 			return FALSE;
 
 #ifdef PLATFORM_MACOSX
-		if (is_macos_10_5_or_higher ())
-			handler = g_strdup ("/usr/bin/open -W");
-		else
-			handler = g_strdup ("/usr/bin/open");
+		handler = g_strdup ("/usr/bin/open");
 #else
 		/*
 		 * On Linux, try: xdg-open, the FreeDesktop standard way of doing it,
