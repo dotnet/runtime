@@ -6525,7 +6525,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			if (supported)
 				info->dyn_call_info = mono_arch_dyn_call_prepare (sig);
 
-			ret_type = mini_replace_type (sig->ret);
+			ret_type = sig->ret;
 			if (info->dyn_call_info) {
 				switch (ret_type->type) {
 				case MONO_TYPE_VOID:
@@ -6622,7 +6622,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (sig->hasthis)
 			args [pindex ++] = &obj;
 		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = mini_replace_type (sig->params [i]);
+			MonoType *t = sig->params [i];
 
 			if (t->byref) {
 				args [pindex ++] = &params [i];
