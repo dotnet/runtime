@@ -894,10 +894,11 @@ mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, gui
 
 	mono_runtime_class_init (vtable);
 
-	if (plt_entry) {
-		mono_arch_nullify_plt_entry (plt_entry, regs);
-	} else {
-		mono_arch_nullify_class_init_trampoline (code, regs);
+	if (vtable->initialized) {
+		if (plt_entry)
+			mono_arch_nullify_plt_entry (plt_entry, regs);
+		else
+			mono_arch_nullify_class_init_trampoline (code, regs);
 	}
 }
 
