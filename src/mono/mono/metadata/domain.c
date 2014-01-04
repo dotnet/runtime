@@ -42,7 +42,7 @@
 #include <metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 
-/* #define DEBUG_DOMAIN_UNLOAD */
+#define DEBUG_DOMAIN_UNLOAD 1
 
 /* we need to use both the Tls* functions and __thread because
  * some archs may generate faster jit code with one meachanism
