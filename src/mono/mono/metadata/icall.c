@@ -931,6 +931,11 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 	/* if we have no info we are optimistic and assume there is enough room */
 	if (!stack_addr)
 		return TRUE;
+#ifdef HOST_WIN32
+	// FIXME: Windows dynamically extends the stack, so stack_addr might be close
+	// to the current sp
+	return TRUE;
+#endif
 	current = (guint8 *)&stack_addr;
 	if (current > stack_addr) {
 		if ((current - stack_addr) < min_size)
