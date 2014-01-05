@@ -296,7 +296,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	case OP_ISUB_IMM:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
-		value->value.variable.delta = ins->inst_imm;
+		value->value.variable.delta = -ins->inst_imm;
 		/* FIXME: */
 		//check_delta_safety (area, result);
 		break;
