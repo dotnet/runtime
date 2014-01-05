@@ -4633,8 +4633,10 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoCla
 			return FALSE;
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
-		return FALSE;
+	if (klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+		if (cfg->method == method)
+			return FALSE;
+	}
 
 	if (!mono_class_needs_cctor_run (klass, method))
 		return FALSE;
