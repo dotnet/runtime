@@ -10242,6 +10242,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else {
 						g_assert (vtable);
 						addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
+						g_assert (addr);
 						EMIT_NEW_PCONST (cfg, ins, addr);
 					}
 				} else {
