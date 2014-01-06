@@ -7266,10 +7266,10 @@ mini_init (const char *filename, const char *runtime_version)
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();
 
+	mono_icall_init ();
+
 	/* This must come after mono_init () in the aot-only case */
 	mono_exceptions_init ();
-
-	mono_icall_init ();
 
 	/* This should come after mono_init () too */
 	mini_gc_init ();
