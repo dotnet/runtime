@@ -5337,8 +5337,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoInst *ins_iconst;
 			guint32 opcode = 0;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_ADD_NEW_I4;
+				cfg->has_atomic_add_new_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
@@ -5361,8 +5363,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoInst *ins_iconst;
 			guint32 opcode = 0;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_ADD_NEW_I4;
+				cfg->has_atomic_add_new_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
@@ -5384,8 +5388,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (strcmp (cmethod->name, "Add") == 0) {
 			guint32 opcode = 0;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_ADD_NEW_I4;
+				cfg->has_atomic_add_new_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
@@ -5408,15 +5414,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			guint32 opcode;
 			gboolean is_ref = fsig->params [0]->type == MONO_TYPE_OBJECT;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
+				cfg->has_atomic_exchange_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I8) ||
 					(fsig->params [0]->type == MONO_TYPE_I))
 				opcode = OP_ATOMIC_EXCHANGE_I8;
 #else
-			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I))
+			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I)) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
+				cfg->has_atomic_exchange_i4 = TRUE;
+			}
 #endif
 			else
 				return NULL;
