@@ -49,11 +49,11 @@
 	/* gcc should be smart enough to remove the bounds check, but it isn't:( */
 	desc = vt->desc;
 
-#if defined(SGEN_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
+#if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
 	binary_protocol_scan_begin (start, vt, sgen_safe_object_get_size ((MonoObject*)start));
 #endif
 #else
-#if defined(SGEN_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
+#if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
 	binary_protocol_scan_vtype_begin (start + sizeof (MonoObject), size);
 #endif
 #endif

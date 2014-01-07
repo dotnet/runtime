@@ -57,10 +57,11 @@ typedef guint64 mword;
 
 /*
  * The binary protocol enables logging a lot of the GC ativity in a way that is not very
- * intrusive and produce a compact file that can be searched using a custom tool.
- *
+ * intrusive and produces a compact file that can be searched using a custom tool.  This
+ * option enables very fine-grained binary protocol events, which will make the GC a tiny
+ * bit less efficient even if no binary protocol file is generated.
  */
-//#define SGEN_BINARY_PROTOCOL
+//#define SGEN_HEAVY_BINARY_PROTOCOL
 
 /*
  * This enables checks whenever objects are enqueued in gray queues.
@@ -97,7 +98,7 @@ typedef guint64 mword;
  */
 //#define SGEN_OBJECT_LAYOUT_STATISTICS
 
-#ifndef SGEN_BINARY_PROTOCOL
+#ifndef SGEN_HEAVY_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER

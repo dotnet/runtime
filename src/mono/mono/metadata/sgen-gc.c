@@ -4295,8 +4295,8 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 		return;
 	}
 
-#ifdef SGEN_BINARY_PROTOCOL
-	{
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	if (binary_protocol_is_heavy_enabled ()) {
 		int i;
 		for (i = 0; i < count; ++i) {
 			gpointer dest = (gpointer*)dest_ptr + i;
@@ -4441,7 +4441,7 @@ void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size
 	}
 }
 
-#ifdef SGEN_BINARY_PROTOCOL
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {					\
 		gpointer o = *(gpointer*)(ptr);				\
@@ -4474,8 +4474,8 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		return;
 	}
 
-#ifdef SGEN_BINARY_PROTOCOL
-	{
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	if (binary_protocol_is_heavy_enabled ()) {
 		size_t element_size = mono_class_value_size (klass, NULL);
 		int i;
 		for (i = 0; i < count; ++i) {
@@ -4508,8 +4508,9 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 		return;	
 	}
 
-#ifdef SGEN_BINARY_PROTOCOL
-	scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	if (binary_protocol_is_heavy_enabled ())
+		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
 #endif
 
 	remset.wbarrier_object_copy (obj, src);
@@ -5270,11 +5271,9 @@ mono_gc_base_init (void)
 					fprintf (heap_dump_file, "<sgen-dump>\n");
 					do_pin_stats = TRUE;
 				}
-#ifdef SGEN_BINARY_PROTOCOL
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;
 				binary_protocol_init (filename);
-#endif
 			} else {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
@@ -5302,9 +5301,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  print-allowance\n");
 				fprintf (stderr, "  print-pinning\n");
 				fprintf (stderr, "  heap-dump=<filename>\n");
-#ifdef SGEN_BINARY_PROTOCOL
 				fprintf (stderr, "  binary-protocol=<filename>\n");
-#endif
 				fprintf (stderr, "\n");
 
 				usage_printed = TRUE;

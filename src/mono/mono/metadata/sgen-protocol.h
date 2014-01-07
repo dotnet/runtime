@@ -22,8 +22,6 @@
 
 #include "sgen-gc.h"
 
-#ifdef SGEN_BINARY_PROTOCOL
-
 enum {
 	SGEN_PROTOCOL_COLLECTION_FORCE,
 	SGEN_PROTOCOL_COLLECTION_BEGIN,
@@ -191,7 +189,7 @@ typedef struct {
 	gpointer domain;
 } SGenProtocolDomainUnload;
 
-/* missing: finalizers, dislinks, roots, non-store wbarriers */
+/* missing: finalizers, roots, non-store wbarriers */
 
 void binary_protocol_init (const char *filename) MONO_INTERNAL;
 gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
@@ -201,6 +199,24 @@ void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 void binary_protocol_collection_force (int generation) MONO_INTERNAL;
 void binary_protocol_collection_begin (int index, int generation) MONO_INTERNAL;
 void binary_protocol_collection_end (int index, int generation) MONO_INTERNAL;
+
+void binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip) MONO_INTERNAL;
+void binary_protocol_thread_restart (gpointer thread) MONO_INTERNAL;
+void binary_protocol_thread_register (gpointer thread) MONO_INTERNAL;
+void binary_protocol_thread_unregister (gpointer thread) MONO_INTERNAL;
+void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset,
+		gpointer value, gpointer value_vtable, int value_pinned) MONO_INTERNAL;
+
+void binary_protocol_cement (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_cement_reset (void) MONO_INTERNAL;
+
+void binary_protocol_domain_unload_begin (gpointer domain) MONO_INTERNAL;
+void binary_protocol_domain_unload_end (gpointer domain) MONO_INTERNAL;
+
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+
+#define binary_protocol_is_heavy_enabled()	binary_protocol_is_enabled ()
+
 void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
@@ -214,29 +230,15 @@ void binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value
 void binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_cleanup (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_empty (gpointer start, int size) MONO_INTERNAL;
-void binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip) MONO_INTERNAL;
-void binary_protocol_thread_restart (gpointer thread) MONO_INTERNAL;
-void binary_protocol_thread_register (gpointer thread) MONO_INTERNAL;
-void binary_protocol_thread_unregister (gpointer thread) MONO_INTERNAL;
-void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset,
-		gpointer value, gpointer value_vtable, int value_pinned) MONO_INTERNAL;
 void binary_protocol_card_scan (gpointer start, int size) MONO_INTERNAL;
-void binary_protocol_cement (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_cement_reset (void) MONO_INTERNAL;
 void binary_protocol_dislink_update (gpointer link, gpointer obj, int track, int staged) MONO_INTERNAL;
 void binary_protocol_dislink_update_staged (gpointer link, gpointer obj, int track, int index) MONO_INTERNAL;
 void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index) MONO_INTERNAL;
-void binary_protocol_domain_unload_begin (gpointer domain) MONO_INTERNAL;
-void binary_protocol_domain_unload_end (gpointer domain) MONO_INTERNAL;
 
 #else
 
-#define binary_protocol_is_enabled()	FALSE
+#define binary_protocol_is_heavy_enabled()	FALSE
 
-#define binary_protocol_flush_buffers(force)
-#define binary_protocol_collection_force(generation)
-#define binary_protocol_collection_begin(index, generation)
-#define binary_protocol_collection_end(index, generation)
 #define binary_protocol_alloc(obj, vtable, size)
 #define binary_protocol_alloc_pinned(obj, vtable, size)
 #define binary_protocol_alloc_degraded(obj, vtable, size)
@@ -250,18 +252,9 @@ void binary_protocol_domain_unload_end (gpointer domain) MONO_INTERNAL;
 #define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)
 #define binary_protocol_cleanup(ptr, vtable, size)
 #define binary_protocol_empty(start, size)
-#define binary_protocol_thread_suspend(thread, ip)
-#define binary_protocol_thread_restart(thread)
-#define binary_protocol_thread_register(thread)
-#define binary_protocol_thread_unregister(thread)
-#define binary_protocol_missing_remset(obj, obj_vtable, offset, value, value_vtable, value_pinned)
 #define binary_protocol_card_scan(start, size)
-#define binary_protocol_cement(ptr, vtable, size)
-#define binary_protocol_cement_reset()
 #define binary_protocol_dislink_update(link,obj,track,staged)
 #define binary_protocol_dislink_update_staged(link,obj,track,index)
 #define binary_protocol_dislink_process_staged(link,obj,index)
-#define binary_protocol_domain_unload_begin(domain)
-#define binary_protocol_domain_unload_end(domain)
 
 #endif
