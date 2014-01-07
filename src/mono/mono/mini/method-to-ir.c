@@ -121,6 +121,12 @@
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_OUT_OF_MEMORY);		\
 		goto exception_exit;	\
 	} while (0)
+#define DISABLE_AOT(cfg) do { \
+		if ((cfg)->verbose_level >= 2)						  \
+			printf ("AOT disabled: %s:%d\n", __FILE__, __LINE__);	\
+		(cfg)->disable_aot = TRUE;							  \
+	} while (0)
+
 /* Determine whenever 'ins' represents a load of the 'this' argument */
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && ((ins)->opcode == OP_MOVE) && ((ins)->sreg1 == cfg->args [0]->dreg))
 
@@ -6465,7 +6471,7 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 	int i;
 
 #ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
-	supported_tail_call = mono_arch_tail_call_supported (mono_method_signature (method), mono_method_signature (cmethod));
+	supported_tail_call = mono_arch_tail_call_supported (cfg, mono_method_signature (method), mono_method_signature (cmethod));
 #else
 	supported_tail_call = mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret);
 #endif
@@ -7551,6 +7557,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* Handle tail calls similarly to calls */
 				n = fsig->param_count + fsig->hasthis;
+
+				DISABLE_AOT (cfg);
 
 				MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
 				call->method = cmethod;
@@ -10828,7 +10836,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, tclass->image, tclass->type_token, generic_context);
 							} else {
 								/* FIXME: n is not a normal token */
-								cfg->disable_aot = TRUE;
+								DISABLE_AOT (cfg);
 								EMIT_NEW_PCONST (cfg, ins, NULL);
 							}
 						} else {
@@ -11063,7 +11071,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				inline_costs += 10 * num_calls++;
 				/* Can't embed random pointers into AOT code */
-				cfg->disable_aot = 1;
+				DISABLE_AOT (cfg);
 				break;
 			}
 			case CEE_MONO_JIT_ICALL_ADDR: {
@@ -11259,7 +11267,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins = mono_create_tls_get (cfg, key);
 				if (!ins) {
 					if (cfg->compile_aot) {
-						cfg->disable_aot = TRUE;
+						DISABLE_AOT (cfg);
 						MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 						ins->dreg = alloc_preg (cfg);
 						ins->type = STACK_PTR;

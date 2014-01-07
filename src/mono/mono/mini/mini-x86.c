@@ -701,11 +701,15 @@ mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignatu
 }
 
 gboolean
-mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	MonoType *callee_ret;
 	CallInfo *c1, *c2;
 	gboolean res;
+
+	if (cfg->compile_aot)
+		/* OP_TAILCALL doesn't work with AOT */
+		return FALSE;
 
 	c1 = get_call_info (NULL, NULL, caller_sig);
 	c2 = get_call_info (NULL, NULL, callee_sig);
