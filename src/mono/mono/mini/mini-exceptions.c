@@ -1509,7 +1509,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 	MonoContext initial_ctx;
 	MonoMethod *method;
 	int frame_count = 0;
-	gint32 filter_idx, first_filter_idx;
+	gint32 filter_idx, first_filter_idx = 0;
 	int i;
 	MonoObject *ex_obj;
 	MonoObject *non_exception = NULL;
@@ -2108,6 +2108,7 @@ typedef struct {
 	int count;
 } PrintOverflowUserData;
 
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 static gboolean
 print_overflow_stack_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
@@ -2146,12 +2147,15 @@ print_overflow_stack_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer da
 
 	return FALSE;
 }
+#endif
 
 void
 mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, guint8* fault_addr)
 {
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 	PrintOverflowUserData ud;
 	MonoContext mctx;
+#endif
 
 	/* we don't do much now, but we can warn the user with a useful message */
 	mono_runtime_printf_err ("Stack overflow: IP: %p, fault addr: %p", mono_arch_ip_from_context (ctx), fault_addr);

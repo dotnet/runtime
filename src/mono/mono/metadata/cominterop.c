@@ -2000,11 +2000,9 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 			cominterop_setup_marshal_context (&m, adjust_method);
 			m.mb = mb;
 			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0);
-			mono_loader_lock ();
 			mono_cominterop_lock ();
 			wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
 			mono_cominterop_unlock ();
-			mono_loader_unlock ();
 
 			vtable [vtable_index--] = mono_compile_method (wrapper_method);
 
@@ -2208,11 +2206,9 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	mono_loader_lock ();
 	mono_cominterop_lock ();
 	res = mono_mb_create_method (mb, sig_native, sig_native->param_count + 16);	
 	mono_cominterop_unlock ();
-	mono_loader_unlock ();
 
 	mono_mb_free (mb);
 

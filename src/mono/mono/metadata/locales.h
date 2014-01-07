@@ -27,10 +27,9 @@ typedef enum {
 } MonoCompareOptions;
 
 extern void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale) MONO_INTERNAL;
-extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale (MonoCultureInfo *ci) MONO_INTERNAL;
+extern MonoString* ves_icall_System_Globalization_CultureInfo_get_current_locale_name (void) MONO_INTERNAL;
 extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this, gint lcid) MONO_INTERNAL;
 extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this, MonoString *name) MONO_INTERNAL;
-extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci, MonoString *name) MONO_INTERNAL;
 extern MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral, MonoBoolean specific, MonoBoolean installed) MONO_INTERNAL;
 extern void ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultureInfo *this) MONO_INTERNAL;
 extern void ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureInfo *this) MONO_INTERNAL;

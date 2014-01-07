@@ -401,6 +401,7 @@ sgen_safe_name (void* obj)
  * ######################################################################
  */
 LOCK_DECLARE (gc_mutex);
+gboolean sgen_try_free_some_memory;
 
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
@@ -2919,8 +2920,8 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 				continue;
 			}
 			sgen_los_pin_object (bigobj->data);
-			/* FIXME: only enqueue if object has references */
-			GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
+			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
+				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
 			if (G_UNLIKELY (do_pin_stats))
 				sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
@@ -5511,7 +5512,7 @@ mono_gc_get_write_barrier (void)
 	res = mono_mb_create_method (mb, sig, 16);
 	mono_mb_free (mb);
 
-	mono_loader_lock ();
+	LOCK_GC;
 	if (write_barrier_method) {
 		/* Already created */
 		mono_free_method (res);
@@ -5520,7 +5521,7 @@ mono_gc_get_write_barrier (void)
 		mono_memory_barrier ();
 		write_barrier_method = res;
 	}
-	mono_loader_unlock ();
+	UNLOCK_GC;
 
 	return write_barrier_method;
 }
@@ -5597,7 +5598,12 @@ sgen_gc_lock (void)
 void
 sgen_gc_unlock (void)
 {
-	UNLOCK_GC;
+	gboolean try_free = sgen_try_free_some_memory;
+	sgen_try_free_some_memory = FALSE;
+	mono_mutex_unlock (&gc_mutex);
+	MONO_GC_UNLOCKED ();
+	if (try_free)
+		mono_thread_hazardous_try_free_some ();
 }
 
 void

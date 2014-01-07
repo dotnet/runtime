@@ -264,6 +264,7 @@ mono_type_to_regmove (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_MOVE;
 
+	type = mini_replace_type (type);
 handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -646,6 +647,7 @@ type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 {
 	MonoClass *klass;
 
+	type = mini_replace_type (type);
 	inst->klass = klass = mono_class_from_mono_type (type);
 	if (type->byref) {
 		inst->type = STACK_MP;
@@ -1908,7 +1910,7 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_ir)
 		return;
 
-	if (cfg->lmf_ir_mono_lmf) {
+	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
 		/* Load current lmf */
 		lmf_ins = mono_get_lmf_intrinsic (cfg);
 		g_assert (lmf_ins);
@@ -1962,7 +1964,7 @@ emit_pop_lmf (MonoCompile *cfg)
  	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
  	lmf_reg = ins->dreg;
 
-	if (cfg->lmf_ir_mono_lmf) {
+	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
 		/* Load previous_lmf */
 		prev_lmf_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
@@ -2059,6 +2061,7 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	MonoType *simple_type;
 	MonoClass *klass;
 
+	target = mini_replace_type (target);
 	if (target->byref) {
 		/* FIXME: check that the pointed to types match */
 		if (arg->type == STACK_MP)
@@ -2445,7 +2448,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	call->args = args;
 	call->signature = sig;
 	call->rgctx_reg = rgctx;
-	sig_ret = sig->ret;
+	sig_ret = mini_replace_type (sig->ret);
 
 	type_to_eval_stack_type ((cfg), sig_ret, &call->inst);
 
@@ -4411,7 +4414,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
 	 * store it, and we fill it after the method has been compiled.
 	 */
-	if (!cfg->compile_aot && !method->dynamic && !(cfg->opt & MONO_OPT_SHARED)) {
+	if (!method->dynamic && !(cfg->opt & MONO_OPT_SHARED)) {
 		MonoInst *code_slot_ins;
 
 		if (context_used) {
@@ -4428,7 +4431,10 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			}
 			mono_domain_unlock (domain);
 
-			EMIT_NEW_PCONST (cfg, code_slot_ins, code_slot);
+			if (cfg->compile_aot)
+				EMIT_NEW_AOTCONST (cfg, code_slot_ins, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
+			else
+				EMIT_NEW_PCONST (cfg, code_slot_ins, code_slot);
 		}
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
 	}
@@ -4627,8 +4633,10 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoCla
 			return FALSE;
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
-		return FALSE;
+	if (klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+		if (cfg->method == method)
+			return FALSE;
+	}
 
 	if (!mono_class_needs_cctor_run (klass, method))
 		return FALSE;
@@ -4648,7 +4656,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	int mult_reg, add_reg, array_reg, index_reg, index2_reg;
 	int context_used;
 
-	if (mini_is_gsharedvt_klass (cfg, klass)) {
+	if (mini_is_gsharedvt_variable_klass (cfg, klass)) {
 		size = -1;
 	} else {
 		mono_class_init (klass);
@@ -4920,7 +4928,7 @@ emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean sa
 	} else {
 		MonoInst *ins;
 
-		if (mini_is_gsharedvt_klass (cfg, klass)) {
+		if (mini_is_gsharedvt_variable_klass (cfg, klass)) {
 			MonoInst *addr;
 
 			// FIXME-VT: OP_ICONST optimization
@@ -5329,8 +5337,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoInst *ins_iconst;
 			guint32 opcode = 0;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_ADD_NEW_I4;
+				cfg->has_atomic_add_new_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
@@ -5353,8 +5363,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoInst *ins_iconst;
 			guint32 opcode = 0;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_ADD_NEW_I4;
+				cfg->has_atomic_add_new_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
@@ -5376,8 +5388,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (strcmp (cmethod->name, "Add") == 0) {
 			guint32 opcode = 0;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_ADD_NEW_I4;
+				cfg->has_atomic_add_new_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
@@ -5400,15 +5414,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			guint32 opcode;
 			gboolean is_ref = fsig->params [0]->type == MONO_TYPE_OBJECT;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4)
+			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
+				cfg->has_atomic_exchange_i4 = TRUE;
+			}
 #if SIZEOF_REGISTER == 8
 			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I8) ||
 					(fsig->params [0]->type == MONO_TYPE_I))
 				opcode = OP_ATOMIC_EXCHANGE_I8;
 #else
-			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I))
+			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I)) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
+				cfg->has_atomic_exchange_i4 = TRUE;
+			}
 #endif
 			else
 				return NULL;
@@ -5676,11 +5694,11 @@ emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 {
 	static double r8_0 = 0.0;
 	MonoInst *ins;
+	int t;
 
-	int t = rtype->type;
+	rtype = mini_replace_type (rtype);
+	t = rtype->type;
 
-	if (t == MONO_TYPE_VALUETYPE && rtype->data.klass->enumtype)
-		t = mono_class_enum_basetype (rtype->data.klass)->type;
 	if (rtype->byref) {
 		MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
 	} else if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
@@ -6358,7 +6376,7 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 		token = read32 (ip + 2);
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
 		CHECK_TYPELOAD (klass);
-		type = &klass->byval_arg;
+		type = mini_replace_type (&klass->byval_arg);
 		emit_init_local (cfg, local, type);
 		return ip + 6;
 	}
@@ -8149,7 +8167,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/*
 			 * Making generic calls out of gsharedvt methods.
 			 */
-			if (cmethod && cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
+			if (cmethod && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
 				MonoRgctxInfoType info_type;
 
 				if (virtual) {
@@ -8465,7 +8483,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_pop_lmf (cfg);
 
 				if (cfg->ret) {
-					MonoType *ret_type = mono_method_signature (method)->ret;
+					MonoType *ret_type = mini_replace_type (mono_method_signature (method)->ret);
 
 					if (seq_points && !sym_seq_points) {
 						/* 
@@ -10234,6 +10252,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else {
 						g_assert (vtable);
 						addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
+						g_assert (addr);
 						EMIT_NEW_PCONST (cfg, ins, addr);
 					}
 				} else {
@@ -10555,7 +10574,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			cfg->flags |= MONO_CFG_HAS_LDELEMA;
 
-			if (mini_is_gsharedvt_klass (cfg, klass)) {
+			if (mini_is_gsharedvt_variable_klass (cfg, klass)) {
 				// FIXME-VT: OP_ICONST optimization
 				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0);

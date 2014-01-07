@@ -1311,6 +1311,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		if (mono_class_has_variant_generic_params (iface))
 			has_variant_iface = TRUE;
 
+		mono_class_setup_methods (iface);
 		vt_slot = interface_offset;
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;

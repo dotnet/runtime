@@ -36,6 +36,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-mutex.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -175,6 +176,8 @@ static CRITICAL_SECTION assemblies_mutex;
 
 /* If defined, points to the bundled assembly information */
 const MonoBundledAssembly **bundles;
+
+static mono_mutex_t assembly_binding_mutex;
 
 /* Loaded assembly binding info */
 static GSList *loaded_assembly_bindings = NULL;
@@ -735,6 +738,19 @@ mono_assemblies_init (void)
 	check_extra_gac_path_env ();
 
 	InitializeCriticalSection (&assemblies_mutex);
+	mono_mutex_init (&assembly_binding_mutex);
+}
+
+static void
+mono_assembly_binding_lock (void)
+{
+	mono_locks_mutex_acquire (&assembly_binding_mutex, AssemblyBindingLock);
+}
+
+static void
+mono_assembly_binding_unlock (void)
+{
+	mono_locks_mutex_release (&assembly_binding_mutex, AssemblyBindingLock);
 }
 
 gboolean
@@ -911,7 +927,7 @@ remap_keys (MonoAssemblyName *aname)
 
 		memcpy (aname->public_key_token, entry->to, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		     
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 			    "Remapped public key token of retargetable assembly %s from %s to %s",
 			    aname->name, entry->from, entry->to);
 		return;
@@ -947,7 +963,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		
 		remap_keys (dest_aname);
 
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 					"The request to load the retargetable assembly %s v%d.%d.%d.%d was remapped to %s v%d.%d.%d.%d",
 					aname->name,
 					aname->major, aname->minor, aname->build, aname->revision,
@@ -2469,7 +2485,7 @@ mono_assembly_bind_version (MonoAssemblyBindingInfo *info, MonoAssemblyName *ana
 	return dest_name;
 }
 
-/* LOCKING: Assumes that we are already locked */
+/* LOCKING: assembly_binding lock must be held */
 static MonoAssemblyBindingInfo*
 search_binding_loaded (MonoAssemblyName *aname)
 {
@@ -2605,15 +2621,17 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		return aname;
 
 	domain = mono_domain_get ();
-	mono_loader_lock ();
+
+	mono_assembly_binding_lock ();
 	info = search_binding_loaded (aname);
+	mono_assembly_binding_unlock ();
+
 	if (!info) {
 		mono_domain_lock (domain);
 		info = get_per_domain_assembly_binding_info (domain, aname);
 		mono_domain_unlock (domain);
 	}
 
-	mono_loader_unlock ();
 	if (info) {
 		if (!check_policy_versions (info, aname))
 			return aname;
@@ -2637,10 +2655,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 				g_free (domain_config_file_name);
 			g_free (domain_config_file_path);
 		}
-		mono_domain_unlock (domain);
 
-		mono_loader_lock ();
-		mono_domain_lock (domain);
 		info2 = get_per_domain_assembly_binding_info (domain, aname);
 
 		if (info2) {
@@ -2651,7 +2666,6 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		}
 
 		mono_domain_unlock (domain);
-		mono_loader_unlock ();
 	}
 
 	if (!info) {
@@ -2675,7 +2689,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		g_strlcpy ((char *)info->public_key_token, (const char *)aname->public_key_token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 	}
 	
-	mono_loader_lock ();
+	mono_assembly_binding_lock ();
 	info2 = search_binding_loaded (aname);
 	if (info2) {
 		/* This binding was added by another thread 
@@ -2687,7 +2701,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 	} else
 		loaded_assembly_bindings = g_slist_prepend (loaded_assembly_bindings, info);
 		
-	mono_loader_unlock ();
+	mono_assembly_binding_unlock ();
 	
 	if (!info->is_valid || !check_policy_versions (info, aname))
 		return aname;
@@ -3099,6 +3113,7 @@ mono_assemblies_cleanup (void)
 	GSList *l;
 
 	DeleteCriticalSection (&assemblies_mutex);
+	mono_mutex_destroy (&assembly_binding_mutex);
 
 	for (l = loaded_assembly_bindings; l; l = l->next) {
 		MonoAssemblyBindingInfo *info = l->data;
@@ -3113,12 +3128,14 @@ mono_assemblies_cleanup (void)
 	free_assembly_preload_hooks ();
 }
 
-/*LOCKING assumes loader lock is held*/
+/*LOCKING takes the assembly_binding lock*/
 void
 mono_assembly_cleanup_domain_bindings (guint32 domain_id)
 {
-	GSList **iter = &loaded_assembly_bindings;
+	GSList **iter;
 
+	mono_assembly_binding_lock ();
+	iter = &loaded_assembly_bindings;
 	while (*iter) {
 		GSList *l = *iter;
 		MonoAssemblyBindingInfo *info = l->data;
@@ -3132,6 +3149,7 @@ mono_assembly_cleanup_domain_bindings (guint32 domain_id)
 			iter = &l->next;
 		}
 	}
+	mono_assembly_binding_unlock ();
 }
 
 /*

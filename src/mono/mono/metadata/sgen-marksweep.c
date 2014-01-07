@@ -564,7 +564,13 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->pinned = pinned;
 	info->has_references = has_references;
 	info->has_pinned = pinned;
-	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD); /*FIXME WHY??? */
+	/*
+	 * Blocks that are to-space are not evacuated from.  During an major collection
+	 * blocks are allocated for two reasons: evacuating objects from the nursery and
+	 * evacuating them from major blocks marked for evacuation.  In both cases we don't
+	 * want further evacuation.
+	 */
+	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
 	info->swept = 1;
 #ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
@@ -1298,8 +1304,8 @@ major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queu
 #endif
 
 			sgen_los_pin_object (obj);
-			/* FIXME: only enqueue if object has references */
-			GRAY_OBJECT_ENQUEUE (queue, obj);
+			if (SGEN_OBJECT_HAS_REFERENCES (obj))
+				GRAY_OBJECT_ENQUEUE (queue, obj);
 			INC_NUM_MAJOR_OBJECTS_MARKED ();
 		}
 	}
@@ -1437,8 +1443,8 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 #endif
 
 			sgen_los_pin_object (obj);
-			/* FIXME: only enqueue if object has references */
-			GRAY_OBJECT_ENQUEUE (queue, obj);
+			if (SGEN_OBJECT_HAS_REFERENCES (obj))
+				GRAY_OBJECT_ENQUEUE (queue, obj);
 		}
 	}
 }
@@ -1539,6 +1545,7 @@ static void
 sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 {
 	int count;
+	void *reversed = NULL;
 
 	if (!during_major_collection)
 		g_assert (!sgen_concurrent_collection_in_progress ());
@@ -1564,10 +1571,15 @@ sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 	/* reset mark bits */
 	memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
 
-	/*
-	 * FIXME: reverse free list so that it's in address
-	 * order
-	 */
+	/* Reverse free list so that it's in address order */
+	reversed = NULL;
+	while (block->free_list) {
+		void *next = *(void**)block->free_list;
+		*(void**)block->free_list = reversed;
+		reversed = block->free_list;
+		block->free_list = next;
+	}
+	block->free_list = reversed;
 
 	block->swept = 1;
 }

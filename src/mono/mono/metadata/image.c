@@ -1488,7 +1488,6 @@ mono_image_close_except_pools (MonoImage *image)
 	MonoImage *image2;
 	GHashTable *loaded_images;
 	int i;
-	GSList *free_list;
 
 	g_return_val_if_fail (image != NULL, FALSE);
 
@@ -1533,7 +1532,7 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_image_invoke_unload_hook (image);
 
-	free_list = mono_metadata_clean_for_image (image);
+	mono_metadata_clean_for_image (image);
 
 	/*
 	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
@@ -1651,11 +1650,10 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->native_wrapper_aot_cache);
 	free_hash (image->pinvoke_scopes);
 	free_hash (image->pinvoke_scope_filenames);
+	free_hash (image->gsharedvt_types);
 
 	/* The ownership of signatures is not well defined */
-	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->memberref_signatures);
-	//g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->helper_signatures);
 	g_hash_table_destroy (image->method_signatures);
 
@@ -1665,8 +1663,12 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->property_hash)
 		mono_property_hash_destroy (image->property_hash);
 
-	g_slist_free (image->reflection_info_unregister_classes);
-	image->reflection_info_unregister_classes = free_list;
+	/*
+	reflection_info_unregister_classes is only required by dynamic images, which will not be properly
+	cleared during shutdown as we don't perform regular appdomain unload for the root one.
+	*/
+	g_assert (!image->reflection_info_unregister_classes || mono_runtime_is_shutting_down ());
+	image->reflection_info_unregister_classes = NULL;
 
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);
@@ -1710,12 +1712,6 @@ void
 mono_image_close_finish (MonoImage *image)
 {
 	int i;
-	GSList *l;
-
-	for (l = image->reflection_info_unregister_classes; l; l = l->next)
-		g_free (l->data);
-	g_slist_free (image->reflection_info_unregister_classes);
-	image->reflection_info_unregister_classes = NULL;
 
 	if (image->references && !image->dynamic) {
 		for (i = 0; i < image->nreferences; i++) {
@@ -2362,4 +2358,14 @@ mono_image_property_remove (MonoImage *image, gpointer subject)
 	mono_image_lock (image);
 	mono_property_hash_remove_object (image->property_hash, subject);
  	mono_image_unlock (image);
+}
+
+void
+mono_image_append_class_to_reflection_info_set (MonoClass *class)
+{
+	MonoImage *image = class->image;
+	g_assert (image->dynamic);
+	mono_image_lock (image);
+	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, class);
+	mono_image_unlock (image);
 }

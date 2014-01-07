@@ -72,11 +72,12 @@ typedef struct _MonoRemotingMethods MonoRemotingMethods;
 /* 
  * This mutex protects the various marshalling related caches in MonoImage
  * and a few other data structures static to this file.
- * Note that when this lock is held it is not possible to take other runtime
- * locks like the loader lock.
+ *
+ * The marshal lock is a non-recursive complex lock that sits below the domain lock in the
+ * runtime locking latice. Which means it can take simple locks suck as the image lock.
  */
-#define mono_marshal_lock() EnterCriticalSection (&marshal_mutex)
-#define mono_marshal_unlock() LeaveCriticalSection (&marshal_mutex)
+#define mono_marshal_lock() mono_locks_acquire (&marshal_mutex, MarshalLock)
+#define mono_marshal_unlock() mono_locks_release (&marshal_mutex, MarshalLock)
 static CRITICAL_SECTION marshal_mutex;
 static gboolean marshal_mutex_initialized;
 
@@ -5209,14 +5210,14 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
-	mono_loader_lock ();
+	mono_marshal_lock ();
 	/* double-checked locking */
 	if (!method) {
 		method = mono_mb_create_method (mb, csig, 16);
 		info = mono_wrapper_info_create (method, WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC);
 		mono_marshal_set_wrapper_info (method, info);
 	}
-	mono_loader_unlock ();
+	mono_marshal_unlock ();
 
 	mono_mb_free (mb);
 
@@ -10462,7 +10463,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 #endif
 
-	mono_loader_lock ();
+	mono_marshal_lock ();
 
 	if (!enter_method) {
 		MonoMethodDesc *desc;
@@ -10483,7 +10484,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_method_desc_free (desc);
 	}
 
-	mono_loader_unlock ();
+	mono_marshal_unlock ();
 
 #ifndef DISABLE_JIT
 	/* Push this or the type object */
@@ -12212,12 +12213,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	mono_loader_lock ();
-
-	if (klass->marshal_info) {
-		mono_loader_unlock ();
+	if (klass->marshal_info)
 		return klass->marshal_info;
-	}
 
 	/*
 	 * This function can recursively call itself, so we keep the list of classes which are
@@ -12332,12 +12329,13 @@ mono_marshal_load_type_info (MonoClass* klass)
 	loads_list = g_slist_remove (loads_list, klass);
 	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
 
-	/*We do double-checking locking on marshal_info */
-	mono_memory_barrier ();
-
-	klass->marshal_info = info;
-
-	mono_loader_unlock ();
+	mono_marshal_lock ();
+	if (!klass->marshal_info) {
+		/*We do double-checking locking on marshal_info */
+		mono_memory_barrier ();
+		klass->marshal_info = info;
+	}
+	mono_marshal_unlock ();
 
 	return klass->marshal_info;
 }

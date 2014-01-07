@@ -52,6 +52,7 @@
     <ClCompile Include="..\mono\metadata\exception.c" />
     <ClCompile Include="..\mono\metadata\file-io.c" />
     <ClCompile Include="..\mono\metadata\filewatcher.c" />
+    <ClCompile Include="..\mono\metadata\gc-memfuncs.c" />
     <ClCompile Include="..\mono\metadata\gc.c" />
     <ClCompile Include="..\mono\metadata\icall.c" />
     <ClCompile Include="..\mono\metadata\image.c" />

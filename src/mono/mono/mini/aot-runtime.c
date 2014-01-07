@@ -2948,7 +2948,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_ICALL_ADDR:
-	case MONO_PATCH_INFO_METHOD_RGCTX: {
+	case MONO_PATCH_INFO_METHOD_RGCTX:
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		MethodRef ref;
 		gboolean res;
 
@@ -3742,7 +3743,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 				char *full_name;
 
 				full_name = mono_method_full_name (method, TRUE);
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", full_name);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.", full_name);
 				g_free (full_name);
 			}
 			return NULL;

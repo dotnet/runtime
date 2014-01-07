@@ -5486,7 +5486,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
  *  - supertypes: array of classes: each element has a class in the hierarchy
  *    starting from @class up to System.Object
  * 
- * LOCKING: this assumes the loader lock is held
+ * LOCKING: This function is atomic, in case of contention we waste memory.
  */
 void
 mono_class_setup_supertypes (MonoClass *class)
@@ -5494,7 +5494,8 @@ mono_class_setup_supertypes (MonoClass *class)
 	int ms;
 	MonoClass **supertypes;
 
-	if (class->supertypes)
+	mono_atomic_load_acquire (supertypes, void*, &class->supertypes);
+	if (supertypes)
 		return;
 
 	if (class->parent && !class->parent->supertypes)
@@ -6639,6 +6640,9 @@ mono_class_data_size (MonoClass *klass)
 {	
 	if (!klass->inited)
 		mono_class_init (klass);
+	/* This can happen with dynamically created types */
+	if (!klass->fields_inited)
+		mono_class_setup_fields_locking (klass);
 
 	/* in arrays, sizes.class_size is unioned with element_size
 	 * and arrays have no static fields

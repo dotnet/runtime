@@ -861,7 +861,15 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load MonoInternalThread* into EDX */
-		code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
+		if (aot) {
+			/* load_aotconst () puts the result into EAX */
+			x86_mov_reg_reg (code, X86_EDX, X86_EAX, sizeof (mgreg_t));
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (TLS_KEY_THREAD));
+			code = mono_x86_emit_tls_get_reg (code, X86_EAX, X86_EAX);
+			x86_xchg_reg_reg (code, X86_EAX, X86_EDX, sizeof (mgreg_t));
+		} else {
+			code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
+		}
 		/* load TID into EDX */
 		x86_mov_reg_membase (code, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 
@@ -994,7 +1002,15 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 
 		/* next case: synchronization is not null */
 		/* load MonoInternalThread* into EDX */
-		code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
+		if (aot) {
+			/* load_aotconst () puts the result into EAX */
+			x86_mov_reg_reg (code, X86_EDX, X86_EAX, sizeof (mgreg_t));
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (TLS_KEY_THREAD));
+			code = mono_x86_emit_tls_get_reg (code, X86_EAX, X86_EAX);
+			x86_xchg_reg_reg (code, X86_EAX, X86_EDX, sizeof (mgreg_t));
+		} else {
+			code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
+		}
 		/* load TID into EDX */
 		x86_mov_reg_membase (code, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 		/* is synchronization->owner == TID */

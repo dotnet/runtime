@@ -31,7 +31,7 @@ typedef struct {
 	guint8 info [MONO_ZERO_LEN_ARRAY];
 } MonoUnwindInfo;
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+#define ALIGN_TO(val,align) ((((size_t)val) + ((align) - 1)) & ~((align) - 1))
 
 static CRITICAL_SECTION unwind_mutex;
 
@@ -761,7 +761,7 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 		*this_offset = -1;
 	}
 	ncall_sites = decode_uleb128 (p, &p);
-	p = (guint8*)ALIGN_TO ((guint64)p, 4);
+	p = (guint8*)ALIGN_TO ((mgreg_t)p, 4);
 
 	if (ex_info) {
 		*ex_info = g_malloc0 (ncall_sites * sizeof (MonoJitExceptionInfo));
@@ -784,7 +784,7 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 		p += sizeof (gint32);
 
 		g_assert (landing_pad);
-		g_assert (((guint64)tinfo % 4) == 0);
+		g_assert (((size_t)tinfo % 4) == 0);
 		//printf ("X: %p %d\n", landing_pad, *(int*)tinfo);
 
 		if (ex_info) {

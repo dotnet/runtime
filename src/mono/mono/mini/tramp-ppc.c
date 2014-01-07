@@ -22,6 +22,7 @@
 #include "mini.h"
 #include "mini-ppc.h"
 
+#if 0
 /* Same as mono_create_ftnptr, but doesn't require a domain */
 static gpointer
 mono_ppc_create_ftnptr (guint8 *code)
@@ -38,6 +39,7 @@ mono_ppc_create_ftnptr (guint8 *code)
 	return code;
 #endif
 }
+#endif
 
 /*
  * Return the instruction to jump from code to target, 0 if not

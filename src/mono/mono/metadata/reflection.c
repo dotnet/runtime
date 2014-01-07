@@ -9840,12 +9840,16 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 		/* Put into cache so mono_class_get () will find it.
 		Skip nested types as those should not be available on the global scope. */
-		if (!tb->nesting_type) {
+		if (!tb->nesting_type)
 			mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
-		} else {
-			klass->image->reflection_info_unregister_classes =
-				g_slist_prepend (klass->image->reflection_info_unregister_classes, klass);
-		}
+
+		/*
+		We must register all types as we cannot rely on the name_cache hashtable since we find the class
+		by performing a mono_class_get which does the full resolution.
+
+		Working around this semantics would require us to write a lot of code for no clear advantage.
+		*/
+		mono_image_append_class_to_reflection_info_set (klass);
 	} else {
 		g_assert (mono_class_get_ref_info (klass) == tb);
 	}
@@ -10571,9 +10575,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		 * This table maps metadata structures representing inflated methods/fields
 		 * to the reflection objects representing their generic definitions.
 		 */
-		mono_loader_lock ();
+		mono_image_lock ((MonoImage*)image);
 		mono_g_hash_table_insert (image->generic_def_objects, imethod, rmethod);
-		mono_loader_unlock ();
+		mono_image_unlock ((MonoImage*)image);
 	}
 
 	if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
@@ -10617,9 +10621,9 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 	if (method->is_generic && method->klass->image->dynamic) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 
-		mono_loader_lock ();
+		mono_image_lock ((MonoImage*)image);
 		mono_g_hash_table_insert (image->generic_def_objects, imethod, obj);
-		mono_loader_unlock ();
+		mono_image_unlock ((MonoImage*)image);
 	}
 	return (MonoMethod *) imethod;
 }
@@ -11458,9 +11462,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	gparam->type.type = &pklass->byval_arg;
 
 	mono_class_set_ref_info (pklass, gparam);
-	mono_image_lock (image);
-	image->reflection_info_unregister_classes = g_slist_prepend (image->reflection_info_unregister_classes, pklass);
-	mono_image_unlock (image);
+	mono_image_append_class_to_reflection_info_set (pklass);
 }
 
 MonoArray *

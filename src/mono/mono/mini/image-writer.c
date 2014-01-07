@@ -125,7 +125,11 @@
 #define USE_ELF_WRITER 1
 #endif
 
-#if defined(USE_ELF_WRITER)
+#if defined(TARGET_X86) && defined(__APPLE__)
+//#define USE_MACH_WRITER
+#endif
+
+#if defined(USE_ELF_WRITER) || defined(USE_MACH_WRITER)
 #define USE_BIN_WRITER 1
 #endif
 
@@ -480,6 +484,206 @@ bin_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
 	bin_writer_emit_ensure_buffer (acfg->cur_section, num);
 	acfg->cur_section->cur_offset += num;
 }
+
+static void
+bin_writer_fwrite (MonoImageWriter *acfg, void *val, size_t size, size_t nmemb)
+{
+	if (acfg->fp)
+		fwrite (val, size, nmemb, acfg->fp);
+	else {
+		g_assert (acfg->out_buf_pos + (size * nmemb) <= acfg->out_buf_size);
+		memcpy (acfg->out_buf + acfg->out_buf_pos, val, size * nmemb);
+		acfg->out_buf_pos += (size * nmemb);
+	}
+}
+
+static void
+bin_writer_fseek (MonoImageWriter *acfg, int offset)
+{
+	if (acfg->fp)
+		fseek (acfg->fp, offset, SEEK_SET);
+	else
+		acfg->out_buf_pos = offset;
+}
+
+#ifdef USE_MACH_WRITER
+
+/*
+ * This is a minimal implementation designed to support xdebug on 32 bit osx
+ * FIXME: 64 bit support
+ */
+
+#include <mach-o/loader.h>
+
+static gsize
+get_label_addr (MonoImageWriter *acfg, const char *name)
+{
+	int offset;
+	BinLabel *lab;
+	BinSection *section;
+	gsize value;
+
+	lab = g_hash_table_lookup (acfg->labels, name);
+	if (!lab)
+		g_error ("Undefined label: '%s'.\n", name);
+	section = lab->section;
+	offset = lab->offset;
+	if (section->parent) {
+		value = section->parent->virt_offset + section->cur_offset + offset;
+	} else {
+		value = section->virt_offset + offset;
+	}
+	return value;
+}
+
+
+static void
+resolve_reloc (MonoImageWriter *acfg, BinReloc *reloc, guint8 **out_data, gsize *out_vaddr, gsize *out_start_val, gsize *out_end_val)
+{
+	guint8 *data;
+	gssize end_val, start_val;
+	gsize vaddr;
+
+	end_val = get_label_addr (acfg, reloc->val1);
+	if (reloc->val2) {
+		start_val = get_label_addr (acfg, reloc->val2);
+	} else if (reloc->val2_section) {
+		start_val = reloc->val2_offset;
+		if (reloc->val2_section->parent)
+			start_val += reloc->val2_section->parent->virt_offset + reloc->val2_section->cur_offset;
+		else
+			start_val += reloc->val2_section->virt_offset;
+	} else {
+		start_val = 0;
+	}
+	end_val = end_val - start_val + reloc->offset;
+	if (reloc->section->parent) {
+		data = reloc->section->parent->data;
+		data += reloc->section->cur_offset;
+		data += reloc->section_offset;
+		vaddr = reloc->section->parent->virt_offset;
+		vaddr += reloc->section->cur_offset;
+		vaddr += reloc->section_offset;
+	} else {
+		data = reloc->section->data;
+		data += reloc->section_offset;
+		vaddr = reloc->section->virt_offset;
+		vaddr += reloc->section_offset;
+	}
+
+	*out_start_val = start_val;
+	*out_end_val = end_val;
+	*out_data = data;
+	*out_vaddr = vaddr;
+}
+
+static void
+resolve_relocations (MonoImageWriter *acfg)
+{
+	BinReloc *reloc;
+	guint8 *data;
+	gsize end_val, start_val;
+	gsize vaddr;
+
+	/* Only resolve static relocations */
+	for (reloc = acfg->relocations; reloc; reloc = reloc->next) {
+		resolve_reloc (acfg, reloc, &data, &vaddr, &start_val, &end_val);
+		data [0] = end_val;
+		data [1] = end_val >> 8;
+		data [2] = end_val >> 16;
+		data [3] = end_val >> 24;
+	}
+}
+
+static int
+bin_writer_emit_writeout (MonoImageWriter *acfg)
+{
+	BinSection *s;
+	int sindex, file_size, nsections, file_offset, vmaddr;
+	struct mach_header header;
+	struct segment_command segment;
+	struct section *sections;
+
+	/* Assing vm addresses to sections */
+	nsections = 0;
+	vmaddr = 0;
+	for (s = acfg->sections; s; s = s->next) {
+		s->virt_offset = vmaddr;
+		vmaddr += s->cur_offset;
+		nsections ++;
+	}
+
+	resolve_relocations (acfg);
+
+	file_offset = 0;
+
+	memset (&header, 0, sizeof (header));
+	header.magic = MH_MAGIC;
+	header.cputype = CPU_TYPE_X86;
+	header.cpusubtype = CPU_SUBTYPE_X86_ALL;
+	header.filetype = MH_OBJECT;
+	header.ncmds = 0;
+	header.sizeofcmds = 0;
+	header.flags = 0;
+
+	file_offset += sizeof (header);
+
+	memset (&segment, 0, sizeof (segment));
+	segment.cmd = LC_SEGMENT;
+	segment.cmdsize = sizeof (segment);
+	segment.maxprot = VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE;
+	segment.initprot = VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE;
+
+	file_offset += sizeof (segment);
+	file_offset += nsections * sizeof (struct section);
+
+	sections = g_new0 (struct section, nsections);
+	sindex = 0;
+	for (s = acfg->sections; s; s = s->next) {
+		s->file_offset = file_offset;
+
+		/* .debug_line -> __debug_line */
+		sprintf (sections [sindex].sectname, "__%s", s->name + 1);
+		sprintf (sections [sindex].segname, "%s", "__DWARF");
+		sections [sindex].addr = s->virt_offset;
+		sections [sindex].size = s->cur_offset;
+		sections [sindex].offset = s->file_offset;
+
+		file_offset += s->cur_offset;
+
+		segment.nsects ++;
+		segment.cmdsize += sizeof (struct section);
+
+		sindex ++;
+	}
+
+	header.ncmds ++;
+	header.sizeofcmds += segment.cmdsize;
+
+	/* Emit data */
+	file_size = file_offset;
+
+	if (!acfg->fp) {
+		acfg->out_buf_size = file_size;
+		acfg->out_buf = g_malloc (acfg->out_buf_size);
+	}
+
+	bin_writer_fwrite (acfg, &header, sizeof (header), 1);
+	bin_writer_fwrite (acfg, &segment, sizeof (segment), 1);
+	bin_writer_fwrite (acfg, sections, sizeof (struct section), nsections);
+	for (s = acfg->sections; s; s = s->next) {
+		if (!acfg->fp)
+			g_assert (acfg->out_buf_pos == s->file_offset);
+		bin_writer_fwrite (acfg, s->data, s->cur_offset, 1);
+	}
+
+	if (acfg->fp)
+		fclose (acfg->fp);
+
+	return 0;
+}
+
+#endif
 
 #ifdef USE_ELF_WRITER
 
@@ -1041,27 +1245,6 @@ resolve_relocations (MonoImageWriter *acfg)
 }
 
 #endif /* USE_ELF_RELA */
-
-static void
-bin_writer_fwrite (MonoImageWriter *acfg, void *val, size_t size, size_t nmemb)
-{
-	if (acfg->fp)
-		fwrite (val, size, nmemb, acfg->fp);
-	else {
-		g_assert (acfg->out_buf_pos + (size * nmemb) <= acfg->out_buf_size);
-		memcpy (acfg->out_buf + acfg->out_buf_pos, val, size * nmemb);
-		acfg->out_buf_pos += (size * nmemb);
-	}
-}
-
-static void
-bin_writer_fseek (MonoImageWriter *acfg, int offset)
-{
-	if (acfg->fp)
-		fseek (acfg->fp, offset, SEEK_SET);
-	else
-		acfg->out_buf_pos = offset;
-}
 
 static int normal_sections [] = { SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
 

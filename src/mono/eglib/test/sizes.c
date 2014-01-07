@@ -60,22 +60,22 @@ test_ptrconv ()
 		return FAILED ("int to pointer and back conversions fail %d != %d", iv, iv2);
 
 	uv = 0;
-	ptr = GUINT_TO_POINTER (iv);
+	ptr = GUINT_TO_POINTER (uv);
 	uv2 = GPOINTER_TO_UINT (ptr);
-	if (iv != iv2)
-		return FAILED ("uint to pointer and back conversions fail %u != %d", iv, iv2);
+	if (uv != uv2)
+		return FAILED ("uint to pointer and back conversions fail %u != %d", uv, uv2);
 	
 	uv = 1;
-	ptr = GUINT_TO_POINTER (iv);
+	ptr = GUINT_TO_POINTER (uv);
 	uv2 = GPOINTER_TO_UINT (ptr);
-	if (iv != iv2)
-		return FAILED ("uint to pointer and back conversions fail %u != %d", iv, iv2);
+	if (uv != uv2)
+		return FAILED ("uint to pointer and back conversions fail %u != %d", uv, uv2);
 
 	uv = UINT32_MAX;
-	ptr = GUINT_TO_POINTER (iv);
+	ptr = GUINT_TO_POINTER (uv);
 	uv2 = GPOINTER_TO_UINT (ptr);
-	if (iv != iv2)
-		return FAILED ("uint to pointer and back conversions fail %u != %d", iv, iv2);
+	if (uv != uv2)
+		return FAILED ("uint to pointer and back conversions fail %u != %d", uv, uv2);
 
 	return NULL;
 	

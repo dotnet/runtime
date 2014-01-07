@@ -4574,6 +4574,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_ABS:
 		case MONO_PATCH_INFO_CLASS_INIT:
 		case MONO_PATCH_INFO_RGCTX_FETCH:
+		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 			is_fd = TRUE;
 			break;
 #endif
@@ -5395,8 +5396,6 @@ try_offset_access (void *value, guint32 idx)
 static void
 setup_tls_access (void)
 {
-	guint32 ptk;
-
 #if defined(__linux__) && defined(_CS_GNU_LIBPTHREAD_VERSION)
 	size_t conf_size = 0;
 	char confbuf[128];
@@ -5446,6 +5445,7 @@ setup_tls_access (void)
 		ppc_blr (code);
 		if (*ins == cmplwi_1023) {
 			int found_lwz_284 = 0;
+			guint32 ptk;
 			for (ptk = 0; ptk < 20; ++ptk) {
 				++ins;
 				if (!*ins || *ins == blr_ins)
@@ -5511,7 +5511,7 @@ setup_tls_access (void)
 	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
 	   mono_get_lmf_addr_tls_offset returning -1) then use keyed access. */
 	if (lmf_pthread_key == -1) {
-		ptk = mono_jit_tls_id;
+		guint32 ptk = mono_jit_tls_id;
 		if (ptk < 1024) {
 			/*g_print ("MonoLMF at: %d\n", ptk);*/
 			/*if (!try_offset_access (mono_get_lmf_addr (), ptk)) {

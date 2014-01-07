@@ -277,7 +277,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	 */
 	release_gc_locks ();
 
-	mono_thread_hazardous_try_free_some ();
+	sgen_try_free_some_memory = TRUE;
 
 	sgen_bridge_processing_finish (generation);
 

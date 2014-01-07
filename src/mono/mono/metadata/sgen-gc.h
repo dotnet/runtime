@@ -158,10 +158,7 @@ struct _GCMemSection {
 		MONO_GC_LOCKED ();				\
 	} while (0)
 #define TRYLOCK_GC (mono_mutex_trylock (&gc_mutex) == 0)
-#define UNLOCK_GC do {						\
-		mono_mutex_unlock (&gc_mutex);			\
-		MONO_GC_UNLOCKED ();				\
-	} while (0)
+#define UNLOCK_GC do { sgen_gc_unlock (); } while (0)
 
 extern LOCK_DECLARE (sgen_interruption_mutex);
 
@@ -279,19 +276,19 @@ extern int sgen_nursery_bits MONO_INTERNAL;
 extern char *sgen_nursery_start MONO_INTERNAL;
 extern char *sgen_nursery_end MONO_INTERNAL;
 
-static MONO_ALWAYS_INLINE gboolean
+static inline MONO_ALWAYS_INLINE gboolean
 sgen_ptr_in_nursery (void *p)
 {
 	return SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, sgen_nursery_start, sgen_nursery_end);
 }
 
-static MONO_ALWAYS_INLINE char*
+static inline MONO_ALWAYS_INLINE char*
 sgen_get_nursery_start (void)
 {
 	return sgen_nursery_start;
 }
 
-static MONO_ALWAYS_INLINE char*
+static inline MONO_ALWAYS_INLINE char*
 sgen_get_nursery_end (void)
 {
 	return sgen_nursery_end;
@@ -979,6 +976,7 @@ extern int degraded_mode;
 extern int default_nursery_size;
 extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;
+extern gboolean sgen_try_free_some_memory;
 
 extern LOCK_DECLARE (gc_mutex);
 

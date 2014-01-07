@@ -1836,9 +1836,9 @@ if test x$target_win32 = xno; then
 	fi
 
 	havekqueue=no
-        AC_CHECK_FUNCS(kqueue, , AC_MSG_CHECKING(for kqueue in sys/event.h)
-                AC_TRY_LINK([#include <sys/event.h>], 
-                [ kqueue(); ],[havekqueue=yes],[]))
+
+	AC_CHECK_HEADERS(sys/event.h)
+	AC_CHECK_FUNCS(kqueue, [havekqueue=yes], )
 
 	dnl **************************************
 	dnl * Darwin has a race that prevents us from using reliably:
@@ -1847,7 +1847,7 @@ if test x$target_win32 = xno; then
 	dnl * and very few folks run Mono on large web servers on OSX, falling
 	dnl * back 
 	dnl **************************************
-	if test x$havekqueue = xyes; then
+	if test "x$havekqueue" = "xyes" -a "x$ac_cv_header_sys_event_h" = "xyes"; then
 		if x$platform_darwin = xno; then
 			AC_DEFINE(USE_KQUEUE_FOR_THREADPOOL, 1, [Use kqueue for the threadpool])
 		fi
@@ -2006,6 +2006,7 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(futimens utimensat)
 	AC_CHECK_FUNCS(fstatat mknodat readlinkat)
 	AC_CHECK_FUNCS(readv writev preadv pwritev)
+	AC_CHECK_FUNCS(setpgid)
 	AC_CHECK_SIZEOF(size_t)
 	AC_CHECK_TYPES([blksize_t], [AC_DEFINE(HAVE_BLKSIZE_T)], , 
 		[#include <sys/types.h>
@@ -2143,6 +2144,7 @@ else
 	AC_CHECK_FUNCS(GetProcessId)
 	AC_CHECK_DECLS(InterlockedExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedCompareExchange64, [], [], [[#include <windows.h>]])
+	AC_CHECK_DECLS(InterlockedDecrement64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedIncrement64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedAdd, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedAdd64, [], [], [[#include <windows.h>]])
@@ -3076,6 +3078,8 @@ if test ${TARGET} = ARM; then
 		return 0;
 	], [
 		arm_v5=yes
+
+		arm_ver=ARMv5
 	], [])
 
 	AC_TRY_COMPILE([], [
@@ -3086,6 +3090,8 @@ if test ${TARGET} = ARM; then
 	], [
 		arm_v5=yes
 		arm_v6=yes
+
+		arm_ver=ARMv6
 	], [])
 
 	AC_TRY_COMPILE([], [
@@ -3097,7 +3103,11 @@ if test ${TARGET} = ARM; then
 		arm_v5=yes
 		arm_v6=yes
 		arm_v7=yes
+
+		arm_ver=ARMv7
 	], [])
+
+	AC_MSG_RESULT($arm_ver)
 
 	if test x$arm_v5 = xyes; then
 		AC_DEFINE(HAVE_ARMV5, 1, [ARM v5])

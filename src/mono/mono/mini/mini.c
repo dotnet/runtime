@@ -897,6 +897,8 @@ mono_type_to_store_membase (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_STORE_MEMBASE_REG;
 
+	type = mini_replace_type (type);
+
 handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -959,7 +961,7 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_LOAD_MEMBASE;
 
-	type = mono_type_get_underlying_type (type);
+	type = mini_replace_type (type);
 
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -1037,6 +1039,8 @@ mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
+	type = mini_replace_type (type);
+
 	if (cfg->generic_sharing_context && !type->byref) {
 		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
 			if (mini_type_var_is_vt (cfg, type))
@@ -1216,6 +1220,8 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	int num = cfg->num_varinfo;
 	gboolean regpair;
 
+	type = mini_replace_type (type);
+
 	if ((num + 1) >= cfg->varinfo_count) {
 		int orig_count = cfg->varinfo_count;
 		cfg->varinfo_count = cfg->varinfo_count ? (cfg->varinfo_count * 2) : 64;
@@ -1242,7 +1248,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		if (type->byref) {
 			mono_mark_vreg_as_mp (cfg, vreg);
 		} else {
-			MonoType *t = mini_type_get_underlying_type (NULL, type);
+			MonoType *t = mini_replace_type (type);
 			if ((MONO_TYPE_ISSTRUCT (t) && inst->klass->has_references) || mini_type_is_reference (cfg, t)) {
 				inst->flags |= MONO_INST_GC_TRACK;
 				mono_mark_vreg_as_ref (cfg, vreg);
@@ -1324,6 +1330,7 @@ MonoInst*
 mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
+	type = mini_replace_type (type);
 
 	if (mono_type_is_long (type))
 		dreg = mono_alloc_dreg (cfg, STACK_I8);
@@ -2945,6 +2952,18 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 	return ins;
 }
 
+gboolean
+mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
+{
+	if (!MONO_ARCH_HAVE_TLS_GET)
+		return FALSE;
+
+	if (cfg->compile_aot)
+		return ARCH_HAVE_TLS_GET_REG;
+	else
+		return mini_get_tls_offset (key) != -1;
+}
+
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
@@ -3004,7 +3023,7 @@ mono_get_lmf_addr_intrinsic (MonoCompile* cfg)
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
 {
-	MonoJumpInfo *ji = mono_mempool_alloc (cfg->mempool, sizeof (MonoJumpInfo));
+	MonoJumpInfo *ji = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfo));
 
 	ji->ip.i = ip;
 	ji->type = type;
@@ -3017,7 +3036,7 @@ mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpoin
 void
 mono_add_patch_info_rel (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target, int relocation)
 {
-	MonoJumpInfo *ji = mono_mempool_alloc (cfg->mempool, sizeof (MonoJumpInfo));
+	MonoJumpInfo *ji = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfo));
 
 	ji->ip.i = ip;
 	ji->type = type;
@@ -3153,6 +3172,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_TLS_OFFSET:
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 		return (ji->type << 8) | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return (ji->type << 8) | (gssize)ji->data.gsharedvt->method;
@@ -3317,6 +3337,21 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		}
 #endif
 		break;
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
+		gpointer code_slot;
+
+		mono_domain_lock (domain);
+		if (!domain_jit_info (domain)->method_code_hash)
+			domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
+		code_slot = g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, patch_info->data.method);
+		if (!code_slot) {
+			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
+			g_hash_table_insert (domain_jit_info (domain)->method_code_hash, patch_info->data.method, code_slot);
+		}
+		mono_domain_unlock (domain);
+		target = code_slot;
+		break;
+	}
 	case MONO_PATCH_INFO_SWITCH: {
 		gpointer *jump_table;
 		int i;
@@ -4561,20 +4596,43 @@ static MonoType*
 get_gsharedvt_type (MonoType *t)
 {
 	MonoGenericParam *par = t->data.generic_param;
+	MonoGenericParam *copy;
 	MonoType *res;
+	MonoImage *image = NULL;
 
 	/* 
 	 * Create an anonymous gparam with a different serial so normal gshared and gsharedvt methods have
 	 * a different instantiation.
 	 */
 	g_assert (mono_generic_param_info (par));
-	par = g_memdup (par, sizeof (MonoGenericParamFull));
-	par->owner = NULL;
+	if (par->owner) {
+		image = par->owner->image;
+
+		mono_image_lock (image);
+		if (!image->gsharedvt_types)
+			image->gsharedvt_types = g_hash_table_new (NULL, NULL);
+		res = g_hash_table_lookup (image->gsharedvt_types, par);
+		mono_image_unlock (image);
+		if (res)
+			return res;
+		copy = mono_image_alloc0 (image, sizeof (MonoGenericParamFull));
+		memcpy (copy, par, sizeof (MonoGenericParamFull));
+	} else {
+		copy = g_memdup (par, sizeof (MonoGenericParamFull));
+	}
+	copy->owner = NULL;
 	// FIXME:
-	par->image = mono_defaults.corlib;
-	par->serial = 1;
+	copy->image = mono_defaults.corlib;
+	copy->serial = 1;
 	res = mono_metadata_type_dup (NULL, t);
-	res->data.generic_param = par;
+	res->data.generic_param = copy;
+
+	if (par->owner) {
+		mono_image_lock (image);
+		/* Duplicates are ok */
+		g_hash_table_insert (image->gsharedvt_types, par, res);
+		mono_image_unlock (image);
+	}
 
 	return res;
 }
@@ -7208,10 +7266,10 @@ mini_init (const char *filename, const char *runtime_version)
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();
 
+	mono_icall_init ();
+
 	/* This must come after mono_init () in the aot-only case */
 	mono_exceptions_init ();
-
-	mono_icall_init ();
 
 	/* This should come after mono_init () too */
 	mini_gc_init ();
@@ -7391,6 +7449,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 #if SIZEOF_REGISTER == 4
 	register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "uint32 double", mono_fconv_u4, "mono_fconv_u4", TRUE);
+#else
+	register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "ulong double", mono_fconv_u8, "mono_fconv_u8", TRUE);
 #endif
 
 	/* other jit icalls */
@@ -7427,7 +7487,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_array_new_4, "mono_array_new_4", "object ptr int int int int", FALSE);
 	register_icall (mono_get_native_calli_wrapper, "mono_get_native_calli_wrapper", "ptr ptr ptr ptr", FALSE);
 	register_icall (mono_resume_unwind, "mono_resume_unwind", "void", TRUE);
-	register_icall (mono_gsharedvt_constrained_call, "mono_gsharedvt_constrained_call", "object ptr ptr ptr ptr ptr", TRUE);
+	register_icall (mono_gsharedvt_constrained_call, "mono_gsharedvt_constrained_call", "object ptr ptr ptr ptr ptr", FALSE);
 	register_icall (mono_gsharedvt_value_copy, "mono_gsharedvt_value_copy", "void ptr ptr ptr", TRUE);
 
 	register_icall (mono_gc_wbarrier_value_copy_bitmap, "mono_gc_wbarrier_value_copy_bitmap", "void ptr ptr int int", FALSE);
@@ -7889,3 +7949,14 @@ mono_jumptable_get_entry (guint8 *code_ptr)
 	return mono_arch_jumptable_entry_from_code (code_ptr);
 }
 #endif
+
+/*
+ * mini_replace_type:
+ *
+ * Replace the type used in the metadata stream with what the JIT will actually use during compilation.
+*/
+MonoType*
+mini_replace_type (MonoType *type)
+{
+	return mono_type_get_underlying_type (type);
+}

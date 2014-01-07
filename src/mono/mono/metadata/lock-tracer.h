@@ -15,6 +15,9 @@ typedef enum {
 	DomainLock,
 	DomainAssembliesLock,
 	DomainJitCodeHashLock,
+	IcallLock,
+	AssemblyBindingLock,
+	MarshalLock
 } RuntimeLocks;
 
 #ifdef LOCK_TRACER
@@ -43,6 +46,15 @@ void mono_locks_lock_released (RuntimeLocks kind, gpointer lock) MONO_INTERNAL;
 	LeaveCriticalSection (LOCK); \
 } while (0)
 
+#define mono_locks_mutex_acquire(LOCK, NAME) do { \
+	mono_mutex_lock (LOCK); \
+	mono_locks_lock_acquired (NAME, LOCK); \
+} while (0)
+
+#define mono_locks_mutex_release(LOCK, NAME) do { \
+	mono_locks_lock_released (NAME, LOCK); \
+	mono_mutex_unlock (LOCK); \
+} while (0)
 G_END_DECLS
 
 #endif /* __MONO_METADATA_LOCK_TRACER_H__ */

@@ -24,9 +24,16 @@ else
 runtime_lib=../interpreter/libmint.la
 endif
 
-if DISABLE_LIBRARIES
+if DISABLE_EXECUTABLES
+bin_PROGRAMS =
 else
+if DISABLE_LIBRARIES
+bin_PROGRAMS =
+else
+if SUPPORT_BOEHM
 bin_PROGRAMS = monograph
+endif
+endif
 endif
 
 AM_CPPFLAGS = 				\

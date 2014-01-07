@@ -137,6 +137,7 @@ sgen_gc_descr_has_references (mword desc)
 
 #define SGEN_VTABLE_HAS_REFERENCES(vt)	(sgen_gc_descr_has_references ((mword)((MonoVTable*)(vt))->gc_descr))
 #define SGEN_CLASS_HAS_REFERENCES(c)	(sgen_gc_descr_has_references ((mword)(c)->gc_descr))
+#define SGEN_OBJECT_HAS_REFERENCES(o)	(SGEN_VTABLE_HAS_REFERENCES (SGEN_LOAD_VTABLE ((o))))
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \

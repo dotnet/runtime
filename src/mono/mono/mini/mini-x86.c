@@ -36,7 +36,6 @@
 #include "mini-gc.h"
 
 /* On windows, these hold the key returned by TlsAlloc () */
-static gint lmf_tls_offset = -1;
 #ifdef TARGET_WIN32
 static gint jit_tls_offset = -1;
 #else
@@ -47,12 +46,6 @@ static gint lmf_addr_tls_offset = -1;
 static gboolean optimize_for_xen = TRUE;
 #else
 #define optimize_for_xen 0
-#endif
-
-#ifdef TARGET_WIN32
-static gboolean is_win32 = TRUE;
-#else
-static gboolean is_win32 = FALSE;
 #endif
 
 /* This mutex protects architecture specific caches */
@@ -333,7 +326,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 
 		/* Special case structs with only a float member */
 		if (info->num_fields == 1) {
-			int ftype = info->fields [0].field->type->type;
+			int ftype = mini_replace_type (info->fields [0].field->type)->type;
 			if ((info->native_size == 8) && (ftype == MONO_TYPE_R8)) {
 				ainfo->storage = ArgValuetypeInReg;
 				ainfo->pair_storage [0] = ArgOnDoubleFpStack;
@@ -721,7 +714,7 @@ mono_arch_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignat
 	 * the extra stack space would be left on the stack after the tail call.
 	 */
 	res = c1->stack_usage >= c2->stack_usage;
-	callee_ret = callee_sig->ret;
+	callee_ret = mini_replace_type (callee_sig->ret);
 	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != ArgValuetypeInReg)
 		/* An address on the callee's stack is passed as the first argument */
 		res = FALSE;
@@ -1066,6 +1059,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cfg->frame_reg = X86_EBP;
 	offset = 0;
 
+	if (cfg->has_atomic_add_new_i4 || cfg->has_atomic_exchange_i4) {
+		/* The opcode implementations use callee-saved regs as scratch regs by pushing and pop-ing them, but that is not async safe */
+		cfg->used_int_regs |= (1 << X86_EBX) | (1 << X86_EDI) | (1 << X86_ESI);
+	}
+
 	/* Reserve space to save LMF and caller saved registers */
 
 	if (cfg->method->save_lmf) {
@@ -1204,7 +1202,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
-	sig_ret = sig->ret;
+	sig_ret = mini_replace_type (sig->ret);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
@@ -1241,7 +1239,7 @@ collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_set
 	MonoType *t;
 
 	for (; start_arg < sig->param_count; ++start_arg) {
-		t = mini_type_get_underlying_type (NULL, sig->params [start_arg]);
+		t = mini_replace_type (sig->params [start_arg]);
 		if (!t->byref && t->type == MONO_TYPE_R8) {
 			fp_space += sizeof (double);
 			*fp_arg_setup = start_arg;
@@ -1418,7 +1416,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
-	sig_ret = sig->ret;
+	sig_ret = mini_replace_type (sig->ret);
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
@@ -2410,6 +2408,12 @@ emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
 	return code;
 }
 
+guint8*
+mono_x86_emit_tls_get_reg (guint8* code, int dreg, int offset_reg)
+{
+	return emit_tls_get_reg (code, dreg, offset_reg);
+}
+
 static guint8*
 emit_tls_set_reg (guint8* code, int sreg, int offset_reg)
 {
@@ -2489,53 +2493,40 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 static guint8*
 emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
-	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
-		/*
-		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-		 * through the mono_lmf_addr TLS variable.
-		 */
-		/* %eax = previous_lmf */
-		code = mono_x86_emit_tls_get (code, X86_EAX, lmf_tls_offset);
-		/* set previous_lmf */
-		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_EAX, sizeof (mgreg_t));
-		x86_lea_membase (code, X86_EAX, cfg->frame_reg, lmf_offset);
-		/* set new LMF */
-		code = mono_x86_emit_tls_set (code, X86_EAX, lmf_tls_offset);
-	} else {
-		/* get the address of lmf for the current thread */
-		/* 
-		 * This is performance critical so we try to use some tricks to make
-		 * it fast.
-		 */
-		gboolean have_fastpath = FALSE;
+	/* get the address of lmf for the current thread */
+	/* 
+	 * This is performance critical so we try to use some tricks to make
+	 * it fast.
+	 */
+	gboolean have_fastpath = FALSE;
 
 #ifdef TARGET_WIN32
-		if (jit_tls_offset != -1) {
-			code = mono_x86_emit_tls_get (code, X86_EAX, jit_tls_offset);				
-			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-			have_fastpath = TRUE;
-		}
-#else
-		if (!cfg->compile_aot && lmf_addr_tls_offset != -1) {
-			code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
-			have_fastpath = TRUE;
-		}
-#endif
-		if (!have_fastpath) {
-			if (cfg->compile_aot)
-				code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
-		}
-
-		/* save lmf_addr */
-		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), X86_EAX, sizeof (mgreg_t));
-		/* save previous_lmf */
-		x86_mov_reg_membase (code, X86_ECX, X86_EAX, 0, sizeof (mgreg_t));
-		x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_ECX, sizeof (mgreg_t));
-		/* set new LMF */
-		x86_lea_membase (code, X86_ECX, cfg->frame_reg, lmf_offset);
-		x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
+	if (jit_tls_offset != -1) {
+		code = mono_x86_emit_tls_get (code, X86_EAX, jit_tls_offset);				
+		x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+		have_fastpath = TRUE;
 	}
+#else
+	if (!cfg->compile_aot && lmf_addr_tls_offset != -1) {
+		code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
+		have_fastpath = TRUE;
+	}
+#endif
+	if (!have_fastpath) {
+		if (cfg->compile_aot)
+			code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
+		code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
+	}
+
+	/* save lmf_addr */
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), X86_EAX, sizeof (mgreg_t));
+	/* save previous_lmf */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX, 0, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_ECX, sizeof (mgreg_t));
+	/* set new LMF */
+	x86_lea_membase (code, X86_ECX, cfg->frame_reg, lmf_offset);
+	x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
+
 	return code;
 }
 
@@ -2551,38 +2542,27 @@ emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 	int prev_lmf_reg;
 
-	if (!cfg->compile_aot && (lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
-		/*
-		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-		 * through the mono_lmf_addr TLS variable.
-		 */
-		/* reg = previous_lmf */
-		x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
-
-		/* lmf = previous_lmf */
-		code = mono_x86_emit_tls_set (code, X86_ECX, lmf_tls_offset);
-	} else {
-		/* Find a spare register */
-		switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			prev_lmf_reg = X86_EDI;
-			cfg->used_int_regs |= (1 << X86_EDI);
-			break;
-		default:
-			prev_lmf_reg = X86_EDX;
-			break;
-		}
-
-		/* reg = previous_lmf */
-		x86_mov_reg_membase (code, prev_lmf_reg, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
-
-		/* ecx = lmf */
-		x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
-
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
+	/* Find a spare register */
+	switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		prev_lmf_reg = X86_EDI;
+		cfg->used_int_regs |= (1 << X86_EDI);
+		break;
+	default:
+		prev_lmf_reg = X86_EDX;
+		break;
 	}
+
+	/* reg = previous_lmf */
+	x86_mov_reg_membase (code, prev_lmf_reg, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
+
+	/* ecx = lmf */
+	x86_mov_reg_membase (code, X86_ECX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 4);
+
+	/* *(lmf) = previous_lmf */
+	x86_mov_membase_reg (code, X86_ECX, 0, prev_lmf_reg, 4);
+
 	return code;
 }
 
@@ -4387,6 +4367,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_NEW_I4: {
 			int dreg = ins->dreg;
 
+			g_assert (cfg->has_atomic_add_new_i4);
+
 			/* hack: limit in regalloc, dreg != sreg1 && dreg != sreg2 */
 			if (ins->sreg2 == dreg) {
 				if (dreg == X86_EBX) {
@@ -4431,6 +4413,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guchar *br[2];
 			int sreg2 = ins->sreg2;
 			int breg = ins->inst_basereg;
+
+			g_assert (cfg->has_atomic_exchange_i4);
 
 			/* cmpxchg uses eax as comperand, need to make sure we can use it
 			 * hack to overcome limits in x86 reg allocator 
@@ -4479,7 +4463,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CARD_TABLE_WBARRIER: {
 			int ptr = ins->sreg1;
 			int value = ins->sreg2;
-			guchar *br;
+			guchar *br = NULL;
 			int nursery_shift, card_table_shift;
 			gpointer card_table_mask;
 			size_t nursery_size;
@@ -5826,7 +5810,6 @@ mono_arch_finish_init (void)
 #if MONO_XEN_OPT
 		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
-		lmf_tls_offset = mono_get_lmf_tls_offset ();
 		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 #endif
 	}		

@@ -337,6 +337,9 @@ struct _MonoImage {
 	/* Maps malloc-ed char* pinvoke scope -> malloced-ed char* filename */
 	GHashTable *pinvoke_scope_filenames;
 
+	/* Indexed by MonoGenericParam pointers */
+	GHashTable *gsharedvt_types;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.
@@ -572,6 +575,9 @@ mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MO
 void
 mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
 
+void
+mono_image_append_class_to_reflection_info_set (MonoClass *class) MONO_INTERNAL;
+
 gpointer
 mono_image_set_alloc  (MonoImageSet *set, guint size) MONO_INTERNAL;
 
@@ -586,7 +592,7 @@ mono_image_set_strdup (MonoImageSet *set, const char *s) MONO_INTERNAL;
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
 
-GSList*
+void
 mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
 
 void

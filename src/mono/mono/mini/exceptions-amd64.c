@@ -46,13 +46,13 @@ static MonoW32ExceptionHandler ill_handler;
 static MonoW32ExceptionHandler segv_handler;
 
 LPTOP_LEVEL_EXCEPTION_FILTER mono_old_win_toplevel_exception_filter;
-guint64 mono_win_vectored_exception_handle;
+void *mono_win_vectored_exception_handle;
 extern gboolean mono_win_chained_exception_needs_run;
 
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler(0, ep, sctx)
 
-LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
+static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 {
 #ifndef MONO_CROSS_COMPILE
 	if (mono_old_win_toplevel_exception_filter) {
@@ -69,7 +69,7 @@ LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
  * Unhandled Exception Filter
  * Top-level per-process exception handler.
  */
-LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
+static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 {
 	EXCEPTION_RECORD* er;
 	CONTEXT* ctx;
@@ -160,9 +160,9 @@ void win32_seh_init()
 
 void win32_seh_cleanup()
 {
-	if (mono_old_win_toplevel_exception_filter) SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
-
 	guint32 ret = 0;
+
+	if (mono_old_win_toplevel_exception_filter) SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
 
 	ret = RemoveVectoredExceptionHandler (mono_win_vectored_exception_handle);
 	g_assert (ret);
@@ -1344,7 +1344,7 @@ mono_arch_unwindinfo_get_size (gpointer monoui)
 		(sizeof (UNWIND_CODE) * (MONO_MAX_UNWIND_CODES - unwindinfo->unwindInfo.CountOfCodes));
 }
 
-PRUNTIME_FUNCTION
+static PRUNTIME_FUNCTION
 MONO_GET_RUNTIME_FUNCTION_CALLBACK ( DWORD64 ControlPc, IN PVOID Context )
 {
 	MonoJitInfo *ji;
