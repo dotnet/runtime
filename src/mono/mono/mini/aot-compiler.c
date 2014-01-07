@@ -8420,7 +8420,7 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
 #elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
-#define AS_OPTIONS "-arch i386 -W"
+#define AS_OPTIONS "-arch i386"
 #else
 #define AS_OPTIONS ""
 #endif
