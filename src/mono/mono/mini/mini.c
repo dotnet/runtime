@@ -4823,15 +4823,14 @@ mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
  * @method: the method to compile
  * @opts: the optimization flags to use
  * @domain: the domain where the method will be compiled in
- * @run_cctors: whether we should run type ctors if possible
- * @compile_aot: whether this is an AOT compilation
+ * @flags: compilation flags
  * @parts: debug flag
  *
  * Returns: a MonoCompile* pointer. Caller must check the exception_type
  * field in the returned struct to see if compilation succeded.
  */
 MonoCompile*
-mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
+mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts)
 {
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
@@ -4843,6 +4842,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
+	gboolean run_cctors = (flags & JIT_FLAG_RUN_CCTORS) ? 1 : 0;
+	gboolean compile_aot = (flags & JIT_FLAG_AOT) ? 1 : 0;
 
 	InterlockedIncrement (&mono_jit_stats.methods_compiled);
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
@@ -5689,7 +5690,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #else
 
 MonoCompile*
-mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
+mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -5934,7 +5935,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	jit_timer = g_timer_new ();
 
-	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
+	cfg = mini_method_compile (method, opt, target_domain, JIT_FLAG_RUN_CCTORS, 0);
 	prof_method = cfg->method;
 
 	g_timer_stop (jit_timer);

@@ -1274,6 +1274,16 @@ enum {
 	MONO_OPT_LAST
 };
 
+/* Flags for mini_method_compile () */
+typedef enum {
+	/* Whenever to run cctors during JITting */
+	JIT_FLAG_RUN_CCTORS = (1 << 0),
+	/* Whenever this is an AOT compilation */
+	JIT_FLAG_AOT = (1 << 1),
+	/* Whenever this is a full AOT compilation */
+	JIT_FLAG_FULL_AOT = (1 << 2)
+} JitFlags;
+
 /* Bit-fields in the MonoBasicBlock.region */
 #define MONO_REGION_TRY       0
 #define MONO_REGION_FINALLY  16
@@ -2007,7 +2017,7 @@ void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GLis
 void      mono_global_regalloc              (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks) MONO_INTERNAL;
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, const char *aot_options) MONO_INTERNAL;
-MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts) MONO_INTERNAL;
+MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts) MONO_INTERNAL;
 void      mono_destroy_compile              (MonoCompile *cfg) MONO_INTERNAL;
 MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode) MONO_INTERNAL;
 void	  mono_print_ins_index (int i, MonoInst *ins) MONO_INTERNAL;
