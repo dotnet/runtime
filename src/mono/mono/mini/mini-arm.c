@@ -5570,7 +5570,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
 					ARM_LDR_IMM (code, inst->dreg, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				} else {
-					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, prev_sp_offset + ainfo->offset);
 					ARM_LDR_REG_REG (code, inst->dreg, ARMREG_SP, ARMREG_IP);
 				}
 			} else
