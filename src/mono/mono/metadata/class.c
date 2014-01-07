@@ -69,6 +69,7 @@ static guint32 mono_field_resolve_flags (MonoClassField *field);
 static void mono_class_setup_vtable_full (MonoClass *class, GList *in_setup);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gklass);
 
+static gboolean mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate);
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
 
@@ -7826,13 +7827,6 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
-	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
-	if (!klass->inited)
-		mono_class_init (klass);
-
-	if (!oklass->inited)
-		mono_class_init (oklass);
-
 	if (klass->exception_type || oklass->exception_type)
 		return FALSE;
 
@@ -7865,9 +7859,14 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			 * interface_offsets set.
 			 */
  			return mono_reflection_call_is_assignable_to (oklass, klass);
-		if (!oklass->interface_bitmap)
-			/* Happens with generic instances of not-yet created dynamic types */
-			return FALSE;
+
+		/* When either the interface offset or the iid was not setup.
+		   FIXME we should just lazy init that part of those 2 types, right now this doesn't
+			work because setup_interface_offsets aborts when doing this for corlib.
+		*/
+		if (!oklass->interface_bitmap || !klass->interface_id)
+			return mono_class_implement_interface_slow (klass, oklass);
+
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, klass->interface_id))
 			return TRUE;
 
