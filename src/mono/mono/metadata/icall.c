@@ -1559,9 +1559,6 @@ ves_icall_type_is_assignable_from (MonoReflectionType *type, MonoReflectionType 
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (klassc);
-
 	if (type->type->byref ^ c->type->byref)
 		return FALSE;
 
