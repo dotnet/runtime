@@ -202,6 +202,7 @@ sgen_stop_world (int generation)
 
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
 	MONO_GC_WORLD_STOP_BEGIN ();
+	binary_protocol_world_stopping (sgen_timestamp ());
 	acquire_gc_locks ();
 
 	/* We start to scan after locks are taking, this ensures we won't be interrupted. */
@@ -260,6 +261,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	SGEN_LOG (2, "restarted %d thread(s) (pause time: %d usec, max: %d)", count, (int)usec, (int)max_pause_usec);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 	MONO_GC_WORLD_RESTART_END (generation);
+	binary_protocol_world_restarted (generation, sgen_timestamp ());
 
 	/*
 	 * We must release the thread info suspend lock after doing

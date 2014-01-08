@@ -367,6 +367,8 @@ mono_gc_flush_info (void)
 #define TV_ELAPSED SGEN_TV_ELAPSED
 #define TV_ELAPSED_MS SGEN_TV_ELAPSED_MS
 
+SGEN_TV_DECLARE (sgen_init_timestamp);
+
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
@@ -3333,6 +3335,7 @@ major_start_concurrent_collection (const char *reason)
 	g_assert (num_objects_marked == 0);
 
 	MONO_GC_CONCURRENT_START_BEGIN (GENERATION_OLD);
+	binary_protocol_concurrent_start ();
 
 	// FIXME: store reason and pass it when finishing
 	major_start_collection (TRUE, NULL);
@@ -3353,6 +3356,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	memset (&unpin_queue, 0, sizeof (unpin_queue));
 
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
+	binary_protocol_concurrent_update_finish ();
 
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
@@ -4851,6 +4855,8 @@ mono_gc_base_init (void)
 		}
 	} while (result != 0);
 
+	SGEN_TV_GETTIME (sgen_init_timestamp);
+
 	LOCK_INIT (gc_mutex);
 
 	pagesize = mono_pagesize ();
@@ -5665,6 +5671,14 @@ sgen_gc_event_moves (void)
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
 		moved_objects_idx = 0;
 	}
+}
+
+gint64
+sgen_timestamp (void)
+{
+	SGEN_TV_DECLARE (timestamp);
+	SGEN_TV_GETTIME (timestamp);
+	return SGEN_TV_ELAPSED (sgen_init_timestamp, timestamp);
 }
 
 #endif /* HAVE_SGEN_GC */

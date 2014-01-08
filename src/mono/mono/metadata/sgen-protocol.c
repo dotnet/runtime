@@ -231,6 +231,32 @@ binary_protocol_collection_end (int index, int generation)
 }
 
 void
+binary_protocol_concurrent_start (void)
+{
+	protocol_entry (SGEN_PROTOCOL_CONCURRENT_START, NULL, 0);
+}
+
+void
+binary_protocol_concurrent_update_finish (void)
+{
+	protocol_entry (SGEN_PROTOCOL_CONCURRENT_UPDATE_FINISH, NULL, 0);
+}
+
+void
+binary_protocol_world_stopping (long long timestamp)
+{
+	SGenProtocolWorldStop entry = { timestamp };
+	protocol_entry (SGEN_PROTOCOL_WORLD_STOPPING, &entry, sizeof (SGenProtocolWorldStop));
+}
+
+void
+binary_protocol_world_restarted (int generation, long long timestamp)
+{
+	SGenProtocolWorldRestart entry = { generation, timestamp };
+	protocol_entry (SGEN_PROTOCOL_WORLD_RESTARTED, &entry, sizeof (SGenProtocolWorldRestart));
+}
+
+void
 binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip)
 {
 	SGenProtocolThreadSuspend entry = { thread, stopped_ip };

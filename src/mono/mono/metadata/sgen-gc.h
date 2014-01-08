@@ -1057,6 +1057,7 @@ void sgen_env_var_error (const char *env_var, const char *fallback, const char *
 /* Utilities */
 
 void sgen_qsort (void *base, size_t nel, size_t width, int (*compar) (const void*, const void*)) MONO_INTERNAL;
+gint64 sgen_timestamp (void) MONO_INTERNAL;
 
 #endif /* HAVE_SGEN_GC */
 

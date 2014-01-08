@@ -26,6 +26,10 @@ enum {
 	SGEN_PROTOCOL_COLLECTION_FORCE,
 	SGEN_PROTOCOL_COLLECTION_BEGIN,
 	SGEN_PROTOCOL_COLLECTION_END,
+	SGEN_PROTOCOL_CONCURRENT_START,
+	SGEN_PROTOCOL_CONCURRENT_UPDATE_FINISH,
+	SGEN_PROTOCOL_WORLD_STOPPING,
+	SGEN_PROTOCOL_WORLD_RESTARTED,
 	SGEN_PROTOCOL_ALLOC,
 	SGEN_PROTOCOL_COPY,
 	SGEN_PROTOCOL_PIN,
@@ -61,6 +65,15 @@ typedef struct {
 typedef struct {
 	int index, generation;
 } SGenProtocolCollection;
+
+typedef struct {
+	long long timestamp;
+} SGenProtocolWorldStop;
+
+typedef struct {
+	int generation;
+	long long timestamp;
+} SGenProtocolWorldRestart;
 
 typedef struct {
 	gpointer obj;
@@ -199,6 +212,10 @@ void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 void binary_protocol_collection_force (int generation) MONO_INTERNAL;
 void binary_protocol_collection_begin (int index, int generation) MONO_INTERNAL;
 void binary_protocol_collection_end (int index, int generation) MONO_INTERNAL;
+void binary_protocol_concurrent_start (void) MONO_INTERNAL;
+void binary_protocol_concurrent_update_finish (void) MONO_INTERNAL;
+void binary_protocol_world_stopping (long long timestamp) MONO_INTERNAL;
+void binary_protocol_world_restarted (int generation, long long timestamp) MONO_INTERNAL;
 
 void binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip) MONO_INTERNAL;
 void binary_protocol_thread_restart (gpointer thread) MONO_INTERNAL;
