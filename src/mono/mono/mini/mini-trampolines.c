@@ -1116,13 +1116,8 @@ mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tram
 		exc = mono_thread_resume_interruption ();
 
 	if (exc) {
-		static void (*restore_context) (MonoContext *);
-
-		if (!restore_context)
-			restore_context = mono_get_restore_context ();
-
 		mono_handle_exception (&ctx, exc);
-		restore_context (&ctx);
+		mono_restore_context (&ctx);
 	}
 
 	return resume_ip;
