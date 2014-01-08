@@ -2508,17 +2508,24 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 	}
 
 	for (i = 0; i < cinfo->nargs; ++i) {
-		switch (cinfo->args [i].storage) {
+		ArgInfo *ainfo = &cinfo->args [i];
+		int last_slot;
+
+		switch (ainfo->storage) {
 		case RegTypeGeneral:
 			break;
 		case RegTypeIRegPair:
 			break;
 		case RegTypeBase:
-			if (cinfo->args [i].offset >= (DYN_CALL_STACK_ARGS * sizeof (gpointer)))
+			if (ainfo->offset >= (DYN_CALL_STACK_ARGS * sizeof (gpointer)))
 				return FALSE;
 			break;
 		case RegTypeStructByVal:
-			if (cinfo->args [i].reg + cinfo->args [i].vtsize >= PARAM_REGS + DYN_CALL_STACK_ARGS)
+			if (ainfo->size == 0)
+				last_slot = PARAM_REGS + (ainfo->offset / 4) + ainfo->vtsize;
+			else
+				last_slot = ainfo->reg + ainfo->size + ainfo->vtsize;
+			if (last_slot >= PARAM_REGS + DYN_CALL_STACK_ARGS)
 				return FALSE;
 			break;
 		default:
