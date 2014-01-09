@@ -224,7 +224,7 @@ struct _MonoImage {
 	/*
 	 * Indexed by fielddef and memberref tokens
 	 */
-	GHashTable *field_cache;
+	GHashTable *field_cache; /*protected by the image lock*/
 
 	/* indexed by typespec tokens. */
 	GHashTable *typespec_cache;

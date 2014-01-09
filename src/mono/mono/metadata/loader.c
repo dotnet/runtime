@@ -532,13 +532,13 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 		return result;
 	}
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 	if ((field = g_hash_table_lookup (image->field_cache, GUINT_TO_POINTER (token)))) {
 		*retklass = field->parent;
-		mono_loader_unlock ();
+		mono_image_unlock (image);
 		return field;
 	}
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
 		field = field_from_memberref (image, token, retklass, context);
@@ -555,10 +555,10 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 		field = mono_class_get_field (k, token);
 	}
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 	if (field && field->parent && !field->parent->generic_class && !field->parent->generic_container)
 		g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 	return field;
 }
 
