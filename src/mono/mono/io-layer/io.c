@@ -1362,6 +1362,43 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 	return(TRUE);
 }
 
+
+static gboolean
+share_allows_delete (struct stat *statbuf, struct _WapiFileShare **share_info)
+{
+	gboolean file_already_shared;
+	guint32 file_existing_share, file_existing_access;
+
+	file_already_shared = _wapi_handle_get_or_set_share (statbuf->st_dev, statbuf->st_ino, FILE_SHARE_DELETE, GENERIC_READ, &file_existing_share, &file_existing_access, share_info);
+
+	if (file_already_shared) {
+		/* The reference to this share info was incremented
+		 * when we looked it up, so be careful to put it back
+		 * if we conclude we can't use this file.
+		 */
+		if (file_existing_share == 0) {
+			/* Quick and easy, no possibility to share */
+			DEBUG ("%s: Share mode prevents open: requested access: 0x%x, file has sharing = NONE", __func__, fileaccess);
+
+			_wapi_handle_share_release (*share_info);
+
+			return(FALSE);
+		}
+
+		if (!(file_existing_share & FILE_SHARE_DELETE)) {
+			/* New access mode doesn't match up */
+			DEBUG ("%s: Share mode prevents open: requested access: 0x%x, file has sharing: 0x%x", __func__, fileaccess, file_existing_share);
+
+			_wapi_handle_share_release (*share_info);
+
+			return(FALSE);
+		}
+	} else {
+		DEBUG ("%s: New file!", __func__);
+	}
+
+	return(TRUE);
+}
 static gboolean share_check (struct stat *statbuf, guint32 sharemode,
 			     guint32 fileaccess,
 			     struct _WapiFileShare **share_info, int fd)
@@ -1744,15 +1781,14 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		}
 	}
 
-	/* Check to make sure sharing allows us to open the file for
-	 * writing.  See bug 377049.
+	/* Check to make that we have delete sharing permission.
+	 * See https://bugzilla.xamarin.com/show_bug.cgi?id=17009
 	 *
 	 * Do the checks that don't need an open file descriptor, for
 	 * simplicity's sake.  If we really have to do the full checks
 	 * then we can implement that later.
 	 */
-	if (share_allows_open (&stat_src, 0, GENERIC_WRITE,
-			       &shareinfo) == FALSE) {
+	if (share_allows_delete (&stat_src, &shareinfo) == FALSE) {
 		SetLastError (ERROR_SHARING_VIOLATION);
 		return FALSE;
 	}
