@@ -523,7 +523,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 {
 	struct _WapiHandle_file *file_handle;
 	gboolean ok;
-	off_t offset, newpos;
+	gint64 offset, newpos;
 	int whence, fd;
 	guint32 ret;
 	
@@ -578,15 +578,15 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 	offset=movedistance;
 #endif
 
-#ifdef HAVE_LARGE_FILE_SUPPORT
 	DEBUG ("%s: moving handle %p by %lld bytes from %d", __func__,
-		  handle, offset, whence);
-#else
-	DEBUG ("%s: moving handle %p fd %d by %ld bytes from %d", __func__,
-		  handle, offset, whence);
-#endif
+		   handle, (long long)offset, whence);
 
+#ifdef PLATFORM_ANDROID
+	/* bionic doesn't support -D_FILE_OFFSET_BITS=64 */
+	newpos=lseek64(fd, offset, whence);
+#else
 	newpos=lseek(fd, offset, whence);
+#endif
 	if(newpos==-1) {
 		DEBUG("%s: lseek on handle %p returned error %s",
 			  __func__, handle, strerror(errno));
@@ -595,11 +595,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 		return(INVALID_SET_FILE_POINTER);
 	}
 
-#ifdef HAVE_LARGE_FILE_SUPPORT
 	DEBUG ("%s: lseek returns %lld", __func__, newpos);
-#else
-	DEBUG ("%s: lseek returns %ld", __func__, newpos);
-#endif
 
 #ifdef HAVE_LARGE_FILE_SUPPORT
 	ret=newpos & 0xFFFFFFFF;
