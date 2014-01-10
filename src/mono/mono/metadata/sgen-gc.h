@@ -615,6 +615,16 @@ void sgen_split_nursery_init (SgenMinorCollector *collector) MONO_INTERNAL;
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 
+typedef enum {
+	ITERATE_OBJECTS_SWEEP = 1,
+	ITERATE_OBJECTS_NON_PINNED = 2,
+	ITERATE_OBJECTS_PINNED = 4,
+	ITERATE_OBJECTS_ALL = ITERATE_OBJECTS_NON_PINNED | ITERATE_OBJECTS_PINNED,
+	ITERATE_OBJECTS_SWEEP_NON_PINNED = ITERATE_OBJECTS_SWEEP | ITERATE_OBJECTS_NON_PINNED,
+	ITERATE_OBJECTS_SWEEP_PINNED = ITERATE_OBJECTS_SWEEP | ITERATE_OBJECTS_PINNED,
+	ITERATE_OBJECTS_SWEEP_ALL = ITERATE_OBJECTS_SWEEP | ITERATE_OBJECTS_NON_PINNED | ITERATE_OBJECTS_PINNED
+} IterateObjectsFlags;
+
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
@@ -646,7 +656,7 @@ struct _SgenMajorCollector {
 	void* (*alloc_object) (MonoVTable *vtable, int size, gboolean has_references);
 	void* (*par_alloc_object) (MonoVTable *vtable, int size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
-	void (*iterate_objects) (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data);
+	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
@@ -1026,6 +1036,10 @@ void sgen_check_whole_heap_stw (void) MONO_INTERNAL;
 void sgen_check_objref (char *obj);
 void sgen_check_major_heap_marked (void) MONO_INTERNAL;
 void sgen_check_nursery_objects_pinned (gboolean pinned) MONO_INTERNAL;
+void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type) MONO_INTERNAL;
+void sgen_check_for_xdomain_refs (void) MONO_INTERNAL;
+
+void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise) MONO_INTERNAL;
 
 /* Write barrier support */
 

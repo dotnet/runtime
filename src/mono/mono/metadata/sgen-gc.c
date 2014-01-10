@@ -207,7 +207,6 @@
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
 #include "metadata/monitor.h"
-#include "metadata/threadpool-internals.h"
 #include "metadata/mempool-internals.h"
 #include "metadata/marshal.h"
 #include "metadata/runtime.h"
@@ -611,141 +610,6 @@ gray_queue_redirect (SgenGrayQueue *queue)
 	}
 }
 
-static gboolean
-is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
-{
-	MonoObject *o = (MonoObject*)(obj);
-	MonoObject *ref = (MonoObject*)*(ptr);
-	int offset = (char*)(ptr) - (char*)o;
-
-	if (o->vtable->klass == mono_defaults.thread_class && offset == G_STRUCT_OFFSET (MonoThread, internal_thread))
-		return TRUE;
-	if (o->vtable->klass == mono_defaults.internal_thread_class && offset == G_STRUCT_OFFSET (MonoInternalThread, current_appcontext))
-		return TRUE;
-
-#ifndef DISABLE_REMOTING
-	if (mono_defaults.real_proxy_class->supertypes && mono_class_has_parent_fast (o->vtable->klass, mono_defaults.real_proxy_class) &&
-			offset == G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server))
-		return TRUE;
-#endif
-	/* Thread.cached_culture_info */
-	if (!strcmp (ref->vtable->klass->name_space, "System.Globalization") &&
-			!strcmp (ref->vtable->klass->name, "CultureInfo") &&
-			!strcmp(o->vtable->klass->name_space, "System") &&
-			!strcmp(o->vtable->klass->name, "Object[]"))
-		return TRUE;
-	/*
-	 *  at System.IO.MemoryStream.InternalConstructor (byte[],int,int,bool,bool) [0x0004d] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.IO/MemoryStream.cs:121
-	 * at System.IO.MemoryStream..ctor (byte[]) [0x00017] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.IO/MemoryStream.cs:81
-	 * at (wrapper remoting-invoke-with-check) System.IO.MemoryStream..ctor (byte[]) <IL 0x00020, 0xffffffff>
-	 * at System.Runtime.Remoting.Messaging.CADMethodCallMessage.GetArguments () [0x0000d] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.Runtime.Remoting.Messaging/CADMessages.cs:327
-	 * at System.Runtime.Remoting.Messaging.MethodCall..ctor (System.Runtime.Remoting.Messaging.CADMethodCallMessage) [0x00017] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.Runtime.Remoting.Messaging/MethodCall.cs:87
-	 * at System.AppDomain.ProcessMessageInDomain (byte[],System.Runtime.Remoting.Messaging.CADMethodCallMessage,byte[]&,System.Runtime.Remoting.Messaging.CADMethodReturnMessage&) [0x00018] in /home/schani/Work/novell/trunk/mcs/class/corlib/System/AppDomain.cs:1213
-	 * at (wrapper remoting-invoke-with-check) System.AppDomain.ProcessMessageInDomain (byte[],System.Runtime.Remoting.Messaging.CADMethodCallMessage,byte[]&,System.Runtime.Remoting.Messaging.CADMethodReturnMessage&) <IL 0x0003d, 0xffffffff>
-	 * at System.Runtime.Remoting.Channels.CrossAppDomainSink.ProcessMessageInDomain (byte[],System.Runtime.Remoting.Messaging.CADMethodCallMessage) [0x00008] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.Runtime.Remoting.Channels/CrossAppDomainChannel.cs:198
-	 * at (wrapper runtime-invoke) object.runtime_invoke_CrossAppDomainSink/ProcessMessageRes_object_object (object,intptr,intptr,intptr) <IL 0x0004c, 0xffffffff>
-	 */
-	if (!strcmp (ref->vtable->klass->name_space, "System") &&
-			!strcmp (ref->vtable->klass->name, "Byte[]") &&
-			!strcmp (o->vtable->klass->name_space, "System.IO") &&
-			!strcmp (o->vtable->klass->name, "MemoryStream"))
-		return TRUE;
-	/* append_job() in threadpool.c */
-	if (!strcmp (ref->vtable->klass->name_space, "System.Runtime.Remoting.Messaging") &&
-			!strcmp (ref->vtable->klass->name, "AsyncResult") &&
-			!strcmp (o->vtable->klass->name_space, "System") &&
-			!strcmp (o->vtable->klass->name, "Object[]") &&
-			mono_thread_pool_is_queue_array ((MonoArray*) o))
-		return TRUE;
-	return FALSE;
-}
-
-static void
-check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
-{
-	MonoObject *o = (MonoObject*)(obj);
-	MonoObject *ref = (MonoObject*)*(ptr);
-	int offset = (char*)(ptr) - (char*)o;
-	MonoClass *class;
-	MonoClassField *field;
-	char *str;
-
-	if (!ref || ref->vtable->domain == domain)
-		return;
-	if (is_xdomain_ref_allowed (ptr, obj, domain))
-		return;
-
-	field = NULL;
-	for (class = o->vtable->klass; class; class = class->parent) {
-		int i;
-
-		for (i = 0; i < class->field.count; ++i) {
-			if (class->fields[i].offset == offset) {
-				field = &class->fields[i];
-				break;
-			}
-		}
-		if (field)
-			break;
-	}
-
-	if (ref->vtable->klass == mono_defaults.string_class)
-		str = mono_string_to_utf8 ((MonoString*)ref);
-	else
-		str = NULL;
-	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
-			o, o->vtable->klass->name_space, o->vtable->klass->name,
-			offset, field ? field->name : "",
-			ref, ref->vtable->klass->name_space, ref->vtable->klass->name, str ? str : "");
-	mono_gc_scan_for_specific_ref (o, TRUE);
-	if (str)
-		g_free (str);
-}
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	check_reference_for_xdomain ((ptr), (obj), domain)
-
-static void
-scan_object_for_xdomain_refs (char *start, mword size, void *data)
-{
-	MonoDomain *domain = ((MonoObject*)start)->vtable->domain;
-
-	#include "sgen-scan-object.h"
-}
-
-static gboolean scan_object_for_specific_ref_precise = TRUE;
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj) do {		\
-	if ((MonoObject*)*(ptr) == key) {	\
-	g_print ("found ref to %p in object %p (%s) at offset %td\n",	\
-			key, (obj), safe_name ((obj)), ((char*)(ptr) - (char*)(obj))); \
-	}								\
-	} while (0)
-
-static void
-scan_object_for_specific_ref (char *start, MonoObject *key)
-{
-	char *forwarded;
-
-	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (start)))
-		start = forwarded;
-
-	if (scan_object_for_specific_ref_precise) {
-		#include "sgen-scan-object.h"
-	} else {
-		mword *words = (mword*)start;
-		size_t size = safe_object_get_size ((MonoObject*)start);
-		int i;
-		for (i = 0; i < size / sizeof (mword); ++i) {
-			if (words [i] == (mword)key) {
-				g_print ("found possible ref to %p in object %p (%s) at offset %td\n",
-						key, start, safe_name (start), i * sizeof (mword));
-			}
-		}
-	}
-}
-
 void
 sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
@@ -772,111 +636,6 @@ sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc 
 
 		start += size;
 	}
-}
-
-static void
-scan_object_for_specific_ref_callback (char *obj, size_t size, MonoObject *key)
-{
-	scan_object_for_specific_ref (obj, key);
-}
-
-static void
-check_root_obj_specific_ref (RootRecord *root, MonoObject *key, MonoObject *obj)
-{
-	if (key != obj)
-		return;
-	g_print ("found ref to %p in root record %p\n", key, root);
-}
-
-static MonoObject *check_key = NULL;
-static RootRecord *check_root = NULL;
-
-static void
-check_root_obj_specific_ref_from_marker (void **obj)
-{
-	check_root_obj_specific_ref (check_root, check_key, *obj);
-}
-
-static void
-scan_roots_for_specific_ref (MonoObject *key, int root_type)
-{
-	void **start_root;
-	RootRecord *root;
-	check_key = key;
-
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		mword desc = root->root_desc;
-
-		check_root = root;
-
-		switch (desc & ROOT_DESC_TYPE_MASK) {
-		case ROOT_DESC_BITMAP:
-			desc >>= ROOT_DESC_TYPE_SHIFT;
-			while (desc) {
-				if (desc & 1)
-					check_root_obj_specific_ref (root, key, *start_root);
-				desc >>= 1;
-				start_root++;
-			}
-			return;
-		case ROOT_DESC_COMPLEX: {
-			gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
-			int bwords = (*bitmap_data) - 1;
-			void **start_run = start_root;
-			bitmap_data++;
-			while (bwords-- > 0) {
-				gsize bmap = *bitmap_data++;
-				void **objptr = start_run;
-				while (bmap) {
-					if (bmap & 1)
-						check_root_obj_specific_ref (root, key, *objptr);
-					bmap >>= 1;
-					++objptr;
-				}
-				start_run += GC_BITS_PER_WORD;
-			}
-			break;
-		}
-		case ROOT_DESC_USER: {
-			MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-			marker (start_root, check_root_obj_specific_ref_from_marker);
-			break;
-		}
-		case ROOT_DESC_RUN_LEN:
-			g_assert_not_reached ();
-		default:
-			g_assert_not_reached ();
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;
-
-	check_key = NULL;
-	check_root = NULL;
-}
-
-void
-mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise)
-{
-	void **ptr;
-	RootRecord *root;
-
-	scan_object_for_specific_ref_precise = precise;
-
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE);
-
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
-
-	sgen_los_iterate_objects ((IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
-
-	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
-	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
-
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], ptr, root) {
-		while (ptr < (void**)root->end_root) {
-			check_root_obj_specific_ref (root, *ptr, key);
-			++ptr;
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 static gboolean
@@ -910,85 +669,6 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 		}
 	}
 #endif
-}
-
-static MonoDomain *check_domain = NULL;
-
-static void
-check_obj_not_in_domain (void **o)
-{
-	g_assert (((MonoObject*)(*o))->vtable->domain != check_domain);
-}
-
-static void
-scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
-{
-	void **start_root;
-	RootRecord *root;
-	check_domain = domain;
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		mword desc = root->root_desc;
-
-		/* The MonoDomain struct is allowed to hold
-		   references to objects in its own domain. */
-		if (start_root == (void**)domain)
-			continue;
-
-		switch (desc & ROOT_DESC_TYPE_MASK) {
-		case ROOT_DESC_BITMAP:
-			desc >>= ROOT_DESC_TYPE_SHIFT;
-			while (desc) {
-				if ((desc & 1) && *start_root)
-					check_obj_not_in_domain (*start_root);
-				desc >>= 1;
-				start_root++;
-			}
-			break;
-		case ROOT_DESC_COMPLEX: {
-			gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
-			int bwords = (*bitmap_data) - 1;
-			void **start_run = start_root;
-			bitmap_data++;
-			while (bwords-- > 0) {
-				gsize bmap = *bitmap_data++;
-				void **objptr = start_run;
-				while (bmap) {
-					if ((bmap & 1) && *objptr)
-						check_obj_not_in_domain (*objptr);
-					bmap >>= 1;
-					++objptr;
-				}
-				start_run += GC_BITS_PER_WORD;
-			}
-			break;
-		}
-		case ROOT_DESC_USER: {
-			MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-			marker (start_root, check_obj_not_in_domain);
-			break;
-		}
-		case ROOT_DESC_RUN_LEN:
-			g_assert_not_reached ();
-		default:
-			g_assert_not_reached ();
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;
-
-	check_domain = NULL;
-}
-
-static void
-check_for_xdomain_refs (void)
-{
-	LOSObject *bigobj;
-
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE);
-
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
-
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		scan_object_for_xdomain_refs (bigobj->data, sgen_los_object_size (bigobj), NULL);
 }
 
 static gboolean
@@ -1066,9 +746,9 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_clear_nursery_fragments ();
 
 	if (xdomain_checks && domain != mono_get_root_domain ()) {
-		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
-		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);
-		check_for_xdomain_refs ();
+		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
+		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);
+		sgen_check_for_xdomain_refs ();
 	}
 
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
@@ -1091,7 +771,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	   objects with major-mark&sweep), but we might need to
 	   dereference a pointer from an object to another object if
 	   the first object is a proxy. */
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		clear_domain_process_object (bigobj->data, domain);
 
@@ -1111,8 +791,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 		prev = bigobj;
 		bigobj = bigobj->next;
 	}
-	major_collector.iterate_objects (TRUE, FALSE, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
-	major_collector.iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_NON_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
 	if (domain == mono_get_root_domain ()) {
 		if (G_UNLIKELY (do_pin_stats))
@@ -2568,7 +2248,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	if (xdomain_checks) {
 		sgen_clear_nursery_fragments ();
-		check_for_xdomain_refs ();
+		sgen_check_for_xdomain_refs ();
 	}
 
 	nursery_section->next_data = nursery_next;
@@ -2849,7 +2529,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 
 	if (xdomain_checks) {
 		sgen_clear_nursery_fragments ();
-		check_for_xdomain_refs ();
+		sgen_check_for_xdomain_refs ();
 	}
 
 	if (!concurrent_collection_in_progress) {
@@ -4350,7 +4030,7 @@ find_object_for_ptr (char *ptr)
 	 * be called from gdb, so we don't care.
 	 */
 	found_obj = NULL;
-	major_collector.iterate_objects (TRUE, TRUE, find_object_for_ptr_callback, ptr);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, find_object_for_ptr_callback, ptr);
 	return found_obj;
 }
 
@@ -4599,7 +4279,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 	sgen_clear_nursery_fragments ();
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
 
-	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, walk_references, &hwi);
 	sgen_los_iterate_objects (walk_references, &hwi);
 
 	return 0;
