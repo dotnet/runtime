@@ -1608,6 +1608,7 @@ mono_make_shadow_copy (const char *filename)
 	gchar *sibling_source, *sibling_target;
 	gint sibling_source_len, sibling_target_len;
 	guint16 *orig, *dest;
+	guint32 attrs;
 	char *shadow;
 	gboolean copy_result;
 	MonoException *exc;
@@ -1660,6 +1661,16 @@ mono_make_shadow_copy (const char *filename)
 	orig = g_utf8_to_utf16 (filename, strlen (filename), NULL, NULL, NULL);
 	dest = g_utf8_to_utf16 (shadow, strlen (shadow), NULL, NULL, NULL);
 	DeleteFile (dest);
+
+	/* Fix for bug #17066 - make sure we can read the file. if not then don't error but rather 
+	 * let the assembly fail to load. This ensures you can do Type.GetType("NS.T, NonExistantAssembly)
+	 * and not have it runtime error" */
+	attrs = GetFileAttributes (orig);
+	if (attrs == INVALID_FILE_ATTRIBUTES) {
+		g_free (shadow);
+		return (char *)filename;
+	}
+
 	copy_result = CopyFile (orig, dest, FALSE);
 
 	/* Fix for bug #556884 - make sure the files have the correct mode so that they can be
