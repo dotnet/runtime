@@ -2000,6 +2000,7 @@ ret_type_to_call_opcode (MonoType *type, int calli, int virt, MonoGenericSharing
 
 handle_enum:
 	type = mini_get_basic_type_from_generic (gsctx, type);
+	type = mini_replace_type (type);
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		return calli? OP_VOIDCALL_REG: virt? OP_VOIDCALL_MEMBASE: OP_VOIDCALL;
