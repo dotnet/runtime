@@ -26,6 +26,8 @@ typedef HANDLE MonoNativeThreadHandle; /* unused */
 
 typedef DWORD mono_native_thread_return_t;
 
+#define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (tid)
+
 #else
 
 #include <pthread.h>
@@ -46,6 +48,8 @@ typedef pid_t MonoNativeThreadHandle;
 typedef pthread_t MonoNativeThreadId;
 
 typedef void* mono_native_thread_return_t;
+
+#define MONO_NATIVE_THREAD_ID_TO_UINT(tid) GPOINTER_TO_UINT((tid))
 
 #endif /* #ifdef HOST_WIN32 */
 
@@ -250,6 +254,9 @@ mono_thread_info_set_is_async_context (gboolean async_context) MONO_INTERNAL;
 
 gboolean
 mono_thread_info_is_async_context (void) MONO_INTERNAL;
+
+HANDLE
+mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
 #if !defined(HOST_WIN32)
 

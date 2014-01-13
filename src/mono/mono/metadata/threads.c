@@ -673,7 +673,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 			   gboolean throw_on_failure)
 {
 	HANDLE thread_handle;
-	gsize tid;
+	MonoNativeThreadId tid;
 	guint32 create_flags;
 
 	mono_threads_lock ();
@@ -721,8 +721,8 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	if (no_detach)
 		create_flags |= CREATE_NO_DETACH;
 #endif
-	thread_handle = mono_create_thread (NULL, stack_size, (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
-				     create_flags, &tid);
+	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)start_wrapper, start_info,
+												stack_size, create_flags, &tid);
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
 		mono_threads_lock ();
@@ -738,7 +738,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 
 	internal->handle = thread_handle;
-	internal->tid = tid;
+	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 
 	internal->threadpool_thread = threadpool_thread;
 	if (threadpool_thread)
@@ -789,31 +789,6 @@ void mono_threads_set_default_stacksize (guint32 stacksize)
 guint32 mono_threads_get_default_stacksize (void)
 {
 	return default_stacksize;
-}
-
-/*
- * mono_create_thread:
- *
- *   This is a wrapper around CreateThread which handles differences in the type of
- * the the 'tid' argument.
- */
-gpointer mono_create_thread (WapiSecurityAttributes *security,
-							 guint32 stacksize, WapiThreadStart start,
-							 gpointer param, guint32 create, gsize *tid)
-{
-	gpointer res;
-
-#ifdef HOST_WIN32
-	DWORD real_tid;
-
-	res = mono_threads_CreateThread (security, stacksize, start, param, create, &real_tid);
-	if (tid)
-		*tid = real_tid;
-#else
-	res = CreateThread (security, stacksize, start, param, create, tid);
-#endif
-
-	return res;
 }
 
 /*

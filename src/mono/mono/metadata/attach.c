@@ -31,13 +31,13 @@
 #include <netdb.h>
 #include <unistd.h>
 
-
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/utils/mono-threads.h>
 #include "attach.h"
 
 /*
@@ -473,14 +473,12 @@ transport_send (int fd, guint8 *data, int len)
 static void
 transport_start_receive (void)
 {
-	gsize tid;
-
 	transport_connect ();
 
 	if (!listen_fd)
 		return;
 
-	receiver_thread_handle = mono_create_thread (NULL, 0, receiver_thread, NULL, 0, &tid);
+	receiver_thread_handle = mono_threads_create_thread (receiver_thread, NULL, 0, 0, NULL);
 	g_assert (receiver_thread_handle);
 }
 

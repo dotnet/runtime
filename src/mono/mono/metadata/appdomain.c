@@ -62,6 +62,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-threads.h>
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -2383,7 +2384,6 @@ void
 mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 {
 	HANDLE thread_handle;
-	gsize tid;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	unload_data *thread_data;
@@ -2442,9 +2442,9 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 * http://bugzilla.ximian.com/show_bug.cgi?id=27663
 	 */ 
 #if 0
-	thread_handle = mono_create_thread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
+	thread_handle = mono_threads_create_thread (unload_thread_main, thread_data, 0, 0, NULL);
 #else
-	thread_handle = mono_create_thread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, CREATE_SUSPENDED, &tid);
+	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, 0, CREATE_SUSPENDED, NULL);
 	if (thread_handle == NULL) {
 		return;
 	}

@@ -690,3 +690,31 @@ mono_thread_info_is_async_context (void)
 		return FALSE;
 }
 
+/*
+ * mono_threads_create_thread:
+ *
+ *   Create a new thread executing START with argument ARG. Store its id into OUT_TID.
+ * Returns: a windows or io-layer handle for the thread.
+ */
+HANDLE
+mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid)
+{
+	HANDLE res;
+
+#ifdef HOST_WIN32
+	DWORD real_tid;
+
+	res = mono_threads_CreateThread (NULL, stack_size, start, arg, creation_flags, &real_tid);
+	if (out_tid)
+		*out_tid = real_tid;
+#else
+	gsize real_tid;
+
+	res = CreateThread (NULL, stack_size, start, arg, creation_flags, &real_tid);
+	if (out_tid)
+		*out_tid = (gpointer)real_tid;
+#endif
+
+	return res;
+}
+
