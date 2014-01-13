@@ -240,6 +240,29 @@ static void io_ops_init (void)
 /* Some utility functions.
  */
 
+
+static gboolean
+is_file_writable (struct stat *st, const char *path)
+{
+	/* Is it globally writable? */
+	if (st->st_mode & S_IWOTH)
+		return 1;
+
+	/* Am I the owner? */
+	if ((st->st_uid == geteuid ()) && (st->st_mode & S_IWUSR))
+		return 1;
+
+	/* Am I in the same group? */
+	if ((st->st_gid == getegid ()) && (st->st_mode & S_IWGRP))
+		return 1;
+
+	/* Fallback to using access(2). It's not ideal as it doesn't effective user/group
+	 * but it's the only sane option we have on unix.
+	 */
+	return access (path, W_OK) == 0;
+}
+
+
 static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
 					      struct stat *buf,
 					      struct stat *lbuf)
@@ -259,14 +282,14 @@ static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
 
 	if (S_ISDIR (buf->st_mode)) {
 		attrs = FILE_ATTRIBUTE_DIRECTORY;
-		if (!(buf->st_mode & S_IWUSR)) {
+		if (!is_file_writable (buf, pathname)) {
 			attrs |= FILE_ATTRIBUTE_READONLY;
 		}
 		if (filename[0] == '.') {
 			attrs |= FILE_ATTRIBUTE_HIDDEN;
 		}
 	} else {
-		if (!(buf->st_mode & S_IWUSR)) {
+		if (!is_file_writable (buf, pathname)) {
 			attrs = FILE_ATTRIBUTE_READONLY;
 
 			if (filename[0] == '.') {
