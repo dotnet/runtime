@@ -357,5 +357,5 @@ noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs
 
 TESTS = test-sgen-qsort test-gc-memfuncs
 
-endif !HOST_WIN32
 endif SUPPORT_BOEHM
+endif !HOST_WIN32
