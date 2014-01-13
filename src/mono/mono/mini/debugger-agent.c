@@ -6018,6 +6018,16 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		mgreg_t v;
 		gboolean is_signed = FALSE;
 
+		if (t->byref) {
+			addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
+
+			if (addr) {
+				// FIXME: Write barriers
+				mono_gc_memmove (addr, val, size);
+			}
+			break;
+		}
+
 		if (!t->byref && (t->type == MONO_TYPE_I1 || t->type == MONO_TYPE_I2 || t->type == MONO_TYPE_I4 || t->type == MONO_TYPE_I8))
 			is_signed = TRUE;
 
@@ -6037,9 +6047,6 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		default:
 			g_assert_not_reached ();
 		}
-
-		if (t->byref)
-			NOT_IMPLEMENTED;
 
 		/* Set value on the stack or in the return ctx */
 		if (reg_locations [reg]) {
