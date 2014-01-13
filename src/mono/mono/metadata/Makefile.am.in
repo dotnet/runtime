@@ -335,6 +335,7 @@ Makefile.am: Makefile.am.in
 endif
 
 if !HOST_WIN32
+if SUPPORT_BOEHM
 
 test_sgen_qsort_SOURCES = test-sgen-qsort.c
 test_sgen_qsort_CFLAGS = $(SGEN_DEFINES)
@@ -357,3 +358,4 @@ noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs
 TESTS = test-sgen-qsort test-gc-memfuncs
 
 endif !HOST_WIN32
+endif SUPPORT_BOEHM
