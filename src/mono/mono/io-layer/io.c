@@ -240,7 +240,21 @@ static void io_ops_init (void)
 /* Some utility functions.
  */
 
-
+/*
+ * Check if a file is writable by the current user.
+ *
+ * This is is a best effort kind of thing. It assumes a reasonable sane set
+ * of permissions by the underlying OS.
+ *
+ * We assume that basic unix permission bits are authoritative. Which might not
+ * be the case under systems with extended permissions systems (posix ACLs, SELinux, OSX/iOS sandboxing, etc)
+ *
+ * The choice of access as the fallback is due to the expected lower overhead compared to trying to open the file.
+ *
+ * The only expected problem with using access are for root, setuid or setgid programs as access is not consistent
+ * under those situations. It's to be expected that this should not happen in practice as those bits are very dangerous
+ * and should not be used with a dynamic runtime.
+ */
 static gboolean
 is_file_writable (struct stat *st, const char *path)
 {
@@ -256,7 +270,7 @@ is_file_writable (struct stat *st, const char *path)
 	if ((st->st_gid == getegid ()) && (st->st_mode & S_IWGRP))
 		return 1;
 
-	/* Fallback to using access(2). It's not ideal as it doesn't effective user/group
+	/* Fallback to using access(2). It's not ideal as it might not take into consideration euid/egid
 	 * but it's the only sane option we have on unix.
 	 */
 	return access (path, W_OK) == 0;
