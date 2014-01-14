@@ -49,7 +49,7 @@ typedef pthread_t MonoNativeThreadId;
 
 typedef void* mono_native_thread_return_t;
 
-#define MONO_NATIVE_THREAD_ID_TO_UINT(tid) GPOINTER_TO_UINT((tid))
+#define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (gsize)(tid)
 
 #endif /* #ifdef HOST_WIN32 */
 
