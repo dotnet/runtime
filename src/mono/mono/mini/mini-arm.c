@@ -5629,11 +5629,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->storage == RegTypeBaseGen) {
-				g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
-				g_assert (arm_is_imm12 (inst->inst_offset));
-				ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
-				ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
-				ARM_STR_IMM (code, ARMREG_R3, inst->inst_basereg, inst->inst_offset);
+				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, prev_sp_offset + ainfo->offset);
+					ARM_LDR_REG_REG (code, ARMREG_LR, ARMREG_SP, ARMREG_IP);
+				}
+				if (arm_is_imm12 (inst->inst_offset + 4)) {
+					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
+					ARM_STR_IMM (code, ARMREG_R3, inst->inst_basereg, inst->inst_offset);
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset + 4);
+					ARM_STR_REG_REG (code, ARMREG_LR, inst->inst_basereg, ARMREG_IP);
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+					ARM_STR_REG_REG (code, ARMREG_R3, inst->inst_basereg, ARMREG_IP);
+				}
 			} else if (ainfo->storage == RegTypeBase || ainfo->storage == RegTypeGSharedVtOnStack) {
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
