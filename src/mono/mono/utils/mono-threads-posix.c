@@ -77,8 +77,10 @@ inner_start_thread (void *arg)
 	/* Run the actual main function of the thread */
 	result = start_func (t_arg);
 
+	/*
 	g_assert (!mono_domain_get ());
 	mono_thread_info_dettach ();
+	*/
 
 #if defined(__native_client__)
 	nacl_shutdown_gc_thread();
