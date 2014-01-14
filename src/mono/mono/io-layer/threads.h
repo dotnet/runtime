@@ -40,14 +40,6 @@ G_BEGIN_DECLS
 typedef guint32 (*WapiThreadStart)(gpointer);
 typedef guint32 (*WapiApcProc)(gpointer);
 
-/* 
- * The 'tid' argument has a different type than in win32, which breaks on win64.
- * Runtime code shouldn't use this, use the mono_thread_create () function in
- * metadata instead.
- */
-extern gpointer CreateThread(WapiSecurityAttributes *security,
-			     guint32 stacksize, WapiThreadStart start,
-			     gpointer param, guint32 create, gsize *tid); /* NB tid is 32bit in MS API */
 extern gpointer OpenThread (guint32 access, gboolean inherit, gsize tid); /* NB tid is 32bit in MS API */
 extern void ExitThread(guint32 exitcode) G_GNUC_NORETURN;
 extern gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode);
@@ -76,6 +68,10 @@ void wapi_finish_interrupt_thread (gpointer wait_handle);
 
 
 char* wapi_current_thread_desc (void);
+
+gpointer wapi_create_thread_handle (void);
+void wapi_thread_suspend (gpointer handle);
+void wapi_thread_set_exit_code (guint32 exitstatus, gpointer handle);
 
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */

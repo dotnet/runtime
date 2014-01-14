@@ -214,6 +214,12 @@ static void thread_exit (guint32 exitstatus, gpointer handle)
 	mono_gc_pthread_exit (NULL);
 }
 
+void
+wapi_thread_set_exit_code (guint32 exitstatus, gpointer handle)
+{
+	_wapi_thread_set_termination_details (handle, exitstatus);
+}
+
 static void thread_attached_exit (gpointer handle)
 {
 	/* Drop the extra reference we take in thread_attach, now this
@@ -248,214 +254,64 @@ static void _wapi_thread_resume (struct _WapiHandle_thread *thread)
 	MONO_SEM_POST (&thread->suspend_sem);
 }
 
-static void *thread_start_routine (gpointer args) G_GNUC_NORETURN;
-static void *thread_start_routine (gpointer args)
+void
+wapi_thread_suspend (gpointer handle)
 {
-	struct _WapiHandle_thread *thread = (struct _WapiHandle_thread *)args;
-	int thr_ret;
+	struct _WapiHandle_thread *thread;
+	int res;
 
-	if (!(thread->create_flags & CREATE_NO_DETACH)) {
-		thr_ret = mono_gc_pthread_detach (pthread_self ());
-		g_assert (thr_ret == 0);
-	}
+	res = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+							   (gpointer *)&thread);
+	g_assert (res);
 
-	thr_ret = pthread_setspecific (thread_hash_key,
-				       (void *)thread->handle);
-	if (thr_ret != 0) {
-		/* This is only supposed to happen when Mono is
-		   shutting down.  We cannot assert on it, though,
-		   because we must not depend on metadata, which is
-		   where the shutdown code is.
-
-		   This is a race condition which arises because
-		   pthreads don't allow creation of suspended threads.
-		   Once Mono is set to shut down no new thread is
-		   allowed to start, even though threads may still be
-		   created.  We emulate suspended threads in this
-		   function by calling _wapi_thread_suspend() below.
-
-		   So it can happen that even though Mono is already
-		   shutting down we still end up here, and at this
-		   point the thread_hash_key might already be
-		   destroyed. */
-		mono_gc_pthread_exit (NULL);
-	}
-
-	DEBUG ("%s: started thread id %ld", __func__, thread->id);
-
-	/* We set it again here since passing &thread->id to pthread_create is racy
-	   as the thread can start running before the value is set.*/
-	thread->id = pthread_self ();
-
-	if (thread->create_flags & CREATE_SUSPENDED) {
-		_wapi_thread_suspend (thread);
-	}
-	
-	thread_exit (thread->start_routine (thread->start_arg),
-		     thread->handle);
-
-#ifndef __GNUC__
-	/* Even though we tell gcc that this function doesn't return,
-	 * other compilers won't see that.
-	 */
-	return(NULL);
-#endif
+	_wapi_thread_suspend (thread);
 }
 
-/**
- * CreateThread:
- * @security: Ignored for now.
- * @stacksize: the size in bytes of the new thread's stack. Use 0 to
- * default to the normal stack size. (Ignored for now).
- * @start: The function that the new thread should start with
- * @param: The parameter to give to @start.
- * @create: If 0, the new thread is ready to run immediately.  If
- * %CREATE_SUSPENDED, the new thread will be in the suspended state,
- * requiring a ResumeThread() call to continue running.
- * @tid: If non-NULL, the ID of the new thread is stored here.  NB
- * this is defined as a DWORD (ie 32bit) in the MS API, but we need to
- * cope with 64 bit IDs for s390x and amd64.
+/*
+ * wapi_create_thread_handle:
  *
- * Creates a new threading handle.
- *
- * Return value: a new handle, or NULL
+ *   Create a thread handle for the current thread.
  */
-gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize,
-		      WapiThreadStart start, gpointer param, guint32 create,
-		      gsize *tid) 
+gpointer
+wapi_create_thread_handle (void)
 {
-	struct _WapiHandle_thread thread_handle = {0}, *thread_handle_p;
-	pthread_attr_t attr;
+	struct _WapiHandle_thread thread_handle = {0}, *thread;
 	gpointer handle;
-	gboolean ok;
-	int ret;
-	int thr_ret;
-	int i, unrefs = 0;
-	gpointer ct_ret = NULL;
-	
+	int res;
+
 	mono_once (&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
-	
-	if (start == NULL) {
-		return(NULL);
-	}
 
 	thread_handle.state = THREAD_STATE_START;
 	thread_handle.owned_mutexes = g_ptr_array_new ();
-	thread_handle.create_flags = create;
-	thread_handle.start_routine = start;
-	thread_handle.start_arg = param;
-	
+
 	handle = _wapi_handle_new (WAPI_HANDLE_THREAD, &thread_handle);
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating thread handle", __func__);
 		SetLastError (ERROR_GEN_FAILURE);
 		
-		return (NULL);
+		return NULL;
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
-	thr_ret = _wapi_handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle_p);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		SetLastError (ERROR_GEN_FAILURE);
-		
-		goto cleanup;
-	}
+	res = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+							   (gpointer *)&thread);
+	g_assert (res);
 
-	/* Hold a reference while the thread is active, because we use
+	res = pthread_setspecific (thread_hash_key, handle);
+	if (res)
+		mono_gc_pthread_exit (NULL);
+
+	thread->id = pthread_self ();
+
+	/*
+	 * Hold a reference while the thread is active, because we use
 	 * the handle to store thread exit information
 	 */
 	_wapi_handle_ref (handle);
-	
-	/* Set a 2M stack size.  This is the default on Linux, but BSD
-	 * needs it.  (The original bug report from Martin Dvorak <md@9ll.cz>
-	 * set the size to 2M-4k.  I don't know why it's short by 4k, so
-	 * I'm leaving it as 2M until I'm told differently.)
-	 */
-	thr_ret = pthread_attr_init(&attr);
-	g_assert (thr_ret == 0);
-	
-	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
-	/* temporarily changed to use 1 MB: this allows more threads
-	 * to be used, as well as using less virtual memory and so
-	 * more is available for the GC heap.
-	 */
-	if (stacksize == 0){
-#if HAVE_VALGRIND_MEMCHECK_H
-		if (RUNNING_ON_VALGRIND) {
-			stacksize = 1 << 20;
-		} else {
-			stacksize = (SIZEOF_VOID_P / 4) * 1024 * 1024;
-		}
-#else
-		stacksize = (SIZEOF_VOID_P / 4) * 1024 * 1024;
-#endif
-	}
 
-#ifdef PTHREAD_STACK_MIN
-	if (stacksize < PTHREAD_STACK_MIN)
-		stacksize = PTHREAD_STACK_MIN;
-#endif
-
-#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-	thr_ret = pthread_attr_setstacksize(&attr, stacksize);
-	g_assert (thr_ret == 0);
-#endif
-
-	MONO_SEM_INIT (&thread_handle_p->suspend_sem, 0);
-	thread_handle_p->handle = handle;
+	DEBUG ("%s: started thread id %ld", __func__, thread->id);
 	
-
-	ret = mono_threads_pthread_create (&thread_handle_p->id, &attr,
-									   thread_start_routine, (void *)thread_handle_p);
-
-	if (ret != 0) {
-		g_warning ("%s: Error creating native thread handle %s (%d)", __func__,
-			   strerror (ret), ret);
-		SetLastError (ERROR_GEN_FAILURE);
-
-		/* Two, because of the reference we took above */
-		unrefs = 2;
-		
-		goto cleanup;
-	}
-	ct_ret = handle;
-	
-	DEBUG("%s: Started thread handle %p ID %ld", __func__, handle,
-		  thread_handle_p->id);
-	
-	if (tid != NULL) {
-#ifdef PTHREAD_POINTER_ID
-		/* Don't use GPOINTER_TO_UINT here, it can't cope with
-		 * sizeof(void *) > sizeof(uint) when a cast to uint
-		 * would overflow
-		 */
-		*tid = (gsize)(thread_handle_p->id);
-#else
-		*tid = thread_handle_p->id;
-#endif
-	}
-
-cleanup:
-	thr_ret = _wapi_handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
-	
-	/* Must not call _wapi_handle_unref() with the shared handles
-	 * already locked
-	 */
-	for (i = 0; i < unrefs; i++) {
-		_wapi_handle_unref (handle);
-	}
-	
-	return(ct_ret);
+	return handle;
 }
 
 /* The only time this function is called when tid != pthread_self ()

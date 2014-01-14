@@ -699,22 +699,5 @@ mono_thread_info_is_async_context (void)
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid)
 {
-	HANDLE res;
-
-#ifdef HOST_WIN32
-	DWORD real_tid;
-
-	res = mono_threads_CreateThread (NULL, stack_size, start, arg, creation_flags, &real_tid);
-	if (out_tid)
-		*out_tid = real_tid;
-#else
-	gsize real_tid;
-
-	res = CreateThread (NULL, stack_size, start, arg, creation_flags, &real_tid);
-	if (out_tid)
-		*out_tid = (gpointer)real_tid;
-#endif
-
-	return res;
+	return mono_threads_core_create_thread (start, arg, stack_size, creation_flags, out_tid);
 }
-

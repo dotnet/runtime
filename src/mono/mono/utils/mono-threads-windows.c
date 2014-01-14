@@ -104,11 +104,11 @@ inner_start_thread (LPVOID arg)
 }
 
 HANDLE
-mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, LPTHREAD_START_ROUTINE start_routine,
-		LPVOID arg, DWORD creation_flags, LPDWORD thread_id)
+mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid)
 {
 	ThreadStartInfo *start_info;
 	HANDLE result;
+	DWORD thread_id;
 
 	start_info = g_malloc0 (sizeof (ThreadStartInfo));
 	if (!start_info)
@@ -118,27 +118,26 @@ mono_threads_CreateThread (LPSECURITY_ATTRIBUTES attributes, SIZE_T stack_size, 
 	start_info->start_routine = start_routine;
 	start_info->suspend = creation_flags & CREATE_SUSPENDED;
 	creation_flags &= ~CREATE_SUSPENDED;
-	if (start_info->suspend)
-	{
+	if (start_info->suspend) {
 		start_info->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 		if (!start_info->suspend_event)
 			return NULL;
 	}
 
-	result = CreateThread (attributes, stack_size, inner_start_thread, start_info, creation_flags, thread_id);
-
+	result = CreateThread (attributes, stack_size, inner_start_thread, start_info, creation_flags, &thread_id);
 	if (result) {
 		while (MONO_SEM_WAIT (&(start_info->registered)) != 0) {
 			/*if (EINTR != errno) ABORT("sem_wait failed"); */
 		}
-		if (start_info->suspend)
-		{
+		if (start_info->suspend) {
 			g_assert (SuspendThread (result) != (DWORD)-1);
 			SetEvent (start_info->suspend_event);
 		}
-	}
-	else if (start_info->suspend)
+	} else if (start_info->suspend) {
 		CloseHandle (start_info->suspend_event);
+	}
+	if (out_tid)
+		*out_tid = thread_id;
 	MONO_SEM_DESTROY (&(start_info->registered));
 	g_free (start_info);
 	return result;

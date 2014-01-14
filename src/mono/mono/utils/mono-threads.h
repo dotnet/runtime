@@ -260,9 +260,6 @@ mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 
 
 #if !defined(HOST_WIN32)
 
-int
-mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) MONO_INTERNAL;
-
 #if !defined(__MACH__)
 /*Use this instead of pthread_kill */
 int
@@ -286,6 +283,7 @@ void mono_threads_platform_free (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 void mono_threads_core_interrupt (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 gboolean mono_threads_core_needs_abort_syscall (void) MONO_INTERNAL;
+HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

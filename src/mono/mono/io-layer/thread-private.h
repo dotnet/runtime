@@ -34,7 +34,6 @@ struct _WapiHandle_thread
 	WapiThreadState state : 2;
 	guint joined : 1;
 	guint has_apc : 1;
-	guint32 create_flags;
 	/* Fields below this point are only valid for the owning process */
 	pthread_t id;
 	GPtrArray *owned_mutexes;
