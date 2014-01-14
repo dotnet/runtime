@@ -103,6 +103,9 @@ typedef struct {
 	/*Tells if this thread was created by the runtime or not.*/
 	gboolean runtime_thread;
 
+	/* Whenever the thread is in its initial suspended state */
+	gboolean created_suspended;
+
 	/* suspend machinery, fields protected by suspend_semaphore */
 	MonoSemType suspend_semaphore;
 	int suspend_count;

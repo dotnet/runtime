@@ -71,8 +71,12 @@ inner_start_thread (void *arg)
 	g_assert (!res);
 	start_info = NULL;
 
-	if (flags & CREATE_SUSPENDED)
-		wapi_thread_suspend (handle);
+	if (flags & CREATE_SUSPENDED) {
+		//wapi_thread_suspend (handle);
+		info->created_suspended = TRUE;
+		mono_thread_info_self_suspend ();
+		info->created_suspended = FALSE;
+	}
 
 	/* Run the actual main function of the thread */
 	result = start_func (t_arg);

@@ -415,8 +415,10 @@ mono_thread_info_self_suspend (void)
 
 	info->thread_state |= STATE_SELF_SUSPENDED;
 
-	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->suspend_state, NULL);
-	g_assert (ret);
+	if (!info->created_suspended) {
+		ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->suspend_state, NULL);
+		g_assert (ret);
+	}
 
 	MONO_SEM_POST (&info->suspend_semaphore);
 
