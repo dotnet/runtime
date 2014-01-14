@@ -778,7 +778,6 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	const void *tmp_val;
-	int bufsize = 0;
 	struct timeval tv;
 	
 	if (startup_count == 0) {
@@ -802,6 +801,8 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 #if defined (__linux__)
 	} else if (level == SOL_SOCKET &&
 		   (optname == SO_SNDBUF || optname == SO_RCVBUF)) {
+		int bufsize = 0;
+
 		/* According to socket(7) the Linux kernel doubles the
 		 * buffer sizes "to allow space for bookkeeping
 		 * overhead."
