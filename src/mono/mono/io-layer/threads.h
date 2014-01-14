@@ -45,6 +45,8 @@ extern void ExitThread(guint32 exitcode) G_GNUC_NORETURN;
 extern gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode);
 extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
 extern gpointer GetCurrentThread(void);
+extern guint32 ResumeThread(gpointer handle);
+extern guint32 SuspendThread(gpointer handle);
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 
@@ -68,6 +70,7 @@ void wapi_finish_interrupt_thread (gpointer wait_handle);
 char* wapi_current_thread_desc (void);
 
 gpointer wapi_create_thread_handle (void);
+void wapi_thread_suspend (gpointer handle);
 void wapi_thread_set_exit_code (guint32 exitstatus, gpointer handle);
 
 G_END_DECLS

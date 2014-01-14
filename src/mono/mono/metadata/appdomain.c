@@ -2388,7 +2388,6 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	MonoMethod *method;
 	unload_data *thread_data;
 	MonoDomain *caller_domain = mono_domain_get ();
-	MonoNativeThreadId tid;
 
 	/* printf ("UNLOAD STARTING FOR %s (%p) IN THREAD 0x%x.\n", domain->friendly_name, domain, GetCurrentThreadId ()); */
 
@@ -2437,10 +2436,20 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
-	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, 0, CREATE_SUSPENDED, &tid);
-	if (thread_handle == NULL)
+	/*
+	 * If we create a non-suspended thread, the runtime will hang.
+	 * See:
+	 * http://bugzilla.ximian.com/show_bug.cgi?id=27663
+	 */ 
+#if 0
+	thread_handle = mono_threads_create_thread (unload_thread_main, thread_data, 0, 0, NULL);
+#else
+	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, 0, CREATE_SUSPENDED, NULL);
+	if (thread_handle == NULL) {
 		return;
-	mono_thread_info_resume (tid);
+	}
+	ResumeThread (thread_handle);
+#endif
 
 	/* Wait for the thread */	
 	while (!thread_data->done && WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION) {

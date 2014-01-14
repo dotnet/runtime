@@ -45,6 +45,7 @@ struct _WapiHandle_thread
 	 * This also acts as a reference for the handle.
 	 */
 	gpointer wait_handle;
+	MonoSemType suspend_sem;
 	guint32 (*start_routine)(gpointer arg);
 	gpointer start_arg;
 };

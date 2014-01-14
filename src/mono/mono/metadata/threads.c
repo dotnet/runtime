@@ -757,7 +757,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	if (!handle_store (thread, FALSE))
 		return FALSE;
 
-	mono_thread_info_resume (tid);
+	ResumeThread (internal->handle);
 
 	if (internal->start_notify) {
 		/*
