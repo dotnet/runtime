@@ -778,7 +778,10 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	const void *tmp_val;
+#if defined (__linux__)
+	/* This has its address taken so it cannot be moved to the if block which uses it */
 	int bufsize = 0;
+#endif
 	struct timeval tv;
 	
 	if (startup_count == 0) {
