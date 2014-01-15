@@ -670,9 +670,9 @@ mono_tramp_info_register (MonoTrampInfo *info)
 	copy->code_size = info->code_size;
 	copy->name = g_strdup (info->name);
 
-	mono_loader_lock_if_inited ();
+	mono_jit_lock ();
 	tramp_infos = g_slist_prepend (tramp_infos, copy);
-	mono_loader_unlock_if_inited ();
+	mono_jit_unlock ();
 
 	mono_save_trampoline_xdebug_info (info);
 
@@ -7104,6 +7104,8 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 #endif
 
+	InitializeCriticalSection (&jit_mutex);
+
 	/* Happens when using the embedding interface */
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
@@ -7112,8 +7114,6 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_aot_only)
 		mono_set_generic_sharing_vt_supported (TRUE);
 #endif
-
-	InitializeCriticalSection (&jit_mutex);
 
 #ifdef MONO_HAVE_FAST_TLS
 	MONO_FAST_TLS_INIT (mono_jit_tls);
