@@ -165,7 +165,6 @@ void _wapi_thread_set_termination_details (gpointer handle,
 	
 	thread_handle->exitstatus = exitstatus;
 	thread_handle->state = THREAD_STATE_EXITED;
-	MONO_SEM_DESTROY (&thread_handle->suspend_sem);
 	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
 
 	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
@@ -241,32 +240,6 @@ static void thread_hash_init(void)
 	g_assert (thr_ret == 0);
 }
 
-static void _wapi_thread_suspend (struct _WapiHandle_thread *thread)
-{
-	g_assert (pthread_equal (thread->id, pthread_self ()));
-	
-	while (MONO_SEM_WAIT (&thread->suspend_sem) != 0 &&
-	       errno == EINTR);
-}
-
-static void _wapi_thread_resume (struct _WapiHandle_thread *thread)
-{
-	MONO_SEM_POST (&thread->suspend_sem);
-}
-
-void
-wapi_thread_suspend (gpointer handle)
-{
-	struct _WapiHandle_thread *thread;
-	int res;
-
-	res = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-							   (gpointer *)&thread);
-	g_assert (res);
-
-	_wapi_thread_suspend (thread);
-}
-
 /*
  * wapi_create_thread_handle:
  *
@@ -297,7 +270,6 @@ wapi_create_thread_handle (void)
 							   (gpointer *)&thread);
 	g_assert (res);
 
-	MONO_SEM_INIT (&thread->suspend_sem, 0);
 	thread->handle = handle;
 
 	res = pthread_setspecific (thread_hash_key, handle);
@@ -536,10 +508,6 @@ static gpointer thread_attach(gsize *tid)
 	 */
 	_wapi_handle_ref (handle);
 
-	/* suspend_sem is not used for attached threads, but
-	 * thread_exit() might try to destroy it
-	 */
-	MONO_SEM_INIT (&thread_handle_p->suspend_sem, 0);
 	thread_handle_p->handle = handle;
 	thread_handle_p->id = pthread_self ();
 
@@ -606,51 +574,6 @@ gpointer GetCurrentThread(void)
 	mono_once (&thread_ops_once, thread_ops_init);
 	
 	return(_WAPI_THREAD_CURRENT);
-}
-
-/**
- * ResumeThread:
- * @handle: the thread handle to resume
- *
- * Decrements the suspend count of thread @handle. A thread can only
- * run if its suspend count is zero.
- *
- * Return value: the previous suspend count, or 0xFFFFFFFF on error.
- */
-guint32 ResumeThread(gpointer handle)
-{
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		
-		return (0xFFFFFFFF);
-	}
-
-	/* This is still a kludge that only copes with starting a
-	 * thread that was suspended on create, so don't bother with
-	 * the suspend count crap yet
-	 */
-	_wapi_thread_resume (thread_handle);
-	return(0xFFFFFFFF);
-}
-
-/**
- * SuspendThread:
- * @handle: the thread handle to suspend
- *
- * Increments the suspend count of thread @handle. A thread can only
- * run if its suspend count is zero.
- *
- * Return value: the previous suspend count, or 0xFFFFFFFF on error.
- */
-guint32 SuspendThread(gpointer handle)
-{
-	return(0xFFFFFFFF);
 }
 
 /**

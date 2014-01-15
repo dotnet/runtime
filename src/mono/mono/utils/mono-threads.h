@@ -136,6 +136,11 @@ typedef struct {
 	 * operations like locking without having to pass an 'async' parameter around.
 	 */
 	gboolean is_async_context;
+
+	gboolean create_suspended;
+
+	/* Semaphore used to implement CREATE_SUSPENDED */
+	MonoSemType create_suspended_sem;
 } MonoThreadInfo;
 
 typedef struct {
@@ -284,6 +289,7 @@ void mono_threads_core_interrupt (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 gboolean mono_threads_core_needs_abort_syscall (void) MONO_INTERNAL;
 HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid) MONO_INTERNAL;
+void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

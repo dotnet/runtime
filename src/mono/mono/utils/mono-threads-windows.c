@@ -82,14 +82,16 @@ inner_start_thread (LPVOID arg)
 	DWORD result;
 	gboolean suspend = start_info->suspend;
 	HANDLE suspend_event = start_info->suspend_event;
+	MonoThreadInfo *info;
 
-	mono_thread_info_attach (&result)->runtime_thread = TRUE;
+	info = mono_thread_info_attach (&result);
+	info->runtime_thread = TRUE;
+	info->create_suspended = suspend;
 
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
 
-	if (suspend)
-	{
+	if (suspend) {
 		WaitForSingleObject (suspend_event, INFINITE); /* caller will suspend the thread before setting the event. */
 		CloseHandle (suspend_event);
 	}
@@ -160,6 +162,17 @@ gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
 	return CreateThread (NULL, 0, (func), (arg), 0, (tid)) != NULL;
+}
+
+void
+mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
+{
+	HANDLE handle;
+
+	handle = OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
+	g_assert (handle);
+	ResumeThread (handle);
+	CloseHandle (handle);
 }
 
 #endif
