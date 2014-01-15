@@ -1678,6 +1678,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	prev_line = 1;
 	prev_il_offset = -1;
 
+	w->cur_file_index = -1;
 	for (i = 0; i < code_size; ++i) {
 		int line_diff, addr_diff;
 
@@ -1731,8 +1732,6 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 			emit_byte (w, DW_LNS_advance_line);
 			//printf ("FIRST: %d %d %d\n", prev_line, loc->row, il_offset);
 			emit_sleb128 (w, (gint32)loc->row - (gint32)prev_line);
-			prev_line = loc->row;
-			prev_native_offset = i;
 			first = FALSE;
 		}
 
@@ -1754,6 +1753,9 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 					w->cur_file_index = file_index;
 				}					
 			}
+		}
+
+		if (loc->row != prev_line && !first) {
 			//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
 			emit_advance_op (w, line_diff, addr_diff);
 
@@ -1762,6 +1764,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		}
 
 		mono_debug_symfile_free_location (loc);
+		first = FALSE;
 	}
 
 	g_free (native_to_il_offset);

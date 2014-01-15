@@ -8902,8 +8902,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.dwarf_debug && acfg->aot_opts.asm_only && acfg->aot_opts.gnu_asm) {
 		/*
 		 * CLANG supports GAS .file/.loc directives, so emit line number information this way
+		 * FIXME: CLANG only emits line number info for .loc directives followed by assembly, not
+		 * .byte directives.
 		 */
-		acfg->gas_line_numbers = TRUE;
+		//acfg->gas_line_numbers = TRUE;
 	}
 
 	if (!acfg->aot_opts.nodebug || acfg->aot_opts.dwarf_debug) {
