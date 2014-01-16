@@ -4992,7 +4992,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	}
 #endif
 
-	return ins;
+	return mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
 }
 
 static MonoInst*
@@ -5568,6 +5568,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 	}
 #endif
+
+	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 
 	if (COMPILE_LLVM (cfg)) {
 		ins = llvm_emit_inst_for_method (cfg, cmethod, fsig, args);

@@ -406,6 +406,7 @@ common_sources = \
 	tasklets.c		\
 	tasklets.h		\
 	simd-intrinsics.c	\
+	mini-native-types.c	\
 	mini-unwind.h		\
 	unwind.c		\
 	image-writer.h		\

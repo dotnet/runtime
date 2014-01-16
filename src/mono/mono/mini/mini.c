@@ -7961,5 +7961,6 @@ mono_jumptable_get_entry (guint8 *code_ptr)
 MonoType*
 mini_replace_type (MonoType *type)
 {
-	return mono_type_get_underlying_type (type);
+	type = mono_type_get_underlying_type (type);
+	return mini_native_type_replace_type (type);
 }

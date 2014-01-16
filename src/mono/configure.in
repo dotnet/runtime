@@ -952,6 +952,10 @@ if test x$has_extension_module != xno ; then
 	AC_MSG_NOTICE([Enabling mono extension module.])
 fi
 
+AC_ARG_ENABLE(native-types, [  --enable-native-types Enable native types], enable_native_types=$enableval, enable_native_types=no)
+if test x$enable_native_types = xyes; then
+	AC_DEFINE(MONO_NATIVE_TYPES,1,[native types])
+fi
 
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_COMPILE_IFELSE([
