@@ -216,8 +216,8 @@ cont:
 gchar *
 g_find_program_in_path (const gchar *program)
 {
-	char *p = g_strdup (g_getenv ("PATH"));
-	char *x = p, *l;
+	char *p;
+	char *x, *l;
 	gchar *curdir = NULL;
 	char *save = NULL;
 #ifdef G_OS_WIN32
@@ -228,6 +228,7 @@ g_find_program_in_path (const gchar *program)
 #endif
 
 	g_return_val_if_fail (program != NULL, NULL);
+	x = p = g_strdup (g_getenv ("PATH"));
 
 	if (x == NULL || *x == '\0') {
 		curdir = g_get_current_dir ();
