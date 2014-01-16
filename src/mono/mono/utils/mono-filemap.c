@@ -86,6 +86,8 @@ mono_file_map_fileio (size_t length, int flags, int fd, guint64 offset, void **r
 		return NULL;
 	}
 	bytes_read = read (fd, ptr, length);
+	if (bytes_read != length)
+		return NULL;
 	lseek (fd, cur_offset, SEEK_SET);
 	*ret_handle = NULL;
 	return ptr;
