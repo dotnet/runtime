@@ -962,8 +962,6 @@ if test x$enable_native_types = xyes; then
 	AC_DEFINE(MONO_NATIVE_TYPES,1,[native types])
 fi
 
-AM_CONDITIONAL([ENABLE_NATIVE_TYPES], [test x$enable_native_types != xno])
-
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_COMPILE_IFELSE([
 	AC_LANG_SOURCE([[
