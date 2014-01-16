@@ -2082,7 +2082,7 @@ ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFile
 		      const gunichar2 *backupFileName, guint32 replaceFlags, 
 		      gpointer exclude, gpointer reserved)
 {
-	int result, errno_copy, backup_fd = -1,replaced_fd = -1;
+	int result, backup_fd = -1,replaced_fd = -1;
 	gchar *utf8_replacedFileName, *utf8_replacementFileName = NULL, *utf8_backupFileName = NULL;
 	struct stat stBackup;
 	gboolean ret = FALSE;
@@ -2100,13 +2100,11 @@ ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFile
 		// Open the backup file for read so we can restore the file if an error occurs.
 		backup_fd = _wapi_open (utf8_backupFileName, O_RDONLY, 0);
 		result = _wapi_rename (utf8_replacedFileName, utf8_backupFileName);
-		errno_copy = errno;
 		if (result == -1)
 			goto replace_cleanup;
 	}
 
 	result = _wapi_rename (utf8_replacementFileName, utf8_replacedFileName);
-	errno_copy = errno;
 	if (result == -1) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_replacementFileName);
 		_wapi_rename (utf8_backupFileName, utf8_replacedFileName);

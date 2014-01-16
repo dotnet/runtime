@@ -561,7 +561,7 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 	char buf [256];
 	char *s;
 	int hz = get_user_hz ();
-	guint64	user_ticks = 0, nice_ticks = 0, system_ticks = 0, idle_ticks = 0, iowait_ticks, irq_ticks = 0, sirq_ticks = 0;
+	guint64	user_ticks = 0, nice_ticks = 0, system_ticks = 0, idle_ticks = 0, irq_ticks = 0, sirq_ticks = 0;
 	FILE *f = fopen ("/proc/stat", "r");
 	if (!f)
 		return;
@@ -583,7 +583,7 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 		nice_ticks = strtoull (data, &data, 10);
 		system_ticks = strtoull (data, &data, 10);
 		idle_ticks = strtoull (data, &data, 10);
-		iowait_ticks = strtoull (data, &data, 10);
+		strtoull (data, &data, 10); /* iowait_ticks */
 		irq_ticks = strtoull (data, &data, 10);
 		sirq_ticks = strtoull (data, &data, 10);
 		break;

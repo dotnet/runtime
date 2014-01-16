@@ -1384,8 +1384,10 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 
 			if (err == 0) 
 				done = TRUE;
-			else
+			else {
 				free (result);
+				result = NULL;
+			}
 		}
 	} while (err == 0 && !done);
 	
@@ -1708,9 +1710,7 @@ static GSList *load_modules (void)
 		const struct section *sec;
 #endif
 		const char *name;
-		intptr_t slide;
 
-		slide = _dyld_get_image_vmaddr_slide (i);
 		name = _dyld_get_image_name (i);
 #if SIZEOF_VOID_P == 8
 		hdr = (const struct mach_header_64*)_dyld_get_image_header (i);
