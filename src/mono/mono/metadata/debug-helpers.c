@@ -468,6 +468,8 @@ match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 gboolean
 mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 {
+	if (!desc->klass)
+		return FALSE;
 	if (!match_class (desc, strlen (desc->klass), method->klass))
 		return FALSE;
 
