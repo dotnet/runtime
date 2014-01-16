@@ -2706,7 +2706,7 @@ mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass)
 	return mini_is_gsharedvt_variable_type (cfg, &klass->byval_arg);
 }
 
-#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
+#if defined(MONO_GSHARING)
 
 #include "../../../mono-extensions/mono/mini/mini-generic-sharing-gsharedvt.c"
 

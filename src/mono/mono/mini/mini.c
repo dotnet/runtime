@@ -7841,7 +7841,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 #endif
 
-#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED) && !defined(MONOTOUCH) && !defined(MONO_EXTENSIONS)
+#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED) && !defined(MONO_GSHARING)
 
 gboolean
 mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
