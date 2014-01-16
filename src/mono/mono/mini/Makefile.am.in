@@ -406,7 +406,6 @@ common_sources = \
 	tasklets.c		\
 	tasklets.h		\
 	simd-intrinsics.c	\
-	mini-native-types.c	\
 	mini-unwind.h		\
 	unwind.c		\
 	image-writer.h		\
@@ -421,6 +420,10 @@ common_sources = \
 	mini-llvm.h			\
 	mini-llvm-cpp.h	\
 	alias-analysis.c
+
+if ENABLE_NATIVE_TYPES
+common_sources += mini-native-types.c
+endif
 
 test_sources = 			\
 	basic-calls.cs 		\
