@@ -2550,6 +2550,8 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 MonoType*
 mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
 {
+	type = mini_native_type_replace_type (type);
+
 	if (type->byref)
 		return &mono_defaults.int_class->byval_arg;
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
