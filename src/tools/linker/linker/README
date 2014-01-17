@@ -105,6 +105,10 @@ Here is an example that shows all the possibilities of this format:
 
 In this example, the linker will link the types Foo, Bar, Baz and Gazonk.
 
+The fullname attribute specifies the fullname of the type in the format
+specified by ECMA-335. This is in Mono and certain cases not the same
+as the one reported by Type.FullName (nested classes e.g.).
+
 The preserve attribute ensures that all the fields of the type Baz will be
 always be linked, not matter if they are used or not, but that neither the
 fields or the methods of Bar will be linked if they are not used. Not
