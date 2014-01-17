@@ -263,6 +263,9 @@ mono_thread_info_is_async_context (void) MONO_INTERNAL;
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 
+gboolean
+mono_thread_info_yield (void) MONO_INTERNAL;
+
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
@@ -288,6 +291,7 @@ gboolean mono_threads_core_needs_abort_syscall (void) MONO_INTERNAL;
 HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid) MONO_INTERNAL;
 void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid) MONO_INTERNAL;
 void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_INTERNAL;
+gboolean mono_threads_core_yield (void) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

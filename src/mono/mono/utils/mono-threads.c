@@ -721,3 +721,10 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	return mono_threads_core_get_stack_bounds (staddr, stsize);
 }
+
+gboolean
+mono_thread_info_yield (void)
+{
+	return mono_threads_core_yield ();
+}
+

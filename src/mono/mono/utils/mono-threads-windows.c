@@ -201,4 +201,10 @@ mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*stsize = stackTop - stackBottom;
 }
 
+gboolean
+mono_threads_core_yield (void)
+{
+	return SwitchToThread ();
+}
+
 #endif

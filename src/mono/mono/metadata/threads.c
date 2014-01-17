@@ -1083,11 +1083,7 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 gboolean 
 ves_icall_System_Threading_Thread_Yield (void)
 {
-#ifdef HOST_WIN32
-	return SwitchToThread ();
-#else
-	return sched_yield () == 0;
-#endif
+	return mono_thread_info_yield ();
 }
 
 /*
@@ -2872,7 +2868,7 @@ void mono_thread_manage (void)
 	 * This could be removed if we avoid pthread_detach() and use pthread_join().
 	 */
 #ifndef HOST_WIN32
-	sched_yield ();
+	mono_thread_info_yield ();
 #endif
 }
 

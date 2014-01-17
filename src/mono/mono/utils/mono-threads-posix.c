@@ -290,6 +290,12 @@ mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #endif
 }
 
+gboolean
+mono_threads_core_yield (void)
+{
+	return sched_yield () == 0;
+}
+
 #if !defined (__MACH__)
 
 #if !defined(__native_client__)

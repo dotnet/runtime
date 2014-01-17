@@ -147,11 +147,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		sgen_wait_for_suspend_ack (restart_count);
 
 		if (sleep_duration < 0) {
-#ifdef HOST_WIN32
-			SwitchToThread ();
-#else
-			sched_yield ();
-#endif
+			mono_thread_info_yield ();
 			sleep_duration = 0;
 		} else {
 			g_usleep (sleep_duration);
