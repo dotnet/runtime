@@ -4083,6 +4083,9 @@ ptr_on_stack (void *ptr)
 static void*
 sgen_thread_register (SgenThreadInfo* info, void *addr)
 {
+	size_t stsize = 0;
+	guint8 *staddr = NULL;
+
 #ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
 
@@ -4110,48 +4113,16 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 
 	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
 
-	// FIXME: Unift with mono_threads_get_stack_bounds ()
-	/* try to get it with attributes first */
-#if (defined(HAVE_PTHREAD_GETATTR_NP) || defined(HAVE_PTHREAD_ATTR_GET_NP)) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
-  {
-     size_t size;
-     void *sstart;
-     pthread_attr_t attr;
-
-#if defined(HAVE_PTHREAD_GETATTR_NP)
-    /* Linux */
-    pthread_getattr_np (pthread_self (), &attr);
-#elif defined(HAVE_PTHREAD_ATTR_GET_NP)
-    /* BSD */
-    pthread_attr_init (&attr);
-    pthread_attr_get_np (pthread_self (), &attr);
-#else
-#error Cannot determine which API is needed to retrieve pthread attributes.
-#endif
-
-     pthread_attr_getstack (&attr, &sstart, &size);
-     info->stack_start_limit = sstart;
-     info->stack_end = (char*)sstart + size;
-     pthread_attr_destroy (&attr);
-  }
-#elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
-	{
-		size_t stsize = 0;
-		guint8 *staddr = NULL;
-
-		mono_thread_info_get_stack_bounds (&staddr, &stsize);
+	mono_thread_info_get_stack_bounds (&staddr, &stsize);
+	if (staddr) {
 		info->stack_start_limit = staddr;
 		info->stack_end = staddr + stsize;
-	}
-#else
-	{
-		/* FIXME: we assume the stack grows down */
+	} else {
 		gsize stack_bottom = (gsize)addr;
 		stack_bottom += 4095;
 		stack_bottom &= ~4095;
 		info->stack_end = (char*)stack_bottom;
 	}
-#endif
 
 #ifdef HAVE_KW_THREAD
 	stack_end = info->stack_end;
