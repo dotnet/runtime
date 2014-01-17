@@ -221,6 +221,7 @@ is_major_or_los_object_marked (char *obj)
 		if (!sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
 			SGEN_LOG (0, "major->major reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+			missing_remsets = TRUE;				\
 		}																\
 	}																	\
 	} while (0)
