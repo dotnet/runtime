@@ -65,6 +65,7 @@ mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
 	const char *env;
+	int dummy;
 
 	if (gc_initialized)
 		return;
@@ -190,6 +191,8 @@ mono_gc_base_init (void)
 	
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 	mono_mutex_init (&mono_gc_lock);
+
+	mono_thread_info_attach (&dummy);
 
 	mono_gc_enable_events ();
 	gc_initialized = TRUE;
