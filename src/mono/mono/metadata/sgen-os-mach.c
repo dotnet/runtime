@@ -70,8 +70,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	mono_mach_arch_thread_state_to_mcontext (state, mctx);
 	ctx.uc_mcontext = mctx;
 
-	info->stopped_domain = mono_mach_arch_get_tls_value_from_thread (
-		mono_thread_info_get_tid (info), mono_domain_get_tls_key ());
+	info->stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
 	info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
 	info->stack_start = NULL;
 	stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
