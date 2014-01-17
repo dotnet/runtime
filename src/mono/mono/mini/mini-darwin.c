@@ -336,7 +336,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 	if (!jit_tls || !domain)
 		return FALSE;
 
-#if defined (MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	/*
 	 * The current LMF address is kept in a separate TLS variable, and its hard to read its value without
 	 * arch-specific code. But the address of the TLS variable is stored in another TLS variable which
@@ -351,9 +350,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 		if (addr)
 			lmf = *addr;
 	}
-#else
-	lmf = jit_tls ? jit_tls->lmf : NULL;
-#endif
 
 	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
 	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
