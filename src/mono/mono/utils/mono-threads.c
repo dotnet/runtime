@@ -14,8 +14,6 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-memory-model.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/domain-internals.h>
 
 #include <errno.h>
 
