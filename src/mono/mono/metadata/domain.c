@@ -25,6 +25,7 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -58,17 +59,25 @@ MONO_FAST_TLS_DECLARE(tls_appdomain);
 #define GET_APPDOMAIN() ((MonoDomain*)MONO_FAST_TLS_GET(tls_appdomain))
 
 #define SET_APPDOMAIN(x) do { \
+	MonoThreadInfo *info; \
 	MONO_FAST_TLS_SET (tls_appdomain,x); \
 	mono_native_tls_set_value (appdomain_thread_id, x); \
 	mono_gc_set_current_thread_appdomain (x); \
+	info = mono_thread_info_current (); \
+	if (info) \
+		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
 #else /* !MONO_HAVE_FAST_TLS */
 
 #define GET_APPDOMAIN() ((MonoDomain *)mono_native_tls_get_value (appdomain_thread_id))
 #define SET_APPDOMAIN(x) do {						\
+		MonoThreadInfo *info;								\
 		mono_native_tls_set_value (appdomain_thread_id, x);	\
 		mono_gc_set_current_thread_appdomain (x);		\
+		info = mono_thread_info_current ();				\
+		if (info)												 \
+			mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 	} while (FALSE)
 
 #endif

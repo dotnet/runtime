@@ -60,6 +60,7 @@
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
+#include <mono/utils/mono-threads.h>
 
 #include "mini.h"
 #include "mini-llvm.h"
@@ -2706,19 +2707,33 @@ mono_set_lmf (MonoLMF *lmf)
 static void
 mono_set_jit_tls (MonoJitTlsData *jit_tls)
 {
+	MonoThreadInfo *info;
+
 	mono_native_tls_set_value (mono_jit_tls_id, jit_tls);
 
 #ifdef MONO_HAVE_FAST_TLS
 	MONO_FAST_TLS_SET (mono_jit_tls, jit_tls);
 #endif
+
+	/* Save it into MonoThreadInfo so it can be accessed by mono_thread_state_init_from_handle () */
+	info = mono_thread_info_current ();
+	if (info)
+		mono_thread_info_tls_set (info, TLS_KEY_JIT_TLS, jit_tls);
 }
 
 static void
 mono_set_lmf_addr (gpointer lmf_addr)
 {
+	MonoThreadInfo *info;
+
 #ifdef MONO_HAVE_FAST_TLS
 	MONO_FAST_TLS_SET (mono_lmf_addr, lmf_addr);
 #endif
+
+	/* Save it into MonoThreadInfo so it can be accessed by mono_thread_state_init_from_handle () */
+	info = mono_thread_info_current ();
+	if (info)
+		mono_thread_info_tls_set (info, TLS_KEY_LMF_ADDR, lmf_addr);
 }
 
 /*

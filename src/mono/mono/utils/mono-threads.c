@@ -728,3 +728,22 @@ mono_thread_info_yield (void)
 	return mono_threads_core_yield ();
 }
 
+gpointer
+mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key)
+{
+	return ((MonoThreadInfo*)info)->tls [key];
+}
+
+/*
+ * mono_threads_info_tls_set:
+ *
+ *   Set the TLS key to VALUE in the info structure. This can be used to obtain
+ * values of TLS variables for threads other than the current thread.
+ * This should only be used for infrequently changing TLS variables, and it should
+ * be paired with setting the real TLS variable since this provides no GC tracking.
+ */
+void
+mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value)
+{
+	((MonoThreadInfo*)info)->tls [key] = value;
+}

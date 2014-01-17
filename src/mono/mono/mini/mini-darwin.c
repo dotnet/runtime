@@ -297,12 +297,10 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 	thread_state_t state;
 	ucontext_t ctx;
 	mcontext_t mctx;
-	guint32 domain_key, jit_key;
 	MonoJitTlsData *jit_tls;
 	void *domain;
-#if defined (MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	guint32 lmf_key;
-#endif
+	MonoLMF *lmf;
+	MonoThreadInfo *info;
 
 	/*Zero enough state to make sure the caller doesn't confuse itself*/
 	tctx->valid = FALSE;
@@ -322,25 +320,44 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThrea
 
 	mono_sigctx_to_monoctx (&ctx, &tctx->ctx);
 
-	domain_key = mono_domain_get_tls_key ();
-	jit_key = mono_get_jit_tls_key ();
+	info = mono_thread_info_lookup (thread_id);
 
-	jit_tls = mono_mach_arch_get_tls_value_from_thread (thread_id, jit_key);
-	domain = mono_mach_arch_get_tls_value_from_thread (thread_id, domain_key);
+	if (info) {
+		/* mono_set_jit_tls () sets this */
+		jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
+		/* SET_APPDOMAIN () sets this */
+		domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
+	} else {
+		jit_tls = NULL;
+		domain = NULL;
+	}
 
 	/*Thread already started to cleanup, can no longer capture unwind state*/
 	if (!jit_tls || !domain)
 		return FALSE;
 
 #if defined (MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	lmf_key =  mono_get_lmf_tls_offset ();
-	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_mach_arch_get_tls_value_from_thread (thread_id, lmf_key);;
+	/*
+	 * The current LMF address is kept in a separate TLS variable, and its hard to read its value without
+	 * arch-specific code. But the address of the TLS variable is stored in another TLS variable which
+	 * can be accessed through MonoThreadInfo.
+	 */
+	lmf = NULL;
+	if (info) {
+		gpointer *addr;
+
+		/* mono_set_lmf_addr () sets this */
+		addr = mono_thread_info_tls_get (info, TLS_KEY_LMF_ADDR);
+		if (addr)
+			lmf = *addr;
+	}
 #else
-	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = jit_tls ? jit_tls->lmf : NULL;
+	lmf = jit_tls ? jit_tls->lmf : NULL;
 #endif
 
 	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
 	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
+	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = lmf;
 	tctx->valid = TRUE;
 
 	return TRUE;

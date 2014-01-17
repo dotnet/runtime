@@ -14,6 +14,7 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-tls.h>
 
 #include <glib.h>
 
@@ -141,6 +142,13 @@ typedef struct {
 
 	/* Semaphore used to implement CREATE_SUSPENDED */
 	MonoSemType create_suspended_sem;
+
+	/*
+	 * Values of TLS variables for this thread.
+	 * This can be used to obtain the values of TLS variable for threads
+	 * other than the current one.
+	 */
+	gpointer tls [TLS_KEY_NUM];
 } MonoThreadInfo;
 
 typedef struct {
@@ -265,6 +273,12 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 
 gboolean
 mono_thread_info_yield (void) MONO_INTERNAL;
+
+gpointer
+mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
+
+void
+mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value);
 
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
