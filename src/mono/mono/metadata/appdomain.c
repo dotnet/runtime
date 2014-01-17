@@ -1600,6 +1600,8 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 /*
 This function raises exceptions so it can cause as sorts of nasty stuff if called
 while holding a lock.
+Returns old file name if shadow copy is disabled, new shadow copy file name if successful
+or NULL if source file not found.
 FIXME bubble up the error instead of raising it here
 */
 char *
@@ -1684,6 +1686,11 @@ mono_make_shadow_copy (const char *filename)
 
 	if (copy_result == FALSE) {
 		g_free (shadow);
+
+		/* Fix for bug #17251 - if file not found try finding assembly by other means (it is not fatal error) */
+		if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND)
+			return NULL; /* file not found, shadow copy failed */
+
 		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (CopyFile).");
 		mono_raise_exception (exc);
 	}
