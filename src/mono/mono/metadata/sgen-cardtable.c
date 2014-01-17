@@ -287,9 +287,8 @@ sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char 
 }
 
 static void
-update_mod_union (guint8 *dest, gboolean init, guint8 *start_card, guint8 *end_card)
+update_mod_union (guint8 *dest, gboolean init, guint8 *start_card, size_t num_cards)
 {
-	size_t num_cards = end_card - start_card;
 	if (init) {
 		memcpy (dest, start_card, num_cards);
 	} else {
@@ -306,36 +305,48 @@ alloc_mod_union (size_t num_cards)
 }
 
 guint8*
+sgen_card_table_update_mod_union_from_cards (guint8 *dest, guint8 *start_card, size_t num_cards)
+{
+	gboolean init = dest == NULL;
+
+	if (init)
+		dest = alloc_mod_union (num_cards);
+
+	update_mod_union (dest, init, start_card, num_cards);
+
+	return dest;
+}
+
+guint8*
 sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards)
 {
-	guint8 *result = dest;
 	guint8 *start_card = sgen_card_table_get_card_address ((mword)obj);
 	guint8 *end_card = sgen_card_table_get_card_address ((mword)obj + obj_size - 1) + 1;
-	gboolean init = dest == NULL;
-	size_t num_cards;
+	size_t num_cards, rest_num_cards;
+	guint8 *result = NULL;
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	size_t rest;
 
 	rest = num_cards = cards_in_range ((mword) obj, obj_size);
 
-	if (init)
-		result = dest = alloc_mod_union (num_cards);
-
 	while (start_card + rest > SGEN_CARDTABLE_END) {
 		size_t count = SGEN_CARDTABLE_END - start_card;
-		update_mod_union (dest, init, start_card, SGEN_CARDTABLE_END);
+		dest = sgen_card_table_update_mod_union_from_cards (dest, start_card, count);
+		if (!result)
+			result = dest;
 		dest += count;
 		rest -= count;
 		start_card = sgen_cardtable;
 	}
+	num_cards = rest;
 #else
 	num_cards = end_card - start_card;
-	if (init)
-		result = dest = alloc_mod_union (num_cards);
 #endif
 
-	update_mod_union (dest, init, start_card, end_card);
+	dest = sgen_card_table_update_mod_union_from_cards (dest, start_card, num_cards);
+	if (!result)
+		result = dest;
 
 	if (out_num_cards)
 		*out_num_cards = num_cards;

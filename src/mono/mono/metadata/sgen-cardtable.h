@@ -32,6 +32,7 @@ void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards,
 
 gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
 
+guint8* sgen_card_table_update_mod_union_from_cards (guint8 *dest, guint8 *start_card, size_t num_cards) MONO_INTERNAL;
 guint8* sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards) MONO_INTERNAL;
 
 void sgen_card_table_init (SgenRemeberedSet *remset) MONO_INTERNAL;
