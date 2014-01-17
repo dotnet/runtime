@@ -9,17 +9,28 @@
 
 #include <config.h>
 
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#include <pthread.h>
+#include <pthread_np.h>
+#endif
+
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/gc_wrapper.h>
+#include <mono/utils/mono-mmap.h>
 #include <mono/metadata/threads-types.h>
 
 #include <errno.h>
 
 #if defined(PLATFORM_ANDROID)
 extern int tkill (pid_t tid, int signal);
+#endif
+
+#if defined(PLATFORM_MACOSX) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+void *pthread_get_stackaddr_np(pthread_t);
+size_t pthread_get_stacksize_np(pthread_t);
 #endif
 
 #if defined(_POSIX_VERSION) || defined(__native_client__)
@@ -169,6 +180,114 @@ void
 mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
 {
 	MONO_SEM_POST (&info->create_suspended_sem);
+}
+
+void
+mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
+{
+#if defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+	/* Mac OS X */
+	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self());
+	*stsize = pthread_get_stacksize_np (pthread_self());
+
+
+#ifdef TARGET_OSX
+	/*
+	 * Mavericks reports stack sizes as 512kb:
+	 * http://permalink.gmane.org/gmane.comp.java.openjdk.hotspot.devel/11590
+	 * https://bugs.openjdk.java.net/browse/JDK-8020753
+	 */
+	if (*stsize == 512 * 1024)
+		*stsize = 2048 * mono_pagesize ();
+#endif
+
+	/* staddr points to the start of the stack, not the end */
+	*staddr -= *stsize;
+
+	/* When running under emacs, sometimes staddr is not aligned to a page size */
+	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize() - 1));
+	return;
+
+#elif (defined(HAVE_PTHREAD_GETATTR_NP) || defined(HAVE_PTHREAD_ATTR_GET_NP)) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
+	/* Linux, BSD */
+
+	pthread_attr_t attr;
+	guint8 *current = (guint8*)&attr;
+
+	*staddr = NULL;
+	*stsize = (size_t)-1;
+
+	pthread_attr_init (&attr);
+
+#if     defined(HAVE_PTHREAD_GETATTR_NP)
+	/* Linux */
+	pthread_getattr_np (pthread_self(), &attr);
+
+#elif   defined(HAVE_PTHREAD_ATTR_GET_NP)
+	/* BSD */
+	pthread_attr_get_np (pthread_self(), &attr);
+
+#else
+#error 	Cannot determine which API is needed to retrieve pthread attributes.
+#endif
+
+	pthread_attr_getstack (&attr, (void**)staddr, stsize);
+	pthread_attr_destroy (&attr);
+
+	if (*staddr)
+		g_assert ((current > *staddr) && (current < *staddr + *stsize));
+
+	/* When running under emacs, sometimes staddr is not aligned to a page size */
+	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
+	return;
+
+#elif defined(__OpenBSD__)
+	/* OpenBSD */
+	/* TODO :   Determine if this code is actually still needed. It may already be covered by the case above. */
+
+	pthread_attr_t attr;
+	guint8 *current = (guint8*)&attr;
+
+	*staddr = NULL;
+	*stsize = (size_t)-1;
+
+	pthread_attr_init (&attr);
+
+	stack_t ss;
+	int rslt;
+
+	rslt = pthread_stackseg_np(pthread_self(), &ss);
+	g_assert (rslt == 0);
+
+	*staddr = (guint8*)((size_t)ss.ss_sp - ss.ss_size);
+	*stsize = ss.ss_size;
+
+	pthread_attr_destroy (&attr);
+
+	if (*staddr)
+		g_assert ((current > *staddr) && (current < *staddr + *stsize));
+
+	/* When running under emacs, sometimes staddr is not aligned to a page size */
+	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
+	return;
+
+#elif defined(sun) || defined(__native_client__)
+	/* Solaris/Illumos, NaCl */
+	pthread_attr_t attr;
+	pthread_attr_init (&attr);
+	pthread_attr_getstacksize (&attr, &stsize);
+	pthread_attr_destroy (&attr);
+	*staddr = NULL;
+	return;
+
+#else
+	/* FIXME:   It'd be better to use the 'error' preprocessor macro here so we know
+		    at compile-time if the target platform isn't supported. */
+#warning "Unable to determine how to retrieve a thread's stack-bounds for this platform in 'mono_thread_get_stack_bounds()'."
+	*staddr = NULL;
+	*stsize = 0;
+	return;
+#endif
 }
 
 #if !defined (__MACH__)

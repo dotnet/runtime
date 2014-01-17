@@ -709,3 +709,15 @@ mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 
 {
 	return mono_threads_core_create_thread (start, arg, stack_size, creation_flags, out_tid);
 }
+
+/*
+ * mono_thread_info_get_stack_bounds:
+ *
+ *   Return the address and size of the current threads stack. Return NULL as the 
+ * stack address if the stack address cannot be determined.
+ */
+void
+mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
+{
+	return mono_threads_core_get_stack_bounds (staddr, stsize);
+}

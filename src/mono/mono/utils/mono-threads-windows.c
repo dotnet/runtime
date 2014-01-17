@@ -175,4 +175,30 @@ mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
 	CloseHandle (handle);
 }
 
+#if HAVE_DECL___READFSDWORD==0
+static __inline__ __attribute__((always_inline))
+unsigned long long
+__readfsdword (unsigned long offset)
+{
+	unsigned long value;
+	//	__asm__("movl %%fs:%a[offset], %k[value]" : [value] "=q" (value) : [offset] "irm" (offset));
+   __asm__ volatile ("movl    %%fs:%1,%0"
+     : "=r" (value) ,"=m" ((*(volatile long *) offset)));
+	return value;
+}
+#endif
+
+void
+mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
+{
+	/* Windows */
+	/* http://en.wikipedia.org/wiki/Win32_Thread_Information_Block */
+	void* tib = (void*)__readfsdword(0x18);
+	guint8 *stackTop = (guint8*)*(int*)((char*)tib + 4);
+	guint8 *stackBottom = (guint8*)*(int*)((char*)tib + 8);
+
+	*staddr = stackBottom;
+	*stsize = stackTop - stackBottom;
+}
+
 #endif

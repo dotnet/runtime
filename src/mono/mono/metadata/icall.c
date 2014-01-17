@@ -86,6 +86,7 @@
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-threads.h>
 
 #if defined (HOST_WIN32)
 #include <windows.h>
@@ -927,7 +928,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 	size_t stack_size;
 	/* later make this configurable and per-arch */
 	int min_size = 4096 * 4 * sizeof (void*);
-	mono_thread_get_stack_bounds (&stack_addr, &stack_size);
+	mono_thread_info_get_stack_bounds (&stack_addr, &stack_size);
 	/* if we have no info we are optimistic and assume there is enough room */
 	if (!stack_addr)
 		return TRUE;

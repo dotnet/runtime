@@ -1933,7 +1933,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	if (mono_running_on_valgrind ())
 		return;
 
-	mono_thread_get_stack_bounds (&staddr, &stsize);
+	mono_thread_info_get_stack_bounds (&staddr, &stsize);
 
 	g_assert (staddr);
 

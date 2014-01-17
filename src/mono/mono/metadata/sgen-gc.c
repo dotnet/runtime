@@ -4110,7 +4110,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 
 	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
 
-	// FIXME: Unift with mono_thread_get_stack_bounds ()
+	// FIXME: Unift with mono_threads_get_stack_bounds ()
 	/* try to get it with attributes first */
 #if (defined(HAVE_PTHREAD_GETATTR_NP) || defined(HAVE_PTHREAD_ATTR_GET_NP)) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
   {
@@ -4139,7 +4139,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 		size_t stsize = 0;
 		guint8 *staddr = NULL;
 
-		mono_thread_get_stack_bounds (&staddr, &stsize);
+		mono_thread_info_get_stack_bounds (&staddr, &stsize);
 		info->stack_start_limit = staddr;
 		info->stack_end = staddr + stsize;
 	}
