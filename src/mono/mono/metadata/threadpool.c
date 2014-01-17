@@ -1300,9 +1300,10 @@ try_steal (MonoWSQ *local_wsq, gpointer *data, gboolean retry)
 static gboolean
 dequeue_or_steal (ThreadPool *tp, gpointer *data, MonoWSQ *local_wsq)
 {
-	if (mono_runtime_is_shutting_down ())
+	MonoCQ *queue = tp->queue;
+	if (mono_runtime_is_shutting_down () || !queue)
 		return FALSE;
-	mono_cq_dequeue (tp->queue, (MonoObject **) data);
+	mono_cq_dequeue (queue, (MonoObject **) data);
 	if (!tp->is_io && !*data)
 		try_steal (local_wsq, data, FALSE);
 	return (*data != NULL);
