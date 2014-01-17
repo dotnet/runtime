@@ -3673,6 +3673,7 @@ search_tls_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 
 				static_data->freelist = tmp->next;
 			return tmp;
 		}
+		prev = tmp;
 		tmp = tmp->next;
 	}
 	return NULL;
