@@ -206,10 +206,7 @@ __attribute__ ((noinline))
 			WrapperInfo *info = mono_marshal_get_wrapper_info (impl);
 
 			if (info && info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
-				// FIXME: This needs a gsharedvt-out trampoline, since the caller uses the gsharedvt calling conv, but the
-				// wrapper is a normal non-generic method.
 				*need_rgctx_tramp = TRUE;
-				//g_assert_not_reached ();
 			}
 		}
 
@@ -290,10 +287,10 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 	gpointer addr = compiled_method;
 	gboolean callee_gsharedvt, callee_array_helper;
 	MonoMethod *jmethod = NULL;
-	MonoJitInfo *ji = 
-		mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
+	MonoJitInfo *ji;
 
-	// FIXME: This loads information from AOT
+	// FIXME: This loads information from AOT (perf problem)
+	ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method), NULL);
 	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 
 	callee_array_helper = FALSE;
@@ -357,7 +354,16 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
 
-	if (add_static_rgctx_tramp && !callee_array_helper)
+	if (callee_array_helper) {
+		add_static_rgctx_tramp = FALSE;
+		if (ji && ji->from_aot) {
+			/* In AOT mode, compiled_method points to one of the InternalArray methods in Array. */
+			if (mono_method_needs_static_rgctx_invoke (jinfo_get_method (ji), TRUE))
+				add_static_rgctx_tramp = TRUE;
+		}
+	}
+
+	if (add_static_rgctx_tramp)
 		addr = mono_create_static_rgctx_trampoline (m, addr);
 
 	return addr;
