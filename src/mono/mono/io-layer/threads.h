@@ -47,14 +47,13 @@ extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
 extern gpointer GetCurrentThread(void);
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
-extern guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer thread_handle, 
-					gpointer param);
 
 /* Kludge alert! Making this visible outside io-layer is broken, but I
  * can't find any w32 call that will let me do this.
  */
 extern void _wapi_thread_signal_self (guint32 exitstatus);
 
+void wapi_thread_interrupt_self (void);
 void wapi_interrupt_thread (gpointer handle);
 void wapi_clear_interruption (void);
 gboolean wapi_thread_set_wait_handle (gpointer handle);

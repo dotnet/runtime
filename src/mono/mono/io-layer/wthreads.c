@@ -697,30 +697,32 @@ gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
 }
 
 /*
- * In this implementation, APC_CALLBACK is ignored.
- * if HANDLE refers to the current thread, the only effect this function has 
- * that if called from a signal handler, and the thread was waiting when receiving 
+ * wapi_interrupt_self:
+ *
+ * If this function called from a signal handler, and the thread was waiting when receiving
  * the signal, the wait will be broken after the signal handler returns.
- * In this case, this function is async-signal-safe.
+ * This function is async-signal-safe.
  */
-guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle, 
-		      gpointer param)
+void
+wapi_thread_interrupt_self (void)
 {
+	HANDLE handle;
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
 	
+	handle = _wapi_thread_handle_from_id (pthread_self ());
+	g_assert (handle);
+
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up thread handle %p", __func__,
 			   handle);
-		return (0);
+		return;
 	}
 
-	g_assert (thread_handle->id == (pthread_t)GetCurrentThreadId ());
 	/* No locking/memory barriers are needed here */
 	thread_handle->has_apc = TRUE;
-	return(1);
 }
 
 /*

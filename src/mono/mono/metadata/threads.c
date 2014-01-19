@@ -4099,7 +4099,6 @@ mono_thread_request_interruption (gboolean running_managed)
 		/* Can't stop while in unmanaged code. Increase the global interruption
 		   request count. When exiting the unmanaged method the count will be
 		   checked and the thread will be interrupted. */
-		
 
 		if (mono_thread_notify_pending_exc_fn && !running_managed)
 			/* The JIT will notify the thread about the interruption */
@@ -4109,7 +4108,11 @@ mono_thread_request_interruption (gboolean running_managed)
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
 		/* Our implementation of this function ignores the func argument */
+#ifdef HOST_WIN32
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
+#else
+		wapi_thread_interrupt_self ();
+#endif
 		return NULL;
 	}
 	else {
