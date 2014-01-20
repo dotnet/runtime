@@ -3996,11 +3996,6 @@ mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local)
 static void CALLBACK dummy_apc (ULONG_PTR param)
 {
 }
-#else
-static guint32 dummy_apc (gpointer param)
-{
-	return 0;
-}
 #endif
 
 /*
