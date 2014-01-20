@@ -188,6 +188,11 @@
 #ifdef _MSC_VER
 
 #include <math.h>
+
+#if _MSC_VER < 1800 /* VS 2013 */
+#define strtoull _strtoui64
+#endif
+
 #include <float.h>
 #define isnan(x)	_isnan(x)
 #define trunc(x)	(((x) < 0) ? ceil((x)) : floor((x)))
