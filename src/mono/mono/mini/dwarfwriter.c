@@ -675,69 +675,6 @@ add_line_number_file_name (MonoDwarfWriter *w, const char *name,
 	return index;
 }
 
-static void
-emit_line_number_info_begin (MonoDwarfWriter *w)
-{
-	/* Line number info header */
-	/* 
-	 * GAS seems to emit its own data to the end of the first subsection, so we use
-	 * subsections 1, 2 etc:
-	 * 1 - contains the header
-	 * 2 - contains the file names
-	 * 3 - contains the end of the header + the data
-	 * 4 - the end symbol
-	 */
-	emit_section_change (w, ".debug_line", 0);
-	emit_label (w, ".Ldebug_line_section_start");
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_HEADER);
-	emit_label (w, ".Ldebug_line_start");
-	emit_symbol_diff (w, ".Ldebug_line_end", ".", -4); /* length */
-	emit_int16 (w, 0x2); /* version */
-	emit_symbol_diff (w, ".Ldebug_line_header_end", ".", -4); /* header_length */
-	emit_byte (w, 1); /* minimum_instruction_length */
-	emit_byte (w, 1); /* default_is_stmt */
-	emit_byte (w, LINE_BASE); /* line_base */
-	emit_byte (w, LINE_RANGE); /* line_range */
-	emit_byte (w, OPCODE_BASE); /* opcode_base */
-	emit_byte (w, 0); /* standard_opcode_lengths */
-	emit_byte (w, 1);
-	emit_byte (w, 1);
-	emit_byte (w, 1);
-	emit_byte (w, 1);
-	emit_byte (w, 0);
-	emit_byte (w, 0);
-	emit_byte (w, 0);
-	emit_byte (w, 1);
-	emit_byte (w, 0);
-	emit_byte (w, 0);
-	emit_byte (w, 1);
-
-	/* Includes */
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_INCLUDES);
-
-	/* End of Includes */
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_FILES);
-	emit_byte (w, 0);
-
-	/* Files */
-	emit_line_number_file_name (w, "xdb.il", 0, 0);
-
-	/* End of Files */
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
-	emit_byte (w, 0);
-
-	emit_label (w, ".Ldebug_line_header_end");
-
-	/* Emit this into a separate subsection so it gets placed at the end */	
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_END);
-
-	emit_byte (w, 0);
-	emit_byte (w, 1);
-	emit_byte (w, DW_LNE_end_sequence);
-
-	emit_label (w, ".Ldebug_line_end");
-}
-
 char *
 mono_dwarf_escape_path (const char *name)
 {
