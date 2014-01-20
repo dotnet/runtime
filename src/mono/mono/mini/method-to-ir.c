@@ -4983,8 +4983,9 @@ emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	MonoInst *ins = NULL;
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+	MonoInst *ins = NULL;
+
 	if (cfg->opt & MONO_OPT_SIMD) {
 		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
