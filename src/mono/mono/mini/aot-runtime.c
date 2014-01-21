@@ -3121,7 +3121,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.target = GINT_TO_POINTER (decode_value (p, &p));
 		break;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL: {
-		MonoJumpInfoGSharedVtCall *info = g_new0 (MonoJumpInfoGSharedVtCall, 1);
+		MonoJumpInfoGSharedVtCall *info = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoGSharedVtCall));
 		info->sig = decode_signature (aot_module, p, &p);
 		g_assert (info->sig);
 		info->method = decode_resolve_method_ref (aot_module, p, &p);
@@ -3131,15 +3131,16 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
-		MonoGSharedVtMethodInfo *info = g_new0 (MonoGSharedVtMethodInfo, 1);
-		int i, nentries;
+		MonoGSharedVtMethodInfo *info = mono_mempool_alloc0 (mp, sizeof (MonoGSharedVtMethodInfo));
+		int i;
 		
 		info->method = decode_resolve_method_ref (aot_module, p, &p);
 		g_assert (info->method);
-		nentries = decode_value (p, &p);
-		info->entries = g_ptr_array_new ();
-		for (i = 0; i < nentries; ++i) {
-			MonoRuntimeGenericContextInfoTemplate *template = g_new0 (MonoRuntimeGenericContextInfoTemplate, 1);
+		info->num_entries = decode_value (p, &p);
+		info->count_entries = info->num_entries;
+		info->entries = mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+		for (i = 0; i < info->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *template = &info->entries [i];
 
 			template->info_type = decode_value (p, &p);
 			switch (mini_rgctx_info_type_to_patch_info_type (template->info_type)) {
@@ -3159,8 +3160,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				g_assert_not_reached ();
 				break;
 			}
-
-			g_ptr_array_add (info->entries, template);
 		}
 		ji->data.target = info;
 		break;

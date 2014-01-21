@@ -1132,8 +1132,8 @@ typedef struct {
 
 typedef struct {
 	MonoMethod *method;
-	/* Array of MonoRuntimeGenericContextInfoTemplate* entries */
-	GPtrArray *entries;
+	MonoRuntimeGenericContextInfoTemplate *entries;
+	int num_entries, count_entries;
 } MonoGSharedVtMethodInfo;
 
 /* This is used by gsharedvt methods to allocate locals and compute local offsets */
@@ -1382,6 +1382,7 @@ typedef struct {
 	MonoGenericSharingContext *generic_sharing_context;
 
 	MonoGenericSharingContext gsctx;
+	MonoGenericContext *gsctx_context;
 
 	gboolean gsharedvt;
 
@@ -2658,7 +2659,7 @@ gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst) MONO_INTERNAL;
 gpointer mini_method_get_rgctx (MonoMethod *m) MONO_INTERNAL;
-void mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
+void mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 
 gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx,
 									 gint32 vcall_offset, gboolean calli) MONO_INTERNAL;

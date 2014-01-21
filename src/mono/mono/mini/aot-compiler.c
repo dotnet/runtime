@@ -5014,9 +5014,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		int i;
 
 		encode_method_ref (acfg, info->method, p, &p);
-		encode_value (info->entries->len, p, &p);
-		for (i = 0; i < info->entries->len; ++i) {
-			MonoRuntimeGenericContextInfoTemplate *template = g_ptr_array_index (info->entries, i);
+		encode_value (info->num_entries, p, &p);
+		for (i = 0; i < info->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *template = &info->entries [i];
 
 			encode_value (template->info_type, p, &p);
 			switch (mini_rgctx_info_type_to_patch_info_type (template->info_type)) {

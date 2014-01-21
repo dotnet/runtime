@@ -3132,15 +3132,12 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		info = mono_mempool_alloc (mp, sizeof (MonoGSharedVtMethodInfo));
 		res->data.gsharedvt_method = info;
 		memcpy (info, oinfo, sizeof (MonoGSharedVtMethodInfo));
-		info->entries = g_ptr_array_new ();
-		if (oinfo->entries) {
-			for (i = 0; i < oinfo->entries->len; ++i) {
-				MonoRuntimeGenericContextInfoTemplate *otemplate = g_ptr_array_index (oinfo->entries, i);
-				MonoRuntimeGenericContextInfoTemplate *template = mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate));
+		info->entries = mono_mempool_alloc (mp, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->count_entries);
+		for (i = 0; i < oinfo->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *otemplate = &oinfo->entries [i];
+			MonoRuntimeGenericContextInfoTemplate *template = &info->entries [i];
 
-				memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
-				g_ptr_array_add (info->entries, template);
-			}
+			memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
 		}
 		//info->locals_types = mono_mempool_alloc0 (mp, info->nlocals * sizeof (MonoType*));
 		//memcpy (info->locals_types, oinfo->locals_types, info->nlocals * sizeof (MonoType*));
@@ -3579,13 +3576,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			/* Make a copy into the domain mempool */
 			info = g_malloc0 (sizeof (MonoGSharedVtMethodInfo)); //mono_domain_alloc0 (domain, sizeof (MonoGSharedVtMethodInfo));
 			info->method = oinfo->method;
-			info->entries = g_ptr_array_new ();
-			for (i = 0; i < oinfo->entries->len; ++i) {
-				MonoRuntimeGenericContextInfoTemplate *otemplate = g_ptr_array_index (oinfo->entries, i);
-				MonoRuntimeGenericContextInfoTemplate *template = g_malloc0 (sizeof (MonoRuntimeGenericContextInfoTemplate));
+			info->num_entries = oinfo->num_entries;
+			info->entries = g_malloc0 (sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+			for (i = 0; i < oinfo->num_entries; ++i) {
+				MonoRuntimeGenericContextInfoTemplate *otemplate = &oinfo->entries [i];
+				MonoRuntimeGenericContextInfoTemplate *template = &info->entries [i];
 
 				memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
-				g_ptr_array_add (info->entries, template);
 			}
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
 			break;
@@ -4276,6 +4273,9 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 	jinfo->code_size = info->code_size;
 	jinfo->used_regs = mono_cache_unwind_info (uw_info, info_len);
 
+	if (!info->uw_info)
+		g_free (uw_info);
+
 	return jinfo;
 }
 
@@ -4375,7 +4375,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 		else
 			gi->generic_sharing_context = mono_domain_alloc0 (cfg->domain, sizeof (MonoGenericSharingContext));
-		memcpy (gi->generic_sharing_context, cfg->generic_sharing_context, sizeof (MonoGenericSharingContext));
+		mini_init_gsctx (cfg->method->dynamic ? NULL : cfg->domain, NULL, cfg->gsctx_context, gi->generic_sharing_context);
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method_to_compile)->method_inst ||
@@ -4801,16 +4801,21 @@ mini_get_shared_method (MonoMethod *method)
 }
 
 void
-mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
+mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
 	MonoGenericInst *inst;
 	int i;
 
 	memset (gsctx, 0, sizeof (MonoGenericSharingContext));
 
-	if (context->class_inst) {
+	if (context && context->class_inst) {
 		inst = context->class_inst;
-		gsctx->var_is_vt = g_new0 (gboolean, inst->type_argc);
+		if (domain)
+			gsctx->var_is_vt = mono_domain_alloc0 (domain, sizeof (gboolean) * inst->type_argc);
+		else if (mp)
+			gsctx->var_is_vt = mono_mempool_alloc0 (mp, sizeof (gboolean) * inst->type_argc);
+		else
+			gsctx->var_is_vt = g_new0 (gboolean, inst->type_argc);
 
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
@@ -4819,9 +4824,14 @@ mini_init_gsctx (MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 				gsctx->var_is_vt [i] = TRUE;
 		}
 	}
-	if (context->method_inst) {
+	if (context && context->method_inst) {
 		inst = context->method_inst;
-		gsctx->mvar_is_vt = g_new0 (gboolean, inst->type_argc);
+		if (domain)
+			gsctx->mvar_is_vt = mono_domain_alloc0 (domain, sizeof (gboolean) * inst->type_argc);
+		else if (mp)
+			gsctx->mvar_is_vt = mono_mempool_alloc0 (mp, sizeof (gboolean) * inst->type_argc);
+		else
+			gsctx->mvar_is_vt = g_new0 (gboolean, inst->type_argc);
 
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
@@ -4949,7 +4959,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		MonoMethodInflated *inflated;
 		MonoGenericContext *context;
 
-		// FIXME: Free the contents of gsctx if compilation fails
 		if (method_is_gshared) {
 			g_assert (method->is_inflated);
 			inflated = (MonoMethodInflated*)method;
@@ -4963,7 +4972,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			context = &inflated->context;
 		}
 
-		mini_init_gsctx (context, &cfg->gsctx);
+		mini_init_gsctx (NULL, cfg->mempool, context, &cfg->gsctx);
+		cfg->gsctx_context = context;
 
 		cfg->gsharedvt = TRUE;
 		// FIXME:
