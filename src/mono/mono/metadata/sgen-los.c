@@ -548,10 +548,16 @@ sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
-		guint8 *cards = NULL;
+		guint8 *cards;
+
+		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
+			continue;
+
 		if (mod_union) {
 			cards = obj->cardtable_mod_union;
 			g_assert (cards);
+		} else {
+			cards = NULL;
 		}
 
 		sgen_cardtable_scan_object (obj->data, obj->size, cards, mod_union, queue);
@@ -564,6 +570,8 @@ sgen_los_update_cardtable_mod_union (void)
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
+		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
+			continue;
 		obj->cardtable_mod_union = sgen_card_table_update_mod_union (obj->cardtable_mod_union,
 				obj->data, obj->size, NULL);
 	}
