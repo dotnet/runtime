@@ -14,6 +14,8 @@
 #include "ir-emit.h"
 #include "glib.h"
 
+#ifndef DISABLE_JIT
+
 static gboolean
 is_int_stack_size (int type)
 {
@@ -333,3 +335,5 @@ done:
 	if (cfg->verbose_level > 2)
 		mono_print_code (cfg, "AFTER ALIAS_ANALYSIS");
 }
+
+#endif /* !DISABLE_JIT */
