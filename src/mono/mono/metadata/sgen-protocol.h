@@ -29,6 +29,8 @@ enum {
 	SGEN_PROTOCOL_CONCURRENT_START,
 	SGEN_PROTOCOL_CONCURRENT_UPDATE_FINISH,
 	SGEN_PROTOCOL_WORLD_STOPPING,
+	SGEN_PROTOCOL_WORLD_STOPPED,
+	SGEN_PROTOCOL_WORLD_RESTARTING,
 	SGEN_PROTOCOL_WORLD_RESTARTED,
 	SGEN_PROTOCOL_ALLOC,
 	SGEN_PROTOCOL_COPY,
@@ -68,12 +70,29 @@ typedef struct {
 
 typedef struct {
 	long long timestamp;
-} SGenProtocolWorldStop;
+} SGenProtocolWorldStopping;
+
+typedef struct {
+	long long timestamp;
+	long long total_major_cards;
+	long long marked_major_cards;
+	long long total_los_cards;
+	long long marked_los_cards;
+} SGenProtocolWorldStopped;
 
 typedef struct {
 	int generation;
 	long long timestamp;
-} SGenProtocolWorldRestart;
+	long long total_major_cards;
+	long long marked_major_cards;
+	long long total_los_cards;
+	long long marked_los_cards;
+} SGenProtocolWorldRestarting;
+
+typedef struct {
+	int generation;
+	long long timestamp;
+} SGenProtocolWorldRestarted;
 
 typedef struct {
 	gpointer obj;
@@ -215,6 +234,10 @@ void binary_protocol_collection_end (int index, int generation) MONO_INTERNAL;
 void binary_protocol_concurrent_start (void) MONO_INTERNAL;
 void binary_protocol_concurrent_update_finish (void) MONO_INTERNAL;
 void binary_protocol_world_stopping (long long timestamp) MONO_INTERNAL;
+void binary_protocol_world_stopped (long long timestamp, long long total_major_cards,
+		long long marked_major_cards, long long total_los_cards, long long marked_los_cards) MONO_INTERNAL;
+void binary_protocol_world_restarting (int generation, long long timestamp,
+		long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards) MONO_INTERNAL;
 void binary_protocol_world_restarted (int generation, long long timestamp) MONO_INTERNAL;
 
 void binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip) MONO_INTERNAL;

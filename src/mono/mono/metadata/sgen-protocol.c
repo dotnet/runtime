@@ -245,15 +245,31 @@ binary_protocol_concurrent_update_finish (void)
 void
 binary_protocol_world_stopping (long long timestamp)
 {
-	SGenProtocolWorldStop entry = { timestamp };
-	protocol_entry (SGEN_PROTOCOL_WORLD_STOPPING, &entry, sizeof (SGenProtocolWorldStop));
+	SGenProtocolWorldStopping entry = { timestamp };
+	protocol_entry (SGEN_PROTOCOL_WORLD_STOPPING, &entry, sizeof (SGenProtocolWorldStopping));
+}
+
+void
+binary_protocol_world_stopped (long long timestamp, long long total_major_cards,
+		long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
+{
+	SGenProtocolWorldStopped entry = { timestamp, total_major_cards, marked_major_cards, total_los_cards, marked_los_cards };
+	protocol_entry (SGEN_PROTOCOL_WORLD_STOPPED, &entry, sizeof (SGenProtocolWorldStopped));
+}
+
+void
+binary_protocol_world_restarting (int generation, long long timestamp,
+		long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
+{
+	SGenProtocolWorldRestarting entry = { generation, timestamp, total_major_cards, marked_major_cards, total_los_cards, marked_los_cards };
+	protocol_entry (SGEN_PROTOCOL_WORLD_RESTARTING, &entry, sizeof (SGenProtocolWorldRestarting));
 }
 
 void
 binary_protocol_world_restarted (int generation, long long timestamp)
 {
-	SGenProtocolWorldRestart entry = { generation, timestamp };
-	protocol_entry (SGEN_PROTOCOL_WORLD_RESTARTED, &entry, sizeof (SGenProtocolWorldRestart));
+	SGenProtocolWorldRestarted entry = { generation, timestamp };
+	protocol_entry (SGEN_PROTOCOL_WORLD_RESTARTED, &entry, sizeof (SGenProtocolWorldRestarted));
 }
 
 void

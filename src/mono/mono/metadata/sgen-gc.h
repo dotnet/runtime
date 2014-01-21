@@ -689,6 +689,7 @@ struct _SgenMajorCollector {
 	MonoVTable* (*describe_pointer) (char *pointer);
 	guint8* (*get_cardtable_mod_union_for_object) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
+	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
 };
 
 extern SgenMajorCollector major_collector;
@@ -891,6 +892,7 @@ void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MO
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 void sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_los_update_cardtable_mod_union (void) MONO_INTERNAL;
+void sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards) MONO_INTERNAL;
 void sgen_major_collector_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 gboolean sgen_los_is_valid_object (char *object) MONO_INTERNAL;
 gboolean mono_sgen_los_describe_pointer (char *ptr) MONO_INTERNAL;

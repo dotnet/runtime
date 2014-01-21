@@ -191,6 +191,13 @@ release_gc_locks (void)
 	UNLOCK_INTERRUPTION;
 }
 
+static void
+count_cards (long long *major_total, long long *major_marked, long long *los_total, long long *los_marked)
+{
+	sgen_get_major_collector ()->count_cards (major_total, major_marked);
+	sgen_los_count_cards (los_total, los_marked);
+}
+
 static TV_DECLARE (stop_world_time);
 static unsigned long max_pause_usec = 0;
 
@@ -222,6 +229,11 @@ sgen_stop_world (int generation)
 	SGEN_LOG (3, "world stopped %d thread(s)", count);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 	MONO_GC_WORLD_STOP_END ();
+	if (binary_protocol_is_enabled ()) {
+		long long major_total, major_marked, los_total, los_marked;
+		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+		binary_protocol_world_stopped (sgen_timestamp (), major_total, major_marked, los_total, los_marked);
+	}
 
 	sgen_memgov_collection_start (generation);
 	sgen_bridge_reset_data ();
@@ -238,6 +250,12 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	TV_DECLARE (end_sw);
 	TV_DECLARE (end_bridge);
 	unsigned long usec, bridge_usec;
+
+	if (binary_protocol_is_enabled ()) {
+		long long major_total, major_marked, los_total, los_marked;
+		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+		binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
+	}
 
 	/* notify the profiler of the leftovers */
 	/* FIXME this is the wrong spot at we can STW for non collection reasons. */

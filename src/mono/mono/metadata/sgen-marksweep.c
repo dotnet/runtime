@@ -2377,6 +2377,31 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 	} END_FOREACH_BLOCK;
 }
 
+static void
+major_count_cards (long long *num_total_cards, long long *num_marked_cards)
+{
+	MSBlockInfo *block;
+	long long total_cards = 0;
+	long long marked_cards = 0;
+
+	FOREACH_BLOCK (block) {
+		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) block->block);
+		int i;
+
+		if (!block->has_references)
+			continue;
+
+		total_cards += CARDS_PER_BLOCK;
+		for (i = 0; i < CARDS_PER_BLOCK; ++i) {
+			if (cards [i])
+				++marked_cards;
+		}
+	} END_FOREACH_BLOCK;
+
+	*num_total_cards = total_cards;
+	*num_marked_cards = marked_cards;
+}
+
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 static void
 update_cardtable_mod_union (void)
@@ -2600,6 +2625,7 @@ sgen_marksweep_fixed_init (SgenMajorCollector *collector)
 	collector->post_param_init = post_param_init;
 	collector->is_valid_object = major_is_valid_object;
 	collector->describe_pointer = major_describe_pointer;
+	collector->count_cards = major_count_cards;
 
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops.scan_object = major_scan_object;
