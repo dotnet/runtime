@@ -69,8 +69,13 @@ qsort_rec (void *base, size_t nel, size_t width, int (*compar) (const void*, con
 void
 sgen_qsort (void *base, size_t nel, size_t width, int (*compar) (const void*, const void*))
 {
+#ifndef _MSC_VER
 	unsigned char pivot_tmp [width];
 	unsigned char swap_tmp [width];
+#else
+	unsigned char* pivot_tmp = (unsigned char*) alloca(width);
+	unsigned char* swap_tmp = (unsigned char*) alloca(width);
+#endif
 
 	qsort_rec (base, nel, width, compar, pivot_tmp, swap_tmp);
 }

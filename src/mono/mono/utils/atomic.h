@@ -79,6 +79,35 @@ static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
 }
 #endif
 
+#if defined(_MSC_VER) && !defined(InterlockedAdd)
+/* MSVC before 2013 only defines InterlockedAdd* for the Itanium architecture */
+static inline gint32 InterlockedAdd(volatile gint32 *dest, gint32 add)
+{
+	return InterlockedExchangeAdd (dest, add) + add;
+}
+#endif
+
+#if defined(_MSC_VER) && !defined(InterlockedAdd64)
+#if defined(InterlockedExchangeAdd64)
+/* This may be defined only on amd64 */
+static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+{
+	return InterlockedExchangeAdd64 (dest, add) + add;
+}
+#else
+static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
+{
+	gint64 prev_value;
+
+	do {
+		prev_value = *dest;
+	} while (prev_value != InterlockedCompareExchange64(dest, prev_value + add, prev_value));
+
+	return prev_value + add;
+}
+#endif
+#endif
+
 /* And now for some dirty hacks... The Windows API doesn't
  * provide any useful primitives for this (other than getting
  * into architecture-specific madness), so use CAS. */
