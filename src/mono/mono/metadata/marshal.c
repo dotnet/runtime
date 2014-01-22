@@ -12290,7 +12290,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec, 
 						       &align, TRUE, klass->unicode);
-			min_align = packing;
+			min_align = MAX (align, min_align);
 			info->fields [j].offset = field->offset - sizeof (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
@@ -12304,9 +12304,12 @@ mono_marshal_load_type_info (MonoClass* klass)
 		 * If the provided Size is equal or larger than the calculated size, and there
 		 * was no Pack attribute, we set min_align to 1 to avoid native_size being increased
 		 */
-		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 			if (native_size && native_size == info->native_size && klass->packing_size == 0)
 				min_align = 1;
+			else
+				min_align = MIN (min_align, packing);
+		}
 	}
 
 	if (info->native_size & (min_align - 1)) {

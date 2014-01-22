@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 public class Test 
@@ -51,7 +52,8 @@ public class Test
 		object itf;
 	}
 
-	// Size should be 12 in both 32 and 64 bits
+	// Size should be 16 in both 32 and 64 bits win/linux
+	// Size should be 12 on 32bits OSX size alignment of long is 4
 	[StructLayout (LayoutKind.Explicit)]
 	struct TestStruct8 {
 		[FieldOffset (0)]
@@ -69,7 +71,8 @@ public class Test
 		public ulong b;
 	}
 
-	// Size should be 11 in both 32 and 64 bits
+	// Size should be 16 in both 32 and 64 bits
+	// Size should be 12 on 32bits OSX size alignment of long is 4
 	[StructLayout (LayoutKind.Explicit)]
 	struct TestStruct10 {
 		[FieldOffset (0)]
@@ -93,6 +96,34 @@ public class Test
 		public short a;
 		[FieldOffset (2)]
 		public int b;
+	}
+
+	// Size should always be 12, since pack = 0, size = 0 and min alignment = 4
+	//When pack is not set, we default to 8, so min (8, min alignment) -> 4
+	[StructLayout (LayoutKind.Explicit)]
+	struct TestStruct13 {
+		[FieldOffset(0)]
+		int one;
+		[FieldOffset(4)]
+		int two;
+		[FieldOffset(8)]
+		int three;
+	}
+
+	// Size should always be 12, since pack = 8, size = 0 and min alignment = 4
+	//It's aligned to min (pack, min alignment) -> 4
+	[StructLayout (LayoutKind.Explicit)]
+	struct TestStruct14 {
+		[FieldOffset(0)]
+		int one;
+		[FieldOffset(4)]
+		int two;
+		[FieldOffset(8)]
+		int three;
+	}
+	static bool IsOSX ()
+	{
+		return (int)typeof (Environment).GetMethod ("get_Platform", BindingFlags.Static | BindingFlags.NonPublic).Invoke (null, null) == 6;
 	}
 
 	public unsafe static int Main () 
@@ -181,16 +212,27 @@ public class Test
 		// a VARIANT is 
 		if (Marshal.SizeOf (typeof (TestStruct7)) != 16)
 			return 13;
-		if (Marshal.SizeOf (typeof (TestStruct8)) != 16)
-			return 14;
+		if (IsOSX () && IntPtr.Size == 4) {
+			if (Marshal.SizeOf (typeof (TestStruct8)) != 12)
+				return 14;
+			if (Marshal.SizeOf (typeof (TestStruct10)) != 12)
+				return 16;
+		} else {
+			if (Marshal.SizeOf (typeof (TestStruct8)) != 16)
+				return 14;
+			if (Marshal.SizeOf (typeof (TestStruct10)) != 16)
+				return 16;
+		}
 		if (Marshal.SizeOf (typeof (TestStruct9)) != 12)
 			return 15;
-		if (Marshal.SizeOf (typeof (TestStruct10)) != 16)
-			return 16;
 		if (Marshal.SizeOf (typeof (TestStruct11)) != 11)
 			return 17;
 		if (Marshal.SizeOf (typeof (TestStruct12)) != 6)
 			return 18;
+		if (Marshal.SizeOf (typeof (TestStruct13)) != 12)
+			return 19;
+		if (Marshal.SizeOf (typeof (TestStruct14)) != 12)
+			return 20;
 		return 0;
 	}
 }
