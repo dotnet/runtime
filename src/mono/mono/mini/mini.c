@@ -7045,6 +7045,13 @@ delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
+delete_got_slot_list (gpointer key, gpointer value, gpointer user_data)
+{
+	GSList *list = value;
+	g_slist_free (list);
+}
+
+static void
 dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoJitDynamicMethodInfo *di = value;
@@ -7085,7 +7092,7 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_foreach (info->jump_target_hash, delete_jump_list, NULL);
 	g_hash_table_destroy (info->jump_target_hash);
 	if (info->jump_target_got_slot_hash) {
-		g_hash_table_foreach (info->jump_target_got_slot_hash, delete_jump_list, NULL);
+		g_hash_table_foreach (info->jump_target_got_slot_hash, delete_got_slot_list, NULL);
 		g_hash_table_destroy (info->jump_target_got_slot_hash);
 	}
 	if (info->dynamic_code_hash) {
