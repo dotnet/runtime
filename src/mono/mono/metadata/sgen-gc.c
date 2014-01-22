@@ -2299,7 +2299,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	/* pin cemented objects */
 	sgen_cement_iterate (pin_stage_object_callback, NULL);
 	/* identify pinned objects */
-	sgen_optimize_pin_queue (0);
+	sgen_optimize_pin_queue ();
 	sgen_pinning_setup_section (nursery_section);
 	ctx.scan_func = NULL;
 	ctx.copy_func = NULL;
@@ -2418,7 +2418,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	sgen_workers_reset_data ();
 
 	if (objects_pinned) {
-		sgen_optimize_pin_queue (0);
+		sgen_optimize_pin_queue ();
 		sgen_pinning_setup_section (nursery_section);
 	}
 
@@ -2584,7 +2584,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 			sgen_cement_reset ();
 	}
 
-	sgen_optimize_pin_queue (0);
+	sgen_optimize_pin_queue ();
 
 	/*
 	 * The concurrent collector doesn't move objects, neither on
@@ -2889,7 +2889,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 		/*This is slow, but we just OOM'd*/
 		sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
-		sgen_optimize_pin_queue (0);
+		sgen_optimize_pin_queue ();
 		sgen_find_section_pin_queue_start_end (nursery_section);
 		objects_pinned = 0;
 	}

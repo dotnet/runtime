@@ -28,7 +28,7 @@ enum {
 };
 
 void sgen_pin_stage_ptr (void *ptr) MONO_INTERNAL;
-void sgen_optimize_pin_queue (size_t start_slot) MONO_INTERNAL;
+void sgen_optimize_pin_queue (void) MONO_INTERNAL;
 void sgen_init_pinning (void) MONO_INTERNAL;
 void sgen_finish_pinning (void) MONO_INTERNAL;
 void sgen_pin_queue_clear_discarded_entries (GCMemSection *section, size_t max_pin_slot) MONO_INTERNAL;
