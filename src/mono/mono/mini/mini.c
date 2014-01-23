@@ -2704,6 +2704,12 @@ mono_set_lmf (MonoLMF *lmf)
 	(*mono_get_lmf_addr ()) = lmf;
 }
 
+MonoJitTlsData*
+mono_get_jit_tls (void)
+{
+	return mono_native_tls_get_value (mono_jit_tls_id);
+}
+
 static void
 mono_set_jit_tls (MonoJitTlsData *jit_tls)
 {
