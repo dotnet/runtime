@@ -38,18 +38,15 @@
 
 #elif defined(_MSC_VER)
 
-#ifdef __cplusplus
-extern "C"
-#endif
-void *_ReturnAddress(void);
+#include <intrin.h>
 #pragma intrinsic(_ReturnAddress)
+
 #define RETURN_ADDRESS() _ReturnAddress()
 #define RETURN_ADDRESS_N(N) NULL
 
 #else
 
-#define RETURN_ADDRESS() NULL
-#define RETURN_ADDRESS_N(N) NULL
+#error "Missing return address intrinsics implementation"
 
 #endif
 
