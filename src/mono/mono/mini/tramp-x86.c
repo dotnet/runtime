@@ -1097,11 +1097,11 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	x86_call_code (code, (guint8*)func);
 }
 
-static void
-handler_block_trampoline_helper (gpointer *ptr)
+static gpointer
+handler_block_trampoline_helper (void)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
-	*ptr = jit_tls->handler_block_return_address;
+	return jit_tls->handler_block_return_address;
 }
 
 gpointer
@@ -1116,21 +1116,25 @@ mono_arch_create_handler_block_trampoline (void)
 	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
 	*/
 
+	/*
+	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
+	 */
+
 	if (mono_get_jit_tls_offset () != -1) {
 		code = mono_x86_emit_tls_get (code, X86_EAX, mono_get_jit_tls_offset ());
 		x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 4);
-		/*simulate a call*/
-		/*Fix stack alignment*/
-		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x8);
-		x86_push_reg (code, X86_EAX);
-		x86_jump_code (code, tramp);
 	} else {
 		/*Slow path uses a c helper*/
-		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x8);
-		x86_push_reg (code, X86_ESP);
-		x86_push_imm (code, tramp);
-		x86_jump_code (code, handler_block_trampoline_helper);
+		x86_call_code (code, handler_block_trampoline_helper);
 	}
+	/* Simulate a call */
+	/*Fix stack alignment*/
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x4);
+	/* This is the address the trampoline will return to */
+	x86_push_reg (code, X86_EAX);
+	/* Dummy trampoline argument, since we call the generic trampoline directly */
+	x86_push_imm (code, 0);
+	x86_jump_code (code, tramp);
 
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 
