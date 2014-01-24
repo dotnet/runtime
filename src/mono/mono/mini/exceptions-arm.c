@@ -401,10 +401,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		frame->type = FRAME_TYPE_MANAGED;
 
-		if (ji->from_aot)
-			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
-		else
-			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
+		unwind_info = mono_jinfo_get_unwind_info (ji, &unwind_info_len);
 
 		/*
 		printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);

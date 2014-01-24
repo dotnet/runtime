@@ -2709,3 +2709,16 @@ mono_restore_context (MonoContext *ctx)
 	g_assert_not_reached ();
 }
 
+/*
+ * mono_jinfo_get_unwind_info:
+ *
+ *   Return the unwind info for JI.
+ */
+guint8*
+mono_jinfo_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
+{
+	if (ji->from_aot)
+		return mono_aot_get_unwind_info (ji, unwind_info_len);
+	else
+		return mono_get_cached_unwind_info (ji->used_regs, unwind_info_len);
+}
