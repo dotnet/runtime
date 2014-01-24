@@ -356,7 +356,8 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
 
 	if (callee_array_helper) {
 		add_static_rgctx_tramp = FALSE;
-		if (ji && ji->from_aot) {
+		/* FIXME: ji->from_aot is not set for llvm methods */
+		if (ji && (ji->from_aot || mono_aot_only)) {
 			/* In AOT mode, compiled_method points to one of the InternalArray methods in Array. */
 			if (mono_method_needs_static_rgctx_invoke (jinfo_get_method (ji), TRUE))
 				add_static_rgctx_tramp = TRUE;
