@@ -1105,11 +1105,16 @@ handler_block_trampoline_helper (void)
 }
 
 gpointer
-mono_arch_create_handler_block_trampoline (void)
+mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
 	guint8 *code, *buf;
 	int tramp_size = 64;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	g_assert (!aot);
+
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
 	/*
@@ -1141,8 +1146,8 @@ mono_arch_create_handler_block_trampoline (void)
 	mono_arch_flush_icache (buf, code - buf);
 	g_assert (code - buf <= tramp_size);
 
-	if (mono_jit_map_is_enabled ())
-		mono_emit_jit_tramp (buf, code - buf, "handler_block_trampoline");
+	if (info)
+		*info = mono_tramp_info_create ("handler_block_trampoline", buf, code - buf, ji, unwind_ops);
 
 	return buf;
 }

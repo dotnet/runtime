@@ -1139,16 +1139,16 @@ mono_create_handler_block_trampoline (void)
 		return code;
 	}
 
-
-	if (mono_aot_only) {
-		g_assert (0);
-		return code;
-	}
+	g_assert (!mono_aot_only);
 
 	mono_trampolines_lock ();
 
 	if (!code) {
-		gpointer tmp = mono_arch_create_handler_block_trampoline ();
+		MonoTrampInfo *info;
+		gpointer tmp;
+
+		tmp = mono_arch_create_handler_block_trampoline (&info, FALSE);
+		mono_tramp_info_register (info);
 		mono_memory_barrier ();
 		code = tmp;
 	}
