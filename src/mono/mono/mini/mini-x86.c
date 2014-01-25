@@ -6586,29 +6586,8 @@ mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *cl
 	int offset;
 	gpointer *sp, old_value;
 	char *bp;
-	const unsigned char *handler;
 
-	/*Decode the first instruction to figure out where did we store the spvar*/
-	/*Our jit MUST generate the following:
-	 mov %esp, -?(%ebp)
-	 Which is encoded as: 0x89 mod_rm.
-	 mod_rm (esp, ebp, imm) which can be: (imm will never be zero)
-		mod (reg + imm8):  01 reg(esp): 100 rm(ebp): 101 -> 01100101 (0x65)
-		mod (reg + imm32): 10 reg(esp): 100 rm(ebp): 101 -> 10100101 (0xA5)
-	*/
-	handler = clause->handler_start;
-
-	if (*handler != 0x89)
-		return NULL;
-
-	++handler;
-
-	if (*handler == 0x65)
-		offset = *(signed char*)(handler + 1);
-	else if (*handler == 0xA5)
-		offset = *(int*)(handler + 1);
-	else
-		return NULL;
+	offset = clause->exvar_offset;
 
 	/*Load the spvar*/
 	bp = MONO_CONTEXT_GET_BP (ctx);
