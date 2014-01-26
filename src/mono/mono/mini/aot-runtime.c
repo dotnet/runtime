@@ -2989,16 +2989,22 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
+	case MONO_PATCH_INFO_CLASS_INIT:
 		/* Shared */
 		ji->data.klass = decode_klass_ref (aot_module, p, &p);
 		if (!ji->data.klass)
 			goto cleanup;
 		break;
-	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		ji->data.klass = decode_klass_ref (aot_module, p, &p);
-		if (!ji->data.klass)
+		ji->data.del_tramp = mono_mempool_alloc0 (mp, sizeof (MonoClassMethodPair));
+		ji->data.del_tramp->klass = decode_klass_ref (aot_module, p, &p);
+		if (!ji->data.del_tramp->klass)
 			goto cleanup;
+		if (decode_value (p, &p)) {
+			ji->data.del_tramp->method = decode_resolve_method_ref (aot_module, p, &p);
+			if (!ji->data.del_tramp->method)
+				goto cleanup;
+		}
 		break;
 	case MONO_PATCH_INFO_IMAGE:
 		ji->data.image = load_image (aot_module, decode_value (p, &p), TRUE);
