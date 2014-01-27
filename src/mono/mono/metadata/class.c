@@ -7118,6 +7118,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
  * @image: the image where the class resides
  * @type_token: the token for the class
  * @context: the generic context used to evaluate generic instantiations in
+ * @deprecated: Functions that expose MonoGenericContext are going away in mono 4.0
  *
  * Returns: the MonoClass that represents @type_token in @image
  */
