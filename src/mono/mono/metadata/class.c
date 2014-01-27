@@ -893,7 +893,7 @@ mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoG
 	return inflated;
 }
 
-static MonoClass*
+MonoClass*
 mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext *context, MonoError *error)
 {
 	MonoClass *res;
