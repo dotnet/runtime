@@ -2562,16 +2562,23 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 	domain->assembly_bindings = g_slist_append_mempool (domain->mp, domain->assembly_bindings, info_copy);
 }
 
+static int
+get_version_number (int major, int minor)
+{
+	return major * 256 + minor;
+}
+
 static inline gboolean
 info_major_minor_in_range (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
 {
+	int aname_version_number = get_version_number (aname->major, aname->minor);
 	if (!info->has_old_version_bottom)
 		return FALSE;
 
-	if (info->old_version_bottom.major > aname->major || info->old_version_bottom.minor > aname->minor)
+	if (get_version_number (info->old_version_bottom.major, info->old_version_bottom.minor) > aname_version_number)
 		return FALSE;
 
-	if (info->has_old_version_top && (info->old_version_top.major < aname->major || info->old_version_top.minor < aname->minor))
+	if (info->has_old_version_top && get_version_number (info->old_version_top.major, info->old_version_top.minor) < aname_version_number)
 		return FALSE;
 
 	/* This is not the nicest way to do it, but it's a by-product of the way parsing is done */
