@@ -5442,19 +5442,20 @@ init_generic_context_from_args (MonoGenericContext *context, MonoArray *type_arg
 }
 
 ICALL_EXPORT MonoType*
-ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *error)
+ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token, MonoArray *type_args, MonoArray *method_args, MonoResolveTokenError *resolve_error)
 {
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 	MonoGenericContext context;
+	MonoError error;
 
-	*error = ResolveTokenError_Other;
+	*resolve_error = ResolveTokenError_Other;
 
 	/* Validate token */
 	if ((table != MONO_TABLE_TYPEDEF) && (table != MONO_TABLE_TYPEREF) && 
 		(table != MONO_TABLE_TYPESPEC)) {
-		*error = ResolveTokenError_BadTable;
+		*resolve_error = ResolveTokenError_BadTable;
 		return NULL;
 	}
 
@@ -5470,15 +5471,17 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
-		*error = ResolveTokenError_OutOfRange;
+		*resolve_error = ResolveTokenError_OutOfRange;
 		return NULL;
 	}
 
 	init_generic_context_from_args (&context, type_args, method_args);
-	klass = mono_class_get_full (image, token, &context);
-
+	klass = mono_class_get (image, token);
 	if (mono_loader_get_last_error ())
 		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+
+	klass = mono_class_inflate_generic_class_checked (klass, &context, &error);
+	mono_error_raise_exception (&error);
 
 	if (klass)
 		return &klass->byval_arg;
