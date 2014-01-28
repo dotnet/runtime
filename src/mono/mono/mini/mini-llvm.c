@@ -91,6 +91,7 @@ typedef struct {
 	gboolean *is_dead;
 	gboolean *unreachable;
 	int *pindexes;
+	LLVMValueRef imt_rgctx_loc;
 
 	char temp_name [32];
 } EmitContext;
@@ -1664,6 +1665,19 @@ emit_vtype_to_reg (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMVa
 }
 
 static LLVMValueRef
+build_alloca_llvm_type (EmitContext *ctx, LLVMTypeRef t, int align)
+{
+	/*
+	 * Have to place all alloca's at the end of the entry bb, since otherwise they would
+	 * get executed every time control reaches them.
+	 */
+	LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
+
+	ctx->last_alloca = mono_llvm_build_alloca (ctx->alloca_builder, t, NULL, align, "");
+	return ctx->last_alloca;
+}
+
+static LLVMValueRef
 build_alloca (EmitContext *ctx, MonoType *t)
 {
 	MonoClass *k = mono_class_from_mono_type (t);
@@ -1678,14 +1692,7 @@ build_alloca (EmitContext *ctx, MonoType *t)
 	while (mono_is_power_of_two (align) == -1)
 		align ++;
 
-	/*
-	 * Have to place all alloca's at the end of the entry bb, since otherwise they would
-	 * get executed every time control reaches them.
-	 */
-	LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
-
-	ctx->last_alloca = mono_llvm_build_alloca (ctx->alloca_builder, type_to_llvm_type (ctx, t), NULL, align, "");
-	return ctx->last_alloca;
+	return build_alloca_llvm_type (ctx, type_to_llvm_type (ctx, t), align);
 }
 
 /*
@@ -2020,12 +2027,31 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->rgctx_arg_reg) {
 		g_assert (values [call->rgctx_arg_reg]);
 		g_assert (sinfo.rgctx_arg_pindex < nargs);
+		/*
+		 * On ARM, the imt/rgctx argument is passed in a caller save register, but some of our trampolines etc. clobber it, leading to
+		 * problems is LLVM moves the arg assignment earlier. To work around this, save the argument into a stack slot and load
+		 * it using a volatile load.
+		 */
+#ifdef TARGET_ARM
+		if (!ctx->imt_rgctx_loc)
+			ctx->imt_rgctx_loc = build_alloca_llvm_type (ctx, ctx->lmodule->ptr_type, sizeof (gpointer));
+		LLVMBuildStore (builder, convert (ctx, ctx->values [call->rgctx_arg_reg], ctx->lmodule->ptr_type), ctx->imt_rgctx_loc);
+		args [sinfo.rgctx_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE);
+#else
 		args [sinfo.rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], ctx->lmodule->ptr_type);
+#endif
 	}
 	if (call->imt_arg_reg) {
 		g_assert (values [call->imt_arg_reg]);
 		g_assert (sinfo.imt_arg_pindex < nargs);
+#ifdef TARGET_ARM
+		if (!ctx->imt_rgctx_loc)
+			ctx->imt_rgctx_loc = build_alloca_llvm_type (ctx, ctx->lmodule->ptr_type, sizeof (gpointer));
+		LLVMBuildStore (builder, convert (ctx, ctx->values [call->imt_arg_reg], ctx->lmodule->ptr_type), ctx->imt_rgctx_loc);
+		args [sinfo.imt_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE);
+#else
 		args [sinfo.imt_arg_pindex] = convert (ctx, values [call->imt_arg_reg], ctx->lmodule->ptr_type);
+#endif
 	}
 
 	if (vretaddr) {
