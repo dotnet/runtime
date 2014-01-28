@@ -166,17 +166,25 @@ MonoClass *
 mono_class_from_typeref (MonoImage *image, guint32 type_token)
 {
 	MonoError error;
+	MonoClass *class = mono_class_from_typeref_checked (image, type_token, &error);
+	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+	return class;
+}
+
+MonoClass *
+mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError *error)
+{
 	guint32 cols [MONO_TYPEREF_SIZE];
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 	guint32 idx;
 	const char *name, *nspace;
-	MonoClass *res;
+	MonoClass *res = NULL;
 	MonoImage *module;
 
-	if (!mono_verifier_verify_typeref_row (image, (type_token & 0xffffff) - 1, &error)) {
-		mono_trace_warning (MONO_TRACE_TYPE, "Failed to resolve typeref from %s due to '%s'", image->name, mono_error_get_message (&error));
+	mono_error_init (error);
+
+	if (!mono_verifier_verify_typeref_row (image, (type_token & 0xffffff) - 1, error))
 		return NULL;
-	}
 
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
@@ -192,33 +200,26 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		The defacto behavior is that it's just a typedef in disguise.
 		*/
 		/* a typedef in disguise */
-		return mono_class_from_name (image, nspace, name);
+		res = mono_class_from_name (image, nspace, name); /*FIXME proper error handling*/
+		goto done;
+
 	case MONO_RESOLTION_SCOPE_MODULEREF:
 		module = mono_image_load_module (image, idx);
 		if (module)
-			return mono_class_from_name (module, nspace, name);
-		else {
-			char *msg = g_strdup_printf ("%s%s%s", nspace, nspace [0] ? "." : "", name);
-			char *human_name;
-			
-			human_name = mono_stringify_assembly_name (&image->assembly->aname);
-			mono_loader_set_error_type_load (msg, human_name);
-			g_free (msg);
-			g_free (human_name);
-		
-			return NULL;
-		}
+			res = mono_class_from_name (module, nspace, name); /*FIXME proper error handling*/
+		goto done;
+
 	case MONO_RESOLTION_SCOPE_TYPEREF: {
 		MonoClass *enclosing;
 		GList *tmp;
 
 		if (idx == mono_metadata_token_index (type_token)) {
-			mono_loader_set_error_bad_image (g_strdup_printf ("Image %s with self-referencing typeref token %08x.", image->name, type_token));
+			mono_error_set_bad_image (error, image, "Image with self-referencing typeref token %08x.", type_token);
 			return NULL;
 		}
 
-		enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
-		if (!enclosing)
+		enclosing = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | idx, error); 
+		if (!mono_error_ok (error))
 			return NULL;
 
 		if (enclosing->nested_classes_inited && enclosing->ext) {
@@ -236,28 +237,21 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 				guint32 string_offset = mono_metadata_decode_row_col (&enclosing->image->tables [MONO_TABLE_TYPEDEF], class_nested - 1, MONO_TYPEDEF_NAME);
 				const char *nname = mono_metadata_string_heap (enclosing->image, string_offset);
 
-				if (strcmp (nname, name) == 0) {
-					MonoClass *res = mono_class_create_from_typedef (enclosing->image, MONO_TOKEN_TYPE_DEF | class_nested, &error);
-					if (!mono_error_ok (&error)) {
-						mono_loader_set_error_from_mono_error (&error);
-						mono_error_cleanup (&error); /*FIXME don't swallow error message.*/
-						return NULL;
-					}
-					return res;
-				}
+				if (strcmp (nname, name) == 0)
+					return mono_class_create_from_typedef (enclosing->image, MONO_TOKEN_TYPE_DEF | class_nested, error);
 
 				i = mono_metadata_nesting_typedef (enclosing->image, enclosing->type_token, i + 1);
 			}
 		}
 		g_warning ("TypeRef ResolutionScope not yet handled (%d) for %s.%s in image %s", idx, nspace, name, image->name);
-		return NULL;
+		goto done;
 	}
 	case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
 		break;
 	}
 
 	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
-		mono_loader_set_error_bad_image (g_strdup_printf ("Image %s with invalid assemblyref token %08x.", image->name, idx));
+		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
 		return NULL;
 	}
 
@@ -272,13 +266,20 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
-		mono_loader_set_error_assembly_load (human_name, image->assembly ? image->assembly->ref_only : FALSE);
-		g_free (human_name);
-		
+		mono_error_set_assembly_load_simple (error, human_name, image->assembly ? image->assembly->ref_only : FALSE);
 		return NULL;
 	}
 
-	return mono_class_from_name (image->references [idx - 1]->image, nspace, name);
+	res = mono_class_from_name (image->references [idx - 1]->image, nspace, name);
+
+done:
+	/* Generic case, should be avoided for when a better error is possible. */
+	if (!res && mono_error_ok (error)) {
+		char *name = mono_class_name_from_token (image, type_token);
+		char *assembly = mono_assembly_name_from_token (image, type_token);
+		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
+	}
+	return res;
 }
 
 
@@ -7149,7 +7150,11 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 		}
 		break;		
 	case MONO_TOKEN_TYPE_REF:
-		class = mono_class_from_typeref (image, type_token);
+		class = mono_class_from_typeref_checked (image, type_token, &error);
+		if (!mono_error_ok (&error)) {
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (&error);
+		}
 		break;
 	case MONO_TOKEN_TYPE_SPEC:
 		class = mono_class_create_from_typespec (image, type_token, context, &error);
