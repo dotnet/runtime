@@ -188,6 +188,16 @@ mono_error_set_assembly_load (MonoError *oerror, const char *assembly_name, cons
 	set_error_message ();
 }
 
+
+void
+mono_error_set_assembly_load_simple (MonoError *oerror, const char *assembly_name, gboolean refection_only)
+{
+	if (refection_only)
+		mono_error_set_assembly_load (oerror, assembly_name, "Cannot resolve dependency to assembly because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.");
+	else
+		mono_error_set_assembly_load (oerror, assembly_name, "Could not load file or assembly or one of its dependencies.");
+}
+
 void
 mono_error_set_type_load_class (MonoError *oerror, MonoClass *klass, const char *msg_format, ...)
 {
@@ -321,10 +331,7 @@ mono_error_set_from_loader_error (MonoError *oerror)
 		break;
 	
 	case MONO_EXCEPTION_FILE_NOT_FOUND:
-		if (loader_error->ref_only)
-			mono_error_set_assembly_load (oerror, loader_error->assembly_name, "Cannot resolve dependency to assembly because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.");
-		else
-			mono_error_set_assembly_load (oerror, loader_error->assembly_name, "Could not load file or assembly or one of its dependencies.");
+		mono_error_set_assembly_load_simple (oerror, loader_error->assembly_name, loader_error->ref_only);
 		break;
 
 	case MONO_EXCEPTION_METHOD_ACCESS:
