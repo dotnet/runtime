@@ -922,11 +922,19 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 			continue;
 		if (!block->pinned && !non_pinned)
 			continue;
-		if (sweep && lazy_sweep)
+		if (sweep && lazy_sweep) {
 			sweep_block (block, FALSE);
+			SGEN_ASSERT (0, block->swept, "Block must be swept after sweeping");
+		}
 
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
+			if (!block->swept) {
+				int word, bit;
+				MS_CALC_MARK_BIT (word, bit, obj);
+				if (!MS_MARK_BIT (block, word, bit))
+					continue;
+			}
 			if (MS_OBJ_ALLOCED (obj, block))
 				callback ((char*)obj, block->obj_size, data);
 		}
