@@ -8278,6 +8278,7 @@ collect_methods (MonoAotCompile *acfg)
 
 		if (!method) {
 			printf ("Failed to load method 0x%x from '%s'.\n", token, image->name);
+			printf ("Run with MONO_LOG_LEVEL=debug for more information.\n");
 			exit (1);
 		}
 			
