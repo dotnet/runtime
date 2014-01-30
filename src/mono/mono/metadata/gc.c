@@ -75,7 +75,6 @@ static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 static void reference_queue_proccess_all (void);
 static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
-static void join_threads (void);
 #ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;

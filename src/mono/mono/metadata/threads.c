@@ -4725,7 +4725,7 @@ mono_threads_join_threads (void)
 		if (g_hash_table_size (joinable_threads)) {
 			g_hash_table_iter_init (&iter, joinable_threads);
 			g_hash_table_iter_next (&iter, &key, (void**)&tid);
-			thread = tid;
+			thread = (pthread_t)tid;
 			g_hash_table_remove (joinable_threads, key);
 			joinable_thread_count --;
 			found = TRUE;
@@ -4762,7 +4762,7 @@ mono_thread_join (gpointer tid)
 		joinable_thread_count --;
 	}
 	mono_threads_unlock ();
-	thread = tid;
+	thread = (pthread_t)tid;
 	pthread_join (thread, NULL);
 #endif
 }
