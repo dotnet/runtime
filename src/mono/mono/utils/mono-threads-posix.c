@@ -69,11 +69,6 @@ inner_start_thread (void *arg)
 	}
 	start_info->handle = handle;
 
-	if (!(flags & CREATE_NO_DETACH)) {
-		res = mono_gc_pthread_detach (pthread_self ());
-		g_assert (!res);
-	}
-
 	info = mono_thread_info_attach (&result);
 	info->runtime_thread = TRUE;
 

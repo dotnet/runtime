@@ -53,6 +53,8 @@ static mono_mutex_t mono_gc_lock;
 
 static void*
 boehm_thread_register (MonoThreadInfo* info, void *baseptr);
+static void
+boehm_thread_unregister (MonoThreadInfo *p);
 
 static void
 mono_gc_warning (char *msg, GC_word arg)
@@ -184,6 +186,7 @@ mono_gc_base_init (void)
 
 	memset (&cb, 0, sizeof (cb));
 	cb.thread_register = boehm_thread_register;
+	cb.thread_unregister = boehm_thread_unregister;
 	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
 #ifndef HOST_WIN32
 	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
@@ -356,6 +359,16 @@ boehm_thread_register (MonoThreadInfo* info, void *baseptr)
 	return NULL;
 #endif
 #endif
+}
+
+static void
+boehm_thread_unregister (MonoThreadInfo *p)
+{
+	MonoNativeThreadId tid;
+
+	tid = mono_thread_info_get_tid (p);
+
+	mono_threads_add_joinable_thread ((gpointer)tid);
 }
 
 gboolean
