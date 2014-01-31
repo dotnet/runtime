@@ -29,7 +29,6 @@
 #include <mono/io-layer/mutex-private.h>
 
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-mutex.h>
 

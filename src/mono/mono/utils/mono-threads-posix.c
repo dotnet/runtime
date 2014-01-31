@@ -18,7 +18,6 @@
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/metadata/threads-types.h>
 
