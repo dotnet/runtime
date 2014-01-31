@@ -1209,14 +1209,7 @@ mono_gc_cleanup (void)
 				ret = WaitForSingleObjectEx (gc_thread->handle, INFINITE, TRUE);
 				g_assert (ret == WAIT_OBJECT_0);
 
-#ifndef HOST_WIN32
-				/*
-				 * The above wait only waits for the exited event to be signalled, the thread might still be running. To fix this race, we
-				 * create the finalizer thread without calling pthread_detach () on it, so we can wait for it manually.
-				 */
-				ret = pthread_join ((MonoNativeThreadId)(gpointer)(gsize)gc_thread->tid, NULL);
-				g_assert (ret == 0);
-#endif
+				mono_thread_join ((gpointer)gc_thread->tid);
 			}
 		}
 		gc_thread = NULL;
