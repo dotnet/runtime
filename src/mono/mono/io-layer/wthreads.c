@@ -654,60 +654,11 @@ wapi_thread_interrupt_self (void)
  */
 void wapi_interrupt_thread (gpointer thread_handle)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
-	gpointer prev_handle, wait_handle;
-	guint32 idx;
-	pthread_cond_t *cond;
-	mono_mutex_t *mutex;
-	
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread);
-	g_assert (ok);
+	gpointer wait_handle;
 
-	while (TRUE) {
-		wait_handle = thread->wait_handle;
-
-		/* 
-		 * Atomically obtain the handle the thread is waiting on, and
-		 * change it to a flag value.
-		 */
-		prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
-														 INTERRUPTION_REQUESTED_HANDLE, wait_handle);
-		if (prev_handle == INTERRUPTION_REQUESTED_HANDLE)
-			/* Already interrupted */
-			return;
-		if (prev_handle == wait_handle)
-			break;
-
-		/* Try again */
-	}
-
-	WAIT_DEBUG (printf ("%p: state -> INTERRUPTED.\n", thread->id););
-
-	if (!wait_handle)
-		/* Not waiting */
-		return;
-
-	/* If we reach here, then wait_handle is set to the flag value, 
-	 * which means that the target thread is either
-	 * - before the first CAS in timedwait, which means it won't enter the
-	 * wait.
-	 * - it is after the first CAS, so it is already waiting, or it will 
-	 * enter the wait, and it will be interrupted by the broadcast.
-	 */
-	idx = GPOINTER_TO_UINT(wait_handle);
-	cond = &_WAPI_PRIVATE_HANDLES(idx).signal_cond;
-	mutex = &_WAPI_PRIVATE_HANDLES(idx).signal_mutex;
-
-	mono_mutex_lock (mutex);
-	mono_cond_broadcast (cond);
-	mono_mutex_unlock (mutex);
-
-	/* ref added by set_wait_handle */
-	_wapi_handle_unref (wait_handle);
+	wait_handle = wapi_prepare_interrupt_thread (thread_handle);
+	wapi_finish_interrupt_thread (wait_handle);
 }
-
 
 gpointer wapi_prepare_interrupt_thread (gpointer thread_handle)
 {
@@ -771,7 +722,6 @@ void wapi_finish_interrupt_thread (gpointer wait_handle)
 	_wapi_handle_unref (wait_handle);
 }
 
-
 /*
  * wapi_self_interrupt:
  *
@@ -780,42 +730,15 @@ void wapi_finish_interrupt_thread (gpointer wait_handle)
  */
 void wapi_self_interrupt (void)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
-	gpointer prev_handle, wait_handle;
+	gpointer wait_handle;
 	gpointer thread_handle;
 
-
 	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-							  (gpointer *)&thread);
-	g_assert (ok);
-
-	while (TRUE) {
-		wait_handle = thread->wait_handle;
-
-		/*
-		 * Atomically obtain the handle the thread is waiting on, and
-		 * change it to a flag value.
-		 */
-		prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
-														 INTERRUPTION_REQUESTED_HANDLE, wait_handle);
-		if (prev_handle == INTERRUPTION_REQUESTED_HANDLE)
-			/* Already interrupted */
-			goto cleanup;
-		/*We did not get interrupted*/
-		if (prev_handle == wait_handle)
-			break;
-
-		/* Try again */
-	}
-
-	if (wait_handle) {
+	wait_handle = wapi_prepare_interrupt_thread (thread_handle);
+	if (wait_handle)
 		/* ref added by set_wait_handle */
 		_wapi_handle_unref (wait_handle);
-	}
 
-cleanup:
 	_wapi_handle_unref (thread_handle);
 }
 
