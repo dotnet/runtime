@@ -683,6 +683,19 @@ mono_tramp_info_register (MonoTrampInfo *info)
 	mono_tramp_info_free (info);
 }
 
+static void
+mono_tramp_info_cleanup (void)
+{
+	GSList *l;
+
+	for (l = tramp_infos; l; l = l->next) {
+		MonoTrampInfo *info = l->data;
+
+		mono_tramp_info_free (info);
+	}
+	g_slist_free (tramp_infos);
+}
+
 G_GNUC_UNUSED static void
 break_count (void)
 {
@@ -7703,6 +7716,8 @@ mini_cleanup (MonoDomain *domain)
 	g_free (emul_opcode_map);
 	g_free (emul_opcode_opcodes);
 	g_free (vtable_trampolines);
+
+	mono_tramp_info_cleanup ();
 
 	mono_arch_cleanup ();
 
