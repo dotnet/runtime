@@ -4577,6 +4577,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				g_assert (LLVMTypeOf (ctx->addresses [sreg1]) == LLVMTypeOf (values [phi->dreg]));
 				LLVMAddIncoming (values [phi->dreg], &ctx->addresses [sreg1], &in_bb, 1);
 			} else {
+				if (LLVMTypeOf (values [sreg1]) != LLVMTypeOf (values [phi->dreg]))
+					// FIXME:
+					LLVM_FAILURE (ctx, "incoming phi arg type mismatch");
 				g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [phi->dreg]));
 				LLVMAddIncoming (values [phi->dreg], &values [sreg1], &in_bb, 1);
 			}
