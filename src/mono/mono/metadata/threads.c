@@ -129,6 +129,11 @@ static CRITICAL_SECTION threads_mutex;
 #define mono_contexts_unlock() LeaveCriticalSection (&contexts_mutex)
 static CRITICAL_SECTION contexts_mutex;
 
+/* Controls access to the 'joinable_threads' hash table */
+#define joinable_threads_lock() EnterCriticalSection (&joinable_threads_mutex)
+#define joinable_threads_unlock() LeaveCriticalSection (&joinable_threads_mutex)
+static CRITICAL_SECTION joinable_threads_mutex;
+
 /* Holds current status of static data heap */
 static StaticDataInfo thread_static_info;
 static StaticDataInfo context_static_info;
@@ -2476,6 +2481,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
+	InitializeCriticalSection(&joinable_threads_mutex);
 	
 	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert(background_change_event != NULL);
@@ -4688,12 +4694,12 @@ mono_threads_add_joinable_thread (gpointer tid)
 	 * 2fd16f60/r114307. So we collect them and join them when
 	 * we have time (in he finalizer thread).
 	 */
-	mono_threads_lock ();
+	joinable_threads_lock ();
 	if (!joinable_threads)
 		joinable_threads = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (joinable_threads, tid, tid);
 	joinable_thread_count ++;
-	mono_threads_unlock ();
+	joinable_threads_unlock ();
 
 	mono_gc_finalize_notify ();
 #endif
@@ -4720,7 +4726,7 @@ mono_threads_join_threads (void)
 		return;
 
 	while (TRUE) {
-		mono_threads_lock ();
+		joinable_threads_lock ();
 		found = FALSE;
 		if (g_hash_table_size (joinable_threads)) {
 			g_hash_table_iter_init (&iter, joinable_threads);
@@ -4730,7 +4736,7 @@ mono_threads_join_threads (void)
 			joinable_thread_count --;
 			found = TRUE;
 		}
-		mono_threads_unlock ();
+		joinable_threads_unlock ();
 		if (found) {
 			if (thread != pthread_self ())
 				/* This shouldn't block */
@@ -4754,14 +4760,14 @@ mono_thread_join (gpointer tid)
 #ifndef HOST_WIN32
 	pthread_t thread;
 
-	mono_threads_lock ();
+	joinable_threads_lock ();
 	if (!joinable_threads)
 		joinable_threads = g_hash_table_new (NULL, NULL);
 	if (g_hash_table_lookup (joinable_threads, tid)) {
 		g_hash_table_remove (joinable_threads, tid);
 		joinable_thread_count --;
 	}
-	mono_threads_unlock ();
+	joinable_threads_unlock ();
 	thread = (pthread_t)tid;
 	pthread_join (thread, NULL);
 #endif
