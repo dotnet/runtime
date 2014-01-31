@@ -745,3 +745,15 @@ mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value
 {
 	((MonoThreadInfo*)info)->tls [key] = value;
 }
+
+/*
+ * mono_thread_info_exit:
+ *
+ *   Exit the current thread.
+ * This function doesn't return.
+ */
+void
+mono_thread_info_exit (void)
+{
+	mono_threads_core_exit (0);
+}

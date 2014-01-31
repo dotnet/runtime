@@ -207,4 +207,10 @@ mono_threads_core_yield (void)
 	return SwitchToThread ();
 }
 
+void
+mono_threads_core_exit (int exit_code)
+{
+	ExitThread (exit_code);
+}
+
 #endif

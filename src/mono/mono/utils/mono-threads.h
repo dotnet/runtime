@@ -149,6 +149,9 @@ typedef struct {
 	 * other than the current one.
 	 */
 	gpointer tls [TLS_KEY_NUM];
+
+	/* IO layer/win32 handle for this thread */
+	HANDLE handle;
 } MonoThreadInfo;
 
 typedef struct {
@@ -169,6 +172,7 @@ typedef struct {
 	void (*thread_detach)(THREAD_INFO_TYPE *info);
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 	gboolean (*mono_method_is_critical) (void *method);
+	void (*thread_exit)(void *retval);
 #ifndef HOST_WIN32
 	int (*mono_gc_pthread_create) (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
 #endif
@@ -280,6 +284,9 @@ mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
 void
 mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value);
 
+void
+mono_thread_info_exit (void);
+
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
@@ -306,6 +313,7 @@ HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer a
 void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid) MONO_INTERNAL;
 void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_INTERNAL;
 gboolean mono_threads_core_yield (void) MONO_INTERNAL;
+void mono_threads_core_exit (int exit_code) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

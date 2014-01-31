@@ -67,7 +67,7 @@ void wapi_finish_interrupt_thread (gpointer wait_handle);
 char* wapi_current_thread_desc (void);
 
 gpointer wapi_create_thread_handle (void);
-void wapi_thread_set_exit_code (guint32 exitstatus, gpointer handle);
+void wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus);
 
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */

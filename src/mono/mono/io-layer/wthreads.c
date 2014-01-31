@@ -193,28 +193,8 @@ void _wapi_thread_signal_self (guint32 exitstatus)
 	_wapi_thread_set_termination_details (handle, exitstatus);
 }
 
-/* Called by the thread creation code as a thread is finishing up, and
- * by ExitThread()
-*/
-static void thread_exit (guint32 exitstatus, gpointer handle) G_GNUC_NORETURN;
-#if defined(__native_client__)
-void nacl_shutdown_gc_thread(void);
-#endif
-static void thread_exit (guint32 exitstatus, gpointer handle)
-{
-#if defined(__native_client__)
-	nacl_shutdown_gc_thread();
-#endif
-	_wapi_thread_set_termination_details (handle, exitstatus);
-	
-	/* Call pthread_exit() to call destructors and really exit the
-	 * thread
-	 */
-	mono_gc_pthread_exit (NULL);
-}
-
 void
-wapi_thread_set_exit_code (guint32 exitstatus, gpointer handle)
+wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 {
 	_wapi_thread_set_termination_details (handle, exitstatus);
 }
@@ -273,8 +253,7 @@ wapi_create_thread_handle (void)
 	thread->handle = handle;
 
 	res = pthread_setspecific (thread_hash_key, handle);
-	if (res)
-		mono_gc_pthread_exit (NULL);
+	g_assert (!res);
 
 	thread->id = pthread_self ();
 
@@ -374,71 +353,6 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	DEBUG ("%s: returning thread handle %p", __func__, ret);
 	
 	return(ret);
-}
-
-/**
- * ExitThread:
- * @exitcode: Sets the thread's exit code, which can be read from
- * another thread with GetExitCodeThread().
- *
- * Terminates the calling thread.  A thread can also exit by returning
- * from its start function. When the last thread in a process
- * terminates, the process itself terminates.
- */
-void ExitThread(guint32 exitcode)
-{
-	gpointer thread = _wapi_thread_handle_from_id (pthread_self ());
-	
-	if (thread != NULL) {
-		thread_exit(exitcode, thread);
-	} else {
-		/* Just blow this thread away */
-		mono_gc_pthread_exit (NULL);
-	}
-}
-
-/**
- * GetExitCodeThread:
- * @handle: The thread handle to query
- * @exitcode: The thread @handle exit code is stored here
- *
- * Finds the exit code of @handle, and stores it in @exitcode.  If the
- * thread @handle is still running, the value stored is %STILL_ACTIVE.
- *
- * Return value: %TRUE, or %FALSE on error.
- */
-gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode)
-{
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		return (FALSE);
-	}
-	
-	DEBUG ("%s: Finding exit status for thread handle %p id %ld",
-		   __func__, handle, thread_handle->id);
-
-	if (exitcode == NULL) {
-		DEBUG ("%s: Nowhere to store exit code", __func__);
-		return(FALSE);
-	}
-	
-	if (thread_handle->state != THREAD_STATE_EXITED) {
-		DEBUG ("%s: Thread still active (state %d, exited is %d)",
-			   __func__, thread_handle->state,
-			   THREAD_STATE_EXITED);
-		*exitcode = STILL_ACTIVE;
-		return(TRUE);
-	}
-	
-	*exitcode = thread_handle->exitstatus;
-	
-	return(TRUE);
 }
 
 /**

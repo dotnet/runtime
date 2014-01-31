@@ -954,7 +954,7 @@ mono_thread_exit ()
 	/* we could add a callback here for embedders to use. */
 	if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread))
 		exit (mono_environment_exitcode_get ());
-	ExitThread (-1);
+	mono_thread_info_exit ();
 }
 
 void
@@ -2790,7 +2790,7 @@ mono_threads_set_shutting_down (void)
 		mono_domain_unset ();
 
 		/* Wake up other threads potentially waiting for us */
-		ExitThread (0);
+		mono_thread_info_exit ();
 	} else {
 		shutting_down = TRUE;
 
