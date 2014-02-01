@@ -341,17 +341,10 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
  */
 gsize GetCurrentThreadId(void)
 {
-	pthread_t tid = pthread_self();
-	
-#ifdef PTHREAD_POINTER_ID
-	/* Don't use GPOINTER_TO_UINT here, it can't cope with
-	 * sizeof(void *) > sizeof(uint) when a cast to uint would
-	 * overflow
-	 */
-	return((gsize)tid);
-#else
-	return(tid);
-#endif
+	MonoNativeThreadId id;
+
+	id = mono_native_thread_id_get ();
+	return MONO_NATIVE_THREAD_ID_TO_UINT (id);
 }
 
 gpointer _wapi_thread_duplicate ()
