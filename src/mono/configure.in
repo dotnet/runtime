@@ -954,7 +954,7 @@ fi
 
 AC_ARG_ENABLE(gsharing, [  --enable-gsharing Enable gsharing], enable_gsharing=$enableval, enable_gsharing=no)
 if test x$enable_gsharing = xyes; then
-	AC_DEFINE(MONO_GSHARING,1,[Gsharing])
+	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharing])
 fi
 
 AC_ARG_ENABLE(native-types, [  --enable-native-types Enable native types], enable_native_types=$enableval, enable_native_types=no)

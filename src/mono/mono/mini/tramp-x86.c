@@ -1196,7 +1196,7 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	return start;
 }
 
-#if defined(MONO_GSHARING)
+#if defined(ENABLE_GSHAREDVT)
 
 #include "../../../mono-extensions/mono/mini/tramp-x86-gsharedvt.c"
 

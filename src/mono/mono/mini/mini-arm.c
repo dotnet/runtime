@@ -845,7 +845,7 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
 	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
 	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
-#if defined(MONO_GSHARING)
+#if defined(ENABLE_GSHAREDVT)
 	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 #endif
 
@@ -6864,7 +6864,7 @@ mono_arch_set_target (char *mtriple)
 		eabi_supported = TRUE;
 }
 
-#if defined(MONO_GSHARING)
+#if defined(ENABLE_GSHAREDVT)
 
 #include "../../../mono-extensions/mono/mini/mini-arm-gsharedvt.c"
 
