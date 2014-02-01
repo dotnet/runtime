@@ -150,7 +150,8 @@ typedef struct {
 	 */
 	gpointer tls [TLS_KEY_NUM];
 
-	/* IO layer/win32 handle for this thread */
+	/* IO layer handle for this thread */
+	/* Set when the thread is started, or in _wapi_thread_duplicate () */
 	HANDLE handle;
 } MonoThreadInfo;
 
@@ -314,6 +315,7 @@ void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadI
 void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_INTERNAL;
 gboolean mono_threads_core_yield (void) MONO_INTERNAL;
 void mono_threads_core_exit (int exit_code) MONO_INTERNAL;
+void mono_threads_core_unregister (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

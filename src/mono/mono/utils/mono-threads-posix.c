@@ -100,6 +100,8 @@ inner_start_thread (void *arg)
 #endif
 
 	wapi_thread_handle_set_exited (handle, GPOINTER_TO_UINT (result));
+	/* This is needed by mono_threads_core_unregister () which is called later */
+	info->handle = NULL;
 
 	g_assert (mono_threads_get_callbacks ()->thread_exit);
 	mono_threads_get_callbacks ()->thread_exit (NULL);
@@ -302,6 +304,15 @@ mono_threads_core_exit (int exit_code)
 
 	g_assert (mono_threads_get_callbacks ()->thread_exit);
 	mono_threads_get_callbacks ()->thread_exit (NULL);
+}
+
+void
+mono_threads_core_unregister (MonoThreadInfo *info)
+{
+	if (info->handle) {
+		wapi_thread_handle_set_exited (info->handle, 0);
+		info->handle = NULL;
+	}
 }
 
 #if !defined (__MACH__)

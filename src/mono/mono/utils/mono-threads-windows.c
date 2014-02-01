@@ -213,4 +213,9 @@ mono_threads_core_exit (int exit_code)
 	ExitThread (exit_code);
 }
 
+void
+mono_threads_core_unregister (MonoThreadInfo *info)
+{
+}
+
 #endif

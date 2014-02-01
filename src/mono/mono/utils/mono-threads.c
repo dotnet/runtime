@@ -168,6 +168,8 @@ unregister_thread (void *arg)
 
 	THREADS_DEBUG ("unregistering info %p\n", info);
 
+	mono_threads_core_unregister (info);
+
 	/*
 	 * TLS destruction order is not reliable so small_id might be cleaned up
 	 * before us.

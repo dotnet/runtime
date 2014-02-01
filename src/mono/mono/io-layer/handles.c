@@ -190,29 +190,8 @@ static void handle_cleanup (void)
 	for(i = SLOT_INDEX (0); _wapi_private_handles[i] != NULL; i++) {
 		for(j = SLOT_OFFSET (0); j < _WAPI_HANDLE_INITIAL_COUNT; j++) {
 			struct _WapiHandleUnshared *handle_data = &_wapi_private_handles[i][j];
-			int type = handle_data->type;
 			gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
-			
-			if (_WAPI_SHARED_HANDLE (type)) {
-				if (type == WAPI_HANDLE_THREAD) {
-					/* Special-case thread handles
-					 * because they need extra
-					 * cleanup.  This also avoids
-					 * a race condition between
-					 * the application exit and
-					 * the finalizer thread - if
-					 * it finishes up between now
-					 * and actual app termination
-					 * it will find all its handle
-					 * details have been blown
-					 * away, so this sets those
-					 * anyway.
-					 */
-					g_assert (0); /*This condition is freaking impossible*/
-					_wapi_thread_set_termination_details (handle, 0);
-				}
-			}
-				
+
 			for(k = handle_data->ref; k > 0; k--) {
 				DEBUG ("%s: unreffing %s handle %p", __func__, _wapi_handle_typename[type], handle);
 					
