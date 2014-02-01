@@ -92,7 +92,7 @@ inner_start_thread (void *arg)
 	result = start_func (t_arg);
 
 	/*
-	mono_thread_info_dettach ();
+	mono_thread_info_detach ();
 	*/
 
 #if defined(__native_client__)

@@ -100,7 +100,7 @@ inner_start_thread (LPVOID arg)
 
 	g_assert (!mono_domain_get ());
 
-	mono_thread_info_dettach ();
+	mono_thread_info_detach ();
 
 	return result;
 }

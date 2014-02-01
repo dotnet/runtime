@@ -286,14 +286,14 @@ mono_thread_info_attach (void *baseptr)
 }
 
 void
-mono_thread_info_dettach (void)
+mono_thread_info_detach (void)
 {
 	MonoThreadInfo *info;
 	if (!mono_threads_inited)
 	{
 		/* This can happen from DllMain(THREAD_DETACH) on Windows, if a thread
 		 * is created before an embedding API user initialized Mono. */
-		THREADS_DEBUG ("mono_thread_info_dettach called before mono_threads_init\n");
+		THREADS_DEBUG ("mono_thread_info_detach called before mono_threads_init\n");
 		return;
 	}
 	info = mono_native_tls_get_value (thread_info_key);
