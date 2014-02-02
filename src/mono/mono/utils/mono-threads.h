@@ -289,6 +289,9 @@ void
 mono_thread_info_exit (void);
 
 HANDLE
+mono_thread_info_open_handle (void);
+
+HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
 #if !defined(HOST_WIN32)
@@ -316,6 +319,7 @@ void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_I
 gboolean mono_threads_core_yield (void) MONO_INTERNAL;
 void mono_threads_core_exit (int exit_code) MONO_INTERNAL;
 void mono_threads_core_unregister (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+HANDLE mono_threads_core_open_handle (void) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

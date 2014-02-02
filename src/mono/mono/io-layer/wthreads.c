@@ -200,6 +200,12 @@ wapi_create_thread_handle (void)
 	return handle;
 }
 
+void
+wapi_ref_thread_handle (gpointer handle)
+{
+	_wapi_handle_ref (handle);
+}
+
 /* The only time this function is called when tid != pthread_self ()
  * is from OpenThread (), so we can fast-path most cases by just
  * looking up the handle in TLS.  OpenThread () must cope with a NULL
@@ -308,37 +314,8 @@ gsize GetCurrentThreadId(void)
 
 gpointer _wapi_thread_duplicate ()
 {
-	MonoThreadInfo *info;
-
-	mono_once (&thread_hash_once, thread_hash_init);
-	mono_once (&thread_ops_once, thread_ops_init);
-
-	info = mono_thread_info_current ();
-	if (!info->handle) {
-		info->handle = wapi_create_thread_handle ();
-	} else {
-		_wapi_handle_ref (info->handle);
-	}
-	return info->handle;
-}
-
-/**
- * GetCurrentThread:
- *
- * Looks up the handle associated with the current thread.  Under
- * Windows this is a pseudohandle, and must be duplicated with
- * DuplicateHandle() for some operations.
- *
- * Return value: The current thread handle, or %NULL on failure.
- * (Unknown whether Windows has a possible failure here.  It may be
- * necessary to implement the pseudohandle-constant behaviour).
- */
-gpointer GetCurrentThread(void)
-{
-	mono_once(&thread_hash_once, thread_hash_init);
-	mono_once (&thread_ops_once, thread_ops_init);
-	
-	return(_WAPI_THREAD_CURRENT);
+	g_assert_not_reached ();
+	return NULL;
 }
 
 /**

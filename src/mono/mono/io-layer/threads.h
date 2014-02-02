@@ -68,6 +68,7 @@ char* wapi_current_thread_desc (void);
 
 gpointer wapi_create_thread_handle (void);
 void wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus);
+void wapi_ref_thread_handle (gpointer handle);
 
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */

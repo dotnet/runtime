@@ -857,17 +857,10 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 
 	thread = create_internal_thread ();
 
-	thread_handle = GetCurrentThread ();
+	thread_handle = mono_thread_info_open_handle ();
 	g_assert (thread_handle);
 
 	tid=GetCurrentThreadId ();
-
-	/* 
-	 * The handle returned by GetCurrentThread () is a pseudo handle, so it can't be used to
-	 * refer to the thread from other threads for things like aborting.
-	 */
-	DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &thread_handle, 
-					 THREAD_ALL_ACCESS, TRUE, 0);
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
@@ -4021,7 +4014,9 @@ static MonoException* mono_thread_execute_interruption (MonoInternalThread *thre
 	/* MonoThread::interruption_requested can only be changed with atomics */
 	if (InterlockedCompareExchange (&thread->interruption_requested, FALSE, TRUE)) {
 		/* this will consume pending APC calls */
+#ifdef HOST_WIN32
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
+#endif
 		InterlockedDecrement (&thread_interruption_requested);
 #ifndef HOST_WIN32
 		/* Clear the interrupted flag of the thread so it can wait again */

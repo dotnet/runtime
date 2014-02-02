@@ -315,6 +315,21 @@ mono_threads_core_unregister (MonoThreadInfo *info)
 	}
 }
 
+HANDLE
+mono_threads_core_open_handle (void)
+{
+	MonoThreadInfo *info;
+
+	info = mono_thread_info_current ();
+	g_assert (info);
+
+	if (!info->handle)
+		info->handle = wapi_create_thread_handle ();
+	else
+		wapi_ref_thread_handle (info->handle);
+	return info->handle;
+}
+
 #if !defined (__MACH__)
 
 #if !defined(__native_client__)
