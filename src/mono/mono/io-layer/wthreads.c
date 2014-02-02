@@ -48,12 +48,6 @@
 #define WAIT_DEBUG(code) do { } while (0)
 #endif
 
-/* Hash threads with tids. I thought of using TLS for this, but that
- * would have to set the data in the new thread, which is more hassle
- */
-static mono_once_t thread_hash_once = MONO_ONCE_INIT;
-static pthread_key_t thread_hash_key;
-
 struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close */
 	NULL,				/* signal */
@@ -73,10 +67,16 @@ static void thread_ops_init (void)
 
 void _wapi_thread_cleanup (void)
 {
-	int ret;
-	
-	ret = pthread_key_delete (thread_hash_key);
-	g_assert (ret == 0);
+}
+
+static gpointer
+get_current_thread_handle (void)
+{
+	MonoThreadInfo *info;
+
+	info = mono_thread_info_current ();
+	g_assert (info);
+	return info->handle;
 }
 
 static void
@@ -132,11 +132,9 @@ void _wapi_thread_signal_self (guint32 exitstatus)
 {
 	gpointer handle;
 	
-	handle = _wapi_thread_handle_from_id (pthread_self ());
-	if (handle == NULL) {
-		/* Something gone badly wrong... */
+	handle = get_current_thread_handle ();
+	if (handle == NULL)
 		return;
-	}
 	
 	_wapi_thread_set_termination_details (handle, exitstatus);
 }
@@ -145,14 +143,6 @@ void
 wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 {
 	_wapi_thread_set_termination_details (handle, exitstatus);
-}
-
-static void thread_hash_init(void)
-{
-	int thr_ret;
-	
-	thr_ret = pthread_key_create (&thread_hash_key, NULL);
-	g_assert (thr_ret == 0);
 }
 
 /*
@@ -167,7 +157,6 @@ wapi_create_thread_handle (void)
 	gpointer handle;
 	int res;
 
-	mono_once (&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 
 	thread_handle.owned_mutexes = g_ptr_array_new ();
@@ -183,9 +172,6 @@ wapi_create_thread_handle (void)
 	res = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 							   (gpointer *)&thread);
 	g_assert (res);
-
-	res = pthread_setspecific (thread_hash_key, handle);
-	g_assert (!res);
 
 	thread->id = pthread_self ();
 
@@ -213,23 +199,10 @@ wapi_ref_thread_handle (gpointer handle)
  */
 gpointer _wapi_thread_handle_from_id (pthread_t tid)
 {
-	gpointer ret;
-
-	if (pthread_equal (tid, pthread_self ()) &&
-	    (ret = pthread_getspecific (thread_hash_key)) != NULL) {
-		/* We know the handle */
-
-		DEBUG ("%s: Returning %p for self thread %ld from TLS",
-			   __func__, ret, tid);
-		
-		return(ret);
-	}
-	
-	DEBUG ("%s: Returning NULL for unknown or non-self thread %ld",
-		   __func__, tid);
-		
-
-	return(NULL);
+	if (pthread_equal (tid, pthread_self ()))
+		return get_current_thread_handle ();
+	else
+		return NULL;
 }
 
 static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
@@ -272,12 +245,12 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 {
 	gpointer ret=NULL;
 	
-	mono_once (&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 	
 	DEBUG ("%s: looking up thread %"G_GSIZE_FORMAT, __func__, tid);
 
-	ret = _wapi_thread_handle_from_id ((pthread_t)tid);
+	if (pthread_equal ((pthread_t)tid, pthread_self ()))
+		ret = get_current_thread_handle ();
 	if (ret == NULL) {
 		/* We need to search for this thread */
 		ret = _wapi_search_handle (WAPI_HANDLE_THREAD, find_thread_by_id, (gpointer)tid, NULL, FALSE/*TRUE*/);	/* FIXME: have a proper look at this, me might not need to set search_shared = TRUE */
@@ -337,7 +310,7 @@ guint32 SleepEx(guint32 ms, gboolean alertable)
 	DEBUG("%s: Sleeping for %d ms", __func__, ms);
 
 	if (alertable) {
-		current_thread = _wapi_thread_handle_from_id (pthread_self ());
+		current_thread = get_current_thread_handle ();
 		if (current_thread == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
@@ -391,7 +364,7 @@ void Sleep(guint32 ms)
 
 gboolean _wapi_thread_cur_apc_pending (void)
 {
-	gpointer thread = _wapi_thread_handle_from_id (pthread_self ());
+	gpointer thread = get_current_thread_handle ();
 	
 	if (thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -452,7 +425,7 @@ wapi_thread_interrupt_self (void)
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
 	
-	handle = _wapi_thread_handle_from_id (pthread_self ());
+	handle = get_current_thread_handle ();
 	g_assert (handle);
 
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
@@ -712,7 +685,7 @@ void _wapi_thread_own_mutex (gpointer mutex)
 	gboolean ok;
 	gpointer thread;
 	
-	thread = _wapi_thread_handle_from_id (pthread_self ());
+	thread = get_current_thread_handle ();
 	if (thread == NULL) {
 		g_warning ("%s: error looking up thread by ID", __func__);
 		return;
@@ -737,7 +710,7 @@ void _wapi_thread_disown_mutex (gpointer mutex)
 	gboolean ok;
 	gpointer thread;
 
-	thread = _wapi_thread_handle_from_id (pthread_self ());
+	thread = get_current_thread_handle ();
 	if (thread == NULL) {
 		g_warning ("%s: error looking up thread by ID", __func__);
 		return;
