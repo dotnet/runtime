@@ -79,54 +79,15 @@ void _wapi_thread_cleanup (void)
 	g_assert (ret == 0);
 }
 
-/* Called by thread_exit(), but maybe indirectly by
- * mono_thread_manage() via mono_thread_signal_self() too
- */
-static void _wapi_thread_abandon_mutexes (gpointer handle)
-{
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
-	int i;
-	pid_t pid = _wapi_getpid ();
-	pthread_t tid = pthread_self ();
-	
-	DEBUG ("%s: Thread %p abandoning held mutexes", __func__, handle);
-
-	if (handle == NULL) {
-		handle = _wapi_thread_handle_from_id (pthread_self ());
-		if (handle == NULL) {
-			/* Something gone badly wrong... */
-			return;
-		}
-	}
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		return;
-	}
-	
-	if (!pthread_equal (thread_handle->id, tid)) {
-		return;
-	}
-	
-	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
-		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
-		
-		_wapi_mutex_abandon (mutex, pid, tid);
-		_wapi_thread_disown_mutex (mutex);
-	}
-}
-
 static void
 _wapi_thread_set_termination_details (gpointer handle,
 					   guint32 exitstatus)
 {
 	struct _WapiHandle_thread *thread_handle;
 	gboolean ok;
-	int thr_ret;
+	int i, thr_ret;
+	pid_t pid = _wapi_getpid ();
+	pthread_t tid = pthread_self ();
 	
 	if (_wapi_handle_issignalled (handle) ||
 	    _wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
@@ -138,29 +99,27 @@ _wapi_thread_set_termination_details (gpointer handle,
 
 	DEBUG ("%s: Thread %p terminating", __func__, handle);
 
-	_wapi_thread_abandon_mutexes (handle);
-	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
+	g_assert (ok);
 
-		return;
+	DEBUG ("%s: Thread %p abandoning held mutexes", __func__, handle);
+
+	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
+		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
+
+		_wapi_mutex_abandon (mutex, pid, tid);
+		_wapi_thread_disown_mutex (mutex);
 	}
+	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
 	
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
-	
-	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
 
 	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 	
 	DEBUG("%s: Recording thread handle %p id %ld status as %d",
 		  __func__, handle, thread_handle->id, exitstatus);
