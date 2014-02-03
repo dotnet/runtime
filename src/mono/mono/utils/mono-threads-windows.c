@@ -191,11 +191,18 @@ __readfsdword (unsigned long offset)
 void
 mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-	/* Windows */
+#ifdef TARGET_AMD64
+	/* win7 apis */
+	PNT_TIB ptib = (PNT_TIB)NtCurrentTeb();
+	NT_TIB* tib = (NT_TIB*)NtCurrentTeb();
+	guint8 *stackTop = (guint8*)tib->StackBase;
+	guint8 *stackBottom = (guint8*)tib->StackLimit;
+#else
 	/* http://en.wikipedia.org/wiki/Win32_Thread_Information_Block */
 	void* tib = (void*)__readfsdword(0x18);
 	guint8 *stackTop = (guint8*)*(int*)((char*)tib + 4);
 	guint8 *stackBottom = (guint8*)*(int*)((char*)tib + 8);
+#endif
 
 	*staddr = stackBottom;
 	*stsize = stackTop - stackBottom;
