@@ -963,7 +963,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 	MonoObject **values = NULL;
 	MonoObject *o;
 	int count = 0;
-	gint32 result = 0;
+	gint32 result = (int)mono_defaults.int32_class;
 	MonoClassField* field;
 	gpointer iter;
 
@@ -972,7 +972,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 	klass = mono_object_class (this);
 
 	if (mono_class_num_fields (klass) == 0)
-		return mono_object_hash (this);
+		return result;
 
 	/*
 	 * Compute the starting value of the hashcode for fields of primitive
