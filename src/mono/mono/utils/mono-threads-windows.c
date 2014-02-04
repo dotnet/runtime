@@ -193,7 +193,6 @@ mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 #ifdef TARGET_AMD64
 	/* win7 apis */
-	PNT_TIB ptib = (PNT_TIB)NtCurrentTeb();
 	NT_TIB* tib = (NT_TIB*)NtCurrentTeb();
 	guint8 *stackTop = (guint8*)tib->StackBase;
 	guint8 *stackBottom = (guint8*)tib->StackLimit;
