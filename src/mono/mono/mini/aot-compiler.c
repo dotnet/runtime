@@ -4875,6 +4875,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
+	case MONO_PATCH_INFO_NURSERY_START_SHIFTED:
+	case MONO_PATCH_INFO_NURSERY_SHIFT:
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		encode_value ((gint)patch_info->data.offset, p, &p);

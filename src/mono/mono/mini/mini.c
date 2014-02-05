@@ -3220,6 +3220,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 	case MONO_PATCH_INFO_GOT_OFFSET:
+	case MONO_PATCH_INFO_NURSERY_START_SHIFTED:
+	case MONO_PATCH_INFO_NURSERY_SHIFT:
 		return (ji->type << 8);
 	case MONO_PATCH_INFO_SWITCH:
 		return (ji->type << 8) | ji->data.table->table_size;
@@ -3667,6 +3669,23 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: {
 		target = NULL;
+		break;
+	}
+	case MONO_PATCH_INFO_NURSERY_START_SHIFTED: {
+		size_t nursery_size;
+		int nursery_shift;
+		gpointer nursery_start = mono_gc_get_nursery (&nursery_shift, &nursery_size);
+
+		target = (gpointer)((gsize)nursery_start >> nursery_shift);
+		break;
+	}
+	case MONO_PATCH_INFO_NURSERY_SHIFT: {
+		size_t nursery_size;
+		int nursery_shift;
+
+		mono_gc_get_nursery (&nursery_shift, &nursery_size);
+
+		target = GINT_TO_POINTER (nursery_shift);
 		break;
 	}
 	default:

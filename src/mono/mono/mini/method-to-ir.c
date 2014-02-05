@@ -2911,11 +2911,15 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 
 	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
 
+#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER_IN_AOT
+	if (cfg->compile_aot)
+		has_card_table_wb = TRUE;
+#endif
 #ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
 	has_card_table_wb = TRUE;
 #endif
 
-	if (has_card_table_wb && !cfg->compile_aot && card_table && nursery_shift_bits > 0 && !COMPILE_LLVM (cfg)) {
+	if (has_card_table_wb && card_table && nursery_shift_bits > 0 && !COMPILE_LLVM (cfg)) {
 		MonoInst *wbarrier;
 
 		MONO_INST_NEW (cfg, wbarrier, OP_CARD_TABLE_WBARRIER);
