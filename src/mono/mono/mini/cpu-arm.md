@@ -62,7 +62,7 @@ seq_point: len:38 clob:c
 throw: src1:i len:24
 rethrow: src1:i len:20
 start_handler: len:20
-endfinally: len:20
+endfinally: len:32
 call_handler: len:16 clob:c
 endfilter: src1:i len:16
 
