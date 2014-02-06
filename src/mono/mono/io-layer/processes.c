@@ -380,6 +380,9 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 				SetLastError (ERROR_INVALID_DATA);
 			return FALSE;
 		}
+		/* Shell exec should not return a process handle when it spawned a GUI thing, like a browser. */
+		CloseHandle (process_info.hProcess);
+		process_info.hProcess = NULL;
 	}
 	
 	if (sei->fMask & SEE_MASK_NOCLOSEPROCESS) {
