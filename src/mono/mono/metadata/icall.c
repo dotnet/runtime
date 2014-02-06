@@ -3887,6 +3887,21 @@ handle_parent:
 	return NULL;
 }
 
+static guint
+event_hash (gconstpointer data)
+{
+	MonoEvent *event = (MonoEvent*)data;
+
+	return g_str_hash (event->name);
+}
+
+static gboolean
+event_equal (MonoEvent *event1, MonoEvent *event2)
+{
+	// Events are hide-by-name
+	return g_str_equal (event1->name, event2->name);
+}
+
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
 {
@@ -3899,7 +3914,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoEvent *event;
 	int i, match;
 	gpointer iter;
-	
+	GHashTable *events = NULL;
 	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3915,6 +3930,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 		return mono_array_new_cached (domain, System_Reflection_EventInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
+	events = g_hash_table_new (event_hash, (GEqualFunc)event_equal);
 handle_parent:
 	mono_class_setup_vtable (klass);
 	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
@@ -3958,10 +3974,18 @@ handle_parent:
 				match ++;
 		if (!match)
 			continue;
+
+		if (g_hash_table_lookup (events, event))
+			continue;
+
 		mono_ptr_array_append (tmp_array, mono_event_get_object (domain, startklass, event));
+
+		g_hash_table_insert (events, event, event);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
+
+	g_hash_table_destroy (events);
 
 	res = mono_array_new_cached (domain, System_Reflection_EventInfo, mono_ptr_array_size (tmp_array));
 
