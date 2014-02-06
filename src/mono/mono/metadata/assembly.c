@@ -758,7 +758,7 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 {
 	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLY];
 	guint32 cols [MONO_ASSEMBLY_SIZE];
-	gint32 machine;
+	gint32 machine, flags;
 
 	if (!t->rows)
 		return FALSE;
@@ -804,9 +804,16 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 		aname->public_key = 0;
 
 	machine = ((MonoCLIImageInfo*)(image->image_info))->cli_header.coff.coff_machine;
+	flags = ((MonoCLIImageInfo*)(image->image_info))->cli_cli_header.ch_flags;
 	switch (machine) {
 	case COFF_MACHINE_I386:
-		aname->arch = MONO_PROCESSOR_ARCHITECTURE_X86;
+		/* https://bugzilla.xamarin.com/show_bug.cgi?id=17632 */
+		if (flags & (CLI_FLAGS_32BITREQUIRED|CLI_FLAGS_PREFERRED32BIT))
+			aname->arch = MONO_PROCESSOR_ARCHITECTURE_X86;
+		else if ((flags & 0x70) == 0x70)
+			aname->arch = MONO_PROCESSOR_ARCHITECTURE_NONE;
+		else
+			aname->arch = MONO_PROCESSOR_ARCHITECTURE_MSIL;
 		break;
 	case COFF_MACHINE_IA64:
 		aname->arch = MONO_PROCESSOR_ARCHITECTURE_IA64;
