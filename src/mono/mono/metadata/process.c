@@ -604,7 +604,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	gboolean ret;
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
-	shellex.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_UNICODE;
+	shellex.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE;
 	shellex.nShow = proc_start_info->window_style;
 	shellex.nShow = (shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow);
 	
@@ -634,6 +634,22 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	}
 
 	ret = ShellExecuteEx (&shellex);
+	if (ret == FALSE) {
+		process_info->pid = -GetLastError ();
+	} else {
+		process_info->process_handle = shellex.hProcess;
+		process_info->thread_handle = NULL;
+		/* It appears that there's no way to get the pid from a
+		 * process handle before windows xp.  Really.
+		 */
+#if defined(HAVE_GETPROCESSID) && !defined(MONO_CROSS_COMPILE)
+		process_info->pid = GetProcessId (shellex.hProcess);
+#else
+		process_info->pid = 0;
+#endif
+		process_info->tid = 0;
+	}
+
 	return (ret);
 }
 
