@@ -290,10 +290,26 @@ namespace Mono.Linker.Steps {
 			if (CheckProcessed (assembly))
 				return;
 
+			ProcessModule (assembly);
+
 			MarkCustomAttributes (assembly);
 
 			foreach (ModuleDefinition module in assembly.Modules)
 				MarkCustomAttributes (module);
+		}
+
+		void ProcessModule (AssemblyDefinition assembly)
+		{
+			// Pre-mark <Module> if there is any methods as they need to be executed 
+			// at assembly load time
+			foreach (TypeDefinition type in assembly.MainModule.Types)
+			{
+				if (type.Name == "<Module>" && type.HasMethods)
+				{
+					MarkType (type);
+					break;
+				}
+			}
 		}
 
 		protected void MarkField (FieldReference reference)
