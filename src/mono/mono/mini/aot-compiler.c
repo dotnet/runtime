@@ -3815,6 +3815,9 @@ check_type_depth (MonoType *t, int depth)
 	return FALSE;
 }
 
+static void
+add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method);
+
 /*
  * add_generic_class:
  *
@@ -3875,9 +3878,11 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			continue;
 		}
 		
-		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt))
+		if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, use_gsharedvt)) {
 			/* Already added */
+			add_types_from_method_header (acfg, method);
 			continue;
+		}
 
 		if (method->is_generic)
 			/* FIXME: */
