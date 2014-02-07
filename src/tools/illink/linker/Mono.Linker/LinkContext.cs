@@ -217,6 +217,14 @@ namespace Mono.Linker {
 			case "mscorlib":
 			case "Accessibility":
 			case "Mono.Security":
+				// WPF
+			case "PresentationFramework":
+			case "PresentationCore":
+			case "WindowsBase":
+			case "UIAutomationProvider":
+			case "UIAutomationTypes":
+			case "PresentationUI":
+			case "ReachFramework":
 				return true;
 			default:
 				return name.Name.StartsWith ("System")
