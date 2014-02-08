@@ -5,10 +5,11 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Paolo Molaro (lupus@ximian.com)
  *	 Patrik Torstensson (patrik.torstensson@labs2.com)
+ *   Marek Safar (marek.safar@gmail.com)
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
- * Copyright 2011-2012 Xamarin Inc (http://www.xamarin.com).
+ * Copyright 2011-2014 Xamarin Inc (http://www.xamarin.com).
  */
 
 #include <config.h>
@@ -3134,14 +3135,6 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 		return me > other ? 1 : -1; \
 	} while (0)
 
-#define COMPARE_ENUM_VALUES_RANGE(ENUM_TYPE) do { \
-		ENUM_TYPE me = *((ENUM_TYPE*)tdata); \
-		ENUM_TYPE other = *((ENUM_TYPE*)odata); \
-		if (me == other) \
-			return 0; \
-		return me - other; \
-	} while (0)
-
 	switch (basetype->type) {
 		case MONO_TYPE_U1:
 			COMPARE_ENUM_VALUES (guint8);
@@ -3149,7 +3142,7 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 			COMPARE_ENUM_VALUES (gint8);
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_U2:
-			COMPARE_ENUM_VALUES_RANGE (guint16);
+			COMPARE_ENUM_VALUES (guint16);
 		case MONO_TYPE_I2:
 			COMPARE_ENUM_VALUES (gint16);
 		case MONO_TYPE_U4:
@@ -3163,7 +3156,6 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 		default:
 			g_error ("Implement type 0x%02x in get_hashcode", basetype->type);
 	}
-#undef COMPARE_ENUM_VALUES_RANGE
 #undef COMPARE_ENUM_VALUES
 	return 0;
 }

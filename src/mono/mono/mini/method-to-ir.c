@@ -2916,7 +2916,8 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 		has_card_table_wb = TRUE;
 #endif
 #ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
-	has_card_table_wb = TRUE;
+	if (!cfg->compile_aot)
+		has_card_table_wb = TRUE;
 #endif
 
 	if (has_card_table_wb && card_table && nursery_shift_bits > 0 && !COMPILE_LLVM (cfg)) {
