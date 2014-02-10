@@ -4957,11 +4957,14 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
 	MonoVTable *vtable;
-	size_t size = (sizeof (MonoString) + ((len + 1) * 2));
+	size_t size;
 
-	/* overflow ? can't fit it, can't allocate it! */
-	if (len > size)
+	/* check for overflow */
+	if (len < 0 || len > ((SIZE_MAX - sizeof (MonoString) - 2) / 2))
 		mono_gc_out_of_memory (-1);
+
+	size = (sizeof (MonoString) + ((len + 1) * 2));
+	g_assert (size > 0);
 
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 	g_assert (vtable);

@@ -853,6 +853,10 @@ gboolean
 sgen_can_alloc_size (size_t size)
 {
 	SgenFragment *frag;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return FALSE;
+
 	size = SGEN_ALIGN_UP (size);
 
 	for (frag = unmask (mutator_allocator.alloc_head); frag; frag = unmask (frag->next)) {
@@ -865,6 +869,8 @@ sgen_can_alloc_size (size_t size)
 void*
 sgen_nursery_alloc (size_t size)
 {
+	SGEN_ASSERT (1, size >= sizeof (MonoObject) && size <= SGEN_MAX_SMALL_OBJ_SIZE, "Invalid nursery object size");
+
 	SGEN_LOG (4, "Searching nursery for size: %zd", size);
 	size = SGEN_ALIGN_UP (size);
 

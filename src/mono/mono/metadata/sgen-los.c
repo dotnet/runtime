@@ -334,6 +334,16 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	g_assert (size > SGEN_MAX_SMALL_OBJ_SIZE);
 	g_assert ((size & 1) == 0);
 
+	/*
+	 * size + sizeof (LOSObject) <= SIZE_MAX - (mono_pagesize () - 1)
+	 *
+	 * therefore:
+	 *
+	 * size <= SIZE_MAX - (mono_pagesize () - 1) - sizeof (LOSObject)
+	 */
+	if (size > SIZE_MAX - (mono_pagesize () - 1) - sizeof (LOSObject))
+		return NULL;
+
 #ifdef LOS_DUMMY
 	if (!los_segment)
 		los_segment = sgen_alloc_os_memory (LOS_SEGMENT_SIZE, SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE, NULL);

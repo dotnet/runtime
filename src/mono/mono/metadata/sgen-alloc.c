@@ -433,6 +433,10 @@ void*
 mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	void *res;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
+
 #ifndef DISABLE_CRITICAL_REGION
 	TLAB_ACCESS_INIT;
 
@@ -473,6 +477,10 @@ void*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *arr;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
+
 #ifndef DISABLE_CRITICAL_REGION
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
@@ -506,6 +514,9 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 {
 	MonoArray *arr;
 	MonoArrayBounds *bounds;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
 
 #ifndef DISABLE_CRITICAL_REGION
 	TLAB_ACCESS_INIT;
@@ -545,6 +556,10 @@ void*
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 {
 	MonoString *str;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
+
 #ifndef DISABLE_CRITICAL_REGION
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
@@ -581,7 +596,11 @@ void*
 mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 {
 	void **p;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
 	size = ALIGN_UP (size);
+
 	LOCK_GC;
 
 	if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
@@ -607,7 +626,12 @@ void*
 mono_gc_alloc_mature (MonoVTable *vtable)
 {
 	void **res;
-	size_t size = ALIGN_UP (vtable->klass->instance_size);
+	size_t size = vtable->klass->instance_size;
+
+	if (!SGEN_CAN_ALIGN_UP (size))
+		return NULL;
+	size = ALIGN_UP (size);
+
 	LOCK_GC;
 	res = alloc_degraded (vtable, size, TRUE);
 	UNLOCK_GC;
@@ -748,7 +772,7 @@ create_allocator (int atype)
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
 
 #ifndef DISABLE_JIT
-	size_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
 		/* size = vtable->klass->instance_size; */
 		mono_mb_emit_ldarg (mb, 0);
@@ -759,6 +783,7 @@ create_allocator (int atype)
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_stloc (mb, size_var);
 	} else if (atype == ATYPE_VECTOR) {
 		MonoExceptionClause *clause;
@@ -766,11 +791,11 @@ create_allocator (int atype)
 		MonoClass *oom_exc_class;
 		MonoMethod *ctor;
 
-		/* n > 	MONO_ARRAY_MAX_INDEX -> OverflowException */
+		/* n > MONO_ARRAY_MAX_INDEX -> OutOfMemoryException */
 		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_icon (mb, MONO_ARRAY_MAX_INDEX);
+		mono_mb_emit_ptr (mb, (gpointer) MONO_ARRAY_MAX_INDEX);
 		pos = mono_mb_emit_short_branch (mb, CEE_BLE_UN_S);
-		mono_mb_emit_exception (mb, "OverflowException", NULL);
+		mono_mb_emit_exception (mb, "OutOfMemoryException", NULL);
 		mono_mb_patch_short_branch (mb, pos);
 
 		clause = mono_image_alloc0 (mono_defaults.corlib, sizeof (MonoExceptionClause));
@@ -784,6 +809,7 @@ create_allocator (int atype)
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoClass, sizes.element_size));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
 
 		/* * n */
 		mono_mb_emit_ldarg (mb, 1);
@@ -818,8 +844,28 @@ create_allocator (int atype)
 		mono_mb_patch_branch (mb, pos_leave);
 		/* end catch */
 	} else if (atype == ATYPE_STRING) {
-		/* a string allocator method takes the args: (vtable, len) */
-		/* bytes = (sizeof (MonoString) + ((len + 1) * 2)); */
+		int pos;
+
+		/*
+		 * a string allocator method takes the args: (vtable, len)
+		 *
+		 * bytes = sizeof (MonoString) + ((len + 1) * 2)
+		 *
+		 * condition:
+		 *
+		 * bytes <= INT32_MAX - (SGEN_ALLOC_ALIGN - 1)
+		 *
+		 * therefore:
+		 *
+		 * sizeof (MonoString) + ((len + 1) * 2) <= INT32_MAX - (SGEN_ALLOC_ALIGN - 1)
+		 * len <= (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - sizeof (MonoString)) / 2 - 1
+		 */
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_icon (mb, (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - sizeof (MonoString)) / 2 - 1);
+		pos = mono_mb_emit_short_branch (mb, MONO_CEE_BLE_UN_S);
+		mono_mb_emit_exception (mb, "OutOfMemoryException", NULL);
+		mono_mb_patch_short_branch (mb, pos);
+
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CEE_SHL);
