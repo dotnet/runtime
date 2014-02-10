@@ -787,15 +787,30 @@ create_allocator (int atype)
 		mono_mb_emit_stloc (mb, size_var);
 	} else if (atype == ATYPE_VECTOR) {
 		MonoExceptionClause *clause;
-		int pos, pos_leave;
+		int pos, pos_leave, pos_error;
 		MonoClass *oom_exc_class;
 		MonoMethod *ctor;
 
-		/* n > MONO_ARRAY_MAX_INDEX -> OutOfMemoryException */
+		/*
+		 * n > MONO_ARRAY_MAX_INDEX => OutOfMemoryException
+		 * n < 0                    => OverflowException
+		 *
+		 * We can do an unsigned comparison to catch both cases, then in the error
+		 * case compare signed to distinguish between them.
+		 */
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_ptr (mb, (gpointer) MONO_ARRAY_MAX_INDEX);
 		pos = mono_mb_emit_short_branch (mb, CEE_BLE_UN_S);
+
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_icon (mb, 0);
+		pos_error = mono_mb_emit_short_branch (mb, CEE_BLT_S);
 		mono_mb_emit_exception (mb, "OutOfMemoryException", NULL);
+		mono_mb_patch_short_branch (mb, pos_error);
+		mono_mb_emit_exception (mb, "OverflowException", NULL);
+
 		mono_mb_patch_short_branch (mb, pos);
 
 		clause = mono_image_alloc0 (mono_defaults.corlib, sizeof (MonoExceptionClause));
