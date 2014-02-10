@@ -121,8 +121,13 @@ static gboolean iphone_abi = FALSE;
  */
 static MonoArmFPU arm_fpu;
 
+#if defined(ARM_FPU_VFP_HARD)
 static int vfp_scratch1 = ARM_VFP_F28;
 static int vfp_scratch2 = ARM_VFP_F30;
+#else
+static int vfp_scratch1 = ARM_VFP_D0;
+static int vfp_scratch2 = ARM_VFP_D1;
+#endif
 
 static int i8_align;
 
