@@ -2320,16 +2320,6 @@ class Tests
 
 		try {
 			failed = true;
-			int[] mem1 = new int [Int32.MaxValue];
-		}
-		catch (OutOfMemoryException e) {
-			failed = false;
-		}
-		if (failed)
-			return 1;
-
-		try {
-			failed = true;
 			int[,] mem2 = new int [Int32.MaxValue, Int32.MaxValue];
 		}
 		catch (OutOfMemoryException e) {
