@@ -863,6 +863,9 @@ create_allocator (int atype)
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_icon (mb, (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - sizeof (MonoString)) / 2 - 1);
 		pos = mono_mb_emit_short_branch (mb, MONO_CEE_BLE_UN_S);
+
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
 		mono_mb_emit_exception (mb, "OutOfMemoryException", NULL);
 		mono_mb_patch_short_branch (mb, pos);
 
