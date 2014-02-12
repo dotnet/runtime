@@ -343,8 +343,6 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	/* load ESP into EBP */
 	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esp), 4);
-	/* Align it, it can be unaligned if it was captured asynchronously */
-	x86_alu_reg_imm (code, X86_AND, X86_EBP, ~(MONO_ARCH_LOCALLOC_ALIGNMENT - 1));
 	/* load return address into ECX */
 	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eip), 4);
 	/* save the return addr to the restored stack - 4 */
