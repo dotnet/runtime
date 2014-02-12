@@ -481,7 +481,6 @@ ICALL_TYPE(OBJ, "System.Object", OBJ_1)
 ICALL(OBJ_1, "GetType", ves_icall_System_Object_GetType)
 ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash)
 ICALL(OBJ_3, "MemberwiseClone", ves_icall_System_Object_MemberwiseClone)
-ICALL(OBJ_4, "obj_address", ves_icall_System_Object_obj_address)
 
 ICALL_TYPE(ASSEM, "System.Reflection.Assembly", ASSEM_1)
 ICALL(ASSEM_1, "FillName", ves_icall_System_Reflection_Assembly_FillName)

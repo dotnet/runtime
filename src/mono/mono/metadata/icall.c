@@ -6118,14 +6118,6 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 #endif
 }
 
-ICALL_EXPORT gpointer
-ves_icall_System_Object_obj_address (MonoObject *this) 
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return this;
-}
-
 /* System.Buffer */
 
 static inline gint32 
