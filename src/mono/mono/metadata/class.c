@@ -171,8 +171,11 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
 	switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
 	case MONO_RESOLTION_SCOPE_MODULE:
-		if (!idx)
-			g_error ("null ResolutionScope not yet handled");
+		/*
+		LAMESPEC The spec says that a null module resolution scope should go through the exported type table.
+		This is not the observed behavior of existing implementations.
+		The defacto behavior is that it's just a typedef in disguise.
+		*/
 		/* a typedef in disguise */
 		return mono_class_from_name (image, nspace, name);
 	case MONO_RESOLTION_SCOPE_MODULEREF:
