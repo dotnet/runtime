@@ -334,4 +334,3 @@ gc_liveness_def: len:0
 gc_liveness_use: len:0
 gc_spill_slot_liveness_def: len:0
 gc_param_slot_liveness_def: len:0
-card_table_wbarrier: src1:i src2:i len:96

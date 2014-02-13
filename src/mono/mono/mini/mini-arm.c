@@ -14,7 +14,6 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap-arm.h>
 
@@ -377,21 +376,6 @@ mono_arm_load_jumptable_entry (guint8 *code, gpointer* jte, ARMReg reg)
 	return code;
 }
 #endif
-
-static guint8*
-emit_aotconst (MonoCompile *cfg, guint8 *start, guint8 *code, int dreg, int tramp_type, gconstpointer target)
-{
-	/* Load the GOT offset */
-	mono_add_patch_info (cfg, code - start, tramp_type, target);
-	ARM_LDR_IMM (code, dreg, ARMREG_PC, 0);
-	ARM_B (code, 0);
-	*(gpointer*)code = NULL;
-	code += 4;
-	/* Load the value from the GOT */
-	ARM_LDR_REG_REG (code, dreg, ARMREG_PC, dreg);
-
-	return code;
-}
 
 static guint8*
 emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
@@ -4029,40 +4013,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 #endif
 			break;
-		case OP_CARD_TABLE_WBARRIER: {
-			int card_table_shift;
-			gpointer card_table_mask;
-			gboolean card_table_nursery_check = mono_gc_card_table_nursery_check ();
-			int ptr = ins->sreg1;
-			int value = ins->sreg2;
-			guint8 *br = NULL;
-
-			mono_gc_get_card_table (&card_table_shift, &card_table_mask);
-
-			if (card_table_nursery_check) {
-				code = emit_aotconst (cfg, cfg->native_code, code, ARMREG_LR, MONO_PATCH_INFO_NURSERY_START_SHIFTED, NULL);
-				code = emit_aotconst (cfg, cfg->native_code, code, ARMREG_IP, MONO_PATCH_INFO_NURSERY_SHIFT, NULL);
-				ARM_SHR_REG (code, ARMREG_IP, value, ARMREG_IP);
-				ARM_CMP_REG_REG (code, ARMREG_LR, ARMREG_IP);
-				br = code;
-				ARM_B_COND (code, ARMCOND_NE, 0);
-				//ARM_B (code, 0);
-			}
-
-			code = emit_aotconst (cfg, cfg->native_code, code, ARMREG_LR, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
-			ARM_SHR_IMM (code, ARMREG_IP, ptr, card_table_shift);
-			if (card_table_mask) {
-				imm8 = mono_arm_is_rotated_imm8 ((gsize)card_table_mask, &rot_amount);
-				g_assert (imm8 >= 0);
-				ARM_AND_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
-			}
-			ARM_ADD_REG_REG (code, ARMREG_LR, ARMREG_LR, ARMREG_IP);
-			code = mono_arm_emit_load_imm (code, ARMREG_IP, 1);
-			ARM_STRB_IMM (code, ARMREG_IP, 0, ARMREG_LR);
-
-			arm_patch (br, code);
-			break;
-		}
 		/*case OP_BIGMUL:
 			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
 			ppc_mulhw (code, ppc_r3, ins->sreg1, ins->sreg2);
