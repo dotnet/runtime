@@ -207,12 +207,12 @@ void
 mono_counters_cleanup (void)
 {
 	MonoCounter *counter = counters;
+	counters = NULL;
 	while (counter) {
-		MonoCounter *tmp = counters;
+		MonoCounter *tmp = counter;
 		counter = counter->next;
 		free (tmp);
 	}
-	counters = NULL;
 }
 
 static MonoResourceCallback limit_reached = NULL;
