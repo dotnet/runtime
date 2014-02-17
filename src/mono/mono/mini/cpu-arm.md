@@ -66,7 +66,7 @@ endfinally: len:32
 call_handler: len:16 clob:c
 endfilter: src1:i len:16
 
-ckfinite: dest:f src1:f len:64
+ckfinite: dest:f src1:f len:112
 ceq: dest:i len:12
 cgt: dest:i len:12
 cgt.un: dest:i len:12
@@ -108,7 +108,7 @@ storei4_membase_imm: dest:b len:20
 storei4_membase_reg: dest:b src1:i len:20
 storei8_membase_imm: dest:b 
 storei8_membase_reg: dest:b src1:i 
-storer4_membase_reg: dest:b src1:f len:12
+storer4_membase_reg: dest:b src1:f len:60
 storer8_membase_reg: dest:b src1:f len:24
 store_memindex: dest:b src1:i src2:i len:4
 storei1_memindex: dest:b src1:i src2:i len:4
@@ -122,7 +122,7 @@ loadu2_membase: dest:i src1:b len:4
 loadi4_membase: dest:i src1:b len:4
 loadu4_membase: dest:i src1:b len:4
 loadi8_membase: dest:i src1:b
-loadr4_membase: dest:f src1:b len:8
+loadr4_membase: dest:f src1:b len:56
 loadr8_membase: dest:f src1:b len:24
 load_memindex: dest:i src1:b src2:i len:4
 loadi1_memindex: dest:i src1:b src2:i len:4
@@ -176,15 +176,15 @@ float_rem: dest:f src1:f src2:f len:16
 float_rem_un: dest:f src1:f src2:f len:16
 float_neg: dest:f src1:f len:4
 float_not: dest:f src1:f len:4
-float_conv_to_i1: dest:i src1:f len:40
-float_conv_to_i2: dest:i src1:f len:40
-float_conv_to_i4: dest:i src1:f len:40
-float_conv_to_i8: dest:l src1:f len:40
+float_conv_to_i1: dest:i src1:f len:88
+float_conv_to_i2: dest:i src1:f len:88
+float_conv_to_i4: dest:i src1:f len:88
+float_conv_to_i8: dest:l src1:f len:88
 float_conv_to_r4: dest:f src1:f len:8
-float_conv_to_u4: dest:i src1:f len:40
-float_conv_to_u8: dest:l src1:f len:40
-float_conv_to_u2: dest:i src1:f len:40
-float_conv_to_u1: dest:i src1:f len:40
+float_conv_to_u4: dest:i src1:f len:88
+float_conv_to_u8: dest:l src1:f len:88
+float_conv_to_u2: dest:i src1:f len:88
+float_conv_to_u1: dest:i src1:f len:88
 float_conv_to_i: dest:i src1:f len:40
 float_ceq: dest:i src1:f src2:f len:16
 float_cgt: dest:i src1:f src2:f len:16
@@ -228,8 +228,8 @@ int_not: dest:i src1:i len:4
 int_conv_to_i1: dest:i src1:i len:8
 int_conv_to_i2: dest:i src1:i len:8
 int_conv_to_i4: dest:i src1:i len:4
-int_conv_to_r4: dest:f src1:i len:36
-int_conv_to_r8: dest:f src1:i len:36
+int_conv_to_r4: dest:f src1:i len:84
+int_conv_to_r8: dest:f src1:i len:84
 int_conv_to_u4: dest:i src1:i
 int_conv_to_r_un: dest:f src1:i len:56
 int_conv_to_u2: dest:i src1:i len:8

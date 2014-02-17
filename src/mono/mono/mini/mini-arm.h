@@ -202,6 +202,7 @@ typedef struct MonoCompileArch {
 	gpointer seq_point_bp_method_var;
 	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
+	gpointer *vfp_scratch_slots [2];
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
