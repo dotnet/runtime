@@ -60,7 +60,7 @@ main (void)
 			memcpy (playground, random_mem, POOL_SIZE);
 
 			bzero (reference + START_OFFSET + offset, size);
-			mono_gc_bzero (playground + START_OFFSET + offset, size);
+			mono_gc_bzero_atomic (playground + START_OFFSET + offset, size);
 
 			assert (!memcmp (reference, playground, POOL_SIZE));
 		}
@@ -75,7 +75,7 @@ main (void)
 				memcpy (playground, random_mem, POOL_SIZE);
 
 				memmove (reference + START_OFFSET + dest_offset, reference + START_OFFSET + src_offset, size);
-				mono_gc_memmove (playground + START_OFFSET + dest_offset, playground + START_OFFSET + src_offset, size);
+				mono_gc_memmove_atomic (playground + START_OFFSET + dest_offset, playground + START_OFFSET + src_offset, size);
 
 				assert (!memcmp (reference, playground, POOL_SIZE));
 
@@ -84,7 +84,7 @@ main (void)
 				memcpy (playground, random_mem, POOL_SIZE);
 
 				memmove (reference + START_OFFSET + dest_offset, reference + MEMMOVE_NONOVERLAP_START + src_offset, size);
-				mono_gc_memmove (playground + START_OFFSET + dest_offset, playground + MEMMOVE_NONOVERLAP_START + src_offset, size);
+				mono_gc_memmove_atomic (playground + START_OFFSET + dest_offset, playground + MEMMOVE_NONOVERLAP_START + src_offset, size);
 
 				assert (!memcmp (reference, playground, POOL_SIZE));
 
@@ -93,7 +93,7 @@ main (void)
 				memcpy (playground, random_mem, POOL_SIZE);
 
 				memmove (reference + MEMMOVE_NONOVERLAP_START + dest_offset, reference + START_OFFSET + src_offset, size);
-				mono_gc_memmove (playground + MEMMOVE_NONOVERLAP_START + dest_offset, playground + START_OFFSET + src_offset, size);
+				mono_gc_memmove_atomic (playground + MEMMOVE_NONOVERLAP_START + dest_offset, playground + START_OFFSET + src_offset, size);
 
 				assert (!memcmp (reference, playground, POOL_SIZE));
 			}

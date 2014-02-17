@@ -59,39 +59,24 @@
 			__d [__i] = NULL;		\
 	} while (0)
 
+
 /**
- * mono_gc_bzero:
+ * mono_gc_bzero_aligned:
  * @dest: address to start to clear
  * @size: size of the region to clear
  *
  * Zero @size bytes starting at @dest.
- *
- * Use this to zero memory that can hold managed pointers.
+ * The address of @dest MUST be aligned to word boundaries
  *
  * FIXME borrow faster code from some BSD libc or bionic
  */
 void
-mono_gc_bzero (void *dest, size_t size)
+mono_gc_bzero_aligned (void *dest, size_t size)
 {
 	volatile char *d = (char*)dest;
 	size_t tail_bytes, word_bytes;
 
-	/*
-	If we're copying less than a word, just use memset.
-
-	We cannot bail out early if both are aligned because some implementations
-	use byte copying for sizes smaller than 16. OSX, on this case.
-	*/
-	if (size < sizeof(void*)) {
-		memset (dest, 0, size);
-		return;
-	}
-
-	/*align to word boundary */
-	while (unaligned_bytes (d) && size) {
-		*d++ = 0;
-		--size;
-	}
+	g_assert (unaligned_bytes (dest) == 0);
 
 	/* copy all words with memmove */
 	word_bytes = (size_t)align_down (size);
@@ -121,6 +106,24 @@ mono_gc_bzero (void *dest, size_t size)
 	}
 }
 
+/**
+ * mono_gc_bzero_atomic:
+ * @dest: address to start to clear
+ * @size: size of the region to clear
+ *
+ * Zero @size bytes starting at @dest.
+ *
+ * Use this to zero memory without word tearing when dest is aligned.
+ */
+void
+mono_gc_bzero_atomic (void *dest, size_t size)
+{
+	if (unaligned_bytes (dest))
+		memset (dest, 0, size);
+	else
+		mono_gc_bzero_aligned (dest, size);
+}
+
 #define MEMMOVE_WORDS_UPWARD(dest,src,words) do {	\
 		void * volatile *__d = (void* volatile*)(dest);		\
 		void **__s = (void**)(src);		\
@@ -139,19 +142,22 @@ mono_gc_bzero (void *dest, size_t size)
 			__d [__i] = __s [__i];		\
 	} while (0)
 
+
 /**
- * mono_gc_memmove:
+ * mono_gc_memmove_aligned:
  * @dest: destination of the move
  * @src: source
  * @size: size of the block to move
  *
  * Move @size bytes from @src to @dest.
- * size MUST be a multiple of sizeof (gpointer)
  *
- */
-void
-mono_gc_memmove (void *dest, const void *src, size_t size)
+ * Use this to copy memory without word tearing when both pointers are aligned
+ */void
+mono_gc_memmove_aligned (void *dest, const void *src, size_t size)
 {
+	g_assert (unaligned_bytes (dest) == 0);
+	g_assert (unaligned_bytes (src) == 0);
+
 	/*
 	If we're copying less than a word we don't need to worry about word tearing
 	so we bailout to memmove early.
@@ -170,7 +176,7 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 	 * using memmove, which must handle it.
 	 */
 	if (dest > src && ((size_t)((char*)dest - (char*)src) < size)) { /*backward copy*/
-		volatile char *p = (char*)dest + size;
+			volatile char *p = (char*)dest + size;
 			char *s = (char*)src + size;
 			char *start = (char*)dest;
 			char *align_end = MAX((char*)dest, (char*)align_down (p));
@@ -178,26 +184,17 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 			size_t bytes_to_memmove;
 
 			while (p > align_end)
-				*--p = *--s;
+			        *--p = *--s;
 
 			word_start = align_up (start);
 			bytes_to_memmove = p - word_start;
 			p -= bytes_to_memmove;
 			s -= bytes_to_memmove;
 			MEMMOVE_WORDS_DOWNWARD (p, s, bytes_to_words (bytes_to_memmove));
-
-			while (p > start)
-				*--p = *--s;
 	} else {
 		volatile char *d = (char*)dest;
 		const char *s = (const char*)src;
 		size_t tail_bytes;
-
-		/*align to word boundary */
-		while (unaligned_bytes (d)) {
-			*d++ = *s++;
-			--size;
-		}
 
 		/* copy all words with memmove */
 		MEMMOVE_WORDS_UPWARD (d, s, bytes_to_words (align_down (size)));
@@ -211,4 +208,23 @@ mono_gc_memmove (void *dest, const void *src, size_t size)
 			} while (--tail_bytes);
 		}
 	}
+}
+
+/**
+ * mono_gc_memmove_atomic:
+ * @dest: destination of the move
+ * @src: source
+ * @size: size of the block to move
+ *
+ * Move @size bytes from @src to @dest.
+ *
+ * Use this to copy memory without word tearing when both pointers are aligned
+ */
+void
+mono_gc_memmove_atomic (void *dest, const void *src, size_t size)
+{
+	if (unaligned_bytes (_toi (dest) | _toi (src)))
+		memmove (dest, src, size);
+	else
+		mono_gc_memmove_aligned (dest, src, size);
 }

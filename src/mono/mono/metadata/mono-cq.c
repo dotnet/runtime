@@ -82,7 +82,7 @@ mono_cq_destroy (MonoCQ *cq)
 	if (!cq)
 		return;
 
-	mono_gc_bzero (cq, sizeof (MonoCQ));
+	mono_gc_bzero_aligned (cq, sizeof (MonoCQ));
 	MONO_GC_UNREGISTER_ROOT (cq->tail);
 	MONO_GC_UNREGISTER_ROOT (cq->head);
 	g_free (cq);

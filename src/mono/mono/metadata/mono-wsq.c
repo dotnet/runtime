@@ -133,7 +133,7 @@ mono_wsq_local_push (void *obj)
 		for (i = 0; i < length; i++)
 			mono_array_setref (new_array, i, mono_array_get (wsq->queue, MonoObject*, (i + head) & wsq->mask));
 
-		mono_gc_bzero (mono_array_addr (wsq->queue, MonoObject *, 0), sizeof (MonoObject*) * length);
+		mono_gc_bzero_aligned (mono_array_addr (wsq->queue, MonoObject *, 0), sizeof (MonoObject*) * length);
 		wsq->queue = new_array;
 		wsq->head = 0;
 		wsq->tail = tail = count;
