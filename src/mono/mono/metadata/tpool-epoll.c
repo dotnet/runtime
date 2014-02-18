@@ -177,7 +177,7 @@ tp_epoll_wait (gpointer p)
 		}
 		LeaveCriticalSection (&socket_io_data->io_lock);
 		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results, nresults);
-		mono_gc_bzero (async_results, sizeof (gpointer) * nresults);
+		mono_gc_bzero_aligned (async_results, sizeof (gpointer) * nresults);
 	}
 }
 #undef EPOLL_NEVENTS
