@@ -520,7 +520,8 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_le
 		FloatArgData *fad = list->data;
 		MonoInst *var = get_vreg_to_inst (cfg, fad->vreg);
 
-		*max_len += 4;
+		/* 4+1 insns for emit_big_add () and 1 for FLDS. */
+		*max_len += 20 + 4 + 4;
 
 		if (*offset + *max_len > cfg->code_size) {
 			cfg->code_size += *max_len;
@@ -529,7 +530,8 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_le
 			code = cfg->native_code + *offset;
 		}
 
-		ARM_FLDS (code, fad->hreg, var->inst_basereg, var->inst_offset);
+		code = emit_big_add (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
+		ARM_FLDS (code, fad->hreg, ARMREG_LR, 0);
 
 		*offset = code - cfg->native_code;
 	}
