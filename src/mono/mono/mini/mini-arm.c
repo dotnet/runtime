@@ -519,9 +519,13 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_le
 	for (list = inst->float_args; list; list = list->next) {
 		FloatArgData *fad = list->data;
 		MonoInst *var = get_vreg_to_inst (cfg, fad->vreg);
+		gboolean imm = arm_is_fpimm8 (var->inst_offset);
 
 		/* 4+1 insns for emit_big_add () and 1 for FLDS. */
-		*max_len += 20 + 4 + 4;
+		if (imm)
+			*max_len += 20 + 4;
+
+		*max_len += 4;
 
 		if (*offset + *max_len > cfg->code_size) {
 			cfg->code_size += *max_len;
@@ -530,8 +534,11 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_le
 			code = cfg->native_code + *offset;
 		}
 
-		code = emit_big_add (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
-		ARM_FLDS (code, fad->hreg, ARMREG_LR, 0);
+		if (!imm) {
+			code = emit_big_add (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
+			ARM_FLDS (code, fad->hreg, ARMREG_LR, 0);
+		} else
+			ARM_FLDS (code, fad->hreg, var->inst_basereg, var->inst_offset);
 
 		*offset = code - cfg->native_code;
 	}
@@ -549,8 +556,11 @@ mono_arm_emit_vfp_scratch_save (MonoCompile *cfg, guint8 *code, int reg)
 	inst = (MonoInst *) cfg->arch.vfp_scratch_slots [reg == vfp_scratch1 ? 0 : 1];
 
 	if (IS_HARD_FLOAT) {
-		code = emit_big_add (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
-		ARM_FSTD (code, reg, ARMREG_LR, 0);
+		if (!arm_is_fpimm8 (inst->inst_offset)) {
+			code = emit_big_add (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+			ARM_FSTD (code, reg, ARMREG_LR, 0);
+		} else
+			ARM_FSTD (code, reg, inst->inst_basereg, inst->inst_offset);
 	}
 
 	return code;
@@ -566,8 +576,11 @@ mono_arm_emit_vfp_scratch_restore (MonoCompile *cfg, guint8 *code, int reg)
 	inst = (MonoInst *) cfg->arch.vfp_scratch_slots [reg == vfp_scratch1 ? 0 : 1];
 
 	if (IS_HARD_FLOAT) {
-		code = emit_big_add (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
-		ARM_FLDD (code, reg, ARMREG_LR, 0);
+		if (!arm_is_fpimm8 (inst->inst_offset)) {
+			code = emit_big_add (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+			ARM_FLDD (code, reg, ARMREG_LR, 0);
+		} else
+			ARM_FLDD (code, reg, inst->inst_basereg, inst->inst_offset);
 	}
 
 	return code;
@@ -5777,8 +5790,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->storage == RegTypeFP) {
-				code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
-				ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+				int imm8, rot_amount;
+
+				if ((imm8 = mono_arm_is_rotated_imm8 (inst->inst_offset, &rot_amount)) == -1) {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+					ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+				} else
+					ARM_ADD_REG_IMM (code, ARMREG_IP, inst->inst_basereg, imm8, rot_amount);
 
 				if (ainfo->size == 8)
 					ARM_FSTD (code, ainfo->reg, ARMREG_IP, 0);
