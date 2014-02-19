@@ -850,14 +850,23 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		/* Pop arguments off the stack */
-		/* 
-		 * FIXME: LLVM doesn't push these, we can't use ji->from_llvm as it describes
-		 * the callee.
-		 */
-#ifndef ENABLE_LLVM
-		if (ji->has_arch_eh_info)
-			new_ctx->esp += mono_jit_info_get_arch_eh_info (ji)->stack_size;
+		if (ji->has_arch_eh_info) {
+			MonoJitInfo *caller_ji;
+			int stack_size;
+
+			stack_size = mono_jit_info_get_arch_eh_info (ji)->stack_size;
+
+			if (stack_size) {
+#ifdef ENABLE_LLVM
+				caller_ji = mini_jit_info_table_find (domain, (char*)new_ctx->eip, NULL);
+				/* LLVM doesn't push the arguments */
+				if (caller_ji && !caller_ji->from_llvm)
+					new_ctx->esp += stack_size;
+#else
+					new_ctx->esp += stack_size;
 #endif
+			}
+		}
 
 		return TRUE;
 	} else if (*lmf) {
