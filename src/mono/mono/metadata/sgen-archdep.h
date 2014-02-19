@@ -135,8 +135,12 @@
 #define USE_MONO_CTX
 #define ARCH_NUM_REGS 32
 
-#define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_GREGS((ctx))[29])
-#define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_PC((ctx)))
+/*
+ * These casts are necessary since glibc always makes the
+ * gregs 64-bit values in userland.
+ */
+#define ARCH_SIGCTX_SP(ctx)	((gsize) UCONTEXT_GREGS((ctx))[29])
+#define ARCH_SIGCTX_IP(ctx)	((gsize) UCONTEXT_REG_PC((ctx)))
 
 #elif defined(__s390x__)
 
