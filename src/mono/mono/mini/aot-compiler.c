@@ -678,6 +678,7 @@ arch_init (MonoAotCompile *acfg)
 #endif
 }
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
 /*
  * arch_emit_direct_call:
  *
@@ -724,6 +725,7 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 	g_assert_not_reached ();
 #endif
 }
+#endif
 
 /*
  * PPC32 design:
@@ -840,6 +842,7 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 
 #endif
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
 /*
  * arch_emit_objc_selector_ref:
  *
@@ -868,6 +871,7 @@ arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int 
 	g_assert_not_reached ();
 #endif
 }
+#endif
 
 /*
  * arch_emit_plt_entry:
@@ -4331,6 +4335,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 	return FALSE;
 }
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
 static const char *
 get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 {
@@ -4360,6 +4365,7 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 	
 	return import;
 }
+#endif
 
 static gint
 compare_lne (MonoDebugLineNumberEntry *a, MonoDebugLineNumberEntry *b)
@@ -4490,10 +4496,13 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	MonoJumpInfo *patch_info;
 	MonoMethodHeader *header;
 	MonoDebugSourceLocation **locs = NULL;
-	gboolean skip, direct_call, external_call;
+	gboolean skip;
+#ifdef MONO_ARCH_AOT_SUPPORTED
+	gboolean direct_call, external_call;
 	guint32 got_slot;
 	const char *direct_call_target = 0;
 	const char *direct_pinvoke;
+#endif
 
 	if (method) {
 		header = mono_method_get_header (method);
