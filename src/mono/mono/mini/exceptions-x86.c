@@ -851,13 +851,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		/* Pop arguments off the stack */
 		if (ji->has_arch_eh_info) {
-			MonoJitInfo *caller_ji;
 			int stack_size;
 
 			stack_size = mono_jit_info_get_arch_eh_info (ji)->stack_size;
 
 			if (stack_size) {
 #ifdef ENABLE_LLVM
+				MonoJitInfo *caller_ji;
+
 				caller_ji = mini_jit_info_table_find (domain, (char*)new_ctx->eip, NULL);
 				/* LLVM doesn't push the arguments */
 				if (caller_ji && !caller_ji->from_llvm)
