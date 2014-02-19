@@ -498,7 +498,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	return (gpointer)UCONTEXT_REG_PC (sigctx);
+	return (gpointer)(gsize)UCONTEXT_REG_PC (sigctx);
 }
 
 /*
