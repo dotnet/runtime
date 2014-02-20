@@ -53,7 +53,6 @@ extern guint32 SleepEx(guint32 ms, gboolean alertable);
  */
 extern void _wapi_thread_signal_self (guint32 exitstatus);
 
-void wapi_thread_interrupt_self (void);
 void wapi_interrupt_thread (gpointer handle);
 void wapi_clear_interruption (void);
 gboolean wapi_thread_set_wait_handle (gpointer handle);

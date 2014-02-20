@@ -4132,8 +4132,6 @@ mono_thread_request_interruption (gboolean running_managed)
 		/* Our implementation of this function ignores the func argument */
 #ifdef HOST_WIN32
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
-#else
-		wapi_thread_interrupt_self ();
 #endif
 		return NULL;
 	}

@@ -393,51 +393,13 @@ gboolean _wapi_thread_apc_pending (gpointer handle)
 		return (FALSE);
 	}
 	
-	return(thread->has_apc || thread->wait_handle == INTERRUPTION_REQUESTED_HANDLE);
+	return thread->wait_handle == INTERRUPTION_REQUESTED_HANDLE;
 }
 
-gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
+gboolean
+_wapi_thread_dispatch_apc_queue (gpointer handle)
 {
-	/* We don't support calling APC functions */
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread);
-	g_assert (ok);
-
-	thread->has_apc = FALSE;
-
-	return(TRUE);
-}
-
-/*
- * wapi_interrupt_self:
- *
- * If this function called from a signal handler, and the thread was waiting when receiving
- * the signal, the wait will be broken after the signal handler returns.
- * This function is async-signal-safe.
- */
-void
-wapi_thread_interrupt_self (void)
-{
-	HANDLE handle;
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
-	
-	handle = get_current_thread_handle ();
-	g_assert (handle);
-
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		return;
-	}
-
-	/* No locking/memory barriers are needed here */
-	thread_handle->has_apc = TRUE;
+	return TRUE;
 }
 
 /*
@@ -452,7 +414,6 @@ wapi_thread_interrupt_self (void)
  * target thread didn't receive the interrupt signal yet, in this case it should
  * call the wait function again. This essentially means that the target thread will
  * busy wait until it is ready to process the interruption.
- * FIXME: get rid of QueueUserAPC and thread->has_apc, SleepEx seems to require it.
  */
 void wapi_interrupt_thread (gpointer thread_handle)
 {

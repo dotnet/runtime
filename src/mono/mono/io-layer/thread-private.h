@@ -30,7 +30,6 @@ typedef enum {
 
 struct _WapiHandle_thread
 {
-	guint has_apc : 1;
 	pthread_t id;
 	GPtrArray *owned_mutexes;
 	/* 
