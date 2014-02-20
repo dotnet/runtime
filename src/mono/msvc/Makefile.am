@@ -6,6 +6,7 @@ EXTRA_DIST = \
 	     README \
 	     create-windef.pl \
 	     mono.def \
+	     mono.props \
 	     mono.sln \
 	     monoposixhelper.def \
 	     runmdesc.bat \
