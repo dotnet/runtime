@@ -20,6 +20,8 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/metadata/threads-types.h>
+#include <sys/resource.h>
+#include <limits.h>
 
 #include <errno.h>
 
@@ -328,6 +330,20 @@ mono_threads_core_open_handle (void)
 	else
 		wapi_ref_thread_handle (info->handle);
 	return info->handle;
+}
+
+int
+mono_threads_get_max_stack_size (void)
+{
+	struct rlimit lim;
+
+	/* If getrlimit fails, we don't enforce any limits. */
+	if (getrlimit (RLIMIT_STACK, &lim))
+		return INT_MAX;
+	/* rlim_t is an unsigned long long on 64bits OSX but we want an int response. */
+	if (lim.rlim_max > (rlim_t)INT_MAX)
+		return INT_MAX;
+	return (int)lim.rlim_max;
 }
 
 #if !defined (__MACH__)

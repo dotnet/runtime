@@ -294,6 +294,9 @@ mono_thread_info_open_handle (void);
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
+int
+mono_threads_get_max_stack_size (void) MONO_INTERNAL;
+
 #if !defined(HOST_WIN32)
 
 #if !defined(__MACH__)

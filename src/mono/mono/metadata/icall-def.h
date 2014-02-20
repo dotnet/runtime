@@ -881,6 +881,7 @@ ICALL(THREAD_21, "SetState(System.Threading.InternalThread,System.Threading.Thre
 ICALL(THREAD_22, "Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal)
 ICALL(THREAD_54, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop)
 ICALL(THREAD_23, "Suspend_internal(System.Threading.InternalThread)", ves_icall_System_Threading_Thread_Suspend)
+ICALL(THREAD_56, "SystemMaxStackStize", mono_threads_get_max_stack_size)
 ICALL(THREAD_25, "Thread_internal", ves_icall_System_Threading_Thread_Thread_internal)
 ICALL(THREAD_26, "VolatileRead(byte&)", ves_icall_System_Threading_Thread_VolatileRead1)
 ICALL(THREAD_27, "VolatileRead(double&)", ves_icall_System_Threading_Thread_VolatileReadDouble)
