@@ -320,7 +320,7 @@ pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(PEDUMP_DTRACE_OBJECT)
 
 if PLATFORM_DARWIN
-pedump_LDFLAGS=-framework CoreFoundation
+pedump_LDFLAGS=-framework CoreFoundation -framework Foundation
 endif
 endif
 endif
@@ -342,7 +342,7 @@ test_sgen_qsort_CFLAGS = $(SGEN_DEFINES)
 test_sgen_qsort_LDADD = libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
 if PLATFORM_DARWIN
-test_sgen_qsort_LDFLAGS=-framework CoreFoundation
+test_sgen_qsort_LDFLAGS=-framework CoreFoundation -framework Foundation
 endif
 
 test_gc_memfuncs_SOURCES = test-gc-memfuncs.c
@@ -350,7 +350,7 @@ test_gc_memfuncs_CFLAGS = $(SGEN_DEFINES)
 test_gc_memfuncs_LDADD = libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
 if PLATFORM_DARWIN
-test_gc_memfuncs_LDFLAGS=-framework CoreFoundation
+test_gc_memfuncs_LDFLAGS=-framework CoreFoundation -framework Foundation
 endif
 
 noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs

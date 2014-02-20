@@ -25,7 +25,8 @@
 
 void
 mono_threads_init_platform (void)
-{	
+{
+	mono_threads_init_dead_letter ();
 }
 
 void
@@ -105,6 +106,7 @@ void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
 	info->native_handle = mach_thread_self ();
+	mono_threads_install_dead_letter ();
 }
 
 void

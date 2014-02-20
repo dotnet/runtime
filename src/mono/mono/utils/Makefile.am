@@ -97,6 +97,7 @@ monoutils_sources = \
 	mono-threads.c	\
 	mono-threads-posix.c	\
 	mono-threads-mach.c	\
+	mono-threads-mach-helper.c	\
 	mono-threads-windows.c	\
 	mono-threads.h	\
 	mono-tls.h	\

@@ -331,4 +331,8 @@ gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadI
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg) MONO_INTERNAL;
 
+/*Mach specific internals */
+void mono_threads_init_dead_letter (void) MONO_INTERNAL;
+void mono_threads_install_dead_letter (void) MONO_INTERNAL;
+
 #endif /* __MONO_THREADS_H__ */
