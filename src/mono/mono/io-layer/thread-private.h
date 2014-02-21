@@ -41,6 +41,8 @@ struct _WapiHandle_thread
 	gpointer wait_handle;
 };
 
+typedef struct _WapiHandle_thread WapiHandle_thread;
+
 typedef struct
 {
 	guint32 (*callback)(gpointer arg);

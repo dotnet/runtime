@@ -76,15 +76,36 @@ get_current_thread_handle (void)
 
 	info = mono_thread_info_current ();
 	g_assert (info);
+	g_assert (info->handle);
 	return info->handle;
+}
+
+static WapiHandle_thread*
+lookup_thread (HANDLE handle)
+{
+	WapiHandle_thread *thread;
+	gboolean ok;
+
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+							  (gpointer *)&thread);
+	g_assert (ok);
+	return thread;
+}
+
+static WapiHandle_thread*
+get_current_thread (void)
+{
+	gpointer handle;
+
+	handle = get_current_thread_handle ();
+	return lookup_thread (handle);
 }
 
 static void
 _wapi_thread_set_termination_details (gpointer handle,
 					   guint32 exitstatus)
 {
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
+	WapiHandle_thread *thread_handle;
 	int i, thr_ret;
 	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
@@ -99,9 +120,7 @@ _wapi_thread_set_termination_details (gpointer handle,
 
 	DEBUG ("%s: Thread %p terminating", __func__, handle);
 
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	g_assert (ok);
+	thread_handle = lookup_thread (handle);
 
 	DEBUG ("%s: Thread %p abandoning held mutexes", __func__, handle);
 
@@ -130,13 +149,7 @@ _wapi_thread_set_termination_details (gpointer handle,
 
 void _wapi_thread_signal_self (guint32 exitstatus)
 {
-	gpointer handle;
-	
-	handle = get_current_thread_handle ();
-	if (handle == NULL)
-		return;
-	
-	_wapi_thread_set_termination_details (handle, exitstatus);
+	_wapi_thread_set_termination_details (get_current_thread_handle (), exitstatus);
 }
 
 void
@@ -153,9 +166,8 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 gpointer
 wapi_create_thread_handle (void)
 {
-	struct _WapiHandle_thread thread_handle = {0}, *thread;
+	WapiHandle_thread thread_handle = {0}, *thread;
 	gpointer handle;
-	int res;
 
 	mono_once (&thread_ops_once, thread_ops_init);
 
@@ -169,9 +181,7 @@ wapi_create_thread_handle (void)
 		return NULL;
 	}
 
-	res = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-							   (gpointer *)&thread);
-	g_assert (res);
+	thread = lookup_thread (handle);
 
 	thread->id = pthread_self ();
 
@@ -208,7 +218,7 @@ gpointer _wapi_thread_handle_from_id (pthread_t tid)
 static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
 {
 	pthread_t tid = (pthread_t)user_data;
-	struct _WapiHandle_thread *thread_handle;
+	WapiHandle_thread *thread_handle;
 	gboolean ok;
 	
 	/* Ignore threads that have already exited (ie they are signalled) */
@@ -238,9 +248,6 @@ static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
 	return(FALSE);
 }
 
-/* NB tid is 32bit in MS API, but we need 64bit on amd64 and s390x
- * (and probably others)
- */
 gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, gsize tid)
 {
 	gpointer ret=NULL;
@@ -311,10 +318,6 @@ guint32 SleepEx(guint32 ms, gboolean alertable)
 
 	if (alertable) {
 		current_thread = get_current_thread_handle ();
-		if (current_thread == NULL) {
-			SetLastError (ERROR_INVALID_HANDLE);
-			return(WAIT_FAILED);
-		}
 		
 		if (_wapi_thread_apc_pending (current_thread)) {
 			_wapi_thread_dispatch_apc_queue (current_thread);
@@ -362,36 +365,17 @@ void Sleep(guint32 ms)
 	SleepEx(ms, FALSE);
 }
 
-gboolean _wapi_thread_cur_apc_pending (void)
+gboolean
+_wapi_thread_cur_apc_pending (void)
 {
-	gpointer thread = get_current_thread_handle ();
-	
-	if (thread == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return(FALSE);
-	}
-	
-	return(_wapi_thread_apc_pending (thread));
+	return _wapi_thread_apc_pending (get_current_thread_handle ());
 }
 
 gboolean _wapi_thread_apc_pending (gpointer handle)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread);
-	if (ok == FALSE) {
-		/* This might happen at process shutdown, as all
-		 * thread handles are forcibly closed.  If a thread
-		 * still has an alertable wait the final
-		 * _wapi_thread_apc_pending check will probably fail
-		 * to find the handle
-		 */
-		DEBUG ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		return (FALSE);
-	}
+	WapiHandle_thread *thread;
+
+	thread = lookup_thread (handle);
 	
 	return thread->wait_handle == INTERRUPTION_REQUESTED_HANDLE;
 }
@@ -405,7 +389,6 @@ _wapi_thread_dispatch_apc_queue (gpointer handle)
 /*
  * wapi_interrupt_thread:
  *
- *   This is not part of the WIN32 API.
  * The state of the thread handle HANDLE is set to 'interrupted' which means that
  * if the thread calls one of the WaitFor functions, the function will return with 
  * WAIT_IO_COMPLETION instead of waiting. Also, if the thread was waiting when
@@ -425,13 +408,10 @@ void wapi_interrupt_thread (gpointer thread_handle)
 
 gpointer wapi_prepare_interrupt_thread (gpointer thread_handle)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
+	WapiHandle_thread *thread;
 	gpointer prev_handle, wait_handle;
-	
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread);
-	g_assert (ok);
+
+	thread = lookup_thread (thread_handle);
 
 	while (TRUE) {
 		wait_handle = thread->wait_handle;
@@ -494,15 +474,11 @@ void wapi_finish_interrupt_thread (gpointer wait_handle)
 void wapi_self_interrupt (void)
 {
 	gpointer wait_handle;
-	gpointer thread_handle;
 
-	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
-	wait_handle = wapi_prepare_interrupt_thread (thread_handle);
+	wait_handle = wapi_prepare_interrupt_thread (get_current_thread_handle ());
 	if (wait_handle)
 		/* ref added by set_wait_handle */
 		_wapi_handle_unref (wait_handle);
-
-	_wapi_handle_unref (thread_handle);
 }
 
 /*
@@ -514,39 +490,28 @@ void wapi_self_interrupt (void)
  */
 void wapi_clear_interruption (void)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
+	WapiHandle_thread *thread;
 	gpointer prev_handle;
-	gpointer thread_handle;
 
-	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-							  (gpointer *)&thread);
-	g_assert (ok);
+	thread = get_current_thread ();
 
 	prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
 													 NULL, INTERRUPTION_REQUESTED_HANDLE);
 	if (prev_handle == INTERRUPTION_REQUESTED_HANDLE)
 		WAIT_DEBUG (printf ("%p: state -> NORMAL.\n", GetCurrentThreadId ()););
-
-	_wapi_handle_unref (thread_handle);
 }
 
 char* wapi_current_thread_desc ()
 {
-	struct _WapiHandle_thread *thread;
-	int i;
-	gboolean ok;
-	gpointer handle;
+	WapiHandle_thread *thread;
 	gpointer thread_handle;
+	int i;
+	gpointer handle;
 	GString* text;
 	char *res;
 
-	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-							  (gpointer *)&thread);
-	if (!ok)
-		return g_strdup_printf ("thread handle %p state : lookup failure", thread_handle);
+	thread_handle = get_current_thread_handle ();
+	thread = lookup_thread (thread_handle);
 
 	handle = thread->wait_handle;
 	text = g_string_new (0);
@@ -581,20 +546,13 @@ char* wapi_current_thread_desc ()
  */
 gboolean wapi_thread_set_wait_handle (gpointer handle)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
+	WapiHandle_thread *thread;
 	gpointer prev_handle;
-	gpointer thread_handle;
 
-	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-							  (gpointer *)&thread);
-	g_assert (ok);
+	thread = get_current_thread ();
 
 	prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
 													 handle, NULL);
-	_wapi_handle_unref (thread_handle);
-
 	if (prev_handle == NULL) {
 		/* thread->wait_handle acts as an additional reference to the handle */
 		_wapi_handle_ref (handle);
@@ -615,19 +573,13 @@ gboolean wapi_thread_set_wait_handle (gpointer handle)
  */
 void wapi_thread_clear_wait_handle (gpointer handle)
 {
-	struct _WapiHandle_thread *thread;
-	gboolean ok;
+	WapiHandle_thread *thread;
 	gpointer prev_handle;
-	gpointer thread_handle;
 
-	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
-	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
-							  (gpointer *)&thread);
-	g_assert (ok);
+	thread = get_current_thread ();
 
 	prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
 													 NULL, handle);
-
 	if (prev_handle == handle) {
 		_wapi_handle_unref (handle);
 		WAIT_DEBUG (printf ("%p: state -> NORMAL.\n", GetCurrentThreadId ()););
@@ -636,56 +588,26 @@ void wapi_thread_clear_wait_handle (gpointer handle)
 		g_assert (prev_handle == INTERRUPTION_REQUESTED_HANDLE || prev_handle == NULL);
 		WAIT_DEBUG (printf ("%p: finished waiting.\n", GetCurrentThreadId ()););
 	}
-
-	_wapi_handle_unref (thread_handle);
 }
 
 void _wapi_thread_own_mutex (gpointer mutex)
 {
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
-	gpointer thread;
+	WapiHandle_thread *thread;
 	
-	thread = get_current_thread_handle ();
-	if (thread == NULL) {
-		g_warning ("%s: error looking up thread by ID", __func__);
-		return;
-	}
-
-	ok = _wapi_lookup_handle (thread, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   thread);
-		return;
-	}
+	thread = get_current_thread ();
 
 	_wapi_handle_ref (mutex);
 	
-	g_ptr_array_add (thread_handle->owned_mutexes, mutex);
+	g_ptr_array_add (thread->owned_mutexes, mutex);
 }
 
 void _wapi_thread_disown_mutex (gpointer mutex)
 {
-	struct _WapiHandle_thread *thread_handle;
-	gboolean ok;
-	gpointer thread;
+	WapiHandle_thread *thread;
 
-	thread = get_current_thread_handle ();
-	if (thread == NULL) {
-		g_warning ("%s: error looking up thread by ID", __func__);
-		return;
-	}
-
-	ok = _wapi_lookup_handle (thread, WAPI_HANDLE_THREAD,
-				  (gpointer *)&thread_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   thread);
-		return;
-	}
+	thread = get_current_thread ();
 
 	_wapi_handle_unref (mutex);
 	
-	g_ptr_array_remove (thread_handle->owned_mutexes, mutex);
+	g_ptr_array_remove (thread->owned_mutexes, mutex);
 }
