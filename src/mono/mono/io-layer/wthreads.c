@@ -277,7 +277,7 @@ SleepEx (guint32 ms, gboolean alertable)
 		ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 
 		if (alertable && _wapi_thread_apc_pending (current_thread))
-			_wapi_thread_dispatch_apc_queue (current_thread);
+			return WAIT_IO_COMPLETION;
 
 		if (ret == 0)
 			break;
