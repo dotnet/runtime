@@ -20,7 +20,6 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/metadata/threads-types.h>
-#include <sys/resource.h>
 #include <limits.h>
 
 #include <errno.h>
@@ -35,6 +34,7 @@ size_t pthread_get_stacksize_np(pthread_t);
 #endif
 
 #if defined(_POSIX_VERSION) || defined(__native_client__)
+#include <sys/resource.h>
 #include <signal.h>
 
 #if defined(__native_client__)
