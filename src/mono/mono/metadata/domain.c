@@ -1036,6 +1036,7 @@ lock_free_mempool_free (LockFreeMempool *mp)
 		mono_vfree (chunk, mono_pagesize ());
 		chunk = next;
 	}
+	g_free (mp);
 }
 
 /*
