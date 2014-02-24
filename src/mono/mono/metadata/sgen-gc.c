@@ -1933,7 +1933,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
-	sgen_scan_togglerefs (start_addr, end_addr, ctx);
+	sgen_mark_togglerefs (start_addr, end_addr, ctx);
 
 	if (sgen_need_bridge_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
@@ -1962,6 +1962,8 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	If we don't make sure it is empty we might wrongly see a live object as dead.
 	*/
 	sgen_drain_gray_stack (-1, ctx);
+
+	sgen_clear_togglerefs (start_addr, end_addr, ctx);
 
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for

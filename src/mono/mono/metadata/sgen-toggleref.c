@@ -90,14 +90,13 @@ sgen_process_togglerefs (void)
 		w);
 }
 
-void
-sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
+void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	SgenGrayQueue *queue = ctx.queue;
 	int i;
 
-	SGEN_LOG (4, "Scanning ToggleRefs %d", toggleref_array_size);
+	SGEN_LOG (4, "Marking ToggleRefs %d", toggleref_array_size);
 
 	for (i = 0; i < toggleref_array_size; ++i) {
 		if (toggleref_array [i].strong_ref) {
@@ -106,7 +105,21 @@ sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
 				SGEN_LOG (6, "\tcopying strong slot %d", i);
 				copy_func (&toggleref_array [i].strong_ref, queue);
 			}
-		} else if (toggleref_array [i].weak_ref) {
+		}
+	}
+	sgen_drain_gray_stack (-1, ctx);
+}
+
+void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
+{
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	SgenGrayQueue *queue = ctx.queue;
+	int i;
+
+	SGEN_LOG (4, "Clearing ToggleRefs %d", toggleref_array_size);
+
+	for (i = 0; i < toggleref_array_size; ++i) {
+		if (toggleref_array [i].weak_ref) {
 			char *object = toggleref_array [i].weak_ref;
 
 			if (object >= start && object < end) {
@@ -120,6 +133,7 @@ sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
 			}
 		}
 	}
+	sgen_drain_gray_stack (-1, ctx);
 }
 
 static void

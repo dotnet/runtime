@@ -796,7 +796,9 @@ void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void sgen_bridge_register_finalized_object (MonoObject *object) MONO_INTERNAL;
 void sgen_bridge_describe_pointer (MonoObject *object) MONO_INTERNAL;
 
-void sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_INTERNAL;
+void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_INTERNAL;
+
 void sgen_process_togglerefs (void) MONO_INTERNAL;
 void sgen_register_test_toggleref_callback (void) MONO_INTERNAL;
 
