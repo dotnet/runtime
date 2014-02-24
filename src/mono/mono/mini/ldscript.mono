@@ -5,6 +5,7 @@
               GC_start_blocking;
               GC_end_blocking;
               gc_thread_vtable;
+              mini_type_is_vtype;
       local:
               *;
 };
