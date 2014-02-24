@@ -1756,21 +1756,27 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = info->gsharedvt_arg_trampolines;
 	amodule->thumb_end = info->thumb_end;
 
-#ifdef MONOTOUCH
 	if (info->flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES) {
 		/* Compute code_offsets from the method addresses */
 		amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
 		for (i = 0; i < amodule->info.nmethods; ++i) {
 			/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
-			void *addr = get_arm_bl_target ((guint32*)amodule->method_addresses + i);
+			void *addr = NULL;
 
+#ifdef TARGET_ARM
+			addr = get_call_target ((guint32*)amodule->method_addresses + i);
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+			addr = mono_arch_get_call_target ((guint8*)amodule->method_addresses + (i * 5) + 5);
+#else
+			g_assert_not_reached ();
+#endif
+			g_assert (addr);
 			if (addr == amodule->method_addresses)
 				amodule->code_offsets [i] = 0xffffffff;
 			else
 				amodule->code_offsets [i] = (char*)addr - (char*)amodule->code;
 		}
 	}
-#endif
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32

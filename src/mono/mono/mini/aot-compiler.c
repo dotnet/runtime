@@ -686,7 +686,7 @@ arch_init (MonoAotCompile *acfg)
  * calling code.
  */
 static void
-arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean external, MonoJumpInfo *ji, int *call_size)
+arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean external, gboolean thumb, MonoJumpInfo *ji, int *call_size)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
@@ -710,7 +710,10 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 		emit_bytes (acfg, buf, 4);
 	} else {
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "bl %s\n", target);
+		if (thumb)
+			fprintf (acfg->fp, "blx %s\n", target);
+		else
+			fprintf (acfg->fp, "bl %s\n", target);
 	}
 	*call_size = 4;
 #elif defined(TARGET_POWERPC)
@@ -4658,7 +4661,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				if (direct_call) {
 					int call_size;
 
-					arch_emit_direct_call (acfg, direct_call_target, external_call, patch_info, &call_size);
+					arch_emit_direct_call (acfg, direct_call_target, external_call, FALSE, patch_info, &call_size);
 					i += call_size - 1;
 				} else {
 					int code_size;
@@ -7159,7 +7162,6 @@ emit_code (MonoAotCompile *acfg)
 		}
 	}
 
-#ifdef MONOTOUCH
 	if (acfg->direct_method_addresses) {
 		acfg->flags |= MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES;
 
@@ -7177,14 +7179,12 @@ emit_code (MonoAotCompile *acfg)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
 
 		for (i = 0; i < acfg->nmethods; ++i) {
-			if (acfg->cfgs [i]) {
-				if (acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm)
-					fprintf (acfg->fp, "\tblx %s\n", acfg->cfgs [i]->asm_symbol);
-				else
-					fprintf (acfg->fp, "\tbl %s\n", acfg->cfgs [i]->asm_symbol);
-			} else {
-				fprintf (acfg->fp, "\tbl method_addresses\n");
-			}
+			int call_size;
+
+			if (acfg->cfgs [i])
+				arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
+			else
+				arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
 		}
 
 		sprintf (symbol, "method_addresses_end");
@@ -7212,22 +7212,6 @@ emit_code (MonoAotCompile *acfg)
 			}
 		}
 	}
-#else
-	sprintf (symbol, "code_offsets");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-
-	acfg->stats.offsets_size += acfg->nmethods * 4;
-
-	for (i = 0; i < acfg->nmethods; ++i) {
-		if (acfg->cfgs [i]) {
-			emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, acfg->methods_symbol, 0);
-		} else {
-			emit_int32 (acfg, 0xffffffff);
-		}
-	}
-#endif
 	emit_line (acfg);
 
 	/* Emit a sorted table mapping methods to their unbox trampolines */
