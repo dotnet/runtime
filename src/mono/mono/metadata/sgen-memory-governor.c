@@ -390,6 +390,7 @@ sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance, do
 		soft_heap_limit = soft_limit;
 
 	debug_print_allowance = debug_allowance;
+	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 
 	if (max_heap == 0)
 		return;
@@ -405,13 +406,12 @@ sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance, do
 	}
 	max_heap_size = max_heap - sgen_nursery_size;
 
-	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
-
 	if (allowance_ratio)
 		default_allowance_nursery_size_ratio = allowance_ratio;
 
 	if (save_target)
 		save_target_ratio = save_target;
+	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 }
 
 #endif
