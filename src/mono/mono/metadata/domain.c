@@ -1976,6 +1976,13 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	mono_reflection_cleanup_domain (domain);
 
+	/* This must be done before type_hash is freed */
+	if (domain->class_vtable_array) {
+		int i;
+		for (i = 0; i < domain->class_vtable_array->len; ++i)
+			unregister_vtable_reflection_type (g_ptr_array_index (domain->class_vtable_array, i));
+	}
+
 	if (domain->type_hash) {
 		mono_g_hash_table_destroy (domain->type_hash);
 		domain->type_hash = NULL;
@@ -1983,12 +1990,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	if (domain->type_init_exception_hash) {
 		mono_g_hash_table_destroy (domain->type_init_exception_hash);
 		domain->type_init_exception_hash = NULL;
-	}
-
-	if (domain->class_vtable_array) {
-		int i;
-		for (i = 0; i < domain->class_vtable_array->len; ++i)
-			unregister_vtable_reflection_type (g_ptr_array_index (domain->class_vtable_array, i));
 	}
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
