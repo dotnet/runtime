@@ -5036,6 +5036,11 @@ mono_gc_base_init (void)
 				sgen_register_test_bridge_callbacks (g_strdup (opt));
 				continue;
 			}
+			if (g_str_has_prefix (opt, "toggleref-test")) {
+				sgen_register_test_toggleref_callback ();
+				continue;
+			}
+
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
