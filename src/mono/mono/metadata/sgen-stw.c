@@ -200,12 +200,12 @@ sgen_stop_world (int generation)
 {
 	int count, dead;
 
-	/*XXX this is the right stop, thought might not be the nicest place to put it*/
-	sgen_process_togglerefs ();
-
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
 	MONO_GC_WORLD_STOP_BEGIN ();
 	acquire_gc_locks ();
+
+	/* We start to scan after locks are taking, this ensures we won't be interrupted. */
+	sgen_process_togglerefs ();
 
 	update_current_thread_stack (&count);
 
