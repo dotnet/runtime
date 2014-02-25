@@ -309,10 +309,15 @@ gpointer _wapi_thread_duplicate ()
  */
 guint32 SleepEx(guint32 ms, gboolean alertable)
 {
-	struct timespec req, rem;
+	struct timespec req;
 	int ms_quot, ms_rem;
 	int ret;
 	gpointer current_thread = NULL;
+#ifdef __linux__
+	struct timespec start, target;
+#else
+	struct timespec rem;
+#endif
 	
 	DEBUG("%s: Sleeping for %d ms", __func__, ms);
 
@@ -336,7 +341,33 @@ guint32 SleepEx(guint32 ms, gboolean alertable)
 	
 	req.tv_sec=ms_quot;
 	req.tv_nsec=ms_rem*1000000;
-	
+
+#ifdef __linux__
+	/* Use clock_nanosleep () to prevent time drifting problems when nanosleep () is interrupted by signals */
+	ret = clock_gettime (CLOCK_MONOTONIC, &start);
+	g_assert (ret == 0);
+	target = start;
+	target.tv_sec += ms_quot;
+	target.tv_nsec += ms_rem * 1000000;
+	if (target.tv_nsec > 999999999) {
+		target.tv_nsec -= 999999999;
+		target.tv_sec ++;
+	}
+
+	while (TRUE) {
+		ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+
+		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+			_wapi_thread_dispatch_apc_queue (current_thread);
+			return WAIT_IO_COMPLETION;
+		}
+
+		if (ret == 0)
+			break;
+	}
+
+#else
+
 again:
 	memset (&rem, 0, sizeof (rem));
 	ret=nanosleep(&req, &rem);
@@ -356,6 +387,8 @@ again:
 		req=rem;
 		goto again;
 	}
+
+#endif /* __linux__ */
 
 	return 0;
 }

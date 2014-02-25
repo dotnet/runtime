@@ -393,7 +393,8 @@ BASE_TEST_CS_SRC=		\
 	unload-appdomain-on-shutdown.cs	\
 	block_guard_restore_aligment_on_exit.cs	\
 	finally_block_ending_in_dead_bb.cs	\
-	thread_static_gc_layout.cs
+	thread_static_gc_layout.cs \
+	sleep.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
