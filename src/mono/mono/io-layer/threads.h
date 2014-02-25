@@ -40,11 +40,7 @@ G_BEGIN_DECLS
 typedef guint32 (*WapiThreadStart)(gpointer);
 typedef guint32 (*WapiApcProc)(gpointer);
 
-extern gpointer OpenThread (guint32 access, gboolean inherit, gsize tid); /* NB tid is 32bit in MS API */
-extern void ExitThread(guint32 exitcode) G_GNUC_NORETURN;
-extern gboolean GetExitCodeThread(gpointer handle, guint32 *exitcode);
 extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
-extern gpointer GetCurrentThread(void);
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 

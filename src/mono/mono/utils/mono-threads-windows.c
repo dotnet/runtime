@@ -249,4 +249,11 @@ mono_threads_get_max_stack_size (void)
 	//FIXME
 	return INT_MAX;
 }
+
+HANDLE
+mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
+{
+	return OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
+}
+
 #endif

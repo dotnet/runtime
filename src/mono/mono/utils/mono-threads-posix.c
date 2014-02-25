@@ -346,6 +346,14 @@ mono_threads_get_max_stack_size (void)
 	return (int)lim.rlim_max;
 }
 
+HANDLE
+mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
+{
+	wapi_ref_thread_handle (handle);
+
+	return handle;
+}
+
 #if !defined (__MACH__)
 
 #if !defined(__native_client__)

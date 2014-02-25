@@ -202,75 +202,10 @@ wapi_ref_thread_handle (gpointer handle)
 	_wapi_handle_ref (handle);
 }
 
-/* The only time this function is called when tid != pthread_self ()
- * is from OpenThread (), so we can fast-path most cases by just
- * looking up the handle in TLS.  OpenThread () must cope with a NULL
- * return and do a handle search in that case.
- */
 gpointer _wapi_thread_handle_from_id (pthread_t tid)
 {
-	if (pthread_equal (tid, pthread_self ()))
-		return get_current_thread_handle ();
-	else
-		return NULL;
-}
-
-static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
-{
-	pthread_t tid = (pthread_t)user_data;
-	WapiHandle_thread *thread_handle;
-	gboolean ok;
-	
-	/* Ignore threads that have already exited (ie they are signalled) */
-	if (_wapi_handle_issignalled (handle) == FALSE) {
-		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-					  (gpointer *)&thread_handle);
-		if (ok == FALSE) {
-			/* It's possible that the handle has vanished
-			 * during the _wapi_search_handle before it
-			 * gets here, so don't spam the console with
-			 * warnings.
-			 */
-			return(FALSE);
-		}
-		
-		DEBUG ("%s: looking at thread %ld from process %d", __func__, thread_handle->id, 0);
-
-		if (pthread_equal (thread_handle->id, tid)) {
-			DEBUG ("%s: found the thread we are looking for",
-				   __func__);
-			return(TRUE);
-		}
-	}
-	
-	DEBUG ("%s: not found %ld, returning FALSE", __func__, tid);
-	
-	return(FALSE);
-}
-
-gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, gsize tid)
-{
-	gpointer ret=NULL;
-	
-	mono_once (&thread_ops_once, thread_ops_init);
-	
-	DEBUG ("%s: looking up thread %"G_GSIZE_FORMAT, __func__, tid);
-
-	if (pthread_equal ((pthread_t)tid, pthread_self ()))
-		ret = get_current_thread_handle ();
-	if (ret == NULL) {
-		/* We need to search for this thread */
-		ret = _wapi_search_handle (WAPI_HANDLE_THREAD, find_thread_by_id, (gpointer)tid, NULL, FALSE/*TRUE*/);	/* FIXME: have a proper look at this, me might not need to set search_shared = TRUE */
-	} else {
-		/* if _wapi_search_handle() returns a found handle, it
-		 * refs it itself
-		 */
-		_wapi_handle_ref (ret);
-	}
-	
-	DEBUG ("%s: returning thread handle %p", __func__, ret);
-	
-	return(ret);
+	g_assert (pthread_equal (tid, pthread_self ()));
+	return get_current_thread_handle ();
 }
 
 /**

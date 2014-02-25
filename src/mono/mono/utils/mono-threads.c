@@ -772,3 +772,16 @@ mono_thread_info_open_handle (void)
 {
 	return mono_threads_core_open_handle ();
 }
+
+/*
+ * mono_thread_info_open_handle:
+ *
+ *   Return a io-layer/win32 handle for the thread identified by HANDLE/TID.
+ * The handle need to be closed by calling CloseHandle () when it is no
+ * longer needed.
+ */
+HANDLE
+mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
+{
+	return mono_threads_core_open_thread_handle (handle, tid);
+}

@@ -297,6 +297,9 @@ mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 
 int
 mono_threads_get_max_stack_size (void) MONO_INTERNAL;
 
+HANDLE
+mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INTERNAL;
+
 #if !defined(HOST_WIN32)
 
 #if !defined(__MACH__)
@@ -323,6 +326,7 @@ gboolean mono_threads_core_yield (void) MONO_INTERNAL;
 void mono_threads_core_exit (int exit_code) MONO_INTERNAL;
 void mono_threads_core_unregister (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 HANDLE mono_threads_core_open_handle (void) MONO_INTERNAL;
+HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 
