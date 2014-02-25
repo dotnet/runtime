@@ -245,6 +245,9 @@ MONO_API int
 mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
+MONO_API int
+mono_runtime_set_main_args  (int argc, char* argv[]);
+
 /* The following functions won't be available with mono was configured with remoting disabled. */
 /*#ifndef DISABLE_REMOTING */
 MONO_API void*

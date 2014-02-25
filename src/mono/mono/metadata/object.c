@@ -3540,7 +3540,7 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 }
 
 static char **main_args = NULL;
-static int num_main_args;
+static int num_main_args = 0;
 
 /**
  * mono_runtime_get_main_args:
@@ -3553,9 +3553,6 @@ mono_runtime_get_main_args (void)
 	MonoArray *res;
 	int i;
 	MonoDomain *domain = mono_domain_get ();
-
-	if (!main_args)
-		return NULL;
 
 	res = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, num_main_args);
 
@@ -3573,6 +3570,40 @@ free_main_args (void)
 	for (i = 0; i < num_main_args; ++i)
 		g_free (main_args [i]);
 	g_free (main_args);
+	num_main_args = 0;
+	main_args = NULL;
+}
+
+/**
+ * mono_runtime_set_main_args:
+ * @argc: number of arguments from the command line
+ * @argv: array of strings from the command line
+ *
+ * Set the command line arguments from an embedding application that doesn't otherwise call
+ * mono_runtime_run_main ().
+ */
+int
+mono_runtime_set_main_args (int argc, char* argv[])
+{
+	int i;
+
+	free_main_args ();
+	main_args = g_new0 (char*, argc);
+	num_main_args = argc;
+
+	for (i = 0; i < argc; ++i) {
+		gchar *utf8_arg;
+
+		utf8_arg = mono_utf8_from_external (argv[i]);
+		if (utf8_arg == NULL) {
+			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv [i]);
+			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
+			exit (-1);
+		}
+
+		main_args [i] = utf8_arg;
+	}
+
 }
 
 /**
