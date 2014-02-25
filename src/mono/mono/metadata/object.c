@@ -3604,6 +3604,7 @@ mono_runtime_set_main_args (int argc, char* argv[])
 		main_args [i] = utf8_arg;
 	}
 
+	return 0;
 }
 
 /**
