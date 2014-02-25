@@ -58,19 +58,24 @@ rgctx_tramp_info_hash (gconstpointer data)
 	return GPOINTER_TO_UINT (info->m) ^ GPOINTER_TO_UINT (info->addr);
 }
 
-/*
+/**
  * mono_create_static_rgctx_trampoline:
+ * @m: the mono method to create a trampoline for
+ * @addr: the address to jump to (where the compiled code for M lives)
  *
- *   Return a static rgctx trampoline for M which branches to ADDR which should
+ * Creates a static rgctx trampoline for M which branches to ADDR which should
  * point to the compiled code of M.
  *
- *   Static rgctx trampolines are used when a shared generic method which doesn't
+ * Static rgctx trampolines are used when a shared generic method which doesn't
  * have a this argument is called indirectly, ie. from code which can't pass in
  * the rgctx argument. The trampoline sets the rgctx argument and jumps to the
  * methods code. These trampolines are similar to the unbox trampolines, they
  * perform the same task as the static rgctx wrappers, but they are smaller/faster,
  * and can be made to work with full AOT.
+ *
  * On PPC addr should be an ftnptr and the return value is an ftnptr too.
+ *
+ * Returns the generated static rgctx trampoline.
  */
 gpointer
 mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
@@ -274,12 +279,19 @@ mini_jit_info_is_gsharedvt (MonoJitInfo *ji)
 		return FALSE;
 }
 
-/*
+/**
  * mini_add_method_trampoline:
+ * @orig_method: the method the caller originally called i.e. an iface method, or NULL.
+ * @m: 
+ * @compiled_method:
+ * @add_static_rgctx_tramp: adds a static rgctx trampoline
+ * @add_unbox_tramp: adds an unboxing trampoline
  *
- *   Add static rgctx/gsharedvt_in/unbox trampolines to M/COMPILED_METHOD if needed. Return the trampoline address, or
- * COMPILED_METHOD if no trampoline is needed.
- * ORIG_METHOD is the method the caller originally called i.e. an iface method, or NULL.
+ * Add static rgctx/gsharedvt_in/unbox trampolines to
+ * M/COMPILED_METHOD if needed.
+ *
+ * Returns the trampoline address, or COMPILED_METHOD if no trampoline
+ * is needed.
  */
 gpointer
 mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp)
@@ -693,7 +705,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 /**
  * mono_magic_trampoline:
  *
- *   This trampoline handles normal calls from JITted code.
+ * This trampoline handles normal calls from JITted code.
  */
 gpointer
 mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
@@ -703,10 +715,10 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 	return common_call_trampoline (regs, code, arg, tramp, NULL, NULL, FALSE);
 }
 
-/*
+/**
  * mono_vcall_trampoline:
  *
- *   This trampoline handles virtual calls.
+ * This trampoline handles virtual calls.
  */
 static gpointer
 mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
@@ -817,10 +829,10 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 }
 #endif
 
-/*
+/**
  * mono_aot_trampoline:
  *
- *   This trampoline handles calls made from AOT code. We try to bypass the 
+ * This trampoline handles calls made from AOT code. We try to bypass the 
  * normal JIT compilation logic to avoid loading the metadata for the method.
  */
 #ifdef MONO_ARCH_AOT_SUPPORTED
