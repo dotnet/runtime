@@ -101,9 +101,8 @@ get_current_thread (void)
 	return lookup_thread (handle);
 }
 
-static void
-_wapi_thread_set_termination_details (gpointer handle,
-					   guint32 exitstatus)
+void
+wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 {
 	WapiHandle_thread *thread_handle;
 	int i, thr_ret;
@@ -145,17 +144,6 @@ _wapi_thread_set_termination_details (gpointer handle,
 	
 	/* The thread is no longer active, so unref it */
 	_wapi_handle_unref (handle);
-}
-
-void _wapi_thread_signal_self (guint32 exitstatus)
-{
-	_wapi_thread_set_termination_details (get_current_thread_handle (), exitstatus);
-}
-
-void
-wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
-{
-	_wapi_thread_set_termination_details (handle, exitstatus);
 }
 
 /*
