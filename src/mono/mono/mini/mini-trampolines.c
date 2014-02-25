@@ -430,6 +430,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		} else {
 			gboolean lookup_aot;
 
+			mono_class_interface_offset_with_variance (vt->klass, m->klass, &variance_used);
+
 			if (m->is_inflated && ((MonoMethodInflated*)m)->context.method_inst) {
 				/* Generic virtual method */
 				generic_virtual = m;
