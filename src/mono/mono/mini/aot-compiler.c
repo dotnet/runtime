@@ -7181,10 +7181,12 @@ emit_code (MonoAotCompile *acfg)
 		for (i = 0; i < acfg->nmethods; ++i) {
 			int call_size;
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
 			if (acfg->cfgs [i])
 				arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
 			else
 				arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
+#endif
 		}
 
 		sprintf (symbol, "method_addresses_end");
