@@ -95,7 +95,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	struct timespec abstime;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	gpointer current_thread = wapi_get_current_thread_handle ();
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -103,7 +103,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	}
 
 	if (handle == _WAPI_THREAD_CURRENT) {
-		handle = _wapi_thread_handle_from_id (pthread_self ());
+		handle = wapi_get_current_thread_handle ();
 		if (handle == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
@@ -287,7 +287,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	struct timespec abstime;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	gpointer current_thread = wapi_get_current_thread_handle ();
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -295,7 +295,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	}
 
 	if (signal_handle == _WAPI_THREAD_CURRENT) {
-		signal_handle = _wapi_thread_handle_from_id (pthread_self ());
+		signal_handle = wapi_get_current_thread_handle ();
 		if (signal_handle == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
@@ -303,7 +303,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	}
 
 	if (wait == _WAPI_THREAD_CURRENT) {
-		wait = _wapi_thread_handle_from_id (pthread_self ());
+		wait = wapi_get_current_thread_handle ();
 		if (wait == NULL) {
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
@@ -520,7 +520,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	guint i;
 	guint32 ret;
 	int thr_ret;
-	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	gpointer current_thread = wapi_get_current_thread_handle ();
 	guint32 retval;
 	gboolean poll;
 	gpointer sorted_handles [MAXIMUM_WAIT_OBJECTS];
@@ -543,7 +543,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	/* Check for duplicates */
 	for (i = 0; i < numobjects; i++) {
 		if (handles[i] == _WAPI_THREAD_CURRENT) {
-			handles[i] = _wapi_thread_handle_from_id (pthread_self ());
+			handles[i] = wapi_get_current_thread_handle ();
 			
 			if (handles[i] == NULL) {
 				DEBUG ("%s: Handle %d bogus", __func__, i);

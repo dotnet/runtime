@@ -1328,7 +1328,7 @@ gboolean DuplicateHandle (gpointer srcprocess, gpointer src,
 	if (src == _WAPI_PROCESS_CURRENT) {
 		*target = _wapi_process_duplicate ();
 	} else if (src == _WAPI_THREAD_CURRENT) {
-		*target = _wapi_thread_duplicate ();
+		g_assert_not_reached ();
 	} else {
 		_wapi_handle_ref (src);
 		*target = src;

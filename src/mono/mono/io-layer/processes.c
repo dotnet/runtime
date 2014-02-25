@@ -2901,7 +2901,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 	gboolean spin;
 	gpointer current_thread;
 
-	current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	current_thread = wapi_get_current_thread_handle ();
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
 		return WAIT_FAILED;

@@ -107,7 +107,6 @@ typedef WapiImageResourceDirectoryEntry IMAGE_RESOURCE_DIRECTORY_ENTRY;
 typedef WapiImageResourceDirectoryEntry *PIMAGE_RESOURCE_DIRECTORY_ENTRY;
 typedef WapiImageResourceDataEntry IMAGE_RESOURCE_DATA_ENTRY;
 typedef WapiImageResourceDataEntry *PIMAGE_RESOURCE_DATA_ENTRY;
-typedef WapiApcProc PAPCFUNC;
 typedef WapiShellExecuteInfo SHELLEXECUTEINFO;
 typedef WapiShellExecuteInfo *LPSHELLEXECUTEINFO;
 typedef WapiTransmitFileBuffers TRANSMIT_FILE_BUFFERS;
