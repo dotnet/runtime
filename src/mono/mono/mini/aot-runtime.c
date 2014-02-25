@@ -1764,7 +1764,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			void *addr = NULL;
 
 #ifdef TARGET_ARM
-			addr = get_call_target ((guint32*)amodule->method_addresses + i);
+			addr = get_arm_bl_target ((guint32*)amodule->method_addresses + i);
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
 			addr = mono_arch_get_call_target ((guint8*)amodule->method_addresses + (i * 5) + 5);
 #else
