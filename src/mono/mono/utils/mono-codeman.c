@@ -252,7 +252,7 @@ codechunk_valloc (guint32 size)
 		freelist = g_slist_remove_link (freelist, freelist);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
-		ptr = mono_valloc (NULL, size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		ptr = mono_valloc (NULL, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
 	}
 	LeaveCriticalSection (&valloc_mutex);
 	return ptr;
@@ -508,6 +508,11 @@ new_codechunk (int dynamic, int size)
 		if (size < minsize)
 			chunk_size = minsize;
 		else {
+			/* Allocate MIN_ALIGN-1 more than we need so we can still */
+			/* guarantee MIN_ALIGN alignment for individual allocs    */
+			/* from mono_code_manager_reserve_align.                  */
+			size += MIN_ALIGN - 1;
+			size &= ~(MIN_ALIGN - 1);
 			chunk_size = size;
 			chunk_size += pagesize - 1;
 			chunk_size &= ~ (pagesize - 1);
@@ -531,9 +536,6 @@ new_codechunk (int dynamic, int size)
 		if (!ptr)
 			return NULL;
 	} else {
-		/* Allocate MIN_ALIGN-1 more than we need so we can still */
-		/* guarantee MIN_ALIGN alignment for individual allocs    */
-		/* from mono_code_manager_reserve_align.                  */
 		ptr = codechunk_valloc (chunk_size);
 		if (!ptr)
 			return NULL;
