@@ -233,10 +233,8 @@ done:
 	pthread_cleanup_pop (0);
 	
 check_pending:
-	if (apc_pending) {
-		_wapi_thread_dispatch_apc_queue (current_thread);
+	if (apc_pending)
 		ret = WAIT_IO_COMPLETION;
-	}
 		
 	return(ret);
 }
@@ -430,10 +428,8 @@ done:
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 
-	if (apc_pending) {
-		_wapi_thread_dispatch_apc_queue (current_thread);
+	if (apc_pending)
 		ret = WAIT_IO_COMPLETION;
-	}
 	
 	return(ret);
 }
@@ -618,10 +614,8 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		_wapi_calc_timeout (&abstime, timeout);
 	}
 
-	if (alertable && _wapi_thread_apc_pending (current_thread)) {
-		_wapi_thread_dispatch_apc_queue (current_thread);
+	if (alertable && _wapi_thread_apc_pending (current_thread))
 		return WAIT_IO_COMPLETION;
-	}
 	
 	for (i = 0; i < numobjects; i++) {
 		/* Add a reference, as we need to ensure the handle wont
@@ -681,7 +675,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		pthread_cleanup_pop (0);
 		
 		if (alertable && _wapi_thread_apc_pending (current_thread)) {
-			_wapi_thread_dispatch_apc_queue (current_thread);
 			retval = WAIT_IO_COMPLETION;
 			break;
 		}
