@@ -6,6 +6,7 @@
               GC_end_blocking;
               gc_thread_vtable;
               mini_type_is_vtype;
+              mini_is_gsharedvt_klass;
       local:
               *;
 };
