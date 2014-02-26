@@ -1963,8 +1963,6 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	*/
 	sgen_drain_gray_stack (-1, ctx);
 
-	sgen_clear_togglerefs (start_addr, end_addr, ctx);
-
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for
 	finalization so they can be cleared before that.
@@ -2001,6 +1999,13 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
 	clear_unreachable_ephemerons (ctx);
+
+	/*
+	 * We clear togglerefs only after all possible chances of revival are done. 
+	 * This is semantically more inline with what users expect and it allows for
+	 * user finalizers to correctly interact with TR objects.
+	*/
+	sgen_clear_togglerefs (start_addr, end_addr, ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
