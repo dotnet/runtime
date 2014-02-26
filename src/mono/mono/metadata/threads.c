@@ -4773,6 +4773,7 @@ mono_thread_join (gpointer tid)
 {
 #ifndef HOST_WIN32
 	pthread_t thread;
+	gboolean found = FALSE;
 
 	joinable_threads_lock ();
 	if (!joinable_threads)
@@ -4780,8 +4781,11 @@ mono_thread_join (gpointer tid)
 	if (g_hash_table_lookup (joinable_threads, tid)) {
 		g_hash_table_remove (joinable_threads, tid);
 		joinable_thread_count --;
+		found = TRUE;
 	}
 	joinable_threads_unlock ();
+	if (!found)
+		return;
 	thread = (pthread_t)tid;
 	pthread_join (thread, NULL);
 #endif
