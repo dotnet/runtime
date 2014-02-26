@@ -11800,7 +11800,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 
 	layout = (klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK);
 
-	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		return sizeof (gpointer);
+	} else if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
 		gchar *msg;
 		MonoException *exc;
 
