@@ -21,6 +21,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/sgen-toggleref.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-memory-model.h>
@@ -55,6 +56,8 @@ static void*
 boehm_thread_register (MonoThreadInfo* info, void *baseptr);
 static void
 boehm_thread_unregister (MonoThreadInfo *p);
+static void
+register_test_toggleref_callback (void);
 
 static void
 mono_gc_warning (char *msg, GC_word arg)
@@ -171,6 +174,9 @@ mono_gc_base_init (void)
 					fprintf (stderr, "max-heap-size must be an integer.\n");
 					exit (1);
 				}
+				continue;
+			} else if (g_str_has_prefix (opt, "toggleref-test")) {
+				register_test_toggleref_callback ();
 				continue;
 			} else {
 				/* Could be a parameter for sgen */
@@ -1283,6 +1289,43 @@ gboolean
 mono_gc_set_allow_synchronous_major (gboolean flag)
 {
 	return flag;
+}
+/* Toggleref support */
+
+void
+mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
+{
+	GC_toggleref_add ((GC_PTR)object, (int)strong_ref);
+}
+
+void
+mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
+{
+	GC_toggleref_register_callback (proccess_toggleref);
+}
+
+/* Test support code */
+
+static MonoToggleRefStatus
+test_toggleref_callback (MonoObject *obj)
+{
+	static MonoClassField *mono_toggleref_test_field;
+	int status = MONO_TOGGLE_REF_DROP;
+
+	if (!mono_toggleref_test_field) {
+		mono_toggleref_test_field = mono_class_get_field_from_name (mono_object_get_class (obj), "__test");
+		g_assert (mono_toggleref_test_field);
+	}
+
+	mono_field_get_value (obj, mono_toggleref_test_field, &status);
+	printf ("toggleref-cb obj %d\n", status);
+	return status;
+}
+
+static void
+register_test_toggleref_callback (void)
+{
+	mono_gc_toggleref_register_callback (test_toggleref_callback);
 }
 
 #endif /* no Boehm GC */
