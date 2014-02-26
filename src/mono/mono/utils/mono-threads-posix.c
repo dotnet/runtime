@@ -152,8 +152,8 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 	/* Actually start the thread */
 	res = mono_threads_get_callbacks ()->mono_gc_pthread_create (&thread, &attr, inner_start_thread, &start_info);
 	if (res) {
-		// FIXME:
-		g_assert_not_reached ();
+		MONO_SEM_DESTROY (&(start_info.registered));
+		return NULL;
 	}
 
 	/* Wait until the thread register itself in various places */
