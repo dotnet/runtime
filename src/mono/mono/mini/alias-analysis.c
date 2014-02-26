@@ -268,7 +268,7 @@ recompute_aliased_variables (MonoCompile *cfg)
 
 				var = (MonoInst*)ins->inst_p0;
 				if (!(var->flags & MONO_INST_INDIRECT)) {
-					if (cfg->verbose_level) { printf ("Restoring :"); mono_print_ins (var); }
+					if (cfg->verbose_level > 1) { printf ("Restoring :"); mono_print_ins (var); }
 					++adds;
 				}
 				var->flags |= MONO_INST_INDIRECT;
