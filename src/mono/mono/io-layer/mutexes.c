@@ -301,8 +301,6 @@ static void mutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 		return;
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
@@ -319,7 +317,6 @@ static void mutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 }
 
 static void namedmutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
@@ -392,8 +389,6 @@ static gpointer mutex_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 		return(NULL);
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
@@ -407,7 +402,6 @@ static gpointer mutex_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 	
 	return(handle);
 }
@@ -559,8 +553,6 @@ static gboolean mutex_release (gpointer handle)
 		return(FALSE);
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
@@ -590,7 +582,6 @@ static gboolean mutex_release (gpointer handle)
 cleanup:
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 	
 	return(ret);
 }
