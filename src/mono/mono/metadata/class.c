@@ -2084,17 +2084,11 @@ mono_class_setup_methods (MonoClass *class)
 		MonoMethodSignature *sig;
 		int count_generic = 0, first_generic = 0;
 		int method_num = 0;
-		gboolean jagged_ctor = FALSE;
 
 		class->method.count = 3 + (class->rank > 1? 2: 1);
 
 		mono_class_setup_interfaces (class, &error);
 		g_assert (mono_error_ok (&error)); /*FIXME can this fail for array types?*/
-
-		if (class->rank == 1 && class->element_class->rank) {
-			jagged_ctor = TRUE;
-			class->method.count ++;
-		}
 
 		if (class->interface_count) {
 			count_generic = generic_array_methods (class);
@@ -2124,19 +2118,6 @@ mono_class_setup_methods (MonoClass *class)
 			amethod = create_array_method (class, ".ctor", sig);
 			methods [method_num++] = amethod;
 		}
-
-		if (jagged_ctor) {
-			/* Jagged arrays have an extra ctor in .net which creates an array of arrays */
-			sig = mono_metadata_signature_alloc (class->image, class->rank + 1);
-			sig->ret = &mono_defaults.void_class->byval_arg;
-			sig->pinvoke = TRUE;
-			sig->hasthis = TRUE;
-			for (i = 0; i < class->rank + 1; ++i)
-				sig->params [i] = &mono_defaults.int32_class->byval_arg;
-			amethod = create_array_method (class, ".ctor", sig);
-			methods [method_num++] = amethod;
-		}
-
 		/* element Get (idx11, [idx2, ...]) */
 		sig = mono_metadata_signature_alloc (class->image, class->rank);
 		sig->ret = &class->element_class->byval_arg;

@@ -2830,18 +2830,6 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		for (i = 0; i < pcount; ++i)
 			lengths [i] = *(int32_t*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
 
-		if (m->klass->rank == 1 && sig->param_count == 2 && m->klass->element_class->rank) {
-			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
-			MonoArray *arr = mono_array_new_full (mono_object_domain (params), m->klass, lengths, NULL);
-
-			for (i = 0; i < mono_array_length (arr); ++i) {
-				MonoArray *subarray = mono_array_new_full (mono_object_domain (params), m->klass->element_class, &lengths [1], NULL);
-
-				mono_array_setref_fast (arr, i, subarray);
-			}
-			return (MonoObject*)arr;
-		}
-
 		if (m->klass->rank == pcount) {
 			/* Only lengths provided. */
 			lower_bounds = NULL;
