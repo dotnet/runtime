@@ -315,29 +315,25 @@ sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_
 	size_t num_cards;
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	if (end_card < start_card) {
-		guint8 *edge_card = sgen_cardtable + CARD_COUNT_IN_BYTES;
-		size_t num_cards_to_edge = edge_card - start_card;
+	size_t rest;
 
-		num_cards = (end_card + CARD_COUNT_IN_BYTES) - start_card;
-		if (init) {
-			result = dest = alloc_mod_union (num_cards);
-			//g_print ("%d cards for %d bytes: %p\n", num_cards, num_bytes, dest);
-		}
+	rest = num_cards = cards_in_range ((mword) obj, obj_size);
 
-		update_mod_union (dest, init, start_card, edge_card);
+	if (init)
+		result = dest = alloc_mod_union (num_cards);
 
-		SGEN_ASSERT (0, num_cards == (edge_card - start_card) + (end_card - sgen_cardtable), "wrong number of cards");
-
-		dest += num_cards_to_edge;
+	while (start_card + rest > SGEN_CARDTABLE_END) {
+		size_t count = SGEN_CARDTABLE_END - start_card;
+		update_mod_union (dest, init, start_card, SGEN_CARDTABLE_END);
+		dest += count;
+		rest -= count;
 		start_card = sgen_cardtable;
-	} else
-#endif
-	{
-		num_cards = end_card - start_card;
-		if (init)
-			result = dest = alloc_mod_union (num_cards);
 	}
+#else
+	num_cards = end_card - start_card;
+	if (init)
+		result = dest = alloc_mod_union (num_cards);
+#endif
 
 	update_mod_union (dest, init, start_card, end_card);
 
@@ -356,7 +352,9 @@ move_cards_to_shadow_table (mword start, mword size)
 	guint8 *to = sgen_card_table_get_shadow_card_address (start);
 	size_t bytes = cards_in_range (start, size);
 
-	if (to + bytes > SGEN_SHADOW_CARDTABLE_END) {
+	if (bytes >= CARD_COUNT_IN_BYTES) {
+		memcpy (sgen_shadow_cardtable, sgen_cardtable, CARD_COUNT_IN_BYTES);
+	} else if (to + bytes > SGEN_SHADOW_CARDTABLE_END) {
 		size_t first_chunk = SGEN_SHADOW_CARDTABLE_END - to;
 		size_t second_chunk = MIN (CARD_COUNT_IN_BYTES, bytes) - first_chunk;
 
@@ -373,7 +371,9 @@ clear_cards (mword start, mword size)
 	guint8 *addr = sgen_card_table_get_card_address (start);
 	size_t bytes = cards_in_range (start, size);
 
-	if (addr + bytes > SGEN_CARDTABLE_END) {
+	if (bytes >= CARD_COUNT_IN_BYTES) {
+		memset (sgen_cardtable, 0, CARD_COUNT_IN_BYTES);
+	} else if (addr + bytes > SGEN_CARDTABLE_END) {
 		size_t first_chunk = SGEN_CARDTABLE_END - addr;
 
 		memset (addr, 0, first_chunk);
