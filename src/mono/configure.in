@@ -2439,7 +2439,7 @@ if test "x$enable_llvm" = "xyes"; then
    else
       LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit mcjit $llvm_codegen`
    fi
-   LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"
+   LLVM_LIBS="$LLVM_LIBS $LLVM_LDFLAGS -lstdc++"
 
    expected_llvm_version="3.4svn-mono-mono/e656cac"
 
