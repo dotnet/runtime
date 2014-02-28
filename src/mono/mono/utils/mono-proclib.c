@@ -583,7 +583,7 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 		nice_ticks = strtoull (data, &data, 10);
 		system_ticks = strtoull (data, &data, 10);
 		idle_ticks = strtoull (data, &data, 10);
-		strtoull (data, &data, 10); /* iowait_ticks */
+		/* iowait_ticks = strtoull (data, &data, 10); */
 		irq_ticks = strtoull (data, &data, 10);
 		sirq_ticks = strtoull (data, &data, 10);
 		break;
