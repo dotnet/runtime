@@ -450,7 +450,7 @@ GSList*
 mono_amd64_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
 
 int
-mono_amd64_get_tls_gs_offset (void) MONO_INTERNAL;
+mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
 
 typedef struct {
 	guint8 *address;
