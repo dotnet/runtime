@@ -1301,7 +1301,7 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 void
 mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
 {
-	GC_toggleref_register_callback (proccess_toggleref);
+	GC_toggleref_register_callback ((int (*) (GC_PTR obj)) proccess_toggleref);
 }
 
 /* Test support code */
