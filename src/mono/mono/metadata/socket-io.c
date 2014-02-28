@@ -3018,6 +3018,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	hints.ai_flags = AI_CANONNAME;
 
 	if (*hostname && getaddrinfo(hostname, NULL, &hints, &info) == -1) {
+		g_free (hostname);
 		return(FALSE);
 	}
 	
@@ -3106,10 +3107,13 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 #else
 	he = _wapi_gethostbyname (hostname);
 #endif
-	g_free(hostname);
 
-	if (*hostname && he==NULL)
+	if (*hostname && he==NULL) {
+		g_free (hostname);
 		return(FALSE);
+	}
+
+	g_free (hostname);
 
 	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list, add_local_ips));
 }
