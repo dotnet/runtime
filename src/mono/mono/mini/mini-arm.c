@@ -1694,6 +1694,40 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	return cinfo;
 }
 
+
+gboolean
+mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+{
+	MonoType *callee_ret;
+	CallInfo *c1, *c2;
+	gboolean res;
+
+	if (cfg->compile_aot && !cfg->full_aot)
+		/* OP_TAILCALL doesn't work with AOT */
+		return FALSE;
+
+	c1 = get_call_info (NULL, NULL, caller_sig);
+	c2 = get_call_info (NULL, NULL, callee_sig);
+
+	/*
+	 * Tail calls with more callee stack usage than the caller cannot be supported, since
+	 * the extra stack space would be left on the stack after the tail call.
+	 */
+	res = c1->stack_usage >= c2->stack_usage;
+	callee_ret = mini_replace_type (callee_sig->ret);
+	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != RegTypeStructByVal)
+		/* An address on the callee's stack is passed as the first argument */
+		res = FALSE;
+
+	if (c2->stack_usage > 16 * 4)
+		res = FALSE;
+
+	g_free (c1);
+	g_free (c2);
+
+	return res;
+}
+
 #ifndef DISABLE_JIT
 
 static gboolean
@@ -4638,6 +4672,66 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = mono_arm_patchable_b (code, ARMCOND_AL);
 			}
 			break;
+		case OP_TAILCALL: {
+			MonoCallInst *call = (MonoCallInst*)ins;
+
+			/*
+			 * The stack looks like the following:
+			 * <caller argument area>
+			 * <saved regs etc>
+			 * <rest of frame>
+			 * <callee argument area>
+			 * Need to copy the arguments from the callee argument area to
+			 * the caller argument area, and pop the frame.
+			 */
+			if (call->stack_usage) {
+				int i, prev_sp_offset = 0;
+
+				/* Compute size of saved registers restored below */
+				if (iphone_abi)
+					prev_sp_offset = 2 * 4;
+				else
+					prev_sp_offset = 1 * 4;
+				for (i = 0; i < 16; ++i) {
+					if (cfg->used_int_regs & (1 << i))
+						prev_sp_offset += 4;
+				}
+
+				code = emit_big_add (code, ARMREG_IP, cfg->frame_reg, cfg->stack_usage + prev_sp_offset);
+
+				/* Copy arguments on the stack to our argument area */
+				for (i = 0; i < call->stack_usage; i += sizeof (mgreg_t)) {
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i);
+					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i);
+				}
+			}
+
+			/*
+			 * Keep in sync with mono_arch_emit_epilog
+			 */
+			g_assert (!cfg->method->save_lmf);
+
+			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
+			if (iphone_abi) {
+				if (cfg->used_int_regs)
+					ARM_POP (code, cfg->used_int_regs);
+				ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
+			} else {
+				ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			}
+
+			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
+			if (cfg->compile_aot) {
+				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+				ARM_B (code, 0);
+				*(gpointer*)code = NULL;
+				code += 4;
+				ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
+			} else {
+				code = mono_arm_patchable_b (code, ARMCOND_AL);
+			}
+			break;
+		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			ARM_LDRB_IMM (code, ARMREG_LR, ins->sreg1, 0);

@@ -2037,6 +2037,8 @@ HAS_VALUE:	ldc.i4.1
 	// Code size 34 (0x22)
 	.maxstack 17
 	IL_0000:  ldarg.0 
+			  ldc.i4.1
+			  add
 	IL_0001:  ldarg.1 
 	IL_0002:  ldarg.2 
 	IL_0003:  ldarg.3 
@@ -2051,7 +2053,11 @@ HAS_VALUE:	ldc.i4.1
 	IL_0014:  ldarg.s 12
 	IL_0016:  ldarg.s 13
 	IL_0018:  ldarg.s 14
+			  ldc.i4.1
+			  add
 	IL_001a:  ldarg.s 15
+			  ldc.i4.1
+			  add
 	          tail.
 	IL_001c:  call int32 class Tests::manyargs_callee(int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32)
 	IL_0021:  ret 
@@ -2059,7 +2065,7 @@ HAS_VALUE:	ldc.i4.1
 
     // method line 4
     .method public static  hidebysig 
-           default int32 test_0_many_args_tail_call ()  cil managed 
+           default int32 test_139_many_args_tail_call ()  cil managed
     {
 		// Some platforms might not be able to AOT tail calls
 		.custom instance void class [TestDriver]CategoryAttribute::'.ctor'(string) =  (01 00 08 21 46 55 4C 4C 41 4F 54 00 00 ) // ...!FULLAOT..
@@ -2084,13 +2090,7 @@ HAS_VALUE:	ldc.i4.1
 	IL_0014:  ldc.i4.s 0x0f
 	IL_0016:  ldc.i4.s 0x10
 	IL_0018:  call int32 class Tests::manyargs_tail_caller(int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32, int32)
-	IL_001d:  ldc.i4 136
-	IL_0022:  beq IL_0029
-
-	IL_0027:  ldc.i4.1 
 	IL_0028:  ret 
-	IL_0029:  ldc.i4.0 
-	IL_002a:  ret 
     } // end of method main::Main
 
 	.class nested private auto ansi beforefieldinit R1
