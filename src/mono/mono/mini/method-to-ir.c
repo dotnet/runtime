@@ -4588,9 +4588,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			vtable = mono_class_vtable (cfg->domain, method->klass);
 			if (!vtable)
 				return FALSE;
-			if (cfg->compile_aot && mono_class_needs_cctor_run (method->klass, NULL))
-				return FALSE;
-			mono_runtime_class_init (vtable);
+			if (!cfg->compile_aot)
+				mono_runtime_class_init (vtable);
 		} else if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
 				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
