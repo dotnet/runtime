@@ -487,7 +487,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 			MonoInst *iargs [2]; \
 			iargs [0] = (inst); \
 			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
-			mono_emit_jit_icall (cfg, mono_fstore_r4, iargs); \
+			(dest) = mono_emit_jit_icall (cfg, mono_fstore_r4, iargs);	\
 		} else { \
 			EMIT_NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); \
 		} \
