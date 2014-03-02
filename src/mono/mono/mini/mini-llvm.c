@@ -2383,6 +2383,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_R4CONST:
 			values [ins->dreg] = LLVMConstFPExt (LLVMConstReal (LLVMFloatType (), *(float*)ins->inst_p0), LLVMDoubleType ());
 			break;
+		case OP_DUMMY_ICONST:
+			values [ins->dreg] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			break;
+		case OP_DUMMY_I8CONST:
+			values [ins->dreg] = LLVMConstInt (LLVMInt64Type (), 0, FALSE);
+			break;
+		case OP_DUMMY_R8CONST:
+			values [ins->dreg] = LLVMConstReal (LLVMDoubleType (), 0.0f);
+			break;
 		case OP_BR:
 			LLVMBuildBr (builder, get_bb (ctx, ins->inst_target_bb));
 			has_terminator = TRUE;
@@ -3453,6 +3462,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMBuildCall (builder, LLVMGetNamedFunction (module, memset_func_name), args, memset_param_count, "");
 			break;
 		}
+		case OP_DUMMY_VZERO:
+			break;
 
 		case OP_STOREV_MEMBASE:
 		case OP_LOADV_MEMBASE:
