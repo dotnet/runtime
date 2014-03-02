@@ -5750,7 +5750,34 @@ emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 }
 
 static void
-emit_init_local (MonoCompile *cfg, int local, MonoType *type)
+emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
+{
+	int t;
+
+	rtype = mini_replace_type (rtype);
+	t = rtype->type;
+
+	if (rtype->byref) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_PCONST);
+	} else if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
+	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
+	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
+	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
+		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_VZERO);
+	} else if (((t == MONO_TYPE_VAR) || (t == MONO_TYPE_MVAR)) && mini_type_var_is_vt (cfg, rtype)) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_VZERO);
+	} else {
+		emit_init_rvar (cfg, dreg, rtype);
+	}
+}
+
+/* If INIT is FALSE, emit dummy initialization statements to keep the IR valid */
+static void
+emit_init_local (MonoCompile *cfg, int local, MonoType *type, gboolean init)
 {
 	MonoInst *var = cfg->locals [local];
 	if (COMPILE_SOFT_FLOAT (cfg)) {
@@ -5759,7 +5786,10 @@ emit_init_local (MonoCompile *cfg, int local, MonoType *type)
 		emit_init_rvar (cfg, reg, type);
 		EMIT_NEW_LOCSTORE (cfg, store, local, cfg->cbb->last_ins);
 	} else {
-		emit_init_rvar (cfg, var->dreg, type);
+		if (init)
+			emit_init_rvar (cfg, var->dreg, type);
+		else
+			emit_dummy_init_rvar (cfg, var->dreg, type);
 	}
 }
 
@@ -6405,7 +6435,7 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
 		CHECK_TYPELOAD (klass);
 		type = mini_replace_type (&klass->byval_arg);
-		emit_init_local (cfg, local, type);
+		emit_init_local (cfg, local, type, TRUE);
 		return ip + 6;
 	}
 load_error:
@@ -6686,7 +6716,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	cfg->cil_start = ip;
 	end = ip + header->code_size;
 	cfg->stat_cil_code_size += header->code_size;
-	init_locals = header->init_locals;
 
 	seq_points = cfg->gen_seq_points && cfg->method == method;
 #ifdef PLATFORM_ANDROID
@@ -6720,9 +6749,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	/* 
 	 * Methods without init_locals set could cause asserts in various passes
-	 * (#497220).
+	 * (#497220). To work around this, we emit dummy initialization opcodes
+	 * (OP_DUMMY_ICONST etc.) which generate no code. These are only supported
+	 * on some platforms.
 	 */
-	init_locals = TRUE;
+	if ((cfg->opt & MONO_OPT_UNSAFE) && ARCH_HAVE_DUMMY_INIT)
+		init_locals = header->init_locals;
+	else
+		init_locals = TRUE;
 
 	method_definition = method;
 	while (method_definition->is_inflated) {
@@ -6968,21 +7002,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	
-	if ((init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot || security || pinvoke) {
-		/* we use a separate basic block for the initialization code */
-		NEW_BBLOCK (cfg, init_localsbb);
-		cfg->bb_init = init_localsbb;
-		init_localsbb->real_offset = cfg->real_offset;
-		start_bblock->next_bb = init_localsbb;
-		init_localsbb->next_bb = bblock;
-		link_bblock (cfg, start_bblock, init_localsbb);
-		link_bblock (cfg, init_localsbb, bblock);
+	/* we use a separate basic block for the initialization code */
+	NEW_BBLOCK (cfg, init_localsbb);
+	cfg->bb_init = init_localsbb;
+	init_localsbb->real_offset = cfg->real_offset;
+	start_bblock->next_bb = init_localsbb;
+	init_localsbb->next_bb = bblock;
+	link_bblock (cfg, start_bblock, init_localsbb);
+	link_bblock (cfg, init_localsbb, bblock);
 		
-		cfg->cbb = init_localsbb;
-	} else {
-		start_bblock->next_bb = bblock;
-		link_bblock (cfg, start_bblock, bblock);
-	}
+	cfg->cbb = init_localsbb;
 
 	if (cfg->gsharedvt && cfg->method == method) {
 		MonoGSharedVtMethodInfo *info;
@@ -11925,11 +11954,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->method == method && cfg->got_var)
 		mono_emit_load_got_addr (cfg);
 
-	if (init_locals) {
+	if (init_localsbb) {
 		cfg->cbb = init_localsbb;
 		cfg->ip = NULL;
 		for (i = 0; i < header->num_locals; ++i) {
-			emit_init_local (cfg, i, header->locals [i]);
+			emit_init_local (cfg, i, header->locals [i], init_locals);
 		}
 	}
 

@@ -600,6 +600,13 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
+#define MONO_EMIT_NEW_DUMMY_INIT(cfg,dr,op) do {			  \
+		MonoInst *inst;										  \
+		MONO_INST_NEW ((cfg), (inst), (op));				  \
+		inst->dreg = dr;									  \
+		MONO_ADD_INS ((cfg)->cbb, inst);					  \
+	} while (0)
+
 #ifdef MONO_ARCH_NEED_GOT_VAR
 
 #define MONO_EMIT_NEW_AOTCONST(cfg,dr,cons,patch_type) do { \

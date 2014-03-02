@@ -1626,7 +1626,7 @@ COND:   ldloc.0
     .method private static  hidebysig
            default void regress_80622_inner (object x)  cil managed
     {
-		.locals (unsigned int8 i)
+		.locals init (unsigned int8 i)
         // Method begins at RVA 0x2050
         // Code size 14 (0xe)
         .maxstack 8
@@ -1861,7 +1861,7 @@ HAS_VALUE:	ldc.i4.1
 
 	.method public static int32 test_0_long_shift_regalloc () cil managed
 	{
-		.locals (unsigned int32 'cilsimp.28', unsigned int64 'cilsimp.27', int32 'cilsimp.26')
+		.locals init (unsigned int32 'cilsimp.28', unsigned int64 'cilsimp.27', int32 'cilsimp.26')
 
 		.maxstack 4
 
@@ -2295,7 +2295,7 @@ OK_2:
 
 	.method public static int32 test_0_regalloc_regress_497271 () cil managed
 	{
-		.locals (int32 var)
+		.locals init (int32 var)
 
 		ldc.i4	4
 		stsfld	int32 Tests::shift1
@@ -2699,4 +2699,23 @@ END:
 		add
 		ret
 	}
+
+  .method public static default int32 no_initlocals_inner () cil managed
+  {
+    .locals (
+	int32 V_0,
+	float32 V_1,
+	float64 V_2,
+	valuetype Tests/TailCallStruct V_3)
+       ldloc V_0
+       ret
+  }
+
+  .method public static default int32 test_0_no_initlocals () cil managed
+  {
+       call int32 Tests::no_initlocals_inner()
+       pop
+	   ldc.i4.0
+       ret
+  }
 }

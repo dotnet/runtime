@@ -574,6 +574,10 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 1, tree->inst_ls_word);
 				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, tree->inst_ms_word);
 				break;
+			case OP_DUMMY_I8CONST:
+				MONO_EMIT_NEW_DUMMY_INIT (cfg, tree->dreg + 1, OP_DUMMY_ICONST);
+				MONO_EMIT_NEW_DUMMY_INIT (cfg, tree->dreg + 2, OP_DUMMY_ICONST);
+				break;
 			case OP_LMOVE:
 			case OP_LCONV_TO_U8:
 			case OP_LCONV_TO_I8:
@@ -1185,6 +1189,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						tmp->inst_c1 = ins->dreg;
 						MONO_ADD_INS (cfg->cbb, tmp);
 					}
+					break;
+				case OP_DUMMY_VZERO:
+					NULLIFY_INS (ins);
 					break;
 				case OP_STOREV_MEMBASE: {
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);
