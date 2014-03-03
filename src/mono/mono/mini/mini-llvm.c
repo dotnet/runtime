@@ -4240,6 +4240,8 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->exception_message = g_strdup ("lmf");
 		cfg->disable_llvm = TRUE;
 	}
+	if (cfg->disable_llvm)
+		return;
 
 #if 1
 	for (i = 0; i < header->num_clauses; ++i) {
@@ -4253,6 +4255,8 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 			cfg->disable_llvm = TRUE;
 		}
 	}
+	if (cfg->disable_llvm)
+		return;
 #endif
 
 	/* FIXME: */
@@ -4260,6 +4264,8 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->exception_message = g_strdup ("dynamic.");
 		cfg->disable_llvm = TRUE;
 	}
+	if (cfg->disable_llvm)
+		return;
 }
 
 /*
