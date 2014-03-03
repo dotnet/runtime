@@ -75,7 +75,8 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 void
 mono_llvm_free_domain_info (MonoDomain *domain)
 {
-	mono_llvm_free_domain_info_fptr (domain);
+	if (mono_llvm_free_domain_info_fptr)
+		mono_llvm_free_domain_info_fptr (domain);
 }
 
 static MonoDl*
