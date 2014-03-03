@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <metadata/sgen-gc.h>
+#include <metadata/sgen-qsort.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -55,6 +56,20 @@ compare_teststructs (const void *pa, const void *pb)
 	return 1;
 }
 
+static int
+compare_teststructs2 (const void *pa, const void *pb)
+{
+	int a = (*((const teststruct_t**)pa))->key;
+	int b = (*((const teststruct_t**)pb))->key;
+	if (a < b)
+		return -1;
+	if (a == b)
+		return 0;
+	return 1;
+}
+
+DEF_QSORT_INLINE(test_struct, teststruct_t*, compare_teststructs)
+
 static void
 compare_sorts (void *base, size_t nel, size_t width, int (*compar) (const void*, const void*))
 {
@@ -74,6 +89,24 @@ compare_sorts (void *base, size_t nel, size_t width, int (*compar) (const void*,
 	free (b2);
 }
 
+static void
+compare_sorts2 (void *base, size_t nel)
+{
+	size_t len = nel * sizeof (teststruct_t*);
+	void *b1 = malloc (len);
+	void *b2 = malloc (len);
+
+	memcpy (b1, base, len);
+	memcpy (b2, base, len);
+
+	qsort (b1, nel, sizeof (teststruct_t*), compare_teststructs2);
+	qsort_test_struct (b2, nel);
+
+	assert (!memcmp (b1, b2, len));
+
+	free (b1);
+	free (b2);
+}
 int
 main (void)
 {
@@ -99,5 +132,18 @@ main (void)
 		compare_sorts (a, 200, sizeof (teststruct_t), compare_teststructs);
 	}
 
+	srandom (time (NULL));
+	for (i = 0; i < 2000; ++i) {
+		teststruct_t a [200];
+		teststruct_t *b [200];
+		int j;
+		for (j = 0; j < 200; ++j) {
+			a [j].key = random ();
+			a [j].val = random ();
+			b [j] = &a[j];
+		}
+
+		compare_sorts2 (b, 200);
+	}
 	return 0;
 }

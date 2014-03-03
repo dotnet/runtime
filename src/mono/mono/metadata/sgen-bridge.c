@@ -46,6 +46,7 @@
 #include "sgen-gc.h"
 #include "sgen-bridge.h"
 #include "sgen-hash-table.h"
+#include "sgen-qsort.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
 
@@ -520,12 +521,12 @@ dfs2 (HashEntry *entry)
 }
 
 static int
-compare_hash_entries (const void *ep1, const void *ep2)
+compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 {
-	HashEntry *e1 = *(HashEntry**)ep1;
-	HashEntry *e2 = *(HashEntry**)ep2;
 	return e2->finishing_time - e1->finishing_time;
 }
+
+DEF_QSORT_INLINE(hash_entries, HashEntry*, compare_hash_entries)
 
 static unsigned long step_1, step_2, step_3, step_4, step_5, step_6, step_7, step_8;
 static int fist_pass_links, second_pass_links, sccs_links;
@@ -635,8 +636,7 @@ sgen_bridge_processing_finish (int generation)
 	hash_table_size = hash_table.num_entries;
 
 	/* sort array according to decreasing finishing time */
-
-	sgen_qsort (all_entries, hash_table.num_entries, sizeof (HashEntry*), compare_hash_entries);
+	qsort_hash_entries (all_entries, hash_table.num_entries);
 
 	SGEN_TV_GETTIME (btv);
 	step_3 = SGEN_TV_ELAPSED (atv, btv);

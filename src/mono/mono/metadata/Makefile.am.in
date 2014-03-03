@@ -255,7 +255,8 @@ sgen_sources = \
 	sgen-fin-weak-hash.c	\
 	sgen-layout-stats.c	\
 	sgen-layout-stats.h	\
-	sgen-qsort.c
+	sgen-qsort.c	\
+	sgen-qsort.h
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
