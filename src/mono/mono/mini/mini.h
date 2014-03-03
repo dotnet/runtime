@@ -315,6 +315,7 @@ typedef struct
 	/* memcpy/bzero methods specialized for small constant sizes */
 	gpointer *memcpy_addr [17];
 	gpointer *bzero_addr [17];
+	GHashTable *llvm_types;
 } MonoJitDomainInfo;
 
 typedef struct {
@@ -2157,6 +2158,7 @@ void     mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *cal
 void     mono_llvm_create_aot_module        (const char *got_symbol) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_aot_module          (const char *filename, int got_size) MONO_LLVM_INTERNAL;
 void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_LLVM_INTERNAL;
+void     mono_llvm_free_domain_info         (MonoDomain *domain) MONO_LLVM_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;

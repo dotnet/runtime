@@ -92,6 +92,7 @@ typedef struct {
 	gboolean *unreachable;
 	int *pindexes;
 	LLVMValueRef imt_rgctx_loc;
+	GHashTable *llvm_types;
 
 	char temp_name [32];
 } EmitContext;
@@ -369,7 +370,9 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 
 		if (klass->enumtype)
 			return type_to_llvm_type (ctx, mono_class_enum_basetype (klass));
-		ltype = g_hash_table_lookup (ctx->lmodule->llvm_types, klass);
+
+		printf ("X: %s %d\n", mono_domain_get ()->friendly_name, g_hash_table_size (ctx->llvm_types));
+		ltype = g_hash_table_lookup (ctx->llvm_types, klass);
 		if (!ltype) {
 			int i, size;
 			LLVMTypeRef *eltypes;
@@ -384,7 +387,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 			name = mono_type_full_name (&klass->byval_arg);
 			ltype = LLVMStructCreateNamed (LLVMGetGlobalContext (), name);
 			LLVMStructSetBody (ltype, eltypes, size, FALSE);
-			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
+			g_hash_table_insert (ctx->llvm_types, klass, ltype);
 			g_free (eltypes);
 			g_free (name);
 		}
@@ -4341,6 +4344,23 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		ctx->lmodule = &jit_module;
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
+
+	if (cfg->compile_aot) {
+		ctx->llvm_types = ctx->lmodule->llvm_types;
+	} else {
+		if (!domain_jit_info (cfg->domain)->llvm_types) {
+			mono_loader_lock ();
+			if (!domain_jit_info (cfg->domain)->llvm_types) {
+				GHashTable *llvm_types;
+
+				llvm_types = g_hash_table_new (NULL, NULL);
+				mono_memory_barrier ();
+				domain_jit_info (cfg->domain)->llvm_types = llvm_types;
+			}
+			mono_loader_unlock ();
+		}
+		ctx->llvm_types = domain_jit_info (cfg->domain)->llvm_types;
+	}
 	
 	module = ctx->module = ctx->lmodule->module;
 
@@ -5209,6 +5229,8 @@ init_jit_module (void)
 	g_assert (info);
 	LLVMAddGlobalMapping (ee, LLVMGetNamedFunction (jit_module.module, "llvm_resume_unwind_trampoline"), (void*)info->func);
 
+	mono_memory_barrier ();
+
 	jit_module_inited = TRUE;
 
 	mono_loader_unlock ();
@@ -5227,6 +5249,15 @@ mono_llvm_cleanup (void)
 		LLVMDisposeModule (aot_module.module);
 
 	LLVMContextDispose (LLVMGetGlobalContext ());
+}
+
+void
+mono_llvm_free_domain_info (MonoDomain *domain)
+{
+	MonoJitDomainInfo *info = domain_jit_info (domain);
+
+	if (info->llvm_types)
+		g_hash_table_destroy (info->llvm_types);
 }
 
 void

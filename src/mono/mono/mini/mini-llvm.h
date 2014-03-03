@@ -17,6 +17,7 @@ typedef void (*MonoLLVMCFGFunc)(MonoCompile *cfg);
 typedef void (*MonoLLVMEmitCallFunc)(MonoCompile *cfg, MonoCallInst *call);
 typedef void (*MonoLLVMCreateAotFunc)(const char *got_symbol);
 typedef void (*MonoLLVMEmitAotFunc)(const char *filename, int got_size);
+typedef void (*MonoLLVMFreeDomainFunc)(MonoDomain *domain);
 
 static MonoLLVMVoidFunc mono_llvm_init_fptr;
 static MonoLLVMVoidFunc mono_llvm_cleanup_fptr;
@@ -25,6 +26,7 @@ static MonoLLVMEmitCallFunc mono_llvm_emit_call_fptr;
 static MonoLLVMCreateAotFunc mono_llvm_create_aot_module_fptr;
 static MonoLLVMEmitAotFunc mono_llvm_emit_aot_module_fptr;
 static MonoLLVMCFGFunc mono_llvm_check_method_supported_fptr;
+static MonoLLVMFreeDomainFunc mono_llvm_free_domain_info_fptr;
 
 void
 mono_llvm_init (void)
@@ -68,6 +70,12 @@ void
 mono_llvm_check_method_supported (MonoCompile *cfg)
 {
 	mono_llvm_check_method_supported_fptr (cfg);
+}
+
+void
+mono_llvm_free_domain_info (MonoDomain *domain)
+{
+	mono_llvm_free_domain_info_fptr (domain);
 }
 
 static MonoDl*
@@ -154,6 +162,8 @@ mono_llvm_load (const char* bpath)
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_emit_aot_module", (void**)&mono_llvm_emit_aot_module_fptr);
 	if (err) goto symbol_error;
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_check_method_supported", (void**)&mono_llvm_check_method_supported_fptr);
+	if (err) goto symbol_error;
+	err = mono_dl_symbol (llvm_lib, "mono_llvm_free_domain_info", (void**)&mono_llvm_free_domain_info_fptr);
 	if (err) goto symbol_error;
 	return TRUE;
 symbol_error:

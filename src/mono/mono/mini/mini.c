@@ -7173,6 +7173,9 @@ mini_free_jit_domain_info (MonoDomain *domain)
 		mono_debugger_agent_free_domain_info (domain);
 	if (info->gsharedvt_arg_tramp_hash)
 		g_hash_table_destroy (info->gsharedvt_arg_tramp_hash);
+#ifdef ENABLE_LLVM
+	mono_llvm_free_domain_info (domain);
+#endif
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
