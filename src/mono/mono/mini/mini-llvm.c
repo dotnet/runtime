@@ -386,6 +386,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 			LLVMStructSetBody (ltype, eltypes, size, FALSE);
 			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
 			g_free (eltypes);
+			g_free (name);
 		}
 		return ltype;
 	}
