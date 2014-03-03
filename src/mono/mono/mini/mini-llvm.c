@@ -371,7 +371,6 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		if (klass->enumtype)
 			return type_to_llvm_type (ctx, mono_class_enum_basetype (klass));
 
-		printf ("X: %s %d\n", mono_domain_get ()->friendly_name, g_hash_table_size (ctx->llvm_types));
 		ltype = g_hash_table_lookup (ctx->llvm_types, klass);
 		if (!ltype) {
 			int i, size;
