@@ -4253,6 +4253,7 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 			 */
 			cfg->exception_message = g_strdup ("nested clauses");
 			cfg->disable_llvm = TRUE;
+			break;
 		}
 	}
 	if (cfg->disable_llvm)
