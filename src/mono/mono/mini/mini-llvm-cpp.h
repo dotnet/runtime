@@ -27,14 +27,16 @@ typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end)
 typedef void (ExceptionTableCb) (void *data);
 typedef char* (DlSymCb) (const char *name, void **symbol);
 
-LLVMExecutionEngineRef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb);
+typedef void* MonoEERef;
+
+MonoEERef
+mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee);
 
 void
-mono_llvm_dispose_ee (LLVMExecutionEngineRef ee);
+mono_llvm_dispose_ee (MonoEERef *mono_ee);
 
 void
-mono_llvm_optimize_method (LLVMValueRef method);
+mono_llvm_optimize_method (MonoEERef mono_ee, LLVMValueRef method);
 
 void
 mono_llvm_dump_value (LLVMValueRef value);

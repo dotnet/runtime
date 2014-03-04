@@ -315,7 +315,7 @@ typedef struct
 	/* memcpy/bzero methods specialized for small constant sizes */
 	gpointer *memcpy_addr [17];
 	gpointer *bzero_addr [17];
-	GHashTable *llvm_types;
+	gpointer llvm_module;
 } MonoJitDomainInfo;
 
 typedef struct {
