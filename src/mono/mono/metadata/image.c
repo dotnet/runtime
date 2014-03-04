@@ -1744,8 +1744,10 @@ mono_image_close_finish (MonoImage *image)
 	} else {
 		if (debug_assembly_unload)
 			mono_mempool_invalidate (image->mempool);
-		else
+		else {
 			mono_mempool_destroy (image->mempool);
+			mono_dynamic_image_free_image ((MonoDynamicImage*)image);
+		}
 	}
 }
 

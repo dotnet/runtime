@@ -5091,7 +5091,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 #else
 	image = g_new0 (MonoDynamicImage, 1);
 #endif
-	
+
 	mono_profiler_module_event (&image->image, MONO_PROFILE_START_LOAD);
 	
 	/*g_print ("created image %p\n", image);*/
@@ -5255,6 +5255,17 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_free (di->tables [i].values);
 	}
 }	
+
+void
+mono_dynamic_image_free_image (MonoDynamicImage *image)
+{
+	/* See create_dynamic_mono_image () */
+#if HAVE_BOEHM_GC
+	/* Allocated using GC_MALLOC */
+#else
+	g_free (image);
+#endif
+}
 
 #ifndef DISABLE_REFLECTION_EMIT
 
