@@ -53,22 +53,20 @@
 
 typedef struct {
 	int size;
-	int elem_size;
 	int capacity;
 	char *data;
 } DynArray;
 
-#define DYN_ARRAY_REF(da,i)	((void*)((da)->data + (i) * (da)->elem_size))
+#define DYN_ARRAY_REF(da,i,es)	((void*)((da)->data + (i) * (es)))
 #define DYN_ARRAY_PTR_REF(da,i)	(((void**)(da)->data) [(i)])
 #define DYN_ARRAY_INT_REF(da,i)	(((int*)(da)->data) [(i)])
-#define DYN_ARRAY_PTR_STATIC_INITIALIZER { 0, sizeof (void*), 0, NULL }
-#define DYN_ARRAY_INT_STATIC_INITIALIZER { 0, sizeof (int), 0, NULL }
+#define DYN_ARRAY_PTR_STATIC_INITIALIZER { 0, 0, NULL }
+#define DYN_ARRAY_INT_STATIC_INITIALIZER { 0, 0, NULL }
 
 static void
-dyn_array_init (DynArray *da, int elem_size)
+dyn_array_init (DynArray *da)
 {
 	da->size = 0;
-	da->elem_size = elem_size;
 	da->capacity = 0;
 	da->data = NULL;
 }
@@ -76,27 +74,39 @@ dyn_array_init (DynArray *da, int elem_size)
 static void
 dyn_array_ptr_init (DynArray *da)
 {
-	dyn_array_init (da, sizeof (void*));
+	dyn_array_init (da);
 }
 
 static void
 dyn_array_int_init (DynArray *da)
 {
-	dyn_array_init (da, sizeof (int));
+	dyn_array_init (da);
 }
 
 static void
-dyn_array_uninit (DynArray *da)
+dyn_array_uninit (DynArray *da, int elem_size)
 {
 	if (da->capacity <= 0)
 		return;
 
-	sgen_free_internal_dynamic (da->data, da->elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA);
+	sgen_free_internal_dynamic (da->data, elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = NULL;
 }
 
 static void
-dyn_array_ensure_capacity (DynArray *da, int capacity)
+dyn_array_int_uninit (DynArray *da)
+{
+	dyn_array_uninit (da, sizeof (int));
+}
+
+static void
+dyn_array_ptr_uninit (DynArray *da)
+{
+	dyn_array_uninit (da, sizeof (void*));
+}
+
+static void
+dyn_array_ensure_capacity (DynArray *da, int capacity, int elem_size)
 {
 	int old_capacity = da->capacity;
 	char *new_data;
@@ -109,20 +119,20 @@ dyn_array_ensure_capacity (DynArray *da, int capacity)
 	while (capacity > da->capacity)
 		da->capacity *= 2;
 
-	new_data = sgen_alloc_internal_dynamic (da->elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA, TRUE);
-	memcpy (new_data, da->data, da->elem_size * da->size);
-	sgen_free_internal_dynamic (da->data, da->elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
+	new_data = sgen_alloc_internal_dynamic (elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+	memcpy (new_data, da->data, elem_size * da->size);
+	sgen_free_internal_dynamic (da->data, elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = new_data;
 }
 
 static void*
-dyn_array_add (DynArray *da)
+dyn_array_add (DynArray *da, int elem_size)
 {
 	void *p;
 
-	dyn_array_ensure_capacity (da, da->size + 1);
+	dyn_array_ensure_capacity (da, da->size + 1, elem_size);
 
-	p = DYN_ARRAY_REF (da, da->size);
+	p = DYN_ARRAY_REF (da, da->size, elem_size);
 	++da->size;
 	return p;
 }
@@ -130,7 +140,7 @@ dyn_array_add (DynArray *da)
 static void
 dyn_array_ptr_add (DynArray *da, void *ptr)
 {
-	void **p = dyn_array_add (da);
+	void **p = dyn_array_add (da, sizeof (void*));
 	*p = ptr;
 }
 
@@ -149,7 +159,7 @@ dyn_array_ptr_pop (DynArray *da)
 static void
 dyn_array_int_add (DynArray *da, int x)
 {
-	int *p = dyn_array_add (da);
+	int *p = dyn_array_add (da, sizeof (int));
 	*p = x;
 }
 
@@ -182,7 +192,7 @@ dyn_array_int_merge (DynArray *dst, DynArray *src)
 {
 	int i, j;
 
-	dyn_array_ensure_capacity (&merge_array, dst->size + src->size);
+	dyn_array_ensure_capacity (&merge_array, dst->size + src->size, sizeof (int));
 	merge_array.size = 0;
 
 	for (i = j = 0; i < dst->size || j < src->size; ) {
@@ -210,8 +220,8 @@ dyn_array_int_merge (DynArray *dst, DynArray *src)
 	}
 
 	if (merge_array.size > dst->size) {
-		dyn_array_ensure_capacity (dst, merge_array.size);
-		memcpy (DYN_ARRAY_REF (dst, 0), DYN_ARRAY_REF (&merge_array, 0), merge_array.size * merge_array.elem_size);
+		dyn_array_ensure_capacity (dst, merge_array.size, sizeof (int));
+		memcpy (dst->data, merge_array.data, merge_array.size * sizeof (int));
 		dst->size = merge_array.size;
 	}
 }
@@ -230,7 +240,7 @@ dyn_array_int_merge_one (DynArray *array, int value)
 			break;
 	}
 
-	dyn_array_ensure_capacity (array, array->size + 1);
+	dyn_array_ensure_capacity (array, array->size + 1, sizeof (int));
 
 	if (i < end) {
 		tmp = DYN_ARRAY_INT_REF (array, i);
@@ -365,12 +375,12 @@ free_data (void)
 		total_srcs += entry->srcs.size;
 		if (entry->srcs.size > max_srcs)
 			max_srcs = entry->srcs.size;
-		dyn_array_uninit (&entry->srcs);
+		dyn_array_ptr_uninit (&entry->srcs);
 	} SGEN_HASH_TABLE_FOREACH_END;
 
 	sgen_hash_table_clean (&hash_table);
 
-	dyn_array_uninit (&merge_array);
+	dyn_array_int_uninit (&merge_array);
 	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
 
@@ -509,7 +519,7 @@ dfs2 (HashEntry *entry)
 
 		if (entry->scc_index >= 0) {
 			if (entry->scc_index != current_scc->index)
-				scc_add_xref (DYN_ARRAY_REF (&sccs, entry->scc_index), current_scc);
+				scc_add_xref (DYN_ARRAY_REF (&sccs, entry->scc_index, sizeof (SCC)), current_scc);
 			continue;
 		}
 
@@ -643,12 +653,12 @@ sgen_bridge_processing_finish (int generation)
 
 	/* second DFS pass */
 
-	dyn_array_init (&sccs, sizeof (SCC));
+	dyn_array_init (&sccs);
 	for (i = 0; i < hash_table.num_entries; ++i) {
 		HashEntry *entry = all_entries [i];
 		if (entry->scc_index < 0) {
 			int index = sccs.size;
-			current_scc = dyn_array_add (&sccs);
+			current_scc = dyn_array_add (&sccs, sizeof (SCC));
 			current_scc->index = index;
 			current_scc->num_bridge_entries = 0;
 			current_scc->api_index = -1;
@@ -670,13 +680,13 @@ sgen_bridge_processing_finish (int generation)
 
 	//g_print ("%d sccs\n", sccs.size);
 
-	dyn_array_uninit (&dfs_stack);
+	dyn_array_ptr_uninit (&dfs_stack);
 
 	/* init data for callback */
 
 	num_sccs = 0;
 	for (i = 0; i < sccs.size; ++i) {
-		SCC *scc = DYN_ARRAY_REF (&sccs, i);
+		SCC *scc = DYN_ARRAY_REF (&sccs, i, sizeof (SCC));
 		g_assert (scc->index == i);
 		if (scc->num_bridge_entries)
 			++num_sccs;
@@ -688,7 +698,7 @@ sgen_bridge_processing_finish (int generation)
 	num_xrefs = 0;
 	j = 0;
 	for (i = 0; i < sccs.size; ++i) {
-		SCC *scc = DYN_ARRAY_REF (&sccs, i);
+		SCC *scc = DYN_ARRAY_REF (&sccs, i, sizeof (SCC));
 		if (!scc->num_bridge_entries)
 			continue;
 
@@ -703,7 +713,7 @@ sgen_bridge_processing_finish (int generation)
 
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
 		if (entry->is_bridge) {
-			SCC *scc = DYN_ARRAY_REF (&sccs, entry->scc_index);
+			SCC *scc = DYN_ARRAY_REF (&sccs, entry->scc_index, sizeof (SCC));
 			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = entry->obj;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
@@ -712,11 +722,11 @@ sgen_bridge_processing_finish (int generation)
 	j = 0;
 	for (i = 0; i < sccs.size; ++i) {
 		int k;
-		SCC *scc = DYN_ARRAY_REF (&sccs, i);
+		SCC *scc = DYN_ARRAY_REF (&sccs, i, sizeof (SCC));
 		if (!scc->num_bridge_entries)
 			continue;
 		for (k = 0; k < scc->xrefs.size; ++k) {
-			SCC *src_scc = DYN_ARRAY_REF (&sccs, DYN_ARRAY_INT_REF (&scc->xrefs, k));
+			SCC *src_scc = DYN_ARRAY_REF (&sccs, DYN_ARRAY_INT_REF (&scc->xrefs, k), sizeof (SCC));
 			if (!src_scc->num_bridge_entries)
 				continue;
 			api_xrefs [j].src_scc_index = src_scc->api_index;
@@ -733,17 +743,17 @@ sgen_bridge_processing_finish (int generation)
 	j = 0;
 	max_entries = max_xrefs = 0;
 	for (i = 0; i < sccs.size; ++i) {
-		SCC *scc = DYN_ARRAY_REF (&sccs, i);
+		SCC *scc = DYN_ARRAY_REF (&sccs, i, sizeof (SCC));
 		if (scc->num_bridge_entries)
 			++j;
 		if (scc->num_bridge_entries > max_entries)
 			max_entries = scc->num_bridge_entries;
 		if (scc->xrefs.size > max_xrefs)
 			max_xrefs = scc->xrefs.size;
-		dyn_array_uninit (&scc->xrefs);
+		dyn_array_int_uninit (&scc->xrefs);
 
 	}
-	dyn_array_uninit (&sccs);
+	dyn_array_uninit (&sccs, sizeof (SCC));
 
 	sgen_free_internal_dynamic (all_entries, sizeof (HashEntry*) * hash_table.num_entries, INTERNAL_MEM_BRIDGE_DATA);
 
