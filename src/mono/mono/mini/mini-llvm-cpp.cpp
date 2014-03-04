@@ -245,7 +245,7 @@ MonoJITMemoryManager::endExceptionTable(const Function *F, unsigned char *TableS
 
 #else
 
-class MonoMemoryManager {
+class MonoJITMemoryManager {
 };
 
 #endif /* !MONO_CROSS_COMPILE */
