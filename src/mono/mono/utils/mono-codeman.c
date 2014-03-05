@@ -15,7 +15,7 @@
 #include "mono-mmap.h"
 #include "mono-counters.h"
 #include "dlmalloc.h"
-#include <mono/metadata/class-internals.h>
+#include <mono/io-layer/io-layer.h>
 #include <mono/metadata/profiler-private.h>
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -28,6 +28,9 @@
 #endif
 
 static uintptr_t code_memory_used = 0;
+static gulong dynamic_code_alloc_count;
+static gulong dynamic_code_bytes_count;
+static gulong dynamic_code_frees_count;
 
 /*
  * AMD64 processors maintain icache coherency only for pages which are 
@@ -301,6 +304,9 @@ codechunk_cleanup (void)
 void
 mono_code_manager_init (void)
 {
+	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_alloc_count);
+	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_bytes_count);
+	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_frees_count);
 }
 
 void
@@ -599,8 +605,8 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	g_assert (alignment <= MIN_ALIGN);
 
 	if (cman->dynamic) {
-		++mono_stats.dynamic_code_alloc_count;
-		mono_stats.dynamic_code_bytes_count += size;
+		++dynamic_code_alloc_count;
+		dynamic_code_bytes_count += size;
 	}
 
 	if (!cman->current) {

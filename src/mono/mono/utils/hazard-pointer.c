@@ -6,7 +6,6 @@
 
 #include <config.h>
 
-#include <mono/metadata/class-internals.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-memory-model.h>
@@ -14,6 +13,7 @@
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/lock-free-array-queue.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef struct {
@@ -41,6 +41,7 @@ static CRITICAL_SECTION small_id_mutex;
 static int small_id_next;
 static int highest_small_id = -1;
 static MonoBitSet *small_id_table;
+static int hazardous_pointer_count;
 
 /*
  * Allocate a small thread id.
@@ -236,7 +237,7 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 	if (is_pointer_hazardous (p)) {
 		DelayedFreeItem item = { p, free_func, free_func_might_lock };
 
-		++mono_stats.hazardous_pointer_count;
+		++hazardous_pointer_count;
 
 		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 	} else {
@@ -263,6 +264,7 @@ void
 mono_thread_smr_init (void)
 {
 	InitializeCriticalSection(&small_id_mutex);
+	mono_counters_register ("Hazardous pointers", MONO_COUNTER_JIT | MONO_COUNTER_INT, &hazardous_pointer_count);
 }
 
 void

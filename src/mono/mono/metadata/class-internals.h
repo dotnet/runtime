@@ -724,9 +724,6 @@ typedef struct {
 	gulong inflated_method_count_2;
 	gulong inflated_type_count;
 	gulong generics_metadata_size;
-	gulong dynamic_code_alloc_count;
-	gulong dynamic_code_bytes_count;
-	gulong dynamic_code_frees_count;
 	gulong delegate_creations;
 	gulong imt_tables_size;
 	gulong imt_number_of_tables;
@@ -739,7 +736,6 @@ typedef struct {
 	gulong jit_info_table_insert_count;
 	gulong jit_info_table_remove_count;
 	gulong jit_info_table_lookup_count;
-	gulong hazardous_pointer_count;
 	gulong generics_sharable_methods;
 	gulong generics_unsharable_methods;
 	gulong generics_shared_methods;
