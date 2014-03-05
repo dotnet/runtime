@@ -2217,7 +2217,7 @@ unload_data_unref (unload_data *data)
 			g_free (data);
 			return;
 		}
-	} while (InterlockedCompareExchange (&data->refcount, count, count - 1) != count);
+	} while (InterlockedCompareExchange (&data->refcount, count - 1, count) != count);
 }
 
 static void
