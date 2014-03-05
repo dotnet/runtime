@@ -2284,7 +2284,7 @@ wapi_process_get_path (pid_t pid)
 		return NULL;
 	return g_strdup (buf);
 #else
-	return NULL;
+	return get_process_name_from_proc (pid);
 #endif
 }
 
