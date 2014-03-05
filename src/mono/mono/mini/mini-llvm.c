@@ -4904,6 +4904,8 @@ dlsym_cb (const char *name, void **symbol)
 		g_assert (current);
 
 		err = mono_dl_symbol (current, name, symbol);
+
+		mono_dl_close (current);
 	}
 #ifdef MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK
 	*symbol = (char*)mono_arch_create_llvm_native_thunk (mono_domain_get (), (guint8*)(*symbol));
