@@ -250,7 +250,7 @@ codechunk_valloc (void *preferred, guint32 size)
 	if (freelist) {
 		ptr = freelist->data;
 		memset (ptr, 0, size);
-		freelist = g_slist_remove_link (freelist, freelist);
+		freelist = g_slist_delete_link (freelist, freelist);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
 		ptr = mono_valloc (preferred, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
