@@ -20,18 +20,11 @@
 
 #include "mono/utils/mono-hwcap-ia64.h"
 
-#if defined(MONO_CROSS_COMPILE)
-void
-mono_hwcap_arch_init (void)
-{
-}
-#else
 void
 mono_hwcap_arch_init (void)
 {
 	/* Nothing needed here yet. */
 }
-#endif
 
 void
 mono_hwcap_print (FILE *f)

@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "mono/utils/mono-hwcap.h"
 
@@ -28,12 +29,24 @@ void
 mono_hwcap_init (void)
 {
 	const char *verbose = g_getenv ("MONO_VERBOSE_HWCAP");
+	const char *conservative = g_getenv ("MONO_CONSERVATIVE_HWCAP");
 
 	if (hwcap_inited)
 		return;
 
-	mono_hwcap_arch_init ();
+#ifdef MONO_CROSS_COMPILE
+	/*
+	 * If we're cross-compiling, we want to be as
+	 * conservative as possible so that we produce
+	 * code that's portable. Default to that.
+	 */
+	if (!conservative)
+		conservative = "1";
+#endif
 
-	if (verbose)
+	if (!conservative || strncmp (conservative, "1", 1))
+		mono_hwcap_arch_init ();
+
+	if (verbose && !strncmp (verbose, "1", 1))
 		mono_hwcap_print (stdout);
 }

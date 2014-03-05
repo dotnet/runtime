@@ -40,12 +40,6 @@ gboolean mono_hwcap_arm_has_vfp3_d16 = FALSE;
 gboolean mono_hwcap_arm_has_thumb = FALSE;
 gboolean mono_hwcap_arm_has_thumb2 = FALSE;
 
-#if defined(MONO_CROSS_COMPILE)
-void
-mono_hwcap_arch_init (void)
-{
-}
-#else
 void
 mono_hwcap_arch_init (void)
 {
@@ -160,7 +154,6 @@ mono_hwcap_arch_init (void)
 	}
 #endif
 }
-#endif
 
 void
 mono_hwcap_print(FILE *f)

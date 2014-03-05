@@ -24,12 +24,6 @@
 
 gboolean mono_hwcap_s390x_has_ld = FALSE;
 
-#if defined(MONO_CROSS_COMPILE)
-void
-mono_hwcap_arch_init (void)
-{
-}
-#else
 static void
 catch_sigill (int sig_no, siginfo_t *info, gpointer act)
 {
@@ -64,7 +58,6 @@ mono_hwcap_arch_init (void)
 
 	sigaction (SIGILL, old_sa, NULL);
 }
-#endif
 
 void
 mono_hwcap_print (FILE *f)

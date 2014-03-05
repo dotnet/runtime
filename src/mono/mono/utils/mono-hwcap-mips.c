@@ -20,18 +20,11 @@
 
 #include "mono/utils/mono-hwcap-mips.h"
 
-#if defined(MONO_CROSS_COMPILE)
-void
-mono_hwcap_arch_init (void)
-{
-}
-#else
 void
 mono_hwcap_arch_init (void)
 {
 	/* Nothing needed here yet. */
 }
-#endif
 
 void
 mono_hwcap_print (FILE *f)
