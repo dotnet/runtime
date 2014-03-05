@@ -1840,6 +1840,21 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
+#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+	/*
+	 * If we are not embedded, use the mono runtime executable to run managed exe's.
+	 */
+	{
+		char *runtime_path;
+
+		runtime_path = wapi_process_get_path (getpid ());
+		if (runtime_path) {
+			wapi_process_set_cli_launcher (runtime_path);
+			g_free (runtime_path);
+		}
+	}
+#endif
+
 	if (g_getenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
 

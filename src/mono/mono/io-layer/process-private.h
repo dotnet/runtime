@@ -22,6 +22,7 @@
 #define _WAPI_PROCESS_UNHANDLED_PID_MASK (-1 & ~_WAPI_PROCESS_UNHANDLED)
 
 extern gpointer _wapi_process_duplicate (void);
+extern void wapi_processes_cleanup (void);
 
 extern struct _WapiHandleOps _wapi_process_ops;
 

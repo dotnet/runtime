@@ -215,6 +215,9 @@ extern gboolean TerminateProcess (gpointer process, gint32 exitCode);
 extern guint32 GetPriorityClass (gpointer process);
 extern gboolean SetPriorityClass (gpointer process, guint32  priority_class);
 
+gchar* wapi_process_get_path (pid_t pid);
+
+void wapi_process_set_cli_launcher (char *path);
 
 G_END_DECLS
 

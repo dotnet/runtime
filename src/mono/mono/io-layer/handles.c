@@ -285,6 +285,7 @@ wapi_cleanup (void)
 
 	_wapi_error_cleanup ();
 	_wapi_thread_cleanup ();
+	wapi_processes_cleanup ();
 }
 
 static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
