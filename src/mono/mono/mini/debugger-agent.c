@@ -2199,6 +2199,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	mono_loader_unlock ();
 
 	if (res->domain == NULL) {
+		DEBUG (0, fprintf (log_file, "ERR_UNLOADED, id=%d, type=%d.\n", id, type));
 		*err = ERR_UNLOADED;
 		return NULL;
 	}
