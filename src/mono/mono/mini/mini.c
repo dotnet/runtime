@@ -6958,6 +6958,8 @@ mini_parse_debug_options (void)
 			debug_options.no_gdb_backtrace = TRUE;
 		else if (!strcmp (arg, "suspend-on-sigsegv"))
 			debug_options.suspend_on_sigsegv = TRUE;
+		else if (!strcmp (arg, "suspend-on-exception"))
+			debug_options.suspend_on_exception = TRUE;
 		else if (!strcmp (arg, "suspend-on-unhandled"))
 			debug_options.suspend_on_unhandled = TRUE;
 		else if (!strcmp (arg, "dont-free-domains"))

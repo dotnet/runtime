@@ -1542,6 +1542,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 
 	mono_ex = (MonoException*)obj;
 
+	if (mini_get_debug_options ()->suspend_on_exception) {
+		mono_runtime_printf_err ("Exception thrown, suspending...");
+		while (1)
+			;
+	}
+
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
 	} else {
