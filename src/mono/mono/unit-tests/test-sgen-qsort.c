@@ -19,7 +19,7 @@
 
 #include "config.h"
 
-#include "metadata/sgen-gc.h"
+#include <metadata/sgen-gc.h>
 
 #include <stdlib.h>
 #include <string.h>
