@@ -1934,11 +1934,24 @@ emit_push_lmf (MonoCompile *cfg)
 		if (!cfg->lmf_addr_var)
 			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
+#ifdef HOST_WIN32
+		ins = mono_get_jit_tls_intrinsic (cfg);
+		if (ins) {
+			int jit_tls_dreg = ins->dreg;
+
+			MONO_ADD_INS (cfg->cbb, ins);
+			lmf_reg = alloc_preg (cfg);
+			EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+		} else {
+			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
+		}
+#else
 		lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
 		if (lmf_ins) 
 			MONO_ADD_INS (cfg->cbb, lmf_ins);
 		else
 			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
+#endif
 		lmf_ins->dreg = cfg->lmf_addr_var->dreg;
 
 		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);

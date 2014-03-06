@@ -2947,7 +2947,14 @@ mini_get_tls_offset (MonoTlsKey key)
 		offset = mono_thread_get_tls_offset ();
 		break;
 	case TLS_KEY_JIT_TLS:
+#ifdef HOST_WIN32
+		offset = mono_get_jit_tls_key ();
+		/* Only 64 tls entries can be accessed using inline code */
+		if (offset >= 64)
+			offset = -1;
+#else
 		offset = mono_get_jit_tls_offset ();
+#endif
 		break;
 	case TLS_KEY_DOMAIN:
 		offset = mono_domain_get_tls_offset ();
