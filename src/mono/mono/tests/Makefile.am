@@ -702,9 +702,13 @@ endif
 if NACL_CODEGEN
 test-messages:
 else
+if HOST_WIN32
+test-messages:
+else
 test-messages: w32message.exe
 	> test_messages.zero
 	$(with_mono_path) $(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
+endif
 endif
 
 if AMD64
