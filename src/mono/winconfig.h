@@ -561,7 +561,7 @@
 /* #undef MONO_SIZEOF_SUNPATH */
 
 /* Xen-specific behaviour */
-#define MONO_XEN_OPT 1
+/* #define MONO_XEN_OPT 1 */
 
 /* Length of zero length arrays */
 #define MONO_ZERO_LEN_ARRAY 1
