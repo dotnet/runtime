@@ -107,7 +107,7 @@ void*
 mono_valloc (void *addr, size_t length, int flags)
 {
 	void *ptr;
-	int mflags = MEM_COMMIT;
+	int mflags = MEM_RESERVE|MEM_COMMIT;
 	int prot = prot_from_flags (flags);
 	/* translate the flags */
 
