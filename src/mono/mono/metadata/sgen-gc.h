@@ -48,6 +48,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/metadata/sgen-descriptor.h>
 #include <mono/metadata/sgen-gray.h>
 #include <mono/metadata/sgen-hash-table.h>
+#include <mono/metadata/sgen-bridge.h>
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -791,7 +792,7 @@ void sgen_bridge_processing_stw_step (void) MONO_INTERNAL;
 void sgen_bridge_processing_finish (int generation) MONO_INTERNAL;
 void sgen_register_test_bridge_callbacks (const char *bridge_class_name) MONO_INTERNAL;
 gboolean sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
-gboolean sgen_is_bridge_class (MonoClass *class) MONO_INTERNAL;
+MonoGCBridgeObjectKind sgen_bridge_class_kind (MonoClass *class) MONO_INTERNAL;
 void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void sgen_bridge_register_finalized_object (MonoObject *object) MONO_INTERNAL;
 void sgen_bridge_describe_pointer (MonoObject *object) MONO_INTERNAL;

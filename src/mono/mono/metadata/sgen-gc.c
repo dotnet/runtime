@@ -5634,8 +5634,14 @@ sgen_get_remset (void)
 guint
 mono_gc_get_vtable_bits (MonoClass *class)
 {
-	if (sgen_need_bridge_processing () && sgen_is_bridge_class (class))
+	/* FIXME move this to the bridge code */
+	if (!sgen_need_bridge_processing ())
+		return 0;
+	switch (sgen_bridge_class_kind (class)) {
+	case GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS:
+	case GC_BRIDGE_OPAQUE_BRIDGE_CLASS:
 		return SGEN_GC_BIT_BRIDGE_OBJECT;
+	}
 	return 0;
 }
 

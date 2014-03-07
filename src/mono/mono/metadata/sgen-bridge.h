@@ -29,9 +29,20 @@
 MONO_BEGIN_DECLS
 
 enum {
-	SGEN_BRIDGE_VERSION = 3
+	SGEN_BRIDGE_VERSION = 4
 };
 	
+typedef enum {
+	/* Instances of this class should be scanned when computing the transitive dependency among bridges. E.g. List<object>*/
+	GC_BRIDGE_TRANSPARENT_CLASS,
+	/* Instances of this class should not be scanned when computing the transitive dependency among bridges. E.g. String*/
+	GC_BRIDGE_OPAQUE_CLASS,
+	/* Instances of this class should be bridged and have their dependency computed. */
+	GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS,
+	/* Instances of this class should be bridged but no dependencies should not be calculated. */
+	GC_BRIDGE_OPAQUE_BRIDGE_CLASS,
+} MonoGCBridgeObjectKind;
+
 typedef struct {
 	mono_bool is_alive;	/* to be set by the cross reference callback */
 	int num_objs;
@@ -45,7 +56,7 @@ typedef struct {
 
 typedef struct {
 	int bridge_version;
-	mono_bool (*is_bridge_class) (MonoClass *class);
+	MonoGCBridgeObjectKind (*bridge_class_kind) (MonoClass *class);
 	mono_bool (*is_bridge_object) (MonoObject *object);
 	void (*cross_references) (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs);
 } MonoGCBridgeCallbacks;

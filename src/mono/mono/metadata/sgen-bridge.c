@@ -308,10 +308,10 @@ sgen_is_bridge_object (MonoObject *obj)
 	return bridge_callbacks.is_bridge_object (obj);
 }
 
-gboolean
-sgen_is_bridge_class (MonoClass *class)
+MonoGCBridgeObjectKind
+sgen_bridge_class_kind (MonoClass *class)
 {
-	return bridge_callbacks.is_bridge_class (class);
+	return bridge_callbacks.bridge_class_kind (class);
 }
 
 gboolean
@@ -840,10 +840,12 @@ sgen_bridge_describe_pointer (MonoObject *obj)
 
 static const char *bridge_class;
 
-static gboolean
-bridge_test_is_bridge_class (MonoClass *class)
+static MonoGCBridgeObjectKind
+bridge_test_bridge_class_kind (MonoClass *class)
 {
-	return !strcmp (bridge_class, class->name);
+	if (!strcmp (bridge_class, class->name))
+		return GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS;
+	return GC_BRIDGE_TRANSPARENT_CLASS;
 }
 
 static gboolean
@@ -956,7 +958,7 @@ sgen_register_test_bridge_callbacks (const char *bridge_class_name)
 {
 	MonoGCBridgeCallbacks callbacks;
 	callbacks.bridge_version = SGEN_BRIDGE_VERSION;
-	callbacks.is_bridge_class = bridge_test_is_bridge_class;
+	callbacks.bridge_class_kind = bridge_test_bridge_class_kind;
 	callbacks.is_bridge_object = bridge_test_is_bridge_object;
 	callbacks.cross_references = bridge_class_name[0] == '2' ? bridge_test_cross_reference2 : bridge_test_cross_reference;
 	mono_gc_register_bridge_callbacks (&callbacks);
