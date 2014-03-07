@@ -4297,7 +4297,11 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		invoke_sig = static_sig;
 
 	if (static_method_with_first_arg_bound)
-		name = mono_signature_to_name (invoke_sig, "invoke_bound_");
+		name = mono_signature_to_name (invoke_sig, "invoke_bound");
+	else if (closed_over_null)
+		name = mono_signature_to_name (invoke_sig, "invoke_closed_over_null");
+	else if (callvirt)
+		name = mono_signature_to_name (invoke_sig, "invoke_callvirt");
 	else
 		name = mono_signature_to_name (sig, "invoke");
 	if (ctx)
