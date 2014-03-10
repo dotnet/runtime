@@ -799,7 +799,8 @@ create_allocator (int atype)
 		 * case compare signed to distinguish between them.
 		 */
 		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_ptr (mb, (gpointer) MONO_ARRAY_MAX_INDEX);
+		mono_mb_emit_icon (mb, MONO_ARRAY_MAX_INDEX);
+		mono_mb_emit_byte (mb, CEE_CONV_U);
 		pos = mono_mb_emit_short_branch (mb, CEE_BLE_UN_S);
 
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
