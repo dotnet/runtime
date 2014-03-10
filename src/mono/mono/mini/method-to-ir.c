@@ -3976,6 +3976,21 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 // FIXME: This doesn't work yet (class libs tests fail?)
 #define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
+static MonoInst*
+emit_castclass_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args, MonoBasicBlock **out_bblock)
+{
+	MonoMethod *mono_castclass;
+	MonoInst *res;
+
+	mono_castclass = mono_marshal_get_castclass_with_cache ();
+
+	save_cast_details (cfg, klass, args [0]->dreg, TRUE, out_bblock);
+	res = mono_emit_method_call (cfg, mono_castclass, args, NULL);
+	reset_cast_details (cfg);
+
+	return res;
+}
+
 /*
  * Returns NULL and set the cfg exception on error.
  */
@@ -3991,7 +4006,6 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		MonoInst *args [3];
 
 		if(mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || is_complex_isinst (klass)) {
-			MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 			MonoInst *cache_ins;
 
 			cache_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
@@ -4005,7 +4019,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			/* cache */
 			args [2] = cache_ins;
 
-			return mono_emit_method_call (cfg, mono_castclass, args, NULL);
+			return emit_castclass_with_cache (cfg, klass, args, NULL);
 		}
 
 		klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
@@ -9547,7 +9561,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-				MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 				MonoInst *args [3];
 
 				/* obj */
@@ -9564,9 +9577,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/*The wrapper doesn't inline well so the bloat of inlining doesn't pay off.*/
 
-				save_cast_details (cfg, klass, sp [0]->dreg, TRUE, &bblock);
-				*sp++ = mono_emit_method_call (cfg, mono_castclass, args, NULL);
-				reset_cast_details (cfg);
+				*sp++ = emit_castclass_with_cache (cfg, klass, args, &bblock);
 				ip += 5;
 				inline_costs += 2;
 			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
@@ -9685,7 +9696,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
 				if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-					MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 					MonoInst *args [3];
 
 					/* obj */
@@ -9701,8 +9711,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else
 						EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
 
-					/*The wrapper doesn't inline well so the bloat of inlining doesn't pay off.*/
-					*sp++ = mono_emit_method_call (cfg, mono_castclass, args, NULL);
+					/* The wrapper doesn't inline well so the bloat of inlining doesn't pay off. */
+					*sp++ = emit_castclass_with_cache (cfg, klass, args, &bblock);
 					ip += 5;
 					inline_costs += 2;
 				} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
