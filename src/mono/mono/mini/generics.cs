@@ -1079,6 +1079,15 @@ class Tests
 		return 0;
 	}
 #endif
+
+	public static int test_0_delegate_callvirt_fullaot () {
+		Func<string> f = delegate () { return "A"; };
+        var f2 = (Func<Func<string>, string>)Delegate.CreateDelegate (typeof
+(Func<Func<string>, string>), null, f.GetType ().GetMethod ("Invoke"));
+
+        var s = f2 (f);
+		return s == "A" ? 0 : 1;
+	}
 }
 
 #if !MOBILE

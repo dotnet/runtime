@@ -986,6 +986,7 @@ typedef struct {
 	gpointer impl_this;
 	gpointer impl_nothis;
 	MonoMethod *method;
+	MonoMethodSignature *invoke_sig;
 	MonoMethodSignature *sig;
 	gboolean need_rgctx_tramp;
 } DelegateTrampInfo;
@@ -1007,6 +1008,7 @@ create_delegate_trampoline_data (MonoDomain *domain, MonoClass *klass, MonoMetho
 
 	tramp_data = mono_domain_alloc (domain, sizeof (DelegateTrampInfo));
 	tramp_data->invoke = invoke;
+	tramp_data->invoke_sig = mono_method_signature (invoke);
 	tramp_data->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
 	tramp_data->impl_nothis = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), FALSE);
 	tramp_data->method = method;
@@ -1033,7 +1035,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 	MonoJitInfo *ji;
 	MonoMethod *m;
 	MonoMethod *method = NULL;
-	gboolean multicast, callvirt = FALSE;
+	gboolean multicast, callvirt = FALSE, closed_over_null = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean enable_caching = TRUE;
@@ -1101,6 +1103,25 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 		}
 
 		callvirt = !delegate->target && sig->hasthis;
+		if (callvirt)
+			closed_over_null = tramp_info->invoke_sig->param_count == sig->param_count;
+
+		if (callvirt && !closed_over_null) {
+			/*
+			 * The delegate needs to make a virtual call to the target method using its
+			 * first argument as the receiver. This is hard to support in full-aot, so
+			 * optimize it in some cases if possible.
+			 * If the target method is not virtual or is in a sealed class,
+			 * the vcall will call it directly.
+			 * If the call doesn't return a valuetype, then the vcall uses the same calling
+			 * convention as a normal call.
+			 */
+			if (((method->klass->flags & TYPE_ATTRIBUTE_SEALED) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
+				callvirt = FALSE;
+				enable_caching = FALSE;
+			}
+		}
+
 		if (delegate->target && 
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
