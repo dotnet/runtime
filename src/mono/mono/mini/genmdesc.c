@@ -219,7 +219,7 @@ output_char (FILE *f, char c) {
 	if (isalnum (c))
 		fprintf (f, "%c", c);
 	else
-		fprintf (f, "\\x%x\" \"", c);
+		fprintf (f, "\\x%x\" \"", (guint8)c);
 }
 
 static void
