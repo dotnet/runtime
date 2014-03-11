@@ -1552,6 +1552,9 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 				gr += n_in_regs;
 				nwords -= n_in_regs;
 			}
+			if (sig->call_convention == MONO_CALL_VARARG)
+				/* This matches the alignment in mono_ArgIterator_IntGetNextArg () */
+				stack_size = ALIGN_TO (stack_size, align);
 			ainfo->offset = stack_size;
 			/*g_print ("offset for arg %d at %d\n", n, stack_size);*/
 			stack_size += nwords * sizeof (gpointer);
