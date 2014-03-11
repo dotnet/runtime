@@ -429,11 +429,12 @@ static int dsf1_passes, dsf2_passes;
 	} while (0)
 
 static void
-dfs1 (HashEntry *obj_entry, HashEntry *src)
+dfs1 (HashEntry *obj_entry)
 {
+	HashEntry *src;
 	g_assert (dfs_stack.size == 0);
 
-	dyn_array_ptr_push (&dfs_stack, src);
+	dyn_array_ptr_push (&dfs_stack, NULL);
 	dyn_array_ptr_push (&dfs_stack, obj_entry);
 
 	do {
@@ -592,7 +593,7 @@ sgen_bridge_processing_stw_step (void)
 		register_bridge_object (DYN_ARRAY_PTR_REF (&registered_bridges, i));
 
 	for (i = 0; i < registered_bridges.size; ++i)
-		dfs1 (get_hash_entry (DYN_ARRAY_PTR_REF (&registered_bridges, i), NULL), NULL);
+		dfs1 (get_hash_entry (DYN_ARRAY_PTR_REF (&registered_bridges, i), NULL));
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
