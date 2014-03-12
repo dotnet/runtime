@@ -4791,7 +4791,7 @@ mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res)
 MonoArray*
 mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds)
 {
-	uintptr_t byte_len, len, bounds_size;
+	uintptr_t byte_len = 0, len, bounds_size;
 	MonoObject *o;
 	MonoArray *array;
 	MonoArrayBounds *bounds;
