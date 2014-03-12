@@ -64,6 +64,8 @@ rehash_if_necessary (SgenHashTable *hash_table)
 {
 	if (hash_table->num_entries >= hash_table->size * 2)
 		rehash (hash_table);
+
+	SGEN_ASSERT (1, hash_table->size, "rehash guarantees size > 0");
 }
 
 static SgenHashTableEntry*
