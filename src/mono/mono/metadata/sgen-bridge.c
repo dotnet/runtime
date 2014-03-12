@@ -255,12 +255,6 @@ dyn_array_ptr_get (DynPtrArray *da, int x)
 }
 
 static void
-dyn_array_ptr_set (DynPtrArray *da, int idx, void *val)
-{
-	((void**)da->array.data)[idx] = val;
-}
-
-static void
 dyn_array_ptr_add (DynPtrArray *da, void *ptr)
 {
 	void **p = dyn_array_add (&da->array, sizeof (void*));
