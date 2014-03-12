@@ -516,6 +516,9 @@ if test x"$GCC" = xyes; then
 		# The runtime code does not respect ANSI C strict aliasing rules
 		CFLAGS="$CFLAGS -fno-strict-aliasing"
 
+		# We rely on signed overflow to behave
+		CFLAGS="$CFLAGS -fwrapv"
+
 		ORIG_CFLAGS=$CFLAGS
 		CFLAGS="$CFLAGS -Wdeclaration-after-statement"
 		AC_MSG_CHECKING(for -Wdeclaration-after-statement option to gcc)
