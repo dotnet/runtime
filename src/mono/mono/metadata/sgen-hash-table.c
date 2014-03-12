@@ -199,8 +199,8 @@ sgen_hash_table_clean (SgenHashTable *hash_table)
 	guint i;
 
 	if (!hash_table->size) {
-		g_assert (!hash_table->table);
-		g_assert (!hash_table->num_entries);
+		SGEN_ASSERT (1, !hash_table->table, "clean should reset hash_table->table");
+		SGEN_ASSERT (1, !hash_table->num_entries, "clean should reset hash_table->num_entries");
 		return;
 	}
 
