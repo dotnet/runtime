@@ -3,6 +3,8 @@
 /*.stdout
 /*.stderr
 /*.aotlog
+/*.allout
+/*.zero
 /.deps
 /.libs
 /libtest.la

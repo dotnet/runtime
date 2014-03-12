@@ -1,0 +1,9 @@
+/Makefile
+/Makefile.in
+/.deps
+/.libs
+/*.la
+/*.lo
+/test-gc-memfuncs
+/test-mono-linked-list-set
+/test-sgen-qsort
