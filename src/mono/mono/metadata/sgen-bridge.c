@@ -376,12 +376,12 @@ dyn_array_int_merge_one (DynIntArray *array, int value)
 
 	if (i < size) {
 		tmp = dyn_array_int_get (array, i);
-		for (; i <= size; ++i) {
+		for (; i < size; ++i) {
 			dyn_array_int_set (array, i, value);
 			value = tmp;
 			tmp = dyn_array_int_get (array, i + 1);
 		}
-		dyn_array_int_set (array, size + 1, tmp);
+		dyn_array_int_set (array, size, value);
 	} else {
 		dyn_array_int_set (array, size, value);
 	}
