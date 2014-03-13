@@ -64,9 +64,13 @@ mono_dead_letter_dealloc (id self, SEL _cmd)
 void
 mono_threads_install_dead_letter (void)
 {
-	id cur = objc_msgSend ((id)nsthread, currentThread);
-	id dict = objc_msgSend (cur, threadDictionary);
-	if (objc_msgSend (dict, objectForKey, mono_dead_letter_key) == nil) {
+	id cur, dict;
+
+	cur = objc_msgSend ((id)nsthread, currentThread);
+	if (!cur)
+		return;
+	dict = objc_msgSend (cur, threadDictionary);
+	if (dict && objc_msgSend (dict, objectForKey, mono_dead_letter_key) == nil) {
 		id value = objc_msgSend (objc_msgSend ((id)mono_dead_letter_class, alloc), init);
 		objc_msgSend (dict, setObjectForKey, value, mono_dead_letter_key);
 		objc_msgSend (value, release);
