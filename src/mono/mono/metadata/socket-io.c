@@ -1824,8 +1824,8 @@ static MonoObject* int_to_object (MonoDomain *domain, int val)
 
 void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val, gint32 *error)
 {
-	int system_level;
-	int system_name;
+	int system_level = 0;
+	int system_name = 0;
 	int ret;
 	int val;
 	socklen_t valsize=sizeof(val);
@@ -1979,8 +1979,8 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 
 void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET sock, gint32 level, gint32 name, MonoArray **byte_val, gint32 *error)
 {
-	int system_level;
-	int system_name;
+	int system_level = 0;
+	int system_name = 0;
 	int ret;
 	guchar *buf;
 	socklen_t valsize;
@@ -2094,8 +2094,8 @@ get_local_interface_id (int family)
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
 	struct linger linger;
-	int system_level;
-	int system_name;
+	int system_level = 0;
+	int system_name = 0;
 	int ret;
 #ifdef AF_INET6
 	int sol_ip;
