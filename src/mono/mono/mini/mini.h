@@ -2869,4 +2869,10 @@ gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define ARCH_HAVE_DUMMY_INIT 0
 #endif
 
+#ifdef MONO_CROSS_COMPILE
+#define MONO_IS_CROSS_COMPILE 1
+#else
+#define MONO_IS_CROSS_COMPILE 0
+#endif
+
 #endif /* __MONO_MINI_H__ */
