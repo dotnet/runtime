@@ -43,6 +43,9 @@ gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers 
 void mono_thread_small_id_free (int id) MONO_INTERNAL;
 int mono_thread_small_id_alloc (void) MONO_INTERNAL;
 
+int mono_hazard_pointer_save_for_signal_handler (void) MONO_INTERNAL;
+void mono_hazard_pointer_restore_for_signal_handler (int small_id) MONO_INTERNAL;
+
 void mono_thread_smr_init (void) MONO_INTERNAL;
 void mono_thread_smr_cleanup (void) MONO_INTERNAL;
 #endif /*__MONO_HAZARD_POINTER_H__*/

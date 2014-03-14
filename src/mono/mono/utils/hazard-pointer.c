@@ -14,6 +14,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/lock-free-array-queue.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/atomic.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef struct {
@@ -25,12 +26,20 @@ typedef struct {
 /* The hazard table */
 #if MONO_SMALL_CONFIG
 #define HAZARD_TABLE_MAX_SIZE	256
+#define HAZARD_TABLE_OVERFLOW	4
 #else
 #define HAZARD_TABLE_MAX_SIZE	16384 /* There cannot be more threads than this number. */
+#define HAZARD_TABLE_OVERFLOW	64
 #endif
 
 static volatile int hazard_table_size = 0;
 static MonoThreadHazardPointers * volatile hazard_table = NULL;
+
+/*
+ * Each entry is either 0 or 1, indicating whether that overflow small
+ * ID is busy.
+ */
+static volatile gint32 overflow_busy [HAZARD_TABLE_OVERFLOW];
 
 /* The table where we keep pointers to blocks to be freed but that
    have to wait because they're guarded by a hazard pointer. */
@@ -59,7 +68,7 @@ mono_thread_small_id_alloc (void)
 	if (!small_id_table)
 		small_id_table = mono_bitset_new (1, 0);
 
-	id = mono_bitset_find_first_unset (small_id_table, small_id_next);
+	id = mono_bitset_find_first_unset (small_id_table, small_id_next - 1);
 	if (id == -1)
 		id = mono_bitset_find_first_unset (small_id_table, -1);
 
@@ -197,6 +206,77 @@ get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int 
 	return p;
 }
 
+int
+mono_hazard_pointer_save_for_signal_handler (void)
+{
+	int small_id, i;
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+	MonoThreadHazardPointers *hp_overflow;
+
+	for (i = 0; i < HAZARD_POINTER_COUNT; ++i)
+		if (hp->hazard_pointers [i])
+			goto search;
+	return -1;
+
+ search:
+	for (small_id = 0; small_id < HAZARD_TABLE_OVERFLOW; ++small_id) {
+		if (!overflow_busy [small_id])
+			break;
+	}
+
+	/*
+	 * If this assert fails we don't have enough overflow slots.
+	 * We should contemplate adding them dynamically.  If we can
+	 * make mono_thread_small_id_alloc() lock-free we can just
+	 * allocate them on-demand.
+	 */
+	g_assert (small_id < HAZARD_TABLE_OVERFLOW);
+
+	if (InterlockedCompareExchange (&overflow_busy [small_id], 1, 0) != 0)
+		goto search;
+
+	hp_overflow = &hazard_table [small_id];
+
+	for (i = 0; i < HAZARD_POINTER_COUNT; ++i)
+		g_assert (!hp_overflow->hazard_pointers [i]);
+	*hp_overflow = *hp;
+
+	mono_memory_write_barrier ();
+
+	memset (hp, 0, sizeof (MonoThreadHazardPointers));
+
+	return small_id;
+}
+
+void
+mono_hazard_pointer_restore_for_signal_handler (int small_id)
+{
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+	MonoThreadHazardPointers *hp_overflow;
+	int i;
+
+	if (small_id < 0)
+		return;
+
+	g_assert (small_id < HAZARD_TABLE_OVERFLOW);
+	g_assert (overflow_busy [small_id]);
+
+	for (i = 0; i < HAZARD_POINTER_COUNT; ++i)
+		g_assert (!hp->hazard_pointers [i]);
+
+	hp_overflow = &hazard_table [small_id];
+
+	*hp = *hp_overflow;
+
+	mono_memory_write_barrier ();
+
+	memset (hp_overflow, 0, sizeof (MonoThreadHazardPointers));
+
+	mono_memory_write_barrier ();
+
+	overflow_busy [small_id] = 0;
+}
+
 static gboolean
 try_free_delayed_free_item (gboolean lock_free_context)
 {
@@ -263,8 +343,15 @@ mono_thread_hazardous_try_free_some (void)
 void
 mono_thread_smr_init (void)
 {
+	int i;
+
 	InitializeCriticalSection(&small_id_mutex);
 	mono_counters_register ("Hazardous pointers", MONO_COUNTER_JIT | MONO_COUNTER_INT, &hazardous_pointer_count);
+
+	for (i = 0; i < HAZARD_TABLE_OVERFLOW; ++i) {
+		int small_id = mono_thread_small_id_alloc ();
+		g_assert (small_id == i);
+	}
 }
 
 void
