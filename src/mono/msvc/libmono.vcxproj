@@ -144,6 +144,7 @@
     <ClCompile Include="..\mono\mini\xdebug.c" />
     <ClInclude Include="..\mono\mini\mini-llvm.h" />
     <ClInclude Include="..\mono\mini\mini-llvm-cpp.h" />
+    <ClInclude Include="..\mono\mini\mini-native-types.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CB0D9E92-293C-439C-9AC7-C5F59B6E0771}</ProjectGuid>
