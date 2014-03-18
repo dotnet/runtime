@@ -8,7 +8,7 @@ TEST_LDFLAGS = -framework CoreFoundation -framework Foundation
 endif
 
 
-if !CROSS_COMPILING
+if !CROSS_COMPILE
 if !HOST_WIN32
 if SUPPORT_BOEHM
 
@@ -33,4 +33,5 @@ TESTS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set
 
 endif SUPPORT_BOEHM
 endif !HOST_WIN32
-endif !CROSS_COMPILING
+endif !CROSS_COMPILE
+
