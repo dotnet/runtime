@@ -300,6 +300,7 @@ typedef enum {
 	CMD_SET_METHOD = 22,
 	CMD_SET_TYPE = 23,
 	CMD_SET_MODULE = 24,
+	CMD_SET_FIELD = 25,
 	CMD_SET_EVENT = 64
 } CommandSet;
 
@@ -457,6 +458,10 @@ typedef enum {
 typedef enum {
 	CMD_MODULE_GET_INFO = 1,
 } CmdModule;
+
+typedef enum {
+	CMD_FIELD_GET_INFO = 1,
+} CmdField;
 
 typedef enum {
 	CMD_METHOD_GET_NAME = 1,
@@ -7406,6 +7411,29 @@ module_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	return ERR_NONE;
 }
 
+static ErrorCode
+field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
+{
+	int err;
+	MonoDomain *domain;
+
+	switch (command) {
+	case CMD_FIELD_GET_INFO: {
+		MonoClassField *f = decode_fieldid (p, &p, end, &domain, &err);
+
+		buffer_add_string (buf, f->name);
+		buffer_add_typeid (buf, domain, f->parent);
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type (f->type));
+		buffer_add_int (buf, f->type->attrs);
+		break;
+	}
+	default:
+		return ERR_NOT_IMPLEMENTED;
+	}
+
+	return ERR_NONE;
+}
+
 static void
 buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *val)
 {
@@ -8859,27 +8887,29 @@ command_set_to_string (CommandSet command_set)
 	case CMD_SET_OBJECT_REF:
 		return "OBJECT_REF";
 	case CMD_SET_STRING_REF:
-		return "STRING_REF"; 
+		return "STRING_REF";
 	case CMD_SET_THREAD:
-		return "THREAD"; 
+		return "THREAD";
 	case CMD_SET_ARRAY_REF:
-		return "ARRAY_REF"; 
+		return "ARRAY_REF";
 	case CMD_SET_EVENT_REQUEST:
-		return "EVENT_REQUEST"; 
+		return "EVENT_REQUEST";
 	case CMD_SET_STACK_FRAME:
-		return "STACK_FRAME"; 
+		return "STACK_FRAME";
 	case CMD_SET_APPDOMAIN:
-		return "APPDOMAIN"; 
+		return "APPDOMAIN";
 	case CMD_SET_ASSEMBLY:
-		return "ASSEMBLY"; 
+		return "ASSEMBLY";
 	case CMD_SET_METHOD:
-		return "METHOD"; 
+		return "METHOD";
 	case CMD_SET_TYPE:
-		return "TYPE"; 
+		return "TYPE";
 	case CMD_SET_MODULE:
-		return "MODULE"; 
+		return "MODULE";
+	case CMD_SET_FIELD:
+		return "FIELD";
 	case CMD_SET_EVENT:
-		return "EVENT"; 
+		return "EVENT";
 	default:
 		return "";
 	}
@@ -8936,6 +8966,10 @@ static const char* assembly_cmds_str[] = {
 };
 
 static const char* module_cmds_str[] = {
+	"GET_INFO",
+};
+
+static const char* field_cmds_str[] = {
 	"GET_INFO",
 };
 
@@ -9055,6 +9089,10 @@ cmd_to_string (CommandSet set, int command)
 	case CMD_SET_MODULE:
 		cmds = module_cmds_str;
 		cmds_len = G_N_ELEMENTS (module_cmds_str);
+		break;
+	case CMD_SET_FIELD:
+		cmds = field_cmds_str;
+		cmds_len = G_N_ELEMENTS (field_cmds_str);
 		break;
 	case CMD_SET_EVENT:
 		cmds = event_cmds_str;
@@ -9206,6 +9244,9 @@ debugger_thread (void *arg)
 			break;
 		case CMD_SET_MODULE:
 			err = module_commands (command, p, end, &buf);
+			break;
+		case CMD_SET_FIELD:
+			err = field_commands (command, p, end, &buf);
 			break;
 		case CMD_SET_TYPE:
 			err = type_commands (command, p, end, &buf);
