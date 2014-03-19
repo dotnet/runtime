@@ -5023,6 +5023,42 @@ emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 	}
 }
 
+static gboolean
+is_unsafe_mov_compatible (MonoClass *param_klass, MonoClass *return_klass)
+{
+	uint32_t align;
+
+	//Only allow for valuetypes
+	if (!param_klass->valuetype || !return_klass->valuetype)
+		return FALSE;
+
+	//That are blitable
+	if (param_klass->has_references || return_klass->has_references)
+		return FALSE;
+
+	//And have the same size
+	if (mono_class_value_size (param_klass, &align) != mono_class_value_size (return_klass, &align))
+		return FALSE;
+	return TRUE;
+}
+
+static MonoInst*
+emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoClass *param_klass = mono_class_from_mono_type (fsig->params [0]);
+	MonoClass *return_klass = mono_class_from_mono_type (fsig->ret);
+
+	//Valuetypes that are semantically equivalent
+	if (is_unsafe_mov_compatible (param_klass, return_klass))
+		return args [0];
+
+	//Arrays of valuetypes that are semantically equivalent
+	if (param_klass->rank == 1 && return_klass->rank == 1 && is_unsafe_mov_compatible (param_klass->element_class, return_klass->element_class))
+		return args [0];
+
+	return NULL;
+}
+
 static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -5118,8 +5154,10 @@ mini_emit_inst_for_sharable_method (MonoCompile *cfg, MonoMethod *cmethod, MonoM
 	if (cmethod->klass == mono_defaults.array_class) {
 		if (strcmp (cmethod->name, "UnsafeStore") == 0)
 			return emit_array_unsafe_access (cfg, fsig, args, TRUE);
-		if (strcmp (cmethod->name, "UnsafeLoad") == 0)
+		else if (strcmp (cmethod->name, "UnsafeLoad") == 0)
 			return emit_array_unsafe_access (cfg, fsig, args, FALSE);
+		else if (strcmp (cmethod->name, "UnsafeMov") == 0)
+			return emit_array_unsafe_mov (cfg, fsig, args);
 	}
 
 	return NULL;
