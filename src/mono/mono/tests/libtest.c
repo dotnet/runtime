@@ -1973,6 +1973,18 @@ mono_test_stdcall_name_mangling (int a, int b, int c)
         return a + b + c;
 }
 
+LIBTEST_API int
+mono_test_stdcall_mismatch_1 (int a, int b, int c)
+{
+        return a + b + c;
+}
+
+LIBTEST_API int STDCALL
+mono_test_stdcall_mismatch_2 (int a, int b, int c)
+{
+        return a + b + c;
+}
+
 /*
  * PASSING AND RETURNING SMALL STRUCTURES FROM DELEGATES TESTS
  */

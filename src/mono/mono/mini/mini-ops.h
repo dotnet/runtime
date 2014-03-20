@@ -1245,3 +1245,6 @@ MINI_OP(OP_LLVM_OUTARG_VT,	"llvm_outarg_vt", IREG, VREG, NONE)
 
 MINI_OP(OP_OBJC_GET_SELECTOR, "objc_get_selector", IREG, NONE, NONE)
 
+MINI_OP(OP_GET_SP, "get_sp", IREG, NONE, NONE)
+MINI_OP(OP_SET_SP, "set_sp", NONE, IREG, NONE)
+

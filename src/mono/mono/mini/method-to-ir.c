@@ -2571,11 +2571,29 @@ inline static MonoInst*
 mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
 	MonoCallInst *call;
+	MonoInst *ins;
 	int rgctx_reg = -1;
+	gboolean check_sp = FALSE;
+
+	if (cfg->check_pinvoke_callconv && cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+		if (info && info->subtype == WRAPPER_SUBTYPE_PINVOKE)
+			check_sp = TRUE;
+	}
 
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
+	}
+
+	if (check_sp) {
+		if (!cfg->stack_inbalance_var)
+			cfg->stack_inbalance_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+
+		MONO_INST_NEW (cfg, ins, OP_GET_SP);
+		ins->dreg = cfg->stack_inbalance_var->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
 	call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE, rgctx_arg ? TRUE : FALSE, FALSE);
@@ -2586,6 +2604,24 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 		emit_imt_argument (cfg, call, NULL, imt_arg);
 
 	MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
+
+	if (check_sp) {
+		int sp_reg;
+
+		sp_reg = mono_alloc_preg (cfg);
+
+		MONO_INST_NEW (cfg, ins, OP_GET_SP);
+		ins->dreg = sp_reg;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		/* Restore the stack so we don't crash when throwing the exception */
+		MONO_INST_NEW (cfg, ins, OP_SET_SP);
+		ins->sreg1 = cfg->stack_inbalance_var->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, cfg->stack_inbalance_var->dreg, sp_reg);
+		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "ExecutionEngineException");
+	}
 
 	if (rgctx_arg)
 		set_rgctx_arg (cfg, call, rgctx_reg, rgctx_arg);

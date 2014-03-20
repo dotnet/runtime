@@ -9044,7 +9044,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
 
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
+	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_PINVOKE);
 	info->d.managed_to_native.method = method;
 	mono_marshal_set_wrapper_info (res, info);
 

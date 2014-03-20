@@ -5039,6 +5039,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->backend.pc_offset = code - cfg->native_code;
 			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
 			break;
+		case OP_GET_SP:
+			x86_mov_reg_reg (code, ins->dreg, X86_ESP, sizeof (mgreg_t));
+			break;
+		case OP_SET_SP:
+			x86_mov_reg_reg (code, X86_ESP, ins->sreg1, sizeof (mgreg_t));
+			break;
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();

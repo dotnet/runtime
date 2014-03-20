@@ -2655,7 +2655,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			} else {
-				g_assert (info->subtype == WRAPPER_SUBTYPE_NONE);
+				g_assert (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_PINVOKE);
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			}
 			break;
