@@ -89,6 +89,7 @@ static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
 static MonoImage *exe_image;
+static gboolean debug_domain_unload;
 
 gboolean mono_dont_free_domains;
 
@@ -1341,6 +1342,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
 	int n;
 
+#ifdef DEBUG_DOMAIN_UNLOAD
+	debug_domain_unload = TRUE;
+#endif
+
 	if (domain)
 		g_assert_not_reached ();
 
@@ -2088,18 +2093,18 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
 	max_domain_code_size = MAX (max_domain_code_size, code_size);
 
-#ifdef DEBUG_DOMAIN_UNLOAD
-	mono_mempool_invalidate (domain->mp);
-	mono_code_manager_invalidate (domain->code_mp);
-#else
+	if (debug_domain_unload) {
+		mono_mempool_invalidate (domain->mp);
+		mono_code_manager_invalidate (domain->code_mp);
+	} else {
 #ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (domain->mp);
+		mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (domain->mp);
 #endif
-	mono_mempool_destroy (domain->mp);
-	domain->mp = NULL;
-	mono_code_manager_destroy (domain->code_mp);
-	domain->code_mp = NULL;
-#endif	
+		mono_mempool_destroy (domain->mp);
+		domain->mp = NULL;
+		mono_code_manager_destroy (domain->code_mp);
+		domain->code_mp = NULL;
+	}
 	lock_free_mempool_free (domain->lock_free_mp);
 	domain->lock_free_mp = NULL;
 
@@ -2754,4 +2759,10 @@ int
 mono_framework_version (void)
 {
 	return current_runtime->framework_version [0] - '0';
+}
+
+void
+mono_enable_debug_domain_unload (gboolean enable)
+{
+	debug_domain_unload = enable;
 }
