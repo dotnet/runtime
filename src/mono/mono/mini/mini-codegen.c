@@ -101,6 +101,7 @@ static const int regbank_move_ops [] = {
 
 #define regmask(reg) (((regmask_t)1) << (reg))
 
+#ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
 static const regmask_t regbank_callee_saved_regs [] = {
 	MONO_ARCH_CALLEE_SAVED_REGS,
 	MONO_ARCH_CALLEE_SAVED_FREGS,
@@ -108,6 +109,7 @@ static const regmask_t regbank_callee_saved_regs [] = {
 	MONO_ARCH_CALLEE_SAVED_REGS,
 	MONO_ARCH_CALLEE_SAVED_XREGS,
 };
+#endif
 
 static const regmask_t regbank_callee_regs [] = {
 	MONO_ARCH_CALLEE_REGS,
