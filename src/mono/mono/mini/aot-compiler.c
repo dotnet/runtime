@@ -558,6 +558,12 @@ emit_set_arm_mode (MonoAotCompile *acfg)
 	fprintf (acfg->fp, ".code 32\n");
 }
 
+static inline void
+emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
+{
+	emit_bytes (acfg, buf, size);
+}
+
 /* ARCHITECTURE SPECIFIC CODE */
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_POWERPC)
@@ -4483,6 +4489,8 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
 	return findex;
 }
 
+#define INST_LEN 1
+
 /*
  * emit_and_reloc_code:
  *
@@ -4529,7 +4537,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	g_ptr_array_sort (patches, compare_patches);
 
 	start_index = 0;
-	for (i = 0; i < code_len; i++) {
+	for (i = 0; i < code_len; i += INST_LEN) {
 		patch_info = NULL;
 		for (pindex = start_index; pindex < patches->len; ++pindex) {
 			patch_info = g_ptr_array_index (patches, pindex);
@@ -4559,7 +4567,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				int code_size;
  
 				arch_emit_got_offset (acfg, code + i, &code_size);
-				i += code_size - 1;
+				i += code_size - INST_LEN;
 				skip = TRUE;
 				patch_info->type = MONO_PATCH_INFO_NONE;
 				break;
@@ -4583,7 +4591,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				}
 
 				arch_emit_objc_selector_ref (acfg, code + i, index, &code_size);
-				i += code_size - 1;
+				i += code_size - INST_LEN;
 				skip = TRUE;
 				patch_info->type = MONO_PATCH_INFO_NONE;
 				break;
@@ -4662,14 +4670,14 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					int call_size;
 
 					arch_emit_direct_call (acfg, direct_call_target, external_call, FALSE, patch_info, &call_size);
-					i += call_size - 1;
+					i += call_size - INST_LEN;
 				} else {
 					int code_size;
 
 					got_slot = get_got_offset (acfg, patch_info);
 
 					arch_emit_got_access (acfg, code + i, got_slot, &code_size);
-					i += code_size - 1;
+					i += code_size - INST_LEN;
 				}
 				skip = TRUE;
 			}
@@ -4690,15 +4698,15 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 			if (pindex < patches->len && patch_info->ip.i > i) {
 				int limit;
 
-				for (limit = i + 1; limit < patch_info->ip.i; ++limit) {
+				for (limit = i + INST_LEN; limit < patch_info->ip.i; limit += INST_LEN) {
 					if (locs && locs [limit])
 						break;
 				}
 
-				emit_bytes (acfg, code + i, limit - i);
-				i = limit - 1;
+				emit_code_bytes (acfg, code + i, limit - i);
+				i = limit - INST_LEN;
 			} else {
-				emit_bytes (acfg, code + i, 1);
+				emit_code_bytes (acfg, code + i, INST_LEN);
 			}
 		}
 	}
