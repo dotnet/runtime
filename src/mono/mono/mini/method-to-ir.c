@@ -5049,7 +5049,6 @@ emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 	else
 		eklass = mono_class_from_mono_type (fsig->ret);
 
-
 	if (is_set) {
 		return emit_array_store (cfg, eklass, args, FALSE);
 	} else {
@@ -5070,6 +5069,11 @@ is_unsafe_mov_compatible (MonoClass *param_klass, MonoClass *return_klass)
 
 	//That are blitable
 	if (param_klass->has_references || return_klass->has_references)
+		return FALSE;
+
+	/* Avoid mixing structs and primitive types/enums, they need to be handled differently in the JIT */
+	if ((MONO_TYPE_ISSTRUCT (&param_klass->byval_arg) && !MONO_TYPE_ISSTRUCT (&return_klass->byval_arg)) ||
+		(!MONO_TYPE_ISSTRUCT (&param_klass->byval_arg) && MONO_TYPE_ISSTRUCT (&return_klass->byval_arg)))
 		return FALSE;
 
 	//And have the same size
