@@ -136,9 +136,10 @@ void
 mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
 {
 	MonoContext ctx;
-	gboolean rethrow = pc & 1;
+	gboolean rethrow = sp & 1;
 
-	pc &= ~1; /* clear the optional rethrow bit */
+	sp &= ~1; /* clear the optional rethrow bit */
+	pc &= ~1; /* clear the thumb bit */
 	/* adjust eip so that it point into the call instruction */
 	pc -= 4;
 
@@ -231,6 +232,12 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, cfa_offset);
+	/* we encode rethrow in sp */
+	if (rethrow) {
+		g_assert (!resume_unwind);
+		g_assert (!corlib);
+		ARM_ORR_REG_IMM8 (code, ARMREG_R2, ARMREG_R2, rethrow);
+	}
 	/* exc is already in place in r0 */
 	if (corlib) {
 		/* The caller ip is already in R1 */
@@ -242,8 +249,6 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	}
 	/* int regs */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R3, ARMREG_SP, (cfa_offset - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t))));
-	/* we encode rethrow in the ip */
-	ARM_ORR_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, rethrow);
 	/* fp regs */
 	ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_SP, 8);
 	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, 0);
