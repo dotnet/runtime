@@ -5076,6 +5076,10 @@ is_unsafe_mov_compatible (MonoClass *param_klass, MonoClass *return_klass)
 		(!MONO_TYPE_ISSTRUCT (&param_klass->byval_arg) && MONO_TYPE_ISSTRUCT (&return_klass->byval_arg)))
 		return FALSE;
 
+	if (param_klass->byval_arg.type == MONO_TYPE_R4 || param_klass->byval_arg.type == MONO_TYPE_R8 ||
+		return_klass->byval_arg.type == MONO_TYPE_R4 || return_klass->byval_arg.type == MONO_TYPE_R8)
+		return FALSE;
+
 	//And have the same size
 	if (mono_class_value_size (param_klass, &align) != mono_class_value_size (return_klass, &align))
 		return FALSE;
