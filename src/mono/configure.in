@@ -1863,7 +1863,7 @@ if test x$target_win32 = xno; then
 	dnl * back 
 	dnl **************************************
 	if test "x$havekqueue" = "xyes" -a "x$ac_cv_header_sys_event_h" = "xyes"; then
-		if x$platform_darwin = xno; then
+		if test "x$platform_darwin" = "xno"; then
 			AC_DEFINE(USE_KQUEUE_FOR_THREADPOOL, 1, [Use kqueue for the threadpool])
 		fi
 	fi
