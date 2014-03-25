@@ -10,13 +10,13 @@ class Program
 
         AppDomain.CurrentDomain.ProcessExit += new EventHandler (AppDomain_ProcessExit);
         ThreadPool.QueueUserWorkItem (new WaitCallback (Proc));
-        Thread.Sleep (1000);
+        Thread.Sleep (100);
     }
 
     static void Proc (object unused)
     {
         Thread.CurrentThread.IsBackground = false;
-        Thread.Sleep (5000);
+        Thread.Sleep (500);
         Console.WriteLine ("done");
     }
 
