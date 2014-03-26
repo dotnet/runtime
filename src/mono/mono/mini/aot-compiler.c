@@ -7247,16 +7247,16 @@ emit_code (MonoAotCompile *acfg)
 		method = cfg->orig_method;
 
 		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype) {
+			int call_size;
+
 			index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
 
 			emit_int32 (acfg, index);
 			if (acfg->direct_method_addresses) {
-				emit_unset_mode (acfg);
-				if (acfg->thumb_mixed && cfg->compile_llvm)
-					fprintf (acfg->fp, "\n\tblx %s\n", symbol);
-				else
-					fprintf (acfg->fp, "\n\tbl %s\n", symbol);
+#ifdef MONO_ARCH_AOT_SUPPORTED
+				arch_emit_direct_call (acfg, symbol, FALSE, acfg->thumb_mixed && cfg->compile_llvm, NULL, &call_size);
+#endif
 			} else {
 				emit_symbol_diff (acfg, symbol, acfg->methods_symbol, 0);
 			}
