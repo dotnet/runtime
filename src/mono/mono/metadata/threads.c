@@ -1183,6 +1183,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	if (this_obj->name) {
 		char *tname = mono_string_to_utf8 (name);
 		mono_profiler_thread_name (this_obj->tid, tname);
+		mono_thread_info_set_name (this_obj->tid, tname);
 		mono_free (tname);
 	}
 }

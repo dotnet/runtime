@@ -256,4 +256,9 @@ mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 	return OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
 }
 
+void
+mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
+{
+}
+
 #endif

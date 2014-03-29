@@ -533,6 +533,22 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 	return pthread_create (tid, NULL, func, arg) == 0;
 }
 
+void
+mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
+{
+#ifdef HAVE_PTHREAD_SETNAME_NP
+	if (!name) {
+		pthread_setname_np (tid, "");
+	} else {
+		char n [16];
+
+		strncpy (n, name, 16);
+		n [15] = '\0';
+		pthread_setname_np (tid, n);
+	}
+#endif
+}
+
 #endif /*!defined (__MACH__)*/
 
 #endif

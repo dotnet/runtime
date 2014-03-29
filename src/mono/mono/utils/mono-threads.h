@@ -244,6 +244,9 @@ gboolean
 mono_thread_info_resume (MonoNativeThreadId tid) MONO_INTERNAL;
 
 void
+mono_thread_info_set_name (MonoNativeThreadId tid, const char *name) MONO_INTERNAL;
+
+void
 mono_thread_info_finish_suspend (void) MONO_INTERNAL;
 
 void
@@ -327,6 +330,7 @@ void mono_threads_core_exit (int exit_code) MONO_INTERNAL;
 void mono_threads_core_unregister (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 HANDLE mono_threads_core_open_handle (void) MONO_INTERNAL;
 HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INTERNAL;
+void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name) MONO_INTERNAL;
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 
