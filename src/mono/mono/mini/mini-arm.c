@@ -522,7 +522,7 @@ emit_float_args (MonoCompile *cfg, MonoCallInst *inst, guint8 *code, int *max_le
 		gboolean imm = arm_is_fpimm8 (var->inst_offset);
 
 		/* 4+1 insns for emit_big_add () and 1 for FLDS. */
-		if (imm)
+		if (!imm)
 			*max_len += 20 + 4;
 
 		*max_len += 4;
