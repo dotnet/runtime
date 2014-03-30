@@ -3883,7 +3883,8 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 * Use gsharedvt for generic collections with vtype arguments to avoid code blowup.
 	 * Enable this only for some classes since gsharedvt might not support all methods.
 	 */
-	if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->image == mono_defaults.corlib && klass->generic_class && klass->generic_class->context.class_inst && is_vt_inst (klass->generic_class->context.class_inst) && (!strcmp (klass->name, "Dictionary`2") || !strcmp (klass->name, "List`1")))
+	if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->image == mono_defaults.corlib && klass->generic_class && klass->generic_class->context.class_inst && is_vt_inst (klass->generic_class->context.class_inst) &&
+		(!strcmp (klass->name, "Dictionary`2") || !strcmp (klass->name, "List`1") || !strcmp (klass->name, "ReadOnlyCollection`1")))
 		use_gsharedvt = TRUE;
 
 	iter = NULL;
