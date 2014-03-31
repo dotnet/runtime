@@ -138,4 +138,10 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 	return pthread_create (tid, NULL, func, arg) == 0;
 }
 
+void
+mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
+{
+	/* pthread_setnmae_np() on Mac is not documented and doesn't receive thread id. */
+}
+
 #endif
