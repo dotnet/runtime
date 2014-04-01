@@ -669,6 +669,8 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 	thread_cleanup (internal);
 
+	internal->tid = 0;
+
 	/* Remove the reference to the thread object in the TLS data,
 	 * so the thread object can be finalized.  This won't be
 	 * reached if the thread threw an uncaught exception, so those
@@ -1182,8 +1184,11 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 
 	if (this_obj->name) {
 		char *tname = mono_string_to_utf8 (name);
-		mono_profiler_thread_name (this_obj->tid, tname);
-		mono_thread_info_set_name (this_obj->tid, tname);
+
+		if (this_obj->tid) {
+			mono_profiler_thread_name (this_obj->tid, tname);
+			mono_thread_info_set_name (this_obj->tid, tname);
+		}
 		mono_free (tname);
 	}
 }
