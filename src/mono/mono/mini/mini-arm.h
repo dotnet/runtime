@@ -203,6 +203,7 @@ typedef struct MonoCompileArch {
 	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
 	gpointer *vfp_scratch_slots [2];
+	int atomic_tmp_offset;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
@@ -262,6 +263,10 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #endif
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
+#define MONO_ARCH_HAVE_OPCODE_SUPPORTED 1
+#define MONO_ARCH_HAVE_ATOMIC_EXCHANGE 1
+#define MONO_ARCH_HAVE_ATOMIC_CAS 1
+#define MONO_ARCH_HAVE_ATOMIC_ADD 1
 
 #if defined(__native_client__)
 #undef MONO_ARCH_SOFT_DEBUG_SUPPORTED

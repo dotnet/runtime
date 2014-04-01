@@ -5478,6 +5478,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
 #endif
+			if (opcode && !mono_arch_opcode_supported (opcode))
+				return NULL;
+
 			if (opcode) {
 				MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 				ins_iconst->inst_c0 = 1;
@@ -5504,6 +5507,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
 #endif
+			if (opcode && !mono_arch_opcode_supported (opcode))
+				return NULL;
+
 			if (opcode) {
 				MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 				ins_iconst->inst_c0 = -1;
@@ -5564,6 +5570,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else
 				return NULL;
 
+			if (!mono_arch_opcode_supported (opcode))
+				return NULL;
+
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 			ins->inst_basereg = args [0]->dreg;
@@ -5609,6 +5618,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->sreg3 = args [2]->dreg;
 				ins->type = STACK_I4;
 				MONO_ADD_INS (cfg->cbb, ins);
+				cfg->has_atomic_cas_i4 = TRUE;
 			} else if (size == 8) {
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I8);
 				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
