@@ -86,9 +86,6 @@ mono_arch_nacl_skip_nops (guint8 *code)
 void sys_icache_invalidate (void *start, size_t len);
 #endif
 
-static gint lmf_tls_offset = -1;
-static gint lmf_addr_tls_offset = -1;
-
 /* This mutex protects architecture specific caches */
 #define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
 #define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
@@ -587,7 +584,7 @@ mono_arm_emit_vfp_scratch_restore (MonoCompile *cfg, guint8 *code, int reg)
 }
 
 /*
- * emit_save_lmf:
+ * emit_restore_lmf:
  *
  *   Emit code to pop an LMF structure from the LMF stack.
  */
@@ -6314,8 +6311,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 void
 mono_arch_finish_init (void)
 {
-	lmf_tls_offset = mono_get_lmf_tls_offset ();
-	lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 }
 
 void
