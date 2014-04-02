@@ -168,6 +168,7 @@ rm -rf %buildroot
 %_bindir/gacutil
 %_bindir/gacutil2
 %_bindir/gmcs
+%_bindir/ikdasm
 %_bindir/mcs
 %_bindir/mono
 %_bindir/mono-configuration-crypto
@@ -260,6 +261,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/cscompmgd.dll
 %_prefix/lib/mono/4.5/csharp.exe*
 %_prefix/lib/mono/4.5/gacutil.exe*
+%_prefix/lib/mono/4.5/ikdasm.exe*
 %_prefix/lib/mono/4.5/mcs.exe*
 %_prefix/lib/mono/4.5/mozroots.exe*
 %_prefix/lib/mono/4.0/mscorlib.dll*
