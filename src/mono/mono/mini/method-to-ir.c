@@ -9615,9 +9615,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					addr = emit_get_rgctx_gsharedvt_call (cfg, context_used, fsig, cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
 					mono_emit_calli (cfg, fsig, sp, addr, NULL, vtable_arg);
 				} else if (context_used &&
-						(!mono_method_is_generic_sharable (cmethod, TRUE) ||
-							!mono_class_generic_sharing_enabled (cmethod->klass))) {
+						   ((!mono_method_is_generic_sharable (cmethod, TRUE) ||
+							 !mono_class_generic_sharing_enabled (cmethod->klass)) || cfg->gsharedvt)) {
 					MonoInst *cmethod_addr;
+
+					/* Generic calls made out of gsharedvt methods cannot be patched, so use an indirect call */
 
 					cmethod_addr = emit_get_rgctx_method (cfg, context_used,
 						cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
