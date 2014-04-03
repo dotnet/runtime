@@ -5478,10 +5478,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
 #endif
-			if (opcode && !mono_arch_opcode_supported (opcode))
-				return NULL;
-
 			if (opcode) {
+				if (!mono_arch_opcode_supported (opcode))
+					return NULL;
 				MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 				ins_iconst->inst_c0 = 1;
 				ins_iconst->dreg = mono_alloc_ireg (cfg);
@@ -5507,10 +5506,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
 #endif
-			if (opcode && !mono_arch_opcode_supported (opcode))
-				return NULL;
-
 			if (opcode) {
+				if (!mono_arch_opcode_supported (opcode))
+					return NULL;
 				MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 				ins_iconst->inst_c0 = -1;
 				ins_iconst->dreg = mono_alloc_ireg (cfg);
@@ -5535,8 +5533,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
 				opcode = OP_ATOMIC_ADD_NEW_I8;
 #endif
-
 			if (opcode) {
+				if (!mono_arch_opcode_supported (opcode))
+					return NULL;
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
@@ -5611,6 +5610,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else if (sizeof (gpointer) == 8 && fsig->params [1]->type == MONO_TYPE_I8)
 				size = 8;
 			if (size == 4) {
+				if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I4))
+					return NULL;
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
 				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
@@ -5620,6 +5621,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, ins);
 				cfg->has_atomic_cas_i4 = TRUE;
 			} else if (size == 8) {
+				if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I8))
+					return NULL;
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I8);
 				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
