@@ -526,6 +526,7 @@ extern gboolean mono_dont_free_global_codeman;
 extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
+extern gboolean mono_do_crash_chaining;
 extern gboolean mono_use_llvm;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;

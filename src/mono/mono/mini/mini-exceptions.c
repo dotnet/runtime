@@ -2334,12 +2334,14 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 
 #endif
 
-	/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
+	if (!mono_do_crash_chaining) {
+		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
 #if defined (PLATFORM_ANDROID)
-	exit (-1);
+		exit (-1);
 #else
-	abort ();
+		abort ();
 #endif
+	}
 }
 
 static void

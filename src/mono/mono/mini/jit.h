@@ -31,6 +31,9 @@ MONO_API void
 mono_set_signal_chaining   (mono_bool chain_signals);
 
 MONO_API void
+mono_set_crash_chaining   (mono_bool chain_signals);
+
+MONO_API void
 mono_jit_set_aot_only      (mono_bool aot_only);
 
 /* Allow embedders to decide wherther to actually obey breakpoint instructions

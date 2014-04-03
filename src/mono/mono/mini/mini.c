@@ -101,6 +101,7 @@ int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
 const char *mono_build_date;
 gboolean mono_do_signal_chaining;
+gboolean mono_do_crash_chaining;
 static gboolean	mono_using_xdebug;
 static int mini_verbose = 0;
 
@@ -6753,10 +6754,12 @@ SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 #endif
 
 	if (!ji) {
-		if (mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
 			return;
 
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
+		if (mono_do_crash_chaining)
+			mono_chain_signal (SIG_HANDLER_PARAMS);
 	}
 	
 	mono_arch_handle_exception (ctx, exc);
@@ -6804,9 +6807,11 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls) {
-		if (mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
 			return;
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
+		if (mono_do_crash_chaining)
+			mono_chain_signal (SIG_HANDLER_PARAMS);
 	}
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
@@ -6845,10 +6850,13 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 #else
 
 	if (!ji) {
-		if (mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
 			return;
 
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
+
+		if (mono_do_crash_chaining)
+			mono_chain_signal (SIG_HANDLER_PARAMS);
 	}
 			
 	mono_arch_handle_exception (ctx, NULL);

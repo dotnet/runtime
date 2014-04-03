@@ -2253,3 +2253,16 @@ mono_set_signal_chaining (gboolean chain_signals)
 {
 	mono_do_signal_chaining = chain_signals;
 }
+
+/**
+ * mono_set_crash_chaining:
+ *
+ * Enable/disable crash chaining due to signals. When a fatal signal is delivered and
+ * Mono doesn't know how to handle it, it will invoke the crash handler. If chrash chaining
+ * is enabled, it will first print its crash information and then try to chain with the native handler.
+ */
+void
+mono_set_crash_chaining (gboolean chain_crashes)
+{
+	mono_do_crash_chaining = chain_crashes;
+}
