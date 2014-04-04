@@ -7958,7 +7958,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 gboolean
 mono_arch_opcode_supported (int opcode)
 {
-	return FALSE;
+	return TRUE;
 }
 
 #endif
