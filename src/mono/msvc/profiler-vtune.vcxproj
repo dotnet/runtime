@@ -90,7 +90,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src;$(ProgramFiles)\Intel\VTune Amplifier XE 2011\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src;$(ProgramFiles)\Intel\VTune Amplifier XE 2013\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -100,7 +100,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <ModuleDefinitionFile>mono-profiler-vtune.def</ModuleDefinitionFile>
       <AdditionalDependencies>mono-2.0.lib;libgc.lib;eglib.lib;jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(Platform)\lib;$(ProgramFiles)\Intel\VTune Amplifier XE 2011\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(Platform)\lib;$(ProgramFiles)\Intel\VTune Amplifier XE 2013\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -129,7 +129,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src;$(ProgramFiles)\Intel\VTune Amplifier XE 2011\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src;$(ProgramFiles)\Intel\VTune Amplifier XE 2013\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -141,7 +141,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>mono-2.0.lib;libgc.lib;eglib.lib;jitprofiling.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(Platform)\lib;$(ProgramFiles)\Intel\VTune Amplifier XE 2011\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(Platform)\lib;$(ProgramFiles)\Intel\VTune Amplifier XE 2013\lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
