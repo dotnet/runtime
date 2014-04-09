@@ -47,7 +47,6 @@ static void free_generic_class (MonoGenericClass *ginst);
 static void free_inflated_method (MonoMethodInflated *method);
 static void free_inflated_signature (MonoInflatedMethodSignature *sig);
 static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
-static guint mono_metadata_generic_param_hash (MonoGenericParam *p);
 
 /*
  * This enumeration is used to describe the data types in the metadata
@@ -4588,23 +4587,7 @@ mono_metadata_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	case MONO_TYPE_GENERICINST:
 		return ((hash << 5) - hash) ^ mono_generic_class_hash (t1->data.generic_class);
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		return ((hash << 5) - hash) ^ mono_metadata_generic_param_hash (t1->data.generic_param);
 	}
-	return hash;
-}
-
-static guint
-mono_metadata_generic_param_hash (MonoGenericParam *p)
-{
-	guint hash;
-	MonoGenericContainer *owner;
-
-	hash = (mono_generic_param_num (p) << 2) | p->serial;
-	owner = mono_generic_param_owner (p);
-	if (owner)
-		hash = ((hash << 5) - hash) ^ mono_aligned_addr_hash (owner);
 	return hash;
 }
 
