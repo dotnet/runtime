@@ -2926,7 +2926,8 @@ enum {
 	SAVE_STRUCT,
 	SAVE_ONE,
 	SAVE_TWO,
-	SAVE_FP
+	SAVE_ONE_FP,
+	SAVE_TWO_FP
 };
 
 void*
@@ -2936,7 +2937,8 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	int save_mode = SAVE_NONE;
 	int offset;
 	MonoMethod *method = cfg->method;
-	int rtype = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret)->type;
+	MonoType *ret_type = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
+	int rtype = ret_type->type;
 	int save_offset = cfg->param_area;
 	save_offset += 7;
 	save_offset &= ~7;
@@ -2961,9 +2963,23 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		save_mode = SAVE_TWO;
 		break;
 	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		save_mode = SAVE_FP;
+		if (IS_HARD_FLOAT)
+			save_mode = SAVE_ONE_FP;
+		else
+			save_mode = SAVE_ONE;
 		break;
+	case MONO_TYPE_R8:
+		if (IS_HARD_FLOAT)
+			save_mode = SAVE_TWO_FP;
+		else
+			save_mode = SAVE_TWO;
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (ret_type)) {
+			save_mode = SAVE_ONE;
+			break;
+		}
+		/* Fall through */
 	case MONO_TYPE_VALUETYPE:
 		save_mode = SAVE_STRUCT;
 		break;
@@ -2987,10 +3003,16 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 			ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
 		}
 		break;
-	case SAVE_FP:
-		/* FIXME: what reg?  */
+	case SAVE_ONE_FP:
+		ARM_FSTS (code, ARM_VFP_F0, cfg->frame_reg, save_offset);
 		if (enable_arguments) {
-			/* FIXME: what reg?  */
+			ARM_FMRS (code, ARMREG_R1, ARM_VFP_F0);
+		}
+		break;
+	case SAVE_TWO_FP:
+		ARM_FSTD (code, ARM_VFP_D0, cfg->frame_reg, save_offset);
+		if (enable_arguments) {
+			ARM_FMDRR (code, ARMREG_R1, ARMREG_R2, ARM_VFP_D0);
 		}
 		break;
 	case SAVE_STRUCT:
@@ -3016,8 +3038,11 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	case SAVE_ONE:
 		ARM_LDR_IMM (code, ARMREG_R0, cfg->frame_reg, save_offset);
 		break;
-	case SAVE_FP:
-		/* FIXME */
+	case SAVE_ONE_FP:
+		ARM_FLDS (code, ARM_VFP_F0, cfg->frame_reg, save_offset);
+		break;
+	case SAVE_TWO_FP:
+		ARM_FLDD (code, ARM_VFP_D0, cfg->frame_reg, save_offset);
 		break;
 	case SAVE_NONE:
 	default:
