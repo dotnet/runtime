@@ -1093,6 +1093,17 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 	return FALSE;
 }
 
+static gboolean
+load_profiler_from_mono_instalation (const char *libname, const char *desc)
+{
+	char *err = NULL;
+	MonoDl *pmodule = mono_dl_open_runtime_lib (libname, MONO_DL_LAZY, &err);
+	g_free (err);
+	if (pmodule)
+		return load_profiler (pmodule, desc, INITIALIZER_NAME);
+	return FALSE;
+}
+
 /**
  * mono_profiler_load:
  * @desc: arguments to configure the profiler
@@ -1156,6 +1167,9 @@ mono_profiler_load (const char *desc)
 #if defined (MONO_ASSEMBLIES)
 				res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
 #endif
+				if (!res)
+					res = load_profiler_from_mono_instalation (libname, desc);
+
 				if (!res)
 					g_warning ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
 			}
