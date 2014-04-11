@@ -10,6 +10,7 @@
 #include "config.h"
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-embed.h"
+#include "mono/utils/mono-path.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -51,6 +52,12 @@ static const char suffixes [][4] = {
 #elif defined (HAVE_DL_LOADER)
 
 #include <dlfcn.h>
+#include <unistd.h>
+
+#ifdef __MACH__
+#include <mach-o/dyld.h>
+#endif
+
 
 #ifndef RTLD_LAZY
 #define RTLD_LAZY       1
@@ -551,3 +558,83 @@ mono_dl_fallback_unregister (MonoDlFallbackHandler *handler)
 	g_slist_remove (fallback_handlers, handler);
 	g_free (handler);
 }
+
+
+#if defined (HAVE_DL_LOADER)
+
+static MonoDl*
+try_load (const char *lib_name, char *dir, int flags, char **err)
+{
+	gpointer iter;
+	MonoDl *runtime_lib;
+	char *path;
+	iter = NULL;
+	*err = NULL;
+	while ((path = mono_dl_build_path (dir, lib_name, &iter))) {
+		g_free (*err);
+		runtime_lib = mono_dl_open (path, flags, err);
+		g_free (path);
+		if (runtime_lib)
+			return runtime_lib;
+	}
+	return NULL;
+}
+
+MonoDl*
+mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
+{
+	MonoDl *runtime_lib = NULL;
+	char buf [4096];
+	int binl;
+	binl = readlink ("/proc/self/exe", buf, sizeof (buf)-1);
+	*error_msg = NULL;
+
+#ifdef __MACH__
+	if (binl == -1) {
+		uint32_t bsize = sizeof (buf);
+		if (_NSGetExecutablePath (buf, &bsize) == 0) {
+			binl = strlen (buf);
+		}
+	}
+#endif
+	if (binl != -1) {
+		char *base;
+		char *resolvedname, *name;
+		buf [binl] = 0;
+		resolvedname = mono_path_resolve_symlinks (buf);
+		base = g_path_get_dirname (resolvedname);
+		name = g_strdup_printf ("%s/.libs", base);
+		runtime_lib = try_load (lib_name, name, flags, error_msg);
+		g_free (name);
+		if (!runtime_lib) {
+			char *newbase = g_path_get_dirname (base);
+			name = g_strdup_printf ("%s/lib", newbase);
+			runtime_lib = try_load (lib_name, name, flags, error_msg);
+			g_free (name);
+		}
+#ifdef __MACH__
+		if (!runtime_lib) {
+			char *newbase = g_path_get_dirname (base);
+			name = g_strdup_printf ("%s/Libraries", newbase);
+			runtime_lib = try_load (lib_name, name, flags, error_msg);
+			g_free (name);
+		}
+#endif
+		g_free (base);
+		g_free (resolvedname);
+	}
+	if (!runtime_lib)
+		runtime_lib = try_load (lib_name, NULL, flags, error_msg);
+
+	return runtime_lib;
+}
+
+#else
+
+MonoDl*
+mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
+{
+	return NULL;
+}
+
+#endif
