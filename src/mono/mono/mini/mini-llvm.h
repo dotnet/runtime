@@ -79,77 +79,18 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 		mono_llvm_free_domain_info_fptr (domain);
 }
 
-static MonoDl*
-try_llvm_load (char *dir, char **err)
-{
-	gpointer iter;
-	MonoDl *llvm_lib;
-	char *path;
-	iter = NULL;
-	*err = NULL;
-	while ((path = mono_dl_build_path (dir, "mono-llvm", &iter))) {
-		g_free (*err);
-		llvm_lib = mono_dl_open (path, MONO_DL_LAZY, err);
-		g_free (path);
-		if (llvm_lib)
-			return llvm_lib;
-	}
-	return NULL;
-}
-
 int
 mono_llvm_load (const char* bpath)
 {
-	MonoDl *llvm_lib = NULL;
-	char *err;
-	char buf [4096];
-	int binl;
-	binl = readlink ("/proc/self/exe", buf, sizeof (buf)-1);
-#ifdef __MACH__
-	if (binl == -1) {
-		uint32_t bsize = sizeof (buf);
-		if (_NSGetExecutablePath (buf, &bsize) == 0) {
-			binl = strlen (buf);
-		}
-	}
-#endif
-	if (binl != -1) {
-		char *base;
-		char *resolvedname, *name;
-		buf [binl] = 0;
-		resolvedname = mono_path_resolve_symlinks (buf);
-		base = g_path_get_dirname (resolvedname);
-		name = g_strdup_printf ("%s/.libs", base);
-		err = NULL;
-		llvm_lib = try_llvm_load (name, &err);
-		g_free (name);
-		if (!llvm_lib) {
-			char *newbase = g_path_get_dirname (base);
-			name = g_strdup_printf ("%s/lib", newbase);
-			err = NULL;
-			llvm_lib = try_llvm_load (name, &err);
-			g_free (name);
-		}
-#ifdef __MACH__
-		if (!llvm_lib) {
-			char *newbase = g_path_get_dirname (base);
-			name = g_strdup_printf ("%s/Libraries", newbase);
-			err = NULL;
-			llvm_lib = try_llvm_load (name, &err);
-			g_free (name);
-		}
-#endif
-		g_free (base);
-		g_free (resolvedname);
-	}
+	char *err = NULL;
+	MonoDl *llvm_lib = mono_dl_open_runtime_lib ("mono-llvm", MONO_DL_LAZY, err);
+
 	if (!llvm_lib) {
-		llvm_lib = try_llvm_load (NULL, &err);
-		if (!llvm_lib) {
-			g_warning ("llvm load failed: %s\n", err);
-			g_free (err);
-			return FALSE;
-		}
+		g_warning ("llvm load failed: %s\n", err);
+		g_free (err);
+		return FALSE;
 	}
+
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_init", (void**)&mono_llvm_init_fptr);
 	if (err) goto symbol_error;
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_cleanup", (void**)&mono_llvm_cleanup_fptr);
