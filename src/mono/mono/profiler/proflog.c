@@ -14,6 +14,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-membar.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -1139,29 +1140,6 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	EXIT_LOG (logbuffer);
 }
 
-#ifndef HOST_WIN32
-#include "mono/utils/atomic.h"
-#endif
-#define cmp_exchange InterlockedCompareExchangePointer
-/*#else
-static void*
-cmp_exchange (volatile void **dest, void *exch, void *comp)
-{
-	void *old;
-	__asm__ __volatile__ ("lock; "
-#ifdef __x86_64__
-		"cmpxchgq"
-#else
-		"cmpxchgl"
-#endif
-		" %2, %0"
-		: "=m" (*dest), "=a" (old)
-		: "r" (exch), "m" (*dest), "a" (comp));
-	return old;
-}
-#endif
-*/
-
 static void
 mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 {
@@ -1199,7 +1177,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	do {
 		old_data = sbuf->data;
 		new_data = old_data + 4;
-		data = cmp_exchange ((volatile void**)&sbuf->data, new_data, old_data);
+		data = InterlockedCompareExchangePointer ((volatile void**)&sbuf->data, new_data, old_data);
 	} while (data != old_data);
 	if (old_data >= sbuf->data_end)
 		return; /* lost event */
@@ -1715,15 +1693,7 @@ read_perf_mmap (MonoProfiler* prof, int cpu)
 	int diff, size;
 	unsigned int old;
 
-#if defined(__i386__)
-	asm volatile("lock; addl $0,0(%%esp)":::"memory");
-#elif defined (__x86_64__)
-	asm volatile("lfence":::"memory");
-#elif defined (__arm__)
-	((void(*)(void))0xffff0fa0)();
-#else
-	asm volatile("":::"memory");
-#endif
+	mono_memory_read_barrier ();
 
 	old = perf->prev_pos;
 	diff = head - old;
