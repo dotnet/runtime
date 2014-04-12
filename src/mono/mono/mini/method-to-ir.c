@@ -9011,14 +9011,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_LOAD_MEMBASE (cfg, ins, ldind_to_load_membase (*ip), dreg, sp [0]->dreg, 0);
 			ins->type = ldind_type [*ip - CEE_LDIND_I1];
 			ins->flags |= ins_flag;
-			ins_flag = 0;
 			MONO_ADD_INS (bblock, ins);
 			*sp++ = ins;
-			if (ins->flags & MONO_INST_VOLATILE) {
+			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
 				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
 				emit_memory_barrier (cfg, FullBarrier);
 			}
+			ins_flag = 0;
 			++ip;
 			break;
 		case CEE_STIND_REF:
@@ -9032,15 +9032,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			sp -= 2;
 
-			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
-			ins->flags |= ins_flag;
-			ins_flag = 0;
-
-			if (ins->flags & MONO_INST_VOLATILE) {
+			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
 				emit_memory_barrier (cfg, FullBarrier);
 			}
+
+			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
+			ins->flags |= ins_flag;
+			ins_flag = 0;
 
 			MONO_ADD_INS (bblock, ins);
 
@@ -9296,14 +9296,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0);
 				ins->dreg = cfg->locals [loc_index]->dreg;
+				ins->flags |= ins_flag;
 				ip += 5;
 				ip += stloc_len;
+				if (ins_flag & MONO_INST_VOLATILE) {
+					/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+					/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+					emit_memory_barrier (cfg, FullBarrier);
+				}
+				ins_flag = 0;
 				break;
 			}
 
 			/* Optimize the ldobj+stobj combination */
 			/* The reference case ends up being a load+store anyway */
-			if (((ip [5] == CEE_STOBJ) && ip_in_bb (cfg, bblock, ip + 5) && read32 (ip + 6) == token) && !generic_class_is_reference_type (cfg, klass)) {
+			/* Skip this if the operation is volatile. */
+			if (((ip [5] == CEE_STOBJ) && ip_in_bb (cfg, bblock, ip + 5) && read32 (ip + 6) == token) && !generic_class_is_reference_type (cfg, klass) && !(ins_flag & MONO_INST_VOLATILE)) {
 				CHECK_STACK (1);
 
 				sp --;
@@ -9316,7 +9324,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0);
+			ins->flags |= ins_flag;
 			*sp++ = ins;
+
+			if (ins_flag & MONO_INST_VOLATILE) {
+				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+				emit_memory_barrier (cfg, FullBarrier);
+			}
 
 			ip += 5;
 			ins_flag = 0;
@@ -10443,6 +10458,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Generate IR to do the actual load/store operation */
 
+			if ((op == CEE_STFLD || op == CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
+				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+				emit_memory_barrier (cfg, FullBarrier);
+			}
+
 			if (op == CEE_LDSFLDA) {
 				ins->klass = mono_class_from_mono_type (ftype);
 				ins->type = STACK_PTR;
@@ -10548,6 +10569,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = load;
 				}
 			}
+
+			if ((op == CEE_LDFLD || op == CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
+				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+				emit_memory_barrier (cfg, FullBarrier);
+			}
+
 			ins_flag = 0;
 			ip += 5;
 			break;
@@ -10559,8 +10587,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
+			if (ins_flag & MONO_INST_VOLATILE) {
+				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+				emit_memory_barrier (cfg, FullBarrier);
+			}
 			/* FIXME: should check item at sp [1] is compatible with the type of the store. */
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0, sp [1]->dreg);
+			ins->flags |= ins_flag;
 			if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER &&
 					generic_class_is_reference_type (cfg, klass)) {
 				/* insert call to write barrier */
@@ -11905,24 +11939,49 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (3);
 				sp -= 3;
 
-				if ((ip [1] == CEE_CPBLK) && (cfg->opt & MONO_OPT_INTRINS) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5)) {
+				/* Skip optimized paths for volatile operations. */
+				if ((ip [1] == CEE_CPBLK) && !(ins_flag & MONO_INST_VOLATILE) && (cfg->opt & MONO_OPT_INTRINS) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5)) {
 					mini_emit_memcpy (cfg, sp [0]->dreg, 0, sp [1]->dreg, 0, sp [2]->inst_c0, 0);
-				} else if ((ip [1] == CEE_INITBLK) && (cfg->opt & MONO_OPT_INTRINS) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5) && (sp [1]->opcode == OP_ICONST) && (sp [1]->inst_c0 == 0)) {
+				} else if ((ip [1] == CEE_INITBLK) && !(ins_flag & MONO_INST_VOLATILE) && (cfg->opt & MONO_OPT_INTRINS) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5) && (sp [1]->opcode == OP_ICONST) && (sp [1]->inst_c0 == 0)) {
 					/* emit_memset only works when val == 0 */
 					mini_emit_memset (cfg, sp [0]->dreg, 0, sp [2]->inst_c0, sp [1]->inst_c0, 0);
 				} else {
+					MonoInst *call;
 					iargs [0] = sp [0];
 					iargs [1] = sp [1];
 					iargs [2] = sp [2];
 					if (ip [1] == CEE_CPBLK) {
+						/*
+						 * FIXME: It's unclear whether we should be emitting both the acquire
+						 * and release barriers for cpblk. It is technically both a load and
+						 * store operation, so it seems like that's the sensible thing to do.
+						 */
 						MonoMethod *memcpy_method = get_memcpy_method ();
-						mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
+						if (ins_flag & MONO_INST_VOLATILE) {
+							/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+							/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+							emit_memory_barrier (cfg, FullBarrier);
+						}
+						call = mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
+						call->flags |= ins_flag;
+						if (ins_flag & MONO_INST_VOLATILE) {
+							/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+							/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+							emit_memory_barrier (cfg, FullBarrier);
+						}
 					} else {
 						MonoMethod *memset_method = get_memset_method ();
-						mono_emit_method_call (cfg, memset_method, iargs, NULL);
+						if (ins_flag & MONO_INST_VOLATILE) {
+							/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+							/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
+							emit_memory_barrier (cfg, FullBarrier);
+						}
+						call = mono_emit_method_call (cfg, memset_method, iargs, NULL);
+						call->flags |= ins_flag;
 					}
 				}
 				ip += 2;
+				ins_flag = 0;
 				inline_costs += 1;
 				break;
 			}
