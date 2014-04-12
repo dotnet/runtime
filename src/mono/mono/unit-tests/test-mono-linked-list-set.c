@@ -126,7 +126,6 @@ main (int argc, char *argv [])
 
 	mono_threads_init (&thread_callbacks, 0);
 
-	mono_thread_smr_init ();
 	mono_lls_init (&lls, free_node);
 
 	for (i = 0; i < N; ++i) {
