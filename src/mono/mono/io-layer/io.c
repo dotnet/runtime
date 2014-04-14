@@ -3783,7 +3783,9 @@ add_drive_string (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state)
 			ignore_entry = TRUE;
 		else
 			ignore_entry = FALSE;
-	} else
+	} else if (state->fstype_index == 3 && memcmp ("nfs", state->fstype, state->fstype_index) == 0)
+		ignore_entry = FALSE;
+	else
 		ignore_entry = TRUE;
 
 	if (!ignore_entry) {
