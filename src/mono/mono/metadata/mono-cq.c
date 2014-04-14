@@ -188,6 +188,8 @@ mono_cq_remove_node (MonoCQ *cq)
 	while (old_head->next == NULL)
 		SleepEx (0, FALSE);
 	cq->head = old_head->next;
+	
+	MONO_OBJECT_SETREF (old_head, next, NULL);
 	old_head = NULL;
 }
 
