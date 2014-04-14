@@ -83,7 +83,7 @@ int
 mono_llvm_load (const char* bpath)
 {
 	char *err = NULL;
-	MonoDl *llvm_lib = mono_dl_open_runtime_lib ("mono-llvm", MONO_DL_LAZY, err);
+	MonoDl *llvm_lib = mono_dl_open_runtime_lib ("mono-llvm", MONO_DL_LAZY, &err);
 
 	if (!llvm_lib) {
 		g_warning ("llvm load failed: %s\n", err);
