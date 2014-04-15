@@ -33,6 +33,7 @@
 #include "metadata/profiler-private.h"
 #include "utils/mono-time.h"
 #include "utils/dtrace.h"
+#include "utils/mono-counters.h"
 
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
@@ -201,10 +202,14 @@ count_cards (long long *major_total, long long *major_marked, long long *los_tot
 static TV_DECLARE (stop_world_time);
 static unsigned long max_pause_usec = 0;
 
+static long long time_stop_world;
+static long long time_restart_world;
+
 /* LOCKING: assumes the GC lock is held */
 int
 sgen_stop_world (int generation)
 {
+	TV_DECLARE (end_handshake);
 	int count, dead;
 
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
@@ -235,6 +240,9 @@ sgen_stop_world (int generation)
 		binary_protocol_world_stopped (sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 	}
 
+	TV_GETTIME (end_handshake);
+	time_stop_world += TV_ELAPSED (stop_world_time, end_handshake);
+
 	sgen_memgov_collection_start (generation);
 	sgen_bridge_reset_data ();
 
@@ -248,6 +256,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	int count;
 	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
+	TV_DECLARE (start_handshake);
 	TV_DECLARE (end_bridge);
 	unsigned long usec, bridge_usec;
 
@@ -272,8 +281,10 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 #endif
 	} END_FOREACH_THREAD
 
+	TV_GETTIME (start_handshake);
 	count = sgen_thread_handshake (FALSE);
 	TV_GETTIME (end_sw);
+	time_restart_world += TV_ELAPSED (start_handshake, end_sw);
 	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
 	SGEN_LOG (2, "restarted %d thread(s) (pause time: %d usec, max: %d)", count, (int)usec, (int)max_pause_usec);
@@ -308,6 +319,13 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
 
 	return count;
+}
+
+void
+sgen_init_stw (void)
+{
+	mono_counters_register ("World stop", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_stop_world);
+	mono_counters_register ("World restart", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_restart_world);
 }
 
 #endif

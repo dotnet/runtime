@@ -865,6 +865,7 @@ typedef struct {
 
 int sgen_stop_world (int generation) MONO_INTERNAL;
 int sgen_restart_world (int generation, GGTimingInfo *timing) MONO_INTERNAL;
+void sgen_init_stw (void) MONO_INTERNAL;
 
 /* LOS */
 
