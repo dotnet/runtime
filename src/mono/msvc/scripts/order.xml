@@ -152,7 +152,7 @@
     </project>
     <project dir="tools/gacutil" library="gacutil-build">
       <boot></boot>
-      <flags>/codepage:65001 -r:Mono.Security.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig</flags>
+      <flags>/codepage:65001 -r:Mono.Security.dll -unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig</flags>
       <output>gacutil.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/gacutil.exe</library_output>
@@ -960,6 +960,16 @@
       <profile>net_2_0</profile>
       <response>./../../build/deps/System.DirectoryServices_test_net_2_0.dll.response</response>
     </project>
+    <project dir="class/System.DirectoryServices.Protocols" library="System.DirectoryServices.Protocols-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.DirectoryServices.dll /r:System.Xml.dll</flags>
+      <output>System.DirectoryServices.Protocols.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/System.DirectoryServices.Protocols.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>System.DirectoryServices.Protocols.dll.sources</response>
+    </project>
     <project dir="class/RabbitMQ.Client/src/apigen" library="RabbitMQ.Client.Apigen-net_2_0">
       <boot></boot>
       <flags>/codepage:65001 /r:System.dll /r:System.Xml.dll /main:RabbitMQ.Client.Apigen.Apigen -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
@@ -1200,86 +1210,6 @@
       <profile>net_2_0</profile>
       <response>SystemWebTestShim.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
-      <output>Microsoft.Build.Framework.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Framework.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>Microsoft.Build.Framework.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.Framework_test_net_2_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Framework_test_net_2_0.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Framework_test_net_2_0.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.Utilities.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>Microsoft.Build.Utilities.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:Microsoft.Build.Framework.dll -r:System.dll</flags>
-      <output>Microsoft.Build.Utilities_test_net_2_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Utilities_test_net_2_0.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Utilities_test_net_2_0.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.dll</flags>
-      <output>Microsoft.Build.Engine.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Engine.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>Microsoft.Build.Engine.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.dll /r:System.Xml.dll</flags>
-      <output>Microsoft.Build.Engine_test_net_2_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Engine_test_net_2_0.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Engine_test_net_2_0.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:Microsoft.Build.Utilities.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Engine.dll</flags>
-      <output>Microsoft.Build.Tasks.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Tasks.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>Microsoft.Build.Tasks.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Tasks.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.dll /r:System.Core.dll</flags>
-      <output>Microsoft.Build.Tasks_test_net_2_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Tasks_test_net_2_0.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Tasks_test_net_2_0.dll.response</response>
-    </project>
     <project dir="class/System.Xml.Linq" library="System.Xml.Linq-net_2_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
@@ -1455,7 +1385,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/tmp/System.ServiceModel.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.ServiceModel.dll.sources</response>
@@ -1539,26 +1469,6 @@
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>./../../build/deps/System.Web.DynamicData_test_net_2_0.dll.response</response>
-    </project>
-    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
-      <output>System.ServiceModel.Web.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/System.ServiceModel.Web.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>./../../build/deps/net_2_0_System.ServiceModel.Web.dll.sources</response>
-    </project>
-    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-tests-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.ServiceModel.Web.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
-      <output>System.ServiceModel.Web_test_net_2_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>System.ServiceModel.Web_test_net_2_0.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>./../../build/deps/System.ServiceModel.Web_test_net_2_0.dll.response</response>
     </project>
     <project dir="class/System.Web.Mvc2" library="System.Web.Mvc2-net_2_0">
       <boot>false</boot>
@@ -1660,16 +1570,6 @@
       <profile>net_2_0</profile>
       <response>./../../build/deps/Mono.CSharp_test_net_2_0.dll.response</response>
     </project>
-    <project dir="class/Moonlight.Build.Tasks" library="Moonlight.Build.Tasks-net_2_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.dll /r:Microsoft.Build.Tasks.dll /r:ICSharpCode.SharpZipLib.dll -resource:Moonlight.Build.Tasks/PreviewTemplate.html</flags>
-      <output>Moonlight.Build.Tasks.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/Moonlight.Build.Tasks.dll</library_output>
-      <fx_version>2.0</fx_version>
-      <profile>net_2_0</profile>
-      <response>Moonlight.Build.Tasks.dll.sources</response>
-    </project>
     <project dir="class/System.Net" library="System.Net-net_2_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
@@ -1682,7 +1582,7 @@
     </project>
     <project dir="class/System.Json" library="System.Json-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.ServiceModel.Web.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.Xml.dll /r:System.Core.dll</flags>
       <output>System.Json.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/System.Json.dll</library_output>
@@ -1692,7 +1592,7 @@
     </project>
     <project dir="class/System.Json" library="System.Json-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.Json.dll /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.ServiceModel.Web.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.Json.dll /r:System.dll /r:System.Xml.dll /r:System.Core.dll</flags>
       <output>System.Json_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System.Json_test_net_2_0.dll</library_output>
@@ -1750,6 +1650,26 @@
       <profile>net_2_0</profile>
       <response>./../../build/deps/WindowsBase_test_net_2_0.dll.response</response>
     </project>
+    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
+      <output>System.ServiceModel.Web.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/System.ServiceModel.Web.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/net_2_0_System.ServiceModel.Web.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.ServiceModel.Web.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
+      <output>System.ServiceModel.Web_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.ServiceModel.Web_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/System.ServiceModel.Web_test_net_2_0.dll.response</response>
+    </project>
     <project dir="class/System.Data.Services.Client" library="System.Data.Services.Client-net_2_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.Xml.Linq.dll -r:System.Data.dll -r:System.Xml.dll -resource:Client/System.Data.Services.Client.resources -warn:2 -r:WindowsBase</flags>
@@ -1789,6 +1709,106 @@
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Web.Mvc.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
+      <output>Microsoft.Build.Framework.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Framework.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>Microsoft.Build.Framework.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Framework_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Framework_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/Microsoft.Build.Framework_test_net_2_0.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Utilities.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>Microsoft.Build.Utilities.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll -r:System.dll -r:System.Core.dll</flags>
+      <output>Microsoft.Build.Utilities_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Utilities_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/Microsoft.Build.Utilities_test_net_2_0.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll</flags>
+      <output>Microsoft.Build.Engine.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Engine.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>Microsoft.Build.Engine.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:System.Xml.dll</flags>
+      <output>Microsoft.Build.Engine_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Engine_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/Microsoft.Build.Engine_test_net_2_0.dll.response</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <output>Mono.XBuild.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/Mono.XBuild.Tasks.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>Mono.XBuild.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Mono.XBuild.Tasks.dll</flags>
+      <output>Mono.XBuild.Tasks_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Mono.XBuild.Tasks_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/Mono.XBuild.Tasks_test_net_2_0.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_2_0/Mono.XBuild.Tasks.dll</flags>
+      <output>Microsoft.Build.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/Microsoft.Build.Tasks.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>Microsoft.Build.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Tasks.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_2_0/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:System.Core.dll</flags>
+      <output>Microsoft.Build.Tasks_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Tasks_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/Microsoft.Build.Tasks_test_net_2_0.dll.response</response>
     </project>
     <project dir="nunit24/NUnit.Framework/framework" library="NUnit.Framework-net_2_0">
       <boot>false</boot>
@@ -1902,7 +1922,7 @@
     </project>
     <project dir="tools/linker" library="monolinker-net_2_0">
       <boot></boot>
-      <flags>/codepage:65001 /r:./../../class/lib/net_2_0/Mono.Cecil.dll /r:System.Xml.dll -keyfile:../../class/mono.snk -resource:Descriptors/mscorlib.xml -resource:Descriptors/System.xml -resource:Descriptors/System.Drawing.xml -resource:Descriptors/System.Web.xml -resource:Descriptors/Mono.Posix.xml -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 /r:./../../class/lib/net_2_0/Mono.Cecil.dll /r:System.Xml.dll -keyfile:../../class/mono.snk -resource:Descriptors/mscorlib.xml -resource:Descriptors/System.xml -resource:Descriptors/System.Core.xml -resource:Descriptors/System.Drawing.xml -resource:Descriptors/System.Web.xml -resource:Descriptors/Mono.Posix.xml -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>monolinker.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/monolinker.exe</library_output>
@@ -1992,7 +2012,7 @@
     </project>
     <project dir="tools/gacutil" library="gacutil-net_2_0">
       <boot></boot>
-      <flags>/codepage:65001 -r:Mono.Security.dll -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -r:Mono.Security.dll -unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>gacutil.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/gacutil.exe</library_output>
@@ -2012,7 +2032,7 @@
     </project>
     <project dir="tools/xbuild" library="xbuild-net_2_0">
       <boot></boot>
-      <flags>/codepage:65001 -r:Microsoft.Build.Framework.dll -r:Microsoft.Build.Utilities.dll -r:Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll -r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll -r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>xbuild.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/xbuild.exe</library_output>
@@ -2052,7 +2072,7 @@
     </project>
     <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_3_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll -r:System.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll -r:System.dll -r:System.Core.dll</flags>
       <output>Microsoft.Build.Utilities_test_net_3_5.dll</output>
       <built_sources></built_sources>
       <library_output>Microsoft.Build.Utilities_test_net_3_5.dll</library_output>
@@ -2062,7 +2082,7 @@
     </project>
     <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_3_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v3.5.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll</flags>
       <output>Microsoft.Build.Engine.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_3_5/Microsoft.Build.Engine.dll</library_output>
@@ -2072,7 +2092,7 @@
     </project>
     <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-net_3_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v3.5.dll /r:System.Xml.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:System.Xml.dll</flags>
       <output>Microsoft.Build.Engine_test_net_3_5.dll</output>
       <built_sources></built_sources>
       <library_output>Microsoft.Build.Engine_test_net_3_5.dll</library_output>
@@ -2080,9 +2100,29 @@
       <profile>net_3_5</profile>
       <response>./../../build/deps/Microsoft.Build.Engine_test_net_3_5.dll.response</response>
     </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-net_3_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <output>Mono.XBuild.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_3_5/Mono.XBuild.Tasks.dll</library_output>
+      <fx_version>3.5</fx_version>
+      <profile>net_3_5</profile>
+      <response>Mono.XBuild.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-tests-net_3_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Mono.XBuild.Tasks.dll</flags>
+      <output>Mono.XBuild.Tasks_test_net_3_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>Mono.XBuild.Tasks_test_net_3_5.dll</library_output>
+      <fx_version>3.5</fx_version>
+      <profile>net_3_5</profile>
+      <response>./../../build/deps/Mono.XBuild.Tasks_test_net_3_5.dll.response</response>
+    </project>
     <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_3_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:Microsoft.Build.Utilities.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Mono.XBuild.Tasks.dll</flags>
       <output>Microsoft.Build.Tasks.v3.5.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_3_5/Microsoft.Build.Tasks.v3.5.dll</library_output>
@@ -2092,7 +2132,7 @@
     </project>
     <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_3_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Tasks.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v3.5.dll /r:System.Core.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Tasks.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:System.Core.dll</flags>
       <output>Microsoft.Build.Tasks_test_net_3_5.dll</output>
       <built_sources></built_sources>
       <library_output>Microsoft.Build.Tasks_test_net_3_5.dll</library_output>
@@ -2102,7 +2142,7 @@
     </project>
     <project dir="tools/xbuild" library="xbuild-net_3_5">
       <boot></boot>
-      <flags>/codepage:65001 -r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll -r:Microsoft.Build.Utilities.v3.5.dll -r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll -r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll -r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>xbuild.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_3_5/xbuild.exe</library_output>
@@ -2900,6 +2940,16 @@
       <profile>net_4_0</profile>
       <response>./../../build/deps/System.DirectoryServices_test_net_4_0.dll.response</response>
     </project>
+    <project dir="class/System.DirectoryServices.Protocols" library="System.DirectoryServices.Protocols-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:System.dll /r:System.DirectoryServices.dll /r:System.Xml.dll</flags>
+      <output>System.DirectoryServices.Protocols.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/System.DirectoryServices.Protocols.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>System.DirectoryServices.Protocols.dll.sources</response>
+    </project>
     <project dir="class/RabbitMQ.Client/src/apigen" library="RabbitMQ.Client.Apigen-net_4_0">
       <boot></boot>
       <flags>/codepage:65001 /r:System.dll /r:System.Xml.dll /main:RabbitMQ.Client.Apigen.Apigen -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
@@ -3140,86 +3190,6 @@
       <profile>net_4_0</profile>
       <response>SystemWebTestShim.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
-      <output>Microsoft.Build.Framework.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Framework.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>Microsoft.Build.Framework.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.Framework_test_net_4_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Framework_test_net_4_0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Framework_test_net_4_0.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.Utilities.v4.0.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Utilities.v4.0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>Microsoft.Build.Utilities.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.Utilities.v4.0.dll /r:Microsoft.Build.Framework.dll -r:System.dll</flags>
-      <output>Microsoft.Build.Utilities_test_net_4_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Utilities_test_net_4_0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Utilities_test_net_4_0.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll</flags>
-      <output>Microsoft.Build.Engine.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Engine.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>Microsoft.Build.Engine.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:System.Xml.dll</flags>
-      <output>Microsoft.Build.Engine_test_net_4_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Engine_test_net_4_0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Engine_test_net_4_0.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Engine.dll</flags>
-      <output>Microsoft.Build.Tasks.v4.0.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Tasks.v4.0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>Microsoft.Build.Tasks.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.Tasks.v4.0.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:System.Core.dll</flags>
-      <output>Microsoft.Build.Tasks_test_net_4_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Tasks_test_net_4_0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/Microsoft.Build.Tasks_test_net_4_0.dll.response</response>
-    </project>
     <project dir="class/System.Xml.Linq" library="System.Xml.Linq-net_4_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
@@ -3392,17 +3362,17 @@
     </project>
     <project dir="class/System.ServiceModel" library="System.ServiceModel-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll /r:System.Web.ApplicationServices.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/tmp/System.ServiceModel.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/net_4_0_System.ServiceModel.dll.sources</response>
     </project>
     <project dir="class/System.ServiceModel" library="System.ServiceModel-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.ServiceModel.dll /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll /r:System.Web.ApplicationServices.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.ServiceModel.dll /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System.ServiceModel_test_net_4_0.dll</library_output>
@@ -3479,26 +3449,6 @@
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/System.Web.DynamicData_test_net_4_0.dll.response</response>
-    </project>
-    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
-      <output>System.ServiceModel.Web.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/System.ServiceModel.Web.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/net_4_0_System.ServiceModel.Web.dll.sources</response>
-    </project>
-    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-tests-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.ServiceModel.Web.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
-      <output>System.ServiceModel.Web_test_net_4_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>System.ServiceModel.Web_test_net_4_0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/System.ServiceModel.Web_test_net_4_0.dll.response</response>
     </project>
     <project dir="class/System.Web.Mvc2" library="System.Web.Mvc2-net_4_0">
       <boot>false</boot>
@@ -3610,16 +3560,6 @@
       <profile>net_4_0</profile>
       <response>./../../build/deps/Mono.CSharp_test_net_4_0.dll.response</response>
     </project>
-    <project dir="class/Moonlight.Build.Tasks" library="Moonlight.Build.Tasks-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:Microsoft.Build.Tasks.v4.0.dll /r:ICSharpCode.SharpZipLib.dll -resource:Moonlight.Build.Tasks/PreviewTemplate.html</flags>
-      <output>Moonlight.Build.Tasks.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/Moonlight.Build.Tasks.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>Moonlight.Build.Tasks.dll.sources</response>
-    </project>
     <project dir="class/System.Net" library="System.Net-net_4_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
@@ -3632,7 +3572,7 @@
     </project>
     <project dir="class/System.Json" library="System.Json-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.ServiceModel.Web.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:System.dll /r:System.Xml.dll /r:System.Core.dll</flags>
       <output>System.Json.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/System.Json.dll</library_output>
@@ -3642,7 +3582,7 @@
     </project>
     <project dir="class/System.Json" library="System.Json-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.Json.dll /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.ServiceModel.Web.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.Json.dll /r:System.dll /r:System.Xml.dll /r:System.Core.dll</flags>
       <output>System.Json_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System.Json_test_net_4_0.dll</library_output>
@@ -3680,29 +3620,9 @@
       <profile>net_4_0</profile>
       <response>Microsoft.CSharp.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build" library="Microsoft.Build-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/Microsoft.Build.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>Microsoft.Build.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build" library="Microsoft.Build-tests-net_4_0">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.dll /r:System.Core.dll</flags>
-      <output>Microsoft.Build_test_net_4_0.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build_test_net_4_0.dll</library_output>
-      <fx_version>4.0</fx_version>
-      <profile>net_4_0</profile>
-      <response>./../../build/deps/Microsoft.Build_test_net_4_0.dll.response</response>
-    </project>
     <project dir="class/System.Windows.Forms.DataVisualization" library="System.Windows.Forms.DataVisualization-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core -r:System.Data -r:System.Xml</flags>
       <output>System.Windows.Forms.DataVisualization.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/System.Windows.Forms.DataVisualization.dll</library_output>
@@ -3712,7 +3632,7 @@
     </project>
     <project dir="class/System.Windows.Forms.DataVisualization" library="System.Windows.Forms.DataVisualization-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.Windows.Forms.DataVisualization.dll -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.Windows.Forms.DataVisualization.dll -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core -r:System.Data -r:System.Xml</flags>
       <output>System.Windows.Forms.DataVisualization_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System.Windows.Forms.DataVisualization_test_net_4_0.dll</library_output>
@@ -3759,6 +3679,36 @@
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/WindowsBase_test_net_4_0.dll.response</response>
+    </project>
+    <project dir="class/System.ServiceModel.Activation" library="System.ServiceModel.Activation-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System.Core.dll -r:System.dll -r:System.ServiceModel.dll</flags>
+      <output>System.ServiceModel.Activation.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/System.ServiceModel.Activation.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>System.ServiceModel.Activation.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel" library="System.ServiceModel-net_4_0-1">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
+      <output>System.ServiceModel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/tmp/System.ServiceModel.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/net_4_0_System.ServiceModel.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel" library="System.ServiceModel-tests-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.ServiceModel.dll /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
+      <output>System.ServiceModel_test_net_4_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.ServiceModel_test_net_4_0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/System.ServiceModel_test_net_4_0.dll.response</response>
     </project>
     <project dir="class/System.ServiceModel.Routing" library="System.ServiceModel.Routing-net_4_0">
       <boot>false</boot>
@@ -3930,6 +3880,16 @@
       <profile>net_4_0</profile>
       <response>System.Reactive.Windows.Threading.dll.sources</response>
     </project>
+    <project dir="class/System.Reactive.Observable.Aliases" library="System.Reactive.Observable.Aliases-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -r:System.Reactive.Providers.dll</flags>
+      <output>System.Reactive.Observable.Aliases.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/System.Reactive.Observable.Aliases.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>System.Reactive.Observable.Aliases.dll.sources</response>
+    </project>
     <project dir="class/System.Reactive.Experimental" library="System.Reactive.Experimental-net_4_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll</flags>
@@ -3980,6 +3940,26 @@
       <profile>net_4_0</profile>
       <response>./../../build/deps/WebMatrix.Data_test_net_4_0.dll.response</response>
     </project>
+    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll -r:System.ServiceModel.Activation.dll</flags>
+      <output>System.ServiceModel.Web.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/System.ServiceModel.Web.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/net_4_0_System.ServiceModel.Web.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-tests-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.ServiceModel.Web.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll -r:System.ServiceModel.Activation.dll</flags>
+      <output>System.ServiceModel.Web_test_net_4_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.ServiceModel.Web_test_net_4_0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/System.ServiceModel.Web_test_net_4_0.dll.response</response>
+    </project>
     <project dir="class/System.Data.Services.Client" library="System.Data.Services.Client-net_4_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.Xml.Linq.dll -r:System.Data.dll -r:System.Xml.dll -resource:Client/System.Data.Services.Client.resources -warn:2 -r:WindowsBase</flags>
@@ -3992,7 +3972,7 @@
     </project>
     <project dir="class/System.Data.Services" library="System.Data.Services-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.ServiceModel.dll -r:System.ServiceModel.Web.dll -r:System.Data.Services.Client.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.ServiceModel.dll -r:System.ServiceModel.Web.dll -r:System.Data.Services.Client.dll -r:System.ServiceModel.Activation.dll</flags>
       <output>System.Data.Services.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/System.Data.Services.dll</library_output>
@@ -4059,6 +4039,86 @@
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.ComponentModel.Composition.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
+      <output>Microsoft.Build.Framework.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Framework.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Microsoft.Build.Framework.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Framework_test_net_4_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Framework_test_net_4_0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/Microsoft.Build.Framework_test_net_4_0.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:./../../class/lib/net_4_0/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Utilities.v4.0.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Utilities.v4.0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Microsoft.Build.Utilities.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_4_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_0/Microsoft.Build.Utilities.v4.0.dll</flags>
+      <output>Microsoft.Build.Engine.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Engine.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Microsoft.Build.Engine.dll.sources</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <output>Mono.XBuild.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/Mono.XBuild.Tasks.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Mono.XBuild.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:./../../class/lib/net_4_0/Microsoft.Build.Utilities.v4.0.dll /r:./../../class/lib/net_4_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_0/Mono.XBuild.Tasks.dll</flags>
+      <output>Microsoft.Build.Tasks.v4.0.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/Microsoft.Build.Tasks.v4.0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Microsoft.Build.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build" library="Microsoft.Build-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL</flags>
+      <output>Microsoft.Build.dll</output>
+      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
+      <library_output>./../../class/lib/net_4_0/Microsoft.Build.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Microsoft.Build.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build" library="Microsoft.Build-tests-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Microsoft.Build.dll /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL /r:Microsoft.Build.Utilities.v4.0.dll</flags>
+      <output>Microsoft.Build_test_net_4_0.dll</output>
+      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
+      <library_output>Microsoft.Build_test_net_4_0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/Microsoft.Build_test_net_4_0.dll.response</response>
     </project>
     <project dir="mcs" library="mcs-net_4_5">
       <boot></boot>
@@ -4860,6 +4920,16 @@
       <profile>net_4_5</profile>
       <response>./../../build/deps/System.DirectoryServices_test_net_4_5.dll.response</response>
     </project>
+    <project dir="class/System.DirectoryServices.Protocols" library="System.DirectoryServices.Protocols-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.DirectoryServices.dll /r:System.Xml.dll</flags>
+      <output>System.DirectoryServices.Protocols.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.DirectoryServices.Protocols.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.DirectoryServices.Protocols.dll.sources</response>
+    </project>
     <project dir="class/RabbitMQ.Client/src/apigen" library="RabbitMQ.Client.Apigen-net_4_5">
       <boot></boot>
       <flags>/codepage:65001 /r:System.dll /r:System.Xml.dll /main:RabbitMQ.Client.Apigen.Apigen -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
@@ -5100,86 +5170,6 @@
       <profile>net_4_5</profile>
       <response>SystemWebTestShim.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
-      <output>Microsoft.Build.Framework.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>Microsoft.Build.Framework.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.Framework_test_net_4_5.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Framework_test_net_4_5.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/Microsoft.Build.Framework_test_net_4_5.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.Utilities.v4.0.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>Microsoft.Build.Utilities.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:Microsoft.Build.Framework.dll -r:System.dll</flags>
-      <output>Microsoft.Build.Utilities_test_net_4_5.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Utilities_test_net_4_5.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/Microsoft.Build.Utilities_test_net_4_5.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll</flags>
-      <output>Microsoft.Build.Engine.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Engine.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>Microsoft.Build.Engine.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:System.Xml.dll</flags>
-      <output>Microsoft.Build.Engine_test_net_4_5.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Engine_test_net_4_5.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/Microsoft.Build.Engine_test_net_4_5.dll.response</response>
-    </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Engine.dll</flags>
-      <output>Microsoft.Build.Tasks.v4.0.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Tasks.v4.0.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>Microsoft.Build.Tasks.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Tasks.v4.0.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:System.Core.dll</flags>
-      <output>Microsoft.Build.Tasks_test_net_4_5.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build.Tasks_test_net_4_5.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/Microsoft.Build.Tasks_test_net_4_5.dll.response</response>
-    </project>
     <project dir="class/System.Xml.Linq" library="System.Xml.Linq-net_4_5">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
@@ -5352,17 +5342,17 @@
     </project>
     <project dir="class/System.ServiceModel" library="System.ServiceModel-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll /r:System.Web.ApplicationServices.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/tmp/System.ServiceModel.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/net_4_5_System.ServiceModel.dll.sources</response>
     </project>
     <project dir="class/System.ServiceModel" library="System.ServiceModel-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.ServiceModel.dll /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll /r:System.Web.ApplicationServices.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.ServiceModel.dll /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System.ServiceModel_test_net_4_5.dll</library_output>
@@ -5439,26 +5429,6 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/System.Web.DynamicData_test_net_4_5.dll.response</response>
-    </project>
-    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
-      <output>System.ServiceModel.Web.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/System.ServiceModel.Web.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/net_4_5_System.ServiceModel.Web.dll.sources</response>
-    </project>
-    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-tests-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.ServiceModel.Web.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll</flags>
-      <output>System.ServiceModel.Web_test_net_4_5.dll</output>
-      <built_sources></built_sources>
-      <library_output>System.ServiceModel.Web_test_net_4_5.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/System.ServiceModel.Web_test_net_4_5.dll.response</response>
     </project>
     <project dir="class/System.Web.Mvc2" library="System.Web.Mvc2-net_4_5">
       <boot>false</boot>
@@ -5570,16 +5540,6 @@
       <profile>net_4_5</profile>
       <response>./../../build/deps/Mono.CSharp_test_net_4_5.dll.response</response>
     </project>
-    <project dir="class/Moonlight.Build.Tasks" library="Moonlight.Build.Tasks-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /r:Microsoft.Build.Utilities.v4.0.dll /r:Microsoft.Build.Tasks.v4.0.dll /r:ICSharpCode.SharpZipLib.dll -resource:Moonlight.Build.Tasks/PreviewTemplate.html</flags>
-      <output>Moonlight.Build.Tasks.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/Moonlight.Build.Tasks.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>Moonlight.Build.Tasks.dll.sources</response>
-    </project>
     <project dir="class/System.Net" library="System.Net-net_4_5">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -r:System.dll -r:System.Core.dll -r:System.Xml.dll -d:NET_3_5 -nowarn:1720</flags>
@@ -5592,7 +5552,7 @@
     </project>
     <project dir="class/System.Json" library="System.Json-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.ServiceModel.Web.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.Xml.dll /r:System.Core.dll</flags>
       <output>System.Json.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Json.dll</library_output>
@@ -5602,7 +5562,7 @@
     </project>
     <project dir="class/System.Json" library="System.Json-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.Json.dll /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.ServiceModel.Web.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.Json.dll /r:System.dll /r:System.Xml.dll /r:System.Core.dll</flags>
       <output>System.Json_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System.Json_test_net_4_5.dll</library_output>
@@ -5640,29 +5600,9 @@
       <profile>net_4_5</profile>
       <response>Microsoft.CSharp.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build" library="Microsoft.Build-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll</flags>
-      <output>Microsoft.Build.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/Microsoft.Build.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>Microsoft.Build.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build" library="Microsoft.Build-tests-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.dll /r:System.Core.dll</flags>
-      <output>Microsoft.Build_test_net_4_5.dll</output>
-      <built_sources></built_sources>
-      <library_output>Microsoft.Build_test_net_4_5.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>./../../build/deps/Microsoft.Build_test_net_4_5.dll.response</response>
-    </project>
     <project dir="class/System.Windows.Forms.DataVisualization" library="System.Windows.Forms.DataVisualization-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core -r:System.Data -r:System.Xml</flags>
       <output>System.Windows.Forms.DataVisualization.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Windows.Forms.DataVisualization.dll</library_output>
@@ -5672,7 +5612,7 @@
     </project>
     <project dir="class/System.Windows.Forms.DataVisualization" library="System.Windows.Forms.DataVisualization-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.Windows.Forms.DataVisualization.dll -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.Windows.Forms.DataVisualization.dll -r:System -r:System.Drawing -r:System.Windows.Forms -r:System.Core -r:System.Data -r:System.Xml</flags>
       <output>System.Windows.Forms.DataVisualization_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System.Windows.Forms.DataVisualization_test_net_4_5.dll</library_output>
@@ -5719,6 +5659,36 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/WindowsBase_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/System.ServiceModel.Activation" library="System.ServiceModel.Activation-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.Core.dll -r:System.dll -r:System.ServiceModel.dll</flags>
+      <output>System.ServiceModel.Activation.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.ServiceModel.Activation.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ServiceModel.Activation.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel" library="System.ServiceModel-net_4_5-1">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
+      <output>System.ServiceModel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/tmp/System.ServiceModel.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/net_4_5_System.ServiceModel.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel" library="System.ServiceModel-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.ServiceModel.dll /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
+      <output>System.ServiceModel_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.ServiceModel_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/System.ServiceModel_test_net_4_5.dll.response</response>
     </project>
     <project dir="class/System.ServiceModel.Routing" library="System.ServiceModel.Routing-net_4_5">
       <boot>false</boot>
@@ -5890,6 +5860,16 @@
       <profile>net_4_5</profile>
       <response>System.Reactive.Windows.Threading.dll.sources</response>
     </project>
+    <project dir="class/System.Reactive.Observable.Aliases" library="System.Reactive.Observable.Aliases-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -r:System.Reactive.Providers.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
+      <output>System.Reactive.Observable.Aliases.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.Reactive.Observable.Aliases.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reactive.Observable.Aliases.dll.sources</response>
+    </project>
     <project dir="class/System.Reactive.Experimental" library="System.Reactive.Experimental-net_4_5">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig @more_build_args -r:System.dll -r:System.Core.dll -r:System.Reactive.Interfaces.dll -r:System.Reactive.Core.dll -r:System.Reactive.Linq.dll -d:HAS_EDI -d:PREFERASYNC -d:PREFER_ASYNC -d:HAS_AWAIT</flags>
@@ -5940,6 +5920,26 @@
       <profile>net_4_5</profile>
       <response>./../../build/deps/WebMatrix.Data_test_net_4_5.dll.response</response>
     </project>
+    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll -r:System.ServiceModel.Activation.dll</flags>
+      <output>System.ServiceModel.Web.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/System.ServiceModel.Web.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/net_4_5_System.ServiceModel.Web.dll.sources</response>
+    </project>
+    <project dir="class/System.ServiceModel.Web" library="System.ServiceModel.Web-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.ServiceModel.Web.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Core.dll -d:NET_3_5 -d:NET_3_0 -r:System.Configuration.dll -r:System.Web.Extensions.dll -r:System.ServiceModel.Activation.dll</flags>
+      <output>System.ServiceModel.Web_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.ServiceModel.Web_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/System.ServiceModel.Web_test_net_4_5.dll.response</response>
+    </project>
     <project dir="class/System.Data.Services.Client" library="System.Data.Services.Client-net_4_5">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.Xml.Linq.dll -r:System.Data.dll -r:System.Xml.dll -resource:Client/System.Data.Services.Client.resources -warn:2 -r:WindowsBase</flags>
@@ -5952,7 +5952,7 @@
     </project>
     <project dir="class/System.Data.Services" library="System.Data.Services-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.ServiceModel.dll -r:System.ServiceModel.Web.dll -r:System.Data.Services.Client.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -d:NET_3_5 -r:System.dll -r:System.Core.dll -r:System.ServiceModel.dll -r:System.ServiceModel.Web.dll -r:System.Data.Services.Client.dll -r:System.ServiceModel.Activation.dll</flags>
       <output>System.Data.Services.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Data.Services.dll</library_output>
@@ -6150,25 +6150,15 @@
       <profile>net_4_5</profile>
       <response>System.Web.Http.SelfHost.dll.sources</response>
     </project>
-    <project dir="class/System.Web.Http.WebHost" library="">
-      <boot></boot>
-      <flags></flags>
-      <output></output>
+    <project dir="class/System.Web.Http.WebHost" library="System.Web.Http.WebHost-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.Core.dll -r:System.dll -r:System.Xml.dll -r:System.Configuration.dll -r:System.Net.Http.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.IdentityModel.dll -r:System.Web.Http.dll -r:System.Net.Http.Formatting.dll -r:System.Web.Routing.dll -r:System.Web.dll -r:Microsoft.Web.Infrastructure.dll -d:ASPNETMVC -keyfile:../winfx.pub -delaysign</flags>
+      <output>System.Web.Http.WebHost.dll</output>
       <built_sources></built_sources>
-      <library_output></library_output>
-      <fx_version></fx_version>
-      <profile></profile>
-      <response></response>
-    </project>
-    <project dir="System.Web.Http.WebHost-net_4_5" library="">
-      <boot></boot>
-      <flags></flags>
-      <output></output>
-      <built_sources></built_sources>
-      <library_output></library_output>
-      <fx_version></fx_version>
-      <profile></profile>
-      <response></response>
+      <library_output>./../../class/lib/net_4_5/System.Web.Http.WebHost.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Web.Http.WebHost.dll.sources</response>
     </project>
     <project dir="class/EntityFramework" library="EntityFramework-net_4_5">
       <boot>false</boot>
@@ -6232,7 +6222,7 @@
     </project>
     <project dir="class/System.Windows" library="System.Windows-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /r:System</flags>
       <output>System.Windows.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Windows.dll</library_output>
@@ -6242,7 +6232,7 @@
     </project>
     <project dir="class/System.Xml.Serialization" library="System.Xml.Serialization-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml /r:System.ServiceModel</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /r:System.Xml /r:System.ServiceModel</flags>
       <output>System.Xml.Serialization.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Xml.Serialization.dll</library_output>
@@ -6250,89 +6240,19 @@
       <profile>net_4_5</profile>
       <response>System.Xml.Serialization.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime" library="System.Runtime-net_4_5">
+    <project dir="class/Facades/System.Collections.Concurrent" library="System.Collections.Concurrent-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System /r:System.Core /r:System.ComponentModel.Composition</flags>
-      <output>System.Runtime.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.Collections.Concurrent.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Collections.Concurrent.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Runtime.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Linq" library="System.Linq-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
-      <output>System.Linq.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Linq.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Xml.XmlSerializer" library="System.Xml.XmlSerializer-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml</flags>
-      <output>System.Xml.XmlSerializer.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.XmlSerializer.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Xml.XmlSerializer.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.ServiceModel.Primitives" library="System.ServiceModel.Primitives-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.ServiceModel /r:System.Xml</flags>
-      <output>System.ServiceModel.Primitives.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.ServiceModel.Primitives.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.ServiceModel.Primitives.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Xml.ReaderWriter" library="System.Xml.ReaderWriter-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml</flags>
-      <output>System.Xml.ReaderWriter.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.ReaderWriter.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Xml.ReaderWriter.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Diagnostics.Debug" library="System.Diagnostics.Debug-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Diagnostics.Debug.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Debug.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Diagnostics.Debug.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Runtime.Extensions" library="System.Runtime.Extensions-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Runtime.Extensions.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Extensions.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Runtime.Extensions.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Diagnostics.Tools" library="System.Diagnostics.Tools-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Diagnostics.Tools.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Tools.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Diagnostics.Tools.dll.sources</response>
+      <response>System.Collections.Concurrent.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Collections" library="System.Collections-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System /r:System.Core</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System /r:System.Core</flags>
       <output>System.Collections.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Collections.dll</library_output>
@@ -6340,9 +6260,19 @@
       <profile>net_4_5</profile>
       <response>System.Collections.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.ComponentModel.Annotations" library="System.ComponentModel.Annotations-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.ComponentModel.DataAnnotations</flags>
+      <output>System.ComponentModel.Annotations.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.Annotations.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.ComponentModel.Annotations.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.ComponentModel.EventBasedAsync" library="System.ComponentModel.EventBasedAsync-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
       <output>System.ComponentModel.EventBasedAsync.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.EventBasedAsync.dll</library_output>
@@ -6352,7 +6282,7 @@
     </project>
     <project dir="class/Facades/System.ComponentModel" library="System.ComponentModel-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
       <output>System.ComponentModel.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.dll</library_output>
@@ -6360,59 +6290,59 @@
       <profile>net_4_5</profile>
       <response>System.ComponentModel.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ObjectModel" library="System.ObjectModel-net_4_5">
+    <project dir="class/Facades/System.Diagnostics.Contracts" library="System.Diagnostics.Contracts-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.ObjectModel.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Diagnostics.Contracts.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.ObjectModel.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Contracts.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.ObjectModel.dll.sources</response>
+      <response>System.Diagnostics.Contracts.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Text.RegularExpressions" library="System.Text.RegularExpressions-net_4_5">
+    <project dir="class/Facades/System.Diagnostics.Debug" library="System.Diagnostics.Debug-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Text.RegularExpressions.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.Diagnostics.Debug.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.RegularExpressions.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Debug.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Text.RegularExpressions.dll.sources</response>
+      <response>System.Diagnostics.Debug.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading" library="System.Threading-net_4_5">
+    <project dir="class/Facades/System.Diagnostics.Tracing" library="System.Diagnostics.Tracing-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
-      <output>System.Threading.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Diagnostics.Tracing.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Tracing.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Threading.dll.sources</response>
+      <response>System.Diagnostics.Tracing.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.InteropServices" library="System.Runtime.InteropServices-net_4_5">
+    <project dir="class/Facades/System.Diagnostics.Tools" library="System.Diagnostics.Tools-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Runtime.InteropServices.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.Diagnostics.Tools.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.InteropServices.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Tools.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Runtime.InteropServices.dll.sources</response>
+      <response>System.Diagnostics.Tools.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection" library="System.Reflection-net_4_5">
+    <project dir="class/Facades/System.Dynamic.Runtime" library="System.Dynamic.Runtime-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Reflection.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core /r:System</flags>
+      <output>System.Dynamic.Runtime.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Dynamic.Runtime.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Reflection.dll.sources</response>
+      <response>System.Dynamic.Runtime.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Globalization" library="System.Globalization-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Globalization.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Globalization.dll</library_output>
@@ -6422,7 +6352,7 @@
     </project>
     <project dir="class/Facades/System.IO" library="System.IO-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
       <output>System.IO.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.IO.dll</library_output>
@@ -6430,69 +6360,9 @@
       <profile>net_4_5</profile>
       <response>System.IO.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Primitives" library="System.Reflection.Primitives-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Reflection.Primitives.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Primitives.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Reflection.Primitives.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Resources.ResourceManager" library="System.Resources.ResourceManager-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Resources.ResourceManager.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Resources.ResourceManager.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Resources.ResourceManager.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Security.Principal" library="System.Security.Principal-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Security.Principal.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Security.Principal.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Security.Principal.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Text.Encoding" library="System.Text.Encoding-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Text.Encoding.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.Encoding.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Text.Encoding.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Text.Encoding.Extensions" library="System.Text.Encoding.Extensions-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Text.Encoding.Extensions.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.Encoding.Extensions.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Text.Encoding.Extensions.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Linq.Queryable" library="System.Linq.Queryable-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
-      <output>System.Linq.Queryable.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Queryable.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Linq.Queryable.dll.sources</response>
-    </project>
     <project dir="class/Facades/System.Linq.Expressions" library="System.Linq.Expressions-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core</flags>
       <output>System.Linq.Expressions.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Expressions.dll</library_output>
@@ -6500,9 +6370,49 @@
       <profile>net_4_5</profile>
       <response>System.Linq.Expressions.dll.sources</response>
     </project>
+    <project dir="class/Facades/System.Linq.Parallel" library="System.Linq.Parallel-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core</flags>
+      <output>System.Linq.Parallel.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Parallel.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.Parallel.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Linq.Queryable" library="System.Linq.Queryable-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core</flags>
+      <output>System.Linq.Queryable.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Queryable.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.Queryable.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Linq" library="System.Linq-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core</flags>
+      <output>System.Linq.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Linq.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Net.NetworkInformation" library="System.Net.NetworkInformation-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.Net.NetworkInformation.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Net.NetworkInformation.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Net.NetworkInformation.dll.sources</response>
+    </project>
     <project dir="class/Facades/System.Net.Primitives" library="System.Net.Primitives-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
       <output>System.Net.Primitives.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Net.Primitives.dll</library_output>
@@ -6512,7 +6422,7 @@
     </project>
     <project dir="class/Facades/System.Net.Requests" library="System.Net.Requests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
       <output>System.Net.Requests.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Net.Requests.dll</library_output>
@@ -6520,19 +6430,109 @@
       <profile>net_4_5</profile>
       <response>System.Net.Requests.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.NetworkInformation" library="System.Net.NetworkInformation-net_4_5">
+    <project dir="class/Facades/System.ObjectModel" library="System.ObjectModel-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Net.NetworkInformation.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.ObjectModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Net.NetworkInformation.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ObjectModel.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Net.NetworkInformation.dll.sources</response>
+      <response>System.ObjectModel.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Extensions" library="System.Reflection.Extensions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Reflection.Extensions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Extensions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Extensions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Primitives" library="System.Reflection.Primitives-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Reflection.Primitives.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Primitives.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Primitives.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection" library="System.Reflection-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Reflection.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Resources.ResourceManager" library="System.Resources.ResourceManager-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Resources.ResourceManager.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Resources.ResourceManager.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Resources.ResourceManager.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Extensions" library="System.Runtime.Extensions-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.Runtime.Extensions.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Extensions.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Extensions.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.InteropServices" library="System.Runtime.InteropServices-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System /r:System.Core</flags>
+      <output>System.Runtime.InteropServices.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.InteropServices.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.InteropServices.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.InteropServices.WindowsRuntime" library="System.Runtime.InteropServices.WindowsRuntime-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Runtime.InteropServices.WindowsRuntime.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.InteropServices.WindowsRuntime.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.InteropServices.WindowsRuntime.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Numerics" library="System.Runtime.Numerics-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Numerics</flags>
+      <output>System.Runtime.Numerics.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Numerics.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Numerics.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Runtime.Serialization.Json" library="System.Runtime.Serialization.Json-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Runtime.Serialization</flags>
+      <output>System.Runtime.Serialization.Json.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Json.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Runtime.Serialization.Json.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Runtime.Serialization.Primitives" library="System.Runtime.Serialization.Primitives-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Runtime.Serialization /r:System.Xml</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Runtime.Serialization</flags>
       <output>System.Runtime.Serialization.Primitives.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Primitives.dll</library_output>
@@ -6542,7 +6542,7 @@
     </project>
     <project dir="class/Facades/System.Runtime.Serialization.Xml" library="System.Runtime.Serialization.Xml-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Runtime.Serialization /r:System.Xml</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Runtime.Serialization /r:System.Xml</flags>
       <output>System.Runtime.Serialization.Xml.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Xml.dll</library_output>
@@ -6550,19 +6550,29 @@
       <profile>net_4_5</profile>
       <response>System.Runtime.Serialization.Xml.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Serialization.Json" library="System.Runtime.Serialization.Json-net_4_5">
+    <project dir="class/Facades/System.Runtime" library="System.Runtime-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Runtime.Serialization /r:System.Xml</flags>
-      <output>System.Runtime.Serialization.Json.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System /r:System.ComponentModel.Composition /r:System.Core</flags>
+      <output>System.Runtime.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Serialization.Json.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Runtime.Serialization.Json.dll.sources</response>
+      <response>System.Runtime.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Security.Principal" library="System.Security.Principal-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Security.Principal.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Security.Principal.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Security.Principal.dll.sources</response>
     </project>
     <project dir="class/Facades/System.ServiceModel.Http" library="System.ServiceModel.Http-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.ServiceModel</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.ServiceModel</flags>
       <output>System.ServiceModel.Http.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.ServiceModel.Http.dll</library_output>
@@ -6570,89 +6580,49 @@
       <profile>net_4_5</profile>
       <response>System.ServiceModel.Http.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.XDocument" library="System.Xml.XDocument-net_4_5">
+    <project dir="class/Facades/System.ServiceModel.Primitives" library="System.ServiceModel.Primitives-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Xml.Linq /r:System.Xml</flags>
-      <output>System.Xml.XDocument.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.ServiceModel /r:System.Xml</flags>
+      <output>System.ServiceModel.Primitives.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.XDocument.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.ServiceModel.Primitives.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Xml.XDocument.dll.sources</response>
+      <response>System.ServiceModel.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Tasks" library="System.Threading.Tasks-net_4_5">
+    <project dir="class/Facades/System.Text.Encoding.Extensions" library="System.Text.Encoding.Extensions-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
-      <output>System.Threading.Tasks.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Text.Encoding.Extensions.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.Tasks.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.Encoding.Extensions.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Threading.Tasks.dll.sources</response>
+      <response>System.Text.Encoding.Extensions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.Contracts" library="System.Diagnostics.Contracts-net_4_5">
+    <project dir="class/Facades/System.Text.Encoding" library="System.Text.Encoding-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Diagnostics.Contracts.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Text.Encoding.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Diagnostics.Contracts.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.Encoding.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Diagnostics.Contracts.dll.sources</response>
+      <response>System.Text.Encoding.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Dynamic.Runtime" library="System.Dynamic.Runtime-net_4_5">
+    <project dir="class/Facades/System.Text.RegularExpressions" library="System.Text.RegularExpressions-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Dynamic.Runtime.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System</flags>
+      <output>System.Text.RegularExpressions.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Dynamic.Runtime.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Text.RegularExpressions.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Dynamic.Runtime.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.ComponentModel.Annotations" library="System.ComponentModel.Annotations-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.ComponentModel.DataAnnotations</flags>
-      <output>System.ComponentModel.Annotations.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.ComponentModel.Annotations.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.ComponentModel.Annotations.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Runtime.Numerics" library="System.Runtime.Numerics-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Numerics</flags>
-      <output>System.Runtime.Numerics.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Runtime.Numerics.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Runtime.Numerics.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Linq.Parallel" library="System.Linq.Parallel-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.Core /r:System</flags>
-      <output>System.Linq.Parallel.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Linq.Parallel.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Linq.Parallel.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.Collections.Concurrent" library="System.Collections.Concurrent-net_4_5">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System</flags>
-      <output>System.Collections.Concurrent.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Collections.Concurrent.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_5</profile>
-      <response>System.Collections.Concurrent.dll.sources</response>
+      <response>System.Text.RegularExpressions.dll.sources</response>
     </project>
     <project dir="class/Facades/System.Threading.Tasks.Parallel" library="System.Threading.Tasks.Parallel-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Threading.Tasks.Parallel.dll</output>
       <built_sources></built_sources>
       <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.Tasks.Parallel.dll</library_output>
@@ -6660,15 +6630,215 @@
       <profile>net_4_5</profile>
       <response>System.Threading.Tasks.Parallel.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Extensions" library="System.Reflection.Extensions-net_4_5">
+    <project dir="class/Facades/System.Threading.Tasks" library="System.Threading.Tasks-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
-      <output>System.Reflection.Extensions.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core</flags>
+      <output>System.Threading.Tasks.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Extensions.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.Tasks.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>System.Reflection.Extensions.dll.sources</response>
+      <response>System.Threading.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Threading.Timer" library="System.Threading.Timer-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System /r:System.Core</flags>
+      <output>System.Threading.Timer.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.Timer.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Threading.Timer.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Threading" library="System.Threading-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System /r:System.Core</flags>
+      <output>System.Threading.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Threading.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Threading.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.ReaderWriter" library="System.Xml.ReaderWriter-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml</flags>
+      <output>System.Xml.ReaderWriter.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.ReaderWriter.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.ReaderWriter.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.XDocument" library="System.Xml.XDocument-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml.Linq /r:System.Xml</flags>
+      <output>System.Xml.XDocument.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.XDocument.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.XDocument.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Xml.XmlSerializer" library="System.Xml.XmlSerializer-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml</flags>
+      <output>System.Xml.XmlSerializer.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Xml.XmlSerializer.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Xml.XmlSerializer.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Emit.ILGeneration" library="System.Reflection.Emit.ILGeneration-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Reflection.Emit.ILGeneration.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Emit.ILGeneration.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Emit.ILGeneration.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Emit.Lightweight" library="System.Reflection.Emit.Lightweight-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Reflection.Emit.Lightweight.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Emit.Lightweight.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Emit.Lightweight.dll.sources</response>
+    </project>
+    <project dir="class/Facades/System.Reflection.Emit" library="System.Reflection.Emit-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
+      <output>System.Reflection.Emit.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../../class/lib/net_4_5/Facades/System.Reflection.Emit.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>System.Reflection.Emit.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
+      <output>Microsoft.Build.Framework.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>Microsoft.Build.Framework.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Framework_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Framework_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Microsoft.Build.Framework_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Utilities.v4.0.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>Microsoft.Build.Utilities.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll -r:System.dll -r:System.Core.dll</flags>
+      <output>Microsoft.Build.Utilities_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Utilities_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Microsoft.Build.Utilities_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll</flags>
+      <output>Microsoft.Build.Engine.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Engine.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>Microsoft.Build.Engine.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:System.Xml.dll</flags>
+      <output>Microsoft.Build.Engine_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Engine_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Microsoft.Build.Engine_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <output>Mono.XBuild.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/Mono.XBuild.Tasks.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>Mono.XBuild.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Mono.XBuild.Tasks.dll</flags>
+      <output>Mono.XBuild.Tasks_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>Mono.XBuild.Tasks_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Mono.XBuild.Tasks_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Mono.XBuild.Tasks.dll</flags>
+      <output>Microsoft.Build.Tasks.v4.0.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Tasks.v4.0.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>Microsoft.Build.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Tasks.v4.0.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_5/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:System.Core.dll</flags>
+      <output>Microsoft.Build.Tasks_test_net_4_5.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Tasks_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Microsoft.Build.Tasks_test_net_4_5.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build" library="Microsoft.Build-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL</flags>
+      <output>Microsoft.Build.dll</output>
+      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
+      <library_output>./../../class/lib/net_4_5/Microsoft.Build.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>Microsoft.Build.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build" library="Microsoft.Build-tests-net_4_5">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.dll /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL /r:Microsoft.Build.Utilities.v4.0.dll</flags>
+      <output>Microsoft.Build_test_net_4_5.dll</output>
+      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
+      <library_output>Microsoft.Build_test_net_4_5.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Microsoft.Build_test_net_4_5.dll.response</response>
     </project>
     <project dir="nunit24/NUnit.Framework/framework" library="NUnit.Framework-net_4_5">
       <boot>false</boot>
@@ -6782,7 +6952,7 @@
     </project>
     <project dir="tools/linker" library="monolinker-net_4_5">
       <boot></boot>
-      <flags>/codepage:65001 /r:./../../class/lib/net_4_5/Mono.Cecil.dll /r:System.Xml.dll -keyfile:../../class/mono.snk -resource:Descriptors/mscorlib.xml -resource:Descriptors/System.xml -resource:Descriptors/System.Drawing.xml -resource:Descriptors/System.Web.xml -resource:Descriptors/Mono.Posix.xml -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 /r:./../../class/lib/net_4_5/Mono.Cecil.dll /r:System.Xml.dll -keyfile:../../class/mono.snk -resource:Descriptors/mscorlib.xml -resource:Descriptors/System.xml -resource:Descriptors/System.Core.xml -resource:Descriptors/System.Drawing.xml -resource:Descriptors/System.Web.xml -resource:Descriptors/Mono.Posix.xml -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>monolinker.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/monolinker.exe</library_output>
@@ -6872,7 +7042,7 @@
     </project>
     <project dir="tools/gacutil" library="gacutil-net_4_5">
       <boot></boot>
-      <flags>/codepage:65001 -r:Mono.Security.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -r:Mono.Security.dll -unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>gacutil.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/gacutil.exe</library_output>
@@ -6892,7 +7062,7 @@
     </project>
     <project dir="tools/xbuild" library="xbuild-net_4_5">
       <boot></boot>
-      <flags>/codepage:65001 -r:Microsoft.Build.Framework.dll -r:Microsoft.Build.Utilities.v4.0.dll -r:Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <flags>/codepage:65001 -r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll -r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll -r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>xbuild.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/xbuild.exe</library_output>
@@ -7189,5 +7359,145 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>mdbrebase.exe.sources</response>
+    </project>
+    <project dir="tools/ikdasm" library="ikdasm-net_4_5">
+      <boot></boot>
+      <flags>/codepage:65001 -d:NO_SYMBOL_WRITER /r:System.Security.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>ikdasm.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/ikdasm.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>ikdasm.exe.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll</flags>
+      <output>Microsoft.Build.Framework.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>Microsoft.Build.Framework.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-tests-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Framework_test_xbuild_12.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Framework_test_xbuild_12.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>./../../build/deps/Microsoft.Build.Framework_test_xbuild_12.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Utilities.v12.0.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>Microsoft.Build.Utilities.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll -r:System.dll -r:System.Core.dll</flags>
+      <output>Microsoft.Build.Utilities_test_xbuild_12.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Utilities_test_xbuild_12.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>./../../build/deps/Microsoft.Build.Utilities_test_xbuild_12.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll</flags>
+      <output>Microsoft.Build.Engine.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>Microsoft.Build.Engine.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Engine" library="Microsoft.Build.Engine-tests-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll /r:System.Xml.dll</flags>
+      <output>Microsoft.Build.Engine_test_xbuild_12.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Engine_test_xbuild_12.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>./../../build/deps/Microsoft.Build.Engine_test_xbuild_12.dll.response</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <output>Mono.XBuild.Tasks.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/xbuild_12/Mono.XBuild.Tasks.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>Mono.XBuild.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Mono.XBuild.Tasks" library="Mono.XBuild.Tasks-tests-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Mono.XBuild.Tasks.dll</flags>
+      <output>Mono.XBuild.Tasks_test_xbuild_12.dll</output>
+      <built_sources></built_sources>
+      <library_output>Mono.XBuild.Tasks_test_xbuild_12.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>./../../build/deps/Mono.XBuild.Tasks_test_xbuild_12.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll /r:./../../class/lib/xbuild_12/Mono.XBuild.Tasks.dll</flags>
+      <output>Microsoft.Build.Tasks.v12.0.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.Tasks.v12.0.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>Microsoft.Build.Tasks.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.Tasks.v12.0.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll /r:./../../class/lib/xbuild_12/Mono.XBuild.Tasks.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll /r:System.Core.dll</flags>
+      <output>Microsoft.Build.Tasks_test_xbuild_12.dll</output>
+      <built_sources></built_sources>
+      <library_output>Microsoft.Build.Tasks_test_xbuild_12.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>./../../build/deps/Microsoft.Build.Tasks_test_xbuild_12.dll.response</response>
+    </project>
+    <project dir="class/Microsoft.Build" library="Microsoft.Build-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL</flags>
+      <output>Microsoft.Build.dll</output>
+      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
+      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>Microsoft.Build.dll.sources</response>
+    </project>
+    <project dir="class/Microsoft.Build" library="Microsoft.Build-tests-xbuild_12">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.dll /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL /r:Microsoft.Build.Utilities.v4.0.dll</flags>
+      <output>Microsoft.Build_test_xbuild_12.dll</output>
+      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
+      <library_output>Microsoft.Build_test_xbuild_12.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>./../../build/deps/Microsoft.Build_test_xbuild_12.dll.response</response>
+    </project>
+    <project dir="tools/xbuild" library="xbuild-xbuild_12">
+      <boot></boot>
+      <flags>/codepage:65001 -r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll -r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll -r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig</flags>
+      <output>xbuild.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/xbuild_12/xbuild.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>xbuild_12</profile>
+      <response>xbuild.exe.sources</response>
     </project>
 </root>
