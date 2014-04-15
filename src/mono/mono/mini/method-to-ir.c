@@ -209,6 +209,12 @@ mono_alloc_ireg (MonoCompile *cfg)
 }
 
 guint32
+mono_alloc_lreg (MonoCompile *cfg)
+{
+	return alloc_lreg (cfg);
+}
+
+guint32
 mono_alloc_freg (MonoCompile *cfg)
 {
 	return alloc_freg (cfg);
