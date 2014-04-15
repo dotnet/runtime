@@ -293,7 +293,7 @@ opt_descr (guint32 flags) {
 
 	need_comma = 0;
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i) {
-		if (flags & (1 << i)) {
+		if (flags & (1 << i) && optflag_get_name (i)) {
 			if (need_comma)
 				g_string_append_c (str, ',');
 			g_string_append (str, optflag_get_name (i));
