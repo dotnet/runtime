@@ -1,4 +1,7 @@
 language: c
+branches:
+  only:
+    - master
 compiler:
   - gcc
   - clang
