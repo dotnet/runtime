@@ -5910,7 +5910,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			else
 				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
-		nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc, FALSE);
+		nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc, mono_aot_only);
 		code = mono_get_addr_from_ftnptr (mono_compile_method (nm));
 		jinfo = mono_jit_info_table_find (target_domain, code);
 		if (!jinfo)
