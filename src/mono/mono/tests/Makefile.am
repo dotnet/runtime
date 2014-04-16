@@ -1,6 +1,11 @@
 SUBDIRS = cas assemblyresolve gc-descriptors
 
-check-local: test
+check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test-process-exit test-messages rm-empty-logs
+check-full: test-sgen check-local
+check-parallel: compile-tests check-full
+
+# for backwards compatibility on Wrench
+test-wrench: check-parallel
 
 aotcheck: testaot gshared-aot
 
@@ -735,9 +740,6 @@ endif
 compile-tests:
 	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 
-test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test-process-exit test-messages rm-empty-logs
-test-wrench: compile-tests assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test-process-exit test-sgen test-messages rm-empty-logs
-
 # Remove empty .stdout and .stderr files for wrench
 rm-empty-logs:
 	@echo "Removing empty logs..."
@@ -752,8 +754,9 @@ TestDriver.dll:
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$${disabled_tests}' '$${dump_action}' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -766,8 +769,10 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTSI_IL); do	\
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" 'no-dump' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" '$${dump_action}' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -778,46 +783,24 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	echo; echo ".il: $${passed} test(s) passed. $${failed} test(s) did not pass."; echo
 
 testb: $(TEST_PROG) $(TESTBS)
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTBS); do	\
-		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$${disabled_tests}' '$${dump_action}' $(RUNTIME_ARGS);	\
 	done
-
-runtest-wrench: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
-		rm -f $${i}.so; \
-		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
-		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS_WRENCH)' 'dump-output' $(RUNTIME_ARGS); \
-		then \
-			passed=`expr $${passed} + 1`; \
-		else \
-			if [ $$? = 2 ]; then break; fi; \
-			failed=`expr $${failed} + 1`; \
-			failed_tests="$${failed_tests} $$i"; \
-		fi \
-	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; cat $${i}.stdout; cat $${i}.stderr; done; exit 1; fi
-
-runtest-managed-wrench: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
-	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS_WRENCH)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
-
-testjit-wrench:
-	@if test x$(M) != x; then $(MAKE) runtest-managed-wrench; else $(MAKE) runtest-wrench; fi
 
 runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	rm -f testlist testlist.sorted; \
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do echo $${i} >> testlist; sort testlist > testlist.sorted; done; \
 	for i in `cat testlist.sorted`; do \
 		rm -f $${i}.so; \
 		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
-		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$${disabled_tests}' '$${dump_action}' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -828,11 +811,21 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	rm -f testlist testlist.sorted; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+	if [ $${failed} != 0 ]; then \
+	  echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do \
+	    echo $${i}; \
+	    if [ "x$V" = "x1" ]; then \
+	      cat $${i}.stdout; \
+	      cat $${i}.stderr; \
+	    fi; \
+	  done; \
+	  exit 1; \
+	fi
 
 runtest-managed: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
-	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
+	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
+	@$(RUNTIME) ./test-runner.exe -j a --disabled '$${disabled_tests}' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 testjit:
 	@if test x$(M) != x; then $(MAKE) runtest-managed; else $(MAKE) runtest; fi
@@ -932,13 +925,14 @@ sgen-regular-tests: $(SGEN_TESTS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_CONFIGURATIONS); do 	\
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" 'dump-output' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -956,13 +950,14 @@ sgen-bridge-tests1: sgen-bridge.exe sgen-bridge-major-fragmentation.exe
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="bridge=Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" 'dump-output' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="bridge=Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -980,13 +975,14 @@ sgen-bridge-tests2: sgen-bridge-xref.exe
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="bridge=2Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" 'dump-output' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="bridge=2Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -1004,13 +1000,14 @@ sgen-toggleref-tests: sgen-toggleref.exe
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
+	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_CONFIGURATIONS); do 	\
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="toggleref-test,$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" 'dump-output' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="toggleref-test,$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
