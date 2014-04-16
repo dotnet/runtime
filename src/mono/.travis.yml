@@ -1,0 +1,16 @@
+language: c
+compiler:
+  - gcc
+  - clang
+env:
+  - CFLAGS=-O0
+  - CFLAGS=-O1
+  - CFLAGS=-O2
+  - CFLAGS=-O3
+  - CFLAGS=-Os
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq mono-complete
+script:
+  - ./autogen.sh
+  - make distcheck
