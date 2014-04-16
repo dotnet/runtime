@@ -323,6 +323,7 @@ struct _MonoImage {
 	GSList *reflection_info_unregister_classes;
 
 	/* List of image sets containing this image */
+	/* Protected by image_sets_lock */
 	GSList *image_sets;
 
 	/* Caches for MonoClass-es representing anon generic params */

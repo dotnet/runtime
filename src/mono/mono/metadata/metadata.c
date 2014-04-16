@@ -1371,8 +1371,11 @@ builtin_types[] = {
 static GHashTable *type_cache = NULL;
 static int next_generic_inst_id = 0;
 
+/* Protected by image_sets_mutex */
 static MonoImageSet *mscorlib_image_set;
+/* Protected by image_sets_mutex */
 static GPtrArray *image_sets;
+static CRITICAL_SECTION image_sets_mutex;
 
 static guint mono_generic_class_hash (gconstpointer data);
 
@@ -1485,6 +1488,8 @@ mono_metadata_init (void)
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
+
+	InitializeCriticalSection (&image_sets_mutex);
 }
 
 /**
@@ -1500,6 +1505,7 @@ mono_metadata_cleanup (void)
 	type_cache = NULL;
 	g_ptr_array_free (image_sets, TRUE);
 	image_sets = NULL;
+	DeleteCriticalSection (&image_sets_mutex);
 }
 
 /**
@@ -2182,12 +2188,22 @@ retry:
 	}
 }
 
+static inline void
+image_sets_lock (void)
+{
+	EnterCriticalSection (&image_sets_mutex);
+}
+
+static inline void
+image_sets_unlock (void)
+{
+	LeaveCriticalSection (&image_sets_mutex);
+}
+
 /*
  * get_image_set:
  *
  *   Return a MonoImageSet representing the set of images in IMAGES.
- * 
- * LOCKING: Assumes the loader lock is held.
  */
 static MonoImageSet*
 get_image_set (MonoImage **images, int nimages)
@@ -2196,9 +2212,6 @@ get_image_set (MonoImage **images, int nimages)
 	MonoImageSet *set;
 	GSList *l;
 
-	if (!image_sets)
-		image_sets = g_ptr_array_new ();
-
 	/* Common case */
 	if (nimages == 1 && images [0] == mono_defaults.corlib && mscorlib_image_set)
 		return mscorlib_image_set;
@@ -2206,6 +2219,11 @@ get_image_set (MonoImage **images, int nimages)
 	/* Happens with empty generic instances */
 	if (nimages == 0)
 		return mscorlib_image_set;
+
+	image_sets_lock ();
+
+	if (!image_sets)
+		image_sets = g_ptr_array_new ();
 
 	if (images [0] == mono_defaults.corlib && nimages > 1)
 		l = images [1]->image_sets;
@@ -2250,8 +2268,12 @@ get_image_set (MonoImage **images, int nimages)
 		g_ptr_array_add (image_sets, set);
 	}
 
-	if (nimages == 1 && images [0] == mono_defaults.corlib)
+	if (nimages == 1 && images [0] == mono_defaults.corlib) {
+		mono_memory_barrier ();
 		mscorlib_image_set = set;
+	}
+
+	image_sets_unlock ();
 
 	return set;
 }
@@ -2266,10 +2288,14 @@ delete_image_set (MonoImageSet *set)
 	g_hash_table_destroy (set->gmethod_cache);
 	g_hash_table_destroy (set->gsignature_cache);
 
+	image_sets_lock ();
+
 	for (i = 0; i < set->nimages; ++i)
 		set->images [i]->image_sets = g_slist_remove (set->images [i]->image_sets, set);
 
 	g_ptr_array_remove (image_sets, set);
+
+	image_sets_unlock ();
 
 	if (set->mempool)
 		mono_mempool_destroy (set->mempool);
@@ -2631,10 +2657,12 @@ mono_metadata_clean_for_image (MonoImage *image)
 	for (l = image->image_sets; l; l = l->next) {
 		MonoImageSet *set = l->data;
 
+		mono_image_set_lock (set);
 		g_hash_table_foreach_steal (set->gclass_cache, steal_gclass_in_image, &gclass_data);
 		g_hash_table_foreach_steal (set->ginst_cache, steal_ginst_in_image, &ginst_data);
 		g_hash_table_foreach_remove (set->gmethod_cache, inflated_method_in_image, image);
 		g_hash_table_foreach_remove (set->gsignature_cache, inflated_signature_in_image, image);
+		mono_image_set_unlock (set);
 	}
 
 	/* Delete the removed items */
@@ -2717,6 +2745,7 @@ mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
 {
 	CollectData data;
 	MonoImageSet *set;
+	gpointer res;
 
 	collect_data_init (&data);
 
@@ -2727,11 +2756,17 @@ mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
 	collect_data_free (&data);
 
 	if (cache) {
+		mono_image_set_lock (set);
 		g_hash_table_insert (set->gmethod_cache, method, method);
+		mono_image_set_unlock (set);
 
 		return method;
 	} else {
-		return g_hash_table_lookup (set->gmethod_cache, method);
+		mono_image_set_lock (set);
+		res = g_hash_table_lookup (set->gmethod_cache, method);
+		mono_image_set_unlock (set);
+
+		return res;
 	}
 }
 
@@ -2749,8 +2784,6 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	CollectData data;
 	MonoImageSet *set;
 
-	mono_loader_lock ();
-
 	helper.sig = sig;
 	helper.context.class_inst = context->class_inst;
 	helper.context.method_inst = context->method_inst;
@@ -2763,6 +2796,8 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 
 	collect_data_free (&data);
 
+	mono_image_set_lock (set);
+
 	res = g_hash_table_lookup (set->gsignature_cache, &helper);
 	if (!res) {
 		res = g_new0 (MonoInflatedMethodSignature, 1);
@@ -2772,7 +2807,8 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 		g_hash_table_insert (set->gsignature_cache, res, res);
 	}
 
-	mono_loader_unlock ();
+	mono_image_set_unlock (set);
+
 	return res->sig;
 }
 
@@ -2805,8 +2841,6 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	ginst->type_argc = type_argc;
 	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));
 
-	mono_loader_lock ();
-
 	collect_data_init (&data);
 
 	collect_ginst_images (ginst, &data);
@@ -2814,6 +2848,8 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	set = get_image_set (data.images, data.nimages);
 
 	collect_data_free (&data);
+
+	mono_image_set_lock (set);
 
 	ginst = g_hash_table_lookup (set->ginst_cache, ginst);
 	if (!ginst) {
@@ -2830,7 +2866,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 		g_hash_table_insert (set->ginst_cache, ginst, ginst);
 	}
 
-	mono_loader_unlock ();
+	mono_image_set_unlock (set);
 	return ginst;
 }
 
@@ -2866,8 +2902,6 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	helper.is_tb_open = is_tb_open;
 	helper.cached_class = NULL;
 
-	mono_loader_lock ();
-
 	collect_data_init (&data);
 
 	collect_gclass_images (&helper, &data);
@@ -2876,13 +2910,15 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	collect_data_free (&data);
 
+	mono_image_set_lock (set);
+
 	gclass = g_hash_table_lookup (set->gclass_cache, &helper);
 
 	/* A tripwire just to keep us honest */
 	g_assert (!helper.cached_class);
 
 	if (gclass) {
-		mono_loader_unlock ();
+		mono_image_set_unlock (set);
 		return gclass;
 	}
 
@@ -2904,7 +2940,7 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	g_hash_table_insert (set->gclass_cache, gclass, gclass);
 
-	mono_loader_unlock ();
+	mono_image_set_unlock (set);
 
 	return gclass;
 }
