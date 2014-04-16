@@ -16,6 +16,4 @@ before_install:
   - sudo apt-get install -qq mono-complete
 script:
   - ./autogen.sh
-  - make
-  - make check
-  - make dist
+  - make distcheck
