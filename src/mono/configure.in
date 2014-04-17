@@ -2452,7 +2452,7 @@ if test "x$enable_llvm" = "xyes"; then
    llvm_version=`$LLVM_CONFIG --version`
    major_version=`echo $llvm_version | cut -c 1`
    minor_version=`echo $llvm_version | cut -c 3`
-   llvm_api_version=`$LLVM_CONFIG --mono-api-version 2>&1`
+   llvm_api_version=`$LLVM_CONFIG --mono-api-version 2>/dev/null`
    AC_MSG_CHECKING(LLVM version)
    AC_MSG_RESULT($llvm_version)
    if echo $llvm_version | grep -q 'mono'; then
