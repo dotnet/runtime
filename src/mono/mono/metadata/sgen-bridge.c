@@ -92,6 +92,11 @@ typedef struct _HashEntry {
 	int scc_index;
 } HashEntry;
 
+typedef struct {
+	HashEntry entry;
+	double weight;
+} HashEntryWithAccounting;
+
 typedef struct _SCC {
 	int index;
 	int api_index;
@@ -107,6 +112,7 @@ static int current_time;
 
 gboolean bridge_processing_in_progress = FALSE;
 
+static gboolean bridge_accounting_enabled = FALSE;
 
 
 /* Core functions */
@@ -399,6 +405,13 @@ mono_gc_wait_for_bridge_processing (void)
 
 	sgen_gc_lock ();
 	sgen_gc_unlock ();
+}
+
+void
+sgen_enable_bridge_accounting (void)
+{
+	bridge_accounting_enabled = TRUE;
+	hash_table = (SgenHashTable)SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
 }
 
 void
@@ -771,6 +784,43 @@ sgen_bridge_processing_finish (int generation)
 		}
 	}
 
+	/*
+	 * Compute the weight of each object. The weight of an object is its size plus the size of all
+	 * objects it points do. When the an object is pointed by multiple objects we distribute it's weight
+	 * equally among them. This distribution gives a rough estimate of the real impact of making the object
+	 * go away.
+	 *
+	 * The reasoning for this model is that complex graphs with single roots will have a bridge with very high
+	 * value in comparison to others.
+	 *
+	 * The all_entries array has all objects topologically sorted. To correctly propagate the weights it must be
+	 * done in reverse topological order - so we calculate the weight of the pointed-to objects before processing
+	 * pointer-from objects.
+	 *
+	 * We log those objects in the opposite order for no particular reason. The other constrain is that it should use the same
+	 * direction as the other logging loop that records live/dead information.
+	 */
+	if (bridge_accounting_enabled) {
+		for (i = hash_table.num_entries - 1; i >= 0; --i) {
+			double w;
+			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
+
+			entry->weight += (double)sgen_safe_object_get_size (entry->entry.obj);
+			w = entry->weight / dyn_array_ptr_size (&entry->entry.srcs);
+			for (j = 0; j < dyn_array_ptr_size (&entry->entry.srcs); ++j) {
+				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry->entry.srcs, j);
+				other->weight += w;
+			}
+		}
+		for (i = 0; i < hash_table.num_entries; ++i) {
+			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
+			if (entry->entry.is_bridge) {
+				MonoClass *klass = ((MonoVTable*)SGEN_LOAD_VTABLE (entry->entry.obj))->klass;
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", klass->name_space, klass->name, entry->entry.obj, entry->weight);
+			}
+		}
+	}
+
 	sccs_size = dyn_array_scc_size (&sccs);
 
 	for (i = 0; i < hash_table.num_entries; ++i) {
@@ -896,6 +946,17 @@ sgen_bridge_processing_finish (int generation)
 		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
 
 	sgen_hash_table_clean (&alive_hash);
+
+	if (bridge_accounting_enabled) {
+		for (i = 0; i < num_sccs; ++i) {
+			for (j = 0; j < api_sccs [i]->num_objs; ++j)
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC,
+					"OBJECT %s (%p) SCC [%d] %s",
+						sgen_safe_name (api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
+						i,
+						api_sccs [i]->is_alive  ? "ALIVE" : "DEAD");
+		}
+	}
 
 	/* free callback data */
 
