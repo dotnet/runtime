@@ -1752,7 +1752,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 	if (align == 0)
 		align = 4;
 
-	if ((size <= 4) && (size <= align)) {
+	if ((size <= SIZEOF_REGISTER) && (size <= align)) {
 		switch (size) {
 		case 1:
 			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, destreg, offset, val);
