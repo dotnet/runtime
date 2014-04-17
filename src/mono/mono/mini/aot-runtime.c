@@ -138,6 +138,7 @@ typedef struct MonoAotModule {
 	MonoDl *sofile;
 
 	JitInfoMap *async_jit_info_table;
+	CRITICAL_SECTION mutex;
 } MonoAotModule;
 
 typedef struct {
@@ -207,6 +208,18 @@ init_plt (MonoAotModule *info);
 /*****************************************************/
 /*                 AOT RUNTIME                       */
 /*****************************************************/
+
+static inline void
+amodule_lock (MonoAotModule *amodule)
+{
+	EnterCriticalSection (&amodule->mutex);
+}
+
+static inline void
+amodule_unlock (MonoAotModule *amodule)
+{
+	LeaveCriticalSection (&amodule->mutex);
+}
 
 /*
  * load_image:
@@ -1686,6 +1699,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	amodule->blob = blob;
 
+	InitializeCriticalSection (&amodule->mutex);
+
 	/* Read image table */
 	{
 		guint32 table_len, i;
@@ -2068,7 +2083,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	if (!amodule || !amodule->class_name_table)
 		return FALSE;
 
-	mono_aot_lock ();
+	amodule_lock (amodule);
 
 	*klass = NULL;
 
@@ -2079,7 +2094,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	if (nspace_table) {
 		*klass = g_hash_table_lookup (nspace_table, name);
 		if (*klass) {
-			mono_aot_unlock ();
+			amodule_unlock (amodule);
 			return TRUE;
 		}
 	}
@@ -2119,19 +2134,19 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			name_space2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 			if (!strcmp (name, name2) && !strcmp (name_space, name_space2)) {
-				mono_aot_unlock ();
+				amodule_unlock (amodule);
 				*klass = mono_class_get (image, token);
 
 				/* Add to cache */
 				if (*klass) {
-					mono_aot_lock ();
+					amodule_lock (amodule);
 					nspace_table = g_hash_table_lookup (amodule->name_cache, name_space);
 					if (!nspace_table) {
 						nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
 						g_hash_table_insert (amodule->name_cache, (char*)name_space2, nspace_table);
 					}
 					g_hash_table_insert (nspace_table, (char*)name2, *klass);
-					mono_aot_unlock ();
+					amodule_unlock (amodule);
 				}
 				return TRUE;
 			}
@@ -2144,7 +2159,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 		}
 	}
 
-	mono_aot_unlock ();
+	amodule_unlock (amodule);
 	
 	return TRUE;
 }
@@ -2854,9 +2869,9 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	/* Might be a wrapper/extra method */
 	if (!async) {
 		if (amodule->extra_methods) {
-			mono_aot_lock ();
+			amodule_lock (amodule);
 			method = g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
-			mono_aot_unlock ();
+			amodule_unlock (amodule);
 		} else {
 			method = NULL;
 		}
@@ -3311,10 +3326,17 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		code = &amodule->code [amodule->code_offsets [method_index] + 1];
 	}
 
-	mono_aot_lock ();
-	if (!amodule->methods_loaded)
-		amodule->methods_loaded = g_new0 (guint32, amodule->info.nmethods / 32 + 1);
-	mono_aot_unlock ();
+	if (!amodule->methods_loaded) {
+		amodule_lock (amodule);
+		if (!amodule->methods_loaded) {
+			guint32 *loaded;
+
+			loaded = g_new0 (guint32, amodule->info.nmethods / 32 + 1);
+			mono_memory_barrier ();
+			amodule->methods_loaded = loaded;
+		}
+		amodule_unlock (amodule);
+	}
 
 	if ((amodule->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
 		return code;
@@ -3411,7 +3433,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		g_free (full_name);
 	}
 
-	mono_aot_lock ();
+	amodule_lock (amodule);
 
 	InterlockedIncrement (&mono_jit_stats.methods_aot);
 
@@ -3422,7 +3444,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	if (method && method->wrapper_type)
 		g_hash_table_insert (amodule->method_to_code, method, code);
 
-	mono_aot_unlock ();
+	amodule_unlock (amodule);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION) {
 		MonoJitInfo *jinfo;
@@ -3487,17 +3509,17 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 		p = amodule->blob + key;
 		orig_p = p;
 
-		mono_aot_lock ();
+		amodule_lock (amodule);
 		if (!amodule->method_ref_to_method)
 			amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
 		m = g_hash_table_lookup (amodule->method_ref_to_method, p);
-		mono_aot_unlock ();
+		amodule_unlock (amodule);
 		if (!m) {
 			m = decode_resolve_method_ref_with_target (amodule, method, p, &p);
 			if (m) {
-				mono_aot_lock ();
+				amodule_lock (amodule);
 				g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
-				mono_aot_unlock ();
+				amodule_unlock (amodule);
 			}
 		}
 		if (m == method) {
@@ -3636,9 +3658,9 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		method_index = mono_metadata_token_index (method->token) - 1;
 	} else if (method->is_inflated || !method->token) {
 		/* This hash table is used to avoid the slower search in the extra_method_table in the AOT image */
-		mono_aot_lock ();
+		amodule_lock (amodule);
 		code = g_hash_table_lookup (amodule->method_to_code, method);
-		mono_aot_unlock ();
+		amodule_unlock (amodule);
 		if (code)
 			return code;
 
@@ -3757,11 +3779,11 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			return NULL;
 
 		/* Needed by find_jit_info */
-		mono_aot_lock ();
+		amodule_lock (amodule);
 		if (!amodule->extra_methods)
 			amodule->extra_methods = g_hash_table_new (NULL, NULL);
 		g_hash_table_insert (amodule->extra_methods, GUINT_TO_POINTER (method_index), method);
-		mono_aot_unlock ();
+		amodule_unlock (amodule);
 	} else {
 		/* Common case */
 		method_index = mono_metadata_token_index (method->token) - 1;
@@ -3960,7 +3982,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
  *
  *   Initialize the PLT table of the AOT module. Called lazily when the first AOT
  * method in the module is loaded to avoid committing memory by writing to it.
- * LOCKING: Assumes the AOT lock is held.
+ * LOCKING: Assumes the AMODULE lock is held.
  */
 static void
 init_plt (MonoAotModule *amodule)
