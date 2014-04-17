@@ -756,7 +756,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	passed=0; \
 	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$${disabled_tests}' '$${dump_action}' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -772,7 +772,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTSI_IL); do	\
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" '$${dump_action}' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -786,7 +786,7 @@ testb: $(TEST_PROG) $(TESTBS)
 	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTBS); do	\
-		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$${disabled_tests}' '$${dump_action}' $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS);	\
 	done
 
 runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
@@ -800,7 +800,7 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	for i in `cat testlist.sorted`; do \
 		rm -f $${i}.so; \
 		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
-		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$${disabled_tests}' '$${dump_action}' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -932,7 +932,7 @@ sgen-regular-tests: $(SGEN_TESTS)
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -957,7 +957,7 @@ sgen-bridge-tests1: sgen-bridge.exe sgen-bridge-major-fragmentation.exe
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="bridge=Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="bridge=Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -982,7 +982,7 @@ sgen-bridge-tests2: sgen-bridge-xref.exe
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="bridge=2Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="bridge=2Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
@@ -1007,7 +1007,7 @@ sgen-toggleref-tests: sgen-toggleref.exe
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="toggleref-test,$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" '$${dump_action}' $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="toggleref-test,$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \
