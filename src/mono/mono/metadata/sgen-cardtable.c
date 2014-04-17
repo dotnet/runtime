@@ -321,8 +321,10 @@ guint8*
 sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards)
 {
 	guint8 *start_card = sgen_card_table_get_card_address ((mword)obj);
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
 	guint8 *end_card = sgen_card_table_get_card_address ((mword)obj + obj_size - 1) + 1;
-	size_t num_cards, rest_num_cards;
+#endif
+	size_t num_cards;
 	guint8 *result = NULL;
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
