@@ -2456,8 +2456,6 @@ if test "x$enable_llvm" = "xyes"; then
    AC_MSG_CHECKING(LLVM version)
    AC_MSG_RESULT($llvm_version)
    if echo $llvm_version | grep -q 'mono'; then
-   	  AC_DEFINE(LLVM_MONO_BRANCH, 1, [Whenever we are using the mono branch of LLVM])
-	  LLVM_CXXFLAGS="$LLVM_CXXFLAGS -DLLVM_MONO_BRANCH"	  
 	  if test "x$enable_llvm_version_check" == "xyes"; then
 	  	 if test "$llvm_version" != "$expected_llvm_version"; then
 	  	 	AC_MSG_ERROR([Expected llvm version $expected_llvm_version, but llvm-config --version returned $llvm_version"])
