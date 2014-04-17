@@ -70,67 +70,63 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, ins->sreg1, 0);
 		NULLIFY_INS (ins);
 		break;
-	case OP_LADD_OVF:
+	case OP_LADD_OVF: {
+		int opcode;
+
 		if (COMPILE_LLVM (cfg))
 			break;
-		{
-			int opcode;
-#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LADDCC;
-#else
+		else
 			opcode = OP_ADDCC;
-#endif
-			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		}
+		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
-	case OP_LADD_OVF_UN:
+	}
+	case OP_LADD_OVF_UN: {
+		int opcode;
+
 		if (COMPILE_LLVM (cfg))
 			break;
-		{
-			int opcode;
-#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LADDCC;
-#else
+		else
 			opcode = OP_ADDCC;
-#endif
-			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		}
+		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
+	}
 #ifndef __mono_ppc64__
-	case OP_LSUB_OVF:
+	case OP_LSUB_OVF: {
+		int opcode;
+
 		if (COMPILE_LLVM (cfg))
 			break;
-		{
-			int opcode;
-#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LSUBCC;
-#else
+		else
 			opcode = OP_SUBCC;
-#endif
-			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		}
+		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
-	case OP_LSUB_OVF_UN:
+	}
+	case OP_LSUB_OVF_UN: {
+		int opcode;
+
 		if (COMPILE_LLVM (cfg))
 			break;
-		{
-			int opcode;
-#if defined(__mono_ilp32__) && SIZEOF_REGISTER == 8
+		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LSUBCC;
-#else
+		else
 			opcode = OP_SUBCC;
-#endif
-			EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		}
+		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		NULLIFY_INS (ins);
 		break;
+	}
 #endif
 		
 	case OP_ICONV_TO_OVF_I8:
