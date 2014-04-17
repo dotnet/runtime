@@ -37,11 +37,19 @@
 #include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetRegisterInfo.h>
+#if LLVM_API_VERSION >= 1
+#include <llvm/IR/Verifier.h>
+#else
 #include <llvm/Analysis/Verifier.h>
+#endif
 #include <llvm/Analysis/Passes.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/CommandLine.h>
+#if LLVM_API_VERSION >= 1
+#include "llvm/IR/LegacyPassNameParser.h"
+#else
 #include "llvm/Support/PassNameParser.h"
+#endif
 #include "llvm/Support/PrettyStackTrace.h"
 #include <llvm/CodeGen/Passes.h>
 #include <llvm/CodeGen/MachineFunctionPass.h>
@@ -360,7 +368,11 @@ mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef ptr, LLVMValueRef 
 {
 	AtomicCmpXchgInst *ins;
 
+#if LLVM_API_VERSION >= 1
+	ins = unwrap(builder)->CreateAtomicCmpXchg (unwrap(ptr), unwrap (cmp), unwrap (val), SequentiallyConsistent, SequentiallyConsistent);
+#else
 	ins = unwrap(builder)->CreateAtomicCmpXchg (unwrap(ptr), unwrap (cmp), unwrap (val), SequentiallyConsistent);
+#endif
 	return wrap (ins);
 }
 
@@ -610,7 +622,11 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   FunctionPassManager *fpm = new FunctionPassManager (unwrap (MP));
   mono_ee->fpm = fpm;
 
+#if LLVM_API_VERSION >= 1
+  fpm->add(new DataLayoutPass(*EE->getDataLayout()));
+#else
   fpm->add(new DataLayout(*EE->getDataLayout()));
+#endif
 
   if (PassList.size() > 0) {
 	  /* Use the passes specified by the env variable */
