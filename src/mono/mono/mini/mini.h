@@ -2886,4 +2886,10 @@ gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define MONO_IS_CROSS_COMPILE 0
 #endif
 
+#if defined(__mono_ilp32__)
+#define MONO_IS_ILP32 1
+#else
+#define MONO_IS_ILP32 0
+#endif
+
 #endif /* __MONO_MINI_H__ */
