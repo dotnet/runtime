@@ -754,7 +754,8 @@ TestDriver.dll:
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTSI_CS); do	\
 		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS); \
 		then \
@@ -769,8 +770,8 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTSI_IL); do	\
 		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS); \
 		then \
@@ -783,8 +784,8 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	echo; echo ".il: $${passed} test(s) passed. $${failed} test(s) did not pass."; echo
 
 testb: $(TEST_PROG) $(TESTBS)
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	for i in $(TESTBS); do	\
 		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$${disabled_tests}" "$${dump_action}" $(RUNTIME_ARGS);	\
 	done
@@ -793,8 +794,8 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	rm -f testlist testlist.sorted; \
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do echo $${i} >> testlist; sort testlist > testlist.sorted; done; \
 	for i in `cat testlist.sorted`; do \
@@ -815,7 +816,7 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	  echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do \
 	    echo $${i}; \
-	    if [ "x$V" = "x1" ]; then \
+	    if [ "x$$V" = "x1" ]; then \
 	      cat $${i}.stdout; \
 	      cat $${i}.stderr; \
 	    fi; \
@@ -824,7 +825,7 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	fi
 
 runtest-managed: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
-	if [ "x$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
+	if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
 	@$(RUNTIME) ./test-runner.exe -j a --disabled '$${disabled_tests}' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 testjit:
@@ -925,7 +926,7 @@ sgen-regular-tests: $(SGEN_TESTS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_CONFIGURATIONS); do 	\
@@ -950,7 +951,7 @@ sgen-bridge-tests1: sgen-bridge.exe sgen-bridge-major-fragmentation.exe
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
@@ -975,7 +976,7 @@ sgen-bridge-tests2: sgen-bridge-xref.exe
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
@@ -1000,7 +1001,7 @@ sgen-toggleref-tests: sgen-toggleref.exe
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	if [ "x$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
+	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
 	for test in $+; do	\
 		echo "...$$test";	\
 		for conf in $(SGEN_CONFIGURATIONS); do 	\
