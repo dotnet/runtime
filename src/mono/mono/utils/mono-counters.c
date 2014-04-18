@@ -160,7 +160,9 @@ section_names [][10] = {
 	"GC",
 	"Metadata",
 	"Generics",
-	"Security"
+	"Security",
+	"Runtime",
+	"System",
 };
 
 static void
