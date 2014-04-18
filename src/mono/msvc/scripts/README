@@ -46,9 +46,15 @@ necessary to build the Mono class libraries.
 
 	Run the genproj.exe executable in this directory.
 
+	   On Windows:
 		cd msvc/scripts/
 		/cygdrive/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe genproj.csproj
 		./genproj.exe
+
+   	   On Mac:
+		cd msvc/scripts/
+		make genproj.exe
+		mono genproj.
 		
 	One output of genproj is the solutions for the successive profiles, 
 	from net_2_0.sln to from net_4.5.sln 
@@ -70,6 +76,16 @@ necessary to build the Mono class libraries.
 
 * KNOWN ISSUES
 
+	* We are currently not running "sn" to sign the assemblies
+	
+	* We do not have an "install" target, perhaps we should generate
+	this based on something similar to the update-csproj setup
+
+	* Audit: every Makefile for "local" changes, as those are not
+        visible to this tool.
+
+* OLD KNOWN ISSUES
+
 	* Many assemblies still fail to compile, due to missing project 
 	references output by genproj, or other issues yet to determine
 	
@@ -80,3 +96,4 @@ necessary to build the Mono class libraries.
 	v4.0 runtime, even when requesting 2.0 in the csproj file
 	(http://social.msdn.microsoft.com/Forums/en-US/msbuild/
 	thread/6c9cd0e1-7fb8-480a-b006-f034b5926e03)
+

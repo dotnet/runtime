@@ -783,32 +783,26 @@ class MsbuildGenerator {
 			}
 		}
 
-		string library_output_dir = string.Empty;
-		try {
-			// ../class/lib/build/tmp/System.Xml.dll
-			//   /class/lib/basic/System.Core.dll
-			// <library_output>mcs.exe</library_output>
-			bool has_tmp = library_output.Contains ("/tmp/");
-			string p = library_output.Replace ("/tmp/", "/").Replace ("/", "\\");
-			string profile_dir = Path.GetDirectoryName (p);
-			string d = has_tmp ? Path.Combine (profile_dir, library) : profile_dir;
-			library_output_dir = d;
-			if (string.IsNullOrEmpty (library_output_dir))
-				library_output_dir = ".\\";
-			library_output = Path.Combine (library_output_dir, output_name).Replace ("\\", "/");
-		} catch {
-			Console.WriteLine ("Error in path: {0} while processing {1}", library_output_dir, library);
-		}
+		// Possible inputs:
+		// ../class/lib/build/tmp/System.Xml.dll  [No longer possible, we should be removing this from order.xml]
+		//   /class/lib/basic/System.Core.dll
+		// <library_output>mcs.exe</library_output>
+		string build_output_dir;
+		if (library_output.Contains ("/"))
+			build_output_dir = Path.GetDirectoryName (library_output);
+		else
+			build_output_dir = "bin\\Debug\\" + library;
+		
 
-		// The build output directory shoudl be unique for each project, to overcome cyclic deps
-		var build_output_dir = string.Format ("bin\\Debug\\{0}", library);
+		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
+		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
+		string postbuild_unix = string.Empty;
+		string postbuild_windows = string.Empty;
 
-
-		string postbuild = string.Empty;
-		postbuild = string.Format (
-			//"if not \"$(OutDir)\" == \"..\\lib\\{0}\" xcopy $(OutDir)$(TargetName).* ..\\lib\\{0}\\ /Y /R /D",
-			"      xcopy $(TargetName).* $(ProjectDir)..\\lib\\{0}\\ /Y /R /D",
-			profile);
+		var postbuild =  
+			"    <PostBuildEvent " + condition_unix + ">\n" + postbuild_unix + "\n    </PostBuildEvent>\n" +
+			"    <PostBuildEvent " + condition_windows + ">\n" + postbuild_windows + "\n    </PostBuildEvent>";
+			
 
 		bool basic_or_build = (library.Contains ("-basic") || library.Contains ("-build"));
 
@@ -842,7 +836,9 @@ class MsbuildGenerator {
 			Replace ("@SOURCES@", sources.ToString ());
 
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
-		using (var o = new StreamWriter (NativeName (result.csprojFileName))) {
+		var generatedProjFile = NativeName (result.csprojFileName);
+		Console.WriteLine ("Generating: {0}", generatedProjFile);
+		using (var o = new StreamWriter (generatedProjFile)) {
 			o.WriteLine (result.output);
 		}
 
@@ -960,18 +956,18 @@ public class Driver {
 		}
 		Console.WriteLine (sb.ToString ());
 
-		//writeSolution (two_sln_gen, mkSlnName (MsbuildGenerator.profile_2_0));
-		//writeSolution (three_five_sln_gen, mkSlnName (MsbuildGenerator.profile_3_5));
-		//writeSolution (four_sln_gen, mkSlnName (MsbuildGenerator.profile_4_0));
+		WriteSolution (two_sln_gen, MakeSolutionName (MsbuildGenerator.profile_2_0));
+		WriteSolution (three_five_sln_gen, MakeSolutionName (MsbuildGenerator.profile_3_5));
+		WriteSolution (four_sln_gen, MakeSolutionName (MsbuildGenerator.profile_4_0));
 		WriteSolution (four_five_sln_gen, MakeSolutionName (MsbuildGenerator.profile_4_5));
 		
 		// A few other optional solutions
 		// Solutions with 'everything' and the most common libraries used in development may be of interest
-		//writeSolution (sln_gen, "mcs_full.sln");
-		//writeSolution (small_full_sln_gen, "small_full.sln");
+		//WriteSolution (sln_gen, "mcs_full.sln");
+		//WriteSolution (small_full_sln_gen, "small_full.sln");
 		// The following may be useful if lacking visual studio or MonoDevelop, to bootstrap mono compiler self-hosting
-		//writeSolution (basic_sln_gen, "mcs_basic.sln");
-		//writeSolution (build_sln_gen, "mcs_build.sln");
+		//WriteSolution (basic_sln_gen, "mcs_basic.sln");
+		//WriteSolution (build_sln_gen, "mcs_build.sln");
 	}
 
 	static string MakeSolutionName (string profileTag)
