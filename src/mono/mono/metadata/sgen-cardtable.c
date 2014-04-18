@@ -774,8 +774,8 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &large_objects);
 	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &bloby_objects);
 #endif
-	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &major_card_scan_time);
-	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &los_card_scan_time);
+	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &major_card_scan_time);
+	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &los_card_scan_time);
 
 
 	remset->wbarrier_set_field = sgen_card_table_wbarrier_set_field;

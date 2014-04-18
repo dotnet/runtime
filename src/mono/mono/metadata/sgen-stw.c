@@ -324,8 +324,8 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 void
 sgen_init_stw (void)
 {
-	mono_counters_register ("World stop", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_stop_world);
-	mono_counters_register ("World restart", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_restart_world);
+	mono_counters_register ("World stop", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_stop_world);
+	mono_counters_register ("World restart", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_restart_world);
 }
 
 #endif

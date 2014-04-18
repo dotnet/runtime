@@ -122,7 +122,10 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      int64val = ((LongFunc)counter->addr) ();
 	      else
 		      int64val = *(gint64*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)int64val);
+	      if (mono_counter_get_unit (counter) == MONO_COUNTER_TIME)
+		      fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)int64val / 10000.0);
+	      else
+		      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)int64val);
 	      break;
 	case MONO_COUNTER_ULONG:
 	      if (counter->type & MONO_COUNTER_CALLBACK)
@@ -136,11 +139,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      wordval = ((PtrFunc)counter->addr) ();
 	      else
 		      wordval = *(gssize*)counter->addr;
-#if SIZEOF_VOID_P == 8
-	      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (gint64)wordval);
-#else
-	      fprintf (outfile, ENTRY_FMT "%d\n", counter->name, (gint)wordval);
-#endif
+	      fprintf (outfile, ENTRY_FMT "%zd\n", counter->name, (gint64)wordval);
 	      break;
 	case MONO_COUNTER_DOUBLE:
 	      if (counter->type & MONO_COUNTER_CALLBACK)
@@ -156,13 +155,6 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      str = *(char**)counter->addr;
 	      fprintf (outfile, ENTRY_FMT "%s\n", counter->name, str);
 	      break;
-	case MONO_COUNTER_TIME_INTERVAL:
-	    if (counter->type & MONO_COUNTER_CALLBACK)
-		      int64val = ((LongFunc)counter->addr) ();
-	    else
-		      int64val = *(gint64*)counter->addr;
-	    fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)int64val / 1000.0);
-	    break;
 	}
 }
 

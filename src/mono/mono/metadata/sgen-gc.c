@@ -1894,28 +1894,28 @@ init_stats (void)
 	if (inited)
 		return;
 
-	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_pre_collection_fragment_clear);
-	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_pinning);
-	mono_counters_register ("Minor scan remembered set", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_remsets);
-	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_pinned);
-	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_registered_roots);
-	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_scan_thread_data);
-	mono_counters_register ("Minor finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_finish_gray_stack);
-	mono_counters_register ("Minor fragment creation", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_minor_fragment_creation);
+	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_pre_collection_fragment_clear);
+	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_pinning);
+	mono_counters_register ("Minor scan remembered set", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_scan_remsets);
+	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_scan_pinned);
+	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_scan_registered_roots);
+	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_scan_thread_data);
+	mono_counters_register ("Minor finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_finish_gray_stack);
+	mono_counters_register ("Minor fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_fragment_creation);
 
-	mono_counters_register ("Major fragment clear", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_pre_collection_fragment_clear);
-	mono_counters_register ("Major pinning", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_pinning);
-	mono_counters_register ("Major scan pinned", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_pinned);
-	mono_counters_register ("Major scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_registered_roots);
-	mono_counters_register ("Major scan thread data", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_thread_data);
-	mono_counters_register ("Major scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_alloc_pinned);
-	mono_counters_register ("Major scan finalized", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_finalized);
-	mono_counters_register ("Major scan big objects", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_scan_big_objects);
-	mono_counters_register ("Major finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_finish_gray_stack);
-	mono_counters_register ("Major free big objects", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_free_bigobjs);
-	mono_counters_register ("Major LOS sweep", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_los_sweep);
-	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_sweep);
-	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_TIME_INTERVAL, &time_major_fragment_creation);
+	mono_counters_register ("Major fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_pre_collection_fragment_clear);
+	mono_counters_register ("Major pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_pinning);
+	mono_counters_register ("Major scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_scan_pinned);
+	mono_counters_register ("Major scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_scan_registered_roots);
+	mono_counters_register ("Major scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_scan_thread_data);
+	mono_counters_register ("Major scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_scan_alloc_pinned);
+	mono_counters_register ("Major scan finalized", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_scan_finalized);
+	mono_counters_register ("Major scan big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_scan_big_objects);
+	mono_counters_register ("Major finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_finish_gray_stack);
+	mono_counters_register ("Major free big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_free_bigobjs);
+	mono_counters_register ("Major LOS sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_los_sweep);
+	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_sweep);
+	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_major_fragment_creation);
 
 	mono_counters_register ("Number of pinned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_pinned_objects);
 
