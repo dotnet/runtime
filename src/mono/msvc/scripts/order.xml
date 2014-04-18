@@ -15,7 +15,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/basic/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/basic/mscorlib.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
       <response>corlib.dll.sources</response>
@@ -25,7 +25,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:XML_DEP -r:System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/basic/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/basic/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
       <response>./../../build/deps/basic_System.dll.sources</response>
@@ -35,7 +35,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/basic/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/basic/System.Xml.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
       <response>System.Xml.dll.sources</response>
@@ -45,7 +45,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:XML_DEP -r:System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/basic/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/basic/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
       <response>./../../build/deps/basic_System.dll.sources</response>
@@ -55,7 +55,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -r:System.dll -unsafe -nowarn:1030</flags>
       <output>Mono.Security.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/basic/tmp/Mono.Security.dll</library_output>
+      <library_output>./../../class/lib/basic/Mono.Security.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
       <response>Mono.Security.dll.sources</response>
@@ -75,7 +75,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/build/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/build/mscorlib.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>build</profile>
       <response>corlib.dll.sources</response>
@@ -85,7 +85,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:XML_DEP -r:System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/build/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/build/System.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>build</profile>
       <response>System.dll.sources</response>
@@ -95,7 +95,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/build/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/build/System.Xml.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>build</profile>
       <response>System.Xml.dll.sources</response>
@@ -105,7 +105,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:XML_DEP -r:System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/build/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/build/System.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>build</profile>
       <response>System.dll.sources</response>
@@ -115,7 +115,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:System.dll -unsafe -nowarn:1030</flags>
       <output>Mono.Security.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/build/tmp/Mono.Security.dll</library_output>
+      <library_output>./../../class/lib/build/Mono.Security.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>build</profile>
       <response>Mono.Security.dll.sources</response>
@@ -175,7 +175,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -debug -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v2</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/mscorlib.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>corlib.dll.sources</response>
@@ -195,7 +195,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.dll.sources</response>
@@ -215,7 +215,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -define:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Xml.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Xml.dll.sources</response>
@@ -235,7 +235,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll</flags>
       <output>Mono.CompilerServices.SymbolWriter.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/Mono.CompilerServices.SymbolWriter.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/Mono.CompilerServices.SymbolWriter.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
@@ -285,7 +285,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -unsafe -nowarn:1030</flags>
       <output>Mono.Security.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/Mono.Security.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/Mono.Security.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>Mono.Security.dll.sources</response>
@@ -305,7 +305,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.dll.sources</response>
@@ -345,7 +345,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Configuration.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Configuration.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Configuration.dll.sources</response>
@@ -365,7 +365,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.dll.sources</response>
@@ -385,7 +385,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -define:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Xml.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Xml.dll.sources</response>
@@ -405,7 +405,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /unsafe /define:DISABLE_UNSAFE -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_2_0/tmp/I18N.dll</library_output>
+      <library_output>./../../../class/lib/net_2_0/I18N.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>I18N.dll.sources</response>
@@ -415,7 +415,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.West.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_2_0/tmp/I18N.West.dll</library_output>
+      <library_output>./../../../class/lib/net_2_0/I18N.West.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>I18N.West.dll.sources</response>
@@ -435,7 +435,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.MidEast.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_2_0/tmp/I18N.MidEast.dll</library_output>
+      <library_output>./../../../class/lib/net_2_0/I18N.MidEast.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>I18N.MidEast.dll.sources</response>
@@ -455,7 +455,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.Other.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_2_0/tmp/I18N.Other.dll</library_output>
+      <library_output>./../../../class/lib/net_2_0/I18N.Other.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>I18N.Other.dll.sources</response>
@@ -465,7 +465,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.Rare.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_2_0/tmp/I18N.Rare.dll</library_output>
+      <library_output>./../../../class/lib/net_2_0/I18N.Rare.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>I18N.Rare.dll.sources</response>
@@ -475,7 +475,7 @@
       <flags>/codepage:65001 /unsafe /resource:big5.table /resource:gb2312.table /resource:jis.table /resource:ks.table /resource:gb18030.table /r:mscorlib.dll /r:I18N.dll /define:DISABLE_UNSAFE -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.CJK.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_2_0/tmp/I18N.CJK.dll</library_output>
+      <library_output>./../../../class/lib/net_2_0/I18N.CJK.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>I18N.CJK.dll.sources</response>
@@ -685,7 +685,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Web.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>./../../build/deps/net_2_0_System.Web.dll.sources</response>
@@ -735,7 +735,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Web.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>./../../build/deps/net_2_0_System.Web.dll.sources</response>
@@ -845,7 +845,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:Accessibility.dll -r:System.Data.dll -r:System.Configuration.dll -define:DRAWING_DESIGN_DEP -r:System.Drawing.Design.dll</flags>
       <output>System.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Design.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Design.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Design.dll.sources</response>
@@ -1085,7 +1085,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:Accessibility.dll -r:System.Data.dll -r:System.Configuration.dll -define:DRAWING_DESIGN_DEP -r:System.Drawing.Design.dll</flags>
       <output>System.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Design.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Design.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Design.dll.sources</response>
@@ -1295,7 +1295,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Web.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>./../../build/deps/net_2_0_System.Web.dll.sources</response>
@@ -1385,7 +1385,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.ServiceModel.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.ServiceModel.dll.sources</response>
@@ -1475,7 +1475,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /warn:1 /keyfile:../winfx.pub /r:System.dll /r:System.Core.dll /r:System.Configuration.dll /r:System.Data.dll /r:System.Xml.dll /r:System.Web.dll /r:System.Web.Abstractions.dll /r:System.Web.Routing.dll /r:System.Web.Extensions.dll /r:System.ComponentModel.DataAnnotations.dll /r:System.Data.Linq.dll /resource:System.Web.Mvc/Resources/MvcResources.resources,System.Web.Mvc.Resources.MvcResources.resources -d:NET_3_5 -d:MONO</flags>
       <output>System.Web.Mvc.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/System.Web.Mvc.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/System.Web.Mvc.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Web.Mvc2.dll.sources</response>
@@ -1505,7 +1505,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:Mono.Posix.dll</flags>
       <output>Mono.Management.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/Mono.Management.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/Mono.Management.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>Mono.Management.dll.sources</response>
@@ -1705,7 +1705,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll /r:System.Core.dll /r:System.Configuration.dll /r:System.Data.dll /r:System.Xml.dll /r:System.Web.dll /r:System.Web.Abstractions.dll /r:System.Web.Routing.dll /r:System.Web.Extensions.dll /resource:System.Web.Mvc/Resources/MvcResources.resources,System.Web.Mvc.Resources.MvcResources.resources -d:NET_3_5 -d:MONO</flags>
       <output>System.Web.Mvc.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/compat/net_2_0/tmp/System.Web.Mvc.dll</library_output>
+      <library_output>./../../class/compat/net_2_0/System.Web.Mvc.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>System.Web.Mvc.dll.sources</response>
@@ -2155,7 +2155,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/mscorlib.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>corlib.dll.sources</response>
@@ -2175,7 +2175,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.dll.sources</response>
@@ -2195,7 +2195,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Xml.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.Xml.dll.sources</response>
@@ -2215,7 +2215,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:System.dll</flags>
       <output>Mono.CompilerServices.SymbolWriter.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/Mono.CompilerServices.SymbolWriter.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/Mono.CompilerServices.SymbolWriter.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
@@ -2265,7 +2265,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System.dll -unsafe -nowarn:1030</flags>
       <output>Mono.Security.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/Mono.Security.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/Mono.Security.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>Mono.Security.dll.sources</response>
@@ -2285,7 +2285,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.dll.sources</response>
@@ -2325,7 +2325,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Configuration.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Configuration.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.Configuration.dll.sources</response>
@@ -2345,7 +2345,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_0/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.dll.sources</response>
@@ -2365,7 +2365,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Xml.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.Xml.dll.sources</response>
@@ -2385,7 +2385,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /unsafe /define:DISABLE_UNSAFE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
       <output>I18N.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_0/tmp/I18N.dll</library_output>
+      <library_output>./../../../class/lib/net_4_0/I18N.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.dll.sources</response>
@@ -2395,7 +2395,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
       <output>I18N.West.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_0/tmp/I18N.West.dll</library_output>
+      <library_output>./../../../class/lib/net_4_0/I18N.West.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.West.dll.sources</response>
@@ -2415,7 +2415,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
       <output>I18N.MidEast.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_0/tmp/I18N.MidEast.dll</library_output>
+      <library_output>./../../../class/lib/net_4_0/I18N.MidEast.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.MidEast.dll.sources</response>
@@ -2435,7 +2435,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
       <output>I18N.Other.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_0/tmp/I18N.Other.dll</library_output>
+      <library_output>./../../../class/lib/net_4_0/I18N.Other.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.Other.dll.sources</response>
@@ -2445,7 +2445,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
       <output>I18N.Rare.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_0/tmp/I18N.Rare.dll</library_output>
+      <library_output>./../../../class/lib/net_4_0/I18N.Rare.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.Rare.dll.sources</response>
@@ -2455,7 +2455,7 @@
       <flags>/codepage:65001 /unsafe /resource:big5.table /resource:gb2312.table /resource:jis.table /resource:ks.table /resource:gb18030.table /r:mscorlib.dll /r:I18N.dll /define:DISABLE_UNSAFE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig</flags>
       <output>I18N.CJK.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_0/tmp/I18N.CJK.dll</library_output>
+      <library_output>./../../../class/lib/net_4_0/I18N.CJK.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>I18N.CJK.dll.sources</response>
@@ -2665,7 +2665,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll -r:System.Web.ApplicationServices.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js /resource:System.Web.UI.WebControls/MenuModern.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Web.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/net_4_0_System.Web.dll.sources</response>
@@ -2715,7 +2715,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll -r:System.Web.ApplicationServices.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js /resource:System.Web.UI.WebControls/MenuModern.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Web.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/net_4_0_System.Web.dll.sources</response>
@@ -2825,7 +2825,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:Accessibility.dll -r:System.Data.dll -r:System.Configuration.dll -define:DRAWING_DESIGN_DEP -r:System.Drawing.Design.dll</flags>
       <output>System.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Design.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Design.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.Design.dll.sources</response>
@@ -3065,7 +3065,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:Accessibility.dll -r:System.Data.dll -r:System.Configuration.dll -define:DRAWING_DESIGN_DEP -r:System.Drawing.Design.dll</flags>
       <output>System.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Design.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Design.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.Design.dll.sources</response>
@@ -3275,7 +3275,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll -r:System.Web.ApplicationServices.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js /resource:System.Web.UI.WebControls/MenuModern.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.Web.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/net_4_0_System.Web.dll.sources</response>
@@ -3365,7 +3365,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.ServiceModel.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/net_4_0_System.ServiceModel.dll.sources</response>
@@ -3455,7 +3455,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /warn:1 /keyfile:../winfx.pub /r:System.dll /r:System.Core.dll /r:System.Configuration.dll /r:System.Data.dll /r:System.Xml.dll /r:System.Web.dll /r:System.Web.Abstractions.dll /r:System.Web.Routing.dll /r:System.Web.Extensions.dll /r:System.ComponentModel.DataAnnotations.dll /r:System.Data.Linq.dll</flags>
       <output>dummy-System.Web.Mvc.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/dummy-System.Web.Mvc.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/dummy-System.Web.Mvc.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>System.Web.Mvc2.dll.sources</response>
@@ -3485,7 +3485,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:Mono.Posix.dll</flags>
       <output>Mono.Management.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/Mono.Management.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/Mono.Management.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>Mono.Management.dll.sources</response>
@@ -3695,7 +3695,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/System.ServiceModel.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/net_4_0_System.ServiceModel.dll.sources</response>
@@ -4135,7 +4135,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/mscorlib.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>corlib.dll.sources</response>
@@ -4155,7 +4155,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.dll.sources</response>
@@ -4175,7 +4175,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Xml.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Xml.dll.sources</response>
@@ -4195,7 +4195,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:System.dll</flags>
       <output>Mono.CompilerServices.SymbolWriter.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/Mono.CompilerServices.SymbolWriter.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/Mono.CompilerServices.SymbolWriter.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
@@ -4245,7 +4245,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -unsafe -nowarn:1030</flags>
       <output>Mono.Security.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/Mono.Security.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/Mono.Security.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>Mono.Security.dll.sources</response>
@@ -4265,7 +4265,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.dll.sources</response>
@@ -4305,7 +4305,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Configuration.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Configuration.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Configuration.dll.sources</response>
@@ -4325,7 +4325,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_4_5/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:MonoSecurity=Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.dll.sources</response>
@@ -4345,7 +4345,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs</built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Xml.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Xml.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Xml.dll.sources</response>
@@ -4365,7 +4365,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /unsafe /define:DISABLE_UNSAFE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/tmp/I18N.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/I18N.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>I18N.dll.sources</response>
@@ -4375,7 +4375,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.West.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/tmp/I18N.West.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/I18N.West.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>I18N.West.dll.sources</response>
@@ -4395,7 +4395,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.MidEast.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/tmp/I18N.MidEast.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/I18N.MidEast.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>I18N.MidEast.dll.sources</response>
@@ -4415,7 +4415,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.Other.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/tmp/I18N.Other.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/I18N.Other.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>I18N.Other.dll.sources</response>
@@ -4425,7 +4425,7 @@
       <flags>/codepage:65001 /r:mscorlib.dll /r:I18N.dll /unsafe -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.Rare.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/tmp/I18N.Rare.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/I18N.Rare.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>I18N.Rare.dll.sources</response>
@@ -4435,7 +4435,7 @@
       <flags>/codepage:65001 /unsafe /resource:big5.table /resource:gb2312.table /resource:jis.table /resource:ks.table /resource:gb18030.table /r:mscorlib.dll /r:I18N.dll /define:DISABLE_UNSAFE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
       <output>I18N.CJK.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_5/tmp/I18N.CJK.dll</library_output>
+      <library_output>./../../../class/lib/net_4_5/I18N.CJK.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>I18N.CJK.dll.sources</response>
@@ -4645,7 +4645,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll -r:System.Web.ApplicationServices.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js /resource:System.Web.UI.WebControls/MenuModern.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Web.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/net_4_5_System.Web.dll.sources</response>
@@ -4695,7 +4695,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll -r:System.Web.ApplicationServices.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js /resource:System.Web.UI.WebControls/MenuModern.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Web.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/net_4_5_System.Web.dll.sources</response>
@@ -4805,7 +4805,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:Accessibility.dll -r:System.Data.dll -r:System.Configuration.dll -define:DRAWING_DESIGN_DEP -r:System.Drawing.Design.dll</flags>
       <output>System.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Design.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Design.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Design.dll.sources</response>
@@ -5045,7 +5045,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:Accessibility.dll -r:System.Data.dll -r:System.Configuration.dll -define:DRAWING_DESIGN_DEP -r:System.Drawing.Design.dll</flags>
       <output>System.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Design.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Design.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Design.dll.sources</response>
@@ -5255,7 +5255,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:System.Runtime.Serialization.Formatters.Soap -d:INSIDE_SYSTEM_WEB -nowarn:618 -r:System.Configuration.dll -r:Mono.Data.Sqlite.dll -r:System.Web.ApplicationServices.dll /resource:resources/TranslationResources.resources /resource:resources/WebUIValidation.js /resource:resources/folder.gif /resource:resources/file.gif /resource:resources/computer.gif /resource:resources/arrow_minus.gif /resource:resources/arrow_noexpand.gif /resource:resources/arrow_plus.gif /resource:resources/arrow_up.gif /resource:resources/arrow_down.gif /resource:resources/box_full.gif /resource:resources/box_empty.gif /resource:resources/box_minus.gif /resource:resources/box_noexpand.gif /resource:resources/box_plus.gif /resource:resources/contact.gif /resource:resources/dot_empty.gif /resource:resources/dot_full.gif /resource:resources/dots.gif /resource:resources/inbox.gif /resource:resources/star_empty.gif /resource:resources/star_full.gif /resource:resources/warning.gif /resource:resources/TreeView_noexpand.gif /resource:resources/TreeView_dash.gif /resource:resources/TreeView_dashminus.gif /resource:resources/TreeView_dashplus.gif /resource:resources/TreeView_i.gif /resource:resources/TreeView_l.gif /resource:resources/TreeView_lminus.gif /resource:resources/TreeView_lplus.gif /resource:resources/TreeView_minus.gif /resource:resources/TreeView_plus.gif /resource:resources/TreeView_r.gif /resource:resources/TreeView_rminus.gif /resource:resources/TreeView_rplus.gif /resource:resources/TreeView_t.gif /resource:resources/TreeView_tminus.gif /resource:resources/TreeView_tplus.gif /resource:resources/transparent.gif /resource:resources/webform.js /resource:resources/WebUIValidation_2.0.js /resource:resources/ErrorTemplateCommon_Top.html /resource:resources/DefaultErrorTemplate_CustomErrorDefault.html /resource:resources/ErrorTemplateCommon_Bottom.html /resource:resources/DefaultErrorTemplate_StandardPage.html /resource:resources/HtmlizedExceptionPage_Top.html /resource:resources/HtmlizedExceptionPage_FileLongSource.html /resource:resources/HtmlizedExceptionPage_FileShortSource.html /resource:resources/HtmlizedExceptionPage_CompilerOutput.html /resource:System.Web.UI.WebControls/GridView.js /resource:System.Web.UI.WebControls/DetailsView.js /resource:System.Web.UI.WebControls/TreeView.js /resource:System.Web.UI.WebControls/Menu.js /resource:System.Web.UI.WebControls/MenuModern.js -define:WEBSERVICES_DEP -r:System.Web.Services.dll -define:MONOWEB_DEP -r:Mono.Web.dll -define:SYSTEMCORE_DEP -r:System.Core.dll</flags>
       <output>System.Web.dll</output>
       <built_sources>System.Web/UplevelHelper.cs</built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Web.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Web.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/net_4_5_System.Web.dll.sources</response>
@@ -5345,7 +5345,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.ServiceModel.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/net_4_5_System.ServiceModel.dll.sources</response>
@@ -5435,7 +5435,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /warn:1 /keyfile:../winfx.pub /r:System.dll /r:System.Core.dll /r:System.Configuration.dll /r:System.Data.dll /r:System.Xml.dll /r:System.Web.dll /r:System.Web.Abstractions.dll /r:System.Web.Routing.dll /r:System.Web.Extensions.dll /r:System.ComponentModel.DataAnnotations.dll /r:System.Data.Linq.dll</flags>
       <output>dummy-System.Web.Mvc.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/dummy-System.Web.Mvc.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/dummy-System.Web.Mvc.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Web.Mvc2.dll.sources</response>
@@ -5465,7 +5465,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:Mono.Posix.dll</flags>
       <output>Mono.Management.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/Mono.Management.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/Mono.Management.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>Mono.Management.dll.sources</response>
@@ -5675,7 +5675,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /nowarn:414,169,67,3005,436,219,618 /unsafe /d:TRACE /r:System.dll /r:System.Xml.dll /r:System.Core.dll /r:System.Runtime.Serialization.dll /resource:resources/WS-Addressing.schema /resource:resources/ws-addr.xsd /d:NET_3_0 /r:System.Configuration.dll /r:System.Data.dll /r:System.Security.dll /r:System.IdentityModel.dll /r:System.IdentityModel.Selectors.dll /r:System.Transactions.dll /r:System.Messaging.dll /r:System.Web.dll /r:System.Web.Services.dll /r:Mono.Security.dll -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll /r:System.Web.ApplicationServices.dll</flags>
       <output>System.ServiceModel.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.ServiceModel.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.ServiceModel.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>./../../build/deps/net_4_5_System.ServiceModel.dll.sources</response>
@@ -6115,7 +6115,7 @@
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /warn:1 /keyfile:../winfx.pub /d:MONO /delaysign /r:Microsoft.Web.Infrastructure.dll /r:System.dll /r:System.Core.dll /r:System.Configuration.dll /r:System.Data.dll /r:System.Xml.dll /r:System.Web.dll /r:System.Web.Abstractions.dll /r:System.Web.Routing.dll /r:System.Web.Extensions.dll /r:System.ComponentModel.DataAnnotations.dll /r:System.Data.Linq.dll /r:System.Runtime.Caching.dll /r:System.Web.Razor.dll /r:System.Web.WebPages.Razor.dll /r:System.Web.WebPages.dll /resource:Mvc/Resources/MvcResources.resources,System.Web.Mvc.Resources.MvcResources.resources</flags>
       <output>System.Web.Mvc.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/System.Web.Mvc.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/System.Web.Mvc.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>System.Web.Mvc3.dll.sources</response>
