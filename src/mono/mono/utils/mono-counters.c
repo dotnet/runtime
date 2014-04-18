@@ -20,6 +20,18 @@ static MonoCounter *counters = NULL;
 static int valid_mask = 0;
 static int set_mask = 0;
 
+static int
+mono_counter_get_variance (MonoCounter *counter)
+{
+	return counter->type & MONO_COUNTER_VARIANCE_MASK;
+}
+
+static int
+mono_counter_get_unit (MonoCounter *counter)
+{
+	return counter->type & MONO_COUNTER_UNIT_MASK;
+}
+
 /**
  * mono_counters_enable:
  * @section_mask: a mask listing the sections that will be displayed
@@ -170,7 +182,7 @@ mono_counters_dump_section (int section, FILE *outfile)
 {
 	MonoCounter *counter = counters;
 	while (counter) {
-		if (counter->type & section)
+		if (counter->type & section && mono_counter_get_variance (counter) == MONO_COUNTER_MONOTONIC)
 			dump_counter (counter, outfile);
 		counter = counter->next;
 	}
