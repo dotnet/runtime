@@ -2419,7 +2419,6 @@ gpointer mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer ar
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, mgreg_t *regs) MONO_INTERNAL;
-void     mono_arch_nullify_plt_entry            (guint8 *code, mgreg_t *regs) MONO_INTERNAL;
 int      mono_arch_get_this_arg_reg             (guint8 *code) MONO_INTERNAL;
 gpointer mono_arch_get_this_arg_from_call       (mgreg_t *regs, guint8 *code) MONO_INTERNAL;
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target) MONO_INTERNAL;

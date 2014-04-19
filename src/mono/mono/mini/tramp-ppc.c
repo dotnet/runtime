@@ -203,12 +203,6 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 	mono_arch_patch_callsite (NULL, code, mini_get_nullified_class_init_trampoline ());
 }
 
-void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	mono_arch_patch_plt_entry (code, NULL, regs, mini_get_nullified_class_init_trampoline ());
-}
-
 /* Stack size for trampoline function 
  * PPC_MINIMAL_STACK_SIZE + 16 (args + alignment to ppc_magic_trampoline)
  * + MonoLMF + 14 fp regs + 13 gregs + alignment

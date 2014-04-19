@@ -112,12 +112,6 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 #define STACK (int)(ALIGN_TO(4*IREG_SIZE + 8 + sizeof(MonoLMF) + 32, 8))
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	mono_arch_patch_plt_entry (code, NULL, regs, mini_get_nullified_class_init_trampoline ());
-}
-
-void
 mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
 	guint32 *code32 = (guint32*)code;

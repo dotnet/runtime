@@ -219,22 +219,6 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_nullify_plt_entry			    */
-/*                                                                  */
-/* Function	- Nullify a PLT entry call.			    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	g_assert_not_reached ();
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_create_trampoline_code                  */
 /*                                                                  */
 /* Function	- Create the designated type of trampoline according*/

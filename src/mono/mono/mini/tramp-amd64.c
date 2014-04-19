@@ -392,12 +392,6 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 	}
 }
 
-void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	mono_arch_patch_plt_entry (code, NULL, regs, mini_get_nullified_class_init_trampoline ());
-}
-
 static void
 stack_unaligned (MonoTrampolineType tramp_type)
 {

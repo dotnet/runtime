@@ -75,12 +75,6 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 	sparc_nop (code);
 }
 
-void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	g_assert_not_reached ();
-}
-
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
 guchar*

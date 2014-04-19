@@ -169,12 +169,6 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 	mono_arch_flush_icache (callsite_begin, code - callsite_begin);
 }
 
-void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	g_assert_not_reached ();
-}
-
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {

@@ -132,12 +132,6 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 	mono_arch_patch_callsite (NULL, code, mini_get_nullified_class_init_trampoline ());
 }
 
-void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
-{
-	mono_arch_patch_plt_entry (code, NULL, regs, mini_get_nullified_class_init_trampoline ());
-}
-
 #ifndef DISABLE_JIT
 
 #define arm_is_imm12(v) ((int)(v) > -4096 && (int)(v) < 4096)

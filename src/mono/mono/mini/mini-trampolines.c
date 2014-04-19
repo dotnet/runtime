@@ -917,7 +917,7 @@ mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, gui
 
 	if (vtable->initialized) {
 		if (plt_entry)
-			mono_arch_nullify_plt_entry (plt_entry, regs);
+			mono_arch_patch_plt_entry (code, NULL, regs, mini_get_nullified_class_init_trampoline ());
 		else
 			mono_arch_nullify_class_init_trampoline (code, regs);
 	}
