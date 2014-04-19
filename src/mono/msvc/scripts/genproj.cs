@@ -630,10 +630,25 @@ class MsbuildGenerator {
 		//  inputs/LIBRARY.pre
 		//
 		string prebuild = Load (library + ".pre");
-
+		string prebuild_windows, prebuild_unix;
+		
 		int q = library.IndexOf ("-");
 		if (q != -1)
 			prebuild = prebuild + Load (library.Substring (0, q) + ".pre");
+
+		if (prebuild.IndexOf ("@MONO@") != -1){
+			prebuild_unix = prebuild.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
+			prebuild_windows = prebuild.Replace ("@MONO@", "").Replace ("@CAT@", "type");
+		} else {
+			prebuild_unix = prebuild;
+			prebuild_windows = prebuild;
+		}
+		
+		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
+		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
+		prebuild =
+			"    <PreBuildEvent " + condition_unix + ">\n" + prebuild_unix + "\n    </PreBuildEvent>\n" +
+			"    <PreBuildEvent " + condition_windows + ">\n" + prebuild_windows + "\n    </PreBuildEvent>\n";
 
 		var all_args = new Queue<string []> ();
 		all_args.Enqueue (flags.Split ());
@@ -794,8 +809,6 @@ class MsbuildGenerator {
 			build_output_dir = "bin\\Debug\\" + library;
 		
 
-		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
-		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
 		string postbuild_unix = string.Empty;
 		string postbuild_windows = string.Empty;
 
@@ -850,23 +863,16 @@ class MsbuildGenerator {
 		refs.AppendFormat ("    <ProjectReference Include=\"{0}\">{1}", GetRelativePath (result.csprojFileName, lastMatching.csprojFileName), NewLine);
 		refs.Append ("      <Project>" + lastMatching.projectGuid + "</Project>" + NewLine);
 		refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.csprojFileName) + "</Name>" + NewLine);
-		//refs.Append("      <HintPath>" + r + "</HintPath>" + NewLine);
 		refs.Append ("    </ProjectReference>" + NewLine);
 		if (!result.projReferences.Contains (lastMatching))
 			result.projReferences.Add (lastMatching);
 	}
 
-	static string GetRelativePath (string referencerPath, string referenceePath)
+	static string GetRelativePath (string from, string to)
 	{
-		// F:\src\mono\msvc\scripts\
-		//..\..\mcs\class\System\System-net_2_0.csproj
-		//..\..\mcs\class\corlib\corlib-net_2_0.csproj
-		//  So from \System\, corlib needs to be referenced as:
-		// ..\corlib\corlib-net_2_0.csproj
-
-		// Could be possible to use PathRelativePathTo, but this is a P/Invoke to Win32 API.
-		// For now, simpler but less robust:
-		return referenceePath.Replace (@"..\..\mcs\class", "..").Replace ("/", "\\");
+		var fromUri = new Uri (Path.GetFullPath (from));
+		var toUri = new Uri (Path.GetFullPath (to));
+		return fromUri.MakeRelativeUri (toUri).ToString ();
 	}
 
 	static VsCsproj GetMatchingCsproj (string dllReferenceName, List<VsCsproj> projects)

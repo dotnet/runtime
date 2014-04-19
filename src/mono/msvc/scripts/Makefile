@@ -1,5 +1,8 @@
-all: genproj.exe
+all: genproj.exe prepare.exe
 	mono genproj.exe
 
 genproj.exe: genproj.cs
-	mcs genproj.cs -pkg:dotnet -r:System.Xml.Linq
+	mcs genproj.cs -r:System.Xml.Linq
+
+prepare.exe: prepare.cs
+	mcs prepare.cs
