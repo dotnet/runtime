@@ -128,6 +128,26 @@
 	((a)[13]) = (gpointer) (UCONTEXT_REG_LR((ctx)));	\
 	} while (0)
 
+#elif defined(TARGET_ARM64)
+
+#include <mono/utils/mono-sigcontext.h>
+
+#ifdef __linux__
+#define REDZONE_SIZE    0
+#elif defined(__APPLE__)
+#define REDZONE_SIZE	128
+#else
+#error "Not implemented."
+#endif
+#define USE_MONO_CTX
+#define ARCH_NUM_REGS 31
+
+#define ARCH_STORE_REGS(ptr) do { g_assert_not_reached (); } while (0)
+
+#define ARCH_SIGCTX_SP(ctx)	UCONTEXT_REG_SP (ctx)
+#define ARCH_SIGCTX_IP(ctx)	UCONTEXT_REG_PC (ctx)
+#define ARCH_COPY_SIGCTX_REGS(a,ctx) do { g_assert_not_reached (); } while (0)
+
 #elif defined(__mips__)
 
 #define REDZONE_SIZE	0
