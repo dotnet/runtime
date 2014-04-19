@@ -7622,7 +7622,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 #ifdef TARGET_IOS
-	register_icall (pthread_getspecific, "pthread_getspecific", NULL, TRUE);
+	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);
 #endif
 
 	mono_generic_sharing_init ();
