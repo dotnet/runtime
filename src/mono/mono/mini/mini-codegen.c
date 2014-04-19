@@ -1065,8 +1065,9 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 	else {
 		g_assert (reg >= MONO_MAX_IREGS);
 		g_assert (hreg < MONO_MAX_IREGS);
-#ifndef TARGET_ARM
+#if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
+		/* On arm64, rgctx_reg is a global hreg, and it is used to pass an argument */
 		g_assert (! is_global_ireg (hreg));
 #endif
 
@@ -1124,7 +1125,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		desc_to_fixed_reg_inited = TRUE;
 
 		/* Validate the cpu description against the info in mini-ops.h */
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 		for (i = OP_LOAD; i < OP_LAST; ++i) {
 			const char *ispec;
 

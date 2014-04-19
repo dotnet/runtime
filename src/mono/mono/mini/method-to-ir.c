@@ -1953,10 +1953,26 @@ emit_push_lmf (MonoCompile *cfg)
 		}
 #else
 		lmf_ins = mono_get_lmf_addr_intrinsic (cfg);
-		if (lmf_ins) 
+		if (lmf_ins) {
 			MONO_ADD_INS (cfg->cbb, lmf_ins);
-		else
+		} else {
+#ifdef TARGET_IOS
+			MonoInst *args [16], *jit_tls_ins, *ins;
+
+			/* Inline mono_get_lmf_addr () */
+			/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
+
+			/* Load mono_jit_tls_id */
+			EMIT_NEW_AOTCONST (cfg, args [0], MONO_PATCH_INFO_JIT_TLS_ID, NULL);
+			/* call pthread_getspecific () */
+			jit_tls_ins = mono_emit_jit_icall (cfg, pthread_getspecific, args);
+			/* lmf_addr = &jit_tls->lmf */
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, cfg->lmf_addr_var->dreg, jit_tls_ins->dreg, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+			lmf_ins = ins;
+#else
 			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
+#endif
+		}
 #endif
 		lmf_ins->dreg = cfg->lmf_addr_var->dreg;
 
@@ -5686,10 +5702,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (args [0]->opcode == OP_GOT_ENTRY) {
 			pi = args [0]->inst_p1;
 			g_assert (pi->opcode == OP_PATCH_INFO);
-			g_assert ((int)pi->inst_p1 == MONO_PATCH_INFO_LDSTR);
+			g_assert (GPOINTER_TO_INT (pi->inst_p1) == MONO_PATCH_INFO_LDSTR);
 			ji = pi->inst_p0;
 		} else {
-			g_assert ((int)args [0]->inst_p1 == MONO_PATCH_INFO_LDSTR);
+			g_assert (GPOINTER_TO_INT (args [0]->inst_p1) == MONO_PATCH_INFO_LDSTR);
 			ji = args [0]->inst_p0;
 		}
 
