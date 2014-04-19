@@ -274,6 +274,57 @@ typedef struct {
 	ctx.pc = ctx.regs [15];			\
 } while (0)
 
+#elif (defined(__aarch64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
+
+#include <mono/arch/arm64/arm64-codegen.h>
+
+typedef struct {
+	mgreg_t regs [32];
+	double fregs [32];
+	mgreg_t pc;
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (mgreg_t)ip; } while (0)
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (mgreg_t)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (mgreg_t)bp; } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) (gpointer)((ctx)->pc)
+#define MONO_CONTEXT_GET_BP(ctx) (gpointer)((ctx)->regs [ARMREG_FP])
+#define MONO_CONTEXT_GET_SP(ctx) (gpointer)((ctx)->regs [ARMREG_SP])
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
+	__asm__ __volatile__(			\
+		"mov x16, %0\n" \
+		"stp x0, x1, [x16], #16\n"	\
+		"stp x2, x3, [x16], #16\n"	\
+		"stp x4, x5, [x16], #16\n"	\
+		"stp x6, x7, [x16], #16\n"	\
+		"stp x8, x9, [x16], #16\n"	\
+		"stp x10, x11, [x16], #16\n"	\
+		"stp x12, x13, [x16], #16\n"	\
+		"stp x14, x15, [x16], #16\n"	\
+		"stp xzr, x17, [x16], #16\n"	\
+		"stp x18, x19, [x16], #16\n"	\
+		"stp x20, x21, [x16], #16\n"	\
+		"stp x22, x23, [x16], #16\n"	\
+		"stp x24, x25, [x16], #16\n"	\
+		"stp x26, x27, [x16], #16\n"	\
+		"stp x28, x29, [x16], #16\n"	\
+		"stp x30, xzr, [x16]\n"	\
+		"mov x30, sp\n"				\
+		"str x30, [x16, #8]\n"		\
+		:							\
+		: "r" (&ctx.regs)			\
+		: "x30", "memory"			\
+	);								\
+	__asm__ __volatile__( \
+		"adr %0, L0\n" \
+		"L0:\n"	\
+		: "=r" (ctx.pc)		\
+		:					\
+		: "memory"			 \
+	); \
+} while (0)
 
 #elif defined(__mono_ppc__) /* defined(__arm__) */
 

@@ -15,6 +15,8 @@
 #define MONO_MACH_ARCH_SUPPORTED 1
 #if defined(__arm__)
 typedef _STRUCT_MCONTEXT *mcontext_t;
+#elif defined(__aarch64__)
+typedef _STRUCT_MCONTEXT64 *mcontext_t;
 #endif
 
 // We need to define this here since we need _XOPEN_SOURCE for mono

@@ -128,6 +128,10 @@ if ARM
 arch_sources += mach-support-arm.c
 endif
 
+if ARM64
+arch_sources += mach-support-arm.c
+endif
+
 else
 
 arch_sources += mach-support-unknown.c
@@ -144,6 +148,10 @@ endif
 
 if ARM
 arch_sources += mono-hwcap-arm.c mono-hwcap-arm.h
+endif
+
+if ARM64
+arch_sources += mono-hwcap-arm64.c mono-hwcap-arm64.h
 endif
 
 if MIPS
