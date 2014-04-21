@@ -870,9 +870,15 @@ class MsbuildGenerator {
 
 	static string GetRelativePath (string from, string to)
 	{
+		from = from.Replace ("\\", "/");
+		to = to.Replace ("\\", "/");
 		var fromUri = new Uri (Path.GetFullPath (from));
 		var toUri = new Uri (Path.GetFullPath (to));
-		return fromUri.MakeRelativeUri (toUri).ToString ();
+
+		var ret =  fromUri.MakeRelativeUri (toUri).ToString ().Replace ("%5C", "\x5c");
+		Console.WriteLine ("From {0} to {1} => {2}", from, to, ret);
+		
+		return ret;
 	}
 
 	static VsCsproj GetMatchingCsproj (string dllReferenceName, List<VsCsproj> projects)
