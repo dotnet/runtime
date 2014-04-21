@@ -44,6 +44,9 @@ enum {
 	MONO_COUNTER_VARIABLE       = 2 << 24, /* This counter value can be anything on each sampling. Only interesting when sampling. */
 };
 
+typedef struct _MonoCounter MonoCounter;
+
+
 MONO_API void mono_counters_enable (int section_mask);
 
 /* 
@@ -59,6 +62,10 @@ MONO_API void mono_counters_register (const char* descr, int type, void *addr);
 MONO_API void mono_counters_dump (int section_mask, FILE *outfile);
 
 MONO_API void mono_counters_cleanup (void);
+
+typedef mono_bool (*CountersEnumCallback) (MonoCounter *counter, void *user_data);
+
+MONO_API void mono_counters_foreach (CountersEnumCallback cb, void *user_data);
 
 typedef enum {
 	MONO_RESOURCE_JIT_CODE, /* bytes */

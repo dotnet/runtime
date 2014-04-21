@@ -7,8 +7,6 @@
 #include <glib.h>
 #include "mono-counters.h"
 
-typedef struct _MonoCounter MonoCounter;
-
 struct _MonoCounter {
 	MonoCounter *next;
 	const char *name;
@@ -155,6 +153,17 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      str = *(char**)counter->addr;
 	      fprintf (outfile, ENTRY_FMT "%s\n", counter->name, str);
 	      break;
+	}
+}
+
+void
+mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
+{
+	MonoCounter *counter;
+
+	for (counter = counters; counter; counter = counter->next) {
+		if (!cb (counter, user_data))
+			return;
 	}
 }
 
