@@ -909,6 +909,23 @@ processing_finish (int generation)
 			current_scc->api_index = -1;
 
 			dfs2 (entry);
+
+#ifdef NEW_XREFS
+			/*
+			 * If a node has only one incoming edge, we just copy the source's
+			 * xrefs array, effectively removing the source from the graph.
+			 * This takes care of long linked lists.
+			 */
+			if (!current_scc->num_bridge_entries && dyn_array_int_size (&current_scc->new_xrefs) == 1) {
+				SCC *src;
+				j = dyn_array_int_get (&current_scc->new_xrefs, 0);
+				src = dyn_array_scc_get_ptr (&sccs, j);
+				if (src->num_bridge_entries)
+					dyn_array_int_set (&current_scc->new_xrefs, 0, j);
+				else
+					dyn_array_int_set_all (&current_scc->new_xrefs, &src->new_xrefs);
+			}
+#endif
 		}
 	}
 
