@@ -52,6 +52,20 @@
 #include "utils/mono-time.h"
 #include "utils/mono-compiler.h"
 
+#define NEW_XREFS
+#ifdef NEW_XREFS
+//#define TEST_NEW_XREFS
+#endif
+
+#if !defined(NEW_XREFS) || defined(TEST_NEW_XREFS)
+#define OLD_XREFS
+#endif
+
+#ifdef NEW_XREFS
+#define XREFS new_xrefs
+#else
+#define XREFS old_xrefs
+#endif
 
 typedef struct {
 	int size;
@@ -102,7 +116,18 @@ typedef struct _SCC {
 	int index;
 	int api_index;
 	int num_bridge_entries;
-	DynIntArray xrefs;		/* these are incoming, not outgoing */
+	/*
+	 * New and old xrefs are typically mutually exclusive.  Only when TEST_NEW_XREFS is
+	 * enabled we do both, and compare the results.  This should only be done for
+	 * debugging, obviously.
+	 */
+#ifdef OLD_XREFS
+	DynIntArray old_xrefs;		/* these are incoming, not outgoing */
+#endif
+#ifdef NEW_XREFS
+	gboolean flag;
+	DynIntArray new_xrefs;
+#endif
 } SCC;
 
 static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
@@ -592,22 +617,81 @@ dfs1 (HashEntry *obj_entry)
 	} while (dyn_array_ptr_size (&dfs_stack) > 0);
 }
 
+/*
+ * At the end of bridge processing we need to end up with an (acyclyc) graph of bridge
+ * object SCCs, where the links between the nodes (each one an SCC) in that graph represent
+ * the presence of a direct or indirect link between those SCCs.  An example:
+ *
+ *                       D
+ *                       |
+ *                       v
+ *        A -> B -> c -> e -> F
+ *
+ * A, B, D and F are SCCs that contain bridge objects, c and e don't contain bridge objects.
+ * The graph we need to produce from this is:
+ *
+ *                  D
+ *                  |
+ *                  v
+ *        A -> B -> F
+ *
+ * Note that we don't need to produce an edge from A to F.  It's sufficient that F is
+ * indirectly reachable from A.
+ *
+ * The old algorithm would create a set, for each SCC, of bridge SCCs that can reach it,
+ * directly or indirectly, by merging the ones sets for those that reach it directly.  The
+ * sets it would build up are these:
+ *
+ *   A: {}
+ *   B: {A}
+ *   c: {B}
+ *   D: {}
+ *   e: {B,D}
+ *   F: {B,D}
+ *
+ * The merge operations on these sets turned out to be huge time sinks.
+ *
+ * The new algorithm proceeds in two passes: During DFS2, it only builds up the sets of SCCs
+ * that directly point to each SCC:
+ *
+ *   A: {}
+ *   B: {A}
+ *   c: {B}
+ *   D: {}
+ *   e: {c,D}
+ *   F: {e}
+ *
+ * This is the adjacency list for the SCC graph, in other words.  In a separate step
+ * afterwards, it does a depth-first traversal of that graph, for each bridge node, to get
+ * to the final list.  It uses a flag to avoid traversing any node twice.
+ */
 static void
 scc_add_xref (SCC *src, SCC *dst)
 {
 	g_assert (src != dst);
 	g_assert (src->index != dst->index);
 
-	if (dyn_array_int_contains (&dst->xrefs, src->index))
+#ifdef NEW_XREFS
+	/*
+	 * FIXME: Right now we don't even unique the direct ancestors, but just add to the
+	 * list.  Doing a containment check slows this algorithm down to almost the speed of
+	 * the old one.  Use the flag instead!
+	 */
+	dyn_array_int_add (&dst->new_xrefs, src->index);
+#endif
+
+#ifdef OLD_XREFS
+	if (dyn_array_int_contains (&dst->old_xrefs, src->index))
 		return;
 	if (src->num_bridge_entries) {
-		dyn_array_int_merge_one (&dst->xrefs, src->index);
+		dyn_array_int_merge_one (&dst->old_xrefs, src->index);
 	} else {
 		int i;
-		dyn_array_int_merge (&dst->xrefs, &src->xrefs);
-		for (i = 0; i < dyn_array_int_size (&dst->xrefs); ++i)
-			g_assert (dyn_array_int_get (&dst->xrefs, i) != dst->index);
+		dyn_array_int_merge (&dst->old_xrefs, &src->old_xrefs);
+		for (i = 0; i < dyn_array_int_size (&dst->old_xrefs); ++i)
+			g_assert (dyn_array_int_get (&dst->old_xrefs, i) != dst->index);
 	}
+#endif
 }
 
 static void
@@ -647,6 +731,40 @@ dfs2 (HashEntry *entry)
 			dyn_array_ptr_push (&dfs_stack, dyn_array_ptr_get (&entry->srcs, i));
 	} while (dyn_array_ptr_size (&dfs_stack) > 0);
 }
+
+#ifdef NEW_XREFS
+static void
+gather_xrefs (SCC *scc)
+{
+	int i;
+	for (i = 0; i < dyn_array_int_size (&scc->new_xrefs); ++i) {
+		int index = dyn_array_int_get (&scc->new_xrefs, i);
+		SCC *src = dyn_array_scc_get_ptr (&sccs, index);
+		if (src->flag)
+			continue;
+		src->flag = TRUE;
+		if (src->num_bridge_entries)
+			dyn_array_int_add (&merge_array, index);
+		else
+			gather_xrefs (src);
+	}
+}
+
+static void
+reset_flags (SCC *scc)
+{
+	int i;
+	for (i = 0; i < dyn_array_int_size (&scc->new_xrefs); ++i) {
+		int index = dyn_array_int_get (&scc->new_xrefs, i);
+		SCC *src = dyn_array_scc_get_ptr (&sccs, index);
+		if (!src->flag)
+			continue;
+		src->flag = FALSE;
+		if (!src->num_bridge_entries)
+			reset_flags (src);
+	}
+}
+#endif
 
 static int
 compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
@@ -781,12 +899,59 @@ processing_finish (int generation)
 			current_scc = dyn_array_scc_add (&sccs);
 			current_scc->index = index;
 			current_scc->num_bridge_entries = 0;
+#ifdef NEW_XREFS
+			current_scc->flag = FALSE;
+			dyn_array_int_init (&current_scc->new_xrefs);
+#endif
+#ifdef OLD_XREFS
+			dyn_array_int_init (&current_scc->old_xrefs);
+#endif
 			current_scc->api_index = -1;
-			dyn_array_int_init (&current_scc->xrefs);
 
 			dfs2 (entry);
 		}
 	}
+
+#ifdef NEW_XREFS
+#ifdef TEST_NEW_XREFS
+	for (j = 0; j < dyn_array_scc_size (&sccs); ++j) {
+		SCC *scc = dyn_array_scc_get_ptr (&sccs, j);
+		g_assert (!scc->flag);
+	}
+#endif
+
+	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
+		g_assert (scc->index == i);
+		if (!scc->num_bridge_entries)
+			continue;
+
+		dyn_array_int_set_size (&merge_array, 0);
+		gather_xrefs (scc);
+		reset_flags (scc);
+		dyn_array_int_set_all (&scc->new_xrefs, &merge_array);
+
+#ifdef TEST_NEW_XREFS
+		for (j = 0; j < dyn_array_scc_size (&sccs); ++j) {
+			SCC *scc = dyn_array_scc_get_ptr (&sccs, j);
+			g_assert (!scc->flag);
+		}
+#endif
+	}
+
+#ifdef TEST_NEW_XREFS
+	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
+		g_assert (scc->index == i);
+		if (!scc->num_bridge_entries)
+			continue;
+
+		g_assert (dyn_array_int_size (&scc->new_xrefs) == dyn_array_int_size (&scc->old_xrefs));
+		for (j = 0; j < dyn_array_int_size (&scc->new_xrefs); ++j)
+			g_assert (dyn_array_int_contains (&scc->old_xrefs, dyn_array_int_get (&scc->new_xrefs, j)));
+	}
+#endif
+#endif
 
 	/*
 	 * Compute the weight of each object. The weight of an object is its size plus the size of all
@@ -847,8 +1012,8 @@ processing_finish (int generation)
 		g_assert (scc->index == i);
 		if (scc->num_bridge_entries)
 			++num_sccs;
-		sccs_links += dyn_array_int_size (&scc->xrefs);
-		max_sccs_links = MAX (max_sccs_links, dyn_array_int_size (&scc->xrefs));
+		sccs_links += dyn_array_int_size (&scc->XREFS);
+		max_sccs_links = MAX (max_sccs_links, dyn_array_int_size (&scc->XREFS));
 	}
 
 	api_sccs = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
@@ -865,7 +1030,7 @@ processing_finish (int generation)
 		scc->num_bridge_entries = 0;
 		scc->api_index = j++;
 
-		num_xrefs += dyn_array_int_size (&scc->xrefs);
+		num_xrefs += dyn_array_int_size (&scc->XREFS);
 	}
 
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
@@ -882,8 +1047,8 @@ processing_finish (int generation)
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (!scc->num_bridge_entries)
 			continue;
-		for (k = 0; k < dyn_array_int_size (&scc->xrefs); ++k) {
-			SCC *src_scc = dyn_array_scc_get_ptr (&sccs, dyn_array_int_get (&scc->xrefs, k));
+		for (k = 0; k < dyn_array_int_size (&scc->XREFS); ++k) {
+			SCC *src_scc = dyn_array_scc_get_ptr (&sccs, dyn_array_int_get (&scc->XREFS, k));
 			if (!src_scc->num_bridge_entries)
 				continue;
 			api_xrefs [j].src_scc_index = src_scc->api_index;
@@ -905,9 +1070,14 @@ processing_finish (int generation)
 			++j;
 		if (scc->num_bridge_entries > max_entries)
 			max_entries = scc->num_bridge_entries;
-		if (dyn_array_int_size (&scc->xrefs) > max_xrefs)
-			max_xrefs = dyn_array_int_size (&scc->xrefs);
-		dyn_array_int_uninit (&scc->xrefs);
+		if (dyn_array_int_size (&scc->XREFS) > max_xrefs)
+			max_xrefs = dyn_array_int_size (&scc->XREFS);
+#ifdef NEW_XREFS
+		dyn_array_int_uninit (&scc->new_xrefs);
+#endif
+#ifdef OLD_XREFS
+		dyn_array_int_uninit (&scc->old_xrefs);
+#endif
 
 	}
 	dyn_array_scc_uninit (&sccs);
