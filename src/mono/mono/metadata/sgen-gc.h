@@ -832,6 +832,8 @@ typedef struct {
 } SgenBridgeProcessor;
 
 void sgen_old_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
+void sgen_new_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
+void sgen_set_bridge_implementation (const char *name) MONO_INTERNAL;
 
 typedef mono_bool (*WeakLinkAlivePredicateFunc) (MonoObject*, void*);
 

@@ -77,7 +77,19 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 
 	bridge_callbacks = *callbacks;
 
-	sgen_old_bridge_init (&bridge_processor);
+	if (!bridge_processor.reset_data)
+		sgen_old_bridge_init (&bridge_processor);
+}
+
+void
+sgen_set_bridge_implementation (const char *name)
+{
+	if (!strcmp ("old", name))
+		sgen_old_bridge_init (&bridge_processor);
+	else if (!strcmp ("new", name))
+		sgen_new_bridge_init (&bridge_processor);
+	else
+		g_warning ("Invalid value for bridge implementation, valid values are: 'new' and 'old'.");
 }
 
 gboolean

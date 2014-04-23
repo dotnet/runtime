@@ -4731,6 +4731,11 @@ mono_gc_base_init (void)
 				sgen_register_test_bridge_callbacks (g_strdup (opt));
 				continue;
 			}
+			if (g_str_has_prefix (opt, "bridge-implementation=")) {
+				opt = strchr (opt, '=') + 1;
+				sgen_set_bridge_implementation (opt);
+				continue;
+			}
 			if (g_str_has_prefix (opt, "toggleref-test")) {
 				sgen_register_test_toggleref_callback ();
 				continue;
