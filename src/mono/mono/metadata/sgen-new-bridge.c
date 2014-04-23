@@ -52,7 +52,7 @@
 #include "utils/mono-time.h"
 #include "utils/mono-compiler.h"
 
-#define NEW_XREFS
+//#define NEW_XREFS
 #ifdef NEW_XREFS
 //#define TEST_NEW_XREFS
 #endif
@@ -116,6 +116,7 @@ typedef struct _SCC {
 	int index;
 	int api_index;
 	int num_bridge_entries;
+	gboolean flag;
 	/*
 	 * New and old xrefs are typically mutually exclusive.  Only when TEST_NEW_XREFS is
 	 * enabled we do both, and compare the results.  This should only be done for
@@ -125,7 +126,6 @@ typedef struct _SCC {
 	DynIntArray old_xrefs;		/* these are incoming, not outgoing */
 #endif
 #ifdef NEW_XREFS
-	gboolean flag;
 	DynIntArray new_xrefs;
 #endif
 } SCC;
@@ -617,6 +617,9 @@ dfs1 (HashEntry *obj_entry)
 	} while (dyn_array_ptr_size (&dfs_stack) > 0);
 }
 
+static DynSCCArray sccs;
+static SCC *current_scc;
+
 /*
  * At the end of bridge processing we need to end up with an (acyclyc) graph of bridge
  * object SCCs, where the links between the nodes (each one an SCC) in that graph represent
@@ -681,15 +684,22 @@ scc_add_xref (SCC *src, SCC *dst)
 #endif
 
 #ifdef OLD_XREFS
-	if (dyn_array_int_contains (&dst->old_xrefs, src->index))
-		return;
 	if (src->num_bridge_entries) {
-		dyn_array_int_merge_one (&dst->old_xrefs, src->index);
+		if (src->flag)
+			return;
+		src->flag = TRUE;
+		dyn_array_int_add (&dst->old_xrefs, src->index);
 	} else {
 		int i;
-		dyn_array_int_merge (&dst->old_xrefs, &src->old_xrefs);
-		for (i = 0; i < dyn_array_int_size (&dst->old_xrefs); ++i)
-			g_assert (dyn_array_int_get (&dst->old_xrefs, i) != dst->index);
+		for (i = 0; i < dyn_array_int_size (&src->old_xrefs); ++i) {
+			int j = dyn_array_int_get (&src->old_xrefs, i);
+			SCC *bridge_scc = dyn_array_scc_get_ptr (&sccs, j);
+			g_assert (bridge_scc->num_bridge_entries);
+			if (!bridge_scc->flag) {
+				bridge_scc->flag = TRUE;
+				dyn_array_int_add (&dst->old_xrefs, j);
+			}
+		}
 	}
 #endif
 }
@@ -702,9 +712,6 @@ scc_add_entry (SCC *scc, HashEntry *entry)
 	if (entry->is_bridge)
 		++scc->num_bridge_entries;
 }
-
-static DynSCCArray sccs;
-static SCC *current_scc;
 
 static void
 dfs2 (HashEntry *entry)
@@ -730,6 +737,13 @@ dfs2 (HashEntry *entry)
 		for (i = 0; i < dyn_array_ptr_size (&entry->srcs); ++i)
 			dyn_array_ptr_push (&dfs_stack, dyn_array_ptr_get (&entry->srcs, i));
 	} while (dyn_array_ptr_size (&dfs_stack) > 0);
+
+	for (i = 0; i < dyn_array_int_size (&current_scc->old_xrefs); ++i) {
+		int j = dyn_array_int_get (&current_scc->old_xrefs, i);
+		SCC *bridge_scc = dyn_array_scc_get_ptr (&sccs, j);
+		g_assert (bridge_scc->flag);
+		bridge_scc->flag = FALSE;
+	}
 }
 
 #ifdef NEW_XREFS
