@@ -4580,6 +4580,7 @@ mono_gc_base_init (void)
 	sgen_init_nursery_allocator ();
 	sgen_init_fin_weak_hash ();
 	sgen_init_stw ();
+	sgen_init_hash_table ();
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_READY_ENTRY, sizeof (FinalizeReadyEntry));

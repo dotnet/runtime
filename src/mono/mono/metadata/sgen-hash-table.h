@@ -38,6 +38,8 @@ gboolean sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpointer da
 
 void sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
 
+void sgen_init_hash_table (void) MONO_INTERNAL;
+
 #define sgen_hash_table_num_entries(h)	((h)->num_entries)
 
 #define SGEN_HASH_TABLE_FOREACH(h,k,v) do {				\
