@@ -673,7 +673,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 				}
 			}
 			if (!no_patch)
-				mono_aot_patch_plt_entry (plt_entry, NULL, regs, addr);
+				mono_aot_patch_plt_entry (code, plt_entry, NULL, regs, addr);
 		} else {
 			if (generic_shared) {
 				if (m->wrapper_type != MONO_WRAPPER_NONE)
@@ -869,7 +869,7 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
 	plt_entry = mono_aot_get_plt_entry (code);
 	g_assert (plt_entry);
 
-	mono_aot_patch_plt_entry (plt_entry, NULL, regs, addr);
+	mono_aot_patch_plt_entry (code, plt_entry, NULL, regs, addr);
 
 	return addr;
 }
@@ -917,7 +917,7 @@ mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, gui
 
 	if (vtable->initialized) {
 		if (plt_entry)
-			mono_arch_patch_plt_entry (plt_entry, NULL, regs, mini_get_nullified_class_init_trampoline ());
+			mono_aot_patch_plt_entry (code, plt_entry, NULL, regs, mini_get_nullified_class_init_trampoline ());
 		else
 			mono_arch_nullify_class_init_trampoline (code, regs);
 	}
