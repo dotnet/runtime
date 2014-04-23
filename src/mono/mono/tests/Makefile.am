@@ -920,7 +920,10 @@ SGEN_CONFIGURATIONS =	\
 SGEN_BRIDGE_CONFIGURATIONS =	\
 	"|plain"	\
 	",major=marksweep-conc|ms-conc"	\
-	",minor=split|ms-split"
+	",minor=split|ms-split"	\
+	",bridge-implementation=new|plain-new-bridge"	\
+	",bridge-implementation=new,major=marksweep-conc|ms-conc-new-bridge"	\
+	",bridge-implementation=new,minor=split|ms-split-new-bridge"
 
 sgen-regular-tests: $(SGEN_TESTS)
 	@failed=0; \
