@@ -556,7 +556,6 @@ DISABLED_TESTS=			\
 DISABLED_TESTS_WRENCH=	\
 	$(DISABLED_TESTS)	\
 	$(PLATFORM_DISABLED_TESTS_WRENCH)	\
-	bug-18026.exe	\
 	main-returns-background-resetabort.exe \
 	main-returns-background-abort-resetabort.exe	\
 	thread6.exe	\
