@@ -974,14 +974,14 @@ sgen_bridge_processing_finish (int generation)
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms user-cb %.2fms clenanup %.2fms links %d/%d/%d/%d dfs passes %d/%d",
 		num_registered_bridges, hash_table_size, dyn_array_scc_size (&sccs),
-		step_1 / 1000.0f,
-		step_2 / 1000.0f,
-		step_3 / 1000.0f,
-		step_4 / 1000.0f,
-		step_5 / 1000.0f,
-		step_6 / 1000.0f,
-		step_7 / 1000.0f,
-		step_8 / 1000.f,
+		step_1 / 10000.0f,
+		step_2 / 10000.0f,
+		step_3 / 10000.0f,
+		step_4 / 10000.0f,
+		step_5 / 10000.0f,
+		step_6 / 10000.0f,
+		step_7 / 10000.0f,
+		step_8 / 10000.f,
 		fist_pass_links, second_pass_links, sccs_links, max_sccs_links,
 		dsf1_passes, dsf2_passes);
 

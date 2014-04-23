@@ -748,7 +748,7 @@ sgen_card_tables_collect_stats (gboolean begin)
 		printf ("cards major (t %d m %d g %d r %d)  los (t %d m %d g %d r %d) major_scan %.2fms los_scan %.2fms\n", 
 			major_stats.total, major_stats.marked, major_stats.gc_marked, major_stats.remarked,
 			los_stats.total, los_stats.marked, los_stats.gc_marked, los_stats.remarked,
-			last_major_scan_time / 1000.0, last_los_scan_time / 1000.0);
+			last_major_scan_time / 10000.0f, last_los_scan_time / 10000.0f);
 	}
 #endif
 }
