@@ -219,6 +219,7 @@ sgen_sources = \
 	sgen-protocol.c \
 	sgen-bridge.c		\
 	sgen-bridge.h		\
+	sgen-old-bridge.c		\
 	sgen-toggleref.c		\
 	sgen-toggleref.h		\
 	sgen-gc.h		\

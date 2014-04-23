@@ -244,7 +244,8 @@ sgen_stop_world (int generation)
 	time_stop_world += TV_ELAPSED (stop_world_time, end_handshake);
 
 	sgen_memgov_collection_start (generation);
-	sgen_bridge_reset_data ();
+	if (sgen_need_bridge_processing ())
+		sgen_bridge_reset_data ();
 
 	return count;
 }
@@ -306,7 +307,8 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 
 	sgen_try_free_some_memory = TRUE;
 
-	sgen_bridge_processing_finish (generation);
+	if (sgen_need_bridge_processing ())
+		sgen_bridge_processing_finish (generation);
 
 	TV_GETTIME (end_bridge);
 	bridge_usec = TV_ELAPSED (end_sw, end_bridge);

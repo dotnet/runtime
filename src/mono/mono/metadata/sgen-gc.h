@@ -228,6 +228,7 @@ extern int current_collection_generation;
 extern unsigned int sgen_global_stop_count;
 
 extern gboolean bridge_processing_in_progress;
+extern MonoGCBridgeCallbacks bridge_callbacks;
 
 extern int num_ready_finalizers;
 
@@ -814,6 +815,23 @@ void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_IN
 
 void sgen_process_togglerefs (void) MONO_INTERNAL;
 void sgen_register_test_toggleref_callback (void) MONO_INTERNAL;
+
+
+void sgen_register_test_bridge_callbacks (const char *bridge_class_name) MONO_INTERNAL;
+gboolean sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
+void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
+
+typedef struct {
+	void (*reset_data) (void);
+	void (*processing_stw_step) (void);
+	void (*processing_finish) (int generation);
+	MonoGCBridgeObjectKind (*class_kind) (MonoClass *class);
+	void (*register_finalized_object) (MonoObject *object);
+	void (*describe_pointer) (MonoObject *object);
+	void (*enable_accounting) (void);
+} SgenBridgeProcessor;
+
+void sgen_old_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
 
 typedef mono_bool (*WeakLinkAlivePredicateFunc) (MonoObject*, void*);
 
