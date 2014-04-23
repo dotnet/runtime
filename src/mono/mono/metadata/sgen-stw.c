@@ -50,7 +50,7 @@ align_pointer (void *ptr)
 }
 
 #ifdef USE_MONO_CTX
-static MonoContext cur_thread_ctx;
+static MonoContext cur_thread_ctx = {0};
 #else
 static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
 #endif

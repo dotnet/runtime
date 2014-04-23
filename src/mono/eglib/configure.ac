@@ -88,7 +88,7 @@ case $host in
 esac
 
 case $target in
-arm*-darwin*|aarch64*-*)
+arm*-darwin*)
     CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
     ;;
 i*86-*-darwin*)

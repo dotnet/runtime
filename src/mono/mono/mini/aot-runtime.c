@@ -1549,8 +1549,6 @@ get_arm_bl_target (guint32 *ins_addr)
 		offset = (((int)ins & 0xffffff) << 8) >> 8;
 		return (char*)ins_addr + (offset * 4) + 8;
 	}
-#elif defined(TARGET_ARM64)
-	return mono_arch_get_call_target (((guint8*)ins_addr) + 4);
 #else
 	g_assert_not_reached ();
 	return NULL;
@@ -1780,7 +1778,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
 			void *addr = NULL;
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#ifdef TARGET_ARM
 			addr = get_arm_bl_target ((guint32*)amodule->method_addresses + i);
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
 			addr = mono_arch_get_call_target ((guint8*)amodule->method_addresses + (i * 5) + 5);
@@ -3882,24 +3880,16 @@ find_aot_module (guint8 *code)
 }
 
 void
-mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_aot_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
-	MonoAotModule *amodule;
-
 	/*
 	 * Since AOT code is only used in the root domain, 
 	 * mono_domain_get () != mono_get_root_domain () means the calling method
 	 * is AppDomain:InvokeInDomain, so this is the same check as in 
 	 * mono_method_same_domain () but without loading the metadata for the method.
 	 */
-	if (mono_domain_get () == mono_get_root_domain ()) {
-		if (!got) {
-			amodule = find_aot_module (code);
-			if (amodule)
-				got = amodule->got;
-		}
-		mono_arch_patch_plt_entry (plt_entry, got, regs, addr);
-	}
+	if (mono_domain_get () == mono_get_root_domain ())
+		mono_arch_patch_plt_entry (code, got, regs, addr);
 }
 
 /*
@@ -3978,7 +3968,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	/* Patch the PLT entry with target which might be the actual method not a trampoline */
 	plt_entry = mono_aot_get_plt_entry (code);
 	g_assert (plt_entry);
-	mono_aot_patch_plt_entry (code, plt_entry, module->got, NULL, target);
+	mono_aot_patch_plt_entry (plt_entry, module->got, NULL, target);
 
 	return target;
 #else
@@ -4388,14 +4378,10 @@ get_new_trampoline_from_page (int tramp_type)
 		page = (TrampolinePage*)addr;
 		page->next = trampoline_pages [tramp_type];
 		trampoline_pages [tramp_type] = page;
-#ifdef TARGET_ARM64
-		page->trampolines = (void*)(taddr + amodule->info.tramp_page_code_offsets [tramp_type]);
-#else
 		page->trampolines = (void*)(taddr + trampolines_pages_code_offsets [tramp_type]);
-#endif
-		page->trampolines_end = (void*)(taddr + psize - 64);
+		page->trampolines_end = (void*)(taddr + psize);
 		code = page->trampolines;
-		page->trampolines += specific_trampoline_size;
+		page->trampolines += 8;
 		mono_aot_page_unlock ();
 		return code;
 	}
@@ -4893,7 +4879,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 }
 
 void
-mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_aot_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
 }
 

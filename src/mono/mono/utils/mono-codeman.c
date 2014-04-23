@@ -489,9 +489,6 @@ mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void
 #if defined(__arm__)
 #define BIND_ROOM 8
 #endif
-#if defined(TARGET_ARM64)
-#define BIND_ROOM 8
-#endif
 
 static CodeChunk*
 new_codechunk (CodeChunk *last, int dynamic, int size)

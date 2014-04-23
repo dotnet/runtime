@@ -225,7 +225,6 @@ typedef struct MonoAotCompile {
 	const char *temp_prefix;
 	const char *user_symbol_prefix;
 	const char *llvm_label_prefix;
-	const char *inst_directive;
 	guint32 label_generator;
 	gboolean llvm;
 	MonoAotFileFlags flags;
@@ -565,16 +564,7 @@ emit_set_arm_mode (MonoAotCompile *acfg)
 static inline void
 emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 {
-#ifdef TARGET_ARM64
-	int i;
-
-	g_assert (size % 4 == 0);
-	emit_unset_mode (acfg);
-	for (i = 0; i < size; i += 4)
-		fprintf (acfg->fp, "%s 0x%x\n", acfg->inst_directive, *(guint32*)(buf + i));
-#else
 	emit_bytes (acfg, buf, size);
-#endif
 }
 
 /* ARCHITECTURE SPECIFIC CODE */
@@ -610,14 +600,6 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 #define AOT_TARGET_STR "ARM (MACH)"
 #else
 #define AOT_TARGET_STR "ARM (!MACH)"
-#endif
-#endif
-
-#ifdef TARGET_ARM64
-#ifdef TARGET_MACH
-#define AOT_TARGET_STR "ARM64 (MACH)"
-#else
-#define AOT_TARGET_STR "ARM64 (!MACH)"
 #endif
 #endif
 
@@ -688,16 +670,9 @@ arch_init (MonoAotCompile *acfg)
 		mono_arch_set_target (acfg->aot_opts.mtriple);
 #endif
 
-#ifdef TARGET_ARM64
-	acfg->inst_directive = ".inst";
-	if (acfg->aot_opts.mtriple)
-		mono_arch_set_target (acfg->aot_opts.mtriple);
-#endif
-
 #ifdef TARGET_MACH
 	acfg->user_symbol_prefix = "_";
 	acfg->llvm_label_prefix = "_";
-	acfg->inst_directive = ".word";
 	acfg->need_no_dead_strip = TRUE;
 	acfg->aot_opts.gnu_asm = TRUE;
 #endif
@@ -711,12 +686,6 @@ arch_init (MonoAotCompile *acfg)
 	acfg->global_symbols = TRUE;
 #endif
 }
-
-#ifdef TARGET_ARM64
-
-#include "../../../mono-extensions/mono/mini/aot-compiler-arm64.c"
-
-#endif
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
 /*
@@ -756,8 +725,6 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 			fprintf (acfg->fp, "bl %s\n", target);
 	}
 	*call_size = 4;
-#elif defined(TARGET_ARM64)
-	arm64_emit_direct_call (acfg, target, external, thumb, ji, call_size);
 #elif defined(TARGET_POWERPC)
 	if (acfg->use_bin_writer) {
 		g_assert_not_reached ();
@@ -869,8 +836,6 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 #elif defined(TARGET_ARM)
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
 	*code_size = mono_arch_get_patch_offset (code) + 4;
-#elif defined(TARGET_ARM64)
-	arm64_emit_got_access (acfg, code, got_slot, code_size);
 #elif defined(TARGET_POWERPC)
 	{
 		guint8 buf [32];
@@ -914,8 +879,6 @@ arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int 
 	fprintf (acfg->fp, ".long %s-(%s+12)", symbol2, symbol1);
 
 	*code_size = 12;
-#elif defined(TARGET_ARM64)
-	arm64_emit_objc_selector_ref (acfg, code, index, code_size);
 #else
 	g_assert_not_reached ();
 #endif
@@ -998,8 +961,6 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 4);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
-#elif defined(TARGET_ARM64)
-		arm64_emit_plt_entry (acfg, index);
 #elif defined(TARGET_POWERPC)
 		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
 
@@ -1234,8 +1195,6 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		g_assert (code - buf == 8);
 		emit_bytes (acfg, buf, code - buf);
 	}
-#elif defined(TARGET_ARM64)
-	arm64_emit_specific_trampoline_pages (acfg);
 #endif
 }
 
@@ -1350,8 +1309,6 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 */
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 4);
 	//emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
-#elif defined(TARGET_ARM64)
-	arm64_emit_specific_trampoline (acfg, offset, tramp_size);
 #elif defined(TARGET_POWERPC)
 	guint8 buf [128];
 	guint8 *code;
@@ -1499,8 +1456,6 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 		else
 			fprintf (acfg->fp, "\n\tb %s\n", call_target);
 	}
-#elif defined(TARGET_ARM64)
-	arm64_emit_unbox_trampoline (acfg, cfg, method, call_target);
 #elif defined(TARGET_POWERPC)
 	int this_pos = 3;
 
@@ -1586,8 +1541,6 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	emit_bytes (acfg, buf, code - buf);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 8);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 4);
-#elif defined(TARGET_ARM64)
-	arm64_emit_static_rgctx_trampoline (acfg, offset, tramp_size);
 #elif defined(TARGET_POWERPC)
 	guint8 buf [128];
 	guint8 *code;
@@ -1892,8 +1845,6 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
 
 	*tramp_size = code - buf + 4;
-#elif defined(TARGET_ARM64)
-	arm64_emit_imt_thunk (acfg, offset, tramp_size);
 #elif defined(TARGET_POWERPC)
 	guint8 buf [128];
 	guint8 *code, *labels [16];
@@ -2009,8 +1960,6 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + 4);
-#elif defined(TARGET_ARM64)
-	arm64_emit_gsharedvt_arg_trampoline (acfg, offset, tramp_size);
 #else
 	g_assert_not_reached ();
 #endif
@@ -4545,11 +4494,7 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
 	return findex;
 }
 
-#ifdef TARGET_ARM64
-#define INST_LEN 4
-#else
 #define INST_LEN 1
-#endif
 
 /*
  * emit_and_reloc_code:
@@ -6329,7 +6274,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-icalls")) {
 			opts->direct_icalls = TRUE;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM)
 		} else if (str_begins_with (arg, "iphone-abi")) {
 			// older full-aot users did depend on this.
 #endif
@@ -8323,7 +8268,7 @@ emit_objc_selectors (MonoAotCompile *acfg)
 	img_writer_emit_unset_mode (acfg->w);
 	g_assert (acfg->fp);
 	fprintf (acfg->fp, ".section	__DATA,__objc_selrefs,literal_pointers,no_dead_strip\n");
-	fprintf (acfg->fp, ".align	3\n");
+	fprintf (acfg->fp, ".align	2\n");
 	for (i = 0; i < acfg->objc_selectors->len; ++i) {
 		fprintf (acfg->fp, "L_OBJC_SELECTOR_REFERENCES_%d:\n", i);
 		fprintf (acfg->fp, ".long	L_OBJC_METH_VAR_NAME_%d\n", i);
@@ -8335,7 +8280,7 @@ emit_objc_selectors (MonoAotCompile *acfg)
 	}
 
 	fprintf (acfg->fp, ".section	__DATA,__objc_imageinfo,regular,no_dead_strip\n");
-	fprintf (acfg->fp, ".align	3\n");
+	fprintf (acfg->fp, ".align	2\n");
 	fprintf (acfg->fp, "L_OBJC_IMAGE_INFO:\n");
 	fprintf (acfg->fp, ".long	0\n");
 	fprintf (acfg->fp, ".long	16\n");

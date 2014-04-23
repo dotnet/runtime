@@ -1033,11 +1033,9 @@ MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze", IREG, IREG, NONE)
 MINI_OP(OP_CHECK_FINITE,           "ppc_check_finite", NONE, IREG, NONE)
 #endif
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM)
 MINI_OP(OP_ARM_RSBS_IMM,            "arm_rsbs_imm", IREG, IREG, NONE)
 MINI_OP(OP_ARM_RSC_IMM,             "arm_rsc_imm", IREG, IREG, NONE)
-/* Set dreg to an r4 value */
-MINI_OP(OP_ARM_SETFREG_R4,             "arm_setfreg_r4", FREG, FREG, NONE)
 #endif
 
 #if defined(__sparc__) || defined(sparc)
@@ -1238,15 +1236,6 @@ MINI_OP(OP_MIPS_COND_EXC_INO, "mips_cond_exc_ino", NONE, IREG, IREG)
 MINI_OP(OP_MIPS_COND_EXC_IC, "mips_cond_exc_ic", NONE, IREG, IREG)
 MINI_OP(OP_MIPS_COND_EXC_INC, "mips_cond_exc_inc", NONE, IREG, IREG)
 
-#endif
-
-#if defined(TARGET_ARM64)
-/* Branch if sreg1 == 0 */
-MINI_OP(OP_ARM64_CBZW, "arm64_cbzw", NONE, IREG, NONE)
-MINI_OP(OP_ARM64_CBZX, "arm64_cbzx", NONE, IREG, NONE)
-/* Branch if sreg1 != 0 */
-MINI_OP(OP_ARM64_CBNZW, "arm64_cbnzw", NONE, IREG, NONE)
-MINI_OP(OP_ARM64_CBNZX, "arm64_cbnzx", NONE, IREG, NONE)
 #endif
 
 /* Same as OUTARG_VT, but has a dreg */

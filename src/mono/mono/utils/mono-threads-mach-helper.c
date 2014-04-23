@@ -72,20 +72,7 @@ mono_threads_install_dead_letter (void)
 	dict = objc_msgSend (cur, threadDictionary);
 	if (dict && objc_msgSend (dict, objectForKey, mono_dead_letter_key) == nil) {
 		id value = objc_msgSend (objc_msgSend ((id)mono_dead_letter_class, alloc), init);
-
-#ifdef TARGET_ARM64
-		/*
-		 * See the 'Dispatch Objective-C Messages Using the Method Function’s Prototype' section in
-		 * the '64-Bit Transition Guide for Cocoa Touch' as to why this is required.
-		 */
-		{
-			void (*action)(id, SEL, id, id) = (void (*)(id, SEL, id, id)) objc_msgSend;
-			action (dict, setObjectForKey, value, mono_dead_letter_key);
-		}
-#else
 		objc_msgSend (dict, setObjectForKey, value, mono_dead_letter_key);
-#endif
-
 		objc_msgSend (value, release);
 	}
 }
@@ -97,7 +84,6 @@ mono_threads_init_dead_letter (void)
 	id nsautoreleasepool = objc_getClass ("NSAutoreleasePool");
 	SEL stringWithUTF8String = sel_registerName ("stringWithUTF8String:");
 	SEL retain = sel_registerName ("retain");
-	id pool;
 
 	nsthread = (Class)objc_getClass ("NSThread");
 	nsobject = (Class)objc_getClass ("NSObject");
@@ -119,17 +105,8 @@ mono_threads_init_dead_letter (void)
 	objc_registerClassPair (mono_dead_letter_class);
 
 	// create the dict key
-	pool = objc_msgSend (objc_msgSend (nsautoreleasepool, alloc), init);
-
-#ifdef TARGET_ARM64
-	{
-		id (*action)(id, SEL, char*) = (id (*)(id, SEL, char*)) objc_msgSend;
-		mono_dead_letter_key = action(nsstring, stringWithUTF8String, "mono-dead-letter");
-	}
-#else
+	id pool = objc_msgSend (objc_msgSend (nsautoreleasepool, alloc), init);
 	mono_dead_letter_key = objc_msgSend (nsstring, stringWithUTF8String, "mono-dead-letter");
-#endif
-
 	objc_msgSend (mono_dead_letter_key, retain);
 	objc_msgSend (pool, release);
 }
