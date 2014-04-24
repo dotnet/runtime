@@ -491,7 +491,7 @@ object_is_live (MonoObject **objp)
 static DynPtrArray registered_bridges;
 static DynPtrArray dfs_stack;
 
-static int dsf1_passes, dsf2_passes;
+static int dfs1_passes, dfs2_passes;
 
 
 #undef HANDLE_PTR
@@ -515,7 +515,7 @@ dfs1 (HashEntry *obj_entry)
 	do {
 		MonoObject *obj;
 		char *start;
-		++dsf1_passes;
+		++dfs1_passes;
 
 		obj_entry = dyn_array_ptr_pop (&dfs_stack);
 		if (obj_entry) {
@@ -591,7 +591,7 @@ dfs2 (HashEntry *entry)
 
 	do {
 		entry = dyn_array_ptr_pop (&dfs_stack);
-		++dsf2_passes;
+		++dfs2_passes;
 
 		if (entry->scc_index >= 0) {
 			if (entry->scc_index != current_scc->index)
@@ -945,9 +945,11 @@ processing_finish (int generation)
 		step_7 / 10000.0f,
 		step_8 / 10000.f,
 		fist_pass_links, second_pass_links, sccs_links, max_sccs_links,
-		dsf1_passes, dsf2_passes);
+		dfs1_passes, dfs2_passes);
 
 	step_1 = 0; /* We must cleanup since this value is used as an accumulator. */
+	fist_pass_links = second_pass_links = sccs_links = max_sccs_links = 0;
+	dfs1_passes = dfs2_passes = 0;
 
 	bridge_processing_in_progress = FALSE;
 }
