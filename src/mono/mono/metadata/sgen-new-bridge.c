@@ -47,6 +47,7 @@
 #include "sgen-bridge.h"
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
+#include "tabledefs.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
 #include "utils/mono-compiler.h"
@@ -402,7 +403,31 @@ enable_accounting (void)
 static MonoGCBridgeObjectKind
 class_kind (MonoClass *class)
 {
-	return bridge_callbacks.bridge_class_kind (class);
+	MonoGCBridgeObjectKind res = bridge_callbacks.bridge_class_kind (class);
+
+	/* If it's a bridge, nothing we can do about it. */
+	if (res == GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS || res == GC_BRIDGE_OPAQUE_BRIDGE_CLASS)
+		return res;
+
+	/* Non bridge classes with no pointers will never point to a bridge, so we can savely ignore them. */
+	if (!class->has_references) {
+		printf ("class %s is opaque\n", mono_type_get_full_name (class));
+		return GC_BRIDGE_OPAQUE_CLASS;
+	}
+
+	/* Some arrays can be ignored */
+	if (class->rank == 1) {
+		MonoClass *elem_class = class->element_class;
+
+		/* FIXME the bridge check can be quite expensive, cache it at the class level. */
+		/* An array of a sealed type that is not a bridge will never get to a bridge */
+		if ((elem_class->flags & TYPE_ATTRIBUTE_SEALED) && !elem_class->has_references && !bridge_callbacks.bridge_class_kind (elem_class)) {
+			printf ("class %s is opaque\n", mono_type_get_full_name (class));
+			return GC_BRIDGE_OPAQUE_CLASS;
+		}
+	}
+
+	return GC_BRIDGE_TRANSPARENT_CLASS;
 }
 
 static HashEntry*
@@ -474,6 +499,18 @@ register_finishing_time (HashEntry *entry, int t)
 	entry->finishing_time = t;
 }
 
+static int ignored_objects;
+
+static gboolean
+is_opaque_object (MonoObject *obj)
+{
+	if ((obj->vtable->gc_bits & SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) == SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) {
+		++ignored_objects;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static gboolean
 object_is_live (MonoObject **objp)
 {
@@ -481,8 +518,12 @@ object_is_live (MonoObject **objp)
 	MonoObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
 	if (fwd) {
 		*objp = fwd;
+		if (is_opaque_object (obj))
+			return TRUE;
 		return sgen_hash_table_lookup (&hash_table, fwd) == NULL;
 	}
+	if (is_opaque_object (obj))
+		return TRUE;
 	if (!sgen_object_is_live (obj))
 		return FALSE;
 	return sgen_hash_table_lookup (&hash_table, obj) == NULL;
@@ -934,7 +975,7 @@ processing_finish (int generation)
 	SGEN_TV_GETTIME (atv);
 	step_8 = SGEN_TV_ELAPSED (btv, atv);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms user-cb %.2fms clenanup %.2fms links %d/%d/%d/%d dfs passes %d/%d",
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms user-cb %.2fms clenanup %.2fms links %d/%d/%d/%d dfs passes %d/%d ignored %d",
 		num_registered_bridges, hash_table_size, dyn_array_scc_size (&sccs),
 		step_1 / 10000.0f,
 		step_2 / 10000.0f,
@@ -945,11 +986,11 @@ processing_finish (int generation)
 		step_7 / 10000.0f,
 		step_8 / 10000.f,
 		fist_pass_links, second_pass_links, sccs_links, max_sccs_links,
-		dfs1_passes, dfs2_passes);
+		dfs1_passes, dfs2_passes, ignored_objects);
 
 	step_1 = 0; /* We must cleanup since this value is used as an accumulator. */
 	fist_pass_links = second_pass_links = sccs_links = max_sccs_links = 0;
-	dfs1_passes = dfs2_passes = 0;
+	dfs1_passes = dfs2_passes = ignored_objects = 0;
 
 	bridge_processing_in_progress = FALSE;
 }
