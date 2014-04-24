@@ -69,7 +69,7 @@
 
 typedef struct {
 	int size;
-	int capacity;
+	int capacity;		/* if negative, data points to another DynArray's data */
 	char *data;
 } DynArray;
 
@@ -153,11 +153,25 @@ dyn_array_init (DynArray *da)
 static void
 dyn_array_uninit (DynArray *da, int elem_size)
 {
-	if (da->capacity <= 0)
+	if (da->capacity < 0) {
+		dyn_array_init (da);
+		return;
+	}
+
+	if (da->capacity == 0)
 		return;
 
 	sgen_free_internal_dynamic (da->data, elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = NULL;
+}
+
+static void
+dyn_array_empty (DynArray *da)
+{
+	if (da->capacity < 0)
+		dyn_array_init (da);
+	else
+		da->size = 0;
 }
 
 static void
@@ -166,18 +180,36 @@ dyn_array_ensure_capacity (DynArray *da, int capacity, int elem_size)
 	int old_capacity = da->capacity;
 	char *new_data;
 
+	g_assert (capacity > 0);
+
 	if (capacity <= old_capacity)
 		return;
 
-	if (da->capacity == 0)
+	if (old_capacity <= 0)
 		da->capacity = 2;
 	while (capacity > da->capacity)
 		da->capacity *= 2;
 
 	new_data = sgen_alloc_internal_dynamic (elem_size * da->capacity, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	memcpy (new_data, da->data, elem_size * da->size);
-	sgen_free_internal_dynamic (da->data, elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
+	if (old_capacity > 0)
+		sgen_free_internal_dynamic (da->data, elem_size * old_capacity, INTERNAL_MEM_BRIDGE_DATA);
 	da->data = new_data;
+}
+
+static gboolean
+dyn_array_is_copy (DynArray *da)
+{
+	return da->capacity < 0;
+}
+
+static void
+dyn_array_ensure_independent (DynArray *da, int elem_size)
+{
+	if (!dyn_array_is_copy (da))
+		return;
+	dyn_array_ensure_capacity (da, da->size, elem_size);
+	g_assert (da->capacity > 0);
 }
 
 static void*
@@ -190,6 +222,19 @@ dyn_array_add (DynArray *da, int elem_size)
 	p = da->data + da->size * elem_size;
 	++da->size;
 	return p;
+}
+
+static void
+dyn_array_copy (DynArray *dst, DynArray *src, int elem_size)
+{
+	dyn_array_uninit (dst, elem_size);
+
+	if (src->size == 0)
+		return;
+
+	dst->size = src->size;
+	dst->capacity = -1;
+	dst->data = src->data;
 }
 
 /* int */
@@ -212,9 +257,9 @@ dyn_array_int_size (DynIntArray *da)
 }
 
 static void
-dyn_array_int_set_size (DynIntArray *da, int size)
+dyn_array_int_empty (DynIntArray *da)
 {
-	da->array.size = size;
+	dyn_array_empty (&da->array);
 }
 
 static void
@@ -243,11 +288,21 @@ dyn_array_int_ensure_capacity (DynIntArray *da, int capacity)
 }
 
 static void
-dyn_array_int_set_all (DynIntArray *dst, DynIntArray *src)
+dyn_array_int_ensure_independent (DynIntArray *da)
 {
-	dyn_array_int_ensure_capacity (dst, src->array.size);
-	memcpy (dst->array.data, src->array.data, src->array.size * sizeof (int));
-	dst->array.size = src->array.size;
+	dyn_array_ensure_independent (&da->array, sizeof (int));
+}
+
+static void
+dyn_array_int_copy (DynIntArray *dst, DynIntArray *src)
+{
+	dyn_array_copy (&dst->array, &src->array, sizeof (int));
+}
+
+static gboolean
+dyn_array_int_is_copy (DynIntArray *da)
+{
+	return dyn_array_is_copy (&da->array);
 }
 
 /* ptr */
@@ -271,9 +326,9 @@ dyn_array_ptr_size (DynPtrArray *da)
 }
 
 static void
-dyn_array_ptr_set_size (DynPtrArray *da, int size)
+dyn_array_ptr_empty (DynPtrArray *da)
 {
-	da->array.size = size;
+	dyn_array_empty (&da->array);
 }
 
 static void*
@@ -297,6 +352,7 @@ dyn_array_ptr_pop (DynPtrArray *da)
 	void *p;
 	int size = da->array.size;
 	g_assert (size > 0);
+	dyn_array_ensure_independent (&da->array, sizeof (void*));
 	p = dyn_array_ptr_get (da, size - 1);
 	--da->array.size;
 	return p;
@@ -614,11 +670,24 @@ scc_add_xref (SCC *src, SCC *dst)
 #endif
 
 #ifdef OLD_XREFS
+	if (dyn_array_int_is_copy (&dst->old_xrefs)) {
+		int i;
+		dyn_array_int_ensure_independent (&dst->old_xrefs);
+		for (i = 0; i < dyn_array_int_size (&dst->old_xrefs); ++i) {
+			int j = dyn_array_int_get (&dst->old_xrefs, i);
+			SCC *bridge_scc = dyn_array_scc_get_ptr (&sccs, j);
+			g_assert (!bridge_scc->flag);
+			bridge_scc->flag = TRUE;
+		}
+	}
+
 	if (src->num_bridge_entries) {
 		if (src->flag)
 			return;
 		src->flag = TRUE;
 		dyn_array_int_add (&dst->old_xrefs, src->index);
+	} else if (dyn_array_int_size (&dst->old_xrefs) == 0) {
+		dyn_array_int_copy (&dst->old_xrefs, &src->old_xrefs);
 	} else {
 		int i;
 		for (i = 0; i < dyn_array_int_size (&src->old_xrefs); ++i) {
@@ -668,12 +737,17 @@ dfs2 (HashEntry *entry)
 			dyn_array_ptr_push (&dfs_stack, dyn_array_ptr_get (&entry->srcs, i));
 	} while (dyn_array_ptr_size (&dfs_stack) > 0);
 
+#ifdef OLD_XREFS
+	/* If xrefs is a copy then we haven't set a single flag. */
+	if (dyn_array_int_is_copy (&current_scc->old_xrefs))
+		return;
 	for (i = 0; i < dyn_array_int_size (&current_scc->old_xrefs); ++i) {
 		int j = dyn_array_int_get (&current_scc->old_xrefs, i);
 		SCC *bridge_scc = dyn_array_scc_get_ptr (&sccs, j);
 		g_assert (bridge_scc->flag);
 		bridge_scc->flag = FALSE;
 	}
+#endif
 }
 
 #ifdef NEW_XREFS
@@ -732,7 +806,7 @@ register_finalized_object (MonoObject *obj)
 static void
 reset_data (void)
 {
-	dyn_array_ptr_set_size (&registered_bridges, 0);
+	dyn_array_ptr_empty (&registered_bridges);
 }
 
 static void
@@ -867,7 +941,7 @@ processing_finish (int generation)
 				if (src->num_bridge_entries)
 					dyn_array_int_set (&current_scc->new_xrefs, 0, j);
 				else
-					dyn_array_int_set_all (&current_scc->new_xrefs, &src->new_xrefs);
+					dyn_array_int_copy (&current_scc->new_xrefs, &src->new_xrefs);
 			}
 #endif
 		}
@@ -887,10 +961,11 @@ processing_finish (int generation)
 		if (!scc->num_bridge_entries)
 			continue;
 
-		dyn_array_int_set_size (&merge_array, 0);
+		dyn_array_int_empty (&merge_array);
 		gather_xrefs (scc);
 		reset_flags (scc);
-		dyn_array_int_set_all (&scc->new_xrefs, &merge_array);
+		dyn_array_int_copy (&scc->new_xrefs, &merge_array);
+		dyn_array_int_ensure_independent (&scc->new_xrefs);
 
 #ifdef TEST_NEW_XREFS
 		for (j = 0; j < dyn_array_scc_size (&sccs); ++j) {
@@ -1048,7 +1123,7 @@ processing_finish (int generation)
 	free_data ();
 	/* Empty the registered bridges array */
 	num_registered_bridges = dyn_array_ptr_size (&registered_bridges);
-	dyn_array_ptr_set_size (&registered_bridges, 0);
+	dyn_array_ptr_empty (&registered_bridges);
 
 	SGEN_TV_GETTIME (atv);
 	step_6 = SGEN_TV_ELAPSED (btv, atv);
