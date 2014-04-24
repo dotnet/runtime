@@ -291,21 +291,20 @@ struct _MonoClass {
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	/* next byte */
 	guint8 min_align;
+
 	/* next byte */
 	guint packing_size    : 4;
-	/* still 4 bits free */
-	/* next byte */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint has_finalize    : 1; /* class has its own Finalize impl */ 
 #ifndef DISABLE_REMOTING
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
 	guint contextbound    : 1; /* class is a ContextBoundObject */
 #endif
+	/* next byte */
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
-	/* next byte */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
 	/* directly or indirectly derives from ComImport attributed class.
@@ -315,11 +314,12 @@ struct _MonoClass {
 	 */
 	guint is_com_object : 1; 
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
+
+	/* next byte*/
 	guint interfaces_inited : 1; /* interfaces is initialized */
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint is_generic : 1; /* class is a generic type definition */
 	guint is_inflated : 1; /* class is a generic instance */
-	/* next byte */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* fields is initialized */
 	guint setup_fields_called : 1; /* to prevent infinite loops in setup_fields */
