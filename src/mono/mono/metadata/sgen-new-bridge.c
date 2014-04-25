@@ -411,7 +411,7 @@ class_kind (MonoClass *class)
 
 	/* Non bridge classes with no pointers will never point to a bridge, so we can savely ignore them. */
 	if (!class->has_references) {
-		printf ("class %s is opaque\n", mono_type_get_full_name (class));
+		SGEN_LOG (6, "class %s is opaque\n", class->name);
 		return GC_BRIDGE_OPAQUE_CLASS;
 	}
 
@@ -422,7 +422,7 @@ class_kind (MonoClass *class)
 		/* FIXME the bridge check can be quite expensive, cache it at the class level. */
 		/* An array of a sealed type that is not a bridge will never get to a bridge */
 		if ((elem_class->flags & TYPE_ATTRIBUTE_SEALED) && !elem_class->has_references && !bridge_callbacks.bridge_class_kind (elem_class)) {
-			printf ("class %s is opaque\n", mono_type_get_full_name (class));
+			SGEN_LOG (6, "class %s is opaque\n", class->name);
 			return GC_BRIDGE_OPAQUE_CLASS;
 		}
 	}
@@ -505,6 +505,7 @@ static gboolean
 is_opaque_object (MonoObject *obj)
 {
 	if ((obj->vtable->gc_bits & SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) == SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) {
+		SGEN_LOG (6, "ignoring %s\n", obj->vtable->klass->name);
 		++ignored_objects;
 		return TRUE;
 	}
@@ -518,7 +519,7 @@ object_is_live (MonoObject **objp)
 	MonoObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
 	if (fwd) {
 		*objp = fwd;
-		if (is_opaque_object (obj))
+		if (is_opaque_object (fwd))
 			return TRUE;
 		return sgen_hash_table_lookup (&hash_table, fwd) == NULL;
 	}
