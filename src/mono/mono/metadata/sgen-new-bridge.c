@@ -527,21 +527,21 @@ is_opaque_object (MonoObject *obj)
 }
 
 static gboolean
-object_is_live (MonoObject **objp)
+object_needs_expansion (MonoObject **objp)
 {
 	MonoObject *obj = *objp;
 	MonoObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
 	if (fwd) {
 		*objp = fwd;
 		if (is_opaque_object (fwd))
-			return TRUE;
-		return sgen_hash_table_lookup (&hash_table, fwd) == NULL;
+			return FALSE;
+		return sgen_hash_table_lookup (&hash_table, fwd) != NULL;
 	}
 	if (is_opaque_object (obj))
-		return TRUE;
-	if (!sgen_object_is_live (obj))
 		return FALSE;
-	return sgen_hash_table_lookup (&hash_table, obj) == NULL;
+	if (!sgen_object_is_live (obj))
+		return TRUE;
+	return sgen_hash_table_lookup (&hash_table, obj) != NULL;
 }
 
 static HashEntry*
@@ -568,7 +568,7 @@ static int dfs1_passes, dfs2_passes;
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		MonoObject *dst = (MonoObject*)*(ptr);			\
-		if (dst && !object_is_live (&dst)) {			\
+		if (dst && object_needs_expansion (&dst)) {			\
 			++num_links;					\
 			dyn_array_ptr_push (&dfs_stack, obj_entry);	\
 			dyn_array_ptr_push (&dfs_stack, follow_forward (get_hash_entry (dst, NULL))); \
