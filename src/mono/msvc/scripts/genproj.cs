@@ -765,7 +765,7 @@ class MsbuildGenerator {
 			foreach (string r in refdistinct) {
 				VsCsproj lastMatching = GetMatchingCsproj (Path.GetFileName (r), projects);
 				if (lastMatching != null) {
-					AddProjectReference (refs, result, lastMatching, r);
+					AddProjectReference (refs, result, lastMatching, r, null);
 				} else {
 					if (showWarnings){
 						Console.WriteLine ("{0}: Could not find a matching project reference for {1}", library, Path.GetFileName (r));
@@ -785,7 +785,7 @@ class MsbuildGenerator {
 				string assembly = r.Substring (index + 1);
 				VsCsproj lastMatching = GetMatchingCsproj (Path.GetFileName (assembly), projects);
 				if (lastMatching != null) {
-					AddProjectReference (refs, result, lastMatching, r);
+					AddProjectReference (refs, result, lastMatching, r, alias);
 				} else {
 					throw new NotSupportedException (string.Format ("From {0}, could not find a matching project reference for {1}", library, r));
 					refs.Append ("    <Reference Include=\"" + assembly + "\">" + NewLine);
@@ -858,11 +858,13 @@ class MsbuildGenerator {
 		return result;
 	}
 
-	void AddProjectReference (StringBuilder refs, VsCsproj result, VsCsproj lastMatching, string r)
+	void AddProjectReference (StringBuilder refs, VsCsproj result, VsCsproj lastMatching, string r, string alias)
 	{
 		refs.AppendFormat ("    <ProjectReference Include=\"{0}\">{1}", GetRelativePath (result.csprojFileName, lastMatching.csprojFileName), NewLine);
 		refs.Append ("      <Project>" + lastMatching.projectGuid + "</Project>" + NewLine);
 		refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (lastMatching.csprojFileName) + "</Name>" + NewLine);
+		if (alias != null)
+			refs.Append ("      <Aliases>" + alias + "</Aliases>");
 		refs.Append ("    </ProjectReference>" + NewLine);
 		if (!result.projReferences.Contains (lastMatching))
 			result.projReferences.Add (lastMatching);
@@ -876,8 +878,6 @@ class MsbuildGenerator {
 		var toUri = new Uri (Path.GetFullPath (to));
 
 		var ret =  fromUri.MakeRelativeUri (toUri).ToString ().Replace ("%5C", "\x5c");
-		Console.WriteLine ("From {0} to {1} => {2}", from, to, ret);
-		
 		return ret;
 	}
 
