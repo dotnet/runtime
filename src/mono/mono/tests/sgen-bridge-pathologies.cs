@@ -120,6 +120,30 @@ class Driver {
 		Console.WriteLine ("-double fan done-");
 	}
 
+	/*
+	 * Not necessarily a pathology, but a special case of where we
+	 * generate lots of "dead" SCCs.  A non-bridge object that
+	 * can't reach a bridge object can safely be removed from the
+	 * graph.  In this special case it's a linked list hanging off
+	 * a bridge object.  We can handle this by "forwarding" edges
+	 * going to non-bridge nodes that have only a single outgoing
+	 * edge.  That collapses the whole list into a single node.
+	 * We could remove that node, too, by removing non-bridge
+	 * nodes with no outgoing edges.
+	 */
+	static void SetupDeadList ()
+	{
+		var head = new Bridge ();
+		var tail = new NonBridge ();
+		head.Links.Add (tail);
+		for (int i = 0; i < LIST_LENGTH; ++i)
+		{
+			var obj = new NonBridge ();
+			tail.Link = obj;
+			tail = obj;
+		}
+	}
+
 	static void RunTest (ThreadStart setup)
 	{
 		var t = new Thread (setup);
@@ -140,6 +164,7 @@ class Driver {
 		RunTest (SetupLinkedFan);
 		RunTest (SetupInverseFan);
 		RunTest (SetupDoubleFan);
+		RunTest (SetupDeadList);
 
 		for (int i = 0; i < 0; ++i) {
 			GC.Collect ();
