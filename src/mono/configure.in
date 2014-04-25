@@ -237,6 +237,12 @@ case "$host" in
                 	# available during cross-compilation
                 	mono_cv_uscore=no
                 fi
+		case "$host" in
+		aarch64-*)
+			support_boehm=no
+			with_gc=sgen
+			;;
+		esac
 		;;
 	*-*-nacl*)
 		host_win32=no
@@ -2507,6 +2513,7 @@ sizeof_register="SIZEOF_VOID_P"
 jit_wanted=true
 interp_wanted=false
 sgen_supported=false
+boehm_supported=true
 case "$host" in
 	mips*)
 		TARGET=MIPS;
@@ -2683,6 +2690,14 @@ case "$host" in
 #		sgen_supported=true
 #		AOT_SUPPORTED="no"
 #		;;
+	aarch64-*)
+		# https://lkml.org/lkml/2012/7/15/133
+		TARGET=ARM64
+		arch_target=arm64
+		JIT_SUPPORTED=yes
+		sgen_supported=true
+		boehm_supported=false
+		;;
 	s390x-*-linux*)
 		TARGET=S390X;
 		arch_target=s390x;
@@ -2788,6 +2803,11 @@ if test "x$host" != "x$target"; then
 			;;
 		esac
 		;;
+	aarch64-*)
+		TARGET=ARM64
+		JIT_SUPPORTED=yes
+		jit_wanted=true
+		;;
 	*)
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])
 	esac
@@ -2802,6 +2822,9 @@ AMD64)
 	;;
 ARM)
 	AC_DEFINE(TARGET_ARM, 1, [...])
+	;;
+ARM64)
+	AC_DEFINE(TARGET_ARM64, 1, [...])
 	;;
 POWERPC)
 	AC_DEFINE(TARGET_POWERPC, 1, [...])
@@ -2830,14 +2853,14 @@ esac
 dnl Use GCC atomic ops if they work on the target.
 if test x$GCC = "xyes"; then
 	case $TARGET in
-	X86 | AMD64 | ARM | POWERPC | POWERPC64 | MIPS | S390X | SPARC | SPARC64)
+	X86 | AMD64 | ARM | ARM64 | POWERPC | POWERPC64 | MIPS | S390X | SPARC | SPARC64)
 		AC_DEFINE(USE_GCC_ATOMIC_OPS, 1, [...])
 		;;
 	esac
 fi
 
 if test "x$target_mach" = "xyes"; then
-   if test "x$TARGET" = "xARM"; then
+   if test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM64"; then
    	  AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"
@@ -3304,10 +3327,12 @@ AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(POWERPC64, test x$TARGET = xPOWERPC64)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
+AM_CONDITIONAL(ARM64, test x$TARGET = xARM64)
 AM_CONDITIONAL(S390X, test x$TARGET = xS390X)
 AM_CONDITIONAL(HOST_X86, test x$HOST = xX86)
 AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
 AM_CONDITIONAL(HOST_ARM, test x$HOST = xARM)
+AM_CONDITIONAL(HOST_ARM64, test x$HOST = xARM64)
 AM_CONDITIONAL(CROSS_COMPILE, test "x$host" != "x$target")
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
@@ -3526,6 +3551,7 @@ mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
 mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
+mono/arch/arm64/Makefile
 mono/arch/ia64/Makefile
 mono/arch/mips/Makefile
 mono/interpreter/Makefile

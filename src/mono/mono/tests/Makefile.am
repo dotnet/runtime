@@ -914,7 +914,12 @@ SGEN_CONFIGURATIONS =	\
 	"major=marksweep-conc|ms-conc"	\
 	"major=marksweep-conc,minor=split|ms-conc-split"	\
 	"minor=split|ms-split"	\
-	"minor=split,alloc-ratio=95|ms-split-95"
+	"minor=split,alloc-ratio=95|ms-split-95"	\
+	"|plain-clear-at-gc|clear-at-gc"	\
+	"major=marksweep-par|ms-par-clear-at-gc|clear-at-gc"	\
+	"major=marksweep-conc|ms-conc-clear-at-gc|clear-at-gc"	\
+	"minor=split|ms-split-clear-at-gc|clear-at-gc"
+
 
 #FIXME We should move to use SGEN_CONFIGURATIONS once sgen supports trailling commas or its argument list.
 SGEN_BRIDGE_CONFIGURATIONS =	\
@@ -935,8 +940,9 @@ sgen-regular-tests: $(SGEN_TESTS)
 		for conf in $(SGEN_CONFIGURATIONS); do 	\
 			name=`echo $$conf | cut -d\| -f 2`;	\
 			params=`echo $$conf | cut -d\| -f 1`;	\
+			debug_opt=`echo $$conf | cut -d\| -f 3`;	\
 			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
+			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="$$debug_opt" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
 			then \
 				passed=`expr $${passed} + 1`; \
 			else \

@@ -436,6 +436,9 @@ static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, 
 static int callee_saved_regs [] = { X86_EBX, X86_ESI, X86_EDI };
 #elif defined(TARGET_ARM)
 static int callee_saved_regs [] = { ARMREG_V1, ARMREG_V2, ARMREG_V3, ARMREG_V4, ARMREG_V5, ARMREG_V7, ARMREG_FP };
+#elif defined(TARGET_ARM64)
+// FIXME:
+static int callee_saved_regs [] = { };
 #elif defined(TARGET_S390X)
 static int callee_saved_regs [] = { s390_r6, s390_r7, s390_r8, s390_r9, s390_r10, s390_r11, s390_r12, s390_r13, s390_r14 };
 #endif

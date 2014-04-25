@@ -19,6 +19,8 @@
 #include "mini-ia64.h"
 #elif defined(TARGET_ARM)
 #include "mini-arm.h"
+#elif defined(TARGET_ARM64)
+#include "mini-arm64.h"
 #elif defined(__mips__)
 #include "mini-mips.h"
 #else

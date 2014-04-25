@@ -74,6 +74,14 @@
 
 #if (defined(TARGET_AMD64) || defined(TARGET_POWERPC64)) && !defined(__mono_ilp32__)
 #define AS_POINTER_DIRECTIVE ".quad"
+#elif defined(TARGET_ARM64)
+
+#ifdef TARGET_ASM_APPLE
+#define AS_POINTER_DIRECTIVE ".quad"
+#else
+#define AS_POINTER_DIRECTIVE ".xword"
+#endif
+
 #else
 #define AS_POINTER_DIRECTIVE ".long"
 #endif
@@ -1713,7 +1721,7 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		fprintf (acfg->fp, ".section __DWARF, __%s,regular,debug\n", section_name + 1);
 	} else
 		fprintf (acfg->fp, "%s\n", section_name);
-#elif defined(TARGET_ARM) || defined(TARGET_POWERPC)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_POWERPC)
 	/* ARM gas doesn't seem to like subsections of .bss */
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data")) {
 		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);

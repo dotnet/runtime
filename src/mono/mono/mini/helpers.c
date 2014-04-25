@@ -66,7 +66,11 @@ opnames[] = {
 #endif /* DISABLE_LOGGING */
 
 #if defined(__i386__) || defined(__x86_64__)
+#ifndef TARGET_ARM64
 #define emit_debug_info  TRUE
+#else
+#define emit_debug_info  FALSE
+#endif
 #else
 #define emit_debug_info  FALSE
 #endif
@@ -237,6 +241,12 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #  else
 #    define AS_CMD "as -gstabs"
 #  endif
+#elif defined (TARGET_ARM64)
+#  if defined (__APPLE__)
+#    define AS_CMD "clang -c -arch arm64 -g -x assembler"
+#  else
+#    define AS_CMD "as -gstabs"
+#  endif
 #elif defined(__mips__) && (_MIPS_SIM == _ABIO32)
 #define AS_CMD "as -mips32"
 #elif defined(__ppc64__)
@@ -275,7 +285,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	cmd = g_strdup_printf (ARCH_PREFIX DIS_CMD " %s %s", objdump_args, o_file);
 	unused = system (cmd);
 	g_free (cmd);
-	
+
 #ifndef HOST_WIN32
 	unlink (o_file);
 	unlink (as_file);

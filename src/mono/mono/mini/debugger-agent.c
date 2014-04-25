@@ -285,7 +285,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 29
+#define MINOR_VERSION 30
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -371,7 +371,8 @@ typedef enum {
 	STEP_FILTER_NONE = 0,
 	STEP_FILTER_STATIC_CTOR = 1,
 	STEP_FILTER_DEBUGGER_HIDDEN = 2,
-	STEP_FILTER_DEBUGGER_STEP_THROUGH = 4
+	STEP_FILTER_DEBUGGER_STEP_THROUGH = 4,
+	STEP_FILTER_DEBUGGER_NON_USER_CODE = 8
 } StepFilter;
 
 typedef enum {
@@ -3496,6 +3497,32 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 							ji->dbg_step_through_inited = TRUE;
 						}
 						if (ji->dbg_step_through)
+							filtered = TRUE;
+					}
+					if ((mod->data.filter & STEP_FILTER_DEBUGGER_NON_USER_CODE) && ji) {
+						MonoCustomAttrInfo *ainfo;
+						static MonoClass *klass;
+
+						if (!klass) {
+							klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
+							g_assert (klass);
+						}
+						if (!ji->dbg_non_user_code_inited) {
+							ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
+							if (ainfo) {
+								if (mono_custom_attrs_has_attr (ainfo, klass))
+									ji->dbg_non_user_code = TRUE;
+								mono_custom_attrs_free (ainfo);
+							}
+							ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
+							if (ainfo) {
+								if (mono_custom_attrs_has_attr (ainfo, klass))
+									ji->dbg_non_user_code = TRUE;
+								mono_custom_attrs_free (ainfo);
+							}
+							ji->dbg_non_user_code_inited = TRUE;
+						}
+						if (ji->dbg_non_user_code)
 							filtered = TRUE;
 					}
 				}
