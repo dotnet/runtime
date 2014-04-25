@@ -102,6 +102,8 @@ typedef struct _HashEntry {
 
 	int finishing_time;
 
+	struct _HashEntry *forwarded_to;
+
 	DynPtrArray srcs;
 
 	int scc_index;
@@ -541,18 +543,34 @@ object_is_live (MonoObject **objp)
 	return sgen_hash_table_lookup (&hash_table, obj) == NULL;
 }
 
+static HashEntry*
+follow_forward (HashEntry *entry)
+{
+	while (entry->forwarded_to)
+		entry = entry->forwarded_to;
+	return entry;
+}
+
 static DynPtrArray registered_bridges;
 static DynPtrArray dfs_stack;
 
 static int dfs1_passes, dfs2_passes;
 
+/*
+ * DFS1 maintains a stack, where each two entries are effectively one entry.  (FIXME:
+ * Optimize this via pointer tagging.)  There are two different types of entries:
+ *
+ * entry, src: entry needs to be expanded via scanning, and linked to from src
+ * NULL, entry: entry has already been expanded and needs to be finished
+ */
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		MonoObject *dst = (MonoObject*)*(ptr);			\
 		if (dst && !object_is_live (&dst)) {			\
+			++num_links;					\
 			dyn_array_ptr_push (&dfs_stack, obj_entry);	\
-			dyn_array_ptr_push (&dfs_stack, get_hash_entry (dst, NULL)); \
+			dyn_array_ptr_push (&dfs_stack, follow_forward (get_hash_entry (dst, NULL))); \
 		}							\
 	} while (0)
 
@@ -572,29 +590,60 @@ dfs1 (HashEntry *obj_entry)
 
 		obj_entry = dyn_array_ptr_pop (&dfs_stack);
 		if (obj_entry) {
+			/* obj_entry needs to be expanded */
 			src = dyn_array_ptr_pop (&dfs_stack);
+			if (src)
+				g_assert (!src->forwarded_to);
 
+			obj_entry = follow_forward (obj_entry);
+
+		again:
+			g_assert (!obj_entry->forwarded_to);
 			obj = obj_entry->obj;
 			start = (char*)obj;
 
+			if (!obj_entry->is_visited) {
+				int num_links = 0;
+
+				obj_entry->is_visited = TRUE;
+
+				/* push the finishing entry on the stack */
+				dyn_array_ptr_push (&dfs_stack, obj_entry);
+				dyn_array_ptr_push (&dfs_stack, NULL);
+
+#include "sgen-scan-object.h"
+
+				/*
+				 * We can remove non-bridge objects with a single outgoing
+				 * link by forwarding links going to it.
+				 *
+				 * This is the first time we've encountered this object, so
+				 * no links to it have yet been added.  We'll keep it that
+				 * way by setting the forward pointer, and instead of
+				 * continuing processing this object, we start over with the
+				 * object it points to.
+				 */
+				if (!obj_entry->is_bridge && num_links == 1) {
+					HashEntry *dst_entry = dyn_array_ptr_pop (&dfs_stack);
+					HashEntry *obj_entry_again = dyn_array_ptr_pop (&dfs_stack);
+					g_assert (obj_entry_again == obj_entry);
+					g_assert (!dst_entry->forwarded_to);
+					obj_entry->forwarded_to = dst_entry;
+					obj_entry = dst_entry;
+					goto again;
+				}
+			}
+
 			if (src) {
 				//g_print ("link %s -> %s\n", sgen_safe_name (src->obj), sgen_safe_name (obj));
+				g_assert (!obj_entry->forwarded_to);
 				add_source (obj_entry, src);
 			} else {
 				//g_print ("starting with %s\n", sgen_safe_name (obj));
 			}
-
-			if (obj_entry->is_visited)
-				continue;
-
-			obj_entry->is_visited = TRUE;
-
-			dyn_array_ptr_push (&dfs_stack, obj_entry);
-			/* NULL marks that the next entry is to be finished */
-			dyn_array_ptr_push (&dfs_stack, NULL);
-
-#include "sgen-scan-object.h"
 		} else {
+			/* obj_entry needs to be finished */
+
 			obj_entry = dyn_array_ptr_pop (&dfs_stack);
 
 			//g_print ("finish %s\n", sgen_safe_name (obj_entry->obj));
@@ -814,6 +863,8 @@ processing_stw_step (void)
 {
 	int i;
 	int bridge_count;
+	MonoObject *obj;
+	HashEntry *entry;
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
 
@@ -849,6 +900,15 @@ processing_stw_step (void)
 
 	for (i = 0; i < bridge_count; ++i)
 		dfs1 (get_hash_entry (dyn_array_ptr_get (&registered_bridges, i), NULL));
+
+	/* Remove all forwarded objects. */
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		if (entry->forwarded_to) {
+			g_assert (dyn_array_ptr_size (&entry->srcs) == 0);
+			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+			continue;
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
