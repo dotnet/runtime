@@ -830,11 +830,13 @@ typedef struct {
 	void (*register_finalized_object) (MonoObject *object);
 	void (*describe_pointer) (MonoObject *object);
 	void (*enable_accounting) (void);
+	void (*set_dump_prefix) (const char *prefix);
 } SgenBridgeProcessor;
 
 void sgen_old_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
 void sgen_new_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
 void sgen_set_bridge_implementation (const char *name) MONO_INTERNAL;
+void sgen_bridge_set_dump_prefix (const char *prefix) MONO_INTERNAL;
 
 typedef mono_bool (*WeakLinkAlivePredicateFunc) (MonoObject*, void*);
 

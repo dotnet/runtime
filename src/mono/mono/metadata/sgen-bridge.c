@@ -149,6 +149,17 @@ sgen_enable_bridge_accounting (void)
 	bridge_processor.enable_accounting ();
 }
 
+void
+sgen_bridge_set_dump_prefix (const char *prefix)
+{
+	if (!bridge_processor.set_dump_prefix) {
+		fprintf (stderr, "Warning: Bridge implementation does not support dumping - ignoring.\n");
+		return;
+	}
+
+	bridge_processor.set_dump_prefix (prefix);
+}
+
 /* Test support code */
 static const char *bridge_class;
 

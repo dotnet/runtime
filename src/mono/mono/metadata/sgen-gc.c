@@ -4969,6 +4969,9 @@ mono_gc_base_init (void)
 				binary_protocol_init (filename);
 			} else if (!strcmp (opt, "enable-bridge-accounting")) {
 				sgen_enable_bridge_accounting ();
+			} else if (g_str_has_prefix (opt, "bridge-dump=")) {
+				char *prefix = strchr (opt, '=') + 1;
+				sgen_bridge_set_dump_prefix (prefix);
 			} else {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
@@ -4998,6 +5001,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  heap-dump=<filename>\n");
 				fprintf (stderr, "  binary-protocol=<filename>\n");
 				fprintf (stderr, "  enable-bridge-accounting\n");
+				fprintf (stderr, "  bridge-dump=<filename-prefix>\n");
 				fprintf (stderr, "\n");
 
 				usage_printed = TRUE;

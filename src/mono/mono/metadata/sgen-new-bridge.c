@@ -42,6 +42,7 @@
 #ifdef HAVE_SGEN_GC
 
 #include <stdlib.h>
+#include <errno.h>
 
 #include "sgen-gc.h"
 #include "sgen-bridge.h"
@@ -833,6 +834,65 @@ reset_flags (SCC *scc)
 }
 #endif
 
+static char *dump_prefix = NULL;
+
+static void
+dump_graph (void)
+{
+	static int counter = 0;
+
+	MonoObject *obj;
+	HashEntry *entry;
+	int prefix_len = strlen (dump_prefix);
+	char filename [prefix_len + 64];
+	FILE *file;
+	int edge_id = 0;
+
+	sprintf (filename, "%s.%d.gexf", dump_prefix, counter++);
+	file = fopen (filename, "w");
+
+	if (file == NULL) {
+		fprintf (stderr, "Warning: Could not open bridge dump file `%s` for writing: %s\n", filename, strerror (errno));
+		return;
+	}
+
+	fprintf (file, "<gexf xmlns=\"http://www.gexf.net/1.2draft\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd\" version=\"1.2\">\n");
+
+	fprintf (file, "<graph defaultedgetype=\"directed\">\n"
+			"<attributes class=\"node\">\n"
+			"<attribute id=\"0\" title=\"class\" type=\"string\"/>\n"
+			"<attribute id=\"1\" title=\"bridge\" type=\"boolean\"/>\n"
+			"</attributes>\n");
+
+	fprintf (file, "<nodes>\n");
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		MonoVTable *vt = (MonoVTable*) SGEN_LOAD_VTABLE (obj);
+		fprintf (file, "<node id=\"%p\"><attvalues><attvalue for=\"0\" value=\"%s.%s\"/><attvalue for=\"1\" value=\"%s\"/></attvalues></node>\n",
+				obj, vt->klass->name_space, vt->klass->name, entry->is_bridge ? "true" : "false");
+	} SGEN_HASH_TABLE_FOREACH_END;
+	fprintf (file, "</nodes>\n");
+
+	fprintf (file, "<edges>\n");
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		int i;
+		for (i = 0; i < dyn_array_ptr_size (&entry->srcs); ++i) {
+			HashEntry *src = dyn_array_ptr_get (&entry->srcs, i);
+			fprintf (file, "<edge id=\"%d\" source=\"%p\" target=\"%p\"/>\n", edge_id++, src->obj, obj);
+		}
+	} SGEN_HASH_TABLE_FOREACH_END;
+	fprintf (file, "</edges>\n");
+
+	fprintf (file, "</graph></gexf>\n");
+
+	fclose (file);
+}
+
+static void
+set_dump_prefix (const char *prefix)
+{
+	dump_prefix = strdup (prefix);
+}
+
 static int
 compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 {
@@ -912,6 +972,9 @@ processing_stw_step (void)
 
 	SGEN_TV_GETTIME (atv);
 	step_2 = SGEN_TV_ELAPSED (btv, atv);
+
+	if (dump_prefix)
+		dump_graph ();
 }
 
 static mono_bool
@@ -1294,6 +1357,7 @@ sgen_new_bridge_init (SgenBridgeProcessor *collector)
 	collector->register_finalized_object = register_finalized_object;
 	collector->describe_pointer = describe_pointer;
 	collector->enable_accounting = enable_accounting;
+	collector->set_dump_prefix = set_dump_prefix;
 }
 
 #endif
