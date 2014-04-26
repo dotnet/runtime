@@ -745,9 +745,11 @@ gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
 	guint8 *code, *start;
+	MonoType *sig_ret;
 
 	/* FIXME: Support more cases */
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
+	sig_ret = mini_type_get_underlying_type (NULL, sig->ret);
+	if (MONO_TYPE_ISSTRUCT (sig_ret))
 		return NULL;
 
 	if (has_target) {
@@ -1820,6 +1822,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	MonoInst *ins;
+	MonoType *sig_ret;
 	int i, offset, size, align, curinst;
 	CallInfo *cinfo;
 	guint32 ualign;
@@ -1829,6 +1832,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 	cinfo = cfg->arch.cinfo;
+	sig_ret = mini_replace_type (sig->ret);
 
 	mono_arch_compute_omit_fp (cfg);
 
@@ -1858,8 +1862,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	offset = 0;
 	curinst = 0;
-	if (!MONO_TYPE_ISSTRUCT (sig->ret) && !cinfo->vtype_retaddr) {
-		if (sig->ret->type != MONO_TYPE_VOID) {
+	if (!MONO_TYPE_ISSTRUCT (sig_ret) && !cinfo->vtype_retaddr) {
+		if (sig_ret->type != MONO_TYPE_VOID) {
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = ARMREG_R0;
 		}
@@ -2829,11 +2833,13 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
 	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
 	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
+	MonoType *ptype;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
 	mgreg_t res = ((DynCallArgs*)buf)->res;
 	mgreg_t res2 = ((DynCallArgs*)buf)->res2;
 
-	switch (mono_type_get_underlying_type (sig->ret)->type) {
+	ptype = mini_type_get_underlying_type (NULL, sig->ret);
+	switch (ptype->type) {
 	case MONO_TYPE_VOID:
 		*(gpointer*)ret = NULL;
 		break;
@@ -2874,7 +2880,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		((gint32*)ret) [1] = res2;
 		break;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
+		if (MONO_TYPE_IS_REFERENCE (ptype)) {
 			*(gpointer*)ret = (gpointer)res;
 			break;
 		} else {
