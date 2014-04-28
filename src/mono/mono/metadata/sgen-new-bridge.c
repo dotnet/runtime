@@ -98,16 +98,19 @@ typedef struct {
 typedef struct _HashEntry {
 	MonoObject *obj;	/* This is a duplicate - it's already stored in the hash table */
 
+	union {
+		struct {
+			gboolean is_visited;
+			int finishing_time;
+			struct _HashEntry *forwarded_to;
+		} dfs1;
+		struct {
+			int scc_index;
+		} dfs2;
+	} v;
+
 	gboolean is_bridge;
-	gboolean is_visited;
-
-	int finishing_time;
-
-	struct _HashEntry *forwarded_to;
-
 	DynPtrArray srcs;
-
-	int scc_index;
 } HashEntry;
 
 typedef struct {
@@ -462,8 +465,7 @@ get_hash_entry (MonoObject *obj, gboolean *existing)
 
 	new_entry.obj = obj;
 	dyn_array_ptr_init (&new_entry.srcs);
-	new_entry.finishing_time = -1;
-	new_entry.scc_index = -1;
+	new_entry.v.dfs1.finishing_time = -1;
 
 	sgen_hash_table_replace (&hash_table, obj, &new_entry, NULL);
 
@@ -509,8 +511,8 @@ register_bridge_object (MonoObject *obj)
 static void
 register_finishing_time (HashEntry *entry, int t)
 {
-	g_assert (entry->finishing_time < 0);
-	entry->finishing_time = t;
+	g_assert (entry->v.dfs1.finishing_time < 0);
+	entry->v.dfs1.finishing_time = t;
 }
 
 static int ignored_objects;
@@ -547,8 +549,8 @@ object_needs_expansion (MonoObject **objp)
 static HashEntry*
 follow_forward (HashEntry *entry)
 {
-	while (entry->forwarded_to)
-		entry = entry->forwarded_to;
+	while (entry->v.dfs1.forwarded_to)
+		entry = entry->v.dfs1.forwarded_to;
 	return entry;
 }
 
@@ -594,19 +596,19 @@ dfs1 (HashEntry *obj_entry)
 			/* obj_entry needs to be expanded */
 			src = dyn_array_ptr_pop (&dfs_stack);
 			if (src)
-				g_assert (!src->forwarded_to);
+				g_assert (!src->v.dfs1.forwarded_to);
 
 			obj_entry = follow_forward (obj_entry);
 
 		again:
-			g_assert (!obj_entry->forwarded_to);
+			g_assert (!obj_entry->v.dfs1.forwarded_to);
 			obj = obj_entry->obj;
 			start = (char*)obj;
 
-			if (!obj_entry->is_visited) {
+			if (!obj_entry->v.dfs1.is_visited) {
 				int num_links = 0;
 
-				obj_entry->is_visited = TRUE;
+				obj_entry->v.dfs1.is_visited = TRUE;
 
 				/* push the finishing entry on the stack */
 				dyn_array_ptr_push (&dfs_stack, obj_entry);
@@ -628,8 +630,8 @@ dfs1 (HashEntry *obj_entry)
 					HashEntry *dst_entry = dyn_array_ptr_pop (&dfs_stack);
 					HashEntry *obj_entry_again = dyn_array_ptr_pop (&dfs_stack);
 					g_assert (obj_entry_again == obj_entry);
-					g_assert (!dst_entry->forwarded_to);
-					obj_entry->forwarded_to = dst_entry;
+					g_assert (!dst_entry->v.dfs1.forwarded_to);
+					obj_entry->v.dfs1.forwarded_to = dst_entry;
 					obj_entry = dst_entry;
 					goto again;
 				}
@@ -637,7 +639,7 @@ dfs1 (HashEntry *obj_entry)
 
 			if (src) {
 				//g_print ("link %s -> %s\n", sgen_safe_name (src->obj), sgen_safe_name (obj));
-				g_assert (!obj_entry->forwarded_to);
+				g_assert (!obj_entry->v.dfs1.forwarded_to);
 				add_source (obj_entry, src);
 			} else {
 				//g_print ("starting with %s\n", sgen_safe_name (obj));
@@ -756,8 +758,8 @@ scc_add_xref (SCC *src, SCC *dst)
 static void
 scc_add_entry (SCC *scc, HashEntry *entry)
 {
-	g_assert (entry->scc_index < 0);
-	entry->scc_index = scc->index;
+	g_assert (entry->v.dfs2.scc_index < 0);
+	entry->v.dfs2.scc_index = scc->index;
 	if (entry->is_bridge)
 		++scc->num_bridge_entries;
 }
@@ -775,9 +777,9 @@ dfs2 (HashEntry *entry)
 		entry = dyn_array_ptr_pop (&dfs_stack);
 		++dfs2_passes;
 
-		if (entry->scc_index >= 0) {
-			if (entry->scc_index != current_scc->index)
-				scc_add_xref (dyn_array_scc_get_ptr (&sccs, entry->scc_index), current_scc);
+		if (entry->v.dfs2.scc_index >= 0) {
+			if (entry->v.dfs2.scc_index != current_scc->index)
+				scc_add_xref (dyn_array_scc_get_ptr (&sccs, entry->v.dfs2.scc_index), current_scc);
 			continue;
 		}
 
@@ -896,7 +898,7 @@ set_dump_prefix (const char *prefix)
 static int
 compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 {
-	return e2->finishing_time - e1->finishing_time;
+	return e2->v.dfs1.finishing_time - e1->v.dfs1.finishing_time;
 }
 
 DEF_QSORT_INLINE(hash_entries, HashEntry*, compare_hash_entries)
@@ -963,7 +965,7 @@ processing_stw_step (void)
 
 	/* Remove all forwarded objects. */
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
-		if (entry->forwarded_to) {
+		if (entry->v.dfs1.forwarded_to) {
 			g_assert (dyn_array_ptr_size (&entry->srcs) == 0);
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;
@@ -1017,7 +1019,7 @@ processing_finish (int generation)
 
 	j = 0;
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
-		g_assert (entry->finishing_time >= 0);
+		g_assert (entry->v.dfs1.finishing_time >= 0);
 		all_entries [j++] = entry;
 		fist_pass_links += dyn_array_ptr_size (&entry->srcs);
 	} SGEN_HASH_TABLE_FOREACH_END;
@@ -1027,6 +1029,10 @@ processing_finish (int generation)
 	/* sort array according to decreasing finishing time */
 	qsort_hash_entries (all_entries, hash_table.num_entries);
 
+	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
+		entry->v.dfs2.scc_index = -1;
+	} SGEN_HASH_TABLE_FOREACH_END;
+
 	SGEN_TV_GETTIME (btv);
 	step_3 = SGEN_TV_ELAPSED (atv, btv);
 
@@ -1035,7 +1041,7 @@ processing_finish (int generation)
 	dyn_array_scc_init (&sccs);
 	for (i = 0; i < hash_table.num_entries; ++i) {
 		HashEntry *entry = all_entries [i];
-		if (entry->scc_index < 0) {
+		if (entry->v.dfs2.scc_index < 0) {
 			int index = dyn_array_scc_size (&sccs);
 			current_scc = dyn_array_scc_add (&sccs);
 			current_scc->index = index;
@@ -1194,7 +1200,7 @@ processing_finish (int generation)
 
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
 		if (entry->is_bridge) {
-			SCC *scc = dyn_array_scc_get_ptr (&sccs, entry->scc_index);
+			SCC *scc = dyn_array_scc_get_ptr (&sccs, entry->v.dfs2.scc_index);
 			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = entry->obj;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
@@ -1344,7 +1350,7 @@ describe_pointer (MonoObject *obj)
 
 	printf ("Bridge hash table entry %p:\n", entry);
 	printf ("  is bridge: %d\n", (int)entry->is_bridge);
-	printf ("  is visited: %d\n", (int)entry->is_visited);
+	printf ("  is visited: %d\n", (int)entry->v.dfs1.is_visited);
 }
 
 void
