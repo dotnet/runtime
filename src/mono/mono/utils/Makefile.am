@@ -189,6 +189,7 @@ libmonoutilsinclude_HEADERS = 	\
 	mono-logger.h		\
 	mono-error.h		\
 	mono-publib.h		\
-	mono-dl-fallback.h
+	mono-dl-fallback.h	\
+	mono-counters.h
 
 EXTRA_DIST = ChangeLog mono-embed.h mono-embed.c
