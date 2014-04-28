@@ -61,6 +61,10 @@ mono_counters_register (const char* name, int type, void *addr)
 	MonoCounter *counter;
 	if (!(type & valid_mask))
 		return;
+
+	if ((type & MONO_COUNTER_VARIANCE_MASK) == 0)
+		type |= MONO_COUNTER_MONOTONIC;
+
 	counter = malloc (sizeof (MonoCounter));
 	if (!counter)
 		return;
@@ -200,7 +204,7 @@ mono_counters_dump_section (int section, FILE *outfile)
 {
 	MonoCounter *counter = counters;
 	while (counter) {
-		if (counter->type & section && mono_counter_get_variance (counter) == MONO_COUNTER_MONOTONIC)
+		if ((counter->type & section) && (mono_counter_get_variance (counter) & section))
 			dump_counter (counter, outfile);
 		counter = counter->next;
 	}
@@ -212,6 +216,8 @@ mono_counters_dump_section (int section, FILE *outfile)
  * @outfile: a FILE to dump the results to
  *
  * Displays the counts of all the enabled counters registered. 
+ * To filter by variance, you can OR one or more variance with the specific section you want.
+ * Use MONO_COUNTER_SECTION_MASK to dump all categories of a specific variance.
  */
 void
 mono_counters_dump (int section_mask, FILE *outfile)
@@ -220,10 +226,15 @@ mono_counters_dump (int section_mask, FILE *outfile)
 	section_mask &= valid_mask;
 	if (!counters)
 		return;
+
+	/* If no variance mask is supplied, we default to all kinds. */
+	if (!(section_mask & MONO_COUNTER_VARIANCE_MASK))
+		section_mask |= MONO_COUNTER_VARIANCE_MASK;
+
 	for (j = 0, i = MONO_COUNTER_JIT; i < MONO_COUNTER_LAST_SECTION; j++, i <<= 1) {
 		if ((section_mask & i) && (set_mask & i)) {
 			fprintf (outfile, "\n%s statistics\n", section_names [j]);
-			mono_counters_dump_section (i, outfile);
+			mono_counters_dump_section (i | (section_mask & MONO_COUNTER_VARIANCE_MASK), outfile);
 		}
 	}
 
