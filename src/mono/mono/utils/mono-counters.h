@@ -33,9 +33,8 @@ enum {
 	MONO_COUNTER_RAW        = 0 << 24,  /* Raw value */
 	MONO_COUNTER_BYTES      = 1 << 24, /* Quantity of bytes. RSS, active heap, etc */
 	MONO_COUNTER_TIME       = 2 << 24,  /* Time interval in 100ns units. Minor pause, JIT compilation*/
-	MONO_COUNTER_EVENTS     = 3 << 24, /* Number of times the given event happens. Major collections, Compiled methods. */
-	MONO_COUNTER_ITEMS      = 4 << 24, /* Current number of things. Threads, queued jobs.*/
-	MONO_COUNTER_PERCENTAGE = 5 << 24, /* [0-1] Fraction Percentage of something. Load average. */
+	MONO_COUNTER_COUNT      = 3 << 24, /*  Number of things (threads, queued jobs) or Number of events triggered (Major collections, Compiled methods).*/
+	MONO_COUNTER_PERCENTAGE = 4 << 24, /* [0-1] Fraction Percentage of something. Load average. */
 
 	/* Monotonicity, bits 28-31 (4 bits) */
 	MONO_COUNTER_VARIANCE_SHIFT = 28,
