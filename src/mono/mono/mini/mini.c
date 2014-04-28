@@ -7779,7 +7779,7 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_trace_cleanup ();
 
-	mono_counters_dump (-1, stdout);
+	mono_counters_dump (MONO_COUNTER_SECTION_MASK | MONO_COUNTER_MONOTONIC, stdout);
 
 	if (mono_inject_async_exc_method)
 		mono_method_desc_free (mono_inject_async_exc_method);
