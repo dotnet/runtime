@@ -96,8 +96,6 @@ typedef struct {
  * just one source, so use the srcs pointer itself.
  */
 typedef struct _HashEntry {
-	MonoObject *obj;	/* This is a duplicate - it's already stored in the hash table */
-
 	union {
 		struct {
 			gboolean is_visited;
@@ -463,7 +461,6 @@ get_hash_entry (MonoObject *obj, gboolean *existing)
 
 	memset (&new_entry, 0, sizeof (HashEntry));
 
-	new_entry.obj = obj;
 	dyn_array_ptr_init (&new_entry.srcs);
 	new_entry.v.dfs1.finishing_time = -1;
 
@@ -602,7 +599,7 @@ dfs1 (HashEntry *obj_entry)
 
 		again:
 			g_assert (!obj_entry->v.dfs1.forwarded_to);
-			obj = obj_entry->obj;
+			obj = sgen_hash_table_key_for_value_pointer (obj_entry);
 			start = (char*)obj;
 
 			if (!obj_entry->v.dfs1.is_visited) {
@@ -879,7 +876,7 @@ dump_graph (void)
 		int i;
 		for (i = 0; i < dyn_array_ptr_size (&entry->srcs); ++i) {
 			HashEntry *src = dyn_array_ptr_get (&entry->srcs, i);
-			fprintf (file, "<edge id=\"%d\" source=\"%p\" target=\"%p\"/>\n", edge_id++, src->obj, obj);
+			fprintf (file, "<edge id=\"%d\" source=\"%p\" target=\"%p\"/>\n", edge_id++, sgen_hash_table_key_for_value_pointer (src), obj);
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 	fprintf (file, "</edges>\n");
@@ -1139,7 +1136,7 @@ processing_finish (int generation)
 			double w;
 			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
 
-			entry->weight += (double)sgen_safe_object_get_size (entry->entry.obj);
+			entry->weight += (double)sgen_safe_object_get_size (sgen_hash_table_key_for_value_pointer (entry));
 			w = entry->weight / dyn_array_ptr_size (&entry->entry.srcs);
 			for (j = 0; j < dyn_array_ptr_size (&entry->entry.srcs); ++j) {
 				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry->entry.srcs, j);
@@ -1149,8 +1146,9 @@ processing_finish (int generation)
 		for (i = 0; i < hash_table.num_entries; ++i) {
 			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
 			if (entry->entry.is_bridge) {
-				MonoClass *klass = ((MonoVTable*)SGEN_LOAD_VTABLE (entry->entry.obj))->klass;
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", klass->name_space, klass->name, entry->entry.obj, entry->weight);
+				MonoObject *obj = sgen_hash_table_key_for_value_pointer (entry);
+				MonoClass *klass = ((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass;
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", klass->name_space, klass->name, obj, entry->weight);
 			}
 		}
 	}
@@ -1201,7 +1199,7 @@ processing_finish (int generation)
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
 		if (entry->is_bridge) {
 			SCC *scc = dyn_array_scc_get_ptr (&sccs, entry->v.dfs2.scc_index);
-			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = entry->obj;
+			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = sgen_hash_table_key_for_value_pointer (entry);
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 
