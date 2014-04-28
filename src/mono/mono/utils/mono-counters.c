@@ -83,7 +83,9 @@ mono_counters_register (const char* name, int type, void *addr)
 }
 
 typedef int (*IntFunc) (void);
+typedef guint (*UIntFunc) (void);
 typedef gint64 (*LongFunc) (void);
+typedef guint64 (*ULongFunc) (void);
 typedef gssize (*PtrFunc) (void);
 typedef double (*DoubleFunc) (void);
 typedef char* (*StrFunc) (void);
@@ -92,7 +94,9 @@ typedef char* (*StrFunc) (void);
 static void
 dump_counter (MonoCounter *counter, FILE *outfile) {
 	int intval;
+	guint uintval;
 	gint64 int64val;
+	guint64 uint64val;
 	gssize wordval;
 	double dval;
 	const char *str;
@@ -104,6 +108,13 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      intval = *(int*)counter->addr;
 	      fprintf (outfile, ENTRY_FMT "%d\n", counter->name, intval);
 	      break;
+	case MONO_COUNTER_UINT:
+	      if (counter->type & MONO_COUNTER_CALLBACK)
+		      uintval = ((UIntFunc)counter->addr) ();
+	      else
+		      uintval = *(guint*)counter->addr;
+	      fprintf (outfile, ENTRY_FMT "%u\n", counter->name, uintval);
+	      break;
 	case MONO_COUNTER_LONG:
 	      if (counter->type & MONO_COUNTER_CALLBACK)
 		      int64val = ((LongFunc)counter->addr) ();
@@ -113,6 +124,13 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)int64val / 10000.0);
 	      else
 		      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)int64val);
+	      break;
+	case MONO_COUNTER_ULONG:
+	      if (counter->type & MONO_COUNTER_CALLBACK)
+		      uint64val = ((ULongFunc)counter->addr) ();
+	      else
+		      uint64val = *(guint64*)counter->addr;
+	      fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, (unsigned long long)uint64val);
 	      break;
 	case MONO_COUNTER_WORD:
 	      if (counter->type & MONO_COUNTER_CALLBACK)

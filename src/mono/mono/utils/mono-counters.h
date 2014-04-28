@@ -7,8 +7,10 @@
 enum {
 	/* Counter type, bits 0-7. */
 	MONO_COUNTER_INT,    /* 32 bit int */
+	MONO_COUNTER_UINT,    /* 32 bit uint */
 	MONO_COUNTER_WORD,   /* pointer-sized int */
 	MONO_COUNTER_LONG,   /* 64 bit int */
+	MONO_COUNTER_ULONG,   /* 64 bit uint */
 	MONO_COUNTER_DOUBLE,
 	MONO_COUNTER_STRING, /* char* */
 	MONO_COUNTER_TYPE_MASK = 0xf,

@@ -28,9 +28,9 @@
 #endif
 
 static uintptr_t code_memory_used = 0;
-static size_t dynamic_code_alloc_count;
-static size_t dynamic_code_bytes_count;
-static size_t dynamic_code_frees_count;
+static gulong dynamic_code_alloc_count;
+static gulong dynamic_code_bytes_count;
+static gulong dynamic_code_frees_count;
 
 /*
  * AMD64 processors maintain icache coherency only for pages which are 
@@ -304,9 +304,9 @@ codechunk_cleanup (void)
 void
 mono_code_manager_init (void)
 {
-	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &dynamic_code_alloc_count);
-	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &dynamic_code_bytes_count);
-	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &dynamic_code_frees_count);
+	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_alloc_count);
+	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_bytes_count);
+	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_frees_count);
 }
 
 void
