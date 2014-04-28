@@ -163,6 +163,16 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 	}
 }
 
+
+/**
+ * mono_counters_foreach:
+ * @cb: The callback that will be called for each counter.
+ * @user_data: Value passed as second argument of the callback.
+ *
+ * Iterate over all counters and call @cb for each one of them. Stop iterating if
+ * the callback returns FALSE.
+ *
+ */
 void
 mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 {
