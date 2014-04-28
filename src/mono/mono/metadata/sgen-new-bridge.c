@@ -546,8 +546,12 @@ object_needs_expansion (MonoObject **objp)
 static HashEntry*
 follow_forward (HashEntry *entry)
 {
-	while (entry->v.dfs1.forwarded_to)
-		entry = entry->v.dfs1.forwarded_to;
+	while (entry->v.dfs1.forwarded_to) {
+		HashEntry *next = entry->v.dfs1.forwarded_to;
+		if (next->v.dfs1.forwarded_to)
+			entry->v.dfs1.forwarded_to = next->v.dfs1.forwarded_to;
+		entry = next;
+	}
 	return entry;
 }
 
