@@ -99,7 +99,7 @@ typedef struct _HashEntry {
 	union {
 		struct {
 			gboolean is_visited;
-			int finishing_time;
+			guint32 finishing_time;
 			struct _HashEntry *forwarded_to;
 		} dfs1;
 		struct {
@@ -136,7 +136,7 @@ typedef struct _SCC {
 
 static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
 
-static int current_time;
+static guint32 current_time;
 
 static gboolean bridge_accounting_enabled = FALSE;
 
@@ -462,7 +462,7 @@ get_hash_entry (MonoObject *obj, gboolean *existing)
 	memset (&new_entry, 0, sizeof (HashEntry));
 
 	dyn_array_ptr_init (&new_entry.srcs);
-	new_entry.v.dfs1.finishing_time = -1;
+	new_entry.v.dfs1.finishing_time = 0;
 
 	sgen_hash_table_replace (&hash_table, obj, &new_entry, NULL);
 
@@ -506,9 +506,9 @@ register_bridge_object (MonoObject *obj)
 }
 
 static void
-register_finishing_time (HashEntry *entry, int t)
+register_finishing_time (HashEntry *entry, guint32 t)
 {
-	g_assert (entry->v.dfs1.finishing_time < 0);
+	g_assert (entry->v.dfs1.finishing_time == 0);
 	entry->v.dfs1.finishing_time = t;
 }
 
@@ -651,7 +651,7 @@ dfs1 (HashEntry *obj_entry)
 			obj_entry = dyn_array_ptr_pop (&dfs_stack);
 
 			//g_print ("finish %s\n", sgen_safe_name (obj_entry->obj));
-			register_finishing_time (obj_entry, current_time++);
+			register_finishing_time (obj_entry, ++current_time);
 		}
 	} while (dyn_array_ptr_size (&dfs_stack) > 0);
 }
@@ -899,6 +899,8 @@ set_dump_prefix (const char *prefix)
 static int
 compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 {
+	if (e2->v.dfs1.finishing_time < e2->v.dfs1.finishing_time)
+		return -1;
 	return e2->v.dfs1.finishing_time - e1->v.dfs1.finishing_time;
 }
 
@@ -1020,7 +1022,7 @@ processing_finish (int generation)
 
 	j = 0;
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
-		g_assert (entry->v.dfs1.finishing_time >= 0);
+		g_assert (entry->v.dfs1.finishing_time > 0);
 		all_entries [j++] = entry;
 		fist_pass_links += dyn_array_ptr_size (&entry->srcs);
 	} SGEN_HASH_TABLE_FOREACH_END;
