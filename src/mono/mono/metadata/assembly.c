@@ -1102,8 +1102,17 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		*/
 		if (!reference)
 			reference = REFERENCE_MISSING;
-	} else
-		reference = mono_assembly_load (&aname, image->assembly? image->assembly->basedir: NULL, &status);
+	} else {
+		/* we first try without setting the basedir: this can eventually result in a ResolveAssembly
+		 * event which is the MS .net compatible behaviour (the assemblyresolve_event3.cs test has been fixed
+		 * accordingly, it would fail on the MS runtime before).
+		 * The second load attempt has the basedir set to keep compatibility with the old mono behavior, for
+		 * example bug-349190.2.cs and who knows how much more code in the wild.
+		 */
+		reference = mono_assembly_load (&aname, NULL, &status);
+		if (!reference && image->assembly)
+			reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
+	}
 
 	if (reference == NULL){
 		char *extra_msg;

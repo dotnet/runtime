@@ -4,7 +4,7 @@ using System.Reflection;
 
 class App
 {
-	const int expected_count = 1;
+	const int expected_count = 2;
 	static int event_handler_count;
 	
 	public static int Main ()
