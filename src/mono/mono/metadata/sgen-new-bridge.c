@@ -96,10 +96,12 @@ typedef struct {
  * just one source, so use the srcs pointer itself.
  */
 typedef struct _HashEntry {
+	gboolean is_bridge;
+
 	union {
 		struct {
-			gboolean is_visited;
-			guint32 finishing_time;
+			guint32 is_visited : 1;
+			guint32 finishing_time : 31;
 			struct _HashEntry *forwarded_to;
 		} dfs1;
 		struct {
@@ -107,7 +109,6 @@ typedef struct _HashEntry {
 		} dfs2;
 	} v;
 
-	gboolean is_bridge;
 	DynPtrArray srcs;
 } HashEntry;
 
@@ -509,6 +510,8 @@ static void
 register_finishing_time (HashEntry *entry, guint32 t)
 {
 	g_assert (entry->v.dfs1.finishing_time == 0);
+	/* finishing_time has 31 bits, so it must be within signed int32 range. */
+	g_assert (t > 0 && t <= G_MAXINT32);
 	entry->v.dfs1.finishing_time = t;
 }
 
@@ -609,7 +612,7 @@ dfs1 (HashEntry *obj_entry)
 			if (!obj_entry->v.dfs1.is_visited) {
 				int num_links = 0;
 
-				obj_entry->v.dfs1.is_visited = TRUE;
+				obj_entry->v.dfs1.is_visited = 1;
 
 				/* push the finishing entry on the stack */
 				dyn_array_ptr_push (&dfs_stack, obj_entry);
@@ -899,9 +902,8 @@ set_dump_prefix (const char *prefix)
 static int
 compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 {
-	if (e2->v.dfs1.finishing_time < e2->v.dfs1.finishing_time)
-		return -1;
-	return e2->v.dfs1.finishing_time - e1->v.dfs1.finishing_time;
+	/* We can cast to signed int here because finishing_time has only 31 bits. */
+	return (gint32)e2->v.dfs1.finishing_time - (gint32)e1->v.dfs1.finishing_time;
 }
 
 DEF_QSORT_INLINE(hash_entries, HashEntry*, compare_hash_entries)
