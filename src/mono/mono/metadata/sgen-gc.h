@@ -826,11 +826,22 @@ typedef struct {
 	void (*reset_data) (void);
 	void (*processing_stw_step) (void);
 	void (*processing_finish) (int generation);
+	void (*processing_build_callback_data) (int generation);
+	void (*processing_free_callback_data) (int generation);
 	MonoGCBridgeObjectKind (*class_kind) (MonoClass *class);
 	void (*register_finalized_object) (MonoObject *object);
 	void (*describe_pointer) (MonoObject *object);
 	void (*enable_accounting) (void);
 	void (*set_dump_prefix) (const char *prefix);
+
+	/*
+	 * These are set by processing_build_callback_data().
+	 */
+	int num_sccs;
+	MonoGCBridgeSCC **api_sccs;
+
+	int num_xrefs;
+	MonoGCBridgeXRef *api_xrefs;
 } SgenBridgeProcessor;
 
 void sgen_old_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;

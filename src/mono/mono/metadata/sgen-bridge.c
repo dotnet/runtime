@@ -84,12 +84,20 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 void
 sgen_set_bridge_implementation (const char *name)
 {
-	if (!strcmp ("old", name))
+	if (!strcmp ("old", name)) {
+		memset (&bridge_processor, 0, sizeof (SgenBridgeProcessor));
 		sgen_old_bridge_init (&bridge_processor);
-	else if (!strcmp ("new", name))
+	} else if (!strcmp ("new", name)) {
+		memset (&bridge_processor, 0, sizeof (SgenBridgeProcessor));
 		sgen_new_bridge_init (&bridge_processor);
-	else
+	} else {
 		g_warning ("Invalid value for bridge implementation, valid values are: 'new' and 'old'.");
+	}
+
+	if (bridge_processor.processing_finish)
+		g_assert (!bridge_processor.processing_build_callback_data && !bridge_processor.processing_free_callback_data);
+	else
+		g_assert (bridge_processor.processing_build_callback_data && bridge_processor.processing_free_callback_data);
 }
 
 gboolean
@@ -122,7 +130,21 @@ sgen_bridge_processing_stw_step (void)
 void
 sgen_bridge_processing_finish (int generation)
 {
-	bridge_processor.processing_finish (generation);
+	if (bridge_processor.processing_finish) {
+		bridge_processor.processing_finish (generation);
+	} else {
+		bridge_processor.processing_build_callback_data (generation);
+
+		if (bridge_processor.num_sccs == 0) {
+			g_assert (bridge_processor.num_xrefs == 0);
+			return;
+		}
+
+		bridge_callbacks.cross_references (bridge_processor.num_sccs, bridge_processor.api_sccs,
+				bridge_processor.num_xrefs, bridge_processor.api_xrefs);
+
+		bridge_processor.processing_free_callback_data (generation);
+	}
 }
 
 MonoGCBridgeObjectKind
