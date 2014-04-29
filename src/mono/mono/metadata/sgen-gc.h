@@ -827,7 +827,7 @@ typedef struct {
 	void (*processing_stw_step) (void);
 	void (*processing_finish) (int generation);
 	void (*processing_build_callback_data) (int generation);
-	void (*processing_free_callback_data) (int generation);
+	void (*processing_after_callback) (int generation);
 	MonoGCBridgeObjectKind (*class_kind) (MonoClass *class);
 	void (*register_finalized_object) (MonoObject *object);
 	void (*describe_pointer) (MonoObject *object);

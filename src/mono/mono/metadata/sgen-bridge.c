@@ -95,9 +95,9 @@ sgen_set_bridge_implementation (const char *name)
 	}
 
 	if (bridge_processor.processing_finish)
-		g_assert (!bridge_processor.processing_build_callback_data && !bridge_processor.processing_free_callback_data);
+		g_assert (!bridge_processor.processing_build_callback_data && !bridge_processor.processing_after_callback);
 	else
-		g_assert (bridge_processor.processing_build_callback_data && bridge_processor.processing_free_callback_data);
+		g_assert (bridge_processor.processing_build_callback_data && bridge_processor.processing_after_callback);
 }
 
 gboolean
@@ -127,24 +127,91 @@ sgen_bridge_processing_stw_step (void)
 	bridge_processor.processing_stw_step ();
 }
 
+static mono_bool
+is_bridge_object_alive (MonoObject *obj, void *data)
+{
+	SgenHashTable *table = data;
+	unsigned char *value = sgen_hash_table_lookup (table, obj);
+	if (!value)
+		return TRUE;
+	return *value;
+}
+
 void
 sgen_bridge_processing_finish (int generation)
 {
+	int num_sccs, num_xrefs;
+	MonoGCBridgeSCC **api_sccs;
+	MonoGCBridgeXRef *api_xrefs;
+	int i, j;
+	SgenHashTable alive_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE, INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY, 1, mono_aligned_addr_hash, NULL);
+	unsigned long step_8;
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
+
 	if (bridge_processor.processing_finish) {
 		bridge_processor.processing_finish (generation);
-	} else {
-		bridge_processor.processing_build_callback_data (generation);
-
-		if (bridge_processor.num_sccs == 0) {
-			g_assert (bridge_processor.num_xrefs == 0);
-			return;
-		}
-
-		bridge_callbacks.cross_references (bridge_processor.num_sccs, bridge_processor.api_sccs,
-				bridge_processor.num_xrefs, bridge_processor.api_xrefs);
-
-		bridge_processor.processing_free_callback_data (generation);
+		return;
 	}
+
+	bridge_processor.processing_build_callback_data (generation);
+
+	if (bridge_processor.num_sccs == 0) {
+		g_assert (bridge_processor.num_xrefs == 0);
+		goto after_callback;
+	}
+
+	num_sccs = bridge_processor.num_sccs;
+	num_xrefs = bridge_processor.num_xrefs;
+	api_sccs = bridge_processor.api_sccs;
+	api_xrefs = bridge_processor.api_xrefs;
+
+	bridge_callbacks.cross_references (bridge_processor.num_sccs, bridge_processor.api_sccs,
+			bridge_processor.num_xrefs, bridge_processor.api_xrefs);
+
+	/* Release for finalization those objects we no longer care. */
+	SGEN_TV_GETTIME (btv);
+
+	for (i = 0; i < num_sccs; ++i) {
+		unsigned char alive = api_sccs [i]->is_alive ? 1 : 0;
+		for (j = 0; j < api_sccs [i]->num_objs; ++j) {
+			/* Build hash table for nulling weak links. */
+			sgen_hash_table_replace (&alive_hash, api_sccs [i]->objs [j], &alive, NULL);
+
+			/* Release for finalization those objects we no longer care. */
+			if (!api_sccs [i]->is_alive)
+				sgen_mark_bridge_object (api_sccs [i]->objs [j]);
+		}
+	}
+
+	/* Null weak links to dead objects. */
+	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &alive_hash);
+	if (generation == GENERATION_OLD)
+		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
+
+	sgen_hash_table_clean (&alive_hash);
+
+	/* free callback data */
+
+	for (i = 0; i < num_sccs; ++i) {
+		sgen_free_internal_dynamic (api_sccs [i],
+				sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * api_sccs [i]->num_objs,
+				INTERNAL_MEM_BRIDGE_DATA);
+	}
+	sgen_free_internal_dynamic (api_sccs, sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA);
+
+	sgen_free_internal_dynamic (api_xrefs, sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA);
+
+	bridge_processor.num_sccs = 0;
+	bridge_processor.api_sccs = NULL;
+	bridge_processor.num_xrefs = 0;
+	bridge_processor.api_xrefs = NULL;
+
+	SGEN_TV_GETTIME (atv);
+	step_8 = SGEN_TV_ELAPSED (btv, atv);
+
+ after_callback:
+	bridge_processor.processing_after_callback (generation);
 }
 
 MonoGCBridgeObjectKind

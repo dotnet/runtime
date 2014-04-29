@@ -937,7 +937,7 @@ compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 
 DEF_QSORT_INLINE(hash_entries, HashEntry*, compare_hash_entries)
 
-static unsigned long step_1, step_2, step_3, step_4, step_5, step_6, step_8;
+static unsigned long step_1, step_2, step_3, step_4, step_5, step_6;
 static int fist_pass_links, second_pass_links, sccs_links;
 static int max_sccs_links = 0;
 
@@ -1011,16 +1011,6 @@ processing_stw_step (void)
 
 	if (dump_prefix)
 		dump_graph ();
-}
-
-static mono_bool
-is_bridge_object_alive (MonoObject *obj, void *data)
-{
-	SgenHashTable *table = data;
-	unsigned char *value = sgen_hash_table_lookup (table, obj);
-	if (!value)
-		return TRUE;
-	return *value;
 }
 
 static int num_registered_bridges, hash_table_size;
@@ -1304,38 +1294,11 @@ processing_build_callback_data (int generation)
 }
 
 static void
-processing_free_callback_data (int generation)
+processing_after_callback (int generation)
 {
 	int i, j;
 	int num_sccs = bridge_processor->num_sccs;
-	int num_xrefs = bridge_processor->num_xrefs;
 	MonoGCBridgeSCC **api_sccs = bridge_processor->api_sccs;
-	MonoGCBridgeXRef *api_xrefs = bridge_processor->api_xrefs;
-	SgenHashTable alive_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE, INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY, 1, mono_aligned_addr_hash, NULL);
-	SGEN_TV_DECLARE (atv);
-	SGEN_TV_DECLARE (btv);
-
-	/* Release for finalization those objects we no longer care. */
-	SGEN_TV_GETTIME (btv);
-
-	for (i = 0; i < num_sccs; ++i) {
-		unsigned char alive = api_sccs [i]->is_alive ? 1 : 0;
-		for (j = 0; j < api_sccs [i]->num_objs; ++j) {
-			/* Build hash table for nulling weak links. */
-			sgen_hash_table_replace (&alive_hash, api_sccs [i]->objs [j], &alive, NULL);
-
-			/* Release for finalization those objects we no longer care. */
-			if (!api_sccs [i]->is_alive)
-				sgen_mark_bridge_object (api_sccs [i]->objs [j]);
-		}
-	}
-
-	/* Null weak links to dead objects. */
-	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &alive_hash);
-	if (generation == GENERATION_OLD)
-		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
-
-	sgen_hash_table_clean (&alive_hash);
 
 	if (bridge_accounting_enabled) {
 		for (i = 0; i < num_sccs; ++i) {
@@ -1348,26 +1311,7 @@ processing_free_callback_data (int generation)
 		}
 	}
 
-	/* free callback data */
-
-	for (i = 0; i < num_sccs; ++i) {
-		sgen_free_internal_dynamic (api_sccs [i],
-				sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * api_sccs [i]->num_objs,
-				INTERNAL_MEM_BRIDGE_DATA);
-	}
-	sgen_free_internal_dynamic (api_sccs, sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA);
-
-	sgen_free_internal_dynamic (api_xrefs, sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA);
-
-	bridge_processor->num_sccs = 0;
-	bridge_processor->api_sccs = NULL;
-	bridge_processor->num_xrefs = 0;
-	bridge_processor->api_xrefs = NULL;
-
-	SGEN_TV_GETTIME (atv);
-	step_8 = SGEN_TV_ELAPSED (btv, atv);
-
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms cleanup %.2fms links %d/%d/%d/%d dfs passes %d/%d ignored %d",
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms links %d/%d/%d/%d dfs passes %d/%d ignored %d",
 		num_registered_bridges, hash_table_size, dyn_array_scc_size (&sccs),
 		step_1 / 10000.0f,
 		step_2 / 10000.0f,
@@ -1375,7 +1319,6 @@ processing_free_callback_data (int generation)
 		step_4 / 10000.0f,
 		step_5 / 10000.0f,
 		step_6 / 10000.0f,
-		step_8 / 10000.f,
 		fist_pass_links, second_pass_links, sccs_links, max_sccs_links,
 		dfs1_passes, dfs2_passes, ignored_objects);
 
@@ -1414,7 +1357,7 @@ sgen_new_bridge_init (SgenBridgeProcessor *collector)
 	collector->reset_data = reset_data;
 	collector->processing_stw_step = processing_stw_step;
 	collector->processing_build_callback_data = processing_build_callback_data;
-	collector->processing_free_callback_data = processing_free_callback_data;
+	collector->processing_after_callback = processing_after_callback;
 	collector->class_kind = class_kind;
 	collector->register_finalized_object = register_finalized_object;
 	collector->describe_pointer = describe_pointer;
