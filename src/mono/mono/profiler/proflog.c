@@ -378,6 +378,8 @@ static __thread LogBuffer* tlsbuffer = NULL;
 static pthread_key_t tlsbuffer;
 #endif
 
+static void safe_dump (MonoProfiler *profiler, LogBuffer *logbuffer);
+
 static char*
 pstrdup (const char *s)
 {
@@ -613,6 +615,8 @@ static void
 runtime_initialized (MonoProfiler *profiler)
 {
 	runtime_inited = 1;
+	/* ensure the main thread data and startup are available soon */
+	safe_dump (profiler, ensure_logbuf (0));
 }
 
 /*

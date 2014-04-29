@@ -1648,7 +1648,7 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "non-zero flags in thread\n");
 					return 0;
 				}
-				nt = get_thread (ctx, ptr_base * ptrdiff);
+				nt = get_thread (ctx, ptr_base + ptrdiff);
 				nt->name = pstrdup ((char*)p);
 				if (debug)
 					fprintf (outfile, "thread %p named: %s\n", (void*)(ptr_base + ptrdiff), p);
