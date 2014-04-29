@@ -321,7 +321,10 @@ dyn_array_ptr_init (DynPtrArray *da)
 static void
 dyn_array_ptr_uninit (DynPtrArray *da)
 {
-	dyn_array_uninit (&da->array, sizeof (void*));
+	if (da->array.capacity == 1)
+		dyn_array_ptr_init (da);
+	else
+		dyn_array_uninit (&da->array, sizeof (void*));
 }
 
 static int
@@ -339,13 +342,32 @@ dyn_array_ptr_empty (DynPtrArray *da)
 static void*
 dyn_array_ptr_get (DynPtrArray *da, int x)
 {
+	if (da->array.capacity == 1) {
+		g_assert (x == 0);
+		return da->array.data;
+	}
 	return ((void**)da->array.data)[x];
 }
 
 static void
 dyn_array_ptr_add (DynPtrArray *da, void *ptr)
 {
-	void **p = dyn_array_add (&da->array, sizeof (void*));
+	void **p;
+
+	if (da->array.capacity == 0) {
+		da->array.capacity = 1;
+		da->array.size = 1;
+		p = (void**)&da->array.data;
+	} else if (da->array.capacity == 1) {
+		void *ptr0 = da->array.data;
+		void **p0;
+		dyn_array_init (&da->array);
+		p0 = dyn_array_add (&da->array, sizeof (void*));
+		*p0 = ptr0;
+		p = dyn_array_add (&da->array, sizeof (void*));
+	} else {
+		p = dyn_array_add (&da->array, sizeof (void*));
+	}
 	*p = ptr;
 }
 
@@ -354,12 +376,18 @@ dyn_array_ptr_add (DynPtrArray *da, void *ptr)
 static void*
 dyn_array_ptr_pop (DynPtrArray *da)
 {
-	void *p;
 	int size = da->array.size;
+	void *p;
 	g_assert (size > 0);
-	dyn_array_ensure_independent (&da->array, sizeof (void*));
-	p = dyn_array_ptr_get (da, size - 1);
-	--da->array.size;
+	if (da->array.capacity == 1) {
+		p = dyn_array_ptr_get (da, 0);
+		dyn_array_init (&da->array);
+	} else {
+		g_assert (da->array.capacity > 1);
+		dyn_array_ensure_independent (&da->array, sizeof (void*));
+		p = dyn_array_ptr_get (da, size - 1);
+		--da->array.size;
+	}
 	return p;
 }
 
