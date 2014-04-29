@@ -58,20 +58,20 @@ report_errors ();
 $report = run_test_sgen ("test-heapshot.exe", "report,heapshot");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
-	check_report_heapshot ($report, 1, {"T" => 5000});
-	check_report_heapshot ($report, 2, {"T" => 5023});
+	check_report_heapshot ($report, 0, {"T" => 5000});
+	check_report_heapshot ($report, 1, {"T" => 5023});
 	report_errors ();
 }
 # test heapshot traces
 $report = run_test_sgen ("test-heapshot.exe", "heapshot,output=-traces.mlpd", "--traces traces.mlpd");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
-	check_report_heapshot ($report, 1, {"T" => 5000});
-	check_report_heapshot ($report, 2, {"T" => 5023});
-	check_heapshot_traces ($report, 1,
+	check_report_heapshot ($report, 0, {"T" => 5000});
+	check_report_heapshot ($report, 1, {"T" => 5023});
+	check_heapshot_traces ($report, 0,
 		T => [4999, "T"]
 	);
-	check_heapshot_traces ($report, 2,
+	check_heapshot_traces ($report, 1,
 		T => [5022, "T"]
 	);
 	report_errors ();
