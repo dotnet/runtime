@@ -967,12 +967,6 @@ processing_stw_step (void)
 	if (!dyn_array_ptr_size (&registered_bridges))
 		return;
 
-	/*
-	 * bridge_processing_in_progress must be set with the world
-	 * stopped.  If not there would be race conditions.
-	 */
-	bridge_processing_in_progress = TRUE;
-
 	SGEN_TV_GETTIME (btv);
 
 	/* first DFS pass */
@@ -1325,8 +1319,6 @@ processing_after_callback (int generation)
 	step_1 = 0; /* We must cleanup since this value is used as an accumulator. */
 	fist_pass_links = second_pass_links = sccs_links = max_sccs_links = 0;
 	dfs1_passes = dfs2_passes = ignored_objects = 0;
-
-	bridge_processing_in_progress = FALSE;
 }
 
 static void

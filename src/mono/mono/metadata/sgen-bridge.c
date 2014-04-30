@@ -119,6 +119,12 @@ sgen_bridge_reset_data (void)
 void
 sgen_bridge_processing_stw_step (void)
 {
+	/*
+	 * bridge_processing_in_progress must be set with the world
+	 * stopped.  If not there would be race conditions.
+	 */
+	bridge_processing_in_progress = TRUE;
+
 	bridge_processor.processing_stw_step ();
 }
 
@@ -202,6 +208,8 @@ sgen_bridge_processing_finish (int generation)
 
  after_callback:
 	bridge_processor.processing_after_callback (generation);
+
+	bridge_processing_in_progress = FALSE;
 }
 
 MonoGCBridgeObjectKind
