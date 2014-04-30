@@ -443,28 +443,20 @@ push_object (MonoObject *obj)
 	if (fwd)
 		obj = fwd;
 
-	printf ("\t= pushing %p %s -> ", obj, sgen_safe_name (obj));
 	/* Object types we can ignore */
-	if (is_opaque_object (obj)) {
-		printf ("opaque\n");
+	if (is_opaque_object (obj))
 		return;
-	}
-
-	data = sgen_hash_table_lookup (&hash_table, obj);
-
-	/* Already marked - XXX must be done this way as the bridge themselves are alive. */
-	if (data && data->is_marked) {
-		printf ("already marked\n");
-		return;
-	}
 
 	/* We only care about dead objects */
-	if (!data && sgen_object_is_live (obj)) {
-		printf ("alive\n");
+	if (sgen_object_is_live (obj))
 		return;
-	}
 
 	data = get_scan_data (obj);
+
+	/* Already marked */
+	if (data->is_marked)
+		return;
+
 	data->is_marked = TRUE;
 	dyn_array_ptr_push (&scan_stack, data);
 }
@@ -481,7 +473,6 @@ push_all (ScanData *data)
 	MonoObject *obj = data->obj;
 	char *start = (char*)obj;
 
-	printf ("**scanning %p %s\n", obj, sgen_safe_name (obj));
 	#include "sgen-scan-object.h"
 }
 
@@ -489,17 +480,9 @@ push_all (ScanData *data)
 static void
 compute_low_index (ScanData *data, MonoObject *obj)
 {
-	ScanData *other;
-	MonoObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
-	if (fwd)
-		obj = fwd;
+	ScanData *other = get_scan_data (obj);
 
-	other = sgen_hash_table_lookup (&hash_table, obj);
-
-	printf ("\tcompute low %p ->%p (%s) %p\n", data->obj, obj, sgen_safe_name (obj), other);
-	if (!other)
-		return;
-
+	printf ("\tcompute low %p ->%p\n", data->obj, obj);
 	g_assert (other->is_marked);
 	g_assert (other->low_index != -1);
 
@@ -660,23 +643,6 @@ processing_stw_step (void)
 			dyn_array_ptr_push (&scan_stack, sd);
 			dfs ();
 		}
-	}
-	printf ("----summary----\n");
-	printf ("bridges:\n");
-	for (i = 0; i < bridge_count; ++i) {
-		ScanData *sd = get_scan_data (dyn_array_ptr_get (&registered_bridges, i));
-		printf ("\t%s (%p) index %d color %d\n", sgen_safe_name (sd->obj), sd->obj, sd->index, sd->color);
-	}
-
-	printf ("colors:\n");
-	for (i = 0; i <  dyn_array_ptr_size (&color_table); ++i) {
-		int j;
-		ColorData *cd = dyn_array_ptr_get (&color_table, i);
-		printf ("\t%d: ", i + 1);
-		for (j = 0; j < dyn_array_int_size (&cd->other_colors); ++j) {
-			printf ("%d ", dyn_array_int_get (&cd->other_colors, j));
-		}
-		printf ("\n");
 	}
 }
 
