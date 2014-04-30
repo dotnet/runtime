@@ -81,18 +81,26 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 		sgen_old_bridge_init (&bridge_processor);
 }
 
+static gboolean
+init_bridge_processor (SgenBridgeProcessor *processor, const char *name)
+{
+	if (!strcmp ("old", name)) {
+		memset (processor, 0, sizeof (SgenBridgeProcessor));
+		sgen_old_bridge_init (processor);
+	} else if (!strcmp ("new", name)) {
+		memset (processor, 0, sizeof (SgenBridgeProcessor));
+		sgen_new_bridge_init (processor);
+	} else {
+		return FALSE;
+	}
+	return TRUE;
+}
+
 void
 sgen_set_bridge_implementation (const char *name)
 {
-	if (!strcmp ("old", name)) {
-		memset (&bridge_processor, 0, sizeof (SgenBridgeProcessor));
-		sgen_old_bridge_init (&bridge_processor);
-	} else if (!strcmp ("new", name)) {
-		memset (&bridge_processor, 0, sizeof (SgenBridgeProcessor));
-		sgen_new_bridge_init (&bridge_processor);
-	} else {
+	if (!init_bridge_processor (&bridge_processor, name))
 		g_warning ("Invalid value for bridge implementation, valid values are: 'new' and 'old'.");
-	}
 }
 
 gboolean
@@ -138,35 +146,13 @@ is_bridge_object_alive (MonoObject *obj, void *data)
 	return *value;
 }
 
-void
-sgen_bridge_processing_finish (int generation)
+static void
+null_weak_links_to_dead_objects (SgenBridgeProcessor *processor, int generation)
 {
-	int num_sccs, num_xrefs;
-	MonoGCBridgeSCC **api_sccs;
-	MonoGCBridgeXRef *api_xrefs;
 	int i, j;
+	int num_sccs = processor->num_sccs;
+	MonoGCBridgeSCC **api_sccs = processor->api_sccs;
 	SgenHashTable alive_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE, INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY, 1, mono_aligned_addr_hash, NULL);
-	unsigned long step_8;
-	SGEN_TV_DECLARE (atv);
-	SGEN_TV_DECLARE (btv);
-
-	bridge_processor.processing_build_callback_data (generation);
-
-	if (bridge_processor.num_sccs == 0) {
-		g_assert (bridge_processor.num_xrefs == 0);
-		goto after_callback;
-	}
-
-	num_sccs = bridge_processor.num_sccs;
-	num_xrefs = bridge_processor.num_xrefs;
-	api_sccs = bridge_processor.api_sccs;
-	api_xrefs = bridge_processor.api_xrefs;
-
-	bridge_callbacks.cross_references (bridge_processor.num_sccs, bridge_processor.api_sccs,
-			bridge_processor.num_xrefs, bridge_processor.api_xrefs);
-
-	/* Release for finalization those objects we no longer care. */
-	SGEN_TV_GETTIME (btv);
 
 	for (i = 0; i < num_sccs; ++i) {
 		unsigned char alive = api_sccs [i]->is_alive ? 1 : 0;
@@ -186,8 +172,16 @@ sgen_bridge_processing_finish (int generation)
 		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
 
 	sgen_hash_table_clean (&alive_hash);
+}
 
-	/* free callback data */
+static void
+free_callback_data (SgenBridgeProcessor *processor)
+{
+	int i;
+	int num_sccs = processor->num_sccs;
+	int num_xrefs = processor->num_xrefs;
+	MonoGCBridgeSCC **api_sccs = processor->api_sccs;
+	MonoGCBridgeXRef *api_xrefs = processor->api_xrefs;
 
 	for (i = 0; i < num_sccs; ++i) {
 		sgen_free_internal_dynamic (api_sccs [i],
@@ -198,10 +192,33 @@ sgen_bridge_processing_finish (int generation)
 
 	sgen_free_internal_dynamic (api_xrefs, sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA);
 
-	bridge_processor.num_sccs = 0;
-	bridge_processor.api_sccs = NULL;
-	bridge_processor.num_xrefs = 0;
-	bridge_processor.api_xrefs = NULL;
+	processor->num_sccs = 0;
+	processor->api_sccs = NULL;
+	processor->num_xrefs = 0;
+	processor->api_xrefs = NULL;
+}
+
+void
+sgen_bridge_processing_finish (int generation)
+{
+	unsigned long step_8;
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
+
+	bridge_processor.processing_build_callback_data (generation);
+
+	if (bridge_processor.num_sccs == 0) {
+		g_assert (bridge_processor.num_xrefs == 0);
+		goto after_callback;
+	}
+
+	bridge_callbacks.cross_references (bridge_processor.num_sccs, bridge_processor.api_sccs,
+			bridge_processor.num_xrefs, bridge_processor.api_xrefs);
+
+	SGEN_TV_GETTIME (btv);
+
+	null_weak_links_to_dead_objects (&bridge_processor, generation);
+	free_callback_data (&bridge_processor);
 
 	SGEN_TV_GETTIME (atv);
 	step_8 = SGEN_TV_ELAPSED (btv, atv);
