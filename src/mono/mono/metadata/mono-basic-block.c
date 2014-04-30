@@ -519,8 +519,6 @@ mono_basic_block_split (MonoMethod *method, MonoError *error)
 	MonoSimpleBasicBlock *bb, *root;
 	const unsigned char *start, *end;
 	MonoMethodHeader *header = mono_method_get_header (method);
-	start = header->code;
-	end = start + header->code_size;
 
 	mono_error_init (error);
 
@@ -528,6 +526,9 @@ mono_basic_block_split (MonoMethod *method, MonoError *error)
 		mono_error_set_not_verifiable (error, method, "Could not decode header");
 		return NULL;
 	}
+
+	start = header->code;
+	end = start + header->code_size;
 
 	bb = g_new0 (MonoSimpleBasicBlock, 1);
 	bb->start = 0;
