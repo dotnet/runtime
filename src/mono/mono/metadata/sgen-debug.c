@@ -908,11 +908,33 @@ sgen_check_for_xdomain_refs (void)
 		scan_object_for_xdomain_refs (bigobj->data, sgen_los_object_size (bigobj), NULL);
 }
 
+static int
+compare_xrefs (const void *a_ptr, const void *b_ptr)
+{
+	const MonoGCBridgeXRef *a = a_ptr;
+	const MonoGCBridgeXRef *b = b_ptr;
+
+	if (a->src_scc_index < b->src_scc_index)
+		return -1;
+	if (a->src_scc_index > b->src_scc_index)
+		return 1;
+
+	if (a->dst_scc_index < b->dst_scc_index)
+		return -1;
+	if (a->dst_scc_index > b->dst_scc_index)
+		return 1;
+
+	return 0;
+}
+
 gboolean
 sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b)
 {
 	int i;
 	SgenHashTable obj_to_a_scc = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DEBUG, INTERNAL_MEM_BRIDGE_DEBUG, sizeof (int), mono_aligned_addr_hash, NULL);
+	SgenHashTable b_scc_to_a_scc = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DEBUG, INTERNAL_MEM_BRIDGE_DEBUG, sizeof (int), g_direct_hash, NULL);
+	MonoGCBridgeXRef *a_xrefs, *b_xrefs;
+	size_t xrefs_alloc_size;
 
 	g_assert (a->num_sccs == b->num_sccs);
 	g_assert (a->num_xrefs == b->num_xrefs);
@@ -937,6 +959,9 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 	/*
 	 * Now we check whether each of the objects in `b` are in `a`, and whether the SCCs
 	 * of `b` contain the same sets of objects as those of `a`.
+	 *
+	 * While we're doing this, build a hash table to map from `b` SCC indexes to `a` SCC
+	 * indexes.
 	 */
 	for (i = 0; i < b->num_sccs; ++i) {
 		MonoGCBridgeSCC *scc = b->api_sccs [i];
@@ -944,6 +969,7 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 		int *a_scc_index_ptr;
 		int a_scc_index;
 		int j;
+		gboolean new_entry;
 
 		g_assert (scc->num_objs > 0);
 		a_scc_index_ptr = sgen_hash_table_lookup (&obj_to_a_scc, scc->objs [0]);
@@ -960,9 +986,53 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 			g_assert (a_scc_index_ptr);
 			g_assert (*a_scc_index_ptr == a_scc_index);
 		}
+
+		new_entry = sgen_hash_table_replace (&b_scc_to_a_scc, GINT_TO_POINTER (i), &a_scc_index, NULL);
+		g_assert (new_entry);
+	}
+
+	/*
+	 * Finally, check that we have the same xrefs.  We do this by making copies of both
+	 * xref arrays, and replacing the SCC indexes in the copy for `b` with the
+	 * corresponding indexes in `a`.  Then we sort both arrays and assert that they're
+	 * the same.
+	 *
+	 * At the same time, check that no xref is self-referential and that there are no
+	 * duplicate ones.
+	 */
+
+	xrefs_alloc_size = a->num_xrefs * sizeof (MonoGCBridgeXRef);
+	a_xrefs = sgen_alloc_internal_dynamic (xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG, TRUE);
+	b_xrefs = sgen_alloc_internal_dynamic (xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG, TRUE);
+
+	memcpy (a_xrefs, a->api_xrefs, xrefs_alloc_size);
+	for (i = 0; i < b->num_xrefs; ++i) {
+		MonoGCBridgeXRef *xref = &b->api_xrefs [i];
+		int *scc_index_ptr;
+
+		g_assert (xref->src_scc_index != xref->dst_scc_index);
+
+		scc_index_ptr = sgen_hash_table_lookup (&b_scc_to_a_scc, GINT_TO_POINTER (xref->src_scc_index));
+		g_assert (scc_index_ptr);
+		b_xrefs [i].src_scc_index = *scc_index_ptr;
+
+		scc_index_ptr = sgen_hash_table_lookup (&b_scc_to_a_scc, GINT_TO_POINTER (xref->dst_scc_index));
+		g_assert (scc_index_ptr);
+		b_xrefs [i].dst_scc_index = *scc_index_ptr;
+	}
+
+	qsort (a_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
+	qsort (b_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
+
+	for (i = 0; i < a->num_xrefs; ++i) {
+		g_assert (a_xrefs [i].src_scc_index == b_xrefs [i].src_scc_index);
+		g_assert (a_xrefs [i].dst_scc_index == b_xrefs [i].dst_scc_index);
 	}
 
 	sgen_hash_table_clean (&obj_to_a_scc);
+	sgen_hash_table_clean (&b_scc_to_a_scc);
+	sgen_free_internal_dynamic (a_xrefs, xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG);
+	sgen_free_internal_dynamic (b_xrefs, xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG);
 
 	return TRUE;
 }
