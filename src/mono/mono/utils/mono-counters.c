@@ -18,16 +18,58 @@ static MonoCounter *counters = NULL;
 static int valid_mask = 0;
 static int set_mask = 0;
 
-static int
+int
 mono_counter_get_variance (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_VARIANCE_MASK;
 }
 
-static int
+int
 mono_counter_get_unit (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_UNIT_MASK;
+}
+
+int
+mono_counter_get_section (MonoCounter *counter)
+{
+	return counter->type & MONO_COUNTER_SECTION_MASK;
+}
+
+int
+mono_counter_get_type (MonoCounter *counter)
+{
+	return counter->type & MONO_COUNTER_TYPE_MASK;
+}
+
+const char*
+mono_counter_get_name (MonoCounter *counter)
+{
+	return counter->name;
+}
+
+size_t
+mono_counter_get_size (MonoCounter *counter)
+{
+	switch (mono_counter_get_type (counter)) {
+	case MONO_COUNTER_INT:
+		return sizeof (int);
+	case MONO_COUNTER_UINT:
+		return sizeof (guint);
+	case MONO_COUNTER_LONG:
+	case MONO_COUNTER_TIME_INTERVAL:
+		return sizeof (gint64);
+	case MONO_COUNTER_ULONG:
+		return sizeof (guint64);
+	case MONO_COUNTER_WORD:
+		return sizeof (gssize);
+	case MONO_COUNTER_DOUBLE:
+		return sizeof (double);
+	case MONO_COUNTER_STRING:
+		return -1; // FIXME
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 /**
@@ -186,6 +228,53 @@ mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 		if (!cb (counter, user_data))
 			return;
 	}
+}
+
+int
+mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
+{
+	int intval;
+	guint uintval;
+	gint64 gint64val;
+	guint64 guint64val;
+	gssize gssizeval;
+	double doubleval;
+
+	int cb = counter->type & MONO_COUNTER_CALLBACK;
+	int size = mono_counter_get_size (counter);
+
+	switch (mono_counter_get_type (counter)) {
+	case MONO_COUNTER_INT:
+		intval = cb ? ((IntFunc)counter->addr) () : *(int*)counter->addr;
+		memcpy (buffer, &intval, MIN (buffer_size, size));
+		break;
+	case MONO_COUNTER_UINT:
+		uintval = cb ? ((UIntFunc)counter->addr) () : *(guint*)counter->addr;
+		memcpy (buffer, &uintval, MIN (buffer_size, size));
+		break;
+	case MONO_COUNTER_LONG:
+	case MONO_COUNTER_TIME_INTERVAL:
+		gint64val = cb ? ((LongFunc)counter->addr) () : *(gint64*)counter->addr;
+		memcpy (buffer, &gint64val, MIN (buffer_size, size));
+		break;
+	case MONO_COUNTER_ULONG:
+		guint64val = cb ? ((ULongFunc)counter->addr) () : *(guint64*)counter->addr;
+		memcpy (buffer, &guint64val, MIN (buffer_size, size));
+		break;
+	case MONO_COUNTER_WORD:
+		gssizeval = cb ? ((PtrFunc)counter->addr) () : *(gssize*)counter->addr;
+		memcpy (buffer, &gssizeval, MIN (buffer_size, size));
+		break;
+	case MONO_COUNTER_DOUBLE:
+		doubleval = cb ? ((DoubleFunc)counter->addr) () : *(double*)counter->addr;
+		memcpy (buffer, &doubleval, MIN (buffer_size, size));
+		break;
+	case MONO_COUNTER_STRING:
+		// FIXME : add support for string sampling
+		break;
+	}
+
+	return size;
 }
 
 static const char
