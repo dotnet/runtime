@@ -107,6 +107,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY: return "bridge-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE: return "bridge-alive-hash-table";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY: return "bridge-alive-hash-table-entry";
+	case INTERNAL_MEM_BRIDGE_DEBUG: return "bridge-debug";
 	case INTERNAL_MEM_JOB_QUEUE_ENTRY: return "job-queue-entry";
 	case INTERNAL_MEM_TOGGLEREF_DATA: return "toggleref-data";
 	case INTERNAL_MEM_CARDTABLE_MOD_UNION: return "cardtable-mod-union";

@@ -908,4 +908,63 @@ sgen_check_for_xdomain_refs (void)
 		scan_object_for_xdomain_refs (bigobj->data, sgen_los_object_size (bigobj), NULL);
 }
 
+gboolean
+sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b)
+{
+	int i;
+	SgenHashTable obj_to_a_scc = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DEBUG, INTERNAL_MEM_BRIDGE_DEBUG, sizeof (int), mono_aligned_addr_hash, NULL);
+
+	g_assert (a->num_sccs == b->num_sccs);
+	g_assert (a->num_xrefs == b->num_xrefs);
+
+	/*
+	 * First we build a hash of each object in `a` to its respective SCC index within
+	 * `a`.  Along the way we also assert that no object is more than one SCC.
+	 */
+	for (i = 0; i < a->num_sccs; ++i) {
+		int j;
+		MonoGCBridgeSCC *scc = a->api_sccs [i];
+
+		g_assert (scc->num_objs > 0);
+
+		for (j = 0; j < scc->num_objs; ++j) {
+			MonoObject *obj = scc->objs [j];
+			gboolean new_entry = sgen_hash_table_replace (&obj_to_a_scc, obj, &i, NULL);
+			g_assert (new_entry);
+		}
+	}
+
+	/*
+	 * Now we check whether each of the objects in `b` are in `a`, and whether the SCCs
+	 * of `b` contain the same sets of objects as those of `a`.
+	 */
+	for (i = 0; i < b->num_sccs; ++i) {
+		MonoGCBridgeSCC *scc = b->api_sccs [i];
+		MonoGCBridgeSCC *a_scc;
+		int *a_scc_index_ptr;
+		int a_scc_index;
+		int j;
+
+		g_assert (scc->num_objs > 0);
+		a_scc_index_ptr = sgen_hash_table_lookup (&obj_to_a_scc, scc->objs [0]);
+		g_assert (a_scc_index_ptr);
+		a_scc_index = *a_scc_index_ptr;
+
+		g_print ("A SCC %d -> B SCC %d\n", a_scc_index, i);
+
+		a_scc = a->api_sccs [a_scc_index];
+		g_assert (a_scc->num_objs == scc->num_objs);
+
+		for (j = 1; j < scc->num_objs; ++j) {
+			a_scc_index_ptr = sgen_hash_table_lookup (&obj_to_a_scc, scc->objs [j]);
+			g_assert (a_scc_index_ptr);
+			g_assert (*a_scc_index_ptr == a_scc_index);
+		}
+	}
+
+	sgen_hash_table_clean (&obj_to_a_scc);
+
+	return TRUE;
+}
+
 #endif /*HAVE_SGEN_GC*/

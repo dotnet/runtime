@@ -228,6 +228,9 @@ sgen_bridge_processing_finish (int generation)
 	bridge_callbacks.cross_references (bridge_processor.num_sccs, bridge_processor.api_sccs,
 			bridge_processor.num_xrefs, bridge_processor.api_xrefs);
 
+	if (compare_bridge_processors ())
+		sgen_compare_bridge_processor_results (&bridge_processor, &compare_to_bridge_processor);
+
 	SGEN_TV_GETTIME (btv);
 
 	null_weak_links_to_dead_objects (&bridge_processor, generation);
