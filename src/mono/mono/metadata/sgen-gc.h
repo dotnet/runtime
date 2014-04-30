@@ -809,7 +809,6 @@ MonoGCBridgeObjectKind sgen_bridge_class_kind (MonoClass *class) MONO_INTERNAL;
 void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void sgen_bridge_register_finalized_object (MonoObject *object) MONO_INTERNAL;
 void sgen_bridge_describe_pointer (MonoObject *object) MONO_INTERNAL;
-void sgen_enable_bridge_accounting (void) MONO_INTERNAL;
 
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_INTERNAL;
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_INTERNAL;
@@ -817,10 +816,11 @@ void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx) MONO_IN
 void sgen_process_togglerefs (void) MONO_INTERNAL;
 void sgen_register_test_toggleref_callback (void) MONO_INTERNAL;
 
-
-void sgen_register_test_bridge_callbacks (const char *bridge_class_name) MONO_INTERNAL;
 gboolean sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
+
+gboolean sgen_bridge_handle_gc_debug (const char *opt) MONO_INTERNAL;
+void sgen_bridge_print_gc_debug_usage (void) MONO_INTERNAL;
 
 typedef struct {
 	void (*reset_data) (void);

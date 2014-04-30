@@ -230,14 +230,8 @@ sgen_bridge_describe_pointer (MonoObject *obj)
 	bridge_processor.describe_pointer (obj);
 }
 
-void
-sgen_enable_bridge_accounting (void)
-{
-	bridge_processor.enable_accounting ();
-}
-
-void
-sgen_bridge_set_dump_prefix (const char *prefix)
+static void
+set_dump_prefix (const char *prefix)
 {
 	if (!bridge_processor.set_dump_prefix) {
 		fprintf (stderr, "Warning: Bridge implementation does not support dumping - ignoring.\n");
@@ -363,8 +357,8 @@ bridge_test_cross_reference2 (int num_sccs, MonoGCBridgeSCC **sccs, int num_xref
 		sccs [i]->is_alive = TRUE;
 }
 
-void
-sgen_register_test_bridge_callbacks (const char *bridge_class_name)
+static void
+register_test_bridge_callbacks (const char *bridge_class_name)
 {
 	MonoGCBridgeCallbacks callbacks;
 	callbacks.bridge_version = SGEN_BRIDGE_VERSION;
@@ -373,6 +367,31 @@ sgen_register_test_bridge_callbacks (const char *bridge_class_name)
 	callbacks.cross_references = bridge_class_name[0] == '2' ? bridge_test_cross_reference2 : bridge_test_cross_reference;
 	mono_gc_register_bridge_callbacks (&callbacks);
 	bridge_class = bridge_class_name + (bridge_class_name[0] == '2' ? 1 : 0);
+}
+
+gboolean
+sgen_bridge_handle_gc_debug (const char *opt)
+{
+	if (g_str_has_prefix (opt, "bridge=")) {
+		opt = strchr (opt, '=') + 1;
+		register_test_bridge_callbacks (g_strdup (opt));
+	} else if (!strcmp (opt, "enable-bridge-accounting")) {
+		bridge_processor.enable_accounting ();
+	} else if (g_str_has_prefix (opt, "bridge-dump=")) {
+		char *prefix = strchr (opt, '=') + 1;
+		set_dump_prefix (prefix);
+	} else {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+void
+sgen_bridge_print_gc_debug_usage (void)
+{
+	fprintf (stderr, "  bridge=<class-name>\n");
+	fprintf (stderr, "  enable-bridge-accounting\n");
+	fprintf (stderr, "  bridge-dump=<filename-prefix>\n");
 }
 
 #endif
