@@ -93,11 +93,6 @@ sgen_set_bridge_implementation (const char *name)
 	} else {
 		g_warning ("Invalid value for bridge implementation, valid values are: 'new' and 'old'.");
 	}
-
-	if (bridge_processor.processing_finish)
-		g_assert (!bridge_processor.processing_build_callback_data && !bridge_processor.processing_after_callback);
-	else
-		g_assert (bridge_processor.processing_build_callback_data && bridge_processor.processing_after_callback);
 }
 
 gboolean
@@ -148,11 +143,6 @@ sgen_bridge_processing_finish (int generation)
 	unsigned long step_8;
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
-
-	if (bridge_processor.processing_finish) {
-		bridge_processor.processing_finish (generation);
-		return;
-	}
 
 	bridge_processor.processing_build_callback_data (generation);
 

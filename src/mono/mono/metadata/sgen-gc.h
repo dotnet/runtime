@@ -825,7 +825,6 @@ void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 typedef struct {
 	void (*reset_data) (void);
 	void (*processing_stw_step) (void);
-	void (*processing_finish) (int generation);
 	void (*processing_build_callback_data) (int generation);
 	void (*processing_after_callback) (int generation);
 	MonoGCBridgeObjectKind (*class_kind) (MonoClass *class);
