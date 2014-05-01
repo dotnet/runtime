@@ -103,8 +103,12 @@ description_for_type (int type)
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
 	case INTERNAL_MEM_WORKER_JOB_DATA: return "worker-job-data";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
+	case INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE: return "old-bridge-hash-table";
+	case INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY: return "old-bridge-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE: return "bridge-hash-table";
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY: return "bridge-hash-table-entry";
+	case INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE: return "tarjan-bridge-hash-table";
+	case INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE_ENTRY: return "tarjan-bridge-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE: return "bridge-alive-hash-table";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY: return "bridge-alive-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_DEBUG: return "bridge-debug";

@@ -104,7 +104,7 @@ typedef struct _SCC {
 	DynIntArray xrefs;		/* these are incoming, not outgoing */
 } SCC;
 
-static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
+static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE, INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
 
 static int current_time;
 
