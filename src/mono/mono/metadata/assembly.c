@@ -242,6 +242,8 @@ mono_set_assemblies_path (const char* path)
 	while (*splitted){
 		if (**splitted)
 			*dest++ = *splitted;
+		else
+			g_free (*splitted);
 		splitted++;
 	}
 	*dest = *splitted;
