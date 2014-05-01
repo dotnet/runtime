@@ -109,6 +109,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY: return "bridge-hash-table-entry";
 	case INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE: return "tarjan-bridge-hash-table";
 	case INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE_ENTRY: return "tarjan-bridge-hash-table-entry";
+	case INTERNAL_MEM_TARJAN_OBJ_BUCKET: return "tarjan-bridge-object-buckets";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE: return "bridge-alive-hash-table";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY: return "bridge-alive-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_DEBUG: return "bridge-debug";

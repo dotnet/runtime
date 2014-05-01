@@ -221,6 +221,7 @@ sgen_sources = \
 	sgen-bridge.h		\
 	sgen-old-bridge.c		\
 	sgen-new-bridge.c		\
+	sgen-tarjan-bridge.c		\
 	sgen-toggleref.c		\
 	sgen-toggleref.h		\
 	sgen-gc.h		\

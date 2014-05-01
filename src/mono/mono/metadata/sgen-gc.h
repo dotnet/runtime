@@ -435,6 +435,7 @@ enum {
 	INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE,
 	INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE_ENTRY,
+	INTERNAL_MEM_TARJAN_OBJ_BUCKET,
 	INTERNAL_MEM_BRIDGE_DEBUG,
 	INTERNAL_MEM_JOB_QUEUE_ENTRY,
 	INTERNAL_MEM_TOGGLEREF_DATA,
@@ -850,6 +851,7 @@ typedef struct {
 
 void sgen_old_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
 void sgen_new_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
+void sgen_tarjan_bridge_init (SgenBridgeProcessor *collector) MONO_INTERNAL;
 void sgen_set_bridge_implementation (const char *name) MONO_INTERNAL;
 void sgen_bridge_set_dump_prefix (const char *prefix) MONO_INTERNAL;
 
