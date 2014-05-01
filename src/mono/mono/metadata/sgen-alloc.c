@@ -120,9 +120,9 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 		if (last_major_gc_warned < stat_major_gcs) {
 			++num_degraded;
 			if (num_degraded == 1 || num_degraded == 3)
-				fprintf (stderr, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.\n");
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
 			else if (num_degraded == 10)
-				fprintf (stderr, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.\n");
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
 			last_major_gc_warned = stat_major_gcs;
 		}
 		InterlockedExchangeAdd (&degraded_mode, size);
