@@ -234,20 +234,20 @@ void
 mono_set_assemblies_path (const char* path)
 {
 	char **splitted, **dest;
-	
+
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
 	assemblies_path = dest = splitted;
-	while (*splitted){
-		if (**splitted)
-			*dest++ = *splitted;
-		else
-			g_free (*splitted);
+	while (*splitted) {
+		char *tmp = *splitted;
+		if (*tmp)
+			*dest++ = mono_path_canonicalize (tmp);
+		g_free (tmp);
 		splitted++;
 	}
 	*dest = *splitted;
-	
+
 	if (g_getenv ("MONO_DEBUG") == NULL)
 		return;
 
