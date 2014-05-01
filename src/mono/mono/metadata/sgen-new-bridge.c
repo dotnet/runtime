@@ -1307,7 +1307,7 @@ processing_after_callback (int generation)
 		}
 	}
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms links %d/%d/%d/%d dfs passes %d/%d ignored %d",
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_NEW_BRIDGE num-objects %d num_hash_entries %d sccs size %d init %.2fms df1 %.2fms sort %.2fms dfs2 %.2fms setup-cb %.2fms free-data %.2fms links %d/%d/%d/%d dfs passes %d/%d ignored %d",
 		num_registered_bridges, hash_table_size, dyn_array_scc_size (&sccs),
 		step_1 / 10000.0f,
 		step_2 / 10000.0f,
