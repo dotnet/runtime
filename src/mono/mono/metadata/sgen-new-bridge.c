@@ -664,8 +664,10 @@ dfs1 (HashEntry *obj_entry)
 					HashEntry *obj_entry_again = dyn_array_ptr_pop (&dfs_stack);
 					g_assert (obj_entry_again == obj_entry);
 					g_assert (!dst_entry->v.dfs1.forwarded_to);
-					obj_entry->v.dfs1.forwarded_to = dst_entry;
-					obj_entry = dst_entry;
+					if (obj_entry != dst_entry) {
+						obj_entry->v.dfs1.forwarded_to = dst_entry;
+						obj_entry = dst_entry;
+					}
 					goto again;
 				}
 			}

@@ -144,6 +144,17 @@ class Driver {
 		}
 	}
 
+	/*
+	 * Triggered a bug in the forwarding mechanic.
+	 */
+	static void SetupSelfLinks ()
+	{
+		var head = new Bridge ();
+		var tail = new NonBridge ();
+		head.Links.Add (tail);
+		tail.Link = tail;
+	}
+
 	static void RunTest (ThreadStart setup)
 	{
 		var t = new Thread (setup);
@@ -165,6 +176,7 @@ class Driver {
 		RunTest (SetupInverseFan);
 		RunTest (SetupDoubleFan);
 		RunTest (SetupDeadList);
+		RunTest (SetupSelfLinks);
 
 		for (int i = 0; i < 0; ++i) {
 			GC.Collect ();
