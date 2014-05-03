@@ -242,6 +242,13 @@ mono_thread_get_tls_offset (void)
 	return offset;
 }
 
+static inline MonoNativeThreadId
+thread_get_tid (MonoInternalThread *thread)
+{
+	/* We store the tid as a guint64 to keep the object layout constant between platforms */
+	return MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid);
+}
+
 /* handle_store() and handle_remove() manage the array of threads that
  * still need to be waited for when the main thread exits.
  *
@@ -1191,7 +1198,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	if (this_obj->name && this_obj->tid) {
 		char *tname = mono_string_to_utf8 (name);
 		mono_profiler_thread_name (this_obj->tid, tname);
-		mono_thread_info_set_name (this_obj->tid, tname);
+		mono_thread_info_set_name (thread_get_tid (this_obj), tname);
 		mono_free (tname);
 	}
 }
