@@ -230,47 +230,39 @@ mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 	}
 }
 
+#define COPY_COUNTER(type,functype) do {	\
+		size = sizeof (type);	\
+		if (buffer_size < size)	\
+			return -1;	\
+		type __var = cb ? ((functype)counter->addr) () : *(type*)counter->addr;	\
+		memcpy (buffer, &__var, size);	\
+	} while (0);
+
 int
 mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 {
-	int intval;
-	guint uintval;
-	gint64 gint64val;
-	guint64 guint64val;
-	gssize gssizeval;
-	double doubleval;
-
 	int cb = counter->type & MONO_COUNTER_CALLBACK;
-	int size = mono_counter_get_size (counter);
-
-	if (buffer_size < size)
-		return -1;
+	int size = -1;
 
 	switch (mono_counter_get_type (counter)) {
 	case MONO_COUNTER_INT:
-		intval = cb ? ((IntFunc)counter->addr) () : *(int*)counter->addr;
-		memcpy (buffer, &intval, size);
+		COPY_COUNTER (int, IntFunc);
 		break;
 	case MONO_COUNTER_UINT:
-		uintval = cb ? ((UIntFunc)counter->addr) () : *(guint*)counter->addr;
-		memcpy (buffer, &uintval, size);
+		COPY_COUNTER (guint, UIntFunc);
 		break;
 	case MONO_COUNTER_LONG:
 	case MONO_COUNTER_TIME_INTERVAL:
-		gint64val = cb ? ((LongFunc)counter->addr) () : *(gint64*)counter->addr;
-		memcpy (buffer, &gint64val, size);
+		COPY_COUNTER (gint64, LongFunc);
 		break;
 	case MONO_COUNTER_ULONG:
-		guint64val = cb ? ((ULongFunc)counter->addr) () : *(guint64*)counter->addr;
-		memcpy (buffer, &guint64val, size);
+		COPY_COUNTER (guint64, ULongFunc);
 		break;
 	case MONO_COUNTER_WORD:
-		gssizeval = cb ? ((PtrFunc)counter->addr) () : *(gssize*)counter->addr;
-		memcpy (buffer, &gssizeval, size);
+		COPY_COUNTER (gssize, PtrFunc);
 		break;
 	case MONO_COUNTER_DOUBLE:
-		doubleval = cb ? ((DoubleFunc)counter->addr) () : *(double*)counter->addr;
-		memcpy (buffer, &doubleval, size);
+		COPY_COUNTER (double, DoubleFunc);
 		break;
 	case MONO_COUNTER_STRING:
 		// FIXME : add support for string sampling
