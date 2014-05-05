@@ -285,7 +285,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 30
+#define MINOR_VERSION 31
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -496,7 +496,8 @@ typedef enum {
 	CMD_TYPE_GET_METHODS_BY_NAME_FLAGS = 15,
 	CMD_TYPE_GET_INTERFACES = 16,
 	CMD_TYPE_GET_INTERFACE_MAP = 17,
-	CMD_TYPE_IS_INITIALIZED = 18
+	CMD_TYPE_IS_INITIALIZED = 18,
+	CMD_TYPE_CREATE_INSTANCE = 19
 } CmdType;
 
 typedef enum {
@@ -7989,6 +7990,13 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_int (buf, (vtable->initialized || vtable->init_failed) ? 1 : 0);
 		else
 			buffer_add_int (buf, 0);
+		break;
+	}
+	case CMD_TYPE_CREATE_INSTANCE: {
+		MonoObject *obj;
+
+		obj = mono_object_new (domain, klass);
+		buffer_add_objid (buf, obj);
 		break;
 	}
 	default:
