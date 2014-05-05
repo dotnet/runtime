@@ -101,8 +101,6 @@ void
 mono_counters_register (const char* name, int type, void *addr)
 {
 	MonoCounter *counter;
-	if (!(type & valid_mask))
-		return;
 
 	if ((type & MONO_COUNTER_VARIANCE_MASK) == 0)
 		type |= MONO_COUNTER_MONOTONIC;
