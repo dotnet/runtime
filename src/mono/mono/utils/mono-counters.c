@@ -18,16 +18,58 @@ static MonoCounter *counters = NULL;
 static int valid_mask = 0;
 static int set_mask = 0;
 
-static int
+int
 mono_counter_get_variance (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_VARIANCE_MASK;
 }
 
-static int
+int
 mono_counter_get_unit (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_UNIT_MASK;
+}
+
+int
+mono_counter_get_section (MonoCounter *counter)
+{
+	return counter->type & MONO_COUNTER_SECTION_MASK;
+}
+
+int
+mono_counter_get_type (MonoCounter *counter)
+{
+	return counter->type & MONO_COUNTER_TYPE_MASK;
+}
+
+const char*
+mono_counter_get_name (MonoCounter *counter)
+{
+	return counter->name;
+}
+
+size_t
+mono_counter_get_size (MonoCounter *counter)
+{
+	switch (mono_counter_get_type (counter)) {
+	case MONO_COUNTER_INT:
+		return sizeof (int);
+	case MONO_COUNTER_UINT:
+		return sizeof (guint);
+	case MONO_COUNTER_LONG:
+	case MONO_COUNTER_TIME_INTERVAL:
+		return sizeof (gint64);
+	case MONO_COUNTER_ULONG:
+		return sizeof (guint64);
+	case MONO_COUNTER_WORD:
+		return sizeof (gssize);
+	case MONO_COUNTER_DOUBLE:
+		return sizeof (double);
+	case MONO_COUNTER_STRING:
+		return -1; // FIXME
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 /**
@@ -59,8 +101,6 @@ void
 mono_counters_register (const char* name, int type, void *addr)
 {
 	MonoCounter *counter;
-	if (!(type & valid_mask))
-		return;
 
 	if ((type & MONO_COUNTER_VARIANCE_MASK) == 0)
 		type |= MONO_COUNTER_MONOTONIC;
@@ -186,6 +226,48 @@ mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 		if (!cb (counter, user_data))
 			return;
 	}
+}
+
+#define COPY_COUNTER(type,functype) do {	\
+		size = sizeof (type);	\
+		if (buffer_size < size)	\
+			return -1;	\
+		type __var = cb ? ((functype)counter->addr) () : *(type*)counter->addr;	\
+		memcpy (buffer, &__var, size);	\
+	} while (0);
+
+int
+mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
+{
+	int cb = counter->type & MONO_COUNTER_CALLBACK;
+	int size = -1;
+
+	switch (mono_counter_get_type (counter)) {
+	case MONO_COUNTER_INT:
+		COPY_COUNTER (int, IntFunc);
+		break;
+	case MONO_COUNTER_UINT:
+		COPY_COUNTER (guint, UIntFunc);
+		break;
+	case MONO_COUNTER_LONG:
+	case MONO_COUNTER_TIME_INTERVAL:
+		COPY_COUNTER (gint64, LongFunc);
+		break;
+	case MONO_COUNTER_ULONG:
+		COPY_COUNTER (guint64, ULongFunc);
+		break;
+	case MONO_COUNTER_WORD:
+		COPY_COUNTER (gssize, PtrFunc);
+		break;
+	case MONO_COUNTER_DOUBLE:
+		COPY_COUNTER (double, DoubleFunc);
+		break;
+	case MONO_COUNTER_STRING:
+		// FIXME : add support for string sampling
+		break;
+	}
+
+	return size;
 }
 
 static const char

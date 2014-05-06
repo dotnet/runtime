@@ -67,6 +67,15 @@ typedef mono_bool (*CountersEnumCallback) (MonoCounter *counter, void *user_data
 
 MONO_API void mono_counters_foreach (CountersEnumCallback cb, void *user_data);
 
+MONO_API int mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size);
+
+MONO_API const char* mono_counter_get_name (MonoCounter *name);
+MONO_API int mono_counter_get_type (MonoCounter *counter);
+MONO_API int mono_counter_get_section (MonoCounter *counter);
+MONO_API int mono_counter_get_unit (MonoCounter *counter);
+MONO_API int mono_counter_get_variance (MonoCounter *counter);
+MONO_API size_t mono_counter_get_size (MonoCounter *counter);
+
 typedef enum {
 	MONO_RESOURCE_JIT_CODE, /* bytes */
 	MONO_RESOURCE_METADATA, /* bytes */
