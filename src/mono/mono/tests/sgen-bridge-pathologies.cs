@@ -155,6 +155,42 @@ class Driver {
 		tail.Link = tail;
 	}
 
+	const int L0_COUNT = 100000;
+	const int L1_COUNT = 100000;
+	const int EXTRA_LEVELS = 4;
+
+	/*
+	Set a complex graph from one bridge to a couple.
+	The graph is designed to expose naive coloring on
+	tarjan and SCC explosion on classic.
+	*/
+	static void Spider () {
+		Bridge a = new Bridge ();
+		Bridge b = new Bridge ();
+
+		var l1 = new List<object> ();
+		for (int i = 0; i < L0_COUNT; ++i) {
+			var l0 = new List<object> ();
+			l0.Add (a);
+			l0.Add (b);
+			l1.Add (l0);
+		}
+		var last_level = l1;
+		for (int l = 0; l < EXTRA_LEVELS; ++l) {
+			int j = 0;
+			var l2 = new List<object> ();
+			for (int i = 0; i < L1_COUNT; ++i) {
+				var tmp = new List<object> ();
+				tmp.Add (last_level [j++ % last_level.Count]);
+				tmp.Add (last_level [j++ % last_level.Count]);
+				l2.Add (tmp);
+			}
+			last_level = l2;
+		}
+		Bridge c = new Bridge ();
+		c.Links.Add (last_level);
+	}
+
 	static void RunTest (ThreadStart setup)
 	{
 		var t = new Thread (setup);
@@ -177,6 +213,7 @@ class Driver {
 		RunTest (SetupDoubleFan);
 		RunTest (SetupDeadList);
 		RunTest (SetupSelfLinks);
+		RunTest (Spider);
 
 		for (int i = 0; i < 0; ++i) {
 			GC.Collect ();
