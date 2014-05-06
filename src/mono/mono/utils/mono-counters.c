@@ -282,11 +282,11 @@ section_names [][10] = {
 };
 
 static void
-mono_counters_dump_section (int section, FILE *outfile)
+mono_counters_dump_section (int section, int variance, FILE *outfile)
 {
 	MonoCounter *counter = counters;
 	while (counter) {
-		if ((counter->type & section) && (mono_counter_get_variance (counter) & section))
+		if ((counter->type & section) && (mono_counter_get_variance (counter) & variance))
 			dump_counter (counter, outfile);
 		counter = counter->next;
 	}
@@ -305,18 +305,22 @@ void
 mono_counters_dump (int section_mask, FILE *outfile)
 {
 	int i, j;
+	int variance;
 	section_mask &= valid_mask;
 	if (!counters)
 		return;
 
+	variance = section_mask & MONO_COUNTER_VARIANCE_MASK;
+
 	/* If no variance mask is supplied, we default to all kinds. */
-	if (!(section_mask & MONO_COUNTER_VARIANCE_MASK))
-		section_mask |= MONO_COUNTER_VARIANCE_MASK;
+	if (!variance)
+		variance = MONO_COUNTER_VARIANCE_MASK;
+	section_mask &= ~MONO_COUNTER_VARIANCE_MASK;
 
 	for (j = 0, i = MONO_COUNTER_JIT; i < MONO_COUNTER_LAST_SECTION; j++, i <<= 1) {
 		if ((section_mask & i) && (set_mask & i)) {
 			fprintf (outfile, "\n%s statistics\n", section_names [j]);
-			mono_counters_dump_section (i | (section_mask & MONO_COUNTER_VARIANCE_MASK), outfile);
+			mono_counters_dump_section (i, variance, outfile);
 		}
 	}
 
