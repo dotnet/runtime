@@ -5,7 +5,13 @@
 
 #include <stdlib.h>
 #include <glib.h>
+#include "config.h"
 #include "mono-counters.h"
+#include "mono-proclib.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 struct _MonoCounter {
 	MonoCounter *next;
@@ -207,6 +213,128 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 	}
 }
 
+#ifdef HAVE_UNISTD_H
+#define PROCESS_GET_DATA(kind) mono_process_get_data (GINT_TO_POINTER (getpid ()), kind)
+#else
+#define PROCESS_GET_DATA(kind) 0
+#endif
+
+static gint64
+user_time ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_USER_TIME);
+}
+
+static gint64
+system_time ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_SYSTEM_TIME);
+}
+
+static gint64
+total_time ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_TOTAL_TIME);
+}
+
+static gint64
+working_set ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_WORKING_SET);
+}
+
+static gint64
+private_bytes ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_PRIVATE_BYTES);
+}
+
+static gint64
+virtual_bytes ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_VIRTUAL_BYTES);
+}
+
+static gint64
+page_faults ()
+{
+	return PROCESS_GET_DATA (MONO_PROCESS_FAULTS);
+}
+
+static double
+cpu_load (int kind)
+{
+#if defined(TARGET_WIN32) || defined(TARGET_XBOX360)
+#elif defined(TARGET_MACH)
+	double load [3];
+	if (getloadavg (load, 3) > 0)
+		return load [kind];
+#else
+	char buffer[512], *b;
+	int len, i;
+	FILE *f = fopen ("/proc/loadavg", "r");
+	if (f) {
+		len = fread (buffer, 1, sizeof (buffer), f);
+		if (len > 0) {
+			b = buffer;
+			for (i = 0; i < 3; i++) {
+				if (kind == i)
+					return strtod (b, NULL);
+				if (i < 2) {
+					b = strchr (b, ' ');
+					if (!b)
+						return 0;
+					b += 1;
+				}
+			}
+		}
+		fclose (f);
+	}
+#endif
+	return 0;
+}
+
+static double
+cpu_load_1min ()
+{
+	return cpu_load (0);
+}
+
+static double
+cpu_load_5min ()
+{
+	return cpu_load (1);
+}
+
+static double
+cpu_load_15min ()
+{
+	return cpu_load (2);
+}
+
+static gboolean system_counters_initialized = FALSE;
+
+#define SYSCOUNTER_TIME (MONO_COUNTER_SYSTEM | MONO_COUNTER_LONG | MONO_COUNTER_TIME | MONO_COUNTER_MONOTONIC | MONO_COUNTER_CALLBACK)
+#define SYSCOUNTER_BYTES (MONO_COUNTER_SYSTEM | MONO_COUNTER_LONG | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE | MONO_COUNTER_CALLBACK)
+#define SYSCOUNTER_COUNT (MONO_COUNTER_SYSTEM | MONO_COUNTER_LONG | MONO_COUNTER_COUNT | MONO_COUNTER_MONOTONIC | MONO_COUNTER_CALLBACK)
+#define SYSCOUNTER_LOAD (MONO_COUNTER_SYSTEM | MONO_COUNTER_DOUBLE | MONO_COUNTER_PERCENTAGE | MONO_COUNTER_VARIABLE | MONO_COUNTER_CALLBACK)
+
+static void
+initialize_system_counters ()
+{
+	mono_counters_register ("User Time", SYSCOUNTER_TIME, &user_time);
+	mono_counters_register ("System Time", SYSCOUNTER_TIME, &system_time);
+	mono_counters_register ("Total Time", SYSCOUNTER_TIME, &total_time);
+	mono_counters_register ("Working Set", SYSCOUNTER_BYTES, &working_set);
+	mono_counters_register ("Private Bytes", SYSCOUNTER_BYTES, &private_bytes);
+	mono_counters_register ("Virtual Bytes", SYSCOUNTER_BYTES, &virtual_bytes);
+	mono_counters_register ("Page Faults", SYSCOUNTER_COUNT, &page_faults);
+	mono_counters_register ("CPU Load Average - 1min", SYSCOUNTER_LOAD, &cpu_load_1min);
+	mono_counters_register ("CPU Load Average - 5min", SYSCOUNTER_LOAD, &cpu_load_5min);
+	mono_counters_register ("CPU Load Average - 15min", SYSCOUNTER_LOAD, &cpu_load_15min);
+
+	system_counters_initialized = TRUE;
+}
 
 /**
  * mono_counters_foreach:
@@ -221,6 +349,9 @@ void
 mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 {
 	MonoCounter *counter;
+
+	if (!system_counters_initialized)
+		initialize_system_counters ();
 
 	for (counter = counters; counter; counter = counter->next) {
 		if (!cb (counter, user_data))
