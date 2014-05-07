@@ -136,6 +136,8 @@ mono_counters_register_with_size (const char *name, int type, void *addr, int si
 
 	if ((type & MONO_COUNTER_VARIANCE_MASK) == 0)
 		type |= MONO_COUNTER_MONOTONIC;
+	if (size < 0)
+		size = 0;
 
 	counter = malloc (sizeof (MonoCounter));
 	if (!counter)
@@ -305,7 +307,7 @@ mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 			return 0;
 		size = counter->size;
 		strncpy (buffer, strval, size - 1);
-		buffer[size - 1] = '\0';
+		((char*)buffer)[size - 1] = '\0';
 	}
 
 	return size;
