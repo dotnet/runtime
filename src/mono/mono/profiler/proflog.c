@@ -659,10 +659,15 @@ process_requests (MonoProfiler *profiler)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
+static void counters_init (MonoProfiler *profiler);
+
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
 	runtime_inited = 1;
+#ifndef DISABLE_HELPER_THREAD
+	counters_init (profiler);
+#endif
 	/* ensure the main thread data and startup are available soon */
 	safe_dump (profiler, ensure_logbuf (0));
 }
@@ -2126,6 +2131,9 @@ helper_thread (void* arg)
 	int len;
 	char buf [64];
 	MonoThread *thread = NULL;
+	GTimeVal start, now;
+
+	g_get_current_time (&start);
 
 	//fprintf (stderr, "Server listening\n");
 	command_socket = -1;
@@ -2156,6 +2164,10 @@ helper_thread (void* arg)
 			}
 		}
 #endif
+		g_get_current_time (&now);
+		counters_sample (prof, (uint64_t)(now.tv_sec * 1000 + now.tv_usec / 1000) - (uint64_t)(start.tv_sec * 1000 + start.tv_usec / 1000));
+		safe_dump (prof, ensure_logbuf (0));
+
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
