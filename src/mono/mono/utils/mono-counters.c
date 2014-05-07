@@ -303,8 +303,9 @@ mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 		strval = cb ? ((StrFunc)counter->addr) () : (char*)counter->addr;
 		if (!strval)
 			return 0;
-		size = buffer_size;
-		strncpy (buffer, strval, size);
+		size = counter->size;
+		strncpy (buffer, strval, size - 1);
+		buffer[size - 1] = '\0';
 	}
 
 	return size;
