@@ -12,6 +12,7 @@ struct _MonoCounter {
 	const char *name;
 	void *addr;
 	int type;
+	size_t size;
 };
 
 static MonoCounter *counters = NULL;
@@ -51,25 +52,7 @@ mono_counter_get_name (MonoCounter *counter)
 size_t
 mono_counter_get_size (MonoCounter *counter)
 {
-	switch (mono_counter_get_type (counter)) {
-	case MONO_COUNTER_INT:
-		return sizeof (int);
-	case MONO_COUNTER_UINT:
-		return sizeof (guint);
-	case MONO_COUNTER_LONG:
-	case MONO_COUNTER_TIME_INTERVAL:
-		return sizeof (gint64);
-	case MONO_COUNTER_ULONG:
-		return sizeof (guint64);
-	case MONO_COUNTER_WORD:
-		return sizeof (gssize);
-	case MONO_COUNTER_DOUBLE:
-		return sizeof (double);
-	case MONO_COUNTER_STRING:
-		return -1; // FIXME
-	default:
-		g_assert_not_reached ();
-	}
+	return counter->size;
 }
 
 /**
@@ -100,6 +83,55 @@ mono_counters_enable (int section_mask)
 void 
 mono_counters_register (const char* name, int type, void *addr)
 {
+	int size;
+	switch (type & MONO_COUNTER_TYPE_MASK) {
+	case MONO_COUNTER_INT:
+		size = sizeof (int);
+		break;
+	case MONO_COUNTER_UINT:
+		size = sizeof (guint);
+		break;
+	case MONO_COUNTER_LONG:
+	case MONO_COUNTER_TIME_INTERVAL:
+		size = sizeof (gint64);
+		break;
+	case MONO_COUNTER_ULONG:
+		size = sizeof (guint64);
+		break;
+	case MONO_COUNTER_WORD:
+		size = sizeof (gssize);
+		break;
+	case MONO_COUNTER_DOUBLE:
+		size = sizeof (double);
+		break;
+	case MONO_COUNTER_STRING:
+		size = 0;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+	mono_counters_register_with_size (name, type, addr, size);
+}
+
+/**
+ * mono_counters_register_with_size:
+ * @name: The name for this counters.
+ * @type: One of the possible MONO_COUNTER types, or MONO_COUNTER_CALLBACK for a function pointer.
+ * @addr: The address to register.
+ * @size: The memory size of the address, default to 0 for MONO_COUNTER_STRING type.
+ *
+ * Register addr as the address of a counter of type @type.
+ * Note that @name must be a valid string at all times until
+ * mono_counters_dump () is called.
+ *
+ * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
+ * the function should return the value and take no arguments.
+ *
+ * Use @size for type that can have dynamic size such as string.
+ */
+void
+mono_counters_register_with_size (const char *name, int type, void *addr, int size)
+{
 	MonoCounter *counter;
 
 	if ((type & MONO_COUNTER_VARIANCE_MASK) == 0)
@@ -112,6 +144,7 @@ mono_counters_register (const char* name, int type, void *addr)
 	counter->type = type;
 	counter->addr = addr;
 	counter->next = NULL;
+	counter->size = size;
 
 	set_mask |= type;
 
@@ -194,7 +227,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 	      if (counter->type & MONO_COUNTER_CALLBACK)
 		      str = ((StrFunc)counter->addr) ();
 	      else
-		      str = *(char**)counter->addr;
+		      str = (char*)counter->addr;
 	      fprintf (outfile, ENTRY_FMT "%s\n", counter->name, str);
 	      break;
 	case MONO_COUNTER_TIME_INTERVAL:
@@ -242,6 +275,8 @@ mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 	int cb = counter->type & MONO_COUNTER_CALLBACK;
 	int size = -1;
 
+	char *strval;
+
 	switch (mono_counter_get_type (counter)) {
 	case MONO_COUNTER_INT:
 		COPY_COUNTER (int, IntFunc);
@@ -263,8 +298,14 @@ mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 		COPY_COUNTER (double, DoubleFunc);
 		break;
 	case MONO_COUNTER_STRING:
-		// FIXME : add support for string sampling
-		break;
+		if (buffer_size < counter->size)
+			return -1;
+		strval = cb ? ((StrFunc)counter->addr) () : (char*)counter->addr;
+		if (!strval)
+			return 0;
+		size = counter->size;
+		strncpy (buffer, strval, size - 1);
+		buffer[size - 1] = '\0';
 	}
 
 	return size;
