@@ -723,7 +723,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 		if (!minfo)
 			continue;
 
-		mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, NULL, NULL, NULL, NULL, NULL);
+		mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		for (i = 0; i < source_file_list->len; ++i) {
 			MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, i);
 			add_line_number_file_name (w, sinfo->source_file, 0, 0);

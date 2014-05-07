@@ -465,8 +465,13 @@ get_source_info (MonoSymbolFile *symfile, int index)
 	return info;
 }
 
-static gboolean
-method_has_column_info (MonoDebugMethodInfo *minfo)
+typedef enum {
+	LNT_FLAG_HAS_COLUMN_INFO = 1 << 1,
+	LNT_FLAG_HAS_END_INFO = 1 << 2,
+} LineNumberTableFlags;
+
+static LineNumberTableFlags
+method_get_lnt_flags (MonoDebugMethodInfo *minfo)
 {
 	MonoSymbolFile *symfile;
 	const unsigned char *ptr;
@@ -492,7 +497,7 @@ method_has_column_info (MonoDebugMethodInfo *minfo)
 	read_leb128 (ptr, &ptr);
 
 	flags = read_leb128 (ptr, &ptr);
-	return (flags & 2) > 0;
+	return flags;
 }
 
 /*
@@ -503,15 +508,17 @@ method_has_column_info (MonoDebugMethodInfo *minfo)
  * The MonoDebugSourceFile structures are owned by this module.
  */
 void
-mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int *n_il_offsets, int **il_offsets, int **line_numbers, int **column_numbers, int **source_files)
+mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int *n_il_offsets, int **il_offsets, int **line_numbers, int **column_numbers, int **source_files, int **end_line_numbers, int **end_column_numbers)
 {
 	// FIXME: Unify this with mono_debug_symfile_lookup_location
 	MonoSymbolFile *symfile;
 	const unsigned char *ptr;
 	StatementMachine stm;
 	uint32_t i;
+	LineNumberTableFlags flags;
 	GPtrArray *il_offset_array, *line_number_array, *source_file_array;
-	gboolean has_column_info;
+	gboolean has_column_info, has_end_info;
+	gboolean column_info_read = FALSE;
 
 	if (source_file_list)
 		*source_file_list = NULL;
@@ -527,7 +534,9 @@ mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **sou
 	if ((symfile = minfo->handle->symfile) == NULL)
 		return;
 
-	has_column_info = method_has_column_info (minfo);
+	flags = method_get_lnt_flags (minfo);
+	has_column_info = (flags & LNT_FLAG_HAS_COLUMN_INFO) > 0;
+	has_end_info = (flags & LNT_FLAG_HAS_END_INFO) > 0;
 
 	il_offset_array = g_ptr_array_new ();
 	line_number_array = g_ptr_array_new ();
@@ -564,7 +573,6 @@ mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **sou
 				if (il_offset_array->len == 0)
 					/* Empty table */
 					break;
-				add_line (&stm, il_offset_array, line_number_array, source_file_array);
 				break;
 			} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
 				stm.is_hidden = !stm.is_hidden;
@@ -658,9 +666,31 @@ mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **sou
 	}
 
 	if (column_numbers && has_column_info) {
+		column_info_read = TRUE;
 		*column_numbers = g_malloc (il_offset_array->len * sizeof (int));
 		for (i = 0; i < il_offset_array->len; ++i)
 			(*column_numbers) [i] = read_leb128 (ptr, &ptr);
+	}
+
+	if (has_end_info && end_line_numbers) {
+		g_assert (end_column_numbers);
+		*end_line_numbers = g_malloc (il_offset_array->len * sizeof (int));
+		*end_column_numbers = g_malloc (il_offset_array->len * sizeof (int));
+		if (has_column_info && !column_info_read) {
+			for (i = 0; i < il_offset_array->len; ++i)
+				read_leb128 (ptr, &ptr);
+		}
+		for (i = 0; i < il_offset_array->len; ++i) {
+			int end_row, end_column = -1;
+
+			end_row = read_leb128 (ptr, &ptr);
+			if (end_row != 0xffffff) {
+				end_row += GPOINTER_TO_UINT (g_ptr_array_index (line_number_array, i));
+				end_column = read_leb128 (ptr, &ptr);
+				(*end_line_numbers) [i] = end_row;
+				(*end_column_numbers) [i] = end_column;
+			}
+		}
 	}
 
 	g_ptr_array_free (il_offset_array, TRUE);
@@ -678,7 +708,7 @@ mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **sou
 void
 mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_file, int *n_il_offsets, int **il_offsets, int **line_numbers)
 {
-	mono_debug_symfile_get_line_numbers_full (minfo, source_file, NULL, n_il_offsets, il_offsets, line_numbers, NULL, NULL);
+	mono_debug_symfile_get_line_numbers_full (minfo, source_file, NULL, n_il_offsets, il_offsets, line_numbers, NULL, NULL, NULL, NULL);
 }
 	
 int32_t
