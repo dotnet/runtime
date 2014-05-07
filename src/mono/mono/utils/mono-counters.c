@@ -19,17 +19,42 @@ static MonoCounter *counters = NULL;
 static int valid_mask = 0;
 static int set_mask = 0;
 
+/**
+ * mono_counter_get_variance:
+ * @counter: counter to get the variance
+ *
+ * Variance specifies how the counter value is expected to behave between any two samplings.
+ *
+ * Returns: the monotonicity of the counter.
+ */
 int
 mono_counter_get_variance (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_VARIANCE_MASK;
 }
 
+/**
+ * mono_counter_get_unit:
+ * @counter: counter to get the unit
+ *
+ * The unit gives a high level view of the unit that the counter is measuring.
+ *
+ * Returns: the unit of the counter.
+ */
 int
 mono_counter_get_unit (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_UNIT_MASK;
 }
+
+/**
+ * mono_counter_get_section:
+ * @counter: counter to get the section
+ *
+ * Sections are the unit of organization between all counters.
+ *
+ * Returns: the section of the counter.
+ */
 
 int
 mono_counter_get_section (MonoCounter *counter)
@@ -37,11 +62,28 @@ mono_counter_get_section (MonoCounter *counter)
 	return counter->type & MONO_COUNTER_SECTION_MASK;
 }
 
+/**
+ * mono_counter_get_type:
+ * @counter: counter to get the type
+ *
+ * Returns the type used to strong the value of the counter.
+ *
+ * Returns:the type of the counter.
+ */
 int
 mono_counter_get_type (MonoCounter *counter)
 {
 	return counter->type & MONO_COUNTER_TYPE_MASK;
 }
+
+/**
+ * mono_counter_get_name:
+ * @counter: counter to get the name
+ *
+ * Returns the counter name. The string should not be freed.
+ *
+ * Returns the name of the counter.
+ */
 
 const char*
 mono_counter_get_name (MonoCounter *counter)
@@ -49,6 +91,14 @@ mono_counter_get_name (MonoCounter *counter)
 	return counter->name;
 }
 
+/**
+ * mono_counter_get_size:
+ * @counter: counter to get the max size of the counter
+ *
+ * Use the returned size to create the buffer used with mono_counters_sample
+ *
+ * Returns: the max size of the counter data.
+ */
 size_t
 mono_counter_get_size (MonoCounter *counter)
 {
@@ -76,6 +126,10 @@ mono_counters_enable (int section_mask)
  * Register addr as the address of a counter of type type.
  * Note that @name must be a valid string at all times until
  * mono_counters_dump () is called.
+ *
+ * This function should not be used with counter types that require an explicit size such as string
+ * as the counter size will be set to zero making them effectively useless.
+ *
  *
  * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
@@ -118,7 +172,7 @@ mono_counters_register (const char* name, int type, void *addr)
  * @name: The name for this counters.
  * @type: One of the possible MONO_COUNTER types, or MONO_COUNTER_CALLBACK for a function pointer.
  * @addr: The address to register.
- * @size: The memory size of the address, default to 0 for MONO_COUNTER_STRING type.
+ * @size: Max size of the counter data.
  *
  * Register addr as the address of a counter of type @type.
  * Note that @name must be a valid string at all times until
@@ -127,7 +181,11 @@ mono_counters_register (const char* name, int type, void *addr)
  * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
  *
- * Use @size for type that can have dynamic size such as string.
+ * The value of @size is ignored for types with fixed size such as int and long.
+ *
+ * Use @size for types that can have dynamic size such as string.
+ *
+ * If @size is negative, it's silently converted to zero.
  */
 void
 mono_counters_register_with_size (const char *name, int type, void *addr, int size)
