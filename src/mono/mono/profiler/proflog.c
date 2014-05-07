@@ -514,6 +514,35 @@ emit_obj (LogBuffer *logbuffer, void *ptr)
 	assert (logbuffer->data <= logbuffer->data_end);
 }
 
+static void
+emit_string (LogBuffer *logbuffer, const char *str, size_t size)
+{
+	size_t i = 0;
+	if (str) {
+		for (; i < size; i++) {
+			emit_byte (logbuffer, str [i]);
+			if (str[i] == '\0')
+				break;
+		}
+	}
+	if (!str || i == size)
+		emit_byte (logbuffer, '\0');
+}
+
+static void
+emit_double (LogBuffer *logbuffer, double value)
+{
+	int i;
+	unsigned char buffer[8];
+	memcpy (buffer, &value, 8);
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+	for (i = 7; i >= 0; i--)
+#else
+	for (i = 0; i < 8; i++)
+#endif
+		emit_byte (logbuffer, buffer[i]);
+}
+
 static char*
 write_int16 (char *buf, int32_t value)
 {
