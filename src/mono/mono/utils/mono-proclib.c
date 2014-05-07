@@ -16,6 +16,7 @@
 
 #ifdef HOST_WIN32
 #include <windows.h>
+#include <process.h>
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
@@ -499,6 +500,18 @@ mono_process_get_data (gpointer pid, MonoProcessData data)
 {
 	MonoProcessError error;
 	return mono_process_get_data_with_error (pid, data, &error);
+}
+
+int
+mono_process_current_pid ()
+{
+#if defined(HAVE_UNISTD_H)
+	return (int) getpid ();
+#elif defined(HOST_WIN32)
+	return (int) GetCurrentProcessId ();
+#else
+#error getpid
+#endif
 }
 
 /**

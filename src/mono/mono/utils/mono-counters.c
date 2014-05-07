@@ -213,11 +213,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 	}
 }
 
-#ifdef HAVE_UNISTD_H
-#define PROCESS_GET_DATA(kind) mono_process_get_data (GINT_TO_POINTER (getpid ()), kind)
-#else
-#define PROCESS_GET_DATA(kind) 0
-#endif
+#define PROCESS_GET_DATA(kind) mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), kind)
 
 static gint64
 user_time ()
@@ -274,7 +270,8 @@ cpu_load (int kind)
 	int len, i;
 	FILE *f = fopen ("/proc/loadavg", "r");
 	if (f) {
-		len = fread (buffer, 1, sizeof (buffer), f);
+		len = fread (buffer, 1, sizeof (buffer) - 1, f);
+		buffer [len < 511 ? len : 511] = 0;
 		if (len > 0) {
 			b = buffer;
 			for (i = 0; i < 3; i++) {
