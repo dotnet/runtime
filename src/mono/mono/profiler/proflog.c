@@ -288,7 +288,7 @@ typedef struct _LogBuffer LogBuffer;
  *
  * type sample format
  * type: TYPE_SAMPLE
- * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN
+ * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
  * if exinfo == TYPE_SAMPLE_HIT
  * 	[sample_type: uleb128] type of sample (SAMPLE_*)
  * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
@@ -304,6 +304,23 @@ typedef struct _LogBuffer LogBuffer;
  * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
  * 	[size: uleb128] memory size
  * 	[name: string] binary name
+ * if exinfo == TYPE_SAMPLE_COUNTERS_DESC
+ * 	[len: uleb128] number of counters
+ * 	for i = 0 to len
+ * 		[section: uleb128] section name of counter
+ * 		[name: string] name of counter
+ * 		[type: uleb128] type name of counter
+ * 		[unit: uleb128] unit name of counter
+ * 		[variance: uleb128] variance name of counter
+ * 		[index: uleb128] unique index of counter
+ * if exinfo == TYPE_SAMPLE_COUNTERS
+ * 	[timestamp: uleb128] sampling timestamp
+ * 	while true:
+ * 		[index: uleb128] unique index of counter
+ * 		if index == 0:
+ * 			break
+ * 		[size: uleb128] size of counter value
+ * 		[value: string/uleb128/sleb128/double] counter value, can be sleb128, uleb128, string or double (determined by using counter type)
  *
  */
 struct _LogBuffer {

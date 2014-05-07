@@ -58,9 +58,11 @@ enum {
 	/* extended type for TYPE_MONITOR */
 	TYPE_MONITOR_BT  = 1 << 7,
 	/* extended type for TYPE_SAMPLE */
-	TYPE_SAMPLE_HIT    = 0 << 4,
-	TYPE_SAMPLE_USYM   = 1 << 4,
-	TYPE_SAMPLE_UBIN   = 2 << 4,
+	TYPE_SAMPLE_HIT           = 0 << 4,
+	TYPE_SAMPLE_USYM          = 1 << 4,
+	TYPE_SAMPLE_UBIN          = 2 << 4,
+	TYPE_SAMPLE_COUNTERS_DESC = 3 << 4,
+	TYPE_SAMPLE_COUNTERS      = 4 << 4,
 	TYPE_END
 };
 
