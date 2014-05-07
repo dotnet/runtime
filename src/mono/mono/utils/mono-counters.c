@@ -360,6 +360,8 @@ mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 	case MONO_COUNTER_STRING:
 		if (buffer_size < counter->size)
 			return -1;
+		if (counter->size == 0)
+			return 0;
 		strval = cb ? ((StrFunc)counter->addr) () : (char*)counter->addr;
 		if (!strval)
 			return 0;
