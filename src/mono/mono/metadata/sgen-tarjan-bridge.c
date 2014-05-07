@@ -1,8 +1,8 @@
 /*
- * sgen-bridge.c: Simple generational GC.
+ * sgen-tarjan-bridge.c: Tarjan-based bridge implementation.
  *
  * Copyright 2011 Novell, Inc (http://www.novell.com)
- * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
+ * Copyright 2014 Xamarin Inc (http://www.xamarin.com)
  *
  * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
  * OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
