@@ -19,7 +19,7 @@ struct GFoo<T> {
 }
 
 struct GFoo2<T> {
-	public T t, t2;
+	public T t, t2, t3;
 }
 
 class GFoo3<T> {
@@ -384,6 +384,16 @@ public class Tests
 		return t;
 	}
 
+	interface IFaceGSharedVtIn {
+		T return_t<T> (T t);
+	}
+
+	class ClassGSharedVtIn : IFaceGSharedVtIn {
+		public T return_t<T> (T t) {
+			return t;
+		}
+	}
+
 	public static int test_0_gsharedvt_in () {
 		// Check that the non-generic argument is passed at the correct stack position
 		int r = args_simple<bool> (true, 42);
@@ -427,9 +437,14 @@ public class Tests
 		var v2 = return_t<GFoo2<int>> (v);
 		if (v2.t != 55 || v2.t2 != 32)
 			return 6;
+		IFaceGSharedVtIn o = new ClassGSharedVtIn ();
+		var v3 = new GFoo2<long> () { t = 55, t2 = 32 };
+		var v4 = o.return_t<GFoo2<long>> (v3);
+		if (v4.t != 55 || v4.t2 != 32)
+			return 7;
 		i = new GSharedTests ().return_this_t<int> (42);
 		if (i != 42)
-			return 7;
+			return 8;
 		return 0;
 	}
 
