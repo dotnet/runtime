@@ -230,74 +230,40 @@ typedef char* (*StrFunc) (void);
 #define ENTRY_FMT "%-36s: "
 static void
 dump_counter (MonoCounter *counter, FILE *outfile) {
-	int intval;
-	guint uintval;
-	gint64 int64val;
-	guint64 uint64val;
-	gssize wordval;
-	double dval;
-	const char *str;
+	void *buffer = g_malloc0 (counter->size);
+	mono_counters_sample (counter, buffer, counter->size);
+
 	switch (counter->type & MONO_COUNTER_TYPE_MASK) {
 	case MONO_COUNTER_INT:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      intval = ((IntFunc)counter->addr) ();
-	      else
-		      intval = *(int*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%d\n", counter->name, intval);
-	      break;
+		fprintf (outfile, ENTRY_FMT "%d\n", counter->name, *(int*)buffer);
+		break;
 	case MONO_COUNTER_UINT:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      uintval = ((UIntFunc)counter->addr) ();
-	      else
-		      uintval = *(guint*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%u\n", counter->name, uintval);
-	      break;
+		fprintf (outfile, ENTRY_FMT "%u\n", counter->name, *(guint*)buffer);
+		break;
 	case MONO_COUNTER_LONG:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      int64val = ((LongFunc)counter->addr) ();
-	      else
-		      int64val = *(gint64*)counter->addr;
-	      if (mono_counter_get_unit (counter) == MONO_COUNTER_TIME)
-		      fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)int64val / 10000.0);
-	      else
-		      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)int64val);
-	      break;
-	case MONO_COUNTER_ULONG:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      uint64val = ((ULongFunc)counter->addr) ();
-	      else
-		      uint64val = *(guint64*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, (unsigned long long)uint64val);
-	      break;
-	case MONO_COUNTER_WORD:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      wordval = ((PtrFunc)counter->addr) ();
-	      else
-		      wordval = *(gssize*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%zd\n", counter->name, (gint64)wordval);
-	      break;
-	case MONO_COUNTER_DOUBLE:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      dval = ((DoubleFunc)counter->addr) ();
-	      else
-		      dval = *(double*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%.4f\n", counter->name, dval);
-	      break;
-	case MONO_COUNTER_STRING:
-	      if (counter->type & MONO_COUNTER_CALLBACK)
-		      str = ((StrFunc)counter->addr) ();
-	      else
-		      str = (char*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%s\n", counter->name, str);
-	      break;
-	case MONO_COUNTER_TIME_INTERVAL:
-		if (counter->type & MONO_COUNTER_CALLBACK)
-			int64val = ((LongFunc)counter->addr) ();
+		if (counter->type & MONO_COUNTER_UNIT_MASK == MONO_COUNTER_TIME)
+			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 10000.0);
 		else
-			int64val = *(gint64*)counter->addr;
-		fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)int64val / 1000.0);
+			fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, *(gint64*)buffer);
+		break;
+	case MONO_COUNTER_ULONG:
+		fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, *(guint64*)buffer);
+		break;
+	case MONO_COUNTER_WORD:
+		fprintf (outfile, ENTRY_FMT "%zd\n", counter->name, *(gssize*)buffer);
+		break;
+	case MONO_COUNTER_DOUBLE:
+		fprintf (outfile, ENTRY_FMT "%.4f\n", counter->name, *(double*)buffer);
+		break;
+	case MONO_COUNTER_STRING:
+		fprintf (outfile, ENTRY_FMT "%s\n", counter->name, (counter->size == 0) ? "(null)" : (char*)buffer);
+		break;
+	case MONO_COUNTER_TIME_INTERVAL:
+		fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 1000.0);
 		break;
 	}
+
+	g_free (buffer);
 }
 
 
