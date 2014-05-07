@@ -55,6 +55,7 @@ MONO_API void mono_counters_enable (int section_mask);
  * the function should return the value and take no arguments.
  */
 MONO_API void mono_counters_register (const char* descr, int type, void *addr);
+MONO_API void mono_counters_register_with_size (const char *name, int type, void *addr, int size);
 
 /* 
  * Create a readable dump of the counters for section_mask sections (ORed section values)
