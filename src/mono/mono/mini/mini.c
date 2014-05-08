@@ -139,8 +139,6 @@ gboolean check_for_pending_exc = TRUE;
 /* Whenever to disable passing/returning small valuetypes in registers for managed methods */
 gboolean disable_vtypes_in_regs = FALSE;
 
-gboolean mono_dont_free_global_codeman;
-
 static GSList *tramp_infos;
 
 gpointer
@@ -7762,8 +7760,7 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_unwind_cleanup ();
 
-	if (!mono_dont_free_global_codeman)
-		mono_code_manager_destroy (global_codeman);
+	mono_code_manager_destroy (global_codeman);
 	g_hash_table_destroy (jit_icall_name_hash);
 	g_free (emul_opcode_map);
 	g_free (emul_opcode_opcodes);
