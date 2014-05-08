@@ -320,8 +320,15 @@ typedef struct _LogBuffer LogBuffer;
  * 		[index: uleb128] unique index of counter
  * 		if index == 0:
  * 			break
- * 		[size: uleb128] size of counter value
- * 		[value: string/uleb128/sleb128/double] counter value, can be sleb128, uleb128, string or double (determined by using counter type)
+ * 		[type: uleb128] type of counter value
+ * 		if type == string:
+ * 			if value == null:
+ * 				[0: uleb128] 0 -> value is null
+ * 			else:
+ * 				[1: uleb128] 1 -> value is not null
+ * 				[value: string] counter value
+ * 		else:
+ * 			[value: uleb128/sleb128/double] counter value, can be sleb128, uleb128 or double (determined by using type)
  *
  */
 struct _LogBuffer {
@@ -539,13 +546,12 @@ emit_string (LogBuffer *logbuffer, const char *str, size_t size)
 	size_t i = 0;
 	if (str) {
 		for (; i < size; i++) {
-			emit_byte (logbuffer, str [i]);
 			if (str[i] == '\0')
 				break;
+			emit_byte (logbuffer, str [i]);
 		}
 	}
-	if (!str || i == size)
-		emit_byte (logbuffer, '\0');
+	emit_byte (logbuffer, '\0');
 }
 
 static void
@@ -1968,7 +1974,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			agent->value_size = size;
 		} else {
 			if (type == MONO_COUNTER_STRING) {
-				if (strncmp (agent->value, buffer, size) == 0)
+				if (strcmp (agent->value, buffer) == 0)
 					continue;
 			} else {
 				if (agent->value_size == size && memcmp (agent->value, buffer, size) == 0)
@@ -2002,10 +2008,12 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			emit_double (logbuffer, *(double*)buffer);
 			break;
 		case MONO_COUNTER_STRING:
-			if (size == 0)
-				emit_string (logbuffer, "(null)", 7);
-			else
+			if (size == 0) {
+				emit_byte (logbuffer, 0);
+			} else {
+				emit_byte (logbuffer, 1);
 				emit_string (logbuffer, (char*)buffer, size);
+			}
 			break;
 		default:
 			assert (0);
@@ -2023,6 +2031,8 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 	EXIT_LOG (logbuffer);
+
+	safe_dump (profiler, ensure_logbuf (0));
 }
 
 #endif /* DISABLE_HELPER_THREAD */
@@ -2131,11 +2141,10 @@ helper_thread (void* arg)
 	int len;
 	char buf [64];
 	MonoThread *thread = NULL;
-	GTimeVal start, now;
-
-	g_get_current_time (&start);
+	uint64_t start, now;
 
 	//fprintf (stderr, "Server listening\n");
+	start = current_time ();
 	command_socket = -1;
 	while (1) {
 		fd_set rfds;
@@ -2164,14 +2173,13 @@ helper_thread (void* arg)
 			}
 		}
 #endif
-		g_get_current_time (&now);
-		counters_sample (prof, (uint64_t)(now.tv_sec * 1000 + now.tv_usec / 1000) - (uint64_t)(start.tv_sec * 1000 + start.tv_usec / 1000));
-		safe_dump (prof, ensure_logbuf (0));
+		now = current_time ();
+		counters_sample (prof, (now - start) / 1000/ 1000);
 
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
-		
+
 		if (len < 0) {
 			if (errno == EINTR)
 				continue;

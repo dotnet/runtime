@@ -11,6 +11,7 @@
  * version 2: added offsets in heap walk
  * version 3: added GC roots
  * version 4: added sample/statistical profiling
+ * version 5: added counters sampling
  */
 
 enum {
