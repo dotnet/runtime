@@ -524,12 +524,20 @@ mono_debug_symfile_get_line_numbers_full (MonoDebugMethodInfo *minfo, char **sou
 		*source_file_list = NULL;
 	if (n_il_offsets)
 		*n_il_offsets = 0;
+	if (il_offsets)
+		*il_offsets = NULL;
 	if (source_files)
 		*source_files = NULL;
 	if (source_file)
 		*source_file = NULL;
+	if (line_numbers)
+		*line_numbers = NULL;
 	if (column_numbers)
 		*column_numbers = NULL;
+	if (end_line_numbers)
+		*end_line_numbers = NULL;
+	if (end_column_numbers)
+		*end_column_numbers = NULL;
 
 	if ((symfile = minfo->handle->symfile) == NULL)
 		return;
