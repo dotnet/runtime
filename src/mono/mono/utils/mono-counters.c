@@ -241,7 +241,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		fprintf (outfile, ENTRY_FMT "%u\n", counter->name, *(guint*)buffer);
 		break;
 	case MONO_COUNTER_LONG:
-		if (counter->type & MONO_COUNTER_UNIT_MASK == MONO_COUNTER_TIME)
+		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME)
 			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 10000.0);
 		else
 			fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, *(gint64*)buffer);
