@@ -46,6 +46,7 @@ static uint64_t time_from = 0;
 static uint64_t time_to = 0xffffffffffffffffULL;
 static uint64_t startup_time = 0;
 static FILE* outfile = NULL;
+static int is_little_endian = 1;
 
 static int32_t
 read_int16 (unsigned char *p)
@@ -2566,6 +2567,17 @@ add_find_spec (const char *p)
 }
 
 static void
+check_endianness (void)
+{
+	int i = 1;
+	char *b = (char*)&i;
+	if (b[0] == 1)
+		is_little_endian = 1;
+	else
+		is_little_endian = 0;
+}
+
+static void
 usage (void)
 {
 	printf ("Mono log profiler report version %d.%d\n", LOG_VERSION_MAJOR, LOG_VERSION_MINOR);
@@ -2695,6 +2707,7 @@ main (int argc, char *argv[])
 		usage ();
 		return 2;
 	}
+	check_endianness ();
 	ctx = load_file (argv [i]);
 	if (!ctx) {
 		printf ("Not a log profiler data file (or unsupported version).\n");
