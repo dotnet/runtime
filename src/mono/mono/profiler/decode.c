@@ -2229,6 +2229,18 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "unmanaged binary %s at %p\n", name, (void*)addr);
 				while (*p) p++;
 				p++;
+			} else if (subtype == TYPE_SAMPLE_COUNTERS_DESC) {
+				uint64_t i, len = decode_uleb128 (p + 1, &p);
+				for (i = 0; i < len; i++) {
+					uint64_t section = decode_uleb128 (p, &p);
+					char *name = pstrdup ((char*)p);
+					while (*p++);
+					uint64_t type = decode_uleb128 (p, &p);
+					uint64_t unit = decode_uleb128 (p, &p);
+					uint64_t variance = decode_uleb128 (p, &p);
+					uint64_t index = decode_uleb128 (p, &p);
+					add_counter ((int)section, name, (int)type, (int)unit, (int)variance, (int)index);
+				}
 			} else {
 				return 0;
 			}
