@@ -23,6 +23,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/mono-counters.h>
 
 #define HASH_SIZE 9371
 #define SMALL_HASH_SIZE 31
@@ -290,6 +291,61 @@ add_counter_value (int index, CounterValue *value)
 
 			return;
 		}
+	}
+}
+
+static const char*
+section_name (int section)
+{
+	switch (section) {
+	case MONO_COUNTER_JIT: return "Mono JIT";
+	case MONO_COUNTER_GC: return "Mono GC";
+	case MONO_COUNTER_METADATA: return "Mono Metadata";
+	case MONO_COUNTER_GENERICS: return "Mono Generics";
+	case MONO_COUNTER_SECURITY: return "Mono Security";
+	case MONO_COUNTER_RUNTIME: return "Mono Runtime";
+	case MONO_COUNTER_SYSTEM: return "Mono System";
+	default: return "<unknown>";
+	}
+}
+
+static const char*
+type_name (int type)
+{
+	switch (type) {
+	case MONO_COUNTER_INT: return "Int";
+	case MONO_COUNTER_UINT: return "UInt";
+	case MONO_COUNTER_WORD: return "Word";
+	case MONO_COUNTER_LONG: return "Long";
+	case MONO_COUNTER_ULONG: return "ULong";
+	case MONO_COUNTER_DOUBLE: return "Double";
+	case MONO_COUNTER_STRING: return "String";
+	case MONO_COUNTER_TIME_INTERVAL: return "Time Interval";
+	default: return "<unknown>";
+	}
+}
+
+static const char*
+unit_name (int unit)
+{
+	switch (unit) {
+	case MONO_COUNTER_RAW: return "Raw";
+	case MONO_COUNTER_BYTES: return "Bytes";
+	case MONO_COUNTER_TIME: return "Time";
+	case MONO_COUNTER_COUNT: return "Count";
+	case MONO_COUNTER_PERCENTAGE: return "Percentage";
+	default: return "<unknown>";
+	}
+}
+
+static const char*
+variance_name (int variance)
+{
+	switch (variance) {
+	case MONO_COUNTER_MONOTONIC: return "Monotonic";
+	case MONO_COUNTER_CONSTANT: return "Constant";
+	case MONO_COUNTER_VARIABLE: return "Variable";
+	default: return "<unknown>";
 	}
 }
 
