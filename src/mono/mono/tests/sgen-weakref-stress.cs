@@ -18,11 +18,11 @@ public class Tests
 			});
 		}
 
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < thread_count; ++i)
 			t [i].Start ();
 
 		while (true) {
-			if (fcount == 10)
+			if (fcount == thread_count)
 				break;
 			GC.Collect ();
 			Thread.Sleep (1);
