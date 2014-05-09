@@ -2920,7 +2920,7 @@ flush_context (ProfContext *ctx)
 	}
 }
 
-static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,heapshot";
+static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,heapshot,counters";
 
 static const char*
 match_option (const char *p, const char *opt)
@@ -2995,6 +2995,11 @@ print_reports (ProfContext *ctx, const char *reps, int parse_only)
 				dump_samples ();
 			continue;
 		}
+		if ((opt = match_option (p, "counters")) != p) {
+			if (!parse_only)
+				dump_counters ();
+			continue;
+		}
 		return 0;
 	}
 	return 1;
@@ -3040,6 +3045,7 @@ usage (void)
 	printf ("\t                     %s\n", reports);
 	printf ("\t--method-sort=MODE   sort methods according to MODE: total, self, calls\n");
 	printf ("\t--alloc-sort=MODE    sort allocations according to MODE: bytes, count\n");
+	printf ("\t--counters-sort=MODE sort counters according to MODE: time, category\n");
 	printf ("\t--track=OB1[,OB2...] track what happens to objects OBJ1, O2 etc.\n");
 	printf ("\t--find=FINDSPEC      find and track objects matching FINFSPEC, where FINDSPEC is:\n");
 	printf ("\t                     S:minimum_size or T:partial_name\n");
@@ -3079,6 +3085,16 @@ main (int argc, char *argv[])
 				method_sort_mode = METHOD_SORT_SELF;
 			} else if (strcmp (val, "calls") == 0) {
 				method_sort_mode = METHOD_SORT_CALLS;
+			} else {
+				usage ();
+				return 1;
+			}
+		} else if (strncmp ("--counters-sort=", argv [i], 16) == 0) {
+			const char *val = argv [i] + 16;
+			if (strcmp (val, "time") == 0) {
+				counters_sort_mode = COUNTERS_SORT_TIME;
+			} else if (strcmp (val, "category") == 0) {
+				counters_sort_mode = COUNTERS_SORT_CATEGORY;
 			} else {
 				usage ();
 				return 1;
