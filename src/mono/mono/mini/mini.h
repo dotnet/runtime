@@ -522,7 +522,6 @@ extern int mono_break_at_bb_bb_num;
 extern gboolean check_for_pending_exc;
 extern gboolean disable_vtypes_in_regs;
 extern gboolean mono_verify_all;
-extern gboolean mono_dont_free_global_codeman;
 extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
