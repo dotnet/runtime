@@ -89,6 +89,59 @@ pstrdup (const char *s)
 	return p;
 }
 
+typedef struct _CounterValue CounterValue;
+struct _CounterValue {
+	uint64_t timestamp;
+	unsigned char *buffer;
+	CounterValue *next;
+};
+
+typedef struct _Counter Counter;
+struct _Counter {
+	int index;
+	int section;
+	const char *name;
+	int type;
+	int unit;
+	int variance;
+	CounterValue *values;
+	CounterValue *values_last;
+};
+
+typedef struct _CounterList CounterList;
+struct _CounterList {
+	Counter *counter;
+	CounterList *next;
+};
+
+typedef struct _CounterSection CounterSection;
+struct _CounterSection {
+	int value;
+	CounterList *counters;
+	CounterList *counters_last;
+	CounterSection *next;
+};
+
+typedef struct _CounterTimestamp CounterTimestamp;
+struct _CounterTimestamp {
+	uint64_t value;
+	CounterSection *sections;
+	CounterSection *sections_last;
+	CounterTimestamp *next;
+};
+
+static CounterList *counters = NULL;
+static CounterSection *counters_sections = NULL;
+static CounterTimestamp *counters_timestamps = NULL;
+
+enum {
+	COUNTERS_SORT_TIME,
+	COUNTERS_SORT_CATEGORY
+};
+
+static int counters_sort_mode = COUNTERS_SORT_TIME;
+
+
 static int num_images;
 typedef struct _ImageDesc ImageDesc;
 struct _ImageDesc {
