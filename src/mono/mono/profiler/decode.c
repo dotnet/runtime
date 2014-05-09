@@ -349,6 +349,121 @@ variance_name (int variance)
 	}
 }
 
+static void
+dump_counters (void)
+{
+	Counter *counter;
+	CounterValue *cvalue;
+	CounterTimestamp *ctimestamp;
+	CounterSection *csection;
+	CounterList *clist;
+	char strtimestamp[17];
+
+	fprintf (outfile, "Counters:\n");
+
+	if (counters_sort_mode == COUNTERS_SORT_TIME) {
+		for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
+			fprintf (outfile, "\t%lld:%02lld:%02lld:%02lld.%03lld:\n", ctimestamp->value / 1000 / 60 / 60 / 24 % 1000,
+				ctimestamp->value / 1000 / 60 / 60 % 24, ctimestamp->value / 1000 / 60 % 60,
+				ctimestamp->value / 1000 % 60, ctimestamp->value % 1000);
+
+			for (csection = ctimestamp->sections; csection; csection = csection->next) {
+				fprintf (outfile, "\t\t%s:\n", section_name (csection->value));
+
+				for (clist = csection->counters; clist; clist = clist->next) {
+					counter = clist->counter;
+					for (cvalue = counter->values; cvalue; cvalue = cvalue->next) {
+						if (cvalue->timestamp != ctimestamp->value)
+							continue;
+
+						switch (counter->type) {
+						case MONO_COUNTER_INT:
+#if SIZEOF_VOID_P == 4
+						case MONO_COUNTER_WORD:
+#endif
+							fprintf (outfile, "\t\t\t%-30s: %d\n", counter->name, *(int32_t*)cvalue->buffer);
+							break;
+						case MONO_COUNTER_UINT:
+							fprintf (outfile, "\t\t\t%-30s: %u\n", counter->name, *(uint32_t*)cvalue->buffer);
+							break;
+						case MONO_COUNTER_LONG:
+#if SIZEOF_VOID_P == 8
+						case MONO_COUNTER_WORD:
+#endif
+						case MONO_COUNTER_TIME_INTERVAL:
+							if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME)
+								fprintf (outfile, "\t\t\t%-30s: %0.3fms\n", counter->name, (double)*(int64_t*)cvalue->buffer / 10000.0);
+							else if (counter->type == MONO_COUNTER_TIME_INTERVAL)
+								fprintf (outfile, "\t\t\t%-30s: %0.3fms\n", counter->name, (double)*(int64_t*)cvalue->buffer / 1000.0);
+							else
+								fprintf (outfile, "\t\t\t%-30s: %lld\n", counter->name, *(int64_t*)cvalue->buffer);
+							break;
+						case MONO_COUNTER_ULONG:
+							fprintf (outfile, "\t\t\t%-30s: %llu\n", counter->name, *(uint64_t*)cvalue->buffer);
+							break;
+						case MONO_COUNTER_DOUBLE:
+							fprintf (outfile, "\t\t\t%-30s: %f\n", counter->name, *(double*)cvalue->buffer);
+							break;
+						case MONO_COUNTER_STRING:
+							fprintf (outfile, "\t\t\t%-30s: %s\n", counter->name, (char*)cvalue->buffer);
+							break;
+						}
+					}
+				}
+			}
+		}
+	} else if (counters_sort_mode == COUNTERS_SORT_CATEGORY) {
+		for (csection = counters_sections; csection; csection = csection->next) {
+			fprintf (outfile, "\t%s:\n", section_name (csection->value));
+
+			for (clist = csection->counters; clist; clist = clist->next) {
+				counter = clist->counter;
+				fprintf (outfile, "\t\t%s: [type: %s, unit: %s, variance: %s]\n",
+					counter->name, type_name (counter->type), unit_name (counter->unit), variance_name (counter->variance));
+
+				for (cvalue = counter->values; cvalue; cvalue = cvalue->next) {
+					snprintf (strtimestamp, sizeof (strtimestamp), "%lld:%02lld:%02lld:%02lld.%03lld", cvalue->timestamp / 1000 / 60 / 60 / 24 % 1000,
+						cvalue->timestamp / 1000 / 60 / 60 % 24, cvalue->timestamp / 1000 / 60 % 60,
+						cvalue->timestamp / 1000 % 60, cvalue->timestamp % 1000);
+
+					switch (counter->type) {
+					case MONO_COUNTER_INT:
+#if SIZEOF_VOID_P == 4
+					case MONO_COUNTER_WORD:
+#endif
+						fprintf (outfile, "\t\t\t%s: %d\n", strtimestamp, *(int32_t*)cvalue->buffer);
+						break;
+					case MONO_COUNTER_UINT:
+						fprintf (outfile, "\t\t\t%s: %u\n", strtimestamp, *(uint32_t*)cvalue->buffer);
+						break;
+					case MONO_COUNTER_LONG:
+#if SIZEOF_VOID_P == 8
+					case MONO_COUNTER_WORD:
+#endif
+					case MONO_COUNTER_TIME_INTERVAL:
+						if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME)
+							fprintf (outfile, "\t\t\t%s: %0.3fms\n", strtimestamp, (double)*(int64_t*)cvalue->buffer / 10000.0);
+						else if (counter->type == MONO_COUNTER_TIME_INTERVAL)
+							fprintf (outfile, "\t\t\t%s: %0.3fms\n", strtimestamp, (double)*(int64_t*)cvalue->buffer / 1000.0);
+						else
+							fprintf (outfile, "\t\t\t%s: %lld\n", strtimestamp, *(int64_t*)cvalue->buffer);
+						break;
+					case MONO_COUNTER_ULONG:
+						fprintf (outfile, "\t\t\t%s: %llu\n", strtimestamp, *(uint64_t*)cvalue->buffer);
+						break;
+					case MONO_COUNTER_DOUBLE:
+						fprintf (outfile, "\t\t\t%s: %f\n", strtimestamp, *(double*)cvalue->buffer);
+						break;
+					case MONO_COUNTER_STRING:
+						fprintf (outfile, "\t\t\t%s: %s\n", strtimestamp, (char*)cvalue->buffer);
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
 static int num_images;
 typedef struct _ImageDesc ImageDesc;
 struct _ImageDesc {
