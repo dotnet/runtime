@@ -2241,6 +2241,67 @@ decode_buffer (ProfContext *ctx)
 					uint64_t index = decode_uleb128 (p, &p);
 					add_counter ((int)section, name, (int)type, (int)unit, (int)variance, (int)index);
 				}
+			} else if (subtype == TYPE_SAMPLE_COUNTERS) {
+				int i;
+				CounterValue *value;
+				uint64_t timestamp = decode_uleb128 (p + 1, &p);
+				uint64_t time_between = timestamp / 1000 * 1000 * 1000 * 1000 + startup_time;
+				while (1) {
+					uint64_t index = decode_uleb128 (p, &p);
+					if (index == 0)
+						break;
+
+					uint64_t type = decode_uleb128 (p, &p);
+
+					value = calloc (1, sizeof (CounterValue));
+					value->timestamp = timestamp;
+
+					switch (type) {
+					case MONO_COUNTER_INT:
+#if SIZEOF_VOID_P == 4
+					case MONO_COUNTER_WORD:
+#endif
+						value->buffer = malloc (sizeof (int32_t));
+						*(int32_t*)value->buffer = (int32_t)decode_sleb128 (p, &p);
+						break;
+					case MONO_COUNTER_UINT:
+						value->buffer = malloc (sizeof (uint32_t));
+						*(uint32_t*)value->buffer = (uint32_t)decode_uleb128 (p, &p);
+						break;
+					case MONO_COUNTER_LONG:
+#if SIZEOF_VOID_P == 8
+					case MONO_COUNTER_WORD:
+#endif
+					case MONO_COUNTER_TIME_INTERVAL:
+						value->buffer = malloc (sizeof (int64_t));
+						*(int64_t*)value->buffer = (int64_t)decode_sleb128 (p, &p);
+						break;
+					case MONO_COUNTER_ULONG:
+						value->buffer = malloc (sizeof (uint64_t));
+						*(uint64_t*)value->buffer = (uint64_t)decode_uleb128 (p, &p);
+						break;
+					case MONO_COUNTER_DOUBLE:
+						value->buffer = malloc (sizeof (double));
+						if (is_little_endian) {
+							for (i = 0; i < sizeof (double); i++)
+								value->buffer[i] = *p++;
+						} else {
+							for (i = sizeof (double) - 1; i >= 0; i--)
+								value->buffer[i] = *p++;
+						}
+						break;
+					case MONO_COUNTER_STRING:
+						if (*p++ == 0) {
+							value->buffer = NULL;
+						} else {
+							value->buffer = (unsigned char*) pstrdup ((char*)p);
+							while (*p++);
+						}
+						break;
+					}
+					if (time_between >= time_from && time_between <= time_to)
+						add_counter_value (index, value);
+				}
 			} else {
 				return 0;
 			}
