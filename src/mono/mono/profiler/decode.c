@@ -141,6 +141,157 @@ enum {
 
 static int counters_sort_mode = COUNTERS_SORT_TIME;
 
+static void
+add_counter_to_section (Counter *counter)
+{
+	CounterSection *csection, *s;
+	CounterList *clist;
+
+	clist = calloc (1, sizeof (CounterList));
+	clist->counter = counter;
+
+	for (csection = counters_sections; csection; csection = csection->next) {
+		if (csection->value == counter->section) {
+			/* If section exist */
+			if (!csection->counters)
+				csection->counters = clist;
+			else
+				csection->counters_last->next = clist;
+			csection->counters_last = clist;
+			return;
+		}
+	}
+
+	/* If section does not exist */
+	csection = calloc (1, sizeof (CounterSection));
+	csection->value = counter->section;
+	csection->counters = clist;
+	csection->counters_last = clist;
+
+	if (!counters_sections) {
+		counters_sections = csection;
+	} else {
+		s = counters_sections;
+		while (s->next)
+			s = s->next;
+		s->next = csection;
+	}
+}
+
+static void
+add_counter (int section, const char *name, int type, int unit, int variance, int index)
+{
+	CounterList *list, *l;
+	Counter *counter;
+
+	for (list = counters; list; list = list->next)
+		if (list->counter->index == index)
+			return;
+
+	counter = calloc (1, sizeof (Counter));
+	counter->section = section;
+	counter->name = name;
+	counter->type = type;
+	counter->unit = unit;
+	counter->variance = variance;
+	counter->index = index;
+
+	list = calloc (1, sizeof (CounterList));
+	list->counter = counter;
+
+	if (!counters) {
+		counters = list;
+	} else {
+		l = counters;
+		while (l->next)
+			l = l->next;
+		l->next = list;
+	}
+
+	if (counters_sort_mode == COUNTERS_SORT_CATEGORY)
+		add_counter_to_section (counter);
+}
+
+static void
+add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
+{
+	CounterTimestamp *ctimestamp, *t;
+	CounterSection *csection;
+	CounterList *clist;
+
+	clist = calloc (1, sizeof (CounterList));
+	clist->counter = counter;
+
+	for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
+		if (ctimestamp->value == timestamp) {
+			for (csection = ctimestamp->sections; csection; csection = csection->next) {
+				if (csection->value == counter->section) {
+					/* if timestamp exist and section exist */
+					if (!csection->counters)
+						csection->counters = clist;
+					else
+						csection->counters_last->next = clist;
+					csection->counters_last = clist;
+					return;
+				}
+			}
+
+			/* if timestamp exist and section does not exist */
+			csection = calloc (1, sizeof (CounterSection));
+			csection->value = counter->section;
+			csection->counters = clist;
+			csection->counters_last = clist;
+
+			if (!ctimestamp->sections)
+				ctimestamp->sections = csection;
+			else
+				ctimestamp->sections_last->next = csection;
+			ctimestamp->sections_last = csection;
+			return;
+		}
+	}
+
+	/* If timestamp do not exist and section does not exist */
+	csection = calloc (1, sizeof (CounterSection));
+	csection->value = counter->section;
+	csection->counters = clist;
+	csection->counters_last = clist;
+
+	ctimestamp = calloc (1, sizeof (CounterTimestamp));
+	ctimestamp->value = timestamp;
+	ctimestamp->sections = csection;
+	ctimestamp->sections_last = csection;
+
+	if (!counters_timestamps) {
+		counters_timestamps = ctimestamp;
+	} else {
+		t = counters_timestamps;
+		while (t->next)
+			t = t->next;
+		t->next = ctimestamp;
+	}
+}
+
+static void
+add_counter_value (int index, CounterValue *value)
+{
+	CounterList *list;
+
+	for (list = counters; list; list = list->next) {
+		if (list->counter->index == index) {
+			if (!list->counter->values)
+				list->counter->values = value;
+			else
+				list->counter->values_last->next = value;
+			list->counter->values_last = value;
+
+			if (counters_sort_mode == COUNTERS_SORT_TIME)
+				add_counter_to_timestamp (value->timestamp, list->counter);
+
+			return;
+		}
+	}
+}
 
 static int num_images;
 typedef struct _ImageDesc ImageDesc;
