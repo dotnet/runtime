@@ -2358,13 +2358,21 @@ decode_buffer (ProfContext *ctx)
 				}
 			} else if (subtype == TYPE_SAMPLE_COUNTERS) {
 				int i;
-				CounterValue *value;
+				CounterValue *value, *previous = NULL;
+				CounterList *list;
 				uint64_t timestamp = decode_uleb128 (p + 1, &p);
 				uint64_t time_between = timestamp / 1000 * 1000 * 1000 * 1000 + startup_time;
 				while (1) {
 					uint64_t index = decode_uleb128 (p, &p);
 					if (index == 0)
 						break;
+
+					for (list = counters; list; list = list->next) {
+						if (list->counter->index == (int)index) {
+							previous = list->counter->values_last;
+							break;
+						}
+					}
 
 					uint64_t type = decode_uleb128 (p, &p);
 
@@ -2377,11 +2385,11 @@ decode_buffer (ProfContext *ctx)
 					case MONO_COUNTER_WORD:
 #endif
 						value->buffer = malloc (sizeof (int32_t));
-						*(int32_t*)value->buffer = (int32_t)decode_sleb128 (p, &p);
+						*(int32_t*)value->buffer = (int32_t)decode_sleb128 (p, &p) + (previous ? (*(int32_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_UINT:
 						value->buffer = malloc (sizeof (uint32_t));
-						*(uint32_t*)value->buffer = (uint32_t)decode_uleb128 (p, &p);
+						*(uint32_t*)value->buffer = (uint32_t)decode_uleb128 (p, &p) + (previous ? (*(uint32_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_LONG:
 #if SIZEOF_VOID_P == 8
@@ -2389,11 +2397,11 @@ decode_buffer (ProfContext *ctx)
 #endif
 					case MONO_COUNTER_TIME_INTERVAL:
 						value->buffer = malloc (sizeof (int64_t));
-						*(int64_t*)value->buffer = (int64_t)decode_sleb128 (p, &p);
+						*(int64_t*)value->buffer = (int64_t)decode_sleb128 (p, &p) + (previous ? (*(int64_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_ULONG:
 						value->buffer = malloc (sizeof (uint64_t));
-						*(uint64_t*)value->buffer = (uint64_t)decode_uleb128 (p, &p);
+						*(uint64_t*)value->buffer = (uint64_t)decode_uleb128 (p, &p) + (previous ? (*(uint64_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_DOUBLE:
 						value->buffer = malloc (sizeof (double));
