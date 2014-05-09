@@ -99,8 +99,6 @@ inner_start_thread (LPVOID arg)
 
 	result = start_func (t_arg);
 
-	g_assert (!mono_domain_get ());
-
 	mono_thread_info_detach ();
 
 	return result;
