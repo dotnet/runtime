@@ -235,19 +235,6 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Chan
 	fi
 )
 
-dnl
-dnl No, you can not replace the call below with a pkg.m4 macro
-dnl
-have_glib=false
-if test "x$PKG_CONFIG" != "xno"; then
-    if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
-        have_glib=true;
-    else
-        have_glib=false;
-    fi
-fi
-AM_CONDITIONAL(HAVE_GLIB, $have_glib)
-
 AC_SUBST(GPOINTER_TO_INT)
 AC_SUBST(GPOINTER_TO_UINT)
 AC_SUBST(GINT_TO_POINTER)

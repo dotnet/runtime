@@ -37,26 +37,8 @@ test_eglib_LDADD = ../src/libeglib.la $(LIBICONV)
 run-eglib: all
 	srcdir=`readlink -f $(srcdir)` ./test-eglib
 
-if HAVE_GLIB
-
-noinst_PROGRAMS = test-glib test-eglib
-
-test_glib_SOURCES = $(SOURCES)
-
-test_glib_CFLAGS = `pkg-config --cflags glib-2.0` -DDRIVER_NAME=\"GLib\"
-test_glib_LDFLAGS = `pkg-config --libs glib-2.0 gmodule-2.0`
-
-run-glib: all
-	srcdir=`readlink -f $(srcdir)` ./test-glib
-
-run-both: run-glib run-eglib
-
-else
-
 noinst_PROGRAMS = test-eglib
 
 run-both: run-eglib
-
-endif
 
 MAINTAINERCLEANFILES = Makefile.in
