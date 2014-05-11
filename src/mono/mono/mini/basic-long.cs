@@ -1203,5 +1203,13 @@ class Tests
 		ulong c = ((ulong) (-(-a))) >> 32;
 		return c == 1 ? 0 : 1;
 	}
+
+	public static int test_6_lrem_un () {
+		ulong r2 = 4294967296;
+		uint d = 10;
+		ulong res = r2 % d;
+
+		return (int)res;
+	}
 }
 
