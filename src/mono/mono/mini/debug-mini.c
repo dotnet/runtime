@@ -425,10 +425,10 @@ serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 		encode_value (var->offset, p, &p);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
-	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
@@ -508,10 +508,10 @@ deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET_INDIR:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 		var->offset = decode_value (p, &p);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL:
-	case MONO_DEBUG_VAR_ADDRESS_MODE_VTADDR:
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
