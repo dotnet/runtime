@@ -213,54 +213,52 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 	}
 }
 
-#define PROCESS_GET_DATA(kind) mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), kind)
-
 static gint64
 user_time ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_USER_TIME);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_USER_TIME);
 }
 
 static gint64
 system_time ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_SYSTEM_TIME);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_SYSTEM_TIME);
 }
 
 static gint64
 total_time ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_TOTAL_TIME);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_TOTAL_TIME);
 }
 
 static gint64
 working_set ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_WORKING_SET);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_WORKING_SET);
 }
 
 static gint64
 private_bytes ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_PRIVATE_BYTES);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_PRIVATE_BYTES);
 }
 
 static gint64
 virtual_bytes ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_VIRTUAL_BYTES);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_VIRTUAL_BYTES);
 }
 
 static gint64
 page_faults ()
 {
-	return PROCESS_GET_DATA (MONO_PROCESS_FAULTS);
+	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_FAULTS);
 }
 
 static double
 cpu_load (int kind)
 {
-#if defined(TARGET_WIN32) || defined(TARGET_XBOX360)
+#if defined(TARGET_WIN32)
 #elif defined(TARGET_MACH)
 	double load [3];
 	if (getloadavg (load, 3) > 0)
@@ -271,8 +269,8 @@ cpu_load (int kind)
 	FILE *f = fopen ("/proc/loadavg", "r");
 	if (f) {
 		len = fread (buffer, 1, sizeof (buffer) - 1, f);
-		buffer [len < 511 ? len : 511] = 0;
 		if (len > 0) {
+			buffer [len < 511 ? len : 511] = 0;
 			b = buffer;
 			for (i = 0; i < 3; i++) {
 				if (kind == i)
