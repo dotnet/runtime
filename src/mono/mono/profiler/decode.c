@@ -47,7 +47,6 @@ static uint64_t time_from = 0;
 static uint64_t time_to = 0xffffffffffffffffULL;
 static uint64_t startup_time = 0;
 static FILE* outfile = NULL;
-static int is_little_endian = 1;
 
 static int32_t
 read_int16 (unsigned char *p)
@@ -350,6 +349,54 @@ variance_name (int variance)
 }
 
 static void
+dump_counters_value (Counter *counter, const char *key_format, const char *key, void *value)
+{
+	char format[32];
+
+	switch (counter->type) {
+	case MONO_COUNTER_INT:
+#if SIZEOF_VOID_P == 4
+	case MONO_COUNTER_WORD:
+#endif
+		snprintf (format, sizeof (format), "\t\t\t%s: %%d\n", key_format);
+		fprintf (outfile, format, key, *(int32_t*)value);
+		break;
+	case MONO_COUNTER_UINT:
+		snprintf (format, sizeof (format), "\t\t\t%s: %%u\n", key_format);
+		fprintf (outfile, format, key, *(uint32_t*)value);
+		break;
+	case MONO_COUNTER_LONG:
+#if SIZEOF_VOID_P == 8
+	case MONO_COUNTER_WORD:
+#endif
+	case MONO_COUNTER_TIME_INTERVAL:
+		if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME) {
+			snprintf (format, sizeof (format), "\t\t\t%s: %%0.3fms\n", key_format);
+			fprintf (outfile, format, key, (double)*(int64_t*)value / 10000.0);
+		} else if (counter->type == MONO_COUNTER_TIME_INTERVAL) {
+			snprintf (format, sizeof (format), "\t\t\t%s: %%0.3fms\n", key_format);
+			fprintf (outfile, format, key, (double)*(int64_t*)value / 1000.0);
+		} else {
+			snprintf (format, sizeof (format), "\t\t\t%s: %%u\n", key_format);
+			fprintf (outfile, format, key, *(int64_t*)value);
+		}
+		break;
+	case MONO_COUNTER_ULONG:
+		snprintf (format, sizeof (format), "\t\t\t%s: %%llu\n", key_format);
+		fprintf (outfile, format, key, *(uint64_t*)value);
+		break;
+	case MONO_COUNTER_DOUBLE:
+		snprintf (format, sizeof (format), "\t\t\t%s: %%f\n", key_format);
+		fprintf (outfile, format, key, *(double*)value);
+		break;
+	case MONO_COUNTER_STRING:
+		snprintf (format, sizeof (format), "\t\t\t%s: %%s\n", key_format);
+		fprintf (outfile, format, key, *(char*)value);
+		break;
+	}
+}
+
+static void
 dump_counters (void)
 {
 	Counter *counter;
@@ -359,9 +406,18 @@ dump_counters (void)
 	CounterList *clist;
 	char strtimestamp[17];
 
-	fprintf (outfile, "Counters:\n");
+	fprintf (outfile, "\nCounters:\n");
 
-	if (counters_sort_mode == COUNTERS_SORT_TIME) {
+	if (!verbose) {
+		for (csection = counters_sections; csection; csection = csection->next) {
+			fprintf (outfile, "\t%s:\n", section_name (csection->value));
+
+			for (clist = csection->counters; clist; clist = clist->next) {
+				counter = clist->counter;
+				dump_counters_value (counter, "%-30s", counter->name, counter->values_last->buffer);
+			}
+		}
+	} else if (counters_sort_mode == COUNTERS_SORT_TIME) {
 		for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
 			fprintf (outfile, "\t%lld:%02lld:%02lld:%02lld.%03lld:\n", ctimestamp->value / 1000 / 60 / 60 / 24 % 1000,
 				ctimestamp->value / 1000 / 60 / 60 % 24, ctimestamp->value / 1000 / 60 % 60,
@@ -376,38 +432,7 @@ dump_counters (void)
 						if (cvalue->timestamp != ctimestamp->value)
 							continue;
 
-						switch (counter->type) {
-						case MONO_COUNTER_INT:
-#if SIZEOF_VOID_P == 4
-						case MONO_COUNTER_WORD:
-#endif
-							fprintf (outfile, "\t\t\t%-30s: %d\n", counter->name, *(int32_t*)cvalue->buffer);
-							break;
-						case MONO_COUNTER_UINT:
-							fprintf (outfile, "\t\t\t%-30s: %u\n", counter->name, *(uint32_t*)cvalue->buffer);
-							break;
-						case MONO_COUNTER_LONG:
-#if SIZEOF_VOID_P == 8
-						case MONO_COUNTER_WORD:
-#endif
-						case MONO_COUNTER_TIME_INTERVAL:
-							if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME)
-								fprintf (outfile, "\t\t\t%-30s: %0.3fms\n", counter->name, (double)*(int64_t*)cvalue->buffer / 10000.0);
-							else if (counter->type == MONO_COUNTER_TIME_INTERVAL)
-								fprintf (outfile, "\t\t\t%-30s: %0.3fms\n", counter->name, (double)*(int64_t*)cvalue->buffer / 1000.0);
-							else
-								fprintf (outfile, "\t\t\t%-30s: %lld\n", counter->name, *(int64_t*)cvalue->buffer);
-							break;
-						case MONO_COUNTER_ULONG:
-							fprintf (outfile, "\t\t\t%-30s: %llu\n", counter->name, *(uint64_t*)cvalue->buffer);
-							break;
-						case MONO_COUNTER_DOUBLE:
-							fprintf (outfile, "\t\t\t%-30s: %f\n", counter->name, *(double*)cvalue->buffer);
-							break;
-						case MONO_COUNTER_STRING:
-							fprintf (outfile, "\t\t\t%-30s: %s\n", counter->name, (char*)cvalue->buffer);
-							break;
-						}
+						dump_counters_value (counter, "%-30s", counter->name, cvalue->buffer);
 					}
 				}
 			}
@@ -426,38 +451,7 @@ dump_counters (void)
 						cvalue->timestamp / 1000 / 60 / 60 % 24, cvalue->timestamp / 1000 / 60 % 60,
 						cvalue->timestamp / 1000 % 60, cvalue->timestamp % 1000);
 
-					switch (counter->type) {
-					case MONO_COUNTER_INT:
-#if SIZEOF_VOID_P == 4
-					case MONO_COUNTER_WORD:
-#endif
-						fprintf (outfile, "\t\t\t%s: %d\n", strtimestamp, *(int32_t*)cvalue->buffer);
-						break;
-					case MONO_COUNTER_UINT:
-						fprintf (outfile, "\t\t\t%s: %u\n", strtimestamp, *(uint32_t*)cvalue->buffer);
-						break;
-					case MONO_COUNTER_LONG:
-#if SIZEOF_VOID_P == 8
-					case MONO_COUNTER_WORD:
-#endif
-					case MONO_COUNTER_TIME_INTERVAL:
-						if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME)
-							fprintf (outfile, "\t\t\t%s: %0.3fms\n", strtimestamp, (double)*(int64_t*)cvalue->buffer / 10000.0);
-						else if (counter->type == MONO_COUNTER_TIME_INTERVAL)
-							fprintf (outfile, "\t\t\t%s: %0.3fms\n", strtimestamp, (double)*(int64_t*)cvalue->buffer / 1000.0);
-						else
-							fprintf (outfile, "\t\t\t%s: %lld\n", strtimestamp, *(int64_t*)cvalue->buffer);
-						break;
-					case MONO_COUNTER_ULONG:
-						fprintf (outfile, "\t\t\t%s: %llu\n", strtimestamp, *(uint64_t*)cvalue->buffer);
-						break;
-					case MONO_COUNTER_DOUBLE:
-						fprintf (outfile, "\t\t\t%s: %f\n", strtimestamp, *(double*)cvalue->buffer);
-						break;
-					case MONO_COUNTER_STRING:
-						fprintf (outfile, "\t\t\t%s: %s\n", strtimestamp, (char*)cvalue->buffer);
-						break;
-					}
+					dump_counters_value (counter, "%s", strtimestamp, cvalue->buffer);
 				}
 			}
 		}
@@ -2405,13 +2399,12 @@ decode_buffer (ProfContext *ctx)
 						break;
 					case MONO_COUNTER_DOUBLE:
 						value->buffer = malloc (sizeof (double));
-						if (is_little_endian) {
-							for (i = 0; i < sizeof (double); i++)
-								value->buffer[i] = *p++;
-						} else {
-							for (i = sizeof (double) - 1; i >= 0; i--)
-								value->buffer[i] = *p++;
-						}
+#if TARGET_BYTE_ORDER == G_LITTLE_ENDIAN
+						for (i = 0; i < sizeof (double); i++)
+#else
+						for (i = sizeof (double) - 1; i >= 0; i--)
+#endif
+							value->buffer[i] = *p++;
 						break;
 					case MONO_COUNTER_STRING:
 						if (*p++ == 0) {
@@ -3028,17 +3021,6 @@ add_find_spec (const char *p)
 }
 
 static void
-check_endianness (void)
-{
-	int i = 1;
-	char *b = (char*)&i;
-	if (b[0] == 1)
-		is_little_endian = 1;
-	else
-		is_little_endian = 0;
-}
-
-static void
 usage (void)
 {
 	printf ("Mono log profiler report version %d.%d\n", LOG_VERSION_MAJOR, LOG_VERSION_MINOR);
@@ -3054,6 +3036,7 @@ usage (void)
 	printf ("\t--method-sort=MODE   sort methods according to MODE: total, self, calls\n");
 	printf ("\t--alloc-sort=MODE    sort allocations according to MODE: bytes, count\n");
 	printf ("\t--counters-sort=MODE sort counters according to MODE: time, category\n");
+	printf ("\t                     only accessible in verbose mode\n");
 	printf ("\t--track=OB1[,OB2...] track what happens to objects OBJ1, O2 etc.\n");
 	printf ("\t--find=FINDSPEC      find and track objects matching FINFSPEC, where FINDSPEC is:\n");
 	printf ("\t                     S:minimum_size or T:partial_name\n");
@@ -3179,7 +3162,6 @@ main (int argc, char *argv[])
 		usage ();
 		return 2;
 	}
-	check_endianness ();
 	ctx = load_file (argv [i]);
 	if (!ctx) {
 		printf ("Not a log profiler data file (or unsupported version).\n");
