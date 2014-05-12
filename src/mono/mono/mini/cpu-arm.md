@@ -192,6 +192,9 @@ float_cgt: dest:i src1:f src2:f len:16
 float_cgt_un: dest:i src1:f src2:f len:20
 float_clt: dest:i src1:f src2:f len:16
 float_clt_un: dest:i src1:f src2:f len:20
+float_cneq: dest:y src1:f src2:f len:20
+float_cge: dest:y src1:f src2:f len:20
+float_cle: dest:y src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 setfret: src1:f len:12
 aot_const: dest:i len:16
@@ -293,6 +296,12 @@ int_cgt: dest:i len:12
 int_cgt_un: dest:i len:12
 int_clt: dest:i len:12
 int_clt_un: dest:i len:12
+
+int_cneq: dest:i len:12
+int_cge: dest:i len:12
+int_cle: dest:i len:12
+int_cge_un: dest:i len:12
+int_cle_un: dest:i len:12
 
 cond_exc_ieq: len:16
 cond_exc_ine_un: len:16
