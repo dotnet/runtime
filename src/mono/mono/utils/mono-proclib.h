@@ -47,6 +47,8 @@ char*     mono_process_get_name (gpointer pid, char *buf, int len) MONO_INTERNAL
 gint64    mono_process_get_data (gpointer pid, MonoProcessData data) MONO_INTERNAL;
 gint64    mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error) MONO_INTERNAL;
 
+int       mono_process_current_pid (void) MONO_INTERNAL;
+
 int       mono_cpu_count    (void) MONO_INTERNAL;
 gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error) MONO_INTERNAL;
 
