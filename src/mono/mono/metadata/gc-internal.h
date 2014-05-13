@@ -289,6 +289,10 @@ gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
    or -1 if not applicable. */
 int mono_gc_get_suspend_signal (void) MONO_INTERNAL;
 
+/* Return the suspend signal number used by the GC to suspend threads,
+   or -1 if not applicable. */
+int mono_gc_get_restart_signal (void) MONO_INTERNAL;
+
 /*
  * Return a human readable description of the GC in malloc-ed memory.
  */
