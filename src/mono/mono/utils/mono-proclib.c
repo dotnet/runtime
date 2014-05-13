@@ -416,7 +416,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
 
-	if (strcmp (item, "VmRSS") == 0 || strcmp (item, "VmHWM") == 0)
+	if (strcmp (item, "VmRSS") == 0 || strcmp (item, "VmHWM") == 0 || strcmp (item, "VmData") == 0)
 		ret = t_info.resident_size;
 	else if (strcmp (item, "VmSize") == 0 || strcmp (item, "VmPeak") == 0)
 		ret = t_info.virtual_size;
