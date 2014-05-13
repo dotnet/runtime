@@ -691,6 +691,16 @@ mono_gc_get_suspend_signal (void)
 #endif
 }
 
+int
+mono_gc_get_restart_signal (void)
+{
+#ifdef USE_INCLUDED_GC
+	return GC_get_restart_signal ();
+#else
+	return -1;
+#endif
+}
+
 #if defined(USE_INCLUDED_LIBGC) && defined(USE_COMPILER_TLS) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
 extern __thread MONO_TLS_FAST void* GC_thread_tls;
 #include "metadata-internals.h"
