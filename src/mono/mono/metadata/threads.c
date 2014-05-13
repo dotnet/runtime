@@ -1972,6 +1972,10 @@ static void CALLBACK interruption_request_apc (ULONG_PTR param)
  */
 static void signal_thread_state_change (MonoInternalThread *thread)
 {
+#ifndef HOST_WIN32
+	gpointer wait_handle;
+#endif
+
 	if (thread == mono_thread_internal_current ()) {
 		/* Do it synchronously */
 		MonoException *exc = mono_thread_request_interruption (FALSE); 
@@ -1982,9 +1986,6 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 #ifdef HOST_WIN32
 	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, NULL);
 #else
-	/* fixme: store the state somewhere */
-	mono_thread_kill (thread, mono_thread_get_abort_signal ());
-
 	/* 
 	 * This will cause waits to be broken.
 	 * It will also prevent the thread from entering a wait, so if the thread returns
@@ -1992,7 +1993,12 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 	 * functions in the io-layer until the signal handler calls QueueUserAPC which will
 	 * make it return.
 	 */
-	wapi_interrupt_thread (thread->handle);
+	wait_handle = wapi_prepare_interrupt_thread (thread->handle);
+
+	/* fixme: store the state somewhere */
+	mono_thread_kill (thread, mono_thread_get_abort_signal ());
+
+	wapi_finish_interrupt_thread (wait_handle);
 #endif /* HOST_WIN32 */
 }
 
@@ -4155,6 +4161,8 @@ mono_thread_request_interruption (gboolean running_managed)
 		/* Our implementation of this function ignores the func argument */
 #ifdef HOST_WIN32
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
+#else
+		wapi_self_interrupt ();
 #endif
 		return NULL;
 	}
