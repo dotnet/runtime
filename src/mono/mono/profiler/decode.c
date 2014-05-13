@@ -559,6 +559,7 @@ struct _MethodDesc {
 	int len;
 	int recurse_count;
 	int sample_hits;
+	int ignore_jit; /* when this is set, we collect the metadata but don't count this method fot jit time and code size, when filtering events */
 	uint64_t calls;
 	uint64_t total_time;
 	uint64_t callee_time;
@@ -2082,14 +2083,19 @@ decode_buffer (ProfContext *ctx)
 			if (subtype == TYPE_JIT) {
 				intptr_t codediff = decode_sleb128 (p, &p);
 				int codelen = decode_uleb128 (p, &p);
+				MethodDesc *jitted_method;
 				if (debug)
 					fprintf (outfile, "jitted method %p (%s), size: %d, code: %p\n", (void*)(method_base), p, codelen, (void*)(ptr_base + codediff));
-				add_method (method_base, (char*)p, ptr_base + codediff, codelen);
+				jitted_method = add_method (method_base, (char*)p, ptr_base + codediff, codelen);
+				if (!(time_base >= time_from && time_base < time_to))
+					jitted_method->ignore_jit = 1;
 				while (*p) p++;
 				p++;
 			} else {
 				MethodDesc *method;
 				if ((thread_filter && thread_filter != thread->thread_id))
+					break;
+				if (!(time_base >= time_from && time_base < time_to))
 					break;
 				method = lookup_method (method_base);
 				if (subtype == TYPE_ENTER) {
@@ -2205,6 +2211,8 @@ decode_buffer (ProfContext *ctx)
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			record = (!thread_filter || thread_filter == thread->thread_id);
+			if (!(time_base >= time_from && time_base < time_to))
+				record = 0;
 			if (event == MONO_PROFILER_MONITOR_CONTENTION) {
 				MonitorDesc *mdesc = lookup_monitor (OBJ_ADDR (objdiff));
 				if (record) {
@@ -2267,6 +2275,8 @@ decode_buffer (ProfContext *ctx)
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			record = (!thread_filter || thread_filter == thread->thread_id);
+			if (!(time_base >= time_from && time_base < time_to))
+				record = 0;
 			if (subtype == TYPE_CLAUSE) {
 				int clause_type = decode_uleb128 (p, &p);
 				int clause_num = decode_uleb128 (p, &p);
@@ -2309,7 +2319,8 @@ decode_buffer (ProfContext *ctx)
 				int count = decode_uleb128 (p, &p);
 				for (i = 0; i < count; ++i) {
 					uintptr_t ip = ptr_base + decode_sleb128 (p, &p);
-					add_stat_sample (sample_type, ip);
+					if ((tstamp >= time_from && tstamp < time_to))
+						add_stat_sample (sample_type, ip);
 					if (debug)
 						fprintf (outfile, "sample hit, type: %d at %p\n", sample_type, (void*)ip);
 				}
@@ -2635,7 +2646,7 @@ dump_jit (void)
 	for (i = 0; i < HASH_SIZE; ++i) {
 		m = method_hash [i];
 		for (m = method_hash [i]; m; m = m->next) {
-			if (!m->code)
+			if (!m->code || m->ignore_jit)
 				continue;
 			compiled_methods++;
 			code_size += m->len;
