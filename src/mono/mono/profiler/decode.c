@@ -209,7 +209,7 @@ add_counter (int section, const char *name, int type, int unit, int variance, in
 		l->next = list;
 	}
 
-	if (counters_sort_mode == COUNTERS_SORT_CATEGORY)
+	if (counters_sort_mode == COUNTERS_SORT_CATEGORY || !verbose)
 		add_counter_to_section (counter);
 }
 
