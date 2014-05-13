@@ -1642,15 +1642,12 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	if (process_handle->id == getpid ()) {
 		struct rusage time_data;
 		if (getrusage (RUSAGE_SELF, &time_data) == 0) {
-			gint64 tick_val;
-			gint64 *tick_val_ptr;
+			guint64 tick_val;
 			ku_times_set = TRUE;
 			tick_val = time_data.ru_utime.tv_sec * 10000000 + time_data.ru_utime.tv_usec * 10;
-			tick_val_ptr = (gint64*)user_time;
-			*tick_val_ptr = tick_val;
+			_wapi_guint64_to_filetime (tick_val, user_time);
 			tick_val = time_data.ru_stime.tv_sec * 10000000 + time_data.ru_stime.tv_usec * 10;
-			tick_val_ptr = (gint64*)kernel_time;
-			*tick_val_ptr = tick_val;
+			_wapi_guint64_to_filetime (tick_val, kernel_time);
 		}
 	}
 #endif

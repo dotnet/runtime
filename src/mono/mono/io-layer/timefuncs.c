@@ -38,6 +38,12 @@ void _wapi_timeval_to_filetime (struct timeval *tv, WapiFileTime *filetime)
 	filetime->dwHighDateTime = ticks >> 32;
 }
 
+void _wapi_guint64_to_filetime (guint64 ticks, WapiFileTime *filetime)
+{
+	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
+	filetime->dwHighDateTime = ticks >> 32;
+}
+
 gboolean QueryPerformanceCounter(WapiLargeInteger *count G_GNUC_UNUSED)
 {
 	return(FALSE);

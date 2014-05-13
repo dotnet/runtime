@@ -814,44 +814,40 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForInputIdle_internal (Mono
 	return (ret) ? FALSE : TRUE;
 }
 
+static guint64
+file_time_to_guint64 (FILETIME *time)
+{
+	return ((guint64)time->dwHighDateTime << 32) | ((guint64)time->dwLowDateTime);
+}
+
 gint64 ves_icall_System_Diagnostics_Process_ExitTime_internal (HANDLE process)
 {
 	gboolean ret;
-	gint64 ticks;
 	FILETIME create_time, exit_time, kernel_time, user_time;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	ret=GetProcessTimes (process, &create_time, &exit_time, &kernel_time,
-			     &user_time);
-	if(ret==TRUE) {
-		ticks=((guint64)exit_time.dwHighDateTime << 32) +
-			exit_time.dwLowDateTime;
-		
-		return(ticks);
-	} else {
-		return(0);
-	}
+	ret = GetProcessTimes (process, &create_time, &exit_time, &kernel_time,
+						   &user_time);
+	if (ret)
+		return file_time_to_guint64 (&exit_time);
+	else
+		return 0;
 }
 
 gint64 ves_icall_System_Diagnostics_Process_StartTime_internal (HANDLE process)
 {
 	gboolean ret;
-	gint64 ticks;
 	FILETIME create_time, exit_time, kernel_time, user_time;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	ret=GetProcessTimes (process, &create_time, &exit_time, &kernel_time,
-			     &user_time);
-	if(ret==TRUE) {
-		ticks=((guint64)create_time.dwHighDateTime << 32) +
-			create_time.dwLowDateTime;
-		
-		return(ticks);
-	} else {
-		return(0);
-	}
+	ret = GetProcessTimes (process, &create_time, &exit_time, &kernel_time,
+						   &user_time);
+	if (ret)
+		return file_time_to_guint64 (&create_time);
+	else
+		return 0;
 }
 
 gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
@@ -989,12 +985,15 @@ ves_icall_System_Diagnostics_Process_Times (HANDLE process, gint32 type)
 	FILETIME create_time, exit_time, kernel_time, user_time;
 	
 	if (GetProcessTimes (process, &create_time, &exit_time, &kernel_time, &user_time)) {
+		guint64 ktime = file_time_to_guint64 (&kernel_time);
+		guint64 utime = file_time_to_guint64 (&user_time);
+
 		if (type == 0)
-			return *(gint64*)&user_time;
+			return utime;
 		else if (type == 1)
-			return *(gint64*)&kernel_time;
-		/* system + user time: FILETIME can be (memory) cast to a 64 bit int */
-		return *(gint64*)&kernel_time + *(gint64*)&user_time;
+			return ktime;
+		else
+			return ktime + utime;
 	}
 	return 0;
 }
