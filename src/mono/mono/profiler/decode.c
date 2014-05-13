@@ -354,46 +354,51 @@ dump_counters_value (Counter *counter, const char *key_format, const char *key, 
 {
 	char format[32];
 
-	switch (counter->type) {
-	case MONO_COUNTER_INT:
-#if SIZEOF_VOID_P == 4
-	case MONO_COUNTER_WORD:
-#endif
-		snprintf (format, sizeof (format), "\t\t\t%s: %%d\n", key_format);
-		fprintf (outfile, format, key, *(int32_t*)value);
-		break;
-	case MONO_COUNTER_UINT:
-		snprintf (format, sizeof (format), "\t\t\t%s: %%u\n", key_format);
-		fprintf (outfile, format, key, *(uint32_t*)value);
-		break;
-	case MONO_COUNTER_LONG:
-#if SIZEOF_VOID_P == 8
-	case MONO_COUNTER_WORD:
-#endif
-	case MONO_COUNTER_TIME_INTERVAL:
-		if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME) {
-			snprintf (format, sizeof (format), "\t\t\t%s: %%0.3fms\n", key_format);
-			fprintf (outfile, format, key, (double)*(int64_t*)value / 10000.0);
-		} else if (counter->type == MONO_COUNTER_TIME_INTERVAL) {
-			snprintf (format, sizeof (format), "\t\t\t%s: %%0.3fms\n", key_format);
-			fprintf (outfile, format, key, (double)*(int64_t*)value / 1000.0);
-		} else {
-			snprintf (format, sizeof (format), "\t\t\t%s: %%u\n", key_format);
-			fprintf (outfile, format, key, *(int64_t*)value);
-		}
-		break;
-	case MONO_COUNTER_ULONG:
-		snprintf (format, sizeof (format), "\t\t\t%s: %%llu\n", key_format);
-		fprintf (outfile, format, key, *(uint64_t*)value);
-		break;
-	case MONO_COUNTER_DOUBLE:
-		snprintf (format, sizeof (format), "\t\t\t%s: %%f\n", key_format);
-		fprintf (outfile, format, key, *(double*)value);
-		break;
-	case MONO_COUNTER_STRING:
+	if (value == NULL) {
 		snprintf (format, sizeof (format), "\t\t\t%s: %%s\n", key_format);
-		fprintf (outfile, format, key, *(char*)value);
-		break;
+		fprintf (outfile, format, key, "<null>");
+	} else {
+		switch (counter->type) {
+		case MONO_COUNTER_INT:
+#if SIZEOF_VOID_P == 4
+		case MONO_COUNTER_WORD:
+#endif
+			snprintf (format, sizeof (format), "\t\t\t%s: %%d\n", key_format);
+			fprintf (outfile, format, key, *(int32_t*)value);
+			break;
+		case MONO_COUNTER_UINT:
+			snprintf (format, sizeof (format), "\t\t\t%s: %%u\n", key_format);
+			fprintf (outfile, format, key, *(uint32_t*)value);
+			break;
+		case MONO_COUNTER_LONG:
+#if SIZEOF_VOID_P == 8
+		case MONO_COUNTER_WORD:
+#endif
+		case MONO_COUNTER_TIME_INTERVAL:
+			if (counter->type == MONO_COUNTER_LONG && counter->unit == MONO_COUNTER_TIME) {
+				snprintf (format, sizeof (format), "\t\t\t%s: %%0.3fms\n", key_format);
+				fprintf (outfile, format, key, (double)*(int64_t*)value / 10000.0);
+			} else if (counter->type == MONO_COUNTER_TIME_INTERVAL) {
+				snprintf (format, sizeof (format), "\t\t\t%s: %%0.3fms\n", key_format);
+				fprintf (outfile, format, key, (double)*(int64_t*)value / 1000.0);
+			} else {
+				snprintf (format, sizeof (format), "\t\t\t%s: %%u\n", key_format);
+				fprintf (outfile, format, key, *(int64_t*)value);
+			}
+			break;
+		case MONO_COUNTER_ULONG:
+			snprintf (format, sizeof (format), "\t\t\t%s: %%llu\n", key_format);
+			fprintf (outfile, format, key, *(uint64_t*)value);
+			break;
+		case MONO_COUNTER_DOUBLE:
+			snprintf (format, sizeof (format), "\t\t\t%s: %%f\n", key_format);
+			fprintf (outfile, format, key, *(double*)value);
+			break;
+		case MONO_COUNTER_STRING:
+			snprintf (format, sizeof (format), "\t\t\t%s: %%s\n", key_format);
+			fprintf (outfile, format, key, *(char*)value);
+			break;
+		}
 	}
 }
 
@@ -415,7 +420,7 @@ dump_counters (void)
 
 			for (clist = csection->counters; clist; clist = clist->next) {
 				counter = clist->counter;
-				dump_counters_value (counter, "%-30s", counter->name, counter->values_last->buffer);
+				dump_counters_value (counter, "%-30s", counter->name, counter->values_last == NULL ? NULL : counter->values_last->buffer);
 			}
 		}
 	} else if (counters_sort_mode == COUNTERS_SORT_TIME) {
