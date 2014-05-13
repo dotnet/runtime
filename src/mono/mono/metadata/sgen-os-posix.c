@@ -246,5 +246,11 @@ mono_gc_get_suspend_signal (void)
 {
 	return suspend_signal_num;
 }
+
+int
+mono_gc_get_restart_signal (void)
+{
+	return restart_signal_num;
+}
 #endif
 #endif
