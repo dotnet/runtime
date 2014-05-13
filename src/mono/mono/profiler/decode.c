@@ -45,6 +45,7 @@ static uint64_t find_size = 0;
 static const char* find_name = NULL;
 static uint64_t time_from = 0;
 static uint64_t time_to = 0xffffffffffffffffULL;
+static int use_time_filter = 0;
 static uint64_t startup_time = 0;
 static FILE* outfile = NULL;
 
@@ -1896,7 +1897,7 @@ decode_buffer (ProfContext *ctx)
 		return 0;
 	if (!startup_time) {
 		startup_time = time_base;
-		if (time_from) {
+		if (use_time_filter) {
 			time_from += startup_time;
 			time_to += startup_time;
 		}
@@ -3149,6 +3150,7 @@ main (int argc, char *argv[])
 			}
 			time_from = from_secs * 1000000000;
 			time_to = to_secs * 1000000000;
+			use_time_filter = 1;
 		} else if (strcmp ("--verbose", argv [i]) == 0) {
 			verbose++;
 		} else if (strcmp ("--traces", argv [i]) == 0) {
