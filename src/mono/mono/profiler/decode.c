@@ -2324,6 +2324,19 @@ decode_buffer (ProfContext *ctx)
 					if (debug)
 						fprintf (outfile, "sample hit, type: %d at %p\n", sample_type, (void*)ip);
 				}
+				if (ctx->data_version > 5) {
+					count = decode_uleb128 (p, &p);
+					for (i = 0; i < count; ++i) {
+						MethodDesc *method;
+						int64_t ptrdiff = decode_sleb128 (p, &p);
+						int il_offset = decode_sleb128 (p, &p);
+						int native_offset = decode_sleb128 (p, &p);
+						method_base += ptrdiff;
+						method = lookup_method (method_base);
+						if (debug)
+							fprintf (outfile, "sample hit bt %d: %s at IL offset %d (native: %d)\n", i, method->name, il_offset, native_offset);
+					}
+				}
 			} else if (subtype == TYPE_SAMPLE_USYM) {
 				/* un unmanaged symbol description */
 				uintptr_t addr = ptr_base + decode_sleb128 (p + 1, &p);

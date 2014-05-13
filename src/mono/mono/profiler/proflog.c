@@ -295,6 +295,12 @@ typedef struct _LogBuffer LogBuffer;
  * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
+ *	if (format_version > 5)
+ *		[mbt_count: uleb128] number of managed backtrace info triplets (method + IL offset + native offset)
+ *		[method: sleb128]* MonoMethod* as a pointer difference from the last such
+ * 		pointer or the buffer method_base (the first such method can be also indentified by ip, but this is not neccessarily true)
+ *		[il_offset: sleb128]* IL offset inside method where the hit occurred
+ *		[native_offset: sleb128]* native offset inside method where the hit occurred
  * if exinfo == TYPE_SAMPLE_USYM
  * 	[address: sleb128] symbol address as a difference from ptr_base
  * 	[size: uleb128] symbol size (may be 0 if unknown)
@@ -797,6 +803,8 @@ gc_resize (MonoProfiler *profiler, int64_t new_size) {
 typedef struct {
 	int count;
 	MonoMethod* methods [MAX_FRAMES];
+	int32_t il_offsets [MAX_FRAMES];
+	int32_t native_offsets [MAX_FRAMES];
 } FrameData;
 static int num_frames = MAX_FRAMES / 2;
 
@@ -805,8 +813,10 @@ walk_stack (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_b
 {
 	FrameData *frame = data;
 	if (method && frame->count < num_frames) {
+		frame->il_offsets [frame->count] = il_offset;
+		frame->native_offsets [frame->count] = native_offset;
 		frame->methods [frame->count++] = method;
-		//printf ("In %d %s\n", frame->count, mono_method_get_name (method));
+		//printf ("In %d %s at %d (native: %d)\n", frame->count, mono_method_get_name (method), il_offset, native_offset);
 	}
 	return frame->count == num_frames;
 }
@@ -1207,13 +1217,16 @@ static void
 mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 {
 	StatBuffer *sbuf;
+	FrameData bt_data;
 	uint64_t now;
 	uintptr_t *data, *new_data, *old_data;
 	uintptr_t elapsed;
 	int timedout = 0;
+	int i;
 	if (in_shutdown)
 		return;
 	now = current_time ();
+	collect_bt (&bt_data);
 	elapsed = (now - profiler->startup_time) / 10000;
 	if (do_debug) {
 		int len;
@@ -1252,15 +1265,20 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	}
 	do {
 		old_data = sbuf->data;
-		new_data = old_data + 4;
+		new_data = old_data + 4 + bt_data.count * 3;
 		data = InterlockedCompareExchangePointer ((volatile void**)&sbuf->data, new_data, old_data);
 	} while (data != old_data);
 	if (old_data >= sbuf->data_end)
 		return; /* lost event */
-	old_data [0] = 1 | (sample_type << 16);
+	old_data [0] = 1 | (sample_type << 16) | (bt_data.count << 8);
 	old_data [1] = thread_id ();
 	old_data [2] = elapsed;
 	old_data [3] = (uintptr_t)ip;
+	for (i = 0; i < bt_data.count; ++i) {
+		old_data [4+3*i] = (uintptr_t)bt_data.methods [i];
+		old_data [4+3*i+1] = (uintptr_t)bt_data.il_offsets [i];
+		old_data [4+3*i+2] = (uintptr_t)bt_data.native_offsets [i];
+	}
 }
 
 static uintptr_t *code_pages = 0;
@@ -1592,9 +1610,10 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
 	}
 	for (sample = sbuf->buf; sample < sbuf->data;) {
 		int i;
-		int count = sample [0] & 0xffff;
+		int count = sample [0] & 0xff;
+		int mbt_count = (sample [0] & 0xff00) >> 8;
 		int type = sample [0] >> 16;
-		if (sample + count + 3 > sbuf->data)
+		if (sample + count + 3 + mbt_count * 3 > sbuf->data)
 			break;
 		logbuffer = ensure_logbuf (20 + count * 8);
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
@@ -1606,6 +1625,14 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
 			add_code_pointer (sample [i + 3]);
 		}
 		sample += count + 3;
+		/* new in data version 6 */
+		emit_uvalue (logbuffer, mbt_count);
+		for (i = 0; i < mbt_count; ++i) {
+			emit_method (logbuffer, (void*)sample [i * 3]); /* method */
+			emit_svalue (logbuffer, sample [i * 3 + 1]); /* il offset */
+			emit_svalue (logbuffer, sample [i * 3 + 2]); /* native offset */
+		}
+		sample += 3 * mbt_count;
 	}
 	dump_unmanaged_coderefs (prof);
 }
@@ -1749,6 +1776,8 @@ dump_perf_hits (MonoProfiler *prof, void *buf, int size)
 		emit_uvalue (logbuffer, s->timestamp - prof->startup_time);
 		emit_value (logbuffer, 1); /* count */
 		emit_ptr (logbuffer, (void*)(uintptr_t)s->ip);
+		/* no support here yet for the managed backtrace */
+		emit_uvalue (logbuffer, 0);
 		add_code_pointer (s->ip);
 		buf = (char*)buf + s->h.size;
 		samples++;
