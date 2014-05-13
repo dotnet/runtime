@@ -1209,24 +1209,37 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	StatBuffer *sbuf;
 	uint64_t now;
 	uintptr_t *data, *new_data, *old_data;
+	uintptr_t elapsed;
+	int timedout = 0;
 	if (in_shutdown)
 		return;
 	now = current_time ();
+	elapsed = (now - profiler->startup_time) / 10000;
 	if (do_debug) {
 		int len;
 		char buf [256];
-		snprintf (buf, sizeof (buf), "hit at %p in thread %p at %llu\n", ip, (void*)thread_id (), (unsigned long long int)now);
+		snprintf (buf, sizeof (buf), "hit at %p in thread %p after %llu ms\n", ip, (void*)thread_id (), (unsigned long long int)elapsed/100);
 		len = strlen (buf);
 		write (2, buf, len);
 	}
 	sbuf = profiler->stat_buffers;
 	if (!sbuf)
 		return;
-	/* overflow */
-	if (sbuf->data + 400 >= sbuf->data_end) {
+	/* flush the buffer at 1 second intervals */
+	if (sbuf->data > sbuf->buf && (elapsed - sbuf->buf [2]) > 100000) {
+		timedout = 1;
+	}
+	/* overflow: 400 slots is a big enough number to reduce the chance of losing this event if many
+	 * threads hit this same spot at the same time
+	 */
+	if (timedout || (sbuf->data + 400 >= sbuf->data_end)) {
+		StatBuffer *oldsb, *foundsb;
 		sbuf = create_stat_buffer ();
-		sbuf->next = profiler->stat_buffers;
-		profiler->stat_buffers = sbuf;
+		do {
+			oldsb = profiler->stat_buffers;
+			sbuf->next = oldsb;
+			foundsb = InterlockedCompareExchangePointer ((volatile void**)&profiler->stat_buffers, sbuf, oldsb);
+		} while (foundsb != oldsb);
 		if (do_debug)
 			write (2, "overflow\n", 9);
 		/* notify the helper thread */
@@ -1246,7 +1259,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		return; /* lost event */
 	old_data [0] = 1 | (sample_type << 16);
 	old_data [1] = thread_id ();
-	old_data [2] = (now - profiler->startup_time) / 10000;
+	old_data [2] = elapsed;
 	old_data [3] = (uintptr_t)ip;
 }
 
@@ -2192,12 +2205,17 @@ helper_thread (void* arg)
 			char c;
 			int r = read (prof->pipes [0], &c, 1);
 			if (r == 1 && c == 0) {
-				StatBuffer *sbuf = prof->stat_buffers->next->next;
-				prof->stat_buffers->next->next = NULL;
+				StatBuffer *sbufbase = prof->stat_buffers;
+				StatBuffer *sbuf;
+				if (!sbufbase->next)
+					continue;
+				sbuf = sbufbase->next->next;
+				sbufbase->next->next = NULL;
 				if (do_debug)
 					fprintf (stderr, "stat buffer dump\n");
 				dump_sample_hits (prof, sbuf, 1);
 				free_buffer (sbuf, sbuf->size);
+				safe_dump (prof, ensure_logbuf (0));
 				continue;
 			}
 			/* time to shut down */
