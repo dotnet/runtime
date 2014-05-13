@@ -521,6 +521,11 @@ mono_runtime_posix_install_handlers (void)
 	 */
 	sigemptyset (&signal_set);
 	sigaddset (&signal_set, mono_thread_get_abort_signal ());
+	if (mono_gc_get_suspend_signal () != -1)
+		sigaddset (&signal_set, mono_gc_get_suspend_signal ());
+	if (mono_gc_get_restart_signal () != -1)
+		sigaddset (&signal_set, mono_gc_get_restart_signal ());
+	sigaddset (&signal_set, SIGCHLD);
 	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
 
 	signal (SIGPIPE, SIG_IGN);
