@@ -285,7 +285,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 32
+#define MINOR_VERSION 33
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -385,7 +385,8 @@ typedef enum {
 
 typedef enum {
 	VALUE_TYPE_ID_NULL = 0xf0,
-	VALUE_TYPE_ID_TYPE = 0xf1
+	VALUE_TYPE_ID_TYPE = 0xf1,
+	VALUE_TYPE_ID_PARENT_VTYPE = 0xf2
 } ValueTypeId;
 
 typedef enum {
@@ -5534,9 +5535,10 @@ mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, 
  */
 static void
 buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
-					   gboolean as_vtype)
+					   gboolean as_vtype, GHashTable *parent_vtypes)
 {
 	MonoObject *obj;
+	gboolean boxed_vtype = FALSE;
 
 	if (t->byref) {
 		if (!(*(void**)addr)) {
@@ -5626,6 +5628,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			if (obj->vtable->klass->valuetype) {
 				t = &obj->vtable->klass->byval_arg;
 				addr = mono_object_unbox (obj);
+				boxed_vtype = TRUE;
 				goto handle_vtype;
 			} else if (obj->vtable->klass->rank) {
 				buffer_add_byte (buf, obj->vtable->klass->byval_arg.type);
@@ -5643,6 +5646,28 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		gpointer iter;
 		MonoClassField *f;
 		MonoClass *klass = mono_class_from_mono_type (t);
+		int vtype_index;
+
+		if (boxed_vtype) {
+			/*
+			 * Handle boxed vtypes recursively referencing themselves using fields.
+			 */
+			if (!parent_vtypes)
+				parent_vtypes = g_hash_table_new (NULL, NULL);
+			vtype_index = GPOINTER_TO_INT (g_hash_table_lookup (parent_vtypes, addr));
+			if (vtype_index) {
+				if (CHECK_PROTOCOL_VERSION (2, 33)) {
+					buffer_add_byte (buf, VALUE_TYPE_ID_PARENT_VTYPE);
+					buffer_add_int (buf, vtype_index - 1);
+				} else {
+					/* The client can't handle PARENT_VTYPE */
+					buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
+				}
+				break;
+			} else {
+				g_hash_table_insert (parent_vtypes, addr, GINT_TO_POINTER (g_hash_table_size (parent_vtypes) + 1));
+			}
+		}
 
 		buffer_add_byte (buf, MONO_TYPE_VALUETYPE);
 		buffer_add_byte (buf, klass->enumtype);
@@ -5665,7 +5690,15 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				continue;
 			if (mono_field_is_deleted (f))
 				continue;
-			buffer_add_value_full (buf, f->type, (guint8*)addr + f->offset - sizeof (MonoObject), domain, FALSE);
+			buffer_add_value_full (buf, f->type, (guint8*)addr + f->offset - sizeof (MonoObject), domain, FALSE, parent_vtypes);
+		}
+
+		if (boxed_vtype) {
+			g_hash_table_remove (parent_vtypes, addr);
+			if (g_hash_table_size (parent_vtypes) == 0) {
+				g_hash_table_destroy (parent_vtypes);
+				parent_vtypes = NULL;
+			}
 		}
 		break;
 	}
@@ -5684,7 +5717,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 static void
 buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
 {
-	buffer_add_value_full (buf, t, addr, domain, FALSE);
+	buffer_add_value_full (buf, t, addr, domain, FALSE, NULL);
 }
 
 static gboolean
@@ -5960,7 +5993,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
 		reg_val = mono_arch_context_get_int_reg (ctx, reg);
 
-		buffer_add_value_full (buf, t, &reg_val, domain, as_vtype);
+		buffer_add_value_full (buf, t, &reg_val, domain, as_vtype, NULL);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
@@ -5968,7 +6001,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 
 		//printf ("[R%d+%d] = %p\n", reg, var->offset, addr);
 
-		buffer_add_value_full (buf, t, addr, domain, as_vtype);
+		buffer_add_value_full (buf, t, addr, domain, as_vtype, NULL);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		NOT_IMPLEMENTED;
@@ -5981,7 +6014,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 
 		gaddr = *(gpointer*)addr;
 		g_assert (gaddr);
-		buffer_add_value_full (buf, t, gaddr, domain, as_vtype);
+		buffer_add_value_full (buf, t, gaddr, domain, as_vtype, NULL);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_GSHAREDVT_LOCAL: {
 		MonoDebugVarInfo *info_var = jit->gsharedvt_info_var;
@@ -6023,7 +6056,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 
 		addr = locals + GPOINTER_TO_INT (info->entries [idx]);
 
-		buffer_add_value_full (buf, t, addr, domain, as_vtype);
+		buffer_add_value_full (buf, t, addr, domain, as_vtype, NULL);
 		break;
 	}
 
