@@ -444,18 +444,21 @@ mono_thread_info_resume_internal (MonoThreadInfo *info)
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid)
 {
-	gboolean result = TRUE;
+	gboolean result; /* don't initialize it so the compiler can catch unitilized paths. */
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();	
 	MonoThreadInfo *info = mono_thread_info_lookup (tid); /*info on HP1*/
 
-	if (!info)
-		return FALSE;
+	if (!info) {
+		result = FALSE;
+		goto cleanup;
+	}
 
 	if (info->create_suspended) {
 		/* Have to special case this, as the normal suspend/resume pair are racy, they don't work if he resume is received before the suspend */
 		info->create_suspended = FALSE;
 		mono_threads_core_resume_created (info, tid);
-		return TRUE;
+		result = TRUE;
+		goto cleanup;
 	}
 
 	MONO_SEM_WAIT_UNITERRUPTIBLE (&info->suspend_semaphore);
@@ -464,8 +467,8 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 
 	if (info->suspend_count <= 0) {
 		MONO_SEM_POST (&info->suspend_semaphore);
-		mono_hazard_pointer_clear (hp, 1);
-		return FALSE;
+		result = FALSE;
+		goto cleanup;
 	}
 
 	/*
@@ -476,11 +479,14 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 
 	if (--info->suspend_count == 0)
 		result = mono_thread_info_resume_internal (info);
+	else
+		result = TRUE;
 
 	MONO_SEM_POST (&info->suspend_semaphore);
-	mono_hazard_pointer_clear (hp, 1);
 	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
 
+cleanup:
+	mono_hazard_pointer_clear (hp, 1);
 	return result;
 }
 
