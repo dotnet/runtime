@@ -411,16 +411,48 @@ dump_counters (void)
 	CounterSection *csection;
 	CounterList *clist;
 	char strtimestamp[17];
+	int i, section_printed;
 
 	fprintf (outfile, "\nCounters:\n");
 
 	if (!verbose) {
+		char counters_to_print[][64] = {
+			"Methods from AOT",
+			"Methods JITted using mono JIT",
+			"Methods JITted using LLVM",
+			"Total time spent JITting (sec)",
+			"User Time",
+			"System Time",
+			"Total Time",
+			"Working Set",
+			"Private Bytes",
+			"Virtual Bytes",
+			"Page Faults",
+			"CPU Load Average - 1min",
+			"CPU Load Average - 5min",
+			"CPU Load Average - 15min",
+			""
+		};
+
 		for (csection = counters_sections; csection; csection = csection->next) {
-			fprintf (outfile, "\t%s:\n", section_name (csection->value));
+			section_printed = 0;
 
 			for (clist = csection->counters; clist; clist = clist->next) {
 				counter = clist->counter;
-				dump_counters_value (counter, "%-30s", counter->name, counter->values_last == NULL ? NULL : counter->values_last->buffer);
+				if (!counter->values_last)
+					continue;
+
+				for (i = 0; counters_to_print [i][0] != 0; i++) {
+					if (strcmp (counters_to_print [i], counter->name) == 0) {
+						if (!section_printed) {
+							fprintf (outfile, "\t%s:\n", section_name (csection->value));
+							section_printed = 1;
+						}
+
+						dump_counters_value (counter, "\t\t%-30s", counter->name, counter->values_last->buffer);
+						break;
+					}
+				}
 			}
 		}
 	} else if (counters_sort_mode == COUNTERS_SORT_TIME) {
