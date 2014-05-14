@@ -58,7 +58,7 @@ mono_threads_core_suspend (MonoThreadInfo *info)
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 	res = mono_threads_get_runtime_callbacks ()->
-		thread_state_init_from_handle (&info->suspend_state, mono_thread_info_get_tid (info), info->native_handle);
+		thread_state_init_from_handle (&info->suspend_state, info);
 	if (!res)
 		thread_resume (info->native_handle);
 	return res;

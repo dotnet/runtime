@@ -136,7 +136,7 @@ mono_runtime_shutdown_stat_profiler (void)
 }
 
 gboolean
-mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThreadId thread_id, MonoNativeThreadHandle thread_handle)
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info)
 {
 	g_error ("Windows systems haven't been ported to support mono_thread_state_init_from_handle");
 	return FALSE;
