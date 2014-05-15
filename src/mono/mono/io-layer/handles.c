@@ -344,7 +344,7 @@ static size_t _wapi_handle_struct_size (WapiHandleType type)
 			break;
 
 		default:
-			type_size = 0;
+			g_error ("Unknown WapiHandleType: %d\n", type);
 	}
 
 	return type_size;
