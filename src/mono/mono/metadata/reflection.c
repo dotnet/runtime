@@ -8026,6 +8026,7 @@ handle_type:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_STRING:
+			case MONO_TYPE_SZARRAY:
 				for (i = 0; i < alen; i++) {
 					MonoObject *item = load_cattr_value (image, &tklass->byval_arg, p, &p);
 					mono_array_setref (arr, i, item);
