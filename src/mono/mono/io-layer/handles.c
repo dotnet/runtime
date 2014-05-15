@@ -304,10 +304,57 @@ static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
 	}
 }
 
+static size_t _wapi_handle_struct_size (WapiHandleType type)
+{
+	size_t type_size;
+
+	switch (type) {
+		case WAPI_HANDLE_FILE: case WAPI_HANDLE_CONSOLE:
+			type_size = sizeof (struct _WapiHandle_file);
+			break;
+		case WAPI_HANDLE_THREAD:
+			type_size = sizeof (struct _WapiHandle_thread);
+			break;
+		case WAPI_HANDLE_SEM:
+			type_size = sizeof (struct _WapiHandle_sem);
+			break;
+		case WAPI_HANDLE_MUTEX:
+			type_size = sizeof (struct _WapiHandle_mutex);
+			break;
+		case WAPI_HANDLE_EVENT:
+			type_size = sizeof (struct _WapiHandle_event);
+			break;
+		case WAPI_HANDLE_SOCKET:
+			type_size = sizeof (struct _WapiHandle_socket);
+			break;
+		case WAPI_HANDLE_FIND:
+			type_size = sizeof (struct _WapiHandle_find);
+			break;
+		case WAPI_HANDLE_PROCESS:
+			type_size = sizeof (struct _WapiHandle_process);
+			break;
+		case WAPI_HANDLE_NAMEDMUTEX:
+			type_size = sizeof (struct _WapiHandle_namedmutex);
+			break;
+		case WAPI_HANDLE_NAMEDSEM:
+			type_size = sizeof (struct _WapiHandle_namedsem);
+			break;
+		case WAPI_HANDLE_NAMEDEVENT:
+			type_size = sizeof (struct _WapiHandle_namedevent);
+			break;
+
+		default:
+			type_size = 0;
+	}
+
+	return type_size;
+}
+
 static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 			       WapiHandleType type, gpointer handle_specific)
 {
 	int thr_ret;
+	int type_size;
 	
 	g_assert (_wapi_has_shut_down == FALSE);
 	
@@ -323,8 +370,9 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 		g_assert (thr_ret == 0);
 
 		if (handle_specific != NULL) {
+			type_size = _wapi_handle_struct_size (type);
 			memcpy (&handle->u, handle_specific,
-				sizeof (handle->u));
+				type_size);
 		}
 	}
 }
