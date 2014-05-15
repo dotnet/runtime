@@ -2655,7 +2655,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 			thread_interrupt (tls, info, NULL, ji);
 
-			mono_thread_info_resume (mono_thread_info_get_tid (info));
+			mono_thread_info_finish_suspend_and_resume (info);
 		}
 	} else {
 		res = mono_thread_kill (thread, mono_thread_get_abort_signal ());

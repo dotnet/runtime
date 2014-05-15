@@ -249,7 +249,10 @@ void
 mono_thread_info_set_name (MonoNativeThreadId tid, const char *name) MONO_INTERNAL;
 
 void
-mono_thread_info_finish_suspend (void) MONO_INTERNAL;
+mono_thread_info_finish_suspend (MonoThreadInfo *info) MONO_INTERNAL;
+
+void
+mono_thread_info_finish_suspend_and_resume (MonoThreadInfo *info) MONO_INTERNAL;
 
 void
 mono_thread_info_self_suspend (void) MONO_INTERNAL;

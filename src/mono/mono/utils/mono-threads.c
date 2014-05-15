@@ -393,7 +393,6 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 	++info->suspend_count;
 	info->thread_state |= STATE_SUSPENDED;
 	MONO_SEM_POST (&info->suspend_semaphore);
-	mono_hazard_pointer_clear (hp, 1);
 
 	return info;
 }
@@ -427,48 +426,24 @@ mono_thread_info_self_suspend (void)
 }
 
 static gboolean
-mono_thread_info_resume_internal (MonoThreadInfo *info)
+mono_thread_info_core_resume (MonoThreadInfo *info)
 {
 	gboolean result;
-	if (mono_thread_info_suspend_state (info) == STATE_SELF_SUSPENDED) {
-		MONO_SEM_POST (&info->resume_semaphore);
-		MONO_SEM_WAIT_UNITERRUPTIBLE (&info->finish_resume_semaphore);
-		result = TRUE;
-	} else {
-		result = mono_threads_core_resume (info);
-	}
-	info->thread_state &= ~SUSPEND_STATE_MASK;
-	return result;
-}
-
-gboolean
-mono_thread_info_resume (MonoNativeThreadId tid)
-{
-	gboolean result; /* don't initialize it so the compiler can catch unitilized paths. */
-	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();	
-	MonoThreadInfo *info = mono_thread_info_lookup (tid); /*info on HP1*/
-
-	if (!info) {
-		result = FALSE;
-		goto cleanup;
-	}
-
+	MonoNativeThreadId tid = mono_thread_info_get_tid (info);
 	if (info->create_suspended) {
 		/* Have to special case this, as the normal suspend/resume pair are racy, they don't work if he resume is received before the suspend */
 		info->create_suspended = FALSE;
 		mono_threads_core_resume_created (info, tid);
-		result = TRUE;
-		goto cleanup;
+		return TRUE;
 	}
 
 	MONO_SEM_WAIT_UNITERRUPTIBLE (&info->suspend_semaphore);
 
-	THREADS_DEBUG ("resume %x IN COUNT %d\n",tid, info->suspend_count);
+	THREADS_DEBUG ("resume %x IN COUNT %d\n", tid, info->suspend_count);
 
 	if (info->suspend_count <= 0) {
 		MONO_SEM_POST (&info->suspend_semaphore);
-		result = FALSE;
-		goto cleanup;
+		return FALSE;
 	}
 
 	/*
@@ -477,13 +452,35 @@ mono_thread_info_resume (MonoNativeThreadId tid)
 	*/
 	g_assert (mono_thread_info_get_tid (info));
 
-	if (--info->suspend_count == 0)
-		result = mono_thread_info_resume_internal (info);
-	else
+	if (--info->suspend_count == 0) {
+		if (mono_thread_info_suspend_state (info) == STATE_SELF_SUSPENDED) {
+			MONO_SEM_POST (&info->resume_semaphore);
+			MONO_SEM_WAIT_UNITERRUPTIBLE (&info->finish_resume_semaphore);
+			result = TRUE;
+		} else {
+			result = mono_threads_core_resume (info);
+		}
+		info->thread_state &= ~SUSPEND_STATE_MASK;
+	} else {
 		result = TRUE;
+	}
 
 	MONO_SEM_POST (&info->suspend_semaphore);
-	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
+	return result;
+}
+
+gboolean
+mono_thread_info_resume (MonoNativeThreadId tid)
+{
+	gboolean result; /* don't initialize it so the compiler can catch unitilized paths. */
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+	MonoThreadInfo *info = mono_thread_info_lookup (tid); /*info on HP1*/
+
+	if (!info) {
+		result = FALSE;
+		goto cleanup;
+	}
+	result = mono_thread_info_core_resume (info);
 
 cleanup:
 	mono_hazard_pointer_clear (hp, 1);
@@ -491,8 +488,21 @@ cleanup:
 }
 
 void
-mono_thread_info_finish_suspend (void)
+mono_thread_info_finish_suspend (MonoThreadInfo *info)
 {
+	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
+}
+
+void
+mono_thread_info_finish_suspend_and_resume (MonoThreadInfo *info)
+{
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+
+	/*Resume can access info after the target has resumed, so we must ensure it won't touch freed memory. */
+	mono_hazard_pointer_set (hp, 1, info);
+	mono_thread_info_core_resume (info);
+	mono_hazard_pointer_clear (hp, 1);
+
 	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, FALSE);
 }
 
@@ -530,6 +540,10 @@ WARNING:
 If we are trying to suspend a target that is on a critical region
 and running a syscall we risk looping forever if @interrupt_kernel is FALSE.
 So, be VERY carefull in calling this with @interrupt_kernel == FALSE.
+
+Info is not put on a hazard pointer as a suspended thread cannot exit and be freed.
+
+This function MUST be matched with mono_thread_info_finish_suspend or mono_thread_info_finish_suspend_and_resume
 */
 MonoThreadInfo*
 mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_kernel)
@@ -552,8 +566,9 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 		if (!is_thread_in_critical_region (info))
 			break;
 
-		if (!mono_thread_info_resume (id)) {
+		if (!mono_thread_info_core_resume (info)) {
 			g_warning ("failed to result thread %p, hopefully it is dead", (gpointer)id);
+			mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
 			mono_thread_info_suspend_unlock ();
 			return NULL;
 		}
@@ -572,9 +587,10 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 		sleep_duration += 10;
 	}
 
+	/* XXX this clears HP 1, so we restated it again */
 	mono_atomic_store_release (&mono_thread_info_current ()->inside_critical_region, TRUE);
-
 	mono_thread_info_suspend_unlock ();
+
 	return info;
 }
 
