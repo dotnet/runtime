@@ -309,7 +309,7 @@ static size_t _wapi_handle_struct_size (WapiHandleType type)
 	size_t type_size;
 
 	switch (type) {
-		case WAPI_HANDLE_FILE: case WAPI_HANDLE_CONSOLE:
+		case WAPI_HANDLE_FILE: case WAPI_HANDLE_CONSOLE: case WAPI_HANDLE_PIPE:
 			type_size = sizeof (struct _WapiHandle_file);
 			break;
 		case WAPI_HANDLE_THREAD:
