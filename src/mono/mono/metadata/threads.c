@@ -957,13 +957,13 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 }
 
 void
-mono_thread_detach (MonoThread *thread)
+mono_thread_detach_internal (MonoInternalThread *thread)
 {
 	g_return_if_fail (thread != NULL);
 
-	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->internal_thread->tid));
+	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
 
-	thread_cleanup (thread->internal_thread);
+	thread_cleanup (thread);
 
 	SET_CURRENT_OBJECT (NULL);
 	mono_domain_unset ();
@@ -972,6 +972,13 @@ mono_thread_detach (MonoThread *thread)
 	 * reference in mono_thread_attach (), because the GC will do it
 	 * when the Thread object is finalised.
 	 */
+}
+
+void
+mono_thread_detach (MonoThread *thread)
+{
+	if (thread)
+		mono_thread_detach_internal (thread->internal_thread);
 }
 
 void

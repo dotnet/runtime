@@ -3839,7 +3839,7 @@ sgen_thread_detach (SgenThreadInfo *p)
 	 * the thread
 	 */
 	if (mono_domain_get ())
-		mono_thread_detach (mono_thread_current ());
+		mono_thread_detach_internal (mono_thread_internal_current ());
 }
 
 static void

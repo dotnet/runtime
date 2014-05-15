@@ -245,4 +245,6 @@ void mono_threads_add_joinable_thread (gpointer tid) MONO_INTERNAL;
 void mono_threads_join_threads (void) MONO_INTERNAL;
 void mono_thread_join (gpointer tid) MONO_INTERNAL;
 
+void mono_thread_detach_internal (MonoInternalThread *thread) MONO_INTERNAL;
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
