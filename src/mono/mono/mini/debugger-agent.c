@@ -9475,6 +9475,10 @@ debugger_thread (void *arg)
 			err = ERR_NOT_IMPLEMENTED;
 		}		
 
+		if (command_set == CMD_SET_VM && command == CMD_VM_START_BUFFERING) {
+			buffer_replies = TRUE;
+		}
+
 		if (!no_reply) {
 			if (buffer_replies) {
 				buffer_reply_packet (id, err, &buf);
@@ -9484,18 +9488,9 @@ debugger_thread (void *arg)
 			}
 		}
 
-		if (!err && command_set == CMD_SET_VM) {
-			switch (command) {
-			case CMD_VM_STOP_BUFFERING:
-				send_buffered_reply_packets ();
-				buffer_replies = FALSE;
-				break;
-			case CMD_VM_START_BUFFERING:
-				buffer_replies = TRUE;
-				break;
-			default:
-				break;
-			}
+		if (!err && command_set == CMD_SET_VM && command == CMD_VM_STOP_BUFFERING) {
+			send_buffered_reply_packets ();
+			buffer_replies = FALSE;
 		}
 
 		g_free (data);
