@@ -285,7 +285,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 33
+#define MINOR_VERSION 34
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -416,7 +416,9 @@ typedef enum {
 	CMD_VM_SET_KEEPALIVE = 10,
 	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11,
 	CMD_VM_GET_TYPES = 12,
-	CMD_VM_INVOKE_METHODS = 13
+	CMD_VM_INVOKE_METHODS = 13,
+	CMD_VM_START_BUFFERING = 14,
+	CMD_VM_STOP_BUFFERING = 15
 } CmdVM;
 
 typedef enum {
@@ -593,6 +595,16 @@ typedef struct {
 	void* dummy;
 } DebuggerProfiler;
 
+typedef struct {
+	guint8 *buf, *p, *end;
+} Buffer;
+
+typedef struct ReplyPacket {
+	int id;
+	int error;
+	Buffer *data;
+} ReplyPacket;
+
 #define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
 
 #ifdef HOST_WIN32
@@ -695,6 +707,13 @@ static GHashTable *domains;
 
 /* The number of times the runtime is suspended */
 static gint32 suspend_count;
+
+/* Whenever to buffer reply messages and send them together */
+static gboolean buffer_replies;
+
+/* Buffered reply packets */
+static ReplyPacket reply_packets [128];
+int nreply_packets;
 
 static void transport_init (void);
 static void transport_connect (const char *address);
@@ -851,6 +870,8 @@ mono_debugger_agent_parse_options (char *options)
 	agent_config.server = FALSE;
 	agent_config.defer = FALSE;
 	agent_config.address = NULL;
+
+	//agent_config.log_level = 10;
 
 	args = g_strsplit (options, ",", -1);
 	for (ptr = args; ptr && *ptr; ptr ++) {
@@ -1653,16 +1674,18 @@ decode_string (guint8 *buf, guint8 **endbuf, guint8 *limit)
  * Functions to encode protocol data
  */
 
-typedef struct {
-	guint8 *buf, *p, *end;
-} Buffer;
-
 static inline void
 buffer_init (Buffer *buf, int size)
 {
 	buf->buf = g_malloc (size);
 	buf->p = buf->buf;
 	buf->end = buf->buf + size;
+}
+
+static inline int
+buffer_len (Buffer *buf)
+{
+	return buf->p - buf->buf;
 }
 
 static inline void
@@ -1742,6 +1765,12 @@ buffer_add_string (Buffer *buf, const char *str)
 }
 
 static inline void
+buffer_add_buffer (Buffer *buf, Buffer *data)
+{
+	buffer_add_data (buf, data->buf, buffer_len (data));
+}
+
+static inline void
 buffer_free (Buffer *buf)
 {
 	g_free (buf->buf);
@@ -1773,26 +1802,71 @@ send_packet (int command_set, int command, Buffer *data)
 }
 
 static gboolean
-send_reply_packet (int id, int error, Buffer *data)
+send_reply_packets (int npackets, ReplyPacket *packets)
 {
 	Buffer buf;
-	int len;
+	int i, len;
 	gboolean res;
-	
-	len = data->p - data->buf + 11;
-	buffer_init (&buf, len);
-	buffer_add_int (&buf, len);
-	buffer_add_int (&buf, id);
-	buffer_add_byte (&buf, 0x80); /* flags */
-	buffer_add_byte (&buf, (error >> 8) & 0xff);
-	buffer_add_byte (&buf, error);
-	memcpy (buf.buf + 11, data->buf, data->p - data->buf);
 
+	len = 0;
+	for (i = 0; i < npackets; ++i)
+		len += buffer_len (packets [i].data) + 11;
+	buffer_init (&buf, len);
+	for (i = 0; i < npackets; ++i) {
+		buffer_add_int (&buf, buffer_len (packets [i].data) + 11);
+		buffer_add_int (&buf, packets [i].id);
+		buffer_add_byte (&buf, 0x80); /* flags */
+		buffer_add_byte (&buf, (packets [i].error >> 8) & 0xff);
+		buffer_add_byte (&buf, packets [i].error);
+		buffer_add_buffer (&buf, packets [i].data);
+	}
 	res = transport_send (buf.buf, len);
 
 	buffer_free (&buf);
 
 	return res;
+}
+
+static gboolean
+send_reply_packet (int id, int error, Buffer *data)
+{
+	ReplyPacket packet;
+
+	memset (&packet, 0, sizeof (ReplyPacket));
+	packet.id = id;
+	packet.error = error;
+	packet.data = data;
+
+	return send_reply_packets (1, &packet);
+}
+
+static void
+send_buffered_reply_packets (void)
+{
+	int i;
+
+	send_reply_packets (nreply_packets, reply_packets);
+	for (i = 0; i < nreply_packets; ++i)
+		buffer_free (reply_packets [i].data);
+	DEBUG (1, fprintf (log_file, "[dbg] Sent %d buffered reply packets [at=%lx].\n", nreply_packets, (long)mono_100ns_ticks () / 10000));
+	nreply_packets = 0;
+}
+
+static void
+buffer_reply_packet (int id, int error, Buffer *data)
+{
+	ReplyPacket *p;
+
+	if (nreply_packets == 128)
+		send_buffered_reply_packets ();
+
+	p = &reply_packets [nreply_packets];
+	p->id = id;
+	p->error = error;
+	p->data = g_new0 (Buffer, 1);
+	buffer_init (p->data, buffer_len (data));
+	buffer_add_buffer (p->data, data);
+	nreply_packets ++;
 }
 
 /*
@@ -7019,7 +7093,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		g_ptr_array_free (res_domains, TRUE);
 		break;
 	}
-
+	case CMD_VM_START_BUFFERING:
+	case CMD_VM_STOP_BUFFERING:
+		/* Handled in the main loop */
+		break;
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9329,7 +9406,7 @@ debugger_thread (void *arg)
 				cmd_str = cmd_num;
 			}
 			
-			DEBUG (1, fprintf (log_file, "[dbg] Command %s(%s) [%d].\n", command_set_to_string (command_set), cmd_str, id));
+			DEBUG (1, fprintf (log_file, "[dbg] Command %s(%s) [%d][at=%lx].\n", command_set_to_string (command_set), cmd_str, id, (long)mono_100ns_ticks () / 10000));
 		}
 
 		data = g_malloc (len - HEADER_LENGTH);
@@ -9398,8 +9475,28 @@ debugger_thread (void *arg)
 			err = ERR_NOT_IMPLEMENTED;
 		}		
 
-		if (!no_reply)
-			send_reply_packet (id, err, &buf);
+		if (!no_reply) {
+			if (buffer_replies) {
+				buffer_reply_packet (id, err, &buf);
+			} else {
+				send_reply_packet (id, err, &buf);
+				//DEBUG (1, fprintf (log_file, "[dbg] Sent reply to %d [at=%lx].\n", id, (long)mono_100ns_ticks () / 10000));
+			}
+		}
+
+		if (!err && command_set == CMD_SET_VM) {
+			switch (command) {
+			case CMD_VM_STOP_BUFFERING:
+				send_buffered_reply_packets ();
+				buffer_replies = FALSE;
+				break;
+			case CMD_VM_START_BUFFERING:
+				buffer_replies = TRUE;
+				break;
+			default:
+				break;
+			}
+		}
 
 		g_free (data);
 		buffer_free (&buf);
