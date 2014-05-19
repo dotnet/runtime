@@ -356,6 +356,19 @@ struct _MonoReferenceQueue {
 	gboolean should_be_deleted;
 };
 
+enum {
+	MONO_GC_FINALIZER_EXTENSION_VERSION = 1,
+};
+
+typedef struct {
+	int version;
+	gboolean (*is_class_finalization_aware) (MonoClass *class);
+	void (*object_queued_for_finalization) (MonoObject *object);
+} MonoGCFinalizerCallbacks;
+
+void mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks);
+
+
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved) MONO_INTERNAL;
 #endif

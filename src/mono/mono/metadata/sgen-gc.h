@@ -367,6 +367,7 @@ List of what each bit on of the vtable gc bits means.
 enum {
 	SGEN_GC_BIT_BRIDGE_OBJECT = 1,
 	SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT = 2,
+	SGEN_GC_BIT_FINALIZER_AWARE = 4,
 };
 
 /* the runtime can register areas of memory as roots: we keep two lists of roots,
