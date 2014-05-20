@@ -267,6 +267,9 @@ typedef struct {
 	 * to caller saved registers done by set_var ().
 	 */
 	MonoContext restore_ctx;
+
+	/* The currently unloading appdomain */
+	MonoDomain *domain_unloading;
 } DebuggerTlsData;
 
 typedef struct {
@@ -732,6 +735,8 @@ static void thread_end (MonoProfiler *prof, uintptr_t tid);
 
 static void appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result);
 
+static void appdomain_start_unload (MonoProfiler *prof, MonoDomain *domain);
+
 static void appdomain_unload (MonoProfiler *prof, MonoDomain *domain);
 
 static void emit_appdomain_load (gpointer key, gpointer value, gpointer user_data);
@@ -963,7 +968,7 @@ mono_debugger_agent_init (void)
 	mono_profiler_install ((MonoProfiler*)&debugger_profiler, runtime_shutdown);
 	mono_profiler_set_events (MONO_PROFILE_APPDOMAIN_EVENTS | MONO_PROFILE_THREADS | MONO_PROFILE_ASSEMBLY_EVENTS | MONO_PROFILE_JIT_COMPILATION | MONO_PROFILE_METHOD_EVENTS);
 	mono_profiler_install_runtime_initialized (runtime_initialized);
-	mono_profiler_install_appdomain (NULL, appdomain_load, NULL, appdomain_unload);
+	mono_profiler_install_appdomain (NULL, appdomain_load, appdomain_start_unload, appdomain_unload);
 	mono_profiler_install_thread (thread_startup, thread_end);
 	mono_profiler_install_assembly (NULL, assembly_load, assembly_unload, NULL);
 	mono_profiler_install_jit_end (jit_end);
@@ -2293,10 +2298,13 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	return res->data.val;
 }
 
-static inline void
+static inline int
 buffer_add_ptr_id (Buffer *buf, MonoDomain *domain, IdType type, gpointer val)
 {
-	buffer_add_id (buf, get_id (domain, type, val));
+	int id = get_id (domain, type, val);
+
+	buffer_add_id (buf, id);
+	return id;
 }
 
 static inline MonoClass*
@@ -2393,7 +2401,11 @@ buffer_add_methodid (Buffer *buf, MonoDomain *domain, MonoMethod *method)
 static inline void
 buffer_add_assemblyid (Buffer *buf, MonoDomain *domain, MonoAssembly *assembly)
 {
-	buffer_add_ptr_id (buf, domain, ID_ASSEMBLY, assembly);
+	int id;
+
+	id = buffer_add_ptr_id (buf, domain, ID_ASSEMBLY, assembly);
+	if (G_UNLIKELY (log_level >= 2) && assembly)
+		DEBUG(2, fprintf (log_file, "[dbg]   send assembly [%s][%s][%d]\n", assembly->aname.name, domain->friendly_name, id));
 }
 
 static inline void
@@ -3746,9 +3758,19 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			buffer_add_methodid (&buf, domain, arg);
 			break;
 		case EVENT_KIND_ASSEMBLY_LOAD:
-		case EVENT_KIND_ASSEMBLY_UNLOAD:
 			buffer_add_assemblyid (&buf, domain, arg);
 			break;
+		case EVENT_KIND_ASSEMBLY_UNLOAD: {
+			DebuggerTlsData *tls;
+
+			/* The domain the assembly belonged to is not equal to the current domain */
+			tls = mono_native_tls_get_value (debugger_tls_id);
+			g_assert (tls);
+			g_assert (tls->domain_unloading);
+
+			buffer_add_assemblyid (&buf, tls->domain_unloading, arg);
+			break;
+		}
 		case EVENT_KIND_TYPE_LOAD:
 			buffer_add_typeid (&buf, domain, arg);
 			break;
@@ -3986,8 +4008,28 @@ appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result)
 }
 
 static void
+appdomain_start_unload (MonoProfiler *prof, MonoDomain *domain)
+{
+	DebuggerTlsData *tls;
+
+	/*
+	 * Remember the currently unloading appdomain as it is needed to generate
+	 * proper ids for unloading assemblies.
+	 */
+	tls = mono_native_tls_get_value (debugger_tls_id);
+	g_assert (tls);
+	tls->domain_unloading = domain;
+}
+
+static void
 appdomain_unload (MonoProfiler *prof, MonoDomain *domain)
 {
+	DebuggerTlsData *tls;
+
+	tls = mono_native_tls_get_value (debugger_tls_id);
+	g_assert (tls);
+	tls->domain_unloading = NULL;
+
 	clear_breakpoints_for_domain (domain);
 	
 	mono_loader_lock ();
