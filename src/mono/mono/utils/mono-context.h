@@ -222,7 +222,8 @@ typedef struct {
 		"movq %%r13, 0x68(%0)\n"	\
 		"movq %%r14, 0x70(%0)\n"	\
 		"movq %%r15, 0x78(%0)\n"	\
-		"leaq (%%rip), %%rdx\n"	\
+		/* "leaq (%%rip), %%rdx\n" is not understood by icc */	\
+		".byte 0x48, 0x8d, 0x15, 0x00, 0x00, 0x00, 0x00\n" \
 		"movq %%rdx, 0x80(%0)\n"	\
 		: 	\
 		: "a" (&(ctx))	\
