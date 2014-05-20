@@ -31,6 +31,7 @@
 #include <stdint.h>
 
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/Host.h>
 #include <llvm/PassManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JITMemoryManager.h>
@@ -606,11 +607,17 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   opts.JITExceptionHandling = 1;
 
   EngineBuilder b (unwrap (MP));
-#ifdef TARGET_AMD64
-  ExecutionEngine *EE = b.setJITMemoryManager (mono_mm).setTargetOptions (opts).setCodeModel (CodeModel::Large).setAllocateGVsWithCode (true).create ();
-#else
-  ExecutionEngine *EE = b.setJITMemoryManager (mono_mm).setTargetOptions (opts).setAllocateGVsWithCode (true).create ();
+  EngineBuilder &eb = b;
+  eb = eb.setJITMemoryManager (mono_mm).setTargetOptions (opts).setAllocateGVsWithCode (true);
+#if LLVM_API_VERSION >= 1
+  StringRef cpu_name = sys::getHostCPUName ();
+  eb = eb.setMCPU (cpu_name);
 #endif
+#ifdef TARGET_AMD64
+  eb = eb.setCodeModel (CodeModel::Large);
+#endif
+
+  ExecutionEngine *EE = eb.create ();
   g_assert (EE);
   mono_ee->EE = EE;
 
