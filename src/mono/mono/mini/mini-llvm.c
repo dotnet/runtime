@@ -4397,7 +4397,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (cfg->compile_aot) {
 		LLVMSetLinkage (method, LLVMInternalLinkage);
+#if LLVM_API_VERSION == 0
+		/* This causes an assertion in later LLVM versions */
 		LLVMSetVisibility (method, LLVMHiddenVisibility);
+#endif
 	} else {
 		LLVMSetLinkage (method, LLVMPrivateLinkage);
 	}

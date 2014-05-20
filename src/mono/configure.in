@@ -2468,8 +2468,10 @@ if test "x$enable_llvm" = "xyes"; then
 	  	 fi
 	  fi
 	  if test "x$llvm_api_version" = "x"; then
+		LLVM_CFLAGS="$LLVM_CFLAGS -DLLVM_API_VERSION=0"
 		LLVM_CXXFLAGS="$LLVM_CXXFLAGS -DLLVM_API_VERSION=0"
 	  else
+		LLVM_CFLAGS="$LLVM_CFLAGS -DLLVM_API_VERSION=$llvm_api_version"
 		LLVM_CXXFLAGS="$LLVM_CXXFLAGS -DLLVM_API_VERSION=$llvm_api_version"
 	  fi
    else
