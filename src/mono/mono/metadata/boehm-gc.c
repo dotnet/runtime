@@ -161,7 +161,7 @@ mono_gc_base_init (void)
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
 			if (g_str_has_prefix (opt, "max-heap-size=")) {
-				glong max_heap;
+				size_t max_heap;
 
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap)) {

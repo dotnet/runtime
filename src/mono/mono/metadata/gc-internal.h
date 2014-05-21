@@ -333,7 +333,7 @@ void mono_gc_register_mach_exception_thread (pthread_t thread) MONO_INTERNAL;
 pthread_t mono_gc_get_mach_exception_thread (void) MONO_INTERNAL;
 #endif
 
-gboolean mono_gc_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
+gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out) MONO_INTERNAL;
 
 gboolean mono_gc_precise_stack_mark_enabled (void) MONO_INTERNAL;
 

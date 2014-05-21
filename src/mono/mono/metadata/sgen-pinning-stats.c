@@ -40,7 +40,7 @@ struct _PinStatAddress {
 };
 
 typedef struct {
-	gulong num_pins [PIN_TYPE_MAX];
+	size_t num_pins [PIN_TYPE_MAX];
 } PinnedClassEntry;
 
 typedef struct {

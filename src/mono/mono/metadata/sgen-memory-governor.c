@@ -384,7 +384,7 @@ sgen_memgov_try_alloc_space (mword size, int space)
 }
 
 void
-sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance, double allowance_ratio, double save_target)
+sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double allowance_ratio, double save_target)
 {
 	if (soft_limit)
 		soft_heap_limit = soft_limit;

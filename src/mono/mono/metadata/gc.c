@@ -1294,11 +1294,11 @@ mono_gc_get_mach_exception_thread (void)
  * Returns true if passing was successful
  */
 gboolean
-mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
+mono_gc_parse_environment_string_extract_number (const char *str, size_t *out)
 {
 	char *endptr;
 	int len = strlen (str), shift = 0;
-	glong val;
+	size_t val;
 	gboolean is_suffix = FALSE;
 	char suffix;
 
@@ -1333,18 +1333,18 @@ mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
 		return FALSE;
 
 	if (is_suffix) {
-		gulong unshifted;
+		size_t unshifted;
 
 		if (val < 0)	/* negative numbers cannot be suffixed */
 			return FALSE;
 		if (*(endptr + 1)) /* Invalid string. */
 			return FALSE;
 
-		unshifted = (gulong)val;
+		unshifted = (size_t)val;
 		val <<= shift;
 		if (val < 0)	/* overflow */
 			return FALSE;
-		if (((gulong)val >> shift) != unshifted) /* value too large */
+		if (((size_t)val >> shift) != unshifted) /* value too large */
 			return FALSE;
 	}
 

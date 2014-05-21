@@ -144,7 +144,7 @@ struct _GCMemSection {
 	/* in major collections indexes in the pin_queue for objects that pin this section */
 	void **pin_queue_start;
 	int pin_queue_num_entries;
-	unsigned int num_scan_start;
+	size_t num_scan_start;
 };
 
 /*
@@ -257,7 +257,7 @@ extern int num_ready_finalizers;
 
 /* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
 #define DEFAULT_NURSERY_SIZE (sgen_nursery_size)
-extern int sgen_nursery_size MONO_INTERNAL;
+extern size_t sgen_nursery_size MONO_INTERNAL;
 #ifdef SGEN_ALIGN_NURSERY
 /* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
 #define DEFAULT_NURSERY_BITS (sgen_nursery_bits)
@@ -1111,7 +1111,7 @@ sgen_dummy_use (gpointer v) {
 #define MONO_GC_PARAMS_NAME	"MONO_GC_PARAMS"
 #define MONO_GC_DEBUG_NAME	"MONO_GC_DEBUG"
 
-gboolean sgen_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
+gboolean sgen_parse_environment_string_extract_number (const char *str, size_t *out) MONO_INTERNAL;
 void sgen_env_var_error (const char *env_var, const char *fallback, const char *description_format, ...) MONO_INTERNAL;
 
 /* Utilities */

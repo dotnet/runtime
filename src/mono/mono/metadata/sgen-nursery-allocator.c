@@ -101,7 +101,7 @@ char *sgen_nursery_start;
 char *sgen_nursery_end;
 
 #ifdef USER_CONFIG
-int sgen_nursery_size = (1 << 22);
+size_t sgen_nursery_size = (1 << 22);
 #ifdef SGEN_ALIGN_NURSERY
 int sgen_nursery_bits = 22;
 #endif

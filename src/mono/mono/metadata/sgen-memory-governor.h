@@ -25,7 +25,7 @@
 #define __MONO_SGEN_MEMORY_GOVERNOR_H__
 
 /* Heap limits */
-void sgen_memgov_init (glong max_heap, glong soft_limit, gboolean debug_allowance, double min_allowance_ratio, double save_target) MONO_INTERNAL;
+void sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double min_allowance_ratio, double save_target) MONO_INTERNAL;
 void sgen_memgov_release_space (mword size, int space) MONO_INTERNAL;
 gboolean sgen_memgov_try_alloc_space (mword size, int space) MONO_INTERNAL;
 

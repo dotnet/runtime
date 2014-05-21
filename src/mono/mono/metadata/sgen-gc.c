@@ -907,7 +907,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	void *last_obj = NULL;
 	size_t last_obj_size = 0;
 	void *addr;
-	int idx;
+	size_t idx;
 	void **definitely_pinned = start;
 	ScanObjectFunc scan_func = ctx.scan_func;
 	SgenGrayQueue *queue = ctx.queue;
@@ -1356,12 +1356,12 @@ alloc_nursery (void)
 {
 	GCMemSection *section;
 	char *data;
-	int scan_starts;
-	int alloc_size;
+	size_t scan_starts;
+	size_t alloc_size;
 
 	if (nursery_section)
 		return;
-	SGEN_LOG (2, "Allocating nursery size: %lu", (unsigned long)sgen_nursery_size);
+	SGEN_LOG (2, "Allocating nursery size: %lu", (size_t)sgen_nursery_size);
 	/* later we will alloc a larger area for the nursery but only activate
 	 * what we need. The rest will be used as expansion if we have too many pinned
 	 * objects in the existing nursery.
@@ -1716,7 +1716,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 void
 sgen_check_section_scan_starts (GCMemSection *section)
 {
-	int i;
+	size_t i;
 	for (i = 0; i < section->num_scan_start; ++i) {
 		if (section->scan_starts [i]) {
 			guint size = safe_object_get_size ((MonoObject*) section->scan_starts [i]);
@@ -2083,12 +2083,12 @@ job_scan_los_mod_union_cardtable (WorkerData *worker_data, void *job_data_untype
 static void
 verify_scan_starts (char *start, char *end)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < nursery_section->num_scan_start; ++i) {
 		char *addr = nursery_section->scan_starts [i];
 		if (addr > start && addr < end)
-			SGEN_LOG (1, "NFC-BAD SCAN START [%d] %p for obj [%p %p]", i, addr, start, end);
+			SGEN_LOG (1, "NFC-BAD SCAN START [%ld] %p for obj [%p %p]", i, addr, start, end);
 	}
 }
 
@@ -4507,8 +4507,8 @@ mono_gc_base_init (void)
 	char **opts, **ptr;
 	char *major_collector_opt = NULL;
 	char *minor_collector_opt = NULL;
-	glong max_heap = 0;
-	glong soft_limit = 0;
+	size_t max_heap = 0;
+	size_t soft_limit = 0;
 	int num_workers;
 	int result;
 	int dummy;
@@ -4672,10 +4672,10 @@ mono_gc_base_init (void)
 			if (g_str_has_prefix (opt, "minor="))
 				continue;
 			if (g_str_has_prefix (opt, "max-heap-size=")) {
-				glong max_heap_candidate = 0;
+				size_t max_heap_candidate = 0;
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap_candidate)) {
-					max_heap = (max_heap_candidate + mono_pagesize () - 1) & ~(glong)(mono_pagesize () - 1);
+					max_heap = (max_heap_candidate + mono_pagesize () - 1) & ~(size_t)(mono_pagesize () - 1);
 					if (max_heap != max_heap_candidate)
 						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %d.", mono_pagesize ());
 				} else {
@@ -4739,7 +4739,7 @@ mono_gc_base_init (void)
 
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
-				long val;
+				size_t val;
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &val)) {
 #ifdef SGEN_ALIGN_NURSERY
