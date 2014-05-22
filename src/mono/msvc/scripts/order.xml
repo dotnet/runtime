@@ -15,7 +15,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/basic/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/basic/mscorlib.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>basic</profile>
       <response>corlib.dll.sources</response>
@@ -75,7 +75,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/build/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/build/mscorlib.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>build</profile>
       <response>corlib.dll.sources</response>
@@ -102,7 +102,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -lib:./../../class/lib/build/bare -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -152,7 +152,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -lib:./../../class/lib/build/bare -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -235,7 +235,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -debug -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v2</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/net_2_0/mscorlib.dll</library_output>
       <fx_version>2.0</fx_version>
       <profile>net_2_0</profile>
       <response>corlib.dll.sources</response>
@@ -262,7 +262,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_2_0.dll</library_output>
@@ -282,7 +282,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_2_0.dll</library_output>
@@ -292,7 +292,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -lib:./../../class/lib/net_2_0/bare -r:PrebuiltSystem=./../../class/lib/net_2_0/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_2_0/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/secxml/System.dll</library_output>
@@ -302,7 +302,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_2_0.dll</library_output>
@@ -2235,7 +2235,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_0/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/net_4_0/mscorlib.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>corlib.dll.sources</response>
@@ -2262,7 +2262,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_0.dll</library_output>
@@ -2282,7 +2282,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_0.dll</library_output>
@@ -2292,7 +2292,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -lib:./../../class/lib/net_4_0/bare -r:PrebuiltSystem=./../../class/lib/net_4_0/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_0/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/secxml/System.dll</library_output>
@@ -2302,7 +2302,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_0.dll</library_output>
@@ -4255,7 +4255,7 @@
       <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_5/tmp/mscorlib.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/mscorlib.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>corlib.dll.sources</response>
@@ -4282,7 +4282,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_5.dll</library_output>
@@ -4302,7 +4302,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_5.dll</library_output>
@@ -4312,7 +4312,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -lib:./../../class/lib/net_4_5/bare -r:PrebuiltSystem=./../../class/lib/net_4_5/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_5/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/secxml/System.dll</library_output>
@@ -4322,7 +4322,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
       <output>System_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_5.dll</library_output>
