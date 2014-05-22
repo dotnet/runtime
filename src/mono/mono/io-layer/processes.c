@@ -1350,13 +1350,13 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	gboolean done;
 	size_t proclength, size;
 #if defined(__OpenBSD__)
-	struct kinfo_proc2 *result;
+	struct kinfo_proc *result;
 	int name[6];
 	name[0] = CTL_KERN;
-	name[1] = KERN_PROC2;
+	name[1] = KERN_PROC;
 	name[2] = KERN_PROC_ALL;
 	name[3] = 0;
-	name[4] = sizeof(struct kinfo_proc2);
+	name[4] = sizeof(struct kinfo_proc);
 	name[5] = 0;
 #else
 	struct kinfo_proc *result;
@@ -1384,7 +1384,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 				return FALSE;
 
 #if defined(__OpenBSD__)
-			name[5] = (int)(proclength / sizeof(struct kinfo_proc2));
+			name[5] = (int)(proclength / sizeof(struct kinfo_proc));
 #endif
 
 			err = sysctl ((int *) name, size, result, &proclength, NULL, 0);
@@ -1406,11 +1406,8 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 		return(FALSE);
 	}	
 
-#if defined(__OpenBSD__)
-	count = proclength / sizeof(struct kinfo_proc2);
-#else
 	count = proclength / sizeof(struct kinfo_proc);
-#endif
+
 	fit = len / sizeof(guint32);
 	for (i = 0, j = 0; j< fit && i < count; i++) {
 #if defined(__OpenBSD__)
@@ -2119,7 +2116,7 @@ static gchar *get_process_name_from_proc (pid_t pid)
 #if defined(__OpenBSD__)
 	int mib [6];
 	size_t size;
-	struct kinfo_proc2 *pi;
+	struct kinfo_proc *pi;
 #elif defined(PLATFORM_MACOSX)
 #if !(!defined (__mono_ppc__) && defined (TARGET_OSX))
 	size_t size;
@@ -2176,10 +2173,10 @@ static gchar *get_process_name_from_proc (pid_t pid)
 #endif
 #elif defined(__OpenBSD__)
 	mib [0] = CTL_KERN;
-	mib [1] = KERN_PROC2;
+	mib [1] = KERN_PROC;
 	mib [2] = KERN_PROC_PID;
 	mib [3] = pid;
-	mib [4] = sizeof(struct kinfo_proc2);
+	mib [4] = sizeof(struct kinfo_proc);
 	mib [5] = 0;
 
 retry:
@@ -2189,10 +2186,10 @@ retry:
 	if ((pi = malloc(size)) == NULL)
 		return(ret);
 
-	mib[5] = (int)(size / sizeof(struct kinfo_proc2));
+	mib[5] = (int)(size / sizeof(struct kinfo_proc));
 
 	if ((sysctl (mib, 6, pi, &size, NULL, 0) < 0) ||
-		(size != sizeof (struct kinfo_proc2))) {
+		(size != sizeof (struct kinfo_proc))) {
 		if (errno == ENOMEM) {
 			free(pi);
 			goto retry;
