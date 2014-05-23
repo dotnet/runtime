@@ -199,6 +199,10 @@ mono_error_set_type_load_class (MonoError *oerror, MonoClass *klass, const char 
 	set_error_message ();
 }
 
+/*
+ * Different than other functions, this one here assumes that type_name and assembly_name to have been allocated just for us.
+ * Which means mono_error_cleanup will free them.
+ */
 void
 mono_error_set_type_load_name (MonoError *oerror, const char *type_name, const char *assembly_name, const char *msg_format, ...)
 {
@@ -208,6 +212,7 @@ mono_error_set_type_load_name (MonoError *oerror, const char *type_name, const c
 	error->error_code = MONO_ERROR_TYPE_LOAD;
 	mono_error_set_type_name (oerror, type_name);
 	mono_error_set_assembly_name (oerror, assembly_name);
+	mono_error_dup_strings (oerror, FALSE);
 	set_error_message ();
 }
 
@@ -273,9 +278,9 @@ mono_error_set_from_loader_error (MonoError *oerror)
 {
 	MonoLoaderError *loader_error = mono_loader_get_last_error ();
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	gboolean dup_strings = TRUE;
 
 	mono_error_prepare (error);
-
 
 	if (!loader_error) {
 		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Runtime tried to produce a mono-error from an empty loader-error");
@@ -311,7 +316,8 @@ mono_error_set_from_loader_error (MonoError *oerror)
 		break;
 
 	case MONO_EXCEPTION_TYPE_LOAD:
-		mono_error_set_type_load_name (oerror, loader_error->class_name, loader_error->assembly_name, "Failed for unknown reasons.");
+		mono_error_set_type_load_name (oerror, g_strdup (loader_error->class_name), g_strdup (loader_error->assembly_name), "Failed for unknown reasons.");
+		dup_strings = FALSE;
 		break;
 	
 	case MONO_EXCEPTION_FILE_NOT_FOUND:
@@ -347,7 +353,7 @@ mono_error_set_from_loader_error (MonoError *oerror)
 		break;
 	}
 
-	mono_error_dup_strings (oerror, TRUE);
+	mono_error_dup_strings (oerror, dup_strings);
 	mono_loader_clear_error ();
 }
 
