@@ -7796,16 +7796,23 @@ mono_reflection_get_token (MonoObject *obj)
 }
 
 static MonoClass*
-load_cattr_enum_type (MonoImage *image, const char *p, const char **end)
+load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoError *error)
 {
 	char *n;
 	MonoType *t;
 	int slen = mono_metadata_decode_value (p, &p);
+
+	mono_error_init (error);
+
 	n = g_memdup (p, slen + 1);
 	n [slen] = 0;
 	t = mono_reflection_type_from_name (n, image);
-	if (!t)
-		g_error ("Cannot load type '%s'", n);
+	if (!t) {
+		/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+		/* We don't free n, it's consumed by mono_error */
+		mono_error_set_type_load_name (error, n, NULL, "Could not load enum type %s while decoding custom attribute", n);
+		return NULL;
+	}
 	g_free (n);
 	p += slen;
 	*end = p;
@@ -7813,10 +7820,12 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char **end)
 }
 
 static void*
-load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end)
+load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end, MonoError *error)
 {
 	int slen, type = t->type;
 	MonoClass *tklass = t->data.klass;
+
+	mono_error_init (error);
 
 handle_enum:
 	switch (type) {
@@ -7902,14 +7911,15 @@ handle_type:
 		n = g_memdup (p, slen + 1);
 		n [slen] = 0;
 		t = mono_reflection_type_from_name (n, image);
-		if (!t)
-			g_warning ("Cannot load type '%s'", n);
+		if (!t) {
+			/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+			/* We don't free n, it's consumed by mono_error */
+			mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute", n);
+			return NULL;
+		}
 		g_free (n);
 		*end = p + slen;
-		if (t)
-			return mono_type_get_object (mono_domain_get (), t);
-		else
-			return NULL;
+		return mono_type_get_object (mono_domain_get (), t);
 	}
 	case MONO_TYPE_OBJECT: {
 		char subt = *p++;
@@ -7931,7 +7941,9 @@ handle_type:
 			if (etype == 0x50) {
 				tklass = mono_defaults.systemtype_class;
 			} else if (etype == 0x55) {
-				tklass = load_cattr_enum_type (image, p, &p);
+				tklass = load_cattr_enum_type (image, p, &p, error);
+				if (!mono_error_ok (error))
+					return NULL;
 			} else {
 				if (etype == 0x51)
 					/* See Partition II, Appendix B3 */
@@ -7947,8 +7959,12 @@ handle_type:
 			n = g_memdup (p, slen + 1);
 			n [slen] = 0;
 			t = mono_reflection_type_from_name (n, image);
-			if (!t)
-				g_error ("Cannot load type '%s'", n);
+			if (!t) {
+				/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+				/* We don't free n, it's consumed by mono_error */
+				mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute", n);
+				return NULL;
+			}
 			g_free (n);
 			p += slen;
 			subc = mono_class_from_mono_type (t);
@@ -7959,10 +7975,14 @@ handle_type:
 		} else {
 			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
 		}
-		val = load_cattr_value (image, &subc->byval_arg, p, end);
-		obj = mono_object_new (mono_domain_get (), subc);
-		g_assert (!subc->has_references);
-		mono_gc_memmove_atomic ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
+		val = load_cattr_value (image, &subc->byval_arg, p, end, error);
+		obj = NULL;
+		if (mono_error_ok (error)) {
+			obj = mono_object_new (mono_domain_get (), subc);
+			g_assert (!subc->has_references);
+			mono_gc_memmove_atomic ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
+		}
+
 		g_free (val);
 		return obj;
 	}
@@ -8028,7 +8048,9 @@ handle_type:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 				for (i = 0; i < alen; i++) {
-					MonoObject *item = load_cattr_value (image, &tklass->byval_arg, p, &p);
+					MonoObject *item = load_cattr_value (image, &tklass->byval_arg, p, &p, error);
+					if (!mono_error_ok (error))
+						return NULL;
 					mono_array_setref (arr, i, item);
 				}
 				break;
@@ -8172,7 +8194,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	guint32 i, j, num_named;
 	MonoObject *attr;
 	void *params_buf [32];
-	void **params;
+	void **params = NULL;
 	MonoMethodSignature *sig;
 
 	mono_error_init (error);
@@ -8196,22 +8218,26 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	/*g_print ("got attr %s\n", method->klass->name);*/
 
 	sig = mono_method_signature (method);
-	if (sig->param_count < 32)
+	if (sig->param_count < 32) {
 		params = params_buf;
-	else
+		memset (params, 0, sizeof (void*) * sig->param_count);
+	} else {
 		/* Allocate using GC so it gets GC tracking */
 		params = mono_gc_alloc_fixed (sig->param_count * sizeof (void*), NULL);
+	}
 
 	/* skip prolog */
 	p += 2;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
-		params [i] = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p);
+		params [i] = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p, error);
+		if (!mono_error_ok (error))
+			goto fail;
 	}
 
 	named = p;
 	attr = mono_object_new (mono_domain_get (), method->klass);
-	mono_runtime_invoke (method, attr, params, NULL);
-	free_param_data (method->signature, params);
+
+	mono_runtime_invoke (method, attr, params, NULL); //FIXME we leak in case of exceptions
 	num_named = read16 (named);
 	named += 2;
 	for (j = 0; j < num_named; j++) {
@@ -8238,8 +8264,25 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		name [name_len] = 0;
 		named += name_len;
 		if (named_type == 0x53) {
-			MonoClassField *field = mono_class_get_field_from_name (mono_object_class (attr), name);
-			void *val = load_cattr_value (image, field->type, named, &named);
+			MonoClassField *field;
+			void *val;
+
+			/* how this fail is a blackbox */
+			field = mono_class_get_field_from_name (mono_object_class (attr), name);
+			if (!field) {
+				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a field with name %s", name);
+				g_free (name);
+				goto fail;
+			}
+
+			val = load_cattr_value (image, field->type, named, &named, error);
+			if (!mono_error_ok (error)) {
+				g_free (name);
+				if (!type_is_reference (field->type))
+					g_free (val);
+				goto fail;
+			}
+
 			mono_field_set_value (attr, field, val);
 			if (!type_is_reference (field->type))
 				g_free (val);
@@ -8249,10 +8292,32 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			MonoType *prop_type;
 
 			prop = mono_class_get_property_from_name (mono_object_class (attr), name);
+
+			if (!prop) {
+				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a property with name %s", name);
+				g_free (name);
+				goto fail;
+			}
+
+			if (!prop->set) {
+				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find the setter for %s", name);
+				g_free (name);
+				goto fail;
+			}
+
 			/* can we have more that 1 arg in a custom attr named property? */
 			prop_type = prop->get? mono_method_signature (prop->get)->ret :
 			     mono_method_signature (prop->set)->params [mono_method_signature (prop->set)->param_count - 1];
-			pparams [0] = load_cattr_value (image, prop_type, named, &named);
+
+			pparams [0] = load_cattr_value (image, prop_type, named, &named, error);
+			if (!mono_error_ok (error)) {
+				g_free (name);
+				if (!type_is_reference (prop_type))
+					g_free (pparams [0]);
+				goto fail;
+			}
+
+
 			mono_property_set_value (prop, attr, pparams, NULL);
 			if (!type_is_reference (prop_type))
 				g_free (pparams [0]);
@@ -8260,10 +8325,17 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		g_free (name);
 	}
 
+	free_param_data (method->signature, params);
 	if (params != params_buf)
 		mono_gc_free_fixed (params);
 
 	return attr;
+
+fail:
+	free_param_data (method->signature, params);
+	if (params != params_buf)
+		mono_gc_free_fixed (params);
+	return NULL;
 }
 	
 /*
@@ -8310,7 +8382,13 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		MonoObject *obj;
 		void *val;
 
-		val = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p);
+		val = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p, error);
+		if (!mono_error_ok (error)) {
+			if (!type_is_reference (mono_method_signature (method)->params [i]))
+				g_free (val);
+			return;
+		}
+
 		obj = type_is_reference (mono_method_signature (method)->params [i]) ? 
 			val : mono_value_box (domain, mono_class_from_mono_type (mono_method_signature (method)->params [i]), val);
 		mono_array_setref (typedargs, i, obj);
@@ -8361,10 +8439,22 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			MonoClassField *field = mono_class_get_field_from_name (attrklass, name);
 			void *val;
 
+			if (!field) {
+				g_free (name);
+				goto fail;
+			}
+
 			arginfo [j].type = field->type;
 			arginfo [j].field = field;
 
-			val = load_cattr_value (image, field->type, named, &named);
+			val = load_cattr_value (image, field->type, named, &named, error);
+			if (!mono_error_ok (error)) {
+				if (!type_is_reference (field->type))
+					g_free (val);
+				g_free (name);
+				return;
+			}
+
 			obj = type_is_reference (field->type) ? val : mono_value_box (domain, mono_class_from_mono_type (field->type), val);
 			mono_array_setref (namedargs, j, obj);
 			if (!type_is_reference (field->type))
@@ -8375,13 +8465,25 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			MonoProperty *prop = mono_class_get_property_from_name (attrklass, name);
 			void *val;
 
+			if (!prop || !prop->set) {
+				g_free (name);
+				goto fail;
+			}
+
 			prop_type = prop->get? mono_method_signature (prop->get)->ret :
 			     mono_method_signature (prop->set)->params [mono_method_signature (prop->set)->param_count - 1];
 
 			arginfo [j].type = prop_type;
 			arginfo [j].prop = prop;
 
-			val = load_cattr_value (image, prop_type, named, &named);
+			val = load_cattr_value (image, prop_type, named, &named, error);
+			if (!mono_error_ok (error)) {
+				if (!type_is_reference (prop_type))
+					g_free (val);
+				g_free (name);
+				return;
+			}
+
 			obj = type_is_reference (prop_type) ? val : mono_value_box (domain, mono_class_from_mono_type (prop_type), val);
 			mono_array_setref (namedargs, j, obj);
 			if (!type_is_reference (prop_type))
@@ -8990,6 +9092,7 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
+		/* FIXME add MonoError to mono_reflection_get_custom_attrs_info */
 		if (mono_loader_get_last_error ())
 			return NULL;
 		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
