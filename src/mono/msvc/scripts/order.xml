@@ -20,6 +20,16 @@
       <profile>basic</profile>
       <response>corlib.dll.sources</response>
     </project>
+    <project dir="class/Mono.Security" library="Mono.Security-basic">
+      <boot>true</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/basic/bare</flags>
+      <output>Mono.Security.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/basic/Mono.Security.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>basic</profile>
+      <response>Mono.Security.dll.sources</response>
+    </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
@@ -32,7 +42,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP -lib:./../../class/lib/basic/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/basic/bare -d:NET_1_1 -d:NET_2_0 -d:BOOTSTRAP_BASIC -nowarn:1699 -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/basic_PatternParser.cs Mono.Xml.Xsl/basic_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/basic/System.Xml.dll</library_output>
@@ -80,6 +90,16 @@
       <profile>build</profile>
       <response>corlib.dll.sources</response>
     </project>
+    <project dir="class/Mono.Security" library="Mono.Security-build">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/build/bare</flags>
+      <output>Mono.Security.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/Mono.Security.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>build</profile>
+      <response>Mono.Security.dll.sources</response>
+    </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
@@ -112,7 +132,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP -lib:./../../class/lib/build/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/build_PatternParser.cs Mono.Xml.Xsl/build_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/build/System.Xml.dll</library_output>
@@ -122,7 +142,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/build/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/build_PatternParser.cs Mono.Xml.Xsl/build_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/build/bare/System.Xml.dll</library_output>
@@ -250,6 +270,26 @@
       <profile>net_2_0</profile>
       <response>./../../build/deps/corlib_test_net_2_0.dll.response</response>
     </project>
+    <project dir="class/Mono.Security" library="Mono.Security-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/net_2_0/bare</flags>
+      <output>Mono.Security.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_2_0/Mono.Security.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>Mono.Security.dll.sources</response>
+    </project>
+    <project dir="class/Mono.Security" library="Mono.Security-tests-net_2_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Mono.Security.dll -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/net_2_0/bare -nowarn:169,219,618,672</flags>
+      <output>Mono.Security_test_net_2_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Mono.Security_test_net_2_0.dll</library_output>
+      <fx_version>2.0</fx_version>
+      <profile>net_2_0</profile>
+      <response>./../../build/deps/Mono.Security_test_net_2_0.dll.response</response>
+    </project>
     <project dir="class/System" library="System-net_2_0">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_2_0/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
@@ -312,7 +352,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP -lib:./../../class/lib/net_2_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_2_0_PatternParser.cs Mono.Xml.Xsl/net_2_0_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/net_2_0/System.Xml.dll</library_output>
@@ -322,7 +362,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_2_0/bare -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
       <output>System.Xml_test_net_2_0.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_2_0_PatternParser.cs Mono.Xml.Xsl/net_2_0_PatternTokenizer.cs</built_sources>
       <library_output>System.Xml_test_net_2_0.dll</library_output>
@@ -332,7 +372,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-bare-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_2_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_2_0_PatternParser.cs Mono.Xml.Xsl/net_2_0_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/net_2_0/bare/System.Xml.dll</library_output>
@@ -342,7 +382,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_2_0/bare -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
       <output>System.Xml_test_net_2_0.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_2_0_PatternParser.cs Mono.Xml.Xsl/net_2_0_PatternTokenizer.cs</built_sources>
       <library_output>System.Xml_test_net_2_0.dll</library_output>
@@ -462,7 +502,7 @@
     </project>
     <project dir="class/System.Configuration" library="System.Configuration-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618 -lib:./../../class/lib/net_2_0/secxml -lib:./../../class/lib/net_2_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/secxml -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_0/System.Configuration.dll</library_output>
@@ -472,7 +512,7 @@
     </project>
     <project dir="class/System.Configuration" library="System.Configuration-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.Configuration.dll -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618 -lib:./../../class/lib/net_2_0/secxml -lib:./../../class/lib/net_2_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_2_0/secxml -lib:./../../class/lib/net_2_0/bare -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/System.Configuration.dll -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>System.Configuration_test_net_2_0.dll</library_output>
@@ -1882,7 +1922,7 @@
     </project>
     <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_2_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Tasks.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_2_0/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:System.Core.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_2_0/Microsoft.Build.Tasks.dll /r:System.Xml.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Engine.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Framework.dll /r:./../../class/lib/net_2_0/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_2_0/Microsoft.Build.Utilities.dll /r:System.Core.dll</flags>
       <output>Microsoft.Build.Tasks_test_net_2_0.dll</output>
       <built_sources></built_sources>
       <library_output>Microsoft.Build.Tasks_test_net_2_0.dll</library_output>
@@ -2212,7 +2252,7 @@
     </project>
     <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_3_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Tasks.v3.5.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:System.Core.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_3_5 -lib:./../../class/lib/net_2_0 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_3_5/Microsoft.Build.Tasks.v3.5.dll /r:System.Xml.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_3_5/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_3_5/Microsoft.Build.Utilities.v3.5.dll /r:System.Core.dll</flags>
       <output>Microsoft.Build.Tasks_test_net_3_5.dll</output>
       <built_sources></built_sources>
       <library_output>Microsoft.Build.Tasks_test_net_3_5.dll</library_output>
@@ -2249,6 +2289,26 @@
       <fx_version>4.0</fx_version>
       <profile>net_4_0</profile>
       <response>./../../build/deps/corlib_test_net_4_0.dll.response</response>
+    </project>
+    <project dir="class/Mono.Security" library="Mono.Security-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/net_4_0/bare</flags>
+      <output>Mono.Security.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_0/Mono.Security.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>Mono.Security.dll.sources</response>
+    </project>
+    <project dir="class/Mono.Security" library="Mono.Security-tests-net_4_0">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/Mono.Security.dll -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/net_4_0/bare -nowarn:169,219,618,672</flags>
+      <output>Mono.Security_test_net_4_0.dll</output>
+      <built_sources></built_sources>
+      <library_output>Mono.Security_test_net_4_0.dll</library_output>
+      <fx_version>4.0</fx_version>
+      <profile>net_4_0</profile>
+      <response>./../../build/deps/Mono.Security_test_net_4_0.dll.response</response>
     </project>
     <project dir="class/System" library="System-net_4_0">
       <boot>false</boot>
@@ -2312,7 +2372,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP -lib:./../../class/lib/net_4_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_0_PatternParser.cs Mono.Xml.Xsl/net_4_0_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/net_4_0/System.Xml.dll</library_output>
@@ -2322,7 +2382,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_4_0/bare -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
       <output>System.Xml_test_net_4_0.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_0_PatternParser.cs Mono.Xml.Xsl/net_4_0_PatternTokenizer.cs</built_sources>
       <library_output>System.Xml_test_net_4_0.dll</library_output>
@@ -2332,7 +2392,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-bare-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_4_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_0_PatternParser.cs Mono.Xml.Xsl/net_4_0_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/net_4_0/bare/System.Xml.dll</library_output>
@@ -2342,7 +2402,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_4_0/bare -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
       <output>System.Xml_test_net_4_0.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_0_PatternParser.cs Mono.Xml.Xsl/net_4_0_PatternTokenizer.cs</built_sources>
       <library_output>System.Xml_test_net_4_0.dll</library_output>
@@ -2462,7 +2522,7 @@
     </project>
     <project dir="class/System.Configuration" library="System.Configuration-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618 -lib:./../../class/lib/net_4_0/secxml -lib:./../../class/lib/net_4_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/secxml -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_0/System.Configuration.dll</library_output>
@@ -2472,7 +2532,7 @@
     </project>
     <project dir="class/System.Configuration" library="System.Configuration-tests-net_4_0">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.Configuration.dll -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618 -lib:./../../class/lib/net_4_0/secxml -lib:./../../class/lib/net_4_0/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_0/secxml -lib:./../../class/lib/net_4_0/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_0 -r:mscorlib.dll -optimize -r:./../../class/lib/net_4_0/System.Configuration.dll -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration_test_net_4_0.dll</output>
       <built_sources></built_sources>
       <library_output>System.Configuration_test_net_4_0.dll</library_output>
@@ -4332,7 +4392,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP -lib:./../../class/lib/net_4_5/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_5_PatternParser.cs Mono.Xml.Xsl/net_4_5_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/net_4_5/System.Xml.dll</library_output>
@@ -4342,7 +4402,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_4_5/bare -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
       <output>System.Xml_test_net_4_5.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_5_PatternParser.cs Mono.Xml.Xsl/net_4_5_PatternTokenizer.cs</built_sources>
       <library_output>System.Xml_test_net_4_5.dll</library_output>
@@ -4352,7 +4412,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-bare-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_4_5/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_5_PatternParser.cs Mono.Xml.Xsl/net_4_5_PatternTokenizer.cs</built_sources>
       <library_output>./../../class/lib/net_4_5/bare/System.Xml.dll</library_output>
@@ -4362,7 +4422,7 @@
     </project>
     <project dir="class/System.XML" library="System.Xml-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -lib:./../../class/lib/net_4_5/bare -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/bare/System.Xml.dll -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -nowarn:0618 -nowarn:219 -nowarn:169 -r:System.Data.dll -r:System.Core.dll</flags>
       <output>System.Xml_test_net_4_5.dll</output>
       <built_sources>System.Xml.XPath/Parser.cs Mono.Xml.Xsl/net_4_5_PatternParser.cs Mono.Xml.Xsl/net_4_5_PatternTokenizer.cs</built_sources>
       <library_output>System.Xml_test_net_4_5.dll</library_output>
@@ -4442,7 +4502,7 @@
     </project>
     <project dir="class/Mono.Security" library="Mono.Security-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -unsafe -nowarn:1030 -lib:./../../class/lib/net_4_5/bare</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5/bare -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:System.dll -unsafe -nowarn:1030</flags>
       <output>Mono.Security.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/Mono.Security.dll</library_output>
@@ -4482,7 +4542,7 @@
     </project>
     <project dir="class/System.Configuration" library="System.Configuration-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618 -lib:./../../class/lib/net_4_5/secxml -lib:./../../class/lib/net_4_5/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/secxml -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.Configuration.dll</library_output>
@@ -4492,7 +4552,7 @@
     </project>
     <project dir="class/System.Configuration" library="System.Configuration-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.Configuration.dll -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618 -lib:./../../class/lib/net_4_5/secxml -lib:./../../class/lib/net_4_5/bare</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/secxml -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/System.Configuration.dll -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll -nowarn:618</flags>
       <output>System.Configuration_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>System.Configuration_test_net_4_5.dll</library_output>
@@ -6912,7 +6972,7 @@
     </project>
     <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</flags>
       <output>Microsoft.Build.Utilities.v4.0.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll</library_output>
@@ -6982,7 +7042,7 @@
     </project>
     <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Tasks.v4.0.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_5/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:System.Core.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Tasks.v4.0.dll /r:System.Xml.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll /r:./../../class/lib/net_4_5/Mono.XBuild.Tasks.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:System.Core.dll /r:Microsoft.Build.dll</flags>
       <output>Microsoft.Build.Tasks_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>Microsoft.Build.Tasks_test_net_4_5.dll</library_output>
@@ -7620,54 +7680,34 @@
       <profile>xbuild_12</profile>
       <response>./../../build/deps/Mono.XBuild.Tasks_test_xbuild_12.dll.response</response>
     </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-xbuild_12">
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll /r:./../../class/lib/xbuild_12/Mono.XBuild.Tasks.dll</flags>
-      <output>Microsoft.Build.Tasks.v12.0.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll</flags>
+      <output>Microsoft.Build.Utilities.v4.0.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.Tasks.v12.0.dll</library_output>
+      <library_output>./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll</library_output>
       <fx_version>4.5</fx_version>
-      <profile>xbuild_12</profile>
-      <response>Microsoft.Build.Tasks.dll.sources</response>
+      <profile>net_4_5</profile>
+      <response>Microsoft.Build.Utilities.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-tests-xbuild_12">
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.Tasks.v12.0.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll /r:./../../class/lib/xbuild_12/Mono.XBuild.Tasks.dll /r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll /r:System.Core.dll</flags>
-      <output>Microsoft.Build.Tasks_test_xbuild_12.dll</output>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_5/Microsoft.Build.Utilities.v4.0.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Engine.dll /r:./../../class/lib/net_4_5/Microsoft.Build.Framework.dll -r:System.dll -r:System.Core.dll</flags>
+      <output>Microsoft.Build.Utilities_test_net_4_5.dll</output>
       <built_sources></built_sources>
-      <library_output>Microsoft.Build.Tasks_test_xbuild_12.dll</library_output>
+      <library_output>Microsoft.Build.Utilities_test_net_4_5.dll</library_output>
       <fx_version>4.5</fx_version>
-      <profile>xbuild_12</profile>
-      <response>./../../build/deps/Microsoft.Build.Tasks_test_xbuild_12.dll.response</response>
+      <profile>net_4_5</profile>
+      <response>./../../build/deps/Microsoft.Build.Utilities_test_net_4_5.dll.response</response>
     </project>
-    <project dir="class/Microsoft.Build" library="Microsoft.Build-xbuild_12">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL</flags>
-      <output>Microsoft.Build.dll</output>
-      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
-      <library_output>./../../class/lib/xbuild_12/Microsoft.Build.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>xbuild_12</profile>
-      <response>Microsoft.Build.dll.sources</response>
-    </project>
-    <project dir="class/Microsoft.Build" library="Microsoft.Build-tests-xbuild_12">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize -r:./../../class/lib/xbuild_12/Microsoft.Build.dll /r:mscorlib.dll /r:System.dll /r:System.Core.dll /r:System.Xml.dll /r:Microsoft.Build.Engine.dll /r:Microsoft.Build.Framework.dll /d:MICROSOFT_BUILD_DLL /r:Microsoft.Build.Utilities.v4.0.dll</flags>
-      <output>Microsoft.Build_test_xbuild_12.dll</output>
-      <built_sources>Microsoft.Build.Internal/ExpressionParser.cs</built_sources>
-      <library_output>Microsoft.Build_test_xbuild_12.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>xbuild_12</profile>
-      <response>./../../build/deps/Microsoft.Build_test_xbuild_12.dll.response</response>
-    </project>
-    <project dir="tools/xbuild" library="xbuild-xbuild_12">
+    <project dir="mcs" library="mcs-net_4_5">
       <boot></boot>
-      <flags>/codepage:65001 -r:./../../class/lib/xbuild_12/Microsoft.Build.Framework.dll -r:./../../class/lib/xbuild_12/Microsoft.Build.Utilities.v12.0.dll -r:./../../class/lib/xbuild_12/Microsoft.Build.Engine.dll -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../../class/lib/xbuild_12 -r:mscorlib.dll -debug -d:XBUILD_12 -lib:./../../class/lib/net_4_5 -optimize /noconfig</flags>
-      <output>xbuild.exe</output>
+      <flags>/codepage:65001 -lib:./../class/lib/build -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -nowarn:1699 -nostdlib -lib:./../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>mcs.exe</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/xbuild_12/xbuild.exe</library_output>
+      <library_output>mcs.exe</library_output>
       <fx_version>4.5</fx_version>
-      <profile>xbuild_12</profile>
-      <response>xbuild.exe.sources</response>
+      <profile>net_4_5</profile>
+      <response>mcs.exe.sources</response>
     </project>
 </root>

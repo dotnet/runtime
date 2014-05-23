@@ -628,7 +628,7 @@ class MsbuildGenerator {
 	public VsCsproj Generate (Dictionary<string,MsbuildGenerator> projects, bool showWarnings = false)
 	{
 		var generatedProjFile = NativeName (Csproj.csProjFilename);
-		Console.WriteLine ("Generating: {0}", generatedProjFile);
+		//Console.WriteLine ("Generating: {0}", generatedProjFile);
 
 		string boot, flags, output_name, built_sources, response, profile;
 
@@ -679,7 +679,7 @@ class MsbuildGenerator {
 			prebuild_unix = prebuild.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
 			prebuild_windows = prebuild.Replace ("@MONO@", "").Replace ("@CAT@", "type");
 		} else {
-			prebuild_unix = prebuild;
+			prebuild_unix = prebuild.Replace ("jay.exe", "jay");
 			prebuild_windows = prebuild;
 		}
 		
@@ -695,9 +695,9 @@ class MsbuildGenerator {
 			string [] f = all_args.Dequeue ();
 
 			for (int i = 0; i < f.Length; i++) {
-				if (f [i] [0] == '-')
+				if (f [i].Length > 0 && f [i][0] == '-')
 					f [i] = "/" + f [i].Substring (1);
-
+				
 				if (f [i] [0] == '@') {
 					string [] extra_args;
 					string response_file = f [i].Substring (1);
@@ -787,6 +787,8 @@ class MsbuildGenerator {
 			}
 			resources.AppendFormat ("  </ItemGroup>" + NewLine);
 		}
+	
+
 		if (references.Count > 0 || reference_aliases.Count > 0) {
 			// -r:mscorlib.dll -r:System.dll
 			//<ProjectReference Include="..\corlib\corlib-basic.csproj">
