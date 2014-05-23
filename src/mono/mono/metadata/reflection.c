@@ -8196,6 +8196,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	void *params_buf [32];
 	void **params = NULL;
 	MonoMethodSignature *sig;
+	MonoObject *exc = NULL;
 
 	mono_error_init (error);
 
@@ -8237,7 +8238,9 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	named = p;
 	attr = mono_object_new (mono_domain_get (), method->klass);
 
-	mono_runtime_invoke (method, attr, params, NULL); //FIXME we leak in case of exceptions
+	mono_runtime_invoke (method, attr, params, &exc);
+	if (exc)
+		goto fail;
 	num_named = read16 (named);
 	named += 2;
 	for (j = 0; j < num_named; j++) {
@@ -8335,6 +8338,8 @@ fail:
 	free_param_data (method->signature, params);
 	if (params != params_buf)
 		mono_gc_free_fixed (params);
+	if (exc)
+		mono_raise_exception ((MonoException*)exc);
 	return NULL;
 }
 	
