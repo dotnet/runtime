@@ -190,7 +190,8 @@ common_sources = \
 	threadpool-internals.h	\
 	verify.c		\
 	verify-internals.h	\
-	wrapper-types.h
+	wrapper-types.h	\
+	reflection-internals.h
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

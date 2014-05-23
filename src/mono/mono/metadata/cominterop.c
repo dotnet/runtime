@@ -20,6 +20,7 @@
 #include "metadata/tabledefs.h"
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
+#include "metadata/reflection-internals.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/threads.h"
@@ -285,7 +286,9 @@ cominterop_get_com_slot_begin (MonoClass* klass)
 		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
 	cinfo = mono_custom_attrs_from_class (klass);
 	if (cinfo) {
-		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr (cinfo, interface_type_attribute);
+		MonoError error;
+		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr_checked (cinfo, interface_type_attribute, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	}
@@ -392,7 +395,9 @@ cominterop_class_guid (MonoClass* klass, guint8* guid)
 
 	cinfo = mono_custom_attrs_from_class (klass);	
 	if (cinfo) {
-		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr (cinfo, GuidAttribute);
+		MonoError error;
+		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr_checked (cinfo, GuidAttribute, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
 		if (!attr)
 			return FALSE;
@@ -420,7 +425,9 @@ cominterop_com_visible (MonoClass* klass)
 
 	cinfo = mono_custom_attrs_from_class (klass);
 	if (cinfo) {
-		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr (cinfo, ComVisibleAttribute);
+		MonoError error;
+		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr_checked (cinfo, ComVisibleAttribute, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
 		if (attr)
 			visible = attr->visible;
@@ -2433,7 +2440,9 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 		if (method) {
 			cinfo = mono_custom_attrs_from_method (method);
 			if (cinfo) {
-				MonoObject *result = mono_custom_attrs_get_attr (cinfo, ComDispIdAttribute);
+				MonoError error;
+				MonoObject *result = mono_custom_attrs_get_attr_checked (cinfo, ComDispIdAttribute, &error);
+				g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/;
 
 				if (result)
 					rgDispId[i] = *(gint32*)mono_object_unbox (result);

@@ -12,7 +12,7 @@
 #include <config.h>
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-membar.h"
-#include "mono/metadata/reflection.h"
+#include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/metadata-internals.h"
 #include <mono/metadata/profiler-private.h>
@@ -8522,8 +8522,10 @@ MonoArray*
 mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 {
 	MonoError error;
+	MonoArray *result = mono_custom_attrs_construct_by_type (cinfo, NULL, &error);
+	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
-	return mono_custom_attrs_construct_by_type (cinfo, NULL, &error);
+	return result;
 }
 
 static MonoArray*
@@ -8823,9 +8825,20 @@ mono_custom_attrs_has_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 MonoObject*
 mono_custom_attrs_get_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 {
+	MonoError error;
+	MonoObject *res = mono_custom_attrs_get_attr_checked (ainfo, attr_klass, &error);
+	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+	return res;
+}
+
+MonoObject*
+mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error)
+{
 	int i, attr_index;
 	MonoClass *klass;
 	MonoArray *attrs;
+
+	mono_error_init (error);
 
 	attr_index = -1;
 	for (i = 0; i < ainfo->num_attrs; ++i) {
@@ -8838,11 +8851,10 @@ mono_custom_attrs_get_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 	if (attr_index == -1)
 		return NULL;
 
-	attrs = mono_custom_attrs_construct (ainfo);
-	if (attrs)
-		return mono_array_get (attrs, MonoObject*, attr_index);
-	else
+	attrs = mono_custom_attrs_construct_by_type (ainfo, NULL, error);
+	if (!mono_error_ok (error))
 		return NULL;
+	return mono_array_get (attrs, MonoObject*, attr_index);
 }
 
 /*
