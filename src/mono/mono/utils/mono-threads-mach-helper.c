@@ -93,8 +93,8 @@ mono_threads_install_dead_letter (void)
 void
 mono_threads_init_dead_letter (void)
 {
-	id nsstring = objc_getClass ("NSString");
-	id nsautoreleasepool = objc_getClass ("NSAutoreleasePool");
+	id nsstring = (id) objc_getClass ("NSString");
+	id nsautoreleasepool = (id) objc_getClass ("NSAutoreleasePool");
 	SEL stringWithUTF8String = sel_registerName ("stringWithUTF8String:");
 	SEL retain = sel_registerName ("retain");
 	id pool;
