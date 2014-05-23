@@ -1,6 +1,6 @@
 SUBDIRS = cas assemblyresolve gc-descriptors
 
-check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test-process-exit test-messages rm-empty-logs
+check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test_platform test-process-exit test-messages rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -883,6 +883,15 @@ test-type-load: TestDriver.dll
 	@$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	@echo "Testing load-exception.exe..."
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
+
+EXTRA_DIST += custom-attr-errors.cs custom-attr-errors-lib.cs
+test-cattr-type-load: TestDriver.dll custom-attr-errors.cs custom-attr-errors-lib.cs
+	$(MCS) -D:WITH_MEMBERS /t:library $(srcdir)/custom-attr-errors-lib.cs
+	$(MCS) -r:TestDriver.dll -r:custom-attr-errors-lib.dll  $(srcdir)/custom-attr-errors.cs
+	$(MCS) /t:library $(srcdir)/custom-attr-errors-lib.cs
+	@echo "Testing custom-attribute-load-exceptions.exe..."
+	@$(RUNTIME) custom-attr-errors.exe > custom-attr-errors.exe.stdout 2> custom-attr-errors.exe.stderr
+
 
 EXTRA_DIST += debug-casts.cs
 # This depends on TLS, so its not ran by default
