@@ -417,8 +417,7 @@ mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 		size = sizeof (type);	\
 		if (buffer_size < size)	\
 			return -1;	\
-		type __var = cb ? ((functype)counter->addr) () : *(type*)counter->addr;	\
-		memcpy (buffer, &__var, size);	\
+		*(type*)buffer = cb ? ((functype)counter->addr) () : *(type*)counter->addr; \
 	} while (0);
 
 int
