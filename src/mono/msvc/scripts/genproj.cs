@@ -861,7 +861,19 @@ class MsbuildGenerator {
 		// Replace the template values
 		//
 
+		string strongNameSection = "";
+		if (StrongNameKeyFile != null){
+			strongNameSection = String.Format (
+				"  <PropertyGroup>\n" +
+				"    <SignAssembly>true</SignAssembly>\n" +
+				"{1}" +
+				"  </PropertyGroup>\n" + 
+				"  <PropertyGroup>\n" + 
+				"    <AssemblyOriginatorKeyFile>{0}</AssemblyOriginatorKeyFile>\n" +
+				"  </PropertyGroup>", StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>\n" : "");
+		}
 		Csproj.output = template.
+			Replace ("@SIGNATURE@", strongNameSection).
 			Replace ("@PROJECTGUID@", Csproj.projectGuid).
 			Replace ("@DEFINES@", defines.ToString ()).
 			Replace ("@DISABLEDWARNINGS@", string.Join (",", (from i in ignore_warning select i.ToString ()).ToArray ())).
