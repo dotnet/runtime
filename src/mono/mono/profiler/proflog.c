@@ -1937,11 +1937,11 @@ counters_init_add_counter (MonoCounter *counter, gpointer data)
 static void
 counters_init (MonoProfiler *profiler)
 {
-	mono_counters_foreach (counters_init_add_counter, NULL);
-
 	MonoCounterAgent *agent;
 	LogBuffer *logbuffer;
 	int size = 1 + 5, len = 0;
+
+	mono_counters_foreach (counters_init_add_counter, NULL);
 
 	for (agent = counters; agent; agent = agent->next) {
 		size += strlen (mono_counter_get_name (agent->counter)) + 1 + 5 * 5;
@@ -1994,9 +1994,11 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	emit_byte (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE);
 	emit_uvalue (logbuffer, timestamp);
 	for (agent = counters; agent; agent = agent->next) {
+		size_t size;
+
 		counter = agent->counter;
 
-		size_t size = mono_counter_get_size (counter);
+		size = mono_counter_get_size (counter);
 		if (size < 0) {
 			continue; // FIXME error
 		} else if (size > buffer_size) {

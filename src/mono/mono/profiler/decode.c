@@ -2403,13 +2403,14 @@ decode_buffer (ProfContext *ctx)
 			} else if (subtype == TYPE_SAMPLE_COUNTERS_DESC) {
 				uint64_t i, len = decode_uleb128 (p + 1, &p);
 				for (i = 0; i < len; i++) {
+					uint64_t type, unit, variance, index;
 					uint64_t section = decode_uleb128 (p, &p);
 					char *name = pstrdup ((char*)p);
 					while (*p++);
-					uint64_t type = decode_uleb128 (p, &p);
-					uint64_t unit = decode_uleb128 (p, &p);
-					uint64_t variance = decode_uleb128 (p, &p);
-					uint64_t index = decode_uleb128 (p, &p);
+					type = decode_uleb128 (p, &p);
+					unit = decode_uleb128 (p, &p);
+					variance = decode_uleb128 (p, &p);
+					index = decode_uleb128 (p, &p);
 					add_counter ((int)section, name, (int)type, (int)unit, (int)variance, (int)index);
 				}
 			} else if (subtype == TYPE_SAMPLE_COUNTERS) {
@@ -2419,7 +2420,7 @@ decode_buffer (ProfContext *ctx)
 				uint64_t timestamp = decode_uleb128 (p + 1, &p);
 				uint64_t time_between = timestamp / 1000 * 1000 * 1000 * 1000 + startup_time;
 				while (1) {
-					uint64_t index = decode_uleb128 (p, &p);
+					uint64_t type, index = decode_uleb128 (p, &p);
 					if (index == 0)
 						break;
 
@@ -2430,7 +2431,7 @@ decode_buffer (ProfContext *ctx)
 						}
 					}
 
-					uint64_t type = decode_uleb128 (p, &p);
+					type = decode_uleb128 (p, &p);
 
 					value = calloc (1, sizeof (CounterValue));
 					value->timestamp = timestamp;
