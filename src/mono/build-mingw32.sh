@@ -57,7 +57,7 @@ function setup ()
     CROSS_DLL_DIR="$CROSS_DIR/bin"
     PATH=$CROSS_BIN_DIR:$PATH
 
-    MONO_VERSION=`grep AC_INIT configure.in | cut -d ',' -f 2|tr -d '\[ \]'`
+    MONO_VERSION=`grep AC_INIT configure.ac | cut -d ',' -f 2|tr -d '\[ \]'`
     
     if [ -d ./.git ]; then
 	MONO_GIT_COMMIT="`git log -1 --format=format:%t`"

@@ -27,10 +27,10 @@
 	
 #	if defined(HAVE_KW_THREAD) && defined(USE_INCLUDED_LIBGC) && !defined(__powerpc__)
         /* The local alloc stuff is in pthread_support.c, but solaris uses solaris_threads.c */
-        /* It is also disabled on solaris/x86 by libgc/configure.in */
+        /* It is also disabled on solaris/x86 by libgc/configure.ac */
         /* 
 		 * ARM has no definition for some atomic functions in gc_locks.h and
-		 * support is also disabled in libgc/configure.in.
+		 * support is also disabled in libgc/configure.ac.
 		 */
 #       if !defined(__sparc__) && !defined(__sun) && !defined(__arm__) && !defined(__mips__)
 #		    define GC_REDIRECT_TO_LOCAL

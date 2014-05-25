@@ -167,7 +167,7 @@ static inline void InterlockedWrite16(volatile gint16 *dst, gint16 val)
 	mono_memory_barrier ();
 }
 
-/* Prefer GCC atomic ops if the target supports it (see configure.in). */
+/* Prefer GCC atomic ops if the target supports it (see configure.ac). */
 #elif defined(USE_GCC_ATOMIC_OPS)
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,

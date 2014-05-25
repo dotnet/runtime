@@ -705,7 +705,7 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 	
 #ifdef FTRUNCATE_DOESNT_EXTEND
-	/* I haven't bothered to write the configure.in stuff for this
+	/* I haven't bothered to write the configure.ac stuff for this
 	 * because I don't know if any platform needs it.  I'm leaving
 	 * this code just in case though
 	 */
