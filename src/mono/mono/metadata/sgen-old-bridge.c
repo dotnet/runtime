@@ -396,8 +396,9 @@ dyn_array_int_merge_one (DynIntArray *array, int value)
 static void
 enable_accounting (void)
 {
+	SgenHashTable table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
 	bridge_accounting_enabled = TRUE;
-	hash_table = (SgenHashTable)SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_HASH_TABLE, INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntryWithAccounting), mono_aligned_addr_hash, NULL);
+	hash_table = table;
 }
 
 static MonoGCBridgeObjectKind
