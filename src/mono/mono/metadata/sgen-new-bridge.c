@@ -882,7 +882,7 @@ dump_graph (void)
 	MonoObject *obj;
 	HashEntry *entry;
 	int prefix_len = strlen (dump_prefix);
-	char filename [prefix_len + 64];
+	char *filename = alloca(prefix_len + 64);
 	FILE *file;
 	int edge_id = 0;
 
