@@ -273,43 +273,43 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 }
 
 static gint64
-user_time ()
+user_time (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_USER_TIME);
 }
 
 static gint64
-system_time ()
+system_time (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_SYSTEM_TIME);
 }
 
 static gint64
-total_time ()
+total_time (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_TOTAL_TIME);
 }
 
 static gint64
-working_set ()
+working_set (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_WORKING_SET);
 }
 
 static gint64
-private_bytes ()
+private_bytes (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_PRIVATE_BYTES);
 }
 
 static gint64
-virtual_bytes ()
+virtual_bytes (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_VIRTUAL_BYTES);
 }
 
 static gint64
-page_faults ()
+page_faults (void)
 {
 	return mono_process_get_data (GINT_TO_POINTER (mono_process_current_pid ()), MONO_PROCESS_FAULTS);
 }
@@ -349,19 +349,19 @@ cpu_load (int kind)
 }
 
 static double
-cpu_load_1min ()
+cpu_load_1min (void)
 {
 	return cpu_load (0);
 }
 
 static double
-cpu_load_5min ()
+cpu_load_5min (void)
 {
 	return cpu_load (1);
 }
 
 static double
-cpu_load_15min ()
+cpu_load_15min (void)
 {
 	return cpu_load (2);
 }
@@ -374,7 +374,7 @@ static gboolean system_counters_initialized = FALSE;
 #define SYSCOUNTER_LOAD (MONO_COUNTER_SYSTEM | MONO_COUNTER_DOUBLE | MONO_COUNTER_PERCENTAGE | MONO_COUNTER_VARIABLE | MONO_COUNTER_CALLBACK)
 
 static void
-initialize_system_counters ()
+initialize_system_counters (void)
 {
 	mono_counters_register ("User Time", SYSCOUNTER_TIME, &user_time);
 	mono_counters_register ("System Time", SYSCOUNTER_TIME, &system_time);

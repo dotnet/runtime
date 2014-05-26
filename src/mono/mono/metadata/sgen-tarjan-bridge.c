@@ -390,9 +390,9 @@ retry:
 static void
 free_color_buckets (void)
 {
-	color_data_count = 0;
-
 	ColorBucket *cur, *tmp;
+
+	color_data_count = 0;
 
 	for (cur = root_color_bucket; cur; cur = tmp) {
 		ColorData *cd;
