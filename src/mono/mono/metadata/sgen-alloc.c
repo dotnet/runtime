@@ -187,6 +187,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	/* FIXME: handle OOM */
 	void **p;
 	char *new_next;
+	SgenThreadInfo *__thread_info__;
 	TLAB_ACCESS_INIT;
 
 	HEAVY_STAT (++stat_objects_alloced);
@@ -368,6 +369,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 {
 	void **p;
 	char *new_next;
+	SgenThreadInfo *__thread_info__;
 	TLAB_ACCESS_INIT;
 
 	size = ALIGN_UP (size);
@@ -454,6 +456,7 @@ void*
 mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	void *res;
+	SgenThreadInfo *__thread_info__;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
@@ -498,6 +501,7 @@ void*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *arr;
+	SgenThreadInfo *__thread_info__;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
@@ -535,6 +539,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 {
 	MonoArray *arr;
 	MonoArrayBounds *bounds;
+	SgenThreadInfo *__thread_info__;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
@@ -577,7 +582,7 @@ void*
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 {
 	MonoString *str;
-
+	SgenThreadInfo *__thread_info__;
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
 

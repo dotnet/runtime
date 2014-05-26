@@ -982,7 +982,7 @@ extern __thread char *stack_end;
 #define TLAB_ACCESS_INIT
 #define IN_CRITICAL_REGION sgen_thread_info->in_critical_region
 #else
-#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
+#define TLAB_ACCESS_INIT	__thread_info__ = mono_native_tls_get_value (thread_info_key)
 #define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
 #endif
 
