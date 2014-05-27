@@ -313,6 +313,8 @@ type_to_simd_type (int type)
 static LLVMTypeRef
 type_to_llvm_type (EmitContext *ctx, MonoType *t)
 {
+	t = mini_replace_type (t);
+
 	if (t->byref)
 		return LLVMPointerType (LLVMInt8Type (), 0);
 	switch (t->type) {
