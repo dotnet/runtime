@@ -25,9 +25,6 @@
 #  elif defined(__native_client__) && defined(USE_NEWLIB)
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a, b) sem_trywait(a)
-#  elif defined(__OpenBSD__)
-#    define TIMESPEC struct timespec
-#    define WAIT_BLOCK(a) sem_trywait(a)
 #  else
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a,b) sem_timedwait (a, b)
@@ -43,9 +40,6 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 	TIMESPEC ts, copy;
 	struct timeval t;
 	int res = 0;
-#if defined(__OpenBSD__)
-	int timeout;
-#endif
 
 #ifndef USE_MACH_SEMA
 	if (timeout_ms == 0)
@@ -65,19 +59,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		ts.tv_nsec -= NSEC_PER_SEC;
 		ts.tv_sec++;
 	}
-#if defined(__OpenBSD__)
-	timeout = ts.tv_sec;
-	while (timeout) {
-		if ((res = WAIT_BLOCK (sem)) == 0)
-			return res;
 
-		if (alertable)
-			return -1;
-
-		usleep (ts.tv_nsec / 1000);
-		timeout--;
-	}
-#else
 	copy = ts;
 	while ((res = WAIT_BLOCK (sem, &ts)) == -1 && errno == EINTR) {
 		struct timeval current;
@@ -104,7 +86,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 			ts.tv_nsec = 0;
 		}
 	}
-#endif
+
 	/* OSX might return > 0 for error */
 	if (res != 0)
 		res = -1;
