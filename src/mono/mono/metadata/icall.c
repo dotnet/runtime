@@ -1265,6 +1265,8 @@ get_caller_no_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed
 static MonoReflectionType *
 type_from_name (const char *str, MonoBoolean ignoreCase)
 {
+	MonoMethod *m, *dest;
+
 	MonoType *type = NULL;
 	MonoAssembly *assembly = NULL;
 	MonoTypeNameParse info;
@@ -1280,31 +1282,37 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 		return NULL;
 	}
 
-	if (info.assembly.name) {
-		assembly = mono_assembly_load (&info.assembly, NULL, NULL);
+
+	/*
+	 * We must compute the calling assembly as type loading must happen under a metadata context.
+	 * For example. The main assembly is a.exe and Type.GetType is called from dir/b.dll. Without
+	 * the metadata context (basedir currently) set to dir/b.dll we won't be able to load a dir/c.dll.
+	 */
+	m = mono_method_get_last_managed ();
+	dest = m;
+
+	mono_stack_walk_no_il (get_caller_no_reflection, &dest);
+	if (!dest)
+		dest = m;
+
+	/*
+	 * FIXME: mono_method_get_last_managed() sometimes returns NULL, thus
+	 *        causing ves_icall_System_Reflection_Assembly_GetCallingAssembly()
+	 *        to crash.  This only seems to happen in some strange remoting
+	 *        scenarios and I was unable to figure out what's happening there.
+	 *        Dec 10, 2005 - Martin.
+	 */
+
+	if (dest) {
+		assembly = dest->klass->image->assembly;
+		type_resolve = TRUE;
 	} else {
-		MonoMethod *m = mono_method_get_last_managed ();
-		MonoMethod *dest = m;
-
-		mono_stack_walk_no_il (get_caller_no_reflection, &dest);
-		if (!dest)
-			dest = m;
-
-		/*
-		 * FIXME: mono_method_get_last_managed() sometimes returns NULL, thus
-		 *        causing ves_icall_System_Reflection_Assembly_GetCallingAssembly()
-		 *        to crash.  This only seems to happen in some strange remoting
-		 *        scenarios and I was unable to figure out what's happening there.
-		 *        Dec 10, 2005 - Martin.
-		 */
-
-		if (dest) {
-			assembly = dest->klass->image->assembly;
-			type_resolve = TRUE;
-		} else {
-			g_warning (G_STRLOC);
-		}
+		g_warning (G_STRLOC);
 	}
+
+	if (info.assembly.name)
+		assembly = mono_assembly_load (&info.assembly, assembly ? assembly->basedir : NULL, NULL);
+
 
 	if (assembly) {
 		/* When loading from the current assembly, AppDomain.TypeResolve will not be called yet */
