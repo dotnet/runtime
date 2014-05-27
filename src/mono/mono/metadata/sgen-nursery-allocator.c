@@ -938,7 +938,12 @@ sgen_nursery_allocator_set_nursery_bounds (char *start, char *end)
 	sgen_nursery_start = start;
 	sgen_nursery_end = end;
 
-	sgen_space_bitmap_size = (end - start) / (SGEN_TO_SPACE_GRANULE_IN_BYTES * 8);
+	/*
+	 * This will not divide evenly for tiny nurseries (<4kb), so we make sure to be on
+	 * the right side of things and round up.  We could just do a MIN(1,x) instead,
+	 * since the nursery size must be a power of 2.
+	 */
+	sgen_space_bitmap_size = (end - start + SGEN_TO_SPACE_GRANULE_IN_BYTES * 8 - 1) / (SGEN_TO_SPACE_GRANULE_IN_BYTES * 8);
 	sgen_space_bitmap = g_malloc0 (sgen_space_bitmap_size);
 
 	/* Setup the single first large fragment */
