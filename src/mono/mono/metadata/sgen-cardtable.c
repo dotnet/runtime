@@ -131,7 +131,6 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 static void
 sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	SgenThreadInfo *__thread_info__;
 	size_t element_size = mono_class_value_size (klass, NULL);
 	size_t size = count * element_size;
 
@@ -153,7 +152,6 @@ sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, Mon
 static void
 sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
-	SgenThreadInfo *__thread_info__;
 	int size = mono_object_class (obj)->instance_size;
 
 #ifdef DISABLE_CRITICAL_REGION
