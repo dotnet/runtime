@@ -721,6 +721,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	MonoNativeThreadId tid;
 	guint32 create_flags;
 
+	/*
+	 * Join joinable threads to prevent running out of threads since the finalizer
+	 * thread might be blocked/backlogged.
+	 */
+	mono_threads_join_threads ();
+
 	mono_threads_lock ();
 	if (shutting_down) {
 		g_free (start_info);
