@@ -173,7 +173,7 @@
  * #define NO_ERRNO if strtod should not assign errno = ERANGE when
  *	the result overflows to +-Infinity or underflows to 0.
  */
-#if defined(TARGET_X86) || defined(mips) && defined(MIPSEL) || defined (__arm__)
+#if defined(TARGET_X86) || defined(mips) && defined(MIPSEL) || defined (__arm__) || defined(__aarch64__)
 
 #   define IEEE_8087
 
