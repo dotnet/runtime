@@ -118,7 +118,8 @@ typedef struct {
 	 __asm mov [eax+0x14], esp											\
 	 __asm mov [eax+0x18], esi											\
 	 __asm mov [eax+0x1c], edi											\
-	 __asm call $+5														\
+	 __asm call __mono_context_get_ip									\
+	 __asm __mono_context_get_ip:										\
 	 __asm pop dword ptr [eax+0x20]										\
 		 }																\
 	} while (0)
