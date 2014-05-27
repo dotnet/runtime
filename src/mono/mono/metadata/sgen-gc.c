@@ -4750,7 +4750,7 @@ mono_gc_base_init (void)
 
 					if (val < SGEN_MAX_NURSERY_WASTE) {
 						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.",
-								"`nursery-size` must be at least %d bytes.\n", SGEN_MAX_NURSERY_WASTE);
+								"`nursery-size` must be at least %d bytes.", SGEN_MAX_NURSERY_WASTE);
 						continue;
 					}
 
