@@ -19,6 +19,7 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
 #endif
@@ -876,11 +877,11 @@ prepare_for_guard_pages (MonoContext *mctx)
 }
 
 static void
-altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
+altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 {
 	MonoContext mctx;
 
-	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+	mctx = *ctx;
 
 	mono_handle_exception (&mctx, obj);
 	if (stack_ovf)
@@ -893,11 +894,10 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
 	MonoException *exc = NULL;
-	ucontext_t *ctx = (ucontext_t*)sigctx;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (sigctx), NULL);
 	gpointer *sp;
 	int frame_size;
-	ucontext_t *copied_ctx;
+	MonoContext *copied_ctx;
 
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
@@ -912,27 +912,15 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	 *   return ip
 	 * 128 is the size of the red zone
 	 */
-	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 4 + 128;
-#ifdef __APPLE__
-	frame_size += sizeof (*ctx->uc_mcontext);
-#endif
+	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 4 + 128;
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (gpointer)(UCONTEXT_REG_RSP (sigctx) & ~15);
 	sp = (gpointer)((char*)sp - frame_size);
-	copied_ctx = (ucontext_t*)(sp + 4);
+	copied_ctx = (MonoContext*)(sp + 4);
 	/* the arguments must be aligned */
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
-	/* may need to adjust pointers in the new struct copy, depending on the OS */
-	memcpy (copied_ctx, ctx, sizeof (ucontext_t));
-#ifdef __APPLE__
-	{
-		guint8 * copied_mcontext = (guint8*)copied_ctx + sizeof (ucontext_t);
-		/* uc_mcontext is a pointer, so make a copy which is stored after the ctx */
-		memcpy (copied_mcontext, ctx->uc_mcontext, sizeof (*ctx->uc_mcontext));
-		copied_ctx->uc_mcontext = (void*)copied_mcontext;
-	}
-#endif
+	mono_sigctx_to_monoctx (sigctx, copied_ctx);
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_RIP (sigctx) = (unsigned long)altstack_handle_and_restore;
 	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
