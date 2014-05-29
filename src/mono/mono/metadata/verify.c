@@ -3222,6 +3222,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			if (!mono_metadata_type_equal_full (mono_type_get_type_byval (value->type), mono_type_get_underlying_type (ctx->constrained_type), TRUE))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Object not compatible with constrained type at 0x%04x", ctx->ip_offset));
 			copy.stype |= BOXED_MASK;
+			copy.type = ctx->constrained_type;
 		} else {
 			if (stack_slot_is_managed_pointer (value) && !mono_class_from_mono_type (value->type)->valuetype)
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a reference type using a managed pointer to the this arg at 0x%04x", ctx->ip_offset));
