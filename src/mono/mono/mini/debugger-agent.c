@@ -356,7 +356,8 @@ typedef enum {
 	MOD_KIND_STEP = 10,
 	MOD_KIND_ASSEMBLY_ONLY = 11,
 	MOD_KIND_SOURCE_FILE_ONLY = 12,
-	MOD_KIND_TYPE_NAME_ONLY = 13
+	MOD_KIND_TYPE_NAME_ONLY = 13,
+	MOD_KIND_NONE = 14
 } ModifierKind;
 
 typedef enum {
@@ -4326,7 +4327,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 #endif
 	}
 
-	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x.\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (int)sp->il_offset));	
+	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x [%p](%d).\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (int)sp->il_offset, inst->ip, count));
 }
 
 static void
@@ -4346,6 +4347,7 @@ remove_breakpoint (BreakpointInstance *inst)
 
 	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
 		mono_arch_clear_breakpoint (ji, ip);
+		DEBUG(1, fprintf (log_file, "[dbg] Clear breakpoint at %s [%p].\n", mono_method_full_name (jinfo_get_method (ji), TRUE), ip));
 	}
 #else
 	NOT_IMPLEMENTED;
@@ -5412,6 +5414,25 @@ ss_destroy (SingleStepReq *req)
 	ss_req = NULL;
 }
 
+static void
+ss_clear_for_assembly (SingleStepReq *req, MonoAssembly *assembly)
+{
+	GSList *l;
+	gboolean found = TRUE;
+
+	while (found) {
+		found = FALSE;
+		for (l = ss_req->bps; l; l = l->next) {
+			if (breakpoint_matches_assembly (l->data, assembly)) {
+				clear_breakpoint (l->data);
+				ss_req->bps = g_slist_delete_link (ss_req->bps, l);
+				found = TRUE;
+				break;
+			}
+		}
+	}
+}
+
 /*
  * Called from metadata by the icall for System.Diagnostics.Debugger:Log ().
  */
@@ -6311,28 +6332,47 @@ clear_event_request (int req_id, int etype)
 	mono_loader_unlock ();
 }
 
-static gboolean
-event_req_matches_assembly (EventRequest *req, MonoAssembly *assembly)
+static void
+clear_assembly_from_modifier (EventRequest *req, Modifier *m, MonoAssembly *assembly)
 {
-	if (req->event_kind == EVENT_KIND_BREAKPOINT)
-		return breakpoint_matches_assembly (req->info, assembly);
-	else {
-		int i, j;
+	int i;
 
-		for (i = 0; i < req->nmodifiers; ++i) {
-			Modifier *m = &req->modifiers [i];
+	if (m->kind == MOD_KIND_EXCEPTION_ONLY && m->data.exc_class && m->data.exc_class->image->assembly == assembly)
+		m->kind = MOD_KIND_NONE;
+	if (m->kind == MOD_KIND_ASSEMBLY_ONLY && m->data.assemblies) {
+		int count = 0, match_count = 0, pos;
+		MonoAssembly **newassemblies;
 
-			if (m->kind == MOD_KIND_EXCEPTION_ONLY && m->data.exc_class && m->data.exc_class->image->assembly == assembly)
-				return TRUE;
-			if (m->kind == MOD_KIND_ASSEMBLY_ONLY && m->data.assemblies) {
-				for (j = 0; m->data.assemblies [j]; ++j)
-					if (m->data.assemblies [j] == assembly)
-						return TRUE;
-			}
+		for (i = 0; m->data.assemblies [i]; ++i) {
+			count ++;
+			if (m->data.assemblies [i] == assembly)
+				match_count ++;
+		}
+
+		if (match_count) {
+			newassemblies = g_new0 (MonoAssembly*, count - match_count);
+
+			pos = 0;
+			for (i = 0; i < count; ++i)
+				if (m->data.assemblies [i] != assembly)
+					newassemblies [pos ++] = m->data.assemblies [i];
+			g_assert (pos == count - match_count);
+			g_free (m->data.assemblies);
+			m->data.assemblies = newassemblies;
 		}
 	}
+}
 
-	return FALSE;
+static void
+clear_assembly_from_modifiers (EventRequest *req, MonoAssembly *assembly)
+{
+	int i;
+
+	for (i = 0; i < req->nmodifiers; ++i) {
+		Modifier *m = &req->modifiers [i];
+
+		clear_assembly_from_modifier (req, m, assembly);
+	}
 }
 
 /*
@@ -6353,11 +6393,16 @@ clear_event_requests_for_assembly (MonoAssembly *assembly)
 		for (i = 0; i < event_requests->len; ++i) {
 			EventRequest *req = g_ptr_array_index (event_requests, i);
 
-			if (event_req_matches_assembly (req, assembly)) {
+			clear_assembly_from_modifiers (req, assembly);
+
+			if (req->event_kind == EVENT_KIND_BREAKPOINT && breakpoint_matches_assembly (req->info, assembly)) {
 				clear_event_request (req->id, req->event_kind);
 				found = TRUE;
 				break;
 			}
+
+			if (req->event_kind == EVENT_KIND_STEP)
+				ss_clear_for_assembly (req->info, assembly);
 		}
 	}
 	mono_loader_unlock ();
