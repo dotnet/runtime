@@ -242,10 +242,10 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_thread_init (start_cb, attach_cb);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
+	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, class);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = (MonoAppDomain *) mono_object_new (domain, class);
+	ad = (MonoAppDomain *) mono_object_new_pinned (domain, class);
 	ad->data = domain;
 	domain->domain = ad;
 	domain->setup = setup;
@@ -330,7 +330,7 @@ mono_context_init (MonoDomain *domain)
 	MonoAppContext *context;
 
 	class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = (MonoAppContext *) mono_object_new (domain, class);
+	context = (MonoAppContext *) mono_object_new_pinned (domain, class);
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
 	domain->default_context = context;
