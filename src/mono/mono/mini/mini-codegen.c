@@ -1452,6 +1452,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						if (k != j)
 							sreg_masks [k] &= ~ (regmask (dest_sreg));
 					}
+					/* See below */
+					dreg_mask &= ~ (regmask (dest_sreg));
 				} else {
 					val = rs->vassign [sreg];
 					if (val == -1) {
@@ -1471,7 +1473,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 								sreg_masks [k] &= ~ (regmask (dest_sreg));
 						}
 						/* 
-						 * Prevent the dreg from being allocate to dest_sreg 
+						 * Prevent the dreg from being allocated to dest_sreg
 						 * too, since it could force sreg1 to be allocated to 
 						 * the same reg on x86.
 						 */
