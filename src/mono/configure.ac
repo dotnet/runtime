@@ -1087,6 +1087,7 @@ case "x$gc" in
 		AC_MSG_WARN("Compiling mono without GC.")
 		AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "none", [GC description])
 		AC_DEFINE(HAVE_NULL_GC,1,[No GC support.])
+		gc_msg="none"
 		;;
 	*)
 		AC_MSG_ERROR([Invalid argument to --with-gc.])
