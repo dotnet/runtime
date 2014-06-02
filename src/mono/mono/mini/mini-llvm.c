@@ -1071,11 +1071,13 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	int i, j, pindex, vret_arg_pindex = 0;
 	int *pindexes;
 	gboolean vretaddr = FALSE;
+	MonoType *rtype;
 
 	if (sinfo)
 		memset (sinfo, 0, sizeof (LLVMSigInfo));
 
-	ret_type = type_to_llvm_type (ctx, sig->ret);
+	rtype = mini_replace_type (sig->ret);
+	ret_type = type_to_llvm_type (ctx, rtype);
 	CHECK_FAILURE (ctx);
 
 	if (cinfo && cinfo->ret.storage == LLVMArgVtypeInReg) {
@@ -1088,7 +1090,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		} else {
 			g_assert_not_reached ();
 		}
-	} else if (cinfo && mini_type_is_vtype (ctx->cfg, sig->ret)) {
+	} else if (cinfo && mini_type_is_vtype (ctx->cfg, rtype)) {
 		g_assert (cinfo->ret.storage == LLVMArgVtypeRetAddr);
 		vretaddr = TRUE;
 		ret_type = LLVMVoidType ();
