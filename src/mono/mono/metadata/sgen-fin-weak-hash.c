@@ -41,7 +41,7 @@ int num_ready_finalizers = 0;
 static int no_finalize = 0;
 
 #define DISLINK_OBJECT(l)	(REVEAL_POINTER (*(void**)(l)))
-#define DISLINK_TRACK(l)	((~(gulong)(*(void**)(l))) & 1)
+#define DISLINK_TRACK(l)	((~(size_t)(*(void**)(l))) & 1)
 
 /*
  * The finalizable hash has the object as the key, the 

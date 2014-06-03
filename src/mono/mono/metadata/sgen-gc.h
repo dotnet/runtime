@@ -239,13 +239,19 @@ extern int num_ready_finalizers;
 #define SGEN_CAN_ALIGN_UP(s)		((s) <= SIZE_MAX - (SGEN_ALLOC_ALIGN - 1))
 #define SGEN_ALIGN_UP(s)		(((s)+(SGEN_ALLOC_ALIGN-1)) & ~(SGEN_ALLOC_ALIGN-1))
 
+#if SIZEOF_VOID_P == 4
+#define ONE_P 1
+#else
+#define ONE_P 1ll
+#endif
+
 /*
  * The link pointer is hidden by negating each bit.  We use the lowest
  * bit of the link (before negation) to store whether it needs
  * resurrection tracking.
  */
-#define HIDE_POINTER(p,t)	((gpointer)(~((gulong)(p)|((t)?1:0))))
-#define REVEAL_POINTER(p)	((gpointer)((~(gulong)(p))&~3L))
+#define HIDE_POINTER(p,t)	((gpointer)(~((size_t)(p)|((t)?1:0))))
+#define REVEAL_POINTER(p)	((gpointer)((~(size_t)(p))&~3L))
 
 #ifdef SGEN_ALIGN_NURSERY
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~((1 << (bits)) - 1)) == (mword)(start))
@@ -1098,10 +1104,8 @@ sgen_dummy_use (gpointer v) {
 #if defined(__GNUC__)
 	__asm__ volatile ("" : "=r"(v) : "r"(v));
 #elif defined(_MSC_VER)
-	__asm {
-		mov eax, v;
-		and eax, eax;
-	};
+	static volatile gpointer ptr;
+	ptr = v;
 #else
 #error "Implement sgen_dummy_use for your compiler"
 #endif
