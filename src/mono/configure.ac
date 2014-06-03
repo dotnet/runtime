@@ -481,7 +481,7 @@ AC_CHECK_HEADERS(wchar.h)
 AC_CHECK_HEADERS(ieeefp.h)
 AC_MSG_CHECKING(for isinf)
 AC_TRY_LINK([#include <math.h>], [
-	int f = isinf (1);
+	int f = isinf (1.0);
 ], [
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(HAVE_ISINF, 1, [isinf available])
