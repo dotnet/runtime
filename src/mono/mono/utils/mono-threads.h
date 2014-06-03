@@ -28,7 +28,7 @@ typedef HANDLE MonoNativeThreadHandle; /* unused */
 typedef DWORD mono_native_thread_return_t;
 
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (tid)
-#define MONO_UINT_TO_NATIVE_THREAD_ID(tid) (tid)
+#define MONO_UINT_TO_NATIVE_THREAD_ID(tid) ((MonoNativeThreadId)(tid))
 
 #else
 

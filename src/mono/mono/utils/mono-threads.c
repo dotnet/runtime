@@ -38,7 +38,7 @@ when it is in fact not.
 */
 static MonoSemType global_suspend_semaphore;
 
-static int thread_info_size;
+static size_t thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key, small_id_key;
@@ -741,7 +741,7 @@ mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-	return mono_threads_core_get_stack_bounds (staddr, stsize);
+	mono_threads_core_get_stack_bounds (staddr, stsize);
 }
 
 gboolean
