@@ -19,48 +19,21 @@
  */
 
 #include "mono/utils/mono-hwcap-s390x.h"
-
 #include <signal.h>
 
-gboolean mono_hwcap_s390x_has_ld = FALSE;
-
-static void
-catch_sigill (int sig_no, siginfo_t *info, gpointer act)
-{
-	mono_hwcap_s390x_has_ld = FALSE;
-}
+facilityList_t facs;
 
 void
 mono_hwcap_arch_init (void)
 {
-	mono_hwcap_s390x_has_ld = TRUE;
+	int lFacs = sizeof(facs) / 8;
 
-	struct sigaction sa, *old_sa;
-
-	/* Determine if we have a long displacement facility
-	 * by executing the STY instruction. If it fails, we
-	 * catch the SIGILL and assume the answer is no.
-	 */
-	sa.sa_sigaction = catch_sigill;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
-
-	sigaction (SIGILL, &sa, old_sa);
-
-	__asm__ __volatile__ (
-		"LGHI\t0,1\n\t"
-		"LA\t1,%0\n\t"
-		".byte\t0xe3,0x00,0x10,0x00,0x00,0x50\n\t"
-		: "=m" (mono_hwcap_s390x_has_ld)
-		:
-		: "0", "1"
-	);
-
-	sigaction (SIGILL, old_sa, NULL);
+	__asm__ ("	lgfr	0,%1\n"
+		 "	.insn	s,0xb2b00000,%0\n"
+		 : "=m" (facs) : "r" (lFacs) : "0", "cc");
 }
 
 void
 mono_hwcap_print (FILE *f)
 {
-	g_fprintf (f, "mono_hwcap_s390x_has_ld = %i\n", mono_hwcap_s390x_has_ld);
 }

@@ -118,11 +118,11 @@ float_conv_to_i2: dest:i src1:f len:50
 float_conv_to_i4: dest:i src1:f len:50
 float_conv_to_i8: dest:l src1:f len:50
 float_conv_to_i: dest:i src1:f len:52
-float_conv_to_r4: dest:f src1:f len:4
-float_conv_to_u1: dest:i src1:f len:66
-float_conv_to_u2: dest:i src1:f len:66
-float_conv_to_u4: dest:i src1:f len:66
-float_conv_to_u8: dest:i src1:f len:66
+float_conv_to_r4: dest:f src1:f len:8
+float_conv_to_u1: dest:i src1:f len:72
+float_conv_to_u2: dest:i src1:f len:72
+float_conv_to_u4: dest:i src1:f len:72
+float_conv_to_u8: dest:i src1:f len:72
 float_conv_to_u: dest:i src1:f len:36
 float_div: dest:f src1:f src2:f len:6
 float_div_un: dest:f src1:f src2:f len:6
@@ -135,27 +135,25 @@ float_sub: dest:f src1:f src2:f len:6
 fmove: dest:f src1:f len:4
 i8const: dest:i len:20
 icompare: src1:i src2:i len:4
-icompare_imm: src1:i len:14
+icompare_imm: src1:i len:18
 iconst: dest:i len:40
-
-
 jmp: len:46
 label: len:0
 lcall: dest:o len:22 clob:c
 lcall_membase: dest:o src1:b len:12 clob:c
 lcall_reg: dest:o src1:i len:8 clob:c
 lcompare: src1:i src2:i len:4
-load_membase: dest:i src1:b len:26
+load_membase: dest:i src1:b len:30
 loadi1_membase: dest:i src1:b len:40
-loadi2_membase: dest:i src1:b len:26
-loadi4_membase: dest:i src1:b len:26
-loadi8_membase: dest:i src1:b len:26
+loadi2_membase: dest:i src1:b len:30
+loadi4_membase: dest:i src1:b len:30
+loadi8_membase: dest:i src1:b len:30
 loadr4_membase: dest:f src1:b len:28
 loadr8_membase: dest:f src1:b len:28
-loadu1_membase: dest:i src1:b len:26
-loadu2_membase: dest:i src1:b len:26
+loadu1_membase: dest:i src1:b len:30
+loadu2_membase: dest:i src1:b len:30
 loadu4_mem: dest:i len:8
-loadu4_membase: dest:i src1:b len:26
+loadu4_membase: dest:i src1:b len:30
 localloc: dest:i src1:i len:106
 memory_barrier: len: 10
 move: dest:i src1:i len:4
