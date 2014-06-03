@@ -128,6 +128,11 @@
     <ClInclude Include="..\mono\utils\mono-hwcap-x86.h" />
     <ClInclude Include="..\mono\utils\bsearch.h" />
   </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\mono\utils\win64.asm">
+      <FileType>Document</FileType>
+    </MASM>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8FC2B0C8-51AD-49DF-851F-5D01A77A75E4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -160,6 +165,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -223,6 +229,9 @@
     <PreBuildEvent>
       <Command>winsetup.bat</Command>
     </PreBuildEvent>
+    <MASM>
+      <PreprocessorDefinitions>X64</PreprocessorDefinitions>
+    </MASM>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -268,5 +277,6 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>
