@@ -414,9 +414,9 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>libgc.lib;libmonoruntime.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libgc.lib;libmonoruntimesgen.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>monosgen.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>monosgen64.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ImportLibrary>$(Platform)\lib\$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
@@ -567,7 +567,7 @@
     <Link>
       <AdditionalDependencies>libgc.lib;libmonoruntime.lib;libmonoutils.lib;eglib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Platform)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>monosgen.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>monosgen64.def</ModuleDefinitionFile>
       <ImportLibrary>$(Platform)\lib\$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>

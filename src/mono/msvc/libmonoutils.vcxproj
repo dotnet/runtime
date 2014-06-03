@@ -214,7 +214,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(top_srcdir);$(top_srcdir)/mono;$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(top_srcdir);$(top_srcdir)/eglib/src;$(top_srcdir)/mono;$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

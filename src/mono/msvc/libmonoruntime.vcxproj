@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_SGen|Win32">
       <Configuration>Debug_SGen</Configuration>
@@ -102,7 +102,9 @@
     <ClCompile Include="..\mono\metadata\sgen-marksweep-par.c" />
     <ClCompile Include="..\mono\metadata\sgen-marksweep.c" />
     <ClCompile Include="..\mono\metadata\sgen-memory-governor.c" />
+    <ClCompile Include="..\mono\metadata\sgen-new-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-nursery-allocator.c" />
+    <ClCompile Include="..\mono\metadata\sgen-old-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-os-mach.c" />
     <ClCompile Include="..\mono\metadata\sgen-os-posix.c" />
     <ClCompile Include="..\mono\metadata\sgen-os-win32.c" />
@@ -111,6 +113,7 @@
     <ClCompile Include="..\mono\metadata\sgen-protocol.c" />
     <ClCompile Include="..\mono\metadata\sgen-simple-nursery.c" />
     <ClCompile Include="..\mono\metadata\sgen-split-nursery.c" />
+    <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />
     <ClCompile Include="..\mono\metadata\sgen-workers.c" />
     <ClCompile Include="..\mono\metadata\sgen-fin-weak-hash.c" />
@@ -378,7 +381,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(top_srcdir);$(top_srcdir)/mono;$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE)</AdditionalIncludeDirectories>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>$(top_srcdir);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(top_srcdir)\mono</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
