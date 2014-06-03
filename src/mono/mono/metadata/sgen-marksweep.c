@@ -187,9 +187,9 @@ static LOCK_DECLARE (ms_block_list_mutex);
 #endif
 
 static gboolean *evacuate_block_obj_sizes;
-static float evacuation_threshold = 0.666;
+static float evacuation_threshold = 0.666f;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
-static float concurrent_evacuation_threshold = 0.666;
+static float concurrent_evacuation_threshold = 0.666f;
 static gboolean want_evacuation = FALSE;
 #endif
 
@@ -2132,7 +2132,7 @@ major_handle_gc_param (const char *opt)
 			fprintf (stderr, "evacuation-threshold must be an integer in the range 0-100.\n");
 			exit (1);
 		}
-		evacuation_threshold = (float)percentage / 100.0;
+		evacuation_threshold = (float)percentage / 100.0f;
 		return TRUE;
 	} else if (!strcmp (opt, "lazy-sweep")) {
 		lazy_sweep = TRUE;

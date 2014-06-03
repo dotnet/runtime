@@ -502,7 +502,7 @@ static HashEntry merge_cache [COLOR_CACHE_SIZE][ELEMENTS_PER_BUCKET];
 static int
 mix_hash (size_t hash)
 {
-	return ((hash * 215497) >> 16) ^ (hash * 1823231) + hash;
+	return (int)(((hash * 215497) >> 16) ^ (hash * 1823231) + hash);
 }
 
 static void
