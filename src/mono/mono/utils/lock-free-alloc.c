@@ -127,7 +127,7 @@ struct _MonoLockFreeAllocDescriptor {
 #define SB_HEADER_SIZE	16
 #define SB_USABLE_SIZE	(SB_SIZE - SB_HEADER_SIZE)
 
-#define SB_HEADER_FOR_ADDR(a)	((gpointer)((gulong)(a) & ~(gulong)(SB_SIZE-1)))
+#define SB_HEADER_FOR_ADDR(a)	((gpointer)((size_t)(a) & ~(size_t)(SB_SIZE-1)))
 #define DESCRIPTOR_FOR_ADDR(a)	(*(Descriptor**)SB_HEADER_FOR_ADDR (a))
 
 /* Taken from SGen */

@@ -65,8 +65,8 @@ malloc_shared_area (int pid)
 static char*
 aligned_address (char *mem, size_t size, size_t alignment)
 {
-	char *aligned = (char*)((gulong)(mem + (alignment - 1)) & ~(alignment - 1));
-	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((gulong)aligned & (alignment - 1)));
+	char *aligned = (char*)((size_t)(mem + (alignment - 1)) & ~(alignment - 1));
+	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((size_t)aligned & (alignment - 1)));
 	return aligned;
 }
 

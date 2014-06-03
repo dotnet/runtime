@@ -28,9 +28,9 @@
 #endif
 
 static uintptr_t code_memory_used = 0;
-static gulong dynamic_code_alloc_count;
-static gulong dynamic_code_bytes_count;
-static gulong dynamic_code_frees_count;
+static size_t dynamic_code_alloc_count;
+static size_t dynamic_code_bytes_count;
+static size_t dynamic_code_frees_count;
 
 /*
  * AMD64 processors maintain icache coherency only for pages which are 
