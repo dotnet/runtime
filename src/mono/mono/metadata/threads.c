@@ -1345,7 +1345,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 			continue;
 
 		/* Re-calculate ms according to the time passed */
-		diff_ms = (mono_100ns_ticks () - start) / 10000;
+		diff_ms = (gint32)((mono_100ns_ticks () - start) / 10000);
 		if (diff_ms >= ms) {
 			ret = WAIT_TIMEOUT;
 			break;
@@ -1369,7 +1369,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	/* Do this WaitSleepJoin check before creating objects */
 	mono_thread_current_check_pending_interrupt ();
 
-	numhandles = mono_array_length(mono_handles);
+	/* We fail in managed if the array has more than 64 elements */
+	numhandles = (guint32)mono_array_length(mono_handles);
 	handles = g_new0(HANDLE, numhandles);
 
 	for(i = 0; i < numhandles; i++) {	
@@ -1404,7 +1405,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
 	HANDLE handles [MAXIMUM_WAIT_OBJECTS];
-	guint32 numhandles;
+	uintptr_t numhandles;
 	guint32 ret;
 	guint32 i;
 	MonoObject *waitHandle;
@@ -3746,6 +3747,12 @@ search_tls_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 
 	return NULL;
 }
 
+#if SIZEOF_VOID_P == 4
+#define ONE_P 1
+#else
+#define ONE_P 1ll
+#endif
+
 static void
 update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int numbits)
 {
@@ -3759,8 +3766,8 @@ update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int numbits)
 	offset /= sizeof (gpointer);
 	/* offset is now the bitmap offset */
 	for (i = 0; i < numbits; ++i) {
-		if (bitmap [i / sizeof (uintptr_t)] & (1L << (i & (sizeof (uintptr_t) * 8 -1))))
-			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (1L << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
+		if (bitmap [i / sizeof (uintptr_t)] & (ONE_P << (i & (sizeof (uintptr_t) * 8 -1))))
+			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (ONE_P << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
 	}
 }
 
@@ -4561,7 +4568,6 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
 		mono_thread_info_finish_suspend_and_resume (info);
 	} else {
-		gpointer interrupt_handle;
 		/* 
 		 * This will cause waits to be broken.
 		 * It will also prevent the thread from entering a wait, so if the thread returns
@@ -4570,6 +4576,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		 * make it return.
 		 */
 #ifndef HOST_WIN32
+		gpointer interrupt_handle;
 		interrupt_handle = wapi_prepare_interrupt_thread (thread->handle);
 #endif
 		mono_thread_info_finish_suspend_and_resume (info);
