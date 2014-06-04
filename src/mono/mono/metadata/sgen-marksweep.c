@@ -130,10 +130,12 @@ typedef struct {
 #define MS_BLOCK_FOR_OBJ(o)		(((MSBlockHeader*)MS_BLOCK_DATA_FOR_OBJ ((o)))->info)
 #endif
 
-#define MS_BLOCK_OBJ_INDEX(o,b)	(((char*)(o) - ((b)->block + MS_BLOCK_SKIP)) / (b)->obj_size)
+/* object index will always be small */
+#define MS_BLOCK_OBJ_INDEX(o,b)	((int)(((char*)(o) - ((b)->block + MS_BLOCK_SKIP)) / (b)->obj_size))
 
+//casting to int is fine since blocks are 32k
 #define MS_CALC_MARK_BIT(w,b,o) 	do {				\
-		int i = ((char*)(o) - MS_BLOCK_DATA_FOR_OBJ ((o))) >> SGEN_ALLOC_ALIGN_BITS; \
+		int i = ((int)((char*)(o) - MS_BLOCK_DATA_FOR_OBJ ((o)))) >> SGEN_ALLOC_ALIGN_BITS; \
 		if (sizeof (mword) == 4) {				\
 			(w) = i >> 5;					\
 			(b) = i & 31;					\
@@ -143,11 +145,11 @@ typedef struct {
 		}							\
 	} while (0)
 
-#define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (1L << (b)))
-#define MS_SET_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] |= (1L << (b)))
+#define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (ONE_P << (b)))
+#define MS_SET_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] |= (ONE_P << (b)))
 #define MS_PAR_SET_MARK_BIT(was_marked,bl,w,b)	do {			\
 		mword __old = (bl)->mark_words [(w)];			\
-		mword __bitmask = 1L << (b);				\
+		mword __bitmask = ONE_P << (b);				\
 		if (__old & __bitmask) {				\
 			was_marked = TRUE;				\
 			break;						\
@@ -209,7 +211,7 @@ static MSBlockInfo *empty_blocks = NULL;
 #else
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
-static int num_empty_blocks = 0;
+static size_t num_empty_blocks = 0;
 #endif
 
 #define FOREACH_BLOCK(bl)	for ((bl) = all_blocks; (bl); (bl) = (bl)->next) {
@@ -250,7 +252,7 @@ static void
 sweep_block (MSBlockInfo *block, gboolean during_major_collection);
 
 static int
-ms_find_block_obj_size_index (int size)
+ms_find_block_obj_size_index (size_t size)
 {
 	int i;
 	SGEN_ASSERT (9, size <= SGEN_MAX_SMALL_OBJ_SIZE, "size %d is bigger than max small object size %d", size, SGEN_MAX_SMALL_OBJ_SIZE);
@@ -397,7 +399,7 @@ ms_get_empty_block (void)
 			p += MS_BLOCK_SIZE;
 		}
 
-		SGEN_ATOMIC_ADD (num_empty_blocks, alloc_num);
+		SGEN_ATOMIC_ADD_P (num_empty_blocks, alloc_num);
 
 		stat_major_blocks_alloced += alloc_num;
 #if SIZEOF_VOID_P != 8
@@ -414,7 +416,7 @@ ms_get_empty_block (void)
 		next = *(void**)block;
 	} while (SGEN_CAS_PTR (&empty_blocks, next, empty) != empty);
 
-	SGEN_ATOMIC_ADD (num_empty_blocks, -1);
+	SGEN_ATOMIC_ADD_P (num_empty_blocks, -1);
 
 	*(void**)block = NULL;
 
@@ -436,7 +438,7 @@ ms_free_block (void *block)
 		*(void**)block = empty;
 	} while (SGEN_CAS_PTR (&empty_blocks, block, empty) != empty);
 
-	SGEN_ATOMIC_ADD (num_empty_blocks, 1);
+	SGEN_ATOMIC_ADD_P (num_empty_blocks, 1);
 }
 #endif
 
@@ -476,7 +478,7 @@ check_empty_blocks (void)
 {
 #ifndef FIXED_HEAP
 	void *p;
-	int i = 0;
+	size_t i = 0;
 	for (p = empty_blocks; p; p = *(void**)p)
 		++i;
 	g_assert (i == num_empty_blocks);
@@ -728,14 +730,14 @@ alloc_obj_par (MonoVTable *vtable, int size, gboolean pinned, gboolean has_refer
 }
 
 static void*
-major_par_alloc_object (MonoVTable *vtable, int size, gboolean has_references)
+major_par_alloc_object (MonoVTable *vtable, size_t size, gboolean has_references)
 {
 	return alloc_obj_par (vtable, size, FALSE, has_references);
 }
 #endif
 
 static void*
-alloc_obj (MonoVTable *vtable, int size, gboolean pinned, gboolean has_references)
+alloc_obj (MonoVTable *vtable, size_t size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
@@ -759,7 +761,7 @@ alloc_obj (MonoVTable *vtable, int size, gboolean pinned, gboolean has_reference
 }
 
 static void*
-major_alloc_object (MonoVTable *vtable, int size, gboolean has_references)
+major_alloc_object (MonoVTable *vtable, size_t size, gboolean has_references)
 {
 	return alloc_obj (vtable, size, FALSE, has_references);
 }
@@ -1812,7 +1814,7 @@ ms_calculate_block_obj_sizes (double factor, int *arr)
 	int last_size = 0;
 
 	do {
-		int target_count = ceil (MS_BLOCK_FREE / target_size);
+		int target_count = (int)ceil (MS_BLOCK_FREE / target_size);
 		int size = MIN ((MS_BLOCK_FREE / target_count) & ~(SGEN_ALLOC_ALIGN - 1), SGEN_MAX_SMALL_OBJ_SIZE);
 
 		if (size != last_size) {
@@ -1904,7 +1906,7 @@ static void
 major_have_computer_minor_collection_allowance (void)
 {
 #ifndef FIXED_HEAP
-	int section_reserve = sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
+	size_t section_reserve = sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
 
 	g_assert (have_swept);
 
@@ -2283,7 +2285,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			base = sgen_card_table_align_pointer (obj);
 
 			while (obj < end) {
-				int card_offset;
+				size_t card_offset;
 
 				if (!block->swept)
 					sweep_block (block, FALSE);
@@ -2337,8 +2339,8 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			card_data_end = card_data + CARDS_PER_BLOCK;
 
 			for (card_data = initial_skip_card (card_data); card_data < card_data_end; ++card_data) { //card_data = skip_card (card_data + 1, card_data_end)) {
-				int index;
-				int idx = card_data - card_base;
+				size_t index;
+				size_t idx = card_data - card_base;
 				char *start = (char*)(block_start + idx * CARD_SIZE_IN_BYTES);
 				char *end = start + CARD_SIZE_IN_BYTES;
 				char *first_obj, *obj;

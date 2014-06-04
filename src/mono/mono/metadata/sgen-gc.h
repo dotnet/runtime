@@ -668,8 +668,8 @@ struct _SgenMajorCollector {
 	SgenObjectOperations major_ops;
 	SgenObjectOperations major_concurrent_ops;
 
-	void* (*alloc_object) (MonoVTable *vtable, int size, gboolean has_references);
-	void* (*par_alloc_object) (MonoVTable *vtable, int size, gboolean has_references);
+	void* (*alloc_object) (MonoVTable *vtable, size_t size, gboolean has_references);
+	void* (*par_alloc_object) (MonoVTable *vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);
