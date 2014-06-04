@@ -1424,7 +1424,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 				else
 					sreg = -1;
 				if (sreg != -1) {
-					MonoInst *tins;
+					MonoInst *tins, *var;
 
 					skip = FALSE;
 					for (tins = ins->prev; tins; tins = tins->prev) {
@@ -1438,6 +1438,9 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 						}
 					}
 					if (skip)
+						continue;
+					var = get_vreg_to_inst (cfg, sreg);
+					if (var && (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 						continue;
 					ins->sreg1 = sreg;
 				}
