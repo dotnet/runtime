@@ -27,9 +27,9 @@
 #include "metadata/sgen-protocol.h"
 
 static void** pin_queue;
-static int pin_queue_size = 0;
-static int next_pin_slot = 0;
-static int last_num_pinned = 0;
+static size_t pin_queue_size = 0;
+static size_t next_pin_slot = 0;
+static size_t last_num_pinned = 0;
 
 #define PIN_HASH_SIZE 1024
 static void *pin_hash_filter [PIN_HASH_SIZE];
@@ -50,7 +50,7 @@ sgen_finish_pinning (void)
 static void
 realloc_pin_queue (void)
 {
-	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
+	size_t new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
 	void **new_pin = sgen_alloc_internal_dynamic (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE, TRUE);
 	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
 	sgen_free_internal_dynamic (pin_queue, sizeof (void*) * pin_queue_size, INTERNAL_MEM_PIN_QUEUE);
@@ -75,12 +75,12 @@ sgen_pin_stage_ptr (void *ptr)
 	pin_queue [next_pin_slot++] = ptr;
 }
 
-static int
+static size_t
 optimized_pin_queue_search (void *addr)
 {
-	int first = 0, last = next_pin_slot;
+	size_t first = 0, last = next_pin_slot;
 	while (first < last) {
-		int middle = first + ((last - first) >> 1);
+		size_t middle = first + ((last - first) >> 1);
 		if (addr <= pin_queue [middle])
 			last = middle;
 		else
@@ -91,9 +91,9 @@ optimized_pin_queue_search (void *addr)
 }
 
 void**
-sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
+sgen_find_optimized_pin_queue_area (void *start, void *end, size_t *num)
 {
-	int first, last;
+	size_t first, last;
 	first = optimized_pin_queue_search (start);
 	last = optimized_pin_queue_search (end);
 	*num = last - first;
@@ -125,7 +125,7 @@ sgen_pinning_trim_queue_to_section (GCMemSection *section)
 }
 
 void
-sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot)
+sgen_pin_queue_clear_discarded_entries (GCMemSection *section, size_t max_pin_slot)
 {
 	void **start = section->pin_queue_start + section->pin_queue_num_entries;
 	void **end = pin_queue + max_pin_slot;
@@ -144,7 +144,7 @@ sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot)
 
 /* reduce the info in the pin queue, removing duplicate pointers and sorting them */
 void
-sgen_optimize_pin_queue (int start_slot)
+sgen_optimize_pin_queue (size_t start_slot)
 {
 	void **start, **cur, **end;
 	/* sort and uniq pin_queue: we just sort and we let the rest discard multiple values */
@@ -164,7 +164,7 @@ sgen_optimize_pin_queue (int start_slot)
 	SGEN_LOG (5, "Pin queue reduced to size: %d", next_pin_slot);
 }
 
-int
+size_t
 sgen_get_pinned_count (void)
 {
 	return next_pin_slot;
@@ -311,7 +311,7 @@ sgen_cement_lookup_or_register (char *obj)
 					vt->klass->name_space, vt->klass->name);
 		}
 		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
-				sgen_safe_object_get_size ((MonoObject*)obj));
+				(int)sgen_safe_object_get_size ((MonoObject*)obj));
 	}
 
 	return FALSE;

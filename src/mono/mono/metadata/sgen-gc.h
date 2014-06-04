@@ -143,7 +143,7 @@ struct _GCMemSection {
 	char **scan_starts;
 	/* in major collections indexes in the pin_queue for objects that pin this section */
 	void **pin_queue_start;
-	int pin_queue_num_entries;
+	size_t pin_queue_num_entries;
 	size_t num_scan_start;
 };
 
@@ -497,7 +497,7 @@ void sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure) MONO_INTERNAL;
 void sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
 
-void** sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
+void** sgen_find_optimized_pin_queue_area (void *start, void *end, size_t *num) MONO_INTERNAL;
 void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
 void sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx) MONO_INTERNAL;
 
@@ -505,7 +505,7 @@ void sgen_pin_stats_register_object (char *obj, size_t size);
 void sgen_pin_stats_register_global_remset (char *obj);
 void sgen_pin_stats_print_class_stats (void);
 
-void sgen_sort_addresses (void **array, int size) MONO_INTERNAL;
+void sgen_sort_addresses (void **array, size_t size) MONO_INTERNAL;
 void sgen_add_to_global_remset (gpointer ptr, gpointer obj) MONO_INTERNAL;
 
 int sgen_get_current_collection_generation (void) MONO_INTERNAL;

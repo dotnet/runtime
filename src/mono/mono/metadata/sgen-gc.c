@@ -1020,10 +1020,10 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 void
 sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx)
 {
-	int num_entries = section->pin_queue_num_entries;
+	size_t num_entries = section->pin_queue_num_entries;
 	if (num_entries) {
 		void **start = section->pin_queue_start;
-		int reduced_to;
+		size_t reduced_to;
 		reduced_to = pin_objects_from_addresses (section, start, start + num_entries,
 				section->data, section->next_data, ctx);
 		section->pin_queue_num_entries = reduced_to;
@@ -1097,15 +1097,15 @@ sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueu
  * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
  */
 void
-sgen_sort_addresses (void **array, int size)
+sgen_sort_addresses (void **array, size_t size)
 {
-	int i;
+	size_t i;
 	void *tmp;
 
 	for (i = 1; i < size; ++i) {
-		int child = i;
+		size_t child = i;
 		while (child > 0) {
-			int parent = (child - 1) / 2;
+			size_t parent = (child - 1) / 2;
 
 			if (array [parent] >= array [child])
 				break;
@@ -1119,7 +1119,7 @@ sgen_sort_addresses (void **array, int size)
 	}
 
 	for (i = size - 1; i > 0; --i) {
-		int end, root;
+		size_t end, root;
 		tmp = array [i];
 		array [i] = array [0];
 		array [0] = tmp;
@@ -1128,7 +1128,7 @@ sgen_sort_addresses (void **array, int size)
 		root = 0;
 
 		while (root * 2 + 1 <= end) {
-			int child = root * 2 + 1;
+			size_t child = root * 2 + 1;
 
 			if (child < end && array [child] < array [child + 1])
 				++child;
@@ -2479,7 +2479,7 @@ scan_nursery_objects (ScanCopyContext ctx)
 }
 
 static void
-major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concurrent_mark, gboolean scan_mod_union)
+major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_concurrent_mark, gboolean scan_mod_union)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2595,7 +2595,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 	/* identify possible pointers to the insize of large objects */
 	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		int dummy;
+		size_t dummy;
 		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((MonoObject*)(bigobj->data))));
 
@@ -2752,7 +2752,7 @@ major_copy_or_mark_from_roots (int *old_next_pin_slot, gboolean finish_up_concur
 }
 
 static void
-major_start_collection (gboolean concurrent, int *old_next_pin_slot)
+major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 {
 	MONO_GC_BEGIN (GENERATION_OLD);
 	binary_protocol_collection_begin (stat_major_gcs, GENERATION_OLD);
@@ -2818,7 +2818,7 @@ join_workers (void)
 }
 
 static void
-major_finish_collection (const char *reason, int old_next_pin_slot, gboolean scan_mod_union)
+major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean scan_mod_union)
 {
 	LOSObject *bigobj, *prevbo;
 	TV_DECLARE (atv);
@@ -2979,7 +2979,7 @@ major_do_collection (const char *reason)
 {
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
-	int old_next_pin_slot;
+	size_t old_next_pin_slot;
 
 	if (disable_major_collections)
 		return FALSE;

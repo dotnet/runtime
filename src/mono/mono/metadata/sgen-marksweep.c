@@ -83,7 +83,7 @@ typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
 	int obj_size;
 	int obj_size_index;
-	int pin_queue_num_entries;
+	size_t pin_queue_num_entries;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
