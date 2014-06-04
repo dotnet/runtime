@@ -1721,7 +1721,7 @@ sgen_check_section_scan_starts (GCMemSection *section)
 	size_t i;
 	for (i = 0; i < section->num_scan_start; ++i) {
 		if (section->scan_starts [i]) {
-			guint size = safe_object_get_size ((MonoObject*) section->scan_starts [i]);
+			mword size = safe_object_get_size ((MonoObject*) section->scan_starts [i]);
 			g_assert (size >= sizeof (MonoObject) && size <= MAX_SMALL_OBJ_SIZE);
 		}
 	}

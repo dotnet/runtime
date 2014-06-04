@@ -737,7 +737,7 @@ typedef struct {
 
 SgenRemeberedSet *sgen_get_remset (void) MONO_INTERNAL;
 
-static guint /*__attribute__((noinline)) not sure if this hint is a good idea*/
+static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
 slow_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
 	MonoClass *klass = vtable->klass;
@@ -768,7 +768,7 @@ slow_object_get_size (MonoVTable *vtable, MonoObject* o)
  * vtable field, is not intact.  This is necessary for the parallel
  * collector.
  */
-static inline guint
+static inline mword
 sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
 	mword descr = (mword)vtable->gc_descr;
@@ -795,7 +795,7 @@ sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 	return slow_object_get_size (vtable, o);
 }
 
-static inline guint
+static inline mword
 sgen_safe_object_get_size (MonoObject *obj)
 {
        char *forwarded;
