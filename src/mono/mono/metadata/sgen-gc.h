@@ -692,7 +692,7 @@ struct _SgenMajorCollector {
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
-	int (*get_num_major_sections) (void);
+	size_t (*get_num_major_sections) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	gboolean (*is_worker_thread) (MonoNativeThreadId thread);

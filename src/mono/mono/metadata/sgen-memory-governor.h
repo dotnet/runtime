@@ -39,7 +39,7 @@ void sgen_memgov_major_collection_end (void) MONO_INTERNAL;
 void sgen_memgov_collection_start (int generation) MONO_INTERNAL;
 void sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count) MONO_INTERNAL;
 
-void sgen_register_major_sections_alloced (int num_sections) MONO_INTERNAL;
+void sgen_register_major_sections_alloced (mword num_sections) MONO_INTERNAL;
 mword sgen_get_minor_collection_allowance (void) MONO_INTERNAL;
 gboolean sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
 

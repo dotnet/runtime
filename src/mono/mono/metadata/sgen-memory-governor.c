@@ -57,14 +57,14 @@ static gboolean debug_print_allowance = FALSE;
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
 static mword minor_collection_allowance;
-static int minor_collection_sections_alloced = 0;
+static mword minor_collection_sections_alloced = 0;
 
-static int last_major_num_sections = 0;
-static int last_los_memory_usage = 0;
+static mword last_major_num_sections = 0;
+static mword last_los_memory_usage = 0;
 
 static gboolean need_calculate_minor_collection_allowance;
 
-static int last_collection_old_num_major_sections;
+static mword last_collection_old_num_major_sections;
 static mword last_collection_los_memory_usage = 0;
 static mword last_collection_old_los_memory_usage;
 static mword last_collection_los_memory_alloced;
@@ -85,7 +85,7 @@ double_to_mword_with_saturation (double value)
 static void
 sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 {
-	int num_major_sections, num_major_sections_saved;
+	size_t num_major_sections, num_major_sections_saved;
 	mword los_memory_saved, new_major, new_heap_size, save_target, allowance_target;
 
 	if (overwrite)
@@ -210,7 +210,7 @@ static void
 log_timming (GGTimingInfo *info)
 {
 	//unsigned long stw_time, unsigned long bridge_time, gboolean is_overflow
-	int num_major_sections = major_collector.get_num_major_sections ();
+	mword num_major_sections = major_collector.get_num_major_sections ();
 	char full_timing_buff [1024];
 	full_timing_buff [0] = '\0';
 
@@ -248,7 +248,7 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 }
 
 void
-sgen_register_major_sections_alloced (int num_sections)
+sgen_register_major_sections_alloced (size_t num_sections)
 {
 	minor_collection_sections_alloced += num_sections;
 }
@@ -342,7 +342,7 @@ sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags)
 	g_assert (!(flags & ~SGEN_ALLOC_HEAP));
 
 	mono_vfree (addr, size);
-	SGEN_ATOMIC_ADD_P (total_alloc, -size);
+	SGEN_ATOMIC_ADD_P (total_alloc, -(gssize)size);
 	if (flags & SGEN_ALLOC_HEAP)
 		MONO_GC_HEAP_FREE ((mword)addr, size);
 }
@@ -369,7 +369,7 @@ sgen_memgov_available_free_space (void)
 void
 sgen_memgov_release_space (mword size, int space)
 {
-	SGEN_ATOMIC_ADD_P (allocated_heap, -size);
+	SGEN_ATOMIC_ADD_P (allocated_heap, -(gssize)size);
 }
 
 gboolean

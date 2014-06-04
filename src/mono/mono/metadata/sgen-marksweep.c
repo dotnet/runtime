@@ -217,7 +217,7 @@ static size_t num_empty_blocks = 0;
 #define FOREACH_BLOCK(bl)	for ((bl) = all_blocks; (bl); (bl) = (bl)->next) {
 #define END_FOREACH_BLOCK	}
 
-static int num_major_sections = 0;
+static size_t num_major_sections = 0;
 /* one free block list for each block object size */
 static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 
@@ -833,7 +833,7 @@ static void*
 major_alloc_degraded (MonoVTable *vtable, size_t size)
 {
 	void *obj;
-	int old_num_sections;
+	size_t old_num_sections;
 
 	old_num_sections = num_major_sections;
 
@@ -1831,7 +1831,7 @@ ms_calculate_block_obj_sizes (double factor, int *arr)
 }
 
 /* only valid during minor collections */
-static int old_num_major_sections;
+static mword old_num_major_sections;
 
 static void
 major_start_nursery_collection (void)
@@ -2107,7 +2107,7 @@ major_get_used_size (void)
 	return size;
 }
 
-static int
+static size_t
 get_num_major_sections (void)
 {
 	return num_major_sections;
