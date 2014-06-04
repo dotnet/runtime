@@ -235,7 +235,7 @@ sgen_gc_descr_has_references (mword desc)
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
 		gsize *bitmap_data = sgen_get_complex_descriptor ((desc)); \
-		int bwords = (*bitmap_data) - 1;	\
+		gsize bwords = (*bitmap_data) - 1;	\
 		void **start_run = _objptr;	\
 		bitmap_data++;	\
 		if (0) {	\
@@ -261,8 +261,8 @@ sgen_gc_descr_has_references (mword desc)
 #define OBJ_COMPLEX_ARR_FOREACH_PTR(vt,obj)	do {	\
 		/* there are pointers */	\
 		gsize *mbitmap_data = sgen_get_complex_descriptor ((vt)->desc); \
-		int mbwords = (*mbitmap_data++) - 1;	\
-		int el_size = mono_array_element_size (vt->klass);	\
+		gsize mbwords = (*mbitmap_data++) - 1;	\
+		gsize el_size = mono_array_element_size (vt->klass);	\
 		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
 		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 		if (0)							\
@@ -270,7 +270,7 @@ sgen_gc_descr_has_references (mword desc)
 		while (e_start < e_end) {	\
 			void **_objptr = (void**)e_start;	\
 			gsize *bitmap_data = mbitmap_data;	\
-			unsigned int bwords = mbwords;	\
+			gsize bwords = mbwords;	\
 			while (bwords-- > 0) {	\
 				gsize _bmap = *bitmap_data++;	\
 				void **start_run = _objptr;	\

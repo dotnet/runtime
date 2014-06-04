@@ -1290,7 +1290,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 		return;
 	case ROOT_DESC_COMPLEX: {
 		gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
-		int bwords = (*bitmap_data) - 1;
+		gsize bwords = (*bitmap_data) - 1;
 		void **start_run = start_root;
 		bitmap_data++;
 		while (bwords-- > 0) {
@@ -1478,7 +1478,7 @@ precisely_report_roots_from (GCRootReport *report, void** start_root, void** end
 		return;
 	case ROOT_DESC_COMPLEX: {
 		gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
-		int bwords = (*bitmap_data) - 1;
+		gsize bwords = (*bitmap_data) - 1;
 		void **start_run = start_root;
 		bitmap_data++;
 		while (bwords-- > 0) {

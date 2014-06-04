@@ -87,7 +87,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 				return i;
 			}
 		}
-		i += complex_descriptors [i];
+		i += (int)complex_descriptors [i];
 	}
 	if (complex_descriptors_next + nwords > complex_descriptors_size) {
 		int new_size = complex_descriptors_size * 2 + nwords;
@@ -266,7 +266,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 
 	case DESC_TYPE_COMPLEX: {
 		gsize *bitmap_data = sgen_get_complex_descriptor (d);
-		int bwords = (*bitmap_data) - 1;
+		int bwords = (int)(*bitmap_data) - 1;//Max scalar object size is 1Mb, which means up to 32k descriptor words
 		int i;
 
 		bitmap = g_new0 (gsize, bwords);
