@@ -827,7 +827,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 	sgen_minor_collector.build_fragments_finish (&mutator_allocator);
 
 	if (!unmask (mutator_allocator.alloc_head)) {
-		SGEN_LOG (1, "Nursery fully pinned (%d)", num_entries);
+		SGEN_LOG (1, "Nursery fully pinned (%zd)", num_entries);
 		for (i = 0; i < num_entries; ++i) {
 			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %d", start [i], sgen_safe_name (start [i]), sgen_safe_object_get_size (start [i]));
 		}

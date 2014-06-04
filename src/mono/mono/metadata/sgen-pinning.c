@@ -56,7 +56,7 @@ realloc_pin_queue (void)
 	sgen_free_internal_dynamic (pin_queue, sizeof (void*) * pin_queue_size, INTERNAL_MEM_PIN_QUEUE);
 	pin_queue = new_pin;
 	pin_queue_size = new_size;
-	SGEN_LOG (4, "Reallocated pin queue to size: %d", new_size);
+	SGEN_LOG (4, "Reallocated pin queue to size: %zd", new_size);
 }
 
 void
@@ -107,7 +107,7 @@ sgen_find_section_pin_queue_start_end (GCMemSection *section)
 {
 	SGEN_LOG (6, "Pinning from section %p (%p-%p)", section, section->data, section->end_data);
 	section->pin_queue_start = sgen_find_optimized_pin_queue_area (section->data, section->end_data, &section->pin_queue_num_entries);
-	SGEN_LOG (6, "Found %d pinning addresses in section %p", section->pin_queue_num_entries, section);
+	SGEN_LOG (6, "Found %zd pinning addresses in section %p", section->pin_queue_num_entries, section);
 }
 
 /*This will setup the given section for the while pin queue. */
@@ -149,7 +149,7 @@ sgen_optimize_pin_queue (size_t start_slot)
 	void **start, **cur, **end;
 	/* sort and uniq pin_queue: we just sort and we let the rest discard multiple values */
 	/* it may be better to keep ranges of pinned memory instead of individually pinning objects */
-	SGEN_LOG (5, "Sorting pin queue, size: %d", next_pin_slot);
+	SGEN_LOG (5, "Sorting pin queue, size: %zd", next_pin_slot);
 	if ((next_pin_slot - start_slot) > 1)
 		sgen_sort_addresses (pin_queue + start_slot, next_pin_slot - start_slot);
 	start = cur = pin_queue + start_slot;
@@ -161,7 +161,7 @@ sgen_optimize_pin_queue (size_t start_slot)
 		start++;
 	};
 	next_pin_slot = start - pin_queue;
-	SGEN_LOG (5, "Pin queue reduced to size: %d", next_pin_slot);
+	SGEN_LOG (5, "Pin queue reduced to size: %zd", next_pin_slot);
 }
 
 size_t
@@ -176,7 +176,7 @@ sgen_dump_pin_queue (void)
 	int i;
 
 	for (i = 0; i < last_num_pinned; ++i) {
-		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %d", pin_queue [i], sgen_safe_name (pin_queue [i]), sgen_safe_object_get_size (pin_queue [i]));
+		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", pin_queue [i], sgen_safe_name (pin_queue [i]), sgen_safe_object_get_size (pin_queue [i]));
 	}	
 }
 

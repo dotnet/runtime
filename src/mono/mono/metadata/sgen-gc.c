@@ -2288,8 +2288,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED (btv, atv);
-	SGEN_LOG (2, "Finding pinned pointers: %d in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
-	SGEN_LOG (4, "Start scan with %d pinned objects", sgen_get_pinned_count ());
+	SGEN_LOG (2, "Finding pinned pointers: %zd in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
+	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
 	MONO_GC_CHECKPOINT_3 (GENERATION_NURSERY);
 
@@ -2662,8 +2662,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
-	SGEN_LOG (2, "Finding pinned pointers: %d in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (atv, btv));
-	SGEN_LOG (4, "Start scan with %d pinned objects", sgen_get_pinned_count ());
+	SGEN_LOG (2, "Finding pinned pointers: %zd in %d usecs", sgen_get_pinned_count (), TV_ELAPSED (atv, btv));
+	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
 	major_collector.init_to_space ();
 
@@ -3226,7 +3226,7 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	/* this also sets the proper pointers for the next allocation */
 	if (generation_to_collect == GENERATION_NURSERY && !sgen_can_alloc_size (requested_size)) {
 		/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-		SGEN_LOG (1, "nursery collection didn't find enough room for %zd alloc (%d pinned)", requested_size, sgen_get_pinned_count ());
+		SGEN_LOG (1, "nursery collection didn't find enough room for %zd alloc (%zd pinned)", requested_size, sgen_get_pinned_count ());
 		sgen_dump_pin_queue ();
 		degraded_mode = 1;
 	}
@@ -3746,7 +3746,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %d)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, mono_thread_info_run_state (info));
 			continue;
 		}
-		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
+		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
 		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 			UserCopyOrMarkData data = { NULL, queue };
 			set_user_copy_or_mark_data (&data);
