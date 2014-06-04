@@ -727,6 +727,14 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 #define G_UNLIKELY(x) (x)
 #endif
 
+#if defined(_MSC_VER)
+#define  eg_unreachable() __assume(0)
+#elif defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 5)))
+#define  eg_unreachable() __builtin_unreachable()
+#else
+#define  eg_unreachable()
+#endif
+
 #define  g_assert(x)     G_STMT_START { if (G_UNLIKELY (!(x))) g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x);  } G_STMT_END
 #define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } G_STMT_END
 
