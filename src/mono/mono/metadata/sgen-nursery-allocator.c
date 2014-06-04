@@ -108,7 +108,7 @@ int sgen_nursery_bits = 22;
 #endif
 
 char *sgen_space_bitmap MONO_INTERNAL;
-int sgen_space_bitmap_size MONO_INTERNAL;
+size_t sgen_space_bitmap_size MONO_INTERNAL;
 
 #ifdef HEAVY_STATISTICS
 
@@ -471,7 +471,7 @@ restart:
 	for (frag = unmask (allocator->alloc_head); unmask (frag); frag = unmask (frag->next)) {
 		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
 
-		if (size <= (frag->fragment_end - frag->fragment_next)) {
+		if (size <= (size_t)(frag->fragment_end - frag->fragment_next)) {
 			void *p = par_alloc_from_fragment (allocator, frag, size);
 			if (!p) {
 				HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
@@ -579,7 +579,7 @@ restart:
 #endif
 
 	for (frag = unmask (allocator->alloc_head); frag; frag = unmask (frag->next)) {
-		int frag_size = frag->fragment_end - frag->fragment_next;
+		size_t frag_size = frag->fragment_end - frag->fragment_next;
 
 		HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_iterations));
 
@@ -608,7 +608,7 @@ restart:
 
 	if (min_frag) {
 		void *p;
-		int frag_size;
+		size_t frag_size;
 
 		frag_size = min_frag->fragment_end - min_frag->fragment_next;
 		if (frag_size < minimum_size)
@@ -745,11 +745,11 @@ fragment_list_reverse (SgenFragmentAllocator *allocator)
 }
 
 mword
-sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries, SgenGrayQueue *unpin_queue)
+sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_t num_entries, SgenGrayQueue *unpin_queue)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
-	int i = 0;
+	size_t i = 0;
 	SgenFragment *frags_ranges;
 
 #ifdef NALLOC_DEBUG
@@ -860,7 +860,7 @@ sgen_can_alloc_size (size_t size)
 	size = SGEN_ALIGN_UP (size);
 
 	for (frag = unmask (mutator_allocator.alloc_head); frag; frag = unmask (frag->next)) {
-		if ((frag->fragment_end - frag->fragment_next) >= size)
+		if ((size_t)(frag->fragment_end - frag->fragment_next) >= size)
 			return TRUE;
 	}
 	return FALSE;

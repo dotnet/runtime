@@ -566,14 +566,14 @@ Test 1 (compiling corlib):
 #define SGEN_TO_SPACE_GRANULE_IN_BYTES (1 << SGEN_TO_SPACE_GRANULE_BITS)
 
 extern char *sgen_space_bitmap MONO_INTERNAL;
-extern int sgen_space_bitmap_size MONO_INTERNAL;
+extern size_t sgen_space_bitmap_size MONO_INTERNAL;
 
 static inline gboolean
 sgen_nursery_is_to_space (char *object)
 {
-	int idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
-	int byte = idx / 8;
-	int bit = idx & 0x7;
+	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	size_t byte = idx / 8;
+	size_t bit = idx & 0x7;
 
 	SGEN_ASSERT (4, sgen_ptr_in_nursery (object), "object %p is not in nursery [%p - %p]", object, sgen_get_nursery_start (), sgen_get_nursery_end ());
 	SGEN_ASSERT (4, byte < sgen_space_bitmap_size, "byte index %d out of range", byte, sgen_space_bitmap_size);
@@ -611,7 +611,7 @@ typedef struct {
 	SgenObjectOperations serial_ops;
 	SgenObjectOperations parallel_ops;
 
-	void (*prepare_to_space) (char *to_space_bitmap, int space_bitmap_size);
+	void (*prepare_to_space) (char *to_space_bitmap, size_t space_bitmap_size);
 	void (*clear_fragments) (void);
 	SgenFragment* (*build_fragments_get_exclude_head) (void);
 	void (*build_fragments_release_exclude_head) (void);
@@ -959,7 +959,7 @@ gboolean sgen_los_object_is_pinned (char *obj) MONO_INTERNAL;
 void sgen_clear_nursery_fragments (void) MONO_INTERNAL;
 void sgen_nursery_allocator_prepare_for_pinning (void) MONO_INTERNAL;
 void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nursery_end) MONO_INTERNAL;
-mword sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, int num_entries, SgenGrayQueue *unpin_queue) MONO_INTERNAL;
+mword sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_t num_entries, SgenGrayQueue *unpin_queue) MONO_INTERNAL;
 void sgen_init_nursery_allocator (void) MONO_INTERNAL;
 void sgen_nursery_allocator_init_heavy_stats (void) MONO_INTERNAL;
 void sgen_alloc_init_heavy_stats (void) MONO_INTERNAL;
@@ -1056,7 +1056,7 @@ extern int do_pin_stats;
 static inline void
 sgen_set_nursery_scan_start (char *p)
 {
-	int idx = (p - (char*)nursery_section->data) / SGEN_SCAN_START_SIZE;
+	size_t idx = (p - (char*)nursery_section->data) / SGEN_SCAN_START_SIZE;
 	char *old = nursery_section->scan_starts [idx];
 	if (!old || old > p)
 		nursery_section->scan_starts [idx] = p;

@@ -139,7 +139,7 @@ static float alloc_ratio = 60.f/100.f;
 
 
 static char *region_age;
-static int region_age_size;
+static size_t region_age_size;
 static AgeAllocationBuffer age_alloc_buffers [MAX_AGE];
 
 /* The collector allocs from here. */
@@ -150,14 +150,14 @@ static LOCK_DECLARE (par_alloc_buffer_refill_mutex);
 static inline int
 get_object_age (char *object)
 {
-	int idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
 	return region_age [idx];
 }
 
 static inline void
 set_object_age (char *object, int age)
 {
-	int idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
 	region_age [idx] = age;
 }
 
@@ -165,7 +165,7 @@ static void
 set_age_in_range (char *start, char *end, int age)
 {
 	char *region_start;
-	int region_idx, length;
+	size_t region_idx, length;
 	region_idx = (start - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
 	region_start = &region_age [region_idx];
 	length = (end - start) >> SGEN_TO_SPACE_GRANULE_BITS;
@@ -175,8 +175,8 @@ set_age_in_range (char *start, char *end, int age)
 static inline void
 mark_bit (char *space_bitmap, char *pos)
 {
-	int idx = (pos - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
-	int byte = idx / 8;
+	size_t idx = (pos - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	size_t byte = idx / 8;
 	int bit = idx & 0x7;
 
 	g_assert (byte < sgen_space_bitmap_size);
@@ -420,7 +420,7 @@ build_fragments_finish (SgenFragmentAllocator *allocator)
 }
 
 static void
-prepare_to_space (char *to_space_bitmap, int space_bitmap_size)
+prepare_to_space (char *to_space_bitmap, size_t space_bitmap_size)
 {
 	SgenFragment **previous, *frag;
 
