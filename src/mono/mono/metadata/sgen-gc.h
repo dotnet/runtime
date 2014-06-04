@@ -1041,7 +1041,7 @@ extern int stat_major_gcs;
 extern guint32 collect_before_allocs;
 extern guint32 verify_before_allocs;
 extern gboolean has_per_allocation_action;
-extern int degraded_mode;
+extern size_t degraded_mode;
 extern int default_nursery_size;
 extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;

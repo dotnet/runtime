@@ -125,7 +125,7 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
 			last_major_gc_warned = stat_major_gcs;
 		}
-		InterlockedExchangeAdd (&degraded_mode, size);
+		SGEN_ATOMIC_ADD_P (degraded_mode, size);
 		sgen_ensure_free_space (size);
 	} else {
 		if (sgen_need_major_collection (size))

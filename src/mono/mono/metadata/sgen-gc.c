@@ -409,7 +409,7 @@ gboolean sgen_try_free_some_memory;
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
 static mword pagesize = 4096;
-int degraded_mode = 0;
+size_t degraded_mode = 0;
 
 static mword bytes_pinned_from_failed_allocation = 0;
 
