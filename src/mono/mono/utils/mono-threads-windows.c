@@ -40,19 +40,19 @@ mono_threads_core_needs_abort_syscall (void)
 void
 mono_threads_core_self_suspend (MonoThreadInfo *info)
 {
-	g_assert (0);
+	g_assert_not_reached ();
 }
 
 gboolean
 mono_threads_core_suspend (MonoThreadInfo *info)
 {
-	g_assert (0);
+	g_assert_not_reached ();
 }
 
 gboolean
 mono_threads_core_resume (MonoThreadInfo *info)
 {
-	g_assert (0);
+	g_assert_not_reached ();
 }
 
 void
