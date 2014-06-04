@@ -238,7 +238,7 @@ sgen_card_table_get_card_data (guint8 *data_dest, mword address, mword cards)
 #endif
 	}
 
-	return mask;
+	return mask != 0;
 }
 
 void*
@@ -585,7 +585,7 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboo
 		mword obj_size = sgen_par_object_get_size (vt, (MonoObject*)obj);
 		char *obj_end = obj + obj_size;
 		size_t card_count;
-		int extra_idx = 0;
+		size_t extra_idx = 0;
 
 		MonoArray *arr = (MonoArray*)obj;
 		mword desc = (mword)klass->element_class->gc_descr;
@@ -624,8 +624,8 @@ LOOP_HEAD:
 
 		card_data = find_next_card (card_data, card_data_end);
 		for (; card_data < card_data_end; card_data = find_next_card (card_data + 1, card_data_end)) {
-			int index;
-			int idx = (card_data - card_base) + extra_idx;
+			size_t index;
+			size_t idx = (card_data - card_base) + extra_idx;
 			char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
 			char *card_end = start + CARD_SIZE_IN_BYTES;
 			char *first_elem, *elem;
