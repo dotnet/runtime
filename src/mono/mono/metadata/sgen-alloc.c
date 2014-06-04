@@ -508,7 +508,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	arr = mono_gc_try_alloc_obj_nolock (vtable, size);
 	if (arr) {
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
-		arr->max_length = max_length;
+		arr->max_length = (mono_array_size_t)max_length;
 		EXIT_CRITICAL_REGION;
 		return arr;
 	}
@@ -523,7 +523,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 		return mono_gc_out_of_memory (size);
 	}
 
-	arr->max_length = max_length;
+	arr->max_length = (mono_array_size_t)max_length;
 
 	UNLOCK_GC;
 
@@ -545,7 +545,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	arr = mono_gc_try_alloc_obj_nolock (vtable, size);
 	if (arr) {
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
-		arr->max_length = max_length;
+		arr->max_length = (mono_array_size_t)max_length;
 
 		bounds = (MonoArrayBounds*)((char*)arr + size - bounds_size);
 		arr->bounds = bounds;
@@ -563,7 +563,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 		return mono_gc_out_of_memory (size);
 	}
 
-	arr->max_length = max_length;
+	arr->max_length = (mono_array_size_t)max_length;
 
 	bounds = (MonoArrayBounds*)((char*)arr + size - bounds_size);
 	arr->bounds = bounds;

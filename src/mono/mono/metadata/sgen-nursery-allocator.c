@@ -685,7 +685,7 @@ sgen_clear_range (char *start, char *end)
 	/* Mark this as not a real object */
 	o->obj.synchronisation = GINT_TO_POINTER (-1);
 	o->bounds = NULL;
-	o->max_length = size - sizeof (MonoArray);
+	o->max_length = (mono_array_size_t)(size - sizeof (MonoArray));
 	sgen_set_nursery_scan_start (start);
 	g_assert (start + sgen_safe_object_get_size ((MonoObject*)o) == end);
 }
