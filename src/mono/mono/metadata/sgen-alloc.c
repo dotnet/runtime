@@ -283,7 +283,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE)
 				return alloc_degraded (vtable, size, FALSE);
 
-			available_in_tlab = TLAB_REAL_END - TLAB_NEXT;
+			available_in_tlab = (int)(TLAB_REAL_END - TLAB_NEXT);//We'll never have tlabs > 2Gb
 			if (size > tlab_size || available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
 				/* Allocate directly from the nursery */
 				do {
@@ -396,7 +396,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		new_next = (char*)p + size;
 
 		real_end = TLAB_REAL_END;
-		available_in_tlab = real_end - (char*)p;
+		available_in_tlab = (int)(real_end - (char*)p);//We'll never have tlabs > 2Gb
 
 		if (G_LIKELY (new_next < real_end)) {
 			TLAB_NEXT = new_next;
@@ -997,7 +997,7 @@ create_allocator (int atype)
 
 	/*The tlab store must be visible before the the vtable store. This could be replaced with a DDS but doing it with IL would be tricky. */
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_MEMORY_BARRIER, StoreStoreBarrier);
+	mono_mb_emit_op (mb, CEE_MONO_MEMORY_BARRIER, (gpointer)StoreStoreBarrier);
 
 	/* *p = vtable; */
 	mono_mb_emit_ldloc (mb, p_var);
@@ -1036,7 +1036,7 @@ create_allocator (int atype)
 	We must make sure both vtable and max_length are globaly visible before returning to managed land.
 	*/
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_MEMORY_BARRIER, StoreStoreBarrier);
+	mono_mb_emit_op (mb, CEE_MONO_MEMORY_BARRIER, (gpointer)StoreStoreBarrier);
 
 	/* return p */
 	mono_mb_emit_ldloc (mb, p_var);
