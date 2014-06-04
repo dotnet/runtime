@@ -232,7 +232,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #define S390_TRACE_STACK_SIZE (5*sizeof(gpointer)+4*sizeof(gdouble))
 
 #define BREAKPOINT_SIZE		sizeof(breakpoint_t)
-#define S390X_NOP_SIZE	 	sizeof(I_Format)
+#define S390X_NOP_SIZE	 	sizeof(RR_Format)
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -408,6 +408,8 @@ static gpointer ss_trigger_page;
 static gpointer bp_trigger_page;
 
 breakpoint_t breakpointCode;
+
+static CRITICAL_SECTION mini_arch_mutex;
 
 /*====================== End of Global Variables ===================*/
 
@@ -1257,6 +1259,8 @@ mono_arch_init (void)
 {
 	guint8 *code;
 
+	InitializeCriticalSection (&mini_arch_mutex);
+
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
 	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
 	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
@@ -1282,6 +1286,11 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
+	if (ss_trigger_page)
+		mono_vfree (ss_trigger_page, mono_pagesize ());
+	if (bp_trigger_page)
+		mono_vfree (bp_trigger_page, mono_pagesize ());
+	DeleteCriticalSection (&mini_arch_mutex);
 }
 
 /*========================= End of Function ========================*/
@@ -4076,6 +4085,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			for (i = 0; i < (BREAKPOINT_SIZE / S390X_NOP_SIZE); ++i)
 				s390_nop (code);
+
+			/*
+			 * Add an additional nop so skipping the bp doesn't cause the ip to point
+			 * to another IL offset.
+			 */
+			s390_nop (code);
+
 			break;
 		}
 	
@@ -5980,7 +5996,10 @@ gboolean
 mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
 	siginfo_t* sinfo = (siginfo_t*) info;
-	/* Sometimes the address is off by 4 */
+
+	/* 
+	 * Sometimes the address is off by 4 
+	 */
 	if (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128)
 		return TRUE;
 	else
@@ -6002,7 +6021,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 void
 mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 {
-	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
+	MONO_CONTEXT_SET_IP (ctx, ((guint8*)MONO_CONTEXT_GET_IP (ctx) + sizeof(RXY_Format)));
 }
 
 /*========================= End of Function ========================*/
@@ -6053,7 +6072,9 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 {
 	siginfo_t* sinfo = (siginfo_t*) info;
 
-	/* Sometimes the address is off by 4 */
+	/* 
+	 * Sometimes the address is off by 4 
+	 */
 	if (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128)
 		return TRUE;
 	else

@@ -21,11 +21,9 @@
 		s390_##opy (loc, r, ix, br, off);			\
 	} else {							\
 		if (ix == 0) {						\
-fprintf(stderr,"\nS390_LONG - no index - r: %d br: %d off: %d\n",r,br,off); \
 			S390_SET(loc, s390_r13, off);			\
 			s390_la (loc, s390_r13, s390_r13, br, 0);	\
 		} else {						\
-fprintf(stderr,"\nS390_LONG - index - r: %d br: %d ix: %d off: %d\n",r,br,ix,off); \
 			s390_la   (loc, s390_r13, ix, br, 0);		\
 			S390_SET  (loc, s390_r0, off);			\
 			s390_agr  (loc, s390_r13, s390_r0);		\
