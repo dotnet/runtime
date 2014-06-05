@@ -6468,12 +6468,11 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 ICALL_EXPORT void
 ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, MonoString *value)
 {
-	MonoError error;
 #ifdef HOST_WIN32
-
 	gunichar2 *utf16_name, *utf16_value;
 #else
 	gchar *utf8_name, *utf8_value;
+	MonoError error;
 #endif
 
 	MONO_ARCH_SAVE_REGS;
