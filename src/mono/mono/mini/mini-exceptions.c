@@ -2352,7 +2352,10 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	MonoContext ctx;
 #endif
 	GString* text = g_string_new (0);
-	char *name, *wapi_desc;
+	char *name;
+#ifndef HOST_WIN32
+	char *wapi_desc;
+#endif
 	GError *error = NULL;
 
 	if (thread->name) {

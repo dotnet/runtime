@@ -598,7 +598,9 @@ thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 
 	if (tls->tid != GetCurrentThreadId ()) {
 		/* Happens on osx because threads are not suspended using signals */
+#ifndef TARGET_WIN32
 		gboolean res;
+#endif
 
 		g_assert (tls->info);
 #ifdef TARGET_WIN32

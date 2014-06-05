@@ -47,6 +47,7 @@
 #ifdef HOST_WIN32
 #ifdef _MSC_VER
 #include <winsock2.h>
+#include <process.h>
 #endif
 #include <ws2tcpip.h>
 #ifdef __GNUC__
@@ -2709,7 +2710,9 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoInternalThread *thread = key;
 	DebuggerTlsData *tls = value;
 	gsize tid = thread->tid;
+#ifndef HOST_WIN32
 	int res;
+#endif
 
 	if (GetCurrentThreadId () == tid || tls->terminated)
 		return;
@@ -2736,7 +2739,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 #ifdef HOST_WIN32
-	QueueUserAPC (notify_thread_apc, thread->handle, NULL);
+	QueueUserAPC (notify_thread_apc, thread->handle, (ULONG_PTR)NULL);
 #else
 	if (mono_thread_info_new_interrupt_enabled ()) {
 		MonoThreadInfo *info;
@@ -2958,7 +2961,9 @@ invalidate_frames (DebuggerTlsData *tls)
 static void
 suspend_current (void)
 {
+#ifndef HOST_WIN32
 	int err;
+#endif
 	DebuggerTlsData *tls;
 
 	g_assert (debugger_thread_id != GetCurrentThreadId ());
