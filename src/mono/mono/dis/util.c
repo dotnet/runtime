@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "util.h"
+#include "mono/utils/mono-compiler.h"
 
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
