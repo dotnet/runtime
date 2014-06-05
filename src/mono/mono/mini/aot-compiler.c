@@ -7259,9 +7259,9 @@ emit_code (MonoAotCompile *acfg)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
 
 		for (i = 0; i < acfg->nmethods; ++i) {
+#ifdef MONO_ARCH_AOT_SUPPORTED
 			int call_size;
 
-#ifdef MONO_ARCH_AOT_SUPPORTED
 			if (acfg->cfgs [i])
 				arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
 			else
@@ -7318,7 +7318,9 @@ emit_code (MonoAotCompile *acfg)
 		method = cfg->orig_method;
 
 		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype) {
+#ifdef MONO_ARCH_AOT_SUPPORTED
 			int call_size;
+#endif
 
 			index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
