@@ -19,7 +19,7 @@ mono_main_with_options (int argc, char *argv [])
 		GPtrArray *array = g_ptr_array_new ();
 		GString *buffer = g_string_new ("");
 		const char *p;
-		int i;
+		unsigned i;
 		gboolean in_quotes = FALSE;
 		char quote_char = '\0';
 
