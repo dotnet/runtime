@@ -3342,7 +3342,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
-	return mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value);
+	mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value);
 }
 
 /**
