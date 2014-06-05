@@ -1998,7 +1998,7 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 	}
 
 #ifdef HOST_WIN32
-	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, NULL);
+	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, (ULONG_PTR)NULL);
 #else
 	/* 
 	 * This will cause waits to be broken.
@@ -4180,7 +4180,7 @@ mono_thread_request_interruption (gboolean running_managed)
 		   or similar */
 		/* Our implementation of this function ignores the func argument */
 #ifdef HOST_WIN32
-		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
+		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, (ULONG_PTR)NULL);
 #else
 		wapi_self_interrupt ();
 #endif
