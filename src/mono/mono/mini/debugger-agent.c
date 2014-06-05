@@ -2737,7 +2737,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 #ifdef HOST_WIN32
-	QueueUserAPC (notify_thread_apc, thread->handle, NULL);
+	QueueUserAPC (notify_thread_apc, thread->handle, (ULONG_PTR)NULL);
 #else
 	if (mono_thread_info_new_interrupt_enabled ()) {
 		MonoThreadInfo *info;
