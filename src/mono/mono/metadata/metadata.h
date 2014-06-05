@@ -190,6 +190,7 @@ typedef struct {
 		struct {
 			char *custom_name;
 			char *cookie;
+			MonoImage *image;
 		} custom_data;
 		struct {
 			MonoMarshalVariant elem_type;

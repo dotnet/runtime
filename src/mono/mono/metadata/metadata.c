@@ -5012,7 +5012,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 		const char *p;
 		
 		if ((p = mono_metadata_get_marshal_info (meta, index, TRUE))) {
-			*marshal_spec = mono_metadata_parse_marshal_spec_full (alloc_from_image ? meta : NULL, p);
+			*marshal_spec = mono_metadata_parse_marshal_spec_full (alloc_from_image ? meta : NULL, meta, p);
 		}
 	}
 
@@ -5344,11 +5344,15 @@ mono_image_strndup (MonoImage *image, const char *data, guint len)
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 {
-	return mono_metadata_parse_marshal_spec_full (NULL, ptr);
+	return mono_metadata_parse_marshal_spec_full (NULL, image, ptr);
 }
 
+/*
+ * If IMAGE is non-null, memory will be allocated from its mempool, otherwise it will be allocated using malloc.
+ * PARENT_IMAGE is the image containing the marshal spec.
+ */
 MonoMarshalSpec *
-mono_metadata_parse_marshal_spec_full (MonoImage *image, const char *ptr)
+mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image, const char *ptr)
 {
 	MonoMarshalSpec *res;
 	int len;
@@ -5413,6 +5417,7 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, const char *ptr)
 		/* read cookie string */
 		len = mono_metadata_decode_value (ptr, &ptr);
 		res->data.custom_data.cookie = mono_image_strndup (image, ptr, len);
+		res->data.custom_data.image = parent_image;
 	}
 
 	if (res->native == MONO_NATIVE_SAFEARRAY) {
