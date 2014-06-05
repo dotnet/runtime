@@ -2710,7 +2710,9 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoInternalThread *thread = key;
 	DebuggerTlsData *tls = value;
 	gsize tid = thread->tid;
+#ifndef HOST_WIN32
 	int res;
+#endif
 
 	if (GetCurrentThreadId () == tid || tls->terminated)
 		return;
@@ -2959,7 +2961,9 @@ invalidate_frames (DebuggerTlsData *tls)
 static void
 suspend_current (void)
 {
+#ifndef HOST_WIN32
 	int err;
+#endif
 	DebuggerTlsData *tls;
 
 	g_assert (debugger_thread_id != GetCurrentThreadId ());
