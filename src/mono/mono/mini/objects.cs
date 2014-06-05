@@ -1625,6 +1625,20 @@ ncells ) {
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static void t_14217_inner (BugStruct bug) {
     }
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct EmptyStruct {
+	}
+
+	class EmptyClass {
+		public static EmptyStruct s;
+	}
+
+	// #20349
+	static int test_0_empty_struct_as_static () {
+		var s = EmptyClass.s;
+		return 0;
+	}
 }
 
 #if MOBILE

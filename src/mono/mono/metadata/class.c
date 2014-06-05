@@ -1749,6 +1749,7 @@ mono_class_layout_fields (MonoClass *class)
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	guint32 pass, passes, real_size;
 	gboolean gc_aware_layout = FALSE;
+	gboolean has_static_fields = FALSE;
 	MonoClassField *field;
 
 	/*
@@ -1989,6 +1990,8 @@ mono_class_layout_fields (MonoClass *class)
 			break;
 		}
 
+		has_static_fields = TRUE;
+
 		size = mono_type_size (field->type, &align);
 		field->offset = class->sizes.class_size;
 		/*align is always non-zero here*/
@@ -1996,6 +1999,10 @@ mono_class_layout_fields (MonoClass *class)
 		field->offset &= ~(align - 1);
 		class->sizes.class_size = field->offset + size;
 	}
+
+	if (has_static_fields && class->sizes.class_size == 0)
+		/* Simplify code which depends on class_size != 0 if the class has static fields */
+		class->sizes.class_size = 8;
 }
 
 static MonoMethod*
