@@ -4635,7 +4635,9 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		if (running_managed && !protected_wrapper) {
 			transition_to_suspended (thread, info);
 		} else {
+#ifndef HOST_WIN32
 			gpointer interrupt_handle;
+#endif
 
 			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
 				InterlockedIncrement (&thread_interruption_requested);
