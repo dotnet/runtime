@@ -1823,7 +1823,7 @@ dump_object (MonoObject *obj, gboolean dump_location)
 	g_assert (j < sizeof (class_name));
 	class_name [j] = 0;
 
-	fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%d\"",
+	fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%zd\"",
 			class->name_space, class_name,
 			safe_object_get_size (obj));
 	if (dump_location) {
