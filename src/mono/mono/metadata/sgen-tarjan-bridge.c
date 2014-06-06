@@ -68,14 +68,6 @@ typedef struct {
 /* private */
 
 static void
-dyn_array_init (DynArray *da)
-{
-	da->size = 0;
-	da->capacity = 0;
-	da->data = NULL;
-}
-
-static void
 dyn_array_uninit (DynArray *da, int elem_size)
 {
 	if (da->capacity <= 0)
@@ -120,12 +112,6 @@ dyn_array_add (DynArray *da, int elem_size)
 }
 
 /* ptr */
-
-static void
-dyn_array_ptr_init (DynPtrArray *da)
-{
-	dyn_array_init (&da->array);
-}
 
 static void
 dyn_array_ptr_uninit (DynPtrArray *da)
@@ -461,6 +447,7 @@ bridge_object_forward (MonoObject *obj)
 	return fwd ? fwd : obj;
 }
 
+#ifdef DUMP_GRAPH
 static const char*
 safe_name_bridge (MonoObject *obj)
 {
@@ -476,7 +463,7 @@ find_or_create_data (MonoObject *obj)
 		entry = create_data (obj);
 	return entry;
 }
-
+#endif
 
 //----------
 typedef struct {
@@ -908,6 +895,7 @@ cleanup (void)
 	num_colors_with_bridges = 0;
 }
 
+#ifdef DUMP_GRAPH
 static void
 dump_color_table (const char *why, gboolean do_index)
 {
@@ -938,6 +926,7 @@ dump_color_table (const char *why, gboolean do_index)
 	}
 
 }
+#endif
 
 static gint64
 step_timer (gint64 *timer)
@@ -1034,16 +1023,6 @@ reset_xrefs (ColorData *color)
 		if (!dyn_array_ptr_size (&src->bridges))
 			reset_xrefs (src);
 	}
-}
-
-static mono_bool
-is_bridge_object_alive (MonoObject *obj, void *data)
-{
-	SgenHashTable *table = data;
-	unsigned char *value = sgen_hash_table_lookup (table, obj);
-	if (!value)
-		return TRUE;
-	return *value;
 }
 
 static void

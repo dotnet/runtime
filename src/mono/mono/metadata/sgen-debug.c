@@ -927,6 +927,7 @@ compare_xrefs (const void *a_ptr, const void *b_ptr)
 	return 0;
 }
 
+/*
 static void
 dump_processor_state (SgenBridgeProcessor *p)
 {
@@ -951,6 +952,7 @@ dump_processor_state (SgenBridgeProcessor *p)
 
 	printf ("-------\n");
 }
+*/
 
 gboolean
 sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b)
