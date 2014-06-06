@@ -1256,7 +1256,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		do {
 			oldsb = profiler->stat_buffers;
 			sbuf->next = oldsb;
-			foundsb = InterlockedCompareExchangePointer ((volatile void**)&profiler->stat_buffers, sbuf, oldsb);
+			foundsb = InterlockedCompareExchangePointer ((void * volatile*)&profiler->stat_buffers, sbuf, oldsb);
 		} while (foundsb != oldsb);
 		if (do_debug)
 			ign_res (write (2, "overflow\n", 9));
@@ -1271,7 +1271,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	do {
 		old_data = sbuf->data;
 		new_data = old_data + 4 + bt_data.count * 3;
-		data = InterlockedCompareExchangePointer ((volatile void**)&sbuf->data, new_data, old_data);
+		data = InterlockedCompareExchangePointer ((void * volatile*)&sbuf->data, new_data, old_data);
 	} while (data != old_data);
 	if (old_data >= sbuf->data_end)
 		return; /* lost event */
