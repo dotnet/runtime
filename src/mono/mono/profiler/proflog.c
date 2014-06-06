@@ -354,7 +354,12 @@ struct _LogBuffer {
 	unsigned char buf [1];
 };
 
-#define ENTER_LOG(lb,str) if ((lb)->locked) {write(2, str, strlen(str)); write(2, "\n", 1);return;} else {(lb)->locked++;}
+static inline void
+ign_res (int G_GNUC_UNUSED unused, ...)
+{
+}
+
+#define ENTER_LOG(lb,str) if ((lb)->locked) {ign_res (write(2, str, strlen(str))); ign_res (write(2, "\n", 1));return;} else {(lb)->locked++;}
 #define EXIT_LOG(lb) (lb)->locked--;
 
 typedef struct _StatBuffer StatBuffer;
@@ -1233,7 +1238,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		char buf [256];
 		snprintf (buf, sizeof (buf), "hit at %p in thread %p after %llu ms\n", ip, (void*)thread_id (), (unsigned long long int)elapsed/100);
 		len = strlen (buf);
-		write (2, buf, len);
+		ign_res (write (2, buf, len));
 	}
 	sbuf = profiler->stat_buffers;
 	if (!sbuf)
@@ -1254,13 +1259,13 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 			foundsb = InterlockedCompareExchangePointer ((volatile void**)&profiler->stat_buffers, sbuf, oldsb);
 		} while (foundsb != oldsb);
 		if (do_debug)
-			write (2, "overflow\n", 9);
+			ign_res (write (2, "overflow\n", 9));
 		/* notify the helper thread */
 		if (sbuf->next->next) {
 			char c = 0;
-			write (profiler->pipes [1], &c, 1);
+			ign_res (write (profiler->pipes [1], &c, 1));
 			if (do_debug)
-				write (2, "notify\n", 7);
+				ign_res (write (2, "notify\n", 7));
 		}
 	}
 	do {
@@ -2089,7 +2094,7 @@ log_shutdown (MonoProfiler *prof)
 	if (prof->command_port) {
 		char c = 1;
 		void *res;
-		write (prof->pipes [1], &c, 1);
+		ign_res (write (prof->pipes [1], &c, 1));
 		pthread_join (prof->helper_thread, &res);
 	}
 #endif
