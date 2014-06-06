@@ -378,7 +378,8 @@ boehm_thread_unregister (MonoThreadInfo *p)
 
 	tid = mono_thread_info_get_tid (p);
 
-	mono_threads_add_joinable_thread ((gpointer)tid);
+	if (p->runtime_thread)
+		mono_threads_add_joinable_thread ((gpointer)tid);
 }
 
 gboolean

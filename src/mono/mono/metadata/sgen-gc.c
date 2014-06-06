@@ -3863,7 +3863,8 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	binary_protocol_thread_unregister ((gpointer)tid);
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
 
-	mono_threads_add_joinable_thread ((gpointer)tid);
+	if (p->info.runtime_thread)
+		mono_threads_add_joinable_thread ((gpointer)tid);
 
 	if (gc_callbacks.thread_detach_func) {
 		gc_callbacks.thread_detach_func (p->runtime_data);
