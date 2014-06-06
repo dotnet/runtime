@@ -2149,13 +2149,13 @@ decode_buffer (ProfContext *ctx)
 		case TYPE_HEAP: {
 			int subtype = *p & 0xf0;
 			if (subtype == TYPE_HEAP_OBJECT) {
-				HeapObjectDesc *ho;
+				HeapObjectDesc *ho = NULL;
 				int i;
 				intptr_t objdiff = decode_sleb128 (p + 1, &p);
 				intptr_t ptrdiff = decode_sleb128 (p, &p);
 				uint64_t size = decode_uleb128 (p, &p);
 				uintptr_t num = decode_uleb128 (p, &p);
-				uintptr_t ref_offset;
+				uintptr_t ref_offset = 0;
 				uintptr_t last_obj_offset = 0;
 				ClassDesc *cd = lookup_class (ptr_base + ptrdiff);
 				if (size) {
@@ -2185,7 +2185,7 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %d\n", (void*)OBJ_ADDR (objdiff), size, cd->name, num);
 			} else if (subtype == TYPE_HEAP_ROOT) {
 				uintptr_t num = decode_uleb128 (p + 1, &p);
-				uintptr_t gc_num = decode_uleb128 (p, &p);
+				/*uintptr_t gc_num =*/ decode_uleb128 (p, &p);
 				int i;
 				for (i = 0; i < num; ++i) {
 					intptr_t objdiff = decode_sleb128 (p, &p);
@@ -2389,7 +2389,7 @@ decode_buffer (ProfContext *ctx)
 				/* un unmanaged binary loaded in memory */
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				uintptr_t addr = decode_sleb128 (p, &p);
-				uint64_t offset = decode_uleb128 (p, &p);
+				/*uint64_t offset =*/ decode_uleb128 (p, &p);
 				uintptr_t size = decode_uleb128 (p, &p);
 				char *name;
 				LOG_TIME (time_base, tdiff);
