@@ -67,7 +67,7 @@
 #endif
 
 /* the architecture needs a memory fence */
-#if defined(__linux__) && (defined(__i386__) || defined(__x86_64__) || defined(__arm__))
+#if defined(__linux__) && (defined(__i386__) || defined(__x86_64__) || defined(__arm__)) && !defined(PLATFORM_ANDROID)
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "perf_event.h"
