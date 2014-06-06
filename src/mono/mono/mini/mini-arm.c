@@ -4206,7 +4206,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_CMP_REG_IMM (code, tmpreg, 0, 0);
 				buf [2] = code;
 				ARM_B_COND (code, ARMCOND_NE, 0);
-				arm_patch (buf [2], buf [1]);
+				arm_patch (buf [2], buf [0]);
 				arm_patch (buf [1], code);
 				break;
 			case OP_ATOMIC_ADD_NEW_I4:
