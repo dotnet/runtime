@@ -19,19 +19,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-
-/* Disclaimers */
-
-#if defined(__GNUC__)
-#ifndef HAVE_GETRESUID
-	#warning getresuid not supported. WindowsImpersonationContext wont work
-#endif
-#ifndef HAVE_SETRESUID
-	#warning setresuid not supported. WindowsImpersonationContext wont work
-#endif
-#endif
-
-
 gboolean 
 ImpersonateLoggedOnUser (gpointer handle)
 {
