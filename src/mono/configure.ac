@@ -59,6 +59,9 @@ CFLAGS_FOR_LIBGC=$CFLAGS
 CPPFLAGS_FOR_EGLIB=$CPPFLAGS
 CFLAGS_FOR_EGLIB=$CFLAGS
 
+# libgc uses some deprecated APIs
+CFLAGS_FOR_LIBGC="$CFLAGS -Wno-deprecated-declarations"
+
 #
 # These are the flags that need to be stored in the mono.pc file for 
 # compiling code that will embed Mono
