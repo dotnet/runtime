@@ -17,13 +17,13 @@
 
 #include <pthread.h>
 
+static pthread_mutex_t spin = PTHREAD_MUTEX_INITIALIZER;
+
 #define NEED_64BIT_CMPXCHG_FALLBACK
 
 #endif
 
 #ifdef WAPI_NO_ATOMIC_ASM
-
-static pthread_mutex_t spin = PTHREAD_MUTEX_INITIALIZER;
 
 static mono_once_t spin_once=MONO_ONCE_INIT;
 
