@@ -3936,6 +3936,7 @@ mono_gc_pthread_exit (void *retval)
 {
 	mono_thread_info_detach ();
 	pthread_exit (retval);
+	g_assert_not_reached ();
 }
 
 #endif /* USE_PTHREAD_INTERCEPT */

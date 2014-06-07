@@ -1245,6 +1245,7 @@ void
 mono_gc_pthread_exit (void *retval)
 {
 	pthread_exit (retval);
+	g_assert_not_reached ();
 }
 
 #endif
