@@ -115,7 +115,7 @@ test_file ()
 
 #ifndef G_OS_WIN32 /* FIXME */
 	gchar *sympath;
-	gint ignored;
+	gint ignored G_GNUC_UNUSED;
 #endif
 
 	res = g_file_test (NULL, 0);
