@@ -4901,7 +4901,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	guint8 *ip;
 	MonoCompile *cfg;
 	int dfn, i, code_size_ratio;
+#ifndef DISABLE_SSA
 	gboolean deadce_has_run = FALSE;
+#endif
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
