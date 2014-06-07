@@ -849,6 +849,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
+#ifndef MONO_X86_NO_PUSHES
 		/* Pop arguments off the stack */
 		if (ji->has_arch_eh_info) {
 			int stack_size;
@@ -868,6 +869,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 #endif
 			}
 		}
+#endif
 
 		return TRUE;
 	} else if (*lmf) {

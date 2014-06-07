@@ -1871,7 +1871,11 @@ sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 #elif defined(TARGET_X86)
 	/* The offset is computed from the sp at the start of the call sequence */
 	g_assert (cfg->frame_reg == X86_EBP);
+#ifdef MONO_X86_NO_PUSHES
+	return (- cfg->arch.sp_fp_offset + sp_offset);
+#else
 	return (- cfg->arch.sp_fp_offset - sp_offset);	
+#endif
 #else
 	NOT_IMPLEMENTED;
 	return -1;
@@ -2058,7 +2062,11 @@ compute_frame_size (MonoCompile *cfg)
 #ifdef TARGET_AMD64
 	min_offset = MIN (min_offset, -cfg->arch.sp_fp_offset);
 #elif defined(TARGET_X86)
+#ifdef MONO_X86_NO_PUSHES
+	min_offset = MIN (min_offset, -cfg->arch.sp_fp_offset);
+#else
 	min_offset = MIN (min_offset, - (cfg->arch.sp_fp_offset + cfg->arch.param_area_size));
+#endif
 #elif defined(TARGET_ARM)
 	// FIXME:
 #elif defined(TARGET_s390X)
