@@ -384,7 +384,7 @@ struct _MonoProfiler {
 	StatBuffer *stat_buffers;
 	FILE* file;
 #if defined (HAVE_SYS_ZLIB)
-	gzFile *gzfile;
+	gzFile gzfile;
 #endif
 	uint64_t startup_time;
 	int pipe_output;
