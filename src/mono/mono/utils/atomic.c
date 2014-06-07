@@ -13,11 +13,11 @@
 
 #include <mono/utils/atomic.h>
 
-#if defined (WAPI_NO_ATOMIC_ASM) || defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
+#if defined (WAPI_NO_ATOMIC_ASM) || (defined (BROKEN_64BIT_ATOMICS_INTRINSIC) && !defined (TARGET_OSX))
 
 #include <pthread.h>
 
-static pthread_mutex_t spin = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t spin G_GNUC_UNUSED = PTHREAD_MUTEX_INITIALIZER;
 
 #define NEED_64BIT_CMPXCHG_FALLBACK
 
