@@ -483,6 +483,8 @@ mono_mprotect (void *addr, size_t length, int flags)
 }
 #endif // HAVE_MMAP
 
+#if defined(HAVE_SHM_OPEN) && !defined (DISABLE_SHARED_PERFCOUNTERS)
+
 static int use_shared_area;
 
 static gboolean
@@ -496,8 +498,6 @@ shared_area_disabled (void)
 	}
 	return use_shared_area == -1;
 }
-
-#if defined(HAVE_SHM_OPEN) && !defined (DISABLE_SHARED_PERFCOUNTERS)
 
 static int
 mono_shared_area_instances_slow (void **array, int count, gboolean cleanup)
