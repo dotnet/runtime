@@ -5338,6 +5338,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cfg->arch.no_pushes) {
 		cfg->stack_offset += cfg->param_area;
+		cfg->stack_offset = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 	}
 
 	alloc_size = cfg->stack_offset;
