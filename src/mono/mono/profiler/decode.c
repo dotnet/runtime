@@ -1433,7 +1433,7 @@ typedef struct _ThreadContext ThreadContext;
 typedef struct {
 	FILE *file;
 #if defined (HAVE_SYS_ZLIB)
-	gzFile *gzfile;
+	gzFile gzfile;
 #endif
 	unsigned char *buf;
 	int size;
