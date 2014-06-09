@@ -149,7 +149,7 @@ call_membase: dest:a src1:b len:16 nacl:18 clob:c
 iconst: dest:i len:5
 r4const: dest:f len:15
 r8const: dest:f len:16
-store_membase_imm: dest:b len:10
+store_membase_imm: dest:b len:11
 store_membase_reg: dest:b src1:i len:7
 storei1_membase_imm: dest:b len:10
 storei1_membase_reg: dest:b src1:y len:7
