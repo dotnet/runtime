@@ -50,8 +50,6 @@
 
 #include "jit-icalls.h"
 
-gboolean mono_win_chained_exception_needs_run;
-
 void
 mono_runtime_install_handlers (void)
 {
@@ -83,7 +81,8 @@ mono_runtime_cleanup_handlers (void)
 gboolean
 SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
-	mono_win_chained_exception_needs_run = TRUE;
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	jit_tls->mono_win_chained_exception_needs_run = TRUE;
 	return TRUE;
 }
 
