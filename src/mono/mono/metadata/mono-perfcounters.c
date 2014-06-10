@@ -478,9 +478,10 @@ perfctr_type_compress (int type)
 	return 2;
 }
 
-static unsigned char*
-shared_data_find_room (int size)
+static SharedHeader*
+shared_data_reserve_room (int size, int ftype)
 {
+	SharedHeader* header;
 	unsigned char *p = (unsigned char *)shared_area + shared_area->data_start;
 	unsigned char *end = (unsigned char *)shared_area + shared_area->size;
 
@@ -490,7 +491,7 @@ shared_data_find_room (int size)
 		unsigned short *next;
 		if (*p == FTYPE_END) {
 			if (size < (end - p))
-				return p;
+				goto res;
 			return NULL;
 		}
 		if (p + 4 > end)
@@ -499,12 +500,20 @@ shared_data_find_room (int size)
 		if (*p == FTYPE_DELETED) {
 			/* we reuse only if it's the same size */
 			if (*next == size) {
-				return p;
+				goto res;
 			}
 		}
 		p += *next;
 	}
 	return NULL;
+
+res:
+	header = (SharedHeader*)p;
+	header->ftype = ftype;
+	header->extra = 0; /* data_offset could overflow here, so we leave this field unused */
+	header->size = size;
+
+	return header;
 }
 
 typedef gboolean (*SharedFunc) (SharedHeader *header, void *data);
@@ -1144,7 +1153,6 @@ static SharedInstance*
 custom_get_instance (SharedCategory *cat, SharedCounter *scounter, MonoString* instance)
 {
 	SharedInstance* inst;
-	unsigned char *ptr;
 	char *p;
 	int size, data_offset;
 	char *name;
@@ -1158,22 +1166,18 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, MonoString* i
 	data_offset = size;
 	size += (sizeof (guint64) * cat->num_counters);
 	perfctr_lock ();
-	ptr = shared_data_find_room (size);
-	if (!ptr) {
+	inst = (SharedInstance*) shared_data_reserve_room (size, FTYPE_INSTANCE);
+	if (!inst) {
 		perfctr_unlock ();
 		g_free (name);
 		return NULL;
 	}
-	inst = (SharedInstance*)ptr;
-	inst->header.extra = 0; /* data_offset could overflow here, so we leave this field unused */
-	inst->header.size = size;
 	inst->category_offset = (char*)cat - (char*)shared_area;
 	cat->num_instances++;
 	/* now copy the variable data */
 	p = inst->instance_name;
 	strcpy (p, name);
 	p += strlen (name) + 1;
-	inst->header.ftype = FTYPE_INSTANCE;
 	perfctr_unlock ();
 	g_free (name);
 
@@ -1384,7 +1388,6 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	char *name = NULL;
 	char *chelp = NULL;
 	char **counter_info = NULL;
-	unsigned char *ptr;
 	char *p;
 	SharedCategory *cat;
 
@@ -1420,14 +1423,11 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	if (size > 65535)
 		goto failure;
 	perfctr_lock ();
-	ptr = shared_data_find_room (size);
-	if (!ptr) {
+	cat = (SharedCategory*) shared_data_reserve_room (size, FTYPE_CATEGORY);
+	if (!cat) {
 		perfctr_unlock ();
 		goto failure;
 	}
-	cat = (SharedCategory*)ptr;
-	cat->header.extra = type;
-	cat->header.size = size;
 	cat->num_counters = num_counters;
 	cat->counters_data_size = counters_data_size;
 	/* now copy the vaiable data */
@@ -1446,7 +1446,6 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 		strcpy (p, counter_info [i * 2 + 1]);
 		p += strlen (counter_info [i * 2 + 1]) + 1;
 	}
-	cat->header.ftype = FTYPE_CATEGORY;
 
 	perfctr_unlock ();
 	result = TRUE;
