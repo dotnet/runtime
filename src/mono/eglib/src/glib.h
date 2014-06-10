@@ -49,12 +49,6 @@
 
 G_BEGIN_DECLS
 
-#ifdef G_OS_WIN32
-/* MSC and Cross-compilatin will use this */
-int vasprintf (char **strp, const char *fmt, va_list ap);
-#endif
-
-
 /*
  * Basic data types
  */

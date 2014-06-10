@@ -30,6 +30,8 @@
 #include <string.h>
 #include <glib.h>
 
+#include "vasprintf.h"
+
 GError *
 g_error_new (gpointer domain, gint code, const char *format, ...)
 {
