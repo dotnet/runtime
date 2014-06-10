@@ -610,7 +610,8 @@ find_custom_counter (SharedCategory* cat, MonoString *name)
 		SharedCounter *counter = (SharedCounter*)p;
 		if (mono_string_compare_ascii (name, counter->name) == 0)
 			return counter;
-		p += 1 + strlen (p + 1) + 1; /* skip counter type and name */
+		p += 2; /* skip counter type */
+		p += strlen (p) + 1; /* skip counter name */
 		p += strlen (p) + 1; /* skip counter help */
 	}
 	return NULL;
@@ -1539,7 +1540,8 @@ mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 		res = mono_array_new (domain, mono_get_string_class (), scat->num_counters);
 		for (i = 0; i < scat->num_counters; ++i) {
 			mono_array_setref (res, i, mono_string_new (domain, p + 1));
-			p += 1 + strlen (p + 1) + 1; /* skip counter type and name */
+			p += 2; /* skip counter type */
+			p += strlen (p) + 1; /* skip counter name */
 			p += strlen (p) + 1; /* skip counter help */
 		}
 		perfctr_unlock ();
