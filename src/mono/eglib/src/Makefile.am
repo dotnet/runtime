@@ -1,5 +1,7 @@
 noinst_LTLIBRARIES = libeglib.la libeglib-static.la
 
+AM_CFLAGS = $(WERROR_CFLAGS)
+
 win_files  = \
 	eglib-config.hw \
 	gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c \

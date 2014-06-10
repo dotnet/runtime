@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
+AM_CFLAGS = $(WERROR_CFLAGS)
+
 if HOST_WIN32
 SUBDIRS = m4 src
 else
