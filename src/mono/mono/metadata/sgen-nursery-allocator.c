@@ -414,7 +414,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 				/*frag->next read must happen before the first CAS*/
 				mono_memory_write_barrier ();
 
-				/*Fail if the next done is removed concurrently and its CAS wins */
+				/*Fail if the next node is removed concurrently and its CAS wins */
 				if (InterlockedCompareExchangePointer ((volatile gpointer*)&frag->next, mask (next, 1), next) != next) {
 					continue;
 				}
@@ -424,7 +424,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 			mono_memory_write_barrier ();
 
 			/* Fail if the previous node was deleted and its CAS wins */
-			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev_ptr, next, frag) != frag) {
+			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev_ptr, unmask (next), frag) != frag) {
 				prev_ptr = find_previous_pointer_fragment (allocator, frag);
 				continue;
 			}
