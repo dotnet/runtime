@@ -77,6 +77,10 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	LONG res;
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 
+	/* If the thread is not managed by the runtime return early */
+	if (!jit_tls)
+		return EXCEPTION_CONTINUE_SEARCH;
+
 	jit_tls->mono_win_chained_exception_needs_run = FALSE;
 	res = EXCEPTION_CONTINUE_EXECUTION;
 
