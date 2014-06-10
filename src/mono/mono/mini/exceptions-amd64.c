@@ -115,6 +115,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 		W32_SEH_HANDLE_EX(fpe);
 		break;
 	default:
+		jit_tls->mono_win_chained_exception_needs_run = TRUE;
 		break;
 	}
 
