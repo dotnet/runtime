@@ -3486,9 +3486,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			x86_mov_membase_reg (code, spvar->inst_basereg, spvar->inst_offset, X86_ESP, 4);
-			if ((MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FINALLY) ||
-				MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FAULT))  &&
-				cfg->param_area && cfg->arch.no_pushes) {
+			if (cfg->param_area && cfg->arch.no_pushes) {
 				x86_alu_reg_imm (code, X86_SUB, X86_ESP, ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
 			}
 			break;
