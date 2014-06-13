@@ -2350,6 +2350,8 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 		x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EAX);
 				
 		x86_lea_membase (code, X86_EDI, X86_ESP, offset);
+		if (cfg->param_area && cfg->arch.no_pushes)
+			x86_alu_reg_imm (code, X86_ADD, X86_EDI, cfg->param_area);
 		x86_cld (code);
 		x86_prefix (code, X86_REP_PREFIX);
 		x86_stosl (code);
