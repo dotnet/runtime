@@ -315,12 +315,14 @@ ICALL(INOW_1, "AddWatch", ves_icall_System_IO_InotifyWatcher_AddWatch)
 ICALL(INOW_2, "GetInotifyInstance", ves_icall_System_IO_InotifyWatcher_GetInotifyInstance)
 ICALL(INOW_3, "RemoveWatch", ves_icall_System_IO_InotifyWatcher_RemoveWatch)
 
-#if defined (TARGET_IOS) || defined (TARGET_ANDROID)
 ICALL_TYPE(MMAPIMPL, "System.IO.MemoryMappedFiles.MemoryMapImpl", MMAPIMPL_1)
-ICALL(MMAPIMPL_1, "mono_filesize_from_fd", mono_filesize_from_fd)
-ICALL(MMAPIMPL_2, "mono_filesize_from_path", mono_filesize_from_path)
-#endif
-
+ICALL(MMAPIMPL_1, "CloseMapping", mono_mmap_close)
+ICALL(MMAPIMPL_2, "ConfigureHandleInheritability", mono_mmap_configure_inheritability)
+ICALL(MMAPIMPL_3, "Flush", mono_mmap_flush)
+ICALL(MMAPIMPL_4, "MapInternal", mono_mmap_map)
+ICALL(MMAPIMPL_5, "OpenFileInternal", mono_mmap_open_file)
+ICALL(MMAPIMPL_6, "OpenHandleInternal", mono_mmap_open_handle)
+ICALL(MMAPIMPL_7, "Unmap", mono_mmap_unmap)
 
 ICALL_TYPE(MONOIO, "System.IO.MonoIO", MONOIO_1)
 ICALL(MONOIO_1, "Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close)

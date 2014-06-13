@@ -193,7 +193,11 @@ common_sources = \
 	verify.c		\
 	verify-internals.h	\
 	wrapper-types.h	\
-	reflection-internals.h
+	reflection-internals.h	\
+	file-mmap-posix.c	\
+	file-mmap-windows.c	\
+	file-mmap.h
+
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

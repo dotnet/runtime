@@ -75,6 +75,7 @@
 #include <mono/metadata/mono-ptr-array.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/file-mmap.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
