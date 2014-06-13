@@ -201,22 +201,22 @@ acess_to_mmap_flags (int access)
 {
 	switch (access) {
 	case MMAP_FILE_ACCESS_READ_WRITE:
-        return MONO_MMAP_WRITE | MONO_MMAP_READ | MONO_MMAP_PRIVATE;
+        return MONO_MMAP_WRITE | MONO_MMAP_READ | MONO_MMAP_SHARED;
         
 	case MMAP_FILE_ACCESS_WRITE:
-        return MONO_MMAP_WRITE | MONO_MMAP_PRIVATE;
+        return MONO_MMAP_WRITE | MONO_MMAP_SHARED;
         
 	case MMAP_FILE_ACCESS_COPY_ON_WRITE:
-        return MONO_MMAP_WRITE | MONO_MMAP_READ;
+        return MONO_MMAP_WRITE | MONO_MMAP_READ | MONO_MMAP_PRIVATE;
         
 	case MMAP_FILE_ACCESS_READ_EXECUTE:
         return MONO_MMAP_EXEC | MONO_MMAP_PRIVATE | MONO_MMAP_SHARED;
         
 	case MMAP_FILE_ACCESS_READ_WRITE_EXECUTE:
-        return MONO_MMAP_WRITE | MONO_MMAP_READ | MONO_MMAP_EXEC | MONO_MMAP_PRIVATE;
+        return MONO_MMAP_WRITE | MONO_MMAP_READ | MONO_MMAP_EXEC | MONO_MMAP_SHARED;
         
 	case MMAP_FILE_ACCESS_READ:
-        return MONO_MMAP_READ | MONO_MMAP_PRIVATE;
+        return MONO_MMAP_READ | MONO_MMAP_SHARED;
 	default:
 		g_error ("unknown MemoryMappedFileAccess %d", access);
 	}
