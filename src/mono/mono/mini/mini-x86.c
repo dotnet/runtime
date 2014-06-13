@@ -3322,11 +3322,52 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2:
 		case OP_VOIDCALL:
 		case OP_CALL:
+		case OP_FCALL_REG:
+		case OP_LCALL_REG:
+		case OP_VCALL_REG:
+		case OP_VCALL2_REG:
+		case OP_VOIDCALL_REG:
+		case OP_CALL_REG:
+		case OP_FCALL_MEMBASE:
+		case OP_LCALL_MEMBASE:
+		case OP_VCALL_MEMBASE:
+		case OP_VCALL2_MEMBASE:
+		case OP_VOIDCALL_MEMBASE:
+		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
-			if (ins->flags & MONO_INST_HAS_METHOD)
-				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
-			else
-				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
+
+			switch (ins->opcode) {
+			case OP_FCALL:
+			case OP_LCALL:
+			case OP_VCALL:
+			case OP_VCALL2:
+			case OP_VOIDCALL:
+			case OP_CALL:
+				if (ins->flags & MONO_INST_HAS_METHOD)
+					code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
+				else
+					code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
+				break;
+			case OP_FCALL_REG:
+			case OP_LCALL_REG:
+			case OP_VCALL_REG:
+			case OP_VCALL2_REG:
+			case OP_VOIDCALL_REG:
+			case OP_CALL_REG:
+				x86_call_reg (code, ins->sreg1);
+				break;
+			case OP_FCALL_MEMBASE:
+			case OP_LCALL_MEMBASE:
+			case OP_VCALL_MEMBASE:
+			case OP_VCALL2_MEMBASE:
+			case OP_VOIDCALL_MEMBASE:
+			case OP_CALL_MEMBASE:
+				x86_call_membase (code, ins->sreg1, ins->inst_offset);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature) && !cfg->arch.no_pushes) {
@@ -3350,43 +3391,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 				}
-			}
-			code = emit_move_return_value (cfg, ins, code);
-			break;
-		case OP_FCALL_REG:
-		case OP_LCALL_REG:
-		case OP_VCALL_REG:
-		case OP_VCALL2_REG:
-		case OP_VOIDCALL_REG:
-		case OP_CALL_REG:
-			call = (MonoCallInst*)ins;
-			x86_call_reg (code, ins->sreg1);
-			ins->flags |= MONO_INST_GC_CALLSITE;
-			ins->backend.pc_offset = code - cfg->native_code;
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature) && !cfg->arch.no_pushes) {
-				if (call->stack_usage == 4)
-					x86_pop_reg (code, X86_ECX);
-				else
-					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
-			}
-			code = emit_move_return_value (cfg, ins, code);
-			break;
-		case OP_FCALL_MEMBASE:
-		case OP_LCALL_MEMBASE:
-		case OP_VCALL_MEMBASE:
-		case OP_VCALL2_MEMBASE:
-		case OP_VOIDCALL_MEMBASE:
-		case OP_CALL_MEMBASE:
-			call = (MonoCallInst*)ins;
-
-			x86_call_membase (code, ins->sreg1, ins->inst_offset);
-			ins->flags |= MONO_INST_GC_CALLSITE;
-			ins->backend.pc_offset = code - cfg->native_code;
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature) && !cfg->arch.no_pushes) {
-				if (call->stack_usage == 4)
-					x86_pop_reg (code, X86_ECX);
-				else
-					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			}
 			code = emit_move_return_value (cfg, ins, code);
 			break;
