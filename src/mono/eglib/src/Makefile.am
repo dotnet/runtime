@@ -32,6 +32,7 @@ libeglib_la_SOURCES = \
 	garray.c	\
 	gbytearray.c	\
 	gerror.c	\
+	vasprintf.h     \
 	ghashtable.c 	\
 	giconv.c	\
 	gmem.c       	\
