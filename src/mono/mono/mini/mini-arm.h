@@ -124,6 +124,17 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
+/* Argument marshallings for calls between gsharedvt and normal code */
+typedef enum {
+	GSHAREDVT_ARG_NONE = 0,
+	GSHAREDVT_ARG_BYVAL_TO_BYREF = 1,
+	GSHAREDVT_ARG_BYREF_TO_BYVAL = 2,
+	GSHAREDVT_ARG_BYREF_TO_BYVAL_I1 = 3,
+	GSHAREDVT_ARG_BYREF_TO_BYVAL_I2 = 4,
+	GSHAREDVT_ARG_BYREF_TO_BYVAL_U1 = 5,
+	GSHAREDVT_ARG_BYREF_TO_BYVAL_U2 = 6
+} GSharedVtArgMarshal;
+
 /* Return value marshalling for calls between gsharedvt and normal code */
 typedef enum {
 	GSHAREDVT_RET_NONE = 0,
