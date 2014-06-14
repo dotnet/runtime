@@ -22,7 +22,7 @@ if test x$GCC != xyes; then
     dolt_supported=no
 fi
 case $host in
-i?86-*-linux*|x86_64-*-linux*|powerpc-*-linux*|powerpc64-*-linux* \
+i?86-*-linux*|i?86-apple-darwin*|x86_64-*-linux*|powerpc-*-linux*|powerpc64-*-linux* \
 |amd64-*-freebsd*|i?86-*-freebsd*|ia64-*-freebsd*|arm*-*-linux*|sparc*-*-linux*|mips*-*-linux*|x86_64-apple-darwin*|aarch64*)
     pic_options='-fPIC'
     ;;
@@ -158,7 +158,7 @@ modeok=false
 tagok=false
 for arg in "$[]@"; do
     case "$arg" in
-        --silent) ;;    
+        --silent) ;;
         --mode=compile) modeok=true ;;
         --tag=CC|--tag=CXX) tagok=true ;;
         --quiet) ;;
