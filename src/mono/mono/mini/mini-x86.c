@@ -2300,9 +2300,10 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 			x86_push_reg (code, X86_EDI);
 			x86_mov_reg_imm (code, X86_ECX, (0x1000 >> 2));
 			x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EAX);				
-			x86_lea_membase (code, X86_EDI, X86_ESP, 12);
 			if (cfg->param_area && cfg->arch.no_pushes)
-				x86_alu_reg_imm (code, X86_ADD, X86_EDI, cfg->param_area);
+				x86_lea_membase (code, X86_EDI, X86_ESP, 12 + ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
+			else
+				x86_lea_membase (code, X86_EDI, X86_ESP, 12);
 			x86_cld (code);
 			x86_prefix (code, X86_REP_PREFIX);
 			x86_stosl (code);
@@ -2349,7 +2350,10 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 			x86_mov_reg_reg (code, X86_ECX, sreg, 4);
 		x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EAX);
 				
-		x86_lea_membase (code, X86_EDI, X86_ESP, offset);
+		if (cfg->param_area && cfg->arch.no_pushes)
+			x86_lea_membase (code, X86_EDI, X86_ESP, offset + ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
+		else
+			x86_lea_membase (code, X86_EDI, X86_ESP, offset);
 		x86_cld (code);
 		x86_prefix (code, X86_REP_PREFIX);
 		x86_stosl (code);
@@ -3456,7 +3460,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_emit_stack_alloc (cfg, code, ins);
 			x86_mov_reg_reg (code, ins->dreg, X86_ESP, 4);
                         if (cfg->param_area && cfg->arch.no_pushes)
-                                x86_alu_reg_imm (code, X86_ADD, ins->dreg, cfg->param_area);
+                                x86_alu_reg_imm (code, X86_ADD, ins->dreg, ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
 			break;
 		case OP_LOCALLOC_IMM: {
 			guint32 size = ins->inst_imm;
@@ -3474,7 +3478,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_mov_reg_reg (code, ins->dreg, X86_ESP, 4);
 			}
                         if (cfg->param_area && cfg->arch.no_pushes)
-                                x86_alu_reg_imm (code, X86_ADD, ins->dreg, cfg->param_area);
+                                x86_alu_reg_imm (code, X86_ADD, ins->dreg, ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
 			break;
 		}
 		case OP_THROW: {
