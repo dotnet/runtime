@@ -272,10 +272,16 @@ open_file_map (MonoString *path, int input_fd, int mode, gint64 *capacity, int a
 		}
 	}
 
+#ifndef PLATFORM_ANDROID
 	if (path) //FIXME use io portability?
 		fd = open (c_path, file_mode_to_unix (mode) | access_mode_to_unix (access), DEFFILEMODE);
 	else
 		fd = dup (input_fd);
+#else
+	// FIXME: No DEFFILEMODE
+	fd = -1;
+	g_assert_not_reached ();
+#endif
 
 	if (fd == -1) { //XXX translate errno?
 		*error = COULD_NOT_OPEN;
