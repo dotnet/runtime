@@ -811,7 +811,7 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 void
 mono_arch_cpu_init (void)
 {
-#if defined(__APPLE__)
+#ifdef TARGET_IOS
 	i8_align = 4;
 #else
 	i8_align = __alignof__ (gint64);
