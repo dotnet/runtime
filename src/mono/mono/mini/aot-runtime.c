@@ -3353,10 +3353,10 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 				method = mono_get_method (image, token, NULL);
 			if (method) {
 				char *name = mono_method_full_name (method, TRUE);
-				printf ("LAST AOT METHOD: %s.\n", name);
+				g_print ("LAST AOT METHOD: %s.\n", name);
 				g_free (name);
 			} else {
-				printf ("LAST AOT METHOD: %p %d\n", code, method_index);
+				g_print ("LAST AOT METHOD: %p %d\n", code, method_index);
 			}
 		}
 	}
