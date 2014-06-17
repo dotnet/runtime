@@ -762,5 +762,7 @@ MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGeneri
 
 MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context) MONO_INTERNAL;
 
+void mono_type_set_alignment (MonoTypeEnum type, int align) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

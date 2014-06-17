@@ -816,6 +816,14 @@ mono_arch_cpu_init (void)
 #else
 	i8_align = __alignof__ (gint64);
 #endif
+
+#ifdef MONO_CROSS_COMPILE
+	/* Need to set the alignment of i8 since it can different on the target */
+#ifdef TARGET_ANDROID
+	/* linux gnueabi */
+	mono_type_set_alignment (MONO_TYPE_I8, 8);
+#endif
+#endif
 }
 
 static gpointer

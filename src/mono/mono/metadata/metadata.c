@@ -4284,6 +4284,29 @@ mono_backtrace (int limit)
 
 #define abi__alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
 
+static int i8_align;
+
+/*
+ * mono_type_set_alignment:
+ *
+ *   Set the alignment used by runtime to layout fields etc. of type TYPE to ALIGN.
+ * This should only be used in AOT mode since the resulting layout will not match the
+ * host abi layout.
+ */
+void
+mono_type_set_alignment (MonoTypeEnum type, int align)
+{
+	/* Support only a few types whose alignment is abi dependent */
+	switch (type) {
+	case MONO_TYPE_I8:
+		i8_align = align;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
 /*
  * mono_type_size:
  * @t: the type to return the size of
@@ -4328,7 +4351,10 @@ mono_type_size (MonoType *t, int *align)
 		return 4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		*align = abi__alignof__(gint64);
+		if (i8_align)
+			*align = i8_align;
+		else
+			*align = abi__alignof__(gint64);
 		return 8;		
 	case MONO_TYPE_R8:
 		*align = abi__alignof__(double);
@@ -4453,7 +4479,10 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		return sizeof (float);		
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		*align = abi__alignof__(gint64);
+		if (i8_align)
+			*align = i8_align;
+		else
+			*align = abi__alignof__(gint64);
 		return sizeof (gint64);		
 	case MONO_TYPE_R8:
 		*align = abi__alignof__(double);
