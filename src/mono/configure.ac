@@ -2519,6 +2519,8 @@ INTL="libc.so.6"
 SQLITE="libsqlite.so.0"
 SQLITE3="libsqlite3.so.0"
 X11="libX11.so"
+GDKX11="libgdk-x11-2.0.so.0"
+GTKX11="libgtk-x11-2.0.so.0"
 XINERAMA="libXinerama.so"
 
 sizeof_register="SIZEOF_VOID_P"
@@ -2974,6 +2976,8 @@ case "$host" in
 	SQLITE="libsqlite.0.dylib"
 	SQLITE3="libsqlite3.0.dylib"
 	X11="libX11.dylib"
+	GDKX11="libgdk-x11-2.0.dylib"
+	GTKX11="libgtk-x11-2.0.dylib"
 	;;
      *-*-*netbsd*)
 	LIBC="libc.so.12"
@@ -3369,6 +3373,8 @@ AC_SUBST(INTL)
 AC_SUBST(SQLITE)
 AC_SUBST(SQLITE3)
 AC_SUBST(X11)
+AC_SUBST(GDKX11)
+AC_SUBST(GTKX11)
 AC_SUBST(XINERAMA)
 AC_DEFINE_UNQUOTED(ARCHITECTURE,"$arch_target",[The architecture this is running on])
 AC_SUBST(arch_target)
