@@ -4388,6 +4388,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_NEW_I8: {
 			guint8 *loop = code, *branch;
 			g_assert (ins->inst_offset == 0);
+			ppc_sync (code);
 			if (ins->opcode == OP_ATOMIC_ADD_NEW_I4)
 				ppc_lwarx (code, ppc_r0, 0, ins->inst_basereg);
 			else
@@ -4400,6 +4401,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			branch = code;
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 			ppc_patch (branch, loop);
+			ppc_sync (code);
 			ppc_mr (code, ins->dreg, ppc_r0);
 			break;
 		}
@@ -4426,6 +4428,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *start, *not_equal, *lost_reservation;
 
 			start = code;
+			ppc_sync (code);
 			if (ins->opcode == OP_ATOMIC_CAS_I4)
 				ppc_lwarx (code, ppc_r0, 0, location);
 #ifdef __mono_ppc64__
@@ -4448,6 +4451,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_patch (lost_reservation, start);
 
 			ppc_patch (not_equal, code);
+			ppc_sync (code);
 			ppc_mr (code, ins->dreg, ppc_r0);
 			break;
 		}
