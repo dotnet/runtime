@@ -290,8 +290,9 @@ open_file_map (MonoString *path, int input_fd, int mode, gint64 *capacity, int a
 
 	*capacity = align_up_to_page_size ((size_t)*capacity);
 
-	if (*capacity > buf.st_size)
-		ftruncate (fd, (off_t)*capacity);
+	if (*capacity > buf.st_size) {
+		int unused G_GNUC_UNUSED = ftruncate (fd, (off_t)*capacity);
+	}
 
 	handle = g_new0 (FileHandle, 1);
 	handle->handle.kind = MMAP_KIND_FILE;
