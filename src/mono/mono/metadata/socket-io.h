@@ -191,7 +191,7 @@ typedef struct
 	gint gid;
 } MonoPeerCredData;
 
-extern gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error) MONO_INTERNAL;
+extern gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this_obj, gint32 family, gint32 type, gint32 proto, gint32 *error) MONO_INTERNAL;
 extern void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock, gint32 *error) MONO_INTERNAL;
 extern gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void) MONO_INTERNAL;
 extern gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock, gint32 *error) MONO_INTERNAL;

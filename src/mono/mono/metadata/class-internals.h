@@ -673,7 +673,7 @@ void
 mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_fields_locking (MonoClass *class) MONO_INTERNAL;
+mono_class_setup_fields_locking (MonoClass *klass) MONO_INTERNAL;
 
 /* WARNING
  * Only call this function if you can ensure both @klass and @parent
@@ -909,13 +909,13 @@ void
 mono_class_setup_parent    (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
 
 MonoMethod*
-mono_class_get_method_by_index (MonoClass *class, int index) MONO_INTERNAL;
+mono_class_get_method_by_index (MonoClass *klass, int index) MONO_INTERNAL;
 
 MonoMethod*
-mono_class_get_inflated_method (MonoClass *class, MonoMethod *method) MONO_INTERNAL;
+mono_class_get_inflated_method (MonoClass *klass, MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod*
-mono_class_get_vtable_entry (MonoClass *class, int offset) MONO_INTERNAL;
+mono_class_get_vtable_entry (MonoClass *klass, int offset) MONO_INTERNAL;
 
 GPtrArray*
 mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error) MONO_INTERNAL;
@@ -985,7 +985,7 @@ void
 mono_install_get_class_from_name (MonoGetClassFromName func) MONO_INTERNAL;
 
 MonoGenericContext*
-mono_class_get_context (MonoClass *class) MONO_INTERNAL;
+mono_class_get_context (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethodSignature*
 mono_method_signature_checked (MonoMethod *m, MonoError *err) MONO_INTERNAL;
@@ -1263,7 +1263,7 @@ char*
 mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format) MONO_INTERNAL;
 
 char*
-mono_type_get_full_name (MonoClass *class) MONO_INTERNAL;
+mono_type_get_full_name (MonoClass *klass) MONO_INTERNAL;
 
 MonoArrayType *mono_dup_array_type (MonoImage *image, MonoArrayType *a) MONO_INTERNAL;
 MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMethodSignature *sig) MONO_INTERNAL;
@@ -1324,7 +1324,7 @@ MonoMethod*
 mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig) MONO_INTERNAL;
 
 void
-mono_class_setup_interface_id (MonoClass *class) MONO_INTERNAL;
+mono_class_setup_interface_id (MonoClass *klass) MONO_INTERNAL;
 
 MonoGenericContainer*
 mono_class_get_generic_container (MonoClass *klass) MONO_INTERNAL;
@@ -1342,7 +1342,7 @@ MonoClassField*
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type) MONO_INTERNAL;
 
 MonoVTable*
-mono_class_vtable_full (MonoDomain *domain, MonoClass *class, gboolean raise_on_error) MONO_INTERNAL;
+mono_class_vtable_full (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error) MONO_INTERNAL;
 
 gboolean
 mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate) MONO_INTERNAL;
@@ -1362,13 +1362,13 @@ MonoClassField*
 mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter) MONO_INTERNAL;
 
 gboolean
-mono_class_check_vtable_constraints (MonoClass *class, GList *in_setup) MONO_INTERNAL;
+mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup) MONO_INTERNAL;
 
 gboolean
 mono_class_has_finalizer (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_unload_interface_id (MonoClass *class) MONO_INTERNAL;
+mono_unload_interface_id (MonoClass *klass) MONO_INTERNAL;
 
 GPtrArray*
 mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bflags, gboolean ignore_case, gboolean allow_ctors, MonoException **ex) MONO_INTERNAL;

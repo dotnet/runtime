@@ -58,7 +58,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func) MONO_INTERNAL;
 
-void ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this) MONO_INTERNAL;
+void ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj) MONO_INTERNAL;
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start) MONO_INTERNAL;
 void ves_icall_System_Threading_InternalThread_Thread_free_internal(MonoInternalThread *this_obj, HANDLE thread) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms) MONO_INTERNAL;
@@ -184,7 +184,7 @@ void mono_special_static_data_free_slot (guint32 offset, guint32 size) MONO_INTE
 uint32_t mono_thread_alloc_tls   (MonoReflectionType *type) MONO_INTERNAL;
 void     mono_thread_destroy_tls (uint32_t tls_offset) MONO_INTERNAL;
 void     mono_thread_destroy_domain_tls (MonoDomain *domain) MONO_INTERNAL;
-void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MONO_INTERNAL;
+void mono_thread_free_local_slot_values (int slot, MonoBoolean is_thread_local) MONO_INTERNAL;
 void mono_thread_current_check_pending_interrupt (void) MONO_INTERNAL;
 
 void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state) MONO_INTERNAL;

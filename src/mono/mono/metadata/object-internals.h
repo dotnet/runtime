@@ -647,7 +647,7 @@ void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args) MONO_INTERNAL;
 
 void
-mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer addr, MonoMethod *method) MONO_INTERNAL;
+mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method) MONO_INTERNAL;
 
 void
 mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr) MONO_INTERNAL;
@@ -1476,7 +1476,7 @@ void
 mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 
 gboolean
-mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res) MONO_INTERNAL;
+mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res) MONO_INTERNAL;
 
 #ifndef DISABLE_REMOTING
 MonoObject *
@@ -1567,7 +1567,7 @@ void
 mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy) MONO_INTERNAL;
 
 MonoVTable *
-mono_class_try_get_vtable (MonoDomain *domain, MonoClass *class) MONO_INTERNAL;
+mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass) MONO_INTERNAL;
 
 MonoException *
 mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception) MONO_INTERNAL;
@@ -1576,16 +1576,16 @@ void
 mono_method_clear_object (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 
 void
-mono_class_compute_gc_descriptor (MonoClass *class) MONO_INTERNAL;
+mono_class_compute_gc_descriptor (MonoClass *klass) MONO_INTERNAL;
 
 gsize*
-mono_class_compute_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields) MONO_INTERNAL;
+mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields) MONO_INTERNAL;
 
 MonoObject*
 mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoObject **exc) MONO_INTERNAL;
 
 gboolean
-mono_class_is_reflection_method_or_constructor (MonoClass *class) MONO_INTERNAL;
+mono_class_is_reflection_method_or_constructor (MonoClass *klass) MONO_INTERNAL;
 
 MonoObject *
 mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob) MONO_INTERNAL;

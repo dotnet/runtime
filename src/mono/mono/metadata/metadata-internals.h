@@ -577,7 +577,7 @@ void
 mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
 
 void
-mono_image_append_class_to_reflection_info_set (MonoClass *class) MONO_INTERNAL;
+mono_image_append_class_to_reflection_info_set (MonoClass *klass) MONO_INTERNAL;
 
 gpointer
 mono_image_set_alloc  (MonoImageSet *set, guint size) MONO_INTERNAL;

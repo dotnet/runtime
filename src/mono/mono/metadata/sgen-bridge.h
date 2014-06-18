@@ -56,7 +56,7 @@ typedef struct {
 
 typedef struct {
 	int bridge_version;
-	MonoGCBridgeObjectKind (*bridge_class_kind) (MonoClass *class);
+	MonoGCBridgeObjectKind (*bridge_class_kind) (MonoClass *klass);
 	mono_bool (*is_bridge_object) (MonoObject *object);
 	void (*cross_references) (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs);
 } MonoGCBridgeCallbacks;

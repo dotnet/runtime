@@ -362,7 +362,7 @@ enum {
 
 typedef struct {
 	int version;
-	gboolean (*is_class_finalization_aware) (MonoClass *class);
+	gboolean (*is_class_finalization_aware) (MonoClass *klass);
 	void (*object_queued_for_finalization) (MonoObject *object);
 } MonoGCFinalizerCallbacks;
 
@@ -382,7 +382,7 @@ void mono_gc_bzero_aligned (void *dest, size_t size) MONO_INTERNAL;
 void mono_gc_memmove_atomic (void *dest, const void *src, size_t size) MONO_INTERNAL;
 void mono_gc_memmove_aligned (void *dest, const void *src, size_t size) MONO_INTERNAL;
 
-guint mono_gc_get_vtable_bits (MonoClass *class) MONO_INTERNAL;
+guint mono_gc_get_vtable_bits (MonoClass *klass) MONO_INTERNAL;
 
 void mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size) MONO_INTERNAL;
 
