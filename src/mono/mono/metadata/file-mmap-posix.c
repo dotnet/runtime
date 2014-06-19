@@ -488,9 +488,9 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 
 		if (!eff_size)
 			eff_size = *size = mh->length;
-		mmap_offset = (size_t)mmap_offset;
+		mmap_offset = (size_t)offset;
 		res.address = (char*)mh->address + offset;
-		res.length = (size_t)size;
+		res.length = (size_t)*size;
 		res.kind = MMAP_KIND_MEMORY;
 	}
 
