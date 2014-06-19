@@ -226,6 +226,15 @@ acess_to_mmap_flags (int access)
 }
 
 /*
+This allow us to special case zero size files that can be arbitrarily mapped.
+*/
+static gboolean
+is_special_zero_size_file (struct stat *buf)
+{
+	return buf->st_size == 0 && (buf->st_mode & (S_IFCHR | S_IFBLK | S_IFIFO | S_IFSOCK)) != 0;
+}
+
+/*
 XXX implement options
 */
 static void*
@@ -259,7 +268,7 @@ open_file_map (MonoString *path, int input_fd, int mode, gint64 *capacity, int a
 			 * Special files such as FIFOs, sockets, and devices can have a size of 0. Specifying a capacity for these
 			 * also makes little sense, so don't do the check if th file is one of these.
 			 */
-			if (buf.st_size == 0 && (buf.st_mode & (S_IFCHR | S_IFBLK | S_IFIFO | S_IFSOCK)) == 0) {
+			if (buf.st_size == 0 && !is_special_zero_size_file (&buf)) {
 				*error = CAPACITY_SMALLER_THAN_FILE_SIZE;
 				goto done;
 			}
@@ -468,7 +477,12 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 		struct stat buf = { 0 };
 		fstat (fh->fd, &buf); //FIXME error handling
 
-		if (eff_size == 0 || eff_size > buf.st_size)
+		/**
+		  * We use the file size if one of the following conditions is true:
+		  *  -input size is zero
+		  *  -input size is bigger than the file and the file is not a magical zero size file such as /dev/mem.
+		  */
+		if (eff_size == 0 || (eff_size > buf.st_size && !is_special_zero_size_file (&buf)))
 			eff_size = buf.st_size;
 		*size = eff_size;
 
