@@ -1248,7 +1248,7 @@ GSHARED_TESTS = \
 		generic-sealed-virtual.2.exe generic-system-arrays.2.exe	\
 		generic-stack-traces.2.exe generic-stack-traces2.2.exe		\
 		bug-472600.2.exe bug-473482.2.exe bug-473999.2.exe		\
-		bug-479763.2.exe generic-xdomain.2.exe				\
+		bug-479763.2.exe				\
 		generic-type-load-exception.2.exe bug-616463.exe	\
 		bug-1147.exe
 
