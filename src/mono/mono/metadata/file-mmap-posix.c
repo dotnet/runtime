@@ -333,25 +333,26 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 	if (handle) {
 		if (mode == FILE_MODE_CREATE_NEW)
 			*error = FILE_ALREADY_EXISTS;
-
-		handle->handle.ref_count++;
+		else
+			handle->handle.ref_count++;
 		//XXX should we ftruncate if the file is smaller than capacity?
 	} else {
-		if (mode == FILE_MODE_OPEN)
+		if (mode == FILE_MODE_OPEN) {
 			*error = FILE_NOT_FOUND;
+		} else {
+			*capacity = align_up_to_page_size (*capacity);
 
-		*capacity = align_up_to_page_size (*capacity);
+			handle = g_new0 (MemoryHandle, 1);
+			handle->handle.kind = MMAP_KIND_MEMORY;
+			handle->handle.ref_count = 1;
+			handle->handle.capacity = *capacity;
+			handle->handle.name = g_strdup (c_mapName);
 
-		handle = g_new0 (MemoryHandle, 1);
-		handle->handle.kind = MMAP_KIND_MEMORY;
-		handle->handle.ref_count = 1;
-		handle->handle.capacity = *capacity;
-		handle->handle.name = g_strdup (c_mapName);
-
-		//FIXME compute RWX from access
-		handle->address = mono_valloc (NULL, (size_t)*capacity, MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_PRIVATE | MONO_MMAP_ANON);
-		handle->length = (size_t)*capacity;
-		g_hash_table_insert (named_regions, handle->handle.name, handle);
+			//FIXME compute RWX from access
+			handle->address = mono_valloc (NULL, (size_t)*capacity, MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_PRIVATE | MONO_MMAP_ANON);
+			handle->length = (size_t)*capacity;
+			g_hash_table_insert (named_regions, handle->handle.name, handle);
+		}
 	}
 
 	named_regions_unlock ();
