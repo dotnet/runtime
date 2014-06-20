@@ -15,6 +15,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-compiler.h>
 
 G_BEGIN_DECLS
 

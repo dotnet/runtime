@@ -1,6 +1,8 @@
 #ifndef _MONO_METADATA_CHAR_CONVERSIONS_H_
 #define _MONO_METADATA_CHAR_CONVERSIONS_H_ 1
 
+#include <glib.h>
+
 /*
  * The CategoryData_v2* tables below are automatically generated
  * by create-category-table(.cs), available in the mcs

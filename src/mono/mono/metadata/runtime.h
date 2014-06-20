@@ -10,9 +10,13 @@
 #ifndef _MONO_METADATA_RUNTIME_H_
 #define _MONO_METADATA_RUNTIME_H_
 
+#include <glib.h>
 #include <mono/utils/mono-publib.h>
+#include <mono/utils/mono-compiler.h>
 
 MONO_BEGIN_DECLS
+
+typedef struct _MonoMethod MonoMethod;
 
 gboolean mono_runtime_is_critical_method (MonoMethod *method) MONO_INTERNAL;
 gboolean mono_runtime_try_shutdown (void) MONO_INTERNAL;

@@ -1,3 +1,7 @@
+#ifndef _MONO_DECIMAL_H_
+#define _MONO_DECIMAL_H_
+
+#include <glib.h>
 #include "mono/metadata/object.h"
 #include "mono/utils/mono-compiler.h"
 
@@ -45,3 +49,4 @@ gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp) MONO_
 
 gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, /*[In]*/MonoString* s, gint32 decrDecimal, gint32 sign) MONO_INTERNAL;
 
+#endif

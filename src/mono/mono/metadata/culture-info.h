@@ -3,6 +3,7 @@
 #define _MONO_METADATA_CULTURE_INFO_H_ 1
 
 #include <glib.h>
+#include <mono/metadata/object.h>
 
 #define NUM_DAYS 7
 #define NUM_MONTHS 13

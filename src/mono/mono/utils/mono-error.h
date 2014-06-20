@@ -33,7 +33,7 @@ enum {
 };
 
 /*Keep in sync with MonoErrorInternal*/
-typedef struct {
+typedef struct _MonoError {
 	unsigned short error_code;
     unsigned short hidden_0; /*DON'T TOUCH */
 

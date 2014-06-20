@@ -22,6 +22,8 @@
 #ifndef __MONO_SGENCONF_H__
 #define __MONO_SGENCONF_H__
 
+#include <glib.h>
+
 /*Basic defines and static tunables */
 
 #if SIZEOF_VOID_P == 4

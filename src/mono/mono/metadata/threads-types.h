@@ -15,6 +15,7 @@
 #include <glib.h>
 
 #include <mono/io-layer/io-layer.h>
+#include <mono/metadata/object.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-membar.h"
 

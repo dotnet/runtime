@@ -10,6 +10,7 @@
  * (C) 2001 Ximian, Inc.
  */
 
+#include <glib.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
 #include "mono/utils/mono-compiler.h"

@@ -26,7 +26,7 @@ typedef struct _MonoDynamicImage MonoDynamicImage;
 typedef struct _MonoReflectionMethodBody MonoReflectionMethodBody;
 typedef struct _MonoAppContext MonoAppContext;
 
-typedef struct {
+typedef struct _MonoObject {
 	MonoVTable *vtable;
 	MonoThreadsSync *synchronisation;
 } MonoObject;

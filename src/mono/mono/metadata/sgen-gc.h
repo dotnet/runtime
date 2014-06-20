@@ -717,7 +717,7 @@ void sgen_marksweep_conc_init (SgenMajorCollector *collector) MONO_INTERNAL;
 SgenMajorCollector* sgen_get_major_collector (void) MONO_INTERNAL;
 
 
-typedef struct {
+typedef struct _SgenRemeberedSet {
 	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
 	void (*wbarrier_set_arrayref) (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
 	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
@@ -818,7 +818,7 @@ void sgen_bridge_processing_stw_step (void) MONO_INTERNAL;
 void sgen_bridge_processing_finish (int generation) MONO_INTERNAL;
 void sgen_register_test_bridge_callbacks (const char *bridge_class_name) MONO_INTERNAL;
 gboolean sgen_is_bridge_object (MonoObject *obj) MONO_INTERNAL;
-MonoGCBridgeObjectKind sgen_bridge_class_kind (MonoClass *class) MONO_INTERNAL;
+MonoGCBridgeObjectKind sgen_bridge_class_kind (MonoClass *klass) MONO_INTERNAL;
 void sgen_mark_bridge_object (MonoObject *obj) MONO_INTERNAL;
 void sgen_bridge_register_finalized_object (MonoObject *object) MONO_INTERNAL;
 void sgen_bridge_describe_pointer (MonoObject *object) MONO_INTERNAL;

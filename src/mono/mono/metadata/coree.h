@@ -11,10 +11,12 @@
 #define __MONO_COREE_H__
 
 #include <config.h>
+#include <glib.h>
 
 #ifdef HOST_WIN32
 
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-compiler.h>
 #include "image.h"
 
 #define STATUS_SUCCESS 0x00000000L

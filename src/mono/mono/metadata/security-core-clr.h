@@ -10,7 +10,9 @@
 #ifndef _MONO_METADATA_SECURITY_CORE_CLR_H_
 #define _MONO_METADATA_SECURITY_CORE_CLR_H_
 
+#include <glib.h>
 #include <mono/metadata/reflection.h>
+#include <mono/utils/mono-compiler.h>
 
 typedef enum {
 	/* We compare these values as integers, so the order must not
