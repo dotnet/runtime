@@ -340,7 +340,7 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 		}
 
 		unlink (file_name);
-		ftruncate (fd, (off_t)*capacity);
+		int unused G_GNUC_UNUSED = ftruncate (fd, (off_t)*capacity);
 
 		handle = g_new0 (MmapHandle, 1);
 		handle->ref_count = 1;
