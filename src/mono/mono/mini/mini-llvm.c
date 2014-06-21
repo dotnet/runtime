@@ -3347,7 +3347,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
-			LLVMValueRef args [3];
+			LLVMValueRef args [3], val;
 			LLVMTypeRef t;
 				
 			if (ins->opcode == OP_ATOMIC_CAS_I4)
@@ -3360,7 +3360,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [1] = convert (ctx, values [ins->sreg3], t);
 			/* new value */
 			args [2] = convert (ctx, values [ins->sreg2], t);
-			values [ins->dreg] = mono_llvm_build_cmpxchg (builder, args [0], args [1], args [2]);
+			val = mono_llvm_build_cmpxchg (builder, args [0], args [1], args [2]);
+#if LLVM_API_VERSION >= 1
+			/* cmpxchg returns a pair */
+			values [ins->dreg] = LLVMBuildExtractValue (builder, val, 0, "");
+#else
+			values [ins->dreg] = val;
+#endif
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
