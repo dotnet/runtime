@@ -21,12 +21,6 @@
 //
 
 #include "config.h"
-//undef those as llvm defines them on its own config.h as well.
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
 
 #include <stdint.h>
 
