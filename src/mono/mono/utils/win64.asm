@@ -1,4 +1,5 @@
-ifndef X64
+ifdef RAX
+else
 
 .386
 .model flat, c
@@ -7,7 +8,7 @@ endif
 
 .code
 
-ifdef X64
+ifdef RAX
 
 PUBLIC mono_context_get_current
 
