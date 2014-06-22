@@ -11,12 +11,6 @@
 
 #ifdef HOST_WIN32
 
-#if _WIN32_WINNT < 0x0501
-/* Required for ACTCTX. */
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif /* _WIN32_WINNT < 0x0501 */
-
 #include <string.h>
 #include <glib.h>
 #include <mono/io-layer/io-layer.h>

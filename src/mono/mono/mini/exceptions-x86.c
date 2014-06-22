@@ -9,12 +9,6 @@
 
 #include <config.h>
 
-#if _WIN32_WINNT < 0x0501
-/* Required for Vectored Exception Handling. */
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif /* _WIN32_WINNT < 0x0501 */
-
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
