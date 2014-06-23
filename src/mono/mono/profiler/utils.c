@@ -275,7 +275,7 @@ alloc_buffer (int size)
 	return ptr;
 #else
 	ptr = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
-	if (ptr == (void*)-1)
+	if (ptr == MAP_FAILED)
 		return NULL;
 	return ptr;
 #endif

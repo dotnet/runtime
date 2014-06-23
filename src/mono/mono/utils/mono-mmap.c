@@ -308,13 +308,13 @@ mono_valloc (void *addr, size_t length, int flags)
 	mflags |= MAP_PRIVATE;
 
 	ptr = mmap (addr, length, prot, mflags, -1, 0);
-	if (ptr == (void*)-1) {
+	if (ptr == MAP_FAILED) {
 		int fd = open ("/dev/zero", O_RDONLY);
 		if (fd != -1) {
 			ptr = mmap (addr, length, prot, mflags, fd, 0);
 			close (fd);
 		}
-		if (ptr == (void*)-1)
+		if (ptr == MAP_FAILED)
 			return NULL;
 	}
 	return ptr;
@@ -368,7 +368,7 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		mflags |= MAP_32BIT;
 
 	ptr = mmap (0, length, prot, mflags, fd, offset);
-	if (ptr == (void*)-1)
+	if (ptr == MAP_FAILED)
 		return NULL;
 	*ret_handle = (void*)length;
 	return ptr;
