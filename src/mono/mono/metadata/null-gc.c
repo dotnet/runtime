@@ -20,13 +20,19 @@ void
 mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
+	int dummy;
 
 	memset (&cb, 0, sizeof (cb));
-	cb.mono_method_is_critical = mono_runtime_is_critical_method;
+	/* TODO: This casts away an incompatible pointer type warning in the same
+	         manner that boehm-gc does it. This is probably worth investigating
+	         more carefully. */
+	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
 	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
 	cb.thread_exit = mono_gc_pthread_exit;
 
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
+
+	mono_thread_info_attach (&dummy);
 }
 
 void
