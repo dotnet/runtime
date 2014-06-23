@@ -44,8 +44,8 @@ get_entropy_from_server (const char *path, guchar *buf, int len)
         ret = -1;
     else {
         egd_addr.sun_family = AF_UNIX;
-        strncpy (egd_addr.sun_path, path, MONO_SIZEOF_SUNPATH - 1);
-        egd_addr.sun_path [MONO_SIZEOF_SUNPATH-1] = '\0';
+        strncpy (egd_addr.sun_path, path, sizeof(egd_addr.sun_path) - 1);
+        egd_addr.sun_path [sizeof(egd_addr.sun_path)-1] = '\0';
         ret = connect (file, (struct sockaddr *)&egd_addr, sizeof(egd_addr));
     }
     if (ret == -1) {

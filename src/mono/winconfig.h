@@ -565,9 +565,6 @@
 /* Enable the allocation and indexing of arrays greater than Int32.MaxValue */
 /* #undef MONO_BIG_ARRAYS */
 
-/* Sizeof sock_un.sun_path */
-/* #undef MONO_SIZEOF_SUNPATH */
-
 /* Xen-specific behaviour */
 /* #define MONO_XEN_OPT 1 */
 

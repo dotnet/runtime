@@ -1216,7 +1216,7 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 		/* Need a byte for the '\0' terminator/prefix, and the first
 		 * two bytes hold the SocketAddress family
 		 */
-		if (len - 2 >= MONO_SIZEOF_SUNPATH) {
+		if (len - 2 >= sizeof(sock_un->sun_path)) {
 			mono_raise_exception (mono_get_exception_index_out_of_range ());
 		}
 		
