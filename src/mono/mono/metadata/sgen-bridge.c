@@ -270,7 +270,8 @@ sgen_bridge_register_finalized_object (MonoObject *obj)
 void
 sgen_bridge_describe_pointer (MonoObject *obj)
 {
-	bridge_processor.describe_pointer (obj);
+	if (bridge_processor.describe_pointer)
+		bridge_processor.describe_pointer (obj);
 }
 
 static void
