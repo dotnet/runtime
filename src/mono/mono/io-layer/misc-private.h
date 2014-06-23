@@ -12,6 +12,7 @@
 
 #include <glib.h>
 #include <sys/time.h>
+#include <time.h>
 
 extern void _wapi_calc_timeout(struct timespec *timeout, guint32 ms);
 
