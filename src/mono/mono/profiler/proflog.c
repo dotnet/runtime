@@ -1338,6 +1338,7 @@ add_code_pointer (uintptr_t ip)
 	num_code_pages += add_code_page (code_pages, size_code_pages, ip & CPAGE_MASK);
 }
 
+#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
 static void
 dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t size)
 {
@@ -1355,6 +1356,7 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 	memcpy (logbuffer->data, filename, len);
 	logbuffer->data += len;
 }
+#endif
 
 static void
 dump_usym (const char *name, uintptr_t value, uintptr_t size)
