@@ -24,7 +24,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <fcntl.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <ctype.h>
 
 #ifdef HAVE_SYS_MKDEV_H
