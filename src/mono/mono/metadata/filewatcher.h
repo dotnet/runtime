@@ -19,10 +19,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_SYS_SYSCALL_H
-#include <sys/syscall.h>
-#endif
-
 G_BEGIN_DECLS
 
 gint ves_icall_System_IO_FSW_SupportsFSW (void) MONO_INTERNAL;
