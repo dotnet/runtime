@@ -296,6 +296,7 @@ SIG_HANDLER_FUNC (static, sigusr1_signal_handler)
 #define FULL_STAT_PROFILER_BACKTRACE 0
 #endif
 
+#ifdef SIGPROF
 #if defined(__ia64__) || defined(__sparc__) || defined(sparc) || defined(__s390__) || defined(s390)
 
 SIG_HANDLER_FUNC (static, sigprof_signal_handler)
@@ -384,6 +385,7 @@ SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 	mono_chain_signal (SIG_HANDLER_PARAMS);
 }
 
+#endif
 #endif
 
 SIG_HANDLER_FUNC (static, sigquit_signal_handler)
