@@ -13,7 +13,11 @@
 #endif
 
 #ifdef HAVE_POLL
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
+#endif
 
 #define MONO_POLLIN		POLLIN
 #define MONO_POLLPRI		POLLPRI
