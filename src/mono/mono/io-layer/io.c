@@ -3238,9 +3238,9 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	 * catch that case here.
 	 */
 	if (attrs & FILE_ATTRIBUTE_READONLY) {
-		result = _wapi_chmod (utf8_name, buf.st_mode & ~(S_IWRITE | S_IWOTH | S_IWGRP));
+		result = _wapi_chmod (utf8_name, buf.st_mode & ~(S_IWUSR | S_IWOTH | S_IWGRP));
 	} else {
-		result = _wapi_chmod (utf8_name, buf.st_mode | S_IWRITE);
+		result = _wapi_chmod (utf8_name, buf.st_mode | S_IWUSR);
 	}
 
 	/* Ignore the other attributes for now */
