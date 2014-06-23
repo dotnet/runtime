@@ -38,6 +38,7 @@
   -->
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -67,6 +68,7 @@
     <Compile Include="Mono.Linker\Pipeline.cs" />
     <Compile Include="Mono.Linker\TypePreserve.cs" />
     <Compile Include="Mono.Linker\XApiReader.cs" />
+    <Compile Include="Mono.Linker.Steps\TypeMapStep.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Descriptors\mscorlib.xml">
@@ -83,6 +85,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Descriptors\System.Drawing.xml">
       <LogicalName>System.Drawing.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Descriptors\System.Core.xml">
+      <LogicalName>System.Core.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
