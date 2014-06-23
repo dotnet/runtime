@@ -59,7 +59,7 @@ main (void)
 			memcpy (reference, random_mem, POOL_SIZE);
 			memcpy (playground, random_mem, POOL_SIZE);
 
-			bzero (reference + START_OFFSET + offset, size);
+			memset (reference + START_OFFSET + offset, 0, size);
 			mono_gc_bzero_atomic (playground + START_OFFSET + offset, size);
 
 			assert (!memcmp (reference, playground, POOL_SIZE));
