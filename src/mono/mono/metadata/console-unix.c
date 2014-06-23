@@ -17,6 +17,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
+#ifdef HAVE_SYS_SELECT_H
+#    include <sys/select.h>
+#endif
 #ifdef HAVE_SYS_TIME_H
 #    include <sys/time.h>
 #endif
