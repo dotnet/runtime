@@ -1135,6 +1135,8 @@ mono_op_imm_to_op (int opcode)
 		return OP_IREM_UN;
 	case OP_IREM_IMM:
 		return OP_IREM;
+	case OP_LREM_IMM:
+		return OP_LREM;
 	case OP_DIV_IMM:
 #if SIZEOF_REGISTER == 4
 		return OP_IDIV;

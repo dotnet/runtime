@@ -12364,7 +12364,11 @@ mono_op_to_op_imm (int opcode)
 	case OP_LSHR:
 		return OP_LSHR_IMM;
 	case OP_LSHR_UN:
-		return OP_LSHR_UN_IMM;		
+		return OP_LSHR_UN_IMM;
+#ifdef TARGET_AMD64
+	case OP_LREM:
+		return OP_LREM_IMM;
+#endif
 
 	case OP_COMPARE:
 		return OP_COMPARE_IMM;

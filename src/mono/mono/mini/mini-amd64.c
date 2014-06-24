@@ -3306,9 +3306,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IREM_UN_IMM:
 			mono_decompose_op_imm (cfg, bb, ins);
 			break;
+		case OP_LREM_IMM:
 		case OP_IREM_IMM:
 			/* Keep the opcode if we can implement it efficiently */
-			if (!((ins->inst_imm > 0) && (mono_is_power_of_two (ins->inst_imm) != -1)))
+			if (!(amd64_is_imm32 (ins->inst_imm) && (ins->inst_imm > 0) && (mono_is_power_of_two (ins->inst_imm) != -1)))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
 		case OP_COMPARE_IMM:
@@ -4503,6 +4504,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_div_reg (code, ins->sreg2, FALSE);
 			}
 			break;
+		case OP_LREM_IMM: {
+			int power = mono_is_power_of_two (ins->inst_imm);
+
+			g_assert (ins->sreg1 == AMD64_RAX);
+			g_assert (ins->dreg == AMD64_RAX);
+			g_assert (power >= 0);
+
+			if (power == 0) {
+				amd64_mov_reg_imm (code, ins->dreg, 0);
+				break;
+			}
+
+			/* Based on gcc code */
+
+			/* Add compensation for negative dividents */
+			amd64_mov_reg_reg_size (code, AMD64_RDX, AMD64_RAX, 8);
+			if (power > 1)
+				amd64_shift_reg_imm_size (code, X86_SAR, AMD64_RDX, 63, 8);
+			amd64_shift_reg_imm_size (code, X86_SHR, AMD64_RDX, 64 - power, 8);
+			amd64_alu_reg_reg_size (code, X86_ADD, AMD64_RAX, AMD64_RDX, 8);
+			/* Compute remainder */
+			amd64_alu_reg_imm_size (code, X86_AND, AMD64_RAX, (1 << power) - 1, 8);
+			/* Remove compensation */
+			amd64_alu_reg_reg_size (code, X86_SUB, AMD64_RAX, AMD64_RDX, 8);
+			break;
+		}
 		case OP_IDIV:
 		case OP_IREM:
 #if defined( __native_client_codegen__ )

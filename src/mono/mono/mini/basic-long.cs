@@ -1211,5 +1211,47 @@ class Tests
 
 		return (int)res;
 	}
+
+	public static int test_0_lrem_imm_2 ()
+	{
+		long x = 245345634L;
+		return (int)(x % 2L);
+	}
+
+	public static int test_1_lrem_imm_2 ()
+	{
+		long x = 24534553245L;
+		return (int)(x % 2L);
+	}
+
+	public static int test_1_lrem_imm_2_neg ()
+	{
+		long x = -24534553245L;
+		return -(int)(x % 2L);
+	}
+
+	public static int test_13_lrem_imm_32 ()
+	{
+		long x = 17389L;
+		return (int)(x % 32L);
+	}
+
+	public static int test_27_lrem_imm_32_neg ()
+	{
+		long x = -2435323L;
+		return -(int)(x % 32L);
+	}
+
+	public static int test_5_lrem_imm_large ()
+	{
+		long x = 0x1000000005L;
+		return (int)(x % 0x40000000L);
+	}
+
+	public static int test_5_lrem_imm_too_large ()
+	{
+		long x = 0x1000000005L;
+		return (int)(x % 0x80000000L);
+	}
 }
 
