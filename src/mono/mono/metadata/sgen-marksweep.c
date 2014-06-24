@@ -1712,6 +1712,7 @@ ms_sweep (void)
 			 */
 			*iter = block->next;
 
+			binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
 #ifdef FIXED_HEAP
 			ms_free_block (block);
 #else
