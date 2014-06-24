@@ -2505,10 +2505,21 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		jinfo->from_aot = 1;
 	}
 
+	/*
+	 * Set all the 'has' flags, the mono_jit_info_get () functions depends on this to
+	 * compute the addresses of data blocks.
+	 */
+	if (has_generic_jit_info)
+		jinfo->has_generic_jit_info = 1;
+	if (has_arch_eh_jit_info)
+		jinfo->has_arch_eh_info = 1;
+	if (has_try_block_holes)
+		jinfo->has_try_block_holes = 1;
+
 	if (has_try_block_holes) {
 		MonoTryBlockHoleTableJitInfo *table;
 
-		jinfo->has_try_block_holes = 1;
+		g_assert (jinfo->has_try_block_holes);
 
 		table = mono_jit_info_get_try_block_hole_table_info (jinfo);
 		g_assert (table);
@@ -2525,7 +2536,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	if (has_arch_eh_jit_info) {
 		MonoArchEHJitInfo *eh_info;
 
-		jinfo->has_arch_eh_info = 1;
+		g_assert (jinfo->has_arch_eh_info);
 
 		eh_info = mono_jit_info_get_arch_eh_info (jinfo);
 		eh_info->stack_size = decode_value (p, &p);
@@ -2543,7 +2554,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		MonoGenericJitInfo *gi;
 		int len;
 
-		jinfo->has_generic_jit_info = 1;
+		g_assert (jinfo->has_generic_jit_info);
 
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);

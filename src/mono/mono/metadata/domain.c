@@ -985,6 +985,16 @@ mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji)
 	}
 }
 
+static int
+try_block_hole_table_size (MonoJitInfo *ji)
+{
+	MonoTryBlockHoleTableJitInfo *table;
+
+	table = mono_jit_info_get_try_block_hole_table_info (ji);
+	g_assert (table);
+	return sizeof (MonoTryBlockHoleTableJitInfo) + table->num_holes * sizeof (MonoTryBlockHoleJitInfo);
+}
+
 MonoArchEHJitInfo*
 mono_jit_info_get_arch_eh_info (MonoJitInfo *ji)
 {
@@ -993,7 +1003,7 @@ mono_jit_info_get_arch_eh_info (MonoJitInfo *ji)
 		if (ji->has_generic_jit_info)
 			ptr += sizeof (MonoGenericJitInfo);
 		if (ji->has_try_block_holes)
-			ptr += sizeof (MonoTryBlockHoleTableJitInfo);
+			ptr += try_block_hole_table_size (ji);
 		return (MonoArchEHJitInfo*)ptr;
 	} else {
 		return NULL;
@@ -1008,7 +1018,7 @@ mono_jit_info_get_cas_info (MonoJitInfo *ji)
 		if (ji->has_generic_jit_info)
 			ptr += sizeof (MonoGenericJitInfo);
 		if (ji->has_try_block_holes)
-			ptr += sizeof (MonoTryBlockHoleTableJitInfo);
+			ptr += try_block_hole_table_size (ji);
 		if (ji->has_arch_eh_info)
 			ptr += sizeof (MonoArchEHJitInfo);
 		return (MonoMethodCasInfo*)ptr;
