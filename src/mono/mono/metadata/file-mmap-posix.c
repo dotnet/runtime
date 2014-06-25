@@ -325,6 +325,7 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 	} else {
 		int fd;
 		char file_name [sizeof (MONO_ANON_FILE_TEMPLATE) + 1];
+		int unused G_GNUC_UNUSED;
 
 		if (mode == FILE_MODE_OPEN) {
 			*error = FILE_NOT_FOUND;
@@ -340,7 +341,7 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 		}
 
 		unlink (file_name);
-		int unused G_GNUC_UNUSED = ftruncate (fd, (off_t)*capacity);
+		unused = ftruncate (fd, (off_t)*capacity);
 
 		handle = g_new0 (MmapHandle, 1);
 		handle->ref_count = 1;
