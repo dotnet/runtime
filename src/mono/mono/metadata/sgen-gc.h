@@ -351,19 +351,19 @@ typedef struct {
 #define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = sgen_gray_object_dequeue ((queue)))
 #else
 #define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
-		if (G_UNLIKELY (!(queue)->first || (queue)->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE)) \
+		if (G_UNLIKELY (!(queue)->first || (queue)->cursor == (char**)(queue)->first->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)) \
 			sgen_gray_object_enqueue ((queue), (o));	\
 		else							\
-			(queue)->first->objects [(queue)->first->end++] = (o); \
+			*++(queue)->cursor = (o);			\
 		PREFETCH ((o));						\
 	} while (0)
 #define GRAY_OBJECT_DEQUEUE(queue,o) do {				\
 		if (!(queue)->first)					\
 			(o) = NULL;					\
-		else if (G_UNLIKELY ((queue)->first->end == 1))		\
-			(o) = sgen_gray_object_dequeue ((queue));		\
+		else if (G_UNLIKELY ((queue)->cursor == (char**)(queue)->first->objects))	\
+			(o) = sgen_gray_object_dequeue ((queue));	\
 		else							\
-			(o) = (queue)->first->objects [--(queue)->first->end]; \
+			(o) = *(queue)->cursor--;			\
 	} while (0)
 #endif
 

@@ -246,8 +246,11 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 		memcpy (queue->first->objects,
 				victim_data->stealable_stack + victim_data->stealable_stack_fill - num + n,
 				sizeof (char*) * m);
-		queue->first->end = m;
+		queue->first->size = m;
 	}
+
+	if (queue->first)
+		queue->cursor = (char**)queue->first->objects + queue->first->size - 1;
 
 	victim_data->stealable_stack_fill -= num;
 
@@ -326,16 +329,16 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 
 	while (data->stealable_stack_fill < STEALABLE_STACK_SIZE &&
 			(section = sgen_gray_object_dequeue_section (queue))) {
-		int num = MIN (section->end, STEALABLE_STACK_SIZE - data->stealable_stack_fill);
+		int num = MIN (section->size, STEALABLE_STACK_SIZE - data->stealable_stack_fill);
 
 		memcpy (data->stealable_stack + data->stealable_stack_fill,
-				section->objects + section->end - num,
+				section->objects + section->size - num,
 				sizeof (char*) * num);
 
-		section->end -= num;
+		section->size -= num;
 		data->stealable_stack_fill += num;
 
-		if (section->end)
+		if (section->size)
 			sgen_gray_object_enqueue_section (queue, section);
 		else
 			sgen_gray_object_free_queue_section (section);
