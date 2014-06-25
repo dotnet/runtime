@@ -871,7 +871,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 
 	if (max_objs == -1) {
 		for (;;) {
-			GRAY_OBJECT_DEQUEUE (queue, obj);
+			GRAY_OBJECT_DEQUEUE (queue, &obj);
 			if (!obj)
 				return TRUE;
 			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
@@ -882,7 +882,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 
 		do {
 			for (i = 0; i != max_objs; ++i) {
-				GRAY_OBJECT_DEQUEUE (queue, obj);
+				GRAY_OBJECT_DEQUEUE (queue, &obj);
 				if (!obj)
 					return TRUE;
 				SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
@@ -1226,7 +1226,7 @@ unpin_objects_from_queue (SgenGrayQueue *queue)
 {
 	for (;;) {
 		char *addr;
-		GRAY_OBJECT_DEQUEUE (queue, addr);
+		GRAY_OBJECT_DEQUEUE (queue, &addr);
 		if (!addr)
 			break;
 		g_assert (SGEN_OBJECT_IS_PINNED (addr));

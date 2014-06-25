@@ -346,26 +346,34 @@ typedef struct {
  */
 #define SGEN_LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~SGEN_VTABLE_BITS_MASK)
 
+static inline MONO_ALWAYS_INLINE void
+GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
+{
 #if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
-#define GRAY_OBJECT_ENQUEUE sgen_gray_object_enqueue
-#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = sgen_gray_object_dequeue ((queue)))
+	sgen_gray_object_enqueue (queue, obj);
 #else
-#define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
-		if (G_UNLIKELY (!(queue)->first || (queue)->cursor == (char**)(queue)->first->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)) \
-			sgen_gray_object_enqueue ((queue), (o));	\
-		else							\
-			*++(queue)->cursor = (o);			\
-		PREFETCH ((o));						\
-	} while (0)
-#define GRAY_OBJECT_DEQUEUE(queue,o) do {				\
-		if (!(queue)->first)					\
-			(o) = NULL;					\
-		else if (G_UNLIKELY ((queue)->cursor == (char**)(queue)->first->objects))	\
-			(o) = sgen_gray_object_dequeue ((queue));	\
-		else							\
-			(o) = *(queue)->cursor--;			\
-	} while (0)
+	if (G_UNLIKELY (!queue->first || queue->cursor == (char**)queue->first->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1))
+		sgen_gray_object_enqueue (queue, obj);
+	else
+		*++queue->cursor = obj;
+	PREFETCH (obj);
 #endif
+}
+
+static inline MONO_ALWAYS_INLINE void
+GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
+{
+#if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
+	*obj = sgen_gray_object_enqueue (queue);
+#else
+	if (!queue->first)
+		*obj = NULL;
+	else if (G_UNLIKELY (queue->cursor == (char**)queue->first->objects))
+		*obj = sgen_gray_object_dequeue (queue);
+	else
+		*obj = *queue->cursor--;
+#endif
+}
 
 /*
 List of what each bit on of the vtable gc bits means. 
