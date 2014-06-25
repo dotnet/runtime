@@ -12365,7 +12365,7 @@ mono_op_to_op_imm (int opcode)
 		return OP_LSHR_IMM;
 	case OP_LSHR_UN:
 		return OP_LSHR_UN_IMM;
-#ifdef TARGET_AMD64
+#ifdef MONO_ARCH_HAVE_OP_LREM_IMM
 	case OP_LREM:
 		return OP_LREM_IMM;
 #endif
