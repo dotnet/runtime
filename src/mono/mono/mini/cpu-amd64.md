@@ -98,6 +98,7 @@ long_conv_to_u1: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
 
 long_mul_imm: dest:i src1:i clob:1 len:12
+long_rem_imm: dest:a src1:a len:32 clob:d
 long_min: dest:i src1:i src2:i len:16 clob:1
 long_min_un: dest:i src1:i src2:i len:16 clob:1
 long_max: dest:i src1:i src2:i len:16 clob:1
