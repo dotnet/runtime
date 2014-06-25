@@ -13,6 +13,7 @@
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/sgen-conf.h>
 #include <mono/utils/gc_wrapper.h>
 
 typedef struct {
@@ -20,6 +21,14 @@ typedef struct {
 	int major_gc_count;
 	long long minor_gc_time_usecs;
 	long long major_gc_time_usecs;
+#ifdef HEAVY_STATISTICS
+	unsigned long long gray_queue_section_alloc;
+	unsigned long long gray_queue_section_free;
+	unsigned long long gray_queue_enqueue_fast_path;
+	unsigned long long gray_queue_dequeue_fast_path;
+	unsigned long long gray_queue_enqueue_slow_path;
+	unsigned long long gray_queue_dequeue_slow_path;
+#endif
 } GCStats;
 
 #define mono_domain_finalizers_lock(domain) EnterCriticalSection (&(domain)->finalizable_objects_hash_lock);

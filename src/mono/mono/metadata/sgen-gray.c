@@ -46,6 +46,8 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
 
+	HEAVY_STAT (gc_stats.gray_queue_section_alloc ++);
+
 	if (queue->alloc_prepare_func)
 		queue->alloc_prepare_func (queue);
 
@@ -73,6 +75,8 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 void
 sgen_gray_object_free_queue_section (GrayQueueSection *section)
 {
+	HEAVY_STAT (gc_stats.gray_queue_section_free ++);
+
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_FREED);
 	sgen_free_internal (section, INTERNAL_MEM_GRAY_QUEUE);
 }
@@ -86,6 +90,8 @@ sgen_gray_object_free_queue_section (GrayQueueSection *section)
 void
 sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 {
+	HEAVY_STAT (gc_stats.gray_queue_enqueue_slow_path ++);
+
 	SGEN_ASSERT (9, obj, "enqueueing a null object");
 	//sgen_check_objref (obj);
 
@@ -115,6 +121,8 @@ char*
 sgen_gray_object_dequeue (SgenGrayQueue *queue)
 {
 	char *obj;
+
+	HEAVY_STAT (gc_stats.gray_queue_dequeue_slow_path ++);
 
 	if (sgen_gray_object_queue_is_empty (queue))
 		return NULL;
