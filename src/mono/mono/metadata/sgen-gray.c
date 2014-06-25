@@ -93,7 +93,7 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 		queue->enqueue_check_func (obj);
 #endif
 
-	if (G_UNLIKELY (!queue->first || queue->cursor == (char**)queue->first->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)) {
+	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
 		if (queue->first) {
 			/* Set the current section size back to default, might have been changed by sgen_gray_object_dequeue_section */
 			queue->first->size = SGEN_GRAY_QUEUE_SECTION_SIZE;
@@ -102,7 +102,7 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 		sgen_gray_object_alloc_queue_section (queue);
 	}
 	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
-	SGEN_ASSERT (9, queue->cursor <= (char**)queue->first->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1, "gray queue %p overflow, first %p, cursor %p", queue, queue->first, queue->cursor);
+	SGEN_ASSERT (9, queue->cursor <= GRAY_LAST_CURSOR_POSITION (queue->first), "gray queue %p overflow, first %p, cursor %p", queue, queue->first, queue->cursor);
 	*++queue->cursor = obj;
 }
 

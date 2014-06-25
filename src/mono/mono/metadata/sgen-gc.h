@@ -352,7 +352,7 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 #if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
 	sgen_gray_object_enqueue (queue, obj);
 #else
-	if (G_UNLIKELY (!queue->first || queue->cursor == (char**)queue->first->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1))
+	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first)))
 		sgen_gray_object_enqueue (queue, obj);
 	else
 		*++queue->cursor = obj;
@@ -368,7 +368,7 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 #else
 	if (!queue->first)
 		*obj = NULL;
-	else if (G_UNLIKELY (queue->cursor == (char**)queue->first->objects))
+	else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first)))
 		*obj = sgen_gray_object_dequeue (queue);
 	else
 		*obj = *queue->cursor--;

@@ -105,6 +105,9 @@ struct _SgenSectionGrayQueue {
 #endif
 };
 
+#define GRAY_LAST_CURSOR_POSITION(s) ((char**)(s)->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)
+#define GRAY_FIRST_CURSOR_POSITION(s) ((char**)(s)->objects)
+
 void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
 char* sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
