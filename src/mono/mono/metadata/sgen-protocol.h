@@ -20,6 +20,9 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef __MONO_SGENPROTOCOL_H__
+#define __MONO_SGENPROTOCOL_H__
+
 #include "sgen-gc.h"
 
 enum {
@@ -296,5 +299,7 @@ void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int in
 #define binary_protocol_dislink_update(link,obj,track,staged)
 #define binary_protocol_dislink_update_staged(link,obj,track,index)
 #define binary_protocol_dislink_process_staged(link,obj,index)
+
+#endif
 
 #endif
