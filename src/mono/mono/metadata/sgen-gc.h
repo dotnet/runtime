@@ -49,6 +49,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/metadata/sgen-gray.h>
 #include <mono/metadata/sgen-hash-table.h>
 #include <mono/metadata/sgen-bridge.h>
+#include <mono/metadata/sgen-protocol.h>
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -352,10 +353,15 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 #if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
 	sgen_gray_object_enqueue (queue, obj);
 #else
-	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first)))
+	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
 		sgen_gray_object_enqueue (queue, obj);
-	else
+	} else {
 		*++queue->cursor = obj;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_enqueue (queue, queue->cursor, obj);
+#endif
+	}
+
 	PREFETCH (obj);
 #endif
 }
@@ -366,12 +372,19 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 #if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
 	*obj = sgen_gray_object_enqueue (queue);
 #else
-	if (!queue->first)
+	if (!queue->first) {
 		*obj = NULL;
-	else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first)))
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_dequeue (queue, queue->cursor, *obj);
+#endif
+	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
 		*obj = sgen_gray_object_dequeue (queue);
-	else
+	} else {
 		*obj = *queue->cursor--;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
+#endif
+	}
 #endif
 }
 

@@ -23,6 +23,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "utils/mono-counters.h"
+#include "sgen-protocol.h"
 
 #define GRAY_QUEUE_LENGTH_LIMIT	64
 
@@ -104,6 +105,10 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
 	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 	SGEN_ASSERT (9, queue->cursor <= GRAY_LAST_CURSOR_POSITION (queue->first), "gray queue %p overflow, first %p, cursor %p", queue, queue->first, queue->cursor);
 	*++queue->cursor = obj;
+
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	binary_protocol_gray_enqueue (queue, queue->cursor, obj);
+#endif
 }
 
 char*
@@ -118,6 +123,10 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	SGEN_ASSERT (9, queue->cursor >= (char**)queue->first->objects, "gray queue %p underflow, first %p, cursor %d", queue, queue->first, queue->cursor);
 
 	obj = *queue->cursor--;
+
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	binary_protocol_gray_dequeue (queue, queue->cursor + 1, obj);
+#endif
 
 	if (G_UNLIKELY (queue->cursor == (char**)queue->first->objects - 1)) {
 		GrayQueueSection *section = queue->first;
