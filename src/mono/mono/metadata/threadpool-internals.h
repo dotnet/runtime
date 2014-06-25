@@ -2,10 +2,8 @@
 #define _MONO_THREADPOOL_INTERNALS_H_
 
 #include <glib.h>
+#include <mono/metadata/object.h>
 #include <mono/utils/mono-compiler.h>
-
-typedef struct _MonoArray MonoArray;
-typedef struct _MonoObject MonoObject;
 
 void mono_thread_pool_remove_socket (int sock) MONO_INTERNAL;
 gboolean mono_thread_pool_is_queue_array (MonoArray *o) MONO_INTERNAL;

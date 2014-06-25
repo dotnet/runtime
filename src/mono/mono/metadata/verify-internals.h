@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-error.h>
 
 G_BEGIN_DECLS
 
@@ -35,8 +36,6 @@ gboolean mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list) M
 gboolean mono_verifier_verify_table_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;
 
 gboolean mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;
-
-typedef struct _MonoError MonoError;
 
 gboolean mono_verifier_verify_field_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
