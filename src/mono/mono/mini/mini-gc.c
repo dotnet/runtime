@@ -15,14 +15,9 @@
 //#if 0
 #if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
 
+#include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
-
-#if SIZEOF_VOID_P == 4
-typedef guint32 mword;
-#else
-typedef guint64 mword;
-#endif
 
 #define SIZEOF_SLOT ((int)sizeof (mgreg_t))
 

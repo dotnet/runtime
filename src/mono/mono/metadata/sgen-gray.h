@@ -20,6 +20,34 @@
 #ifndef __MONO_SGEN_GRAY_H__
 #define __MONO_SGEN_GRAY_H__
 
+/*
+ * This gray queue has to be as optimized as possible, because it is in the core of
+ * the mark/copy phase of the garbage collector. The memory access has then to be as
+ * cache friendly as possible. That's why we use a cursor based implementation.
+ * 
+ * This simply consist in maintaining a pointer to the current element in the
+ * queue. In addition to using this cursor, we use a simple linked list of arrays,
+ * called sections, so that we have the cache friendliness of arrays without having
+ * the cost of memory reallocation of a dynaic array, not the cost of memory
+ * indirection of a linked list.
+ * 
+ * This implementation also allows the dequeuing of a whole section at a time. This is
+ * for example used in the parallel GC because it would be too costly to take one element 
+ * at a time. This imply the main constraint that, because we don't carry the cursor
+ * with the section, we still have to store the index of the last element. This is done 
+ * through the 'size' field on the section, which default value is it's maximum value
+ * SGEN_GRAY_QUEUE_SECTION_SIZE. This field is updated in multiple cases :
+ *  - section allocation : default value
+ *  - object push : default value if we fill the current queue first
+ *  - section dequeue : position of the cursor in the dequeued section
+ *  - section enqueue : position of the cursor in the previously first section in the queue
+ * 
+ * The previous implementation was an index based access where we would store the index
+ * of the last element in the section. This was less efficient because we would have
+ * to make 1 memory access for the index value, 1 for the base address of the objects
+ * array and another 1 for the actual value in the array.
+ */
+
 #define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 
 #ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
@@ -45,7 +73,7 @@ struct _GrayQueueSection {
 	int dummy;
 	GrayQueueSectionState state;
 #endif
-	int end;
+	int size;
 	GrayQueueSection *next;
 	char *objects [SGEN_GRAY_QUEUE_SECTION_SIZE];
 };
@@ -56,6 +84,7 @@ typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 typedef void (*GrayQueueEnqueueCheckFunc) (char*);
 
 struct _SgenGrayQueue {
+	char **cursor;
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
 	GrayQueueAllocPrepareFunc alloc_prepare_func;
@@ -75,6 +104,9 @@ struct _SgenSectionGrayQueue {
 	GrayQueueEnqueueCheckFunc enqueue_check_func;
 #endif
 };
+
+#define GRAY_LAST_CURSOR_POSITION(s) ((char**)(s)->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)
+#define GRAY_FIRST_CURSOR_POSITION(s) ((char**)(s)->objects)
 
 void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
 char* sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;

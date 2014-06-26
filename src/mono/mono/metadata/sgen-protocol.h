@@ -20,6 +20,9 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef __MONO_SGENPROTOCOL_H__
+#define __MONO_SGENPROTOCOL_H__
+
 #include "sgen-gc.h"
 
 enum {
@@ -57,7 +60,9 @@ enum {
 	SGEN_PROTOCOL_DISLINK_UPDATE_STAGED,
 	SGEN_PROTOCOL_DISLINK_PROCESS_STAGED,
 	SGEN_PROTOCOL_DOMAIN_UNLOAD_BEGIN,
-	SGEN_PROTOCOL_DOMAIN_UNLOAD_END
+	SGEN_PROTOCOL_DOMAIN_UNLOAD_END,
+	SGEN_PROTOCOL_GRAY_ENQUEUE,
+	SGEN_PROTOCOL_GRAY_DEQUEUE,
 };
 
 typedef struct {
@@ -221,6 +226,12 @@ typedef struct {
 	gpointer domain;
 } SGenProtocolDomainUnload;
 
+typedef struct {
+	gpointer queue;
+	gpointer cursor;
+	gpointer value;
+} SGenProtocolGrayQueue;
+
 /* missing: finalizers, roots, non-store wbarriers */
 
 void binary_protocol_init (const char *filename) MONO_INTERNAL;
@@ -274,6 +285,8 @@ void binary_protocol_card_scan (gpointer start, int size) MONO_INTERNAL;
 void binary_protocol_dislink_update (gpointer link, gpointer obj, int track, int staged) MONO_INTERNAL;
 void binary_protocol_dislink_update_staged (gpointer link, gpointer obj, int track, int index) MONO_INTERNAL;
 void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index) MONO_INTERNAL;
+void binary_protocol_gray_enqueue (gpointer queue, gpointer cursor, gpointer value) MONO_INTERNAL;
+void binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpointer value) MONO_INTERNAL;
 
 #else
 
@@ -296,5 +309,9 @@ void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int in
 #define binary_protocol_dislink_update(link,obj,track,staged)
 #define binary_protocol_dislink_update_staged(link,obj,track,index)
 #define binary_protocol_dislink_process_staged(link,obj,index)
+#define binary_protocol_gray_enqueue(queue,cursor,value)
+#define binary_protocol_gray_dequeue(queue,cursor,value)
+
+#endif
 
 #endif

@@ -49,6 +49,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/metadata/sgen-gray.h>
 #include <mono/metadata/sgen-hash-table.h>
 #include <mono/metadata/sgen-bridge.h>
+#include <mono/metadata/sgen-protocol.h>
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -346,26 +347,52 @@ typedef struct {
  */
 #define SGEN_LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~SGEN_VTABLE_BITS_MASK)
 
+static inline MONO_ALWAYS_INLINE void
+GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
+{
 #if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
-#define GRAY_OBJECT_ENQUEUE sgen_gray_object_enqueue
-#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = sgen_gray_object_dequeue ((queue)))
+	sgen_gray_object_enqueue (queue, obj);
 #else
-#define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
-		if (G_UNLIKELY (!(queue)->first || (queue)->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE)) \
-			sgen_gray_object_enqueue ((queue), (o));	\
-		else							\
-			(queue)->first->objects [(queue)->first->end++] = (o); \
-		PREFETCH ((o));						\
-	} while (0)
-#define GRAY_OBJECT_DEQUEUE(queue,o) do {				\
-		if (!(queue)->first)					\
-			(o) = NULL;					\
-		else if (G_UNLIKELY ((queue)->first->end == 1))		\
-			(o) = sgen_gray_object_dequeue ((queue));		\
-		else							\
-			(o) = (queue)->first->objects [--(queue)->first->end]; \
-	} while (0)
+	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
+		sgen_gray_object_enqueue (queue, obj);
+	} else {
+		HEAVY_STAT (gc_stats.gray_queue_enqueue_fast_path ++);
+
+		*++queue->cursor = obj;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_enqueue (queue, queue->cursor, obj);
 #endif
+	}
+
+	PREFETCH (obj);
+#endif
+}
+
+static inline MONO_ALWAYS_INLINE void
+GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
+{
+#if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
+	*obj = sgen_gray_object_enqueue (queue);
+#else
+	if (!queue->first) {
+		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
+
+		*obj = NULL;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_dequeue (queue, queue->cursor, *obj);
+#endif
+	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
+		*obj = sgen_gray_object_dequeue (queue);
+	} else {
+		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
+
+		*obj = *queue->cursor--;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
+#endif
+	}
+#endif
+}
 
 /*
 List of what each bit on of the vtable gc bits means. 

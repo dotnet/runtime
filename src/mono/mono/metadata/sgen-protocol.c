@@ -456,6 +456,20 @@ binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index)
 	SGenProtocolDislinkProcessStaged entry = { link, obj, index };
 	protocol_entry (SGEN_PROTOCOL_DISLINK_PROCESS_STAGED, &entry, sizeof (SGenProtocolDislinkProcessStaged));
 }
+
+void
+binary_protocol_gray_enqueue (gpointer queue, gpointer cursor, gpointer value)
+{
+	SGenProtocolGrayQueue entry = { queue, cursor, value };
+	protocol_entry (SGEN_PROTOCOL_GRAY_ENQUEUE, &entry, sizeof (SGenProtocolGrayQueue));
+}
+
+void
+binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpointer value)
+{
+	SGenProtocolGrayQueue entry = { queue, cursor, value };
+	protocol_entry (SGEN_PROTOCOL_GRAY_DEQUEUE, &entry, sizeof (SGenProtocolGrayQueue));
+}
 #endif
 
 #endif /* HAVE_SGEN_GC */

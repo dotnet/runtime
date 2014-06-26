@@ -65,6 +65,13 @@ my %tests = (
 		'arg-knob' => 0, # loops
 		'ratio' => 20,
 	},
+	'gc-graystack-stress' => {
+		'program' => 'gc-graystack-stress.exe',
+		# width, depth, collections
+		'args' => [125, 10000, 100],
+		'arg-knob' => 2, # loops
+		'ratio' => 10,
+	},
 	'thread-stress' => {
 		'program' => 'thread-stress.exe',
 		# loops

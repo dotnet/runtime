@@ -43,6 +43,7 @@ STRESS_TESTS_SRC=	\
 	monitor-stress.cs	\
 	thread-stress.cs	\
 	gc-stress.cs		\
+	gc-graystack-stress.cs		\
 	exit-stress.cs		\
 	process-stress.cs	\
 	assembly-load-stress.cs
@@ -927,6 +928,7 @@ SGEN_TESTS =	\
 	sgen-cementing-stress.exe	\
 	sgen-case-23400.exe	\
 	sgen-new-threads-dont-join-stw.exe	\
+	gc-graystack-stress.exe	\
 	bug-17590.exe
 
 SGEN_CONFIGURATIONS =	\
