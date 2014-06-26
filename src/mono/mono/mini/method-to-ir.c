@@ -12365,7 +12365,7 @@ mono_op_to_op_imm (int opcode)
 		return OP_LSHR_IMM;
 	case OP_LSHR_UN:
 		return OP_LSHR_UN_IMM;
-#ifdef MONO_ARCH_HAVE_OP_LREM_IMM
+#if SIZEOF_REGISTER == 8
 	case OP_LREM:
 		return OP_LREM_IMM;
 #endif

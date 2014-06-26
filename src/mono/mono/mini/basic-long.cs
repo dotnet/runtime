@@ -1212,6 +1212,16 @@ class Tests
 		return (int)res;
 	}
 
+	public static int test_0_lrem_imm_1 () {
+		long b = 12L;
+		return (int)(b % 1L);
+	}
+
+	public static int test_0_lrem_imm_1_neg () {
+		long b = -2L;
+		return (int)(b % 1L);
+	}
+
 	public static int test_0_lrem_imm_2 ()
 	{
 		long x = 245345634L;
