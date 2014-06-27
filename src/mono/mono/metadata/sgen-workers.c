@@ -247,10 +247,17 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 				victim_data->stealable_stack + victim_data->stealable_stack_fill - num + n,
 				sizeof (char*) * m);
 		queue->first->size = m;
-	}
 
-	if (queue->first)
+		/*
+		 * DO NOT move outside this loop
+		 * Doing so trigger "assert not reached" in sgen-scan-object.h : we use the queue->cursor
+		 * to compute the size of the first section during section allocation (via alloc_prepare_func
+		 * -> workers_gray_queue_share_redirect -> sgen_gray_object_dequeue_section) which will be then
+		 * set to 0, because queue->cursor is still pointing to queue->first->objects [-1], thus
+		 * losing objects in the gray queue.
+		 */
 		queue->cursor = (char**)queue->first->objects + queue->first->size - 1;
+	}
 
 	victim_data->stealable_stack_fill -= num;
 
