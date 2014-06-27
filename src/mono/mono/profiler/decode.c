@@ -2494,7 +2494,7 @@ decode_buffer (ProfContext *ctx)
 			break;
 		}
 		default:
-			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %d (len: %d\n)\n", *p, (unsigned long long) file_offset, p - ctx->buf, len);
+			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %lld (len: %d\n)\n", *p, (unsigned long long) file_offset, (long long) (p - ctx->buf), len);
 			exit (1);
 		}
 	}
