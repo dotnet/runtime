@@ -399,7 +399,6 @@ BASE_TEST_CS_SRC=		\
 	allow-synchronous-major.cs	\
 	unload-appdomain-on-shutdown.cs	\
 	block_guard_restore_aligment_on_exit.cs	\
-	finally_block_ending_in_dead_bb.cs	\
 	thread_static_gc_layout.cs \
 	sleep.cs
 
@@ -407,19 +406,20 @@ TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
 	async-exc-compilation.cs \
 	filter-stack.cs	\
-	finally_guard.cs
+	finally_guard.cs \
+	finally_block_ending_in_dead_bb.cs
 
 TEST_CS_SRC_GEN = \
 	runtime-invoke.gen.cs \
 	imt_big_iface_test.cs
 
 if AMD64
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
 # #651684
 PLATFORM_DISABLED_TESTS = finally_guard.exe
 else
 if X86
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
 else
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN)
 endif
@@ -435,7 +435,7 @@ endif
 if X86
 
 if HOST_WIN32
-PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe
+PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe
 endif
 
 endif
@@ -470,6 +470,7 @@ PLATFORM_DISABLED_TESTS= abort-stress-1.exe \
                          bug-70561.exe \
                          finalizer-abort.exe \
                          finally_guard.exe \
+                         finally_block_ending_in_dead_bb.exe \
                          main-returns-abort-resetabort.exe \
                          main-returns-background-abort-resetabort.exe \
                          thread6.exe \
