@@ -127,17 +127,12 @@ mono_double_ParseImpl (char *ptr, double *result)
 
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef __arm__
-	if (*ptr)
-		*result = strtod (ptr, &endptr);
-#else
 	if (*ptr){
 		/* mono_strtod () is not thread-safe */
 		EnterCriticalSection (&mono_strtod_mutex);
 		*result = mono_strtod (ptr, &endptr);
 		LeaveCriticalSection (&mono_strtod_mutex);
 	}
-#endif
 
 	if (!*ptr || (endptr && *endptr))
 		return FALSE;
