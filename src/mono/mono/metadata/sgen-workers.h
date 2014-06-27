@@ -26,6 +26,7 @@
 
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
+	int index;
 	MonoNativeThreadId thread;
 	void *major_collector_data;
 

@@ -289,10 +289,9 @@ workers_get_work (WorkerData *data)
 		return TRUE;
 
 	/* From another worker. */
-	for (i = 0; i < workers_num; ++i) {
-		WorkerData *victim_data = &workers_data [i];
-		if (data == victim_data)
-			continue;
+	for (i = data->index + 1; i < workers_num + data->index; ++i) {
+		WorkerData *victim_data = &workers_data [i % workers_num];
+		g_assert (data != victim_data);
 		if (workers_steal (data, victim_data, TRUE))
 			return TRUE;
 	}
@@ -469,6 +468,8 @@ sgen_workers_init (int num_workers)
 		workers_gc_thread_major_collector_data = sgen_get_major_collector ()->alloc_worker_data ();
 
 	for (i = 0; i < workers_num; ++i) {
+		workers_data [i].index = i;
+
 		/* private gray queue is inited by the thread itself */
 		mono_mutex_init (&workers_data [i].stealable_stack_mutex);
 		workers_data [i].stealable_stack_fill = 0;
