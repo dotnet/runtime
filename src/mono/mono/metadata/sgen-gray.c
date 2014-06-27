@@ -144,9 +144,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FREE_LIST);
 
 		queue->free_list = section;
-
-		if (queue->first)
-			queue->cursor = (char**)queue->first->objects + queue->first->size - 1;
+		queue->cursor = queue->first ? (char**)queue->first->objects + queue->first->size - 1 : NULL;
 	}
 
 	return obj;
@@ -166,8 +164,7 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 	section->next = NULL;
 	section->size = queue->cursor - (char**)section->objects + 1;
 
-	if (queue->first)
-		queue->cursor = (char**)queue->first->objects + queue->first->size - 1;
+	queue->cursor = queue->first ? (char**)queue->first->objects + queue->first->size - 1 : NULL;
 
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FLOATING);
 
