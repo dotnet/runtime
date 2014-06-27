@@ -98,7 +98,6 @@ long_conv_to_u1: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
 
 long_mul_imm: dest:i src1:i clob:1 len:12
-long_rem_imm: dest:a src1:a len:32 clob:d
 long_min: dest:i src1:i src2:i len:16 clob:1
 long_min_un: dest:i src1:i src2:i len:16 clob:1
 long_max: dest:i src1:i src2:i len:16 clob:1
@@ -354,7 +353,6 @@ int_sub_imm: dest:i src1:i clob:1 len:8 nacl:10
 int_mul_imm: dest:i src1:i clob:1 len:32
 int_div_imm: dest:a src1:i clob:d len:32
 int_div_un_imm: dest:a src1:i clob:d len:32
-int_rem_imm: dest:a src1:a len:32 clob:d
 int_rem_un_imm: dest:d src1:i clob:a len:32
 int_and_imm: dest:i src1:i clob:1 len:8
 int_or_imm: dest:i src1:i clob:1 len:8
