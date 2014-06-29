@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
 
 public class Tests {
@@ -35,6 +36,12 @@ public class Tests {
 		public string s2;
 		public double x;
 		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)] public char[] a2;
+	}
+
+	[StructLayout (LayoutKind.Sequential, CharSet=CharSet.Ansi)]
+	public struct ByValTStrStruct {
+		[MarshalAs (UnmanagedType.ByValTStr, SizeConst=4)] public string s1;
+		public int i;
 	}
 
 	[StructLayout (LayoutKind.Sequential, CharSet=CharSet.Unicode)]
@@ -182,6 +189,44 @@ public class Tests {
         public string Field2;
 		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
         public string Field3;
+	}
+
+	public static int test_0_byvaltstr () {
+		ByValTStrStruct s = new ByValTStrStruct ();
+
+		IntPtr p2 = Marshal.AllocHGlobal (Marshal.SizeOf (typeof (ByValTStrStruct)));
+		Marshal.StructureToPtr(s, p2, false);
+
+		/* Check that the ByValTStr is initialized correctly */
+		for (int i = 0; i < 4; ++i)
+			if (Marshal.ReadByte (p2, i) != 0)
+				return 31;
+
+		s.s1 = "ABCD";
+		s.i = 55;
+
+		Marshal.StructureToPtr(s, p2, false);
+
+		ByValTStrStruct s2 = (ByValTStrStruct)Marshal.PtrToStructure (p2, typeof (ByValTStrStruct));
+
+		/* The fourth char is lost because of null-termination */
+		if (s2.s1 != "ABC")
+			return 32;
+
+		if (s2.i != 55)
+			return 33;
+
+		// Check that decoding also respects the size, even when there is no null terminator
+		byte[] data = Encoding.ASCII.GetBytes ("ABCDXXXX");
+		int size = Marshal.SizeOf (typeof (ByValTStrStruct));
+		IntPtr buffer = Marshal.AllocHGlobal (size);
+		Marshal.Copy (data, 0, buffer, size);
+
+		s2 = (ByValTStrStruct)Marshal.PtrToStructure (buffer, typeof (ByValTStrStruct));
+		if (s2.s1 != "ABC")
+			return 34;
+
+		return 0;
 	}
 
 	public static int test_0_byvaltstr_unicode () {

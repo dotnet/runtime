@@ -119,6 +119,9 @@ static MonoString*
 mono_string_new_len_wrapper (const char *text, guint length);
 
 static MonoString *
+mono_string_from_byvalstr (const char *data, int len);
+
+static MonoString *
 mono_string_from_byvalwstr (gunichar2 *data, int len);
 
 static void
@@ -234,6 +237,7 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_string_to_utf16_copy, "mono_marshal_string_to_utf16_copy", "ptr obj", FALSE);
 		register_icall (mono_string_to_utf16, "mono_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_string_from_utf16, "mono_string_from_utf16", "obj ptr", FALSE);
+		register_icall (mono_string_from_byvalstr, "mono_string_from_byvalstr", "obj ptr int", FALSE);
 		register_icall (mono_string_from_byvalwstr, "mono_string_from_byvalwstr", "obj ptr int", FALSE);
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
 		register_icall (mono_string_new_len_wrapper, "mono_string_new_len_wrapper", "obj ptr int", FALSE);
@@ -579,6 +583,21 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 
 		mono_runtime_free_method (mono_object_domain (delegate), method);
 	}
+}
+
+static MonoString *
+mono_string_from_byvalstr (const char *data, int max_len)
+{
+	MonoDomain *domain = mono_domain_get ();
+	int len = 0;
+
+	if (!data)
+		return NULL;
+
+	while (len < max_len - 1 && data [len])
+		len++;
+
+	return mono_string_new_len (domain, data, len);
 }
 
 static MonoString *
@@ -1381,9 +1400,16 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	}
 	case MONO_MARSHAL_CONV_STR_BYVALSTR: 
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_icall (mb, mono_string_new_wrapper);
+		if (mspec && mspec->native == MONO_NATIVE_BYVALTSTR && mspec->data.array_data.num_elem) {
+			mono_mb_emit_ldloc (mb, 1);
+			mono_mb_emit_ldloc (mb, 0);
+			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
+			mono_mb_emit_icall (mb, mono_string_from_byvalstr);
+		} else {
+			mono_mb_emit_ldloc (mb, 1);
+			mono_mb_emit_ldloc (mb, 0);
+			mono_mb_emit_icall (mb, mono_string_new_wrapper);
+		}
 		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
