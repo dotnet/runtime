@@ -30,7 +30,9 @@ public class FinalizerException {
 			Environment.Exit (0);
 		};
 
-		MakeException (1024);
+		var t = new Thread (delegate () { MakeException (1024); });
+		t.Start ();
+		t.Join ();
 
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();
