@@ -177,17 +177,8 @@ struct MonoLMF {
 	/* this allows the structure to match for 32-bit compilers.    */
 	guint64     rip __attribute__ ((aligned(8)));
 #endif
-	guint64     rbx;
 	guint64     rbp;
 	guint64     rsp;
-	guint64     r12;
-	guint64     r13;
-	guint64     r14;
-	guint64     r15;
-#ifdef HOST_WIN32
-	guint64     rdi;
-	guint64     rsi;
-#endif
 };
 
 /* LMF structure used by the JIT trampolines */
@@ -202,6 +193,7 @@ typedef struct MonoCompileArch {
 	gint32 reg_save_area_offset;
 	gint32 stack_alloc_size;
 	gint32 sp_fp_offset;
+	guint32 saved_iregs;
 	gboolean omit_fp, omit_fp_computed, no_pushes;
 	gpointer cinfo;
 	gint32 async_point_count;

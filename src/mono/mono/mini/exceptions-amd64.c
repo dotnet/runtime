@@ -1408,19 +1408,8 @@ mono_tasklets_arch_restore (void)
 	amd64_movsl (code);
 
 	/* now restore the registers from the LMF */
+	NOT_IMPLEMENTED;
 	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, G_STRUCT_OFFSET (MonoContinuation, lmf), 8);
-	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rbx), 8);
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rbp), 8);
-	amd64_mov_reg_membase (code, AMD64_R12, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r12), 8);
-	amd64_mov_reg_membase (code, AMD64_R13, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r13), 8);
-	amd64_mov_reg_membase (code, AMD64_R14, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r14), 8);
-#if !defined(__native_client_codegen__)
-	amd64_mov_reg_membase (code, AMD64_R15, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r15), 8);
-#endif
-#ifdef TARGET_WIN32
-	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rdi), 8);
-	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsi), 8);
-#endif
 	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsp), 8);
 
 	/* restore the lmf chain */

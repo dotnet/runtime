@@ -1738,19 +1738,20 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset = 0;
 	}
 
-	if (cfg->method->save_lmf) {
-		/* The LMF var is allocated normally */
-	} else {
-		if (cfg->arch.omit_fp)
-			cfg->arch.reg_save_area_offset = offset;
-		/* Reserve space for callee saved registers */
-		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-				offset += sizeof(mgreg_t);
-			}
-		if (!cfg->arch.omit_fp)
-			cfg->arch.reg_save_area_offset = -offset;
-	}
+	cfg->arch.saved_iregs = cfg->used_int_regs;
+	if (cfg->method->save_lmf)
+		/* Save all callee-saved registers normally, and restore them when unwinding through an LMF */
+		cfg->arch.saved_iregs |= (1 << AMD64_RBX) | (1 << AMD64_R12) | (1 << AMD64_R13) | (1 << AMD64_R14) | (1 << AMD64_R15);
+
+	if (cfg->arch.omit_fp)
+		cfg->arch.reg_save_area_offset = offset;
+	/* Reserve space for callee saved registers */
+	for (i = 0; i < AMD64_NREG; ++i)
+		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
+			offset += sizeof(mgreg_t);
+		}
+	if (!cfg->arch.omit_fp)
+		cfg->arch.reg_save_area_offset = -offset;
 
 	if (sig_ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
@@ -3757,8 +3758,6 @@ mono_arch_translate_tls_offset (int offset)
 static guint8*
 emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offset)
 {
-	int i;
-
 	/* 
 	 * The ip field is not set, the exception handling code will obtain it from the stack location pointed to by the sp field.
 	 */
@@ -3767,35 +3766,10 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	 * async stack walks would work.
 	 */
 	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
-	/* Skip method (only needed for trampoline LMF frames) */
-	/* Save callee saved regs */
-	for (i = 0; i < MONO_MAX_IREGS; ++i) {
-		int offset;
-
-		switch (i) {
-		case AMD64_RBX: offset = G_STRUCT_OFFSET (MonoLMF, rbx); break;
-		case AMD64_RBP: offset = G_STRUCT_OFFSET (MonoLMF, rbp); break;
-		case AMD64_R12: offset = G_STRUCT_OFFSET (MonoLMF, r12); break;
-		case AMD64_R13: offset = G_STRUCT_OFFSET (MonoLMF, r13); break;
-		case AMD64_R14: offset = G_STRUCT_OFFSET (MonoLMF, r14); break;
-#ifndef __native_client_codegen__
-		case AMD64_R15: offset = G_STRUCT_OFFSET (MonoLMF, r15); break;
-#endif
-#ifdef HOST_WIN32
-		case AMD64_RDI: offset = G_STRUCT_OFFSET (MonoLMF, rdi); break;
-		case AMD64_RSI: offset = G_STRUCT_OFFSET (MonoLMF, rsi); break;
-#endif
-		default:
-			offset = -1;
-			break;
-		}
-
-		if (offset != -1) {
-			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + offset, i, 8);
-			if ((cfg->arch.omit_fp || (i != AMD64_RBP)) && cfa_offset != -1)
-				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - (lmf_offset + offset)));
-		}
-	}
+	/* Save rbp */
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
+	if (cfg->arch.omit_fp && cfa_offset != -1)
+		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - (cfa_offset - (lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp))));
 
 	/* These can't contain refs */
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
@@ -3804,18 +3778,8 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 #endif
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
-
 	/* These are handled automatically by the stack marking code */
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), SLOT_NOREF);
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), SLOT_NOREF);
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), SLOT_NOREF);
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), SLOT_NOREF);
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), SLOT_NOREF);
-#ifdef HOST_WIN32
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), SLOT_NOREF);
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), SLOT_NOREF);
-#endif
 
 	return code;
 }
@@ -6853,7 +6817,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Save callee saved registers */
-	if (!method->save_lmf) {
+	if (TRUE || !method->save_lmf) {
 		gint32 save_area_offset;
 
 		if (cfg->arch.omit_fp) {
@@ -6867,7 +6831,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 
 		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 				amd64_mov_membase_reg (code, cfg->frame_reg, save_area_offset, i, 8);
 
 				if (cfg->arch.omit_fp) {
@@ -7204,6 +7168,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	int max_epilog_size;
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->lmf_var ? ((MonoInst*)cfg->lmf_var)->inst_offset : -1;
+	gint32 save_area_offset = cfg->arch.reg_save_area_offset;
 	
 	max_epilog_size = get_max_epilog_size (cfg);
 
@@ -7243,46 +7208,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
-
-		/* Restore caller saved regs */
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
 			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), 8);
 		}
-		if (cfg->used_int_regs & (1 << AMD64_RBX)) {
-			amd64_mov_reg_membase (code, AMD64_RBX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R12)) {
-			amd64_mov_reg_membase (code, AMD64_R12, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R13)) {
-			amd64_mov_reg_membase (code, AMD64_R13, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R14)) {
-			amd64_mov_reg_membase (code, AMD64_R14, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R15)) {
-#if defined(__default_codegen__)
-			amd64_mov_reg_membase (code, AMD64_R15, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), 8);
-#elif defined(__native_client_codegen__)
-			g_assert_not_reached();
-#endif
-		}
-#ifdef HOST_WIN32
-		if (cfg->used_int_regs & (1 << AMD64_RDI)) {
-			amd64_mov_reg_membase (code, AMD64_RDI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_RSI)) {
-			amd64_mov_reg_membase (code, AMD64_RSI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), 8);
-		}
-#endif
-	} else {
-		gint32 save_area_offset = cfg->arch.reg_save_area_offset;
+	}
 
-		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+	/* Restore callee saved regs */
+	for (i = 0; i < AMD64_NREG; ++i) {
+		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
+			/* Restore only used_int_regs, not arch.saved_iregs */
+			if (cfg->used_int_regs & (1 << i))
 				amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
-				save_area_offset += 8;
-			}
+			save_area_offset += 8;
+		}
 	}
 
 	/* Load returned vtypes into registers if needed */
