@@ -642,7 +642,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Adjust IP */
 		new_ctx->rip --;
 
-		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
+		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (new_ctx) >= (gpointer)(*lmf))) {
 			/* remove any unused lmf */
 			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~7);
 		}

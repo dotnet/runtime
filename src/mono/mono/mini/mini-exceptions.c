@@ -1800,7 +1800,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 					mono_profiler_exception_clause_handler (method, ei->flags, i);
 					jit_tls->orig_ex_ctx_set = FALSE;
 					MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-					*(mono_get_lmf_addr ()) = lmf;
+					mono_set_lmf (lmf);
 #ifndef DISABLE_PERFCOUNTERS
 					mono_perfcounters->exceptions_depth += frame_count;
 #endif
@@ -1828,7 +1828,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 #ifndef DISABLE_PERFCOUNTERS
 					mono_perfcounters->exceptions_finallys++;
 #endif
-					*(mono_get_lmf_addr ()) = lmf;
+					mono_set_lmf (lmf);
 					if (ji->from_llvm) {
 						/* 
 						 * LLVM compiled finally handlers follow the design
