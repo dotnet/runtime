@@ -350,11 +350,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (ji != NULL) {
 		frame->type = FRAME_TYPE_MANAGED;
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
-			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
-		}
-
 		/* Restore ip and sp from the saved register window */
 		window = MONO_SPARC_WINDOW_ADDR (ctx->sp);
 		new_ctx->ip = window [sparc_i7 - 16];

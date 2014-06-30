@@ -561,11 +561,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				new_ctx->regs [i] = regs [ppc_r13 + i];
 		}
 
-		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)) {
-			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
-		}
-
 		return TRUE;
 	} else if (*lmf) {
 		

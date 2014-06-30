@@ -217,6 +217,14 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (!err)
 		return (gpointer)-1;
 
+	if (*lmf && ((*lmf) != jit_tls->first_lmf) && ((gpointer)MONO_CONTEXT_GET_SP (new_ctx) >= (gpointer)(*lmf))) {
+		/*
+		 * Remove any unused lmf.
+		 * Mask out the lower bits which might be used to hold additional information.
+		 */
+		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~(SIZEOF_VOID_P -1));
+	}
+
 	/* Convert between the new and the old APIs */
 	switch (frame.type) {
 	case FRAME_TYPE_MANAGED:
@@ -368,6 +376,14 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
 		return FALSE;
+
+	if (*lmf && ((*lmf) != jit_tls->first_lmf) && ((gpointer)MONO_CONTEXT_GET_SP (new_ctx) >= (gpointer)(*lmf))) {
+		/*
+		 * Remove any unused lmf.
+		 * Mask out the lower bits which might be used to hold additional information.
+		 */
+		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~(SIZEOF_VOID_P -1));
+	}
 
 	if (frame->ji && !frame->ji->async)
 		method = jinfo_get_method (frame->ji);

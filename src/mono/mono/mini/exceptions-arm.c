@@ -435,11 +435,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			new_ctx->fregs [8 + i] = regs [MONO_MAX_IREGS + i];
 #endif
 
-		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->sp)) {
-			/* remove any unused lmf */
-			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
-		}
-
 		/* Clear thumb bit */
 		new_ctx->pc &= ~1;
 
