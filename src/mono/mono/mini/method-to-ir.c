@@ -5493,12 +5493,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if SIZEOF_REGISTER == 8
 		if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
+			MonoInst *load_ins;
+
+			emit_memory_barrier (cfg, FullBarrier);
+
 			/* 64 bit reads are already atomic */
-			MONO_INST_NEW (cfg, ins, OP_LOADI8_MEMBASE);
-			ins->dreg = mono_alloc_preg (cfg);
-			ins->inst_basereg = args [0]->dreg;
-			ins->inst_offset = 0;
-			MONO_ADD_INS (cfg->cbb, ins);
+			MONO_INST_NEW (cfg, load_ins, OP_LOADI8_MEMBASE);
+			load_ins->dreg = mono_alloc_preg (cfg);
+			load_ins->inst_basereg = args [0]->dreg;
+			load_ins->inst_offset = 0;
+			MONO_ADD_INS (cfg->cbb, load_ins);
+
+			emit_memory_barrier (cfg, FullBarrier);
+
+			ins = load_ins;
 		}
 #endif
 
