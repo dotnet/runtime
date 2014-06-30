@@ -32,3 +32,4 @@
 /*.exe.dylib.dSYM
 /testlist
 /testlist.sorted
+/reflection-load-dir
