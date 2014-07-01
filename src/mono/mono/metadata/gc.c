@@ -1062,6 +1062,8 @@ finalize_domain_objects (DomainFinalizationReq *req)
 static guint32
 finalizer_thread (gpointer unused)
 {
+	gboolean wait = TRUE;
+
 	while (!finished) {
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
@@ -1069,12 +1071,15 @@ finalizer_thread (gpointer unused)
 
 		g_assert (mono_domain_get () == mono_get_root_domain ());
 
+		if (wait) {
 		/* An alertable wait is required so this thread can be suspended on windows */
 #ifdef MONO_HAS_SEMAPHORES
-		MONO_SEM_WAIT_ALERTABLE (&finalizer_sem, TRUE);
+			MONO_SEM_WAIT_ALERTABLE (&finalizer_sem, TRUE);
 #else
-		WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
+			WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 #endif
+		}
+		wait = TRUE;
 
 		mono_threads_perform_thread_dump ();
 
@@ -1106,7 +1111,16 @@ finalizer_thread (gpointer unused)
 
 		reference_queue_proccess_all ();
 
-		SetEvent (pending_done_event);
+#ifdef MONO_HAS_SEMAPHORES
+		/* Avoid posting the pending done event until there are pending finalizers */
+		if (MONO_SEM_TIMEDWAIT (&finalizer_sem, 0) == 0)
+			/* Don't wait again at the start of the loop */
+			wait = FALSE;
+		else
+			SetEvent (pending_done_event);
+#else
+			SetEvent (pending_done_event);
+#endif
 	}
 
 	SetEvent (shutdown_event);
