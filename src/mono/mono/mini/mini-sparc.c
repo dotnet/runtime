@@ -4430,3 +4430,9 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	/* FIXME: implement */
 	g_assert_not_reached ();
 }
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	return FALSE;
+}

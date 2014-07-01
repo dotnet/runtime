@@ -56,8 +56,6 @@ and_imm: dest:i src1:i len:24
 aot_const: dest:i len:8
 atomic_add_i4: src1:b src2:i dest:i len:28
 atomic_add_i8: src1:b src2:i dest:i len:30
-atomic_add_new_i4: src1:b src2:i dest:i len:28
-atomic_add_new_i8: src1:b src2:i dest:i len:30
 atomic_exchange_i4: src1:b src2:i dest:i len:18
 atomic_exchange_i8: src1:b src2:i dest:i len:24
 br: len:6

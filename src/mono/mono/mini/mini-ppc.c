@@ -4384,17 +4384,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_ATOMIC_ADD_NEW_I4:
-		case OP_ATOMIC_ADD_NEW_I8: {
+		case OP_ATOMIC_ADD_I4:
+		case OP_ATOMIC_ADD_I8: {
 			guint8 *loop = code, *branch;
 			g_assert (ins->inst_offset == 0);
 			ppc_sync (code);
-			if (ins->opcode == OP_ATOMIC_ADD_NEW_I4)
+			if (ins->opcode == OP_ATOMIC_ADD_I4)
 				ppc_lwarx (code, ppc_r0, 0, ins->inst_basereg);
 			else
 				ppc_ldarx (code, ppc_r0, 0, ins->inst_basereg);
 			ppc_add (code, ppc_r0, ppc_r0, ins->sreg2);
-			if (ins->opcode == OP_ATOMIC_ADD_NEW_I4)
+			if (ins->opcode == OP_ATOMIC_ADD_I4)
 				ppc_stwcxd (code, ppc_r0, 0, ins->inst_basereg);
 			else
 				ppc_stdcxd (code, ppc_r0, 0, ins->inst_basereg);
@@ -5945,3 +5945,19 @@ mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
 }
 
 #endif
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	switch (opcode) {
+	case OP_ATOMIC_CAS_I4:
+#ifdef TARGET_POWERPC64
+	case OP_ATOMIC_ADD_I4: /* Yes, really - see cpu-ppc(64).md. */
+	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_CAS_I8:
+#endif
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}

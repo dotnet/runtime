@@ -1491,7 +1491,7 @@ typedef struct {
 	guint            soft_breakpoints : 1;
 	guint            arch_eh_jit_info : 1;
 	guint            has_indirection : 1;
-	guint            has_atomic_add_new_i4 : 1;
+	guint            has_atomic_add_i4 : 1;
 	guint            has_atomic_exchange_i4 : 1;
 	guint            has_atomic_cas_i4 : 1;
 	guint            check_pinvoke_callconv : 1;

@@ -414,8 +414,8 @@ arm64_cbzx: src1:i len:16
 arm64_cbnzw: src1:i len:16
 arm64_cbnzx: src1:i len:16
 
-atomic_add_new_i4: dest:i src1:i src2:i len:32
-atomic_add_new_i8: dest:i src1:i src2:i len:32
+atomic_add_i4: dest:i src1:i src2:i len:32
+atomic_add_i8: dest:i src1:i src2:i len:32
 atomic_exchange_i4: dest:i src1:i src2:i len:32
 atomic_exchange_i8: dest:i src1:i src2:i len:32
 atomic_cas_i4: dest:i src1:i src2:i src3:i len:32

@@ -1065,7 +1065,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cfg->frame_reg = X86_EBP;
 	offset = 0;
 
-	if (cfg->has_atomic_add_new_i4 || cfg->has_atomic_exchange_i4) {
+	if (cfg->has_atomic_add_i4 || cfg->has_atomic_exchange_i4) {
 		/* The opcode implementations use callee-saved regs as scratch regs by pushing and pop-ing them, but that is not async safe */
 		cfg->used_int_regs |= (1 << X86_EBX) | (1 << X86_EDI) | (1 << X86_ESI);
 	}
@@ -4372,28 +4372,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_I4: {
 			int dreg = ins->dreg;
 
-			if (dreg == ins->inst_basereg) {
-				x86_push_reg (code, ins->sreg2);
-				dreg = ins->sreg2;
-			} 
-			
-			if (dreg != ins->sreg2)
-				x86_mov_reg_reg (code, ins->dreg, ins->sreg2, 4);
-
-			x86_prefix (code, X86_LOCK_PREFIX);
-			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, 4);
-
-			if (dreg != ins->dreg) {
-				x86_mov_reg_reg (code, ins->dreg, dreg, 4);
-				x86_pop_reg (code, dreg);
-			}
-
-			break;
-		}
-		case OP_ATOMIC_ADD_NEW_I4: {
-			int dreg = ins->dreg;
-
-			g_assert (cfg->has_atomic_add_new_i4);
+			g_assert (cfg->has_atomic_add_i4);
 
 			/* hack: limit in regalloc, dreg != sreg1 && dreg != sreg2 */
 			if (ins->sreg2 == dreg) {
@@ -6848,6 +6827,19 @@ mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
 }
 
 #endif
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
+	case OP_ATOMIC_EXCHANGE_I4:
+	case OP_ATOMIC_CAS_I4:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
 
 #if defined(ENABLE_GSHAREDVT)
 

@@ -298,10 +298,8 @@ tls_get_reg: dest:i src1:i len:32
 tls_set: src1:i len:16
 tls_set_reg: src1:i src2:i len:32
 atomic_add_i4: src1:b src2:i dest:i len:32
-atomic_add_new_i4: src1:b src2:i dest:i len:32
-atomic_exchange_i4: src1:b src2:i dest:a len:32
 atomic_add_i8: src1:b src2:i dest:i len:32
-atomic_add_new_i8: src1:b src2:i dest:i len:32
+atomic_exchange_i4: src1:b src2:i dest:a len:32
 atomic_exchange_i8: src1:b src2:i dest:a len:32
 atomic_cas_i4: src1:b src2:i src3:a dest:a len:24
 atomic_cas_i8: src1:b src2:i src3:a dest:a len:24

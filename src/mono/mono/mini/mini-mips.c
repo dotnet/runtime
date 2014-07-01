@@ -6142,3 +6142,9 @@ mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
 }
 
 #endif /* MONO_ARCH_SOFT_DEBUG_SUPPORTED */
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	return FALSE;
+}

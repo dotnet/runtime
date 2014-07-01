@@ -5510,18 +5510,17 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 #endif
 
-#ifdef MONO_ARCH_HAVE_ATOMIC_ADD
 		if (strcmp (cmethod->name, "Increment") == 0) {
 			MonoInst *ins_iconst;
 			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4) {
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-				cfg->has_atomic_add_new_i4 = TRUE;
+				opcode = OP_ATOMIC_ADD_I4;
+				cfg->has_atomic_add_i4 = TRUE;
 			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
+				opcode = OP_ATOMIC_ADD_I8;
 #endif
 			if (opcode) {
 				if (!mono_arch_opcode_supported (opcode))
@@ -5536,7 +5535,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->inst_basereg = args [0]->dreg;
 				ins->inst_offset = 0;
 				ins->sreg2 = ins_iconst->dreg;
-				ins->type = (opcode == OP_ATOMIC_ADD_NEW_I4) ? STACK_I4 : STACK_I8;
+				ins->type = (opcode == OP_ATOMIC_ADD_I4) ? STACK_I4 : STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		} else if (strcmp (cmethod->name, "Decrement") == 0) {
@@ -5544,12 +5543,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4) {
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-				cfg->has_atomic_add_new_i4 = TRUE;
+				opcode = OP_ATOMIC_ADD_I4;
+				cfg->has_atomic_add_i4 = TRUE;
 			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
+				opcode = OP_ATOMIC_ADD_I8;
 #endif
 			if (opcode) {
 				if (!mono_arch_opcode_supported (opcode))
@@ -5564,19 +5563,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->inst_basereg = args [0]->dreg;
 				ins->inst_offset = 0;
 				ins->sreg2 = ins_iconst->dreg;
-				ins->type = (opcode == OP_ATOMIC_ADD_NEW_I4) ? STACK_I4 : STACK_I8;
+				ins->type = (opcode == OP_ATOMIC_ADD_I4) ? STACK_I4 : STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		} else if (strcmp (cmethod->name, "Add") == 0) {
 			guint32 opcode = 0;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4) {
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-				cfg->has_atomic_add_new_i4 = TRUE;
+				opcode = OP_ATOMIC_ADD_I4;
+				cfg->has_atomic_add_i4 = TRUE;
 			}
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
+				opcode = OP_ATOMIC_ADD_I8;
 #endif
 			if (opcode) {
 				if (!mono_arch_opcode_supported (opcode))
@@ -5586,13 +5585,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->inst_basereg = args [0]->dreg;
 				ins->inst_offset = 0;
 				ins->sreg2 = args [1]->dreg;
-				ins->type = (opcode == OP_ATOMIC_ADD_NEW_I4) ? STACK_I4 : STACK_I8;
+				ins->type = (opcode == OP_ATOMIC_ADD_I4) ? STACK_I4 : STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		}
-#endif /* MONO_ARCH_HAVE_ATOMIC_ADD */
 
-#ifdef MONO_ARCH_HAVE_ATOMIC_EXCHANGE
 		if (strcmp (cmethod->name, "Exchange") == 0) {
 			guint32 opcode;
 			gboolean is_ref = fsig->params [0]->type == MONO_TYPE_OBJECT;
@@ -5642,9 +5639,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (cfg->gen_write_barriers && is_ref)
 				emit_write_barrier (cfg, args [0], args [1]);
 		}
-#endif /* MONO_ARCH_HAVE_ATOMIC_EXCHANGE */
- 
-#ifdef MONO_ARCH_HAVE_ATOMIC_CAS
+
 		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
 			int size = 0;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [1]);
@@ -5681,7 +5676,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (cfg->gen_write_barriers && is_ref)
 				emit_write_barrier (cfg, args [0], args [1]);
 		}
-#endif /* MONO_ARCH_HAVE_ATOMIC_CAS */
 
 		if (strcmp (cmethod->name, "MemoryBarrier") == 0)
 			ins = emit_memory_barrier (cfg, FullBarrier);

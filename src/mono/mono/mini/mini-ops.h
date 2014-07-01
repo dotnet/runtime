@@ -847,32 +847,36 @@ MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
 MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)
 MINI_OP(OP_XPHI,	"xphi", XREG, NONE, NONE)
 
-/* Atomic specific
-
-	Note, OP_ATOMIC_ADD_IMM_NEW_I4 and
-	OP_ATOMIC_ADD_NEW_I4 returns the new
-	value compared to OP_ATOMIC_ADD_I4 that
-	returns the old value.
-
-	OP_ATOMIC_ADD_NEW_I4 is used by
-	Interlocked::Increment and Interlocked:Decrement
-	and atomic_add_i4 by Interlocked::Add
+/*
+ * These are used for efficient implementation of the
+ * methods on the System.Threading.Interlocked class
+ * on architectures that support it. This is checked
+ * via mono_arch_opcode_supported ().
+ *
+ * Note that while the 32-bit variants are used on
+ * both 32-bit and 64-bit systems, the 64-bit variants
+ * are only used if the system is 64-bit. If that is
+ * not the case, the fallback code in the runtime is
+ * used instead. This is done because decomposing the
+ * 64-bit variants to instructions operating on 32-bit
+ * registers is very complicated on some architectures.
+ *
+ * The memory_barrier instruction translates to a full
+ * acquire/release barrier. Such a memory barrier is
+ * implied at the beginning and end of all other atomic
+ * operations, such that they ensure sequential
+ * consistency.
+ *
+ * All of these return the new value at the given
+ * memory location after performing the operation.
 */
 MINI_OP(OP_ATOMIC_ADD_I4, "atomic_add_i4", IREG, IREG, IREG)
-MINI_OP(OP_ATOMIC_ADD_NEW_I4, "atomic_add_new_i4", IREG, IREG, IREG)
-MINI_OP(OP_ATOMIC_ADD_IMM_I4, "atomic_add_imm_i4", IREG, IREG, NONE)
-MINI_OP(OP_ATOMIC_ADD_IMM_NEW_I4, "atomic_add_imm_new_i4", IREG, IREG, NONE)
-MINI_OP(OP_ATOMIC_EXCHANGE_I4, "atomic_exchange_i4", IREG, IREG, IREG)
-
 MINI_OP(OP_ATOMIC_ADD_I8, "atomic_add_i8", IREG, IREG, IREG)
-MINI_OP(OP_ATOMIC_ADD_NEW_I8, "atomic_add_new_i8", IREG, IREG, IREG)
-MINI_OP(OP_ATOMIC_ADD_IMM_I8, "atomic_add_imm_i8", IREG, IREG, NONE)
-MINI_OP(OP_ATOMIC_ADD_IMM_NEW_I8, "atomic_add_imm_new_i8", IREG, IREG, NONE)
+MINI_OP(OP_ATOMIC_EXCHANGE_I4, "atomic_exchange_i4", IREG, IREG, IREG)
 MINI_OP(OP_ATOMIC_EXCHANGE_I8, "atomic_exchange_i8", IREG, IREG, IREG)
-MINI_OP(OP_MEMORY_BARRIER, "memory_barrier", NONE, NONE, NONE)
-
 MINI_OP3(OP_ATOMIC_CAS_I4, "atomic_cas_i4", IREG, IREG, IREG, IREG)
 MINI_OP3(OP_ATOMIC_CAS_I8, "atomic_cas_i8", IREG, IREG, IREG, IREG)
+MINI_OP(OP_MEMORY_BARRIER, "memory_barrier", NONE, NONE, NONE)
 
 /* Conditional move opcodes.
  * Must be in the same order as the matching CEE_B... opcodes
@@ -1077,6 +1081,9 @@ MINI_OP(OP_S390_ISUB_OVF_UN,    "s390_int_sub_ovf_un", IREG, IREG, IREG)
 #endif
 
 #if defined(__ia64__)
+MINI_OP(OP_ATOMIC_ADD_IMM_I4, "atomic_add_imm_i4", IREG, IREG, NONE)
+MINI_OP(OP_ATOMIC_ADD_IMM_I8, "atomic_add_imm_i8", IREG, IREG, NONE)
+
 MINI_OP(OP_IA64_LOAD,          "ia64_load", NONE, NONE, NONE)
 MINI_OP(OP_IA64_LOADI1,        "ia64_loadi1", NONE, NONE, NONE)
 MINI_OP(OP_IA64_LOADU1,        "ia64_loadu1", NONE, NONE, NONE)

@@ -4529,15 +4529,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lgr (code, ins->dreg, s390_r1);
 		}
 			break;	
-		case OP_ATOMIC_ADD_NEW_I8: {
-			s390_lgr (code, s390_r1, ins->sreg2);
-			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
-			s390_agr (code, s390_r1, s390_r0);
-			s390_csg (code, s390_r0, s390_r1, ins->inst_basereg, ins->inst_offset);
-			s390_jnz (code, -10);
-			s390_lgr (code, ins->dreg, s390_r1);
-		}
-			break;	
 		case OP_ATOMIC_EXCHANGE_I8: {
 			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_csg (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
@@ -4546,15 +4537,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;	
 		case OP_ATOMIC_ADD_I4: {
-			s390_lgfr(code, s390_r1, ins->sreg2);
-			s390_lgf (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
-			s390_agr (code, s390_r1, s390_r0);
-			s390_cs  (code, s390_r0, s390_r1, ins->inst_basereg, ins->inst_offset);
-			s390_jnz (code, -9);
-			s390_lgfr(code, ins->dreg, s390_r1);
-		}
-			break;	
-		case OP_ATOMIC_ADD_NEW_I4: {
 			s390_lgfr(code, s390_r1, ins->sreg2);
 			s390_lgf (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_agr (code, s390_r1, s390_r0);
@@ -6138,3 +6120,17 @@ mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
 /*========================= End of Function ========================*/
 
 #endif
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
+	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_I4:
+	case OP_ATOMIC_EXCHANGE_I8:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}

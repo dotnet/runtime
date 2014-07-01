@@ -1980,7 +1980,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += size;
 	}
 
-	if (cfg->has_atomic_exchange_i4 || cfg->has_atomic_cas_i4 || cfg->has_atomic_add_new_i4) {
+	if (cfg->has_atomic_exchange_i4 || cfg->has_atomic_cas_i4 || cfg->has_atomic_add_i4) {
 		/* Allocate a temporary used by the atomic ops */
 		size = 4;
 		align = 4;
@@ -4174,7 +4174,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_CAS_I4:
-		case OP_ATOMIC_ADD_NEW_I4: {
+		case OP_ATOMIC_ADD_I4: {
 			int tmpreg;
 			guint8 *buf [16];
 
@@ -4217,7 +4217,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_patch (buf [2], buf [0]);
 				arm_patch (buf [1], code);
 				break;
-			case OP_ATOMIC_ADD_NEW_I4:
+			case OP_ATOMIC_ADD_I4:
 				buf [0] = code;
 				ARM_DMB (code, ARM_DMB_SY);
 				ARM_LDREX_REG (code, ARMREG_LR, ins->sreg1);
@@ -7220,9 +7220,9 @@ gboolean
 mono_arch_opcode_supported (int opcode)
 {
 	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_CAS_I4:
-	case OP_ATOMIC_ADD_NEW_I4:
 		return v7_supported;
 	default:
 		return FALSE;

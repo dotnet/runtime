@@ -5635,25 +5635,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int dreg = ins->dreg;
 			guint32 size = (ins->opcode == OP_ATOMIC_ADD_I4) ? 4 : 8;
 
-			if (dreg == ins->inst_basereg)
-				dreg = AMD64_R11;
-			
-			if (dreg != ins->sreg2)
-				amd64_mov_reg_reg (code, ins->dreg, ins->sreg2, size);
-
-			x86_prefix (code, X86_LOCK_PREFIX);
-			amd64_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, size);
-
-			if (dreg != ins->dreg)
-				amd64_mov_reg_reg (code, ins->dreg, dreg, size);
-
-			break;
-		}
-		case OP_ATOMIC_ADD_NEW_I4:
-		case OP_ATOMIC_ADD_NEW_I8: {
-			int dreg = ins->dreg;
-			guint32 size = (ins->opcode == OP_ATOMIC_ADD_NEW_I4) ? 4 : 8;
-
 			if ((dreg == ins->sreg2) || (dreg == ins->inst_basereg))
 				dreg = AMD64_R11;
 
@@ -8640,3 +8621,19 @@ mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
 }
 
 #endif
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
+	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_I4:
+	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_I4:
+	case OP_ATOMIC_CAS_I8:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}

@@ -7959,16 +7959,6 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 #endif
 
-#ifndef MONO_ARCH_HAVE_OPCODE_SUPPORTED
-
-gboolean
-mono_arch_opcode_supported (int opcode)
-{
-	return TRUE;
-}
-
-#endif
-
 #if defined(MONO_ARCH_GSHAREDVT_SUPPORTED) && !defined(ENABLE_GSHAREDVT)
 
 gboolean
