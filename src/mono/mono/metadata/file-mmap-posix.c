@@ -81,8 +81,10 @@ enum {
 	MMAP_FILE_ACCESS_READ_WRITE_EXECUTE = 5,
 };
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+#ifdef PLATFORM_ANDROID
+#define DEFAULT_FILEMODE 0666
+#else
+#define DEFAULT_FILEMODE DEFFILEMODE
 #endif
 
 static int mmap_init_state;
@@ -269,7 +271,7 @@ open_file_map (MonoString *path, int input_fd, int mode, gint64 *capacity, int a
 	}
 
 	if (path) //FIXME use io portability?
-		fd = open (c_path, file_mode_to_unix (mode) | access_mode_to_unix (access), DEFFILEMODE);
+		fd = open (c_path, file_mode_to_unix (mode) | access_mode_to_unix (access), DEFAULT_FILEMODE);
 	else
 		fd = dup (input_fd);
 
