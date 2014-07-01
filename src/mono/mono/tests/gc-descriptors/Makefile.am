@@ -10,7 +10,7 @@ descriptor-tests.exe : descriptor-tests.cs
 	$(MCS) -Warn:0 descriptor-tests.cs
 
 descriptor-tests.cs : descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-descriptor-tests.py
-	-cp $^ .
+	if [ "$(srcdir)" != "$(builddir)" ]; then cp $^ .; fi
 	$(srcdir)/gen-descriptor-tests.py >descriptor-tests.cs
 
 EXTRA_DIST = descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-descriptor-tests.py
