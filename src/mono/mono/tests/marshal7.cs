@@ -218,9 +218,9 @@ public class Test
 			if (Marshal.SizeOf (typeof (TestStruct10)) != 12)
 				return 16;
 		} else {
-			if (Marshal.SizeOf (typeof (TestStruct8)) != 16)
+			if (Marshal.SizeOf (typeof (TestStruct8)) != 16 && Marshal.SizeOf (typeof (TestStruct8)) != 12)
 				return 14;
-			if (Marshal.SizeOf (typeof (TestStruct10)) != 16)
+			if (Marshal.SizeOf (typeof (TestStruct10)) != 16 && Marshal.SizeOf (typeof (TestStruct10)) != 12)
 				return 16;
 		}
 		if (Marshal.SizeOf (typeof (TestStruct9)) != 12)
