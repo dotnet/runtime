@@ -45,6 +45,7 @@
 #include "metadata/profiler-private.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
+#include "metadata/abi-details.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-counters.h"
 
@@ -797,10 +798,10 @@ create_allocator (int atype)
 	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
 		/* size = vtable->klass->instance_size; */
 		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoClass, instance_size));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoClass, instance_size));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
@@ -840,10 +841,10 @@ create_allocator (int atype)
 
 		/* vtable->klass->sizes.element_size */
 		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoClass, sizes.element_size));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoClass, sizes));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		mono_mb_emit_byte (mb, CEE_CONV_I);
@@ -940,7 +941,7 @@ create_allocator (int atype)
 
 	/* tlab_next_addr (local) = tlab_next_addr (TLS var) */
 	tlab_next_addr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	EMIT_TLS_ACCESS (mb, tlab_next_addr, TLS_KEY_SGEN_TLAB_NEXT_ADDR);
+	EMIT_TLS_ACCESS_NEXT_ADDR (mb);
 	mono_mb_emit_stloc (mb, tlab_next_addr_var);
 
 	/* p = (void**)tlab_next; */
@@ -959,7 +960,7 @@ create_allocator (int atype)
 
 	/* if (G_LIKELY (new_next < tlab_temp_end)) */
 	mono_mb_emit_ldloc (mb, new_next_var);
-	EMIT_TLS_ACCESS (mb, tlab_temp_end, TLS_KEY_SGEN_TLAB_TEMP_END);
+	EMIT_TLS_ACCESS_TEMP_END (mb);
 	slowpath_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLT_UN_S);
 
 	/* Slowpath */
@@ -1007,7 +1008,7 @@ create_allocator (int atype)
 	if (atype == ATYPE_VECTOR) {
 		/* arr->max_length = max_length; */
 		mono_mb_emit_ldloc (mb, p_var);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, max_length));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, max_length));
 		mono_mb_emit_ldarg (mb, 1);
 #ifdef MONO_BIG_ARRAYS
 		mono_mb_emit_byte (mb, CEE_STIND_I);
@@ -1018,7 +1019,7 @@ create_allocator (int atype)
 		/* need to set length and clear the last char */
 		/* s->length = len; */
 		mono_mb_emit_ldloc (mb, p_var);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoString, length));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoString, length));
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CEE_STIND_I4);

@@ -12,6 +12,7 @@
 #include "mini.h"
 #include <string.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-proclib.h>
@@ -391,14 +392,14 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 			code = mono_ppc_create_pre_code_ftnptr (code);
 
 		/* Replace the this argument with the target */
-		ppc_ldptr (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
+		ppc_ldptr (code, ppc_r0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* it's a function descriptor */
 		/* Can't use ldptr as it doesn't work with r0 */
 		ppc_ldptr_indexed (code, ppc_r0, 0, ppc_r0);
 #endif
 		ppc_mtctr (code, ppc_r0);
-		ppc_ldptr (code, ppc_r3, G_STRUCT_OFFSET (MonoDelegate, target), ppc_r3);
+		ppc_ldptr (code, ppc_r3, MONO_STRUCT_OFFSET (MonoDelegate, target), ppc_r3);
 		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
 		g_assert ((code - start) <= size);
@@ -412,7 +413,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		if (!aot)
 			code = mono_ppc_create_pre_code_ftnptr (code);
 
-		ppc_ldptr (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
+		ppc_ldptr (code, ppc_r0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* it's a function descriptor */
 		ppc_ldptr_indexed (code, ppc_r0, 0, ppc_r0);

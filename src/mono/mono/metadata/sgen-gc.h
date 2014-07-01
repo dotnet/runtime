@@ -957,8 +957,6 @@ struct _LOSObject {
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 
-#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
-
 extern LOSObject *los_object_list;
 extern mword los_memory_usage;
 
@@ -1039,24 +1037,43 @@ extern __thread char *stack_end;
 #endif
 
 #ifdef HAVE_KW_THREAD
-#define EMIT_TLS_ACCESS(mb,member,key)	do {	\
+
+#define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
-	mono_mb_emit_i4 ((mb), (key));		\
+	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_TLAB_NEXT_ADDR);		\
 	} while (0)
+
+#define EMIT_TLS_ACCESS_TEMP_END(mb)	do {	\
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
+	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
+	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_TLAB_TEMP_END);		\
+	} while (0)
+
 #else
 
 #if defined(__APPLE__) || defined (HOST_WIN32)
-#define EMIT_TLS_ACCESS(mb,member,key)	do {	\
+#define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
 	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO);	\
-	mono_mb_emit_icon ((mb), G_STRUCT_OFFSET (SgenThreadInfo, member));	\
+	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_next_addr));	\
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
 	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
+
+#define EMIT_TLS_ACCESS_TEMP_END(mb)	do {	\
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
+	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
+	mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO);	\
+	mono_mb_emit_icon ((mb), MONO_STRUCT_OFFSET (SgenThreadInfo, tlab_temp_end));	\
+	mono_mb_emit_byte ((mb), CEE_ADD);		\
+	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
+	} while (0)
+
 #else
-#define EMIT_TLS_ACCESS(mb,member,key)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#define EMIT_TLS_ACCESS_TEMP_END(mb)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
 #endif
 
 #endif

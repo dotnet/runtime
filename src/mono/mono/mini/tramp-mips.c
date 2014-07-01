@@ -16,6 +16,7 @@
 #include <config.h>
 #include <glib.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
@@ -408,8 +409,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		mips_move (code, mips_a1, mips_a0);
  	} else {
 		/* load rgctx ptr from vtable */
-		g_assert (mips_is_imm16 (G_STRUCT_OFFSET (MonoVTable, runtime_generic_context)));
-		mips_lw (code, mips_a1, mips_a0, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
+		g_assert (mips_is_imm16 (MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context)));
+		mips_lw (code, mips_a1, mips_a0, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
 		/* is the rgctx ptr null? */
 		/* if yes, jump to actual trampoline */
 		rgctx_null_jumps [njumps ++] = code;

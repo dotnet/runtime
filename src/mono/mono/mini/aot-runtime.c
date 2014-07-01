@@ -37,6 +37,7 @@
 #include <sys/wait.h>  /* for WIFEXITED, WEXITSTATUS */
 #endif
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -1677,8 +1678,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		align_int64 = align;
 	}
 #else
-	align_double = __alignof__ (double);
-	align_int64 = __alignof__ (gint64);
+	align_double = MONO_ABI_ALIGNOF (double);
+	align_int64 = MONO_ABI_ALIGNOF (gint64);
 #endif
 
 	/* Sanity check */

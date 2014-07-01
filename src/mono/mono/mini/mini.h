@@ -132,6 +132,10 @@
 #define printf g_print
 #endif
 
+#if !defined(HAVE_KW_THREAD) || !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+#define MONO_JIT_TLS_DATA_HAS_LMF
+#endif
+
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
 /* Constants used to encode different types of methods in AOT */

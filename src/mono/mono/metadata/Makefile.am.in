@@ -196,7 +196,9 @@ common_sources = \
 	reflection-internals.h	\
 	file-mmap-posix.c	\
 	file-mmap-windows.c	\
-	file-mmap.h
+	file-mmap.h	\
+	object-offsets.h	\
+	abi-details.h
 
 
 # These source files have compile time dependencies on GC code

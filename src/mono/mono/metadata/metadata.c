@@ -25,6 +25,7 @@
 #include "class.h"
 #include "marshal.h"
 #include "debug-helpers.h"
+#include "abi-details.h"
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/bsearch.h>
 
@@ -4282,8 +4283,6 @@ mono_backtrace (int limit)
 }
 #endif
 
-#define abi__alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
-
 static int i8_align;
 
 /*
@@ -4322,7 +4321,7 @@ mono_type_size (MonoType *t, int *align)
 		return 0;
 	}
 	if (t->byref) {
-		*align = abi__alignof__(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	}
 
@@ -4331,43 +4330,40 @@ mono_type_size (MonoType *t, int *align)
 		*align = 1;
 		return 0;
 	case MONO_TYPE_BOOLEAN:
-		*align = abi__alignof__(gint8);
+		*align = MONO_ABI_ALIGNOF (gint8);
 		return 1;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		*align = abi__alignof__(gint8);
+		*align = MONO_ABI_ALIGNOF (gint8);
 		return 1;
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		*align = abi__alignof__(gint16);
+		*align = MONO_ABI_ALIGNOF (gint16);
 		return 2;		
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-		*align = abi__alignof__(gint32);
+		*align = MONO_ABI_ALIGNOF (gint32);
 		return 4;
 	case MONO_TYPE_R4:
-		*align = abi__alignof__(float);
+		*align = MONO_ABI_ALIGNOF (float);
 		return 4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		if (i8_align)
-			*align = i8_align;
-		else
-			*align = abi__alignof__(gint64);
+		*align = MONO_ABI_ALIGNOF (gint64);
 		return 8;		
 	case MONO_TYPE_R8:
-		*align = abi__alignof__(double);
+		*align = MONO_ABI_ALIGNOF (double);
 		return 8;		
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		*align = abi__alignof__(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	case MONO_TYPE_STRING:
-		*align = abi__alignof__(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	case MONO_TYPE_OBJECT:
-		*align = abi__alignof__(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	case MONO_TYPE_VALUETYPE: {
 		if (t->data.klass->enumtype)
@@ -4380,7 +4376,7 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
-		*align = abi__alignof__(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, (guint32*)align);
@@ -4396,14 +4392,14 @@ mono_type_size (MonoType *t, int *align)
 			else
 				return mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 		} else {
-			*align = abi__alignof__(gpointer);
+			*align = MONO_ABI_ALIGNOF (gpointer);
 			return sizeof (gpointer);
 		}
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* FIXME: Martin, this is wrong. */
-		*align = abi__alignof__(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	default:
 		g_error ("mono_type_size: type 0x%02x unknown", t->type);
@@ -4430,7 +4426,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	int tmp;
 #if SIZEOF_VOID_P == SIZEOF_REGISTER
 	int stack_slot_size = sizeof (gpointer);
-	int stack_slot_align = abi__alignof__ (gpointer);
+	int stack_slot_align = MONO_ABI_ALIGNOF (gpointer);
 #elif SIZEOF_VOID_P < SIZEOF_REGISTER
 	int stack_slot_size = SIZEOF_REGISTER;
 	int stack_slot_align = SIZEOF_REGISTER;
@@ -4475,17 +4471,14 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		*align = stack_slot_align;
 		return stack_slot_size * 3;
 	case MONO_TYPE_R4:
-		*align = abi__alignof__(float);
+		*align = MONO_ABI_ALIGNOF (float);
 		return sizeof (float);		
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		if (i8_align)
-			*align = i8_align;
-		else
-			*align = abi__alignof__(gint64);
+		*align = MONO_ABI_ALIGNOF (gint64);
 		return sizeof (gint64);		
 	case MONO_TYPE_R8:
-		*align = abi__alignof__(double);
+		*align = MONO_ABI_ALIGNOF (double);
 		return sizeof (double);
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;

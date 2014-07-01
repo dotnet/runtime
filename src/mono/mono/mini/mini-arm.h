@@ -167,6 +167,23 @@ typedef struct {
 	int map [MONO_ZERO_LEN_ARRAY];
 } GSharedVtCallInfo;
 
+/* Structure used by the sequence points in AOTed code */
+typedef struct {
+	gpointer ss_trigger_page;
+	gpointer bp_trigger_page;
+	guint8* bp_addrs [MONO_ZERO_LEN_ARRAY];
+} SeqPointInfo;
+
+
+#define PARAM_REGS 4
+#define DYN_CALL_STACK_ARGS 6
+
+typedef struct {
+	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
+	mgreg_t res, res2;
+	guint8 *ret;
+} DynCallArgs;
+
 void arm_patch (guchar *code, const guchar *target);
 guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);

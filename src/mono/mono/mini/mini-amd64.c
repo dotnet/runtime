@@ -20,6 +20,7 @@
 #include <unistd.h>
 #endif
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
@@ -7836,15 +7837,15 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 
 		/* Replace the this argument with the target */
 		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
-		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, target), 8);
-		amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RAX, MONO_STRUCT_OFFSET (MonoDelegate, target), 8);
+		amd64_jump_membase (code, AMD64_RAX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < 64);
 	} else {
 		start = code = mono_global_codeman_reserve (64);
 
 		if (param_count == 0) {
-			amd64_jump_membase (code, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			amd64_jump_membase (code, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		} else {
 			/* We have to shift the arguments left */
 			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
@@ -7859,7 +7860,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 #endif
 			}
 
-			amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			amd64_jump_membase (code, AMD64_RAX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		}
 		g_assert ((code - start) < 64);
 	}

@@ -13,6 +13,7 @@
 #include "jit-icalls.h"
 
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/abi-details.h>
 
 #ifndef DISABLE_JIT
 
@@ -1556,7 +1557,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 				switch (ins->opcode) {
 				case OP_LDLEN:
 					NEW_LOAD_MEMBASE_FLAGS (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
-											G_STRUCT_OFFSET (MonoArray, max_length), ins->flags | MONO_INST_INVARIANT_LOAD);
+											MONO_STRUCT_OFFSET (MonoArray, max_length), ins->flags | MONO_INST_INVARIANT_LOAD);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
@@ -1595,7 +1596,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					break;
 				case OP_STRLEN:
 					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, ins->dreg,
-														 ins->sreg1, G_STRUCT_OFFSET (MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);
+														 ins->sreg1, MONO_STRUCT_OFFSET (MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);
 					break;
 				default:
 					break;

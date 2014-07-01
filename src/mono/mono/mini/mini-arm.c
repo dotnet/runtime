@@ -12,6 +12,7 @@
 #include "mini.h"
 #include <string.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
@@ -151,13 +152,6 @@ static gpointer ss_trigger_page;
 
 /* Enabled breakpoints read from this trigger page */
 static gpointer bp_trigger_page;
-
-/* Structure used by the sequence points in AOTed code */
-typedef struct {
-	gpointer ss_trigger_page;
-	gpointer bp_trigger_page;
-	guint8* bp_addrs [MONO_ZERO_LEN_ARRAY];
-} SeqPointInfo;
 
 /*
  * TODO:
@@ -461,7 +455,7 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 							 (gpointer)"pthread_getspecific");
 		code = emit_call_seq (cfg, code);
 		/* lmf_addr = &jit_tls->lmf */
-		lmf_offset = G_STRUCT_OFFSET (MonoJitTlsData, lmf);
+		lmf_offset = MONO_STRUCT_OFFSET (MonoJitTlsData, lmf);
 		g_assert (arm_is_imm8 (lmf_offset));
 		ARM_ADD_REG_IMM (code, ARMREG_R0, ARMREG_R0, lmf_offset, 0);
 
@@ -484,18 +478,18 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	 */
 	code = emit_big_add (code, ARMREG_R1, ARMREG_SP, lmf_offset);
 	/* r0 is the result from mono_get_lmf_addr () */
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* new_lmf->previous_lmf = *lmf_addr */
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* *(lmf_addr) = r1 */
-	ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* Skip method (only needed for trampoline LMF frames) */
-	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, sp));
-	ARM_STR_IMM (code, ARMREG_FP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, fp));
+	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, MONO_STRUCT_OFFSET (MonoLMF, sp));
+	ARM_STR_IMM (code, ARMREG_FP, ARMREG_R1, MONO_STRUCT_OFFSET (MonoLMF, fp));
 	/* save the current IP */
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ip));
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, MONO_STRUCT_OFFSET (MonoLMF, ip));
 
 	for (i = 0; i < sizeof (MonoLMF); i += sizeof (mgreg_t))
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + i, SLOT_NOREF);
@@ -603,11 +597,11 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	}
 
 	/* ip = previous_lmf */
-	ARM_LDR_IMM (code, ARMREG_IP, basereg, offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_LDR_IMM (code, ARMREG_IP, basereg, offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* lr = lmf_addr */
-	ARM_LDR_IMM (code, ARMREG_LR, basereg, offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	ARM_LDR_IMM (code, ARMREG_LR, basereg, offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* *(lmf_addr) = previous_lmf */
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 
 	return code;
 }
@@ -682,8 +676,8 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		start = code = mono_global_codeman_reserve (12);
 
 		/* Replace the this argument with the target */
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, target));
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, target));
 		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 
 		g_assert ((code - start) <= 12);
@@ -695,7 +689,7 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		size = 8 + param_count * 4;
 		start = code = mono_global_codeman_reserve (size);
 
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		/* slide down the arguments */
 		for (i = 0; i < param_count; ++i) {
 			ARM_MOV_REG_REG (code, (ARMREG_R0 + i), (ARMREG_R0 + i + 1));
@@ -811,17 +805,12 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 void
 mono_arch_cpu_init (void)
 {
-#ifdef TARGET_IOS
-	i8_align = 4;
-#else
-	i8_align = __alignof__ (gint64);
-#endif
-
+	i8_align = MONO_ABI_ALIGNOF (gint64);
 #ifdef MONO_CROSS_COMPILE
 	/* Need to set the alignment of i8 since it can different on the target */
 #ifdef TARGET_ANDROID
 	/* linux gnueabi */
-	mono_type_set_alignment (MONO_TYPE_I8, 8);
+	mono_type_set_alignment (MONO_TYPE_I8, i8_align);
 #endif
 #endif
 }
@@ -840,12 +829,12 @@ create_function_wrapper (gpointer function)
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoContext));
 
 	/* save ip, lr and pc into their correspodings ctx.regs slots. */
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + sizeof (mgreg_t) * ARMREG_IP);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs) + sizeof (mgreg_t) * ARMREG_IP);
+	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
+	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
 
 	/* save r0..r10 and fp */
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, regs));
+	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs));
 	ARM_STM (code, ARMREG_IP, 0x0fff);
 
 	/* now we can update fp. */
@@ -854,11 +843,11 @@ create_function_wrapper (gpointer function)
 	/* make ctx.esp hold the actual value of sp at the beginning of this method. */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_FP, sizeof (MonoContext));
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, 4 * ARMREG_SP);
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
 
 	/* make ctx.eip hold the address of the call. */
 	ARM_SUB_REG_IMM8 (code, ARMREG_LR, ARMREG_LR, 4);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, G_STRUCT_OFFSET (MonoContext, pc));
+	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, pc));
 
 	/* r0 now points to the MonoContext */
 	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_FP);
@@ -879,12 +868,12 @@ create_function_wrapper (gpointer function)
 	ARM_BLX_REG (code, ARMREG_IP);
 
 	/* we're back; save ctx.eip and ctx.esp into the corresponding regs slots. */
-	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, pc));
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, pc));
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
 
 	/* make ip point to the regs array, then restore everything, including pc. */
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_FP, G_STRUCT_OFFSET (MonoContext, regs));
+	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs));
 	ARM_LDM (code, ARMREG_IP, 0xffff);
 
 	mono_arch_flush_icache (start, code - start);
@@ -1224,13 +1213,6 @@ typedef struct {
 } CallInfo;
 
 #define DEBUG(a)
-
-#ifndef __GNUC__
-/*#define __alignof__(a) sizeof(a)*/
-#define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
-#endif
-
-#define PARAM_REGS 4
 
 static void inline
 add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
@@ -2606,18 +2588,10 @@ mono_arch_is_inst_imm (gint64 imm)
 	return TRUE;
 }
 
-#define DYN_CALL_STACK_ARGS 6
-
 typedef struct {
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 } ArchDynCallInfo;
-
-typedef struct {
-	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
-	mgreg_t res, res2;
-	guint8 *ret;
-} DynCallArgs;
 
 static gboolean
 dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
@@ -4489,7 +4463,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
 				/* Add the offset */
-				val = ((offset / 4) * sizeof (guint8*)) + G_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				val = ((offset / 4) * sizeof (guint8*)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [offset], which is either 0 or the address of a trigger page */
 				if (arm_is_imm12 ((int)val)) {
 					ARM_LDR_IMM (code, dreg, dreg, val);
@@ -5014,8 +4988,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Save result */
 			ARM_LDR_IMM (code, ARMREG_IP, var->inst_basereg, var->inst_offset);
-			ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, G_STRUCT_OFFSET (DynCallArgs, res)); 
-			ARM_STR_IMM (code, ARMREG_R1, ARMREG_IP, G_STRUCT_OFFSET (DynCallArgs, res2)); 
+			ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, MONO_STRUCT_OFFSET (DynCallArgs, res)); 
+			ARM_STR_IMM (code, ARMREG_R1, ARMREG_IP, MONO_STRUCT_OFFSET (DynCallArgs, res2)); 
 			break;
 		}
 		case OP_THROW: {
@@ -6139,7 +6113,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 			ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
 			/* Load the trigger page addr */
-			ARM_LDR_IMM (code, dreg, dreg, G_STRUCT_OFFSET (SeqPointInfo, ss_trigger_page));
+			ARM_LDR_IMM (code, dreg, dreg, MONO_STRUCT_OFFSET (SeqPointInfo, ss_trigger_page));
 			ARM_STR_IMM (code, dreg, ss_trigger_page_var->inst_basereg, ss_trigger_page_var->inst_offset);
 		}
 	}

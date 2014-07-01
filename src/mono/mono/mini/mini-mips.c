@@ -15,6 +15,7 @@
 #include <string.h>
 #include <asm/cachectl.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
@@ -551,8 +552,8 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		start = code = mono_global_codeman_reserve (16);
 
 		/* Replace the this argument with the target */
-		mips_lw (code, mips_temp, mips_a0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		mips_lw (code, mips_a0, mips_a0, G_STRUCT_OFFSET (MonoDelegate, target));
+		mips_lw (code, mips_temp, mips_a0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mips_lw (code, mips_a0, mips_a0, MONO_STRUCT_OFFSET (MonoDelegate, target));
 		mips_jr (code, mips_temp);
 		mips_nop (code);
 
@@ -565,7 +566,7 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		size = 16 + param_count * 4;
 		start = code = mono_global_codeman_reserve (size);
 
-		mips_lw (code, mips_temp, mips_a0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mips_lw (code, mips_temp, mips_a0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		/* slide down the arguments */
 		for (i = 0; i < param_count; ++i) {
 			mips_move (code, mips_a0 + i, mips_a0 + i + 1);

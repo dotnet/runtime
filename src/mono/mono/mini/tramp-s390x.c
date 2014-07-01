@@ -46,6 +46,7 @@
 #include <glib.h>
 #include <string.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
@@ -533,7 +534,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		s390_lgr (code, s390_r1, s390_r2);
 	} else {
 		/* load rgctx ptr from vtable */
-		s390_lg (code, s390_r1, 0, s390_r2, G_STRUCT_OFFSET(MonoVTable, runtime_generic_context));
+		s390_lg (code, s390_r1, 0, s390_r2, MONO_STRUCT_OFFSET(MonoVTable, runtime_generic_context));
 		/* is the rgctx ptr null? */
 		s390_ltgr (code, s390_r1, s390_r1);
 		/* if yes, jump to actual trampoline */

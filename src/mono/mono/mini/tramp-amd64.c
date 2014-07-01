@@ -13,6 +13,7 @@
 #include <config.h>
 #include <glib.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
@@ -833,7 +834,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
 	} else {
 		/* load rgctx ptr from vtable */
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), sizeof(gpointer));
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context), sizeof(gpointer));
 		/* is the rgctx ptr null? */
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		/* if yes, jump to actual trampoline */
@@ -981,7 +982,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to RCX */
-		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RDI, G_STRUCT_OFFSET (MonoObject, synchronisation), 8);
+		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RDI, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 8);
 
 		if (mono_gc_is_moving ()) {
 			/*if bit zero is set it's a thin hash*/
@@ -1003,7 +1004,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		/* load MonoInternalThread* into RDX */
 		code = mono_amd64_emit_tls_get (code, AMD64_RDX, mono_thread_get_tls_offset ());
 		/* load TID into RDX */
-		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 8);
+		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 8);
 
 		/* is synchronization->owner null? */
 		amd64_alu_membase_imm_size (code, X86_CMP, AMD64_RCX, owner_offset, 0, 8);
@@ -1106,7 +1107,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to RCX */
-		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RDI, G_STRUCT_OFFSET (MonoObject, synchronisation), 8);
+		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RDI, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 8);
 
 		if (mono_gc_is_moving ()) {
 			/*if bit zero is set it's a thin hash*/
@@ -1129,7 +1130,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 		/* load MonoInternalThread* into RDX */
 		code = mono_amd64_emit_tls_get (code, AMD64_RDX, mono_thread_get_tls_offset ());
 		/* load TID into RDX */
-		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 8);
+		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 8);
 		/* is synchronization->owner == TID */
 		amd64_alu_membase_reg_size (code, X86_CMP, AMD64_RCX, owner_offset, AMD64_RDX, 8);
 		/* if no, jump to actual trampoline */

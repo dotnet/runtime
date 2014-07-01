@@ -12,9 +12,24 @@
 
 #include <glib.h>
 #include <mono/metadata/object.h>
+#include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 
 G_BEGIN_DECLS
+
+struct _MonoThreadsSync
+{
+	gsize owner;			/* thread ID */
+	guint32 nest;
+#ifdef HAVE_MOVING_COLLECTOR
+	gint32 hash_code;
+#endif
+	volatile gint32 entry_count;
+	HANDLE entry_sem;
+	GSList *wait_list;
+	void *data;
+};
+
 
 MONO_API void mono_locks_dump (gboolean include_untaken);
 

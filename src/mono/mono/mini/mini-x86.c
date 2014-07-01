@@ -17,6 +17,7 @@
 #include <unistd.h>
 #endif
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
@@ -2539,13 +2540,13 @@ static guint8*
 emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offset)
 {
 	/* save all caller saved regs */
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebx), X86_EBX, sizeof (mgreg_t));
-	mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebx));
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, edi), X86_EDI, sizeof (mgreg_t));
-	mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, edi));
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, esi), X86_ESI, sizeof (mgreg_t));
-	mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, esi));
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), X86_EBP, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx), X86_EBX, sizeof (mgreg_t));
+	mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi), X86_EDI, sizeof (mgreg_t));
+	mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi), X86_ESI, sizeof (mgreg_t));
+	mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebp), X86_EBP, sizeof (mgreg_t));
 
 	/* save the current IP */
 	if (cfg->compile_aot) {
@@ -2556,17 +2557,17 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		x86_mov_reg_imm (code, X86_EAX, 0);
 	}
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, eip), X86_EAX, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, eip), X86_EAX, sizeof (mgreg_t));
 
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, eip), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, esi), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, edi), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebx), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, esp), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
-	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, eip), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebp), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esp), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
 
 	return code;
 }
@@ -5575,7 +5576,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */
-			x86_mov_reg_membase (code, X86_ECX, X86_ECX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 4);
+			x86_mov_reg_membase (code, X86_ECX, X86_ECX, MONO_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 4);
 			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 			patch = code;
 		        x86_branch8 (code, X86_CC_Z, 0, FALSE);
@@ -5588,14 +5589,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		/* restore caller saved regs */
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
-			x86_mov_reg_membase (code, X86_EBX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebx), 4);
+			x86_mov_reg_membase (code, X86_EBX, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx), 4);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_EDI)) {
-			x86_mov_reg_membase (code, X86_EDI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, edi), 4);
+			x86_mov_reg_membase (code, X86_EDI, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi), 4);
 		}
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
-			x86_mov_reg_membase (code, X86_ESI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, esi), 4);
+			x86_mov_reg_membase (code, X86_ESI, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi), 4);
 		}
 
 		/* EBP is restored by LEAVE */
@@ -6210,9 +6211,9 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 
 		/* Replace the this argument with the target */
 		x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
-		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, target), 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, target), 4);
 		x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
-		x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		x86_jump_membase (code, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < code_reserve);
 	} else {
@@ -6251,7 +6252,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 			x86_mov_membase_reg (code, X86_ESP, (i+1)*4, X86_EAX, 4);
 		}
 
-		x86_jump_membase (code, X86_ECX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		x86_jump_membase (code, X86_ECX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < code_reserve);
 	}

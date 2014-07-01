@@ -43,6 +43,7 @@
 #include <sys/stat.h>
 
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -8259,8 +8260,8 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_int32 (acfg, align);
 	}
 #else
-	emit_int32 (acfg, __alignof__ (double));
-	emit_int32 (acfg, __alignof__ (gint64));
+	emit_int32 (acfg, MONO_ABI_ALIGNOF (double));
+	emit_int32 (acfg, MONO_ABI_ALIGNOF (gint64));
 #endif
 	emit_int32 (acfg, MONO_TRAMPOLINE_NUM);
 	emit_int32 (acfg, acfg->tramp_page_size);

@@ -45,6 +45,8 @@
 #endif
 #include <sys/types.h>
 
+#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
+
 guint8 *sgen_cardtable;
 
 static gboolean need_mod_union;

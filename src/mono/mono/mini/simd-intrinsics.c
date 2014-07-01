@@ -13,6 +13,7 @@
 #include "mini.h"
 #include "ir-emit.h"
 #include "mono/utils/bsearch.h"
+#include <mono/metadata/abi-details.h>
 
 /*
 General notes on SIMD intrinsics
@@ -1569,7 +1570,7 @@ mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *array_type, MonoInst *arr,
 
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, array_reg, mult_reg);
-	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
+	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, MONO_STRUCT_OFFSET (MonoArray, vector));
 	ins->type = STACK_PTR;
 	MONO_ADD_INS (cfg->cbb, ins);
 

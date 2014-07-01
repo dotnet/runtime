@@ -33,7 +33,8 @@
 #endif
 
 #include <mono/utils/memcheck.h>
-
+#include "mini.h"
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/loader.h>
@@ -60,7 +61,6 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/mono-basic-block.h>
 
-#include "mini.h"
 #include "trace.h"
 
 #include "ir-emit.h"
@@ -1523,7 +1523,7 @@ mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_r
 static void
 mini_emit_load_intf_bit_reg_class (MonoCompile *cfg, int intf_bit_reg, int klass_reg, MonoClass *klass)
 {
-	mini_emit_interface_bitmap_check (cfg, intf_bit_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_bitmap), klass);
+	mini_emit_interface_bitmap_check (cfg, intf_bit_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, interface_bitmap), klass);
 }
 
 /* 
@@ -1533,7 +1533,7 @@ mini_emit_load_intf_bit_reg_class (MonoCompile *cfg, int intf_bit_reg, int klass
 static void
 mini_emit_load_intf_bit_reg_vtable (MonoCompile *cfg, int intf_bit_reg, int vtable_reg, MonoClass *klass)
 {
-	mini_emit_interface_bitmap_check (cfg, intf_bit_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_bitmap), klass);
+	mini_emit_interface_bitmap_check (cfg, intf_bit_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, interface_bitmap), klass);
 }
 
 /* 
@@ -1564,7 +1564,7 @@ mini_emit_max_iid_check_vtable (MonoCompile *cfg, int vtable_reg, MonoClass *kla
 {
 	int max_iid_reg = alloc_preg (cfg);
 		
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, max_iid_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, max_interface_id));
 	mini_emit_max_iid_check (cfg, max_iid_reg, klass, false_target);
 }
 
@@ -1575,7 +1575,7 @@ mini_emit_max_iid_check_class (MonoCompile *cfg, int klass_reg, MonoClass *klass
 {
 	int max_iid_reg = alloc_preg (cfg);
 
- 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));		
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, max_iid_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, max_interface_id));
 	mini_emit_max_iid_check (cfg, max_iid_reg, klass, false_target);
 }
 
@@ -1589,11 +1589,11 @@ mini_emit_isninst_cast_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, 
 	mono_class_setup_supertypes (klass);
 
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, idepth));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, idepth_reg, klass->idepth);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBLT_UN, false_target);
 	}
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, supertypes));
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stype, stypes_reg, ((klass->idepth - 1) * SIZEOF_VOID_P));
 	if (klass_ins) {
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, stype, klass_ins->dreg);
@@ -1689,14 +1689,14 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 		int eclass_reg = alloc_preg (cfg);
 
 		g_assert (!klass_inst);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, rank));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
-		//		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
+		//		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, cast_class));
 		if (klass->cast_class == mono_defaults.object_class) {
 			int parent_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, G_STRUCT_OFFSET (MonoClass, parent));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, MONO_STRUCT_OFFSET (MonoClass, parent));
 			mini_emit_class_check_branch (cfg, parent_reg, mono_defaults.enum_class->parent, OP_PBNE_UN, object_is_null);
 			mini_emit_class_check (cfg, eclass_reg, mono_defaults.enum_class);
 		} else if (klass->cast_class == mono_defaults.enum_class->parent) {
@@ -1714,7 +1714,7 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 		if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY) && (obj_reg != -1)) {
 			/* Check that the object is a vector too */
 			int bounds_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, obj_reg, G_STRUCT_OFFSET (MonoArray, bounds));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, obj_reg, MONO_STRUCT_OFFSET (MonoArray, bounds));
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
 			MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 		}
@@ -1726,11 +1726,11 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 		mono_class_setup_supertypes (klass);
 
 		if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU2_MEMBASE, idepth_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, idepth));
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, idepth_reg, klass->idepth);
 			MONO_EMIT_NEW_COND_EXC (cfg, LT_UN, "InvalidCastException");
 		}
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stypes_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, supertypes));
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, stype, stypes_reg, ((klass->idepth - 1) * SIZEOF_VOID_P));
 		mini_emit_class_check_inst (cfg, stype, klass, klass_inst);
 	}
@@ -1930,7 +1930,7 @@ emit_push_lmf (MonoCompile *cfg)
 		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 		lmf_reg = ins->dreg;
 		/* Save previous_lmf */
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
 		/* Set new LMF */
 		emit_tls_set (cfg, lmf_reg, TLS_KEY_LMF);
 	} else {
@@ -1947,7 +1947,7 @@ emit_push_lmf (MonoCompile *cfg)
 
 			MONO_ADD_INS (cfg->cbb, ins);
 			lmf_reg = alloc_preg (cfg);
-			EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+			EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
 		} else {
 			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
 		}
@@ -1967,7 +1967,7 @@ emit_push_lmf (MonoCompile *cfg)
 			/* call pthread_getspecific () */
 			jit_tls_ins = mono_emit_jit_icall (cfg, pthread_getspecific, args);
 			/* lmf_addr = &jit_tls->lmf */
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, cfg->lmf_addr_var->dreg, jit_tls_ins->dreg, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, cfg->lmf_addr_var->dreg, jit_tls_ins->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
 			lmf_ins = ins;
 #else
 			lmf_ins = mono_emit_jit_icall (cfg, mono_get_lmf_addr, NULL);
@@ -1982,7 +1982,7 @@ emit_push_lmf (MonoCompile *cfg)
 		prev_lmf_reg = alloc_preg (cfg);
 		/* Save previous_lmf */
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, cfg->lmf_addr_var->dreg, 0);
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
 		/* Set new lmf */
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, cfg->lmf_addr_var->dreg, 0, lmf_reg);
 	}
@@ -2008,7 +2008,7 @@ emit_pop_lmf (MonoCompile *cfg)
 	if (cfg->lmf_ir_mono_lmf && mini_tls_get_supported (cfg, TLS_KEY_LMF)) {
 		/* Load previous_lmf */
 		prev_lmf_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* Set new LMF */
 		emit_tls_set (cfg, prev_lmf_reg, TLS_KEY_LMF);
 	} else {
@@ -2022,7 +2022,7 @@ emit_pop_lmf (MonoCompile *cfg)
 		lmf_addr_reg = cfg->lmf_addr_var->dreg;
 
 		prev_lmf_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
 	}
 }
@@ -2755,7 +2755,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 			/* Make a call to delegate->invoke_impl */
 			call->inst.inst_basereg = this_reg;
-			call->inst.inst_offset = G_STRUCT_OFFSET (MonoDelegate, invoke_impl);
+			call->inst.inst_offset = MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl);
 			MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
 
 			/* We must emit a dummy use here because the delegate trampoline will
@@ -2809,7 +2809,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
 		} else {
 			vtable_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				slot_reg = -1;
 #ifdef MONO_ARCH_HAVE_IMT
@@ -2827,7 +2827,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 				}
 			} else {
 				slot_reg = vtable_reg;
-				offset = G_STRUCT_OFFSET (MonoVTable, vtable) +
+				offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) +
 					((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
 #ifdef MONO_ARCH_HAVE_IMT
 				if (imt_arg) {
@@ -3307,7 +3307,7 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 			int vtable_reg;
 
 			vtable_reg = alloc_preg (cfg);
-			EMIT_NEW_LOAD_MEMBASE (cfg, vtable_var, OP_LOAD_MEMBASE, vtable_reg, mrgctx_var->dreg, G_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable));
+			EMIT_NEW_LOAD_MEMBASE (cfg, vtable_var, OP_LOAD_MEMBASE, vtable_reg, mrgctx_var->dreg, MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable));
 			vtable_var->type = STACK_PTR;
 		}
 
@@ -3317,7 +3317,7 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 		int vtable_reg;
 	
 		vtable_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		return ins;
 	}
 }
@@ -3486,7 +3486,7 @@ emit_get_gsharedvt_info (MonoCompile *cfg, gpointer data, MonoRgctxInfoType rgct
 	idx = get_gsharedvt_info_slot (cfg, data, rgctx_type);
 	/* Load info->entries [idx] */
 	dreg = alloc_preg (cfg);
-	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, cfg->gsharedvt_info_var->dreg, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, cfg->gsharedvt_info_var->dreg, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
 
 	return ins;
 }
@@ -3569,12 +3569,12 @@ save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg, gboolean nul
 		}
 
 		MONO_ADD_INS (cfg->cbb, tls_get);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), klass_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), klass_reg);
 		MONO_EMIT_NEW_PCONST (cfg, to_klass_reg, klass);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_to), to_klass_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, class_cast_to), to_klass_reg);
 
 		if (null_check) {
 			MONO_START_BB (cfg, is_null_bb);
@@ -3593,7 +3593,7 @@ reset_cast_details (MonoCompile *cfg)
 
 		MONO_ADD_INS (cfg->cbb, tls_get);
 		/* It is enough to reset the from field */
-		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), 0);
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, tls_get->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), 0);
 	}
 }
 
@@ -3610,11 +3610,11 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 
 	save_cast_details (cfg, array_class, obj->dreg, FALSE, NULL);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
 	if (cfg->opt & MONO_OPT_SHARED) {
 		int class_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, class_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, class_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		if (cfg->compile_aot) {
 			int klass_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_CLASSCONST (cfg, klass_reg, array_class);
@@ -3700,8 +3700,8 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	int rank_reg = alloc_dreg (cfg ,STACK_I4);
 
 	obj_reg = sp [0]->dreg;
-	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 
 	/* FIXME: generics */
 	g_assert (klass->rank == 0);
@@ -3710,8 +3710,8 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, 0);
 	MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, element_class));
 
 	if (context_used) {
 		MonoInst *element_class;
@@ -4111,12 +4111,12 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 	save_cast_details (cfg, klass, obj_reg, FALSE, NULL);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, vtable_reg, klass, NULL, NULL);
 	} else {
 		int klass_reg = alloc_preg (cfg);
 
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
 		if (!klass->rank && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
 			/* the remoting code is broken, access the class for now */
@@ -4129,12 +4129,12 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 				}
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
 			} else {
-				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
 			}
 			MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 		} else {
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 			mini_emit_castclass_inst (cfg, obj_reg, klass_reg, klass, klass_inst, is_null_bb);
 		}
 	}
@@ -4195,7 +4195,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_null_bb);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		g_assert (!context_used);
@@ -4209,14 +4209,14 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			int eclass_reg = alloc_preg (cfg);
 
 			g_assert (!context_used);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, klass->rank);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, cast_class));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, MONO_STRUCT_OFFSET (MonoClass, cast_class));
 			if (klass->cast_class == mono_defaults.object_class) {
 				int parent_reg = alloc_preg (cfg);
-				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, G_STRUCT_OFFSET (MonoClass, parent));
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, MONO_STRUCT_OFFSET (MonoClass, parent));
 				mini_emit_class_check_branch (cfg, parent_reg, mono_defaults.enum_class->parent, OP_PBNE_UN, is_null_bb);
 				mini_emit_class_check_branch (cfg, eclass_reg, mono_defaults.enum_class, OP_PBEQ, is_null_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
@@ -4233,7 +4233,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 				if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY)) {
 					/* Check that the object is a vector too */
 					int bounds_reg = alloc_preg (cfg);
-					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, obj_reg, G_STRUCT_OFFSET (MonoArray, bounds));
+					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, obj_reg, MONO_STRUCT_OFFSET (MonoArray, bounds));
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
 				}
@@ -4243,7 +4243,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			}
 		} else if (mono_class_is_nullable (klass)) {
 			g_assert (!context_used);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 			/* the is_null_bb target simply copies the input register to the output */
 			mini_emit_isninst_cast (cfg, klass_reg, klass->cast_class, false_bb, is_null_bb);
 		} else {
@@ -4259,13 +4259,13 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 					}
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
 				} else {
-					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
 				}
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 			} else {
-				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 				/* the is_null_bb target simply copies the input register to the output */
 				mini_emit_isninst_cast_inst (cfg, klass_reg, klass, klass_inst, false_bb, is_null_bb);
 			}
@@ -4322,16 +4322,16 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 #endif
 
 		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 #ifndef DISABLE_REMOTING
 		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, true_bb);
 		MONO_START_BB (cfg, interface_fail_bb);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		
 		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, false_bb);
 
 		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false2_bb);		
 #else
@@ -4340,16 +4340,16 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	} else {
 #ifndef DISABLE_REMOTING
 		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
 		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);		
 		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 
 		tmp_reg = alloc_preg (cfg);		
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, no_proxy_bb);
 		
@@ -4424,22 +4424,22 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 #ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, interface_fail_bb);
 	
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, ok_result_bb);
 		MONO_START_BB (cfg, interface_fail_bb);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
 		mini_emit_class_check (cfg, klass_reg, mono_defaults.transparent_proxy_class);
 
 		tmp_reg = alloc_preg (cfg);		
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
 		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "InvalidCastException");
 		
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 #else
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, ok_result_bb);
 #endif
@@ -4447,16 +4447,16 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 #ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, no_proxy_bb);
 
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mini_emit_class_check_branch (cfg, klass_reg, mono_defaults.transparent_proxy_class, OP_PBNE_UN, no_proxy_bb);		
 
 		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 
 		tmp_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, no_proxy_bb);
 
@@ -4515,17 +4515,17 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	/* Set target field */
 	/* Optimize away setting of NULL target */
 	if (!(target->opcode == OP_PCONST && target->inst_p0 == 0)) {
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, target), target->dreg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target), target->dreg);
 		if (cfg->gen_write_barriers) {
 			dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, target));
+			EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target));
 			emit_write_barrier (cfg, ptr, target);
 		}
 	}
 
 	/* Set method field */
 	method_ins = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD);
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
 	/* 
 	 * To avoid looking up the compiled code belonging to the target method
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
@@ -4553,7 +4553,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			else
 				EMIT_NEW_PCONST (cfg, code_slot_ins, code_slot);
 		}
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
 	}
 
 	/* Set invoke_impl field */
@@ -4568,7 +4568,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		trampoline = mono_create_delegate_trampoline_with_method (cfg->domain, klass, context_used ? NULL : method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
 	}
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
 
@@ -4815,7 +4815,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	if (size == 1 || size == 2 || size == 4 || size == 8) {
 		static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
 
-		EMIT_NEW_X86_LEA (cfg, ins, array_reg, index2_reg, fast_log2 [size], G_STRUCT_OFFSET (MonoArray, vector));
+		EMIT_NEW_X86_LEA (cfg, ins, array_reg, index2_reg, fast_log2 [size], MONO_STRUCT_OFFSET (MonoArray, vector));
 		ins->klass = mono_class_get_element_class (klass);
 		ins->type = STACK_MP;
 
@@ -4838,7 +4838,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
 	}
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, array_reg, mult_reg);
-	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
+	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, MONO_STRUCT_OFFSET (MonoArray, vector));
 	ins->klass = mono_class_get_element_class (klass);
 	ins->type = STACK_MP;
 	MONO_ADD_INS (cfg->cbb, ins);
@@ -4890,21 +4890,21 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 
 	/* range checking */
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, 
-				       arr->dreg, G_STRUCT_OFFSET (MonoArray, bounds));
+				       arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, low1_reg, 
-				       bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+				       bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
 	MONO_EMIT_NEW_BIALU (cfg, OP_PSUB, realidx1_reg, index1, low1_reg);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, high1_reg, 
-				       bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, length));
+				       bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
 	MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, high1_reg, realidx1_reg);
 	MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException");
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, low2_reg, 
-				       bounds_reg, sizeof (MonoArrayBounds) + G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+				       bounds_reg, sizeof (MonoArrayBounds) + MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
 	MONO_EMIT_NEW_BIALU (cfg, OP_PSUB, realidx2_reg, index2, low2_reg);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, high2_reg, 
-				       bounds_reg, sizeof (MonoArrayBounds) + G_STRUCT_OFFSET (MonoArrayBounds, length));
+				       bounds_reg, sizeof (MonoArrayBounds) + MONO_STRUCT_OFFSET (MonoArrayBounds, length));
 	MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, high2_reg, realidx2_reg);
 	MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException");
 
@@ -4912,7 +4912,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, sum_reg, mult_reg, realidx2_reg);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PMUL_IMM, mult2_reg, sum_reg, size);
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, mult2_reg, arr->dreg);
-	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
+	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, MONO_STRUCT_OFFSET (MonoArray, vector));
 
 	ins->type = STACK_MP;
 	ins->klass = klass;
@@ -5061,7 +5061,7 @@ emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean sa
 		} else if (sp [1]->opcode == OP_ICONST) {
 			int array_reg = sp [0]->dreg;
 			int index_reg = sp [1]->dreg;
-			int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + G_STRUCT_OFFSET (MonoArray, vector);
+			int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
 			if (safety_checks)
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
@@ -5270,7 +5270,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_EMIT_BOUNDS_CHECK (cfg, args [0]->dreg, MonoString, length, index_reg);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-			EMIT_NEW_X86_LEA (cfg, ins, args [0]->dreg, index_reg, 1, G_STRUCT_OFFSET (MonoString, chars));
+			EMIT_NEW_X86_LEA (cfg, ins, args [0]->dreg, index_reg, 1, MONO_STRUCT_OFFSET (MonoString, chars));
 			add_reg = ins->dreg;
 			/* Avoid a warning */
 			mult_reg = 0;
@@ -5280,7 +5280,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, mult_reg, index_reg, 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, mult_reg, args [0]->dreg);
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg, 
-								   add_reg, G_STRUCT_OFFSET (MonoString, chars));
+								   add_reg, MONO_STRUCT_OFFSET (MonoString, chars));
 #endif
 			type_from_op (ins, NULL, NULL);
 			return ins;
@@ -5301,7 +5301,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			/* The corlib functions check for oob already. */
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, mult_reg, args [1]->dreg, 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, mult_reg, args [0]->dreg);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, add_reg, G_STRUCT_OFFSET (MonoString, chars), args [2]->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, add_reg, MONO_STRUCT_OFFSET (MonoString, chars), args [2]->dreg);
 			return cfg->cbb->last_ins;
 		} else 
 			return NULL;
@@ -5310,8 +5310,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "GetType") == 0) {
 			int dreg = alloc_ireg_ref (cfg);
 			int vt_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, G_STRUCT_OFFSET (MonoVTable, type));
+			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, type));
 			type_from_op (ins, NULL, NULL);
 
 			return ins;
@@ -5351,22 +5351,22 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			NEW_BBLOCK (cfg, szarray_bb);
 
 			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOAD_MEMBASE, bounds_reg,
-										 args [0]->dreg, G_STRUCT_OFFSET (MonoArray, bounds));
+										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, szarray_bb);
 			/* Non-szarray case */
 			if (get_length)
 				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, length));
+									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
 			else
 				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 			MONO_START_BB (cfg, szarray_bb);
 			/* Szarray case */
 			if (get_length)
 				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   args [0]->dreg, G_STRUCT_OFFSET (MonoArray, max_length));
+									   args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
 			else
 				MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 			MONO_START_BB (cfg, end_bb);
@@ -5385,9 +5385,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int dreg = alloc_ireg (cfg);
 			int vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOAD_MEMBASE, vtable_reg, 
-												 args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+												 args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU1_MEMBASE, dreg,
-								   vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
+								   vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 			type_from_op (ins, NULL, NULL);
 
 			return ins;
@@ -5395,7 +5395,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int dreg = alloc_ireg (cfg);
 
 			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
-										 args [0]->dreg, G_STRUCT_OFFSET (MonoArray, max_length));
+										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
 			type_from_op (ins, NULL, NULL);
 
 			return ins;
@@ -5404,7 +5404,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == runtime_helpers_class) {
 
 		if (strcmp (cmethod->name, "get_OffsetToStringData") == 0) {
-			EMIT_NEW_ICONST (cfg, ins, G_STRUCT_OFFSET (MonoString, chars));
+			EMIT_NEW_ICONST (cfg, ins, MONO_STRUCT_OFFSET (MonoString, chars));
 			return ins;
 		} else
 			return NULL;
@@ -6746,7 +6746,7 @@ emit_managed_static_data_access (MonoCompile *cfg, MonoInst *thread_ins, int off
 	// idx = (offset >> 24) - 1;
 	// return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
 	static_data_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, G_STRUCT_OFFSET (MonoInternalThread, static_data));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
 	idx_reg = alloc_ireg (cfg);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, idx_reg, offset_reg, 24);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, idx_reg, idx_reg, 1);
@@ -7200,7 +7200,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->gsharedvt_locals_var = locals_var;
 
 		dreg = alloc_ireg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, dreg, var->dreg, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, locals_size));
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, dreg, var->dreg, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, locals_size));
 
 		MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
 		ins->dreg = locals_var->dreg;
@@ -10374,7 +10374,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				//	return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
 				MONO_ADD_INS (cfg->cbb, thread_ins);
 				static_data_reg = alloc_ireg (cfg);
-				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, G_STRUCT_OFFSET (MonoInternalThread, static_data));
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
 
 				if (cfg->compile_aot) {
 					int offset_reg, offset2_reg, idx_reg;
@@ -10744,7 +10744,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *iargs [3];
 				int add_reg = alloc_ireg_mp (cfg);
 
-				EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, add_reg, ins->dreg, G_STRUCT_OFFSET (MonoArray, vector));
+				EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, add_reg, ins->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 				if (cfg->compile_aot) {
 					EMIT_NEW_AOTCONST_TOKEN (cfg, iargs [1], MONO_PATCH_INFO_RVA, method->klass->image, GPOINTER_TO_UINT(field_token), STACK_PTR, NULL);
 				} else {
@@ -10841,7 +10841,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else if (sp [1]->opcode == OP_ICONST) {
 				int array_reg = sp [0]->dreg;
 				int index_reg = sp [1]->dreg;
-				int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + G_STRUCT_OFFSET (MonoArray, vector);
+				int offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, array_reg, offset);
@@ -10930,7 +10930,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!src_var)
 				src_var = mono_compile_create_var_for_vreg (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL, sp [0]->dreg);
 			EMIT_NEW_VARLOADA (cfg, src, src_var, src_var->inst_vtype);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, src->dreg, G_STRUCT_OFFSET (MonoTypedRef, klass));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, src->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, klass));
 
 			if (context_used) {
 				MonoInst *klass_ins;
@@ -10944,7 +10944,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				mini_emit_class_check (cfg, klass_reg, klass);
 			}
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, src->dreg, G_STRUCT_OFFSET (MonoTypedRef, value));
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, src->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, value));
 			ins->type = STACK_MP;
 			*sp++ = ins;
 			ip += 5;
@@ -10973,22 +10973,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int type_reg = alloc_preg (cfg);
 
 				const_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, klass), const_ins->dreg);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, type_reg, const_ins->dreg, G_STRUCT_OFFSET (MonoClass, byval_arg));
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, type), type_reg);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, klass), const_ins->dreg);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, type_reg, const_ins->dreg, MONO_STRUCT_OFFSET (MonoClass, byval_arg));
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, type), type_reg);
 			} else if (cfg->compile_aot) {
 				int const_reg = alloc_preg (cfg);
 				int type_reg = alloc_preg (cfg);
 
 				MONO_EMIT_NEW_CLASSCONST (cfg, const_reg, klass);
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, klass), const_reg);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, type_reg, const_reg, G_STRUCT_OFFSET (MonoClass, byval_arg));
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, type), type_reg);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, klass), const_reg);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, type_reg, const_reg, MONO_STRUCT_OFFSET (MonoClass, byval_arg));
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, type), type_reg);
 			} else {
-				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, type), &klass->byval_arg);
-				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, klass), klass);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, type), &klass->byval_arg);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, klass), klass);
 			}
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, value), sp [0]->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, value), sp [0]->dreg);
 
 			EMIT_NEW_TEMPLOAD (cfg, ins, loc->inst_c0);
 			ins->type = STACK_VTYPE;
@@ -12108,7 +12108,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!src_var)
 					src_var = mono_compile_create_var_for_vreg (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL, sp [0]->dreg);
 				EMIT_NEW_VARLOADA (cfg, src, src_var, src_var->inst_vtype);
-				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &mono_defaults.typehandle_class->byval_arg, src->dreg, G_STRUCT_OFFSET (MonoTypedRef, type));
+				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &mono_defaults.typehandle_class->byval_arg, src->dreg, MONO_STRUCT_OFFSET (MonoTypedRef, type));
 				*sp++ = ins;
 				ip += 2;
 				break;
@@ -13234,7 +13234,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						g_assert_not_reached ();
 					}
 					reg2 = alloc_ireg (cfg);
-					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, G_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
+					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
 					/* Load the locals area address */
 					reg3 = alloc_ireg (cfg);
 					if (locals_var->opcode == OP_REGOFFSET) {

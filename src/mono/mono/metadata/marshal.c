@@ -23,6 +23,7 @@
 #include "metadata/tabledefs.h"
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
+#include "mono/metadata/abi-details.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/threads.h"
@@ -1086,9 +1087,9 @@ static int
 mono_mb_emit_proxy_check (MonoMethodBuilder *mb, int branch_code)
 {
 	int pos;
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -1102,9 +1103,9 @@ static int
 mono_mb_emit_xdomain_check (MonoMethodBuilder *mb, int branch_code)
 {
 	int pos;
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	mono_mb_emit_icon (mb, -1);
 	pos = mono_mb_emit_branch (mb, branch_code);
@@ -1120,9 +1121,9 @@ mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
 	if (offset < 0)
 		mono_marshal_find_bitfield_offset (MonoClass, contextbound, &offset, &mask);
 
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_ldflda (mb, offset);
 	mono_mb_emit_byte (mb, CEE_LDIND_U1);
@@ -1317,7 +1318,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			/* copy the elements */
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
+			mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
@@ -1703,7 +1704,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_ldloc (mb, 0);	
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);	
-			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, vector));
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 			mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_CPBLK);			
@@ -1858,7 +1859,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoSafeHandle, handle));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
@@ -1867,7 +1868,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	case MONO_MARSHAL_CONV_HANDLEREF: {
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoHandleRef, handle));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
@@ -3867,12 +3868,12 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	/* Get the target domain id */
 
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_byte (mb, CEE_DUP);
 	mono_mb_emit_stloc (mb, loc_real_proxy);
 
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	mono_mb_emit_stloc (mb, loc_domainid);
 
@@ -4370,7 +4371,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	
 	/* get this->prev */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoMulticastDelegate, prev));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_stloc (mb, local_prev);
 	mono_mb_emit_ldloc (mb, local_prev);
@@ -4398,7 +4399,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 	/* get this->target */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, target));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, target));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_stloc (mb, local_target);
 
@@ -4417,7 +4418,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			for (i = 0; i < sig->param_count; ++i)
 				mono_mb_emit_ldarg (mb, i + 1);
 			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 			mono_mb_emit_byte (mb, CEE_LDIND_I );
 			mono_mb_emit_op (mb, CEE_CALLI, sig);
 
@@ -4450,7 +4451,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		for (i = 0; i < sig->param_count; ++i)
 			mono_mb_emit_ldarg (mb, i + 1);
 		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		mono_mb_emit_byte (mb, CEE_LDIND_I );
 		mono_mb_emit_op (mb, CEE_CALLI, invoke_sig);
 	}
@@ -5598,9 +5599,9 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 
 	/* if this->rp->context == mono_context_get goto pos3 */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, context));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoRealProxy, context));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_icall (mb, mono_context_get);
 	pos3 = mono_mb_emit_branch (mb, CEE_BEQ);
@@ -5612,9 +5613,9 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 
 	/* return the address of the field from this->rp->unwrapped_server */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoRealProxy, unwrapped_server));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
@@ -6784,7 +6785,7 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* Pull the handle field from SafeHandle */
 		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoSafeHandle, handle));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, conv_arg);
 
@@ -6831,7 +6832,7 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* refval.handle = returned_handle */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
-			mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoSafeHandle, handle));
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_byte (mb, CEE_STIND_I);
 		} else {
@@ -6870,7 +6871,7 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* Set the return.handle to the value, am using ldflda, not sure if thats a good idea */
 		mono_mb_emit_ldloc (mb, 3);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoSafeHandle, handle));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
 		mono_mb_emit_ldloc (mb, intptr_handle_slot);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
@@ -6920,7 +6921,7 @@ emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		} 
 		mono_mb_emit_ldarg_addr (mb, argnum);
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoHandleRef, handle));
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoHandleRef, handle));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, conv_arg);
@@ -8005,7 +8006,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (eklass->blittable) {
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_byte (mb, CEE_CONV_I);
-			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
+			mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -8122,7 +8123,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* src */
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_byte (mb, CEE_CONV_I);
-			mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
+			mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			/* length */
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -9779,7 +9780,7 @@ mono_marshal_get_castclass_with_cache (void)
 
 	/*obj_vtable = obj->vtable;*/
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, 0);
 
@@ -9872,7 +9873,7 @@ mono_marshal_get_isinst_with_cache (void)
 
 	/*obj_vtable = obj->vtable;*/
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, 0);
 
@@ -10183,7 +10184,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 #ifndef DISABLE_JIT
 	/* get the real proxy from the transparent proxy*/
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
 	
 	/* get the reflection type from the type handle */
@@ -10710,11 +10711,11 @@ static void
 load_array_class (MonoMethodBuilder *mb, int aklass)
 {
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, element_class));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, element_class));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, aklass);
 }
@@ -10723,9 +10724,9 @@ static void
 load_value_class (MonoMethodBuilder *mb, int vklass)
 {
 	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, vklass);
 }
@@ -10965,22 +10966,22 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/* if (vklass->idepth < aklass->idepth) goto failue */
 		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
 		b2 = mono_mb_emit_branch (mb, CEE_BLT_UN);
 
 		/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
 		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, supertypes));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, supertypes));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, CEE_SUB);
@@ -11044,20 +11045,20 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/* vt = value->vtable */
 		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, vtable);
 
 		/* uiid = klass->interface_id; */
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, interface_id));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, interface_id));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 		mono_mb_emit_stloc (mb, uiid);
 
 		/*if (uiid > vt->max_interface_id)*/
 		mono_mb_emit_ldloc (mb, uiid);
 		mono_mb_emit_ldloc (mb, vtable);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, max_interface_id));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 		b2 = mono_mb_emit_branch (mb, CEE_BGT_UN);
 
@@ -11065,7 +11066,7 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/*vt->interface_bitmap*/
 		mono_mb_emit_ldloc (mb, vtable);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, interface_bitmap));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, interface_bitmap));
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 		/*uiid >> 3*/
@@ -11228,40 +11229,40 @@ mono_marshal_get_stelemref ()
 	
 	/* aklass = array->vtable->klass->element_class */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, element_class));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, element_class));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, aklass);
 	
 	/* vklass = value->vtable->klass */
 	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, vklass);
 	
 	/* if (vklass->idepth < aklass->idepth) goto failue */
 	mono_mb_emit_ldloc (mb, vklass);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	
 	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	
 	b2 = mono_mb_emit_branch (mb, CEE_BLT_UN);
 	
 	/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
 	mono_mb_emit_ldloc (mb, vklass);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, supertypes));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, supertypes));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	
 	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	mono_mb_emit_icon (mb, 1);
 	mono_mb_emit_byte (mb, CEE_SUB);
@@ -11448,7 +11449,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 
 	/* bounds = array->bounds; */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, bounds));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, bounds));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, bounds);
 
@@ -11456,7 +11457,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	/* ind = idx0 - bounds [0].lower_bound */
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldloc (mb, bounds);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+	mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	mono_mb_emit_byte (mb, CEE_SUB);
@@ -11464,7 +11465,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	/* if (ind >= bounds [0].length) goto exeception; */
 	mono_mb_emit_ldloc (mb, ind);
 	mono_mb_emit_ldloc (mb, bounds);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArrayBounds, length));
+	mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	/* note that we use unsigned comparison */
@@ -11479,7 +11480,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		/* realidx = idxi - bounds [i].lower_bound */
 		mono_mb_emit_ldarg (mb, 1 + i);
 		mono_mb_emit_ldloc (mb, bounds);
-		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		mono_mb_emit_byte (mb, CEE_SUB);
@@ -11487,14 +11488,14 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		/* if (realidx >= bounds [i].length) goto exeception; */
 		mono_mb_emit_ldloc (mb, realidx);
 		mono_mb_emit_ldloc (mb, bounds);
-		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + G_STRUCT_OFFSET (MonoArrayBounds, length));
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, length));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		branch_positions [i] = mono_mb_emit_branch (mb, CEE_BGE_UN);
 		/* ind = ind * bounds [i].length + realidx */
 		mono_mb_emit_ldloc (mb, ind);
 		mono_mb_emit_ldloc (mb, bounds);
-		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + G_STRUCT_OFFSET (MonoArrayBounds, length));
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, length));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I4);
 		mono_mb_emit_byte (mb, CEE_MUL);
@@ -11505,7 +11506,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 
 	/* return array->vector + ind * element_size */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoArray, vector));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 	mono_mb_emit_ldloc (mb, ind);
 	mono_mb_emit_icon (mb, elem_size);
 	mono_mb_emit_byte (mb, CEE_MUL);
@@ -12427,11 +12428,6 @@ mono_class_native_size (MonoClass *klass, guint32 *align)
 	return klass->marshal_info->native_size;
 }
 
-/* __alignof__ returns the preferred alignment of values not the actual alignment used by
-   the compiler so is wrong e.g. for Linux where doubles are aligned on a 4 byte boundary
-   but __alignof__ returns 8 - using G_STRUCT_OFFSET works better */
-#define ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
-
 /*
  * mono_type_native_stack_size:
  * @t: the type to return the size it uses on the stack
@@ -12480,11 +12476,11 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 		*align = 4;
 		return 4;
 	case MONO_TYPE_R8:
-		*align = ALIGNMENT (gdouble);
+		*align = MONO_ABI_ALIGNOF (double);
 		return 8;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		*align = ALIGNMENT (glong);
+		*align = MONO_ABI_ALIGNOF (gint64);
 		return 8;
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (t)) {
@@ -12543,13 +12539,13 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		return 4;
 	case MONO_NATIVE_I8:
 	case MONO_NATIVE_U8:
-		*align = ALIGNMENT(guint64);
+		*align = MONO_ABI_ALIGNOF (gint64);
 		return 8;
 	case MONO_NATIVE_R4:
 		*align = 4;
 		return 4;
 	case MONO_NATIVE_R8:
-		*align = ALIGNMENT(double);
+		*align = MONO_ABI_ALIGNOF (double);
 		return 8;
 	case MONO_NATIVE_INT:
 	case MONO_NATIVE_UINT:
@@ -12567,7 +12563,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 	case MONO_NATIVE_ASANY:
 	case MONO_NATIVE_FUNC:
 	case MONO_NATIVE_LPSTRUCT:
-		*align = ALIGNMENT(gpointer);
+		*align = MONO_ABI_ALIGNOF (gpointer);
 		return sizeof (gpointer);
 	case MONO_NATIVE_STRUCT: 
 		klass = mono_class_from_mono_type (type);

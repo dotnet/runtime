@@ -260,6 +260,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/profiler-private.h>
@@ -5598,8 +5599,8 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		start = code = mono_global_codeman_reserve (size);
 
 		/* Replace the this argument with the target */
-		s390_lg   (code, s390_r1, 0, s390_r2, G_STRUCT_OFFSET(MonoDelegate, method_ptr));
-		s390_lg   (code, s390_r2, 0, s390_r2, G_STRUCT_OFFSET(MonoDelegate, target));
+		s390_lg   (code, s390_r1, 0, s390_r2, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		s390_lg   (code, s390_r2, 0, s390_r2, MONO_STRUCT_OFFSET (MonoDelegate, target));
 		s390_br   (code, s390_r1);
 		g_assert ((code - start) <= size);
 
@@ -5610,7 +5611,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		size = 32 + param_count * 8;
 		start = code = mono_global_codeman_reserve (size);
 
-		s390_lg   (code, s390_r1, 0, s390_r2, G_STRUCT_OFFSET(MonoDelegate, method_ptr));
+		s390_lg   (code, s390_r1, 0, s390_r2, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		/* slide down the arguments */
 		for (i = 0; i < param_count; ++i) {
 			s390_lgr (code, (s390_r2 + i), (s390_r2 + i + 1));

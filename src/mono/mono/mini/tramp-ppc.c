@@ -14,6 +14,7 @@
 #include <config.h>
 #include <glib.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
@@ -545,7 +546,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		ppc_mr (code, ppc_r4, PPC_FIRST_ARG_REG);
 	} else {
 		/* load rgctx ptr from vtable */
-		ppc_ldptr (code, ppc_r4, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), PPC_FIRST_ARG_REG);
+		ppc_ldptr (code, ppc_r4, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context), PPC_FIRST_ARG_REG);
 		/* is the rgctx ptr null? */
 		ppc_compare_reg_imm (code, 0, ppc_r4, 0);
 		/* if yes, jump to actual trampoline */

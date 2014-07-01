@@ -10,6 +10,7 @@
 #include <config.h>
 #include <glib.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
@@ -622,7 +623,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 	if (!mrgctx) {
 		/* load rgctx ptr from vtable */
-		x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 4);
+		x86_mov_reg_membase (code, X86_EAX, X86_EAX, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 4);
 		/* is the rgctx ptr null? */
 		x86_test_reg_reg (code, X86_EAX, X86_EAX);
 		/* if yes, jump to actual trampoline */
@@ -834,7 +835,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to ECX */
-		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EAX, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 4);
 
 		if (mono_gc_is_moving ()) {
 			/*if bit zero is set it's a thin hash*/
@@ -865,7 +866,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 			code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
 		}
 		/* load TID into EDX */
-		x86_mov_reg_membase (code, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
+		x86_mov_reg_membase (code, X86_EDX, X86_EDX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 
 		/* is synchronization->owner null? */
 		x86_alu_membase_imm (code, X86_CMP, X86_ECX, owner_offset, 0);
@@ -975,7 +976,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to ECX */
-		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EAX, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 4);
 
 		if (mono_gc_is_moving ()) {
 			/*if bit zero is set it's a thin hash*/
@@ -1006,7 +1007,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 			code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
 		}
 		/* load TID into EDX */
-		x86_mov_reg_membase (code, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
+		x86_mov_reg_membase (code, X86_EDX, X86_EDX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 		/* is synchronization->owner == TID */
 		x86_alu_membase_reg (code, X86_CMP, X86_ECX, owner_offset, X86_EDX);
 		/* if no, jump to actual trampoline */
@@ -1121,7 +1122,7 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	if (mono_get_jit_tls_offset () != -1) {
 		code = mono_x86_emit_tls_get (code, X86_EAX, mono_get_jit_tls_offset ());
-		x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 4);
+		x86_mov_reg_membase (code, X86_EAX, X86_EAX, MONO_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 4);
 	} else {
 		/*Slow path uses a c helper*/
 		x86_call_code (code, handler_block_trampoline_helper);
