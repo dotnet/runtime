@@ -4385,22 +4385,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ATOMIC_ADD_I4:
-		case OP_ATOMIC_ADD_I8: {
-			guint8 *loop = code, *branch;
+		CASE_PPC64 (OP_ATOMIC_ADD_I8) {
+			int location = ins->inst_basereg;
+			int addend = ins->sreg2;
+			guint8 *loop, *branch;
 			g_assert (ins->inst_offset == 0);
+
+			loop = code;
 			ppc_sync (code);
 			if (ins->opcode == OP_ATOMIC_ADD_I4)
-				ppc_lwarx (code, ppc_r0, 0, ins->inst_basereg);
+				ppc_lwarx (code, ppc_r0, 0, location);
+#ifdef __mono_ppc64__
 			else
-				ppc_ldarx (code, ppc_r0, 0, ins->inst_basereg);
-			ppc_add (code, ppc_r0, ppc_r0, ins->sreg2);
+				ppc_ldarx (code, ppc_r0, 0, location);
+#endif
+
+			ppc_add (code, ppc_r0, ppc_r0, addend);
+
 			if (ins->opcode == OP_ATOMIC_ADD_I4)
-				ppc_stwcxd (code, ppc_r0, 0, ins->inst_basereg);
+				ppc_stwcxd (code, ppc_r0, 0, location);
+#ifdef __mono_ppc64__
 			else
-				ppc_stdcxd (code, ppc_r0, 0, ins->inst_basereg);
+				ppc_stdcxd (code, ppc_r0, 0, location);
+#endif
+
 			branch = code;
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 			ppc_patch (branch, loop);
+
 			ppc_sync (code);
 			ppc_mr (code, ins->dreg, ppc_r0);
 			break;
@@ -4435,10 +4447,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				ppc_ldarx (code, ppc_r0, 0, location);
 #endif
-			ppc_cmp (code, 0, ins->opcode == OP_ATOMIC_CAS_I4 ? 0 : 1, ppc_r0, comparand);
 
+			ppc_cmp (code, 0, ins->opcode == OP_ATOMIC_CAS_I4 ? 0 : 1, ppc_r0, comparand);
 			not_equal = code;
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+
 			if (ins->opcode == OP_ATOMIC_CAS_I4)
 				ppc_stwcxd (code, value, 0, location);
 #ifdef __mono_ppc64__
@@ -4449,8 +4462,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			lost_reservation = code;
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 			ppc_patch (lost_reservation, start);
-
 			ppc_patch (not_equal, code);
+
 			ppc_sync (code);
 			ppc_mr (code, ins->dreg, ppc_r0);
 			break;
@@ -5950,9 +5963,9 @@ gboolean
 mono_arch_opcode_supported (int opcode)
 {
 	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_CAS_I4:
 #ifdef TARGET_POWERPC64
-	case OP_ATOMIC_ADD_I4: /* Yes, really - see cpu-ppc(64).md. */
 	case OP_ATOMIC_ADD_I8:
 	case OP_ATOMIC_CAS_I8:
 #endif
