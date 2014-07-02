@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2014 Xamarin Inc
  */
 #ifndef __MONO_METADATA_ABI_DETAILS_H__

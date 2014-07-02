@@ -64,6 +64,8 @@ DECL_OFFSET(MonoVTable, rank)
 DECL_OFFSET(MonoVTable, type)
 DECL_OFFSET(MonoVTable, runtime_generic_context)
 
+DECL_OFFSET(MonoDomain, stack_overflow_ex)
+
 DECL_OFFSET(MonoDelegate, target)
 DECL_OFFSET(MonoDelegate, method_ptr)
 DECL_OFFSET(MonoDelegate, invoke_impl)
