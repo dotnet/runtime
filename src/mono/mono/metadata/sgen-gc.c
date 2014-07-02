@@ -322,9 +322,6 @@ static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
 #endif
 
-int stat_minor_gcs = 0;
-int stat_major_gcs = 0;
-
 static long long stat_pinned_objects = 0;
 
 static long long time_minor_pre_collection_fragment_clear = 0;
@@ -2211,7 +2208,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 		return TRUE;
 
 	MONO_GC_BEGIN (GENERATION_NURSERY);
-	binary_protocol_collection_begin (stat_minor_gcs, GENERATION_NURSERY);
+	binary_protocol_collection_begin (gc_stats.minor_gc_count, GENERATION_NURSERY);
 
 	verify_nursery ();
 
@@ -2237,7 +2234,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, sgen_get_nursery_end ());
 
-	SGEN_LOG (1, "Start nursery collection %d %p-%p, size: %d", stat_minor_gcs, sgen_get_nursery_start (), nursery_next, (int)(nursery_next - sgen_get_nursery_start ()));
+	SGEN_LOG (1, "Start nursery collection %d %p-%p, size: %d", gc_stats.minor_gc_count, sgen_get_nursery_start (), nursery_next, (int)(nursery_next - sgen_get_nursery_start ()));
 	max_garbage_amount = nursery_next - sgen_get_nursery_start ();
 	g_assert (nursery_section->size >= max_garbage_amount);
 
@@ -2261,7 +2258,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	init_gray_queue ();
 
-	stat_minor_gcs++;
 	gc_stats.minor_gc_count ++;
 
 	MONO_GC_CHECKPOINT_1 (GENERATION_NURSERY);
@@ -2429,7 +2425,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	gc_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	if (heap_dump_file)
-		dump_heap ("minor", stat_minor_gcs - 1, NULL);
+		dump_heap ("minor", gc_stats.minor_gc_count - 1, NULL);
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
@@ -2457,7 +2453,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	objects_pinned = 0;
 
 	MONO_GC_END (GENERATION_NURSERY);
-	binary_protocol_collection_end (stat_minor_gcs - 1, GENERATION_NURSERY);
+	binary_protocol_collection_end (gc_stats.minor_gc_count - 1, GENERATION_NURSERY);
 
 	if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 		sgen_check_nursery_objects_pinned (unpin_queue != NULL);
@@ -2755,7 +2751,7 @@ static void
 major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 {
 	MONO_GC_BEGIN (GENERATION_OLD);
-	binary_protocol_collection_begin (stat_major_gcs, GENERATION_OLD);
+	binary_protocol_collection_begin (gc_stats.major_gc_count, GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
 #ifndef DISABLE_PERFCOUNTERS
@@ -2785,8 +2781,7 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 	check_scan_starts ();
 
 	degraded_mode = 0;
-	SGEN_LOG (1, "Start major collection %d", stat_major_gcs);
-	stat_major_gcs++;
+	SGEN_LOG (1, "Start major collection %d", gc_stats.major_gc_count);
 	gc_stats.major_gc_count ++;
 
 	if (major_collector.start_major_collection)
@@ -2945,7 +2940,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	time_major_fragment_creation += TV_ELAPSED (btv, atv);
 
 	if (heap_dump_file)
-		dump_heap ("major", stat_major_gcs - 1, reason);
+		dump_heap ("major", gc_stats.major_gc_count - 1, reason);
 
 	if (fin_ready_list || critical_fin_list) {
 		SGEN_LOG (4, "Finalizer-thread wakeup: ready %d", num_ready_finalizers);
@@ -2971,7 +2966,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	//consistency_check ();
 
 	MONO_GC_END (GENERATION_OLD);
-	binary_protocol_collection_end (stat_major_gcs - 1, GENERATION_OLD);
+	binary_protocol_collection_end (gc_stats.major_gc_count - 1, GENERATION_OLD);
 }
 
 static gboolean
@@ -4319,8 +4314,8 @@ int
 mono_gc_collection_count (int generation)
 {
 	if (generation == 0)
-		return stat_minor_gcs;
-	return stat_major_gcs;
+		return gc_stats.minor_gc_count;
+	return gc_stats.major_gc_count;
 }
 
 int64_t
