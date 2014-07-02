@@ -198,7 +198,8 @@ common_sources = \
 	file-mmap-windows.c	\
 	file-mmap.h	\
 	object-offsets.h	\
-	abi-details.h
+	abi-details.h	\
+	metadata-cross-helpers.c
 
 
 # These source files have compile time dependencies on GC code

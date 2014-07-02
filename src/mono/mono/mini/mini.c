@@ -7219,6 +7219,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	InitializeCriticalSection (&jit_mutex);
 
+	mono_cross_helpers_run ();
+
 	/* Happens when using the embedding interface */
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);

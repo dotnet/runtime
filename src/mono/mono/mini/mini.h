@@ -2783,6 +2783,8 @@ void mono_runtime_posix_install_handlers (void) MONO_INTERNAL;
 pid_t mono_runtime_syscall_fork (void) MONO_INTERNAL;
 void mono_gdb_render_native_backtraces (pid_t crashed_pid) MONO_INTERNAL;
 
+void mono_cross_helpers_run (void) MONO_INTERNAL;
+
 /*
  * Signal handling
  */
