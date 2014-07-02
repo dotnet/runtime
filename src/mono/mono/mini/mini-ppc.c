@@ -2430,6 +2430,7 @@ loop_start:
 		case OP_IDIV_IMM:
 		case OP_IREM_IMM:
 		case OP_IREM_UN_IMM:
+		CASE_PPC64 (OP_LREM_IMM) {
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
@@ -2442,9 +2443,12 @@ loop_start:
 				ins->opcode = OP_IDIV_UN;
 			else if (ins->opcode == OP_IREM_UN_IMM)
 				ins->opcode = OP_IREM_UN;
+			else if (ins->opcode == OP_LREM_IMM)
+				ins->opcode = OP_LREM;
 			last_ins = temp;
 			/* handle rem separately */
 			goto loop_start;
+		}
 		case OP_IREM:
 		case OP_IREM_UN:
 		CASE_PPC64 (OP_LREM)
