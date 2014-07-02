@@ -4,6 +4,7 @@
 /.libs
 /*.la
 /*.lo
+/*.trs
 /test-gc-memfuncs
 /test-mono-linked-list-set
 /test-sgen-qsort
