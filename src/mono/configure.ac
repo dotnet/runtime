@@ -2585,6 +2585,10 @@ case "$host" in
 			sgen_supported=true
 			AOT_SUPPORTED="yes"
 			;;
+		  darwin*)
+			sgen_supported=true
+			AOT_SUPPORTED="yes"
+			;;
 		  darwin*|openbsd*|freebsd*)
 			sgen_supported=true
 			;;
