@@ -289,7 +289,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 34
+#define MINOR_VERSION 35
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -401,7 +401,8 @@ typedef enum {
 
 typedef enum {
 	INVOKE_FLAG_DISABLE_BREAKPOINTS = 1,
-	INVOKE_FLAG_SINGLE_THREADED = 2
+	INVOKE_FLAG_SINGLE_THREADED = 2,
+	INVOKE_FLAG_RETURN_OUT_THIS = 4
 } InvokeFlags;
 
 typedef enum {
@@ -6582,7 +6583,6 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	/* 
 	 * Add an LMF frame to link the stack frames on the invoke method with our caller.
 	 */
-	/* FIXME: Move this to arch specific code */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	if (invoke->has_ctx) {
 		MonoLMF **lmf_addr;
@@ -6611,7 +6611,10 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		buffer_add_byte (buf, 0);
 		buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &exc, domain);
 	} else {
-		buffer_add_byte (buf, 1);
+		if ((invoke->flags & INVOKE_FLAG_RETURN_OUT_THIS) && CHECK_PROTOCOL_VERSION (2, 35))
+			buffer_add_byte (buf, 2);
+		else
+			buffer_add_byte (buf, 1);
 		if (sig->ret->type == MONO_TYPE_VOID) {
 			if (!strcmp (m->name, ".ctor") && !m->klass->valuetype) {
 				buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &this, domain);
@@ -6635,6 +6638,9 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		} else {
 			NOT_IMPLEMENTED;
 		}
+		if ((invoke->flags & INVOKE_FLAG_RETURN_OUT_THIS) && CHECK_PROTOCOL_VERSION (2, 35))
+			/* Return the new value of the receiver after the call */
+			buffer_add_value (buf, &m->klass->byval_arg, this_buf, domain);
 	}
 
 	tls->disable_breakpoints = FALSE;
