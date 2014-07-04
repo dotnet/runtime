@@ -2264,7 +2264,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 			;
 #else
 		while (1) {
-			sleep (0);
+			sleep (1);
 		}
 #endif
 	}
