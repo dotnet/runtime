@@ -603,7 +603,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);
 		mono_print_unwind_info (unwind_info, unwind_info_len);
 		*/
-		epilog = (guint8*)ji->code_start + ji->code_size - (ji->used_regs >> 16);
+		epilog = (guint8*)ji->code_start + ji->code_size - (ji->unwind_info >> 16);
  
 		regs [AMD64_RAX] = new_ctx->rax;
 		regs [AMD64_RBX] = new_ctx->rbx;

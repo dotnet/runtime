@@ -5327,10 +5327,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		guint8 *encoded;
 		guint32 unwind_desc;
 
-		/* 
-		 * This is a duplicate of the data in the .debug_frame section, but that
-		 * section cannot be accessed using the dl interface.
-		 */
 		encoded = mono_unwind_ops_encode (cfg->unwind_ops, &encoded_len);
 
 		unwind_desc = get_unwind_info_offset (acfg, encoded, encoded_len);
@@ -5347,7 +5343,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			encode_value (unwind_desc, p, &p);
 		}
 	} else {
-		encode_value (jinfo->used_regs, p, &p);
+		encode_value (jinfo->unwind_info, p, &p);
 	}
 
 	/*Encode the number of holes before the number of clauses to make decoding easier*/

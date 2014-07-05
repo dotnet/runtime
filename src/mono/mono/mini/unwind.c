@@ -646,7 +646,7 @@ mono_unwind_cleanup (void)
  * A copy is made of the unwind info.
  * This function is useful for two reasons:
  * - many methods have the same unwind info
- * - MonoJitInfo->used_regs is an int so it can't store the pointer to the unwind info
+ * - MonoJitInfo->unwind_info is an int so it can't store the pointer to the unwind info
  */
 guint32
 mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)

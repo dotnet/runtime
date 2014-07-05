@@ -2292,11 +2292,11 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		mono_domain_alloc0_lock_free (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * (ei_len + nested_len)) + extra_size);
 
 	jinfo->code_size = code_len;
-	jinfo->used_regs = mono_cache_unwind_info (info.unw_info, info.unw_info_len);
+	jinfo->unwind_info = mono_cache_unwind_info (info.unw_info, info.unw_info_len);
 	jinfo->d.method = method;
 	jinfo->code_start = code;
 	jinfo->domain_neutral = 0;
-	/* This signals that used_regs points to a normal cached unwind info */
+	/* This signals that unwind_info points to a normal cached unwind info */
 	jinfo->from_aot = 0;
 	jinfo->num_clauses = ei_len + nested_len;
 
@@ -2378,7 +2378,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 {
 	int i, buf_len, num_clauses, len;
 	MonoJitInfo *jinfo;
-	guint used_int_regs, flags;
+	guint unwind_info, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes, has_arch_eh_jit_info;
 	gboolean from_llvm, has_gc_map;
 	guint8 *p;
@@ -2401,13 +2401,10 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	has_arch_eh_jit_info = (flags & 128) != 0;
 
 	if (has_dwarf_unwind_info) {
-		guint32 offset;
-
-		offset = decode_value (p, &p);
-		g_assert (offset < (1 << 30));
-		used_int_regs = offset;
+		unwind_info = decode_value (p, &p);
+		g_assert (unwind_info < (1 << 30));
 	} else {
-		used_int_regs = decode_value (p, &p);
+		unwind_info = decode_value (p, &p);
 	}
 	if (has_generic_jit_info)
 		generic_info_size = sizeof (MonoGenericJitInfo);
@@ -2499,7 +2496,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		}
 
 		jinfo->code_size = code_len;
-		jinfo->used_regs = used_int_regs;
+		jinfo->unwind_info = unwind_info;
 		jinfo->d.method = method;
 		jinfo->code_start = code;
 		jinfo->domain_neutral = 0;
@@ -2700,8 +2697,8 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 		mono_aot_unlock ();
 	}
 
-	/* The upper 16 bits of ji->used_regs might contain the epilog offset */
-	p = amodule->unwind_info + (ji->used_regs & 0xffff);
+	/* The upper 16 bits of ji->unwind_info might contain the epilog offset */
+	p = amodule->unwind_info + (ji->unwind_info & 0xffff);
 	*unwind_info_len = decode_value (p, &p);
 	return p;
 }

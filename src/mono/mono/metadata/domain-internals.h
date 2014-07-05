@@ -197,8 +197,7 @@ struct _MonoJitInfo {
 	} d;
 	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
-	/* This might contain an id for the unwind info instead of a register mask */
-	guint32     used_regs;
+	guint32     unwind_info;
 	int         code_size;
 	guint32     num_clauses:15;
 	/* Whenever the code is domain neutral or 'shared' */
