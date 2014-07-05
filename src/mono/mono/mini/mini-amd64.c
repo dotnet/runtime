@@ -7151,7 +7151,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->lmf_var ? ((MonoInst*)cfg->lmf_var)->inst_offset : -1;
 	gint32 save_area_offset = cfg->arch.reg_save_area_offset;
-	
+
 	max_epilog_size = get_max_epilog_size (cfg);
 
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
@@ -7161,6 +7161,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	code = cfg->native_code + cfg->code_len;
+
+	cfg->has_unwind_info_for_epilog = TRUE;
+
+	/* Mark the start of the epilog */
+	mono_emit_unwind_op_mark_loc (cfg, code, 0);
+
+	/* Save the uwind state which is needed by the out-of-line code */
+	mono_emit_unwind_op_remember_state (cfg, code);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
@@ -7199,8 +7207,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	for (i = 0; i < AMD64_NREG; ++i) {
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 			/* Restore only used_int_regs, not arch.saved_iregs */
-			if (cfg->used_int_regs & (1 << i))
+			if (cfg->used_int_regs & (1 << i)) {
 				amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
+				mono_emit_unwind_op_same_value (cfg, code, i);
+				async_exc_point (code);
+			}
 			save_area_offset += 8;
 		}
 	}
@@ -7231,13 +7242,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	if (cfg->arch.omit_fp) {
-		if (cfg->arch.stack_alloc_size)
+		if (cfg->arch.stack_alloc_size) {
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
+		}
 	} else {
 		amd64_leave (code);
+		mono_emit_unwind_op_same_value (cfg, code, AMD64_RBP);
 	}
+	mono_emit_unwind_op_def_cfa (cfg, code, AMD64_RSP, 8);
 	async_exc_point (code);
 	amd64_ret (code);
+
+	/* Restore the unwind state to be the same as before the epilog */
+	mono_emit_unwind_op_restore_state (cfg, code);
 
 	cfg->code_len = code - cfg->native_code;
 

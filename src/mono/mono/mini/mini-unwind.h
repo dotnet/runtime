@@ -60,6 +60,13 @@
 #define DW_CFA_lo_user           0x1c
 #define DW_CFA_hi_user           0x3f
 
+/*
+ * Mono extension, advance loc to a location stored outside the unwind info.
+ * This is required to make the unwind descriptors sharable, since otherwise each one would contain
+ * an advance_loc with a different offset just before the unwind ops for the epilog.
+ */
+#define DW_CFA_mono_advance_loc DW_CFA_lo_user
+
 /* Represents one unwind instruction */
 typedef struct {
 	guint8 op; /* One of DW_CFA_... */
@@ -84,6 +91,16 @@ typedef struct {
 #define mono_emit_unwind_op_same_value(cfg,ip,reg) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_same_value, (reg), 0)
 /* Reg is saved at cfa+offset */
 #define mono_emit_unwind_op_offset(cfg,ip,reg,offset) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_offset, (reg), (offset))
+/* Save the unwind state into an implicit stack */
+#define mono_emit_unwind_op_remember_state(cfg,ip) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_remember_state, 0, 0)
+/* Restore the unwind state from the state stack */
+#define mono_emit_unwind_op_restore_state(cfg,ip) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_restore_state, 0, 0)
+/*
+ * Mark the current location as a location stored outside the unwind info, which will be passed
+ * explicitly to mono_unwind_frame () in the MARK_LOCATIONS argument. This allows the unwind info
+ * to be shared among multiple methods.
+ */
+#define mono_emit_unwind_op_mark_loc(cfg,ip,n) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_mono_advance_loc, 0, (n))
 
 /* Similar macros usable when a cfg is not available, like for trampolines */
 #define mono_add_unwind_op_def_cfa(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa, (reg), (offset))); } while (0)
@@ -127,7 +144,8 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len) MONO_INTERNAL;
 
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
-				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, mgreg_t *regs, int nregs,
+				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
+				   mgreg_t *regs, int nregs,
 				   mgreg_t **save_locations, int save_locations_len,
 				   guint8 **out_cfa) MONO_INTERNAL;
 

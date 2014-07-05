@@ -1499,6 +1499,7 @@ typedef struct {
 	guint            has_atomic_exchange_i4 : 1;
 	guint            has_atomic_cas_i4 : 1;
 	guint            check_pinvoke_callconv : 1;
+	guint            has_unwind_info_for_epilog : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;

@@ -2700,7 +2700,8 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 		mono_aot_unlock ();
 	}
 
-	p = amodule->unwind_info + ji->used_regs;
+	/* The upper 16 bits of ji->used_regs might contain the epilog offset */
+	p = amodule->unwind_info + (ji->used_regs & 0xffff);
 	*unwind_info_len = decode_value (p, &p);
 	return p;
 }

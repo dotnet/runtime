@@ -4638,8 +4638,21 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	} else if (cfg->unwind_ops) {
 		guint32 info_len;
 		guint8 *unwind_info = mono_unwind_ops_encode (cfg->unwind_ops, &info_len);
+		guint32 unwind_desc;
 
-		jinfo->used_regs = mono_cache_unwind_info (unwind_info, info_len);
+		unwind_desc = mono_cache_unwind_info (unwind_info, info_len);
+
+		if (cfg->has_unwind_info_for_epilog) {
+			/*
+			 * The lower 16 bits identify the unwind descriptor, the upper 16 bits contain the offset of
+			 * the start of the epilog from the end of the method.
+			 */
+			g_assert (unwind_desc < 0xffff);
+			g_assert (cfg->code_size - cfg->epilog_begin < 0xffff);
+			jinfo->used_regs = ((cfg->code_size - cfg->epilog_begin) << 16) | unwind_desc;
+		} else {
+			jinfo->used_regs = unwind_desc;
+		}
 		g_free (unwind_info);
 	}
 

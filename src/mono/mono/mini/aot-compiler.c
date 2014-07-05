@@ -5325,14 +5325,27 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (use_unwind_ops) {
 		guint32 encoded_len;
 		guint8 *encoded;
+		guint32 unwind_desc;
 
 		/* 
 		 * This is a duplicate of the data in the .debug_frame section, but that
 		 * section cannot be accessed using the dl interface.
 		 */
 		encoded = mono_unwind_ops_encode (cfg->unwind_ops, &encoded_len);
-		encode_value (get_unwind_info_offset (acfg, encoded, encoded_len), p, &p);
-		g_free (encoded);
+
+		unwind_desc = get_unwind_info_offset (acfg, encoded, encoded_len);
+		g_assert (unwind_desc < 0xffff);
+		if (cfg->has_unwind_info_for_epilog) {
+			/*
+			 * The lower 16 bits identify the unwind descriptor, the upper 16 bits contain the offset of
+			 * the start of the epilog from the end of the method.
+			 */
+			g_assert (cfg->code_size - cfg->epilog_begin < 0xffff);
+			encode_value (((cfg->code_size - cfg->epilog_begin) << 16) | unwind_desc, p, &p);
+			g_free (encoded);
+		} else {
+			encode_value (unwind_desc, p, &p);
+		}
 	} else {
 		encode_value (jinfo->used_regs, p, &p);
 	}

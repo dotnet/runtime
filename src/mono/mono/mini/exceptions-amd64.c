@@ -590,6 +590,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
+		guint8 *epilog;
 
 		frame->type = FRAME_TYPE_MANAGED;
 
@@ -602,6 +603,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);
 		mono_print_unwind_info (unwind_info, unwind_info_len);
 		*/
+		epilog = (guint8*)ji->code_start + ji->code_size - (ji->used_regs >> 16);
  
 		regs [AMD64_RAX] = new_ctx->rax;
 		regs [AMD64_RBX] = new_ctx->rbx;
@@ -619,7 +621,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, regs, MONO_MAX_IREGS + 1, 
+						   ip, &epilog, regs, MONO_MAX_IREGS + 1,
 						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		new_ctx->rax = regs [AMD64_RAX];
