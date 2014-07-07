@@ -123,8 +123,6 @@ DECL_OFFSET(SgenThreadInfo, tlab_temp_end)
 
 #ifndef DISABLE_JIT_OFFSETS
 DECL_OFFSET(MonoLMF, previous_lmf)
-DECL_OFFSET(MonoLMF, method)
-DECL_OFFSET(MonoLMF, lmf_addr)
 
 DECL_OFFSET(MonoMethodRuntimeGenericContext, class_vtable)
 
@@ -157,6 +155,8 @@ DECL_OFFSET(MonoContext, esp)
 DECL_OFFSET(MonoContext, ebp)
 DECL_OFFSET(MonoContext, eip)
 
+DECL_OFFSET(MonoLMF, method)
+DECL_OFFSET(MonoLMF, lmf_addr)
 DECL_OFFSET(MonoLMF, esp)
 DECL_OFFSET(MonoLMF, ebx)
 DECL_OFFSET(MonoLMF, edi)
@@ -170,6 +170,8 @@ DECL_OFFSET (MonoContext, pc)
 DECL_OFFSET (MonoContext, regs)
 DECL_OFFSET (MonoContext, fregs)
 
+DECL_OFFSET(MonoLMF, method)
+DECL_OFFSET(MonoLMF, lmf_addr)
 DECL_OFFSET(MonoLMF, sp)
 DECL_OFFSET(MonoLMF, fp)
 DECL_OFFSET(MonoLMF, ip)
@@ -181,6 +183,41 @@ DECL_OFFSET(SeqPointInfo, ss_trigger_page)
 
 DECL_OFFSET(DynCallArgs, res)
 DECL_OFFSET(DynCallArgs, res2)
+#endif
+
+#ifdef TARGET_AMD64
+DECL_OFFSET(MonoContext, rax)
+DECL_OFFSET(MonoContext, rcx)
+DECL_OFFSET(MonoContext, rdx)
+DECL_OFFSET(MonoContext, rbx)
+DECL_OFFSET(MonoContext, rbp)
+DECL_OFFSET(MonoContext, rsi)
+DECL_OFFSET(MonoContext, rdi)
+DECL_OFFSET(MonoContext, rsp)
+DECL_OFFSET(MonoContext, r8)
+DECL_OFFSET(MonoContext, r9)
+DECL_OFFSET(MonoContext, r10)
+DECL_OFFSET(MonoContext, r12)
+DECL_OFFSET(MonoContext, r13)
+DECL_OFFSET(MonoContext, r14)
+DECL_OFFSET(MonoContext, r15)
+DECL_OFFSET(MonoContext, rip)
+
+#ifdef TARGET_WIN32
+DECL_OFFSET(MonoLMF, lmf_addr)
+#endif
+
+DECL_OFFSET(MonoLMF, rsp)
+DECL_OFFSET(MonoLMF, rbp)
+DECL_OFFSET(MonoLMF, rip)
+
+DECL_OFFSET(SeqPointInfo, bp_addrs)
+DECL_OFFSET(DynCallArgs, res)
+DECL_OFFSET(SeqPointInfo, ss_trigger_page)
+
+DECL_OFFSET(MonoLMFTramp, regs)
+DECL_OFFSET(MonoLMFTramp, lmf_addr)
+
 #endif
 
 #endif

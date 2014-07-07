@@ -206,6 +206,28 @@ typedef struct MonoCompileArch {
 	gpointer lmf_var;
 } MonoCompileArch;
 
+
+
+#ifdef HOST_WIN32
+#define PARAM_REGS 4
+#else
+#define PARAM_REGS 6
+#endif
+
+/* Structure used by the sequence points in AOTed code */
+typedef struct {
+	gpointer ss_trigger_page;
+	gpointer bp_trigger_page;
+	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
+} SeqPointInfo;
+
+typedef struct {
+	mgreg_t regs [PARAM_REGS];
+	mgreg_t res;
+	guint8 *ret;
+} DynCallArgs;
+
+
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)

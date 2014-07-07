@@ -71,13 +71,6 @@ static CRITICAL_SECTION mini_arch_mutex;
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
-/* Structure used by the sequence points in AOTed code */
-typedef struct {
-	gpointer ss_trigger_page;
-	gpointer bp_trigger_page;
-	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
-} SeqPointInfo;
-
 /*
  * The code generated for sequence points reads from this location, which is
  * made read-only when single stepping is enabled.
@@ -537,14 +530,10 @@ typedef struct {
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
 #ifdef HOST_WIN32
-#define PARAM_REGS 4
-
 static AMD64_Reg_No param_regs [] = { AMD64_RCX, AMD64_RDX, AMD64_R8, AMD64_R9 };
 
 static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
 #else
-#define PARAM_REGS 6
- 
 static AMD64_Reg_No param_regs [] = { AMD64_RDI, AMD64_RSI, AMD64_RDX, AMD64_RCX, AMD64_R8, AMD64_R9 };
 
  static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
@@ -2619,12 +2608,6 @@ typedef struct {
 	CallInfo *cinfo;
 } ArchDynCallInfo;
 
-typedef struct {
-	mgreg_t regs [PARAM_REGS];
-	mgreg_t res;
-	guint8 *ret;
-} DynCallArgs;
-
 static gboolean
 dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 {
@@ -3766,21 +3749,21 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	 * sp is saved right before calls but we need to save it here too so
 	 * async stack walks would work.
 	 */
-	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 	/* Save rbp */
-	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
 	if (cfg->arch.omit_fp && cfa_offset != -1)
-		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - (cfa_offset - (lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp))));
+		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - (cfa_offset - (lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp))));
 
 	/* These can't contain refs */
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
 #ifdef HOST_WIN32
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
 #endif
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
 	/* These are handled automatically by the stack marking code */
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
 
 	return code;
 }
@@ -3796,7 +3779,7 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 {
 	if (jit_tls_offset != -1) {
 		code = mono_amd64_emit_tls_get (code, AMD64_RAX, jit_tls_offset);
-		amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+		amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
 	} else {
 		/* 
 		 * The call might clobber argument registers, but they are already
@@ -3809,10 +3792,10 @@ emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args
 	}
 
 	/* Save lmf_addr */
-	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
 	/* Save previous_lmf */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
-	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
 	/* Set new lmf */
 	amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
 	amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
@@ -3831,8 +3814,8 @@ static guint8*
 emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 {
 	/* Restore previous lmf */
-	amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-	amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
+	amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
+	amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
 
 	return code;
@@ -4307,7 +4290,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				/* Load info var */
 				amd64_mov_reg_membase (code, AMD64_R11, info_var->inst_basereg, info_var->inst_offset, 8);
-				val = ((offset) * sizeof (guint8*)) + G_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				val = ((offset) * sizeof (guint8*)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [offset], which is either a valid address or the address of a trigger page */
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, val, 8);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, 8);
@@ -4938,12 +4921,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Save result */
 			amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
-			amd64_mov_membase_reg (code, AMD64_R11, G_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
+			amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
 			break;
 		}
 		case OP_AMD64_SAVE_SP_TO_LMF: {
 			MonoInst *lmf_var = cfg->lmf_var;
-			amd64_mov_membase_reg (code, lmf_var->inst_basereg, lmf_var->inst_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+			amd64_mov_membase_reg (code, lmf_var->inst_basereg, lmf_var->inst_offset + MONO_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
 		}
 		case OP_X86_PUSH:
@@ -7127,7 +7110,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		if (cfg->compile_aot) {
 			amd64_mov_reg_membase (code, AMD64_R11, info_var->inst_basereg, info_var->inst_offset, 8);
-			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, G_STRUCT_OFFSET (SeqPointInfo, ss_trigger_page), 8);
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, MONO_STRUCT_OFFSET (SeqPointInfo, ss_trigger_page), 8);
 		} else {
 			amd64_mov_reg_imm (code, AMD64_R11, (guint64)ss_trigger_page);
 		}
@@ -7188,7 +7171,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */
-			amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RCX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 8);
+			amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RCX, MONO_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 8);
 			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 			patch = code;
 			x86_branch8 (code, X86_CC_Z, 0, FALSE);
@@ -7199,7 +7182,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
-			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), 8);
+			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
 		}
 	}
 

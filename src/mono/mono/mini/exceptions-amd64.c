@@ -19,6 +19,7 @@
 #endif
 
 #include <mono/arch/amd64/amd64-codegen.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -207,21 +208,21 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG1, 8);
 
 	/* Restore all registers except %rip and %r11 */
-	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rax), 8);
-	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rcx), 8);
-	amd64_mov_reg_membase (code, AMD64_RDX, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rdx), 8);
-	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rbx), 8);
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rbp), 8);
-	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rsi), 8);
-	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rdi), 8);
-	//amd64_mov_reg_membase (code, AMD64_R8, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r8), 8);
-	//amd64_mov_reg_membase (code, AMD64_R9, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r9), 8);
-	//amd64_mov_reg_membase (code, AMD64_R10, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r10), 8);
-	amd64_mov_reg_membase (code, AMD64_R12, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r12), 8);
-	amd64_mov_reg_membase (code, AMD64_R13, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r13), 8);
-	amd64_mov_reg_membase (code, AMD64_R14, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r14), 8);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rax), 8);
+	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rcx), 8);
+	amd64_mov_reg_membase (code, AMD64_RDX, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rdx), 8);
+	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rbx), 8);
+	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rbp), 8);
+	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rsi), 8);
+	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rdi), 8);
+	//amd64_mov_reg_membase (code, AMD64_R8, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r8), 8);
+	//amd64_mov_reg_membase (code, AMD64_R9, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r9), 8);
+	//amd64_mov_reg_membase (code, AMD64_R10, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r10), 8);
+	amd64_mov_reg_membase (code, AMD64_R12, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r12), 8);
+	amd64_mov_reg_membase (code, AMD64_R13, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r13), 8);
+	amd64_mov_reg_membase (code, AMD64_R14, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r14), 8);
 #if !defined(__native_client_codegen__)
-	amd64_mov_reg_membase (code, AMD64_R15, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r15), 8);
+	amd64_mov_reg_membase (code, AMD64_R15, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, r15), 8);
 #endif
 
 	/*
@@ -232,8 +233,8 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	 * size.  Hence the stack pointer can be restored only after
 	 * we have finished loading everything from the context.
 	 */
-	amd64_mov_reg_membase (code, AMD64_R8, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rsp), 8);
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rip), 8);
+	amd64_mov_reg_membase (code, AMD64_R8, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rsp), 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11,  MONO_STRUCT_OFFSET (MonoContext, rip), 8);
 	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_R8, 8);
 
 	/* jump to the saved IP */
@@ -293,18 +294,18 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
 
 	/* set new EBP */
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, rbp), 8);
+	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoContext, rbp), 8);
 	/* load callee saved regs */
-	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, rbx), 8);
-	amd64_mov_reg_membase (code, AMD64_R12, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r12), 8);
-	amd64_mov_reg_membase (code, AMD64_R13, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r13), 8);
-	amd64_mov_reg_membase (code, AMD64_R14, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r14), 8);
+	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoContext, rbx), 8);
+	amd64_mov_reg_membase (code, AMD64_R12, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoContext, r12), 8);
+	amd64_mov_reg_membase (code, AMD64_R13, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoContext, r13), 8);
+	amd64_mov_reg_membase (code, AMD64_R14, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoContext, r14), 8);
 #if !defined(__native_client_codegen__)
-	amd64_mov_reg_membase (code, AMD64_R15, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r15), 8);
+	amd64_mov_reg_membase (code, AMD64_R15, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoContext, r15), 8);
 #endif
 #ifdef TARGET_WIN32
-	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rdi), 8);
-	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rsi), 8);
+	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  MONO_STRUCT_OFFSET (MonoContext, rdi), 8);
+	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  MONO_STRUCT_OFFSET (MonoContext, rsi), 8);
 #endif
 
 	/* call the handler */
@@ -1401,25 +1402,25 @@ mono_tasklets_arch_restore (void)
 	amd64_mov_reg_reg (code, cont_reg, MONO_AMD64_ARG_REG1, 8);
 	amd64_mov_reg_reg (code, AMD64_RAX, MONO_AMD64_ARG_REG2, 8);
 	/* setup the copy of the stack */
-	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, G_STRUCT_OFFSET (MonoContinuation, stack_used_size), sizeof (int));
+	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, stack_used_size), sizeof (int));
 	amd64_shift_reg_imm (code, X86_SHR, AMD64_RCX, 3);
 	x86_cld (code);
-	amd64_mov_reg_membase (code, AMD64_RSI, cont_reg, G_STRUCT_OFFSET (MonoContinuation, saved_stack), sizeof (gpointer));
-	amd64_mov_reg_membase (code, AMD64_RDI, cont_reg, G_STRUCT_OFFSET (MonoContinuation, return_sp), sizeof (gpointer));
+	amd64_mov_reg_membase (code, AMD64_RSI, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, saved_stack), sizeof (gpointer));
+	amd64_mov_reg_membase (code, AMD64_RDI, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_sp), sizeof (gpointer));
 	amd64_prefix (code, X86_REP_PREFIX);
 	amd64_movsl (code);
 
 	/* now restore the registers from the LMF */
 	NOT_IMPLEMENTED;
-	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, G_STRUCT_OFFSET (MonoContinuation, lmf), 8);
-	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsp), 8);
+	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, lmf), 8);
+	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rsp), 8);
 
 	/* restore the lmf chain */
 	/*x86_mov_reg_membase (code, X86_ECX, X86_ESP, 12, 4);
 	x86_mov_membase_reg (code, X86_ECX, 0, X86_EDX, 4);*/
 
 	/* state is already in rax */
-	amd64_jump_membase (code, cont_reg, G_STRUCT_OFFSET (MonoContinuation, return_ip));
+	amd64_jump_membase (code, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_ip));
 	g_assert ((code - start) <= kMaxCodeSize);
 
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
