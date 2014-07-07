@@ -4501,7 +4501,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 {
 	MonoInst *ptr;
 	int dreg;
-	gpointer *trampoline;
+	MonoDelegateTrampInfo *trampoline;
 	MonoInst *obj, *method_ins, *tramp_ins;
 	MonoDomain *domain;
 	guint8 **code_slot;
@@ -4565,10 +4565,17 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		del_tramp->method = context_used ? NULL : method;
 		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
-		trampoline = mono_create_delegate_trampoline_info (cfg->domain, klass, context_used ? NULL : method)->invoke_impl;
+		trampoline = mono_create_delegate_trampoline_info (cfg->domain, klass, context_used ? NULL : method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
 	}
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
+
+	dreg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
+
+	dreg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), dreg);
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
 

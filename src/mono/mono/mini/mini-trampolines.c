@@ -1151,6 +1151,9 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 	}
 
+	/* Necessary for !code condition to fallback to slow path */
+	code = NULL;
+
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
 		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature (method)->param_count == mono_method_signature (invoke)->param_count + 1)
@@ -1158,18 +1161,20 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			code = impl_this;
 		else
 			code = delegate->target ? impl_this : impl_nothis;
-
-		if (code) {
-			delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
-			return code;
-		}
 	}
 
-	/* The general, unoptimized case */
-	m = mono_marshal_get_delegate_invoke (invoke, delegate);
-	code = mono_compile_method (m);
-	code = mini_add_method_trampoline (NULL, m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
+	if (!code) {
+		/* The general, unoptimized case */
+		m = mono_marshal_get_delegate_invoke (invoke, delegate);
+		code = mono_compile_method (m);
+		code = mini_add_method_trampoline (NULL, m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
+	}
+
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
+	if (enable_caching && !callvirt && tramp_info->method) {
+		tramp_info->method_ptr = delegate->method_ptr;
+		tramp_info->invoke_impl = delegate->invoke_impl;
+	}
 
 	return code;
 }
