@@ -1177,7 +1177,7 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 }
 
 void *
-mono_gc_scan_object (void *obj)
+mono_gc_scan_object (void *obj, void *gc_data)
 {
 	g_assert_not_reached ();
 	return NULL;

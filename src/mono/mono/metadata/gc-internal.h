@@ -151,8 +151,8 @@ void* mono_gc_make_root_descr_all_refs (int numbits) MONO_INTERNAL;
  * foreach (ref in GC references in the are structure pointed to by ADDR)
  *    mark_func (ref)
  */
-typedef void (*MonoGCMarkFunc)     (void **addr);
-typedef void (*MonoGCRootMarkFunc) (void *addr, MonoGCMarkFunc mark_func);
+typedef void (*MonoGCMarkFunc)     (void **addr, void *gc_data);
+typedef void (*MonoGCRootMarkFunc) (void *addr, MonoGCMarkFunc mark_func, void *gc_data);
 
 /* Create a descriptor with a user defined marking function */
 MONO_API void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
@@ -276,7 +276,7 @@ typedef struct {
 	 * - in the second pass, it should mark the remaining areas of the stack
 	 *   using precise marking by calling mono_gc_scan_object ().
 	 */
-	void (*thread_mark_func) (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise);
+	void (*thread_mark_func) (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise, void *gc_data);
 } MonoGCCallbacks;
 
 /* Set the callback functions callable by the GC */
@@ -289,7 +289,7 @@ MonoGCCallbacks *mono_gc_get_gc_callbacks (void) MONO_INTERNAL;
 void mono_gc_conservatively_scan_area (void *start, void *end) MONO_INTERNAL;
 
 /* Scan OBJ, returning its new address */
-void *mono_gc_scan_object (void *obj) MONO_INTERNAL;
+void *mono_gc_scan_object (void *obj, void *gc_data) MONO_INTERNAL;
 
 /* Return the bitmap encoded by a descriptor */
 gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;

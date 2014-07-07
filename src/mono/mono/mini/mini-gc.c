@@ -1103,7 +1103,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
  * pass.
  */
 static void
-precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
+precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end, void *gc_data)
 {
 	int findex, i;
 	FrameInfo *fi;
@@ -1141,7 +1141,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					MonoObject *obj = *ptr;
 					if (obj) {
 						DEBUG (fprintf (logfile, "\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, obj));
-						*ptr = mono_gc_scan_object (obj);
+						*ptr = mono_gc_scan_object (obj, gc_data);
 						DEBUG (fprintf (logfile, " %p.\n", *ptr));
 					} else {
 						DEBUG (fprintf (logfile, "\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, obj));
@@ -1182,7 +1182,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 			if (obj) {
 				DEBUG (fprintf (logfile, "\treg %s saved at %p: %p ->", mono_arch_regname (fi->regs [i]), ptr, obj));
-				*ptr = mono_gc_scan_object (obj);
+				*ptr = mono_gc_scan_object (obj, gc_data);
 				DEBUG (fprintf (logfile, " %p.\n", *ptr));
 			} else {
 				DEBUG (fprintf (logfile, "\treg %s saved at %p: %p\n", mono_arch_regname (fi->regs [i]), ptr, obj));
@@ -1210,7 +1210,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
  * structure filled up by thread_suspend_func. 
  */
 static void
-thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
+thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise, void *gc_data)
 {
 	TlsData *tls = user_data;
 
@@ -1221,7 +1221,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	if (!precise)
 		conservative_pass (tls, stack_start, stack_end);
 	else
-		precise_pass (tls, stack_start, stack_end);
+		precise_pass (tls, stack_start, stack_end, gc_data);
 }
 
 #ifndef DISABLE_JIT

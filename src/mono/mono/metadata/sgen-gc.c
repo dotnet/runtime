@@ -1236,24 +1236,10 @@ typedef struct {
 	GrayQueue *queue;
 } UserCopyOrMarkData;
 
-static MonoNativeTlsKey user_copy_or_mark_key;
-
 static void
-init_user_copy_or_mark_key (void)
+single_arg_user_copy_or_mark (void **obj, void *gc_data)
 {
-	mono_native_tls_alloc (&user_copy_or_mark_key, NULL);
-}
-
-static void
-set_user_copy_or_mark_data (UserCopyOrMarkData *data)
-{
-	mono_native_tls_set_value (user_copy_or_mark_key, data);
-}
-
-static void
-single_arg_user_copy_or_mark (void **obj)
-{
-	UserCopyOrMarkData *data = mono_native_tls_get_value (user_copy_or_mark_key);
+	UserCopyOrMarkData *data = gc_data;
 
 	data->func (obj, data->queue);
 }
@@ -1309,9 +1295,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 	case ROOT_DESC_USER: {
 		UserCopyOrMarkData data = { copy_func, queue };
 		MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-		set_user_copy_or_mark_data (&data);
-		marker (start_root, single_arg_user_copy_or_mark);
-		set_user_copy_or_mark_data (NULL);
+		marker (start_root, single_arg_user_copy_or_mark, &data);
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -1453,7 +1437,7 @@ report_finalizer_roots (void)
 static GCRootReport *root_report;
 
 static void
-single_arg_report_root (void **obj)
+single_arg_report_root (void **obj, void *gc_data)
 {
 	if (*obj)
 		add_profile_gc_root (root_report, *obj, MONO_PROFILE_GC_ROOT_OTHER, 0);
@@ -1495,7 +1479,7 @@ precisely_report_roots_from (GCRootReport *report, void** start_root, void** end
 	case ROOT_DESC_USER: {
 		MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
 		root_report = report;
-		marker (start_root, single_arg_report_root);
+		marker (start_root, single_arg_report_root, NULL);
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -3710,9 +3694,9 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 }
 
 void*
-mono_gc_scan_object (void *obj)
+mono_gc_scan_object (void *obj, void *gc_data)
 {
-	UserCopyOrMarkData *data = mono_native_tls_get_value (user_copy_or_mark_key);
+	UserCopyOrMarkData *data = gc_data;
 	current_object_ops.copy_or_mark_object (&obj, data->queue);
 	return obj;
 }
@@ -3744,9 +3728,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
 		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 			UserCopyOrMarkData data = { NULL, queue };
-			set_user_copy_or_mark_data (&data);
-			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
-			set_user_copy_or_mark_data (NULL);
+			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise, &data);
 		} else if (!precise) {
 			if (!conservative_stack_mark) {
 				fprintf (stderr, "Precise stack mark not supported - disabling.\n");
@@ -4565,8 +4547,6 @@ mono_gc_base_init (void)
 
 	LOCK_INIT (sgen_interruption_mutex);
 	LOCK_INIT (pin_queue_mutex);
-
-	init_user_copy_or_mark_key ();
 
 	if ((env = g_getenv (MONO_GC_PARAMS_NAME))) {
 		opts = g_strsplit (env, ",", -1);

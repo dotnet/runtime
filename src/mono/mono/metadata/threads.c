@@ -3577,7 +3577,7 @@ static const int static_data_size [NUM_STATIC_DATA_IDX] = {
 static uintptr_t* static_reference_bitmaps [NUM_STATIC_DATA_IDX];
 
 static void
-mark_tls_slots (void *addr, MonoGCMarkFunc mark_func)
+mark_tls_slots (void *addr, MonoGCMarkFunc mark_func, void *gc_data)
 {
 	int i;
 	gpointer *static_data = addr;
@@ -3593,7 +3593,7 @@ mark_tls_slots (void *addr, MonoGCMarkFunc mark_func)
 			void ** p = ptr;
 			while (bmap) {
 				if ((bmap & 1) && *p) {
-					mark_func (p);
+					mark_func (p, gc_data);
 				}
 				p++;
 				bmap >>= 1;

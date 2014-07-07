@@ -640,7 +640,7 @@ static MonoObject *check_key = NULL;
 static RootRecord *check_root = NULL;
 
 static void
-check_root_obj_specific_ref_from_marker (void **obj)
+check_root_obj_specific_ref_from_marker (void **obj, void *gc_data)
 {
 	check_root_obj_specific_ref (check_root, check_key, *obj);
 }
@@ -687,7 +687,7 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 		}
 		case ROOT_DESC_USER: {
 			MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-			marker (start_root, check_root_obj_specific_ref_from_marker);
+			marker (start_root, check_root_obj_specific_ref_from_marker, NULL);
 			break;
 		}
 		case ROOT_DESC_RUN_LEN:
@@ -731,6 +731,13 @@ static MonoDomain *check_domain = NULL;
 
 static void
 check_obj_not_in_domain (void **o)
+{
+	g_assert (((MonoObject*)(*o))->vtable->domain != check_domain);
+}
+
+
+static void
+check_obj_not_in_domain_callback (void **o, void *gc_data)
 {
 	g_assert (((MonoObject*)(*o))->vtable->domain != check_domain);
 }
@@ -779,7 +786,7 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 		}
 		case ROOT_DESC_USER: {
 			MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-			marker (start_root, check_obj_not_in_domain);
+			marker (start_root, check_obj_not_in_domain_callback, NULL);
 			break;
 		}
 		case ROOT_DESC_RUN_LEN:
