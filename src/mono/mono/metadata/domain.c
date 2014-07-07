@@ -856,13 +856,13 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 {
 	MonoJitInfo *ji;
 
-	mono_appdomains_lock ();
+	g_assert (mono_root_domain);
+	mono_domain_lock (mono_root_domain);
 
 	/*
 	 * We reuse MonoJitInfoTable to store AOT module info,
 	 * this gives us async-safe lookup.
 	 */
-	g_assert (mono_root_domain);
 	if (!mono_root_domain->aot_modules) {
 		mono_root_domain->num_jit_info_tables ++;
 		mono_root_domain->aot_modules = jit_info_table_new (mono_root_domain);
@@ -874,7 +874,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 	ji->code_size = (guint8*)end - (guint8*)start;
 	jit_info_table_add (mono_root_domain, &mono_root_domain->aot_modules, ji);
 
-	mono_appdomains_unlock ();
+	mono_domain_unlock (mono_root_domain);
 }
 
 void
