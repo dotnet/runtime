@@ -2567,7 +2567,7 @@ case "$host" in
 			sgen_supported=true
 			AOT_SUPPORTED="yes"
 			;;
-		  darwin*|openbsd*|freebsd*)
+		  openbsd*|freebsd*)
 			sgen_supported=true
 		        ;;
 		esac
