@@ -296,7 +296,7 @@ done:
 	return (void*)handle;
 }
 
-#define MONO_ANON_FILE_TEMPLATE "/tmp/mono.anonmap.XXXXXXXXX"
+#define MONO_ANON_FILE_TEMPLATE "/mono.anonmap.XXXXXXXXX"
 static void*
 open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, int options, int *error)
 {
@@ -326,8 +326,9 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 		//XXX should we ftruncate if the file is smaller than capacity?
 	} else {
 		int fd;
-		char file_name [sizeof (MONO_ANON_FILE_TEMPLATE) + 1];
-		int unused G_GNUC_UNUSED;
+		char *file_name;
+		const char *tmp_dir;
+		int unused G_GNUC_UNUSED, alloc_size;
 
 		if (mode == FILE_MODE_OPEN) {
 			*error = FILE_NOT_FOUND;
@@ -335,7 +336,16 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 		}
 		*capacity = align_up_to_page_size (*capacity);
 
-		strcpy (file_name, MONO_ANON_FILE_TEMPLATE);
+		tmp_dir = g_get_tmp_dir ();
+		alloc_size = strlen (tmp_dir) + strlen (MONO_ANON_FILE_TEMPLATE) + 1;
+		if (alloc_size > 1024) {//rather fail that stack overflow
+			*error = COULD_NOT_MAP_MEMORY;
+			goto done;
+		}
+		file_name = alloca (alloc_size);
+		strcpy (file_name, tmp_dir);
+		strcat (file_name, MONO_ANON_FILE_TEMPLATE);
+
 		fd = mkstemp (file_name);
 		if (fd == -1) {
 			*error = COULD_NOT_MAP_MEMORY;
