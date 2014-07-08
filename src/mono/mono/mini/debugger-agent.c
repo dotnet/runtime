@@ -6561,9 +6561,14 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			err = decode_value (sig->params [i], domain, (guint8*)&args [i], p, &p, end);
 			if (err)
 				break;
-
 			if (args [i] && ((MonoObject*)args [i])->vtable->domain != domain)
 				NOT_IMPLEMENTED;
+
+			if (sig->params [i]->byref) {
+				arg_buf [i] = g_alloca (sizeof (mgreg_t));
+				*(gpointer*)arg_buf [i] = args [i];
+				args [i] = arg_buf [i];
+			}
 		} else {
 			arg_buf [i] = g_alloca (mono_class_instance_size (mono_class_from_mono_type (sig->params [i])));
 			err = decode_value (sig->params [i], domain, arg_buf [i], p, &p, end);
