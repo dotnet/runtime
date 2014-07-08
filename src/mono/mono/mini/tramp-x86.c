@@ -26,6 +26,8 @@
 #include "mini.h"
 #include "mini-x86.h"
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
 /*
  * mono_arch_get_unbox_trampoline:
  * @m: method pointer
@@ -298,9 +300,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 {
 	char *tramp_name;
 	guint8 *buf, *code, *tramp;
-	int pushed_args, pushed_args_caller_saved;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
+	int i, offset, frame_size, regarray_offset, lmf_offset, caller_ip_offset, arg_offset;
 
 	unwind_ops = mono_arch_get_cie_program ();
 
@@ -311,65 +313,75 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * the ret address is at: esp + (pushed_args + 1) * sizeof (gpointer)
 	 */
 
-	/* Put all registers into an array on the stack
-	 * If this code is changed, make sure to update the offset value in
-	 * mono_arch_get_this_arg_from_call () in mini-x86.c.
-	 */
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
+	// FIXME: Unwind info
+
+	/* Compute frame offsets relative to the frame pointer %ebp */
+	arg_offset = sizeof (mgreg_t);
+	caller_ip_offset = 2 * sizeof (mgreg_t);
+	offset = 0;
+	offset += sizeof (MonoLMF);
+	lmf_offset = -offset;
+	offset += X86_NREG * sizeof (mgreg_t);
+	regarray_offset = -offset;
+	/* Argument area */
+	offset += 4 * sizeof (mgreg_t);
+	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/* Allocate frame */
 	x86_push_reg (code, X86_EBP);
-	x86_push_reg (code, X86_ESP);
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDX);
-	x86_push_reg (code, X86_ECX);
-	x86_push_reg (code, X86_EAX);
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP, sizeof (mgreg_t));
+	/* There are three words on the stack, adding + 4 aligns the stack to 16, which is needed on osx */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, frame_size + sizeof (mgreg_t));
 
-	pushed_args_caller_saved = pushed_args = 8;
+	/* Save all registers */
+	for (i = X86_EAX; i <= X86_EDI; ++i) {
+		int reg = i;
 
-	/* Align stack on apple */
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
+		if (i == X86_EBP) {
+			/* Save original ebp */
+			/* EAX is already saved */
+			x86_mov_reg_membase (code, X86_EAX, X86_EBP, 0, sizeof (mgreg_t));
+			reg = X86_EAX;
+		} else if (i == X86_ESP) {
+			/* Save original esp */
+			/* EAX is already saved */
+			x86_mov_reg_reg (code, X86_EAX, X86_EBP, sizeof (mgreg_t));
+			/* Saved ebp + trampoline arg + return addr */
+			x86_alu_reg_imm (code, X86_ADD, X86_EAX, 3 * sizeof (mgreg_t));
+			reg = X86_EAX;
+		}
+		x86_mov_membase_reg (code, X86_EBP, regarray_offset + (i * sizeof (mgreg_t)), reg, sizeof (mgreg_t));
+	}
 
-	pushed_args ++;
+	/* Setup LMF */
+	/* eip */
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+		x86_mov_membase_imm (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, eip), 0, sizeof (mgreg_t));
+	} else {
+		x86_mov_reg_membase (code, X86_EAX, X86_EBP, caller_ip_offset, sizeof (mgreg_t));
+		x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, eip), X86_EAX, sizeof (mgreg_t));
+	}
+	/* method */
+	if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP)) {
+		x86_mov_reg_membase (code, X86_EAX, X86_EBP, arg_offset, sizeof (mgreg_t));
+		x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), X86_EAX, sizeof (mgreg_t));
+	} else {
+		x86_mov_membase_imm (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), 0, sizeof (mgreg_t));
+	}
+	/* esp */
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, regarray_offset + (X86_ESP * sizeof (mgreg_t)), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, esp), X86_EAX, sizeof (mgreg_t));
+	/* callee save registers */
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, regarray_offset + (X86_EBX * sizeof (mgreg_t)), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebx), X86_EAX, sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, regarray_offset + (X86_EDI * sizeof (mgreg_t)), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, edi), X86_EAX, sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, regarray_offset + (X86_ESI * sizeof (mgreg_t)), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, esi), X86_EAX, sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, regarray_offset + (X86_EBP * sizeof (mgreg_t)), sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), X86_EAX, sizeof (mgreg_t));
 
-	/* save LMF begin */
-
-	/* save the IP (caller ip) */
-	if (tramp_type == MONO_TRAMPOLINE_JUMP)
-		x86_push_imm (code, 0);
-	else
-		x86_push_membase (code, X86_ESP, (pushed_args + 1) * sizeof (gpointer));
-
-	pushed_args++;
-
-	x86_push_reg (code, X86_EBP);
-	x86_push_reg (code, X86_ESI);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_EBX);
-
-	pushed_args += 4;
-
-	/* save ESP */
-	x86_push_reg (code, X86_ESP);
-	/* Adjust ESP so it points to the previous frame */
-	x86_alu_membase_imm (code, X86_ADD, X86_ESP, 0, (pushed_args + 2) * 4);
-
-	pushed_args ++;
-
-	/* save method info */
-	if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
-		x86_push_membase (code, X86_ESP, pushed_args * sizeof (gpointer));
-	else
-		x86_push_imm (code, 0);
-
-	pushed_args++;
-
-	/* On apple, the stack is correctly aligned to 16 bytes because pushed_args is
-	 * 16 and there is the extra trampoline arg + the return ip pushed by call
-	 * FIXME: Note that if an exception happens while some args are pushed
-	 * on the stack, the stack will be misaligned.
-	 */
-	g_assert (pushed_args == 16);
-
+	/* Push LMF */
 	/* get the address of lmf for the current thread */
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
@@ -377,42 +389,36 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	} else {
 		x86_call_code (code, mono_get_lmf_addr);
 	}
-	/* push lmf */
-	x86_push_reg (code, X86_EAX); 
-	/* push *lfm (previous_lmf) */
-	x86_push_membase (code, X86_EAX, 0);
+	/* lmf->lmf_addr = lmf_addr (%eax) */
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), X86_EAX, sizeof (mgreg_t));
+	/* lmf->previous_lmf = *(lmf_addr) */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX, 0, sizeof (mgreg_t));
 	/* Signal to mono_arch_find_jit_info () that this is a trampoline frame */
-	x86_alu_membase_imm (code, X86_ADD, X86_ESP, 0, 1);
-	/* *(lmf) = ESP */
-	x86_mov_membase_reg (code, X86_EAX, 0, X86_ESP, 4);
-	/* save LFM end */
+	x86_alu_reg_imm (code, X86_ADD, X86_ECX, 1);
+	x86_mov_membase_reg (code, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), X86_ECX, sizeof (mgreg_t));
+	/* *lmf_addr = lmf */
+	x86_lea_membase (code, X86_ECX, X86_EBP, lmf_offset);
+	x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
 
-	pushed_args += 2;
+	/* Call trampoline function */
+	/* Arg 1 - registers */
+	x86_lea_membase (code, X86_EAX, X86_EBP, regarray_offset);
+	x86_mov_membase_reg (code, X86_ESP, (0 * sizeof (mgreg_t)), X86_EAX, sizeof (mgreg_t));
+	/* Arg2 - calling code */
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+		x86_mov_membase_imm (code, X86_ESP, (1 * sizeof (mgreg_t)), 0, sizeof (mgreg_t));
+	} else {
+		x86_mov_reg_membase (code, X86_EAX, X86_EBP, caller_ip_offset, sizeof (mgreg_t));
+		x86_mov_membase_reg (code, X86_ESP, (1 * sizeof (mgreg_t)), X86_EAX, sizeof (mgreg_t));
+	}
+	/* Arg3 - trampoline argument */
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, arg_offset, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, X86_ESP, (2 * sizeof (mgreg_t)), X86_EAX, sizeof (mgreg_t));
+	/* Arg4 - trampoline address */
+	// FIXME:
+	x86_mov_membase_imm (code, X86_ESP, (3 * sizeof (mgreg_t)), 0, sizeof (mgreg_t));
 
-	/* starting the call sequence */
-
-	/* FIXME: Push the trampoline address */
-	x86_push_imm (code, 0);
-
-	pushed_args++;
-
-	/* push the method info */
-	x86_push_membase (code, X86_ESP, pushed_args * sizeof (gpointer));
-
-	pushed_args++;
-
-	/* push the return address onto the stack */
-	if (tramp_type == MONO_TRAMPOLINE_JUMP)
-		x86_push_imm (code, 0);
-	else
-		x86_push_membase (code, X86_ESP, (pushed_args + 1) * sizeof (gpointer));
-	pushed_args++;
-	/* push the address of the register array */
-	x86_lea_membase (code, X86_EAX, X86_ESP, (pushed_args - 8) * sizeof (gpointer));
-	x86_push_reg (code, X86_EAX);
-
-	pushed_args++;
-
+	// FIXME:
 #ifdef __APPLE__
 	/* check the stack is aligned after the ret ip is pushed */
 	/*x86_mov_reg_reg (buf, X86_EDX, X86_ESP, 4);
@@ -421,8 +427,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	x86_branch_disp (buf, X86_CC_Z, 3, FALSE);
 	x86_breakpoint (buf);*/
 #endif
-
-	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, X86_ESP, ((pushed_args + 2) * 4));
 
 	if (aot) {
 		char *icall_name = g_strdup_printf ("trampoline_func_%d", tramp_type);
@@ -433,96 +437,53 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		x86_call_code (code, tramp);
 	}
 
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4*4);
+	/*
+	 * Overwrite the trampoline argument with the address we need to jump to,
+	 * to free %eax.
+	 */
+	x86_mov_membase_reg (code, X86_EBP, arg_offset, X86_EAX, 4);
 
-	pushed_args -= 4;
-
-	/* Check for thread interruption */
-	/* This is not perf critical code so no need to check the interrupt flag */
-	/* Align the stack on osx */
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 3 * 4);
-	x86_push_reg (code, X86_EAX);
+	/* Check for interruptions */
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
 		x86_call_reg (code, X86_EAX);
 	} else {
 		x86_call_code (code, (guint8*)mono_thread_force_interruption_checkpoint);
 	}
-	x86_pop_reg (code, X86_EAX);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 3 * 4);
 
 	/* Restore LMF */
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof (mgreg_t));
+	x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof (mgreg_t));
+	x86_alu_reg_imm (code, X86_SUB, X86_ECX, 1);
+	x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
 
-	/* ebx = previous_lmf */
-	x86_pop_reg (code, X86_EBX);
-	pushed_args--;
-	x86_alu_reg_imm (code, X86_SUB, X86_EBX, 1);
-
-	/* edi = lmf */
-	x86_pop_reg (code, X86_EDI);
-	pushed_args--;
-
-	/* *(lmf) = previous_lmf */
-	x86_mov_membase_reg (code, X86_EDI, 0, X86_EBX, 4);
-
-	/* discard method info */
-	x86_pop_reg (code, X86_ESI);
-	pushed_args--;
-
-	/* discard ESP */
-	x86_pop_reg (code, X86_ESI);
-	pushed_args--;
-
-	/* restore caller saved regs */
-	x86_pop_reg (code, X86_EBX);
-	x86_pop_reg (code, X86_EDI);
-	x86_pop_reg (code, X86_ESI);
-	x86_pop_reg (code, X86_EBP);
-
-	pushed_args -= 4;
-
-	/* discard save IP */
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-	pushed_args--;
-
-	/* restore LMF end */
-
-	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
-		/* 
-		 * Overwrite the method ptr with the address we need to jump to,
-		 * to free %eax.
-		 */
-		x86_mov_membase_reg (code, X86_ESP, pushed_args * sizeof (gpointer), X86_EAX, 4);
+	/* Restore registers */
+	for (i = X86_EAX; i <= X86_EDI; ++i) {
+		if (i == X86_ESP || i == X86_EBP)
+			continue;
+		if (i == X86_EAX && !((tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT) || (tramp_type == MONO_TRAMPOLINE_AOT_PLT)))
+			continue;
+		x86_mov_reg_membase (code, i, X86_EBP, regarray_offset + (i * 4), 4);
 	}
 
-	/* Restore caller saved registers */
-	x86_mov_reg_membase (code, X86_ECX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_ECX) * 4, 4);
-	x86_mov_reg_membase (code, X86_EDX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_EDX) * 4, 4);
-	if ((tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT) || (tramp_type == MONO_TRAMPOLINE_AOT_PLT))
-		x86_mov_reg_membase (code, X86_EAX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_EAX) * 4, 4);
+	/* Restore frame */
+	x86_leave (code);
 
-	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
-		/* Pop saved reg array + stack align */
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 9 * 4);
-		pushed_args -= 9;
-		g_assert (pushed_args == 0);
-	} else {
-		/* Pop saved reg array + stack align + method ptr */
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 10 * 4);
-		pushed_args -= 10;
-
-		/* We've popped one more stack item than we've pushed (the
-		   method ptr argument), so we must end up at -1. */
-		g_assert (pushed_args == -1);
-	}
-
-	/*block guard trampolines are called with the stack aligned but must exit with the stack unaligned. */
-	if (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD) {
-		x86_pop_reg (code, X86_EAX);
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 0x8);
-		x86_jump_reg (code, X86_EAX);
-	} else {
+	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
+		/* Load the value returned by the trampoline */
+		x86_mov_reg_membase (code, X86_EAX, X86_ESP, 0, 4);
+		/* The trampoline returns normally, pop the trampoline argument */
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 		x86_ret (code);
+	} else {
+		/* The trampoline argument is at the top of the stack, and it contains the address we need to branch to */
+		if (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD) {
+			x86_pop_reg (code, X86_EAX);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 0x8);
+			x86_jump_reg (code, X86_EAX);
+		} else {
+			x86_ret (code);
+		}
 	}
 
 	nacl_global_codeman_validate (&buf, 256, &code);

@@ -1270,6 +1270,7 @@ typedef enum {
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
 
+/* These trampolines return normally to their caller */
 #define MONO_TRAMPOLINE_TYPE_MUST_RETURN(t)		\
 	((t) == MONO_TRAMPOLINE_CLASS_INIT ||		\
 	 (t) == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||	\

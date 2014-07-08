@@ -6183,10 +6183,8 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 	 * The stack looks like:
 	 * <other args>
 	 * <this=delegate>
-	 * <return addr>
-	 * <4 pointers pushed by mono_arch_create_trampoline_code ()>
 	 */
-	res = (((MonoObject**)esp) [5 + (offset / 4)]);
+	res = ((MonoObject**)esp) [0];
 	if (cinfo)
 		g_free (cinfo);
 	return res;
