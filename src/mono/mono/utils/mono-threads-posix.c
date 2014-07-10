@@ -9,6 +9,12 @@
 
 #include <config.h>
 
+#if defined(TARGET_OSX)
+/* For pthread_main_np () */
+#define _DARWIN_C_SOURCE 1
+#include <pthread.h>
+#endif
+
 #if defined(__OpenBSD__) || defined(__FreeBSD__)
 #include <pthread.h>
 #include <pthread_np.h>
@@ -187,14 +193,13 @@ mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self());
 	*stsize = pthread_get_stacksize_np (pthread_self());
 
-
 #ifdef TARGET_OSX
 	/*
 	 * Mavericks reports stack sizes as 512kb:
 	 * http://permalink.gmane.org/gmane.comp.java.openjdk.hotspot.devel/11590
 	 * https://bugs.openjdk.java.net/browse/JDK-8020753
 	 */
-	if (*stsize == 512 * 1024)
+	if (pthread_main_np () && *stsize == 512 * 1024)
 		*stsize = 2048 * mono_pagesize ();
 #endif
 
