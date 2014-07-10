@@ -1437,6 +1437,41 @@ register_socket_transport (void)
 	register_transport (&trans);
 }
 
+/*
+ * socket_fd_transport_connect:
+ *
+ */
+static void
+socket_fd_transport_connect (const char *address)
+{
+	int res;
+
+	res = sscanf (address, "%d", &conn_fd);
+	if (res != 1) {
+		fprintf (stderr, "debugger-agent: socket-fd transport address is invalid: '%s'\n", address);
+		exit (1);
+	}
+
+	if (!transport_handshake ())
+		exit (1);
+}
+
+static void
+register_socket_fd_transport (void)
+{
+	DebuggerTransport trans;
+
+	/* This is the same as the 'dt_socket' transport, but receives an already connected socket fd */
+	trans.name = "socket-fd";
+	trans.connect = socket_fd_transport_connect;
+	trans.close1 = socket_transport_close1;
+	trans.close2 = socket_transport_close2;
+	trans.send = socket_transport_send;
+	trans.recv = socket_transport_recv;
+
+	register_transport (&trans);
+}
+
 #endif /* DISABLE_SOCKET_TRANSPORT */
 
 /*
@@ -1475,6 +1510,7 @@ transport_init (void)
 
 #ifndef DISABLE_SOCKET_TRANSPORT
 	register_socket_transport ();
+	register_socket_fd_transport ();
 #endif
 
 	for (i = 0; i < ntransports; ++i) {
