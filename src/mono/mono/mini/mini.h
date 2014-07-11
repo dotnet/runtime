@@ -123,7 +123,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 100
+#define MONO_AOT_FILE_VERSION 101
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -289,6 +289,13 @@ typedef struct
 	MonoClass *klass;
 	MonoMethod *method;
 } MonoClassMethodPair;
+
+typedef struct
+{
+	MonoClass *klass;
+	MonoMethod *method;
+	gboolean virtual;
+} MonoDelegateClassMethodPair;
 
 /* Per-domain information maintained by the JIT */
 typedef struct
@@ -1245,7 +1252,7 @@ struct MonoJumpInfo {
 		MonoJumpInfoGSharedVtCall *gsharedvt;
 		MonoGSharedVtMethodInfo *gsharedvt_method;
 		MonoMethodSignature *sig;
-		MonoClassMethodPair *del_tramp;
+		MonoDelegateClassMethodPair *del_tramp;
 	} data;
 };
  
