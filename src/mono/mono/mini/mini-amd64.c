@@ -7165,7 +7165,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 #endif
 
 		/* check if we need to restore protection of the stack after a stack overflow */
-		if (mono_get_jit_tls_offset () != -1) {
+		if (!cfg->compile_aot && mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
 			code = mono_amd64_emit_tls_get (code, AMD64_RCX, mono_get_jit_tls_offset ());
 			/* we load the value in a separate instruction: this mechanism may be
