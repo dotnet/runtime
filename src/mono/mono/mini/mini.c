@@ -141,6 +141,8 @@ gboolean disable_vtypes_in_regs = FALSE;
 
 static GSList *tramp_infos;
 
+static void register_icalls (void);
+
 gpointer
 mono_realloc_native_code (MonoCompile *cfg)
 {
@@ -7256,7 +7258,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (!global_codeman)
 		global_codeman = mono_code_manager_new ();
-	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
 	memset (&callbacks, 0, sizeof (callbacks));
 	callbacks.create_ftnptr = mini_create_ftnptr;
@@ -7365,9 +7366,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-	if (debug_options.collect_pagefault_stats) {
+	if (debug_options.collect_pagefault_stats)
 		mono_aot_set_make_unreadable (TRUE);
-	}
 
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);
@@ -7398,6 +7398,58 @@ mini_init (const char *filename, const char *runtime_version)
 	/* This should come after mono_init () too */
 	mini_gc_init ();
 
+#ifndef DISABLE_JIT
+	mono_create_helper_signatures ();
+#endif
+
+	register_jit_stats ();
+
+#define JIT_CALLS_WORK
+#ifdef JIT_CALLS_WORK
+	/* Needs to be called here since register_jit_icall depends on it */
+	mono_marshal_init ();
+
+	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+	mono_arch_register_lowlevel_calls ();
+
+	register_icalls ();
+
+	mono_generic_sharing_init ();
+#endif
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	mono_simd_intrinsics_init ();
+#endif
+
+#if MONO_SUPPORT_TASKLETS
+	mono_tasklets_init ();
+#endif
+
+	if (mono_compile_aot)
+		/*
+		 * Avoid running managed code when AOT compiling, since the platform
+		 * might only support aot-only execution.
+		 */
+		mono_runtime_set_no_exec (TRUE);
+
+#define JIT_RUNTIME_WORKS
+#ifdef JIT_RUNTIME_WORKS
+	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
+	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
+	mono_thread_attach (domain);
+#endif
+
+	mono_profiler_runtime_initialized ();
+
+	MONO_VES_INIT_END ();
+
+	return domain;
+}
+
+static void
+register_icalls (void)
+{
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
 				ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 
@@ -7415,19 +7467,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_add_internal_call ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
 				mono_debugger_agent_unhandled_exception);
 #endif
-
-#ifndef DISABLE_JIT
-	mono_create_helper_signatures ();
-#endif
-
-	register_jit_stats ();
-
-#define JIT_CALLS_WORK
-#ifdef JIT_CALLS_WORK
-	/* Needs to be called here since register_jit_icall depends on it */
-	mono_marshal_init ();
-
-	mono_arch_register_lowlevel_calls ();
 
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
@@ -7629,41 +7668,10 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_object_isinst_with_cache, "mono_object_isinst_with_cache", "object object ptr ptr", FALSE);
 
 	register_icall (mono_debugger_agent_user_break, "mono_debugger_agent_user_break", "void", FALSE);
-#endif
 
 #ifdef TARGET_IOS
 	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);
 #endif
-
-	mono_generic_sharing_init ();
-
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	mono_simd_intrinsics_init ();
-#endif
-
-#if MONO_SUPPORT_TASKLETS
-	mono_tasklets_init ();
-#endif
-
-	if (mono_compile_aot)
-		/* 
-		 * Avoid running managed code when AOT compiling, since the platform
-		 * might only support aot-only execution.
-		 */
-		mono_runtime_set_no_exec (TRUE);
-
-#define JIT_RUNTIME_WORKS
-#ifdef JIT_RUNTIME_WORKS
-	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
-	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
-	mono_thread_attach (domain);
-#endif
-
-	mono_profiler_runtime_initialized ();
-
-	MONO_VES_INIT_END ();
-	
-	return domain;
 }
 
 MonoJitStats mono_jit_stats = {0};
