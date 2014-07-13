@@ -126,10 +126,7 @@ DECL_OFFSET(MonoLMF, previous_lmf)
 
 DECL_OFFSET(MonoMethodRuntimeGenericContext, class_vtable)
 
-#ifdef MONO_JIT_TLS_DATA_HAS_LMF
 DECL_OFFSET(MonoJitTlsData, lmf)
-#endif
-
 DECL_OFFSET(MonoJitTlsData, class_cast_from)
 DECL_OFFSET(MonoJitTlsData, class_cast_to)
 DECL_OFFSET(MonoJitTlsData, handler_block_return_address)

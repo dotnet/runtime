@@ -1029,9 +1029,8 @@ typedef struct {
 typedef struct {
 	gpointer          end_of_stack;
 	guint32           stack_size;
-#if !defined(HAVE_KW_THREAD) || !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	/* !defined(HAVE_KW_THREAD) || !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) */
 	MonoLMF          *lmf;
-#endif
 	MonoLMF          *first_lmf;
 	gpointer         restore_stack_prot;
 	guint32          handling_stack_ovf;
