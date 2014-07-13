@@ -1517,9 +1517,6 @@ mono_main (int argc, char* argv[])
 	if (g_getenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
 	
-	if (!g_thread_supported ())
-		g_thread_init (NULL);
-
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
