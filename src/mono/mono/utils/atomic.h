@@ -108,13 +108,19 @@ static inline gint64 InterlockedAdd64(volatile gint64 *dest, gint64 add)
 #endif
 #endif
 
+#ifdef HOST_WIN32
+#define TO_INTERLOCKED_ARGP(ptr) ((volatile LONG*)(ptr))
+#else
+#define TO_INTERLOCKED_ARGP(ptr) (ptr)
+#endif
+
 /* And now for some dirty hacks... The Windows API doesn't
  * provide any useful primitives for this (other than getting
  * into architecture-specific madness), so use CAS. */
 
 static inline gint32 InterlockedRead(volatile gint32 *src)
 {
-	return InterlockedCompareExchange (src, 0, 0);
+	return InterlockedCompareExchange (TO_INTERLOCKED_ARGP (src), 0, 0);
 }
 
 static inline gint64 InterlockedRead64(volatile gint64 *src)
@@ -129,7 +135,7 @@ static inline gpointer InterlockedReadPointer(volatile gpointer *src)
 
 static inline void InterlockedWrite(volatile gint32 *dst, gint32 val)
 {
-	InterlockedExchange (dst, val);
+	InterlockedExchange (TO_INTERLOCKED_ARGP (dst), val);
 }
 
 static inline void InterlockedWrite64(volatile gint64 *dst, gint64 val)
