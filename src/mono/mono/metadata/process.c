@@ -539,7 +539,7 @@ typedef DWORD (WINAPI *RTLNTSTATUSTODOSERROR_PROC) (NTSTATUS);
 
 static DWORD WINAPI GetProcessId_detect (HANDLE process);
 
-static GETPROCESSID_PROC GetProcessId = &GetProcessId_detect;
+static GETPROCESSID_PROC GetProcessIdFunc = &GetProcessId_detect;
 static NTQUERYINFORMATIONPROCESS_PROC NtQueryInformationProcess_proc = NULL;
 static RTLNTSTATUSTODOSERROR_PROC RtlNtStatusToDosError_proc = NULL;
 
@@ -573,8 +573,8 @@ static DWORD WINAPI GetProcessId_detect (HANDLE process)
 	if (module_handle != NULL) {
 		GetProcessId_kernel = (GETPROCESSID_PROC) GetProcAddress (module_handle, "GetProcessId");
 		if (GetProcessId_kernel != NULL) {
-			GetProcessId = GetProcessId_kernel;
-			return GetProcessId (process);
+			GetProcessIdFunc = GetProcessId_kernel;
+			return GetProcessIdFunc (process);
 		}
 	}
 
@@ -585,15 +585,15 @@ static DWORD WINAPI GetProcessId_detect (HANDLE process)
 		if (NtQueryInformationProcess_proc != NULL) {
 			RtlNtStatusToDosError_proc = (RTLNTSTATUSTODOSERROR_PROC) GetProcAddress (module_handle, "RtlNtStatusToDosError");
 			if (RtlNtStatusToDosError_proc != NULL) {
-				GetProcessId = &GetProcessId_ntdll;
-				return GetProcessId (process);
+				GetProcessIdFunc = &GetProcessId_ntdll;
+				return GetProcessIdFunc (process);
 			}
 		}
 	}
 
 	/* Fall back to ERROR_CALL_NOT_IMPLEMENTED */
-	GetProcessId = &GetProcessId_stub;
-	return GetProcessId (process);
+	GetProcessIdFunc = &GetProcessId_stub;
+	return GetProcessIdFunc (process);
 }
 #endif /* HOST_WIN32 */
 #endif /* !HAVE_GETPROCESSID */
