@@ -2463,8 +2463,6 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	 */
 	x86_prefix (code, X86_FS_PREFIX);
 	x86_mov_reg_mem (code, dreg, 0x18, 4);
-	/* Dunno what this does but TlsGetValue () contains it */
-	x86_alu_membase_imm (code, X86_AND, dreg, 0x34, 0);
 	if (tls_offset < 64) {
 		x86_mov_reg_membase (code, dreg, dreg, 3600 + (tls_offset * 4), 4);
 	} else {
