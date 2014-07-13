@@ -2952,9 +2952,6 @@ mini_get_tls_offset (MonoTlsKey key)
 	case TLS_KEY_JIT_TLS:
 #ifdef HOST_WIN32
 		offset = mono_get_jit_tls_key ();
-		/* Only 64 tls entries can be accessed using inline code */
-		if (offset >= 64)
-			offset = -1;
 #else
 		offset = mono_get_jit_tls_offset ();
 #endif
@@ -2973,6 +2970,12 @@ mini_get_tls_offset (MonoTlsKey key)
 		g_assert (offset != -1);
 		break;
 	}
+
+#ifdef HOST_WIN32
+	/* Only 64 tls entries can be accessed using inline code */
+	if (offset >= 64)
+		offset = -1;
+#endif
 
 	return offset;
 }
