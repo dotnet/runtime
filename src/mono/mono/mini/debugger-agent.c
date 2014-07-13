@@ -696,8 +696,8 @@ static mono_mutex_t debugger_thread_exited_mutex;
 static DebuggerProfiler debugger_profiler;
 
 /* The single step request instance */
-static SingleStepReq *ss_req = NULL;
-static gpointer ss_invoke_addr = NULL;
+static SingleStepReq *ss_req;
+static gpointer ss_invoke_addr;
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 /* Number of single stepping operations in progress */

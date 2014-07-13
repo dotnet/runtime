@@ -112,7 +112,7 @@ struct _ReadOnlyValue {
 		gpointer ptr;
 	} value;
 };
-static ReadOnlyValue *readonly_values = NULL;
+static ReadOnlyValue *readonly_values;
 
 typedef struct MonoAotOptions {
 	char *outfile;

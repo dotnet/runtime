@@ -22,9 +22,9 @@
  */
 guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 
-static GHashTable *class_init_hash_addr = NULL;
-static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
-static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr = NULL;
+static GHashTable *class_init_hash_addr;
+static GHashTable *rgctx_lazy_fetch_trampoline_hash;
+static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr;
 static guint32 trampoline_calls, jit_trampolines, unbox_trampolines, static_rgctx_trampolines;
 
 #define mono_trampolines_lock() EnterCriticalSection (&trampolines_mutex)

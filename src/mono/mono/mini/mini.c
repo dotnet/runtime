@@ -88,15 +88,15 @@ MonoNativeTlsKey mono_jit_tls_id;
 MONO_FAST_TLS_DECLARE(mono_jit_tls);
 #endif
 
-MonoTraceSpec *mono_jit_trace_calls = NULL;
+MonoTraceSpec *mono_jit_trace_calls;
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
 /* Whenever to use IMT */
 gboolean mono_use_imt = TRUE;
-MonoMethodDesc *mono_inject_async_exc_method = NULL;
+MonoMethodDesc *mono_inject_async_exc_method;
 int mono_inject_async_exc_pos;
-MonoMethodDesc *mono_break_at_bb_method = NULL;
+MonoMethodDesc *mono_break_at_bb_method;
 int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
 const char *mono_build_date;
@@ -115,9 +115,9 @@ gboolean mono_use_llvm = FALSE;
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
 static CRITICAL_SECTION jit_mutex;
 
-static MonoCodeManager *global_codeman = NULL;
+static MonoCodeManager *global_codeman;
 
-static GHashTable *jit_icall_name_hash = NULL;
+static GHashTable *jit_icall_name_hash;
 
 static MonoDebugOptions debug_options;
 
@@ -1528,7 +1528,7 @@ mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs,
 static MonoMethodSignature *
 mono_get_array_new_va_signature (int arity)
 {
-	static GHashTable *sighash = NULL;
+	static GHashTable *sighash;
 	MonoMethodSignature *res;
 	int i;
 
@@ -2364,8 +2364,8 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 static mono_byte emul_opcode_hit_cache [(OP_LAST>>EMUL_HIT_SHIFT) + 1] = {0};
 static short emul_opcode_num = 0;
 static short emul_opcode_alloced = 0;
-static short *emul_opcode_opcodes = NULL;
-static MonoJitICallInfo **emul_opcode_map = NULL;
+static short *emul_opcode_opcodes;
+static MonoJitICallInfo **emul_opcode_map;
 
 MonoJitICallInfo *
 mono_find_jit_opcode_emulation (int opcode)
@@ -5836,7 +5836,7 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 }
 
 #if ENABLE_JIT_MAP
-static FILE* perf_map_file = NULL;
+static FILE* perf_map_file;
 
 void
 mono_enable_jit_map (void)
@@ -6459,9 +6459,9 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 
 gboolean mono_do_single_method_regression = FALSE;
 guint32 mono_single_method_regression_opt = 0;
-MonoMethod *mono_current_single_method = NULL;
-GSList *mono_single_method_list = NULL;
-GHashTable *mono_single_method_hash = NULL;
+MonoMethod *mono_current_single_method;
+GSList *mono_single_method_list;
+GHashTable *mono_single_method_hash;
 
 guint32
 mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
@@ -8002,7 +8002,7 @@ typedef struct MonoJumpTableChunk {
 	/* gpointer entries[total]; */
 } MonoJumpTableChunk;
 
-static MonoJumpTableChunk* g_jumptable = NULL;
+static MonoJumpTableChunk* g_jumptable;
 #define mono_jumptable_lock() EnterCriticalSection (&jumptable_mutex)
 #define mono_jumptable_unlock() LeaveCriticalSection (&jumptable_mutex)
 static CRITICAL_SECTION jumptable_mutex;

@@ -8,7 +8,7 @@
 #if defined(MONO_SUPPORT_TASKLETS)
 
 /* keepalive_stacks could be a per-stack var to avoid locking overhead */
-static MonoGHashTable *keepalive_stacks = NULL;
+static MonoGHashTable *keepalive_stacks;
 static CRITICAL_SECTION tasklets_mutex;
 #define tasklets_lock() EnterCriticalSection(&tasklets_mutex)
 #define tasklets_unlock() LeaveCriticalSection(&tasklets_mutex)

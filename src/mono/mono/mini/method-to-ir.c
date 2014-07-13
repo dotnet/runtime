@@ -139,13 +139,13 @@ int mono_op_to_op_imm_noemul (int opcode);
 MONO_API MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature *sig, MonoInst **args);
 
 /* helper methods signatures */
-static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
-static MonoMethodSignature *helper_sig_domain_get = NULL;
-static MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
-static MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm = NULL;
-static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
-static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline = NULL;
-static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm = NULL;
+static MonoMethodSignature *helper_sig_class_init_trampoline;
+static MonoMethodSignature *helper_sig_domain_get;
+static MonoMethodSignature *helper_sig_generic_class_init_trampoline;
+static MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm;
+static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
+static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline;
+static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm;
 
 /*
  * Instruction metadata

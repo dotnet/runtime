@@ -57,7 +57,7 @@
 #include "version.h"
 #include "debugger-agent.h"
 
-static FILE *mini_stats_fd = NULL;
+static FILE *mini_stats_fd;
 
 static void mini_usage (void);
 

@@ -651,7 +651,7 @@ add_expression_to_tree (MonoSsapreExpression *tree, MonoSsapreExpression *expres
 }
 
 #if (MONO_APPLY_SSAPRE_TO_SINGLE_EXPRESSION)
-static char *mono_ssapre_expression_name = NULL;
+static char *mono_ssapre_expression_name;
 static gboolean
 check_ssapre_expression_name (MonoSsapreWorkArea *area, MonoSsapreExpressionDescription *expression_description) {
 	if (area->expression_is_handled_father) {

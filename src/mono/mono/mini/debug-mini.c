@@ -689,7 +689,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
  * breakpoint when the method is JITed.
  */
 
-static GPtrArray *breakpoints = NULL;
+static GPtrArray *breakpoints;
 
 static int
 mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc)
