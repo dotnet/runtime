@@ -2461,12 +2461,24 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	 * See the Under the Hood article in the May 1996 issue of Microsoft Systems 
 	 * Journal and/or a disassembly of the TlsGet () function.
 	 */
-	g_assert (tls_offset < 64);
 	x86_prefix (code, X86_FS_PREFIX);
 	x86_mov_reg_mem (code, dreg, 0x18, 4);
 	/* Dunno what this does but TlsGetValue () contains it */
 	x86_alu_membase_imm (code, X86_AND, dreg, 0x34, 0);
-	x86_mov_reg_membase (code, dreg, dreg, 3600 + (tls_offset * 4), 4);
+	if (tls_offset < 64) {
+		x86_mov_reg_membase (code, dreg, dreg, 3600 + (tls_offset * 4), 4);
+	} else {
+		guint8 *buf [16];
+
+		g_assert (tls_offset < 0x440);
+		/* Load TEB->TlsExpansionSlots */
+		x86_mov_reg_membase (code, dreg, dreg, 0xf94, 4);
+		x86_test_reg_reg (code, dreg, dreg);
+		buf [0] = code;
+		x86_branch (code, X86_CC_EQ, code, TRUE);
+		x86_mov_reg_membase (code, dreg, dreg, (tls_offset * 4) - 0x100, 4);
+		x86_patch (buf [0], code);
+	}
 #else
 	if (optimize_for_xen) {
 		x86_prefix (code, X86_GS_PREFIX);

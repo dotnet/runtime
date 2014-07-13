@@ -301,7 +301,7 @@ bigmul: len:2 dest:l src1:a src2:i
 bigmul_un: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:y len:3
 sext_i2: dest:i src1:y len:3
-tls_get: dest:i len:20
+tls_get: dest:i len:32
 tls_get_reg: dest:i src1:i len:20
 tls_set: src1:i len:20
 tls_set_reg: src1:i src2:i len:20
