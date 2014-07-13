@@ -1010,19 +1010,6 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define G_PRIORITY_DEFAULT 0
 #define G_PRIORITY_DEFAULT_IDLE 200
 
-/*
- * Empty thread functions, not used by eglib
- */
-#define g_thread_supported()   TRUE
-#define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } } G_STMT_END
-
-#define G_LOCK_DEFINE(name)        int name;
-#define G_LOCK_DEFINE_STATIC(name) static int name;
-#define G_LOCK_EXTERN(name)
-#define G_LOCK(name)
-#define G_TRYLOCK(name)
-#define G_UNLOCK(name)
-
 #define GUINT16_SWAP_LE_BE_CONSTANT(x) ((((guint16) x) >> 8) | ((((guint16) x) << 8)))
 
 #define GUINT16_SWAP_LE_BE(x) ((guint16) (((guint16) x) >> 8) | ((((guint16)(x)) & 0xff) << 8))

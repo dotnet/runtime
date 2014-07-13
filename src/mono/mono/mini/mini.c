@@ -7280,7 +7280,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_threads_runtime_init (&ticallbacks);
 
-
 	if (g_getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();
 
@@ -7318,9 +7317,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_trampolines_init ();
-
-	if (!g_thread_supported ())
-		g_thread_init (NULL);
 
 	mono_native_tls_alloc (&mono_jit_tls_id, NULL);
 
