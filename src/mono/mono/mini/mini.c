@@ -3013,6 +3013,15 @@ mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
 		return mini_get_tls_offset (key) != -1;
 }
 
+static gboolean
+mini_tls_key_supported (MonoTlsKey key)
+{
+	if (!MONO_ARCH_HAVE_TLS_GET)
+		return FALSE;
+
+	return mini_get_tls_offset (key) != -1;
+}
+
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
@@ -7266,6 +7275,7 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.set_cast_details = mono_set_cast_details;
 	callbacks.debug_log = mono_debugger_agent_debug_log;
 	callbacks.debug_log_is_enabled = mono_debugger_agent_debug_log_is_enabled;
+	callbacks.tls_key_supported = mini_tls_key_supported;
 
 	if (mono_use_imt) {
 		callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
