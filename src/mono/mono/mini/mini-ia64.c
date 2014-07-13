@@ -4526,8 +4526,6 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 /*
  * LOCKING: called with the domain lock held
  */
@@ -4638,7 +4636,6 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 {
 	/* Done by the implementation of the CALL_MEMBASE opcodes */
 }
-#endif
 
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)

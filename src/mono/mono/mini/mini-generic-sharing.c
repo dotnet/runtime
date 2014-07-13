@@ -1343,9 +1343,6 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		if (virtual) {
 			/* Same as in mono_emit_method_call_full () */
-#ifndef MONO_ARCH_HAVE_IMT
-			NOT_IMPLEMENTED;
-#endif
 			if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
 				/* See mono_emit_method_call_full () */
 				/* The gsharedvt trampoline will recognize this constant */

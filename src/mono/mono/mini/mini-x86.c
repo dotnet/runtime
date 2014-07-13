@@ -5820,8 +5820,6 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 // Linear handler, the bsearch head compare is shorter
 //[2 + 4] x86_alu_reg_imm (code, X86_CMP, ins->sreg1, ins->inst_imm);
 //[1 + 1] x86_branch8(inst,cond,imm,is_signed)
@@ -5990,7 +5988,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
-#endif
 
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)

@@ -6402,8 +6402,6 @@ mono_arch_flush_register_windows (void)
 {
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 #ifndef DISABLE_JIT
 
 void
@@ -6888,8 +6886,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	g_assert (DISTANCE (start, code) <= size);
 	return start;
 }
-
-#endif
 
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)

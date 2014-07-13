@@ -5559,8 +5559,6 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 #define CMP_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 4)
 #define BR_SIZE 4
 #define LOADSTORE_SIZE 4
@@ -5716,7 +5714,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 
 	return (MonoMethod*)(gsize) r [MONO_ARCH_IMT_REG];
 }
-#endif
 
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)

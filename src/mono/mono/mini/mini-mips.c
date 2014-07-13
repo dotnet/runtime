@@ -5845,8 +5845,6 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->sc_regs [reg];
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 #define MIPS_LOAD_SEQUENCE_LENGTH	8
@@ -6000,7 +5998,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
-#endif
 
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)

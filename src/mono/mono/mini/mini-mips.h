@@ -257,7 +257,6 @@ typedef struct MonoCompileArch {
 #define MIPS_LAST_FPARG_REG	mips_f19
 #endif
 
-#define MONO_ARCH_HAVE_IMT	1
 #define MONO_ARCH_IMT_REG	mips_t0
 
 #define MONO_ARCH_VTABLE_REG	mips_a0

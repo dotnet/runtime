@@ -138,8 +138,6 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 }
 #endif
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 /*
  * Either IMPL_METHOD or AOT_ADDR will be set on return.
  */
@@ -243,7 +241,6 @@ __attribute__ ((noinline))
 		}
 	}
 }
-#endif
 
 /*
  * This is a super-ugly hack to fix bug #616463.
@@ -406,7 +403,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	orig_vtable_slot = vtable_slot;
 	vtable_slot_to_patch = vtable_slot;
 
-#ifdef MONO_ARCH_HAVE_IMT
 	/* IMT call */
 	if (vt && (gpointer)vtable_slot < (gpointer)vt) {
 		MonoMethod *impl_method = NULL;
@@ -464,7 +460,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			m = impl_method;
 		}
 	}
-#endif
 
 	/*
 	 * The virtual check is needed because is_generic_method_definition (m) could
@@ -484,9 +479,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		else
 			g_assert (!m->klass->generic_container);
 
-#ifdef MONO_ARCH_HAVE_IMT
 		generic_virtual = mono_arch_find_imt_method (regs, code);
-#endif
 		if (generic_virtual) {
 			g_assert (generic_virtual->is_inflated);
 			context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
@@ -524,7 +517,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			g_assert_not_reached ();
 #endif
 		} else {
-#ifdef MONO_ARCH_HAVE_IMT
 			MonoObject *this_argument = mono_arch_get_this_arg_from_call (regs, code);
 
 			vt = this_argument->vtable;
@@ -537,9 +529,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 				mono_class_setup_supertypes (this_argument->vtable->klass);
 				klass = this_argument->vtable->klass->supertypes [m->klass->idepth - 1];
 			}
-#else
-			NOT_IMPLEMENTED;
-#endif
 		}
 
 		g_assert (vtable_slot || klass);
@@ -816,11 +805,9 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 	else
 		g_assert (!m->klass->generic_container);
 
-#ifdef MONO_ARCH_HAVE_IMT
 	imt_method = mono_arch_find_imt_method (regs, code);
 	if (imt_method->is_inflated)
 		context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
-#endif
 	m = mono_class_inflate_generic_method (declaring, &context);
 	m = mono_marshal_get_remoting_invoke_with_check (m);
 

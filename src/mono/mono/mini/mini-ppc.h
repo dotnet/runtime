@@ -169,7 +169,6 @@ typedef struct MonoCompileArch {
 #endif /* HAVE_WORKING_SIGALTSTACK */
 
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-#define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_IMT_REG ppc_r12
 
 #define MONO_ARCH_VTABLE_REG	ppc_r12

@@ -2873,12 +2873,6 @@ gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define MONO_ARCH_DYN_CALL_PARAM_AREA 0
 #endif
 
-#ifdef MONO_ARCH_HAVE_IMT
-#define ARCH_HAVE_IMT 1
-#else
-#define ARCH_HAVE_IMT 0
-#endif
-
 #ifdef MONO_ARCH_VARARG_ICALLS
 #define ARCH_VARARG_ICALLS 1
 #else

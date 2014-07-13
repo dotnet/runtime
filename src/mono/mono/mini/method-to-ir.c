@@ -2344,7 +2344,6 @@ callvirt_to_call (int opcode)
 	return -1;
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
 /* Either METHOD or IMT_ARG needs to be set */
 static void
 emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, MonoInst *imt_arg)
@@ -2398,7 +2397,6 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, Mon
 	mono_arch_emit_imt_argument (cfg, call, imt_arg);
 #endif
 }
-#endif
 
 static MonoJumpInfo *
 mono_patch_info_new (MonoMemPool *mp, int ip, MonoJumpInfoType type, gconstpointer target)
@@ -2812,14 +2810,12 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				slot_reg = -1;
-#ifdef MONO_ARCH_HAVE_IMT
 				if (mono_use_imt) {
 					guint32 imt_slot = mono_method_get_imt_slot (method);
 					emit_imt_argument (cfg, call, call->method, imt_arg);
 					slot_reg = vtable_reg;
 					offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 				}
-#endif
 				if (slot_reg == -1) {
 					slot_reg = alloc_preg (cfg);
 					mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
@@ -2829,12 +2825,10 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 				slot_reg = vtable_reg;
 				offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) +
 					((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
-#ifdef MONO_ARCH_HAVE_IMT
 				if (imt_arg) {
 					g_assert (mono_method_signature (method)->generic_param_count);
 					emit_imt_argument (cfg, call, call->method, imt_arg);
 				}
-#endif
 			}
 
 			call->inst.sreg1 = slot_reg;

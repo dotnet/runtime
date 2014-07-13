@@ -93,7 +93,7 @@ gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
 /* Whenever to use IMT */
-gboolean mono_use_imt = ARCH_HAVE_IMT;
+gboolean mono_use_imt = TRUE;
 MonoMethodDesc *mono_inject_async_exc_method = NULL;
 int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method = NULL;
@@ -7266,12 +7266,10 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.debug_log = mono_debugger_agent_debug_log;
 	callbacks.debug_log_is_enabled = mono_debugger_agent_debug_log_is_enabled;
 
-#ifdef MONO_ARCH_HAVE_IMT
 	if (mono_use_imt) {
 		callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
 		callbacks.get_imt_trampoline = mini_get_imt_trampoline;
 	}
-#endif
 
 	mono_install_callbacks (&callbacks);
 
@@ -7386,14 +7384,12 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
-#ifdef MONO_ARCH_HAVE_IMT
 	if (mono_use_imt) {
 		if (mono_aot_only)
 			mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
 		else
 			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 	}
-#endif
 
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();
