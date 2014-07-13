@@ -129,6 +129,7 @@ case "$host" in
 		libgc_threads=win32
 		gc_default=included
 		with_sigaltstack=no
+		with_tls=pthread
 		LN_S=cp
 		# This forces libgc to use the DllMain based thread registration code on win32
 		libgc_configure_args="$libgc_configure_args --enable-win32-dllmain=yes"
