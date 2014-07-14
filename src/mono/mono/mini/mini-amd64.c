@@ -3400,7 +3400,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 	int need_touch = FALSE;
 
 #if defined(HOST_WIN32)
-		need_touch = TRUE;
+	need_touch = TRUE;
 #elif defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 	if (!tree->flags & MONO_INST_INIT)
 		need_touch = TRUE;
@@ -3766,9 +3766,6 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 
 	/* These can't contain refs */
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
-#ifdef HOST_WIN32
-	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
-#endif
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
 	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
 	/* These are handled automatically by the stack marking code */
@@ -6521,7 +6518,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *ins;
-	int alloc_size, pos, i, cfa_offset, quad, max_epilog_size;
+	int alloc_size, pos, i, cfa_offset, quad, max_epilog_size, save_area_offset;
 	guint8 *code;
 	CallInfo *cinfo;
 	MonoInst *lmf_var = cfg->lmf_var;
@@ -6698,7 +6695,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 #endif
 
-#ifndef TARGET_WIN32
 	if (mini_get_debug_options ()->init_stacks) {
 		/* Fill the stack frame with a dummy value to force deterministic behavior */
 	
@@ -6729,43 +6725,38 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RSP, -8, 8);
 		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RSP, -16, 8);
 	}
-#endif	
 
 	/* Save LMF */
-	if (method->save_lmf) {
+	if (method->save_lmf)
 		code = emit_setup_lmf (cfg, code, lmf_var->inst_offset, cfa_offset);
-	}
 
 	/* Save callee saved registers */
-	if (TRUE || !method->save_lmf) {
-		gint32 save_area_offset;
+	if (cfg->arch.omit_fp) {
+		save_area_offset = cfg->arch.reg_save_area_offset;
+		/* Save caller saved registers after sp is adjusted */
+		/* The registers are saved at the bottom of the frame */
+		/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
+	} else {
+		/* The registers are saved just below the saved rbp */
+		save_area_offset = cfg->arch.reg_save_area_offset;
+	}
 
-		if (cfg->arch.omit_fp) {
-			save_area_offset = cfg->arch.reg_save_area_offset;
-			/* Save caller saved registers after sp is adjusted */
-			/* The registers are saved at the bottom of the frame */
-			/* FIXME: Optimize this so the regs are saved at the end of the frame in increasing order */
-		} else {
-			/* The registers are saved just below the saved rbp */
-			save_area_offset = cfg->arch.reg_save_area_offset;
-		}
+	for (i = 0; i < AMD64_NREG; ++i) {
+		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
+			amd64_mov_membase_reg (code, cfg->frame_reg, save_area_offset, i, 8);
 
-		for (i = 0; i < AMD64_NREG; ++i)
-			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
-				amd64_mov_membase_reg (code, cfg->frame_reg, save_area_offset, i, 8);
-
-				if (cfg->arch.omit_fp) {
-					mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
-					/* These are handled automatically by the stack marking code */
-					mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
-				} else {
-					mono_emit_unwind_op_offset (cfg, code, i, - (-save_area_offset + (2 * 8)));
-					// FIXME: GC
-				}
-
-				save_area_offset += 8;
-				async_exc_point (code);
+			if (cfg->arch.omit_fp) {
+				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
+				/* These are handled automatically by the stack marking code */
+				mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
+			} else {
+				mono_emit_unwind_op_offset (cfg, code, i, - (-save_area_offset + (2 * 8)));
+				// FIXME: GC
 			}
+
+			save_area_offset += 8;
+			async_exc_point (code);
+		}
 	}
 
 	/* store runtime generic context */
@@ -7918,10 +7909,8 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 void
 mono_arch_finish_init (void)
 {
-#ifndef HOST_WIN32
-#ifdef MONO_XEN_OPT
+#if !defined(HOST_WIN32) && defined(MONO_XEN_OPT)
 	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
-#endif
 #endif
 }
 
