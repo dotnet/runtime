@@ -40,10 +40,6 @@
 #include "debugger-agent.h"
 #include "mini-gc.h"
 
-#ifdef HOST_WIN32
-static gint jit_tls_offset = -1;
-#endif
-
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;
 #else
@@ -7922,17 +7918,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 void
 mono_arch_finish_init (void)
 {
-#ifdef HOST_WIN32
-	/* 
-	 * We need to init this multiple times, since when we are first called, the key might not
-	 * be initialized yet.
-	 */
-	jit_tls_offset = mono_get_jit_tls_key ();
-
-	/* Only 64 tls entries can be accessed using inline code */
-	if (jit_tls_offset >= 64)
-		jit_tls_offset = -1;
-#else
+#ifndef HOST_WIN32
 #ifdef MONO_XEN_OPT
 	optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
