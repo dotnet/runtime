@@ -214,8 +214,14 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #else
 #if defined(sparc) && !defined(__GNUC__)
 #define DIS_CMD "dis"
-#elif defined(__i386__) || defined(__x86_64__)
+#elif defined(TARGET_X86)
 #define DIS_CMD "objdump -l -d"
+#elif defined(TARGET_AMD64)
+  #if defined(HOST_WIN32)
+  #define DIS_CMD "x86_64-w64-mingw32-objdump.exe -M x86-64 -d"
+  #else
+  #define DIS_CMD "objdump -l -d"
+  #endif
 #else
 #define DIS_CMD "objdump -d"
 #endif
@@ -281,7 +287,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	unused = system (cmd);
 	g_free (cmd);
 #endif
-	
+
 	cmd = g_strdup_printf (ARCH_PREFIX DIS_CMD " %s %s", objdump_args, o_file);
 	unused = system (cmd);
 	g_free (cmd);
