@@ -2973,12 +2973,6 @@ mini_get_tls_offset (MonoTlsKey key)
 		break;
 	}
 
-#if defined(HOST_WIN32) && defined(TARGET_AMD64)
-	/* Only 64 tls entries can be accessed using inline code */
-	if (offset >= 64)
-		offset = -1;
-#endif
-
 	return offset;
 }
 

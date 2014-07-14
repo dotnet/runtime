@@ -293,7 +293,7 @@ amd64_icompare_reg_membase: src1:i src2:b len:8
 amd64_set_xmmreg_r4: dest:f src1:f len:14 clob:m
 amd64_set_xmmreg_r8: dest:f src1:f len:14 clob:m
 amd64_save_sp_to_lmf: len:16
-tls_get: dest:i len:16
+tls_get: dest:i len:32
 tls_get_reg: dest:i src1:i len:32
 tls_set: src1:i len:16
 tls_set_reg: src1:i src2:i len:32
