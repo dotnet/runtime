@@ -243,6 +243,7 @@ mono_domain_has_type_resolve
 mono_domain_is_unloading
 mono_domain_owns_vtable_slot
 mono_domain_set
+mono_domain_set_config
 mono_domain_set_internal
 mono_domain_try_type_resolve
 mono_domain_try_unload

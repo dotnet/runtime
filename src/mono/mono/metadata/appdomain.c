@@ -403,6 +403,25 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 	return mono_domain_from_appdomain (ad);
 }
 
+/**
+ * mono_domain_set_config:
+ * @domain: MonoDomain initialized with the appdomain we want to change
+ * @base_dir: new base directory for the appdomain
+ * @config_file_name: path to the new configuration for the app domain
+ *
+ * Used to set the system configuration for an appdomain
+ *
+ * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException: 
+ * Error Initializing the configuration system. ---> System.ArgumentException: 
+ * The 'ExeConfigFilename' argument cannot be null.' for some managed calls.
+ */
+void
+mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
+{
+	MONO_OBJECT_SETREF (domain->setup, application_base, mono_string_new (domain, base_dir));
+	MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, config_file_name));
+}
+
 static MonoAppDomainSetup*
 copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup)
 {
