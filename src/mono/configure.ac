@@ -2583,6 +2583,9 @@ case "$host" in
 		  openbsd*|freebsd*)
 			sgen_supported=true
 			;;
+		  mingw*)
+			sgen_supported=true
+			;;
 		esac
 		case "$host" in
 			x86_64-*-nacl*)
