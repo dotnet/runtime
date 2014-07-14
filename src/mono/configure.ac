@@ -650,18 +650,6 @@ if test "x$USE_NLS" = "xyes"; then
    fi
 fi
 
-AC_ARG_WITH([libgdiplus], 
-	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to installed)], 
-	[], [with_libgdiplus=installed])
-
-case $with_libgdiplus in
-no|installed) libgdiplus_loc= ;;
-yes|sibling) libgdiplus_loc=`cd ../libgdiplus && pwd`/src/libgdiplus.la ;;
-/*) libgdiplus_loc=$with_libgdiplus ;;
-*) libgdiplus_loc=`pwd`/$with_libgdiplus ;;
-esac
-AC_SUBST([libgdiplus_loc])
-
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 
 pkg_config_path=
@@ -3010,6 +2998,33 @@ esac
 
 
 AC_SUBST(libsuffix)
+
+AC_ARG_WITH([libgdiplus],
+	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to installed)],
+	[], [with_libgdiplus=installed])
+
+# default install location
+libgdiplus_install_loc=libgdiplus${libsuffix}
+case $with_libgdiplus in
+    no|installed)
+    libgdiplus_loc=
+    ;;
+
+    yes|sibling)
+    libgdiplus_loc=`cd ../libgdiplus && pwd`/src/libgdiplus.la
+    ;;
+
+    /*) # absolute path, assume it is an install location
+    libgdiplus_loc=$with_libgdiplus
+    libgdiplus_install_loc=$with_libgdiplus
+    ;;
+
+    *)
+    libgdiplus_loc=`pwd`/$with_libgdiplus
+    ;;
+esac
+AC_SUBST([libgdiplus_loc])
+AC_SUBST([libgdiplus_install_loc])
 
 AC_ARG_ENABLE(icall-symbol-map,[  --enable-icall-symbol-map Generate tables which map icall functions to their C symbols], icall_symbol_map=$enableval, icall_symbol_map=no)
 if test "x$icall_symbol_map" = "xyes"; then
