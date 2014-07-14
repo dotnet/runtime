@@ -2018,13 +2018,13 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf)
 		cfg->create_lmf_var = TRUE;
 
-#if !defined(HOST_WIN32)
 	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
+#if !defined(HOST_WIN32)
 		if (mono_get_lmf_tls_offset () != -1 && !optimize_for_xen)
 			cfg->lmf_ir_mono_lmf = TRUE;
-	}
 #endif
+	}
 
 #ifndef MONO_AMD64_NO_PUSHES
 	cfg->arch_eh_jit_info = 1;
@@ -3767,60 +3767,6 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 
 	return code;
 }
-
-#ifdef HOST_WIN32
-/*
- * emit_push_lmf:
- *
- *   Emit code to push an LMF structure on the LMF stack.
- */
-static guint8*
-emit_push_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args_clobbered)
-{
-	if (jit_tls_offset != -1) {
-		code = mono_amd64_emit_tls_get (code, AMD64_RAX, jit_tls_offset);
-		amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
-	} else {
-		/* 
-		 * The call might clobber argument registers, but they are already
-		 * saved to the stack/global regs.
-		 */
-		if (args_clobbered)
-			*args_clobbered = TRUE;
-		code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-						  (gpointer)"mono_get_lmf_addr", TRUE);		
-	}
-
-	/* Save lmf_addr */
-	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
-	/* Save previous_lmf */
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
-	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
-	/* Set new lmf */
-	amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
-	amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
-
-	return code;
-}
-#endif
-
-#ifdef HOST_WIN32
-/*
- * emit_pop_lmf:
- *
- *   Emit code to pop an LMF structure from the LMF stack.
- */
-static guint8*
-emit_pop_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
-{
-	/* Restore previous lmf */
-	amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-	amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
-	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
-
-	return code;
-}
-#endif
 
 #define REAL_PRINT_REG(text,reg) \
 mono_assert (reg >= 0); \
@@ -7007,13 +6953,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-#ifdef HOST_WIN32
-	if (method->save_lmf) {
-		code = emit_push_lmf (cfg, code, lmf_var->inst_offset, &args_clobbered);
-	}
-#else
-	args_clobbered = TRUE;
-#endif
+	if (cfg->save_lmf)
+		args_clobbered = TRUE;
 
 	if (trace) {
 		args_clobbered = TRUE;
@@ -7160,10 +7101,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	pos = 0;
 	
 	if (method->save_lmf) {
-#ifdef HOST_WIN32
-		code = emit_pop_lmf (cfg, code, lmf_offset);
-#endif
-
 		/* check if we need to restore protection of the stack after a stack overflow */
 		if (!cfg->compile_aot && mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
