@@ -4495,7 +4495,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 {
 	MonoInst *ptr;
 	int dreg;
-	gpointer *trampoline;
+	MonoDelegateTrampInfo *trampoline;
 	MonoInst *obj, *method_ins, *tramp_ins;
 	MonoDomain *domain;
 	guint8 **code_slot;
@@ -4559,10 +4559,17 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		del_tramp->method = context_used ? NULL : method;
 		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
-		trampoline = mono_create_delegate_trampoline_with_method (cfg->domain, klass, context_used ? NULL : method);
+		trampoline = mono_create_delegate_trampoline_info (cfg->domain, klass, context_used ? NULL : method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
 	}
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
+
+	dreg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
+
+	dreg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), dreg);
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
 
@@ -11725,7 +11732,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if ((sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ)) {
 					MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context);
 					if (ctor_method && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
-						MonoInst *target_ins;
+						MonoInst *target_ins, *handle_ins;
 						MonoMethod *invoke;
 						int invoke_context_used;
 
@@ -11754,12 +11761,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							ip += 6;
 							if (cfg->verbose_level > 3)
 								g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
-							sp --;
-							*sp = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used);
-							CHECK_CFG_EXCEPTION;
-							ip += 5;			
-							sp ++;
-							break;
+							if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used))) {
+								sp --;
+								*sp = handle_ins;
+								CHECK_CFG_EXCEPTION;
+								ip += 5;
+								sp ++;
+								break;
+							}
+							ip -= 6;
 						}
 #endif
 					}

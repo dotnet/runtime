@@ -3483,7 +3483,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
 		MonoClassMethodPair *del_tramp = patch_info->data.del_tramp;
 
-		target = mono_create_delegate_trampoline_with_method (domain, del_tramp->klass, del_tramp->method);
+		target = mono_create_delegate_trampoline_info (domain, del_tramp->klass, del_tramp->method);
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {

@@ -216,6 +216,9 @@ DECL_OFFSET(MonoLMFTramp, regs)
 DECL_OFFSET(MonoLMFTramp, lmf_addr)
 
 #endif
+	
+DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
+DECL_OFFSET(MonoDelegateTrampInfo, method_ptr)
 
 #endif
 

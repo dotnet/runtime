@@ -299,8 +299,8 @@ typedef struct
 	GHashTable *class_init_trampoline_hash;
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
-	/* Maps ClassMethodPair -> DelegateTrampInfo */
 	GHashTable *delegate_trampoline_hash;
+	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
 	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
@@ -1162,6 +1162,19 @@ typedef struct {
 	 */
 	gpointer entries [MONO_ZERO_LEN_ARRAY];
 } MonoGSharedVtMethodRuntimeInfo;
+
+typedef struct
+{
+	MonoMethod *invoke;
+	MonoMethod *method;
+	MonoMethodSignature *invoke_sig;
+	MonoMethodSignature *sig;
+	gpointer method_ptr;
+	gpointer invoke_impl;
+	gpointer impl_this;
+	gpointer impl_nothis;
+	gboolean need_rgctx_tramp;
+} MonoDelegateTrampInfo;
 
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
@@ -2207,7 +2220,7 @@ gpointer          mono_create_jit_trampoline (MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token) MONO_INTERNAL;
 gpointer          mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method) MONO_LLVM_INTERNAL;
 gpointer          mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass) MONO_INTERNAL;
-gpointer          mono_create_delegate_trampoline_with_method (MonoDomain *domain, MonoClass *klass, MonoMethod *method) MONO_INTERNAL;
+MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset) MONO_INTERNAL;
 gpointer          mono_create_monitor_enter_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_monitor_exit_trampoline (void) MONO_INTERNAL;
