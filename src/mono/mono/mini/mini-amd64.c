@@ -6953,7 +6953,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->save_lmf)
+	if (cfg->method->save_lmf)
 		args_clobbered = TRUE;
 
 	if (trace) {
