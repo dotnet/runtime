@@ -5728,6 +5728,22 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- mono_arch_get_delegate_virtual_invoke_impl.       */
+/*                                                                  */
+/* Function	- 						    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
+{
+	return NULL;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- mono_arch_build_imt_thunk.                        */
 /*                                                                  */
 /* Function	- 						    */

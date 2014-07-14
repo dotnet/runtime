@@ -6363,6 +6363,36 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	return start;
 }
 
+gpointer
+mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
+{
+	guint8 *code, *start;
+	int size = 24;
+
+	/*
+	 * The stack contains:
+	 * <delegate>
+	 * <return addr>
+	 */
+	start = code = mono_global_codeman_reserve (size);
+
+	/* Replace the this argument with the target */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, target), 4);
+	x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
+
+	if (load_imt_reg) {
+		/* Load the IMT reg */
+		x86_mov_reg_membase (code, MONO_ARCH_IMT_REG, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, method), 4);
+	}
+
+	/* Load the vtable */
+	x86_mov_reg_membase (code, X86_EAX, X86_ECX, MONO_STRUCT_OFFSET (MonoObject, vtable), 4);
+	x86_jump_membase (code, X86_EAX, offset);
+
+	return start;
+}
+
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
