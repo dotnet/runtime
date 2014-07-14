@@ -180,7 +180,8 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
 
-#if defined (HOST_WIN32)
+#if defined (HOST_WIN32) && !defined(__GNUC__)
+/* msvc doesn't support inline assembly, so have to use a separate .asm file */
 extern void mono_context_get_current (void *);
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { mono_context_get_current((void*)&(ctx)); } while (0)
 
