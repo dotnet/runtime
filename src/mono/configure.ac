@@ -36,20 +36,15 @@ case $host_os in
 *cygwin* ) LN_S='cp -p';;
 esac
 
-dnl
-dnl libgc checks
-dnl
-
-gc_headers=no
-gc=included
-gc_msg="included Boehm"
-use_included_gc=no
+#
+# libgc defaults
+#
 libgc_configure_args=
 
 if test -d $srcdir/libgc ; then
-  gc_default=included
+  libgc_default=included
 else
-  gc_default=boehm
+  libgc_default=boehm
 fi
 
 # These variables are the CPPFLAGS/CFLAGS passed to libgc's configure
@@ -127,7 +122,7 @@ case "$host" in
 		libmono_ldflags="-mms-bitfields -mwindows"
 		libdl=
 		libgc_threads=win32
-		gc_default=included
+		libgc_default=included
 		with_sigaltstack=no
 		with_tls=pthread
 		LN_S=cp
@@ -182,7 +177,7 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
-		gc_default=boehm
+		libgc_default=boehm
 		libgc_threads=pthreads
 		with_sigaltstack=no
 		use_sigposix=yes
@@ -257,7 +252,7 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl=
 		libgc_threads=pthreads
-		gc_default=boehm
+		libgc_default=boehm
 		use_sigposix=yes
 		ikvm_native=no
 		AC_DEFINE(DISABLE_SOCKETS,1,[Disable sockets support])
@@ -688,8 +683,6 @@ AC_SUBST(GMODULE_LIBS)
 AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
 
-AC_ARG_WITH(gc,   [  --with-gc=boehm,included,none  Controls the Boehm GC config, default=included],[gc=$with_gc],[gc=$gc_default])
-
 # Enable support for fast thread-local storage
 # Some systems have broken support, so we allow to disable it.
 AC_ARG_WITH(tls, [  --with-tls=__thread,pthread    select Thread Local Storage implementation (defaults to __thread)],[],[with_tls=__thread])
@@ -997,22 +990,28 @@ AC_TRY_COMPILE([
    AC_MSG_RESULT(no)
 ])
 
+dnl
+dnl Boehm GC configuration
+dnl
+
+AC_ARG_WITH(libgc,   [  --with-gc=boehm,included,none  Controls the Boehm GC config, default=included],[libgc=$with_gc],[libgc=$libgc_default])
+
+AC_ARG_ENABLE(boehm, [  --disable-boehm            Disable the Boehm GC.], support_boehm=$enableval,support_boehm=${support_boehm:-yes})
+AM_CONDITIONAL(SUPPORT_BOEHM, test x$support_boehm = xyes)
+
 AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=$parallel_mark)
 if test x$enable_parallel_mark = xyes; then
 	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
 fi
 
-AC_ARG_ENABLE(boehm, [  --disable-boehm            Disable the Boehm GC.], support_boehm=$enableval,support_boehm=${support_boehm:-yes})
-AM_CONDITIONAL(SUPPORT_BOEHM, test x$support_boehm = xyes)
-
-dnl
-dnl Boehm GC configuration
-dnl
+gc_headers=no
+gc_msg=""
+use_included_gc=no
 LIBGC_CPPFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=
 libgc_dir=
-case "x$gc" in
+case "x$libgc" in
 	xboehm|xbohem|xyes)
 		AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
 		AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
@@ -1045,12 +1044,11 @@ case "x$gc" in
 		fi
 
 		# check whether we need to explicitly allow
-               	# thread registering
-               	AC_CHECK_LIB(gc, GC_allow_register_threads, found_allow_register_threads="yes",,$libdl)
-               	if test "x$found_allow_register_threads" = "xyes"; then
-                        AC_DEFINE(HAVE_GC_ALLOW_REGISTER_THREADS, 1, [GC requires thread registration])
-               	fi
-
+		# thread registering
+		AC_CHECK_LIB(gc, GC_allow_register_threads, found_allow_register_threads="yes",,$libdl)
+		if test "x$found_allow_register_threads" = "xyes"; then
+		   AC_DEFINE(HAVE_GC_ALLOW_REGISTER_THREADS, 1, [GC requires thread registration])
+		fi
 		;;
 
 	xincluded)
@@ -1070,7 +1068,7 @@ case "x$gc" in
 			CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DGC_BUILD -DGC_NOT_DLL"
 		fi
 
-		gc_msg="bundled Boehm GC with typed GC"
+		gc_msg="Included Boehm GC with typed GC"
 		if test x$enable_parallel_mark = xyes; then
 			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
 			gc_msg="$gc_msg and parallel mark"
@@ -1107,7 +1105,7 @@ AC_SUBST(libgc_dir)
 AC_SUBST(BOEHM_DEFINES)
 
 dnl
-dnl End of libgc checks
+dnl End of Boehm GC Configuration
 dnl
 
 dnl *************************************
@@ -2657,8 +2655,6 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
-		# libgc's gc_locks.h depends on this
-	    CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC"
 		sgen_supported=true
 		;;
 	arm*-linux*)
@@ -2725,7 +2721,6 @@ if test "x$host" != "x$target"; then
 		sizeof_register=8
 		target_byte_order=G_BIG_ENDIAN
 		;;
-
    powerpc64-xbox360-linux-gnu)
 		TARGET=POWERPC64
 		arch_target=powerpc64
@@ -3196,7 +3191,7 @@ if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
 fi
 
-case "x$gc" in
+case "x$libgc" in
 	xincluded)
 		# Pass CPPFLAGS to libgc configure
 		# We should use a separate variable for this to avoid passing useless and
@@ -3350,7 +3345,7 @@ AM_CONDITIONAL(CROSS_COMPILE, test "x$host" != "x$target")
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
 AM_CONDITIONAL(INTERP_SUPPORTED, test x$interp_wanted = xtrue)
-AM_CONDITIONAL(INCLUDED_LIBGC, test x$gc = xincluded)
+AM_CONDITIONAL(INCLUDED_LIBGC, test x$libgc = xincluded)
 
 AC_SUBST(LIBC)
 AC_SUBST(INTL)
@@ -3760,6 +3755,8 @@ echo "
         mcs source:    $mcsdir
 
    Engine:
+	Host:	       $host
+	Target:	       $target
 	GC:	       $gc_msg 
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
