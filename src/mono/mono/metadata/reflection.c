@@ -12787,3 +12787,17 @@ mono_reflection_type_get_type (MonoReflectionType *reftype)
 	return mono_reflection_type_get_handle (reftype);
 }
 
+/**
+ * mono_reflection_assembly_get_assembly:
+ * @refassembly: the System.Reflection.Assembly object
+ *
+ * Returns the MonoAssembly* associated with the C# System.Reflection.Assembly object @refassembly.
+ */
+MonoAssembly*
+mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly)
+{
+	g_assert (refassembly);
+
+	return refassembly->assembly;
+}
+

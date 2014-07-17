@@ -134,6 +134,8 @@ MONO_API MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, u
 
 MONO_API MonoType* mono_reflection_type_get_type (MonoReflectionType *reftype);
 
+MONO_API MonoAssembly* mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly);
+
 MONO_END_DECLS
 
 #endif /* __METADATA_REFLECTION_H__ */
