@@ -30,6 +30,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-conc-hashtable.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 
@@ -307,7 +308,7 @@ typedef struct
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
 	/* Maps methods to a RuntimeInvokeInfo structure */
-	GHashTable *runtime_invoke_hash;
+	MonoConcurrentHashTable *runtime_invoke_hash;
 	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
 	GHashTable *seq_points;
 	/* Debugger agent data */

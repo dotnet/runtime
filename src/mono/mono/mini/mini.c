@@ -6384,7 +6384,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	g_hash_table_remove (domain_jit_info (domain)->dynamic_code_hash, method);
 	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	g_hash_table_remove (domain_jit_info (domain)->jump_trampoline_hash, method);
-	g_hash_table_remove (domain_jit_info (domain)->runtime_invoke_hash, method);
+	mono_conc_hashtable_remove (domain_jit_info (domain)->runtime_invoke_hash, method);
 
 	/* Remove jump targets in this method */
 	g_hash_table_iter_init (&iter, domain_jit_info (domain)->jump_target_hash);
@@ -6525,9 +6525,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	domain_info = domain_jit_info (domain);
 
-	mono_domain_lock (domain);
-	info = g_hash_table_lookup (domain_info->runtime_invoke_hash, method);
-	mono_domain_unlock (domain);		
+	info = mono_conc_hashtable_lookup (domain_info->runtime_invoke_hash, method);
 
 	if (!info) {
 		if (mono_security_core_clr_enabled ()) {
@@ -6668,15 +6666,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (!info->dyn_call_info)
 			info->runtime_invoke = mono_jit_compile_method (invoke);
 
-		mono_domain_lock (domain);
-		info2 = g_hash_table_lookup (domain_info->runtime_invoke_hash, method);
+		info2 = mono_conc_hashtable_insert (domain_info->runtime_invoke_hash, method, info);
 		if (info2) {
 			g_free (info);
 			info = info2;
-		} else {
-			g_hash_table_insert (domain_info->runtime_invoke_hash, method, info);
 		}
-		mono_domain_unlock (domain);
 	}
 
 	runtime_invoke = info->runtime_invoke;
@@ -7126,7 +7120,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	info->runtime_invoke_hash = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
+	info->runtime_invoke_hash = mono_conc_hashtable_new_full (&domain->lock.mutex, mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);	
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, seq_point_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
@@ -7205,7 +7199,7 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	if (info->static_rgctx_trampoline_hash)
 		g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
-	g_hash_table_destroy (info->runtime_invoke_hash);
+	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);
 	if (info->agent_info)
