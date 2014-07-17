@@ -5293,46 +5293,39 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	guint32 len;
 	MonoType *type, *type2;
 
-	mono_loader_lock ();
-
+	mono_image_lock (image);
 	type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
-	if (type) {
-		mono_loader_unlock ();
+	mono_image_unlock (image);
+	if (type)
 		return type;
-	}
 
 	t = &image->tables [MONO_TABLE_TYPESPEC];
 
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 
-	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], type_spec, NULL)) {
-		mono_loader_unlock ();
+	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], type_spec, NULL))
 		return NULL;
-	}
 
 	len = mono_metadata_decode_value (ptr, &ptr);
 
 	type = mono_metadata_parse_type_internal (image, NULL, MONO_PARSE_TYPE, 0, TRUE, ptr, &ptr);
-	if (!type) {
-		mono_loader_unlock ();
+	if (!type)
 		return NULL;
-	}
-
-	type2 = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
-
-	if (type2) {
-		mono_loader_unlock ();
-		return type2;
-	}
 
 	type2 = mono_metadata_type_dup (image, type);
-	g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
 	mono_metadata_free_type (type);
 
-	mono_loader_unlock ();
+	mono_image_lock (image);
+	type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
+	/* We might leak some data in the image mempool if found */
+	if (!type) {
+		g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
+		type = type2;
+	}
+	mono_image_unlock (image);
 
-	return type2;
+	return type;
 }
 
 
