@@ -2826,7 +2826,7 @@ void mono_cross_helpers_run (void) MONO_INTERNAL;
 #endif
 #endif
 
-#ifdef MONO_ARCH_USE_SIGACTION
+#if defined(MONO_ARCH_USE_SIGACTION) && !defined(HOST_WIN32)
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
 #define SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, siginfo_t *info, void *context))
 #define SIG_HANDLER_PARAMS _dummy, info, context

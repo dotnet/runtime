@@ -9755,5 +9755,11 @@ mono_debugger_agent_debug_log_is_enabled (void)
 	return FALSE;
 }
 
+void
+mono_debugger_agent_unhandled_exception (MonoException *exc)
+{
+	g_assert_not_reached ();
+}
+
 #endif
 

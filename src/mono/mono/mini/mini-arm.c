@@ -6911,8 +6911,7 @@ mono_arch_get_trampolines (gboolean aot)
 	return mono_arm_get_exception_trampolines (aot);
 }
 
-
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+#if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED)
 /*
  * mono_arch_set_breakpoint:
  *

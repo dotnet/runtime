@@ -2237,6 +2237,8 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 	return FALSE;
 }
 
+#ifndef MONO_CROSS_COMPILE
+
 static gboolean handling_sigsegv = FALSE;
 
 /*
@@ -2359,6 +2361,16 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 #endif
 	}
 }
+
+#else
+
+void
+mono_handle_native_sigsegv (int signal, void *ctx)
+{
+	g_assert_not_reached ();
+}
+
+#endif /* !MONO_CROSS_COMPILE */
 
 static void
 mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
