@@ -110,7 +110,9 @@ monoutils_sources = \
 	mono-hwcap.c	\
 	bsearch.h	\
 	bsearch.c	\
-	mono-signal-handler.h
+	mono-signal-handler.h	\
+	mono-conc-hashtable.h	\
+	mono-conc-hashtable.c
 
 arch_sources = 
 
