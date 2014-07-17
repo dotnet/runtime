@@ -214,6 +214,9 @@
 
 #define __func__ __FUNCTION__
 
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+
 #endif /* _MSC_VER */
 
 #if !defined(_MSC_VER) && !defined(PLATFORM_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
