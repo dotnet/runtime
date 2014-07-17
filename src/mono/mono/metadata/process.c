@@ -23,9 +23,6 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
-#if defined (MINGW_CROSS_COMPILE) && defined (HAVE_GETPROCESSID)
-#undef HAVE_GETPROCESSID
-#endif
 #ifndef HAVE_GETPROCESSID
 #if defined(_MSC_VER) || defined(HAVE_WINTERNL_H)
 #include <winternl.h>

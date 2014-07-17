@@ -116,7 +116,7 @@ case "$host" in
 		fi
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01
-		CPPFLAGS="$CPPFLAGS -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
+		CPPFLAGS="$CPPFLAGS -DWINVER=0x0502 -D_WIN32_WINNT=0x0502 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
 		LDFLAGS="$LDFLAGS -lmswsock -lws2_32 -lole32 -loleaut32 -lpsapi -lversion -ladvapi32 -lwinmm -lkernel32"
 		libmono_cflags="-mms-bitfields -mwindows"
 		libmono_ldflags="-mms-bitfields -mwindows"
@@ -2137,7 +2137,6 @@ else
 			AC_MSG_RESULT(no)
 		])
 	])
-	AC_CHECK_FUNCS(GetProcessId)
 	AC_CHECK_DECLS(InterlockedExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedCompareExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedDecrement64, [], [], [[#include <windows.h>]])
@@ -2145,6 +2144,16 @@ else
 	AC_CHECK_DECLS(InterlockedAdd, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedAdd64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(__readfsdword, [], [], [[#include <windows.h>]])
+
+	AC_MSG_CHECKING(for GetProcessId)
+	AC_TRY_COMPILE([#include <windows.h>], [
+		GetProcessId (0);
+	], [
+	   AC_MSG_RESULT(yes)
+	   AC_DEFINE(HAVE_GETPROCESSID)
+	], [
+	   AC_MSG_RESULT(no)
+	])
 fi
 
 dnl socklen_t check
