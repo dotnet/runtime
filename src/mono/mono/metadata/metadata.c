@@ -2651,7 +2651,6 @@ mono_metadata_clean_for_image (MonoImage *image)
 	 */
 	ginst_data.image = gclass_data.image = image;
 	ginst_data.list = gclass_data.list = NULL;
-	mono_loader_lock ();
 
 	/* Collect the items to delete */
 	/* delete_image_set () modifies the lists so make a copy */
@@ -2681,8 +2680,6 @@ mono_metadata_clean_for_image (MonoImage *image)
 		delete_image_set (set);
 	}
 	g_slist_free (set_list);
-
-	mono_loader_unlock ();
 }
 
 static void
@@ -3593,22 +3590,13 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
  *
  * Decode the method header at @ptr, including pointer to the IL code,
  * info about local variables and optional exception tables.
- * This is a Mono runtime internal function.
  *
- * Returns: a MonoMethodHeader.
+ * Returns: a transient MonoMethodHeader allocated from the heap.
  */
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
-	MonoMethodHeader *res;
-
-	mono_loader_lock ();
-
-	res = mono_metadata_parse_mh_full (m, NULL, ptr);
-
-	mono_loader_unlock ();
-
-	return res;
+	return mono_metadata_parse_mh_full (m, NULL, ptr);
 }
 
 /*
@@ -4004,8 +3992,7 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
  * The array of interfaces that the @index typedef token implements is returned in
  * @interfaces. The number of elements in the array is returned in @count. 
  *
- * LOCKING: Assumes the loader lock is held.
- *
+
  * Returns: TRUE on success, FALSE on failure.
  */
 gboolean
@@ -4092,9 +4079,7 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 	MonoClass **interfaces;
 	gboolean rv;
 
-	mono_loader_lock ();
 	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, TRUE, NULL);
-	mono_loader_unlock ();
 	if (rv)
 		return interfaces;
 	else
