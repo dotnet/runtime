@@ -903,8 +903,8 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	void *last = NULL;
 	int count = 0;
 	void *search_start;
-	void *last_obj = NULL;
-	size_t last_obj_size = 0;
+	void *last_pinned_obj = NULL;
+	size_t last_pinned_obj_size = 0;
 	void *addr;
 	size_t idx;
 	void **definitely_pinned = start;
@@ -914,93 +914,129 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	sgen_nursery_allocator_prepare_for_pinning ();
 
 	while (start < end) {
+		gboolean found;
+
 		addr = *start;
-		/* the range check should be reduntant */
-		if (addr != last && addr >= start_nursery && addr < end_nursery) {
-			SGEN_LOG (5, "Considering pinning addr %p", addr);
-			/* multiple pointers to the same object */
-			if (addr >= last_obj && (char*)addr < (char*)last_obj + last_obj_size) {
-				start++;
+
+		SGEN_ASSERT (0, addr >= start_nursery && addr < end_nursery, "Potential pinning address out of range");
+		SGEN_ASSERT (0, addr >= last, "Pin queue not sorted");
+
+		if (addr == last) {
+			++start;
+			continue;
+		}
+
+		SGEN_LOG (5, "Considering pinning addr %p", addr);
+		/* multiple pointers to the same object */
+		if (addr >= last_pinned_obj && (char*)addr < (char*)last_pinned_obj + last_pinned_obj_size) {
+			start++;
+			continue;
+		}
+
+		/*
+		 * Find the closest scan start <= addr.  We might search backward in the
+		 * scan_starts array because entries might be NULL.  In the worst case we
+		 * start at start_nursery.
+		 */
+		idx = ((char*)addr - (char*)section->data) / SCAN_START_SIZE;
+		SGEN_ASSERT (0, idx < section->num_scan_start, "Scan start index out of range");
+		search_start = (void*)section->scan_starts [idx];
+		if (!search_start || search_start > addr) {
+			while (idx) {
+				--idx;
+				search_start = section->scan_starts [idx];
+				if (search_start && search_start <= addr)
+					break;
+			}
+			if (!search_start || search_start > addr)
+				search_start = start_nursery;
+		}
+
+		/*
+		 * If the last object we pinned is closer than the scan start we found,
+		 * start searching after that pinned object instead.
+		 */
+		if (search_start < last_pinned_obj)
+			search_start = (char*)last_pinned_obj + last_pinned_obj_size;
+
+		/*
+		 * Now addr should be in an object a short distance from search_start.
+		 *
+		 * search_start must point to zeroed mem or point to an object.
+		 */
+		found = FALSE;
+		do {
+			size_t obj_size;
+
+			/* Skip zeros. */
+			if (!*(void**)search_start) {
+				search_start = (void*)ALIGN_UP ((mword)search_start + sizeof (gpointer));
+				/* The loop condition makes sure we don't overrun addr. */
 				continue;
 			}
-			idx = ((char*)addr - (char*)section->data) / SCAN_START_SIZE;
-			g_assert (idx < section->num_scan_start);
-			search_start = (void*)section->scan_starts [idx];
-			if (!search_start || search_start > addr) {
-				while (idx) {
-					--idx;
-					search_start = section->scan_starts [idx];
-					if (search_start && search_start <= addr)
-						break;
-				}
-				if (!search_start || search_start > addr)
-					search_start = start_nursery;
+
+			obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
+
+			if (addr >= search_start && (char*)addr < (char*)search_start + obj_size) {
+				/* This is the object we're looking for. */
+				last_pinned_obj = search_start;
+				last_pinned_obj_size = obj_size;
+				found = TRUE;
+				break;
 			}
-			if (search_start < last_obj)
-				search_start = (char*)last_obj + last_obj_size;
-			/* now addr should be in an object a short distance from search_start
-			 * Note that search_start must point to zeroed mem or point to an object.
-			 */
 
-			do {
-				if (!*(void**)search_start) {
-					/* Consistency check */
-					/*
-					for (frag = nursery_fragments; frag; frag = frag->next) {
-						if (search_start >= frag->fragment_start && search_start < frag->fragment_end)
-							g_assert_not_reached ();
-					}
-					*/
+			/* Skip to the next object */
+			search_start = (void*)((char*)search_start + obj_size);
+		} while (search_start <= addr);
 
-					search_start = (void*)ALIGN_UP ((mword)search_start + sizeof (gpointer));
-					continue;
-				}
-				last_obj = search_start;
-				last_obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
+		/* We've searched past the address we were looking for. */
+		if (!found)
+			goto next_pin_queue_entry;
 
-				if (((MonoObject*)last_obj)->synchronisation == GINT_TO_POINTER (-1)) {
-					/* Marks the beginning of a nursery fragment, skip */
-				} else {
-					SGEN_LOG (8, "Pinned try match %p (%s), size %zd", last_obj, safe_name (last_obj), last_obj_size);
-					if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
-						if (scan_func) {
-							scan_func (search_start, queue);
-						} else {
-							SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
-									search_start, *(void**)search_start, safe_name (search_start), count);
-							binary_protocol_pin (search_start,
-									(gpointer)LOAD_VTABLE (search_start),
-									safe_object_get_size (search_start));
+		/*
+		 * If this is a dummy array marking the beginning of a nursery
+		 * fragment, we don't process it.
+		 */
+		if (((MonoObject*)search_start)->synchronisation == GINT_TO_POINTER (-1))
+			goto next_pin_queue_entry;
+
+		/*
+		 * Finally - pin the object!
+		 */
+		if (scan_func) {
+			scan_func (last_pinned_obj, queue);
+		} else {
+			SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
+					last_pinned_obj, *(void**)last_pinned_obj, safe_name (last_pinned_obj), count);
+			binary_protocol_pin (last_pinned_obj,
+					(gpointer)LOAD_VTABLE (last_pinned_obj),
+					safe_object_get_size (last_pinned_obj));
 
 #ifdef ENABLE_DTRACE
-							if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
-								int gen = sgen_ptr_in_nursery (search_start) ? GENERATION_NURSERY : GENERATION_OLD;
-								MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (search_start);
-								MONO_GC_OBJ_PINNED ((mword)search_start,
-										sgen_safe_object_get_size (search_start),
-										vt->klass->name_space, vt->klass->name, gen);
-							}
+			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+				int gen = sgen_ptr_in_nursery (last_pinned_obj) ? GENERATION_NURSERY : GENERATION_OLD;
+				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (last_pinned_obj);
+				MONO_GC_OBJ_PINNED ((mword)last_pinned_obj,
+						sgen_safe_object_get_size (last_pinned_obj),
+						vt->klass->name_space, vt->klass->name, gen);
+			}
 #endif
 
-							pin_object (search_start);
-							GRAY_OBJECT_ENQUEUE (queue, search_start);
-							if (G_UNLIKELY (do_pin_stats))
-								sgen_pin_stats_register_object (search_start, last_obj_size);
-							definitely_pinned [count] = search_start;
-							count++;
-						}
-						break;
-					}
-				}
-				/* skip to the next object */
-				search_start = (void*)((char*)search_start + last_obj_size);
-			} while (search_start <= addr);
-			/* we either pinned the correct object or we ignored the addr because
-			 * it points to unused zeroed memory.
-			 */
-			last = addr;
+			pin_object (last_pinned_obj);
+			GRAY_OBJECT_ENQUEUE (queue, last_pinned_obj);
+			if (G_UNLIKELY (do_pin_stats))
+				sgen_pin_stats_register_object (last_pinned_obj, last_pinned_obj_size);
+			definitely_pinned [count] = last_pinned_obj;
+			count++;
 		}
-		start++;
+
+		/*
+		 * We either pinned the correct object or we ignored the addr because it
+		 * points to unused zeroed memory.
+		 */
+	next_pin_queue_entry:
+		last = addr;
+		++start;
 	}
 	//printf ("effective pinned: %d (at the end: %d)\n", count, (char*)end_nursery - (char*)last);
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS) {
