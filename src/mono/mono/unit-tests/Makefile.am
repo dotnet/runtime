@@ -27,9 +27,14 @@ test_mono_linked_list_set_CFLAGS = $(TEST_CFLAGS)
 test_mono_linked_list_set_LDADD = $(TEST_LDADD)
 test_mono_linked_list_set_LDFLAGS = $(TEST_LDFLAGS)
 
-noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set
+test_conc_hashtable_SOURCES = test-conc-hashtable.c
+test_conc_hashtable_CFLAGS = $(TEST_CFLAGS)
+test_conc_hashtable_LDADD = $(TEST_LDADD)
+test_conc_hashtable_LDFLAGS = $(TEST_LDFLAGS)
 
-TESTS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set
+noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set test-conc-hashtable
+
+TESTS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set test-conc-hashtable
 
 endif SUPPORT_BOEHM
 endif !HOST_WIN32
