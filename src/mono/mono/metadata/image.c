@@ -679,7 +679,12 @@ mono_image_init (MonoImage *image)
 				       g_direct_hash,
 				       class_key_extract,
 				       class_next_value);
+#ifdef HOST_WIN32
+	// FIXME:
+	image->field_cache = mono_conc_hashtable_new (&image->lock, NULL, NULL);
+#else
 	image->field_cache = mono_conc_hashtable_new (&image->lock.mutex, NULL, NULL);
+#endif
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
