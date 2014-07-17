@@ -13,6 +13,7 @@
 #include "mono/utils/mono-property-hash.h"
 #include "mono/utils/mono-value-hash.h"
 #include <mono/utils/mono-error.h>
+#include "mono/utils/mono-conc-hashtable.h"
 
 struct _MonoType {
 	union {
@@ -224,7 +225,7 @@ struct _MonoImage {
 	/*
 	 * Indexed by fielddef and memberref tokens
 	 */
-	GHashTable *field_cache; /*protected by the image lock*/
+	MonoConcurrentHashTable *field_cache; /*protected by the image lock*/
 
 	/* indexed by typespec tokens. */
 	GHashTable *typespec_cache;

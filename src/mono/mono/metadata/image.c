@@ -671,12 +671,15 @@ class_next_value (gpointer value)
 void
 mono_image_init (MonoImage *image)
 {
+	InitializeCriticalSection (&image->lock);
+	InitializeCriticalSection (&image->szarray_cache_lock);
+
 	image->mempool = mono_mempool_new_size (512);
 	mono_internal_hash_table_init (&image->class_cache,
 				       g_direct_hash,
 				       class_key_extract,
 				       class_next_value);
-	image->field_cache = g_hash_table_new (NULL, NULL);
+	image->field_cache = mono_conc_hashtable_new (&image->lock.mutex, NULL, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
@@ -684,8 +687,6 @@ mono_image_init (MonoImage *image)
 	image->method_signatures = g_hash_table_new (NULL, NULL);
 
 	image->property_hash = mono_property_hash_new ();
-	InitializeCriticalSection (&image->lock);
-	InitializeCriticalSection (&image->szarray_cache_lock);
 }
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -1602,7 +1603,7 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->methodref_cache)
 		g_hash_table_destroy (image->methodref_cache);
 	mono_internal_hash_table_destroy (&image->class_cache);
-	g_hash_table_destroy (image->field_cache);
+	mono_conc_hashtable_destroy (image->field_cache);
 	if (image->array_cache) {
 		g_hash_table_foreach (image->array_cache, free_array_cache_entry, NULL);
 		g_hash_table_destroy (image->array_cache);
