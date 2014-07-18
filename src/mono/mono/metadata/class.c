@@ -5192,55 +5192,56 @@ mono_class_init (MonoClass *class)
 gboolean
 mono_class_has_finalizer (MonoClass *klass)
 {
-	if (!klass->has_finalize_inited) {
-		MonoClass *class = klass;
+	MonoClass *class = klass;
+	gboolean has_finalize = FALSE;
 
-		mono_loader_lock ();
+	if (klass->has_finalize_inited)
+		return klass->has_finalize;
 
-		/* Interfaces and valuetypes are not supposed to have finalizers */
-		if (!(MONO_CLASS_IS_INTERFACE (class) || class->valuetype)) {
-			MonoMethod *cmethod = NULL;
+	/* Interfaces and valuetypes are not supposed to have finalizers */
+	if (!(MONO_CLASS_IS_INTERFACE (class) || class->valuetype)) {
+		MonoMethod *cmethod = NULL;
 
-			if (class->parent && class->parent->has_finalize) {
-				class->has_finalize = 1;
-			} else {
-				if (class->parent) {
-					/*
-					 * Can't search in metadata for a method named Finalize, because that
-					 * ignores overrides.
-					 */
-					mono_class_setup_vtable (class);
-					if (class->exception_type || mono_loader_get_last_error ())
-						goto leave;
+		if (class->parent && class->parent->has_finalize) {
+			has_finalize = TRUE;
+		} else {
+			if (class->parent) {
+				/*
+				 * Can't search in metadata for a method named Finalize, because that
+				 * ignores overrides.
+				 */
+				mono_class_setup_vtable (class);
+				if (class->exception_type || mono_loader_get_last_error ())
+					cmethod = NULL;
+				else
 					cmethod = class->vtable [finalize_slot];
-				}
+			}
 
-				if (cmethod) {
-					g_assert (class->vtable_size > finalize_slot);
+			if (cmethod) {
+				g_assert (class->vtable_size > finalize_slot);
 
-					class->has_finalize = 0;
-					if (class->parent) { 
-						if (cmethod->is_inflated)
-							cmethod = ((MonoMethodInflated*)cmethod)->declaring;
-						if (cmethod != default_finalize) {
-							class->has_finalize = 1;
-						}
-					}
+				if (class->parent) {
+					if (cmethod->is_inflated)
+						cmethod = ((MonoMethodInflated*)cmethod)->declaring;
+					if (cmethod != default_finalize)
+						has_finalize = TRUE;
 				}
 			}
 		}
+	}
+
+	mono_loader_lock ();
+
+	if (!klass->has_finalize_inited) {
+		klass->has_finalize = has_finalize ? 1 : 0;
 
 		mono_memory_barrier ();
 		klass->has_finalize_inited = TRUE;
-
-		mono_loader_unlock ();
 	}
 
-	return klass->has_finalize;
-
- leave:
 	mono_loader_unlock ();
-	return FALSE;
+
+	return klass->has_finalize;
 }
 
 gboolean
