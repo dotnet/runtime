@@ -5069,14 +5069,11 @@ mono_class_init (MonoClass *class)
 		} else {
 			class->vtable_size = szarray_vtable_size[slot];
 		}
-		class->has_finalize_inited = TRUE;
 	} else if (class->generic_class && !MONO_CLASS_IS_INTERFACE (class)) {
 		MonoClass *gklass = class->generic_class->container_class;
 
 		/* Generic instance case */
 		class->ghcimpl = gklass->ghcimpl;
-		class->has_finalize = mono_class_has_finalizer (gklass);
-		class->has_finalize_inited = TRUE;
 		class->has_cctor = gklass->has_cctor;
 
 		mono_class_setup_vtable (gklass);
@@ -5203,7 +5200,12 @@ mono_class_has_finalizer (MonoClass *klass)
 	if (!(MONO_CLASS_IS_INTERFACE (class) || class->valuetype)) {
 		MonoMethod *cmethod = NULL;
 
-		if (class->parent && class->parent->has_finalize) {
+		if (class->rank == 1 && class->byval_arg.type == MONO_TYPE_SZARRAY) {
+		} else if (class->generic_class) {
+			MonoClass *gklass = class->generic_class->container_class;
+
+			has_finalize = mono_class_has_finalizer (gklass);
+		} else if (class->parent && class->parent->has_finalize) {
 			has_finalize = TRUE;
 		} else {
 			if (class->parent) {
