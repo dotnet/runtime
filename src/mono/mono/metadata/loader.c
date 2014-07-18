@@ -1917,17 +1917,11 @@ MonoMethod *
 mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class,
 			     MonoGenericContext *context)
 {
-	MonoMethod *result;
-
 	g_assert (method);
 
-	mono_loader_lock ();
-
-	result = get_method_constrained (image, method, constrained_class, context);
-
-	mono_loader_unlock ();
-	return result;	
+	return get_method_constrained (image, method, constrained_class, context);
 }
+
 /**
  * mono_get_method_constrained:
  *
@@ -1943,17 +1937,12 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 {
 	MonoMethod *result;
 
-	mono_loader_lock ();
-
 	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL);
-	if (!*cil_method) {
-		mono_loader_unlock ();
+	if (!*cil_method)
 		return NULL;
-	}
 
 	result = get_method_constrained (image, *cil_method, constrained_class, context);
 
-	mono_loader_unlock ();
 	return result;
 }
 
@@ -2654,4 +2643,3 @@ mono_method_get_index (MonoMethod *method) {
 	}
 	return 0;
 }
-
