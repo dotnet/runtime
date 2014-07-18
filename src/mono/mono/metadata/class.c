@@ -10057,12 +10057,49 @@ mono_class_alloc_ext (MonoClass *klass)
 void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 {
-	int i;
+	int i, interface_count;
+	MonoClass **interfaces;
 
 	mono_error_init (error);
 
 	if (klass->interfaces_inited)
 		return;
+
+	if (klass->rank == 1 && klass->byval_arg.type != MONO_TYPE_ARRAY) {
+		MonoType *args [1];
+
+		/* generic IList, ICollection, IEnumerable */
+		interface_count = mono_defaults.generic_ireadonlylist_class ? 2 : 1;
+		interfaces = mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count);
+
+		args [0] = &klass->element_class->byval_arg;
+		interfaces [0] = mono_class_bind_generic_parameters (
+			mono_defaults.generic_ilist_class, 1, args, FALSE);
+		if (interface_count > 1)
+			interfaces [1] = mono_class_bind_generic_parameters (
+			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+	} else if (klass->generic_class) {
+		MonoClass *gklass = klass->generic_class->container_class;
+
+		mono_class_setup_interfaces (gklass, error);
+		if (!mono_error_ok (error)) {
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
+			return;
+		}
+
+		interface_count = gklass->interface_count;
+		interfaces = mono_class_new0 (klass, MonoClass *, interface_count);
+		for (i = 0; i < interface_count; i++) {
+			interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class), error);
+			if (!mono_error_ok (error)) {
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
+				return;
+			}
+		}
+	} else {
+		interface_count = 0;
+		interfaces = NULL;
+	}
 
 	mono_loader_lock ();
 
@@ -10071,33 +10108,8 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		return;
 	}
 
-	if (klass->rank == 1 && klass->byval_arg.type != MONO_TYPE_ARRAY) {
-		MonoType *args [1];
-
-		/* generic IList, ICollection, IEnumerable */
-		klass->interface_count = mono_defaults.generic_ireadonlylist_class ? 2 : 1;
-		klass->interfaces = mono_image_alloc0 (klass->image, sizeof (MonoClass*) * klass->interface_count);
-
-		args [0] = &klass->element_class->byval_arg;
-		klass->interfaces [0] = mono_class_bind_generic_parameters (
-			mono_defaults.generic_ilist_class, 1, args, FALSE);
-		if (klass->interface_count > 1)
-			klass->interfaces [1] = mono_class_bind_generic_parameters (
-			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
-	} else if (klass->generic_class) {
-		MonoClass *gklass = klass->generic_class->container_class;
-
-		klass->interface_count = gklass->interface_count;
-		klass->interfaces = mono_class_new0 (klass, MonoClass *, klass->interface_count);
-		for (i = 0; i < klass->interface_count; i++) {
-			klass->interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class), error);
-			if (!mono_error_ok (error)) {
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
-				klass->interfaces = NULL;
-				return;
-			}
-		}
-	}
+	klass->interface_count = interface_count;
+	klass->interfaces = interfaces;
 
 	mono_memory_barrier ();
 
