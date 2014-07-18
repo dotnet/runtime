@@ -2030,7 +2030,7 @@ create_array_method (MonoClass *class, const char *name, MonoMethodSignature *si
  * mono_class_setup_methods:
  * @class: a class
  *
- *   Initializes the 'methods' array in the klass.
+ *   Initializes the 'methods' array in CLASS.
  * Calling this method should be avoided if possible since it allocates a lot 
  * of long-living MonoMethod structures.
  * Methods belonging to an interface are assigned a sequential slot starting
@@ -2041,18 +2041,11 @@ create_array_method (MonoClass *class, const char *name, MonoMethodSignature *si
 void
 mono_class_setup_methods (MonoClass *class)
 {
-	int i;
+	int i, count;
 	MonoMethod **methods;
 
 	if (class->methods)
 		return;
-
-	mono_loader_lock ();
-
-	if (class->methods) {
-		mono_loader_unlock ();
-		return;
-	}
 
 	if (class->generic_class) {
 		MonoError error;
@@ -2062,17 +2055,16 @@ mono_class_setup_methods (MonoClass *class)
 		if (!gklass->exception_type)
 			mono_class_setup_methods (gklass);
 		if (gklass->exception_type) {
-			/*FIXME make exception_data less opaque so it's possible to dup it here*/
+			/* FIXME make exception_data less opaque so it's possible to dup it here */
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
-			mono_loader_unlock ();
 			return;
 		}
 
 		/* The + 1 makes this always non-NULL to pass the check in mono_class_setup_methods () */
-		class->method.count = gklass->method.count;
-		methods = mono_class_alloc0 (class, sizeof (MonoMethod*) * (class->method.count + 1));
+		count = gklass->method.count;
+		methods = mono_class_alloc0 (class, sizeof (MonoMethod*) * (count + 1));
 
-		for (i = 0; i < class->method.count; i++) {
+		for (i = 0; i < count; i++) {
 			methods [i] = mono_class_inflate_generic_method_full_checked (
 				gklass->methods [i], class, mono_class_get_context (class), &error);
 			if (!mono_error_ok (&error)) {
@@ -2081,7 +2073,6 @@ mono_class_setup_methods (MonoClass *class)
 
 				g_free (method);
 				mono_error_cleanup (&error);
-				mono_loader_unlock ();
 				return;				
 			}
 		}
@@ -2092,18 +2083,18 @@ mono_class_setup_methods (MonoClass *class)
 		int count_generic = 0, first_generic = 0;
 		int method_num = 0;
 
-		class->method.count = 3 + (class->rank > 1? 2: 1);
+		count = 3 + (class->rank > 1? 2: 1);
 
 		mono_class_setup_interfaces (class, &error);
 		g_assert (mono_error_ok (&error)); /*FIXME can this fail for array types?*/
 
 		if (class->interface_count) {
 			count_generic = generic_array_methods (class);
-			first_generic = class->method.count;
-			class->method.count += class->interface_count * count_generic;
+			first_generic = count;
+			count += class->interface_count * count_generic;
 		}
 
-		methods = mono_class_alloc0 (class, sizeof (MonoMethod*) * class->method.count);
+		methods = mono_class_alloc0 (class, sizeof (MonoMethod*) * count);
 
 		sig = mono_metadata_signature_alloc (class->image, class->rank);
 		sig->ret = &mono_defaults.void_class->byval_arg;
@@ -2157,8 +2148,9 @@ mono_class_setup_methods (MonoClass *class)
 		for (i = 0; i < class->interface_count; i++)
 			setup_generic_array_ifaces (class, class->interfaces [i], methods, first_generic + i * count_generic);
 	} else {
-		methods = mono_class_alloc (class, sizeof (MonoMethod*) * class->method.count);
-		for (i = 0; i < class->method.count; ++i) {
+		count = class->method.count;
+		methods = mono_class_alloc (class, sizeof (MonoMethod*) * count);
+		for (i = 0; i < count; ++i) {
 			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
 			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | idx, class);
 		}
@@ -2167,11 +2159,20 @@ mono_class_setup_methods (MonoClass *class)
 	if (MONO_CLASS_IS_INTERFACE (class)) {
 		int slot = 0;
 		/*Only assign slots to virtual methods as interfaces are allowed to have static methods.*/
-		for (i = 0; i < class->method.count; ++i) {
+		for (i = 0; i < count; ++i) {
 			if (methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
 				methods [i]->slot = slot++;
 		}
 	}
+
+	mono_loader_lock ();
+
+	if (class->methods) {
+		mono_loader_unlock ();
+		return;
+	}
+
+	class->method.count = count;
 
 	/* Needed because of the double-checking locking pattern */
 	mono_memory_barrier ();
