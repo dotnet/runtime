@@ -2296,7 +2296,13 @@ mono_class_get_vtable_size (MonoClass *klass)
 	return klass->vtable_size;
 }
 
-/*This method can fail the class.*/
+/*
+ * mono_class_setup_properties:
+ *
+ *   Initialize class->ext.property and class->ext.properties.
+ *
+ * This method can fail the class.
+ */
 static void
 mono_class_setup_properties (MonoClass *class)
 {
@@ -2305,18 +2311,10 @@ mono_class_setup_properties (MonoClass *class)
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
 	MonoProperty *properties;
 	guint32 last;
+	int first, count;
 
 	if (class->ext && class->ext->properties)
 		return;
-
-	mono_loader_lock ();
-
-	if (class->ext && class->ext->properties) {
-		mono_loader_unlock ();
-		return;
-	}
-
-	mono_class_alloc_ext (class);
 
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
@@ -2325,15 +2323,12 @@ mono_class_setup_properties (MonoClass *class)
 		mono_class_setup_properties (gklass);
 		if (gklass->exception_type) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
-			mono_loader_unlock ();			
 			return;
 		}
 
-		class->ext->property = gklass->ext->property;
+		properties = mono_class_new0 (class, MonoProperty, gklass->ext->property.count + 1);
 
-		properties = mono_class_new0 (class, MonoProperty, class->ext->property.count + 1);
-
-		for (i = 0; i < class->ext->property.count; i++) {
+		for (i = 0; i < gklass->ext->property.count; i++) {
 			MonoProperty *prop = &properties [i];
 
 			*prop = gklass->ext->properties [i];
@@ -2347,20 +2342,19 @@ mono_class_setup_properties (MonoClass *class)
 
 			prop->parent = class;
 		}
+
+		first = gklass->ext->property.first;
+		count = gklass->ext->property.count;
 	} else {
-		int first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
-		int count = last - first;
+		first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
+		count = last - first;
 
 		if (count) {
 			mono_class_setup_methods (class);
-			if (class->exception_type) {
-				mono_loader_unlock ();
+			if (class->exception_type)
 				return;
-			}
 		}
 
-		class->ext->property.first = first;
-		class->ext->property.count = count;
 		properties = mono_class_alloc0 (class, sizeof (MonoProperty) * count);
 		for (i = first; i < last; ++i) {
 			mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
@@ -2393,7 +2387,21 @@ mono_class_setup_properties (MonoClass *class)
 			}
 		}
 	}
-	/*Flush any pending writes as we do double checked locking on class->properties */
+
+	mono_loader_lock ();
+
+	if (class->ext && class->ext->properties) {
+		/* We leak 'properties' which was allocated from the image mempool */
+		mono_loader_unlock ();
+		return;
+	}
+
+	mono_class_alloc_ext (class);
+
+	class->ext->property.first = first;
+	class->ext->property.count = count;
+
+	/* Flush any pending writes as we do double checked locking on class->ext->properties */
 	mono_memory_barrier ();
 
 	/* Leave this assignment as the last op in the function */
