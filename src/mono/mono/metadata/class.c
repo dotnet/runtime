@@ -2441,15 +2441,6 @@ mono_class_setup_events (MonoClass *class)
 	if (class->ext && class->ext->events)
 		return;
 
-	mono_loader_lock ();
-
-	if (class->ext && class->ext->events) {
-		mono_loader_unlock ();
-		return;
-	}
-
-	mono_class_alloc_ext (class);
-
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 		MonoGenericContext *context;
@@ -2457,18 +2448,19 @@ mono_class_setup_events (MonoClass *class)
 		mono_class_setup_events (gklass);
 		if (gklass->exception_type) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
-			mono_loader_unlock ();
 			return;
 		}
 
-		class->ext->event = gklass->ext->event;
-		class->ext->events = mono_class_new0 (class, MonoEvent, class->ext->event.count);
+		first = gklass->ext->event.first;
+		count = gklass->ext->event.count;
 
-		if (class->ext->event.count)
+		events = mono_class_new0 (class, MonoEvent, count);
+
+		if (count)
 			context = mono_class_get_context (class);
 
-		for (i = 0; i < class->ext->event.count; i++) {
-			MonoEvent *event = &class->ext->events [i];
+		for (i = 0; i < count; i++) {
+			MonoEvent *event = &events [i];
 			MonoEvent *gevent = &gklass->ext->events [i];
 
 			event->parent = class;
@@ -2481,78 +2473,86 @@ mono_class_setup_events (MonoClass *class)
 #endif
 			event->attrs = gevent->attrs;
 		}
+	} else {
+		first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
+		count = last - first;
 
+		if (count) {
+			mono_class_setup_methods (class);
+			if (class->exception_type) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
+				return;
+			}
+		}
+
+		events = mono_class_alloc0 (class, sizeof (MonoEvent) * count);
+		for (i = first; i < last; ++i) {
+			MonoEvent *event = &events [i - first];
+
+			mono_metadata_decode_table_row (class->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
+			event->parent = class;
+			event->attrs = cols [MONO_EVENT_FLAGS];
+			event->name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
+
+			startm = mono_metadata_methods_from_event (class->image, i, &endm);
+			for (j = startm; j < endm; ++j) {
+				MonoMethod *method;
+
+				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
+
+				if (class->image->uncompressed_metadata)
+					/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
+					method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
+				else
+					method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+
+				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
+				case METHOD_SEMANTIC_ADD_ON:
+					event->add = method;
+					break;
+				case METHOD_SEMANTIC_REMOVE_ON:
+					event->remove = method;
+					break;
+				case METHOD_SEMANTIC_FIRE:
+					event->raise = method;
+					break;
+				case METHOD_SEMANTIC_OTHER: {
+#ifndef MONO_SMALL_CONFIG
+					int n = 0;
+
+					if (event->other == NULL) {
+						event->other = g_new0 (MonoMethod*, 2);
+					} else {
+						while (event->other [n])
+							n++;
+						event->other = g_realloc (event->other, (n + 2) * sizeof (MonoMethod*));
+					}
+					event->other [n] = method;
+					/* NULL terminated */
+					event->other [n + 1] = NULL;
+#endif
+					break;
+				}
+				default:
+					break;
+				}
+			}
+		}
+	}
+
+	mono_loader_lock ();
+
+	if (class->ext && class->ext->events) {
 		mono_loader_unlock ();
 		return;
 	}
 
-	first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &last);
-	count = last - first;
+	mono_class_alloc_ext (class);
 
-	if (count) {
-		mono_class_setup_methods (class);
-		if (class->exception_type) {
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
-			mono_loader_unlock ();
-			return;
-		}
-	}
 	class->ext->event.first = first;
 	class->ext->event.count = count;
-	events = mono_class_alloc0 (class, sizeof (MonoEvent) * class->ext->event.count);
-	for (i = first; i < last; ++i) {
-		MonoEvent *event = &events [i - first];
 
-		mono_metadata_decode_table_row (class->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
-		event->parent = class;
-		event->attrs = cols [MONO_EVENT_FLAGS];
-		event->name = mono_metadata_string_heap (class->image, cols [MONO_EVENT_NAME]);
-
-		startm = mono_metadata_methods_from_event (class->image, i, &endm);
-		for (j = startm; j < endm; ++j) {
-			MonoMethod *method;
-
-			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
-
-			if (class->image->uncompressed_metadata)
-				/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
-				method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
-			else
-				method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
-
-			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
-			case METHOD_SEMANTIC_ADD_ON:
-				event->add = method;
-				break;
-			case METHOD_SEMANTIC_REMOVE_ON:
-				event->remove = method;
-				break;
-			case METHOD_SEMANTIC_FIRE:
-				event->raise = method;
-				break;
-			case METHOD_SEMANTIC_OTHER: {
-#ifndef MONO_SMALL_CONFIG
-				int n = 0;
-
-				if (event->other == NULL) {
-					event->other = g_new0 (MonoMethod*, 2);
-				} else {
-					while (event->other [n])
-						n++;
-					event->other = g_realloc (event->other, (n + 2) * sizeof (MonoMethod*));
-				}
-				event->other [n] = method;
-				/* NULL terminated */
-				event->other [n + 1] = NULL;
-#endif
-				break;
-			}
-			default:
-				break;
-			}
-		}
-	}
-	/*Flush any pending writes as we do double checked locking on class->properties */
+	/* Flush any pending writes as we do double checked locking on class->ext.events */
 	mono_memory_barrier ();
 
 	/* Leave this assignment as the last op in the function */
