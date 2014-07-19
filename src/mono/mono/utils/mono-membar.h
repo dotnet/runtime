@@ -13,7 +13,6 @@
 #include <config.h>
 
 #include <glib.h>
-#include "mono-compiler.h"
 
 #ifdef _MSC_VER
 #ifndef WIN32_LEAN_AND_MEAN
@@ -47,17 +46,17 @@ static inline void mono_memory_write_barrier (void)
 	MemoryBarrier ();
 }
 #elif defined(USE_GCC_ATOMIC_OPS)
-static MONO_ALWAYS_INLINE void mono_memory_barrier (void)
+static inline void mono_memory_barrier (void)
 {
 	__sync_synchronize ();
 }
 
-static MONO_ALWAYS_INLINE void mono_memory_read_barrier (void)
+static inline void mono_memory_read_barrier (void)
 {
 	mono_memory_barrier ();
 }
 
-static MONO_ALWAYS_INLINE void mono_memory_write_barrier (void)
+static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
