@@ -2556,10 +2556,8 @@ mono_method_get_header (MonoMethod *method)
 		MonoMethodHeader *header, *iheader;
 
 		header = mono_method_get_header (imethod->declaring);
-		if (!header) {
-			mono_loader_unlock ();
+		if (!header)
 			return NULL;
-		}
 
 		iheader = inflate_generic_header (header, mono_method_get_context (method));
 		mono_metadata_free_mh (header);
