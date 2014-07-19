@@ -8890,6 +8890,58 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+static void
+setup_nested_types (MonoClass *klass)
+{
+	MonoError error;
+	GList *classes, *l;
+	int i;
+
+	if (klass->nested_classes_inited)
+		return;
+
+	if (!klass->type_token)
+		klass->nested_classes_inited = TRUE;
+
+	i = mono_metadata_nesting_typedef (klass->image, klass->type_token, 1);
+	classes = NULL;
+	while (i) {
+		MonoClass* nclass;
+		guint32 cols [MONO_NESTED_CLASS_SIZE];
+		mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED], &error);
+		if (!mono_error_ok (&error)) {
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (&error);
+
+			i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
+			continue;
+		}
+
+		classes = g_list_prepend (classes, nclass);
+
+		i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
+	}
+
+	mono_loader_lock ();
+	if (klass->nested_classes_inited) {
+		g_list_free (classes);
+		mono_loader_unlock ();
+		return;
+	}
+
+	mono_class_alloc_ext (klass);
+
+	for (l = classes; l; l = l->next)
+		klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, l->data);
+	g_list_free (classes);
+
+	mono_memory_barrier ();
+
+	klass->nested_classes_inited = TRUE;
+	mono_loader_unlock ();
+}
+
 /**
  * mono_class_get_nested_types
  * @klass: the MonoClass to act on
@@ -8906,40 +8958,12 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 MonoClass*
 mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 {
-	MonoError error;
 	GList *item;
-	int i;
 
 	if (!iter)
 		return NULL;
-	if (!klass->nested_classes_inited) {
-		if (!klass->type_token)
-			klass->nested_classes_inited = TRUE;
-		mono_loader_lock ();
-		if (!klass->nested_classes_inited) {
-			i = mono_metadata_nesting_typedef (klass->image, klass->type_token, 1);
-			while (i) {
-				MonoClass* nclass;
-				guint32 cols [MONO_NESTED_CLASS_SIZE];
-				mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED], &error);
-				if (!mono_error_ok (&error)) {
-					/*FIXME don't swallow the error message*/
-					mono_error_cleanup (&error);
-
-					i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
-					continue;
-				}
-				mono_class_alloc_ext (klass);
-				klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, nclass);
-
-				i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
-			}
-		}
-		mono_memory_barrier ();
-		klass->nested_classes_inited = TRUE;
-		mono_loader_unlock ();
-	}
+	if (!klass->nested_classes_inited)
+		setup_nested_types (klass);
 
 	if (!*iter) {
 		/* start from the first */
