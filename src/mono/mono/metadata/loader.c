@@ -2359,7 +2359,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	const char *sig;
 	gboolean can_cache_signature;
 	MonoGenericContainer *container;
-	MonoMethodSignature *signature = NULL;
+	MonoMethodSignature *signature = NULL, *sig2;
 	guint32 sig_offset;
 
 	/* We need memory barriers below because of the double-checked locking pattern */ 
@@ -2369,28 +2369,24 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (m->signature)
 		return m->signature;
 
-	mono_loader_lock ();
-
-	if (m->signature) {
-		mono_loader_unlock ();
-		return m->signature;
-	}
-
 	if (m->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 		/* the lock is recursive */
 		signature = mono_method_signature (imethod->declaring);
 		signature = inflate_generic_signature_checked (imethod->declaring->klass->image, signature, mono_method_get_context (m), error);
-		if (!mono_error_ok (error)) {
-			mono_loader_unlock ();
+		if (!mono_error_ok (error))
 			return NULL;
-		}
 
 		inflated_signatures_size += mono_metadata_signature_size (signature);
 
+		mono_loader_lock ();
+
 		mono_memory_barrier ();
-		m->signature = signature;
+		if (!m->signature)
+			m->signature = signature;
+
 		mono_loader_unlock ();
+
 		return m->signature;
 	}
 
@@ -2413,28 +2409,33 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (mono_metadata_method_has_param_attrs (img, idx))
 		can_cache_signature = FALSE;
 
-	if (can_cache_signature)
+	if (can_cache_signature) {
+		mono_loader_lock ();
 		signature = g_hash_table_lookup (img->method_signatures, sig);
+		mono_loader_unlock ();
+	}
 
 	if (!signature) {
 		const char *sig_body;
 		/*TODO we should cache the failure result somewhere*/
-		if (!mono_verifier_verify_method_signature (img, sig_offset, error)) {
-			mono_loader_unlock ();
+		if (!mono_verifier_verify_method_signature (img, sig_offset, error))
 			return NULL;
-		}
 
 		size = mono_metadata_decode_blob_size (sig, &sig_body);
 
 		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL);
 		if (!signature) {
 			mono_error_set_from_loader_error (error);
-			mono_loader_unlock ();
 			return NULL;
 		}
 
-		if (can_cache_signature)
-			g_hash_table_insert (img->method_signatures, (gpointer)sig, signature);
+		if (can_cache_signature) {
+			mono_loader_lock ();
+			sig2 = g_hash_table_lookup (img->method_signatures, sig);
+			if (!sig2)
+				g_hash_table_insert (img->method_signatures, (gpointer)sig, signature);
+			mono_loader_unlock ();
+		}
 
 		signatures_size += mono_metadata_signature_size (signature);
 	}
@@ -2442,17 +2443,14 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	/* Verify metadata consistency */
 	if (signature->generic_param_count) {
 		if (!container || !container->is_method) {
-			mono_loader_unlock ();
 			mono_error_set_method_load (error, m->klass, m->name, "Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
 			return NULL;
 		}
 		if (container->type_argc != signature->generic_param_count) {
-			mono_loader_unlock ();
 			mono_error_set_method_load (error, m->klass, m->name, "Inconsistent generic parameter count.  Signature says %d, generic_params table says %d for method 0x%08x from image %s", signature->generic_param_count, container->type_argc, idx, img->name);
 			return NULL;
 		}
 	} else if (container && container->is_method && container->type_argc) {
-		mono_loader_unlock ();
 		mono_error_set_method_load (error, m->klass, m->name, "generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
 		return NULL;
 	}
@@ -2483,17 +2481,20 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
 		default:
-			mono_loader_unlock ();
 			mono_error_set_method_load (error, m->klass, m->name, "unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
 			return NULL;
 		}
 		signature->call_convention = conv;
 	}
 
+	mono_loader_lock ();
+
 	mono_memory_barrier ();
-	m->signature = signature;
+	if (!m->signature)
+		m->signature = signature;
 
 	mono_loader_unlock ();
+
 	return m->signature;
 }
 
