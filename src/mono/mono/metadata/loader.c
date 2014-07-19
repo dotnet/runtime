@@ -2552,14 +2552,7 @@ mono_method_get_header (MonoMethod *method)
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		MonoMethodHeader *header;
-
-		mono_loader_lock ();
-
-		if (imethod->header) {
-			mono_loader_unlock ();
-			return imethod->header;
-		}
+		MonoMethodHeader *header, *iheader;
 
 		header = mono_method_get_header (imethod->declaring);
 		if (!header) {
@@ -2567,9 +2560,22 @@ mono_method_get_header (MonoMethod *method)
 			return NULL;
 		}
 
-		imethod->header = inflate_generic_header (header, mono_method_get_context (method));
-		mono_loader_unlock ();
+		iheader = inflate_generic_header (header, mono_method_get_context (method));
 		mono_metadata_free_mh (header);
+
+		mono_loader_lock ();
+
+		if (imethod->header) {
+			mono_metadata_free_mh (iheader);
+			mono_loader_unlock ();
+			return imethod->header;
+		}
+
+		mono_memory_barrier ();
+
+		imethod->header = iheader;
+
+		mono_loader_unlock ();
 		return imethod->header;
 	}
 
@@ -2619,7 +2625,8 @@ mono_method_get_flags (MonoMethod *method, guint32 *iflags)
  * Find the method index in the metadata methodDef table.
  */
 guint32
-mono_method_get_index (MonoMethod *method) {
+mono_method_get_index (MonoMethod *method)
+{
 	MonoClass *klass = method->klass;
 	int i;
 
