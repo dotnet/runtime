@@ -1766,7 +1766,7 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *gene
 	guint32 sig;
 	const char *ptr;
 
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return mono_lookup_dynamic_token (image, token, NULL);
 
 	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);
@@ -2469,7 +2469,7 @@ collect_method_images (MonoMethodInflated *method, CollectData *data)
 	/*
 	 * Dynamic assemblies have no references, so the images they depend on can be unloaded before them.
 	 */
-	if (m->klass->image->dynamic)
+	if (image_is_dynamic (m->klass->image))
 		collect_signature_images (mono_method_signature (m), data);
 }
 
@@ -4636,7 +4636,7 @@ mono_metadata_type_hash (MonoType *t1)
 		 * This is specially problematic with generic instances since they are
 		 * inserted in a bunch of hash tables before been finished.
 		 */
-		if (class->image->dynamic)
+		if (image_is_dynamic (class->image))
 			return (t1->byref << 6) | mono_metadata_str_hash (class->name);
 		return ((hash << 5) - hash) ^ mono_metadata_str_hash (class->name);
 	}

@@ -575,7 +575,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		size_t len2;
 		char *blob2 = NULL;
 
-		if (!method->klass->image->dynamic && !method->dynamic) {
+		if (!image_is_dynamic (method->klass->image) && !method->dynamic) {
 			token = read32 (ip);
 			blob = mono_metadata_user_string (method->klass->image, mono_metadata_token_index (token));
 

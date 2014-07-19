@@ -6510,7 +6510,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		    return NULL;
 		*out_size = size;
 		/*g_print ("optimized in %s: size: %d, numelems: %d\n", method->name, size, newarr->inst_newa_len->inst_c0);*/
-		if (!method->klass->image->dynamic) {
+		if (!image_is_dynamic (method->klass->image)) {
 			field_index = read32 (ip + 2) & 0xffffff;
 			mono_metadata_field_info (method->klass->image, field_index - 1, NULL, &rva, NULL);
 			data_ptr = mono_image_rva_map (method->klass->image, rva);
@@ -12085,7 +12085,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !method->klass->image->dynamic && !generic_context) {
+				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !image_is_dynamic (method->klass->image) && !generic_context) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					val = mono_type_size (type, &ialign);
 				} else {

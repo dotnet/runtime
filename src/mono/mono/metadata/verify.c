@@ -369,7 +369,7 @@ init_verifier_stats (void)
 static gboolean
 token_bounds_check (MonoImage *image, guint32 token)
 {
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return mono_reflection_is_valid_dynamic_token ((MonoDynamicImage*)image, token);
 	return image->tables [mono_metadata_token_table (token)].rows >= mono_metadata_token_index (token) && mono_metadata_token_index (token) > 0;
 }
@@ -4420,7 +4420,7 @@ static void
 do_ldstr (VerifyContext *ctx, guint32 token)
 {
 	GSList *error = NULL;
-	if (ctx->method->wrapper_type == MONO_WRAPPER_NONE && !ctx->image->dynamic) {
+	if (ctx->method->wrapper_type == MONO_WRAPPER_NONE && !image_is_dynamic (ctx->image)) {
 		if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 			return;
@@ -6283,7 +6283,7 @@ mono_verifier_verify_class (MonoClass *class)
 	if (!class->parent &&
 		class != mono_defaults.object_class && 
 		!MONO_CLASS_IS_INTERFACE (class) &&
-		(!class->image->dynamic && class->type_token != 0x2000001)) /*<Module> is the first type in the assembly*/
+		(!image_is_dynamic (class->image) && class->type_token != 0x2000001)) /*<Module> is the first type in the assembly*/
 		return FALSE;
 	if (class->parent) {
 		if (MONO_CLASS_IS_INTERFACE (class->parent))

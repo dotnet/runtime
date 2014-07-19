@@ -719,7 +719,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (inst == container->context.class_inst)
 			return NULL;
 
-		gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
+		gclass = mono_metadata_lookup_generic_class (klass, inst, image_is_dynamic (klass->image));
 
 		nt = mono_metadata_type_dup (image, type);
 		nt->type = MONO_TYPE_GENERICINST;
@@ -1047,7 +1047,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	 * 
 	 */
 	is_mb_open = method->is_generic &&
-		method->klass->image->dynamic && !method->klass->wastypebuilder && /* that is a MethodBuilder from an unfinished TypeBuilder */
+		image_is_dynamic (method->klass->image) && !method->klass->wastypebuilder && /* that is a MethodBuilder from an unfinished TypeBuilder */
 		context->method_inst == mono_method_get_generic_container (method)->context.method_inst; /* and it's been instantiated with its own arguments.  */
 
 	iresult = g_new0 (MonoMethodInflated, 1);
@@ -1369,7 +1369,7 @@ mono_class_setup_basic_field_info (MonoClass *class)
 	image = class->image;
 	top = class->field.count;
 
-	if (class->generic_class && class->generic_class->container_class->image->dynamic && !class->generic_class->container_class->wastypebuilder) {
+	if (class->generic_class && image_is_dynamic (class->generic_class->container_class->image) && !class->generic_class->container_class->wastypebuilder) {
 		/*
 		 * This happens when a generic instance of an unfinished generic typebuilder
 		 * is used as an element type for creating an array type. We can't initialize
@@ -1479,7 +1479,7 @@ mono_class_setup_fields (MonoClass *class)
 	if (class->setup_fields_called)
 		return;
 
-	if (class->generic_class && class->generic_class->container_class->image->dynamic && !class->generic_class->container_class->wastypebuilder) {
+	if (class->generic_class && image_is_dynamic (class->generic_class->container_class->image) && !class->generic_class->container_class->wastypebuilder) {
 		/*
 		 * This happens when a generic instance of an unfinished generic typebuilder
 		 * is used as an element type for creating an array type. We can't initialize
@@ -1895,7 +1895,7 @@ mono_class_layout_fields (MonoClass *class)
 					field->offset &= ~(align - 1);
 				}
 				/*TypeBuilders produce all sort of weird things*/
-				g_assert (class->image->dynamic || field->offset > 0);
+				g_assert (image_is_dynamic (class->image) || field->offset > 0);
 				real_size = field->offset + size;
 			}
 
@@ -2959,7 +2959,7 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 		nifaces = generic_ireadonlylist_class ? 2 : 3;
 
 		// FIXME: This doesn't seem to work/required for generic params
-		if (!(eclass->this_arg.type == MONO_TYPE_VAR || eclass->this_arg.type == MONO_TYPE_MVAR || (eclass->image->dynamic && !eclass->wastypebuilder)))
+		if (!(eclass->this_arg.type == MONO_TYPE_VAR || eclass->this_arg.type == MONO_TYPE_MVAR || (image_is_dynamic (eclass->image) && !eclass->wastypebuilder)))
 			mono_class_setup_interface_offsets (eclass);
 
 		interface_count = all_interfaces? eclass->interface_offsets_count: eclass->interface_count;
@@ -3659,7 +3659,7 @@ mono_class_setup_vtable_full (MonoClass *class, GList *in_setup)
 		type_token = class->type_token;
 	}
 
-	if (class->image->dynamic) {
+	if (image_is_dynamic (class->image)) {
 		/* Generic instances can have zero method overrides without causing any harm.
 		 * This is true since we don't do layout all over again for them, we simply inflate
 		 * the layout of the parent.
@@ -4995,7 +4995,7 @@ mono_class_init (MonoClass *class)
 
 	has_cached_info = mono_class_get_cached_class_info (class, &cached_info);
 
-	if (class->generic_class || class->image->dynamic || !class->type_token || (has_cached_info && !cached_info.has_nested_classes))
+	if (class->generic_class || image_is_dynamic (class->image) || !class->type_token || (has_cached_info && !cached_info.has_nested_classes))
 		class->nested_classes_inited = TRUE;
 
 	/*
@@ -5239,7 +5239,7 @@ gboolean
 mono_is_corlib_image (MonoImage *image)
 {
 	/* FIXME: allow the dynamic case for our compilers and with full trust */
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return image->assembly && !strcmp (image->assembly->aname.name, "mscorlib");
 	else
 		return image == mono_defaults.corlib;
@@ -6434,7 +6434,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	}
 
 	/* for the building corlib use System.Array from it */
-	if (image->assembly && image->assembly->dynamic && image->assembly_name && strcmp (image->assembly_name, "mscorlib") == 0) {
+	if (image->assembly && assembly_is_dynamic (image->assembly) && image->assembly_name && strcmp (image->assembly_name, "mscorlib") == 0) {
 		parent = mono_class_from_name (image, "System", "Array");
 		corlib_type = TRUE;
 	} else {
@@ -6891,7 +6891,7 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 	 * is stored for dynamic assemblies.
 	 */
 
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		int prop_index = mono_property_get_index (property);
 		if (klass->ext->prop_def_values && klass->ext->prop_def_values [prop_index].data) {
 			*def_type = klass->ext->prop_def_values [prop_index].def_type;
@@ -6968,7 +6968,7 @@ char *
 mono_class_name_from_token (MonoImage *image, guint32 type_token)
 {
 	const char *name, *nspace;
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return g_strdup_printf ("DynamicType 0x%08x", type_token);
 	
 	switch (type_token & 0xff000000){
@@ -7023,7 +7023,7 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 static char *
 mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 {
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return g_strdup_printf ("DynamicAssembly %s", image->name);
 	
 	switch (type_token & 0xff000000){
@@ -7093,7 +7093,7 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	MonoError error;
 	MonoClass *class = NULL;
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		int table = mono_metadata_token_table (type_token);
 
 		if (table != MONO_TABLE_TYPEDEF && table != MONO_TABLE_TYPEREF && table != MONO_TABLE_TYPESPEC) {
@@ -7158,7 +7158,7 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 	gboolean inflated = FALSE;
 
 	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return mono_class_get_type (mono_lookup_dynamic_token (image, type_token, context));
 
 	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
@@ -7230,7 +7230,7 @@ mono_image_init_name_cache (MonoImage *image)
 
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		mono_image_unlock (image);
 		return;
 	}
@@ -7350,7 +7350,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 	const char *nspace;
 	guint32 i, visib;
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		guint32 token = 0;
 		FindUserData user_data;
 
@@ -7515,7 +7515,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 
 	mono_image_unlock (image);
 
-	if (!token && image->dynamic && image->modules) {
+	if (!token && image_is_dynamic (image) && image->modules) {
 		/* Search modules as well */
 		for (i = 0; i < image->module_count; ++i) {
 			MonoImage *module = image->modules [i];
@@ -7997,7 +7997,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			return TRUE;
 
 		/*A TypeBuilder can have more interfaces on tb->interfaces than on candidate->interfaces*/
-		if (candidate->image->dynamic && !candidate->wastypebuilder) {
+		if (image_is_dynamic (candidate->image) && !candidate->wastypebuilder) {
 			MonoReflectionTypeBuilder *tb = mono_class_get_ref_info (candidate);
 			int j;
 			if (tb && tb->interfaces) {
@@ -8111,7 +8111,7 @@ mono_class_get_cctor (MonoClass *klass)
 {
 	MonoCachedClassInfo cached_info;
 
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		/* 
 		 * has_cctor is not set for these classes because mono_class_init () is
 		 * not run for them.
@@ -8253,7 +8253,7 @@ gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	      MonoGenericContext *context)
 {
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		MonoClass *tmp_handle_class;
 		gpointer obj = mono_lookup_dynamic_token_class (image, token, TRUE, &tmp_handle_class, context);
 
@@ -9081,7 +9081,7 @@ mono_field_get_rva (MonoClassField *field)
 
 	field_index = mono_field_get_index (field);
 		
-	if (!klass->ext->field_def_values [field_index].data && !klass->image->dynamic) {
+	if (!klass->ext->field_def_values [field_index].data && !image_is_dynamic (klass->image)) {
 		mono_metadata_field_info (field->parent->image, klass->field.first + field_index, NULL, &rva, NULL);
 		if (!rva)
 			g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), field->parent->name);
@@ -10126,7 +10126,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		int idx = class->field.first + field_idx;
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
-		g_assert (!image->dynamic);
+		g_assert (!image_is_dynamic (image));
 
 		if (class->generic_container) {
 			container = class->generic_container;
@@ -10171,7 +10171,7 @@ mono_field_resolve_flags (MonoClassField *field)
 		int idx = class->field.first + field_idx;
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
-		g_assert (!image->dynamic);
+		g_assert (!image_is_dynamic (image));
 
 		return mono_metadata_decode_table_row_col (image, MONO_TABLE_FIELD, idx, MONO_FIELD_FLAGS);
 	}

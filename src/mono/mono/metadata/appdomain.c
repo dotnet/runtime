@@ -1880,7 +1880,7 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		/* Dynamic assemblies can't match here in MS.NET */
-		if (ass->dynamic || refonly != ass->ref_only || !mono_assembly_names_equal (aname, &ass->aname))
+		if (assembly_is_dynamic (ass) || refonly != ass->ref_only || !mono_assembly_names_equal (aname, &ass->aname))
 			continue;
 
 		mono_domain_assemblies_unlock (domain);
@@ -2272,12 +2272,12 @@ deregister_reflection_info_roots (MonoDomain *domain)
 		 * promoting it from a simple lock to a complex lock, which we better avoid if
 		 * possible.
 		 */
-		if (image->dynamic)
+		if (image_is_dynamic (image))
 			deregister_reflection_info_roots_from_list (image);
 
 		for (i = 0; i < image->module_count; ++i) {
 			MonoImage *module = image->modules [i];
-			if (module && module->dynamic)
+			if (module && image_is_dynamic (module))
 				deregister_reflection_info_roots_from_list (module);
 		}
 	}

@@ -1342,7 +1342,7 @@ load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 
 	*aot_name = NULL;
 
-	if (assembly->image->dynamic)
+	if (image_is_dynamic (assembly->image))
 		return NULL;
 
 	create_cache_structure ();
@@ -1584,7 +1584,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		 */
 		return;
 
-	if (assembly->image->dynamic || assembly->ref_only)
+	if (image_is_dynamic (assembly->image) || assembly->ref_only)
 		return;
 
 	if (mono_security_cas_enabled ())

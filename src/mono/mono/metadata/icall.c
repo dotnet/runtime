@@ -1891,7 +1891,7 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 	if (!(t->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 		mono_raise_exception (mono_get_exception_invalid_operation (NULL));
 
-	if (field->parent->image->dynamic) {
+	if (image_is_dynamic (field->parent->image)) {
 		/* FIXME: */
 		g_assert_not_reached ();
 	}
@@ -2171,7 +2171,7 @@ ves_icall_Type_GetPacking (MonoReflectionType *type, guint32 *packing, guint32 *
 	MonoClass *klass = mono_class_from_mono_type (type->type);
 	mono_class_init_or_throw (klass);
 
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)type;
 		*packing = tb->packing_size;
 		*size = tb->class_size;
@@ -2604,7 +2604,7 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 		g_assert (DllImportAttributeClass);
 	}
 														
-	if (method->klass->image->dynamic) {
+	if (image_is_dynamic (method->klass->image)) {
 		MonoReflectionMethodAux *method_aux = 
 			g_hash_table_lookup (
 									  ((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
@@ -2668,7 +2668,7 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 	if (!result->is_generic)
 		return NULL;
 
-	if (method->method->klass->image->dynamic) {
+	if (image_is_dynamic (method->method->klass->image)) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->method->klass->image;
 		MonoReflectionMethod *res;
 
@@ -2819,7 +2819,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		return NULL;
 	}
 
-	if (image->dynamic && !((MonoDynamicImage*)image)->run) {
+	if (image_is_dynamic (image) && !((MonoDynamicImage*)image)->run) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_get_exception_not_supported ("Cannot invoke a method in a dynamic assembly without run access."));
 		return NULL;
 	}
@@ -4165,7 +4165,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			type = NULL;
 	}
 	else
-		if (assembly->assembly->dynamic) {
+		if (assembly_is_dynamic (assembly->assembly)) {
 			/* Enumerate all modules */
 			MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
 			int i;
@@ -4715,7 +4715,7 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 	MonoImage *image = assembly->assembly->image;
 
 	g_assert (image != NULL);
-	g_assert (!assembly->assembly->dynamic);
+	g_assert (!assembly_is_dynamic (assembly->assembly));
 
 	table = &image->tables [MONO_TABLE_FILE];
 	file_count = table->rows;
@@ -5189,7 +5189,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 
 	domain = mono_object_domain (assembly);
 
-	g_assert (!assembly->assembly->dynamic);
+	g_assert (!assembly_is_dynamic (assembly->assembly));
 	image = assembly->assembly->image;
 	table = &image->tables [MONO_TABLE_FILE];
 	res = mono_module_get_types (domain, image, &exceptions, exportedOnly);
@@ -5319,7 +5319,7 @@ ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModule *module)
 
 	g_assert (module->image);
 
-	if (module->image->dynamic && ((MonoDynamicImage*)(module->image))->initial_image)
+	if (image_is_dynamic (module->image) && ((MonoDynamicImage*)(module->image))->initial_image)
 		/* These images do not have a global type */
 		return NULL;
 
@@ -5359,7 +5359,7 @@ ves_icall_System_Reflection_Module_GetHINSTANCE (MonoReflectionModule *module)
 ICALL_EXPORT void
 ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine)
 {
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		MonoDynamicImage *dyn = (MonoDynamicImage*)image;
 		*pe_kind = dyn->pe_kind;
 		*machine = dyn->machine;
@@ -5400,7 +5400,7 @@ ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *modul
 static gboolean
 mono_memberref_is_method (MonoImage *image, guint32 token)
 {
-	if (!image->dynamic) {
+	if (!image_is_dynamic (image)) {
 		guint32 cols [MONO_MEMBERREF_SIZE];
 		const char *sig;
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
@@ -5449,7 +5449,7 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 		return NULL;
 	}
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		if ((table == MONO_TABLE_TYPEDEF) || (table == MONO_TABLE_TYPEREF)) {
 			klass = mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 			return klass ? &klass->byval_arg : NULL;
@@ -5494,7 +5494,7 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		return NULL;
 	}
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		if (table == MONO_TABLE_METHOD)
 			return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 
@@ -5538,7 +5538,7 @@ ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32
 		return NULL;
 	}
 
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 
 	if ((index <= 0) || (index >= image->heap_us.size)) {
@@ -5568,7 +5568,7 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		return NULL;
 	}
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		if (table == MONO_TABLE_FIELD)
 			return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 
@@ -5672,7 +5672,7 @@ ves_icall_System_Reflection_Module_ResolveSignature (MonoImage *image, guint32 t
 	if (table != MONO_TABLE_STANDALONESIG)
 		return NULL;
 
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return NULL;
 
 	if ((idx == 0) || (idx > tables [MONO_TABLE_STANDALONESIG].rows))

@@ -2023,7 +2023,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	/* Close dynamic assemblies first, since they have no ref count */
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = tmp->data;
-		if (!ass->image || !ass->image->dynamic)
+		if (!ass->image || !image_is_dynamic (ass->image))
 			continue;
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		if (!mono_assembly_close_except_image_pools (ass))
@@ -2034,7 +2034,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		MonoAssembly *ass = tmp->data;
 		if (!ass)
 			continue;
-		if (!ass->image || ass->image->dynamic)
+		if (!ass->image || image_is_dynamic (ass->image))
 			continue;
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		if (!mono_assembly_close_except_image_pools (ass))

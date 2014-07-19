@@ -525,6 +525,26 @@ struct _MonoMethodSignature {
 
 #define MONO_SIZEOF_METHOD_SIGNATURE (sizeof (struct _MonoMethodSignature) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
+static inline gboolean
+image_is_dynamic (MonoImage *image)
+{
+#ifdef DISABLE_REFLECTION_EMIT
+	return FALSE;
+#else
+	return image->dynamic;
+#endif
+}
+
+static inline gboolean
+assembly_is_dynamic (MonoAssembly *assembly)
+{
+#ifdef DISABLE_REFLECTION_EMIT
+	return FALSE;
+#else
+	return assembly->dynamic;
+#endif
+}
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
 

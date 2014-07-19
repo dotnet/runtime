@@ -3024,7 +3024,7 @@ mono_assembly_release_gc_roots (MonoAssembly *assembly)
 	if (assembly == NULL || assembly == REFERENCE_MISSING)
 		return;
 
-	if (assembly->dynamic) {
+	if (assembly_is_dynamic (assembly)) {
 		int i;
 		MonoDynamicImage *dynimg = (MonoDynamicImage *)assembly->image;
 		for (i = 0; i < dynimg->image.module_count; ++i)
@@ -3087,7 +3087,7 @@ mono_assembly_close_finish (MonoAssembly *assembly)
 	if (assembly->image)
 		mono_image_close_finish (assembly->image);
 
-	if (assembly->dynamic) {
+	if (assembly_is_dynamic (assembly)) {
 		g_free ((char*)assembly->aname.culture);
 	} else {
 		g_free (assembly);

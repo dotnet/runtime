@@ -1673,7 +1673,7 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 	if (!klass) 
 		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 	ta = klass->image->assembly;
-	if (ta->dynamic || (ta == ass)) {
+	if (assembly_is_dynamic (ta) || (ta == ass)) {
 		if (klass->generic_class || klass->generic_container)
 			/* For generic type definitions, we want T, while REFLECTION returns T<K> */
 			return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_FULL_NAME);
@@ -2246,7 +2246,7 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, image))))
 		return token;
 
-	if (image->assembly->dynamic && (image->assembly == assembly->image.assembly)) {
+	if (assembly_is_dynamic (image->assembly) && (image->assembly == assembly->image.assembly)) {
 		table = &assembly->tables [MONO_TABLE_MODULEREF];
 		token = table->next_idx ++;
 		table->rows ++;
@@ -2261,7 +2261,7 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 		return token;
 	}
 	
-	if (image->assembly->dynamic)
+	if (assembly_is_dynamic (image->assembly))
 		/* FIXME: */
 		memset (cols, 0, sizeof (cols));
 	else {
@@ -3687,7 +3687,7 @@ mono_image_fill_file_table (MonoDomain *domain, MonoReflectionModule *module, Mo
 	values = table->values + table->next_idx * MONO_FILE_SIZE;
 	values [MONO_FILE_FLAGS] = FILE_CONTAINS_METADATA;
 	values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, module->image->module_name);
-	if (module->image->dynamic) {
+	if (image_is_dynamic (module->image)) {
 		/* This depends on the fact that the main module is emitted last */
 		dir = mono_string_to_utf8 (((MonoReflectionModuleBuilder*)module)->assemblyb->dir);
 		path = g_strdup_printf ("%s%c%s", dir, G_DIR_SEPARATOR, module->image->module_name);
@@ -6463,7 +6463,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	 * We cannot do this for TypeBuilders as mono_reflection_create_runtime_class expects
 	 * that the resulting object is different.   
 	 */
-	if (type == &klass->byval_arg && !klass->image->dynamic) {
+	if (type == &klass->byval_arg && !image_is_dynamic (klass->image)) {
 		MonoVTable *vtable = mono_class_try_get_vtable (domain, klass);
 		if (vtable && vtable->type)
 			return vtable->type;
@@ -6942,7 +6942,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	image = method->klass->image;
 	header = mono_method_get_header (method);
 
-	if (!image->dynamic) {
+	if (!image_is_dynamic (image)) {
 		/* Obtain local vars signature token */
 		method_rva = mono_metadata_decode_row_col (&image->tables [MONO_TABLE_METHOD], mono_metadata_token_index (method->token) - 1, MONO_METHOD_RVA);
 		ptr = mono_image_rva_map (image, method_rva);
@@ -7052,7 +7052,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 
 	mono_class_init (klass);
 
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		MonoReflectionMethodAux *aux;
 		if (method->is_inflated)
 			method = ((MonoMethodInflated*)method)->declaring;
@@ -7582,7 +7582,7 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 	MonoType *type;
 	int i;
 
-	g_assert (assembly->dynamic);
+	g_assert (assembly_is_dynamic (assembly));
 	abuilder = (MonoReflectionAssemblyBuilder*)mono_assembly_get_object (((MonoDynamicAssembly*)assembly)->domain, assembly);
 
 	/* Enumerate all modules */
@@ -7617,7 +7617,7 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	GString *fullName;
 	GList *mod;
 
-	if (image && image->dynamic)
+	if (image && image_is_dynamic (image))
 		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase);
 	else
 		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase);
@@ -7644,7 +7644,7 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 
 	assembly = mono_domain_try_type_resolve ( mono_domain_get (), fullName->str, NULL);
 	if (assembly) {
-		if (assembly->assembly->dynamic)
+		if (assembly_is_dynamic (assembly->assembly))
 			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly, info, ignorecase);
 		else
 			type = mono_reflection_get_type_internal (rootimage, assembly->assembly->image, 
@@ -8735,7 +8735,7 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 	
-	if (method->dynamic || method->klass->image->dynamic)
+	if (method->dynamic || image_is_dynamic (method->klass->image))
 		return lookup_custom_attr (method->klass->image, method);
 
 	if (!method->token)
@@ -8756,7 +8756,7 @@ mono_custom_attrs_from_class (MonoClass *klass)
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
-	if (klass->image->dynamic)
+	if (image_is_dynamic (klass->image))
 		return lookup_custom_attr (klass->image, klass);
 
 	if (klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR) {
@@ -8776,7 +8776,7 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 {
 	guint32 idx;
 	
-	if (assembly->image->dynamic)
+	if (image_is_dynamic (assembly->image))
 		return lookup_custom_attr (assembly->image, assembly);
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -8789,7 +8789,7 @@ mono_custom_attrs_from_module (MonoImage *image)
 {
 	guint32 idx;
 	
-	if (image->dynamic)
+	if (image_is_dynamic (image))
 		return lookup_custom_attr (image, image);
 	idx = 1; /* there is only one module */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -8802,7 +8802,7 @@ mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 {
 	guint32 idx;
 	
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		property = mono_metadata_get_corresponding_property_from_generic_type_definition (property);
 		return lookup_custom_attr (klass->image, property);
 	}
@@ -8817,7 +8817,7 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 {
 	guint32 idx;
 	
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		event = mono_metadata_get_corresponding_event_from_generic_type_definition (event);
 		return lookup_custom_attr (klass->image, event);
 	}
@@ -8831,7 +8831,7 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 {
 	guint32 idx;
-	if (klass->image->dynamic) {
+	if (image_is_dynamic (klass->image)) {
 		field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
 		return lookup_custom_attr (klass->image, field);
 	}
@@ -8868,7 +8868,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	if (method->klass->image->dynamic) {
+	if (image_is_dynamic (method->klass->image)) {
 		MonoCustomAttrInfo *res, *ainfo;
 		int size;
 
@@ -9335,7 +9335,7 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
 	mono_loader_lock (); /*same locking as mono_type_get_object*/
 	mono_domain_lock (domain);
 
-	if (!class->image->dynamic) {
+	if (!image_is_dynamic (class->image)) {
 		mono_class_setup_supertypes (class);
 	} else {
 		if (!domain->type_hash)
@@ -10303,7 +10303,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		
 		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 0) | rmb->extra_flags;
 
-		if (klass->image->dynamic)
+		if (image_is_dynamic (klass->image))
 			g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
 		mono_loader_unlock ();
@@ -10491,7 +10491,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		method_aux->param_marshall = specs;
 	}
 
-	if (klass->image->dynamic && method_aux)
+	if (image_is_dynamic (klass->image) && method_aux)
 		g_hash_table_insert (((MonoDynamicImage*)klass->image)->method_aux_hash, m, method_aux);
 
 	mono_loader_unlock ();
@@ -10561,7 +10561,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 		field->type = mono_metadata_type_dup (NULL, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
 		field->type->attrs = fb->attrs;
 
-		g_assert (klass->image->dynamic);
+		g_assert (image_is_dynamic (klass->image));
 		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt);
 		g_free (field->type);
 		field->type = mono_metadata_type_dup (klass->image, custom);
@@ -10701,7 +10701,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	imethod = (MonoMethodInflated *) inflated;
 
 	/*FIXME but I think this is no longer necessary*/
-	if (method->klass->image->dynamic) {
+	if (image_is_dynamic (method->klass->image)) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 		/*
 		 * This table maps metadata structures representing inflated methods/fields
@@ -10750,7 +10750,7 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 		imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);
 	}
 
-	if (method->is_generic && method->klass->image->dynamic) {
+	if (method->is_generic && image_is_dynamic (method->klass->image)) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 
 		mono_image_lock ((MonoImage*)image);
@@ -10971,7 +10971,7 @@ ensure_runtime_vtable (MonoClass *klass)
 	MonoReflectionTypeBuilder *tb = mono_class_get_ref_info (klass);
 	int i, num, j;
 
-	if (!klass->image->dynamic || (!tb && !klass->generic_class) || klass->wastypebuilder)
+	if (!image_is_dynamic (klass->image) || (!tb && !klass->generic_class) || klass->wastypebuilder)
 		return;
 	if (klass->parent)
 		ensure_runtime_vtable (klass->parent);
@@ -11077,7 +11077,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 	*overrides = NULL;
 	*num_overrides = 0;
 
-	g_assert (klass->image->dynamic);
+	g_assert (image_is_dynamic (klass->image));
 
 	if (!mono_class_get_ref_info (klass))
 		return;
@@ -11801,7 +11801,7 @@ MonoMethodSignature *
 mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token)
 {
 	MonoMethodSignature *sig;
-	g_assert (image->dynamic);
+	g_assert (image_is_dynamic (image));
 
 	sig = g_hash_table_lookup (((MonoDynamicImage*)image)->vararg_aux_hash, GUINT_TO_POINTER (token));
 	if (sig)
@@ -11853,7 +11853,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 static void
 ensure_complete_type (MonoClass *klass)
 {
-	if (klass->image->dynamic && !klass->wastypebuilder && mono_class_get_ref_info (klass)) {
+	if (image_is_dynamic (klass->image) && !klass->wastypebuilder && mono_class_get_ref_info (klass)) {
 		MonoReflectionTypeBuilder *tb = mono_class_get_ref_info (klass);
 
 		mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
