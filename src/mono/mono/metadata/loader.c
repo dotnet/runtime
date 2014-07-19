@@ -395,9 +395,9 @@ find_cached_memberref_sig (MonoImage *image, guint32 sig_idx)
 {
 	gpointer res;
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 	res = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (sig_idx));
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 
 	return res;
 }
@@ -407,7 +407,7 @@ cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
 {
 	gpointer prev_sig;
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 	prev_sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (sig_idx));
 	if (prev_sig) {
 		/* Somebody got in before us */
@@ -418,8 +418,7 @@ cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
 		/* An approximation based on glib 2.18 */
 		memberref_sig_cache_size += sizeof (gpointer) * 4;
 	}
-
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 
 	return sig;
 }
@@ -1230,27 +1229,29 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 
 	mono_loader_init ();
 
-	mono_loader_lock ();
-
 	if (!assembly) {
 		entry = g_malloc0 (sizeof (MonoDllMap));
 		entry->dll = dll? g_strdup (dll): NULL;
 		entry->target = tdll? g_strdup (tdll): NULL;
 		entry->func = func? g_strdup (func): NULL;
 		entry->target_func = tfunc? g_strdup (tfunc): NULL;
+
+		mono_loader_lock ();
 		entry->next = global_dll_map;
 		global_dll_map = entry;
+		mono_loader_unlock ();
 	} else {
 		entry = mono_image_alloc0 (assembly, sizeof (MonoDllMap));
 		entry->dll = dll? mono_image_strdup (assembly, dll): NULL;
 		entry->target = tdll? mono_image_strdup (assembly, tdll): NULL;
 		entry->func = func? mono_image_strdup (assembly, func): NULL;
 		entry->target_func = tfunc? mono_image_strdup (assembly, tfunc): NULL;
+
+		mono_image_lock (assembly);
 		entry->next = assembly->dll_map;
 		assembly->dll_map = entry;
+		mono_image_unlock (assembly);
 	}
-
-	mono_loader_unlock ();
 }
 
 static void
@@ -1369,14 +1370,14 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
 
 	if (!module) {
-		mono_loader_lock ();
+		mono_image_lock (image);
 		if (!image->pinvoke_scopes) {
 			image->pinvoke_scopes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 			image->pinvoke_scope_filenames = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 		}
 		module = g_hash_table_lookup (image->pinvoke_scopes, new_scope);
 		found_name = g_hash_table_lookup (image->pinvoke_scope_filenames, new_scope);
-		mono_loader_unlock ();
+		mono_image_unlock (image);
 		if (module)
 			cached = TRUE;
 		if (found_name)
@@ -1542,12 +1543,12 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	if (!cached) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 					"DllImport loaded library '%s'.", found_name);
-		mono_loader_lock ();
+		mono_image_lock (image);
 		if (!g_hash_table_lookup (image->pinvoke_scopes, new_scope)) {
 			g_hash_table_insert (image->pinvoke_scopes, g_strdup (new_scope), module);
 			g_hash_table_insert (image->pinvoke_scope_filenames, g_strdup (new_scope), g_strdup (found_name));
 		}
-		mono_loader_unlock ();
+		mono_image_unlock (image);
 	}
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
@@ -2369,6 +2370,8 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (m->signature)
 		return m->signature;
 
+	img = m->klass->image;
+
 	if (m->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 		/* the lock is recursive */
@@ -2379,20 +2382,19 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 
 		inflated_signatures_size += mono_metadata_signature_size (signature);
 
-		mono_loader_lock ();
+		mono_image_lock (img);
 
 		mono_memory_barrier ();
 		if (!m->signature)
 			m->signature = signature;
 
-		mono_loader_unlock ();
+		mono_image_unlock (img);
 
 		return m->signature;
 	}
 
 	g_assert (mono_metadata_token_table (m->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (m->token);
-	img = m->klass->image;
 
 	sig = mono_metadata_blob_heap (img, sig_offset = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 
@@ -2410,9 +2412,9 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		can_cache_signature = FALSE;
 
 	if (can_cache_signature) {
-		mono_loader_lock ();
+		mono_image_lock (img);
 		signature = g_hash_table_lookup (img->method_signatures, sig);
-		mono_loader_unlock ();
+		mono_image_unlock (img);
 	}
 
 	if (!signature) {
@@ -2430,11 +2432,11 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		}
 
 		if (can_cache_signature) {
-			mono_loader_lock ();
+			mono_image_lock (img);
 			sig2 = g_hash_table_lookup (img->method_signatures, sig);
 			if (!sig2)
 				g_hash_table_insert (img->method_signatures, (gpointer)sig, signature);
-			mono_loader_unlock ();
+			mono_image_unlock (img);
 		}
 
 		signatures_size += mono_metadata_signature_size (signature);
@@ -2487,13 +2489,13 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		signature->call_convention = conv;
 	}
 
-	mono_loader_lock ();
+	mono_image_lock (img);
 
 	mono_memory_barrier ();
 	if (!m->signature)
 		m->signature = signature;
 
-	mono_loader_unlock ();
+	mono_image_unlock (img);
 
 	return m->signature;
 }
@@ -2551,6 +2553,8 @@ mono_method_get_header (MonoMethod *method)
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
 
+	img = method->klass->image;
+
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		MonoMethodHeader *header, *iheader;
@@ -2562,19 +2566,19 @@ mono_method_get_header (MonoMethod *method)
 		iheader = inflate_generic_header (header, mono_method_get_context (method));
 		mono_metadata_free_mh (header);
 
-		mono_loader_lock ();
+		mono_image_lock (img);
 
 		if (imethod->header) {
 			mono_metadata_free_mh (iheader);
-			mono_loader_unlock ();
+			mono_image_unlock (img);
 			return imethod->header;
 		}
 
 		mono_memory_barrier ();
-
 		imethod->header = iheader;
 
-		mono_loader_unlock ();
+		mono_image_unlock (img);
+
 		return imethod->header;
 	}
 
@@ -2590,7 +2594,6 @@ mono_method_get_header (MonoMethod *method)
 	 */
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
-	img = method->klass->image;
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 
 	if (!mono_verifier_verify_method_header (img, rva, NULL))

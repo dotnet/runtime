@@ -10101,10 +10101,10 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		interfaces = NULL;
 	}
 
-	mono_loader_lock ();
+	mono_image_lock (klass->image);
 
 	if (klass->interfaces_inited) {
-		mono_loader_unlock ();
+		mono_image_unlock (klass->image);
 		return;
 	}
 
@@ -10115,7 +10115,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 	klass->interfaces_inited = TRUE;
 
-	mono_loader_unlock ();
+	mono_image_unlock (klass->image);
 }
 
 static void
