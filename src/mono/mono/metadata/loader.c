@@ -1977,7 +1977,7 @@ mono_free_method  (MonoMethod *method)
 		/* g_free (method->signature); */
 	}
 	
-	if (method->dynamic) {
+	if (method_is_dynamic (method)) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
 		int i;
 

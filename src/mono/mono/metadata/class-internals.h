@@ -881,6 +881,16 @@ typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInf
 
 typedef gboolean (*MonoGetClassFromName) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
 
+static inline gboolean
+method_is_dynamic (MonoMethod *method)
+{
+#ifdef DISABLE_REFLECTION_EMIT
+	return FALSE;
+#else
+	return method->dynamic;
+#endif
+}
+
 void
 mono_classes_init (void) MONO_INTERNAL;
 

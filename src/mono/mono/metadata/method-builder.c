@@ -202,7 +202,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		GList *tmp;
 		void **data;
 		l = g_list_reverse (mw->method_data);
-		if (method->dynamic)
+		if (method_is_dynamic (method))
 			data = g_malloc (sizeof (gpointer) * (i + 1));
 		else
 			data = mono_image_alloc (image, sizeof (gpointer) * (i + 1));

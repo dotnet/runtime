@@ -5026,7 +5026,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		/* Can't share this as we push a string as this */
 		need_direct_wrapper = TRUE;
 	} else {
-		if (method->dynamic)
+		if (method_is_dynamic (method))
 			callsig = signature_dup (method->klass->image, mono_method_signature (method));
 		else
 			callsig = mono_method_signature (method);
@@ -12990,7 +12990,7 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 {
 	MonoImage *image = method->klass->image;
 
-	g_assert (method->dynamic);
+	g_assert (method_is_dynamic (method));
 
 	/* This could be called during shutdown */
 	if (marshal_mutex_initialized)

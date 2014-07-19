@@ -6619,7 +6619,7 @@ void
 mono_method_clear_object (MonoDomain *domain, MonoMethod *method)
 {
 	MonoClass *klass;
-	g_assert (method->dynamic);
+	g_assert (method_is_dynamic (method));
 
 	klass = method->klass;
 	while (klass) {
@@ -6921,7 +6921,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	int i;
 
 	/* for compatibility with .net */
-    if (method->dynamic)
+    if (method_is_dynamic (method))
         mono_raise_exception (mono_get_exception_invalid_operation (NULL));
 
 	if (!System_Reflection_MethodBody)
@@ -8735,7 +8735,7 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 	
-	if (method->dynamic || image_is_dynamic (method->klass->image))
+	if (method_is_dynamic (method) || image_is_dynamic (method->klass->image))
 		return lookup_custom_attr (method->klass->image, method);
 
 	if (!method->token)

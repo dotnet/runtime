@@ -6023,7 +6023,7 @@ mono_verifier_is_enabled_for_image (MonoImage *image)
 gboolean
 mono_verifier_is_method_full_trust (MonoMethod *method)
 {
-	return mono_verifier_is_class_full_trust (method->klass) && !method->dynamic;
+	return mono_verifier_is_class_full_trust (method->klass) && !method_is_dynamic (method);
 }
 
 /*

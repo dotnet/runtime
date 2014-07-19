@@ -5844,7 +5844,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 
-	if (method->dynamic) {
+	if (method_is_dynamic (method)) {
 		/* Creating a trampoline would leak memory */
 		func = mono_compile_method (method);
 	} else {

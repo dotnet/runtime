@@ -639,7 +639,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
-	if (method->dynamic) {
+	if (method_is_dynamic (method)) {
 		address = g_malloc0 (total_size);
 	} else {
 		address = (MonoDebugMethodAddress *) allocate_data_item (
@@ -682,7 +682,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	g_hash_table_insert (table->method_address_hash, method, address);
 
-	if (!method->dynamic)
+	if (!method_is_dynamic (method))
 		write_data_item (table, (guint8 *) address);
 
 	mono_debugger_unlock ();
@@ -700,7 +700,7 @@ mono_debug_remove_method (MonoMethod *method, MonoDomain *domain)
 	if (!mono_debug_initialized)
 		return;
 
-	g_assert (method->dynamic);
+	g_assert (method_is_dynamic (method));
 
 	mono_debugger_lock ();
 
