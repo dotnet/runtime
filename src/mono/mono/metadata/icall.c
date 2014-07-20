@@ -1613,10 +1613,15 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *fie
 {
 	MonoClass *klass = field->field->parent;
 	MonoMarshalType *info;
+	MonoType *ftype;
 	int i;
 
 	if (klass->generic_container ||
 	    (klass->generic_class && klass->generic_class->context.class_inst->is_open))
+		return NULL;
+
+	ftype = mono_field_get_type (field->field);
+	if (ftype && !(ftype->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL))
 		return NULL;
 
 	info = mono_marshal_load_type_info (klass);
