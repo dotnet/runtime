@@ -2557,6 +2557,7 @@ mono_method_get_header (MonoMethod *method)
 	MonoImage* img;
 	gpointer loc;
 	MonoMethodHeader *header;
+	MonoGenericContainer *container;
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
@@ -2606,7 +2607,14 @@ mono_method_get_header (MonoMethod *method)
 	if (!loc)
 		return NULL;
 
-	header = mono_metadata_parse_mh_full (img, mono_method_get_generic_container (method), loc);
+	/*
+	 * When parsing the types of local variables, we must pass any container available
+	 * to ensure that both VAR and MVAR will get the right owner.
+	 */
+	container = mono_method_get_generic_container (method);
+	if (!container)
+		container = method->klass->generic_container;
+	header = mono_metadata_parse_mh_full (img, container, loc);
 
 	return header;
 }

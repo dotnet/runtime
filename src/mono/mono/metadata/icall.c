@@ -2275,12 +2275,15 @@ ves_icall_MonoType_get_DeclaringType (MonoReflectionType *type)
 
 	if (type->type->byref)
 		return NULL;
-	if (type->type->type == MONO_TYPE_VAR)
-		class = mono_type_get_generic_param_owner (type->type)->owner.klass;
-	else if (type->type->type == MONO_TYPE_MVAR)
-		class = mono_type_get_generic_param_owner (type->type)->owner.method->klass;
-	else
+	if (type->type->type == MONO_TYPE_VAR) {
+		MonoGenericContainer *param = mono_type_get_generic_param_owner (type->type);
+		class = param ? param->owner.klass : NULL;
+	} else if (type->type->type == MONO_TYPE_MVAR) {
+		MonoGenericContainer *param = mono_type_get_generic_param_owner (type->type);
+		class = param ? param->owner.method->klass : NULL;
+	} else {
 		class = mono_class_from_mono_type (type->type)->nested_in;
+	}
 
 	return class ? mono_type_get_object (domain, &class->byval_arg) : NULL;
 }
