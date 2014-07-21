@@ -3007,15 +3007,6 @@ mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
 		return mini_get_tls_offset (key) != -1;
 }
 
-static gboolean
-mini_tls_key_supported (MonoTlsKey key)
-{
-	if (!MONO_ARCH_HAVE_TLS_GET)
-		return FALSE;
-
-	return mini_get_tls_offset (key) != -1;
-}
-
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
@@ -3071,6 +3062,16 @@ mono_get_lmf_addr_intrinsic (MonoCompile* cfg)
 }
 
 #endif /* !DISABLE_JIT */
+
+
+static gboolean
+mini_tls_key_supported (MonoTlsKey key)
+{
+	if (!MONO_ARCH_HAVE_TLS_GET)
+		return FALSE;
+
+	return mini_get_tls_offset (key) != -1;
+}
 
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
