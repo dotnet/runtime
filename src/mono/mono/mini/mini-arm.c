@@ -202,7 +202,9 @@ int mono_exc_esp_offset = 0;
 	}																	\
 	} while (0)
 
+#ifndef DISABLE_JIT
 static void mono_arch_compute_omit_fp (MonoCompile *cfg);
+#endif
 
 const char*
 mono_arch_regname (int reg)
@@ -2591,6 +2593,8 @@ mono_arch_is_inst_imm (gint64 imm)
 typedef struct {
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
+	MonoType *rtype;
+	MonoType **param_types;
 } ArchDynCallInfo;
 
 static gboolean
@@ -2674,6 +2678,7 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 {
 	ArchDynCallInfo *info;
 	CallInfo *cinfo;
+	int i;
 
 	cinfo = get_call_info (NULL, NULL, sig);
 
@@ -2686,6 +2691,10 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 	// FIXME: Preprocess the info to speed up start_dyn_call ()
 	info->sig = sig;
 	info->cinfo = cinfo;
+	info->rtype = mini_replace_type (sig->ret);
+	info->param_types = g_new0 (MonoType*, sig->param_count);
+	for (i = 0; i < sig->param_count; ++i)
+		info->param_types [i] = mini_replace_type (sig->params [i]);
 	
 	return (MonoDynCallInfo*)info;
 }
@@ -2726,7 +2735,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		p->regs [greg ++] = (mgreg_t)ret;
 
 	for (i = pindex; i < sig->param_count; i++) {
-		MonoType *t = mono_type_get_underlying_type (sig->params [i]);
+		MonoType *t = dinfo->param_types [i];
 		gpointer *arg = args [arg_index ++];
 		ArgInfo *ainfo = &dinfo->cinfo->args [i + sig->hasthis];
 		int slot = -1;
@@ -2814,13 +2823,11 @@ void
 mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
 	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
-	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
-	MonoType *ptype;
+	MonoType *ptype = ainfo->rtype;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
 	mgreg_t res = ((DynCallArgs*)buf)->res;
 	mgreg_t res2 = ((DynCallArgs*)buf)->res2;
 
-	ptype = mini_type_get_underlying_type (NULL, sig->ret);
 	switch (ptype->type) {
 	case MONO_TYPE_VOID:
 		*(gpointer*)ret = NULL;
