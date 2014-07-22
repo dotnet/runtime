@@ -67,6 +67,20 @@ CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
 	HEAVY_STAT (++stat_scan_object_called_major);
 }
 
+static void
+CONCURRENT_NAME (major_scan_work) (char* start, mword obj_off, SgenGrayQueue *queue)
+{
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
+	#define LOS_PARTIAL_SCAN
+	#define SCAN_OBJECT_PROTOCOL
+	#include "sgen-scan-object.h"
+	#undef LOS_PARTIAL_SCAN
+	
+	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
+	HEAVY_STAT (++stat_scan_object_called_major);
+}
+
 #ifdef SCAN_FOR_CONCURRENT_MARK
 #ifdef SGEN_PARALLEL_MARK
 #error concurrent and parallel mark not supported yet

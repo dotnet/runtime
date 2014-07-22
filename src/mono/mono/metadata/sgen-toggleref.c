@@ -107,7 +107,7 @@ void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 			}
 		}
 	}
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 }
 
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
@@ -133,7 +133,7 @@ void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
 			}
 		}
 	}
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 }
 
 static void

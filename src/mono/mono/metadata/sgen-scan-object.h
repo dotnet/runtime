@@ -166,15 +166,23 @@
 		}	\
 	} while (0)
 
-#define OBJ_VECTOR_FOREACH_PTR(desc,obj)	do {	\
+#ifdef LOS_PARTIAL_SCAN	
+#define VECTOR_OBJECT_START(obj, obj_offset, el_size) (void**)(void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector) + (obj_offset *el_size))
+#define VECTOR_OBJECT_END(obj, start, obj_offset, el_size) (void**)((char *)start + MIN((SGEN_MAX_PARTIAL_OFFSET)*(el_size) -1, (el_size) *(mono_array_length_fast((MonoArray*)(obj)) - obj_offset)))
+#else
+#define VECTOR_OBJECT_START(obj, obj_offset, el_size) (void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector))
+#define VECTOR_OBJECT_END(obj, start, obj_offset, el_size) (void**)((char*)(start) + el_size * mono_array_length_fast ((MonoArray*)(obj)))
+#endif
+
+#define OBJ_VECTOR_FOREACH_PTR(desc,obj, obj_offset)	do {	\
 		/* note: 0xffffc000 excludes DESC_TYPE_V_PTRFREE */	\
 		if ((desc) & 0xffffc000) {				\
 			int el_size = ((desc) >> 3) & MAX_ELEMENT_SIZE;	\
 			/* there are pointers */	\
 			int etype = (desc) & 0xc000;			\
 			if (etype == (DESC_TYPE_V_REFS << 14)) {	\
-				void **p = 	(void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector)); \
-				void **end_refs = (void**)((char*)(start) + el_size * mono_array_length_fast ((MonoArray*)(obj)));	\
+				void **p = VECTOR_OBJECT_START(obj,obj_offset,el_size);	\
+				void **end_refs = VECTOR_OBJECT_END(obj,p,obj_offset,el_size);	\
 				/* Note: this code can handle also arrays of struct with only references in them */	\
 				while (p < end_refs) {	\
 					HANDLE_PTR (p, (obj));	\
@@ -249,7 +257,7 @@
 #undef SCAN
 		break;
 	case DESC_TYPE_VECTOR:
-#define SCAN OBJ_VECTOR_FOREACH_PTR (desc, start)
+#define SCAN OBJ_VECTOR_FOREACH_PTR (desc, start, obj_off)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
@@ -297,4 +305,6 @@
 #undef OBJ_LARGE_BITMAP_FOREACH_PTR
 #undef OBJ_COMPLEX_FOREACH_PTR
 #undef OBJ_COMPLEX_ARR_FOREACH_PTR
+#undef VECTOR_OBJECT_START
+#undef VECTOR_OBJECT_END
 #undef OBJ_VECTOR_FOREACH_PTR

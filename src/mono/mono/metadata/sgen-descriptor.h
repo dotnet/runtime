@@ -160,4 +160,6 @@ sgen_gc_descr_has_references (mword desc)
 #define GNUC_BUILTIN_CTZ(bmap)	__builtin_ctzl(bmap)
 #endif
 
+#define SGEN_OBJECT_IS_VECTOR_V_REFS(o) ((((GCVTable*)(SGEN_LOAD_VTABLE(o)))->desc & 0xc007) == ( DESC_TYPE_VECTOR | VECTOR_SUBTYPE_REFS))
+
 #endif
