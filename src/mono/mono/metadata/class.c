@@ -9253,7 +9253,7 @@ mono_event_get_flags (MonoEvent *event)
 /**
  * mono_class_get_method_from_name:
  * @klass: where to look for the method
- * @name_space: name of the method
+ * @name: name of the method
  * @param_count: number of parameters. -1 for any number.
  *
  * Obtains a MonoMethod with a given name and number of parameters.
