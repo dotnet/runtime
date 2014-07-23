@@ -11,6 +11,7 @@ endif
 if !CROSS_COMPILE
 if !HOST_WIN32
 if SUPPORT_BOEHM
+if !PLATFORM_LINUX
 
 test_sgen_qsort_SOURCES = test-sgen-qsort.c
 test_sgen_qsort_CFLAGS = $(TEST_CFLAGS)
@@ -36,6 +37,7 @@ noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set tes
 
 TESTS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set test-conc-hashtable
 
+endif !PLATFORM_LINUX
 endif SUPPORT_BOEHM
 endif !HOST_WIN32
 endif !CROSS_COMPILE
