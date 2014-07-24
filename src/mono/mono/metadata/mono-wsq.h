@@ -20,6 +20,7 @@ gboolean mono_wsq_local_push (void *obj) MONO_INTERNAL;
 gboolean mono_wsq_local_pop (void **ptr) MONO_INTERNAL;
 void mono_wsq_try_steal (MonoWSQ *wsq, void **ptr, guint32 ms_timeout) MONO_INTERNAL;
 gint mono_wsq_count (MonoWSQ *wsq) MONO_INTERNAL;
+gboolean mono_wsq_suspend (MonoWSQ *wsq) MONO_INTERNAL;
 
 G_END_DECLS
 
