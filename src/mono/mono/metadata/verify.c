@@ -1352,8 +1352,6 @@ is_correct_rethrow (MonoMethodHeader *header, guint offset)
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_HANDLER (clause, offset))
 			return 1;
-		if (MONO_OFFSET_IN_FILTER (clause, offset))
-			return 1;
 	}
 	return 0;
 }

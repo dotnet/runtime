@@ -12060,7 +12060,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				bblock->flags |= BB_EXCEPTION_UNSAFE;
 
-				g_assert (handler_offset != -1);
+				if (handler_offset == -1)
+					UNVERIFIED;
 
 				EMIT_NEW_TEMPLOAD (cfg, load, mono_find_exvar_for_offset (cfg, handler_offset)->inst_c0);
 				MONO_INST_NEW (cfg, ins, OP_RETHROW);
