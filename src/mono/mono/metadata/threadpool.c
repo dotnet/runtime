@@ -63,13 +63,6 @@
 #define THREAD_WANTS_A_BREAK(t) ((t->state & (ThreadState_StopRequested | \
 						ThreadState_SuspendRequested)) != 0)
 
-#define SPIN_TRYLOCK(i) (InterlockedCompareExchange (&(i), 1, 0) == 0)
-#define SPIN_LOCK(i) do { \
-				if (SPIN_TRYLOCK (i)) \
-					break; \
-			} while (1)
-
-#define SPIN_UNLOCK(i) i = 0
 #define SMALL_STACK (128 * (sizeof (gpointer) / 4) * 1024)
 
 /* DEBUG: prints tp data every 2s */
@@ -128,16 +121,10 @@ typedef struct {
 	void *pc_nthreads; /* Performance counter for total number of active threads */
 	/**/
 	volatile gint destroy_thread;
-	volatile gint ignore_times; /* Used when there's a thread being created or destroyed */
-	volatile gint sp_lock; /* spin lock used to protect ignore_times */
-	volatile gint64 last_check;
-	volatile gint64 time_sum;
-	volatile gint n_sum;
 #if DEBUG
 	volatile gint32 njobs;
 #endif
 	volatile gint32 nexecuted;
-	gint64 averages [2];
 	gboolean is_io;
 } ThreadPool;
 
@@ -1403,83 +1390,6 @@ dequeue_or_steal (ThreadPool *tp, gpointer *data, MonoWSQ *local_wsq)
 	return (*data != NULL);
 }
 
-static void
-process_idle_times (ThreadPool *tp, gint64 t)
-{
-	gint64 ticks;
-	gint64 avg;
-	gboolean compute_avg;
-	gint new_threads;
-	gint64 per1;
-
-	if (tp->ignore_times || t <= 0)
-		return;
-
-	compute_avg = FALSE;
-	ticks = mono_100ns_ticks ();
-	t = ticks - t;
-	SPIN_LOCK (tp->sp_lock);
-	if (tp->ignore_times) {
-		SPIN_UNLOCK (tp->sp_lock);
-		return;
-	}
-	tp->time_sum += t;
-	tp->n_sum++;
-	if (tp->last_check == 0)
-		tp->last_check = ticks;
-	else if (tp->last_check > 0 && (ticks - tp->last_check) > 5000000) {
-		tp->ignore_times = 1;
-		compute_avg = TRUE;
-	}
-	SPIN_UNLOCK (tp->sp_lock);
-
-	if (!compute_avg)
-		return;
-
-	//printf ("Items: %d Time elapsed: %.3fs\n", tp->n_sum, (ticks - tp->last_check) / 10000.0);
-	tp->last_check = ticks;
-	new_threads = 0;
-	avg = tp->time_sum / tp->n_sum;
-	if (tp->averages [1] == 0) {
-		tp->averages [1] = avg;
-	} else {
-		per1 = ((100 * (ABS (avg - tp->averages [1]))) / tp->averages [1]);
-		if (per1 > 5) {
-			if (avg > tp->averages [1]) {
-				if (tp->averages [1] < tp->averages [0]) {
-					new_threads = -1;
-				} else {
-					new_threads = 1;
-				}
-			} else if (avg < tp->averages [1] && tp->averages [1] < tp->averages [0]) {
-				new_threads = 1;
-			}
-		} else {
-			int min, n;
-			min = tp->min_threads;
-			n = tp->nthreads;
-			if ((n - min) < min && tp->busy_threads == n)
-				new_threads = 1;
-		}
-		/*
-		if (new_threads != 0) {
-			printf ("n: %d per1: %lld avg=%lld avg1=%lld avg0=%lld\n", new_threads, per1, avg, tp->averages [1], tp->averages [0]);
-		}
-		*/
-	}
-
-	tp->time_sum = 0;
-	tp->n_sum = 0;
-
-	tp->averages [0] = tp->averages [1];
-	tp->averages [1] = avg;
-	tp->ignore_times = 0;
-
-	if (new_threads == -1) {
-		threadpool_kill_thread (tp);
-	}
-}
-
 static gboolean
 should_i_die (ThreadPool *tp)
 {
@@ -1606,8 +1516,6 @@ async_invoke_thread (gpointer data)
 					if (tp_item_begin_func)
 						tp_item_begin_func (tp_item_user_data);
 
-					if (!is_io_task && ar->add_time > 0)
-						process_idle_times (tp, ar->add_time);
 					exc = mono_async_invoke (tp, ar);
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
