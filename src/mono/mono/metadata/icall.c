@@ -1749,6 +1749,7 @@ ves_icall_MonoField_GetFieldOffset (MonoReflectionField *field)
 	MonoClass *parent = field->field->parent;
 	if (!parent->size_inited)
 		mono_class_init (parent);
+	mono_class_setup_fields_locking (parent);
 
 	return field->field->offset - sizeof (MonoObject);
 }
