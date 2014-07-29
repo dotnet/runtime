@@ -58,7 +58,8 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
  */
 typedef enum {
 	CLEAR_AT_GC,
-	CLEAR_AT_TLAB_CREATION
+	CLEAR_AT_TLAB_CREATION,
+	CLEAR_AT_TLAB_CREATION_DEBUG
 } NurseryClearPolicy;
 
 NurseryClearPolicy sgen_get_nursery_clear_policy (void) MONO_INTERNAL;

@@ -149,7 +149,7 @@ alloc_degraded (MonoVTable *vtable, size_t size, gboolean for_mature)
 static void
 zero_tlab_if_necessary (void *p, size_t size)
 {
-	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION || nursery_clear_policy == CLEAR_AT_TLAB_CREATION_DEBUG) {
 		memset (p, 0, size);
 	} else {
 		/*

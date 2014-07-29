@@ -393,7 +393,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 		 * allocating from this dying fragment as it doesn't respect SGEN_MAX_NURSERY_WASTE
 		 * when doing second chance allocation.
 		 */
-		if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION && claim_remaining_size (frag, end)) {
+		if ((sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION || sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION_DEBUG) && claim_remaining_size (frag, end)) {
 			sgen_clear_range (end, frag->fragment_end);
 			HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_trailer, frag->fragment_end - end));
 #ifdef NALLOC_DEBUG
@@ -651,7 +651,7 @@ sgen_clear_allocator_fragments (SgenFragmentAllocator *allocator)
 void
 sgen_clear_nursery_fragments (void)
 {
-	if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION) {
+	if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION || sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION_DEBUG) {
 		sgen_clear_allocator_fragments (&mutator_allocator);
 		sgen_minor_collector.clear_fragments ();
 	}
@@ -714,6 +714,8 @@ add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag
 		/* memsetting just the first chunk start is bound to provide better cache locality */
 		if (sgen_get_nursery_clear_policy () == CLEAR_AT_GC)
 			memset (frag_start, 0, frag_size);
+		else if (sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION_DEBUG)
+			memset (frag_start, 0xff, frag_size);
 
 #ifdef NALLOC_DEBUG
 		/* XXX convert this into a flight record entry

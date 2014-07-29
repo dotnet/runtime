@@ -4922,6 +4922,10 @@ mono_gc_base_init (void)
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "clear-nursery-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
+			} else if (!strcmp (opt, "clear-at-tlab-creation")) {
+				nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
+			} else if (!strcmp (opt, "debug-clear-at-tlab-creation")) {
+				nursery_clear_policy = CLEAR_AT_TLAB_CREATION_DEBUG;
 			} else if (!strcmp (opt, "check-scan-starts")) {
 				do_scan_starts_check = TRUE;
 			} else if (!strcmp (opt, "verify-nursery-at-minor-gc")) {
@@ -4971,8 +4975,9 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  disable-major\n");
 				fprintf (stderr, "  xdomain-checks\n");
 				fprintf (stderr, "  check-concurrent\n");
-				fprintf (stderr, "  clear-at-gc\n");
-				fprintf (stderr, "  clear-nursery-at-gc\n");
+				fprintf (stderr, "  clear-[nursery-]at-gc\n");
+				fprintf (stderr, "  clear-at-tlab-creation\n");
+				fprintf (stderr, "  debug-clear-at-tlab-creation\n");
 				fprintf (stderr, "  check-scan-starts\n");
 				fprintf (stderr, "  no-managed-allocator\n");
 				fprintf (stderr, "  print-allowance\n");
