@@ -156,6 +156,7 @@ lower_memory_access (MonoCompile *cfg)
 		g_hash_table_remove_all (addr_loads);
 
 		for (ins = bb->code; ins; ins = ins->next) {
+handle_instruction:
 			switch (ins->opcode) {
 			case OP_LDADDR:
 				g_hash_table_insert (addr_loads, GINT_TO_POINTER (ins->dreg), ins);
@@ -197,7 +198,11 @@ lower_memory_access (MonoCompile *cfg)
 				tmp = g_hash_table_lookup (addr_loads, GINT_TO_POINTER (ins->sreg1));
 				if (tmp) {
 					if (cfg->verbose_level > 2) { printf ("Found candidate load:"); mono_print_ins (ins); }
-					needs_dce |= lower_load (cfg, ins, tmp);
+					if (lower_load (cfg, ins, tmp)) {
+						needs_dce = TRUE;
+						/* Try to propagate known aliases if an OP_MOVE was inserted */
+						goto handle_instruction;
+					}
 				}
 				break;
 
@@ -214,7 +219,11 @@ lower_memory_access (MonoCompile *cfg)
 				tmp = g_hash_table_lookup (addr_loads, GINT_TO_POINTER (ins->dreg));
 				if (tmp) {
 					if (cfg->verbose_level > 2) { printf ("Found candidate store:"); mono_print_ins (ins); }
-					needs_dce |= lower_store (cfg, ins, tmp);
+					if (lower_store (cfg, ins, tmp)) {
+						needs_dce = TRUE;
+						/* Try to propagate known aliases if an OP_MOVE was inserted */
+						goto handle_instruction;
+					}
 				}
 				break;
 
@@ -237,13 +246,14 @@ lower_memory_access (MonoCompile *cfg)
 }
 
 static gboolean
-recompute_aliased_variables (MonoCompile *cfg)
+recompute_aliased_variables (MonoCompile *cfg, int *restored_vars)
 {
 	int i;
 	MonoBasicBlock *bb;
 	MonoInst *ins;
 	int kills = 0;
 	int adds = 0;
+	*restored_vars = 0;
 
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *var = cfg->varinfo [i];
@@ -275,7 +285,8 @@ recompute_aliased_variables (MonoCompile *cfg)
 			}
 		}
 	}
-	
+	*restored_vars = adds;
+
 	mono_jit_stats.alias_found += kills;
 	mono_jit_stats.alias_removed += kills - adds;
 	if (kills > adds) {
@@ -299,6 +310,7 @@ TODO:
 void
 mono_local_alias_analysis (MonoCompile *cfg)
 {
+	int i, restored_vars = 1;
 	if (!cfg->has_indirection)
 		return;
 
@@ -319,17 +331,18 @@ mono_local_alias_analysis (MonoCompile *cfg)
 
 	/*
 	Some variables no longer need to be flagged as indirect, find them.
+	Since indirect vars are converted into global vregs, each pass eliminates only one level of indirection.
+	Most cases only need one pass and some 2.
 	*/
-	if (!recompute_aliased_variables (cfg))
-		goto done;
-
-	/*
-	A lot of simplification just took place, we recompute local variables and do DCE to
-	really profit from the previous gains
-	*/
-	mono_handle_global_vregs (cfg);
-	if (cfg->opt & MONO_OPT_DEADCE)
-		mono_local_deadce (cfg);
+	for (i = 0; i < 3 && restored_vars > 0 && recompute_aliased_variables (cfg, &restored_vars); ++i) {
+		/*
+		A lot of simplification just took place, we recompute local variables and do DCE to
+		really profit from the previous gains
+		*/
+		mono_handle_global_vregs (cfg);
+		if (cfg->opt & MONO_OPT_DEADCE)
+			mono_local_deadce (cfg);
+	}
 
 done:
 	if (cfg->verbose_level > 2)
