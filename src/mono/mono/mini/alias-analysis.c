@@ -238,6 +238,15 @@ handle_instruction:
 					needs_dce |= lower_store_imm (cfg, ins, tmp);
 				}
 				break;
+			case OP_CHECK_THIS:
+			case OP_NOT_NULL:
+				tmp = g_hash_table_lookup (addr_loads, GINT_TO_POINTER (ins->sreg1));
+				if (tmp) {
+					if (cfg->verbose_level > 2) { printf ("Found null check over local: "); mono_print_ins (ins); }
+					NULLIFY_INS (ins);
+					needs_dce = TRUE;
+				}
+				break;
 			}
 		}
 	}
