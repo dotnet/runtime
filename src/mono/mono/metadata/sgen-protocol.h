@@ -234,7 +234,7 @@ typedef struct {
 
 /* missing: finalizers, roots, non-store wbarriers */
 
-void binary_protocol_init (const char *filename) MONO_INTERNAL;
+void binary_protocol_init (const char *filename, long long limit) MONO_INTERNAL;
 gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
 
 void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;

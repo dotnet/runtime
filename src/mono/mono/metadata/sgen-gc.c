@@ -4954,7 +4954,16 @@ mono_gc_base_init (void)
 				}
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;
-				binary_protocol_init (filename);
+				char *colon = strrchr (filename, ':');
+				size_t limit = -1;
+				if (colon) {
+					if (!mono_gc_parse_environment_string_extract_number (colon + 1, &limit)) {
+						sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring limit.", "Binary protocol file size limit must be an integer.");
+						limit = -1;
+					}
+					*colon = '\0';
+				}
+				binary_protocol_init (filename, (long long)limit);
 			} else if (!sgen_bridge_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
@@ -4983,7 +4992,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  print-allowance\n");
 				fprintf (stderr, "  print-pinning\n");
 				fprintf (stderr, "  heap-dump=<filename>\n");
-				fprintf (stderr, "  binary-protocol=<filename>\n");
+				fprintf (stderr, "  binary-protocol=<filename>[:<file-size-limit>]\n");
 				sgen_bridge_print_gc_debug_usage ();
 				fprintf (stderr, "\n");
 

@@ -46,10 +46,57 @@ struct _BinaryProtocolBuffer {
 
 static BinaryProtocolBuffer * volatile binary_protocol_buffers = NULL;
 
-void
-binary_protocol_init (const char *filename)
+static char* filename_or_prefix = NULL;
+static int current_file_index = 0;
+static long long current_file_size = 0;
+static long long file_size_limit;
+
+static char*
+filename_for_index (int index)
 {
+	char *filename;
+
+	SGEN_ASSERT (0, file_size_limit > 0, "Indexed binary protocol filename must only be used with file size limit");
+
+	filename = sgen_alloc_internal_dynamic (strlen (filename_or_prefix) + 32, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
+	sprintf (filename, "%s.%d", filename_or_prefix, index);
+
+	return filename;
+}
+
+static void
+free_filename (char *filename)
+{
+	SGEN_ASSERT (0, file_size_limit > 0, "Indexed binary protocol filename must only be used with file size limit");
+
+	sgen_free_internal_dynamic (filename, strlen (filename_or_prefix) + 32, INTERNAL_MEM_BINARY_PROTOCOL);
+}
+
+static void
+binary_protocol_open_file (void)
+{
+	char *filename;
+
+	if (file_size_limit > 0)
+		filename = filename_for_index (current_file_index);
+	else
+		filename = filename_or_prefix;
+
 	binary_protocol_file = fopen (filename, "w");
+
+	if (file_size_limit > 0)
+		free_filename (filename);
+}
+
+void
+binary_protocol_init (const char *filename, long long limit)
+{
+	filename_or_prefix = sgen_alloc_internal_dynamic (strlen (filename) + 1, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
+	strcpy (filename_or_prefix, filename);
+
+	file_size_limit = limit;
+
+	binary_protocol_open_file ();
 }
 
 gboolean
@@ -110,8 +157,30 @@ binary_protocol_flush_buffer (BinaryProtocolBuffer *buffer)
 {
 	g_assert (buffer->index > 0);
 	fwrite (buffer->buffer, 1, buffer->index, binary_protocol_file);
+	current_file_size += buffer->index;
 
 	sgen_free_os_memory (buffer, sizeof (BinaryProtocolBuffer), SGEN_ALLOC_INTERNAL);
+}
+
+static void
+binary_protocol_check_file_overflow (void)
+{
+	if (file_size_limit <= 0 || current_file_size < file_size_limit)
+		return;
+
+	fclose (binary_protocol_file);
+	binary_protocol_file = NULL;
+
+	if (current_file_index > 0) {
+		char *filename = filename_for_index (current_file_index - 1);
+		unlink (filename);
+		free_filename (filename);
+	}
+
+	++current_file_index;
+	current_file_size = 0;
+
+	binary_protocol_open_file ();
 }
 
 void
@@ -136,8 +205,10 @@ binary_protocol_flush_buffers (gboolean force)
 
 	binary_protocol_buffers = NULL;
 
-	for (i = num_buffers - 1; i >= 0; --i)
+	for (i = num_buffers - 1; i >= 0; --i) {
 		binary_protocol_flush_buffer (bufs [i]);
+		binary_protocol_check_file_overflow ();
+	}
 
 	sgen_free_internal_dynamic (buf, num_buffers * sizeof (BinaryProtocolBuffer*), INTERNAL_MEM_BINARY_PROTOCOL);
 
