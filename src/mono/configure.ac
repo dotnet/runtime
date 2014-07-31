@@ -2495,7 +2495,7 @@ SQLITE3="libsqlite3.so.0"
 X11="libX11.so"
 GDKX11="libgdk-x11-2.0.so.0"
 GTKX11="libgtk-x11-2.0.so.0"
-XINERAMA="libXinerama.so"
+XINERAMA="libXinerama.so.1"
 
 sizeof_register="SIZEOF_VOID_P"
 
@@ -2987,20 +2987,8 @@ case "$host" in
 	done
 	
 	if test "x$X11" = "xlibX11.so"; then
-		AC_MSG_WARN([Could not find X development libs. Do you have the -devel package installed? Assuming libX11.so.6...]);
+		AC_MSG_WARN([Could not find libX11.so. Do you have X.org or XFree86 installed? Assuming libX11.so.6...]);
 		X11=libX11.so.6
-	fi
-	AC_MSG_CHECKING(for the soname of libXinerama.so)
-	for i in $x_libraries $dlsearch_path; do
-		for r in 1 2 3; do
-			if test -f $i/libXinerama.so.$r; then
-				XINERAMA=libXinerama.so.$r
-				AC_MSG_RESULT($XINERAMA)
-			fi
-		done
-	done
-	if test "x$XINERAMA" = "xlibXinerama.so"; then
-		AC_MSG_WARN([Could not find Xinerama development libs. Support for multiple monitors might not work...]);
 	fi
 	;;
 esac
