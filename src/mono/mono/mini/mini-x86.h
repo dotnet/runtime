@@ -48,7 +48,7 @@ struct sigcontext {
 #endif /* __HAIKU__ */
 
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
-       defined(__FreeBSD__) || defined(__OpenBSD__)
+       defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)
 #define MONO_ARCH_USE_SIGACTION
 #endif
 

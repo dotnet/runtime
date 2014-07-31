@@ -142,6 +142,17 @@ case "$host" in
 		with_sigaltstack=no
 		use_sigposix=yes
 		;;
+	*-*-kfreebsd*-gnu)
+		platform_win32=no
+		CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP -DUSE_MUNMAP -DTHREAD_LOCAL_ALLOC -pthread"
+		libmono_cflags="-D_REENTRANT -DTHREAD_LOCAL_ALLOC -pthread"
+		libmono_ldflags="-lpthread -pthread"
+		libdl="-ldl"
+		libgc_threads=pthreads
+		need_link_unlink=yes
+		with_sigaltstack=no
+		use_sigposix=yes
+		;;
 	*-*-*freebsd*)
 		host_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
@@ -2565,7 +2576,7 @@ case "$host" in
 			sgen_supported=true
 			AOT_SUPPORTED="yes"
 			;;
-		  openbsd*|freebsd*)
+		  openbsd*|freebsd*|kfreebsd-gnu*)
 			sgen_supported=true
 		        ;;
 		esac
@@ -2587,7 +2598,7 @@ case "$host" in
 			sgen_supported=true
 			AOT_SUPPORTED="yes"
 			;;
-		  openbsd*|freebsd*)
+		  openbsd*|freebsd*|kfreebsd-gnu*)
 			sgen_supported=true
 			;;
 		  mingw*)
@@ -2960,6 +2971,11 @@ case "$host" in
      *-*-*netbsd*)
 	LIBC="libc.so.12"
 	INTL="libintl.so.0"
+	;;
+     *-*-kfreebsd*-gnu)
+	LIBC="libc.so.0.1"
+	INTL="libc.so.0.1"
+	X11="libX11.so.6"
 	;;
     *-*-*freebsd*)
     	LIBC="libc.so"
