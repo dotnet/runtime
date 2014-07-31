@@ -40,6 +40,12 @@ class GFoo3<T> {
 // The tests use arrays to pass/receive values to keep the calling convention of the methods stable, which is a current limitation of the runtime support for gsharedvt.
 //
 
+//
+// Interfaces are used to prevent the AOT compiler from discovering instantiations, thus forcing the usage of the gsharedvt
+// versions of methods. Unused vtype type arguments are used to test gsharedvt methods with ref type arguments, i.e.
+// when calling foo<T,T2> as foo<object,bool>, the gsharedvt version is used, but with a ref type argument.
+//
+
 // FIXME: Add mixed ref/noref tests, i.e. Dictionary<string, int>
 
 #if MOBILE
@@ -1019,6 +1025,7 @@ public class Tests
 		return action(null, state);
 	}
 
+	[Category ("!FULLAOT")]
 	public static int test_0_delegate_wrappers () {
 		Func<object, Pair<int, int>, Pair<int, int>> del1 = delegate (object o, Pair<int, int> p) { return p; };
 		Func<object, Pair<int, int>, Pair<int, int>> del2 = delegate (object o, Pair<int, int> p) { return p; };
@@ -1458,6 +1465,42 @@ public class Tests
 		var arr = new AnEnum [16];
 		var c = new ReadOnlyCollection<AnEnum> (arr);
 		return c.Contains (AnEnum.Two) == false ? 0 : 1;
+	}
+
+	interface IFaceCallPatching {
+		bool caller<T, T2> ();
+	}
+
+	class CallPatching2<T> {
+		T t;
+		public object o;
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public bool callee () {
+			return (string)o == "ABC";
+		}
+	}
+
+	class CallPatching : IFaceCallPatching {
+		public bool caller<T, T2> () {
+			var c = new CallPatching2<T> ();
+			c.o = "ABC";
+			return c.callee ();
+		}
+	}
+
+	//
+	// This tests that generic calls made from gsharedvt methods are not patched normally.
+	// If they are, the first call to 'caller' would patch in the gshared version of
+	// 'callee', causing the second call to fail because the gshared version of callee
+	// wouldn't work with CallPatching2<bool> since it has a different object layout.
+	//
+	public static int test_0_call_patching () {
+		IFaceCallPatching c = new CallPatching ();
+		c.caller<object, bool> ();
+		if (!c.caller<bool, bool> ())
+			return 1;
+		return 0;
 	}
 }
 
