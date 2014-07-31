@@ -4260,7 +4260,7 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
-#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__)
+#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__) || defined(__FreeBSD_kernel__)
 static gchar*
 get_fstypename (gchar *utfpath)
 {

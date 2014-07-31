@@ -309,7 +309,7 @@ typedef struct {
 
 #define MONO_ARCH_NOMAP32BIT
 
-#elif defined (__FreeBSD__)
+#elif defined (__FreeBSD__) || defined(__FreeBSD_kernel__)
 
 #define REG_RAX 7
 #define REG_RCX 4
