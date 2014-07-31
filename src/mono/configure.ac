@@ -143,7 +143,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-kfreebsd*-gnu)
-		platform_win32=no
+		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP -DUSE_MUNMAP -DTHREAD_LOCAL_ALLOC -pthread"
 		libmono_cflags="-D_REENTRANT -DTHREAD_LOCAL_ALLOC -pthread"
 		libmono_ldflags="-lpthread -pthread"
