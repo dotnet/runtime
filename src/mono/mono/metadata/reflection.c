@@ -11456,9 +11456,10 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	klass->has_finalize = 1;
 	klass->has_finalize_inited = 1;
 
-	/* fool mono_class_setup_parent */
-	klass->supertypes = NULL;
 	mono_class_setup_parent (klass, klass->parent);
+	/* fool mono_class_setup_supertypes */
+	klass->supertypes = NULL;
+	mono_class_setup_supertypes (klass);
 	mono_class_setup_mono_type (klass);
 
 #if 0
