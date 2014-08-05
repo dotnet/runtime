@@ -4981,6 +4981,39 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 }
 
 /**
+ * mono_string_new_utf32:
+ * @text: a pointer to an utf32 string
+ * @len: the length of the string
+ *
+ * Returns: A newly created string object which contains @text.
+ */
+MonoString *
+mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len)
+{
+	MonoString *s;
+	mono_unichar2 *utf16_output = NULL;
+	gint32 utf16_len = 0;
+	GError *error = NULL;
+	glong items_written;
+	
+	utf16_output = g_ucs4_to_utf16 (text, len, NULL, &items_written, &error);
+	
+	if (error)
+		g_error_free (error);
+
+	while (utf16_output [utf16_len]) utf16_len++;
+	
+	s = mono_string_new_size (domain, utf16_len);
+	g_assert (s != NULL);
+
+	memcpy (mono_string_chars (s), utf16_output, utf16_len * 2);
+
+	g_free (utf16_output);
+	
+	return s;
+}
+
+/**
  * mono_string_new_size:
  * @text: a pointer to an utf16 string
  * @len: the length of the string
@@ -5686,6 +5719,31 @@ mono_string_to_utf16 (MonoString *s)
 	
 	memcpy (as, mono_string_chars(s), s->length * 2);
 	return (gunichar2 *)(as);
+}
+
+/**
+ * mono_string_to_utf32:
+ * @s: a MonoString
+ *
+ * Return an null-terminated array of the UTF-32 (UCS-4) chars
+ * contained in @s. The result must be freed with g_free().
+ */
+mono_unichar4*
+mono_string_to_utf32 (MonoString *s)
+{
+	mono_unichar4 *utf32_output = NULL; 
+	GError *error = NULL;
+	glong items_written;
+	
+	if (s == NULL)
+		return NULL;
+		
+	utf32_output = g_utf16_to_ucs4 (s->chars, s->length, NULL, &items_written, &error);
+	
+	if (error)
+		g_error_free (error);
+
+	return utf32_output;
 }
 
 /**

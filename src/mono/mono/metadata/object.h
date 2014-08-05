@@ -127,6 +127,9 @@ mono_string_new_wrapper	    (const char *text);
 MONO_API MonoString*
 mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int length);
 
+MONO_API MonoString*
+mono_string_new_utf32	    (MonoDomain *domain, const mono_unichar4 *text, int32_t len);
+
 MONO_API char *
 mono_string_to_utf8	    (MonoString *string_obj);
 
@@ -135,6 +138,9 @@ mono_string_to_utf8_checked (MonoString *string_obj, MonoError *error);
 
 MONO_API mono_unichar2 *
 mono_string_to_utf16	    (MonoString *string_obj);
+
+MONO_API mono_unichar4 *
+mono_string_to_utf32	    (MonoString *string_obj);
 
 MONO_API MonoString *
 mono_string_from_utf16	    (mono_unichar2 *data);
