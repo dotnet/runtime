@@ -6407,11 +6407,11 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		 * from mono_class_from_mono_type (), mono_array_new (), 
 		 * Array:CreateInstance (), etc, so use a separate cache + a separate lock.
 		 */
-		EnterCriticalSection (&image->szarray_cache_lock);
+		mono_mutex_lock (&image->szarray_cache_lock);
 		if (!image->szarray_cache)
 			image->szarray_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		class = g_hash_table_lookup (image->szarray_cache, eclass);
-		LeaveCriticalSection (&image->szarray_cache_lock);
+		mono_mutex_unlock (&image->szarray_cache_lock);
 		if (class)
 			return class;
 
@@ -6548,14 +6548,14 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if (rank == 1 && !bounded) {
 		MonoClass *prev_class;
 
-		EnterCriticalSection (&image->szarray_cache_lock);
+		mono_mutex_lock (&image->szarray_cache_lock);
 		prev_class = g_hash_table_lookup (image->szarray_cache, eclass);
 		if (prev_class)
 			/* Someone got in before us */
 			class = prev_class;
 		else
 			g_hash_table_insert (image->szarray_cache, eclass, class);
-		LeaveCriticalSection (&image->szarray_cache_lock);
+		mono_mutex_unlock (&image->szarray_cache_lock);
 	} else {
 		list = g_slist_append (rootlist, class);
 		g_hash_table_insert (image->array_cache, eclass, list);

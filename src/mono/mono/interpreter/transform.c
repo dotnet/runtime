@@ -2791,12 +2791,12 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	g_hash_table_destroy (td.data_hash);
 }
 
-static CRITICAL_SECTION calc_section;
+static mono_mutex_t calc_section;
 
 void 
 mono_interp_transform_init (void)
 {
-	InitializeCriticalSection(&calc_section);
+	mono_mutex_init_recursive(&calc_section);
 }
 
 MonoException *
@@ -2845,9 +2845,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethod *nm = NULL;
-		EnterCriticalSection(&calc_section);
+		mono_mutex_lock(&calc_section);
 		if (runtime_method->transformed) {
-			LeaveCriticalSection(&calc_section);
+			mono_mutex_unlock(&calc_section);
 			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 			return NULL;
 		}
@@ -2880,13 +2880,13 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->stack_size = sizeof (stackval); /* for tracing */
 			runtime_method->alloca_size = runtime_method->stack_size;
 			runtime_method->transformed = TRUE;
-			LeaveCriticalSection(&calc_section);
+			mono_mutex_unlock(&calc_section);
 			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 			return NULL;
 		}
 		method = nm;
 		header = mono_method_get_header (nm);
-		LeaveCriticalSection(&calc_section);
+		mono_mutex_unlock(&calc_section);
 	}
 	g_assert ((signature->param_count + signature->hasthis) < 1000);
 	g_assert (header->max_stack < 10000);
@@ -2996,9 +2996,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	}
 
 	/* the rest needs to be locked so it is only done once */
-	EnterCriticalSection(&calc_section);
+	mono_mutex_lock(&calc_section);
 	if (runtime_method->transformed) {
-		LeaveCriticalSection(&calc_section);
+		mono_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
 		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 		return NULL;
@@ -3042,7 +3042,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 	runtime_method->transformed = TRUE;
-	LeaveCriticalSection(&calc_section);
+	mono_mutex_unlock(&calc_section);
 
 	return NULL;
 }

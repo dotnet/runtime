@@ -15,8 +15,8 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/mempool-internals.h>
 
-extern CRITICAL_SECTION mono_delegate_section;
-extern CRITICAL_SECTION mono_strtod_mutex;
+extern mono_mutex_t mono_delegate_section;
+extern mono_mutex_t mono_strtod_mutex;
 
 /*
  * If this is set, the memory belonging to appdomains is not freed when a domain is
@@ -281,7 +281,7 @@ struct _MonoDomain {
 	 * i.e. if both are taken by the same thread, the loader lock
 	 * must taken first.
 	 */
-	CRITICAL_SECTION    lock;
+	mono_mutex_t    lock;
 	MonoMemPool        *mp;
 	MonoCodeManager    *code_mp;
 	/*
@@ -331,7 +331,7 @@ struct _MonoDomain {
 	GHashTable         *proxy_vtable_hash;
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
-	CRITICAL_SECTION    jit_code_hash_lock;
+	mono_mutex_t    jit_code_hash_lock;
 	int		    num_jit_info_tables;
 	MonoJitInfoTable * 
 	  volatile          jit_info_table;
@@ -360,9 +360,9 @@ struct _MonoDomain {
 	GHashTable         *finalizable_objects_hash;
 
 	/* Protects the three hashes above */
-	CRITICAL_SECTION   finalizable_objects_hash_lock;
+	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
-	CRITICAL_SECTION    assemblies_lock;
+	mono_mutex_t    assemblies_lock;
 
 	GHashTable	   *method_rgctx_hash;
 

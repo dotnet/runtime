@@ -84,7 +84,7 @@ tp_poll_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 	socket_io_data = p;
 	data = socket_io_data->event_data;
 
-	LeaveCriticalSection (&socket_io_data->io_lock);
+	mono_mutex_unlock (&socket_io_data->io_lock);
 	
 	MONO_SEM_WAIT (&data->new_sem);
 	INIT_POLLFD (&data->newpfd, GPOINTER_TO_INT (fd), events);
@@ -270,11 +270,11 @@ tp_poll_wait (gpointer p)
 		if (nsock == 0)
 			continue;
 
-		EnterCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_lock (&socket_io_data->io_lock);
 		if (socket_io_data->inited == 3) {
 			g_free (pfds);
 			mono_ptr_array_destroy (async_results);
-			LeaveCriticalSection (&socket_io_data->io_lock);
+			mono_mutex_unlock (&socket_io_data->io_lock);
 			return; /* cleanup called */
 		}
 
@@ -314,7 +314,7 @@ tp_poll_wait (gpointer p)
 					maxfd--;
 			}
 		}
-		LeaveCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_unlock (&socket_io_data->io_lock);
 		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results.data, nresults);
 		mono_ptr_array_clear (async_results);
 	}

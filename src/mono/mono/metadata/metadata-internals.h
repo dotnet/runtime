@@ -249,7 +249,7 @@ struct _MonoImage {
 
 	GHashTable *szarray_cache;
 	/* This has a separate lock to improve scalability */
-	CRITICAL_SECTION szarray_cache_lock;
+	mono_mutex_t szarray_cache_lock;
 
 	/*
 	 * indexed by MonoMethodSignature 
@@ -346,7 +346,7 @@ struct _MonoImage {
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.
 	 */
-	CRITICAL_SECTION    lock;
+	mono_mutex_t    lock;
 };
 
 /*
@@ -362,7 +362,7 @@ typedef struct {
 
 	GHashTable *gclass_cache, *ginst_cache, *gmethod_cache, *gsignature_cache;
 
-	CRITICAL_SECTION    lock;
+	mono_mutex_t    lock;
 
 	/*
 	 * Memory for generic instances owned by this image set should be allocated from

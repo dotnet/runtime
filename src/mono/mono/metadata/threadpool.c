@@ -84,7 +84,7 @@ enum {
 };
 
 typedef struct {
-	CRITICAL_SECTION io_lock; /* access to sock_to_state */
+	mono_mutex_t io_lock; /* access to sock_to_state */
 	int inited; // 0 -> not initialized , 1->initializing, 2->initialized, 3->cleaned up
 	MonoGHashTable *sock_to_state;
 
@@ -160,7 +160,7 @@ static MonoClass *socket_async_call_klass;
 static MonoClass *process_async_call_klass;
 
 static GPtrArray *wsqs;
-CRITICAL_SECTION wsqs_lock;
+mono_mutex_t wsqs_lock;
 static gboolean suspended;
 
 /* Hooks */
@@ -314,14 +314,14 @@ get_events_from_list (MonoMList *list)
 static void
 socket_io_cleanup (SocketIOData *data)
 {
-	EnterCriticalSection (&data->io_lock);
+	mono_mutex_lock (&data->io_lock);
 	if (data->inited != 2) {
-		LeaveCriticalSection (&data->io_lock);
+		mono_mutex_unlock (&data->io_lock);
 		return;
 	}
 	data->inited = 3;
 	data->shutdown (data->event_data);
-	LeaveCriticalSection (&data->io_lock);
+	mono_mutex_unlock (&data->io_lock);
 }
 
 static int
@@ -443,15 +443,15 @@ mono_thread_pool_remove_socket (int sock)
 	if (socket_io_data.inited == 0)
 		return;
 
-	EnterCriticalSection (&socket_io_data.io_lock);
+	mono_mutex_lock (&socket_io_data.io_lock);
 	if (socket_io_data.sock_to_state == NULL) {
-		LeaveCriticalSection (&socket_io_data.io_lock);
+		mono_mutex_unlock (&socket_io_data.io_lock);
 		return;
 	}
 	list = mono_g_hash_table_lookup (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
 	if (list)
 		mono_g_hash_table_remove (socket_io_data.sock_to_state, GINT_TO_POINTER (sock));
-	LeaveCriticalSection (&socket_io_data.io_lock);
+	mono_mutex_unlock (&socket_io_data.io_lock);
 	
 	while (list) {
 		state = (MonoSocketAsyncResult *) mono_mlist_get_data (list);
@@ -506,7 +506,7 @@ socket_io_init (SocketIOData *data)
 		}
 	}
 
-	EnterCriticalSection (&data->io_lock);
+	mono_mutex_lock (&data->io_lock);
 	data->sock_to_state = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC);
 #ifdef HAVE_EPOLL
 	data->event_system = EPOLL_BACKEND;
@@ -520,7 +520,7 @@ socket_io_init (SocketIOData *data)
 
 	init_event_system (data);
 	mono_thread_create_internal (mono_get_root_domain (), data->wait, data, TRUE, SMALL_STACK);
-	LeaveCriticalSection (&data->io_lock);
+	mono_mutex_unlock (&data->io_lock);
 	data->inited = 2;
 	threadpool_start_thread (&async_io_tp);
 }
@@ -543,9 +543,9 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 	MONO_OBJECT_SETREF (state, ares, ares);
 
 	fd = GPOINTER_TO_INT (state->handle);
-	EnterCriticalSection (&data->io_lock);
+	mono_mutex_lock (&data->io_lock);
 	if (data->sock_to_state == NULL) {
-		LeaveCriticalSection (&data->io_lock);
+		mono_mutex_unlock (&data->io_lock);
 		return;
 	}
 	list = mono_g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
@@ -731,11 +731,11 @@ print_pool_info (ThreadPool *tp)
 	g_print ("Queued: %d\n", (tp->tail - tp->head));
 	if (tp == &async_tp) {
 		int i;
-		EnterCriticalSection (&wsqs_lock);
+		mono_mutex_lock (&wsqs_lock);
 		for (i = 0; i < wsqs->len; i++) {
 			g_print ("\tWSQ %d: %d\n", i, mono_wsq_count (g_ptr_array_index (wsqs, i)));
 		}
-		LeaveCriticalSection (&wsqs_lock);
+		mono_mutex_unlock (&wsqs_lock);
 	} else {
 		g_print ("\tSockets: %d\n", mono_g_hash_table_size (socket_io_data.sock_to_state));
 	}
@@ -798,7 +798,7 @@ monitor_thread (gpointer unused)
 				continue;
 			need_one = (mono_cq_count (tp->queue) > 0);
 			if (!need_one && !tp->is_io) {
-				EnterCriticalSection (&wsqs_lock);
+				mono_mutex_lock (&wsqs_lock);
 				for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
 					MonoWSQ *wsq;
 					wsq = g_ptr_array_index (wsqs, i);
@@ -807,7 +807,7 @@ monitor_thread (gpointer unused)
 						break;
 					}
 				}
-				LeaveCriticalSection (&wsqs_lock);
+				mono_mutex_unlock (&wsqs_lock);
 			}
 			if (need_one)
 				threadpool_start_thread (tp);
@@ -842,7 +842,7 @@ mono_thread_pool_init (void)
 	}
 
 	MONO_GC_REGISTER_ROOT_FIXED (socket_io_data.sock_to_state);
-	InitializeCriticalSection (&socket_io_data.io_lock);
+	mono_mutex_init_recursive (&socket_io_data.io_lock);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
 		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));
 		if (threads_per_cpu < 1)
@@ -857,7 +857,7 @@ mono_thread_pool_init (void)
 	async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 	g_assert (async_call_klass);
 
-	InitializeCriticalSection (&wsqs_lock);
+	mono_mutex_init_recursive (&wsqs_lock);
 	wsqs = g_ptr_array_sized_new (MAX (100 * cpu_count, thread_count));
 
 #ifndef DISABLE_PERFCOUNTERS
@@ -1006,12 +1006,12 @@ mono_thread_pool_cleanup (void)
 	}
 
 	if (wsqs) {
-		EnterCriticalSection (&wsqs_lock);
+		mono_mutex_lock (&wsqs_lock);
 		mono_wsq_cleanup ();
 		if (wsqs)
 			g_ptr_array_free (wsqs, TRUE);
 		wsqs = NULL;
-		LeaveCriticalSection (&wsqs_lock);
+		mono_mutex_unlock (&wsqs_lock);
 		MONO_SEM_DESTROY (&async_tp.new_job);
 	}
 }
@@ -1161,11 +1161,11 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	threadpool_clear_queue (&async_tp, domain);
 	threadpool_clear_queue (&async_io_tp, domain);
 
-	EnterCriticalSection (&socket_io_data.io_lock);
+	mono_mutex_lock (&socket_io_data.io_lock);
 	if (socket_io_data.sock_to_state)
 		mono_g_hash_table_foreach_remove (socket_io_data.sock_to_state, remove_sockstate_for_domain, domain);
 
-	LeaveCriticalSection (&socket_io_data.io_lock);
+	mono_mutex_unlock (&socket_io_data.io_lock);
 	
 	/*
 	 * There might be some threads out that could be about to execute stuff from the given domain.
@@ -1218,21 +1218,21 @@ add_wsq (void)
 	int i;
 	MonoWSQ *wsq;
 
-	EnterCriticalSection (&wsqs_lock);
+	mono_mutex_lock (&wsqs_lock);
 	wsq = mono_wsq_create ();
 	if (wsqs == NULL) {
-		LeaveCriticalSection (&wsqs_lock);
+		mono_mutex_unlock (&wsqs_lock);
 		return NULL;
 	}
 	for (i = 0; i < wsqs->len; i++) {
 		if (g_ptr_array_index (wsqs, i) == NULL) {
 			wsqs->pdata [i] = wsq;
-			LeaveCriticalSection (&wsqs_lock);
+			mono_mutex_unlock (&wsqs_lock);
 			return wsq;
 		}
 	}
 	g_ptr_array_add (wsqs, wsq);
-	LeaveCriticalSection (&wsqs_lock);
+	mono_mutex_unlock (&wsqs_lock);
 	return wsq;
 }
 
@@ -1244,9 +1244,9 @@ remove_wsq (MonoWSQ *wsq)
 	if (wsq == NULL)
 		return;
 
-	EnterCriticalSection (&wsqs_lock);
+	mono_mutex_lock (&wsqs_lock);
 	if (wsqs == NULL) {
-		LeaveCriticalSection (&wsqs_lock);
+		mono_mutex_unlock (&wsqs_lock);
 		return;
 	}
 	g_ptr_array_remove_fast (wsqs, wsq);
@@ -1262,7 +1262,7 @@ remove_wsq (MonoWSQ *wsq)
 		}
 	}
 	mono_wsq_destroy (wsq);
-	LeaveCriticalSection (&wsqs_lock);
+	mono_mutex_unlock (&wsqs_lock);
 }
 
 static void
@@ -1279,7 +1279,7 @@ try_steal (MonoWSQ *local_wsq, gpointer *data, gboolean retry)
 		if (mono_runtime_is_shutting_down ())
 			return;
 
-		EnterCriticalSection (&wsqs_lock);
+		mono_mutex_lock (&wsqs_lock);
 		for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
 			MonoWSQ *wsq;
 
@@ -1288,11 +1288,11 @@ try_steal (MonoWSQ *local_wsq, gpointer *data, gboolean retry)
 				continue;
 			mono_wsq_try_steal (wsqs->pdata [i], data, ms);
 			if (*data != NULL) {
-				LeaveCriticalSection (&wsqs_lock);
+				mono_mutex_unlock (&wsqs_lock);
 				return;
 			}
 		}
-		LeaveCriticalSection (&wsqs_lock);
+		mono_mutex_unlock (&wsqs_lock);
 		ms += 10;
 	} while (retry && ms < 11);
 }

@@ -46,7 +46,7 @@ static volatile gint32 overflow_busy [HAZARD_TABLE_OVERFLOW];
 static MonoLockFreeArrayQueue delayed_free_queue = MONO_LOCK_FREE_ARRAY_QUEUE_INIT (sizeof (DelayedFreeItem));
 
 /* The table for small ID assignment */
-static CRITICAL_SECTION small_id_mutex;
+static mono_mutex_t small_id_mutex;
 static int small_id_next;
 static int highest_small_id = -1;
 static MonoBitSet *small_id_table;
@@ -63,7 +63,7 @@ mono_thread_small_id_alloc (void)
 {
 	int i, id = -1;
 
-	EnterCriticalSection (&small_id_mutex);
+	mono_mutex_lock (&small_id_mutex);
 
 	if (!small_id_table)
 		small_id_table = mono_bitset_new (1, 0);
@@ -125,7 +125,7 @@ mono_thread_small_id_alloc (void)
 		mono_memory_write_barrier ();
 	}
 
-	LeaveCriticalSection (&small_id_mutex);
+	mono_mutex_unlock (&small_id_mutex);
 
 	return id;
 }
@@ -134,13 +134,13 @@ void
 mono_thread_small_id_free (int id)
 {
 	/* MonoBitSet operations are not atomic. */
-	EnterCriticalSection (&small_id_mutex);
+	mono_mutex_lock (&small_id_mutex);
 
 	g_assert (id >= 0 && id < small_id_table->size);
 	g_assert (mono_bitset_test_fast (small_id_table, id));
 	mono_bitset_clear_fast (small_id_table, id);
 
-	LeaveCriticalSection (&small_id_mutex);
+	mono_mutex_unlock (&small_id_mutex);
 }
 
 static gboolean
@@ -345,7 +345,7 @@ mono_thread_smr_init (void)
 {
 	int i;
 
-	InitializeCriticalSection(&small_id_mutex);
+	mono_mutex_init_recursive(&small_id_mutex);
 	mono_counters_register ("Hazardous pointers", MONO_COUNTER_JIT | MONO_COUNTER_INT, &hazardous_pointer_count);
 
 	for (i = 0; i < HAZARD_TABLE_OVERFLOW; ++i) {

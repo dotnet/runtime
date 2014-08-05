@@ -76,9 +76,9 @@ enum {
 #undef OPDEF
 
 /* This mutex protects the various cominterop related caches in MonoImage */
-#define mono_cominterop_lock() EnterCriticalSection (&cominterop_mutex)
-#define mono_cominterop_unlock() LeaveCriticalSection (&cominterop_mutex)
-static CRITICAL_SECTION cominterop_mutex;
+#define mono_cominterop_lock() mono_mutex_lock (&cominterop_mutex)
+#define mono_cominterop_unlock() mono_mutex_unlock (&cominterop_mutex)
+static mono_mutex_t cominterop_mutex;
 
 /* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
 #ifdef  HOST_WIN32
@@ -535,7 +535,7 @@ mono_cominterop_init (void)
 {
 	const char* com_provider_env;
 
-	InitializeCriticalSection (&cominterop_mutex);
+	mono_mutex_init_recursive (&cominterop_mutex);
 
 	com_provider_env = g_getenv ("MONO_COM");
 	if (com_provider_env && !strcmp(com_provider_env, "MS"))
@@ -567,7 +567,7 @@ mono_cominterop_init (void)
 void
 mono_cominterop_cleanup (void)
 {
-	DeleteCriticalSection (&cominterop_mutex);
+	mono_mutex_destroy (&cominterop_mutex);
 }
 
 void

@@ -28,7 +28,7 @@
 #include <mono/metadata/mono-endian.h>
 
 static guint32 debugger_lock_level = 0;
-static CRITICAL_SECTION debugger_lock_mutex;
+static mono_mutex_t debugger_lock_mutex;
 
 typedef struct
 {
@@ -43,7 +43,7 @@ void
 mono_debugger_lock (void)
 {
 	g_assert (initialized);
-	EnterCriticalSection (&debugger_lock_mutex);
+	mono_mutex_lock (&debugger_lock_mutex);
 	debugger_lock_level++;
 }
 
@@ -52,13 +52,13 @@ mono_debugger_unlock (void)
 {
 	g_assert (initialized);
 	debugger_lock_level--;
-	LeaveCriticalSection (&debugger_lock_mutex);
+	mono_mutex_unlock (&debugger_lock_mutex);
 }
 
 void
 mono_debugger_initialize ()
 {
-	InitializeCriticalSection (&debugger_lock_mutex);
+	mono_mutex_init_recursive (&debugger_lock_mutex);
 	initialized = 1;
 }
 

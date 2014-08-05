@@ -231,7 +231,7 @@ nacl_inverse_modify_patch_target (unsigned char *target)
 
 #define VALLOC_FREELIST_SIZE 16
 
-static CRITICAL_SECTION valloc_mutex;
+static mono_mutex_t valloc_mutex;
 static GHashTable *valloc_freelists;
 
 static void*
@@ -241,14 +241,14 @@ codechunk_valloc (void *preferred, guint32 size)
 	GSList *freelist;
 
 	if (!valloc_freelists) {
-		InitializeCriticalSection (&valloc_mutex);
+		mono_mutex_init_recursive (&valloc_mutex);
 		valloc_freelists = g_hash_table_new (NULL, NULL);
 	}
 
 	/*
 	 * Keep a small freelist of memory blocks to decrease pressure on the kernel memory subsystem to avoid #3321.
 	 */
-	EnterCriticalSection (&valloc_mutex);
+	mono_mutex_lock (&valloc_mutex);
 	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
 	if (freelist) {
 		ptr = freelist->data;
@@ -260,7 +260,7 @@ codechunk_valloc (void *preferred, guint32 size)
 		if (!ptr && preferred)
 			ptr = mono_valloc (NULL, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
 	}
-	LeaveCriticalSection (&valloc_mutex);
+	mono_mutex_unlock (&valloc_mutex);
 	return ptr;
 }
 
@@ -269,7 +269,7 @@ codechunk_vfree (void *ptr, guint32 size)
 {
 	GSList *freelist;
 
-	EnterCriticalSection (&valloc_mutex);
+	mono_mutex_lock (&valloc_mutex);
 	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
 	if (!freelist || g_slist_length (freelist) < VALLOC_FREELIST_SIZE) {
 		freelist = g_slist_prepend (freelist, ptr);
@@ -277,7 +277,7 @@ codechunk_vfree (void *ptr, guint32 size)
 	} else {
 		mono_vfree (ptr, size);
 	}
-	LeaveCriticalSection (&valloc_mutex);
+	mono_mutex_unlock (&valloc_mutex);
 }		
 
 static void

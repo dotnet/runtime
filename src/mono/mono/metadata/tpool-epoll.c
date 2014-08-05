@@ -78,7 +78,7 @@ tp_epoll_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 			}
 		}
 	}
-	LeaveCriticalSection (&socket_io_data->io_lock);
+	mono_mutex_unlock (&socket_io_data->io_lock);
 }
 
 static void
@@ -129,10 +129,10 @@ tp_epoll_wait (gpointer p)
 			return;
 		}
 
-		EnterCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_lock (&socket_io_data->io_lock);
 		if (socket_io_data->inited == 3) {
 			g_free (events);
-			LeaveCriticalSection (&socket_io_data->io_lock);
+			mono_mutex_unlock (&socket_io_data->io_lock);
 			return; /* cleanup called */
 		}
 
@@ -175,7 +175,7 @@ tp_epoll_wait (gpointer p)
 				epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, evt);
 			}
 		}
-		LeaveCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_unlock (&socket_io_data->io_lock);
 		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results, nresults);
 		mono_gc_bzero_aligned (async_results, sizeof (gpointer) * nresults);
 	}

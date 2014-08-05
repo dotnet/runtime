@@ -54,10 +54,10 @@ static GHashTable *loaded_images_refonly_hash;
 
 static gboolean debug_assembly_unload = FALSE;
 
-#define mono_images_lock() if (mutex_inited) EnterCriticalSection (&images_mutex)
-#define mono_images_unlock() if (mutex_inited) LeaveCriticalSection (&images_mutex)
+#define mono_images_lock() if (mutex_inited) mono_mutex_lock (&images_mutex)
+#define mono_images_unlock() if (mutex_inited) mono_mutex_unlock (&images_mutex)
 static gboolean mutex_inited;
-static CRITICAL_SECTION images_mutex;
+static mono_mutex_t images_mutex;
 
 typedef struct ImageUnloadHook ImageUnloadHook;
 struct ImageUnloadHook {
@@ -184,7 +184,7 @@ mono_image_rva_map (MonoImage *image, guint32 addr)
 void
 mono_images_init (void)
 {
-	InitializeCriticalSection (&images_mutex);
+	mono_mutex_init_recursive (&images_mutex);
 
 	loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
@@ -205,7 +205,7 @@ mono_images_cleanup (void)
 	GHashTableIter iter;
 	MonoImage *image;
 
-	DeleteCriticalSection (&images_mutex);
+	mono_mutex_destroy (&images_mutex);
 
 	g_hash_table_iter_init (&iter, loaded_images_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&image))
@@ -671,20 +671,15 @@ class_next_value (gpointer value)
 void
 mono_image_init (MonoImage *image)
 {
-	InitializeCriticalSection (&image->lock);
-	InitializeCriticalSection (&image->szarray_cache_lock);
+	mono_mutex_init_recursive (&image->lock);
+	mono_mutex_init_recursive (&image->szarray_cache_lock);
 
 	image->mempool = mono_mempool_new_size (512);
 	mono_internal_hash_table_init (&image->class_cache,
 				       g_direct_hash,
 				       class_key_extract,
 				       class_next_value);
-#ifdef HOST_WIN32
-	// FIXME:
 	image->field_cache = mono_conc_hashtable_new (&image->lock, NULL, NULL);
-#else
-	image->field_cache = mono_conc_hashtable_new (&image->lock.mutex, NULL, NULL);
-#endif
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
@@ -1699,8 +1694,8 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->modules_loaded)
 		g_free (image->modules_loaded);
 
-	DeleteCriticalSection (&image->szarray_cache_lock);
-	DeleteCriticalSection (&image->lock);
+	mono_mutex_destroy (&image->szarray_cache_lock);
+	mono_mutex_destroy (&image->lock);
 
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (image_is_dynamic (image)) {

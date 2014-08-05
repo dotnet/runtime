@@ -419,7 +419,7 @@ struct _MonoInternalThread {
 	gpointer suspend_event;
 	gpointer suspended_event;
 	gpointer resume_event;
-	CRITICAL_SECTION *synch_cs;
+	mono_mutex_t *synch_cs;
 	MonoBoolean threadpool_thread;
 	MonoBoolean thread_dump_requested;
 	MonoBoolean thread_interrupt_requested;

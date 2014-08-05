@@ -37,13 +37,13 @@ void mono_locks_lock_released (RuntimeLocks kind, gpointer lock) MONO_INTERNAL;
 #endif
 
 #define mono_locks_acquire(LOCK, NAME) do { \
-	EnterCriticalSection (LOCK); \
+	mono_mutex_lock (LOCK); \
 	mono_locks_lock_acquired (NAME, LOCK); \
 } while (0)
 
 #define mono_locks_release(LOCK, NAME) do { \
 	mono_locks_lock_released (NAME, LOCK); \
-	LeaveCriticalSection (LOCK); \
+	mono_mutex_unlock (LOCK); \
 } while (0)
 
 #define mono_locks_mutex_acquire(LOCK, NAME) do { \

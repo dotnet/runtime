@@ -31,8 +31,8 @@
  * 
  * To log more kind of locks just do the following:
  * 	- add an entry into the RuntimeLocks enum
- *  - change EnterCriticalSection(mutex) to mono_locks_acquire (mutex, LockName)
- *  - change LeaveCriticalSection to mono_locks_release (mutex, LockName)
+ *  - change mono_mutex_lock(mutex) to mono_locks_acquire (mutex, LockName)
+ *  - change mono_mutex_unlock to mono_locks_release (mutex, LockName)
  *  - change the decoder to understand the new lock kind.
  *
  * TODO:
@@ -54,7 +54,7 @@
 #endif
 
 static FILE *trace_file;
-static CRITICAL_SECTION tracer_lock;
+static mono_mutex_t tracer_lock;
 static size_t base_address;
 
 typedef enum {
@@ -71,7 +71,7 @@ mono_locks_tracer_init (void)
 	Dl_info info;
 	int res;
 	char *name;
-	InitializeCriticalSection (&tracer_lock);
+	mono_mutex_init_recursive (&tracer_lock);
 	if (!g_getenv ("MONO_ENABLE_LOCK_TRACER"))
 		return;
 	name = g_strdup_printf ("locks.%d", getpid ());

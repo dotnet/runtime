@@ -88,9 +88,9 @@ static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
 
 
-#define ldstr_lock() EnterCriticalSection (&ldstr_section)
-#define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
-static CRITICAL_SECTION ldstr_section;
+#define ldstr_lock() mono_mutex_lock (&ldstr_section)
+#define ldstr_unlock() mono_mutex_unlock (&ldstr_section)
+static mono_mutex_t ldstr_section;
 
 static gboolean profile_allocs = TRUE;
 
@@ -137,13 +137,13 @@ typedef struct
 	guint32 initializing_tid;
 	guint32 waiting_count;
 	gboolean done;
-	CRITICAL_SECTION initialization_section;
+	mono_mutex_t initialization_section;
 } TypeInitializationLock;
 
 /* for locking access to type_initialization_hash and blocked_thread_hash */
-#define mono_type_initialization_lock() EnterCriticalSection (&type_initialization_section)
-#define mono_type_initialization_unlock() LeaveCriticalSection (&type_initialization_section)
-static CRITICAL_SECTION type_initialization_section;
+#define mono_type_initialization_lock() mono_mutex_lock (&type_initialization_section)
+#define mono_type_initialization_unlock() mono_mutex_unlock (&type_initialization_section)
+static mono_mutex_t type_initialization_section;
 
 /* from vtable to lock */
 static GHashTable *type_initialization_hash;
@@ -188,10 +188,10 @@ mono_thread_get_main (void)
 void
 mono_type_initialization_init (void)
 {
-	InitializeCriticalSection (&type_initialization_section);
+	mono_mutex_init_recursive (&type_initialization_section);
 	type_initialization_hash = g_hash_table_new (NULL, NULL);
 	blocked_thread_hash = g_hash_table_new (NULL, NULL);
-	InitializeCriticalSection (&ldstr_section);
+	mono_mutex_init_recursive (&ldstr_section);
 }
 
 void
@@ -201,11 +201,11 @@ mono_type_initialization_cleanup (void)
 	/* This is causing race conditions with
 	 * mono_release_type_locks
 	 */
-	DeleteCriticalSection (&type_initialization_section);
+	mono_mutex_destroy (&type_initialization_section);
 	g_hash_table_destroy (type_initialization_hash);
 	type_initialization_hash = NULL;
 #endif
-	DeleteCriticalSection (&ldstr_section);
+	mono_mutex_destroy (&ldstr_section);
 	g_hash_table_destroy (blocked_thread_hash);
 	blocked_thread_hash = NULL;
 
@@ -334,12 +334,12 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 				}
 			}
 			lock = g_malloc (sizeof(TypeInitializationLock));
-			InitializeCriticalSection (&lock->initialization_section);
+			mono_mutex_init_recursive (&lock->initialization_section);
 			lock->initializing_tid = tid;
 			lock->waiting_count = 1;
 			lock->done = FALSE;
 			/* grab the vtable lock while this thread still owns type_initialization_section */
-			EnterCriticalSection (&lock->initialization_section);
+			mono_mutex_lock (&lock->initialization_section);
 			g_hash_table_insert (type_initialization_hash, vtable, lock);
 			do_initialization = 1;
 		} else {
@@ -404,11 +404,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			if (last_domain)
 				mono_domain_set (last_domain, TRUE);
 			lock->done = TRUE;
-			LeaveCriticalSection (&lock->initialization_section);
+			mono_mutex_unlock (&lock->initialization_section);
 		} else {
 			/* this just blocks until the initializing thread is done */
-			EnterCriticalSection (&lock->initialization_section);
-			LeaveCriticalSection (&lock->initialization_section);
+			mono_mutex_lock (&lock->initialization_section);
+			mono_mutex_unlock (&lock->initialization_section);
 		}
 
 		mono_type_initialization_lock ();
@@ -416,7 +416,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
 		--lock->waiting_count;
 		if (lock->waiting_count == 0) {
-			DeleteCriticalSection (&lock->initialization_section);
+			mono_mutex_destroy (&lock->initialization_section);
 			g_hash_table_remove (type_initialization_hash, vtable);
 			g_free (lock);
 		}
@@ -452,10 +452,10 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 		 * and get_type_init_exception_for_class () needs to be aware of this.
 		 */
 		vtable->init_failed = 1;
-		LeaveCriticalSection (&lock->initialization_section);
+		mono_mutex_unlock (&lock->initialization_section);
 		--lock->waiting_count;
 		if (lock->waiting_count == 0) {
-			DeleteCriticalSection (&lock->initialization_section);
+			mono_mutex_destroy (&lock->initialization_section);
 			g_free (lock);
 			return TRUE;
 		}

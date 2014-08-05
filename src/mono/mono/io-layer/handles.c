@@ -131,10 +131,10 @@ struct _WapiFileShareLayout *_wapi_fileshare_layout = NULL;
  * 4MB array.
  */
 static GHashTable *file_share_hash;
-static CRITICAL_SECTION file_share_hash_mutex;
+static mono_mutex_t file_share_hash_mutex;
 
-#define file_share_hash_lock() EnterCriticalSection (&file_share_hash_mutex)
-#define file_share_hash_unlock() LeaveCriticalSection (&file_share_hash_mutex)
+#define file_share_hash_lock() mono_mutex_lock (&file_share_hash_mutex)
+#define file_share_hash_unlock() mono_mutex_unlock (&file_share_hash_mutex)
 
 guint32 _wapi_fd_reserve;
 
@@ -207,7 +207,7 @@ static void handle_cleanup (void)
 
 	if (file_share_hash) {
 		g_hash_table_destroy (file_share_hash);
-		DeleteCriticalSection (&file_share_hash_mutex);
+		mono_mutex_destroy (&file_share_hash_mutex);
 	}
 
 	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
@@ -1664,7 +1664,7 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 		 */
 		if (!file_share_hash) {
 			file_share_hash = g_hash_table_new_full (wapi_share_info_hash, wapi_share_info_equal, NULL, g_free);
-			InitializeCriticalSection (&file_share_hash_mutex);
+			mono_mutex_init_recursive (&file_share_hash_mutex);
 		}
 			
 		tmp.device = device;

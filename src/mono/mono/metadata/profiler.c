@@ -103,9 +103,9 @@ struct _ProfilerDesc {
 
 static ProfilerDesc *prof_list = NULL;
 
-#define mono_profiler_coverage_lock() EnterCriticalSection (&profiler_coverage_mutex)
-#define mono_profiler_coverage_unlock() LeaveCriticalSection (&profiler_coverage_mutex)
-static CRITICAL_SECTION profiler_coverage_mutex;
+#define mono_profiler_coverage_lock() mono_mutex_lock (&profiler_coverage_mutex)
+#define mono_profiler_coverage_unlock() mono_mutex_unlock (&profiler_coverage_mutex)
+static mono_mutex_t profiler_coverage_mutex;
 
 /* this is directly accessible to other mono libs.
  * It is the ORed value of all the profiler's events.
@@ -128,7 +128,7 @@ mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
 {
 	ProfilerDesc *desc = g_new0 (ProfilerDesc, 1);
 	if (!prof_list)
-		InitializeCriticalSection (&profiler_coverage_mutex);
+		mono_mutex_init_recursive (&profiler_coverage_mutex);
 	desc->profiler = prof;
 	desc->shutdown_callback = callback;
 	desc->next = prof_list;

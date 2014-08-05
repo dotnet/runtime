@@ -7121,12 +7121,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-#ifdef HOST_WIN32
-	// FIXME:
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (&domain->lock, mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
-#else
-	info->runtime_invoke_hash = mono_conc_hashtable_new_full (&domain->lock.mutex, mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
-#endif
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, seq_point_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
@@ -7809,7 +7804,7 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_mutex_destroy (&jit_mutex);
 
-	DeleteCriticalSection (&mono_delegate_section);
+	mono_mutex_destroy (&mono_delegate_section);
 
 	mono_code_manager_cleanup ();
 

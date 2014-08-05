@@ -254,7 +254,7 @@ interp_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target
 	return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
 }
 
-static CRITICAL_SECTION runtime_method_lookup_section;
+static mono_mutex_t runtime_method_lookup_section;
 
 RuntimeMethod*
 mono_interp_get_runtime_method (MonoMethod *method)
@@ -262,9 +262,9 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	MonoDomain *domain = mono_domain_get ();
 	RuntimeMethod *rtm;
 
-	EnterCriticalSection (&runtime_method_lookup_section);
+	mono_mutex_lock (&runtime_method_lookup_section);
 	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
-		LeaveCriticalSection (&runtime_method_lookup_section);
+		mono_mutex_unlock (&runtime_method_lookup_section);
 		return rtm;
 	}
 	rtm = mono_mempool_alloc (domain->mp, sizeof (RuntimeMethod));
@@ -274,7 +274,7 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	rtm->hasthis = mono_method_signature (method)->hasthis;
 	rtm->valuetype = method->klass->valuetype;
 	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
-	LeaveCriticalSection (&runtime_method_lookup_section);
+	mono_mutex_unlock (&runtime_method_lookup_section);
 
 	return rtm;
 }
@@ -1301,7 +1301,7 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 	return sp;
 }
 
-static CRITICAL_SECTION create_method_pointer_mutex;
+static mono_mutex_t create_method_pointer_mutex;
 
 static MonoGHashTable *method_pointer_hash = NULL;
 
@@ -1311,14 +1311,14 @@ mono_create_method_pointer (MonoMethod *method)
 	gpointer addr;
 	MonoJitInfo *ji;
 
-	EnterCriticalSection (&create_method_pointer_mutex);
+	mono_mutex_lock (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
 		MONO_GC_REGISTER_ROOT (method_pointer_hash);
 		method_pointer_hash = mono_g_hash_table_new (NULL, NULL);
 	}
 	addr = mono_g_hash_table_lookup (method_pointer_hash, method);
 	if (addr) {
-		LeaveCriticalSection (&create_method_pointer_mutex);
+		mono_mutex_unlock (&create_method_pointer_mutex);
 		return addr;
 	}
 
@@ -1338,7 +1338,7 @@ mono_create_method_pointer (MonoMethod *method)
 		addr = mono_arch_create_method_pointer (method);
 
 	mono_g_hash_table_insert (method_pointer_hash, method, addr);
-	LeaveCriticalSection (&create_method_pointer_mutex);
+	mono_mutex_unlock (&create_method_pointer_mutex);
 
 	return addr;
 }
@@ -4394,8 +4394,8 @@ mono_interp_init(const char *file)
 
 	thread_context_id = TlsAlloc ();
 	TlsSetValue (thread_context_id, NULL);
-	InitializeCriticalSection (&runtime_method_lookup_section);
-	InitializeCriticalSection (&create_method_pointer_mutex);
+	mono_mutex_init_recursive (&runtime_method_lookup_section);
+	mono_mutex_init_recursive (&create_method_pointer_mutex);
 
 	mono_runtime_install_handlers ();
 	mono_interp_transform_init ();

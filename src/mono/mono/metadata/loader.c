@@ -55,7 +55,7 @@ MonoDefaults mono_defaults;
  * See domain-internals.h for locking policy in combination with the
  * domain lock.
  */
-static CRITICAL_SECTION loader_mutex;
+static mono_mutex_t loader_mutex;
 static gboolean loader_lock_inited;
 
 /* Statistics */
@@ -83,7 +83,7 @@ mono_loader_init ()
 	static gboolean inited;
 
 	if (!inited) {
-		InitializeCriticalSection (&loader_mutex);
+		mono_mutex_init_recursive (&loader_mutex);
 		loader_lock_inited = TRUE;
 
 		mono_native_tls_alloc (&loader_error_thread_id, NULL);
@@ -110,7 +110,7 @@ mono_loader_cleanup (void)
 	mono_native_tls_free (loader_error_thread_id);
 	mono_native_tls_free (loader_lock_nest_id);
 
-	DeleteCriticalSection (&loader_mutex);
+	mono_mutex_destroy (&loader_mutex);
 	loader_lock_inited = FALSE;	
 }
 

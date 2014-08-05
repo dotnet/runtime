@@ -80,7 +80,7 @@ typedef struct _MonoRemotingMethods MonoRemotingMethods;
  */
 #define mono_marshal_lock() mono_locks_acquire (&marshal_mutex, MarshalLock)
 #define mono_marshal_unlock() mono_locks_release (&marshal_mutex, MarshalLock)
-static CRITICAL_SECTION marshal_mutex;
+static mono_mutex_t marshal_mutex;
 static gboolean marshal_mutex_initialized;
 
 static MonoNativeTlsKey last_error_tls_id;
@@ -230,7 +230,7 @@ mono_marshal_init (void)
 
 	if (!module_initialized) {
 		module_initialized = TRUE;
-		InitializeCriticalSection (&marshal_mutex);
+		mono_mutex_init_recursive (&marshal_mutex);
 		marshal_mutex_initialized = TRUE;
 
 		register_icall (ves_icall_System_Threading_Thread_ResetAbort, "ves_icall_System_Threading_Thread_ResetAbort", "void", TRUE);
@@ -300,7 +300,7 @@ mono_marshal_cleanup (void)
 
 	mono_native_tls_free (load_type_info_tls_id);
 	mono_native_tls_free (last_error_tls_id);
-	DeleteCriticalSection (&marshal_mutex);
+	mono_mutex_destroy (&marshal_mutex);
 	marshal_mutex_initialized = FALSE;
 }
 

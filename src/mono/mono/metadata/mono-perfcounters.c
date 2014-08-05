@@ -147,9 +147,9 @@ enum {
 	NUM_COUNTERS
 };
 
-static CRITICAL_SECTION perfctr_mutex;
-#define perfctr_lock() EnterCriticalSection (&perfctr_mutex)
-#define perfctr_unlock() LeaveCriticalSection (&perfctr_mutex)
+static mono_mutex_t perfctr_mutex;
+#define perfctr_lock() mono_mutex_lock (&perfctr_mutex)
+#define perfctr_unlock() mono_mutex_unlock (&perfctr_mutex)
 
 typedef struct {
 	char reserved [16];
@@ -456,7 +456,7 @@ mono_perfcounters_init (void)
 	d_offset += 7;
 	d_offset &= ~7;
 
-	InitializeCriticalSection (&perfctr_mutex);
+	mono_mutex_init_recursive (&perfctr_mutex);
 
 	shared_area = mono_shared_area ();
 	shared_area->counters_start = G_STRUCT_OFFSET (MonoSharedArea, counters);

@@ -88,9 +88,9 @@ typedef struct
 	gchar *filename;
 } RuntimeConfig;
 
-CRITICAL_SECTION mono_delegate_section;
+mono_mutex_t mono_delegate_section;
 
-CRITICAL_SECTION mono_strtod_mutex;
+mono_mutex_t mono_strtod_mutex;
 
 static gunichar2 process_guid [36];
 static gboolean process_guid_set = FALSE;
@@ -250,9 +250,9 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	domain->domain = ad;
 	domain->setup = setup;
 
-	InitializeCriticalSection (&mono_delegate_section);
+	mono_mutex_init_recursive (&mono_delegate_section);
 
-	InitializeCriticalSection (&mono_strtod_mutex);
+	mono_mutex_init_recursive (&mono_strtod_mutex);
 	
 	mono_thread_attach (domain);
 	mono_context_init (domain);

@@ -59,7 +59,7 @@ tp_kqueue_modify (gpointer p, int fd, int operation, int events, gboolean is_new
 		EV_SET (&evt, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
 		kevent_change (data->fd, &evt, "ADD write");
 	}
-	LeaveCriticalSection (&socket_io_data->io_lock);
+	mono_mutex_unlock (&socket_io_data->io_lock);
 }
 
 static void
@@ -110,10 +110,10 @@ tp_kqueue_wait (gpointer p)
 			return;
 		}
 
-		EnterCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_lock (&socket_io_data->io_lock);
 		if (socket_io_data->inited == 3) {
 			g_free (events);
-			LeaveCriticalSection (&socket_io_data->io_lock);
+			mono_mutex_unlock (&socket_io_data->io_lock);
 			return; /* cleanup called */
 		}
 
@@ -155,7 +155,7 @@ tp_kqueue_wait (gpointer p)
 				mono_g_hash_table_remove (socket_io_data->sock_to_state, GINT_TO_POINTER (fd));
 			}
 		}
-		LeaveCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_unlock (&socket_io_data->io_lock);
 		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results, nresults);
 		mono_gc_bzero_aligned (async_results, sizeof (gpointer) * nresults);
 	}

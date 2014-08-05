@@ -83,9 +83,9 @@ struct _MonitorArray {
 	MonoThreadsSync monitors [MONO_ZERO_LEN_ARRAY];
 };
 
-#define mono_monitor_allocator_lock() EnterCriticalSection (&monitor_mutex)
-#define mono_monitor_allocator_unlock() LeaveCriticalSection (&monitor_mutex)
-static CRITICAL_SECTION monitor_mutex;
+#define mono_monitor_allocator_lock() mono_mutex_lock (&monitor_mutex)
+#define mono_monitor_allocator_unlock() mono_mutex_unlock (&monitor_mutex)
+static mono_mutex_t monitor_mutex;
 static MonoThreadsSync *monitor_freelist;
 static MonitorArray *monitor_allocated;
 static int array_size = 16;
@@ -109,7 +109,7 @@ static __thread gsize tls_pthread_self MONO_TLS_FAST;
 void
 mono_monitor_init (void)
 {
-	InitializeCriticalSection (&monitor_mutex);
+	mono_mutex_init_recursive (&monitor_mutex);
 }
  
 void
@@ -118,7 +118,7 @@ mono_monitor_cleanup (void)
 	MonoThreadsSync *mon;
 	/* MonitorArray *marray, *next = NULL; */
 
-	/*DeleteCriticalSection (&monitor_mutex);*/
+	/*mono_mutex_destroy (&monitor_mutex);*/
 
 	/* The monitors on the freelist don't have weak links - mark them */
 	for (mon = monitor_freelist; mon; mon = mon->data)

@@ -129,9 +129,9 @@ mono_double_ParseImpl (char *ptr, double *result)
 
 	if (*ptr){
 		/* mono_strtod () is not thread-safe */
-		EnterCriticalSection (&mono_strtod_mutex);
+		mono_mutex_lock (&mono_strtod_mutex);
 		*result = mono_strtod (ptr, &endptr);
-		LeaveCriticalSection (&mono_strtod_mutex);
+		mono_mutex_unlock (&mono_strtod_mutex);
 	}
 
 	if (!*ptr || (endptr && *endptr))
