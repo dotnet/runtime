@@ -13,7 +13,6 @@ OTHER_H = \
 	access.h	\
 	collection.h	\
 	context.h	\
-	critical-sections.h	\
 	error.h		\
 	events.h	\
 	handles.h	\
@@ -43,9 +42,6 @@ OTHER_SRC = \
 	collection.h		\
 	context.c		\
 	context.h		\
-	critical-sections.c	\
-	critical-sections.h	\
-	critical-section-private.h	\
 	error.c			\
 	error.h			\
 	events.c		\

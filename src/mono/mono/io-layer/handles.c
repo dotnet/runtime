@@ -37,7 +37,6 @@
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/process-private.h>
-#include <mono/io-layer/critical-section-private.h>
 
 #include <mono/utils/mono-mutex.h>
 #undef DEBUG_REFS
