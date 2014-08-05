@@ -803,14 +803,14 @@ gc_resize (MonoProfiler *profiler, int64_t new_size) {
 	EXIT_LOG (logbuffer);
 }
 
-#define MAX_FRAMES 16
+#define MAX_FRAMES 32
 typedef struct {
 	int count;
 	MonoMethod* methods [MAX_FRAMES];
 	int32_t il_offsets [MAX_FRAMES];
 	int32_t native_offsets [MAX_FRAMES];
 } FrameData;
-static int num_frames = MAX_FRAMES / 2;
+static int num_frames = MAX_FRAMES;
 
 static mono_bool
 walk_stack (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_bool managed, void* data)
