@@ -2429,7 +2429,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				 */
 				float_arg->flags |= MONO_INST_VOLATILE;
 
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, float_arg->dreg, in->dreg);
+				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, float_arg->dreg, in->dreg);
 
 				/* We use the dreg to look up the instruction later. The hreg is used to
 				 * emit the instruction that loads the value into the FP reg.
