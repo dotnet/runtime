@@ -206,7 +206,7 @@ typedef struct MonoAotCompile {
 	MonoAotStats stats;
 	int method_index;
 	char *static_linking_symbol;
-	CRITICAL_SECTION mutex;
+	mono_mutex_t mutex;
 	gboolean use_bin_writer;
 	gboolean gas_line_numbers;
 	MonoImageWriter *w;
@@ -254,8 +254,8 @@ typedef struct {
 	gboolean jit_used, llvm_used;
 } MonoPltEntry;
 
-#define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
-#define mono_acfg_unlock(acfg) LeaveCriticalSection (&((acfg)->mutex))
+#define mono_acfg_lock(acfg) mono_mutex_lock (&((acfg)->mutex))
+#define mono_acfg_unlock(acfg) mono_mutex_unlock (&((acfg)->mutex))
 
 /* This points to the current acfg in LLVM mode */
 static MonoAotCompile *llvm_acfg;
@@ -8708,7 +8708,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->klass_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->method_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	InitializeCriticalSection (&acfg->mutex);
+	mono_mutex_init_recursive (&acfg->mutex);
 
 	return acfg;
 }

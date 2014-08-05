@@ -246,8 +246,8 @@ if (ins->inst_target_bb->native_offset) { 					\
 #define JUMP_SIZE	6
 #define ENABLE_WRONG_METHOD_CHECK 0
 
-#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
-#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
+#define mono_mini_arch_lock() mono_mutex_lock (&mini_arch_mutex)
+#define mono_mini_arch_unlock() mono_mutex_unlock (&mini_arch_mutex)
 
 /*========================= End of Defines =========================*/
 
@@ -410,7 +410,7 @@ static gpointer bp_trigger_page;
 
 breakpoint_t breakpointCode;
 
-static CRITICAL_SECTION mini_arch_mutex;
+static mono_mutex_t mini_arch_mutex;
 
 /*====================== End of Global Variables ===================*/
 
@@ -1260,7 +1260,7 @@ mono_arch_init (void)
 {
 	guint8 *code;
 
-	InitializeCriticalSection (&mini_arch_mutex);
+	mono_mutex_init_recursive (&mini_arch_mutex);
 
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
 	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
@@ -1291,7 +1291,7 @@ mono_arch_cleanup (void)
 		mono_vfree (ss_trigger_page, mono_pagesize ());
 	if (bp_trigger_page)
 		mono_vfree (bp_trigger_page, mono_pagesize ());
-	DeleteCriticalSection (&mini_arch_mutex);
+	mono_mutex_destroy (&mini_arch_mutex);
 }
 
 /*========================= End of Function ========================*/

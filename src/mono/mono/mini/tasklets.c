@@ -9,9 +9,9 @@
 
 /* keepalive_stacks could be a per-stack var to avoid locking overhead */
 static MonoGHashTable *keepalive_stacks;
-static CRITICAL_SECTION tasklets_mutex;
-#define tasklets_lock() EnterCriticalSection(&tasklets_mutex)
-#define tasklets_unlock() LeaveCriticalSection(&tasklets_mutex)
+static mono_mutex_t tasklets_mutex;
+#define tasklets_lock() mono_mutex_lock(&tasklets_mutex)
+#define tasklets_unlock() mono_mutex_unlock(&tasklets_mutex)
 
 /* LOCKING: tasklets_mutex is assumed to e taken */
 static void
@@ -146,7 +146,7 @@ continuation_restore (MonoContinuation *cont, int state)
 void
 mono_tasklets_init (void)
 {
-	InitializeCriticalSection (&tasklets_mutex);
+	mono_mutex_init_recursive (&tasklets_mutex);
 
 	mono_add_internal_call ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
 	mono_add_internal_call ("Mono.Tasklets.Continuation::free", continuation_free);

@@ -723,9 +723,9 @@ static gboolean buffer_replies;
 static ReplyPacket reply_packets [128];
 int nreply_packets;
 
-#define dbg_lock() EnterCriticalSection (&debug_mutex)
-#define dbg_unlock() LeaveCriticalSection (&debug_mutex)
-static CRITICAL_SECTION debug_mutex;
+#define dbg_lock() mono_mutex_lock (&debug_mutex)
+#define dbg_unlock() mono_mutex_unlock (&debug_mutex)
+static mono_mutex_t debug_mutex;
 
 static void transport_init (void);
 static void transport_connect (const char *address);
@@ -961,7 +961,7 @@ mono_debugger_agent_parse_options (char *options)
 void
 mono_debugger_agent_init (void)
 {
-	InitializeCriticalSection (&debug_mutex);
+	mono_mutex_init_recursive (&debug_mutex);
 
 	if (!agent_config.enabled)
 		return;

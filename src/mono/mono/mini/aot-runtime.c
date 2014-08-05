@@ -139,7 +139,7 @@ typedef struct MonoAotModule {
 	MonoDl *sofile;
 
 	JitInfoMap *async_jit_info_table;
-	CRITICAL_SECTION mutex;
+	mono_mutex_t mutex;
 } MonoAotModule;
 
 typedef struct {
@@ -149,9 +149,9 @@ typedef struct {
 } TrampolinePage;
 
 static GHashTable *aot_modules;
-#define mono_aot_lock() EnterCriticalSection (&aot_mutex)
-#define mono_aot_unlock() LeaveCriticalSection (&aot_mutex)
-static CRITICAL_SECTION aot_mutex;
+#define mono_aot_lock() mono_mutex_lock (&aot_mutex)
+#define mono_aot_unlock() mono_mutex_unlock (&aot_mutex)
+static mono_mutex_t aot_mutex;
 
 /* 
  * Maps assembly names to the mono_aot_module_<NAME>_info symbols in the
@@ -199,9 +199,9 @@ static GHashTable *aot_jit_icall_hash;
 #define USE_PAGE_TRAMPOLINES 0
 #endif
 
-#define mono_aot_page_lock() EnterCriticalSection (&aot_page_mutex)
-#define mono_aot_page_unlock() LeaveCriticalSection (&aot_page_mutex)
-static CRITICAL_SECTION aot_page_mutex;
+#define mono_aot_page_lock() mono_mutex_lock (&aot_page_mutex)
+#define mono_aot_page_unlock() mono_mutex_unlock (&aot_page_mutex)
+static mono_mutex_t aot_page_mutex;
 
 static void
 init_plt (MonoAotModule *info);
@@ -213,13 +213,13 @@ init_plt (MonoAotModule *info);
 static inline void
 amodule_lock (MonoAotModule *amodule)
 {
-	EnterCriticalSection (&amodule->mutex);
+	mono_mutex_lock (&amodule->mutex);
 }
 
 static inline void
 amodule_unlock (MonoAotModule *amodule)
 {
-	LeaveCriticalSection (&amodule->mutex);
+	mono_mutex_unlock (&amodule->mutex);
 }
 
 /*
@@ -1702,7 +1702,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	amodule->blob = blob;
 
-	InitializeCriticalSection (&amodule->mutex);
+	mono_mutex_init_recursive (&amodule->mutex);
 
 	/* Read image table */
 	{
@@ -1933,8 +1933,8 @@ mono_aot_register_module (gpointer *aot_info)
 void
 mono_aot_init (void)
 {
-	InitializeCriticalSection (&aot_mutex);
-	InitializeCriticalSection (&aot_page_mutex);
+	mono_mutex_init_recursive (&aot_mutex);
+	mono_mutex_init_recursive (&aot_page_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
 
 #ifndef __native_client__

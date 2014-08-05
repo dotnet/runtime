@@ -45,9 +45,9 @@ static gboolean optimize_for_xen = TRUE;
 #endif
 
 /* This mutex protects architecture specific caches */
-#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
-#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
-static CRITICAL_SECTION mini_arch_mutex;
+#define mono_mini_arch_lock() mono_mutex_lock (&mini_arch_mutex)
+#define mono_mini_arch_unlock() mono_mutex_unlock (&mini_arch_mutex)
+static mono_mutex_t mini_arch_mutex;
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -758,7 +758,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	InitializeCriticalSection (&mini_arch_mutex);
+	mono_mutex_init_recursive (&mini_arch_mutex);
 
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
 	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
@@ -781,7 +781,7 @@ mono_arch_cleanup (void)
 		mono_vfree (ss_trigger_page, mono_pagesize ());
 	if (bp_trigger_page)
 		mono_vfree (bp_trigger_page, mono_pagesize ());
-	DeleteCriticalSection (&mini_arch_mutex);
+	mono_mutex_destroy (&mini_arch_mutex);
 }
 
 /*

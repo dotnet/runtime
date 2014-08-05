@@ -60,9 +60,9 @@ static gboolean optimize_for_xen = TRUE;
 #endif
 
 /* This mutex protects architecture specific caches */
-#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
-#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
-static CRITICAL_SECTION mini_arch_mutex;
+#define mono_mini_arch_lock() mono_mutex_lock (&mini_arch_mutex)
+#define mono_mini_arch_unlock() mono_mutex_unlock (&mini_arch_mutex)
+static mono_mutex_t mini_arch_mutex;
 
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
@@ -1233,7 +1233,7 @@ mono_arch_init (void)
 {
 	int flags;
 
-	InitializeCriticalSection (&mini_arch_mutex);
+	mono_mutex_init_recursive (&mini_arch_mutex);
 #if defined(__native_client_codegen__)
 	mono_native_tls_alloc (&nacl_instruction_depth, NULL);
 	mono_native_tls_set_value (nacl_instruction_depth, (gpointer)0);
@@ -1271,7 +1271,7 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
-	DeleteCriticalSection (&mini_arch_mutex);
+	mono_mutex_destroy (&mini_arch_mutex);
 #if defined(__native_client_codegen__)
 	mono_native_tls_free (nacl_instruction_depth);
 	mono_native_tls_free (nacl_rex_tag);
