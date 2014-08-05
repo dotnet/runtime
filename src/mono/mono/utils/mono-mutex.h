@@ -11,6 +11,8 @@
 #ifndef __MONO_MUTEX_H__
 #define __MONO_MUTEX_H__
 
+#include <config.h>
+
 #include <glib.h>
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
