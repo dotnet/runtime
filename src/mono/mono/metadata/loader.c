@@ -1098,7 +1098,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	mono_metadata_decode_value (ptr, &ptr);
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
-	g_assert (param_count);
 
 	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
 	if (!inst)
