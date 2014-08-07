@@ -408,8 +408,13 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 	struct task_basic_info t_info;
 	mach_msg_type_number_t th_count = TASK_BASIC_INFO_COUNT;
 
-	if (task_for_pid (mach_task_self (), pid, &task) != KERN_SUCCESS)
-		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
+	if (pid == getpid ()) {
+		/* task_for_pid () doesn't work on ios, even for the current process */
+		task = mach_task_self ();
+	} else {
+		if (task_for_pid (mach_task_self (), pid, &task) != KERN_SUCCESS)
+			RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
+	}
 	
 	if (task_info (task, TASK_BASIC_INFO, (task_info_t)&t_info, &th_count) != KERN_SUCCESS) {
 		mach_port_deallocate (mach_task_self (), task);
