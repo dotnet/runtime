@@ -7758,7 +7758,7 @@ buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *
 		buffer_add_value (buf, t, mono_object_unbox (val), domain);
 }
 
-static void
+static int
 buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass *attr_klass, MonoCustomAttrInfo *cinfo)
 {
 	int i, j;
@@ -7766,7 +7766,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 
 	if (!cinfo) {
 		buffer_add_int (buf, 0);
-		return;
+		return ERR_NONE;
 	}
 
 	for (i = 0; i < cinfo->num_attrs; ++i) {
@@ -7784,7 +7784,11 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			MonoError error;
 
 			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
-			g_assert (mono_error_ok (&error));
+			if (!mono_error_ok (&error)) {
+				DEBUG(2, fprintf (log_file, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (&error)));
+				mono_error_cleanup (&error);
+				return ERR_LOADER_ERROR;
+			}
 
 			buffer_add_methodid (buf, domain, attr->ctor);
 
@@ -7827,6 +7831,8 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			g_free (arginfo);
 		}
 	}
+
+	return ERR_NONE;
 }
 
 /* FIXME: Code duplication with icall.c */
@@ -8009,7 +8015,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		cinfo = mono_custom_attrs_from_class (klass);
 
-		buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
+		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
+		if (err)
+			return err;
 		break;
 	}
 	case CMD_TYPE_GET_FIELD_CATTRS: {
@@ -8026,7 +8034,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		cinfo = mono_custom_attrs_from_field (klass, field);
 
-		buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
+		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
+		if (err)
+			return err;
 		break;
 	}
 	case CMD_TYPE_GET_PROPERTY_CATTRS: {
@@ -8043,7 +8053,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		cinfo = mono_custom_attrs_from_property (klass, prop);
 
-		buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
+		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
+		if (err)
+			return err;
 		break;
 	}
 	case CMD_TYPE_GET_VALUES:
@@ -8654,7 +8666,9 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 		cinfo = mono_custom_attrs_from_method (method);
 
-		buffer_add_cattrs (buf, domain, method->klass->image, attr_klass, cinfo);
+		err = buffer_add_cattrs (buf, domain, method->klass->image, attr_klass, cinfo);
+		if (err)
+			return err;
 		break;
 	}
 	case CMD_METHOD_MAKE_GENERIC_METHOD: {
