@@ -227,6 +227,9 @@ public class Tests
 		res = iface.Unbox<AnEnum, int> (AnEnum.One, 0, AnEnum.Two);
 		if (res != AnEnum.Two)
 			return 2;
+		int res2 = iface.Unbox<int, AnEnum> (0, AnEnum.One, AnEnum.Two);
+		if (res2 != 1)
+			return 3;
 		return 0;
 	}
 
