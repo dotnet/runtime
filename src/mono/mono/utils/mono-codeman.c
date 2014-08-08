@@ -26,6 +26,8 @@
 #include <nacl/nacl_dyncode.h>
 #include <mono/mini/mini.h>
 #endif
+#include <mono/utils/mono-mutex.h>
+
 
 static uintptr_t code_memory_used = 0;
 static size_t dynamic_code_alloc_count;
