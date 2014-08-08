@@ -6117,11 +6117,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	else
 		shared = NULL;
 
-	/*
-	 * FIXME: lookup_method_inner requires the loader lock.
-	 * FIXME: This is no longer true, can this be dropped ?
-	 */
-	mono_loader_lock ();
 	mono_domain_lock (target_domain);
 
 	/* Check if some other thread already did the job. In this case, we can
@@ -6200,7 +6195,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mono_emit_jit_map (jinfo);
 #endif
 	mono_domain_unlock (target_domain);
-	mono_loader_unlock ();
 
 	vtable = mono_class_vtable (target_domain, method->klass);
 	if (!vtable) {
