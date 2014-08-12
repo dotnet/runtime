@@ -5043,6 +5043,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		} else {
 			encode_value (0, p, &p);
 		}
+		encode_value (patch_info->data.del_tramp->virtual, p, &p);
 		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:

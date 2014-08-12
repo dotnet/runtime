@@ -1572,6 +1572,19 @@ mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 }
 
 gpointer
+mono_create_delegate_virtual_trampoline (MonoDomain *domain, MonoClass *klass, MonoMethod *method)
+{
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	MonoMethod *invoke = mono_get_delegate_invoke (klass);
+	g_assert (invoke);
+
+	return mono_get_delegate_virtual_invoke_impl (mono_method_signature (invoke), method);
+#else
+	return NULL;
+#endif
+}
+
+gpointer
 mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 {
 	static gboolean inited = FALSE;

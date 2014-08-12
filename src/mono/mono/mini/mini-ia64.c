@@ -4649,6 +4649,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	return NULL;
 }
 
+gpointer
+mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
+{
+	return NULL;
+}
+
 MonoInst*
 mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
