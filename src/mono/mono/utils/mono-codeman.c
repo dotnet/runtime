@@ -547,9 +547,10 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 			return NULL;
 	} else {
 		/* Try to allocate code chunks next to each other to help the VM */
+		ptr = NULL;
 		if (last)
 			ptr = codechunk_valloc ((guint8*)last->data + last->size, chunk_size);
-		else
+		if (!ptr)
 			ptr = codechunk_valloc (NULL, chunk_size);
 		if (!ptr)
 			return NULL;
