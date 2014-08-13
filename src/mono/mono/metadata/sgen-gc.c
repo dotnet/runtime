@@ -2406,7 +2406,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	major_collector.finish_nursery_collection ();
 
 	TV_GETTIME (all_btv);
-	gc_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+	gc_stats.minor_gc_time += TV_ELAPSED (all_atv, all_btv);
 
 	if (heap_dump_file)
 		dump_heap ("minor", gc_stats.minor_gc_count - 1, NULL);
@@ -2975,7 +2975,7 @@ major_do_collection (const char *reason)
 	major_finish_collection (reason, old_next_pin_slot, FALSE);
 
 	TV_GETTIME (all_btv);
-	gc_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+	gc_stats.major_gc_time += TV_ELAPSED (all_atv, all_btv);
 
 	/* FIXME: also report this to the user, preferably in gc-end. */
 	if (major_collector.get_and_reset_num_major_objects_marked)
