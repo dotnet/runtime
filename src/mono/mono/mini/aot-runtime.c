@@ -489,7 +489,6 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			serial = decode_value (p, &p);
 		}
 
-		// FIXME: Memory management
 		t = g_new0 (MonoType, 1);
 		t->type = type;
 		if (container) {
@@ -497,7 +496,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			g_assert (serial == 0);
 		} else {
 			/* Anonymous */
-			MonoGenericParam *par = (MonoGenericParam*)g_new0 (MonoGenericParamFull, 1);
+			MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
 			par->num = num;
 			par->serial = serial;
 			// FIXME:
