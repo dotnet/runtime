@@ -368,7 +368,7 @@ fi
 AC_SUBST(extra_runtime_ldflags)
 AM_CONDITIONAL(HOST_WIN32, test x$host_win32 = xyes)
 AM_CONDITIONAL(TARGET_WIN32, test x$target_win32 = xyes)
-AM_CONDITIONAL(PLATFORM_GNU, echo x$target_os | grep -q -- -gnu$)
+AM_CONDITIONAL(PLATFORM_GNU, echo x$target_os | grep -q -- -gnu)
 AM_CONDITIONAL(PLATFORM_LINUX, echo x$target_os | grep -q linux)
 AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
 AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
