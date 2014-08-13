@@ -4500,6 +4500,10 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	MonoDomain *domain;
 	guint8 **code_slot;
 	
+	// FIXME reenable optimisation for virtual case
+	if (virtual)
+		return NULL;
+
 	if (virtual) {
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
 		g_assert (invoke);
