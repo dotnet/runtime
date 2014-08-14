@@ -8025,7 +8025,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else if (cmethod->klass->image != mono_defaults.corlib && !(cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && !cmethod->klass->valuetype) {
 						/* 'The type parameter is instantiated as a reference type' case below. */
 					} else if (((cmethod->klass == mono_defaults.object_class) || (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) || (!cmethod->klass->valuetype && cmethod->klass->image != mono_defaults.corlib)) &&
-							   (MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || mini_is_gsharedvt_type (cfg, fsig->ret)) &&
+							   (MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || mini_is_gsharedvt_type (cfg, fsig->ret)) &&
 							   (fsig->param_count == 0 || (!fsig->hasthis && fsig->param_count == 1) || (fsig->param_count == 1 && (MONO_TYPE_IS_REFERENCE (fsig->params [0]) || mini_is_gsharedvt_type (cfg, fsig->params [0]))))) {
 						MonoInst *args [16];
 
@@ -8074,7 +8074,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						if (mini_is_gsharedvt_type (cfg, fsig->ret)) {
 							ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type (fsig->ret), ins, &bblock);
-						} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret)) {
+						} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret)) {
 							MonoInst *add;
 
 							/* Unbox */
