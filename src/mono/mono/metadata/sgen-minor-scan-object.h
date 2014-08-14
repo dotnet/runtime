@@ -53,6 +53,8 @@ SERIAL_SCAN_OBJECT (char *start, mword desc, SgenGrayQueue *queue)
 	sgen_descriptor_count_scanned_object (desc);
 #endif
 
+	SGEN_ASSERT (0, sgen_get_current_collection_generation () == GENERATION_NURSERY, "Must not use this to scan during major collection.");
+
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 

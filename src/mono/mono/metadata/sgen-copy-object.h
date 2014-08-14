@@ -31,6 +31,8 @@ extern long long stat_nursery_copy_object_failed_pinned;
 extern long long stat_slots_allocated_in_vain;
 
 /*
+ * Copies an object and enqueues it if a queue is given.
+ *
  * This function can be used even if the vtable of obj is not valid
  * anymore, which is the case in the parallel collector.
  */
@@ -77,15 +79,17 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 	mword objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
+	/* FIXME: Does this not mark the newly allocated object? */
 	char *destination = COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION (vt, obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
+		/* FIXME: Is this path ever tested? */
 		collector_pin_object (obj, queue);
 		sgen_set_pinned_from_failed_allocation (objsize);
 		return obj;
 	}
 
-	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
+	par_copy_object_no_checks (destination, vt, obj, objsize, queue);
 	/* FIXME: mark mod union cards if necessary */
 
 	/* set the forwarding pointer */

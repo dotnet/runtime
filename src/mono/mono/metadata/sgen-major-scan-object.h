@@ -67,7 +67,7 @@ extern long long stat_scan_object_called_major;
 	} while (0)
 
 static void
-CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *queue)
+CONCURRENT_NAME (major_scan_object_no_mark) (char *start, mword desc, SgenGrayQueue *queue)
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
@@ -80,6 +80,28 @@ CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *que
 
 	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 	HEAVY_STAT (++stat_scan_object_called_major);
+}
+
+static void
+CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *queue)
+{
+	if (!sgen_ptr_in_nursery (start)) {
+		if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)start)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
+			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (start);
+			int word, bit;
+			MS_CALC_MARK_BIT (word, bit, start);
+			if (MS_MARK_BIT (block, word, bit))
+				return;
+			MS_SET_MARK_BIT (block, word, bit);
+			binary_protocol_mark (start, (gpointer)LOAD_VTABLE (start), sgen_safe_object_get_size ((MonoObject*)start));
+		} else {
+			if (sgen_los_object_is_pinned (start))
+				return;
+			sgen_los_pin_object (start);
+		}
+	}
+
+	CONCURRENT_NAME (major_scan_object_no_mark) (start, desc, queue);
 }
 
 #ifdef SCAN_FOR_CONCURRENT_MARK
