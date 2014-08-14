@@ -418,14 +418,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	// FIXME:
 	x86_mov_membase_imm (code, X86_ESP, (3 * sizeof (mgreg_t)), 0, sizeof (mgreg_t));
 
-	// FIXME:
 #ifdef __APPLE__
 	/* check the stack is aligned after the ret ip is pushed */
-	/*x86_mov_reg_reg (buf, X86_EDX, X86_ESP, 4);
-	x86_alu_reg_imm (buf, X86_AND, X86_EDX, 15);
-	x86_alu_reg_imm (buf, X86_CMP, X86_EDX, 0);
-	x86_branch_disp (buf, X86_CC_Z, 3, FALSE);
-	x86_breakpoint (buf);*/
+	/*
+	x86_mov_reg_reg (code, X86_EDX, X86_ESP, 4);
+	x86_alu_reg_imm (code, X86_AND, X86_EDX, 15);
+	x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
+	x86_branch_disp (code, X86_CC_Z, 3, FALSE);
+	x86_breakpoint (code);
+	*/
 #endif
 
 	if (aot) {
