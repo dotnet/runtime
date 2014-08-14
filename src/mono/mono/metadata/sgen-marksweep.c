@@ -196,6 +196,22 @@ static long long num_major_objects_marked = 0;
 #define INC_NUM_MAJOR_OBJECTS_MARKED()
 #endif
 
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+static mono_mutex_t scanned_objects_list_lock;
+static SgenPointerQueue scanned_objects_list;
+
+static void
+add_scanned_object (void *ptr)
+{
+	if (!binary_protocol_is_enabled ())
+		return;
+
+	mono_mutex_lock (&scanned_objects_list_lock);
+	sgen_pointer_queue_add (&scanned_objects_list, ptr);
+	mono_mutex_unlock (&scanned_objects_list_lock);
+}
+#endif
+
 static void
 sweep_block (MSBlockInfo *block, gboolean during_major_collection);
 
@@ -1207,6 +1223,9 @@ drain_gray_stack (ScanCopyContext ctx)
 
 				_objptr ++;
 			} while (_bmap);
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+			add_scanned_object (obj);
+#endif
 		} else {
 			major_scan_object_no_mark (obj, desc, queue);
 		}
@@ -1597,8 +1616,18 @@ major_start_major_collection (void)
 }
 
 static void
-major_finish_major_collection (void)
+major_finish_major_collection (ScannedObjectCounts *counts)
 {
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	if (binary_protocol_is_enabled ()) {
+		counts->num_scanned_objects = scanned_objects_list.next_slot;
+
+		sgen_pointer_queue_sort_uniq (&scanned_objects_list);
+		counts->num_unique_scanned_objects = scanned_objects_list.next_slot;
+
+		sgen_pointer_queue_clear (&scanned_objects_list);
+	}
+#endif
 }
 
 #if SIZEOF_VOID_P != 8
@@ -2289,7 +2318,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fills);
 	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fill_failures);
 #endif
+#endif
 
+#ifdef HEAVY_STATISTICS
+	mono_mutex_init (&scanned_objects_list_lock);
 #endif
 
 	/*cardtable requires major pages to be 8 cards aligned*/

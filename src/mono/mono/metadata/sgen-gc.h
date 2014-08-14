@@ -637,6 +637,12 @@ typedef enum {
 	ITERATE_OBJECTS_SWEEP_ALL = ITERATE_OBJECTS_SWEEP | ITERATE_OBJECTS_NON_PINNED | ITERATE_OBJECTS_PINNED
 } IterateObjectsFlags;
 
+typedef struct
+{
+	size_t num_scanned_objects;
+	size_t num_unique_scanned_objects;
+} ScannedObjectCounts;
+
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
@@ -682,7 +688,7 @@ struct _SgenMajorCollector {
 	void (*start_nursery_collection) (void);
 	void (*finish_nursery_collection) (void);
 	void (*start_major_collection) (void);
-	void (*finish_major_collection) (void);
+	void (*finish_major_collection) (ScannedObjectCounts *counts);
 	gboolean (*drain_gray_stack) (ScanCopyContext ctx);
 	void (*have_computed_minor_collection_allowance) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);

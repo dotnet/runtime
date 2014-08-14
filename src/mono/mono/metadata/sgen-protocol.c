@@ -331,17 +331,17 @@ binary_protocol_collection_force (int generation)
 void
 binary_protocol_collection_begin (int index, int generation)
 {
-	SGenProtocolCollection entry = { index, generation };
+	SGenProtocolCollectionBegin entry = { index, generation };
 	binary_protocol_flush_buffers (FALSE);
-	protocol_entry (SGEN_PROTOCOL_COLLECTION_BEGIN, &entry, sizeof (SGenProtocolCollection));
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_BEGIN, &entry, sizeof (SGenProtocolCollectionBegin));
 }
 
 void
-binary_protocol_collection_end (int index, int generation)
+binary_protocol_collection_end (int index, int generation, long long num_objects_scanned, long long num_unique_objects_scanned)
 {
-	SGenProtocolCollection entry = { index, generation };
+	SGenProtocolCollectionEnd entry = { index, generation, num_objects_scanned, num_unique_objects_scanned };
 	binary_protocol_flush_buffers (FALSE);
-	protocol_entry (SGEN_PROTOCOL_COLLECTION_END, &entry, sizeof (SGenProtocolCollection));
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_END, &entry, sizeof (SGenProtocolCollectionEnd));
 }
 
 void

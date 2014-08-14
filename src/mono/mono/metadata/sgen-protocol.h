@@ -72,7 +72,13 @@ typedef struct {
 
 typedef struct {
 	int index, generation;
-} SGenProtocolCollection;
+} SGenProtocolCollectionBegin;
+
+typedef struct {
+	int index, generation;
+	long long num_scanned_objects;
+	long long num_unique_scanned_objects;
+} SGenProtocolCollectionEnd;
 
 typedef struct {
 	long long timestamp;
@@ -247,7 +253,7 @@ void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 
 void binary_protocol_collection_force (int generation) MONO_INTERNAL;
 void binary_protocol_collection_begin (int index, int generation) MONO_INTERNAL;
-void binary_protocol_collection_end (int index, int generation) MONO_INTERNAL;
+void binary_protocol_collection_end (int index, int generation, long long num_objects_scanned, long long num_unique_objects_scanned) MONO_INTERNAL;
 void binary_protocol_concurrent_start (void) MONO_INTERNAL;
 void binary_protocol_concurrent_update_finish (void) MONO_INTERNAL;
 void binary_protocol_world_stopping (long long timestamp) MONO_INTERNAL;

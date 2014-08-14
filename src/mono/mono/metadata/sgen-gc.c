@@ -2453,7 +2453,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	objects_pinned = 0;
 
 	MONO_GC_END (GENERATION_NURSERY);
-	binary_protocol_collection_end (gc_stats.minor_gc_count - 1, GENERATION_NURSERY);
+	binary_protocol_collection_end (gc_stats.minor_gc_count - 1, GENERATION_NURSERY, 0, 0);
 
 	if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 		sgen_check_nursery_objects_pinned (unpin_queue != NULL);
@@ -2798,6 +2798,7 @@ wait_for_workers_to_finish (void)
 static void
 major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean scan_mod_union, gboolean scan_whole_nursery)
 {
+	ScannedObjectCounts counts;
 	LOSObject *bigobj, *prevbo;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -2958,7 +2959,8 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	sgen_memgov_major_collection_end ();
 	current_collection_generation = -1;
 
-	major_collector.finish_major_collection ();
+	memset (&counts, 0, sizeof (ScannedObjectCounts));
+	major_collector.finish_major_collection (&counts);
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
@@ -2973,7 +2975,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	//consistency_check ();
 
 	MONO_GC_END (GENERATION_OLD);
-	binary_protocol_collection_end (gc_stats.major_gc_count - 1, GENERATION_OLD);
+	binary_protocol_collection_end (gc_stats.major_gc_count - 1, GENERATION_OLD, counts.num_scanned_objects, counts.num_unique_scanned_objects);
 }
 
 static gboolean

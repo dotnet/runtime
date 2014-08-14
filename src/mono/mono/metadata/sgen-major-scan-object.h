@@ -74,6 +74,9 @@ CONCURRENT_NAME (major_scan_object_no_mark) (char *start, mword desc, SgenGrayQu
 #ifdef HEAVY_STATISTICS
 	sgen_descriptor_count_scanned_object (desc);
 #endif
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	add_scanned_object (start);
+#endif
 
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
@@ -112,6 +115,11 @@ static void
 CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
+#ifdef HEAVY_STATISTICS
+	/* FIXME: We're half scanning this object.  How do we account for that? */
+	//add_scanned_object (start);
+#endif
 
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);
