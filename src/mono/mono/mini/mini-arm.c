@@ -389,7 +389,8 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_FCALL_REG:
 	case OP_FCALL_MEMBASE:
 		if (IS_VFP) {
-			if (((MonoCallInst*)ins)->signature->ret->type == MONO_TYPE_R4) {
+			MonoType *sig_ret = mini_type_get_underlying_type (NULL, ((MonoCallInst*)ins)->signature->ret);
+			if (sig_ret->type == MONO_TYPE_R4) {
 				if (IS_HARD_FLOAT) {
 					ARM_CVTS (code, ins->dreg, ARM_VFP_F0);
 				} else {
@@ -2658,6 +2659,8 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 
 		if (t->byref)
 			continue;
+
+		t = mini_replace_type (t);
 
 		switch (t->type) {
 		case MONO_TYPE_R4:
@@ -5322,8 +5325,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
 			break;
 
-		case OP_SETFRET:
-			if (mono_method_signature (cfg->method)->ret->type == MONO_TYPE_R4) {
+		case OP_SETFRET: {
+			MonoType *sig_ret = mini_type_get_underlying_type (NULL, mono_method_signature (cfg->method)->ret);
+			if (sig_ret->type == MONO_TYPE_R4) {
 				ARM_CVTD (code, ARM_VFP_F0, ins->sreg1);
 
 				if (!IS_HARD_FLOAT) {
@@ -5337,6 +5341,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
+		}
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
