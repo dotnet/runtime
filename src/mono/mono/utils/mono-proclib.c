@@ -417,7 +417,8 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 	}
 	
 	if (task_info (task, TASK_BASIC_INFO, (task_info_t)&t_info, &th_count) != KERN_SUCCESS) {
-		mach_port_deallocate (mach_task_self (), task);
+		if (pid != getpid ())
+			mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
 
@@ -430,7 +431,8 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 	else
 		ret = 0;
 
-	mach_port_deallocate (mach_task_self (), task);
+	if (pid != getpid ())
+		mach_port_deallocate (mach_task_self (), task);
 	
 	return ret;
 #else
