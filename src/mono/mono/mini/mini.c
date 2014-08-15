@@ -6767,8 +6767,10 @@ SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 			return;
 
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
-		if (mono_do_crash_chaining)
+		if (mono_do_crash_chaining) {
 			mono_chain_signal (SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 	
 	mono_arch_handle_exception (ctx, exc);
@@ -6819,8 +6821,10 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
 			return;
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
-		if (mono_do_crash_chaining)
+		if (mono_do_crash_chaining) {
 			mono_chain_signal (SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
@@ -6864,8 +6868,10 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 
-		if (mono_do_crash_chaining)
+		if (mono_do_crash_chaining) {
 			mono_chain_signal (SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 			
 	mono_arch_handle_exception (ctx, NULL);
