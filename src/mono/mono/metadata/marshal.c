@@ -2508,11 +2508,28 @@ mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 	return res;
 }
 
+/*
+ * mono_mb_create:
+ *
+ *   Create a MonoMethod from MB, set INFO as wrapper info.
+ */
+static MonoMethod*
+mono_mb_create (MonoMethodBuilder *mb, MonoMethodSignature *sig,
+				int max_stack, WrapperInfo *info)
+{
+	MonoMethod *res;
+
+	res = mono_mb_create_method (mb, sig, max_stack);
+	if (info)
+		mono_marshal_set_wrapper_info (res, info);
+	return res;
+}
+
 /* Create the method from the builder and place it in the cache */
 static MonoMethod*
 mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
-							   int max_stack, gboolean *out_found)
+							   int max_stack, WrapperInfo *info, gboolean *out_found)
 {
 	MonoMethod *res;
 
@@ -2530,7 +2547,10 @@ mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 		if (!res) {
 			res = newm;
 			g_hash_table_insert (cache, key, res);
-			mono_marshal_set_wrapper_info (res, key);
+			if (info)
+				mono_marshal_set_wrapper_info (res, info);
+			else
+				mono_marshal_set_wrapper_info (res, key);
 			mono_marshal_unlock ();
 		} else {
 			if (out_found)
@@ -2548,7 +2568,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack)
 {
-	return mono_mb_create_and_cache_full (cache, key, mb, sig, max_stack, NULL);
+	return mono_mb_create_and_cache_full (cache, key, mb, sig, max_stack, NULL, NULL);
 }
 
 static inline MonoMethod*
@@ -2702,11 +2722,11 @@ mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data)
 }
 
 static WrapperInfo*
-mono_wrapper_info_create (MonoMethod *wrapper, WrapperSubtype subtype)
+mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype)
 {
 	WrapperInfo *info;
 
-	info = mono_image_alloc0 (wrapper->klass->image, sizeof (WrapperInfo));
+	info = mono_image_alloc0 (mb->method->klass->image, sizeof (WrapperInfo));
 	info->subtype = subtype;
 	return info;
 }
@@ -4470,16 +4490,15 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		new_key = g_new0 (SignatureMethodPair, 1);
 		*new_key = key;
 
-		res = mono_mb_create_and_cache_full (cache, new_key, mb, sig, sig->param_count + 16, &found);
+		info = mono_wrapper_info_create (mb, subtype);
+
+		res = mono_mb_create_and_cache_full (cache, new_key, mb, sig, sig->param_count + 16, info, &found);
 		if (found)
 			g_free (new_key);
-		info = mono_wrapper_info_create (res, subtype);
-		mono_marshal_set_wrapper_info (res, info);
 	} else {
-		res = mono_mb_create_and_cache (cache, cache_key, mb, sig, sig->param_count + 16);
+		info = mono_wrapper_info_create (mb, subtype);
 
-		info = mono_wrapper_info_create (res, subtype);
-		mono_marshal_set_wrapper_info (res, info);
+		res = mono_mb_create_and_cache_full (cache, cache_key, mb, sig, sig->param_count + 16, info, NULL);
 	}
 	mono_mb_free (mb);
 
@@ -5113,20 +5132,22 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 #ifndef DISABLE_JIT
 		mb->skip_visibility = 1;
 #endif
-		res = mono_mb_create_and_cache (cache, method, mb, csig, sig->param_count + 16);
-		info = mono_wrapper_info_create (res, virtual ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
+		info = mono_wrapper_info_create (mb, virtual ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
 		info->d.runtime_invoke.method = method;
-		mono_marshal_set_wrapper_info (res, info);
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig, sig->param_count + 16, info, NULL);
 	} else {
 		/* taken from mono_mb_create_and_cache */
 		mono_marshal_lock ();
 		res = g_hash_table_lookup (cache, callsig);
 		mono_marshal_unlock ();
 
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
+		info->d.runtime_invoke.sig = callsig;
+
 		/* Somebody may have created it before us */
 		if (!res) {
 			MonoMethod *newm;
-			newm = mono_mb_create_method (mb, csig, sig->param_count + 16);
+			newm = mono_mb_create (mb, csig, sig->param_count + 16, info);
 
 			mono_marshal_lock ();
 			res = g_hash_table_lookup (cache, callsig);
@@ -5135,9 +5156,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 				g_hash_table_insert (cache, callsig, res);
 				/* Can't insert it into wrapper_hash since the key is a signature */
 				g_hash_table_insert (method->klass->image->runtime_invoke_direct_cache, method, res);
-				info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
-				info->d.runtime_invoke.sig = callsig;
-				mono_marshal_set_wrapper_info (res, info);
 			} else {
 				mono_free_method (newm);
 			}
@@ -5265,13 +5283,13 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC);
+
 	mono_marshal_lock ();
 	/* double-checked locking */
-	if (!method) {
-		method = mono_mb_create_method (mb, csig, 16);
-		info = mono_wrapper_info_create (method, WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC);
-		mono_marshal_set_wrapper_info (method, info);
-	}
+	if (!method)
+		method = mono_mb_create (mb, csig, 16, info);
+
 	mono_marshal_unlock ();
 
 	mono_mb_free (mb);
@@ -5348,7 +5366,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	mono_marshal_unlock ();
 	if (!res) {
 		MonoMethod *newm;
-		newm = mono_mb_create_method (mb, sig, 4);
+		newm = mono_mb_create (mb, sig, 4, NULL);
 		mono_marshal_lock ();
 		res = cached;
 		if (!res) {
@@ -5703,7 +5721,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mono_marshal_unlock ();
 	if (!res) {
 		MonoMethod *newm;
-		newm = mono_mb_create_method (mb, sig, 6);
+		newm = mono_mb_create (mb, sig, 6, NULL);
 		mono_marshal_lock ();
 		res = cached;
 		if (!res) {
@@ -5899,13 +5917,11 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	if (csig->call_convention == MONO_CALL_VARARG)
 		csig->call_convention = 0;
 
-	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ICALL_WRAPPER);
+	info->d.icall.func = (gpointer)func;
+	res = mono_mb_create (mb, csig, csig->param_count + 16, info);
 	mono_mb_free (mb);
 
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_ICALL_WRAPPER);
-	info->d.icall.func = (gpointer)func;
-	mono_marshal_set_wrapper_info (res, info);
-	
 	return res;
 }
 
@@ -8980,16 +8996,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-				/* use native_wrapper_cache because internal calls are looked up there */
-				res = mono_mb_create_and_cache (cache, method,
-					mb, csig, csig->param_count + 1);
-
-				mono_mb_free (mb);
-
-				info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_STRING_CTOR);
+				info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_STRING_CTOR);
 				info->d.string_ctor.method = method;
 
-				mono_marshal_set_wrapper_info (res, info);
+				/* use native_wrapper_cache because internal calls are looked up there */
+				res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+													 csig->param_count + 1, info, NULL);
+				mono_mb_free (mb);
 
 				return res;
 			}
@@ -9012,15 +9025,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 #ifndef DISABLE_JIT
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
 #endif
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+
 		csig = signature_dup (method->klass->image, sig);
 		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache (cache, method,
-										mb, csig, csig->param_count + 16);
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+											 csig->param_count + 16, info, NULL);
 		mono_mb_free (mb);
-
-		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
-		info->d.managed_to_native.method = method;
-		mono_marshal_set_wrapper_info (res, info);
 
 		return res;
 	}
@@ -9067,15 +9079,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
 #endif
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
 
 		csig = signature_dup (method->klass->image, csig);
 		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache (cache, method,
-										mb, csig, csig->param_count + 16);
-
-		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
-		info->d.managed_to_native.method = method;
-		mono_marshal_set_wrapper_info (res, info);
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
+											 info, NULL);
 
 		mono_mb_free (mb);
 		return res;
@@ -9091,16 +9101,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mono_marshal_emit_native_wrapper (mb->method->klass->image, mb, sig, piinfo, mspecs, piinfo->addr, aot, check_exceptions, FALSE);
 #endif
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PINVOKE);
+	info->d.managed_to_native.method = method;
 
 	csig = signature_dup (method->klass->image, sig);
 	csig->pinvoke = 0;
-	res = mono_mb_create_and_cache (cache, method,
-									mb, csig, csig->param_count + 16);
+	res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
+										 info, NULL);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_PINVOKE);
-	info->d.managed_to_native.method = method;
-	mono_marshal_set_wrapper_info (res, info);
 
 #ifndef DISABLE_JIT
 	for (i = sig->param_count; i >= 0; i--)
@@ -9203,17 +9211,16 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, NULL, FALSE, TRUE, TRUE);
 #endif
 
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_AOT);
+	info->d.managed_to_native.method = invoke;
+
 	g_assert (!sig->hasthis);
 	csig = signature_dup_add_this (image, sig, mono_defaults.int_class);
 	csig->pinvoke = 0;
-	res = mono_mb_create_and_cache (cache, invoke,
-									mb, csig, csig->param_count + 16);
+	res = mono_mb_create_and_cache_full (cache, invoke,
+										 mb, csig, csig->param_count + 16,
+										 info, NULL);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NATIVE_FUNC_AOT);
-	info->d.managed_to_native.method = invoke;
-
-	mono_marshal_set_wrapper_info (res, info);
 
 	for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
 		if (mspecs [i])
@@ -9630,18 +9637,19 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	if (!target_handle) {
 		WrapperInfo *info;
 
-		res = mono_mb_create_and_cache (cache, method,
-											 mb, csig, sig->param_count + 16);
 		// FIXME: Associate it with the method+delegate_klass pair
-		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 		info->d.native_to_managed.method = method;
 		info->d.native_to_managed.klass = delegate_klass;
-		mono_marshal_set_wrapper_info (res, info);
+
+		res = mono_mb_create_and_cache_full (cache, method,
+											 mb, csig, sig->param_count + 16,
+											 info, NULL);
 	} else {
 #ifndef DISABLE_JIT
 		mb->dynamic = 1;
 #endif
-		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
+		res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 	}
 	mono_mb_free (mb);
 
@@ -9700,7 +9708,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 #ifndef DISABLE_JIT
 		mb->dynamic = 1;
 #endif
-		method = mono_mb_create_method (mb, csig, sig->param_count + 16);
+		method = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 		mono_mb_free (mb);
 
 		for (i = sig->param_count; i >= 0; i--)
@@ -9728,7 +9736,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	mb->dynamic = 1;
 #endif
 
-	method = mono_mb_create_method (mb, sig, param_count);
+	method = mono_mb_create (mb, sig, param_count, NULL);
 	mono_mb_free (mb);
 
 	return mono_compile_method (method);
@@ -9823,9 +9831,8 @@ mono_marshal_get_castclass_with_cache (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
-	res = mono_mb_create_method (mb, sig, 8);
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_CASTCLASS_WITH_CACHE);
-	mono_marshal_set_wrapper_info (res, info);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_CASTCLASS_WITH_CACHE);
+	res = mono_mb_create (mb, sig, 8, info);
 	STORE_STORE_FENCE;
 
 	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
@@ -9945,9 +9952,8 @@ mono_marshal_get_isinst_with_cache (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_method (mb, sig, 8);
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_ISINST_WITH_CACHE);
-	mono_marshal_set_wrapper_info (res, info);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ISINST_WITH_CACHE);
+	res = mono_mb_create (mb, sig, 8, info);
 	STORE_STORE_FENCE;
 
 	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
@@ -10141,11 +10147,11 @@ mono_marshal_get_castclass (MonoClass *klass)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
-	res = mono_mb_create_and_cache (cache, klass, mb, castclass_sig, castclass_sig->param_count + 16);
-	mono_mb_free (mb);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
-	mono_marshal_set_wrapper_info (res, info);
+	res = mono_mb_create_and_cache_full (cache, klass, mb, castclass_sig, castclass_sig->param_count + 16,
+										 info, NULL);
+	mono_mb_free (mb);
 
 	return res;
 }
@@ -10302,12 +10308,9 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
-
-	res = mono_mb_create_method (mb, mono_signature_no_pinvoke (stoptr), 0);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_STRUCTURE_TO_PTR);
+	res = mono_mb_create (mb, mono_signature_no_pinvoke (stoptr), 0, info);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_STRUCTURE_TO_PTR);
-	mono_marshal_set_wrapper_info (res, info);
 
 	klass->marshal_info->str_to_ptr = res;
 	return res;
@@ -10379,12 +10382,9 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
-
-	res = mono_mb_create_method (mb, ptostr, 0);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PTR_TO_STRUCTURE);
+	res = mono_mb_create (mb, ptostr, 0, info);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_PTR_TO_STRUCTURE);
-	mono_marshal_set_wrapper_info (res, info);
 
 	klass->marshal_info->ptr_to_str = res;
 	return res;
@@ -10424,11 +10424,11 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	sig = signature_dup (method->klass->image, mono_method_signature (method));
-	res = mono_mb_create_method (mb, sig, 0);
-	mono_mb_free (mb);
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
+
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
 	info->d.synchronized_inner.method = method;
-	mono_marshal_set_wrapper_info (res, info);
+	res = mono_mb_create (mb, sig, 0, info);
+	mono_mb_free (mb);
 	if (ctx)
 		res = mono_class_inflate_generic_method (res, ctx);
 	return res;
@@ -11112,13 +11112,10 @@ get_virtual_stelemref_wrapper (int kind)
 		g_assert (0);
 	}
 #endif /* DISABLE_JIT */
-
-	res = mono_mb_create_method (mb, signature, 4);
-	res->flags |= METHOD_ATTRIBUTE_VIRTUAL;
-
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_VIRTUAL_STELEMREF);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_VIRTUAL_STELEMREF);
 	info->d.virtual_stelemref.kind = kind;
-	mono_marshal_set_wrapper_info (res, info);
+	res = mono_mb_create (mb, signature, 4, info);
+	res->flags |= METHOD_ATTRIBUTE_VIRTUAL;
 
 	mono_marshal_lock ();
 	if (!cached_methods [kind]) {
@@ -11161,7 +11158,7 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
  * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod*
-mono_marshal_get_stelemref ()
+mono_marshal_get_stelemref (void)
 {
 	static MonoMethod* ret = NULL;
 	MonoMethodSignature *sig;
@@ -11299,12 +11296,9 @@ mono_marshal_get_stelemref ()
 	
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
-
-	ret = mono_mb_create_method (mb, sig, 4);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (ret, WRAPPER_SUBTYPE_NONE);
-	mono_marshal_set_wrapper_info (ret, info);
 
 	return ret;
 }
@@ -11338,12 +11332,9 @@ mono_marshal_get_gsharedvt_in_wrapper (void)
 	 */
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
-
-	ret = mono_mb_create_method (mb, sig, 4);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GSHAREDVT_IN);
+	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (ret, WRAPPER_SUBTYPE_GSHAREDVT_IN);
-	mono_marshal_set_wrapper_info (ret, info);
 
 	return ret;
 }
@@ -11377,12 +11368,9 @@ mono_marshal_get_gsharedvt_out_wrapper (void)
 	 */
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
-
-	ret = mono_mb_create_method (mb, sig, 4);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GSHAREDVT_OUT);
+	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
-
-	info = mono_wrapper_info_create (ret, WRAPPER_SUBTYPE_GSHAREDVT_OUT);
-	mono_marshal_set_wrapper_info (ret, info);
 
 	return ret;
 }
@@ -11414,6 +11402,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	MonoMethod *ret;
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
+	WrapperInfo *info;
 	int i, bounds, ind, realidx;
 	int branch_pos, *branch_positions;
 	int cached;
@@ -11525,7 +11514,10 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	g_free (branch_positions);
 #endif /* DISABLE_JIT */
 
-	ret = mono_mb_create_method (mb, sig, 4);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ELEMENT_ADDR);
+	info->d.element_addr.rank = rank;
+	info->d.element_addr.elem_size = elem_size;
+	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
 
 	/* cache the result */
@@ -11540,8 +11532,6 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		}
 	}
 	if (!cached) {
-		WrapperInfo *info;
-
 		if (elem_addr_cache_next >= elem_addr_cache_size) {
 			int new_size = elem_addr_cache_size + 4;
 			ArrayElemAddr *new_array = g_new0 (ArrayElemAddr, new_size);
@@ -11554,11 +11544,6 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		elem_addr_cache [elem_addr_cache_next].elem_size = elem_size;
 		elem_addr_cache [elem_addr_cache_next].method = ret;
 		elem_addr_cache_next ++;
-
-		info = mono_wrapper_info_create (ret, WRAPPER_SUBTYPE_ELEMENT_ADDR);
-		info->d.element_addr.rank = rank;
-		info->d.element_addr.elem_size = elem_size;
-		mono_marshal_set_wrapper_info (ret, info);
 	}
 	mono_marshal_unlock ();
 	return ret;
@@ -11623,11 +11608,12 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 		def = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
 	} else {
-		res = mono_mb_create_and_cache (cache, method,
-										mb, sig, sig->param_count + 16);
-		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_ARRAY_ACCESSOR);
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ARRAY_ACCESSOR);
 		info->d.array_accessor.method = method;
-		mono_marshal_set_wrapper_info (res, info);
+
+		res = mono_mb_create_and_cache_full (cache, method,
+											 mb, sig, sig->param_count + 16,
+											 info, NULL);
 	}
 	mono_mb_free (mb);
 
@@ -12764,12 +12750,9 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	/* We can corlib internal methods */
 	mb->skip_visibility = TRUE;
 #endif
-
-	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
-
-	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER);
 	info->d.generic_array_helper.method = method;
-	mono_marshal_set_wrapper_info (res, info);
+	res = mono_mb_create (mb, csig, csig->param_count + 16, info);
 
 	mono_mb_free (mb);
 
