@@ -2666,8 +2666,10 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
 		case MONO_WRAPPER_ISINST: {
-			MonoClass *proxy_class = mono_marshal_get_wrapper_info (method);
-			encode_klass_ref (acfg, proxy_class, p, &p);
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			g_assert (info);
+			encode_klass_ref (acfg, info->d.proxy.klass, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_LDFLD_REMOTE:

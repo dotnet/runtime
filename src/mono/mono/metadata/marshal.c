@@ -5399,6 +5399,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	MonoMethod *res;
 	MonoClass *klass;
 	GHashTable *cache;
+	WrapperInfo *info;
 	char *name;
 	int t, pos0, pos1 = 0;
 
@@ -5531,8 +5532,10 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.proxy.klass = klass;
+	res = mono_mb_create_and_cache_full (cache, klass,
+										 mb, sig, sig->param_count + 16, info, NULL);
 	mono_mb_free (mb);
 	
 	return res;
@@ -5554,6 +5557,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	MonoMethod *res;
 	MonoClass *klass;
 	GHashTable *cache;
+	WrapperInfo *info;
 	char *name;
 	int t, pos0, pos1, pos2, pos3;
 
@@ -5654,8 +5658,11 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.proxy.klass = klass;
+	res = mono_mb_create_and_cache_full (cache, klass,
+										 mb, sig, sig->param_count + 16,
+										 info, NULL);
 	mono_mb_free (mb);
 	
 	return res;
@@ -5754,6 +5761,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	MonoMethod *res;
 	MonoClass *klass;
 	GHashTable *cache;
+	WrapperInfo *info;
 	char *name;
 	int t, pos;
 
@@ -5863,8 +5871,11 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.proxy.klass = klass;
+	res = mono_mb_create_and_cache_full (cache, klass,
+										 mb, sig, sig->param_count + 16,
+										 info, NULL);
 	mono_mb_free (mb);
 	
 	return res;
@@ -9980,6 +9991,7 @@ mono_marshal_get_isinst (MonoClass *klass)
 	static MonoMethodSignature *isint_sig = NULL;
 	GHashTable *cache;
 	MonoMethod *res;
+	WrapperInfo *info;
 	int pos_was_ok, pos_end;
 #ifndef DISABLE_REMOTING
 	int pos_end2, pos_failed;
@@ -10064,7 +10076,9 @@ mono_marshal_get_isinst (MonoClass *klass)
 #endif /* DISABLE_REMOTING */
 #endif /* DISABLE_JIT */
 
-	res = mono_mb_create_and_cache (cache, klass, mb, isint_sig, isint_sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.proxy.klass = klass;
+	res = mono_mb_create_and_cache_full (cache, klass, mb, isint_sig, isint_sig->param_count + 16, info, NULL);
 	mono_mb_free (mb);
 
 	return res;
@@ -10163,6 +10177,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	static MonoMethodSignature *isint_sig = NULL;
 	GHashTable *cache;
 	MonoMethod *res;
+	WrapperInfo *info;
 	int pos_failed, pos_end;
 	char *name, *klass_name;
 	MonoMethod *can_cast_to;
@@ -10231,7 +10246,9 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_and_cache (cache, klass, mb, isint_sig, isint_sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.proxy.klass = klass;
+	res = mono_mb_create_and_cache_full (cache, klass, mb, isint_sig, isint_sig->param_count + 16, info, NULL);
 	mono_mb_free (mb);
 
 	return res;
