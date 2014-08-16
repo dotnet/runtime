@@ -436,6 +436,8 @@ static int callee_saved_regs [] = { ARMREG_V1, ARMREG_V2, ARMREG_V3, ARMREG_V4, 
 static int callee_saved_regs [] = { };
 #elif defined(TARGET_S390X)
 static int callee_saved_regs [] = { s390_r6, s390_r7, s390_r8, s390_r9, s390_r10, s390_r11, s390_r12, s390_r13, s390_r14 };
+#elif defined(TARGET_POWERPC)
+static int callee_saved_regs [] = { ppc_r6, ppc_r7, ppc_r8, ppc_r9, ppc_r10, ppc_r11, ppc_r12, ppc_r13, ppc_r14 };
 #endif
 
 static guint32
