@@ -269,7 +269,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 
 #ifdef MALLOC_ALLOCATION
 	{
-		Chunk *c = g_malloc (size);
+		Chunk *c = g_malloc (size + sizeof (Chunk));
 
 		c->next = pool->chunks;
 		pool->chunks = c;
