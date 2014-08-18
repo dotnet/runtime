@@ -891,15 +891,20 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 }
 
 /*
- * Addresses from start to end are already sorted. This function finds
+ * Addresses in the pin queue are already sorted. This function finds
  * the object header for each address and pins the object. The
- * addresses must be inside the passed section.  The (start of the)
+ * addresses must be inside the nursery section.  The (start of the)
  * address array is overwritten with the addresses of the actually
  * pinned objects.  Return the number of pinned objects.
  */
 static int
-pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, ScanCopyContext ctx)
+pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 {
+	GCMemSection *section = nursery_section;
+	void **start = section->pin_queue_start;
+	void **end = start + section->pin_queue_num_entries;
+	void *start_nursery = section->data;
+	void *end_nursery = section->next_data;
 	void *last = NULL;
 	int count = 0;
 	void *search_start;
@@ -1052,19 +1057,18 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	return count;
 }
 
-void
-sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx)
+static void
+pin_objects_in_nursery (ScanCopyContext ctx)
 {
-	size_t num_entries = section->pin_queue_num_entries;
-	if (num_entries) {
-		void **start = section->pin_queue_start;
-		size_t reduced_to;
-		reduced_to = pin_objects_from_addresses (section, start, start + num_entries,
-				section->data, section->next_data, ctx);
-		section->pin_queue_num_entries = reduced_to;
-		if (!reduced_to)
-			section->pin_queue_start = NULL;
-	}
+	size_t reduced_to;
+
+	if (!nursery_section->pin_queue_num_entries)
+		return;
+
+	reduced_to = pin_objects_from_nursery_pin_queue (ctx);
+	nursery_section->pin_queue_num_entries = reduced_to;
+	if (!reduced_to)
+		nursery_section->pin_queue_start = NULL;
 }
 
 
@@ -2301,7 +2305,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	ctx.scan_func = NULL;
 	ctx.copy_func = NULL;
 	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
-	sgen_pin_objects_in_section (nursery_section, ctx);
+	pin_objects_in_nursery (ctx);
 	sgen_pinning_trim_queue_to_section (nursery_section);
 
 	TV_GETTIME (atv);
@@ -2669,7 +2673,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	if (concurrent_collection_in_progress && sgen_minor_collector.is_split) {
 		scan_nursery_objects (ctx);
 	} else {
-		sgen_pin_objects_in_section (nursery_section, ctx);
+		pin_objects_in_nursery (ctx);
 		if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 			sgen_check_nursery_objects_pinned (!concurrent_collection_in_progress || finish_up_concurrent_mark);
 	}
