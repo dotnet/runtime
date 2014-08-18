@@ -491,7 +491,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 {
 	Loc locations [NUM_REGS];
 	guint8 reg_saved [NUM_REGS];
-	int i, pos, reg, cfa_reg, cfa_offset, offset;
+	int i, pos, reg, cfa_reg = -1, cfa_offset = 0, offset;
 	guint8 *p;
 	guint8 *cfa_val;
 	UnwindState state_stack [1];
@@ -599,6 +599,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	if (save_locations)
 		memset (save_locations, 0, save_locations_len * sizeof (mgreg_t*));
 
+	g_assert (cfa_reg != -1);
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (i = 0; i < NUM_REGS; ++i) {
 		if (reg_saved [i] && locations [i].loc_type == LOC_OFFSET) {
