@@ -357,18 +357,21 @@ mono_threads_get_runtime_callbacks (void)
 The return value is only valid until a matching mono_thread_info_resume is called
 */
 static MonoThreadInfo*
-mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
+mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel, const char **error_condition)
 {
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();	
 	MonoThreadInfo *info = mono_thread_info_lookup (tid); /*info on HP1*/
-	if (!info)
+	if (!info) {
+		*error_condition = "Thread not found";
 		return NULL;
+	}
 
 	MONO_SEM_WAIT_UNITERRUPTIBLE (&info->suspend_semaphore);
 
 	/*thread is on the process of detaching*/
 	if (mono_thread_info_run_state (info) > STATE_RUNNING) {
 		mono_hazard_pointer_clear (hp, 1);
+		*error_condition = "Thread is detaching";
 		return NULL;
 	}
 
@@ -384,6 +387,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 	if (!mono_threads_core_suspend (info)) {
 		MONO_SEM_POST (&info->suspend_semaphore);
 		mono_hazard_pointer_clear (hp, 1);
+		*error_condition = "Could not suspend thread";
 		return NULL;
 	}
 
@@ -557,8 +561,9 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 	mono_thread_info_suspend_lock ();
 
 	for (;;) {
-		if (!(info = mono_thread_info_suspend_sync (id, interrupt_kernel))) {
-			g_warning ("failed to suspend thread %p, hopefully it is dead", (gpointer)id);
+		const char *suspend_error = "Unknown error";
+		if (!(info = mono_thread_info_suspend_sync (id, interrupt_kernel, &suspend_error))) {
+			g_warning ("failed to suspend thread %p due to %s, hopefully it is dead", (gpointer)id, suspend_error);
 			mono_thread_info_suspend_unlock ();
 			return NULL;
 		}
@@ -567,7 +572,7 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 			break;
 
 		if (!mono_thread_info_core_resume (info)) {
-			g_warning ("failed to result thread %p, hopefully it is dead", (gpointer)id);
+			g_warning ("failed to resume thread %p, hopefully it is dead", (gpointer)id);
 			mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
 			mono_thread_info_suspend_unlock ();
 			return NULL;
