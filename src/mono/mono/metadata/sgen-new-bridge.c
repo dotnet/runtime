@@ -68,6 +68,10 @@
 #define XREFS old_xrefs
 #endif
 
+#define OPTIMIZATION_COPY
+#define OPTIMIZATION_FORWARD
+#define OPTIMIZATION_SINGLETON_DYN_ARRAY
+
 typedef struct {
 	int size;
 	int capacity;		/* if negative, data points to another DynArray's data */
@@ -320,9 +324,11 @@ dyn_array_ptr_init (DynPtrArray *da)
 static void
 dyn_array_ptr_uninit (DynPtrArray *da)
 {
+#ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
 	if (da->array.capacity == 1)
 		dyn_array_ptr_init (da);
 	else
+#endif
 		dyn_array_uninit (&da->array, sizeof (void*));
 }
 
@@ -335,19 +341,23 @@ dyn_array_ptr_size (DynPtrArray *da)
 static void
 dyn_array_ptr_empty (DynPtrArray *da)
 {
+#ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
 	if (da->array.capacity == 1)
 		dyn_array_ptr_init (da);
 	else
+#endif
 		dyn_array_empty (&da->array);
 }
 
 static void*
 dyn_array_ptr_get (DynPtrArray *da, int x)
 {
+#ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
 	if (da->array.capacity == 1) {
 		g_assert (x == 0);
 		return da->array.data;
 	}
+#endif
 	return ((void**)da->array.data)[x];
 }
 
@@ -356,6 +366,7 @@ dyn_array_ptr_add (DynPtrArray *da, void *ptr)
 {
 	void **p;
 
+#ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
 	if (da->array.capacity == 0) {
 		da->array.capacity = 1;
 		da->array.size = 1;
@@ -367,7 +378,9 @@ dyn_array_ptr_add (DynPtrArray *da, void *ptr)
 		p0 = dyn_array_add (&da->array, sizeof (void*));
 		*p0 = ptr0;
 		p = dyn_array_add (&da->array, sizeof (void*));
-	} else {
+	} else
+#endif
+	{
 		p = dyn_array_add (&da->array, sizeof (void*));
 	}
 	*p = ptr;
@@ -381,10 +394,13 @@ dyn_array_ptr_pop (DynPtrArray *da)
 	int size = da->array.size;
 	void *p;
 	g_assert (size > 0);
+#ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
 	if (da->array.capacity == 1) {
 		p = dyn_array_ptr_get (da, 0);
 		dyn_array_init (&da->array);
-	} else {
+	} else
+#endif
+	{
 		g_assert (da->array.capacity > 1);
 		dyn_array_ensure_independent (&da->array, sizeof (void*));
 		p = dyn_array_ptr_get (da, size - 1);
@@ -582,12 +598,16 @@ object_needs_expansion (MonoObject **objp)
 static HashEntry*
 follow_forward (HashEntry *entry)
 {
+#ifdef OPTIMIZATION_FORWARD
 	while (entry->v.dfs1.forwarded_to) {
 		HashEntry *next = entry->v.dfs1.forwarded_to;
 		if (next->v.dfs1.forwarded_to)
 			entry->v.dfs1.forwarded_to = next->v.dfs1.forwarded_to;
 		entry = next;
 	}
+#else
+	g_assert (!entry->v.dfs1.forwarded_to);
+#endif
 	return entry;
 }
 
@@ -663,6 +683,7 @@ dfs1 (HashEntry *obj_entry)
 				 * continuing processing this object, we start over with the
 				 * object it points to.
 				 */
+#ifdef OPTIMIZATION_FORWARD
 				if (!obj_entry->is_bridge && num_links == 1) {
 					HashEntry *dst_entry = dyn_array_ptr_pop (&dfs_stack);
 					HashEntry *obj_entry_again = dyn_array_ptr_pop (&dfs_stack);
@@ -674,6 +695,7 @@ dfs1 (HashEntry *obj_entry)
 					}
 					goto again;
 				}
+#endif
 			}
 
 			if (src) {
@@ -777,8 +799,10 @@ scc_add_xref (SCC *src, SCC *dst)
 			return;
 		src->flag = TRUE;
 		dyn_array_int_add (&dst->old_xrefs, src->index);
+#ifdef OPTIMIZATION_COPY
 	} else if (dyn_array_int_size (&dst->old_xrefs) == 0) {
 		dyn_array_int_copy (&dst->old_xrefs, &src->old_xrefs);
+#endif
 	} else {
 		int i;
 		for (i = 0; i < dyn_array_int_size (&src->old_xrefs); ++i) {
