@@ -335,7 +335,10 @@ dyn_array_ptr_size (DynPtrArray *da)
 static void
 dyn_array_ptr_empty (DynPtrArray *da)
 {
-	dyn_array_empty (&da->array);
+	if (da->array.capacity == 1)
+		dyn_array_ptr_init (da);
+	else
+		dyn_array_empty (&da->array);
 }
 
 static void*
