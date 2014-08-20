@@ -1044,6 +1044,7 @@ major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue
 {
 	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
 }
+#endif
 
 static long long
 major_get_and_reset_num_major_objects_marked (void)
@@ -1056,7 +1057,6 @@ major_get_and_reset_num_major_objects_marked (void)
 	return 0;
 #endif
 }
-#endif
 
 #include "sgen-major-scan-object.h"
 
@@ -2054,13 +2054,13 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	if (is_concurrent) {
 		collector->is_concurrent = TRUE;
 		collector->want_synchronous_collection = &want_evacuation;
-		collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	} else
 #endif
 	{
 		collector->is_concurrent = FALSE;
 		collector->want_synchronous_collection = NULL;
 	}
+	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 
 	collector->have_swept = &have_swept;
