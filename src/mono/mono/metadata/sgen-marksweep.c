@@ -90,8 +90,10 @@ struct _MSBlockInfo {
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
-#define MS_BLOCK_OBJ(b,i)		((b)->block + MS_BLOCK_SKIP + (b)->obj_size * (i))
-#define MS_BLOCK_OBJ_FOR_SIZE(b,i,obj_size)		((b)->block + MS_BLOCK_SKIP + (obj_size) * (i))
+#define MS_BLOCK_FOR_BLOCK_INFO(b)	((b)->block)
+
+#define MS_BLOCK_OBJ(b,i)		(MS_BLOCK_FOR_BLOCK_INFO(b) + MS_BLOCK_SKIP + (b)->obj_size * (i))
+#define MS_BLOCK_OBJ_FOR_SIZE(b,i,obj_size)		(MS_BLOCK_FOR_BLOCK_INFO(b) + MS_BLOCK_SKIP + (obj_size) * (i))
 #define MS_BLOCK_DATA_FOR_OBJ(o)	((char*)((mword)(o) & ~(mword)(MS_BLOCK_SIZE - 1)))
 
 typedef struct {
@@ -101,7 +103,7 @@ typedef struct {
 #define MS_BLOCK_FOR_OBJ(o)		(((MSBlockHeader*)MS_BLOCK_DATA_FOR_OBJ ((o)))->info)
 
 /* object index will always be small */
-#define MS_BLOCK_OBJ_INDEX(o,b)	((int)(((char*)(o) - ((b)->block + MS_BLOCK_SKIP)) / (b)->obj_size))
+#define MS_BLOCK_OBJ_INDEX(o,b)	((int)(((char*)(o) - (MS_BLOCK_FOR_BLOCK_INFO(b) + MS_BLOCK_SKIP)) / (b)->obj_size))
 
 //casting to int is fine since blocks are 32k
 #define MS_CALC_MARK_BIT(w,b,o) 	do {				\
@@ -133,7 +135,7 @@ typedef struct {
 		}							\
 	} while (1)
 
-#define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < (b)->block || *(char**)(o) >= (b)->block + MS_BLOCK_SIZE))
+#define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < MS_BLOCK_FOR_BLOCK_INFO (b) || *(char**)(o) >= MS_BLOCK_FOR_BLOCK_INFO (b) + MS_BLOCK_SIZE))
 
 #define MS_BLOCK_OBJ_SIZE_FACTOR	(sqrt (2.0))
 
@@ -236,7 +238,7 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 static void
 update_heap_boundaries_for_block (MSBlockInfo *block)
 {
-	sgen_update_heap_boundaries ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
+	sgen_update_heap_boundaries ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), (mword)MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE);
 }
 
 static void*
@@ -443,7 +445,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	update_heap_boundaries_for_block (info);
 
 	/* build free list */
-	obj_start = info->block + MS_BLOCK_SKIP;
+	obj_start = MS_BLOCK_FOR_BLOCK_INFO (info) + MS_BLOCK_SKIP;
 	info->free_list = (void**)obj_start;
 	/* we're skipping the last one - it must be nulled */
 	for (i = 0; i < count - 1; ++i) {
@@ -470,7 +472,7 @@ obj_is_from_pinned_alloc (char *ptr)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE)
+		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE)
 			return block->pinned;
 	} END_FOREACH_BLOCK;
 	return FALSE;
@@ -644,7 +646,7 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE) {
+		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) {
 			int count = MS_BLOCK_FREE / block->obj_size;
 			int i;
 
@@ -705,7 +707,7 @@ major_is_valid_object (char *object)
 		int idx;
 		char *obj;
 
-		if ((block->block > object) || ((block->block + MS_BLOCK_SIZE) <= object))
+		if ((MS_BLOCK_FOR_BLOCK_INFO (block) > object) || ((MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) <= object))
 			continue;
 
 		idx = MS_BLOCK_OBJ_INDEX (object, block);
@@ -732,11 +734,11 @@ major_describe_pointer (char *ptr)
 		int w, b;
 		gboolean marked;
 
-		if ((block->block > ptr) || ((block->block + MS_BLOCK_SIZE) <= ptr))
+		if ((MS_BLOCK_FOR_BLOCK_INFO (block) > ptr) || ((MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) <= ptr))
 			continue;
 
 		SGEN_LOG (0, "major-ptr (block %p sz %d pin %d ref %d)\n",
-			block->block, block->obj_size, block->pinned, block->has_references);
+			MS_BLOCK_FOR_BLOCK_INFO (block), block->obj_size, block->pinned, block->has_references);
 
 		idx = MS_BLOCK_OBJ_INDEX (ptr, block);
 		obj = (char*)MS_BLOCK_OBJ (block, idx);
@@ -814,7 +816,7 @@ major_dump_heap (FILE *heap_dump_file)
 					start = i;
 			} else {
 				if (start >= 0) {
-					sgen_dump_occupied (MS_BLOCK_OBJ (block, start), MS_BLOCK_OBJ (block, i), block->block);
+					sgen_dump_occupied (MS_BLOCK_OBJ (block, start), MS_BLOCK_OBJ (block, i), MS_BLOCK_FOR_BLOCK_INFO (block));
 					start = -1;
 				}
 			}
@@ -1627,7 +1629,7 @@ major_find_pin_queue_start_ends (SgenGrayQueue *queue)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		block->pin_queue_start = sgen_find_optimized_pin_queue_area (block->block + MS_BLOCK_SKIP, block->block + MS_BLOCK_SIZE,
+		block->pin_queue_start = sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
 				&block->pin_queue_num_entries);
 	} END_FOREACH_BLOCK;
 }
@@ -1716,7 +1718,7 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 
 	FOREACH_BLOCK (block) {
 		if (block->has_references)
-			callback ((mword)block->block, MS_BLOCK_SIZE);
+			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
 	} END_FOREACH_BLOCK;
 }
 
@@ -1797,7 +1799,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			continue;
 
 		block_obj_size = block->obj_size;
-		block_start = block->block;
+		block_start = MS_BLOCK_FOR_BLOCK_INFO (block);
 
 		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
 			guint8 *cards;
@@ -1944,7 +1946,7 @@ major_count_cards (long long *num_total_cards, long long *num_marked_cards)
 	long long marked_cards = 0;
 
 	FOREACH_BLOCK (block) {
-		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) block->block);
+		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) MS_BLOCK_FOR_BLOCK_INFO (block));
 		int i;
 
 		if (!block->has_references)
@@ -1971,7 +1973,7 @@ update_cardtable_mod_union (void)
 		size_t num_cards;
 
 		block->cardtable_mod_union = sgen_card_table_update_mod_union (block->cardtable_mod_union,
-				block->block, MS_BLOCK_SIZE, &num_cards);
+				MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE, &num_cards);
 
 		SGEN_ASSERT (0, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
 	} END_FOREACH_BLOCK;
@@ -1981,7 +1983,7 @@ static guint8*
 major_get_cardtable_mod_union_for_object (char *obj)
 {
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	return &block->cardtable_mod_union [(obj - (char*)sgen_card_table_align_pointer (block->block)) >> CARD_BITS];
+	return &block->cardtable_mod_union [(obj - (char*)sgen_card_table_align_pointer (MS_BLOCK_FOR_BLOCK_INFO (block))) >> CARD_BITS];
 }
 #endif
 
