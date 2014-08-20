@@ -11592,9 +11592,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_MONO_JIT_ATTACH: {
-				MonoInst *args [16];
+				MonoInst *args [16], *domain_ins;
 				MonoInst *ad_ins, *lmf_ins;
-				MonoBasicBlock *next_bb = NULL;
+				MonoBasicBlock *next_bb = NULL, *call_bb = NULL;
 
 				cfg->orig_domain_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
@@ -11611,14 +11611,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (MONO_ARCH_HAVE_TLS_GET && ad_ins && lmf_ins) {
 					NEW_BBLOCK (cfg, next_bb);
+					NEW_BBLOCK (cfg, call_bb);
 
+					if (cfg->compile_aot) {
+						/* AOT code is only used in the root domain */
+						EMIT_NEW_PCONST (cfg, domain_ins, NULL);
+					} else {
+						EMIT_NEW_PCONST (cfg, domain_ins, cfg->domain);
+					}
 					MONO_ADD_INS (cfg->cbb, ad_ins);
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, ad_ins->dreg, 0);
-					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, next_bb);
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, ad_ins->dreg, domain_ins->dreg);
+					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, call_bb);
 
 					MONO_ADD_INS (cfg->cbb, lmf_ins);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, lmf_ins->dreg, 0);
-					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, next_bb);
+					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, call_bb);
+
+					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, next_bb);
+					MONO_START_BB (cfg, call_bb);
 				}
 
 				if (cfg->compile_aot) {

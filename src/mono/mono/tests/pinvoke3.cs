@@ -1087,29 +1087,32 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_call_callback")]
 	public static extern int mono_test_marshal_call_callback ();
 
-	public static int test_0_appdomain_swich () {
-        callback = delegate () { return 42; };
-        mono_test_marshal_set_callback (callback);
-
+	public static int test_0_appdomain_switch () {
 		// FIXME: The appdomain unload hangs
-		return 0;
-		/*
+		//return 0;
         AppDomain ad = AppDomain.CreateDomain ("foo");
 		var c = (CallbackClass)ad.CreateInstanceAndUnwrap (
 				typeof (CallbackClass).Assembly.FullName, "Tests/CallbackClass");
-		int res = c.OtherDomainTest ();
+		c.SetCallback ();
+		int domain_id = AppDomain.CurrentDomain.Id;
+		int new_id = mono_test_marshal_call_callback ();
+		int res = 0;
+		if (new_id == domain_id)
+			res = 1;
+		if (AppDomain.CurrentDomain.Id != domain_id)
+			res = 2;
 		AppDomain.Unload (ad);
 		return res;
-		*/
     }
 
+	static int domain_callback () {
+		return AppDomain.CurrentDomain.Id;
+	}
+
 	class CallbackClass : MarshalByRefObject {
-		public int OtherDomainTest () {
-			int appDomainId = AppDomain.CurrentDomain.Id;
-			int res = mono_test_marshal_call_callback ();
-			if (res != 42)
-				return 2;
-			return appDomainId == AppDomain.CurrentDomain.Id ? 0 : 1;
+		public int SetCallback () {
+			mono_test_marshal_set_callback (domain_callback);
+			return 0;
 		}
     }
 }
