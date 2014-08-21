@@ -72,7 +72,7 @@ than just the numbers.
 static MONO_ALWAYS_INLINE int
 mix_hash (int hash)
 {
-	return ((hash * 215497) >> 16) ^ (hash * 1823231) + hash;
+	return ((hash * 215497) >> 16) ^ (hash * 1823231 + hash);
 }
 
 static MONO_ALWAYS_INLINE void
