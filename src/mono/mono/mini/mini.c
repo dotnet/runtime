@@ -1862,7 +1862,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		else {
 			int ialign;
 
-			size = mono_type_size (t, &ialign);
+			size = mini_type_stack_size (NULL, t, &ialign);
 			align = ialign;
 
 			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (t)))
@@ -2157,7 +2157,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		} else {
 			int ialign;
 
-			size = mono_type_size (t, &ialign);
+			size = mini_type_stack_size (NULL, t, &ialign);
 			align = ialign;
 
 			if (mono_class_from_mono_type (t)->exception_type)
