@@ -11,6 +11,7 @@
 
 #if defined(__MACH__)
 
+#include <stdio.h>
 #include <objc/runtime.h>
 #include <objc/message.h>
 #include <mono/utils/mono-compiler.h>

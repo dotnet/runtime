@@ -227,6 +227,9 @@ mono_thread_info_attach (void *baseptr) MONO_INTERNAL;
 void
 mono_thread_info_detach (void) MONO_INTERNAL;
 
+gboolean
+mono_thread_info_is_exiting (void) MONO_INTERNAL;
+
 THREAD_INFO_TYPE *
 mono_thread_info_current (void) MONO_INTERNAL;
 

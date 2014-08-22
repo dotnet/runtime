@@ -3881,6 +3881,12 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	binary_protocol_thread_unregister ((gpointer)tid);
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
 
+#ifndef HAVE_KW_THREAD
+	mono_native_tls_set_value (thread_info_key, NULL);
+#else
+	sgen_thread_info = NULL;
+#endif
+
 	if (p->info.runtime_thread)
 		mono_threads_add_joinable_thread ((gpointer)tid);
 

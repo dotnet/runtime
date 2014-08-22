@@ -41,7 +41,7 @@ static MonoSemType global_suspend_semaphore;
 static size_t thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
-static MonoNativeTlsKey thread_info_key, small_id_key;
+static MonoNativeTlsKey thread_info_key, thread_exited_key, small_id_key;
 static MonoLinkedListSet thread_list;
 static gboolean disable_new_interrupt = FALSE;
 static gboolean mono_threads_inited = FALSE;
@@ -168,6 +168,8 @@ unregister_thread (void *arg)
 
 	THREADS_DEBUG ("unregistering info %p\n", info);
 
+	mono_native_tls_set_value (thread_exited_key, GUINT_TO_POINTER (1));
+
 	mono_threads_core_unregister (info);
 
 	/*
@@ -204,6 +206,27 @@ unregister_thread (void *arg)
 	/*now it's safe to free the thread info.*/
 	mono_thread_hazardous_free_or_queue (info, free_thread_info, TRUE, FALSE);
 	mono_thread_small_id_free (small_id);
+}
+
+static void
+thread_exited_dtor (void *arg)
+{
+#if defined(__MACH__)
+	/*
+	 * Since we use pthread dtors to clean up thread data, if a thread
+	 * is attached to the runtime by another pthread dtor after our dtor
+	 * has ran, it will never be detached, leading to various problems
+	 * since the thread ids etc. will be reused while they are still in
+	 * the threads hashtables etc.
+	 * Dtors are called in a loop until all user tls entries are 0,
+	 * but the loop has a maximum count (4), so if we set the tls
+	 * variable every time, it will remain set when system tls dtors
+	 * are ran. This allows mono_thread_info_is_exiting () to detect
+	 * whenever the thread is exiting, even if it is executed from a
+	 * system tls dtor (i.e. obj-c dealloc methods).
+	 */
+	mono_native_tls_set_value (thread_exited_key, GUINT_TO_POINTER (1));
+#endif
 }
 
 /**
@@ -304,6 +327,22 @@ mono_thread_info_detach (void)
 	}
 }
 
+/*
+ * mono_thread_info_is_exiting:
+ *
+ *   Return whenever the current thread is exiting, i.e. it is running pthread
+ * dtors.
+ */
+gboolean
+mono_thread_info_is_exiting (void)
+{
+#if defined(__MACH__)
+	if (mono_native_tls_get_value (thread_exited_key) == GUINT_TO_POINTER (1))
+		return TRUE;
+#endif
+	return FALSE;
+}
+
 void
 mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 {
@@ -312,8 +351,10 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	thread_info_size = info_size;
 #ifdef HOST_WIN32
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
+	res = mono_native_tls_alloc (&thread_exited_key, NULL);
 #else
 	res = mono_native_tls_alloc (&thread_info_key, unregister_thread);
+	res = mono_native_tls_alloc (&thread_exited_key, thread_exited_dtor);
 #endif
 	g_assert (res);
 

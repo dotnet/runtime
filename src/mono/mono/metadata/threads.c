@@ -987,6 +987,27 @@ mono_thread_detach (MonoThread *thread)
 		mono_thread_detach_internal (thread->internal_thread);
 }
 
+/*
+ * mono_thread_detach_if_exiting:
+ *
+ *   Detach the current thread from the runtime if it is exiting, i.e. it is running pthread dtors.
+ * This should be used at the end of embedding code which calls into managed code, and which
+ * can be called from pthread dtors, like dealloc: implementations in objective-c.
+ */
+void
+mono_thread_detach_if_exiting (void)
+{
+	if (mono_thread_info_is_exiting ()) {
+		MonoInternalThread *thread;
+
+		thread = mono_thread_internal_current ();
+		if (thread) {
+			mono_thread_detach_internal (thread);
+			mono_thread_info_detach ();
+		}
+	}
+}
+
 void
 mono_thread_exit ()
 {
