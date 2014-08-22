@@ -603,10 +603,14 @@ void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN
 #define g_message(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #endif  /* ndef HAVE_C99_SUPPORT */
-#define g_log_set_handler(a,b,c,d)
 
-#define G_GNUC_INTERNAL
+typedef void (*GLogFunc) (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
+typedef void (*GPrintFunc) (const gchar *string);
 
+void       g_log_default_handler     (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data);
+GLogFunc   g_log_set_default_handler (GLogFunc log_func, gpointer user_data);
+GPrintFunc g_set_print_handler       (GPrintFunc func);
+GPrintFunc g_set_printerr_handler    (GPrintFunc func);
 /*
  * Conversions
  */

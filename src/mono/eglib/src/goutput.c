@@ -35,85 +35,47 @@
 
 /* The current fatal levels, error is always fatal */
 static GLogLevelFlags fatal = G_LOG_LEVEL_ERROR;
+static GLogFunc default_log_func;
+static gpointer default_log_func_user_data;
+static GPrintFunc stdout_handler, stderr_handler;
 
-#if PLATFORM_ANDROID
-#include <android/log.h>
-
-static android_LogPriority
-to_android_priority (GLogLevelFlags log_level)
-{
-	switch (log_level & G_LOG_LEVEL_MASK)
-	{
-		case G_LOG_LEVEL_ERROR:     return ANDROID_LOG_FATAL;
-		case G_LOG_LEVEL_CRITICAL:  return ANDROID_LOG_ERROR;
-		case G_LOG_LEVEL_WARNING:   return ANDROID_LOG_WARN;
-		case G_LOG_LEVEL_MESSAGE:   return ANDROID_LOG_INFO;
-		case G_LOG_LEVEL_INFO:      return ANDROID_LOG_DEBUG;
-		case G_LOG_LEVEL_DEBUG:     return ANDROID_LOG_VERBOSE;
-	}
-	return ANDROID_LOG_UNKNOWN;
-}
-
-static void 
-out_vfprintf (FILE *ignore, const gchar *format, va_list args)
-{
-	/* TODO: provide a proper app name */
-	__android_log_vprint (ANDROID_LOG_ERROR, "mono", format, args);
-}
-#elif MONOTOUCH && defined(__arm__)
-#include <asl.h>
-
-static int
-to_asl_priority (GLogLevelFlags log_level)
-{
-	switch (log_level & G_LOG_LEVEL_MASK)
-	{
-		case G_LOG_LEVEL_ERROR:     return ASL_LEVEL_CRIT;
-		case G_LOG_LEVEL_CRITICAL:  return ASL_LEVEL_ERR;
-		case G_LOG_LEVEL_WARNING:   return ASL_LEVEL_WARNING;
-		case G_LOG_LEVEL_MESSAGE:   return ASL_LEVEL_NOTICE;
-		case G_LOG_LEVEL_INFO:      return ASL_LEVEL_INFO;
-		case G_LOG_LEVEL_DEBUG:     return ASL_LEVEL_DEBUG;
-	}
-	return ASL_LEVEL_ERR;
-}
-
-static void
-out_vfprintf (FILE *ignore, const gchar *format, va_list args)
-{
-	asl_vlog (NULL, NULL, ASL_LEVEL_WARNING, format, args);
-}
-
-#else
-static void 
-out_vfprintf (FILE *file, const gchar *format, va_list args)
-{
-	vfprintf (file, format, args);
-}
-#endif
+static void default_stdout_handler (const gchar *string);
+static void default_stderr_handler (const gchar *string);
 
 void
 g_print (const gchar *format, ...)
 {
+	char *msg;
 	va_list args;
 
 	va_start (args, format);
-
-	out_vfprintf (stdout, format, args);
-
+	if (vasprintf (&msg, format, args) < 0)
+		return;
 	va_end (args);
+
+	if (!stdout_handler)
+		stdout_handler = default_stdout_handler;
+
+	stdout_handler (msg);
+	free (msg);
 }
 
 void
 g_printerr (const gchar *format, ...)
 {
+	char *msg;
 	va_list args;
 
 	va_start (args, format);
-
-	out_vfprintf (stderr, format, args);
-
+	if (vasprintf (&msg, format, args) < 0)
+		return;
 	va_end (args);
+
+	if (!stderr_handler)
+		stderr_handler = default_stderr_handler;
+
+	stdout_handler (msg);
+	free (msg);
 }
 
 GLogLevelFlags
@@ -140,42 +102,16 @@ g_log_set_fatal_mask (const gchar *log_domain, GLogLevelFlags fatal_mask)
 void
 g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args)
 {
-#if PLATFORM_ANDROID
-	__android_log_vprint (to_android_priority (log_level), log_domain, format, args);
-#elif MONOTOUCH && defined(__arm__)
-	asl_vlog (NULL, NULL, to_asl_priority (log_level), format, args);
-#else
 	char *msg;
+
+	if (!default_log_func)
+		default_log_func = g_log_default_handler;
 	
 	if (vasprintf (&msg, format, args) < 0)
 		return;
 
-#ifdef G_OS_WIN32
-	printf ("%s%s%s\n",
-            log_domain != NULL ? log_domain : "",
-            log_domain != NULL ? ": " : "",
-            msg);
-#else
-#if MONOTOUCH
-	FILE *target = stderr;
-#else
-	FILE *target = stdout;
-#endif
-	
-	fprintf (target, "%s%s%s\n",
-		log_domain != NULL ? log_domain : "",
-		log_domain != NULL ? ": " : "",
-		msg);
-#endif
+	default_log_func (log_domain, log_level, msg, default_log_func_user_data);
 	free (msg);
-	if (log_level & fatal){
-		fflush (stdout);
-		fflush (stderr);
-	}
-#endif
-	if (log_level & fatal){
-		abort ();
-	}
 }
 
 void
@@ -197,5 +133,61 @@ g_assertion_message (const gchar *format, ...)
 	g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 	va_end (args);
 	abort ();
+}
+
+
+void
+g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
+{
+	FILE *target = stdout;
+
+	fprintf (target, "%s%s%s\n",
+		log_domain != NULL ? log_domain : "",
+		log_domain != NULL ? ": " : "",
+		message);
+
+	if (log_level & fatal) {
+		fflush (stdout);
+		fflush (stderr);
+		abort ();
+	}
+}
+
+static void
+default_stdout_handler (const gchar *string)
+{
+	fprintf (stdout, "%s", string);
+}
+
+static void
+default_stderr_handler (const gchar *string)
+{
+	fprintf (stderr, "%s", string);
+}
+
+
+GLogFunc
+g_log_set_default_handler (GLogFunc log_func, gpointer user_data)
+{
+	GLogFunc old = default_log_func;
+	default_log_func = log_func;
+	default_log_func_user_data = user_data;
+	return old;
+}
+
+GPrintFunc
+g_set_print_handler (GPrintFunc func)
+{
+	GPrintFunc old = stdout_handler;
+	stdout_handler = func;
+	return old;
+}
+
+GPrintFunc
+g_set_printerr_handler (GPrintFunc func)
+{
+	GPrintFunc old = stderr_handler;
+	stdout_handler = func;
+	return old;
 }
 
