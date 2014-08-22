@@ -351,7 +351,7 @@ typedef struct {
 static inline MONO_ALWAYS_INLINE void
 GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 {
-#if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
+#if SGEN_MAX_DEBUG_LEVEL >= 9
 	sgen_gray_object_enqueue (queue, obj);
 #else
 	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
@@ -372,7 +372,7 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 static inline MONO_ALWAYS_INLINE void
 GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 {
-#if defined(SGEN_GRAY_OBJECT_ENQUEUE) || SGEN_MAX_DEBUG_LEVEL >= 9
+#if SGEN_MAX_DEBUG_LEVEL >= 9
 	*obj = sgen_gray_object_enqueue (queue);
 #else
 	if (!queue->first) {
