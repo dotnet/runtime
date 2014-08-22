@@ -349,15 +349,15 @@ typedef struct {
 #define SGEN_LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~SGEN_VTABLE_BITS_MASK)
 
 static inline MONO_ALWAYS_INLINE void
-GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
+GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj, mword desc)
 {
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-	sgen_gray_object_enqueue (queue, obj);
+	sgen_gray_object_enqueue (queue, obj, desc);
 #else
 	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
-		sgen_gray_object_enqueue (queue, obj);
+		sgen_gray_object_enqueue (queue, obj, desc);
 	} else {
-		GrayQueueEntry entry = { obj };
+		GrayQueueEntry entry = { obj, desc };
 
 		HEAVY_STAT (gc_stats.gray_queue_enqueue_fast_path ++);
 
@@ -372,12 +372,13 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 }
 
 static inline MONO_ALWAYS_INLINE void
-GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
+GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 {
 	GrayQueueEntry entry;
 #if SGEN_MAX_DEBUG_LEVEL >= 9
 	entry = sgen_gray_object_enqueue (queue);
 	*obj = entry.obj;
+	*desc = entry.desc;
 #else
 	if (!queue->first) {
 		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
@@ -389,11 +390,13 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
 		entry = sgen_gray_object_dequeue (queue);
 		*obj = entry.obj;
+		*desc = entry.desc;
 	} else {
 		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
 
 		entry = *queue->cursor--;
 		*obj = entry.obj;
+		*desc = entry.desc;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
 #endif
@@ -506,7 +509,7 @@ struct _ObjectList {
 };
 
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
-typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
+typedef void (*ScanObjectFunc) (char *obj, mword desc, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
 
 typedef struct
@@ -790,6 +793,27 @@ slow_object_get_size (MonoVTable *vtable, MonoObject* o)
 		/* from a created object: the class must be inited already */
 		return klass->instance_size;
 	}
+}
+
+static inline mword
+sgen_vtable_get_descriptor (MonoVTable *vtable)
+{
+	return (mword)vtable->gc_descr;
+}
+
+static inline mword
+sgen_obj_get_descriptor (char *obj)
+{
+	MonoVTable *vtable = ((MonoObject*)obj)->vtable;
+	SGEN_ASSERT (0, !(((mword)vtable) & SGEN_VTABLE_BITS_MASK), "Object can't be tagged");
+	return sgen_vtable_get_descriptor (vtable);
+}
+
+static inline mword
+sgen_obj_get_descriptor_safe (char *obj)
+{
+	MonoVTable *vtable = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+	return sgen_vtable_get_descriptor (vtable);
 }
 
 /*

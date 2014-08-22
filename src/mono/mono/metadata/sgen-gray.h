@@ -69,6 +69,7 @@ typedef enum {
 typedef struct _GrayQueueEntry GrayQueueEntry;
 struct _GrayQueueEntry {
 	char *obj;
+	mword desc;
 };
 
 /*
@@ -120,7 +121,7 @@ struct _SgenSectionGrayQueue {
 #define GRAY_LAST_CURSOR_POSITION(s) ((s)->entries + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)
 #define GRAY_FIRST_CURSOR_POSITION(s) ((s)->entries)
 
-void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
+void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc) MONO_INTERNAL;
 GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;

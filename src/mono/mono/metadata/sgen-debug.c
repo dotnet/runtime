@@ -174,7 +174,8 @@ static gboolean missing_remsets;
 static void
 check_consistency_callback (char *start, size_t size, void *dummy)
 {
-	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
+	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (start);
+	mword desc = sgen_vtable_get_descriptor (vt);
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
 
 #include "sgen-scan-object.h"
@@ -230,7 +231,8 @@ static void
 check_mod_union_callback (char *start, size_t size, void *dummy)
 {
 	gboolean in_los = (gboolean) (size_t) dummy;
-	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
+	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (start);
+	mword desc = sgen_vtable_get_descriptor (vt);
 	guint8 *cards;
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
 
@@ -269,6 +271,8 @@ sgen_check_mod_union_consistency (void)
 static void
 check_major_refs_callback (char *start, size_t size, void *dummy)
 {
+	mword desc = sgen_obj_get_descriptor (start);
+
 #include "sgen-scan-object.h"
 }
 
@@ -296,8 +300,12 @@ sgen_check_major_refs (void)
 void
 check_object (char *start)
 {
+	mword desc;
+
 	if (!start)
 		return;
+
+	desc = sgen_obj_get_descriptor (start);
 
 #include "sgen-scan-object.h"
 }
@@ -425,6 +433,7 @@ static void
 verify_object_pointers_callback (char *start, size_t size, void *data)
 {
 	gboolean allow_missing_pinned = (gboolean) (size_t) data;
+	mword desc = sgen_obj_get_descriptor (start);
 
 #include "sgen-scan-object.h"
 }
@@ -548,6 +557,7 @@ static void
 check_marked_callback (char *start, size_t size, void *dummy)
 {
 	gboolean is_los = (gboolean) (size_t) dummy;
+	mword desc;
 
 	if (is_los) {
 		if (!sgen_los_object_is_pinned (start))
@@ -556,6 +566,8 @@ check_marked_callback (char *start, size_t size, void *dummy)
 		if (!major_collector.is_object_live (start))
 			return;
 	}
+
+	desc = sgen_obj_get_descriptor (start);
 
 #include "sgen-scan-object.h"
 }
@@ -608,6 +620,7 @@ scan_object_for_specific_ref (char *start, MonoObject *key)
 		start = forwarded;
 
 	if (scan_object_for_specific_ref_precise) {
+		mword desc = sgen_obj_get_descriptor (start);
 		#include "sgen-scan-object.h"
 	} else {
 		mword *words = (mword*)start;
@@ -896,7 +909,9 @@ check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
 static void
 scan_object_for_xdomain_refs (char *start, mword size, void *data)
 {
-	MonoDomain *domain = ((MonoObject*)start)->vtable->domain;
+	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (start);
+	MonoDomain *domain = vt->domain;
+	mword desc = sgen_vtable_get_descriptor (vt);
 
 	#include "sgen-scan-object.h"
 }

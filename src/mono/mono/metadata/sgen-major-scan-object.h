@@ -56,7 +56,7 @@ extern long long stat_scan_object_called_major;
 	} while (0)
 
 static void
-CONCURRENT_NAME (major_scan_object) (char *start, SgenGrayQueue *queue)
+CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *queue)
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 

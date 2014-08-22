@@ -521,10 +521,12 @@ dfs1 (HashEntry *obj_entry)
 
 		obj_entry = dyn_array_ptr_pop (&dfs_stack);
 		if (obj_entry) {
+			mword desc;
 			src = dyn_array_ptr_pop (&dfs_stack);
 
 			obj = obj_entry->obj;
 			start = (char*)obj;
+			desc = sgen_obj_get_descriptor (start);
 
 			if (src) {
 				//g_print ("link %s -> %s\n", sgen_safe_name (src->obj), sgen_safe_name (obj));

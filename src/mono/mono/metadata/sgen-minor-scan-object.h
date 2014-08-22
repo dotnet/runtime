@@ -45,7 +45,7 @@ extern long long stat_scan_object_called_nursery;
 	} while (0)
 
 static void
-SERIAL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
+SERIAL_SCAN_OBJECT (char *start, mword desc, SgenGrayQueue *queue)
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 

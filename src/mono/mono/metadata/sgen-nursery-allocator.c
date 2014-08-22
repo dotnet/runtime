@@ -782,7 +782,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 
 		if (addr0 < addr1) {
 			if (unpin_queue)
-				GRAY_OBJECT_ENQUEUE (unpin_queue, addr0);
+				GRAY_OBJECT_ENQUEUE (unpin_queue, addr0, sgen_obj_get_descriptor_safe (addr0));
 			else
 				SGEN_UNPIN_OBJECT (addr0);
 			sgen_set_nursery_scan_start (addr0);

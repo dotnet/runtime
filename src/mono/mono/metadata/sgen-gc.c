@@ -866,27 +866,28 @@ gboolean
 sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 {
 	char *obj;
+	mword desc;
 	ScanObjectFunc scan_func = ctx.scan_func;
 	GrayQueue *queue = ctx.queue;
 
 	if (max_objs == -1) {
 		for (;;) {
-			GRAY_OBJECT_DEQUEUE (queue, &obj);
+			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
 				return TRUE;
 			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
-			scan_func (obj, queue);
+			scan_func (obj, desc, queue);
 		}
 	} else {
 		int i;
 
 		do {
 			for (i = 0; i != max_objs; ++i) {
-				GRAY_OBJECT_DEQUEUE (queue, &obj);
+				GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 				if (!obj)
 					return TRUE;
 				SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
-				scan_func (obj, queue);
+				scan_func (obj, desc, queue);
 			}
 		} while (max_objs < 0);
 		return FALSE;
@@ -923,6 +924,7 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 	while (start < end) {
 		void *obj_to_pin = NULL;
 		size_t obj_to_pin_size = 0;
+		mword desc;
 
 		addr = *start;
 
@@ -1017,8 +1019,9 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 		/*
 		 * Finally - pin the object!
 		 */
+		desc = sgen_obj_get_descriptor_safe (obj_to_pin);
 		if (scan_func) {
-			scan_func (obj_to_pin, queue);
+			scan_func (obj_to_pin, desc, queue);
 		} else {
 			SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
 					obj_to_pin, *(void**)obj_to_pin, safe_name (obj_to_pin), count);
@@ -1037,7 +1040,7 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 #endif
 
 			pin_object (obj_to_pin);
-			GRAY_OBJECT_ENQUEUE (queue, obj_to_pin);
+			GRAY_OBJECT_ENQUEUE (queue, obj_to_pin, desc);
 			if (G_UNLIKELY (do_pin_stats))
 				sgen_pin_stats_register_object (obj_to_pin, obj_to_pin_size);
 			definitely_pinned [count] = obj_to_pin;
@@ -1086,7 +1089,7 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	if (G_UNLIKELY (do_pin_stats))
 		sgen_pin_stats_register_object (object, safe_object_get_size (object));
 
-	GRAY_OBJECT_ENQUEUE (queue, object);
+	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor (object));
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
 #ifdef ENABLE_DTRACE
@@ -1261,7 +1264,8 @@ unpin_objects_from_queue (SgenGrayQueue *queue)
 {
 	for (;;) {
 		char *addr;
-		GRAY_OBJECT_DEQUEUE (queue, &addr);
+		mword desc;
+		GRAY_OBJECT_DEQUEUE (queue, &addr, &desc);
 		if (!addr)
 			break;
 		g_assert (SGEN_OBJECT_IS_PINNED (addr));
@@ -2460,7 +2464,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 static void
 scan_nursery_objects_callback (char *obj, size_t size, ScanCopyContext *ctx)
 {
-	ctx->scan_func (obj, ctx->queue);
+	ctx->scan_func (obj, sgen_obj_get_descriptor (obj), ctx->queue);
 }
 
 static void
@@ -2604,7 +2608,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 			}
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
-				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
+				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
 			if (G_UNLIKELY (do_pin_stats))
 				sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
@@ -4260,6 +4264,8 @@ typedef struct {
 static void
 collect_references (HeapWalkInfo *hwi, char *start, size_t size)
 {
+	mword desc = sgen_obj_get_descriptor (start);
+
 #include "sgen-scan-object.h"
 }
 

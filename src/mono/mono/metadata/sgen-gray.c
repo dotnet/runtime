@@ -88,9 +88,9 @@ sgen_gray_object_free_queue_section (GrayQueueSection *section)
  */
 
 void
-sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj)
+sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc)
 {
-	GrayQueueEntry entry = { obj };
+	GrayQueueEntry entry = { obj, desc };
 
 	HEAVY_STAT (gc_stats.gray_queue_enqueue_slow_path ++);
 

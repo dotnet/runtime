@@ -828,30 +828,30 @@ major_dump_heap (FILE *heap_dump_file)
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
-#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,block,queue) do {	\
+#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) { \
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
+				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
-#define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
+#define MS_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {		\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
+				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
-#define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
+#define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {	\
 		int __word, __bit;					\
 		gboolean __was_marked;					\
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
@@ -859,7 +859,7 @@ major_dump_heap (FILE *heap_dump_file)
 		MS_PAR_SET_MARK_BIT (__was_marked, (block), __word, __bit); \
 		if (!__was_marked) {					\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
+				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
@@ -877,7 +877,7 @@ pin_major_object (char *obj, SgenGrayQueue *queue)
 
 	block = MS_BLOCK_FOR_OBJ (obj);
 	block->has_pinned = TRUE;
-	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+	MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 }
 
 #include "sgen-major-copy-object.h"
@@ -895,7 +895,7 @@ major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queu
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE) {
 			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-			MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+			MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 		} else {
 			if (sgen_los_object_is_pinned (obj))
 				return;
@@ -909,7 +909,7 @@ major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queu
 
 			sgen_los_pin_object (obj);
 			if (SGEN_OBJECT_HAS_REFERENCES (obj))
-				GRAY_OBJECT_ENQUEUE (queue, obj);
+				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
 			INC_NUM_MAJOR_OBJECTS_MARKED ();
 		}
 	}
@@ -953,7 +953,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 				block = MS_BLOCK_FOR_OBJ (obj);
 				size_index = block->obj_size_index;
 				evacuate_block_obj_sizes [size_index] = FALSE;
-				MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+				MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 			}
 			return;
 		}
@@ -1013,7 +1013,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 				HEAVY_STAT (++stat_major_objects_evacuated);
 				goto do_copy_object;
 			} else {
-				MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+				MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 			}
 		} else {
 			if (sgen_los_object_is_pinned (obj))
@@ -1029,7 +1029,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 
 			sgen_los_pin_object (obj);
 			if (SGEN_OBJECT_HAS_REFERENCES (obj))
-				GRAY_OBJECT_ENQUEUE (queue, obj);
+				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
 		}
 	}
 }
@@ -1081,10 +1081,12 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 
 	for (i = 0; i < block->pin_queue_num_entries; ++i) {
 		int index = MS_BLOCK_OBJ_INDEX (block->pin_queue_start [i], block);
+		char *obj;
 		SGEN_ASSERT (9, index >= 0 && index < MS_BLOCK_FREE / block->obj_size, "invalid object %p index %d max-index %d", block->pin_queue_start [i], index, MS_BLOCK_FREE / block->obj_size);
 		if (index == last_index)
 			continue;
-		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (MS_BLOCK_OBJ (block, index), block, queue);
+		obj = MS_BLOCK_OBJ (block, index);
+		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (obj, sgen_obj_get_descriptor (obj), block, queue);
 		last_index = index;
 	}
 }
@@ -1927,7 +1929,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 					}
 
 					HEAVY_STAT (++scanned_objects);
-					scan_func (obj, queue);
+					scan_func (obj, sgen_obj_get_descriptor (obj), queue);
 				next_small:
 					obj += block_obj_size;
 				}

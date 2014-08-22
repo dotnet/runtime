@@ -652,6 +652,7 @@ dfs1 (HashEntry *obj_entry)
 		if (obj_entry) {
 			/* obj_entry needs to be expanded */
 			src = dyn_array_ptr_pop (&dfs_stack);
+
 			if (src)
 				g_assert (!src->v.dfs1.forwarded_to);
 
@@ -664,6 +665,7 @@ dfs1 (HashEntry *obj_entry)
 
 			if (!obj_entry->v.dfs1.is_visited) {
 				int num_links = 0;
+				mword desc = sgen_obj_get_descriptor (start);
 
 				obj_entry->v.dfs1.is_visited = 1;
 
