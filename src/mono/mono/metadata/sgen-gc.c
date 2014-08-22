@@ -1736,6 +1736,8 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	}
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
+
+	sgen_gray_object_queue_trim_free_list (queue);
 }
 
 void

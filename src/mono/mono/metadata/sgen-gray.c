@@ -196,21 +196,10 @@ sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *sectio
 }
 
 void
-sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func)
+sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section, *next;
-	int i;
-
-	g_assert (sgen_gray_object_queue_is_empty (queue));
-
-	queue->alloc_prepare_func = NULL;
-	queue->alloc_prepare_data = NULL;
-#ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
-	queue->enqueue_check_func = enqueue_check_func;
-#endif
-
-	/* Free the extra sections allocated during the last collection */
-	i = 0;
+	int i = 0;
 	for (section = queue->free_list; section && i < GRAY_QUEUE_LENGTH_LIMIT - 1; section = section->next) {
 		STATE_ASSERT (section, GRAY_QUEUE_SECTION_STATE_FREE_LIST);
 		i ++;
@@ -223,6 +212,21 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enq
 		STATE_TRANSITION (next, GRAY_QUEUE_SECTION_STATE_FREE_LIST, GRAY_QUEUE_SECTION_STATE_FLOATING);
 		sgen_gray_object_free_queue_section (next);
 	}
+}
+
+void
+sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func)
+{
+	g_assert (sgen_gray_object_queue_is_empty (queue));
+
+	queue->alloc_prepare_func = NULL;
+	queue->alloc_prepare_data = NULL;
+#ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
+	queue->enqueue_check_func = enqueue_check_func;
+#endif
+
+	/* Free the extra sections allocated during the last collection */
+	sgen_gray_object_queue_trim_free_list (queue);
 }
 
 static void
