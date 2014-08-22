@@ -861,37 +861,29 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
  *   Scan objects in the gray stack until the stack is empty. This should be called
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
+ *
+ * max_objs is the maximum number of objects to scan, or -1 to scan until the stack is
+ * empty.
  */
 gboolean
 sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 {
-	char *obj;
-	mword desc;
 	ScanObjectFunc scan_func = ctx.scan_func;
 	GrayQueue *queue = ctx.queue;
 
-	if (max_objs == -1) {
-		for (;;) {
+	do {
+		int i;
+		for (i = 0; i != max_objs; ++i) {
+			char *obj;
+			mword desc;
 			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
 				return TRUE;
 			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
 			scan_func (obj, desc, queue);
 		}
-	} else {
-		int i;
-
-		do {
-			for (i = 0; i != max_objs; ++i) {
-				GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
-				if (!obj)
-					return TRUE;
-				SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
-				scan_func (obj, desc, queue);
-			}
-		} while (max_objs < 0);
-		return FALSE;
-	}
+	} while (max_objs < 0);
+	return FALSE;
 }
 
 /*
