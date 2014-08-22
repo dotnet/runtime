@@ -357,9 +357,11 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
 		sgen_gray_object_enqueue (queue, obj);
 	} else {
+		GrayQueueEntry entry = { obj };
+
 		HEAVY_STAT (gc_stats.gray_queue_enqueue_fast_path ++);
 
-		*++queue->cursor = obj;
+		*++queue->cursor = entry;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 		binary_protocol_gray_enqueue (queue, queue->cursor, obj);
 #endif
@@ -372,8 +374,10 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj)
 static inline MONO_ALWAYS_INLINE void
 GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 {
+	GrayQueueEntry entry;
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-	*obj = sgen_gray_object_enqueue (queue);
+	entry = sgen_gray_object_enqueue (queue);
+	*obj = entry.obj;
 #else
 	if (!queue->first) {
 		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
@@ -383,11 +387,13 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 		binary_protocol_gray_dequeue (queue, queue->cursor, *obj);
 #endif
 	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
-		*obj = sgen_gray_object_dequeue (queue);
+		entry = sgen_gray_object_dequeue (queue);
+		*obj = entry.obj;
 	} else {
 		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
 
-		*obj = *queue->cursor--;
+		entry = *queue->cursor--;
+		*obj = entry.obj;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
 #endif

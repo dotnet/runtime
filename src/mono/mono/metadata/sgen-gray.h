@@ -48,7 +48,14 @@
  * array and another 1 for the actual value in the array.
  */
 
-#define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
+/* SGEN_GRAY_QUEUE_HEADER_SIZE is number of machine words */
+#ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
+#define SGEN_GRAY_QUEUE_HEADER_SIZE	4
+#else
+#define SGEN_GRAY_QUEUE_HEADER_SIZE	2
+#endif
+
+#define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - SGEN_GRAY_QUEUE_HEADER_SIZE)
 
 #ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
 typedef enum {
@@ -58,6 +65,11 @@ typedef enum {
  	GRAY_QUEUE_SECTION_STATE_FREED
 } GrayQueueSectionState;
 #endif
+
+typedef struct _GrayQueueEntry GrayQueueEntry;
+struct _GrayQueueEntry {
+	char *obj;
+};
 
 /*
  * This is a stack now instead of a queue, so the most recently added items are removed
@@ -75,7 +87,7 @@ struct _GrayQueueSection {
 #endif
 	int size;
 	GrayQueueSection *next;
-	char *objects [SGEN_GRAY_QUEUE_SECTION_SIZE];
+	GrayQueueEntry entries [SGEN_GRAY_QUEUE_SECTION_SIZE];
 };
 
 typedef struct _SgenGrayQueue SgenGrayQueue;
@@ -84,7 +96,7 @@ typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 typedef void (*GrayQueueEnqueueCheckFunc) (char*);
 
 struct _SgenGrayQueue {
-	char **cursor;
+	GrayQueueEntry *cursor;
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
 	GrayQueueAllocPrepareFunc alloc_prepare_func;
@@ -105,11 +117,11 @@ struct _SgenSectionGrayQueue {
 #endif
 };
 
-#define GRAY_LAST_CURSOR_POSITION(s) ((char**)(s)->objects + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)
-#define GRAY_FIRST_CURSOR_POSITION(s) ((char**)(s)->objects)
+#define GRAY_LAST_CURSOR_POSITION(s) ((s)->entries + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)
+#define GRAY_FIRST_CURSOR_POSITION(s) ((s)->entries)
 
 void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj) MONO_INTERNAL;
-char* sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
+GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
 void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
