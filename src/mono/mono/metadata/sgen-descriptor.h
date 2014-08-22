@@ -258,15 +258,16 @@ sgen_gc_descr_has_references (mword desc)
 	} while (0)
 
 /* this one is untested */
-#define OBJ_COMPLEX_ARR_FOREACH_PTR(vt,obj)	do {	\
+#define OBJ_COMPLEX_ARR_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
-		gsize *mbitmap_data = sgen_get_complex_descriptor ((vt)->desc); \
+		GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj); \
+		gsize *mbitmap_data = sgen_get_complex_descriptor ((desc)); \
 		gsize mbwords = (*mbitmap_data++) - 1;	\
 		gsize el_size = mono_array_element_size (vt->klass);	\
 		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
 		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 		if (0)							\
-                        g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, vt->klass->name_space, vt->klass->name); \
+                        g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (desc), (vt)->klass->name_space, (vt)->klass->name); \
 		while (e_start < e_end) {	\
 			void **_objptr = (void**)e_start;	\
 			gsize *bitmap_data = mbitmap_data;	\

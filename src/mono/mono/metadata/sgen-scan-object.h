@@ -97,7 +97,7 @@
 #ifndef SCAN_OBJECT_NOVTABLE
 	case DESC_TYPE_COMPLEX_ARR:
 		/* this is an array of complex structs */
-#define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start)
+#define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
