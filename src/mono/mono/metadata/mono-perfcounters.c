@@ -1209,7 +1209,7 @@ custom_get_impl (SharedCategory *cat, MonoString* counter, MonoString* instance,
 	if (!scounter)
 		return NULL;
 	*type = simple_type_to_type [scounter->type];
-	inst = custom_get_instance (cat, scounter, instance);
+	inst = custom_get_instance (cat, scounter, counter);
 	if (!inst)
 		return NULL;
 	size = sizeof (SharedInstance) + strlen (inst->instance_name);
