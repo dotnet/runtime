@@ -503,10 +503,6 @@ ICALL(ASSEM_15, "InternalGetType", ves_icall_System_Reflection_Assembly_Internal
 ICALL(ASSEM_16, "InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion)
 ICALL(ASSEM_17, "LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom)
 ICALL(ASSEM_18, "LoadPermissions", ves_icall_System_Reflection_Assembly_LoadPermissions)
-	/*
-	 * Private icalls for the Mono Debugger
-	 */
-ICALL(ASSEM_19, "MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodToken)
 
 	/* normal icalls again */
 ICALL(ASSEM_20, "get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint)

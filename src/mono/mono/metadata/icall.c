@@ -7412,12 +7412,6 @@ ves_icall_System_Char_GetDataTablePointers (int category_data_version,
 	*to_upper_data_high = ToUpperDataHigh;
 }
 
-ICALL_EXPORT gint32
-ves_icall_MonoDebugger_GetMethodToken (MonoReflectionMethod *method)
-{
-	return method->method->token;
-}
-
 /*
  * We return NULL for no modifiers so the corlib code can return Type.EmptyTypes
  * and avoid useless allocations.
