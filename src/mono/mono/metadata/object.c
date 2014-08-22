@@ -5768,6 +5768,37 @@ mono_string_from_utf16 (gunichar2 *data)
 	return mono_string_new_utf16 (domain, data, len);
 }
 
+/**
+ * mono_string_from_utf32:
+ * @data: the UTF32 string (LPWSTR) to convert
+ *
+ * Converts a UTF32 (UCS-4)to a MonoString.
+ *
+ * Returns: a MonoString.
+ */
+MonoString *
+mono_string_from_utf32 (mono_unichar4 *data)
+{
+	MonoString* result = NULL;
+	mono_unichar2 *utf16_output = NULL;
+	GError *error = NULL;
+	glong items_written;
+	int len = 0;
+
+	if (!data)
+		return NULL;
+
+	while (data [len]) len++;
+
+	utf16_output = g_ucs4_to_utf16 (data, len, NULL, &items_written, &error);
+
+	if (error)
+		g_error_free (error);
+
+	result = mono_string_from_utf16 (utf16_output);
+	g_free (utf16_output);
+	return result;
+}
 
 static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error)

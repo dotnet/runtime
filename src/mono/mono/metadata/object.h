@@ -145,6 +145,9 @@ mono_string_to_utf32	    (MonoString *string_obj);
 MONO_API MonoString *
 mono_string_from_utf16	    (mono_unichar2 *data);
 
+MONO_API MonoString *
+mono_string_from_utf32	    (mono_unichar4 *data);
+
 MONO_API mono_bool
 mono_string_equal           (MonoString *s1, MonoString *s2);
 
