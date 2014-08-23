@@ -77,6 +77,12 @@ enum {
 	KQUEUE_BACKEND
 };
 
+enum {
+	MONITOR_STATE_AWAKE,
+	MONITOR_STATE_FALLING_ASLEEP,
+	MONITOR_STATE_SLEEPING
+};
+
 typedef struct {
 	mono_mutex_t io_lock; /* access to sock_to_state */
 	int inited; // 0 -> not initialized , 1->initializing, 2->initialized, 3->cleaned up
@@ -155,6 +161,10 @@ static MonoClass *process_async_call_klass;
 static GPtrArray *wsqs;
 mono_mutex_t wsqs_lock;
 static gboolean suspended;
+
+static volatile gint32 monitor_njobs = 0;
+static volatile gint32 monitor_state;
+static MonoSemType monitor_sem;
 
 /* Hooks */
 static MonoThreadPoolFunc tp_start_func;
@@ -656,6 +666,9 @@ mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares)
 	if (!tp->is_io)
 		InterlockedIncrement (&tp->nexecuted);
 
+	if (InterlockedDecrement (&monitor_njobs) == 0)
+		monitor_state = MONITOR_STATE_FALLING_ASLEEP;
+
 	return exc;
 }
 
@@ -759,6 +772,9 @@ signal_handler (int signo)
 
 #define SAMPLES_PERIOD 500
 #define HISTORY_SIZE 10
+/* number of iteration without any jobs
+   in the queue before going to sleep */
+#define NUM_WAITING_ITERATIONS 10
 
 typedef struct {
 	gint32 nexecuted;
@@ -842,6 +858,7 @@ monitor_thread (gpointer unused)
 	int i;
 
 	guint32 ms;
+	gint8 num_waiting_iterations = 0;
 
 	gint16 history_size = 0, current = -1;
 	SamplesHistory *history = malloc (sizeof (SamplesHistory) * HISTORY_SIZE);
@@ -870,6 +887,25 @@ monitor_thread (gpointer unused)
 
 		if (suspended)
 			continue;
+
+		switch (monitor_state) {
+		case MONITOR_STATE_AWAKE:
+			num_waiting_iterations = 0;
+			break;
+		case MONITOR_STATE_FALLING_ASLEEP:
+			if (++num_waiting_iterations == NUM_WAITING_ITERATIONS) {
+				if (monitor_state == MONITOR_STATE_FALLING_ASLEEP && InterlockedCompareExchange (&monitor_state, MONITOR_STATE_SLEEPING, MONITOR_STATE_FALLING_ASLEEP) == MONITOR_STATE_FALLING_ASLEEP) {
+					MONO_SEM_WAIT (&monitor_sem);
+
+					num_waiting_iterations = 0;
+					current = -1;
+					history_size = 0;
+				}
+			}
+			break;
+		case MONITOR_STATE_SLEEPING:
+			g_assert_not_reached ();
+		}
 
 		for (i = 0; i < 2; i++) {
 			ThreadPool *tp;
@@ -953,6 +989,10 @@ mono_thread_pool_init (void)
 	signal (SIGALRM, signal_handler);
 	alarm (2);
 #endif
+
+	MONO_SEM_INIT (&monitor_sem, 0);
+	monitor_state = MONITOR_STATE_AWAKE;
+	monitor_njobs = 0;
 }
 
 static MonoAsyncResult *
@@ -1089,6 +1129,8 @@ mono_thread_pool_cleanup (void)
 		mono_mutex_unlock (&wsqs_lock);
 		MONO_SEM_DESTROY (&async_tp.new_job);
 	}
+
+	MONO_SEM_DESTROY (&monitor_sem);
 }
 
 static gboolean
@@ -1158,6 +1200,14 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 			mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE, SMALL_STACK);
 		}
 	}
+
+	InterlockedAdd (&monitor_njobs, njobs);
+
+	if (monitor_state == MONITOR_STATE_SLEEPING && InterlockedCompareExchange (&monitor_state, MONITOR_STATE_AWAKE, MONITOR_STATE_SLEEPING) == MONITOR_STATE_SLEEPING)
+		MONO_SEM_POST (&monitor_sem);
+
+	if (monitor_state == MONITOR_STATE_FALLING_ASLEEP)
+		InterlockedCompareExchange (&monitor_state, MONITOR_STATE_AWAKE, MONITOR_STATE_FALLING_ASLEEP);
 
 	for (i = 0; i < njobs; i++) {
 		ar = jobs [i];
