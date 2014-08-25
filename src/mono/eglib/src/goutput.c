@@ -135,6 +135,87 @@ g_assertion_message (const gchar *format, ...)
 }
 
 
+#if PLATFORM_ANDROID
+#include <android/log.h>
+
+static android_LogPriority
+to_android_priority (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK)
+	{
+		case G_LOG_LEVEL_ERROR:     return ANDROID_LOG_FATAL;
+		case G_LOG_LEVEL_CRITICAL:  return ANDROID_LOG_ERROR;
+		case G_LOG_LEVEL_WARNING:   return ANDROID_LOG_WARN;
+		case G_LOG_LEVEL_MESSAGE:   return ANDROID_LOG_INFO;
+		case G_LOG_LEVEL_INFO:      return ANDROID_LOG_DEBUG;
+		case G_LOG_LEVEL_DEBUG:     return ANDROID_LOG_VERBOSE;
+	}
+	return ANDROID_LOG_UNKNOWN;
+}
+
+void
+g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
+{
+	__android_log_vprint (to_android_priority (log_level), log_domain, "%s", args);
+	if (log_level & fatal)
+		abort ();
+}
+
+static void
+default_stdout_handler (const gchar *message)
+{
+	/* TODO: provide a proper app name */
+	__android_log_vprint (ANDROID_LOG_ERROR, "mono", "%s", message);
+}
+
+static void
+default_stderr_handler (const gchar *message)
+{
+	/* TODO: provide a proper app name */
+	__android_log_vprint (ANDROID_LOG_ERROR, "mono", "%s", message);
+}
+
+
+#elif MONOTOUCH
+#include <asl.h>
+
+static int
+to_asl_priority (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK)
+	{
+		case G_LOG_LEVEL_ERROR:     return ASL_LEVEL_CRIT;
+		case G_LOG_LEVEL_CRITICAL:  return ASL_LEVEL_ERR;
+		case G_LOG_LEVEL_WARNING:   return ASL_LEVEL_WARNING;
+		case G_LOG_LEVEL_MESSAGE:   return ASL_LEVEL_NOTICE;
+		case G_LOG_LEVEL_INFO:      return ASL_LEVEL_INFO;
+		case G_LOG_LEVEL_DEBUG:     return ASL_LEVEL_DEBUG;
+	}
+	return ASL_LEVEL_ERR;
+}
+
+void
+g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
+{
+	asl_vlog (NULL, NULL, to_asl_priority (log_level), "%s", message);
+	if (log_level & fatal)
+		abort ();
+}
+
+static void
+default_stdout_handler (const gchar *message)
+{
+	asl_vlog (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
+}
+
+static void
+default_stderr_handler (const gchar *message)
+{
+	asl_vlog (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
+}
+
+#else
+
 void
 g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
 {
@@ -164,6 +245,7 @@ default_stderr_handler (const gchar *string)
 	fprintf (stderr, "%s", string);
 }
 
+#endif
 
 GLogFunc
 g_log_set_default_handler (GLogFunc log_func, gpointer user_data)
