@@ -274,6 +274,9 @@
     <PreBuildEvent>
       <Command>winsetup.bat</Command>
     </PreBuildEvent>
+    <MASM>
+      <PreprocessorDefinitions>X64</PreprocessorDefinitions>
+    </MASM>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
