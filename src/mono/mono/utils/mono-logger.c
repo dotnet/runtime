@@ -254,3 +254,74 @@ mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
 {
 	return (level <= current_level && mask & current_mask);
 }
+
+
+static MonoLogCallback log_callback;
+static MonoPrintfCallback printf_callback;
+
+static const char*
+log_level_get_name (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK) {
+	case G_LOG_LEVEL_ERROR: return "error";
+	case G_LOG_LEVEL_CRITICAL: return "critical";
+	case G_LOG_LEVEL_WARNING: return "warning";
+	case G_LOG_LEVEL_MESSAGE: return "message";
+	case G_LOG_LEVEL_INFO: return "info";
+	case G_LOG_LEVEL_DEBUG: return "debug";
+	default: return "unknown";
+	}
+}
+
+static void
+log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+{
+	log_callback (log_domain, log_level_get_name (log_level), message, log_level & G_LOG_LEVEL_ERROR, user_data);
+}
+
+static void
+stdout_adapter (const gchar *message)
+{
+	printf_callback (message, TRUE);
+}
+
+static void
+stderr_adapter (const gchar *message)
+{
+	printf_callback (message, FALSE);
+}
+
+/**
+ * mono_trace_set_log_handler:
+ *
+ *  @callback The callback that will replace the default logging handler
+ *  @user_data Argument passed to @callback
+ *
+ * The log handler replaces the default runtime logger. All logging requests with be routed to it.
+ * If the fatal argument in the callback is true, the callback must abort the current process. The runtime expects that
+ * execution will not resume after a fatal error.
+ */
+void
+mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
+{
+	log_callback = callback;
+	g_log_set_default_handler (log_adapter, user_data);
+}
+
+
+/**
+ * mono_trace_set_printf_handler:
+ *
+ * @callback The callback that will replace the default runtime behavior.
+ *
+ * The printf handler replaces the default runtime output handler. This is used by free form output done by the runtime.
+ * If is_stdout is false, the callback is expected to flush the stream after writing to it.
+ *
+ */
+MONO_API void
+mono_trace_set_printf_handler (MonoPrintfCallback callback)
+{
+	printf_callback = callback;
+	g_set_print_handler (stdout_adapter);
+	g_set_printerr_handler (stderr_adapter);
+}
