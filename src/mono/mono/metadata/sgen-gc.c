@@ -347,6 +347,9 @@ static long long time_major_los_sweep = 0;
 static long long time_major_sweep = 0;
 static long long time_major_fragment_creation = 0;
 
+static SGEN_TV_DECLARE (time_major_conc_collection_start);
+static SGEN_TV_DECLARE (time_major_conc_collection_end);
+
 int gc_debug_level = 0;
 FILE* gc_debug_file;
 
@@ -3036,6 +3039,7 @@ major_start_concurrent_collection (const char *reason)
 		return;
 
 	TV_GETTIME (time_start);
+	SGEN_TV_GETTIME (time_major_conc_collection_start);
 
 	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
 	g_assert (num_objects_marked == 0);
@@ -3094,6 +3098,9 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	 * some remsets.
 	 */
 	wait_for_workers_to_finish ();
+
+	SGEN_TV_GETTIME (time_major_conc_collection_end);
+	gc_stats.major_gc_time_concurrent += SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end);
 
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();

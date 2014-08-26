@@ -21,6 +21,7 @@ typedef struct {
 	int major_gc_count;
 	long long minor_gc_time;
 	long long major_gc_time;
+	long long major_gc_time_concurrent;
 #ifdef HEAVY_STATISTICS
 	unsigned long long gray_queue_section_alloc;
 	unsigned long long gray_queue_section_free;
