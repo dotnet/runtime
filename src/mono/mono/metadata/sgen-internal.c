@@ -27,11 +27,19 @@
 #include "metadata/sgen-memory-governor.h"
 
 /* keep each size a multiple of ALLOC_ALIGN */
+#if SIZEOF_VOID_P == 4
 static const int allocator_sizes [] = {
 	   8,   16,   24,   32,   40,   48,   64,   80,
-	  96,  128,  160,  192,  224,  248,  320,  384,
-	 448,  528,  584,  680,  816, 1088, 1360, 2040,
-	2336, 2728, 3272, 4088, 5456, 8184 };
+	  96,  128,  160,  192,  224,  248,  296,  320,
+	 384,  448,  504,  528,  584,  680,  816, 1088,
+	1360, 2040, 2336, 2728, 3272, 4088, 5456, 8184 };
+#else
+static const int allocator_sizes [] = {
+	   8,   16,   24,   32,   40,   48,   64,   80,
+	  96,  128,  160,  192,  224,  248,  320,  328,
+	 384,  448,  528,  584,  680,  816, 1016, 1088,
+	1360, 2040, 2336, 2728, 3272, 4088, 5456, 8184 };
+#endif
 
 #define NUM_ALLOCATORS	(sizeof (allocator_sizes) / sizeof (int))
 
