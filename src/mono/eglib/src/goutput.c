@@ -156,7 +156,7 @@ to_android_priority (GLogLevelFlags log_level)
 void
 g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
 {
-	__android_log_vprint (to_android_priority (log_level), log_domain, "%s", args);
+	__android_log_write (to_android_priority (log_level), log_domain, message);
 	if (log_level & fatal)
 		abort ();
 }
@@ -165,14 +165,14 @@ static void
 default_stdout_handler (const gchar *message)
 {
 	/* TODO: provide a proper app name */
-	__android_log_vprint (ANDROID_LOG_ERROR, "mono", "%s", message);
+	__android_log_write (ANDROID_LOG_ERROR, "mono", message);
 }
 
 static void
 default_stderr_handler (const gchar *message)
 {
 	/* TODO: provide a proper app name */
-	__android_log_vprint (ANDROID_LOG_ERROR, "mono", "%s", message);
+	__android_log_write (ANDROID_LOG_ERROR, "mono", message);
 }
 
 
