@@ -600,7 +600,23 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   TargetOptions opts;
   opts.JITExceptionHandling = 1;
 
-  EngineBuilder b (unwrap (MP));
+  std::unique_ptr<Module> Owner(unwrap(MP));
+
+#if LLVM_API_VERSION >= 2
+  StringRef cpu_name = sys::getHostCPUName ();
+
+  // EngineBuilder no longer has a copy assignment operator (?)
+  EngineBuilder b (std::move(Owner));
+  EngineBuilder &eb = b;
+#ifdef TARGET_AMD64
+  ExecutionEngine *EE = b.setJITMemoryManager (mono_mm).setTargetOptions (opts).setAllocateGVsWithCode (true).setMCPU (cpu_name).setCodeModel (CodeModel::Large).create ();
+#else
+  ExecutionEngine *EE = b.setJITMemoryManager (mono_mm).setTargetOptions (opts).setAllocateGVsWithCode (true).setMCPU (cpu_name).create ();
+#endif
+
+#else
+
+  EngineBuilder b (std::move(Owner));
   EngineBuilder &eb = b;
   eb = eb.setJITMemoryManager (mono_mm).setTargetOptions (opts).setAllocateGVsWithCode (true);
 #if LLVM_API_VERSION >= 1
@@ -612,6 +628,8 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 #endif
 
   ExecutionEngine *EE = eb.create ();
+#endif
+
   g_assert (EE);
   mono_ee->EE = EE;
 
