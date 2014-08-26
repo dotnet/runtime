@@ -30,6 +30,7 @@
     <ClCompile Include="..\mono\utils\mach-support-x86.c" />
     <ClCompile Include="..\mono\utils\mach-support.c" />
     <ClCompile Include="..\mono\utils\mono-codeman.c" />
+    <ClCompile Include="..\mono\utils\mono-conc-hashtable.c" />
     <ClCompile Include="..\mono\utils\mono-context.c" />
     <ClCompile Include="..\mono\utils\mono-counters.c" />
     <ClCompile Include="..\mono\utils\mono-dl.c" />
@@ -85,6 +86,7 @@
     <ClInclude Include="..\mono\utils\memcheck.h" />
     <ClInclude Include="..\mono\utils\mono-codeman.h" />
     <ClInclude Include="..\mono\utils\mono-compiler.h" />
+    <ClInclude Include="..\mono\utils\mono-conc-hashtable.h" />
     <ClInclude Include="..\mono\utils\mono-context.h" />
     <ClInclude Include="..\mono\utils\mono-counters.h" />
     <ClInclude Include="..\mono\utils\mono-digest.h" />

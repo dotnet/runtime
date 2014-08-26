@@ -318,7 +318,7 @@ mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
  * If is_stdout is false, the callback is expected to flush the stream after writing to it.
  *
  */
-MONO_API void
+void
 mono_trace_set_printf_handler (MonoPrintfCallback callback)
 {
 	printf_callback = callback;
