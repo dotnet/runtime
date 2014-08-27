@@ -912,7 +912,7 @@ mono_mem_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample 
 	sample->counterType = predef_counters [predef_categories [CATEGORY_MONO_MEM].first_counter + id].type;
 	switch (id) {
 	case COUNTER_MEM_NUM_OBJECTS:
-		sample->rawValue = mono_stats.new_object_count;
+		sample->rawValue = 0;
 		return TRUE;
 	case COUNTER_MEM_PHYS_TOTAL:
 		sample->rawValue = mono_determine_physical_ram_size ();;

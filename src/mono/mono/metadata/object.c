@@ -4368,7 +4368,6 @@ static inline void *
 mono_object_allocate (size_t size, MonoVTable *vtable)
 {
 	MonoObject *o;
-	mono_stats.new_object_count++;
 	ALLOC_OBJECT (o, vtable, size);
 
 	return o;
@@ -4385,7 +4384,6 @@ static inline void *
 mono_object_allocate_ptrfree (size_t size, MonoVTable *vtable)
 {
 	MonoObject *o;
-	mono_stats.new_object_count++;
 	ALLOC_PTRFREE (o, vtable, size);
 	return o;
 }
@@ -4395,7 +4393,6 @@ mono_object_allocate_spec (size_t size, MonoVTable *vtable)
 {
 	void *o;
 	ALLOC_TYPED (o, size, vtable);
-	mono_stats.new_object_count++;
 
 	return o;
 }
@@ -4879,7 +4876,6 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 	else
 		o = mono_gc_alloc_vector (vtable, byte_len, len);
 	array = (MonoArray*)o;
-	mono_stats.new_object_count++;
 
 	bounds = array->bounds;
 #endif
@@ -4964,7 +4960,6 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 #else
 	o = mono_gc_alloc_vector (vtable, byte_len, n);
 	ao = (MonoArray*)o;
-	mono_stats.new_object_count++;
 #endif
 
 	if (G_UNLIKELY (profile_allocs))
