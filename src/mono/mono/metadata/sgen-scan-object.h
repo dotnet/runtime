@@ -26,6 +26,10 @@
  * be considered undefined after executing this code.  The object's
  * GC descriptor must be in the variable "mword desc".
  *
+ * The macro `HANDLE_PTR` will be invoked for every reference encountered while scanning the
+ * object.  It is called with two parameters: The pointer to the reference (not the
+ * reference itself!) as well as the pointer to the scanned object.
+ *
  * Modifiers (automatically undefined):
  *
  * SCAN_OBJECT_NOSCAN - if defined, don't actually scan the object,

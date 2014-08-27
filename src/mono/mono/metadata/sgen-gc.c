@@ -2310,6 +2310,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_4 (GENERATION_NURSERY);
 
+	/* FIXME: why is this here? */
 	ctx.scan_func = current_object_ops.scan_object;
 	ctx.copy_func = NULL;
 	ctx.queue = &gray_queue;
