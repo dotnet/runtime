@@ -197,7 +197,7 @@ to_asl_priority (GLogLevelFlags log_level)
 void
 g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
 {
-	asl_vlog (NULL, NULL, to_asl_priority (log_level), "%s", message);
+	asl_log (NULL, NULL, to_asl_priority (log_level), "%s", message);
 	if (log_level & fatal)
 		abort ();
 }
@@ -205,13 +205,13 @@ g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const 
 static void
 default_stdout_handler (const gchar *message)
 {
-	asl_vlog (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
+	asl_log (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
 }
 
 static void
 default_stderr_handler (const gchar *message)
 {
-	asl_vlog (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
+	asl_log (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
 }
 
 #else
