@@ -51,9 +51,9 @@ extern long long stat_scan_object_called_major;
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
-		void *__copy;						\
 		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
 		if (__old && FOLLOW_OBJECT (__old)) {			\
+			void *__copy;					\
 			PREFETCH_DYNAMIC_HEAP (__old);			\
 			CONCURRENT_NAME (major_copy_or_mark_object) ((ptr), __old, queue); \
 			__copy = *(ptr);				\
