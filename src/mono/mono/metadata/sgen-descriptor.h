@@ -183,20 +183,13 @@ sgen_gc_descr_has_references (mword desc)
 		void **_objptr = (void**)(obj); \
 		gsize _bmap = (desc) >> 16;     \
 		_objptr += OBJECT_HEADER_WORDS; \
-		{ \
+		do { \
 			int _index = GNUC_BUILTIN_CTZ (_bmap);		\
 			_objptr += _index; \
 			_bmap >>= (_index + 1);				\
 			HANDLE_PTR (_objptr, (obj));		\
 			_objptr ++;							\
-			} \
-		while (_bmap) { \
-			int _index = GNUC_BUILTIN_CTZ (_bmap);		\
-			_objptr += _index; \
-			_bmap >>= (_index + 1);				\
-			HANDLE_PTR (_objptr, (obj));		\
-			_objptr ++;							\
-		}										\
+		} while (_bmap);					\
 	} while (0)
 #else
 #define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
