@@ -43,6 +43,7 @@
 #define _XOPEN_SOURCE
 #endif
 
+#include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
 
 #define MAX_USER_DESCRIPTORS 16
@@ -58,6 +59,9 @@ static MonoGCRootMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];
 static int user_descriptors_next = 0;
 static void *all_ref_root_descrs [32];
 
+#ifdef HEAVY_STATISTICS
+static long long stat_scanned_count_per_descriptor [DESC_TYPE_MAX];
+#endif
 
 static int
 alloc_complex_descriptor (gsize *bitmap, int numbits)
@@ -346,6 +350,30 @@ MonoGCRootMarkFunc
 sgen_get_user_descriptor_func (mword desc)
 {
 	return user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+}
+
+#ifdef HEAVY_STATISTICS
+void
+sgen_descriptor_count_scanned_object (mword desc)
+{
+	int type = desc & 7;
+	SGEN_ASSERT (0, type, "Descriptor type can't be zero");
+	++stat_scanned_count_per_descriptor [type - 1];
+}
+#endif
+
+void
+sgen_init_descriptors (void)
+{
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("# scanned RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
+	mono_counters_register ("# scanned SMALL_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_SMALL_BITMAP - 1]);
+	mono_counters_register ("# scanned COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
+	mono_counters_register ("# scanned VECTOR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
+	mono_counters_register ("# scanned LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
+	mono_counters_register ("# scanned COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
+	mono_counters_register ("# scanned COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
+#endif
 }
 
 #endif
