@@ -142,9 +142,9 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 #define MS_BLOCK_TYPE_MAX	4
 
 static gboolean *evacuate_block_obj_sizes;
-static float evacuation_threshold = 0.666f;
+static float evacuation_threshold = 0.0f;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
-static float concurrent_evacuation_threshold = 0.666f;
+static float concurrent_evacuation_threshold = 0.0f;
 static gboolean want_evacuation = FALSE;
 #endif
 
@@ -1048,6 +1048,173 @@ major_get_and_reset_num_major_objects_marked (void)
 #undef SCAN_FOR_CONCURRENT_MARK
 #endif
 
+#if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
+#ifdef HEAVY_STATISTICS
+static long long stat_optimized_copy_object_called;
+static long long stat_optimized_nursery;
+static long long stat_optimized_nursery_forwarded;
+static long long stat_optimized_nursery_pinned;
+static long long stat_optimized_nursery_not_copied;
+static long long stat_optimized_nursery_regular;
+static long long stat_optimized_major;
+static long long stat_optimized_major_forwarded;
+static long long stat_optimized_major_small;
+static long long stat_optimized_major_large;
+#endif
+
+/* Returns whether the object is still in the nursery. */
+static gboolean
+optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
+{
+	MSBlockInfo *block;
+	mword vtable_word = *(mword*)obj;
+
+	/* we probably only want to prefetch for major heap objects */
+	// PREFETCH ((void*)vtable_word);
+
+	HEAVY_STAT (++stat_optimized_copy_object_called);
+
+	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
+	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
+
+	if (sgen_ptr_in_nursery (obj)) {
+		int word, bit;
+		char *forwarded, *old_obj;
+
+		HEAVY_STAT (++stat_optimized_nursery);
+
+		if (SGEN_VTABLE_IS_PINNED (vtable_word)) {
+			HEAVY_STAT (++stat_optimized_nursery_pinned);
+			return TRUE;
+		}
+		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
+			HEAVY_STAT (++stat_optimized_nursery_forwarded);
+			*ptr = forwarded;
+			return FALSE;
+		}
+
+		HEAVY_STAT (++stat_objects_copied_major);
+
+		old_obj = obj;
+		obj = copy_object_no_checks (obj, queue);
+		if (G_UNLIKELY (old_obj == obj)) {
+			HEAVY_STAT (++stat_optimized_nursery_not_copied);
+
+			/*If we fail to evacuate an object we just stop doing it for a given block size as all other will surely fail too.*/
+			if (!sgen_ptr_in_nursery (obj)) {
+				int size_index;
+				block = MS_BLOCK_FOR_OBJ (obj);
+				size_index = block->obj_size_index;
+				evacuate_block_obj_sizes [size_index] = FALSE;
+				MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
+				return FALSE;
+			}
+			return TRUE;
+		}
+		*ptr = obj;
+
+		HEAVY_STAT (++stat_optimized_nursery_regular);
+
+		/*
+		 * FIXME: See comment for copy_object_no_checks().  If
+		 * we have that, we can let the allocation function
+		 * give us the block info, too, and we won't have to
+		 * re-fetch it.
+		 *
+		 * FIXME (2): We should rework this to avoid all those nursery checks.
+		 */
+		/*
+		 * For the split nursery allocator the object might
+		 * still be in the nursery despite having being
+		 * promoted, in which case we can't mark it.
+		 */
+		block = MS_BLOCK_FOR_OBJ (obj);
+		MS_CALC_MARK_BIT (word, bit, obj);
+		SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p already marked", obj);
+		MS_SET_MARK_BIT (block, word, bit);
+		binary_protocol_mark (obj, (gpointer)LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+		return FALSE;
+	} else {
+		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
+		int type = desc & 7;
+
+		HEAVY_STAT (++stat_optimized_major);
+
+		if (type == DESC_TYPE_SMALL_BITMAP) {
+			int __word, __bit;
+
+			HEAVY_STAT (++stat_optimized_major_small_fast);
+
+			block = MS_BLOCK_FOR_OBJ (obj);
+			MS_CALC_MARK_BIT (__word, __bit, (obj));
+			if (!MS_MARK_BIT ((block), __word, __bit)) {
+				MS_SET_MARK_BIT ((block), __word, __bit);
+				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc));
+			}
+		} else if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE ) {
+			HEAVY_STAT (++stat_optimized_major_small_slow);
+
+			block = MS_BLOCK_FOR_OBJ (obj);
+			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
+		} else {
+			HEAVY_STAT (++stat_optimized_major_large);
+
+			if (sgen_los_object_is_pinned (obj))
+				return FALSE;
+			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+
+			sgen_los_pin_object (obj);
+			if (SGEN_OBJECT_HAS_REFERENCES (obj))
+				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
+		}
+		return FALSE;
+	}
+}
+
+static gboolean
+drain_gray_stack (ScanCopyContext ctx)
+{
+	SgenGrayQueue *queue = ctx.queue;
+
+	SGEN_ASSERT (0, ctx.scan_func == major_scan_object, "Wrong scan function");
+
+	for (;;) {
+		char *obj;
+		mword desc;
+		int type;
+		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+		if (!obj)
+			return TRUE;
+		type = desc & 7;
+		if (type == DESC_TYPE_SMALL_BITMAP) {
+			void **_objptr = (void**)(obj);
+			gsize _bmap = (desc) >> 16;
+			_objptr += OBJECT_HEADER_WORDS;
+			do {
+				int _index = GNUC_BUILTIN_CTZ (_bmap);
+				_objptr += _index;
+				_bmap >>= (_index + 1);
+
+				void *__old = *(_objptr);
+				if (__old) {
+					gboolean still_in_nursery;
+					PREFETCH (__old);
+					still_in_nursery = optimized_copy_or_mark_object (_objptr, __old, queue);
+					if (G_UNLIKELY (still_in_nursery && !sgen_ptr_in_nursery ((_objptr)))) {
+						void *__copy = *(_objptr);
+						sgen_add_to_global_remset ((_objptr), __copy);
+					}
+				}
+
+				_objptr ++;
+			} while (_bmap);
+		} else {
+			major_scan_object (obj, desc, queue);
+		}
+	}
+}
+#endif
+
 static void
 mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 {
@@ -1658,6 +1825,7 @@ get_num_major_sections (void)
 static gboolean
 major_handle_gc_param (const char *opt)
 {
+	/*
 	if (g_str_has_prefix (opt, "evacuation-threshold=")) {
 		const char *arg = strchr (opt, '=') + 1;
 		int percentage = atoi (arg);
@@ -1667,7 +1835,8 @@ major_handle_gc_param (const char *opt)
 		}
 		evacuation_threshold = (float)percentage / 100.0f;
 		return TRUE;
-	} else if (!strcmp (opt, "lazy-sweep")) {
+		} else */
+	if (!strcmp (opt, "lazy-sweep")) {
 		lazy_sweep = TRUE;
 		return TRUE;
 	} else if (!strcmp (opt, "no-lazy-sweep")) {
@@ -2096,6 +2265,26 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_concurrent_ops.scan_object = major_scan_object_concurrent;
 		collector->major_concurrent_ops.scan_vtype = major_scan_vtype_concurrent;
 	}
+#endif
+
+#if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
+	/* FIXME: this will not work with evacuation or the split nursery. */
+	if (!is_concurrent)
+		collector->drain_gray_stack = drain_gray_stack;
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("Optimized copy object called", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_object_called);
+	mono_counters_register ("Optimized nursery", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery);
+	mono_counters_register ("Optimized nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_forwarded);
+	mono_counters_register ("Optimized nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_pinned);
+	mono_counters_register ("Optimized nursery not copied", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_not_copied);
+	mono_counters_register ("Optimized nursery regular", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_regular);
+	mono_counters_register ("Optimized major", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major);
+	mono_counters_register ("Optimized major forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_forwarded);
+	mono_counters_register ("Optimized major small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_small);
+	mono_counters_register ("Optimized major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_large);
+#endif
+
 #endif
 
 	/*cardtable requires major pages to be 8 cards aligned*/

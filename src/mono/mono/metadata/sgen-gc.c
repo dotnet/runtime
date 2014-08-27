@@ -888,6 +888,9 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 	ScanObjectFunc scan_func = ctx.scan_func;
 	GrayQueue *queue = ctx.queue;
 
+	if (current_collection_generation == GENERATION_OLD && major_collector.drain_gray_stack)
+		return major_collector.drain_gray_stack (ctx);
+
 	do {
 		int i;
 		for (i = 0; i != max_objs; ++i) {
@@ -1318,7 +1321,6 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 			if ((desc & 1) && *start_root) {
 				copy_func (start_root, queue);
 				SGEN_LOG (9, "Overwrote root at %p with %p", start_root, *start_root);
-				sgen_drain_gray_stack (-1, ctx);
 			}
 			desc >>= 1;
 			start_root++;
@@ -1336,7 +1338,6 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 				if ((bmap & 1) && *objptr) {
 					copy_func (objptr, queue);
 					SGEN_LOG (9, "Overwrote root at %p with %p", objptr, *objptr);
-					sgen_drain_gray_stack (-1, ctx);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -4726,9 +4727,11 @@ mono_gc_base_init (void)
 		if (!strcmp (minor_collector_opt, "simple")) {
 		use_simple_nursery:
 			sgen_simple_nursery_init (&sgen_minor_collector);
+			/*
 		} else if (!strcmp (minor_collector_opt, "split")) {
 			sgen_split_nursery_init (&sgen_minor_collector);
 			have_split_nursery = TRUE;
+			*/
 		} else {
 			sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `simple` instead.", "Unknown minor collector `%s'.", minor_collector_opt);
 			goto use_simple_nursery;
