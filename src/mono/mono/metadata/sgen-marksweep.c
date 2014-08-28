@@ -1278,7 +1278,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 			binary_protocol_pin (obj, vt, sgen_safe_object_get_size ((MonoObject*)obj));
 			if (SGEN_CAS_PTR ((void*)&bigobj->size, (void*)(size_word | 1), (void*)size_word) == (void*)size_word) {
 				if (SGEN_VTABLE_HAS_REFERENCES (vt))
-					GRAY_OBJECT_ENQUEUE (queue, obj);
+					GRAY_PARTIAL_OBJECT_ENQUEUE (queue,obj);
 			} else {
 				g_assert (sgen_los_object_is_pinned (obj));
 			}
@@ -2640,11 +2640,13 @@ sgen_marksweep_fixed_init (SgenMajorCollector *collector)
 
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops.scan_object = major_scan_object;
+	collector->major_ops.scan_work = major_scan_work;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 	if (is_concurrent) {
 		collector->major_concurrent_ops.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
 		collector->major_concurrent_ops.scan_object = major_scan_object_concurrent;
 		collector->major_concurrent_ops.scan_vtype = major_scan_vtype_concurrent;
+		collector->major_concurrent_ops.scan_work = major_scan_work_concurrent;
 	}
 #endif
 

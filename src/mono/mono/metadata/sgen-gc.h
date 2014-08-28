@@ -395,6 +395,33 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj)
 #endif
 }
 
+#define SGEN_MAX_PARTIAL_OFFSET 1500
+/*FIXME:This works only because SGEN_MAX_PARTIAL_OFFSET is even*/
+#define GRAY_OBJECT_IS_PARTIAL(obj) ((mword)(obj) & 1)
+
+#define GRAY_PARTIAL_OBJECT_ENQUEUE(queue,o) do{   \
+	GRAY_OBJECT_ENQUEUE(queue,(o)); \
+	if( SGEN_OBJECT_IS_VECTOR_V_REFS((o)) && sgen_get_major_collector()->is_parallel){ \
+		mword i; \
+		for(i=SGEN_MAX_PARTIAL_OFFSET; i< mono_array_length_fast ((MonoArray*)(o)); i+=SGEN_MAX_PARTIAL_OFFSET){ \
+			if (G_UNLIKELY (queue->cursor == GRAY_SECOND_TO_LAST_CURSOR_POSITION(queue->first))){ \
+				queue->first->size = SGEN_GRAY_QUEUE_SECTION_SIZE -1;\
+				sgen_gray_object_alloc_queue_section (queue); \
+			} \
+			GRAY_OBJECT_ENQUEUE(queue, (char*)i); \
+			GRAY_OBJECT_ENQUEUE(queue, (char*)((mword)o|1)); \
+			} \
+	} \
+} while(0)
+#define GRAY_PARTIAL_OBJECT_DEQUEUE(queue,o,offset) do{ \
+	GRAY_OBJECT_DEQUEUE((queue),&(o)); \
+	(offset) = NULL; \
+	if(GRAY_OBJECT_IS_PARTIAL((o))){ \
+		GRAY_OBJECT_DEQUEUE((queue),&(offset)); \
+		o = (char*)((mword)(o) & (~1)); \
+	} \
+} while(0)
+
 /*
 List of what each bit on of the vtable gc bits means. 
 */
@@ -502,12 +529,14 @@ struct _ObjectList {
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char*, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
+typedef void (*ScanWorkFunc) (char*, mword, SgenGrayQueue*);
 
 typedef struct
 {
 	ScanObjectFunc scan_func;
 	CopyOrMarkObjectFunc copy_func;
 	SgenGrayQueue *queue;
+	ScanWorkFunc scan_work;
 } ScanCopyContext;
 
 void sgen_report_internal_mem_usage (void) MONO_INTERNAL;
@@ -545,6 +574,7 @@ typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
 	ScanObjectFunc scan_object;
 	ScanVTypeFunc scan_vtype;
+	ScanWorkFunc scan_work;
 	/*FIXME add allocation function? */
 } SgenObjectOperations;
 
@@ -913,7 +943,8 @@ void sgen_process_fin_stage_entries (void) MONO_INTERNAL;
 void sgen_process_dislink_stage_entries (void) MONO_INTERNAL;
 void sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc) MONO_INTERNAL;
 
-gboolean sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx) MONO_INTERNAL;
+gboolean sgen_drain_gray_stack (ScanCopyContext ctx) MONO_INTERNAL;
+gboolean sgen_drain_gray_stack_work_item(int max_objs, ScanCopyContext ctx) MONO_INTERNAL;
 
 enum {
 	SPACE_NURSERY,

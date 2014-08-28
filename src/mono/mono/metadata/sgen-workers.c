@@ -235,11 +235,16 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 	if (lock && mono_mutex_trylock (&victim_data->stealable_stack_mutex))
 		return FALSE;
 
-	n = num = (victim_data->stealable_stack_fill + 1) / 2;
+	num = (victim_data->stealable_stack_fill + 1) / 2;
+	if(num > 0 && GRAY_OBJECT_IS_PARTIAL(victim_data->stealable_stack [victim_data->stealable_stack_fill - num]))
+		num++;
+	n = num;
 	/* We're stealing num entries. */
 
 	while (n > 0) {
 		int m = MIN (SGEN_GRAY_QUEUE_SECTION_SIZE, n);
+		if(GRAY_OBJECT_IS_PARTIAL(victim_data->stealable_stack [victim_data->stealable_stack_fill - num +n -m]))
+			m--;
 		n -= m;
 
 		sgen_gray_object_alloc_queue_section (queue);
@@ -336,6 +341,8 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 	while (data->stealable_stack_fill < STEALABLE_STACK_SIZE &&
 			(section = sgen_gray_object_dequeue_section (queue))) {
 		int num = MIN (section->size, STEALABLE_STACK_SIZE - data->stealable_stack_fill);
+		if(num == STEALABLE_STACK_SIZE - data->stealable_stack_fill && GRAY_OBJECT_IS_PARTIAL(section->objects[section->size -num]))
+			num--;
 
 		memcpy (data->stealable_stack + data->stealable_stack_fill,
 				section->objects + section->size - num,
@@ -344,8 +351,10 @@ workers_gray_queue_share_redirect (SgenGrayQueue *queue)
 		section->size -= num;
 		data->stealable_stack_fill += num;
 
-		if (section->size)
+		if (section->size){
 			sgen_gray_object_enqueue_section (queue, section);
+			break;
+		}
 		else
 			sgen_gray_object_free_queue_section (section);
 	}
@@ -400,11 +409,11 @@ workers_thread_func (void *data_untyped)
 			SgenObjectOperations *ops = sgen_concurrent_collection_in_progress ()
 				? &major->major_concurrent_ops
 				: &major->major_ops;
-			ScanCopyContext ctx = { ops->scan_object, NULL, &data->private_gray_queue };
+			ScanCopyContext ctx = { ops->scan_object, NULL, &data->private_gray_queue, ops->scan_work };
 
 			g_assert (!sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 
-			while (!sgen_drain_gray_stack (32, ctx))
+			while (!sgen_drain_gray_stack_work_item (32, ctx))
 				workers_gray_queue_share_redirect (&data->private_gray_queue);
 			g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 

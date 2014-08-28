@@ -858,35 +858,55 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
  */
+#define CHECK_AND_LOG_OBJECT(obj) do{ \
+    if(!obj) \
+      return TRUE; \
+    SGEN_LOG (9, "Precise gray object scan (%p) (%s)", obj, safe_name (obj)); \
+  }while(0)
+
 gboolean
-sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
+sgen_drain_gray_stack (ScanCopyContext ctx)
 {
-	char *obj;
-	ScanObjectFunc scan_func = ctx.scan_func;
-	GrayQueue *queue = ctx.queue;
+  char *obj;
+  char *offset;
+  ScanObjectFunc scan_func = ctx.scan_func;
+  GrayQueue *queue = ctx.queue;
 
-	if (max_objs == -1) {
-		for (;;) {
-			GRAY_OBJECT_DEQUEUE (queue, &obj);
-			if (!obj)
-				return TRUE;
-			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
-			scan_func (obj, queue);
-		}
-	} else {
-		int i;
+  if(sgen_get_major_collector()->is_parallel){
+    for (;;) {
+      GRAY_PARTIAL_OBJECT_DEQUEUE(queue, obj, offset);
+      CHECK_AND_LOG_OBJECT(obj);
+      scan_func (obj,queue);
+    }
+  }
+  else{
+    for (;;) {
+      GRAY_OBJECT_DEQUEUE(queue, &obj);
+      CHECK_AND_LOG_OBJECT(obj);
+      scan_func (obj,queue);
+    }
+  }
+  return FALSE;
+}
 
-		do {
-			for (i = 0; i != max_objs; ++i) {
-				GRAY_OBJECT_DEQUEUE (queue, &obj);
-				if (!obj)
-					return TRUE;
-				SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
-				scan_func (obj, queue);
-			}
-		} while (max_objs < 0);
-		return FALSE;
-	}
+/*This version is the drain_stack used by the parallel collector */
+
+gboolean
+sgen_drain_gray_stack_work_item (int max_objs, ScanCopyContext ctx)
+{
+  char *obj;
+  char *offset;
+  ScanWorkFunc scan_work = ctx.scan_work;
+  GrayQueue *queue = ctx.queue;
+  int i;
+
+  g_assert(sgen_get_major_collector()->is_parallel);
+  for (i = 0; i != max_objs; ++i) {
+    GRAY_PARTIAL_OBJECT_DEQUEUE(queue,obj, offset);
+    CHECK_AND_LOG_OBJECT(obj);
+    scan_work(obj,(mword)offset,queue);
+  }
+    return FALSE;
 }
 
 /*
@@ -1306,7 +1326,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 			if ((desc & 1) && *start_root) {
 				copy_func (start_root, queue);
 				SGEN_LOG (9, "Overwrote root at %p with %p", start_root, *start_root);
-				sgen_drain_gray_stack (-1, ctx);
+				sgen_drain_gray_stack (ctx);
 			}
 			desc >>= 1;
 			start_root++;
@@ -1324,7 +1344,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 				if ((bmap & 1) && *objptr) {
 					copy_func (objptr, queue);
 					SGEN_LOG (9, "Overwrote root at %p with %p", objptr, *objptr);
-					sgen_drain_gray_stack (-1, ctx);
+					sgen_drain_gray_stack (ctx);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -1613,7 +1633,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 	TV_GETTIME (atv);
 	SGEN_LOG (2, "%s generation done", generation_name (generation));
 
@@ -1635,7 +1655,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = mark_ephemerons_in_range (ctx);
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1643,7 +1663,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 
 	if (sgen_need_bridge_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		sgen_collect_bridge_objects (generation, ctx);
 		if (generation == GENERATION_OLD)
 			sgen_collect_bridge_objects (GENERATION_NURSERY, ctx);
@@ -1667,7 +1687,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	Make sure we drain the gray stack before processing disappearing links and finalizers.
 	If we don't make sure it is empty we might wrongly see a live object as dead.
 	*/
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for
@@ -1688,7 +1708,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 		sgen_finalize_in_range (GENERATION_NURSERY, ctx);
 	/* drain the new stack that might have been created */
 	SGEN_LOG (6, "Precise scan of gray area post fin");
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/*
 	 * This must be done again after processing finalizable objects since CWL slots are cleared only after the key is finalized.
@@ -1696,7 +1716,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = mark_ephemerons_in_range (ctx);
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1731,7 +1751,7 @@ finish_gray_stack (int generation, GrayQueue *queue)
 			sgen_null_link_in_range (GENERATION_NURSERY, FALSE, ctx);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 	}
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
@@ -2340,7 +2360,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 		ctx.scan_func = current_object_ops.scan_object;
 		ctx.copy_func = NULL;
 		ctx.queue = &gray_queue;
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 	}
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
@@ -2633,7 +2653,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 			}
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
-				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
+				GRAY_PARTIAL_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data);
 			if (G_UNLIKELY (do_pin_stats))
 				sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
