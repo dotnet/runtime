@@ -147,4 +147,58 @@ sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
 	return queue->first == NULL;
 }
 
+static inline MONO_ALWAYS_INLINE void
+GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj, mword desc)
+{
+#if SGEN_MAX_DEBUG_LEVEL >= 9
+	sgen_gray_object_enqueue (queue, obj, desc);
+#else
+	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
+		sgen_gray_object_enqueue (queue, obj, desc);
+	} else {
+		GrayQueueEntry entry = { obj, desc };
+
+		HEAVY_STAT (gc_stats.gray_queue_enqueue_fast_path ++);
+
+		*++queue->cursor = entry;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_enqueue (queue, queue->cursor, obj);
+#endif
+	}
+#endif
+}
+
+static inline MONO_ALWAYS_INLINE void
+GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
+{
+	GrayQueueEntry entry;
+#if SGEN_MAX_DEBUG_LEVEL >= 9
+	entry = sgen_gray_object_enqueue (queue);
+	*obj = entry.obj;
+	*desc = entry.desc;
+#else
+	if (!queue->first) {
+		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
+
+		*obj = NULL;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_dequeue (queue, queue->cursor, *obj);
+#endif
+	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
+		entry = sgen_gray_object_dequeue (queue);
+		*obj = entry.obj;
+		*desc = entry.desc;
+	} else {
+		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
+
+		entry = *queue->cursor--;
+		*obj = entry.obj;
+		*desc = entry.desc;
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
+#endif
+	}
+#endif
+}
+
 #endif
