@@ -41,6 +41,12 @@ typedef guint64 mword;
  */
 // #define HEAVY_STATISTICS
 
+#ifdef HEAVY_STATISTICS
+#define HEAVY_STAT(x)	x
+#else
+#define HEAVY_STAT(x)
+#endif
+
 /*
  * Define this to allow the user to change the nursery size by
  * specifying its value in the MONO_GC_PARAMS environmental
