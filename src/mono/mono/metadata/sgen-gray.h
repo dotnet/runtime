@@ -98,6 +98,8 @@ typedef struct _SgenGrayQueue SgenGrayQueue;
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 typedef void (*GrayQueueEnqueueCheckFunc) (char*);
 
+#define SGEN_GRAY_QUEUE_PREFETCH_SIZE (2)
+
 struct _SgenGrayQueue {
 	GrayQueueEntry *cursor;
 	GrayQueueSection *first;
@@ -107,6 +109,8 @@ struct _SgenGrayQueue {
 	GrayQueueEnqueueCheckFunc enqueue_check_func;
 #endif
 	void *alloc_prepare_data;
+	GrayQueueEntry prefetch [SGEN_GRAY_QUEUE_PREFETCH_SIZE];
+	GrayQueueEntry *prefetch_cursor;
 };
 
 typedef struct _SgenSectionGrayQueue SgenSectionGrayQueue;
@@ -154,6 +158,8 @@ void sgen_section_gray_queue_init (SgenSectionGrayQueue *queue, gboolean locked,
 gboolean sgen_section_gray_queue_is_empty (SgenSectionGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_section_gray_queue_dequeue (SgenSectionGrayQueue *queue) MONO_INTERNAL;
 void sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
+
+gboolean sgen_gray_object_fill_prefetch (SgenGrayQueue *queue);
 
 static inline gboolean
 sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
@@ -213,6 +219,20 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 #endif
 	}
 #endif
+}
+
+static inline void
+sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
+	GrayQueueEntry *cursor = queue->prefetch_cursor;
+	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
+	*obj = cursor->obj;
+	*desc = cursor->desc;
+	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, &cursor->desc);
+	PREFETCH (cursor->obj);
+	++cursor;
+	if (cursor == end)
+		cursor = queue->prefetch;
+	queue->prefetch_cursor = cursor;
 }
 
 #endif

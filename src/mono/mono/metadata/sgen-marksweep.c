@@ -1058,8 +1058,13 @@ static long long stat_optimized_nursery_not_copied;
 static long long stat_optimized_nursery_regular;
 static long long stat_optimized_major;
 static long long stat_optimized_major_forwarded;
-static long long stat_optimized_major_small;
+static long long stat_optimized_major_small_fast;
+static long long stat_optimized_major_small_slow;
 static long long stat_optimized_major_large;
+
+static long long stat_drain_prefetch_fills;
+static long long stat_drain_prefetch_fill_failures;
+static long long stat_drain_loops;
 #endif
 
 /* Returns whether the object is still in the nursery. */
@@ -1178,13 +1183,32 @@ drain_gray_stack (ScanCopyContext ctx)
 
 	SGEN_ASSERT (0, ctx.scan_func == major_scan_object, "Wrong scan function");
 
+	HEAVY_STAT (++stat_drain_prefetch_fills);
+	if (!sgen_gray_object_fill_prefetch (queue)) {
+		HEAVY_STAT (++stat_drain_prefetch_fill_failures);
+		return TRUE;
+	}
+
 	for (;;) {
 		char *obj;
 		mword desc;
 		int type;
-		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
-		if (!obj)
-			return TRUE;
+
+		HEAVY_STAT (++stat_drain_loops);
+
+		sgen_gray_object_dequeue_fast (queue, &obj, &desc);
+		if (!obj) {
+			HEAVY_STAT (++stat_drain_prefetch_fills);
+			if (!sgen_gray_object_fill_prefetch (queue)) {
+				HEAVY_STAT (++stat_drain_prefetch_fill_failures);
+				return TRUE;
+			}
+			continue;
+		}
+
+#ifdef HEAVY_STATISTICS
+		sgen_descriptor_count_scanned_object (desc);
+#endif
 		type = desc & 7;
 		if (type == DESC_TYPE_SMALL_BITMAP) {
 			void **_objptr = (void**)(obj);
@@ -1198,7 +1222,6 @@ drain_gray_stack (ScanCopyContext ctx)
 				void *__old = *(_objptr);
 				if (__old) {
 					gboolean still_in_nursery;
-					PREFETCH (__old);
 					still_in_nursery = optimized_copy_or_mark_object (_objptr, __old, queue);
 					if (G_UNLIKELY (still_in_nursery && !sgen_ptr_in_nursery ((_objptr)))) {
 						void *__copy = *(_objptr);
@@ -2281,8 +2304,13 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized nursery regular", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_regular);
 	mono_counters_register ("Optimized major", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major);
 	mono_counters_register ("Optimized major forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_forwarded);
-	mono_counters_register ("Optimized major small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_small);
+	mono_counters_register ("Optimized major small fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_small_fast);
+	mono_counters_register ("Optimized major small slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_small_slow);
 	mono_counters_register ("Optimized major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_large);
+
+	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_loops);
+	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fills);
+	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fill_failures);
 #endif
 
 #endif

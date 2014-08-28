@@ -146,7 +146,7 @@ sgen_gc_descr_has_references (mword desc)
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #ifdef __GNUC__
-#define PREFETCH(addr)	__builtin_prefetch ((addr))
+#define PREFETCH(addr)	__builtin_prefetch ((addr), 0, 1)
 #else
 #define PREFETCH(addr)
 #endif
