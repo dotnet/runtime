@@ -1049,6 +1049,8 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 
 #if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
+//#define USE_PREFETCH_QUEUE
+
 #ifdef HEAVY_STATISTICS
 static long long stat_optimized_copy_object_called;
 static long long stat_optimized_nursery;
@@ -1183,11 +1185,13 @@ drain_gray_stack (ScanCopyContext ctx)
 
 	SGEN_ASSERT (0, ctx.scan_func == major_scan_object, "Wrong scan function");
 
+#ifdef USE_PREFETCH_QUEUE
 	HEAVY_STAT (++stat_drain_prefetch_fills);
 	if (!sgen_gray_object_fill_prefetch (queue)) {
 		HEAVY_STAT (++stat_drain_prefetch_fill_failures);
 		return TRUE;
 	}
+#endif
 
 	for (;;) {
 		char *obj;
@@ -1196,6 +1200,7 @@ drain_gray_stack (ScanCopyContext ctx)
 
 		HEAVY_STAT (++stat_drain_loops);
 
+#ifdef USE_PREFETCH_QUEUE
 		sgen_gray_object_dequeue_fast (queue, &obj, &desc);
 		if (!obj) {
 			HEAVY_STAT (++stat_drain_prefetch_fills);
@@ -1205,6 +1210,11 @@ drain_gray_stack (ScanCopyContext ctx)
 			}
 			continue;
 		}
+#else
+		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+		if (!obj)
+			return TRUE;
+#endif
 
 #ifdef HEAVY_STATISTICS
 		sgen_descriptor_count_scanned_object (desc);
