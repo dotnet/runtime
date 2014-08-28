@@ -1481,6 +1481,8 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 			return 0;
 	}
 	filename = info->dlpi_name;
+	if (!filename)
+		return 0;
 	if (!info->dlpi_addr && !filename [0]) {
 		int l = readlink ("/proc/self/exe", buf, sizeof (buf) - 1);
 		if (l > 0) {
