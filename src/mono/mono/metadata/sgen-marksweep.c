@@ -1079,13 +1079,12 @@ static long long stat_optimized_copy_object_called;
 static long long stat_optimized_nursery;
 static long long stat_optimized_nursery_forwarded;
 static long long stat_optimized_nursery_pinned;
-static long long stat_optimized_nursery_not_copied;
-static long long stat_optimized_nursery_regular;
-static long long stat_optimized_major;
-static long long stat_optimized_major_forwarded;
-static long long stat_optimized_major_small_fast;
-static long long stat_optimized_major_small_slow;
-static long long stat_optimized_major_large;
+static long long stat_optimized_major_mark;
+static long long stat_optimized_major_mark_small;
+static long long stat_optimized_major_mark_large;
+static long long stat_optimized_major_scan;
+static long long stat_optimized_major_scan_fast;
+static long long stat_optimized_major_scan_slow;
 
 static long long stat_drain_prefetch_fills;
 static long long stat_drain_prefetch_fill_failures;
@@ -1117,17 +1116,11 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 			return FALSE;
 		}
 
-		HEAVY_STAT (++stat_objects_copied_major);
-
 		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
-
 		SGEN_ASSERT (0, old_obj != obj, "Cannot handle copy object failure.");
-
+		HEAVY_STAT (++stat_objects_copied_major);
 		*ptr = obj;
-
-		HEAVY_STAT (++stat_optimized_nursery_regular);
-
 		return FALSE;
 	} else {
 		GRAY_OBJECT_ENQUEUE (queue, obj, 0);
@@ -1176,7 +1169,7 @@ drain_gray_stack (ScanCopyContext ctx)
 		desc = sgen_obj_get_descriptor_safe (obj);
 		type = desc & 7;
 
-		HEAVY_STAT (++stat_optimized_major);
+		HEAVY_STAT (++stat_optimized_major_mark);
 
 		/* Mark object or, if already marked, don't process. */
 		if (!sgen_ptr_in_nursery (obj)) {
@@ -1184,20 +1177,22 @@ drain_gray_stack (ScanCopyContext ctx)
 				MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
 				int __word, __bit;
 
-				HEAVY_STAT (++stat_optimized_major_small_fast);
+				HEAVY_STAT (++stat_optimized_major_mark_small);
 
 				MS_CALC_MARK_BIT (__word, __bit, (obj));
 				if (MS_MARK_BIT ((block), __word, __bit))
 					continue;
 				MS_SET_MARK_BIT ((block), __word, __bit);
 			} else {
-				HEAVY_STAT (++stat_optimized_major_large);
+				HEAVY_STAT (++stat_optimized_major_mark_large);
 
 				if (sgen_los_object_is_pinned (obj))
 					continue;
 				sgen_los_pin_object (obj);
 			}
 		}
+
+		HEAVY_STAT (++stat_optimized_major_scan);
 
 		/* Now scan the object. */
 #ifdef HEAVY_STATISTICS
@@ -1225,8 +1220,10 @@ drain_gray_stack (ScanCopyContext ctx)
 			} while (_bmap);
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 			add_scanned_object (obj);
+			++stat_optimized_major_scan_slow;
 #endif
 		} else {
+			HEAVY_STAT (++stat_optimized_major_scan_fast);
 			major_scan_object_no_mark (obj, desc, queue);
 		}
 	}
@@ -2306,13 +2303,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized nursery", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery);
 	mono_counters_register ("Optimized nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_forwarded);
 	mono_counters_register ("Optimized nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_pinned);
-	mono_counters_register ("Optimized nursery not copied", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_not_copied);
-	mono_counters_register ("Optimized nursery regular", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_regular);
-	mono_counters_register ("Optimized major", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major);
-	mono_counters_register ("Optimized major forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_forwarded);
-	mono_counters_register ("Optimized major small fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_small_fast);
-	mono_counters_register ("Optimized major small slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_small_slow);
-	mono_counters_register ("Optimized major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_large);
+	mono_counters_register ("Optimized major mark", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark);
+	mono_counters_register ("Optimized major mark small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_small);
+	mono_counters_register ("Optimized major mark large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_large);
+	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
+	mono_counters_register ("Optimized major scan slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_slow);
+	mono_counters_register ("Optimized major scan fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_fast);
 
 	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_loops);
 	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fills);
