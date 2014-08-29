@@ -138,6 +138,9 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 static MonoCreateDomainFunc create_domain_hook;
 static MonoFreeDomainFunc free_domain_hook;
 
+/* AOT cache configuration */
+static MonoAotCacheConfig aot_cache_config;
+
 /* This is intentionally not in the header file, so people don't misuse it. */
 extern void _mono_debug_init_corlib (MonoDomain *domain);
 
@@ -2775,4 +2778,10 @@ void
 mono_enable_debug_domain_unload (gboolean enable)
 {
 	debug_domain_unload = enable;
+}
+
+MonoAotCacheConfig *
+mono_get_aot_cache_config (void)
+{
+	return &aot_cache_config;
 }

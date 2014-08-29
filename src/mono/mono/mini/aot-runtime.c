@@ -55,11 +55,16 @@
 #include <mono/utils/mono-mmap.h>
 #include "mono/utils/mono-compiler.h"
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-digest.h>
 
 #include "mini.h"
 #include "version.h"
 
 #ifndef DISABLE_AOT
+
+#ifdef TARGET_OSX
+#define ENABLE_AOT_CACHE
+#endif
 
 #ifdef TARGET_WIN32
 #define SHARED_EXT ".dll"
@@ -167,15 +172,9 @@ static GHashTable *ji_to_amodule;
 
 /*
  * Whenever to AOT compile loaded assemblies on demand and store them in
- * a cache under $HOME/.mono/aot-cache.
+ * a cache.
  */
-static gboolean use_aot_cache = FALSE;
-
-/*
- * Whenever to spawn a new process to AOT a file or do it in-process. Only relevant if
- * use_aot_cache is TRUE.
- */
-static gboolean spawn_compiler = TRUE;
+static gboolean enable_aot_cache = FALSE;
 
 /* For debugging */
 static gint32 mono_last_aot_method = -1;
@@ -243,7 +242,7 @@ load_image (MonoAotModule *amodule, int index, gboolean set_error)
 
 	assembly = mono_assembly_load (&amodule->image_names [index], amodule->assembly->basedir, &status);
 	if (!assembly) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable because dependency %s is not found.\n", amodule->aot_name, amodule->image_names [index].name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable because dependency %s is not found.\n", amodule->aot_name, amodule->image_names [index].name);
 		amodule->out_of_date = TRUE;
 
 		if (set_error) {
@@ -255,7 +254,7 @@ load_image (MonoAotModule *amodule, int index, gboolean set_error)
 	}
 
 	if (strcmp (assembly->image->guid, amodule->image_guids [index])) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s').\n", amodule->aot_name, amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s').\n", amodule->aot_name, amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
 		amodule->out_of_date = TRUE;
 		return NULL;
 	}
@@ -1272,131 +1271,246 @@ decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	return decode_resolve_method_ref_with_target (module, NULL, buf, endbuf);
 }
 
+#ifdef ENABLE_AOT_CACHE
+
+/* AOT CACHE */
+
+/*
+ * FIXME:
+ * - Add options for controlling the cache size
+ * - Handle full cache by deleting old assemblies lru style
+ * - Maybe add a threshold after an assembly is AOT compiled
+ * - Add options for enabling this for specific main assemblies
+ */
+
+/* The cache directory */
+static char *cache_dir;
+
+/* The number of assemblies AOTed in this run */
+static int cache_count;
+
+/* Whenever to AOT in-process */
+static gboolean in_process;
+
 static void
-create_cache_structure (void)
+collect_assemblies (gpointer data, gpointer user_data)
 {
-	const char *home;
-	char *tmp;
-	int err;
+	MonoAssembly *ass = data;
+	GSList **l = user_data;
 
-	home = g_get_home_dir ();
-	if (!home)
-		return;
+	*l = g_slist_prepend (*l, ass);
+}
 
-	tmp = g_build_filename (home, ".mono", NULL);
-	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
-#ifdef HOST_WIN32
-		err = mkdir (tmp);
-#else
-		err = mkdir (tmp, 0777);
-#endif
-		if (err) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed: %s", g_strerror (errno));
-			g_free (tmp);
-			return;
-		}
+#define SHA1_DIGEST_LENGTH 20
+
+/*
+ * get_aot_config_hash:
+ *
+ *   Return a hash for all the version information an AOT module depends on.
+ */
+static G_GNUC_UNUSED char*
+get_aot_config_hash (MonoAssembly *assembly)
+{
+	char *build_info;
+	GSList *l, *assembly_list = NULL;
+	GString *s;
+	int i;
+	guint8 digest [SHA1_DIGEST_LENGTH];
+	char *digest_str;
+
+	build_info = mono_get_runtime_build_info ();
+
+	s = g_string_new (build_info);
+
+	mono_assembly_foreach (collect_assemblies, &assembly_list);
+
+	/*
+	 * The assembly list includes the current assembly as well, no need
+	 * to add it.
+	 */
+	for (l = assembly_list; l; l = l->next) {
+		MonoAssembly *ass = l->data;
+
+		g_string_append (s, "_");
+		g_string_append (s, ass->aname.name);
+		g_string_append (s, "_");
+		g_string_append (s, ass->image->guid);
 	}
-	g_free (tmp);
-	tmp = g_build_filename (home, ".mono", "aot-cache", NULL);
-	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
-#ifdef HOST_WIN32
-		err = mkdir (tmp);
-#else
-		err = mkdir (tmp, 0777);
-#endif
-		if (err) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed: %s", g_strerror (errno));
-			g_free (tmp);
-			return;
-		}
+
+	for (i = 0; i < s->len; ++i) {
+		if (!isalnum (s->str [i]) && s->str [i] != '-')
+			s->str [i] = '_';
 	}
-	g_free (tmp);
+
+	mono_sha1_get_digest ((guint8*)s->str, s->len, digest);
+
+	digest_str = g_malloc0 ((SHA1_DIGEST_LENGTH * 2) + 1);
+	for (i = 0; i < SHA1_DIGEST_LENGTH; ++i)
+		sprintf (digest_str + (i * 2), "%02x", digest [i]);
+
+	mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: file dependencies: %s, hash %s", s->str, digest_str);
+
+	g_string_free (s, TRUE);
+
+	return digest_str;
+}
+
+static void
+aot_cache_init (void)
+{
+	enable_aot_cache = TRUE;
+	in_process = TRUE;
 }
 
 /*
- * load_aot_module_from_cache:
+ * aot_cache_load_module:
  *
- *  Experimental code to AOT compile loaded assemblies on demand. 
- *
- * FIXME: 
- * - Add environment variable MONO_AOT_CACHE_OPTIONS
- * - Add options for controlling the cache size
- * - Handle full cache by deleting old assemblies lru style
- * - Add options for excluding assemblies during development
- * - Maybe add a threshold after an assembly is AOT compiled
- * - invoking a new mono process is a security risk
- * - recompile the AOT module if one of its dependencies changes
+ *   Load the AOT image corresponding to ASSEMBLY from the aot cache, AOTing it if neccessary.
  */
 static MonoDl*
-load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
+aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 {
-	char *fname, *cmd, *tmp2, *aot_options;
+	MonoAotCacheConfig *config;
+	GSList *l;
+	char *fname, *tmp2, *aot_options;
 	const char *home;
 	MonoDl *module;
 	gboolean res;
-	gchar *out, *err;
 	gint exit_status;
+	char *hash;
+	int pid;
 
 	*aot_name = NULL;
 
 	if (image_is_dynamic (assembly->image))
 		return NULL;
 
-	create_cache_structure ();
+	/* Check in the list of assemblies enabled for aot caching */
+	config = mono_get_aot_cache_config ();
+	for (l = config->assemblies; l; l = l->next) {
+		char *n = l->data;
 
-	home = g_get_home_dir ();
+		if (!strcmp (assembly->aname.name, n))
+			break;
+	}
+	if (!l)
+		return NULL;
 
-	tmp2 = g_strdup_printf ("%s-%s%s", assembly->image->assembly_name, assembly->image->guid, SHARED_EXT);
-	fname = g_build_filename (home, ".mono", "aot-cache", tmp2, NULL);
+	if (!cache_dir) {
+		home = g_get_home_dir ();
+		if (!home)
+			return NULL;
+		cache_dir = g_strdup_printf ("%s/Library/Caches/mono/aot-cache", home);
+		if (!g_file_test (cache_dir, G_FILE_TEST_EXISTS|G_FILE_TEST_IS_DIR))
+			g_mkdir_with_parents (cache_dir, 0777);
+	}
+
+	/*
+	 * The same assembly can be used in multiple configurations, i.e. multiple
+     * versions of the runtime, with multiple versions of dependent assemblies etc.
+	 * To handle this, we compute a version string containing all this information, hash it,
+	 * and use the hash as a filename suffix.
+	 */
+	hash = get_aot_config_hash (assembly);
+
+	tmp2 = g_strdup_printf ("%s-%s%s", assembly->image->assembly_name, hash, SHARED_EXT);
+	fname = g_build_filename (cache_dir, tmp2, NULL);
 	*aot_name = fname;
 	g_free (tmp2);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT trying to load from cache: '%s'.", fname);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: loading from cache: '%s'.", fname);
 	module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
 
-	if (!module) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT not found.");
+	if (module)
+		return module;
 
-		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT precompiling assembly '%s'... ", assembly->image->name);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: not found.");
+
+	if (!strcmp (assembly->aname.name, "mscorlib") && !mono_defaults.corlib)
+		/* Can't AOT this during startup */
+		return NULL;
+
+	/* Only AOT one assembly per run to avoid slowing down execution too much */
+	if (cache_count > 0)
+		return NULL;
+	cache_count ++;
+
+	mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: compiling assembly '%s'... ", assembly->image->name);
+
+	/*
+	 * We need to invoke the AOT compiler here. There are multiple approaches:
+	 * - spawn a new runtime process. This can be hard when running with mkbundle, and
+	 * its hard to make the new process load the same set of assemblies.
+	 * - doing it in-process. This exposes the current process to bugs/leaks/side effects of
+	 * the AOT compiler.
+	 * - fork a new process and do the work there.
+	 */
+	if (in_process) {
+		FILE *logfile;
+		char *logfile_name;
+
+		logfile_name = g_strdup_printf ("%s/aot.log", cache_dir);
+		logfile = fopen (logfile_name, "a+");
 
 		aot_options = g_strdup_printf ("outfile=%s", fname);
+		/* Maybe due this in another thread ? */
+		res = mono_compile_assembly (assembly, mono_parse_default_optimizations (NULL), aot_options);
+		// FIXME: Cache failures
+	} else {
+		/*
+		 * - Avoid waiting for the aot process to finish ?
+		 *   (less overhead, but multiple processes could aot the same assembly at the same time)
+		 */
+		pid = fork ();
+		if (pid == 0) {
+			FILE *logfile;
+			char *logfile_name;
 
-		if (spawn_compiler) {
-			/* FIXME: security */
-			/* FIXME: Has to pass the assembly loading path to the child process */
-			cmd = g_strdup_printf ("mono -O=all --aot=%s %s", aot_options, assembly->image->name);
+			/* Child */
 
-			res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
+			logfile_name = g_strdup_printf ("%s/aot.log", cache_dir);
+			logfile = fopen (logfile_name, "a+");
+			g_free (logfile_name);
 
-#if !defined(HOST_WIN32) && !defined(__ppc__) && !defined(__ppc64__) && !defined(__powerpc__)
-			if (res) {
-				if (!WIFEXITED (exit_status) && (WEXITSTATUS (exit_status) == 0))
-					mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed: %s.", err);
-				else
-					mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT succeeded.");
-				g_free (out);
-				g_free (err);
-			}
-#endif
-			g_free (cmd);
-		} else {
+			dup2 (fileno (logfile), 1);
+			dup2 (fileno (logfile), 2);
+
+			aot_options = g_strdup_printf ("outfile=%s", fname);
 			res = mono_compile_assembly (assembly, mono_parse_default_optimizations (NULL), aot_options);
 			if (!res) {
-				mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed.");
+				exit (1);
 			} else {
-				mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT succeeded.");
+				exit (0);
 			}
+		} else {
+			/* Parent */
+			waitpid (pid, &exit_status, 0);
+			if (!WIFEXITED (exit_status) && (WEXITSTATUS (exit_status) == 0))
+				mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: failed.");
+			else
+				mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: succeeded.");
 		}
-
-		module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
-
-		g_free (aot_options);
 	}
+
+	module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
 
 	return module;
 }
+
+#else
+
+static void
+aot_cache_init (void)
+{
+}
+
+static MonoDl*
+aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
+{
+	return NULL;
+}
+
+#endif
 
 static void
 find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *value)
@@ -1589,6 +1703,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (mono_security_cas_enabled ())
 		return;
 
+	if (enable_aot_cache && !strcmp (assembly->aname.name, "mscorlib") && !mono_defaults.corlib)
+		/* Loaded later from mono_aot_get_method () */
+		return;
+
 	mono_aot_lock ();
 	if (static_aot_modules)
 		info = g_hash_table_lookup (static_aot_modules, assembly->aname.name);
@@ -1603,9 +1721,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.\n", aot_name);
 		globals = info->globals;
 	} else {
-		if (use_aot_cache)
-			sofile = load_aot_module_from_cache (assembly, &aot_name);
-		else {
+		if (enable_aot_cache) {
+			sofile = aot_cache_load_module (assembly, &aot_name);
+		} else {
 			char *err;
 			aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
 
@@ -1652,7 +1770,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode: %s.\n", aot_name, msg);
 			exit (1);
 		} else {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable: %s.\n", aot_name, msg);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable: %s.\n", aot_name, msg);
 		}
 		g_free (msg);
 		g_free (aot_name);
@@ -1873,14 +1991,14 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	if (amodule->out_of_date) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);
 		if (mono_aot_only) {
 			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", aot_name);
 			exit (1);
 		}
 	}
 	else
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: loaded AOT Module for %s.\n", assembly->image->name);
 }
 
 /*
@@ -1943,8 +2061,9 @@ mono_aot_init (void)
 
 	if (g_getenv ("MONO_LASTAOT"))
 		mono_last_aot_method = atoi (g_getenv ("MONO_LASTAOT"));
-	if (g_getenv ("MONO_AOT_CACHE"))
-		use_aot_cache = TRUE;
+#ifdef ENABLE_AOT_CACHE
+	aot_cache_init ();
+#endif
 }
 
 void
@@ -3324,7 +3443,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 			if (!method)
 				method = mono_get_method (image, token, NULL);
 			full_name = mono_method_full_name (method, TRUE);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.", full_name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: NOT FOUND: %s.", full_name);
 			g_free (full_name);
 		}
 		return NULL;
@@ -3443,7 +3562,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		if (!jinfo)
 			jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND method %s [%p - %p %p]", full_name, code, code + jinfo->code_size, info);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: FOUND method %s [%p - %p %p]", full_name, code, code + jinfo->code_size, info);
 		g_free (full_name);
 	}
 
@@ -3638,6 +3757,12 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	guint32 method_index;
 	MonoAotModule *amodule = klass->image->aot_module;
 	guint8 *code;
+
+	if (enable_aot_cache && !amodule && klass->image == mono_defaults.corlib) {
+		/* This cannot be AOTed during startup, so do it now */
+		load_aot_module (klass->image->assembly, NULL);
+		amodule = klass->image->aot_module;
+	}
 
 	if (!amodule)
 		return NULL;
@@ -4149,7 +4274,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 	if (!code)
 		g_error ("Symbol '%s' not found in AOT file '%s'.\n", name, amodule->aot_name);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND function '%s' in AOT file '%s'.", name, amodule->aot_name);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: FOUND function '%s' in AOT file '%s'.", name, amodule->aot_name);
 
 	/* Load info */
 
@@ -4770,7 +4895,7 @@ mono_aot_set_make_unreadable (gboolean unreadable)
 	make_unreadable = unreadable;
 
 	if (make_unreadable && !inited) {
-		mono_counters_register ("AOT pagefaults", MONO_COUNTER_JIT | MONO_COUNTER_INT, &n_pagefaults);
+		mono_counters_register ("AOT: pagefaults", MONO_COUNTER_JIT | MONO_COUNTER_INT, &n_pagefaults);
 	}		
 }
 

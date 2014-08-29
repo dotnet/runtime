@@ -523,6 +523,14 @@ struct _MonoMethodSignature {
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
+/*
+ * AOT cache configuration loaded from config files.
+ * Doesn't really belong here.
+ */
+typedef struct {
+	GSList *assemblies;
+} MonoAotCacheConfig;
+
 #define MONO_SIZEOF_METHOD_SIGNATURE (sizeof (struct _MonoMethodSignature) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 static inline gboolean
@@ -784,6 +792,8 @@ MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGeneri
 MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context) MONO_INTERNAL;
 
 void mono_type_set_alignment (MonoTypeEnum type, int align) MONO_INTERNAL;
+
+MonoAotCacheConfig *mono_get_aot_cache_config (void) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
