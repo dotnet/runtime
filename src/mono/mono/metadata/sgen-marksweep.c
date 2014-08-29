@@ -1216,6 +1216,9 @@ drain_gray_stack (ScanCopyContext ctx)
 			return TRUE;
 #endif
 
+#ifndef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+		desc = sgen_obj_get_descriptor_safe (obj);
+#endif
 #ifdef HEAVY_STATISTICS
 		sgen_descriptor_count_scanned_object (desc);
 #endif

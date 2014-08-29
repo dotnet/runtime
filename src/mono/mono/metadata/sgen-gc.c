@@ -900,6 +900,9 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 			if (!obj)
 				return TRUE;
 			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
+#ifndef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+			desc = sgen_obj_get_descriptor_safe (obj);
+#endif
 			scan_func (obj, desc, queue);
 		}
 	} while (max_objs < 0);

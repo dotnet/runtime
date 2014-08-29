@@ -68,11 +68,21 @@ typedef enum {
 } GrayQueueSectionState;
 #endif
 
+#define SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+
 typedef struct _GrayQueueEntry GrayQueueEntry;
 struct _GrayQueueEntry {
 	char *obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 	mword desc;
+#endif
 };
+
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+#define SGEN_GRAY_QUEUE_ENTRY(obj,desc)	{ (obj), (desc) }
+#else
+#define SGEN_GRAY_QUEUE_ENTRY(obj,desc) { (obj) }
+#endif
 
 /*
  * This is a stack now instead of a queue, so the most recently added items are removed
@@ -176,7 +186,7 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj, mword desc)
 	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
 		sgen_gray_object_enqueue (queue, obj, desc);
 	} else {
-		GrayQueueEntry entry = { obj, desc };
+		GrayQueueEntry entry = SGEN_GRAY_QUEUE_ENTRY (obj, desc);
 
 		HEAVY_STAT (stat_gray_queue_enqueue_fast_path ++);
 
@@ -195,7 +205,9 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 #if SGEN_MAX_DEBUG_LEVEL >= 9
 	entry = sgen_gray_object_enqueue (queue);
 	*obj = entry.obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 	*desc = entry.desc;
+#endif
 #else
 	if (!queue->first) {
 		HEAVY_STAT (stat_gray_queue_dequeue_fast_path ++);
@@ -207,13 +219,17 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
 		entry = sgen_gray_object_dequeue (queue);
 		*obj = entry.obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 		*desc = entry.desc;
+#endif
 	} else {
 		HEAVY_STAT (stat_gray_queue_dequeue_fast_path ++);
 
 		entry = *queue->cursor--;
 		*obj = entry.obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 		*desc = entry.desc;
+#endif
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
 #endif
@@ -226,8 +242,12 @@ sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 	GrayQueueEntry *cursor = queue->prefetch_cursor;
 	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
 	*obj = cursor->obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 	*desc = cursor->desc;
 	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, &cursor->desc);
+#else
+	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
+#endif
 	PREFETCH (cursor->obj);
 	++cursor;
 	if (cursor == end)

@@ -99,7 +99,7 @@ sgen_gray_object_free_queue_section (GrayQueueSection *section)
 void
 sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc)
 {
-	GrayQueueEntry entry = { obj, desc };
+	GrayQueueEntry entry = SGEN_GRAY_QUEUE_ENTRY (obj, desc);
 
 	HEAVY_STAT (stat_gray_queue_enqueue_slow_path ++);
 
@@ -385,7 +385,11 @@ sgen_gray_object_fill_prefetch (SgenGrayQueue *queue)
 		++from;
 	}
 	while (to < end) {
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 		GRAY_OBJECT_DEQUEUE (queue, &to->obj, &to->desc);
+#else
+		GRAY_OBJECT_DEQUEUE (queue, &to->obj, NULL);
+#endif
 		/* This doesn't necessarily matter because this function constitutes the slow path. */
 		PREFETCH (to->obj);
 		++to;
