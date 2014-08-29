@@ -651,7 +651,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 
 	/* if the name was set before starting, we didn't invoke the profiler callback */
 	if (internal->name && (internal->flags & MONO_THREAD_FLAG_NAME_SET)) {
-		char *tname = g_utf16_to_utf8 (internal->name, -1, NULL, NULL, NULL);
+		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
 		mono_profiler_thread_name (internal->tid, tname);
 		g_free (tname);
 	}
