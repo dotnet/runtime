@@ -3200,11 +3200,15 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	case MONO_TYPE_CLASS: {
 		guint32 token;
 		MonoClass *class;
+		MonoError error;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
-		class = mono_class_get (m, token);
+		class = mono_class_get_checked (m, token, &error);
 		type->data.klass = class;
-		if (!class)
+		if (!class) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
 		if (!compare_type_literals (class->byval_arg.type, type->type))
 			return FALSE;
 		break;
