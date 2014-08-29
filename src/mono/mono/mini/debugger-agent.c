@@ -1581,7 +1581,7 @@ transport_handshake (void)
 
 	/* Read answer */
 	res = transport_recv (buf, strlen (handshake_msg));
-	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
+	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		return FALSE;
 	}
