@@ -5683,7 +5683,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			class->byval_arg.type = MONO_TYPE_CLASS;
 		}
 		parent = mono_class_get_checked (image, parent_token, error);
-		if (parent && context)
+		if (parent && context) /* Always inflate */
 			parent = mono_class_inflate_generic_class_checked (parent, context, error);
 
 		if (parent == NULL) {
@@ -5804,8 +5804,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	 * We must do this after the class has been constructed to make certain recursive scenarios
 	 * work.
 	 */
-	if (class->generic_container && !mono_metadata_load_generic_param_constraints_full (image, type_token, class->generic_container)){
-		mono_class_set_failure_from_loader_error (class, error, g_strdup ("Could not load generic parameter constraints"));
+	if (class->generic_container && !mono_metadata_load_generic_param_constraints_checked (image, type_token, class->generic_container, error)) {
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not load generic parameter constrains due to %s", mono_error_get_message (error)));
 		mono_loader_unlock ();
 		mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 		g_assert (!mono_loader_get_last_error ());
@@ -6367,14 +6367,17 @@ mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGener
 		char *name = mono_class_name_from_token (image, type_spec);
 		char *assembly = mono_assembly_name_from_token (image, type_spec);
 		mono_error_set_type_load_name (error, name, assembly, "Could not resolve typespec token %08x", type_spec);
+		mono_loader_clear_error (); /*FIXME don't swallow the error*/
 		return NULL;
 	}
 
 	if (context && (context->class_inst || context->method_inst)) {
 		MonoType *inflated = inflate_generic_type (NULL, t, context, error);
 
-		if (!mono_error_ok (error))
+		if (!mono_error_ok (error)) {
+			g_assert (!mono_loader_get_last_error ());
 			return NULL;
+		}
 
 		if (inflated) {
 			t = inflated;
@@ -7131,15 +7134,31 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	MonoError error;
 	MonoClass *class;
 	class = mono_class_get_checked (image, type_token, &error);
-	g_assert (mono_error_ok (&error)); /*FIXME remove this function */
 
-	if (context && mono_metadata_token_table (type_token) == MONO_TABLE_TYPESPEC) {
+	if (class && context && mono_metadata_token_table (type_token) == MONO_TABLE_TYPESPEC)
 		class = mono_class_inflate_generic_class_checked (class, context, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME remove this function */
+
+	if (!class) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow this error */
 	}
 	return class;
 }
 
+
+MonoClass *
+mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error)
+{
+	MonoClass *class;
+
+	mono_error_init (error);
+	class = mono_class_get_checked (image, type_token, error);
+
+	if (class && context && mono_metadata_token_table (type_token) == MONO_TABLE_TYPESPEC)
+		class = mono_class_inflate_generic_class_checked (class, context, error);
+
+	return class;
+}
 /**
  * mono_class_get_checked:
  * @image: the image where the class resides
@@ -8344,14 +8363,18 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	}
 	case MONO_TOKEN_FIELD_DEF: {
 		MonoClass *class;
+		MonoError error;
 		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
 		if (!type)
 			return NULL;
 		if (handle_class)
 			*handle_class = mono_defaults.fieldhandle_class;
-		class = mono_class_get_full (image, MONO_TOKEN_TYPE_DEF | type, context);
-		if (!class)
+		class = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_DEF | type, context, &error);
+		if (!class) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
 			return NULL;
+		}
 		mono_class_init (class);
 		return mono_class_get_field (class, token);
 	}

@@ -5476,11 +5476,9 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	}
 
 	init_generic_context_from_args (&context, type_args, method_args);
-	klass = mono_class_get (image, token);
-	if (mono_loader_get_last_error ())
-		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-
-	klass = mono_class_inflate_generic_class_checked (klass, &context, &error);
+	klass = mono_class_get_checked (image, token, &error);
+	if (klass)
+		klass = mono_class_inflate_generic_class_checked (klass, &context, &error);
 	mono_error_raise_exception (&error);
 
 	if (klass)

@@ -465,7 +465,11 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC:
 		class_table = MONO_TOKEN_TYPE_SPEC;
-		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
+		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, context, &error);
+		if (!mono_error_ok (&error)) {
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (&error);
+		}
 		break;
 	default:
 		/*FIXME this must set a loader error!*/
@@ -967,15 +971,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, &error);
-		if (!mono_error_ok (&error)) {
-			/*FIXME don't swallow the error message*/
-			mono_error_cleanup (&error);
-		}
 		if (!klass) {
-			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
-			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
-			mono_loader_set_error_type_load (name, image->assembly_name);
-			g_free (name);
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
 			return NULL;
 		}
 		break;
@@ -983,7 +981,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		/*
 		 * Parse the TYPESPEC in the parent's context.
 		 */
-		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, typespec_context);
+		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, typespec_context, &error);
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
@@ -1770,11 +1768,15 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (*sig & 0x10)
 		generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
+		MonoError error;
 		result->is_generic = TRUE;
 		generic_container->owner.method = result;
 		/*FIXME put this before the image alloc*/
-		if (!mono_metadata_load_generic_param_constraints_full (image, token, generic_container))
+		if (!mono_metadata_load_generic_param_constraints_checked (image, token, generic_container, &error)) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return NULL;
+		}
 
 		container = generic_container;
 	}

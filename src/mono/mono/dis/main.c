@@ -854,10 +854,13 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		mono_metadata_decode_blob_size (sig, &sig);
 
 		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | (i + 1), type_container);
-		if (container)
-			mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_METHOD_DEF | (i + 1), container);
-		else 
+		if (container) {
+			MonoError error;
+			mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | (i + 1), container, &error);
+			g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+		} else {
 			container = type_container;
+		}
 
 		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig);
 		if (ms != NULL){
@@ -1181,8 +1184,11 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 	}
 
 	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
-	if (container)
-		mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_TYPE_DEF | (n + 1), container);
+	if (container) {
+		MonoError error;
+		mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_TYPE_DEF | (n + 1), container, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+	}
 
 	esname = get_escaped_name (name);
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){

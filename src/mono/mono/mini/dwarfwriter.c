@@ -1376,6 +1376,7 @@ static const guint8 *token_handler_ip;
 static char*
 token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 {
+	MonoError error;
 	char *res, *desc;
 	MonoMethod *cmethod;
 	MonoClass *klass;
@@ -1389,10 +1390,12 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_ISINST:
 	case CEE_CASTCLASS:
 	case CEE_LDELEMA:
-		if (method->wrapper_type)
+		if (method->wrapper_type) {
 			klass = data;
-		else
-			klass = mono_class_get_full (method->klass->image, token, NULL);
+		} else {
+			klass = mono_class_get_checked (method->klass->image, token, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME error handling */
+		}
 		res = g_strdup_printf ("<%s>", klass->name);
 		break;
 	case CEE_NEWOBJ:

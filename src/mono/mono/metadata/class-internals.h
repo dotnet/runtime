@@ -1228,13 +1228,9 @@ MONO_API MonoGenericContainer *
 mono_metadata_load_generic_params (MonoImage *image, guint32 token,
 				   MonoGenericContainer *parent_container);
 
-MONO_API void
-mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
-					      MonoGenericContainer *container);
-
-gboolean
-mono_metadata_load_generic_param_constraints_full (MonoImage *image, guint32 token,
-					      MonoGenericContainer *container) MONO_INTERNAL;
+MONO_API gboolean
+mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 token,
+					      MonoGenericContainer *container, MonoError *error);
 
 MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr) MONO_INTERNAL;
@@ -1391,5 +1387,8 @@ mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext 
 
 MonoClass *
 mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error) MONO_INTERNAL;
+
+MonoClass *
+mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

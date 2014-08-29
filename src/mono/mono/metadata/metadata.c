@@ -4046,15 +4046,19 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 
 	pos = start;
 	while (pos < tdef->rows) {
+		MonoError error;
 		MonoClass *iface;
 		
 		mono_metadata_decode_row (tdef, pos, cols, MONO_INTERFACEIMPL_SIZE);
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
 			break;
-		iface = mono_class_get_full (
-			meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]), context);
-		if (iface == NULL)
+		iface = mono_class_get_and_inflate_typespec_checked (
+			meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]), context, &error);
+		if (iface == NULL) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
 			return FALSE;
+		}
 		result [pos - start] = iface;
 		++pos;
 	}
@@ -5776,7 +5780,7 @@ mono_guid_to_string (const guint8 *guid)
 }
 
 static gboolean
-get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGenericContainer *container)
+get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGenericContainer *container, MonoError *error)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
@@ -5785,13 +5789,15 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	GSList *cons = NULL, *tmp;
 	MonoGenericContext *context = &container->context;
 
+	mono_error_init (error);
+
 	*constraints = NULL;
 	found = 0;
 	for (i = 0; i < tdef->rows; ++i) {
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
 		if (cols [MONO_GENPARCONSTRAINT_GENERICPAR] == owner) {
 			token = mono_metadata_token_from_dor (cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
-			klass = mono_class_get_full (image, token, context);
+			klass = mono_class_get_and_inflate_typespec_checked (image, token, context, error);
 			if (!klass) {
 				g_slist_free (cons);
 				return FALSE;
@@ -5870,38 +5876,22 @@ mono_metadata_has_generic_params (MonoImage *image, guint32 token)
  * Memory is allocated from IMAGE's mempool.
  */
 gboolean
-mono_metadata_load_generic_param_constraints_full (MonoImage *image, guint32 token,
-					      MonoGenericContainer *container)
+mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 token,
+					      MonoGenericContainer *container, MonoError *error)
 {
 
 	guint32 start_row, i, owner;
+	mono_error_init (error);
+
 	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return TRUE;
 	for (i = 0; i < container->type_argc; i++) {
-		if (!get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container))
+		if (!get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container, error)) {
+			g_assert (!mono_loader_get_last_error ());
 			return FALSE;
+		}
 	}
 	return TRUE;
-}
-
-/*
- * mono_metadata_load_generic_param_constraints:
- *
- * @image: metadata context
- * @token: metadata token to load the contraints, can be methodef or typedef.
- * @container: generic container to load into.
- *
- * Load the generic parameter constraints for the newly created generic type or method
- * represented by @token and @container.  The @container is the new container which has
- * been returned by a call to mono_metadata_load_generic_params() with this @token.
- * Memory is allocated from IMAGE's mempool.
- */
-void
-mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
-					      MonoGenericContainer *container)
-{
-	mono_metadata_load_generic_param_constraints_full (image, token, container);
-	/*FIXME this function can potentially exit with a pending loader error and cause all sort of havok */
 }
 
 /*

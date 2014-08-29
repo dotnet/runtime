@@ -889,11 +889,14 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 		method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		param_index = cols [MONO_METHOD_PARAMLIST];
 		if (!method) {
+			MonoError error;
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 
 			container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container);
-			if (container)
-				mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container);
+			if (container) {
+				mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container, &error);
+				g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+			}
 
 			mono_metadata_decode_blob_size (sig, &sig);
 			method = mono_metadata_parse_method_signature_full (m, container, methoddef_row, sig, &sig);

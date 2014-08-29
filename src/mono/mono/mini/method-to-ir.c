@@ -6338,6 +6338,7 @@ mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klas
 static inline MonoClass*
 mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoClass *klass;
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -6345,7 +6346,8 @@ mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 		if (context)
 			klass = mono_class_inflate_generic_class (klass, context);
 	} else {
-		klass = mono_class_get_full (method->klass->image, token, context);
+		klass = mono_class_get_and_inflate_typespec_checked (method->klass->image, token, context, &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	}
 	if (klass)
 		mono_class_init (klass);
@@ -10943,7 +10945,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 
@@ -10983,7 +10986,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 
@@ -12162,7 +12166,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					val = mono_type_size (type, &ialign);
 				} else {
-					MonoClass *klass = mono_class_get_full (image, token, generic_context);
+					MonoClass *klass = mono_class_get_and_inflate_typespec_checked (image, token, generic_context, &error);
+					mono_error_cleanup (&error); /* FIXME don't swallow the error */
 					CHECK_TYPELOAD (klass);
 					mono_class_init (klass);
 					val = mono_type_size (&klass->byval_arg, &ialign);
