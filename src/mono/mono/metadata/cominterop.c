@@ -2068,8 +2068,17 @@ mono_marshal_free_ccw (MonoObject* object)
 		MonoObject* handle_target = mono_gchandle_get_target (ccw_iter->gc_handle);
 
 		/* Looks like the GC NULLs the weakref handle target before running the
-		 * finalizer. So if we get a NULL target, destroy the CCW as well. */
-		if (!handle_target || handle_target == object) {
+		 * finalizer. So if we get a NULL target, destroy the CCW as well.
+		 * Unless looking up the object from the CCW shows it not the right object.
+		*/
+		gboolean destroy_ccw = !handle_target || handle_target == object;
+		if (!handle_target) {
+			MonoCCWInterface* ccw_entry = g_hash_table_lookup (ccw_iter->vtable_hash, mono_class_get_iunknown_class ());
+			if (!(ccw_entry && object == cominterop_get_ccw_object (ccw_entry, FALSE)))
+				destroy_ccw = FALSE;
+		}
+
+		if (destroy_ccw) {
 			/* remove all interfaces */
 			g_hash_table_foreach_remove (ccw_iter->vtable_hash, mono_marshal_free_ccw_entry, NULL);
 			g_hash_table_destroy (ccw_iter->vtable_hash);
