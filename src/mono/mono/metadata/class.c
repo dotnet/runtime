@@ -5682,10 +5682,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			class->byval_arg.data.klass = class;
 			class->byval_arg.type = MONO_TYPE_CLASS;
 		}
-		parent = mono_class_get_full (image, parent_token, context);
+		parent = mono_class_get_checked (image, parent_token, error);
+		if (parent && context)
+			parent = mono_class_inflate_generic_class_checked (parent, context, error);
 
 		if (parent == NULL) {
-			mono_class_set_failure_from_loader_error (class, error, g_strdup_printf ("Could not load parent, token is %x", parent_token));
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
 			goto parent_failure;
 		}
 
