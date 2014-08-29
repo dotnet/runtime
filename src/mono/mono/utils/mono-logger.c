@@ -16,6 +16,7 @@ static MonoTraceMask current_mask		= MONO_TRACE_ALL;
 
 static const char	*mono_log_domain	= "Mono";
 static GQueue		*level_stack		= NULL;
+static MonoPrintCallback print_callback, printerr_callback;
 
 /**
  * mono_trace_init:
@@ -295,6 +296,17 @@ mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
 	g_log_set_default_handler (log_adapter, user_data);
 }
 
+static void
+print_handler (const char *string)
+{
+	print_callback (string, TRUE);
+}
+
+static void
+printerr_handler (const char *string)
+{
+	print_callback (string, FALSE);
+}
 
 /**
  * mono_trace_set_print_handler:
@@ -308,7 +320,8 @@ void
 mono_trace_set_print_handler (MonoPrintCallback callback)
 {
 	g_assert (callback);
-	g_set_print_handler (callback);
+	print_callback = callback;
+	g_set_print_handler (print_handler);
 }
 
 /**
@@ -323,5 +336,6 @@ void
 mono_trace_set_printerr_handler (MonoPrintCallback callback)
 {
 	g_assert (callback);
-	g_set_printerr_handler (callback);
+	printerr_callback = callback;
+	g_set_print_handler (printerr_handler);
 }
