@@ -1118,6 +1118,31 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 	return FALSE;
 }
 
+static inline void
+sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
+	GrayQueueEntry *cursor = queue->prefetch_cursor;
+	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
+	MSBlockInfo *block;
+	int word, bit;
+	*obj = cursor->obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+	*desc = cursor->desc;
+	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, &cursor->desc);
+#else
+	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
+#endif
+
+	block = (MSBlockInfo*)MS_BLOCK_DATA_FOR_OBJ (cursor->obj);
+	MS_CALC_MARK_BIT (word, bit, cursor->obj);
+	PREFETCH_WRITE (&block->mark_words [word]);
+
+	PREFETCH_READ (cursor->obj);
+	++cursor;
+	if (cursor == end)
+		cursor = queue->prefetch;
+	queue->prefetch_cursor = cursor;
+}
+
 static gboolean
 drain_gray_stack (ScanCopyContext ctx)
 {

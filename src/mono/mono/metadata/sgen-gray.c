@@ -391,7 +391,7 @@ sgen_gray_object_fill_prefetch (SgenGrayQueue *queue)
 		GRAY_OBJECT_DEQUEUE (queue, &to->obj, NULL);
 #endif
 		/* This doesn't necessarily matter because this function constitutes the slow path. */
-		PREFETCH (to->obj);
+		PREFETCH_READ (to->obj);
 		++to;
 	}
 	queue->prefetch_cursor = queue->prefetch;

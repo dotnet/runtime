@@ -24,7 +24,7 @@ extern long long stat_scan_object_called_major;
 #ifdef FIXED_HEAP
 #define PREFETCH_DYNAMIC_HEAP(addr)
 #else
-#define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH ((addr))
+#define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH_READ ((addr))
 #endif
 
 #ifdef SCAN_FOR_CONCURRENT_MARK
