@@ -983,7 +983,7 @@ create_delegate_trampoline_data (MonoDomain *domain, MonoClass *klass, MonoMetho
 	invoke = mono_get_delegate_invoke (klass);
 	g_assert (invoke);
 
-	tramp_data = mono_domain_alloc (domain, sizeof (MonoDelegateTrampInfo));
+	tramp_data = mono_domain_alloc0 (domain, sizeof (MonoDelegateTrampInfo));
 	tramp_data->invoke = invoke;
 	tramp_data->invoke_sig = mono_method_signature (invoke);
 	tramp_data->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
