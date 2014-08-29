@@ -305,7 +305,7 @@ print_handler (const char *string)
 static void
 printerr_handler (const char *string)
 {
-	print_callback (string, FALSE);
+	printerr_callback (string, FALSE);
 }
 
 /**
