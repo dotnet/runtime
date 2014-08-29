@@ -1389,4 +1389,7 @@ mono_class_full_name (MonoClass *klass) MONO_INTERNAL;
 MonoClass*
 mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
+MonoClass *
+mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
