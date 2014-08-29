@@ -7212,21 +7212,30 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 		return mono_class_get_type (mono_lookup_dynamic_token (image, type_token, context));
 
 	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
-		MonoClass *class = mono_class_get_full (image, type_token, context);
-		return class ? mono_class_get_type (class) : NULL;
+		MonoClass *class = mono_class_get_checked (image, type_token, &error);
+
+		if (!mono_error_ok (&error)) {
+			mono_loader_set_error_from_mono_error (&error);
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (&error);
+			return NULL;
+		}
+
+		g_assert (class);
+		return mono_class_get_type (class);
 	}
 
 	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated, &error);
 
 	if (!mono_error_ok (&error)) {
-		/*FIXME don't swalloc the error message.*/
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
 
 		g_warning ("Error loading type %s from %s due to %s", name, assembly, mono_error_get_message (&error));
 
-		mono_error_cleanup (&error);
 		mono_loader_set_error_type_load (name, assembly);
+		/*FIXME don't swallow the error message.*/
+		mono_error_cleanup (&error);
 		return NULL;
 	}
 
