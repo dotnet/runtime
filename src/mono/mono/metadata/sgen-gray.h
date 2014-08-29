@@ -237,6 +237,9 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 #endif
 }
 
+#define GRAY_MS_BLOCK_SIZE	(16*1024)
+#define GRAY_MS_BLOCK_DATA_FOR_OBJ(o)	((char*)((mword)(o) & ~(mword)(GRAY_MS_BLOCK_SIZE - 1)))
+
 static inline void
 sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 	GrayQueueEntry *cursor = queue->prefetch_cursor;
@@ -248,6 +251,7 @@ sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 #else
 	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
 #endif
+	PREFETCH (GRAY_MS_BLOCK_DATA_FOR_OBJ (cursor->obj));
 	PREFETCH (cursor->obj);
 	++cursor;
 	if (cursor == end)
