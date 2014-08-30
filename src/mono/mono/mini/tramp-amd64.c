@@ -973,7 +973,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	if (mono_thread_get_tls_offset () != -1) {
+	if (!aot && mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in RDI */
 		/* is obj null? */
 		amd64_test_reg_reg (code, AMD64_RDI, AMD64_RDI);
@@ -1098,7 +1098,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	if (mono_thread_get_tls_offset () != -1) {
+	if (!aot && mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in RDI */
 		/* is obj null? */
 		amd64_test_reg_reg (code, AMD64_RDI, AMD64_RDI);
