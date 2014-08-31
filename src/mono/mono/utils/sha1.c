@@ -44,18 +44,18 @@
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
 typedef union {
-	u_int8_t c[64];
-	u_int32_t l[16];
+	guint8 c[64];
+	guint32 l[16];
 } CHAR64LONG16;
 
 /*
  * Hash a single 512-bit block. This is the core of the algorithm.
  */
 void
-SHA1Transform(u_int32_t state[5], const u_int8_t buffer[SHA1_BLOCK_LENGTH])
+SHA1Transform(guint32 state[5], const guint8 buffer[SHA1_BLOCK_LENGTH])
 {
-	u_int32_t a, b, c, d, e;
-	u_int8_t workspace[SHA1_BLOCK_LENGTH];
+	guint32 a, b, c, d, e;
+	guint8 workspace[SHA1_BLOCK_LENGTH];
 	CHAR64LONG16 *block = (CHAR64LONG16 *)workspace;
 
 	(void)memcpy(block, buffer, SHA1_BLOCK_LENGTH);
@@ -122,7 +122,7 @@ SHA1Init(SHA1_CTX *context)
  * Run your data through this.
  */
 void
-SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len)
+SHA1Update(SHA1_CTX *context, const guint8 *data, size_t len)
 {
 	size_t i, j;
 
@@ -132,7 +132,7 @@ SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len)
 		(void)memcpy(&context->buffer[j], data, (i = 64-j));
 		SHA1Transform(context->state, context->buffer);
 		for ( ; i + 63 < len; i += 64)
-			SHA1Transform(context->state, (u_int8_t *)&data[i]);
+			SHA1Transform(context->state, (guint8 *)&data[i]);
 		j = 0;
 	} else {
 		i = 0;
@@ -147,28 +147,28 @@ SHA1Update(SHA1_CTX *context, const u_int8_t *data, size_t len)
 void
 SHA1Pad(SHA1_CTX *context)
 {
-	u_int8_t finalcount[8];
-	u_int i;
+	guint8 finalcount[8];
+	guint i;
 
 	for (i = 0; i < 8; i++) {
-		finalcount[i] = (u_int8_t)((context->count >>
+		finalcount[i] = (guint8)((context->count >>
 		    ((7 - (i & 7)) * 8)) & 255);	/* Endian independent */
 	}
-	SHA1Update(context, (u_int8_t *)"\200", 1);
+	SHA1Update(context, (guint8 *)"\200", 1);
 	while ((context->count & 504) != 448)
-		SHA1Update(context, (u_int8_t *)"\0", 1);
+		SHA1Update(context, (guint8 *)"\0", 1);
 	SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
 }
 
 void
-SHA1Final(u_int8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context)
+SHA1Final(guint8 digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context)
 {
-	u_int i;
+	guint i;
 
 	SHA1Pad(context);
 	if (digest) {
 		for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
-			digest[i] = (u_int8_t)
+			digest[i] = (guint8)
 			   ((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
 		}
 		memset(context, 0, sizeof(*context));
