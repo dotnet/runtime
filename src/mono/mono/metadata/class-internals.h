@@ -1294,7 +1294,7 @@ MONO_API gboolean
 mono_class_is_valid_enum (MonoClass *klass);
 
 MonoType *
-mono_type_get_full        (MonoImage *image, guint32 type_token, MonoGenericContext *context) MONO_INTERNAL;
+mono_type_get_checked        (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
 gboolean
 mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass) MONO_INTERNAL;

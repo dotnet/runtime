@@ -1004,11 +1004,13 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 		MonoClass *class = mono_method_get_wrapper_data (ctx->method, (guint32)token);
 		type = class ? &class->byval_arg : NULL;
 	} else {
+		MonoError error;
 		if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type token 0x%08x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 			return NULL;
 		}
-		type = mono_type_get_full (ctx->image, token, ctx->generic_context);
+		type = mono_type_get_checked (ctx->image, token, ctx->generic_context, &error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error */
 	}
 
 	if (!type || mono_loader_get_last_error ()) {

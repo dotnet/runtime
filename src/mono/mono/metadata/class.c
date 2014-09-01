@@ -7222,33 +7222,33 @@ done:
 
 
 /**
- * mono_type_get_full:
+ * mono_type_get_checked:
  * @image: the image where the type resides
  * @type_token: the token for the type
  * @context: the generic context used to evaluate generic instantiations in
+ * @error: Error handling context
  *
  * This functions exists to fullfill the fact that sometimes it's desirable to have access to the 
  * 
  * Returns: the MonoType that represents @type_token in @image
  */
 MonoType *
-mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error)
 {
-	MonoError error;
 	MonoType *type = NULL;
 	gboolean inflated = FALSE;
+
+	mono_error_init (error);
 
 	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
 	if (image_is_dynamic (image))
 		return mono_class_get_type (mono_lookup_dynamic_token (image, type_token, context));
 
 	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
-		MonoClass *class = mono_class_get_checked (image, type_token, &error);
+		MonoClass *class = mono_class_get_checked (image, type_token, error);
 
-		if (!mono_error_ok (&error)) {
-			mono_loader_set_error_from_mono_error (&error);
-			/*FIXME don't swallow the error message*/
-			mono_error_cleanup (&error);
+		if (!class) {
+			g_assert (!mono_loader_get_last_error ());
 			return NULL;
 		}
 
@@ -7256,17 +7256,10 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 		return mono_class_get_type (class);
 	}
 
-	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated, &error);
+	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated, error);
 
-	if (!mono_error_ok (&error)) {
-		char *name = mono_class_name_from_token (image, type_token);
-		char *assembly = mono_assembly_name_from_token (image, type_token);
-
-		g_warning ("Error loading type %s from %s due to %s", name, assembly, mono_error_get_message (&error));
-
-		mono_loader_set_error_type_load (name, assembly);
-		/*FIXME don't swallow the error message.*/
-		mono_error_cleanup (&error);
+	if (!type) {
+		g_assert (!mono_loader_get_last_error ());
 		return NULL;
 	}
 
@@ -8361,12 +8354,16 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_TYPE_DEF:
 	case MONO_TOKEN_TYPE_REF:
 	case MONO_TOKEN_TYPE_SPEC: {
+		MonoError error;
 		MonoType *type;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		type = mono_type_get_full (image, token, context);
-		if (!type)
+		type = mono_type_get_checked (image, token, context, &error);
+		if (!type) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
 			return NULL;
+		}
 		mono_class_init (mono_class_from_mono_type (type));
 		/* We return a MonoType* as handle */
 		return type;
