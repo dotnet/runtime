@@ -239,6 +239,8 @@ sgen_sources = \
 	sgen-archdep.h		\
 	sgen-cardtable.c	\
 	sgen-cardtable.h	\
+	sgen-pointer-queue.c	\
+	sgen-pointer-queue.h	\
 	sgen-pinning.c	\
 	sgen-pinning.h	\
 	sgen-pinning-stats.c	\
