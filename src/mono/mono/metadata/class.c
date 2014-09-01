@@ -52,6 +52,9 @@ gboolean mono_print_vtable = FALSE;
 guint32 inflated_classes, inflated_classes_size, inflated_methods_size;
 guint32 classes_size, class_ext_size;
 
+/* Low level lock which protects data structures in this module */
+static mono_mutex_t classes_mutex;
+
 /* Function supplied by the runtime to find classes by name using information from the AOT file */
 static MonoGetClassFromName get_class_from_name = NULL;
 
@@ -99,6 +102,18 @@ any generic type definition and, after resolved, correct the parent field if nee
 static int record_gclass_instantiation;
 static GSList *gclass_recorded_list;
 typedef gboolean (*gclass_record_func) (MonoClass*, void*);
+
+static inline void
+classes_lock (void)
+{
+	mono_locks_acquire (&classes_mutex, ClassesLock);
+}
+
+static inline void
+classes_unlock (void)
+{
+	mono_locks_release (&classes_mutex, ClassesLock);
+}
 
 /* 
  * LOCKING: loader lock must be held until pairing disable_gclass_recording is called.
@@ -2564,7 +2579,7 @@ mono_class_setup_events (MonoClass *class)
 
 /*
  * Global pool of interface IDs, represented as a bitset.
- * LOCKING: this is supposed to be accessed with the loader lock held.
+ * LOCKING: Protected by the classes lock.
  */
 static MonoBitSet *global_interface_bitset = NULL;
 
@@ -2579,18 +2594,18 @@ static MonoBitSet *global_interface_bitset = NULL;
 void
 mono_unload_interface_ids (MonoBitSet *bitset)
 {
-	mono_loader_lock ();
+	classes_lock ();
 	mono_bitset_sub (global_interface_bitset, bitset);
-	mono_loader_unlock ();
+	classes_unlock ();
 }
 
 void
 mono_unload_interface_id (MonoClass *class)
 {
 	if (global_interface_bitset && class->interface_id) {
-		mono_loader_lock ();
+		classes_lock ();
 		mono_bitset_clear (global_interface_bitset, class->interface_id);
-		mono_loader_unlock ();
+		classes_unlock ();
 	}
 }
 
@@ -2600,7 +2615,7 @@ mono_unload_interface_id (MonoClass *class)
  *
  * Assign a unique integer ID to the interface represented by @class.
  * The ID will positive and as small as possible.
- * LOCKING: this is supposed to be called with the loader lock held.
+ * LOCKING: Acquires the classes lock.
  * Returns: the new ID.
  */
 static guint
@@ -2609,6 +2624,8 @@ mono_get_unique_iid (MonoClass *class)
 	int iid;
 	
 	g_assert (MONO_CLASS_IS_INTERFACE (class));
+
+	classes_lock ();
 
 	if (!global_interface_bitset) {
 		global_interface_bitset = mono_bitset_new (128, 0);
@@ -2636,6 +2653,8 @@ mono_get_unique_iid (MonoClass *class)
 		}
 		mono_bitset_set (class->image->interface_bitset, iid);
 	}
+
+	classes_unlock ();
 
 #ifndef MONO_SMALL_CONFIG
 	if (mono_print_vtable) {
@@ -9433,6 +9452,8 @@ mono_class_get_exception_data (MonoClass *klass)
 void
 mono_classes_init (void)
 {
+	mono_mutex_init (&classes_mutex);
+
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_methods_size);
 	mono_counters_register ("Inflated classes",
@@ -9456,6 +9477,7 @@ mono_classes_cleanup (void)
 	if (global_interface_bitset)
 		mono_bitset_free (global_interface_bitset);
 	global_interface_bitset = NULL;
+	mono_mutex_destroy (&classes_mutex);
 }
 
 /**

@@ -317,6 +317,7 @@ struct _MonoImage {
 	MonoDllMap *dll_map;
 
 	/* interfaces IDs from this image */
+	/* protected by the classes lock */
 	MonoBitSet *interface_bitset;
 
 	/* when the image is being closed, this is abused as a list of
