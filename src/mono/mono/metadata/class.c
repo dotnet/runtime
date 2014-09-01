@@ -1259,7 +1259,7 @@ mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* con
  * in a separate function since it is cheaper than calling mono_class_setup_fields.
  */
 static MonoType*
-mono_class_find_enum_basetype (MonoClass *class)
+mono_class_find_enum_basetype (MonoClass *class, MonoError *error)
 {
 	MonoGenericContainer *container = NULL;
 	MonoImage *m = class->image; 
@@ -1267,6 +1267,8 @@ mono_class_find_enum_basetype (MonoClass *class)
 	int i;
 
 	g_assert (class->enumtype);
+
+	mono_error_init (error);
 
 	if (class->generic_container)
 		container = class->generic_container;
@@ -1292,27 +1294,41 @@ mono_class_find_enum_basetype (MonoClass *class)
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
 			continue;
 
-		if (!mono_verifier_verify_field_signature (class->image, cols [MONO_FIELD_SIGNATURE], NULL))
-			return NULL;
+		if (!mono_verifier_verify_field_signature (class->image, cols [MONO_FIELD_SIGNATURE], NULL)) {
+			mono_error_set_bad_image (error, class->image, "Invalid field signature %x", cols [MONO_FIELD_SIGNATURE]);
+			goto fail;
+		}
 
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
-		if (*sig != 0x06)
-			return NULL;
+		if (*sig != 0x06) {
+			mono_error_set_bad_image (error, class->image, "Invalid field signature %x, expected 0x6 but got %x", cols [MONO_FIELD_SIGNATURE], *sig);
+			goto fail;
+		}
 
 		ftype = mono_metadata_parse_type_full (m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
-		if (!ftype)
-			return NULL;
+		if (!ftype) {
+			if (mono_loader_get_last_error ()) /*FIXME plug the above to not leak errors*/
+				mono_error_set_from_loader_error (error);
+			else
+				mono_error_set_bad_image (error, class->image, "Could not parse type for field signature %x", cols [MONO_FIELD_SIGNATURE]);
+			goto fail;
+		}
 		if (class->generic_class) {
 			//FIXME do we leak here?
-			ftype = mono_class_inflate_generic_type (ftype, mono_class_get_context (class));
+			ftype = mono_class_inflate_generic_type_checked (ftype, mono_class_get_context (class), error);
+			if (!mono_error_ok (error))
+				goto fail;
 			ftype->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
 		return ftype;
 	}
+	mono_error_set_type_load_class (error, class, "Could not find base type");
 
+fail:
+	g_assert (!mono_loader_get_last_error ());
 	return NULL;
 }
 
@@ -5786,11 +5802,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	}
 
 	if (class->enumtype) {
-		MonoType *enum_basetype = mono_class_find_enum_basetype (class);
+		MonoType *enum_basetype = mono_class_find_enum_basetype (class, error);
 		if (!enum_basetype) {
 			/*set it to a default value as the whole runtime can't handle this to be null*/
 			class->cast_class = class->element_class = mono_defaults.int32_class;
-			mono_class_set_failure_and_error (class, error, "Could not enum basetype");
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			g_assert (!mono_loader_get_last_error ());
