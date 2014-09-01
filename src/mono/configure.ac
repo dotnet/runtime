@@ -2499,7 +2499,6 @@ TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
 JIT_SUPPORTED=no
-INTERP_SUPPORTED=no
 LIBC="libc.so.6"
 INTL="libc.so.6"
 SQLITE="libsqlite.so.0"
@@ -2512,7 +2511,6 @@ XINERAMA="libXinerama.so.1"
 sizeof_register="SIZEOF_VOID_P"
 
 jit_wanted=true
-interp_wanted=false
 sgen_supported=false
 boehm_supported=true
 case "$host" in
@@ -2940,18 +2938,10 @@ if test x$JIT_SUPPORTED = xyes; then
       USEJIT=true
       jit_status="Building and using the JIT"
    else
-      if $interp_wanted; then
-         jit_status="Building the JIT, defaulting to the interpreter"
-      else
-         AC_ERROR(No JIT or interpreter support available or selected.)
-      fi
+      AC_ERROR(No JIT support available or selected.)
    fi
 else
-   if test x$interp_wanted = xtrue; then
-      jit_status="interpreter"
-   else
-      AC_ERROR(No JIT or interpreter support available or selected.)
-   fi
+   AC_ERROR(No JIT support available or selected.)
 fi
 
 AM_CONDITIONAL(USE_JIT, test x$USEJIT = xtrue)
@@ -3358,7 +3348,6 @@ AM_CONDITIONAL(HOST_ARM64, test x$HOST = xARM64)
 AM_CONDITIONAL(CROSS_COMPILE, test "x$host" != "x$target")
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
-AM_CONDITIONAL(INTERP_SUPPORTED, test x$interp_wanted = xtrue)
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$libgc = xincluded)
 
 AC_SUBST(LIBC)
@@ -3378,11 +3367,7 @@ AC_SUBST(LDFLAGS)
 mono_build_root=`pwd`
 AC_SUBST(mono_build_root)
 
-if test x$USEJIT = xtrue; then
-  mono_runtime=mono/mini/mono
-else
-  mono_runtime=mono/interpreter/mint
-fi
+mono_runtime=mono/mini/mono
 AC_SUBST(mono_runtime)
 
 mono_cfg_root=$mono_build_root/runtime
@@ -3579,7 +3564,6 @@ mono/arch/arm/Makefile
 mono/arch/arm64/Makefile
 mono/arch/ia64/Makefile
 mono/arch/mips/Makefile
-mono/interpreter/Makefile
 mono/tests/Makefile
 mono/tests/tests-config
 mono/tests/assemblyresolve/Makefile
