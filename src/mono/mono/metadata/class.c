@@ -6374,18 +6374,12 @@ mono_class_from_mono_type (MonoType *type)
 static MonoType *
 mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, gboolean *did_inflate, MonoError *error)
 {
-	MonoType *t = mono_type_create_from_typespec (image, type_spec);
+	MonoType *t = mono_type_create_from_typespec_checked (image, type_spec, error);
 
-	mono_error_init (error);
 	*did_inflate = FALSE;
 
-	if (!t) {
-		char *name = mono_class_name_from_token (image, type_spec);
-		char *assembly = mono_assembly_name_from_token (image, type_spec);
-		mono_error_set_type_load_name (error, name, assembly, "Could not resolve typespec token %08x", type_spec);
-		mono_loader_clear_error (); /*FIXME don't swallow the error*/
+	if (!t)
 		return NULL;
-	}
 
 	if (context && (context->class_inst || context->method_inst)) {
 		MonoType *inflated = inflate_generic_type (NULL, t, context, error);

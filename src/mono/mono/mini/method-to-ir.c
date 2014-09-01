@@ -12163,7 +12163,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !image_is_dynamic (method->klass->image) && !generic_context) {
-					MonoType *type = mono_type_create_from_typespec (image, token);
+					MonoType *type = mono_type_create_from_typespec_checked (image, token, &error);
+					mono_error_cleanup (&error); /* FIXME don't swallow the error */
+					if (!type)
+						UNVERIFIED;
+
 					val = mono_type_size (type, &ialign);
 				} else {
 					MonoClass *klass = mono_class_get_and_inflate_typespec_checked (image, token, generic_context, &error);

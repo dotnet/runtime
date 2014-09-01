@@ -5287,6 +5287,7 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 /**
  * @image: context where the image is created
  * @type_spec:  typespec token
+ * @deprecated use mono_type_create_from_typespec_checked that has proper error handling
  *
  * Creates a MonoType representing the TypeSpec indexed by the @type_spec
  * token.
@@ -5294,12 +5295,27 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 MonoType *
 mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
+	MonoError error;
+	MonoType *type = mono_type_create_from_typespec_checked (image, type_spec, &error);
+	if (!type) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /* FIXME don't swallow error*/
+	}
+	return type;
+}
+
+MonoType *
+mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error)
+
+{
 	guint32 idx = mono_metadata_token_index (type_spec);
 	MonoTableInfo *t;
 	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
 	guint32 len;
 	MonoType *type, *type2;
+
+	mono_error_init (error);
 
 	mono_image_lock (image);
 	type = g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
@@ -5312,14 +5328,21 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 
-	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], type_spec, NULL))
+	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], type_spec, NULL)) {
+		mono_error_set_bad_image (error, image, "Could not verify type spec %08x.", type_spec);
 		return NULL;
+	}
 
 	len = mono_metadata_decode_value (ptr, &ptr);
 
 	type = mono_metadata_parse_type_internal (image, NULL, MONO_PARSE_TYPE, 0, TRUE, ptr, &ptr);
-	if (!type)
+	if (!type) {
+		if (mono_loader_get_last_error ())
+			mono_error_set_from_loader_error (error);
+		else
+			mono_error_set_bad_image (error, image, "Could not parse type spec %08x.", type_spec);
 		return NULL;
+	}
 
 	type2 = mono_metadata_type_dup (image, type);
 	mono_metadata_free_type (type);
