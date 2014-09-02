@@ -1101,7 +1101,7 @@ sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueu
 		gboolean major_pinned = FALSE;
 
 		if (sgen_ptr_in_nursery (obj)) {
-			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+			if (SGEN_CAS_PTR (obj, SGEN_POINTER_TAG_PINNED (vt), vt) == vt) {
 				sgen_pin_object (obj, queue);
 				break;
 			}
@@ -1112,13 +1112,13 @@ sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueu
 
 		vtable_word = *(mword*)obj;
 		/*someone else forwarded it, update the pointer and bail out*/
-		if (vtable_word & SGEN_FORWARDED_BIT) {
-			*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+		if (SGEN_POINTER_IS_TAGGED_FORWARDED (vtable_word)) {
+			*ptr = SGEN_POINTER_UNTAG_VTABLE (vtable_word);
 			break;
 		}
 
 		/*someone pinned it, nothing to do.*/
-		if (vtable_word & SGEN_PINNED_BIT || major_pinned)
+		if (SGEN_POINTER_IS_TAGGED_PINNED (vtable_word) || major_pinned)
 			break;
 	}
 }
