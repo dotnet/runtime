@@ -168,6 +168,12 @@ static gboolean have_swept;
 static gboolean concurrent_mark;
 #endif
 
+#define BLOCK_IS_TAGGED_HAS_REFERENCES(bl)	SGEN_POINTER_IS_TAGGED_1 ((bl))
+#define BLOCK_TAG_HAS_REFERENCES(bl)		SGEN_POINTER_TAG_1 ((bl))
+#define BLOCK_UNTAG_HAS_REFERENCES(bl)		SGEN_POINTER_UNTAG_1 ((bl))
+
+#define BLOCK_TAG(bl)	((bl)->has_references ? BLOCK_TAG_HAS_REFERENCES ((bl)) : (bl))
+
 /* all allocated blocks in the system */
 static SgenPointerQueue allocated_blocks;
 
@@ -175,7 +181,8 @@ static SgenPointerQueue allocated_blocks;
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
-#define FOREACH_BLOCK(bl)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index];
+#define FOREACH_BLOCK(bl)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
+#define FOREACH_BLOCK_HAS_REFERENCES(bl,hr)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
 #define END_FOREACH_BLOCK	} }
 #define DELETE_BLOCK_IN_FOREACH()	(allocated_blocks.data [__index] = NULL)
 
@@ -339,7 +346,7 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 			g_assert (block->free_list);
 
 		/* the block must be in the allocated_blocks array */
-		g_assert (sgen_pointer_queue_find (&allocated_blocks, block) != (size_t)-1);
+		g_assert (sgen_pointer_queue_find (&allocated_blocks, BLOCK_TAG (block)) != (size_t)-1);
 	}
 }
 
@@ -456,7 +463,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->next_free = free_blocks [size_index];
 	free_blocks [size_index] = info;
 
-	sgen_pointer_queue_add (&allocated_blocks, info);
+	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
 
 	++num_major_sections;
 	return TRUE;
@@ -1705,9 +1712,10 @@ static void
 major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	MSBlockInfo *block;
+	gboolean has_references;
 
-	FOREACH_BLOCK (block) {
-		if (block->has_references)
+	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
+		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
 	} END_FOREACH_BLOCK;
 }
@@ -1772,6 +1780,7 @@ static void
 major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
+	gboolean has_references;
 	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
 
 #ifdef SGEN_HAVE_CONCURRENT_MARK
@@ -1781,11 +1790,11 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 	g_assert (!mod_union);
 #endif
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
 		int block_obj_size;
 		char *block_start;
 
-		if (!block->has_references)
+		if (!has_references)
 			continue;
 
 		block_obj_size = block->obj_size;
@@ -1932,14 +1941,15 @@ static void
 major_count_cards (long long *num_total_cards, long long *num_marked_cards)
 {
 	MSBlockInfo *block;
+	gboolean has_references;
 	long long total_cards = 0;
 	long long marked_cards = 0;
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
 		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) MS_BLOCK_FOR_BLOCK_INFO (block));
 		int i;
 
-		if (!block->has_references)
+		if (!has_references)
 			continue;
 
 		total_cards += CARDS_PER_BLOCK;
