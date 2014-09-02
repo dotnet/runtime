@@ -64,6 +64,27 @@ sgen_pointer_queue_search (SgenPointerQueue *queue, void *addr)
 	return first;
 }
 
+/*
+ * Removes all NULL pointers from the queue.
+ */
+void
+sgen_pointer_queue_remove_nulls (SgenPointerQueue *queue)
+{
+	void **start, **cur, **end;
+	start = cur = queue->data;
+	end = queue->data + queue->next_slot;
+	while (cur < end) {
+		if (*cur)
+			*start++ = *cur++;
+		else
+			++cur;
+	}
+	queue->next_slot = start - queue->data;
+}
+
+/*
+ * Sorts the pointers in the queue, then removes duplicates.
+ */
 void
 sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue)
 {
@@ -83,6 +104,19 @@ sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue)
 	};
 	queue->next_slot = start - queue->data;
 	SGEN_LOG (5, "Pointer queue reduced to size: %lu", queue->next_slot);
+}
+
+/*
+ * Does a linear search through the pointer queue to find `ptr`.  Returns the index if
+ * found, otherwise (size_t)-1.
+ */
+size_t
+sgen_pointer_queue_find (SgenPointerQueue *queue, void *ptr)
+{
+	for (size_t i = 0; i < queue->next_slot; ++i)
+		if (queue->data [i] == ptr)
+			return i;
+	return (size_t)-1;
 }
 
 #endif

@@ -40,6 +40,7 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/gc-internal.h"
+#include "metadata/sgen-pointer-queue.h"
 
 #define SGEN_HAVE_CONCURRENT_MARK
 
@@ -79,7 +80,6 @@ struct _MSBlockInfo {
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
 	unsigned int is_to_space : 1;
 	unsigned int swept : 1;
-	MSBlockInfo *next;
 	char *block;
 	void **free_list;
 	MSBlockInfo *next_free;
@@ -169,14 +169,15 @@ static gboolean concurrent_mark;
 #endif
 
 /* all allocated blocks in the system */
-static MSBlockInfo *all_blocks;
+static SgenPointerQueue allocated_blocks;
 
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
-#define FOREACH_BLOCK(bl)	for ((bl) = all_blocks; (bl); (bl) = (bl)->next) {
-#define END_FOREACH_BLOCK	}
+#define FOREACH_BLOCK(bl)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index];
+#define END_FOREACH_BLOCK	} }
+#define DELETE_BLOCK_IN_FOREACH()	(allocated_blocks.data [__index] = NULL)
 
 static size_t num_major_sections = 0;
 /* one free block list for each block object size */
@@ -337,12 +338,8 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 		if (block->swept)
 			g_assert (block->free_list);
 
-		/* the block must be in the all_blocks list */
-		for (b = all_blocks; b; b = b->next) {
-			if (b == block)
-				break;
-		}
-		g_assert (b == block);
+		/* the block must be in the allocated_blocks array */
+		g_assert (sgen_pointer_queue_find (&allocated_blocks, block) != (size_t)-1);
 	}
 }
 
@@ -459,8 +456,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->next_free = free_blocks [size_index];
 	free_blocks [size_index] = info;
 
-	info->next = all_blocks;
-	all_blocks = info;
+	sgen_pointer_queue_add (&allocated_blocks, info);
 
 	++num_major_sections;
 	return TRUE;
@@ -1193,7 +1189,7 @@ static void
 ms_sweep (void)
 {
 	int i;
-	MSBlockInfo **iter;
+	MSBlockInfo *block;
 
 	/* statistics for evacuation */
 	int *slots_available = alloca (sizeof (int) * num_block_obj_sizes);
@@ -1217,9 +1213,7 @@ ms_sweep (void)
 	}
 
 	/* traverse all blocks, free and zero unmarked objects */
-	iter = &all_blocks;
-	while (*iter) {
-		MSBlockInfo *block = *iter;
+	FOREACH_BLOCK (block) {
 		int count;
 		gboolean have_live = FALSE;
 		gboolean has_pinned;
@@ -1264,8 +1258,6 @@ ms_sweep (void)
 				slots_available [obj_size_index] += count;
 			}
 
-			iter = &block->next;
-
 			/*
 			 * If there are free slots in the block, add
 			 * the block to the corresponding free list.
@@ -1283,7 +1275,7 @@ ms_sweep (void)
 			 * Blocks without live objects are removed from the
 			 * block list and freed.
 			 */
-			*iter = block->next;
+			DELETE_BLOCK_IN_FOREACH ();
 
 			binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
 			ms_free_block (block->block);
@@ -1291,7 +1283,8 @@ ms_sweep (void)
 
 			--num_major_sections;
 		}
-	}
+	} END_FOREACH_BLOCK;
+	sgen_pointer_queue_remove_nulls (&allocated_blocks);
 
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		float usage = (float)slots_used [i] / (float)slots_available [i];
@@ -1437,18 +1430,13 @@ major_start_major_collection (void)
 
 	// Sweep all unswept blocks
 	if (lazy_sweep) {
-		MSBlockInfo **iter;
+		MSBlockInfo *block;
 
 		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
 
-		iter = &all_blocks;
-		while (*iter) {
-			MSBlockInfo *block = *iter;
-
+		FOREACH_BLOCK (block) {
 			sweep_block (block, TRUE);
-
-			iter = &block->next;
-		}
+		} END_FOREACH_BLOCK;
 
 		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 	}

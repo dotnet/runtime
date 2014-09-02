@@ -28,7 +28,9 @@ typedef struct {
 
 void sgen_pointer_queue_add (SgenPointerQueue *queue, void *ptr) MONO_INTERNAL;
 void sgen_pointer_queue_clear (SgenPointerQueue *queue) MONO_INTERNAL;
+void sgen_pointer_queue_remove_nulls (SgenPointerQueue *queue) MONO_INTERNAL;
 void sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue) MONO_INTERNAL;
 size_t sgen_pointer_queue_search (SgenPointerQueue *queue, void *addr) MONO_INTERNAL;
+size_t sgen_pointer_queue_find (SgenPointerQueue *queue, void *ptr) MONO_INTERNAL;
 
 #endif
