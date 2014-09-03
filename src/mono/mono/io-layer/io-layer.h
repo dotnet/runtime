@@ -21,9 +21,9 @@
  * Declare as __GetProcessId for unsupported targets. */
 #define GetProcessId __GetProcessId
 #endif
-#include <winsock2.h>
 #include <windows.h>
 #include <winbase.h>
+#include <winsock2.h>
 /*
  * The mingw version says:
  * /usr/i686-pc-mingw32/sys-root/mingw/include/ws2tcpip.h:38:2: error: #error "ws2tcpip.h is not compatible with winsock.h. Include winsock2.h instead."
