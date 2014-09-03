@@ -14,6 +14,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-mmap.h>
 
 #include <errno.h>
 
@@ -787,7 +788,16 @@ mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+	guint8 *current = (guint8 *)&stsize;
 	mono_threads_core_get_stack_bounds (staddr, stsize);
+	if (!*staddr)
+		return;
+
+	/* Sanity check the result */
+	g_assert ((current > *staddr) && (current < *staddr + *stsize));
+
+	/* When running under emacs, sometimes staddr is not aligned to a page size */
+	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
 }
 
 gboolean
