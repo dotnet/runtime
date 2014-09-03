@@ -1225,7 +1225,7 @@ drain_gray_stack (ScanCopyContext ctx)
 				void *__old = *(_objptr);
 				if (__old) {
 					gboolean still_in_nursery = optimized_copy_or_mark_object (_objptr, __old, queue);
-					if (G_UNLIKELY (still_in_nursery && !sgen_ptr_in_nursery ((_objptr)))) {
+					if (G_UNLIKELY (still_in_nursery && !sgen_ptr_in_nursery ((_objptr)) && !SGEN_OBJECT_IS_CEMENTED (*_objptr))) {
 						void *__copy = *(_objptr);
 						sgen_add_to_global_remset ((_objptr), __copy);
 					}

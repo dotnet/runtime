@@ -28,7 +28,13 @@
 #define SGEN_POINTER_TAG_2(p)		((void*)((mword)(p) | 2))
 #define SGEN_POINTER_UNTAG_2(p)		((void*)((mword)(p) & ~2))
 
-#define SGEN_POINTER_IS_TAGGED_1_OR_2(p)	((mword)(p) & 3)
-#define SGEN_POINTER_UNTAG_12(p)	((void*)((mword)(p) & ~3))
+#define SGEN_POINTER_IS_TAGGED_4(p)	((mword)(p) & 4)
+#define SGEN_POINTER_TAG_4(p)		((void*)((mword)(p) | 4))
+#define SGEN_POINTER_UNTAG_4(p)		((void*)((mword)(p) & ~4))
+
+#define SGEN_POINTER_UNTAG_24(p)	((void*)((mword)(p) & ~6))
+
+#define SGEN_POINTER_IS_TAGGED_ANY(p)	((mword)(p) & 7)
+#define SGEN_POINTER_UNTAG_ALL(p)	((void*)((mword)(p) & ~7))
 
 #endif

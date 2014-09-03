@@ -58,7 +58,7 @@ extern long long stat_scan_object_called_major;
 			CONCURRENT_NAME (major_copy_or_mark_object) ((ptr), __old, queue); \
 			__copy = *(ptr);				\
 			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
-			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (__copy))) \
 				sgen_add_to_global_remset ((ptr), __copy);	\
 		} else {						\
 			if (ALWAYS_ADD_TO_GLOBAL_REMSET && G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \

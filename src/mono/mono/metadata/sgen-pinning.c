@@ -293,6 +293,9 @@ sgen_cement_lookup_or_register (char *obj)
 
 	++hash [i].count;
 	if (hash [i].count == SGEN_CEMENT_THRESHOLD) {
+		SGEN_ASSERT (9, SGEN_OBJECT_IS_PINNED (obj), "Can only cement pinned objects");
+		SGEN_CEMENT_OBJECT (obj);
+
 		if (G_UNLIKELY (MONO_GC_OBJ_CEMENTED_ENABLED())) {
 			MonoVTable *vt G_GNUC_UNUSED = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 			MONO_GC_OBJ_CEMENTED ((mword)obj, sgen_safe_object_get_size ((MonoObject*)obj),
@@ -318,6 +321,8 @@ pin_from_hash (CementHashEntry *hash, gboolean has_been_reset)
 
 		sgen_pin_stage_ptr (hash [i].obj);
 		/* FIXME: do pin stats if enabled */
+
+		SGEN_CEMENT_OBJECT (cement_hash [i].obj);
 	}
 }
 

@@ -313,7 +313,7 @@ typedef struct {
  * The forwarding address is stored in the sync block.
  */
 
-#define SGEN_VTABLE_BITS_MASK 0x3
+#define SGEN_VTABLE_BITS_MASK 0x7
 
 #include "sgen-tagged-pointer.h"
 
@@ -323,7 +323,10 @@ typedef struct {
 #define SGEN_POINTER_IS_TAGGED_PINNED(p)	SGEN_POINTER_IS_TAGGED_2((p))
 #define SGEN_POINTER_TAG_PINNED(p)	SGEN_POINTER_TAG_2((p))
 
-#define SGEN_POINTER_UNTAG_VTABLE(p)	SGEN_POINTER_UNTAG_12((p))
+#define SGEN_POINTER_IS_TAGGED_CEMENTED(p)	SGEN_POINTER_IS_TAGGED_4((p))
+#define SGEN_POINTER_TAG_CEMENTED(p)	SGEN_POINTER_TAG_4((p))
+
+#define SGEN_POINTER_UNTAG_VTABLE(p)	SGEN_POINTER_UNTAG_ALL((p))
 
 /* returns NULL if not forwarded, or the forwarded address */
 #define SGEN_VTABLE_IS_FORWARDED(vtable) (SGEN_POINTER_IS_TAGGED_FORWARDED ((vtable)) ? SGEN_POINTER_UNTAG_VTABLE ((vtable)) : NULL)
@@ -332,6 +335,8 @@ typedef struct {
 #define SGEN_VTABLE_IS_PINNED(vtable) SGEN_POINTER_IS_TAGGED_PINNED ((vtable))
 #define SGEN_OBJECT_IS_PINNED(obj) (SGEN_VTABLE_IS_PINNED (((mword*)(obj))[0]))
 
+#define SGEN_OBJECT_IS_CEMENTED(obj) (SGEN_POINTER_IS_TAGGED_CEMENTED (((mword*)(obj))[0]))
+
 /* set the forwarded address fw_addr for object obj */
 #define SGEN_FORWARD_OBJECT(obj,fw_addr) do {				\
 		*(void**)(obj) = SGEN_POINTER_TAG_FORWARDED ((fw_addr));	\
@@ -339,15 +344,19 @@ typedef struct {
 #define SGEN_PIN_OBJECT(obj) do {	\
 		*(void**)(obj) = SGEN_POINTER_TAG_PINNED (*(void**)(obj)); \
 	} while (0)
+#define SGEN_CEMENT_OBJECT(obj) do {	\
+		*(void**)(obj) = SGEN_POINTER_TAG_CEMENTED (*(void**)(obj)); \
+	} while (0)
+/* Unpins and uncements */
 #define SGEN_UNPIN_OBJECT(obj) do {	\
-		*(void**)(obj) = SGEN_POINTER_UNTAG_2 (*(void**)(obj)); \
+		*(void**)(obj) = SGEN_POINTER_UNTAG_24 (*(void**)(obj)); \
 	} while (0)
 
 /*
  * Since we set bits in the vtable, use the macro to load it from the pointer to
  * an object that is potentially pinned.
  */
-#define SGEN_LOAD_VTABLE(addr)	SGEN_POINTER_UNTAG_12 (*(void**)(addr))
+#define SGEN_LOAD_VTABLE(addr)	SGEN_POINTER_UNTAG_ALL (*(void**)(addr))
 
 /*
 List of what each bit on of the vtable gc bits means. 
@@ -775,7 +784,7 @@ static inline mword
 sgen_obj_get_descriptor (char *obj)
 {
 	MonoVTable *vtable = ((MonoObject*)obj)->vtable;
-	SGEN_ASSERT (0, !SGEN_POINTER_IS_TAGGED_1_OR_2 (vtable), "Object can't be tagged");
+	SGEN_ASSERT (0, !SGEN_POINTER_IS_TAGGED_ANY (vtable), "Object can't be tagged");
 	return sgen_vtable_get_descriptor (vtable);
 }
 
