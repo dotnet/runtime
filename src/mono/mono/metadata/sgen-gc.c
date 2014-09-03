@@ -3835,11 +3835,11 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
 
 	/* On win32, stack_start_limit should be 0, since the stack can grow dynamically */
-#ifndef HOST_WIN32
 	mono_thread_info_get_stack_bounds (&staddr, &stsize);
-#endif
 	if (staddr) {
+#ifndef HOST_WIN32
 		info->stack_start_limit = staddr;
+#endif
 		info->stack_end = staddr + stsize;
 	} else {
 		gsize stack_bottom = (gsize)addr;
