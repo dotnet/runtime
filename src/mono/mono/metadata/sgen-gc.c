@@ -2180,13 +2180,6 @@ init_gray_queue (void)
 	}
 }
 
-static void
-pin_stage_object_callback (char *obj, size_t size, void *data)
-{
-	sgen_pin_stage_ptr (obj);
-	/* FIXME: do pin stats if enabled */
-}
-
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -2271,7 +2264,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
 	pin_from_roots (sgen_get_nursery_start (), nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* pin cemented objects */
-	sgen_cement_iterate (pin_stage_object_callback, NULL);
+	sgen_pin_cemented_objects ();
 	/* identify pinned objects */
 	sgen_optimize_pin_queue ();
 	sgen_pinning_setup_section (nursery_section);
@@ -2547,7 +2540,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 			 *
 			 * FIXME: We could evict now!
 			 */
-			sgen_cement_iterate (pin_stage_object_callback, NULL);
+			sgen_pin_cemented_objects ();
 		}
 
 		if (!concurrent_collection_in_progress)

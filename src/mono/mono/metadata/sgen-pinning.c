@@ -266,7 +266,7 @@ sgen_cement_lookup_or_register (char *obj)
 }
 
 void
-sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data)
+sgen_pin_cemented_objects (void)
 {
 	int i;
 	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; ++i) {
@@ -275,7 +275,8 @@ sgen_cement_iterate (IterateObjectCallbackFunc callback, void *callback_data)
 
 		SGEN_ASSERT (5, cement_hash [i].count >= SGEN_CEMENT_THRESHOLD, "Cementing hash inconsistent");
 
-		callback (cement_hash [i].obj, 0, callback_data);
+		sgen_pin_stage_ptr (cement_hash [i].obj);
+		/* FIXME: do pin stats if enabled */
 	}
 }
 
