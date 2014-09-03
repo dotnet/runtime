@@ -365,7 +365,6 @@ aot_cache_start (gpointer user_data,
 {
 	int i;
 	MonoAotCacheConfig *config;
-	char *app_name = NULL;
 
 	if (strcmp (element_name, "aotcache") != 0)
 		return;
