@@ -176,6 +176,8 @@ static GHashTable *ji_to_amodule;
  */
 static gboolean enable_aot_cache = FALSE;
 
+static gboolean mscorlib_aot_loaded;
+
 /* For debugging */
 static gint32 mono_last_aot_method = -1;
 
@@ -1381,6 +1383,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	gint exit_status;
 	char *hash;
 	int pid;
+	gboolean enabled;
 
 	*aot_name = NULL;
 
@@ -1389,13 +1392,33 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 
 	/* Check in the list of assemblies enabled for aot caching */
 	config = mono_get_aot_cache_config ();
-	for (l = config->assemblies; l; l = l->next) {
-		char *n = l->data;
 
-		if (!strcmp (assembly->aname.name, n))
-			break;
+	enabled = FALSE;
+	if (config->apps) {
+		MonoDomain *domain = mono_domain_get ();
+		MonoAssembly *entry_assembly = domain->entry_assembly;
+
+		for (l = config->apps; l; l = l->next) {
+			char *n = l->data;
+
+			if ((entry_assembly && !strcmp (entry_assembly->aname.name, n)) || (!entry_assembly && !strcmp (assembly->aname.name, n)))
+				break;
+		}
+		if (l)
+			enabled = TRUE;
 	}
-	if (!l)
+
+	if (!enabled) {
+		for (l = config->assemblies; l; l = l->next) {
+			char *n = l->data;
+
+			if (!strcmp (assembly->aname.name, n))
+				break;
+		}
+		if (l)
+			enabled = TRUE;
+	}
+	if (!enabled)
 		return NULL;
 
 	if (!cache_dir) {
@@ -3761,10 +3784,13 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	MonoAotModule *amodule = klass->image->aot_module;
 	guint8 *code;
 
-	if (enable_aot_cache && !amodule && klass->image == mono_defaults.corlib) {
+	if (enable_aot_cache && !amodule && domain->entry_assembly && klass->image == mono_defaults.corlib) {
 		/* This cannot be AOTed during startup, so do it now */
-		load_aot_module (klass->image->assembly, NULL);
-		amodule = klass->image->aot_module;
+		if (!mscorlib_aot_loaded) {
+			load_aot_module (klass->image->assembly, NULL);
+			amodule = klass->image->aot_module;
+		}
+		mscorlib_aot_loaded = TRUE;
 	}
 
 	if (!amodule)
