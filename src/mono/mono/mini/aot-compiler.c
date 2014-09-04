@@ -149,6 +149,7 @@ typedef struct MonoAotOptions {
 	char *mtriple;
 	char *llvm_path;
 	char *instances_logfile_path;
+	char *logfile;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -244,6 +245,7 @@ typedef struct MonoAotCompile {
 	int objc_selector_index, objc_selector_index_2;
 	GPtrArray *objc_selectors;
 	GHashTable *objc_selector_to_index;
+	FILE *logfile;
 	FILE *instances_logfile;
 } MonoAotCompile;
 
@@ -302,6 +304,25 @@ get_patch_name (int info)
 
 static char*
 get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cache);
+
+static void
+aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
+{
+	char *msg;
+	va_list args;
+
+	va_start (args, format);
+	if (vasprintf (&msg, format, args) < 0)
+		return;
+	va_end (args);
+
+	if (acfg->logfile)
+		fprintf (acfg->logfile, "%s", msg);
+	else
+		printf ("%s", msg);
+
+	free (msg);
+}
 
 /* Wrappers around the image writer functions */
 
@@ -3113,7 +3134,7 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 		method = mini_get_shared_method (method);
 
 	if (acfg->aot_opts.log_generics)
-		printf ("%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
+		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
 
 	add_method_full (acfg, method, TRUE, depth);
 }
@@ -3929,7 +3950,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		return;
 
 	if (acfg->aot_opts.log_generics)
-		printf ("%*sAdding generic instance %s [%s].\n", depth, "", mono_type_full_name (&klass->byval_arg), ref);
+		aot_printf (acfg, "%*sAdding generic instance %s [%s].\n", depth, "", mono_type_full_name (&klass->byval_arg), ref);
 
 	g_hash_table_insert (acfg->ginst_hash, klass, klass);
 
@@ -3979,7 +4000,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		method = mono_marshal_get_delegate_invoke (method, NULL);
 
 		if (acfg->aot_opts.log_generics)
-			printf ("%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
+			aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_full_name (method, TRUE));
 
 		add_method (acfg, method);
 	}
@@ -6361,6 +6382,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->instances_logfile_path = g_strdup (arg + strlen ("log-instances="));
 		} else if (str_begins_with (arg, "log-instances")) {
 			opts->log_instances = TRUE;
+		} else if (str_begins_with (arg, "internal-logfile=")) {
+			opts->logfile = g_strdup (arg + strlen ("internal-logfile="));
 		} else if (str_begins_with (arg, "mtriple=")) {
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
@@ -7104,7 +7127,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
 #if 1
 	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
-	printf ("Executing opt: %s\n", command);
+	aot_printf (acfg, "Executing opt: %s\n", command);
 	if (system (command) != 0) {
 		exit (1);
 	}
@@ -7133,7 +7156,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpbasename);
 
-	printf ("Executing llc: %s\n", command);
+	aot_printf (acfg, "Executing llc: %s\n", command);
 
 	if (system (command) != 0) {
 		exit (1);
@@ -8395,8 +8418,8 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method (acfg->image, token, NULL);
 
 		if (!method) {
-			printf ("Failed to load method 0x%x from '%s'.\n", token, image->name);
-			printf ("Run with MONO_LOG_LEVEL=debug for more information.\n");
+			aot_printf (acfg, "Failed to load method 0x%x from '%s'.\n", token, image->name);
+			aot_printf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
 			exit (1);
 		}
 			
@@ -8573,9 +8596,9 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	if (acfg->aot_opts.asm_only) {
-		printf ("Output file: '%s'.\n", acfg->tmpfname);
+		aot_printf (acfg, "Output file: '%s'.\n", acfg->tmpfname);
 		if (acfg->aot_opts.static_link)
-			printf ("Linking symbol: '%s'.\n", acfg->static_linking_symbol);
+			aot_printf (acfg, "Linking symbol: '%s'.\n", acfg->static_linking_symbol);
 		return 0;
 	}
 
@@ -8588,7 +8611,7 @@ compile_asm (MonoAotCompile *acfg)
 		objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
 	}
 	command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", objfile, acfg->tmpfname);
-	printf ("Executing the native assembler: %s\n", command);
+	aot_printf (acfg, "Executing the native assembler: %s\n", command);
 	if (system (command) != 0) {
 		g_free (command);
 		g_free (objfile);
@@ -8598,8 +8621,8 @@ compile_asm (MonoAotCompile *acfg)
 	g_free (command);
 
 	if (acfg->aot_opts.static_link) {
-		printf ("Output file: '%s'.\n", objfile);
-		printf ("Linking symbol: '%s'.\n", acfg->static_linking_symbol);
+		aot_printf (acfg, "Output file: '%s'.\n", objfile);
+		aot_printf (acfg, "Linking symbol: '%s'.\n", acfg->static_linking_symbol);
 		g_free (objfile);
 		return 0;
 	}
@@ -8616,7 +8639,7 @@ compile_asm (MonoAotCompile *acfg)
 #else
 	command = g_strdup_printf ("%sld %s -shared -o %s %s.o", tool_prefix, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
 #endif
-	printf ("Executing the native linker: %s\n", command);
+	aot_printf (acfg, "Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
@@ -8638,7 +8661,7 @@ compile_asm (MonoAotCompile *acfg)
 	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.
 	 */
 	command = g_strdup_printf ("%sstrip --strip-symbol=\\$a --strip-symbol=\\$d %s", tool_prefix, tmp_outfile_name);
-	printf ("Stripping the binary: %s\n", command);
+	aot_printf (acfg, "Stripping the binary: %s\n", command);
 	if (system (command) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
@@ -8652,7 +8675,7 @@ compile_asm (MonoAotCompile *acfg)
 
 #if defined(TARGET_MACH)
 	command = g_strdup_printf ("dsymutil %s", outfile_name);
-	printf ("Executing dsymutil: %s\n", command);
+	aot_printf (acfg, "Executing dsymutil: %s\n", command);
 	if (system (command) != 0) {
 		return 1;
 	}
@@ -8666,7 +8689,7 @@ compile_asm (MonoAotCompile *acfg)
 	g_free (objfile);
 
 	if (acfg->aot_opts.save_temps)
-		printf ("Retained input file.\n");
+		aot_printf (acfg, "Retained input file.\n");
 	else
 		unlink (acfg->tmpfname);
 
@@ -8778,8 +8801,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 #endif
 
-	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
-
 	acfg = acfg_create (ass, opts);
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
@@ -8796,14 +8817,20 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
+	if (acfg->aot_opts.logfile) {
+		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
+	}
+
 	if (acfg->aot_opts.static_link)
 		acfg->aot_opts.autoreg = TRUE;
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
+	aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
+
 #ifndef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (acfg->aot_opts.full_aot) {
-		printf ("--aot=full is not supported on this platform.\n");
+		aot_printf (acfg, "--aot=full is not supported on this platform.\n");
 		return 1;
 	}
 #endif
@@ -8976,7 +9003,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		acfg->fp = fopen (tmp_outfile_name, "w");
 		if (!acfg->fp) {
-			printf ("Unable to create temporary file '%s': %s\n", tmp_outfile_name, strerror (errno));
+			aot_printf (acfg, "Unable to create temporary file '%s': %s\n", tmp_outfile_name, strerror (errno));
 			return 1;
 		}
 
@@ -9125,7 +9152,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	all_sizes = acfg->stats.code_size + acfg->stats.info_size + acfg->stats.ex_info_size + acfg->stats.unwind_info_size + acfg->stats.class_info_size + acfg->stats.got_info_size + acfg->stats.offsets_size + acfg->stats.plt_size;
 
-	printf ("Code: %d(%d%%) Info: %d(%d%%) Ex Info: %d(%d%%) Unwind Info: %d(%d%%) Class Info: %d(%d%%) PLT: %d(%d%%) GOT Info: %d(%d%%) Offsets: %d(%d%%) GOT: %d\n",
+	aot_printf (acfg, "Code: %d(%d%%) Info: %d(%d%%) Ex Info: %d(%d%%) Unwind Info: %d(%d%%) Class Info: %d(%d%%) PLT: %d(%d%%) GOT Info: %d(%d%%) Offsets: %d(%d%%) GOT: %d\n",
 			acfg->stats.code_size, acfg->stats.code_size * 100 / all_sizes,
 			acfg->stats.info_size, acfg->stats.info_size * 100 / all_sizes,
 			acfg->stats.ex_info_size, acfg->stats.ex_info_size * 100 / all_sizes,
@@ -9135,19 +9162,19 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			acfg->stats.got_info_size, acfg->stats.got_info_size * 100 / all_sizes,
 			acfg->stats.offsets_size, acfg->stats.offsets_size * 100 / all_sizes,
 			(int)(acfg->got_offset * sizeof (gpointer)));
-	printf ("Compiled: %d/%d (%d%%)%s, No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
+	aot_printf (acfg, "Compiled: %d/%d (%d%%)%s, No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
 			acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100,
 			llvm_stats_msg,
 			acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100,
 			acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
 	if (acfg->stats.genericcount)
-		printf ("%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
+		aot_printf (acfg, "%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.abscount)
-		printf ("%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
+		aot_printf (acfg, "%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.lmfcount)
-		printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
+		aot_printf (acfg, "%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.ocount)
-		printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
+		aot_printf (acfg, "%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
 
 	TV_GETTIME (atv);
 	res = img_writer_emit_writeout (acfg->w);
@@ -9159,7 +9186,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		int err = rename (tmp_outfile_name, outfile_name);
 
 		if (err) {
-			printf ("Unable to rename '%s' to '%s': %s\n", tmp_outfile_name, outfile_name, strerror (errno));
+			aot_printf (acfg, "Unable to rename '%s' to '%s': %s\n", tmp_outfile_name, outfile_name, strerror (errno));
 			return 1;
 		}
 	} else {
@@ -9175,13 +9202,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.stats) {
 		int i;
 
-		printf ("GOT slot distribution:\n");
+		aot_printf (acfg, "GOT slot distribution:\n");
 		for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
 			if (acfg->stats.got_slot_types [i])
-				printf ("\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
+				aot_printf (acfg, "\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
 	}
 
-	printf ("JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
+	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
 	acfg_free (acfg);
 	
