@@ -201,9 +201,3 @@ libmonoutilsinclude_HEADERS = 	\
 	mono-counters.h
 
 EXTRA_DIST = ChangeLog mono-embed.h mono-embed.c
-
-if HAS_EXTENSION_MODULE
-else
-Makefile.am: Makefile.am.in
-	cp $< $@
-endif
