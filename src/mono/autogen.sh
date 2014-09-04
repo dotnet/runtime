@@ -123,7 +123,6 @@ if test x$has_ext_mod = xtrue; then
 	popd
 else
 	cat mono/mini/Makefile.am.in > mono/mini/Makefile.am
-	cat mono/metadata/Makefile.am.in > mono/metadata/Makefile.am
 fi
 
 
