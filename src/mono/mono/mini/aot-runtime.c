@@ -1471,13 +1471,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	 * - fork a new process and do the work there.
 	 */
 	if (in_process) {
-		FILE *logfile;
-		char *logfile_name;
-
-		logfile_name = g_strdup_printf ("%s/aot.log", cache_dir);
-		logfile = fopen (logfile_name, "a+");
-
-		aot_options = g_strdup_printf ("outfile=%s", fname);
+		aot_options = g_strdup_printf ("outfile=%s,internal-logfile=%s/aot.log", fname, cache_dir);
 		/* Maybe due this in another thread ? */
 		res = mono_compile_assembly (assembly, mono_parse_default_optimizations (NULL), aot_options);
 		// FIXME: Cache failures

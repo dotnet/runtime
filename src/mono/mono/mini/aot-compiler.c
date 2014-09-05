@@ -324,6 +324,25 @@ aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
 	free (msg);
 }
 
+static void
+aot_printerrf (MonoAotCompile *acfg, const gchar *format, ...)
+{
+	char *msg;
+	va_list args;
+
+	va_start (args, format);
+	if (vasprintf (&msg, format, args) < 0)
+		return;
+	va_end (args);
+
+	if (acfg->logfile)
+		fprintf (acfg->logfile, "%s", msg);
+	else
+		fprintf (stderr, "%s", msg);
+
+	free (msg);
+}
+
 /* Wrappers around the image writer functions */
 
 static inline void
@@ -7047,7 +7066,7 @@ mono_aot_patch_info_dup (MonoJumpInfo* ji)
  *   Emit the LLVM code into an LLVM bytecode file, and compile it using the LLVM
  * tools.
  */
-static void
+static gboolean
 emit_llvm_file (MonoAotCompile *acfg)
 {
 	char *command, *opts, *tempbc;
@@ -7128,9 +7147,8 @@ emit_llvm_file (MonoAotCompile *acfg)
 #if 1
 	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
 	aot_printf (acfg, "Executing opt: %s\n", command);
-	if (system (command) != 0) {
-		exit (1);
-	}
+	if (system (command) != 0)
+		return FALSE;
 #endif
 	g_free (opts);
 
@@ -7158,9 +7176,9 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	aot_printf (acfg, "Executing llc: %s\n", command);
 
-	if (system (command) != 0) {
-		exit (1);
-	}
+	if (system (command) != 0)
+		return FALSE;
+	return TRUE;
 }
 #endif
 
@@ -8404,7 +8422,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 #endif
 }
 
-static void
+static gboolean
 collect_methods (MonoAotCompile *acfg)
 {
 	int mindex, i;
@@ -8418,9 +8436,9 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method (acfg->image, token, NULL);
 
 		if (!method) {
-			aot_printf (acfg, "Failed to load method 0x%x from '%s'.\n", token, image->name);
-			aot_printf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
-			exit (1);
+			aot_printerrf (acfg, "Failed to load method 0x%x from '%s'.\n", token, image->name);
+			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
+			return FALSE;
 		}
 			
 		/* Load all methods eagerly to skip the slower lazy loading code */
@@ -8484,6 +8502,7 @@ collect_methods (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.full_aot)
 		add_wrappers (acfg);
+	return TRUE;
 }
 
 static void
@@ -8794,13 +8813,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
-#if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED) || !defined(ENABLE_GSHAREDVT)
-	if (opts & MONO_OPT_GSHAREDVT) {
-		fprintf (stderr, "-O=gsharedvt not supported on this platform.\n");
-		exit (1);
-	}
-#endif
-
 	acfg = acfg_create (ass, opts);
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
@@ -8826,18 +8838,25 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
+#if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED) || !defined(ENABLE_GSHAREDVT)
+	if (opts & MONO_OPT_GSHAREDVT) {
+		aot_printerrf (acfg, "-O=gsharedvt not supported on this platform.\n");
+		return 1;
+	}
+#endif
+
 	aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 #ifndef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (acfg->aot_opts.full_aot) {
-		aot_printf (acfg, "--aot=full is not supported on this platform.\n");
+		aot_printerrf (acfg, "--aot=full is not supported on this platform.\n");
 		return 1;
 	}
 #endif
 
 	if (acfg->aot_opts.direct_pinvoke && !acfg->aot_opts.static_link) {
-		fprintf (stderr, "The 'direct-pinvoke' AOT option also requires the 'static' AOT option.\n");
-		exit (1);
+		aot_printerrf (acfg, "The 'direct-pinvoke' AOT option also requires the 'static' AOT option.\n");
+		return 1;
 	}
 
 	if (acfg->aot_opts.static_link)
@@ -8850,7 +8869,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		opt->gen_seq_points = TRUE;
 
 		if (!mono_debug_enabled ()) {
-			fprintf (stderr, "The soft-debug AOT option requires the --debug option.\n");
+			aot_printerrf (acfg, "The soft-debug AOT option requires the --debug option.\n");
 			return 1;
 		}
 		acfg->flags |= MONO_AOT_FILE_FLAG_DEBUG;
@@ -8862,8 +8881,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
 
 		if (acfg->aot_opts.soft_debug) {
-			fprintf (stderr, "The 'soft-debug' option is not supported when compiling with LLVM.\n");
-			exit (1);
+			aot_printerrf (acfg, "The 'soft-debug' option is not supported when compiling with LLVM.\n");
+			return 1;
 		}
 	}
 
@@ -8873,8 +8892,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.instances_logfile_path) {
 		acfg->instances_logfile = fopen (acfg->aot_opts.instances_logfile_path, "w");
 		if (!acfg->instances_logfile) {
-			fprintf (stderr, "Unable to create logfile: '%s'.\n", acfg->aot_opts.instances_logfile_path);
-			exit (1);
+			aot_printerrf (acfg, "Unable to create logfile: '%s'.\n", acfg->aot_opts.instances_logfile_path);
+			return 1;
 		}
 	}
 
@@ -8920,7 +8939,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mono_set_partial_sharing_supported (TRUE);
 	*/
 
-	collect_methods (acfg);
+	res = collect_methods (acfg);
+	if (!res)
+		return 1;
 
 	acfg->cfgs_size = acfg->methods->len + 32;
 	acfg->cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
@@ -8972,6 +8993,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
+		gboolean res;
+
 		if (acfg->aot_opts.asm_only) {
 			if (acfg->aot_opts.outfile) {
 				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
@@ -8985,7 +9008,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 		}
 
-		emit_llvm_file (acfg);
+		res = emit_llvm_file (acfg);
+		if (!res)
+			return FALSE;
 	}
 #endif
 
@@ -9027,7 +9052,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			}
 		}
 		if (acfg->fp == 0) {
-			fprintf (stderr, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
+			aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
 			return 1;
 		}
 		acfg->w = img_writer_create (acfg->fp, FALSE);
@@ -9064,7 +9089,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	if (!acfg->aot_opts.nodebug || acfg->aot_opts.dwarf_debug) {
 		if (acfg->aot_opts.dwarf_debug && !mono_debug_enabled ()) {
-			fprintf (stderr, "The dwarf AOT option requires the --debug option.\n");
+			aot_printerrf (acfg, "The dwarf AOT option requires the --debug option.\n");
 			return 1;
 		}
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE, !acfg->gas_line_numbers);
