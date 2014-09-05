@@ -1,6 +1,6 @@
 #include <config.h>
 
-#if defined(PLATFORM_LINUX)
+#if defined(__linux__) && !defined(PLATFORM_ANDROID)
 
 #include <pthread.h>
 
