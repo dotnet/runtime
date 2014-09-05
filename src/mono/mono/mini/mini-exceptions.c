@@ -2759,6 +2759,16 @@ mono_jinfo_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 	if (ji->from_aot)
 		return mono_aot_get_unwind_info (ji, unwind_info_len);
 	else
-		/* The upper 16 bits of ji->unwind_info might contain the epilog offset */
-		return mono_get_cached_unwind_info (ji->unwind_info & 0xffff, unwind_info_len);
+		return mono_get_cached_unwind_info (ji->unwind_info, unwind_info_len);
+}
+
+int
+mono_jinfo_get_epilog_size (MonoJitInfo *ji)
+{
+	MonoArchEHJitInfo *info;
+
+	info = mono_jit_info_get_arch_eh_info (ji);
+	g_assert (info);
+
+	return info->epilog_size;
 }

@@ -4354,6 +4354,9 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		if (stack_size)
 			arch_eh_info_size = sizeof (MonoArchEHJitInfo);
 	}
+
+	if (cfg->has_unwind_info_for_epilog && !arch_eh_info_size)
+		arch_eh_info_size = sizeof (MonoArchEHJitInfo);
 		
 	if (cfg->try_block_holes) {
 		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
@@ -4651,16 +4654,13 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		unwind_desc = mono_cache_unwind_info (unwind_info, info_len);
 
 		if (cfg->has_unwind_info_for_epilog) {
-			/*
-			 * The lower 16 bits identify the unwind descriptor, the upper 16 bits contain the offset of
-			 * the start of the epilog from the end of the method.
-			 */
-			g_assert (unwind_desc < 0xffff);
-			g_assert (cfg->code_size - cfg->epilog_begin < 0xffff);
-			jinfo->unwind_info = ((cfg->code_size - cfg->epilog_begin) << 16) | unwind_desc;
-		} else {
-			jinfo->unwind_info = unwind_desc;
+			MonoArchEHJitInfo *info;
+
+			info = mono_jit_info_get_arch_eh_info (jinfo);
+			g_assert (info);
+			info->epilog_size = cfg->code_size - cfg->epilog_begin;
 		}
+		jinfo->unwind_info = unwind_desc;
 		g_free (unwind_info);
 	} else {
 		jinfo->unwind_info = cfg->used_int_regs;
