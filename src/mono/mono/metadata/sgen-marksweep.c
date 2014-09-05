@@ -1134,6 +1134,7 @@ major_get_and_reset_num_major_objects_marked (void)
 
 #if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
 //#define USE_PREFETCH_QUEUE
+#define DESCRIPTOR_FAST_PATH
 
 #ifdef HEAVY_STATISTICS
 static long long stat_optimized_copy;
@@ -1150,8 +1151,10 @@ static long long stat_optimized_major_mark;
 static long long stat_optimized_major_mark_small;
 static long long stat_optimized_major_mark_large;
 static long long stat_optimized_major_scan;
+#ifdef DESCRIPTOR_FAST_PATH
 static long long stat_optimized_major_scan_fast;
 static long long stat_optimized_major_scan_slow;
+#endif
 
 static long long stat_drain_prefetch_fills;
 static long long stat_drain_prefetch_fill_failures;
@@ -1360,6 +1363,7 @@ drain_gray_stack (ScanCopyContext ctx)
 		HEAVY_STAT (++stat_optimized_major_scan);
 
 		/* Now scan the object. */
+#ifdef DESCRIPTOR_FAST_PATH
 		if (type == DESC_TYPE_SMALL_BITMAP) {
 			void **_objptr = (void**)(obj);
 			gsize _bmap = (desc) >> 16;
@@ -1391,6 +1395,29 @@ drain_gray_stack (ScanCopyContext ctx)
 			HEAVY_STAT (++stat_optimized_major_scan_slow);
 			major_scan_object_no_mark (obj, desc, queue);
 		}
+#else
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+			void *__old = *(ptr);				\
+			if (__old) {					\
+				gboolean __still_in_nursery = optimized_copy_or_mark_object ((ptr), __old, queue); \
+				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
+					void *__copy = *(ptr);		\
+					sgen_add_to_global_remset ((ptr), __copy); \
+				}					\
+			}						\
+		} while (0)
+
+		{
+			char *start = obj;
+#ifdef HEAVY_STATISTICS
+			sgen_descriptor_count_scanned_object (desc);
+			add_scanned_object (start);
+#endif
+
+#include "sgen-scan-object.h"
+		}
+#endif
 	}
 }
 #endif
@@ -2482,8 +2509,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized major mark small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_small);
 	mono_counters_register ("Optimized major mark large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_large);
 	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
+#ifdef DESCRIPTOR_FAST_PATH
 	mono_counters_register ("Optimized major scan slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_slow);
 	mono_counters_register ("Optimized major scan fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_fast);
+#endif
 
 	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_loops);
 	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fills);
