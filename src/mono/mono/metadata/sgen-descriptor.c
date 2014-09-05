@@ -121,7 +121,7 @@ sgen_get_complex_descriptor (mword desc)
 void*
 mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 {
-	return (void*) DESC_TYPE_RUN_LENGTH;
+	return (void*) DESC_TYPE_COMPLEX_PTRFREE;
 }
 
 void*
@@ -161,7 +161,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		return (void*) desc;
 	}
 
-	if (stored_size <= MAX_RUNLEN_OBJECT_SIZE) {
+	if (stored_size <= MAX_RUNLEN_OBJECT_SIZE && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
 		/* check run-length encoding first: one byte offset, one byte number of pointers
 		 * on 64 bit archs, we can have 3 runs, just one on 32.
 		 * It may be better to use nibbles.

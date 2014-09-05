@@ -1220,7 +1220,7 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 
 		HEAVY_STAT (++stat_optimized_major);
 
-		if (type == DESC_TYPE_SMALL_BITMAP) {
+		if (type == DESC_TYPE_SMALL_BITMAP || type == DESC_TYPE_RUN_LENGTH) {
 			int __word, __bit;
 
 			HEAVY_STAT (++stat_optimized_major_small_fast);
