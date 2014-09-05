@@ -88,6 +88,7 @@ CONCURRENT_NAME (major_scan_object_no_mark) (char *start, mword desc, SgenGrayQu
 static void
 CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *queue)
 {
+#ifndef SGEN_MARK_ON_ENQUEUE
 	if (!sgen_ptr_in_nursery (start)) {
 		if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)start)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
 			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (start);
@@ -103,6 +104,7 @@ CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *que
 			sgen_los_pin_object (start);
 		}
 	}
+#endif
 
 	CONCURRENT_NAME (major_scan_object_no_mark) (start, desc, queue);
 }

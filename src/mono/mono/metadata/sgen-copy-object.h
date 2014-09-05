@@ -89,6 +89,10 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 		return obj;
 	}
 
+#ifdef SGEN_MARK_ON_ENQUEUE
+	if (!has_references)
+		queue = NULL;
+#endif
 	par_copy_object_no_checks (destination, vt, obj, objsize, queue);
 	/* FIXME: mark mod union cards if necessary */
 

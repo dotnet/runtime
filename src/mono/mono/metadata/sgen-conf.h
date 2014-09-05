@@ -69,6 +69,8 @@ typedef guint64 mword;
  */
 //#define SGEN_HEAVY_BINARY_PROTOCOL
 
+#define SGEN_MARK_ON_ENQUEUE	1
+
 /*
  * This enables checks whenever objects are enqueued in gray queues.
  * Right now the only check done is that we never enqueue nursery

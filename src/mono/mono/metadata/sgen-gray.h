@@ -68,7 +68,9 @@ typedef enum {
 } GrayQueueSectionState;
 #endif
 
-//#define SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+#ifdef SGEN_MARK_ON_ENQUEUE
+#define SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+#endif
 
 typedef struct _GrayQueueEntry GrayQueueEntry;
 struct _GrayQueueEntry {
