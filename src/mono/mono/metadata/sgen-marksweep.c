@@ -1136,10 +1136,16 @@ major_get_and_reset_num_major_objects_marked (void)
 //#define USE_PREFETCH_QUEUE
 
 #ifdef HEAVY_STATISTICS
-static long long stat_optimized_copy_object_called;
-static long long stat_optimized_nursery;
-static long long stat_optimized_nursery_forwarded;
-static long long stat_optimized_nursery_pinned;
+static long long stat_optimized_copy;
+static long long stat_optimized_copy_nursery;
+static long long stat_optimized_copy_nursery_forwarded;
+static long long stat_optimized_copy_nursery_pinned;
+#ifdef SGEN_MARK_ON_ENQUEUE
+static long long stat_optimized_copy_major;
+static long long stat_optimized_copy_major_small_fast;
+static long long stat_optimized_copy_major_small_slow;
+static long long stat_optimized_copy_major_large;
+#endif
 static long long stat_optimized_major_mark;
 static long long stat_optimized_major_mark_small;
 static long long stat_optimized_major_mark_large;
@@ -1160,7 +1166,7 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 	MSBlockInfo *block;
 #endif
 
-	HEAVY_STAT (++stat_optimized_copy_object_called);
+	HEAVY_STAT (++stat_optimized_copy);
 
 	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
@@ -1172,14 +1178,14 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		char *forwarded, *old_obj;
 		mword vtable_word = *(mword*)obj;
 
-		HEAVY_STAT (++stat_optimized_nursery);
+		HEAVY_STAT (++stat_optimized_copy_nursery);
 
 		if (SGEN_VTABLE_IS_PINNED (vtable_word)) {
-			HEAVY_STAT (++stat_optimized_nursery_pinned);
+			HEAVY_STAT (++stat_optimized_copy_nursery_pinned);
 			return TRUE;
 		}
 		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
-			HEAVY_STAT (++stat_optimized_nursery_forwarded);
+			HEAVY_STAT (++stat_optimized_copy_nursery_forwarded);
 			*ptr = forwarded;
 			return FALSE;
 		}
@@ -1218,12 +1224,12 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
 		int type = desc & 7;
 
-		HEAVY_STAT (++stat_optimized_major);
+		HEAVY_STAT (++stat_optimized_copy_major);
 
 		if (type == DESC_TYPE_SMALL_BITMAP || type == DESC_TYPE_RUN_LENGTH) {
 			int __word, __bit;
 
-			HEAVY_STAT (++stat_optimized_major_small_fast);
+			HEAVY_STAT (++stat_optimized_copy_major_small_fast);
 
 			block = MS_BLOCK_FOR_OBJ (obj);
 			MS_CALC_MARK_BIT (__word, __bit, (obj));
@@ -1232,12 +1238,12 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc));
 			}
 		} else if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE ) {
-			HEAVY_STAT (++stat_optimized_major_small_slow);
+			HEAVY_STAT (++stat_optimized_copy_major_small_slow);
 
 			block = MS_BLOCK_FOR_OBJ (obj);
 			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
 		} else {
-			HEAVY_STAT (++stat_optimized_major_large);
+			HEAVY_STAT (++stat_optimized_copy_major_large);
 
 			if (sgen_los_object_is_pinned (obj))
 				return FALSE;
@@ -1354,9 +1360,6 @@ drain_gray_stack (ScanCopyContext ctx)
 		HEAVY_STAT (++stat_optimized_major_scan);
 
 		/* Now scan the object. */
-#ifdef HEAVY_STATISTICS
-		sgen_descriptor_count_scanned_object (desc);
-#endif
 		if (type == DESC_TYPE_SMALL_BITMAP) {
 			void **_objptr = (void**)(obj);
 			gsize _bmap = (desc) >> 16;
@@ -1377,12 +1380,15 @@ drain_gray_stack (ScanCopyContext ctx)
 
 				_objptr ++;
 			} while (_bmap);
+#ifdef HEAVY_STATISTICS
+			sgen_descriptor_count_scanned_object (desc);
+			++stat_optimized_major_scan_fast;
+#endif
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 			add_scanned_object (obj);
-			++stat_optimized_major_scan_slow;
 #endif
 		} else {
-			HEAVY_STAT (++stat_optimized_major_scan_fast);
+			HEAVY_STAT (++stat_optimized_major_scan_slow);
 			major_scan_object_no_mark (obj, desc, queue);
 		}
 	}
@@ -2462,10 +2468,16 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->drain_gray_stack = drain_gray_stack;
 
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("Optimized copy object called", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_object_called);
-	mono_counters_register ("Optimized nursery", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery);
-	mono_counters_register ("Optimized nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_forwarded);
-	mono_counters_register ("Optimized nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_nursery_pinned);
+	mono_counters_register ("Optimized copy", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy);
+	mono_counters_register ("Optimized copy nursery", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery);
+	mono_counters_register ("Optimized copy nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery_forwarded);
+	mono_counters_register ("Optimized copy nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery_pinned);
+#ifdef SGEN_MARK_ON_ENQUEUE
+	mono_counters_register ("Optimized copy major", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major);
+	mono_counters_register ("Optimized copy major small fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_fast);
+	mono_counters_register ("Optimized copy major small slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_slow);
+	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_large);
+#endif
 	mono_counters_register ("Optimized major mark", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark);
 	mono_counters_register ("Optimized major mark small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_small);
 	mono_counters_register ("Optimized major mark large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_large);
