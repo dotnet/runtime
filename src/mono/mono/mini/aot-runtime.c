@@ -2098,9 +2098,7 @@ mono_aot_init (void)
 
 	if (g_getenv ("MONO_LASTAOT"))
 		mono_last_aot_method = atoi (g_getenv ("MONO_LASTAOT"));
-#ifdef ENABLE_AOT_CACHE
 	aot_cache_init ();
-#endif
 }
 
 void
