@@ -12155,8 +12155,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				guint32 val;
 				int ialign;
 
-				GSHAREDVT_FAILURE (*ip);
-
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
@@ -12168,6 +12166,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					CHECK_TYPELOAD (klass);
 					mono_class_init (klass);
 					val = mono_type_size (&klass->byval_arg, &ialign);
+
+					if (mini_is_gsharedvt_klass (cfg, klass))
+						GSHAREDVT_FAILURE (*ip);
 				}
 				EMIT_NEW_ICONST (cfg, ins, val);
 				*sp++= ins;
