@@ -121,6 +121,7 @@ void sgen_init_descriptors (void) MONO_INTERNAL;
 
 #ifdef HEAVY_STATISTICS
 void sgen_descriptor_count_scanned_object (mword desc) MONO_INTERNAL;
+void sgen_descriptor_count_copied_object (mword desc) MONO_INTERNAL;
 #endif
 
 static inline gboolean

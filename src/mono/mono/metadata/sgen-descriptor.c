@@ -61,6 +61,7 @@ static void *all_ref_root_descrs [32];
 
 #ifdef HEAVY_STATISTICS
 static long long stat_scanned_count_per_descriptor [DESC_TYPE_MAX];
+static long long stat_copied_count_per_descriptor [DESC_TYPE_MAX];
 #endif
 
 static int
@@ -362,6 +363,14 @@ sgen_descriptor_count_scanned_object (mword desc)
 	SGEN_ASSERT (0, type, "Descriptor type can't be zero");
 	++stat_scanned_count_per_descriptor [type - 1];
 }
+
+void
+sgen_descriptor_count_copied_object (mword desc)
+{
+	int type = desc & 7;
+	SGEN_ASSERT (0, type, "Descriptor type can't be zero");
+	++stat_copied_count_per_descriptor [type - 1];
+}
 #endif
 
 void
@@ -375,6 +384,14 @@ sgen_init_descriptors (void)
 	mono_counters_register ("# scanned LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
 	mono_counters_register ("# scanned COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
 	mono_counters_register ("# scanned COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
+
+	mono_counters_register ("# copied RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
+	mono_counters_register ("# copied SMALL_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_SMALL_BITMAP - 1]);
+	mono_counters_register ("# copied COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
+	mono_counters_register ("# copied VECTOR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
+	mono_counters_register ("# copied LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
+	mono_counters_register ("# copied COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
+	mono_counters_register ("# copied COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
 #endif
 }
 

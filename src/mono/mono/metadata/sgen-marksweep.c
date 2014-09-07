@@ -1170,7 +1170,19 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 	MSBlockInfo *block;
 #endif
 
-	HEAVY_STAT (++stat_optimized_copy);
+#ifdef HEAVY_STATISTICS
+	++stat_optimized_copy;
+	{
+		char *forwarded;
+		mword desc;
+		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
+			desc = sgen_obj_get_descriptor_safe (forwarded);
+		else
+			desc = sgen_obj_get_descriptor_safe (obj);
+
+		sgen_descriptor_count_copied_object (desc);
+	}
+#endif
 
 	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
