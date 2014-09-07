@@ -1363,6 +1363,19 @@ drain_gray_stack (ScanCopyContext ctx)
 		HEAVY_STAT (++stat_optimized_major_scan);
 
 		/* Now scan the object. */
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+			void *__old = *(ptr);				\
+			if (__old) {					\
+				gboolean __still_in_nursery = optimized_copy_or_mark_object ((ptr), __old, queue); \
+				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
+					void *__copy = *(ptr);		\
+					sgen_add_to_global_remset ((ptr), __copy); \
+				}					\
+			}						\
+		} while (0)
+
 #ifdef DESCRIPTOR_FAST_PATH
 		if (type == DESC_TYPE_SMALL_BITMAP) {
 			void **_objptr = (void**)(obj);
@@ -1372,16 +1385,7 @@ drain_gray_stack (ScanCopyContext ctx)
 				int _index = GNUC_BUILTIN_CTZ (_bmap);
 				_objptr += _index;
 				_bmap >>= (_index + 1);
-
-				void *__old = *(_objptr);
-				if (__old) {
-					gboolean still_in_nursery = optimized_copy_or_mark_object (_objptr, __old, queue);
-					if (G_UNLIKELY (still_in_nursery && !sgen_ptr_in_nursery ((_objptr)) && !SGEN_OBJECT_IS_CEMENTED (*_objptr))) {
-						void *__copy = *(_objptr);
-						sgen_add_to_global_remset ((_objptr), __copy);
-					}
-				}
-
+				HANDLE_PTR (_objptr, NULL);
 				_objptr ++;
 			} while (_bmap);
 #ifdef HEAVY_STATISTICS
@@ -1396,18 +1400,6 @@ drain_gray_stack (ScanCopyContext ctx)
 			major_scan_object_no_mark (obj, desc, queue);
 		}
 #else
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {					\
-			void *__old = *(ptr);				\
-			if (__old) {					\
-				gboolean __still_in_nursery = optimized_copy_or_mark_object ((ptr), __old, queue); \
-				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
-					void *__copy = *(ptr);		\
-					sgen_add_to_global_remset ((ptr), __copy); \
-				}					\
-			}						\
-		} while (0)
-
 		{
 			char *start = obj;
 #ifdef HEAVY_STATISTICS
