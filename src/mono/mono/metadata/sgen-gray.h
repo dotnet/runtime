@@ -121,6 +121,17 @@ struct _SgenSectionGrayQueue {
 #define GRAY_LAST_CURSOR_POSITION(s) ((s)->entries + SGEN_GRAY_QUEUE_SECTION_SIZE - 1)
 #define GRAY_FIRST_CURSOR_POSITION(s) ((s)->entries)
 
+#ifdef HEAVY_STATISTICS
+extern unsigned long long stat_gray_queue_section_alloc;
+extern unsigned long long stat_gray_queue_section_free;
+extern unsigned long long stat_gray_queue_enqueue_fast_path;
+extern unsigned long long stat_gray_queue_dequeue_fast_path;
+extern unsigned long long stat_gray_queue_enqueue_slow_path;
+extern unsigned long long stat_gray_queue_dequeue_slow_path;
+#endif
+
+void sgen_init_gray_queues (void) MONO_INTERNAL;
+
 void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc) MONO_INTERNAL;
 GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
@@ -158,7 +169,7 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, char* obj, mword desc)
 	} else {
 		GrayQueueEntry entry = { obj, desc };
 
-		HEAVY_STAT (gc_stats.gray_queue_enqueue_fast_path ++);
+		HEAVY_STAT (stat_gray_queue_enqueue_fast_path ++);
 
 		*++queue->cursor = entry;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
@@ -178,7 +189,7 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 	*desc = entry.desc;
 #else
 	if (!queue->first) {
-		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
+		HEAVY_STAT (stat_gray_queue_dequeue_fast_path ++);
 
 		*obj = NULL;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
@@ -189,7 +200,7 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 		*obj = entry.obj;
 		*desc = entry.desc;
 	} else {
-		HEAVY_STAT (gc_stats.gray_queue_dequeue_fast_path ++);
+		HEAVY_STAT (stat_gray_queue_dequeue_fast_path ++);
 
 		entry = *queue->cursor--;
 		*obj = entry.obj;

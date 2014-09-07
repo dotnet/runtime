@@ -25,6 +25,15 @@
 #include "utils/mono-counters.h"
 #include "sgen-protocol.h"
 
+#ifdef HEAVY_STATISTICS
+unsigned long long stat_gray_queue_section_alloc;
+unsigned long long stat_gray_queue_section_free;
+unsigned long long stat_gray_queue_enqueue_fast_path;
+unsigned long long stat_gray_queue_dequeue_fast_path;
+unsigned long long stat_gray_queue_enqueue_slow_path;
+unsigned long long stat_gray_queue_dequeue_slow_path;
+#endif
+
 #define GRAY_QUEUE_LENGTH_LIMIT	64
 
 #ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
@@ -46,7 +55,7 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
 
-	HEAVY_STAT (gc_stats.gray_queue_section_alloc ++);
+	HEAVY_STAT (stat_gray_queue_section_alloc ++);
 
 	if (queue->alloc_prepare_func)
 		queue->alloc_prepare_func (queue);
@@ -75,7 +84,7 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 void
 sgen_gray_object_free_queue_section (GrayQueueSection *section)
 {
-	HEAVY_STAT (gc_stats.gray_queue_section_free ++);
+	HEAVY_STAT (stat_gray_queue_section_free ++);
 
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_FREED);
 	sgen_free_internal (section, INTERNAL_MEM_GRAY_QUEUE);
@@ -92,7 +101,7 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc)
 {
 	GrayQueueEntry entry = { obj, desc };
 
-	HEAVY_STAT (gc_stats.gray_queue_enqueue_slow_path ++);
+	HEAVY_STAT (stat_gray_queue_enqueue_slow_path ++);
 
 	SGEN_ASSERT (9, obj, "enqueueing a null object");
 	//sgen_check_objref (obj);
@@ -124,7 +133,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 {
 	GrayQueueEntry entry;
 
-	HEAVY_STAT (gc_stats.gray_queue_dequeue_slow_path ++);
+	HEAVY_STAT (stat_gray_queue_dequeue_slow_path ++);
 
 	if (sgen_gray_object_queue_is_empty (queue)) {
 		entry.obj = NULL;
@@ -353,4 +362,16 @@ sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *
 	unlock_section_queue (queue);
 }
 
+void
+sgen_init_gray_queues (void)
+{
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("Gray Queue alloc section", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gray_queue_section_alloc);
+	mono_counters_register ("Gray Queue free section", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gray_queue_section_free);
+	mono_counters_register ("Gray Queue enqueue fast path", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gray_queue_enqueue_fast_path);
+	mono_counters_register ("Gray Queue dequeue fast path", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gray_queue_dequeue_fast_path);
+	mono_counters_register ("Gray Queue enqueue slow path", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gray_queue_enqueue_slow_path);
+	mono_counters_register ("Gray Queue dequeue slow path", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gray_queue_dequeue_slow_path);
+#endif
+}
 #endif
