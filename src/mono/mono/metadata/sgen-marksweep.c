@@ -1151,6 +1151,7 @@ static long long stat_optimized_major_mark;
 static long long stat_optimized_major_mark_small;
 static long long stat_optimized_major_mark_large;
 static long long stat_optimized_major_scan;
+static long long stat_optimized_major_scan_no_refs;
 #ifdef DESCRIPTOR_FAST_PATH
 static long long stat_optimized_major_scan_fast;
 static long long stat_optimized_major_scan_slow;
@@ -1360,7 +1361,11 @@ drain_gray_stack (ScanCopyContext ctx)
 		}
 #endif
 
-		HEAVY_STAT (++stat_optimized_major_scan);
+#ifdef HEAVY_STATISTICS
+		++stat_optimized_major_scan;
+		if (!sgen_gc_descr_has_references (desc))
+			++stat_optimized_major_scan_no_refs;
+#endif
 
 		/* Now scan the object. */
 
@@ -2501,6 +2506,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized major mark small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_small);
 	mono_counters_register ("Optimized major mark large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_large);
 	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
+	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_no_refs);
 #ifdef DESCRIPTOR_FAST_PATH
 	mono_counters_register ("Optimized major scan slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_slow);
 	mono_counters_register ("Optimized major scan fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_fast);
