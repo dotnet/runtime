@@ -806,10 +806,9 @@ sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 	mword descr = (mword)vtable->gc_descr;
 	mword type = descr & 0x7;
 
-	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_BITMAP) {
+	if (type == DESC_TYPE_RUN_LENGTH) {
 		mword size = descr & 0xfff8;
-		if (size == 0) /* This is used to encode a string */
-			return offsetof (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+		SGEN_ASSERT (0, size >= sizeof (MonoObject), "Run length object size to small");
 		return size;
 	} else if (type == DESC_TYPE_VECTOR) {
 		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;

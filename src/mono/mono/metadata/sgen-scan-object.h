@@ -61,13 +61,6 @@
 #endif
 #undef SCAN
 		break;
-	case DESC_TYPE_SMALL_BITMAP:
-#define SCAN OBJ_BITMAP_FOREACH_PTR (desc, start)
-#ifndef SCAN_OBJECT_NOSCAN
-		SCAN;
-#endif
-#undef SCAN
-		break;
 	case DESC_TYPE_VECTOR:
 #define SCAN OBJ_VECTOR_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN

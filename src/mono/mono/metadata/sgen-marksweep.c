@@ -1242,7 +1242,7 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 
 		HEAVY_STAT (++stat_optimized_copy_major);
 
-		if (type == DESC_TYPE_SMALL_BITMAP || type == DESC_TYPE_RUN_LENGTH) {
+		if (type <= DESC_TYPE_MAX_SMALL_OBJ) {
 			int __word, __bit;
 
 			HEAVY_STAT (++stat_optimized_copy_major_small_fast);
@@ -1353,7 +1353,7 @@ drain_gray_stack (ScanCopyContext ctx)
 
 		/* Mark object or, if already marked, don't process. */
 		if (!sgen_ptr_in_nursery (obj)) {
-			if (type == DESC_TYPE_SMALL_BITMAP || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
+			if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
 				MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
 				int __word, __bit;
 
@@ -1394,9 +1394,9 @@ drain_gray_stack (ScanCopyContext ctx)
 		} while (0)
 
 #ifdef DESCRIPTOR_FAST_PATH
-		if (type == DESC_TYPE_SMALL_BITMAP) {
+		if (type == DESC_TYPE_LARGE_BITMAP) {
 			void **_objptr = (void**)(obj);
-			gsize _bmap = (desc) >> 16;
+			gsize _bmap = (desc) >> LOW_TYPE_BITS;
 			_objptr += OBJECT_HEADER_WORDS;
 			do {
 				int _index = GNUC_BUILTIN_CTZ (_bmap);

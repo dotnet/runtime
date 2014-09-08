@@ -153,12 +153,9 @@ typedef guint64 mword;
 #define SGEN_SCAN_START_SIZE (4096*2)
 
 /*
- * Objects bigger then this go into the large object space.  This size
- * has a few constraints.  It must fit into the major heap, which in
- * the case of the copying collector means that it must fit into a
- * pinned chunk.  It must also play well with the GC descriptors, some
- * of which (DESC_TYPE_RUN_LENGTH, DESC_TYPE_SMALL_BITMAP) encode the
- * object size.
+ * Objects bigger then this go into the large object space.  This size has a few
+ * constraints.  At least two of them must fit into a major heap block.  It must also play
+ * well with the run length GC descriptor, which encodes the object size.
  */
 #define SGEN_MAX_SMALL_OBJ_SIZE 8000
 

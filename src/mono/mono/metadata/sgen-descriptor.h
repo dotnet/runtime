@@ -37,11 +37,11 @@
 #define OBJECT_HEADER_WORDS (sizeof(MonoObject)/sizeof(gpointer))
 #define LOW_TYPE_BITS 3
 #define MAX_RUNLEN_OBJECT_SIZE 0xFFFF
-#define SMALL_BITMAP_SHIFT 16
-#define SMALL_BITMAP_SIZE (GC_BITS_PER_WORD - SMALL_BITMAP_SHIFT)
 #define VECTOR_INFO_SHIFT 14
 #define VECTOR_KIND_SHIFT 13
 #define VECTOR_ELSIZE_SHIFT 3
+#define VECTOR_BITMAP_SHIFT 16
+#define VECTOR_BITMAP_SIZE (GC_BITS_PER_WORD - VECTOR_BITMAP_SHIFT)
 #define LARGE_BITMAP_SIZE (GC_BITS_PER_WORD - LOW_TYPE_BITS)
 #define MAX_ELEMENT_SIZE 0x3ff
 #define VECTOR_SUBTYPE_PTRFREE (DESC_TYPE_V_PTRFREE << VECTOR_INFO_SHIFT)
@@ -82,13 +82,13 @@ enum {
 	 * object's class.
 	 */
 	DESC_TYPE_RUN_LENGTH = 1,   /* 16 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
-	DESC_TYPE_SMALL_BITMAP = 2, /* 16 bits aligned byte size | 16-48 bit bitmap */
+	DESC_TYPE_LARGE_BITMAP = 2, /* | 29-61 bitmap bits */
+	DESC_TYPE_MAX_SMALL_OBJ = 2,
 	DESC_TYPE_COMPLEX = 3,      /* index for bitmap into complex_descriptors */
-	DESC_TYPE_VECTOR = 4,       /* 10 bits element size | 1 bit kind | 2 bits desc | element desc */
-	DESC_TYPE_LARGE_BITMAP = 5, /* | 29-61 bitmap bits */
+	DESC_TYPE_COMPLEX_PTRFREE = 4, /*Nothing, used to encode large ptr objects. */
+	DESC_TYPE_VECTOR = 5,       /* 10 bits element size | 1 bit kind | 2 bits desc | element desc */
 	DESC_TYPE_COMPLEX_ARR = 6,  /* index for bitmap into complex_descriptors */
-	DESC_TYPE_COMPLEX_PTRFREE = 7, /*Nothing, used to encode large ptr objects. */
-	DESC_TYPE_MAX = 7,
+	DESC_TYPE_MAX = 6,
 	/* values for array kind */
 	DESC_TYPE_V_SZARRAY = 0, /*vector with no bounds data */
 	DESC_TYPE_V_ARRAY = 1, /* array with bounds data */
@@ -174,36 +174,6 @@ sgen_gc_descr_has_references (mword desc)
 			}	\
 		}	\
 	} while (0)
-
-#if defined(__GNUC__)
-#define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
-		/* there are pointers */        \
-		void **_objptr = (void**)(obj); \
-		gsize _bmap = (desc) >> 16;     \
-		_objptr += OBJECT_HEADER_WORDS; \
-		do { \
-			int _index = GNUC_BUILTIN_CTZ (_bmap);		\
-			_objptr += _index; \
-			_bmap >>= (_index + 1);				\
-			HANDLE_PTR (_objptr, (obj));		\
-			_objptr ++;							\
-		} while (_bmap);					\
-	} while (0)
-#else
-#define OBJ_BITMAP_FOREACH_PTR(desc,obj)       do {    \
-		/* there are pointers */        \
-		void **_objptr = (void**)(obj); \
-		gsize _bmap = (desc) >> 16;     \
-		_objptr += OBJECT_HEADER_WORDS; \
-		while (_bmap) {						   \
-			if ((_bmap & 1)) {								   \
-				HANDLE_PTR (_objptr, (obj));				   \
-			}												   \
-			_bmap >>= 1;									   \
-			++_objptr;										   \
-		}													   \
-	} while (0)
-#endif
 
 /* a bitmap desc means that there are pointer references or we'd have
  * choosen run-length, instead: add an assert to check.
