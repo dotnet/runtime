@@ -21,7 +21,7 @@ typedef struct {
     guint8 buffer[SHA1_BLOCK_LENGTH];
 } SHA1_CTX;
 
-__BEGIN_DECLS
+G_BEGIN_DECLS
 void SHA1Init(SHA1_CTX *);
 void SHA1Pad(SHA1_CTX *);
 void SHA1Transform(guint32 [5], const guint8 [SHA1_BLOCK_LENGTH]);
@@ -31,7 +31,7 @@ char *SHA1End(SHA1_CTX *, char *);
 char *SHA1File(const char *, char *);
 char *SHA1FileChunk(const char *, char *, off_t, off_t);
 char *SHA1Data(const guint8 *, size_t, char *);
-__END_DECLS
+G_END_DECLS
 
 #define HTONDIGEST(x) do {                                              \
         x[0] = htonl(x[0]);                                             \
