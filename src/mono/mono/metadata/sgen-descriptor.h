@@ -85,7 +85,7 @@ enum {
 	DESC_TYPE_LARGE_BITMAP = 2, /* | 29-61 bitmap bits */
 	DESC_TYPE_MAX_SMALL_OBJ = 2,
 	DESC_TYPE_COMPLEX = 3,      /* index for bitmap into complex_descriptors */
-	DESC_TYPE_COMPLEX_PTRFREE = 4, /*Nothing, used to encode large ptr objects. */
+	DESC_TYPE_COMPLEX_PTRFREE = 4, /* Nothing, used to encode large ptr objects and strings. */
 	DESC_TYPE_VECTOR = 5,       /* 10 bits element size | 1 bit kind | 2 bits desc | element desc */
 	DESC_TYPE_COMPLEX_ARR = 6,  /* index for bitmap into complex_descriptors */
 	DESC_TYPE_MAX = 6,
@@ -98,6 +98,8 @@ enum {
 	DESC_TYPE_V_RUN_LEN,    /* elements are run-length encoded as DESC_TYPE_RUN_LENGTH */
 	DESC_TYPE_V_BITMAP      /* elements are as the bitmap in DESC_TYPE_SMALL_BITMAP */
 };
+
+#define SGEN_DESC_STRING	(DESC_TYPE_COMPLEX_PTRFREE | (1 << LOW_TYPE_BITS))
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
  * and we either have 30/62 bitmap bits or nibble-based run-length,
@@ -127,15 +129,16 @@ void sgen_descriptor_count_copied_object (mword desc) MONO_INTERNAL;
 static inline gboolean
 sgen_gc_descr_has_references (mword desc)
 {
-	/*Both string and fixed size objects are encoded using a zero run RUN_LEN*/
+	/* Small pointer-free objects are encoded using a zero run RUN_LEN */
 	if ((desc & 0xffff0007) == DESC_TYPE_RUN_LENGTH)
+		return FALSE;
+
+	/* Large pointer-free objects and strings */
+	if ((desc & 0x7) == DESC_TYPE_COMPLEX_PTRFREE)
 		return FALSE;
 
 	/*The array is ptr-free*/
 	if ((desc & 0xC007) == (DESC_TYPE_VECTOR | VECTOR_SUBTYPE_PTRFREE))
-		return FALSE;
-
-	if ((desc & 0x7) == DESC_TYPE_COMPLEX_PTRFREE)
 		return FALSE;
 
 	return TRUE;

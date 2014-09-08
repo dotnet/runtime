@@ -122,7 +122,7 @@ sgen_get_complex_descriptor (mword desc)
 void*
 mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 {
-	return (void*) DESC_TYPE_COMPLEX_PTRFREE;
+	return (void*)SGEN_DESC_STRING;
 }
 
 void*
