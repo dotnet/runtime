@@ -178,19 +178,35 @@ sgen_gc_descr_has_references (mword desc)
 /* a bitmap desc means that there are pointer references or we'd have
  * choosen run-length, instead: add an assert to check.
  */
+#ifdef __GNUC__
+#define OBJ_LARGE_BITMAP_FOREACH_PTR(desc,obj)	do {		\
+		/* there are pointers */			\
+		void **_objptr = (void**)(obj);			\
+		gsize _bmap = (desc) >> LOW_TYPE_BITS;		\
+		_objptr += OBJECT_HEADER_WORDS;			\
+		do {						\
+			int _index = GNUC_BUILTIN_CTZ (_bmap);	\
+			_objptr += _index;			\
+			_bmap >>= (_index + 1);			\
+			HANDLE_PTR (_objptr, (obj));		\
+			++_objptr;				\
+		} while (_bmap);				\
+	} while (0)
+#else
 #define OBJ_LARGE_BITMAP_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
 		gsize _bmap = (desc) >> LOW_TYPE_BITS;	\
 		_objptr += OBJECT_HEADER_WORDS;	\
-		while (_bmap) {	\
+		do {	\
 			if ((_bmap & 1)) {	\
 				HANDLE_PTR (_objptr, (obj));	\
 			}	\
 			_bmap >>= 1;	\
 			++_objptr;	\
-		}	\
+		} while (_bmap)		\
 	} while (0)
+#endif
 
 #define OBJ_COMPLEX_FOREACH_PTR(vt,obj)	do {	\
 		/* there are pointers */	\
