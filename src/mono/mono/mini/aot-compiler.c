@@ -308,39 +308,33 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 static void
 aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
 {
-	char *msg;
+	FILE *output;
 	va_list args;
 
-	va_start (args, format);
-	if (vasprintf (&msg, format, args) < 0)
-		return;
-	va_end (args);
-
 	if (acfg->logfile)
-		fprintf (acfg->logfile, "%s", msg);
+		output = acfg->logfile;
 	else
-		printf ("%s", msg);
+		output = stdout;
 
-	free (msg);
+	va_start (args, format);
+	vfprintf (output, format, args);
+	va_end (args);
 }
 
 static void
 aot_printerrf (MonoAotCompile *acfg, const gchar *format, ...)
 {
-	char *msg;
+	FILE *output;
 	va_list args;
 
-	va_start (args, format);
-	if (vasprintf (&msg, format, args) < 0)
-		return;
-	va_end (args);
-
 	if (acfg->logfile)
-		fprintf (acfg->logfile, "%s", msg);
+		output = acfg->logfile;
 	else
-		fprintf (stderr, "%s", msg);
+		output = stderr;
 
-	free (msg);
+	va_start (args, format);
+	vfprintf (output, format, args);
+	va_end (args);
 }
 
 /* Wrappers around the image writer functions */
