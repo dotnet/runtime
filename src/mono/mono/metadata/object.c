@@ -287,8 +287,19 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	if (!klass->image->checked_module_cctor) {
 		mono_image_check_for_module_cctor (klass->image);
 		if (klass->image->has_module_cctor) {
-			MonoClass *module_klass = mono_class_get (klass->image, MONO_TOKEN_TYPE_DEF | 1);
-			MonoVTable *module_vtable = mono_class_vtable_full (vtable->domain, module_klass, raise_exception);
+			MonoError error;
+			MonoClass *module_klass;
+			MonoVTable *module_vtable;
+
+			module_klass = mono_class_get_checked (klass->image, MONO_TOKEN_TYPE_DEF | 1, &error);
+			if (!module_klass) {
+				exc = mono_error_convert_to_exception (&error);
+				if (raise_exception)
+					mono_raise_exception (exc);
+				return exc; 
+			}
+				
+			module_vtable = mono_class_vtable_full (vtable->domain, module_klass, raise_exception);
 			if (!module_vtable)
 				return NULL;
 			exc = mono_runtime_class_init_full (module_vtable, raise_exception);
@@ -4596,9 +4607,11 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token)
 {
+	MonoError error;
 	MonoClass *class;
 
-	class = mono_class_get (image, token);
+	class = mono_class_get_checked (image, token, &error);
+	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
 	return mono_object_new (domain, class);
 }
