@@ -7419,6 +7419,7 @@ find_nocase (gpointer key, gpointer value, gpointer user_data)
  * @image: The MonoImage where the type is looked up in
  * @name_space: the type namespace
  * @name: the type short name.
+ * @deprecated: use the _checked variant
  *
  * Obtains a MonoClass with a given namespace and a given name which
  * is located in the given MonoImage.   The namespace and name
@@ -7427,11 +7428,22 @@ find_nocase (gpointer key, gpointer value, gpointer user_data)
 MonoClass *
 mono_class_from_name_case (MonoImage *image, const char* name_space, const char *name)
 {
+	MonoError error;
+	MonoClass *res = mono_class_from_name_case_checked (image, name_space, name, &error);
+	g_assert (!mono_error_ok (&error));
+	return res;
+}
+
+MonoClass *
+mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
+{
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *n;
 	const char *nspace;
 	guint32 i, visib;
+
+	mono_error_init (error);
 
 	if (image_is_dynamic (image)) {
 		guint32 token = 0;
@@ -7461,7 +7473,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 		mono_image_unlock (image);
 		
 		if (token)
-			return mono_class_get (image, MONO_TOKEN_TYPE_DEF | token);
+			return mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | token, error);
 		else
 			return NULL;
 
@@ -7480,7 +7492,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 		n = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 		if (mono_utf8_strcasecmp (n, name) == 0 && mono_utf8_strcasecmp (nspace, name_space) == 0)
-			return mono_class_get (image, MONO_TOKEN_TYPE_DEF | i);
+			return mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | i, error);
 	}
 	return NULL;
 }

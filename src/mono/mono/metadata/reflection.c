@@ -7487,10 +7487,13 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	if (!image)
 		image = mono_defaults.corlib;
 
-	if (ignorecase)
-		klass = mono_class_from_name_case (image, info->name_space, info->name);
-	else
+	if (ignorecase) {
+		MonoError error;
+		klass = mono_class_from_name_case_checked (image, info->name_space, info->name, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME Don't swallow the error */
+	} else {
 		klass = mono_class_from_name (image, info->name_space, info->name);
+	}
 	if (!klass)
 		return NULL;
 	for (mod = info->nested; mod; mod = mod->next) {
