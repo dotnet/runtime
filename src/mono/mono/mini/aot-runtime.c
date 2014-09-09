@@ -1466,7 +1466,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	failure_file = fopen (failure_fname, "r");
 	g_free (failure_fname);
 	if (!failure_file) {
-		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: assembly '%s' previously failed to compile '%s' ('%s')... ", assembly->image->name, failure_fname);
+		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: assembly '%s' previously failed to compile '%s' ('%s')... ", assembly->image->name, fname, failure_fname);
 		return NULL;
 	} else {
 		fclose (failure_file);
