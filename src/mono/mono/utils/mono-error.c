@@ -636,20 +636,18 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 }
 
 /*
-Raises the exception of @error.
-Does nothing if @error has a success error code.
-Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
-to construct the first exception object.
-The error object @error is cleaned up. 
+Convert this MonoError to an exception if it's faulty or return NULL.
+The error object is cleant after.
 */
-void
-mono_error_raise_exception (MonoError *target_error)
+
+MonoException*
+mono_error_convert_to_exception (MonoError *target_error)
 {
 	MonoError error;
 	MonoException *ex;
 
 	if (mono_error_ok (target_error))
-		return;
+		return NULL;
 
 	ex = mono_error_prepare_exception (target_error, &error);
 	if (!mono_error_ok (&error)) {
@@ -661,6 +659,21 @@ mono_error_raise_exception (MonoError *target_error)
 		mono_error_cleanup (&error);
 	}
 	mono_error_cleanup (target_error);
+	return ex;
+}
 
-	mono_raise_exception (ex);	
+
+/*
+Raises the exception of @error.
+Does nothing if @error has a success error code.
+Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
+to construct the first exception object.
+The error object @error is cleaned up. 
+*/
+void
+mono_error_raise_exception (MonoError *target_error)
+{
+	MonoException *ex = mono_error_convert_to_exception (target_error);
+	if (ex)
+		mono_raise_exception (ex);	
 }
