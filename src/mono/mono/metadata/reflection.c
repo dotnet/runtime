@@ -1702,8 +1702,10 @@ fieldref_encode_signature (MonoDynamicImage *assembly, MonoImage *field_image, M
 	if (type->num_mods) {
 		for (i = 0; i < type->num_mods; ++i) {
 			if (field_image) {
-				MonoClass *class = mono_class_get (field_image, type->modifiers [i].token);
-				g_assert (class);
+				MonoError error;
+				MonoClass *class = mono_class_get_checked (field_image, type->modifiers [i].token, &error);
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+
 				token = mono_image_typedef_or_ref (assembly, &class->byval_arg);
 			} else {
 				token = type->modifiers [i].token;
@@ -3798,7 +3800,9 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	t = &image->tables [MONO_TABLE_TYPEDEF];
 
 	for (i = 0; i < t->rows; ++i) {
-		MonoClass *klass = mono_class_get (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, i + 1));
+		MonoError error;
+		MonoClass *klass = mono_class_get_checked (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, i + 1), &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
 		if (klass->flags & TYPE_ATTRIBUTE_PUBLIC)
 			mono_image_fill_export_table_from_class (domain, klass, module_index, 0, assembly);
@@ -9973,7 +9977,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 		mono_class_set_ref_info (klass, tb);
 
-		/* Put into cache so mono_class_get () will find it.
+		/* Put into cache so mono_class_get_checked () will find it.
 		Skip nested types as those should not be available on the global scope. */
 		if (!tb->nesting_type)
 			mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
