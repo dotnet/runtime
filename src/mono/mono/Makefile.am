@@ -1,5 +1,5 @@
 if CROSS_COMPILING
-SUBDIRS = arch utils io-layer cil metadata $(interpreter_dir) mini dis profiler
+SUBDIRS = arch utils io-layer cil metadata mini dis profiler
 else
 if INSTALL_MONOTOUCH
 SUBDIRS = utils io-layer metadata arch mini profiler
@@ -26,7 +26,7 @@ monotouch-do-clean:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
     done;
 else
-SUBDIRS = arch utils io-layer cil metadata $(interpreter_dir) mini dis monograph tests unit-tests benchmark profiler
+SUBDIRS = arch utils io-layer cil metadata mini dis monograph tests unit-tests benchmark profiler
 endif
 endif
-DIST_SUBDIRS = arch utils io-layer cil metadata interpreter mini dis monograph tests unit-tests benchmark profiler
+DIST_SUBDIRS = arch utils io-layer cil metadata mini dis monograph tests unit-tests benchmark profiler
