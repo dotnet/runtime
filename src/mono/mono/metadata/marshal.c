@@ -2739,6 +2739,7 @@ mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype)
 static MonoClass*
 get_wrapper_target_class (MonoImage *image)
 {
+	MonoError error;
 	MonoClass *klass;
 
 	/*
@@ -2754,10 +2755,12 @@ get_wrapper_target_class (MonoImage *image)
 	 * To avoid these problems, we put the wrappers into the <Module> class of 
 	 * the image.
 	 */
-	if (image_is_dynamic (image))
+	if (image_is_dynamic (image)) {
 		klass = ((MonoDynamicImage*)image)->wrappers_type;
-	else
-		klass = mono_class_get (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, 1));
+	} else {
+		klass = mono_class_get_checked (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, 1), &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	}
 	g_assert (klass);
 
 	return klass;
@@ -9490,8 +9493,9 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 	/* Why is this a modopt ? */
 	if (sig->ret && sig->ret->num_mods) {
 		for (i = 0; i < sig->ret->num_mods; ++i) {
-			MonoClass *cmod_class = mono_class_get (method->klass->image, sig->ret->modifiers [i].token);
-			g_assert (cmod_class);
+			MonoError error;
+			MonoClass *cmod_class = mono_class_get_checked (method->klass->image, sig->ret->modifiers [i].token, &error);
+			g_assert (mono_error_ok (&error));
 			if ((cmod_class->image == mono_defaults.corlib) && !strcmp (cmod_class->name_space, "System.Runtime.CompilerServices")) {
 				if (!strcmp (cmod_class->name, "CallConvCdecl"))
 					csig->call_convention = MONO_CALL_C;
