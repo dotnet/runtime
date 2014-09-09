@@ -1399,6 +1399,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 		MonoDomain *domain = mono_domain_get ();
 		MonoAssembly *entry_assembly = domain->entry_assembly;
 
+		// FIXME: This cannot be used for mscorlib during startup, since entry_assembly is not set yet
 		for (l = config->apps; l; l = l->next) {
 			char *n = l->data;
 
@@ -1450,11 +1451,14 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	if (module)
 		return module;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: not found.");
-
-	if (!strcmp (assembly->aname.name, "mscorlib") && !mono_defaults.corlib)
-		/* Can't AOT this during startup */
+	if (!strcmp (assembly->aname.name, "mscorlib") && !mscorlib_aot_loaded)
+		/*
+		 * Can't AOT this during startup, so we AOT it when called later from
+		 * mono_aot_get_method ().
+		 */
 		return NULL;
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: not found.");
 
 	/* Only AOT one assembly per run to avoid slowing down execution too much */
 	if (cache_count > 0)
@@ -1464,11 +1468,12 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	/* Check for previous failure */
 	failure_fname = g_strdup_printf ("%s.failure", fname);
 	failure_file = fopen (failure_fname, "r");
-	g_free (failure_fname);
-	if (!failure_file) {
+	if (failure_file) {
 		mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: assembly '%s' previously failed to compile '%s' ('%s')... ", assembly->image->name, fname, failure_fname);
+		g_free (failure_fname);
 		return NULL;
 	} else {
+		g_free (failure_fname);
 		fclose (failure_file);
 	}
 
@@ -1737,10 +1742,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 
 	if (mono_security_cas_enabled ())
-		return;
-
-	if (enable_aot_cache && !strcmp (assembly->aname.name, "mscorlib") && !mono_defaults.corlib && !mono_aot_only)
-		/* Loaded later from mono_aot_get_method () */
 		return;
 
 	mono_aot_lock ();
@@ -3796,10 +3797,10 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	if (enable_aot_cache && !amodule && domain->entry_assembly && klass->image == mono_defaults.corlib) {
 		/* This cannot be AOTed during startup, so do it now */
 		if (!mscorlib_aot_loaded) {
+			mscorlib_aot_loaded = TRUE;
 			load_aot_module (klass->image->assembly, NULL);
 			amodule = klass->image->aot_module;
 		}
-		mscorlib_aot_loaded = TRUE;
 	}
 
 	if (!amodule)
