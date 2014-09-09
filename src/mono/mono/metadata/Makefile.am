@@ -342,4 +342,4 @@ endif
 endif
 
 EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
-		tpool-poll.c tpool-epoll.c tpool-kqueue.c Makefile.am.in
+		tpool-poll.c tpool-epoll.c tpool-kqueue.c
