@@ -3381,7 +3381,16 @@ parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
 				if (ec->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					ec->data.filter_offset = tof_value;
 				} else if (ec->flags == MONO_EXCEPTION_CLAUSE_NONE) {
-					ec->data.catch_class = tof_value? mono_class_get (m, tof_value): 0;
+					ec->data.catch_class = NULL;
+					if (tof_value) {
+						MonoError error;
+						ec->data.catch_class = mono_class_get_checked (m, tof_value, &error);
+						if (!mono_error_ok (&error)) {
+							mono_error_cleanup (&error); /* FIXME don't swallow the error */
+							g_free (clauses);
+							return NULL;
+						}
+					}
 				} else {
 					ec->data.catch_class = NULL;
 				}
@@ -3484,7 +3493,7 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 MonoMethodHeader *
 mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr)
 {
-	MonoMethodHeader *mh;
+	MonoMethodHeader *mh = NULL;
 	unsigned char flags = *(const unsigned char *) ptr;
 	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 	guint16 fat_flags;
@@ -3540,11 +3549,11 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	if (local_var_sig_tok) {
 		int idx = (local_var_sig_tok & 0xffffff)-1;
 		if (idx >= t->rows || idx < 0)
-			return NULL;
+			goto fail;
 		mono_metadata_decode_row (t, idx, cols, 1);
 
 		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], NULL))
-			return NULL;
+			goto fail;
 	}
 	if (fat_flags & METHOD_HEADER_MORE_SECTS)
 		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr);
@@ -3563,11 +3572,8 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_internal (m, container,
 																MONO_PARSE_LOCAL, 0, TRUE, locals_ptr, &locals_ptr);
-			if (!mh->locals [i]) {
-				g_free (clauses);
-				g_free (mh);
-				return NULL;
-			}
+			if (!mh->locals [i])
+				goto fail;
 		}
 	} else {
 		mh = g_malloc0 (MONO_SIZEOF_METHOD_HEADER + num_clauses * sizeof (MonoExceptionClause));
@@ -3585,6 +3591,11 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh->num_clauses = num_clauses;
 	}
 	return mh;
+fail:
+	g_free (clauses);
+	g_free (mh);
+	return NULL;
+
 }
 
 /*
