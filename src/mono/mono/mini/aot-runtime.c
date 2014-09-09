@@ -405,6 +405,7 @@ decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *
 static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
+	MonoError error;
 	MonoImage *image;
 	MonoClass *klass = NULL, *eklass;
 	guint32 token, rank, idx;
@@ -423,21 +424,24 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		image = load_image (module, 0, TRUE);
 		if (!image)
 			return NULL;
-		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + idx);
+		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF + idx, &error);
+		g_assert (mono_error_ok (&error));
 		break;
 	case MONO_AOT_TYPEREF_TYPEDEF_INDEX_IMAGE:
 		idx = decode_value (p, &p);
 		image = load_image (module, decode_value (p, &p), TRUE);
 		if (!image)
 			return NULL;
-		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + idx);
+		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF + idx, &error);
+		g_assert (mono_error_ok (&error));
 		break;
 	case MONO_AOT_TYPEREF_TYPESPEC_TOKEN:
 		token = decode_value (p, &p);
 		image = module->assembly->image;
 		if (!image)
 			return NULL;
-		klass = mono_class_get (image, token);
+		klass = mono_class_get_checked (image, token, &error);
+		g_assert (mono_error_ok (&error));
 		break;
 	case MONO_AOT_TYPEREF_GINST: {
 		MonoClass *gclass;
@@ -2291,8 +2295,11 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			name_space2 = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 			if (!strcmp (name, name2) && !strcmp (name_space, name_space2)) {
+				MonoError error;
 				amodule_unlock (amodule);
-				*klass = mono_class_get (image, token);
+				*klass = mono_class_get_checked (image, token, &error);
+				if (!mono_error_ok (&error))
+					mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 				/* Add to cache */
 				if (*klass) {

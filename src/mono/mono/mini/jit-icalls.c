@@ -17,7 +17,7 @@
 #endif
 
 #include "jit-icalls.h"
-
+#include <mono/utils/mono-error-internals.h>
 void*
 mono_ldftn (MonoMethod *method)
 {
@@ -1022,9 +1022,9 @@ mono_helper_ldstr_mscorlib (guint32 idx)
 MonoObject*
 mono_helper_newobj_mscorlib (guint32 idx)
 {
-	MonoClass *klass = mono_class_get (mono_defaults.corlib, MONO_TOKEN_TYPE_DEF | idx);
-	
-	g_assert (klass);
+	MonoError error;
+	MonoClass *klass = mono_class_get_checked (mono_defaults.corlib, MONO_TOKEN_TYPE_DEF | idx, &error);
+	mono_error_raise_exception (&error);
 
 	return mono_object_new (mono_domain_get (), klass);
 }
