@@ -6620,6 +6620,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 	 * call void class [mscorlib]System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray(class [mscorlib]System.Array, valuetype [mscorlib]System.RuntimeFieldHandle)
 	 */
 	if (ip [0] == CEE_DUP && ip [1] == CEE_LDTOKEN && ip [5] == 0x4 && ip [6] == CEE_CALL) {
+		MonoError error;
 		guint32 token = read32 (ip + 7);
 		guint32 field_token = read32 (ip + 2);
 		guint32 field_index = field_token & 0xffffff;
@@ -6628,11 +6629,13 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		int size = 0;
 		MonoMethod *cmethod;
 		MonoClass *dummy_class;
-		MonoClassField *field = mono_field_from_token (method->klass->image, field_token, &dummy_class, NULL);
+		MonoClassField *field = mono_field_from_token_checked (method->klass->image, field_token, &dummy_class, NULL, &error);
 		int dummy_align;
 
-		if (!field)
+		if (!field) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			return NULL;
+		}
 
 		*out_field_token = field_token;
 
@@ -10171,10 +10174,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = field->parent;
 			}
 			else {
-				field = mono_field_from_token (image, token, &klass, generic_context);
+				field = mono_field_from_token_checked (image, token, &klass, generic_context, &cfg->error);
+				CHECK_CFG_ERROR;
 			}
-			if (!field)
-				LOAD_ERROR;
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
 				FIELD_ACCESS_FAILURE (method, field);
 			mono_class_init (klass);

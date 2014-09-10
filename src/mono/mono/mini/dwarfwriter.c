@@ -1422,10 +1422,12 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_LDSFLD:
 	case CEE_STFLD:
 	case CEE_STSFLD:
-		if (method->wrapper_type)
+		if (method->wrapper_type) {
 			field = data;
-		else
-			field = mono_field_from_token (method->klass->image, token, &klass, NULL);
+		} else {
+			field = mono_field_from_token_checked (method->klass->image, token, &klass, NULL,  &error);
+			g_assert (mono_error_ok (&error)); /* FIXME error handling */
+		}
 		desc = mono_field_full_name (field);
 		res = g_strdup_printf ("<%s>", desc);
 		g_free (desc);
