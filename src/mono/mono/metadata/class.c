@@ -191,9 +191,9 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
 
-	idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
-	switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
-	case MONO_RESOLTION_SCOPE_MODULE:
+	idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLUTION_SCOPE_BITS;
+	switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLUTION_SCOPE_MASK) {
+	case MONO_RESOLUTION_SCOPE_MODULE:
 		/*
 		LAMESPEC The spec says that a null module resolution scope should go through the exported type table.
 		This is not the observed behavior of existing implementations.
@@ -203,13 +203,13 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		res = mono_class_from_name (image, nspace, name); /*FIXME proper error handling*/
 		goto done;
 
-	case MONO_RESOLTION_SCOPE_MODULEREF:
+	case MONO_RESOLUTION_SCOPE_MODULEREF:
 		module = mono_image_load_module (image, idx);
 		if (module)
 			res = mono_class_from_name (module, nspace, name); /*FIXME proper error handling*/
 		goto done;
 
-	case MONO_RESOLTION_SCOPE_TYPEREF: {
+	case MONO_RESOLUTION_SCOPE_TYPEREF: {
 		MonoClass *enclosing;
 		GList *tmp;
 
@@ -246,7 +246,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		g_warning ("TypeRef ResolutionScope not yet handled (%d) for %s.%s in image %s", idx, nspace, name, image->name);
 		goto done;
 	}
-	case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
+	case MONO_RESOLUTION_SCOPE_ASSEMBLYREF:
 		break;
 	}
 
@@ -7100,18 +7100,18 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 		}
 		mono_metadata_decode_row (t, idx-1, cols, MONO_TYPEREF_SIZE);
 
-		idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
-		switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
-		case MONO_RESOLTION_SCOPE_MODULE:
+		idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLUTION_SCOPE_BITS;
+		switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLUTION_SCOPE_MASK) {
+		case MONO_RESOLUTION_SCOPE_MODULE:
 			/* FIXME: */
 			return g_strdup ("");
-		case MONO_RESOLTION_SCOPE_MODULEREF:
+		case MONO_RESOLUTION_SCOPE_MODULEREF:
 			/* FIXME: */
 			return g_strdup ("");
-		case MONO_RESOLTION_SCOPE_TYPEREF:
+		case MONO_RESOLUTION_SCOPE_TYPEREF:
 			/* FIXME: */
 			return g_strdup ("");
-		case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
+		case MONO_RESOLUTION_SCOPE_ASSEMBLYREF:
 			mono_assembly_get_assemblyref (image, idx - 1, &aname);
 			return mono_stringify_assembly_name (&aname);
 		default:

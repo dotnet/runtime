@@ -2256,8 +2256,8 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 		values = table->values + token * MONO_MODULEREF_SIZE;
 		values [MONO_MODULEREF_NAME] = string_heap_insert (&assembly->sheap, image->module_name);
 
-		token <<= MONO_RESOLTION_SCOPE_BITS;
-		token |= MONO_RESOLTION_SCOPE_MODULEREF;
+		token <<= MONO_RESOLUTION_SCOPE_BITS;
+		token |= MONO_RESOLUTION_SCOPE_MODULEREF;
 		g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
 
 		return token;
@@ -2299,8 +2299,8 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	} else {
 		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
 	}
-	token <<= MONO_RESOLTION_SCOPE_BITS;
-	token |= MONO_RESOLTION_SCOPE_ASSEMBLYREF;
+	token <<= MONO_RESOLUTION_SCOPE_BITS;
+	token |= MONO_RESOLUTION_SCOPE_ASSEMBLYREF;
 	g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
 	return token;
 }
@@ -2390,7 +2390,7 @@ mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboo
 		enclosing = mono_image_typedef_or_ref_full (assembly, &klass->nested_in->byval_arg, FALSE);
 		/* get the typeref idx of the enclosing type */
 		enclosing >>= MONO_TYPEDEFORREF_BITS;
-		scope = (enclosing << MONO_RESOLTION_SCOPE_BITS) | MONO_RESOLTION_SCOPE_TYPEREF;
+		scope = (enclosing << MONO_RESOLUTION_SCOPE_BITS) | MONO_RESOLUTION_SCOPE_TYPEREF;
 	} else {
 		scope = resolution_scope_from_image (assembly, klass->image);
 	}
@@ -3824,8 +3824,8 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 		forwarder = FALSE;
 	} else {
 		scope = resolution_scope_from_image (assembly, klass->image);
-		g_assert ((scope & MONO_RESOLTION_SCOPE_MASK) == MONO_RESOLTION_SCOPE_ASSEMBLYREF);
-		scope_idx = scope >> MONO_RESOLTION_SCOPE_BITS;
+		g_assert ((scope & MONO_RESOLUTION_SCOPE_MASK) == MONO_RESOLUTION_SCOPE_ASSEMBLYREF);
+		scope_idx = scope >> MONO_RESOLUTION_SCOPE_BITS;
 		impl = (scope_idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
 	}
 
