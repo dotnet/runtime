@@ -854,7 +854,7 @@ major_dump_heap (FILE *heap_dump_file)
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) {	\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			if ((block)->has_references)			\
+			if (sgen_gc_descr_has_references (desc))			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
@@ -866,7 +866,7 @@ major_dump_heap (FILE *heap_dump_file)
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj); \
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			if ((block)->has_references)			\
+			if (sgen_gc_descr_has_references (desc))			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
@@ -879,7 +879,7 @@ major_dump_heap (FILE *heap_dump_file)
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		MS_PAR_SET_MARK_BIT (__was_marked, (block), __word, __bit); \
 		if (!__was_marked) {					\
-			if ((block)->has_references)			\
+			if (sgen_gc_descr_has_references (desc))			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
@@ -891,7 +891,7 @@ major_dump_heap (FILE *heap_dump_file)
 		SGEN_ASSERT (0, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		if (MS_OBJ_ALLOCED ((obj), (block))) { \
-			if ((block)->has_references) {			\
+			if (sgen_gc_descr_has_references (desc)) {						\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			} else {					\
 				MS_SET_MARK_BIT ((block), __word, __bit); \
@@ -906,7 +906,7 @@ major_dump_heap (FILE *heap_dump_file)
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
 		{		\
-			if ((block)->has_references) {			\
+			if (sgen_gc_descr_has_references (desc)) {			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			} else {					\
 				MS_SET_MARK_BIT ((block), __word, __bit); \
