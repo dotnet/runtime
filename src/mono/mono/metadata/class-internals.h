@@ -209,7 +209,9 @@ enum {
 	MONO_EXCEPTION_BAD_IMAGE = 12,
 	MONO_EXCEPTION_OBJECT_SUPPLIED = 13, /*The exception object is already created.*/
 	MONO_EXCEPTION_OUT_OF_MEMORY = 14,
-	MONO_EXCEPTION_INLINE_FAILED = 15
+	MONO_EXCEPTION_INLINE_FAILED = 15,
+	MONO_EXCEPTION_MONO_ERROR = 16,
+	/* add other exception type */
 };
 
 /* This struct collects the info needed for the runtime use of a class,

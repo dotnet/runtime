@@ -1639,6 +1639,9 @@ typedef struct {
 	guint8 *gc_map;
 	guint32 gc_map_size;
 
+	/* Error handling */
+	MonoError error;
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;

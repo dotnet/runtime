@@ -123,6 +123,13 @@
 		LOAD_ERROR;					\
 	} while (0)
 
+#define CHECK_CFG_ERROR do {\
+		if (!mono_error_ok (&cfg->error)) { \
+			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);	\
+			goto mono_error_exit; \
+		} \
+	} while (0)
+
 /* Determine whenever 'ins' represents a load of the 'this' argument */
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && ((ins)->opcode == OP_MOVE) && ((ins)->sreg1 == cfg->args [0]->dreg))
 
@@ -12380,6 +12387,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if ((cfg->verbose_level > 2) && (cfg->method == method)) 
 		mono_print_code (cfg, "AFTER METHOD-TO-IR");
 
+	goto cleanup;
+
+mono_error_exit:
+	g_assert (!mono_error_ok (&cfg->error));
 	goto cleanup;
  
  exception_exit:
