@@ -1396,16 +1396,7 @@ drain_gray_stack (ScanCopyContext ctx)
 
 #ifdef DESCRIPTOR_FAST_PATH
 		if (type == DESC_TYPE_LARGE_BITMAP) {
-			void **_objptr = (void**)(obj);
-			gsize _bmap = (desc) >> LOW_TYPE_BITS;
-			_objptr += OBJECT_HEADER_WORDS;
-			do {
-				int _index = GNUC_BUILTIN_CTZ (_bmap);
-				_objptr += _index;
-				_bmap >>= (_index + 1);
-				HANDLE_PTR (_objptr, NULL);
-				_objptr ++;
-			} while (_bmap);
+			OBJ_LARGE_BITMAP_FOREACH_PTR (desc, obj);
 #ifdef HEAVY_STATISTICS
 			sgen_descriptor_count_scanned_object (desc);
 			++stat_optimized_major_scan_fast;
