@@ -3469,8 +3469,12 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code, *info;
 
-	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
+	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE) {
+		if (mono_aot_only)
+			/* The caller cannot handle this */
+			g_assert_not_reached ();
 		return NULL;
+	}
 
 	if ((domain != mono_get_root_domain ()) && (!(amodule->info.opts & MONO_OPT_SHARED)))
 		/* Non shared AOT code can't be used in other appdomains */
