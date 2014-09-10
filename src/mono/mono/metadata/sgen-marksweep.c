@@ -1251,7 +1251,8 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 			MS_CALC_MARK_BIT (__word, __bit, (obj));
 			if (!MS_MARK_BIT ((block), __word, __bit)) {
 				MS_SET_MARK_BIT ((block), __word, __bit);
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc));
+				if (sgen_gc_descr_has_references (desc))
+					GRAY_OBJECT_ENQUEUE (queue, obj, desc);
 			}
 		} else if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE ) {
 			HEAVY_STAT (++stat_optimized_copy_major_small_slow);
