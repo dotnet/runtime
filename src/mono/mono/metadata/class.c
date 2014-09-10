@@ -8473,11 +8473,16 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 		sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
 		if (*sig == 0x6) { /* it's a field */
+			MonoError error;
 			MonoClass *klass;
 			MonoClassField *field;
-			field = mono_field_from_token (image, token, &klass, context);
+			field = mono_field_from_token_checked (image, token, &klass, context, &error);
 			if (handle_class)
 				*handle_class = mono_defaults.fieldhandle_class;
+			if (!field) {
+				mono_loader_set_error_from_mono_error (&error);
+				mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+			}
 			return field;
 		} else {
 			MonoMethod *meth;

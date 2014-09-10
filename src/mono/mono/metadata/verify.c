@@ -934,6 +934,7 @@ mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 	
 static MonoClassField*
 verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const char *opcode) {
+	MonoError error;
 	MonoClassField *field;
 	MonoClass *klass = NULL;
 
@@ -946,12 +947,12 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const
 			return NULL;
 		}
 
-		field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
+		field = mono_field_from_token_checked (ctx->image, token, &klass, ctx->generic_context, &error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error */
 	}
 
-	if (!field || !field->parent || !klass || mono_loader_get_last_error ()) {
+	if (!field || !field->parent || !klass) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		mono_loader_clear_error ();
 		return NULL;
 	}
 
