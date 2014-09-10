@@ -147,7 +147,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	if (first_set < 0) {
 		SGEN_LOG (6, "Ptrfree descriptor %p, size: %zd", (void*)desc, stored_size);
 		if (stored_size <= MAX_RUNLEN_OBJECT_SIZE && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE)
-			return (void*)(DESC_TYPE_RUN_LENGTH | stored_size);
+			return (void*)(DESC_TYPE_SMALL_PTRFREE | stored_size);
 		return (void*)DESC_TYPE_COMPLEX_PTRFREE;
 	}
 
@@ -364,6 +364,7 @@ sgen_init_descriptors (void)
 {
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("# scanned RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
+	mono_counters_register ("# scanned SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
 	mono_counters_register ("# scanned COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
 	mono_counters_register ("# scanned VECTOR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
 	mono_counters_register ("# scanned LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
@@ -371,6 +372,7 @@ sgen_init_descriptors (void)
 	mono_counters_register ("# scanned COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
 
 	mono_counters_register ("# copied RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
+	mono_counters_register ("# copied SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
 	mono_counters_register ("# copied COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
 	mono_counters_register ("# copied VECTOR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
 	mono_counters_register ("# copied LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);

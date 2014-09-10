@@ -83,12 +83,13 @@ enum {
 	 */
 	DESC_TYPE_RUN_LENGTH = 1,   /* 16 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
 	DESC_TYPE_LARGE_BITMAP = 2, /* | 29-61 bitmap bits */
-	DESC_TYPE_MAX_SMALL_OBJ = 2,
-	DESC_TYPE_COMPLEX = 3,      /* index for bitmap into complex_descriptors */
-	DESC_TYPE_COMPLEX_PTRFREE = 4, /* Nothing, used to encode large ptr objects and strings. */
+	DESC_TYPE_SMALL_PTRFREE = 3,
+	DESC_TYPE_MAX_SMALL_OBJ = 3,
+	DESC_TYPE_COMPLEX = 4,      /* index for bitmap into complex_descriptors */
 	DESC_TYPE_VECTOR = 5,       /* 10 bits element size | 1 bit kind | 2 bits desc | element desc */
 	DESC_TYPE_COMPLEX_ARR = 6,  /* index for bitmap into complex_descriptors */
-	DESC_TYPE_MAX = 6,
+	DESC_TYPE_COMPLEX_PTRFREE = 7, /* Nothing, used to encode large ptr objects and strings. */
+	DESC_TYPE_MAX = 7,
 	/* values for array kind */
 	DESC_TYPE_V_SZARRAY = 0, /*vector with no bounds data */
 	DESC_TYPE_V_ARRAY = 1, /* array with bounds data */
@@ -129,12 +130,8 @@ void sgen_descriptor_count_copied_object (mword desc) MONO_INTERNAL;
 static inline gboolean
 sgen_gc_descr_has_references (mword desc)
 {
-	/* Small pointer-free objects are encoded using a zero run RUN_LEN */
-	if ((desc & 0xffff0007) == DESC_TYPE_RUN_LENGTH)
-		return FALSE;
-
-	/* Large pointer-free objects and strings */
-	if ((desc & 0x7) == DESC_TYPE_COMPLEX_PTRFREE)
+	/* This covers SMALL_PTRFREE and COMPLEX_PTRFREE */
+	if ((desc & 3) == 3)
 		return FALSE;
 
 	/*The array is ptr-free*/

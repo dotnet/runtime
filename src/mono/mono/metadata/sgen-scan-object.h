@@ -93,6 +93,7 @@
 #undef SCAN
 		break;
 #endif
+	case DESC_TYPE_SMALL_PTRFREE:
 	case DESC_TYPE_COMPLEX_PTRFREE:
 		/*Nothing to do*/
 		break;
