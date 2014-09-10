@@ -176,7 +176,7 @@ default_stderr_handler (const gchar *message)
 }
 
 
-#elif MONOTOUCH
+#elif defined(HOST_IOS)
 #include <asl.h>
 
 static int
