@@ -7560,11 +7560,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {
-		original_bb = bb = mono_basic_block_split (method, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error);
-			UNVERIFIED;
-		}
+		original_bb = bb = mono_basic_block_split (method, &cfg->error);
+		CHECK_CFG_ERROR;
 		g_assert (bb);
 	}
 
@@ -10987,9 +10984,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			CHECK_TYPELOAD (klass);
+			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &cfg->error);
+			CHECK_CFG_ERROR;
 			mono_class_init (klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
@@ -11028,9 +11024,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			CHECK_TYPELOAD (klass);
+			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &cfg->error);
+			CHECK_CFG_ERROR;
 			mono_class_init (klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
@@ -12195,16 +12190,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !image_is_dynamic (method->klass->image) && !generic_context) {
-					MonoType *type = mono_type_create_from_typespec_checked (image, token, &error);
-					mono_error_cleanup (&error); /* FIXME don't swallow the error */
-					if (!type)
-						UNVERIFIED;
+					MonoType *type = mono_type_create_from_typespec_checked (image, token, &cfg->error);
+					CHECK_CFG_ERROR;
 
 					val = mono_type_size (type, &ialign);
 				} else {
-					MonoClass *klass = mono_class_get_and_inflate_typespec_checked (image, token, generic_context, &error);
-					mono_error_cleanup (&error); /* FIXME don't swallow the error */
-					CHECK_TYPELOAD (klass);
+					MonoClass *klass = mono_class_get_and_inflate_typespec_checked (image, token, generic_context, &cfg->error);
+					CHECK_CFG_ERROR;
+
 					mono_class_init (klass);
 					val = mono_type_size (&klass->byval_arg, &ialign);
 
