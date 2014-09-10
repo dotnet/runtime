@@ -440,9 +440,9 @@ cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
 
 static MonoClassField*
 field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
-		      MonoGenericContext *context)
+		      MonoGenericContext *context, MonoError *error)
 {
-	MonoClass *klass;
+	MonoClass *klass = NULL;
 	MonoClassField *field;
 	MonoTableInfo *tables = image->tables;
 	MonoType *sig_type;
@@ -451,7 +451,8 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	const char *fname;
 	const char *ptr;
 	guint32 idx = mono_metadata_token_index (token);
-	MonoError error;
+
+	mono_error_init (error);
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
@@ -460,60 +461,39 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
 	if (!mono_verifier_verify_memberref_field_signature (image, cols [MONO_MEMBERREF_SIGNATURE], NULL)) {
-		mono_loader_set_error_bad_image (g_strdup_printf ("Bad field signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
+		mono_error_set_bad_image (error, image, "Bad field '%s' signature 0x%08x", class, token);
 		return NULL;
 	}
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
 		class_table = MONO_TOKEN_TYPE_DEF;
-		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | nindex, &error);
-		if (!mono_error_ok (&error)) {
-			/*FIXME don't swallow the error message*/
-			mono_error_cleanup (&error);
-		}
-
+		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | nindex, error);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		class_table = MONO_TOKEN_TYPE_REF;
-		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, &error);
-		if (!mono_error_ok (&error)) {
-			/*FIXME don't swallow the error message*/
-			mono_error_cleanup (&error);
-		}
-
+		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC:
 		class_table = MONO_TOKEN_TYPE_SPEC;
-		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, context, &error);
-		if (!mono_error_ok (&error)) {
-			/*FIXME don't swallow the error message*/
-			mono_error_cleanup (&error);
-		}
+		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, context, error);
 		break;
 	default:
-		/*FIXME this must set a loader error!*/
-		g_warning ("field load from %x", class);
-		return NULL;
+		mono_error_set_bad_image (error, image, "Bad field field '%s' signature 0x%08x", class, token);
 	}
 
-	if (!klass) {
-		char *name = mono_class_name_from_token (image, class_table | nindex);
-		g_warning ("Missing field %s in class %s (type token %d)", fname, name, class_table | nindex);
-		mono_loader_set_error_type_load (name, image->assembly_name);
-		g_free (name);
+	if (!klass)
 		return NULL;
-	}
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 	/* we may want to check the signature here... */
 
 	if (*ptr++ != 0x6) {
-		g_warning ("Bad field signature class token %08x field name %s token %08x", class, fname, token);
-		mono_loader_set_error_field_load (klass, fname);
+		mono_error_set_field_load (error, klass, fname, "Bad field signature class token %08x field name %s token %08x", class, fname, token);
 		return NULL;
 	}
+
 	/* FIXME: This needs a cache, especially for generic instances, since
 	 * mono_metadata_parse_type () allocates everything from a mempool.
 	 */
@@ -521,7 +501,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	if (!sig_type) {
 		sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 		if (sig_type == NULL) {
-			mono_loader_set_error_field_load (klass, fname);
+			mono_error_set_field_load (error, klass, fname, "Could not parse field '%s' signature %08x", fname, token);
 			return NULL;
 		}
 		sig_type = cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
@@ -532,20 +512,39 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		*retklass = klass;
 	field = mono_class_get_field_from_name_full (klass, fname, sig_type);
 
-	if (!field)
-		mono_loader_set_error_field_load (klass, fname);
+	if (!field) {
+		g_assert (!mono_loader_get_last_error ());
+		mono_error_set_field_load (error, klass, fname, "Could not find field '%s'", fname);
+	}
 
 	return field;
 }
 
+/*
+ * mono_field_from_token:
+ * @deprecated use the _checked variant
+*/
 MonoClassField*
-mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
-		       MonoGenericContext *context)
+mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass, MonoGenericContext *context)
 {
 	MonoError error;
+	MonoClassField *res = mono_field_from_token_checked (image, token, retklass, context, &error);
+	g_assert (!mono_loader_get_last_error ());
+	if (!mono_error_ok (&error)) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
+	}
+	return res;
+}
+
+MonoClassField*
+mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retklass, MonoGenericContext *context, MonoError *error)
+{
 	MonoClass *k;
 	guint32 type;
 	MonoClassField *field;
+
+	mono_error_init (error);
 
 	if (image_is_dynamic (image)) {
 		MonoClassField *result;
@@ -555,7 +554,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 		result = mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
 		// This checks the memberref type as well
 		if (!result || handle_class != mono_defaults.fieldhandle_class) {
-			mono_loader_set_error_bad_image (g_strdup_printf ("Bad field token 0x%08x on image %s.", token, image->name));
+			mono_error_set_bad_image (error, image, "Bad field token 0x%08x", token);
 			return NULL;
 		}
 		*retklass = result->parent;
@@ -567,22 +566,29 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 		return field;
 	}
 
-	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
-		field = field_from_memberref (image, token, retklass, context);
-	else {
+	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+		field = field_from_memberref (image, token, retklass, context, error);
+		g_assert (!mono_loader_get_last_error ());
+	} else {
 		type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
-		if (!type)
-			return NULL;
-		k = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | type, &error);
-		if (!k) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		if (!type) {
+			mono_error_set_bad_image (error, image, "Invalid field token 0x%08x", token);
 			return NULL;
 		}
+		k = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | type, error);
+		if (!k)
+			return NULL;
+
 		mono_class_init (k);
 		if (retklass)
 			*retklass = k;
 		field = mono_class_get_field (k, token);
+		if (!field) {
+			if (mono_loader_get_last_error ())
+				mono_loader_set_error_from_mono_error (error);
+			else
+				mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
+		}
 	}
 
 	if (field && field->parent && !field->parent->generic_class && !field->parent->generic_container)

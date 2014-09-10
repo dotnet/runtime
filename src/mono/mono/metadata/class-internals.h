@@ -1394,4 +1394,7 @@ mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_toke
 MonoClass *
 mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error) MONO_INTERNAL;
 
+MonoClassField*
+mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
