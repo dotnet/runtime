@@ -1401,24 +1401,20 @@ drain_gray_stack (ScanCopyContext ctx)
 			sgen_descriptor_count_scanned_object (desc);
 			++stat_optimized_major_scan_fast;
 #endif
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-			add_scanned_object (obj);
+		} else
 #endif
-		} else {
-			HEAVY_STAT (++stat_optimized_major_scan_slow);
-			major_scan_object_no_mark (obj, desc, queue);
-		}
-#else
 		{
 			char *start = obj;
 #ifdef HEAVY_STATISTICS
+			++stat_optimized_major_scan_slow;
 			sgen_descriptor_count_scanned_object (desc);
+#endif
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
 			add_scanned_object (start);
 #endif
 
 #include "sgen-scan-object.h"
 		}
-#endif
 	}
 }
 #endif
