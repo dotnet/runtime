@@ -1163,7 +1163,7 @@ static long long stat_drain_loops;
 #endif
 
 /* Returns whether the object is still in the nursery. */
-static gboolean
+static inline MONO_ALWAYS_INLINE gboolean
 optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 {
 #ifdef SGEN_MARK_ON_ENQUEUE
