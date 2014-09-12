@@ -1868,6 +1868,8 @@ mono_main (int argc, char* argv[])
 		g_set_prgname (argv[i]);
 	}
 
+	mono_counters_init ();
+
 	if (enable_profile)
 		mono_profiler_load (profile_options);
 

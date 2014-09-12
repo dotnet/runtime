@@ -4585,6 +4585,8 @@ mono_gc_base_init (void)
 	gboolean have_split_nursery = FALSE;
 	gboolean cement_enabled = TRUE;
 
+	mono_counters_init ();
+
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);
 		switch (result) {

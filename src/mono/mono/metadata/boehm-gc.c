@@ -30,6 +30,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-counters.h>
 
 #if HAVE_BOEHM_GC
 
@@ -77,6 +78,8 @@ mono_gc_base_init (void)
 
 	if (gc_initialized)
 		return;
+
+	mono_counters_init ();
 
 	/*
 	 * Handle the case when we are called from a thread different from the main thread,

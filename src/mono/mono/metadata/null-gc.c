@@ -13,6 +13,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-counters.h>
 
 #ifdef HAVE_NULL_GC
 
@@ -21,6 +22,8 @@ mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
 	int dummy;
+
+	mono_counters_init ();
 
 	memset (&cb, 0, sizeof (cb));
 	/* TODO: This casts away an incompatible pointer type warning in the same

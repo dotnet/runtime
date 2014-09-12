@@ -46,8 +46,8 @@ enum {
 
 typedef struct _MonoCounter MonoCounter;
 
-
 MONO_API void mono_counters_enable (int section_mask);
+MONO_API void mono_counters_init (void);
 
 /* 
  * register addr as the address of a counter of type type.
