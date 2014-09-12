@@ -30,6 +30,8 @@ static volatile gboolean initialized = FALSE;
 static int valid_mask = 0;
 static int set_mask = 0;
 
+static GSList *register_callbacks = NULL;
+
 static void initialize_system_counters (void);
 
 /**
@@ -147,6 +149,7 @@ static void
 register_internal (const char *name, int type, void *addr, int size)
 {
 	MonoCounter *counter;
+	GSList *register_callback;
 
 	g_assert (size >= 0);
 	if ((type & MONO_COUNTER_VARIANCE_MASK) == 0)
@@ -184,6 +187,9 @@ register_internal (const char *name, int type, void *addr, int size)
 	} else {
 		counters = counter;
 	}
+
+	for (register_callback = register_callbacks; register_callback; register_callback = register_callback->next)
+		((MonoCounterRegisterCallback)register_callback->data) (counter);
 
 	mono_mutex_unlock (&counters_mutex);
 }
@@ -269,6 +275,25 @@ mono_counters_register_with_size (const char *name, int type, void *addr, int si
 		g_warning ("counters not enabled");
 	else
 		register_internal (name, type, addr, size);
+}
+
+/**
+ * mono_counters_on_register
+ * @callback : function to callback when a counter is registered
+ *
+ * Add a callback that is going to be called when a counter is registered
+ */
+void
+mono_counters_on_register (MonoCounterRegisterCallback callback)
+{
+	if (!initialized) {
+		g_warning ("counters not enabled");
+		return;
+	}
+
+	mono_mutex_lock (&counters_mutex);
+	register_callbacks = g_slist_append (register_callbacks, callback);
+	mono_mutex_unlock (&counters_mutex);
 }
 
 typedef int (*IntFunc) (void);

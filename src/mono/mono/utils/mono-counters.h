@@ -57,6 +57,9 @@ MONO_API void mono_counters_init (void);
 MONO_API void mono_counters_register (const char* descr, int type, void *addr);
 MONO_API void mono_counters_register_with_size (const char *name, int type, void *addr, int size);
 
+typedef void (*MonoCounterRegisterCallback) (MonoCounter*);
+MONO_API void mono_counters_on_register (MonoCounterRegisterCallback callback);
+
 /* 
  * Create a readable dump of the counters for section_mask sections (ORed section values)
  */
