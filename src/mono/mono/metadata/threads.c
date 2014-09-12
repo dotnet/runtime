@@ -3265,13 +3265,18 @@ mono_threads_perform_thread_dump (void)
 
 	printf ("Full thread dump:\n");
 
-	/* 
-	 * Make a copy of the hashtable since we can't do anything with
-	 * threads while threads_mutex is held.
-	 */
+	/* We take the loader lock and the root domain lock as to increase our odds of not deadlocking if
+	something needs then in the process.
+	*/
+	mono_loader_lock ();
+	mono_domain_lock (mono_get_root_domain ());
+
 	mono_threads_lock ();
 	mono_g_hash_table_foreach (threads, dump_thread, NULL);
 	mono_threads_unlock ();
+
+	mono_domain_unlock (mono_get_root_domain ());
+	mono_loader_unlock ();
 
 	thread_dump_requested = FALSE;
 }
