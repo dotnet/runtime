@@ -20,6 +20,11 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 }
 #else
 
+#ifdef HOST_WIN32
+/* For select */
+#include <winsock2.h>
+#endif
+
 int
 mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 {

@@ -198,10 +198,12 @@
 #endif
 
 #include <float.h>
-#define isnan(x)	_isnan(x)
 #define trunc(x)	(((x) < 0) ? ceil((x)) : floor((x)))
+#if _MSC_VER < 1800 /* VS 2013 */
+#define isnan(x)	_isnan(x)
 #define isinf(x)	(_isnan(x) ? 0 : (_fpclass(x) == _FPCLASS_NINF) ? -1 : (_fpclass(x) == _FPCLASS_PINF) ? 1 : 0)
 #define isnormal(x)	_finite(x)
+#endif
 
 #define popen		_popen
 #define pclose		_pclose
