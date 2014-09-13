@@ -24,69 +24,14 @@ extern long long stat_scan_object_called_nursery;
 #if defined(SGEN_SIMPLE_NURSERY)
 #define SERIAL_SCAN_OBJECT simple_nursery_serial_scan_object
 #define SERIAL_SCAN_VTYPE simple_nursery_serial_scan_vtype
-#define PARALLEL_SCAN_OBJECT simple_nursery_parallel_scan_object
-#define PARALLEL_SCAN_VTYPE simple_nursery_parallel_scan_vtype
 
 #elif defined (SGEN_SPLIT_NURSERY)
 #define SERIAL_SCAN_OBJECT split_nursery_serial_scan_object
 #define SERIAL_SCAN_VTYPE split_nursery_serial_scan_vtype
-#define PARALLEL_SCAN_OBJECT split_nursery_parallel_scan_object
-#define PARALLEL_SCAN_VTYPE split_nursery_parallel_scan_vtype
 
 #else
 #error "Please define GC_CONF_NAME"
 #endif
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		void *__old = *(ptr);	\
-		void *__copy;		\
-		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
-		if (__old) {	\
-			PARALLEL_COPY_OBJECT ((ptr), queue);	\
-			__copy = *(ptr);	\
-			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old);	\
-			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr), __copy); \
-		}	\
-	} while (0)
-
-/*
- * Scan the object pointed to by @start for references to
- * other objects between @from_start and @from_end and copy
- * them to the gray_objects area.
- */
-static void
-PARALLEL_SCAN_OBJECT (char *start, SgenGrayQueue *queue)
-{
-	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
-
-#define SCAN_OBJECT_PROTOCOL
-#include "sgen-scan-object.h"
-
-	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
-	HEAVY_STAT (++stat_scan_object_called_nursery);
-}
-
-/*
- * scan_vtype:
- *
- * Scan the valuetype pointed to by START, described by DESC for references to
- * other objects between @from_start and @from_end and copy them to the gray_objects area.
- * Returns a pointer to the end of the object.
- */
-static void
-PARALLEL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
-{
-	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
-
-	/* The descriptors include info about the MonoObject header as well */
-	start -= sizeof (MonoObject);
-
-#define SCAN_OBJECT_NOVTABLE
-#define SCAN_OBJECT_PROTOCOL
-#include "sgen-scan-object.h"
-}
 
 #undef HANDLE_PTR
 /* Global remsets are handled in SERIAL_COPY_OBJECT_FROM_OBJ */
@@ -125,8 +70,6 @@ SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL
 }
 
 #define FILL_MINOR_COLLECTOR_SCAN_OBJECT(collector)	do {			\
-		(collector)->parallel_ops.scan_object = PARALLEL_SCAN_OBJECT;	\
-		(collector)->parallel_ops.scan_vtype = PARALLEL_SCAN_VTYPE;	\
 		(collector)->serial_ops.scan_object = SERIAL_SCAN_OBJECT;	\
 		(collector)->serial_ops.scan_vtype = SERIAL_SCAN_VTYPE; \
 	} while (0)

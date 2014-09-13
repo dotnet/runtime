@@ -936,13 +936,11 @@ SGEN_TESTS =	\
 
 SGEN_CONFIGURATIONS =	\
 	"|plain"	\
-	"major=marksweep-par|ms-par"	\
 	"major=marksweep-conc|ms-conc"	\
 	"major=marksweep-conc,minor=split|ms-conc-split"	\
 	"minor=split|ms-split"	\
 	"minor=split,alloc-ratio=95|ms-split-95"	\
 	"|plain-clear-at-gc|clear-at-gc"	\
-	"major=marksweep-par|ms-par-clear-at-gc|clear-at-gc"	\
 	"major=marksweep-conc|ms-conc-clear-at-gc|clear-at-gc"	\
 	"minor=split|ms-split-clear-at-gc|clear-at-gc"
 
@@ -1321,7 +1319,6 @@ OOM_TESTS =	\
 test-oom: $(OOM_TESTS)
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
-		MONO_GC_PARAMS=max-heap-size=16m,major=marksweep-par MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
 		MONO_GC_PARAMS=max-heap-size=16m MONO_ENV_OPTIONS="--gc=sgen"                     $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
 		MONO_GC_PARAMS=max-heap-size=16m                                                  $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
 	done

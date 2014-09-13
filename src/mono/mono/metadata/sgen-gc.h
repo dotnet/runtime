@@ -537,7 +537,6 @@ void sgen_sort_addresses (void **array, size_t size) MONO_INTERNAL;
 void sgen_add_to_global_remset (gpointer ptr, gpointer obj) MONO_INTERNAL;
 
 int sgen_get_current_collection_generation (void) MONO_INTERNAL;
-gboolean sgen_collection_is_parallel (void) MONO_INTERNAL;
 gboolean sgen_collection_is_concurrent (void) MONO_INTERNAL;
 gboolean sgen_concurrent_collection_in_progress (void) MONO_INTERNAL;
 
@@ -634,10 +633,8 @@ typedef struct {
 	gboolean is_split;
 
 	char* (*alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
-	char* (*par_alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
-	SgenObjectOperations parallel_ops;
 
 	void (*prepare_to_space) (char *to_space_bitmap, size_t space_bitmap_size);
 	void (*clear_fragments) (void);
@@ -671,7 +668,6 @@ typedef enum {
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
-	gboolean is_parallel;
 	gboolean is_concurrent;
 	gboolean supports_cardtable;
 	gboolean sweeps_lazily;
@@ -697,7 +693,6 @@ struct _SgenMajorCollector {
 	SgenObjectOperations major_concurrent_ops;
 
 	void* (*alloc_object) (MonoVTable *vtable, size_t size, gboolean has_references);
-	void* (*par_alloc_object) (MonoVTable *vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);
@@ -1000,7 +995,6 @@ void sgen_nursery_alloc_prepare_for_minor (void) MONO_INTERNAL;
 void sgen_nursery_alloc_prepare_for_major (void) MONO_INTERNAL;
 
 char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references) MONO_INTERNAL;
-char* sgen_par_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references) MONO_INTERNAL;
 
 /* TLS Data */
 

@@ -21,7 +21,6 @@
 
 #define collector_pin_object(obj, queue) sgen_pin_object (obj, queue);
 #define COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION alloc_for_promotion
-#define COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION par_alloc_for_promotion
 
 extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
 
@@ -211,88 +210,6 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 #endif
 }
 
-static void
-PARALLEL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
-{
-	char *obj = *obj_slot;
-	mword vtable_word, objsize;
-	MonoVTable *vt;
-	void *destination;
-	gboolean has_references;
-
-	SGEN_ASSERT (9, current_collection_generation == GENERATION_NURSERY, "calling minor-par-copy from a %d generation collection", current_collection_generation);
-
-	HEAVY_STAT (++stat_copy_object_called_nursery);
-
-	if (!sgen_ptr_in_nursery (obj)) {
-		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
-		return;
-	}
-
-	vtable_word = *(mword*)obj;
-	vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
-
-	/*
-	 * Before we can copy the object we must make sure that we are
-	 * allowed to, i.e. that the object not pinned, not already
-	 * forwarded and not in the nursery To Space.
-	 */
-
-	if (vtable_word & SGEN_FORWARDED_BIT) {
-		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
-		*obj_slot = vt;
-		return;
-	}
-	if (vtable_word & SGEN_PINNED_BIT) {
-		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
-		return;
-	}
-
-	if (sgen_nursery_is_to_space (obj)) {
-		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
-		return;
-	}
-
-	HEAVY_STAT (++stat_objects_copied_nursery);
-
-	objsize = SGEN_ALIGN_UP (sgen_par_object_get_size (vt, (MonoObject*)obj));
-	has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
-
-	destination = COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION (vt, obj, objsize, has_references);
-
-	if (G_UNLIKELY (!destination)) {
-		sgen_parallel_pin_or_update (obj_slot, obj, vt, queue);
-		return;
-	}
-
-	*(MonoVTable**)destination = vt;
-
-	if (SGEN_CAS_PTR ((void*)obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
-		par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
-		obj = destination;
-		*obj_slot = obj;
-	} else {
-		/* FIXME: unify with code in major_copy_or_mark_object() */
-
-		/* FIXME: Give destination back to the allocator. */
-		/*The major collector only needs the first word zeroed and nursery requires all bits to be. */
-		if (!sgen_ptr_in_nursery (destination))
-			*(void**)destination = NULL;
-		else
-			memset (destination, 0, objsize);
-
-		vtable_word = *(mword*)obj;
-		g_assert (vtable_word & SGEN_FORWARDED_BIT);
-
-		obj = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
-
-		*obj_slot = obj;
-
-		HEAVY_STAT (++stat_slots_allocated_in_vain);
-	}
-}
-
 #define FILL_MINOR_COLLECTOR_COPY_OBJECT(collector)	do {			\
 		(collector)->serial_ops.copy_or_mark_object = SERIAL_COPY_OBJECT;			\
-		(collector)->parallel_ops.copy_or_mark_object = PARALLEL_COPY_OBJECT;	\
 	} while (0)

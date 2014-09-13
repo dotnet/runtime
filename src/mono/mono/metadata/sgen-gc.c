@@ -285,7 +285,6 @@ static gboolean do_scan_starts_check = FALSE;
  * GC.Collect().
  */
 static gboolean allow_synchronous_major = TRUE;
-static gboolean nursery_collection_is_parallel = FALSE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
 gboolean do_pin_stats = FALSE;
@@ -603,8 +602,7 @@ gray_queue_redirect (SgenGrayQueue *queue)
 	}
 
 	if (wake) {
-		g_assert (concurrent_collection_in_progress ||
-				(current_collection_generation == GENERATION_OLD && major_collector.is_parallel));
+		g_assert (concurrent_collection_in_progress);
 		if (sgen_workers_have_started ()) {
 			sgen_workers_wake_up_all ();
 		} else {
@@ -1082,19 +1080,12 @@ sgen_pin_object (void *object, GrayQueue *queue)
 {
 	g_assert (!concurrent_collection_in_progress);
 
-	if (sgen_collection_is_parallel ()) {
-		LOCK_PIN_QUEUE;
-		/*object arrives pinned*/
-		sgen_pin_stage_ptr (object);
-		++objects_pinned ;
-		UNLOCK_PIN_QUEUE;
-	} else {
-		SGEN_PIN_OBJECT (object);
-		sgen_pin_stage_ptr (object);
-		++objects_pinned;
-		if (G_UNLIKELY (do_pin_stats))
-			sgen_pin_stats_register_object (object, safe_object_get_size (object));
-	}
+	SGEN_PIN_OBJECT (object);
+	sgen_pin_stage_ptr (object);
+	++objects_pinned;
+	if (G_UNLIKELY (do_pin_stats))
+		sgen_pin_stats_register_object (object, safe_object_get_size (object));
+
 	GRAY_OBJECT_ENQUEUE (queue, object);
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
@@ -1905,9 +1896,6 @@ sgen_register_moved_object (void *obj, void *destination)
 {
 	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
 
-	/* FIXME: handle this for parallel collector */
-	g_assert (!sgen_collection_is_parallel ());
-
 	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
 		moved_objects_idx = 0;
@@ -1996,19 +1984,6 @@ void
 sgen_set_pinned_from_failed_allocation (mword objsize)
 {
 	bytes_pinned_from_failed_allocation += objsize;
-}
-
-gboolean
-sgen_collection_is_parallel (void)
-{
-	switch (current_collection_generation) {
-	case GENERATION_NURSERY:
-		return nursery_collection_is_parallel;
-	case GENERATION_OLD:
-		return major_collector.is_parallel;
-	default:
-		g_error ("Invalid current generation %d", current_collection_generation);
-	}
 }
 
 gboolean
@@ -2198,7 +2173,7 @@ check_nursery_is_clean (void)
 static void
 init_gray_queue (void)
 {
-	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ()) {
+	if (sgen_collection_is_concurrent ()) {
 		sgen_workers_init_distribute_gray_queue ();
 		sgen_gray_object_queue_init_with_alloc_prepare (&gray_queue, NULL,
 				gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
@@ -2249,11 +2224,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 #endif
 
 	current_collection_generation = GENERATION_NURSERY;
-	if (sgen_collection_is_parallel ())
-		current_object_ops = sgen_minor_collector.parallel_ops;
-	else
-		current_object_ops = sgen_minor_collector.serial_ops;
-	
+	current_object_ops = sgen_minor_collector.serial_ops;
+
 	reset_pinned_from_failed_allocation ();
 
 	check_scan_starts ();
@@ -2340,12 +2312,10 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_4 (GENERATION_NURSERY);
 
-	if (!sgen_collection_is_parallel ()) {
-		ctx.scan_func = current_object_ops.scan_object;
-		ctx.copy_func = NULL;
-		ctx.queue = &gray_queue;
-		sgen_drain_gray_stack (-1, ctx);
-	}
+	ctx.scan_func = current_object_ops.scan_object;
+	ctx.copy_func = NULL;
+	ctx.queue = &gray_queue;
+	sgen_drain_gray_stack (-1, ctx);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -2390,10 +2360,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_7 (GENERATION_NURSERY);
 
-	g_assert (!sgen_collection_is_parallel () && !sgen_collection_is_concurrent ());
-
-	if (sgen_collection_is_parallel () || sgen_collection_is_concurrent ())
-		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+	g_assert (!sgen_collection_is_concurrent ());
 
 	/* Scan the list of objects ready for finalization. If */
 	sfejd_fin_ready = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
@@ -2696,11 +2663,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	if (!concurrent_collection_in_progress && major_collector.is_parallel) {
-		sgen_workers_start_all_workers ();
-		sgen_workers_start_marking ();
-	}
-
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
 	TV_GETTIME (atv);
@@ -2829,7 +2791,7 @@ wait_for_workers_to_finish (void)
 static void
 join_workers (void)
 {
-	if (concurrent_collection_in_progress || major_collector.is_parallel) {
+	if (concurrent_collection_in_progress) {
 		gray_queue_redirect (&gray_queue);
 		sgen_workers_join ();
 	}
@@ -2850,7 +2812,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 	TV_GETTIME (btv);
 
-	if (concurrent_collection_in_progress || major_collector.is_parallel)
+	if (concurrent_collection_in_progress)
 		join_workers ();
 
 	if (concurrent_collection_in_progress) {
@@ -4573,7 +4535,6 @@ mono_gc_base_init (void)
 	char *minor_collector_opt = NULL;
 	size_t max_heap = 0;
 	size_t soft_limit = 0;
-	int num_workers;
 	int result;
 	int dummy;
 	gboolean debug_print_allowance = FALSE;
@@ -4693,24 +4654,12 @@ mono_gc_base_init (void)
 	if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep")) {
 	use_marksweep_major:
 		sgen_marksweep_init (&major_collector);
-	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-par")) {
-		sgen_marksweep_par_init (&major_collector);
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-conc")) {
 		sgen_marksweep_conc_init (&major_collector);
 	} else {
 		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `marksweep` instead.", "Unknown major collector `%s'.", major_collector_opt);
 		goto use_marksweep_major;
 	}
-
-	if (have_split_nursery && major_collector.is_parallel) {
-		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Disabling split minor collector.", "`minor=split` is not supported with the parallel collector yet.");
-		have_split_nursery = FALSE;
-	}
-
-	num_workers = mono_cpu_count ();
-	g_assert (num_workers > 0);
-	if (num_workers > 16)
-		num_workers = 16;
 
 	///* Keep this the default for now */
 	/* Precise marking is broken on all supported targets. Disable until fixed. */
@@ -4751,26 +4700,6 @@ mono_gc_base_init (void)
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`soft-heap-limit` must be an integer.");
 				}
-				continue;
-			}
-			if (g_str_has_prefix (opt, "workers=")) {
-				long val;
-				char *endptr;
-				if (!major_collector.is_parallel) {
-					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring.", "The `workers` option can only be used for parallel collectors.");
-					continue;
-				}
-				opt = strchr (opt, '=') + 1;
-				val = strtol (opt, &endptr, 10);
-				if (!*opt || *endptr) {
-					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring.", "Cannot parse the `workers` option value.");
-					continue;
-				}
-				if (val <= 0 || val > 16) {
-					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.", "The number of `workers` must be in the range 1 to 16.");
-					continue;
-				}
-				num_workers = (int)val;
 				continue;
 			}
 			if (g_str_has_prefix (opt, "stack-mark=")) {
@@ -4863,10 +4792,6 @@ mono_gc_base_init (void)
 			}
 
 			if (!strcmp (opt, "cementing")) {
-				if (major_collector.is_parallel) {
-					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring.", "`cementing` is not supported for the parallel major collector.");
-					continue;
-				}
 				cement_enabled = TRUE;
 				continue;
 			}
@@ -4911,12 +4836,8 @@ mono_gc_base_init (void)
 		g_strfreev (opts);
 	}
 
-	if (major_collector.is_parallel) {
-		cement_enabled = FALSE;
-		sgen_workers_init (num_workers);
-	} else if (major_collector.is_concurrent) {
+	if (major_collector.is_concurrent)
 		sgen_workers_init (1);
-	}
 
 	if (major_collector_opt)
 		g_free (major_collector_opt);
@@ -5069,18 +4990,6 @@ mono_gc_base_init (void)
 			}
 		}
 		g_strfreev (opts);
-	}
-
-	if (major_collector.is_parallel) {
-		if (heap_dump_file) {
-			sgen_env_var_error (MONO_GC_DEBUG_NAME, "Disabling.", "Cannot do `heap-dump` with the parallel collector.");
-			fclose (heap_dump_file);
-			heap_dump_file = NULL;
-		}
-		if (do_pin_stats) {
-			sgen_env_var_error (MONO_GC_DEBUG_NAME, "Disabling.", "`print-pinning` is not supported with the parallel collector.");
-			do_pin_stats = FALSE;
-		}
 	}
 
 	if (major_collector.post_param_init)

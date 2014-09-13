@@ -145,8 +145,6 @@ static AgeAllocationBuffer age_alloc_buffers [MAX_AGE];
 /* The collector allocs from here. */
 static SgenFragmentAllocator collector_allocator;
 
-static LOCK_DECLARE (par_alloc_buffer_refill_mutex);
-
 static inline int
 get_object_age (char *object)
 {
@@ -293,82 +291,6 @@ alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has
 }
 
 static char*
-par_alloc_for_promotion_slow_path (int age, size_t objsize)
-{
-	char *p;
-	size_t allocated_size;
-	size_t aligned_objsize = (size_t)align_up (objsize, SGEN_TO_SPACE_GRANULE_BITS);
-
-	mono_mutex_lock (&par_alloc_buffer_refill_mutex);
-
-restart:
-	p = age_alloc_buffers [age].next;
-	if (G_LIKELY (p + objsize <= age_alloc_buffers [age].end)) {
-		if (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, p + objsize, p) != p)
-			goto restart;
-	} else {
-		/* Reclaim remaining space - if we OOMd the nursery nothing to see here. */
-		char *end = age_alloc_buffers [age].end;
-		if (end) {
-			do {
-				p = age_alloc_buffers [age].next;
-			} while (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, end, p) != p);
-				sgen_clear_range (p, end);
-		}
-
-		/* By setting end to NULL we make sure no other thread can advance while we're updating.*/
-		age_alloc_buffers [age].end = NULL;
-		STORE_STORE_FENCE;
-
-		p = sgen_fragment_allocator_par_range_alloc (
-			&collector_allocator,
-			MAX (aligned_objsize, AGE_ALLOC_BUFFER_DESIRED_SIZE),
-			MAX (aligned_objsize, AGE_ALLOC_BUFFER_MIN_SIZE),
-			&allocated_size);
-		if (p) {
-			set_age_in_range (p, p + allocated_size, age);
-			age_alloc_buffers [age].next = p + objsize;
-			STORE_STORE_FENCE; /* Next must arrive before the new value for next. */
-			age_alloc_buffers [age].end = p + allocated_size;
-		}
-	}
-
-	mono_mutex_unlock (&par_alloc_buffer_refill_mutex);
-	return p;
-}
-
-static inline char*
-par_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
-{
-	char *p;
-	int age;
-
-	age = get_object_age (obj);
-	if (age >= promote_age)
-		return major_collector.par_alloc_object (vtable, objsize, has_references);
-
-restart:
-	p = age_alloc_buffers [age].next;
-
-	LOAD_LOAD_FENCE; /* The read of ->next must happen before ->end */
-
-	if (G_LIKELY (p + objsize <= age_alloc_buffers [age].end)) {
-		if (SGEN_CAS_PTR ((void*)&age_alloc_buffers [age].next, p + objsize, p) != p)
-			goto restart;
-	} else {
-		p = par_alloc_for_promotion_slow_path (age, objsize);
-
-		/* Have we failed to promote to the nursery, lets just evacuate it to old gen. */
-		if (!p)
-			return major_collector.par_alloc_object (vtable, objsize, has_references);
-	}
-
-	*(MonoVTable**)p = vtable;
-
-	return p;
-}
-
-static char*
 minor_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	/*
@@ -378,18 +300,6 @@ minor_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboole
 		return major_collector.alloc_object (vtable, objsize, has_references);
 
 	return alloc_for_promotion (vtable, obj, objsize, has_references);
-}
-
-static char*
-minor_par_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
-{
-	/*
-	We only need to check for a non-nursery object if we're doing a major collection.
-	*/
-	if (!sgen_ptr_in_nursery (obj))
-		return major_collector.par_alloc_object (vtable, objsize, has_references);
-
-	return par_alloc_for_promotion (vtable, obj, objsize, has_references);
 }
 
 static SgenFragment*
@@ -522,7 +432,6 @@ print_gc_param_usage (void)
 #define SGEN_SPLIT_NURSERY
 
 #define SERIAL_COPY_OBJECT split_nursery_serial_copy_object
-#define PARALLEL_COPY_OBJECT split_nursery_parallel_copy_object
 #define SERIAL_COPY_OBJECT_FROM_OBJ split_nursery_serial_copy_object_from_obj
 
 #include "sgen-minor-copy-object.h"
@@ -534,7 +443,6 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 	collector->is_split = TRUE;
 
 	collector->alloc_for_promotion = minor_alloc_for_promotion;
-	collector->par_alloc_for_promotion = minor_par_alloc_for_promotion;
 
 	collector->prepare_to_space = prepare_to_space;
 	collector->clear_fragments = clear_fragments;
@@ -547,7 +455,6 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 
 	FILL_MINOR_COLLECTOR_COPY_OBJECT (collector);
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (collector);
-	LOCK_INIT (par_alloc_buffer_refill_mutex);
 }
 
 

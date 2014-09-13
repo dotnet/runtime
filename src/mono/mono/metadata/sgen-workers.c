@@ -140,7 +140,7 @@ workers_wait (void)
 static gboolean
 collection_needs_workers (void)
 {
-	return sgen_collection_is_parallel () || sgen_collection_is_concurrent ();
+	return sgen_collection_is_concurrent ();
 }
 
 void
@@ -301,7 +301,7 @@ workers_get_work (WorkerData *data)
 	 * distribute gray queue.
 	 */
 	major = sgen_get_major_collector ();
-	if (major->is_concurrent || major->is_parallel) {
+	if (major->is_concurrent) {
 		GrayQueueSection *section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
 		if (section) {
 			sgen_gray_object_enqueue_section (&data->private_gray_queue, section);
@@ -441,7 +441,7 @@ sgen_workers_init_distribute_gray_queue (void)
 	if (!collection_needs_workers ())
 		return;
 
-	init_distribute_gray_queue (sgen_get_major_collector ()->is_concurrent || sgen_get_major_collector ()->is_parallel);
+	init_distribute_gray_queue (sgen_get_major_collector ()->is_concurrent);
 }
 
 void
@@ -449,7 +449,7 @@ sgen_workers_init (int num_workers)
 {
 	int i;
 
-	if (!sgen_get_major_collector ()->is_parallel && !sgen_get_major_collector ()->is_concurrent)
+	if (!sgen_get_major_collector ()->is_concurrent)
 		return;
 
 	//g_print ("initing %d workers\n", num_workers);
@@ -462,7 +462,7 @@ sgen_workers_init (int num_workers)
 	MONO_SEM_INIT (&workers_waiting_sem, 0);
 	MONO_SEM_INIT (&workers_done_sem, 0);
 
-	init_distribute_gray_queue (sgen_get_major_collector ()->is_concurrent || sgen_get_major_collector ()->is_parallel);
+	init_distribute_gray_queue (sgen_get_major_collector ()->is_concurrent);
 
 	if (sgen_get_major_collector ()->alloc_worker_data)
 		workers_gc_thread_major_collector_data = sgen_get_major_collector ()->alloc_worker_data ();
