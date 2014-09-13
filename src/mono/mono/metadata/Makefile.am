@@ -222,9 +222,7 @@ sgen_sources = \
 	sgen-gc.c		\
 	sgen-internal.c		\
 	sgen-marksweep.c	\
-	sgen-marksweep-fixed.c	\
 	sgen-marksweep-par.c	\
-	sgen-marksweep-fixed-par.c	\
 	sgen-los.c		\
 	sgen-protocol.c \
 	sgen-bridge.c		\
