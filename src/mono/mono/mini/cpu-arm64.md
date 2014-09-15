@@ -321,9 +321,9 @@ icompare_imm: src1:i len:12
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:36
 
-vcall2: len:32 clob:c
-vcall2_reg: src1:i len:32 clob:c
-vcall2_membase: src1:b len:32 clob:c
+vcall2: len:40 clob:c
+vcall2_reg: src1:i len:40 clob:c
+vcall2_membase: src1:b len:40 clob:c
 dyn_call: src1:i src2:i len:120 clob:c
 
 # This is different from the original JIT opcodes
