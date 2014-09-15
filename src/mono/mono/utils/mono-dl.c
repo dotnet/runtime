@@ -124,7 +124,7 @@ w32_dlerror (void)
 	wchar_t* buf = NULL;
 	DWORD code = GetLastError ();
 
-	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
+	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
 		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buf, 0, NULL))
 	{
 		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
