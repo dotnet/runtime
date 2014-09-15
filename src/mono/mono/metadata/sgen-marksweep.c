@@ -1242,13 +1242,13 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 
 		HEAVY_STAT (++stat_optimized_copy_major);
 
-		if (type <= DESC_TYPE_MAX_SMALL_OBJ) {
-			HEAVY_STAT (++stat_optimized_copy_major_small_fast);
-
-			block = MS_BLOCK_FOR_OBJ (obj);
-			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
-		} else if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE ) {
-			HEAVY_STAT (++stat_optimized_copy_major_small_slow);
+		if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
+#ifdef HEAVY_STATISTICS
+			if (type <= DESC_TYPE_MAX_SMALL_OBJ)
+				++stat_optimized_copy_major_small_fast;
+			else
+				++stat_optimized_copy_major_small_slow;
+#endif
 
 			block = MS_BLOCK_FOR_OBJ (obj);
 			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
