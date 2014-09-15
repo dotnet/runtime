@@ -3860,7 +3860,7 @@ is_vt_inst (MonoGenericInst *inst)
 
 	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
-		if (t->type == MONO_TYPE_VALUETYPE)
+		if (MONO_TYPE_ISSTRUCT (t) || t->type == MONO_TYPE_VALUETYPE)
 			return TRUE;
 	}
 	return FALSE;
