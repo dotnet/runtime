@@ -1243,17 +1243,10 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		HEAVY_STAT (++stat_optimized_copy_major);
 
 		if (type <= DESC_TYPE_MAX_SMALL_OBJ) {
-			int __word, __bit;
-
 			HEAVY_STAT (++stat_optimized_copy_major_small_fast);
 
 			block = MS_BLOCK_FOR_OBJ (obj);
-			MS_CALC_MARK_BIT (__word, __bit, (obj));
-			if (!MS_MARK_BIT ((block), __word, __bit)) {
-				MS_SET_MARK_BIT ((block), __word, __bit);
-				if (sgen_gc_descr_has_references (desc))
-					GRAY_OBJECT_ENQUEUE (queue, obj, desc);
-			}
+			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
 		} else if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE ) {
 			HEAVY_STAT (++stat_optimized_copy_major_small_slow);
 
