@@ -577,7 +577,7 @@ my_g_bit_nth_msf (gsize mask)
 	if (_BitScanReverse (&bIndex, mask))
 		return bIndex;
 	return -1;
-#elif defined(__x86_64__) && defined(_MSC_VER)
+#elif defined(_M_X64) && defined(_MSC_VER)
 	unsigned long bIndex = 0;
 	if (_BitScanReverse64 (&bIndex, mask))
 		return bIndex;
@@ -597,7 +597,7 @@ my_g_bit_nth_msf (gsize mask)
 	i = sizeof (gsize) * 8;
 	while (i > 0) {
 		i --;
-		if (mask & (1UL << i))
+		if (mask & (1ULL << i))
 			return i;
 	}
 	return -1;
