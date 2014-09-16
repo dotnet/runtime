@@ -971,147 +971,6 @@ major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queu
 }
 #endif
 
-static void
-major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
-{
-	MSBlockInfo *block;
-
-	HEAVY_STAT (++stat_copy_object_called_major);
-
-	SGEN_ASSERT (9, !sgen_concurrent_collection_in_progress (), "Why are we scanning non-concurrently when there's a concurrent collection on?");
-
-	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
-	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
-
-	if (sgen_ptr_in_nursery (obj)) {
-		int word, bit;
-		char *forwarded, *old_obj;
-
-		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-			SGEN_UPDATE_REFERENCE (ptr, forwarded);
-			return;
-		}
-		if (SGEN_OBJECT_IS_PINNED (obj))
-			return;
-
-		/* An object in the nursery To Space has already been copied and grayed. Nothing to do. */
-		if (sgen_nursery_is_to_space (obj))
-			return;
-
-		HEAVY_STAT (++stat_objects_copied_major);
-
-	do_copy_object:
-		old_obj = obj;
-		obj = copy_object_no_checks (obj, queue);
-		if (G_UNLIKELY (old_obj == obj)) {
-			/*If we fail to evacuate an object we just stop doing it for a given block size as all other will surely fail too.*/
-			if (!sgen_ptr_in_nursery (obj)) {
-				int size_index;
-				block = MS_BLOCK_FOR_OBJ (obj);
-				size_index = block->obj_size_index;
-				evacuate_block_obj_sizes [size_index] = FALSE;
-				MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
-			}
-			return;
-		}
-		SGEN_UPDATE_REFERENCE (ptr, obj);
-
-		/*
-		 * FIXME: See comment for copy_object_no_checks().  If
-		 * we have that, we can let the allocation function
-		 * give us the block info, too, and we won't have to
-		 * re-fetch it.
-		 *
-		 * FIXME (2): We should rework this to avoid all those nursery checks.
-		 */
-		/*
-		 * For the split nursery allocator the object might
-		 * still be in the nursery despite having being
-		 * promoted, in which case we can't mark it.
-		 */
-		if (!sgen_ptr_in_nursery (obj)) {
-			block = MS_BLOCK_FOR_OBJ (obj);
-			MS_CALC_MARK_BIT (word, bit, obj);
-			SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p already marked", obj);
-#ifndef SGEN_MARK_ON_ENQUEUE
-			if (!SGEN_VTABLE_HAS_REFERENCES (LOAD_VTABLE (obj)))
-#endif
-			{
-				MS_SET_MARK_BIT (block, word, bit);
-				binary_protocol_mark (obj, (gpointer)LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
-			}
-		}
-	} else {
-		char *forwarded;
-		mword objsize;
-
-		/*
-		 * If we have don't have a fixed heap we cannot know
-		 * whether an object is in the LOS or in the small
-		 * object major heap without checking its size.  To do
-		 * that, however, we need to know that we actually
-		 * have a valid object, not a forwarding pointer, so
-		 * we have to do this check first.
-		 */
-		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-			SGEN_UPDATE_REFERENCE (ptr, forwarded);
-			return;
-		}
-
-		objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj));
-
-		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE) {
-			int size_index;
-			gboolean evacuate;
-
-			block = MS_BLOCK_FOR_OBJ (obj);
-			size_index = block->obj_size_index;
-			evacuate = evacuate_block_obj_sizes [size_index];
-
-			if (evacuate && !block->has_pinned) {
-				g_assert (!SGEN_OBJECT_IS_PINNED (obj));
-				if (block->is_to_space)
-					return;
-				HEAVY_STAT (++stat_major_objects_evacuated);
-				goto do_copy_object;
-			} else {
-				MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
-			}
-		} else {
-			if (sgen_los_object_is_pinned (obj))
-				return;
-			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
-
-#ifdef ENABLE_DTRACE
-			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
-				MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
-				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
-			}
-#endif
-
-#ifdef SGEN_MARK_ON_ENQUEUE
-			sgen_los_pin_object (obj);
-#endif
-			if (SGEN_OBJECT_HAS_REFERENCES (obj))
-				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
-		}
-	}
-}
-
-static void
-major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
-{
-	major_copy_or_mark_object (ptr, *ptr, queue);
-}
-
-#ifdef SGEN_HAVE_CONCURRENT_MARK
-static void
-major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue)
-{
-	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
-}
-#endif
-
 static long long
 major_get_and_reset_num_major_objects_marked (void)
 {
@@ -1124,15 +983,6 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 }
 
-#include "sgen-major-scan-object.h"
-
-#ifdef SGEN_HAVE_CONCURRENT_MARK
-#define SCAN_FOR_CONCURRENT_MARK
-#include "sgen-major-scan-object.h"
-#undef SCAN_FOR_CONCURRENT_MARK
-#endif
-
-#if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
 //#define USE_PREFETCH_QUEUE
 #define DESCRIPTOR_FAST_PATH
 
@@ -1162,8 +1012,16 @@ static long long stat_drain_prefetch_fill_failures;
 static long long stat_drain_loops;
 #endif
 
-#define COPY_OR_MARK_FUNCTION_NAME	optimized_copy_or_mark_object
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object
 #include "sgen-marksweep-copy-or-mark-object.h"
+
+#include "sgen-major-scan-object.h"
+
+#ifdef SGEN_HAVE_CONCURRENT_MARK
+#define SCAN_FOR_CONCURRENT_MARK
+#include "sgen-major-scan-object.h"
+#undef SCAN_FOR_CONCURRENT_MARK
+#endif
 
 static inline void
 sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
@@ -1273,7 +1131,7 @@ drain_gray_stack (ScanCopyContext ctx)
 #define HANDLE_PTR(ptr,obj)	do {					\
 			void *__old = *(ptr);				\
 			if (__old) {					\
-				gboolean __still_in_nursery = optimized_copy_or_mark_object ((ptr), __old, queue); \
+				gboolean __still_in_nursery = major_copy_or_mark_object ((ptr), __old, queue); \
 				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
 					void *__copy = *(ptr);		\
 					sgen_add_to_global_remset ((ptr), __copy); \
@@ -1303,6 +1161,19 @@ drain_gray_stack (ScanCopyContext ctx)
 #include "sgen-scan-object.h"
 		}
 	}
+}
+
+static void
+major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object (ptr, *ptr, queue);
+}
+
+#ifdef SGEN_HAVE_CONCURRENT_MARK
+static void
+major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
 }
 #endif
 
