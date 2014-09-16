@@ -936,7 +936,7 @@ pin_major_object (char *obj, SgenGrayQueue *queue)
 
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 static void
-major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
+major_copy_or_mark_object_with_evacuation_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
 {
 	SGEN_ASSERT (9, sgen_concurrent_collection_in_progress (), "Why are we scanning concurrently when there's no concurrent collection on?");
 	SGEN_ASSERT (9, !sgen_workers_are_working () || sgen_is_worker_thread (mono_native_thread_id_get ()), "We must not scan from two threads at the same time!");
@@ -1014,9 +1014,31 @@ static long long stat_drain_loops;
 
 static void major_scan_object (char *start, mword desc, SgenGrayQueue *queue);
 
-#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object
-#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_no_evacuation
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_no_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
+
+#define COPY_OR_MARK_WITH_EVACUATION
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_with_evacuation
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_with_evacuation
+#include "sgen-marksweep-drain-gray-stack.h"
+
+static gboolean
+drain_gray_stack (ScanCopyContext ctx)
+{
+	gboolean evacuation = FALSE;
+	for (int i = 0; i < num_block_obj_sizes; ++i) {
+		if (evacuate_block_obj_sizes [i]) {
+			evacuation = TRUE;
+			break;
+		}
+	}
+
+	if (evacuation)
+		return drain_gray_stack_with_evacuation (ctx);
+	else
+		return drain_gray_stack_no_evacuation (ctx);
+}
 
 #include "sgen-major-scan-object.h"
 
@@ -1057,14 +1079,14 @@ sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 static void
 major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
 {
-	major_copy_or_mark_object (ptr, *ptr, queue);
+	major_copy_or_mark_object_with_evacuation (ptr, *ptr, queue);
 }
 
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 static void
 major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue)
 {
-	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
+	major_copy_or_mark_object_with_evacuation_concurrent (ptr, *ptr, queue);
 }
 #endif
 

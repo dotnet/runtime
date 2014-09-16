@@ -76,7 +76,9 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		if (sgen_nursery_is_to_space (obj))
 			return TRUE;
 
+#ifdef COPY_OR_MARK_WITH_EVACUATION
 	do_copy_object:
+#endif
 		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
 		SGEN_ASSERT (0, old_obj != obj, "Cannot handle copy object failure.");
@@ -110,23 +112,24 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		return FALSE;
 	} else {
 #ifdef SGEN_MARK_ON_ENQUEUE
-		char *forwarded;
 		mword vtable_word = *(mword*)obj;
 		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
 		int type = desc & 7;
 
 		HEAVY_STAT (++stat_optimized_copy_major);
 
-		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
-			HEAVY_STAT (++stat_optimized_copy_major_forwarded);
-			*ptr = forwarded;
-			return FALSE;
+#ifdef COPY_OR_MARK_WITH_EVACUATION
+		{
+			char *forwarded;
+			if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
+				HEAVY_STAT (++stat_optimized_copy_major_forwarded);
+				*ptr = forwarded;
+				return FALSE;
+			}
 		}
+#endif
 
 		if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
-			int size_index;
-			gboolean evacuate;
-
 #ifdef HEAVY_STATISTICS
 			if (type <= DESC_TYPE_MAX_SMALL_OBJ)
 				++stat_optimized_copy_major_small_fast;
@@ -135,15 +138,19 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 #endif
 
 			block = MS_BLOCK_FOR_OBJ (obj);
-			size_index = block->obj_size_index;
-			evacuate = evacuate_block_obj_sizes [size_index];
 
-			if (evacuate && !block->has_pinned) {
-				HEAVY_STAT (++stat_optimized_copy_major_small_evacuate);
-				if (block->is_to_space)
-					return FALSE;
-				goto do_copy_object;
+#ifdef COPY_OR_MARK_WITH_EVACUATION
+			{
+				int size_index = block->obj_size_index;
+
+				if (evacuate_block_obj_sizes [size_index] && !block->has_pinned) {
+					HEAVY_STAT (++stat_optimized_copy_major_small_evacuate);
+					if (block->is_to_space)
+						return FALSE;
+					goto do_copy_object;
+				}
 			}
+#endif
 
 			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
 		} else {
@@ -281,4 +288,5 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 }
 
 #undef COPY_OR_MARK_FUNCTION_NAME
+#undef COPY_OR_MARK_WITH_EVACUATION
 #undef DRAIN_GRAY_STACK_FUNCTION_NAME

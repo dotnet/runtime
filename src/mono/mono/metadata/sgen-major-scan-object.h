@@ -55,7 +55,7 @@ extern long long stat_scan_object_called_major;
 		if (__old && FOLLOW_OBJECT (__old)) {			\
 			void *__copy;					\
 			PREFETCH_DYNAMIC_HEAP (__old);			\
-			CONCURRENT_NAME (major_copy_or_mark_object) ((ptr), __old, queue); \
+			CONCURRENT_NAME (major_copy_or_mark_object_with_evacuation) ((ptr), __old, queue); \
 			__copy = *(ptr);				\
 			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (__copy))) \
