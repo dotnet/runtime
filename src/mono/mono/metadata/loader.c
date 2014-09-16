@@ -2278,6 +2278,18 @@ mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
 	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_DEFAULT, &ud);
 }
 
+/*
+ * mono_stack_walk_async_safe:
+ *
+ *   Async safe version callable from signal handlers.
+ */
+void
+mono_stack_walk_async_safe (MonoStackWalk func, gpointer user_data)
+{
+	StackWalkUserData ud = { func, user_data };
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_NONE, &ud);
+}
+
 static gboolean
 last_managed (MonoMethod *m, gint no, gint ilo, gboolean managed, gpointer data)
 {

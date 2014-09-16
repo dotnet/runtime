@@ -831,10 +831,13 @@ walk_stack (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_b
  * event, hence the collect_bt/emit_bt split.
  */
 static void
-collect_bt (FrameData *data)
+collect_bt (FrameData *data, gboolean async_safe)
 {
 	data->count = 0;
-	mono_stack_walk_no_il (walk_stack, data);
+	if (async_safe)
+		mono_stack_walk_async_safe (walk_stack, data);
+	else
+		mono_stack_walk_no_il (walk_stack, data);
 }
 
 static void
@@ -867,7 +870,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	len += 7;
 	len &= ~7;
 	if (do_bt)
-		collect_bt (&data);
+		collect_bt (&data, FALSE);
 	logbuffer = ensure_logbuf (32 + MAX_FRAMES * 8);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "gcalloc");
@@ -1132,7 +1135,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 	FrameData data;
 	LogBuffer *logbuffer;
 	if (do_bt)
-		collect_bt (&data);
+		collect_bt (&data, FALSE);
 	logbuffer = ensure_logbuf (16 + MAX_FRAMES * 8);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "throw");
@@ -1168,7 +1171,7 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 	FrameData data;
 	LogBuffer *logbuffer;
 	if (do_bt)
-		collect_bt (&data);
+		collect_bt (&data, FALSE);
 	logbuffer = ensure_logbuf (16 + MAX_FRAMES * 8);
 	now = current_time ();
 	ENTER_LOG (logbuffer, "monitor");
@@ -1230,7 +1233,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	if (in_shutdown)
 		return;
 	now = current_time ();
-	collect_bt (&bt_data);
+	collect_bt (&bt_data, TRUE);
 	elapsed = (now - profiler->startup_time) / 10000;
 	if (do_debug) {
 		int len;

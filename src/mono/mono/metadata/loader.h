@@ -90,6 +90,9 @@ mono_stack_walk         (MonoStackWalk func, void* user_data);
 MONO_API void
 mono_stack_walk_no_il   (MonoStackWalk func, void* user_data);
 
+MONO_API void
+mono_stack_walk_async_safe   (MonoStackWalk func, void* user_data);
+
 MONO_END_DECLS
 
 #endif
