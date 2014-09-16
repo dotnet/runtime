@@ -1203,14 +1203,21 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
 			HEAVY_STAT (++stat_optimized_copy_nursery_forwarded);
 			*ptr = forwarded;
-			return FALSE;
+			return sgen_ptr_in_nursery (forwarded);
 		}
+
+		/* An object in the nursery To Space has already been copied and grayed. Nothing to do. */
+		if (sgen_nursery_is_to_space (obj))
+			return TRUE;
 
 		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
 		SGEN_ASSERT (0, old_obj != obj, "Cannot handle copy object failure.");
 		HEAVY_STAT (++stat_objects_copied_major);
 		*ptr = obj;
+
+		if (sgen_ptr_in_nursery (obj))
+			return TRUE;
 
 #ifdef SGEN_MARK_ON_ENQUEUE
 		/*

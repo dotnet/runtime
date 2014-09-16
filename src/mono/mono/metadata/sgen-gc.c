@@ -4734,11 +4734,9 @@ mono_gc_base_init (void)
 		if (!strcmp (minor_collector_opt, "simple")) {
 		use_simple_nursery:
 			sgen_simple_nursery_init (&sgen_minor_collector);
-			/*
 		} else if (!strcmp (minor_collector_opt, "split")) {
 			sgen_split_nursery_init (&sgen_minor_collector);
 			have_split_nursery = TRUE;
-			*/
 		} else {
 			sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using `simple` instead.", "Unknown minor collector `%s'.", minor_collector_opt);
 			goto use_simple_nursery;
