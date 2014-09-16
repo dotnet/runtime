@@ -153,9 +153,9 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 #define MS_BLOCK_TYPE_MAX	4
 
 static gboolean *evacuate_block_obj_sizes;
-static float evacuation_threshold = 0.0f;
+static float evacuation_threshold = 0.666f;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
-static float concurrent_evacuation_threshold = 0.0f;
+static float concurrent_evacuation_threshold = 0.666f;
 static gboolean want_evacuation = FALSE;
 #endif
 
@@ -1210,6 +1210,7 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		if (sgen_nursery_is_to_space (obj))
 			return TRUE;
 
+	do_copy_object:
 		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
 		SGEN_ASSERT (0, old_obj != obj, "Cannot handle copy object failure.");
@@ -1243,13 +1244,23 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		return FALSE;
 	} else {
 #ifdef SGEN_MARK_ON_ENQUEUE
+		char *forwarded;
 		mword vtable_word = *(mword*)obj;
 		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
 		int type = desc & 7;
 
 		HEAVY_STAT (++stat_optimized_copy_major);
 
+		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
+			HEAVY_STAT (++stat_optimized_copy_major_forwarded);
+			*ptr = forwarded;
+			return FALSE;
+		}
+
 		if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
+			int size_index;
+			gboolean evacuate;
+
 #ifdef HEAVY_STATISTICS
 			if (type <= DESC_TYPE_MAX_SMALL_OBJ)
 				++stat_optimized_copy_major_small_fast;
@@ -1258,6 +1269,16 @@ optimized_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 #endif
 
 			block = MS_BLOCK_FOR_OBJ (obj);
+			size_index = block->obj_size_index;
+			evacuate = evacuate_block_obj_sizes [size_index];
+
+			if (evacuate && !block->has_pinned) {
+				HEAVY_STAT (++stat_optimized_copy_major_small_evacuate);
+				if (block->is_to_space)
+					return FALSE;
+				goto do_copy_object;
+			}
+
 			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
 		} else {
 			HEAVY_STAT (++stat_optimized_copy_major_large);
@@ -1651,7 +1672,6 @@ ms_sweep (void)
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		float usage = (float)slots_used [i] / (float)slots_available [i];
 		if (num_blocks [i] > 5 && usage < evacuation_threshold) {
-			g_assert_not_reached ();
 			evacuate_block_obj_sizes [i] = TRUE;
 			/*
 			g_print ("slot size %d - %d of %d used\n",
@@ -2044,7 +2064,6 @@ get_num_major_sections (void)
 static gboolean
 major_handle_gc_param (const char *opt)
 {
-	/*
 	if (g_str_has_prefix (opt, "evacuation-threshold=")) {
 		const char *arg = strchr (opt, '=') + 1;
 		int percentage = atoi (arg);
@@ -2054,8 +2073,7 @@ major_handle_gc_param (const char *opt)
 		}
 		evacuation_threshold = (float)percentage / 100.0f;
 		return TRUE;
-		} else */
-	if (!strcmp (opt, "lazy-sweep")) {
+	} else if (!strcmp (opt, "lazy-sweep")) {
 		lazy_sweep = TRUE;
 		return TRUE;
 	} else if (!strcmp (opt, "no-lazy-sweep")) {
