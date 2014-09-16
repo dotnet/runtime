@@ -1,6 +1,6 @@
 /*
- * sgen-marksweep-copy-or-mark-object.h: The copy/mark function
- *     of the M&S major collector.
+ * sgen-marksweep-drain-gray-stack.h: The copy/mark and gray stack
+ *     draining functions of the M&S major collector.
  *
  * Copyright (C) 2014 Xamarin Inc
  *
@@ -16,6 +16,16 @@
  * You should have received a copy of the GNU Library General Public
  * License 2.0 along with this library; if not, write to the Free
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+/*
+ * COPY_OR_MARK_FUNCTION_NAME must be defined to be the function name of the copy/mark
+ * function.
+ *
+ * DRAIN_GRAY_STACK_FUNCTION_NAME must be defined to be the function name of the gray stack
+ * draining function.
+ *
+ * Define COPY_OR_MARK_WITH_EVACUATION to support evacuation.
  */
 
 /* Returns whether the object is still in the nursery. */
@@ -155,4 +165,120 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 	return FALSE;
 }
 
+static gboolean
+DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
+{
+	SgenGrayQueue *queue = ctx.queue;
+
+	SGEN_ASSERT (0, ctx.scan_func == major_scan_object, "Wrong scan function");
+
+#ifdef USE_PREFETCH_QUEUE
+	HEAVY_STAT (++stat_drain_prefetch_fills);
+	if (!sgen_gray_object_fill_prefetch (queue)) {
+		HEAVY_STAT (++stat_drain_prefetch_fill_failures);
+		return TRUE;
+	}
+#endif
+
+	for (;;) {
+		char *obj;
+		mword desc;
+		int type;
+
+		HEAVY_STAT (++stat_drain_loops);
+
+#ifdef USE_PREFETCH_QUEUE
+		sgen_gray_object_dequeue_fast (queue, &obj, &desc);
+		if (!obj) {
+			HEAVY_STAT (++stat_drain_prefetch_fills);
+			if (!sgen_gray_object_fill_prefetch (queue)) {
+				HEAVY_STAT (++stat_drain_prefetch_fill_failures);
+				return TRUE;
+			}
+			continue;
+		}
+#else
+		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+		if (!obj)
+			return TRUE;
+#endif
+
+#ifndef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+		desc = sgen_obj_get_descriptor_safe (obj);
+#endif
+		type = desc & 7;
+
+#ifndef SGEN_MARK_ON_ENQUEUE
+		HEAVY_STAT (++stat_optimized_major_mark);
+
+		/* Mark object or, if already marked, don't process. */
+		if (!sgen_ptr_in_nursery (obj)) {
+			if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
+				MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
+				int __word, __bit;
+
+				HEAVY_STAT (++stat_optimized_major_mark_small);
+
+				MS_CALC_MARK_BIT (__word, __bit, (obj));
+				if (MS_MARK_BIT ((block), __word, __bit))
+					continue;
+				MS_SET_MARK_BIT ((block), __word, __bit);
+			} else {
+				HEAVY_STAT (++stat_optimized_major_mark_large);
+
+				if (sgen_los_object_is_pinned (obj))
+					continue;
+				sgen_los_pin_object (obj);
+			}
+		}
+#endif
+
+#ifdef HEAVY_STATISTICS
+		++stat_optimized_major_scan;
+		if (!sgen_gc_descr_has_references (desc))
+			++stat_optimized_major_scan_no_refs;
+#endif
+
+		/* Now scan the object. */
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+			void *__old = *(ptr);				\
+			if (__old) {					\
+				gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
+				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
+					void *__copy = *(ptr);		\
+					sgen_add_to_global_remset ((ptr), __copy); \
+				}					\
+			}						\
+		} while (0)
+
+#ifdef DESCRIPTOR_FAST_PATH
+		if (type == DESC_TYPE_LARGE_BITMAP) {
+			OBJ_LARGE_BITMAP_FOREACH_PTR (desc, obj);
+#ifdef HEAVY_STATISTICS
+			sgen_descriptor_count_scanned_object (desc);
+			++stat_optimized_major_scan_fast;
+#endif
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+			add_scanned_object (obj);
+#endif
+		} else
+#endif
+		{
+			char *start = obj;
+#ifdef HEAVY_STATISTICS
+			++stat_optimized_major_scan_slow;
+			sgen_descriptor_count_scanned_object (desc);
+#endif
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+			add_scanned_object (start);
+#endif
+
+#include "sgen-scan-object.h"
+		}
+	}
+}
+
 #undef COPY_OR_MARK_FUNCTION_NAME
+#undef DRAIN_GRAY_STACK_FUNCTION_NAME

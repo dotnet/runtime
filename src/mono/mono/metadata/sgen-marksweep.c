@@ -1012,8 +1012,11 @@ static long long stat_drain_prefetch_fill_failures;
 static long long stat_drain_loops;
 #endif
 
+static void major_scan_object (char *start, mword desc, SgenGrayQueue *queue);
+
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object
-#include "sgen-marksweep-copy-or-mark-object.h"
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack
+#include "sgen-marksweep-drain-gray-stack.h"
 
 #include "sgen-major-scan-object.h"
 
@@ -1049,118 +1052,6 @@ sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 	if (cursor == end)
 		cursor = queue->prefetch;
 	queue->prefetch_cursor = cursor;
-}
-
-static gboolean
-drain_gray_stack (ScanCopyContext ctx)
-{
-	SgenGrayQueue *queue = ctx.queue;
-
-	SGEN_ASSERT (0, ctx.scan_func == major_scan_object, "Wrong scan function");
-
-#ifdef USE_PREFETCH_QUEUE
-	HEAVY_STAT (++stat_drain_prefetch_fills);
-	if (!sgen_gray_object_fill_prefetch (queue)) {
-		HEAVY_STAT (++stat_drain_prefetch_fill_failures);
-		return TRUE;
-	}
-#endif
-
-	for (;;) {
-		char *obj;
-		mword desc;
-		int type;
-
-		HEAVY_STAT (++stat_drain_loops);
-
-#ifdef USE_PREFETCH_QUEUE
-		sgen_gray_object_dequeue_fast (queue, &obj, &desc);
-		if (!obj) {
-			HEAVY_STAT (++stat_drain_prefetch_fills);
-			if (!sgen_gray_object_fill_prefetch (queue)) {
-				HEAVY_STAT (++stat_drain_prefetch_fill_failures);
-				return TRUE;
-			}
-			continue;
-		}
-#else
-		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
-		if (!obj)
-			return TRUE;
-#endif
-
-#ifndef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
-		desc = sgen_obj_get_descriptor_safe (obj);
-#endif
-		type = desc & 7;
-
-#ifndef SGEN_MARK_ON_ENQUEUE
-		HEAVY_STAT (++stat_optimized_major_mark);
-
-		/* Mark object or, if already marked, don't process. */
-		if (!sgen_ptr_in_nursery (obj)) {
-			if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
-				MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-				int __word, __bit;
-
-				HEAVY_STAT (++stat_optimized_major_mark_small);
-
-				MS_CALC_MARK_BIT (__word, __bit, (obj));
-				if (MS_MARK_BIT ((block), __word, __bit))
-					continue;
-				MS_SET_MARK_BIT ((block), __word, __bit);
-			} else {
-				HEAVY_STAT (++stat_optimized_major_mark_large);
-
-				if (sgen_los_object_is_pinned (obj))
-					continue;
-				sgen_los_pin_object (obj);
-			}
-		}
-#endif
-
-#ifdef HEAVY_STATISTICS
-		++stat_optimized_major_scan;
-		if (!sgen_gc_descr_has_references (desc))
-			++stat_optimized_major_scan_no_refs;
-#endif
-
-		/* Now scan the object. */
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {					\
-			void *__old = *(ptr);				\
-			if (__old) {					\
-				gboolean __still_in_nursery = major_copy_or_mark_object ((ptr), __old, queue); \
-				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
-					void *__copy = *(ptr);		\
-					sgen_add_to_global_remset ((ptr), __copy); \
-				}					\
-			}						\
-		} while (0)
-
-#ifdef DESCRIPTOR_FAST_PATH
-		if (type == DESC_TYPE_LARGE_BITMAP) {
-			OBJ_LARGE_BITMAP_FOREACH_PTR (desc, obj);
-#ifdef HEAVY_STATISTICS
-			sgen_descriptor_count_scanned_object (desc);
-			++stat_optimized_major_scan_fast;
-#endif
-		} else
-#endif
-		{
-			char *start = obj;
-#ifdef HEAVY_STATISTICS
-			++stat_optimized_major_scan_slow;
-			sgen_descriptor_count_scanned_object (desc);
-#endif
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-			add_scanned_object (start);
-#endif
-
-#include "sgen-scan-object.h"
-		}
-	}
 }
 
 static void
