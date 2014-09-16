@@ -548,7 +548,7 @@ static inline gboolean
 sgen_nursery_is_to_space (char *object)
 {
 	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
-	size_t byte = idx / 8;
+	size_t byte = idx >> 3;
 	size_t bit = idx & 0x7;
 
 	SGEN_ASSERT (4, sgen_ptr_in_nursery (object), "object %p is not in nursery [%p - %p]", object, sgen_get_nursery_start (), sgen_get_nursery_end ());
