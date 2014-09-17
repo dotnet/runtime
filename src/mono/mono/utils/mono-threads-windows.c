@@ -20,10 +20,23 @@ mono_threads_init_platform (void)
 {
 }
 
+static void CALLBACK
+interrupt_apc (ULONG_PTR param)
+{
+}
+
 void
 mono_threads_core_interrupt (MonoThreadInfo *info)
 {
-	g_assert (0);
+	DWORD id = mono_thread_info_get_tid (info);
+	HANDLE handle;
+
+	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
+	g_assert (handle);
+
+	QueueUserAPC ((PAPCFUNC)interrupt_apc, handle, (ULONG_PTR)NULL);
+
+	CloseHandle (handle);
 }
 
 void
@@ -46,13 +59,102 @@ mono_threads_core_self_suspend (MonoThreadInfo *info)
 gboolean
 mono_threads_core_suspend (MonoThreadInfo *info)
 {
-	g_assert_not_reached ();
+	DWORD id = mono_thread_info_get_tid (info);
+	HANDLE handle;
+	DWORD result;
+	gboolean res;
+
+	g_assert (id != GetCurrentThreadId ());
+
+	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
+	g_assert (handle);
+
+	result = SuspendThread (handle);
+	if (result == (DWORD)-1) {
+		fprintf (stderr, "could not suspend thread %x (handle %p): %d\n", id, handle, GetLastError ()); fflush (stderr);
+		CloseHandle (handle);
+		return FALSE;
+	}
+
+	CloseHandle (handle);
+
+	res = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->suspend_state, info);
+	g_assert (res);
+
+	return TRUE;
 }
 
 gboolean
 mono_threads_core_resume (MonoThreadInfo *info)
 {
-	g_assert_not_reached ();
+	DWORD id = mono_thread_info_get_tid (info);
+	HANDLE handle;
+	DWORD result;
+
+	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
+	g_assert (handle);
+
+	if (info->async_target) {
+		MonoContext ctx;
+		CONTEXT context;
+		gboolean res;
+
+		ctx = info->suspend_state.ctx;
+		mono_threads_get_runtime_callbacks ()->setup_async_callback (&ctx, info->async_target, info->user_data);
+		info->async_target = info->user_data = NULL;
+
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+
+		if (!GetThreadContext (handle, &context)) {
+			CloseHandle (handle);
+			return FALSE;
+		}
+
+		g_assert (context.ContextFlags & CONTEXT_INTEGER);
+		g_assert (context.ContextFlags & CONTEXT_CONTROL);
+
+		// FIXME: This should be in mini-windows.c
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+#ifdef TARGET_AMD64
+		context.Rip = ctx.rip;
+		context.Rax = ctx.rax;
+		context.Rcx = ctx.rcx;
+		context.Rdx = ctx.rdx;
+		context.Rbx = ctx.rbx;
+		context.Rsp = ctx.rsp;
+		context.Rbp = ctx.rbp;
+		context.Rsi = ctx.rsi;
+		context.Rdi = ctx.rdi;
+		context.R8 = ctx.r8;
+		context.R9 = ctx.r9;
+		context.R10 = ctx.r10;
+		context.R11 = ctx.r11;
+		context.R12 = ctx.r12;
+		context.R13 = ctx.r13;
+		context.R14 = ctx.r14;
+		context.R15 = ctx.r15;
+#else
+		context.Eip = ctx.eip;
+		context.Edi = ctx.edi;
+		context.Esi = ctx.esi;
+		context.Ebx = ctx.ebx;
+		context.Edx = ctx.edx;
+		context.Ecx = ctx.ecx;
+		context.Eax = ctx.eax;
+		context.Ebp = ctx.ebp;
+		context.Esp = ctx.esp;
+#endif
+
+		res = SetThreadContext (handle, &context);
+		g_assert (res);
+	}
+
+	result = ResumeThread (handle);
+	g_assert (result != (DWORD)-1);
+
+	CloseHandle (handle);
+
+	return result != (DWORD)-1;
 }
 
 void

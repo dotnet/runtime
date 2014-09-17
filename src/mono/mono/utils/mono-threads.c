@@ -731,9 +731,8 @@ mono_thread_info_new_interrupt_enabled (void)
 #if defined (HAVE_BOEHM_GC) && !defined (USE_INCLUDED_LIBGC)
 	return FALSE;
 #endif
-	/*port not done*/
 #if defined(HOST_WIN32)
-	return FALSE;
+	return !disable_new_interrupt;
 #endif
 #if defined (__i386__)
 	return !disable_new_interrupt;

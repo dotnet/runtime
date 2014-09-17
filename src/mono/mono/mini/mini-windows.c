@@ -123,7 +123,7 @@ mono_runtime_setup_stat_profiler (void)
 	if (timeBeginPeriod (1) != TIMERR_NOERROR)
 		return;
 
-	if ((win32_timer = timeSetEvent (1, 0, win32_time_proc, 0, TIME_PERIODIC)) == 0) {
+	if ((win32_timer = timeSetEvent (1, 0, (LPTIMECALLBACK)win32_time_proc, (DWORD_PTR)NULL, TIME_PERIODIC)) == 0) {
 		timeEndPeriod (1);
 		return;
 	}
@@ -137,7 +137,92 @@ mono_runtime_shutdown_stat_profiler (void)
 gboolean
 mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info)
 {
-	g_error ("Windows systems haven't been ported to support mono_thread_state_init_from_handle");
-	return FALSE;
+	DWORD id = mono_thread_info_get_tid (info);
+	HANDLE handle;
+	CONTEXT context;
+	DWORD result;
+	MonoContext *ctx;
+	MonoJitTlsData *jit_tls;
+	void *domain;
+	MonoLMF *lmf = NULL;
+	gpointer *addr;
+
+	tctx->valid = FALSE;
+	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = NULL;
+	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = NULL;
+	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = NULL;
+
+	g_assert (id != GetCurrentThreadId ());
+
+	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
+	g_assert (handle);
+
+	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
+
+	if (!GetThreadContext (handle, &context)) {
+		CloseHandle (handle);
+		return FALSE;
+	}
+
+	g_assert (context.ContextFlags & CONTEXT_INTEGER);
+	g_assert (context.ContextFlags & CONTEXT_CONTROL);
+
+	ctx = &tctx->ctx;
+
+	memset (ctx, 0, sizeof (MonoContext));
+#ifdef TARGET_AMD64
+	ctx->rip = context.Rip;
+	ctx->rax = context.Rax;
+	ctx->rcx = context.Rcx;
+	ctx->rdx = context.Rdx;
+	ctx->rbx = context.Rbx;
+	ctx->rsp = context.Rsp;
+	ctx->rbp = context.Rbp;
+	ctx->rsi = context.Rsi;
+	ctx->rdi = context.Rdi;
+	ctx->r8 = context.R8;
+	ctx->r9 = context.R9;
+	ctx->r10 = context.R10;
+	ctx->r11 = context.R11;
+	ctx->r12 = context.R12;
+	ctx->r13 = context.R13;
+	ctx->r14 = context.R14;
+	ctx->r15 = context.R15;
+#else
+	ctx->edi = context.Edi;
+	ctx->esi = context.Esi;
+	ctx->ebx = context.Ebx;
+	ctx->edx = context.Edx;
+	ctx->ecx = context.Ecx;
+	ctx->eax = context.Eax;
+	ctx->ebp = context.Ebp;
+	ctx->esp = context.Esp;
+#endif
+
+	/* mono_set_jit_tls () sets this */
+	jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
+	/* SET_APPDOMAIN () sets this */
+	domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
+
+	/*Thread already started to cleanup, can no longer capture unwind state*/
+	if (!jit_tls || !domain)
+		return FALSE;
+
+	/*
+	 * The current LMF address is kept in a separate TLS variable, and its hard to read its value without
+	 * arch-specific code. But the address of the TLS variable is stored in another TLS variable which
+	 * can be accessed through MonoThreadInfo.
+	 */
+	/* mono_set_lmf_addr () sets this */
+	addr = mono_thread_info_tls_get (info, TLS_KEY_LMF_ADDR);
+	if (addr)
+		lmf = *addr;
+
+	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
+	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
+	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = lmf;
+	tctx->valid = TRUE;
+
+	return TRUE;
 }
 

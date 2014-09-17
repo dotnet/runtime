@@ -236,9 +236,7 @@ extern void mono_context_get_current (void *);
 		: "rdx", "memory")
 #endif
 
-#if !defined(HOST_WIN32)
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
-#endif
 
 #elif (defined(__arm__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM)) /* defined(__x86_64__) */
 
