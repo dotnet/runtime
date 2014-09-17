@@ -3904,7 +3904,7 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 }
 #endif
 
-#if (defined(HAVE_STATVFS) || defined(HAVE_STATFS)) && !defined(PLATFORM_ANDROID)
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
 gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
 			    WapiULargeInteger *total_number_of_bytes,
 			    WapiULargeInteger *total_number_of_free_bytes)
@@ -3943,7 +3943,11 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 		block_size = fsstat.f_frsize;
 #elif defined(HAVE_STATFS)
 		ret = statfs (utf8_path_name, &fsstat);
+#if defined (MNT_RDONLY)
 		isreadonly = ((fsstat.f_flags & MNT_RDONLY) == MNT_RDONLY);
+#elif defined (MS_RDONLY)
+		isreadonly = ((fsstat.f_flags & MS_RDONLY) == MS_RDONLY);
+#endif
 		block_size = fsstat.f_bsize;
 #endif
 	} while(ret == -1 && errno == EINTR);
