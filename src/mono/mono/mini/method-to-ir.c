@@ -8474,10 +8474,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Generic sharing */
-			/* FIXME: only do this for generic methods if
-			   they are not shared! */
+
+			/*
+			 * Use this if the callee is gsharedvt sharable too, since
+			 * at runtime we might find an instantiation so the call cannot
+			 * be patched (the 'no_patch' code path in mini-trampolines.c).
+			 */
 			if (context_used && !imt_arg && !array_rank && !delegate_invoke &&
-				(!mono_method_is_generic_sharable (cmethod, TRUE) ||
+				(!mono_method_is_generic_sharable_full (cmethod, TRUE, FALSE, FALSE) ||
 				 !mono_class_generic_sharing_enabled (cmethod->klass)) &&
 				(!virtual || MONO_METHOD_IS_FINAL (cmethod) ||
 				 !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
