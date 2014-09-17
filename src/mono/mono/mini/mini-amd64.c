@@ -8425,8 +8425,11 @@ gboolean
 mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
 #ifdef HOST_WIN32
-	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;
-	return FALSE;
+	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;
+	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && einfo->ExceptionInformation [1] == bp_trigger_page)
+		return TRUE;
+	else
+		return FALSE;
 #else
 	siginfo_t* sinfo = (siginfo_t*) info;
 	/* Sometimes the address is off by 4 */
@@ -8486,8 +8489,11 @@ gboolean
 mono_arch_is_single_step_event (void *info, void *sigctx)
 {
 #ifdef HOST_WIN32
-	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;
-	return FALSE;
+	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;
+	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && einfo->ExceptionInformation [1] == ss_trigger_page)
+		return TRUE;
+	else
+		return FALSE;
 #else
 	siginfo_t* sinfo = (siginfo_t*) info;
 	/* Sometimes the address is off by 4 */
