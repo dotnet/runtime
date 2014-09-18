@@ -25,6 +25,8 @@
 
 extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
 
+#include "mono/utils/mono-compiler.h"
+
 #include "sgen-copy-object.h"
 
 /*
@@ -47,11 +49,7 @@ extern long long stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
  * copy_object could be made into a macro once debugged (use inline for now).
  */
 
-#ifdef _MSC_VER
-static __forceinline void
-#else
-static inline void __attribute__((always_inline))
-#endif
+static MONO_ALWAYS_INLINE void
 SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue) 
 {
 	char *forwarded;
@@ -107,11 +105,7 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
  *
  *   Similar to SERIAL_COPY_OBJECT, but assumes that OBJ_SLOT is part of an object, so it handles global remsets as well.
  */
-#ifdef _MSC_VER
-static __forceinline void
-#else
-static inline void __attribute__((always_inline))
-#endif
+static MONO_ALWAYS_INLINE void
 SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue) 
 {
 	char *forwarded;

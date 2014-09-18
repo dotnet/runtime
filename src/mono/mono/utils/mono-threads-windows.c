@@ -12,6 +12,7 @@
 #if defined(HOST_WIN32)
 
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-compiler.h>
 #include <limits.h>
 
 
@@ -248,8 +249,7 @@ mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
 }
 
 #if HAVE_DECL___READFSDWORD==0
-static __inline__ __attribute__((always_inline))
-unsigned long long
+static MONO_ALWAYS_INLINE unsigned long long
 __readfsdword (unsigned long offset)
 {
 	unsigned long value;

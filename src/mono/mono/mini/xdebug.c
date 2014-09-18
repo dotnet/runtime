@@ -51,6 +51,8 @@
 #include "image-writer.h"
 #include "dwarfwriter.h"
 
+#include "mono/utils/mono-compiler.h"
+
 #define USE_GDB_JIT_INTERFACE
 
 /* The recommended gdb macro is: */
@@ -95,15 +97,8 @@ struct jit_descriptor
   struct jit_code_entry *first_entry;
 };
 
-
-#ifdef _MSC_VER
-#define MONO_NOINLINE __declspec (noinline)
-#else
-#define MONO_NOINLINE __attribute__((noinline))
-#endif
-
 /* GDB puts a breakpoint in this function.  */
-void MONO_NOINLINE __jit_debug_register_code(void);
+void MONO_NEVER_INLINE __jit_debug_register_code(void);
 
 #if !defined(MONO_LLVM_LOADED) && defined(ENABLE_LLVM) && !defined(MONO_CROSS_COMPILE)
 
@@ -114,7 +109,7 @@ extern struct jit_descriptor __jit_debug_descriptor;
 #else
 
 /* gcc seems to inline/eliminate calls to noinline functions, thus the asm () */
-void MONO_NOINLINE __jit_debug_register_code(void) {
+void MONO_NEVER_INLINE __jit_debug_register_code(void) {
 #if defined(__GNUC__)
 	asm ("");
 #endif

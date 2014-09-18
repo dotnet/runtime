@@ -18,6 +18,8 @@
 #include <linux/ioctl.h>
 #include <asm/byteorder.h>
 
+#include "mono/utils/mono-compiler.h"
+
 /*
  * User-space ABI bits:
  */
@@ -1004,7 +1006,7 @@ static inline void perf_fetch_caller_regs(struct pt_regs *regs)
 	perf_arch_fetch_caller_regs(regs, CALLER_ADDR0);
 }
 
-static __always_inline void
+static MONO_ALWAYS_INLINE void
 perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
 {
 	struct pt_regs hot_regs;

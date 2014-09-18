@@ -247,5 +247,13 @@ typedef SSIZE_T ssize_t;
 #define MONO_ALWAYS_INLINE
 #endif
 
+#ifdef __GNUC__
+#define MONO_NEVER_INLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define MONO_NEVER_INLINE __declspec(noinline)
+#else
+#define MONO_NEVER_INLINE
+#endif
+
 #endif /* __UTILS_MONO_COMPILER_H__*/
 

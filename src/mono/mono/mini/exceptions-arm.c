@@ -36,6 +36,7 @@
 #include "mini.h"
 #include "mini-arm.h"
 #include "mono/utils/mono-sigcontext.h"
+#include "mono/utils/mono-compiler.h"
 
 /*
  * arch_get_restore_context:
@@ -536,10 +537,7 @@ handle_signal_exception (gpointer obj)
  * This works around a gcc 4.5 bug:
  * https://bugs.launchpad.net/ubuntu/+source/gcc-4.5/+bug/721531
  */
-#if defined(__GNUC__)
-__attribute__((noinline))
-#endif
-static gpointer
+static MONO_NEVER_INLINE gpointer
 get_handle_signal_exception_addr (void)
 {
 	return handle_signal_exception;
