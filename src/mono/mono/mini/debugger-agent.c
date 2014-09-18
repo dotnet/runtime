@@ -2776,9 +2776,6 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 #endif
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
-#ifdef HOST_WIN32
-	QueueUserAPC (notify_thread_apc, thread->handle, (ULONG_PTR)NULL);
-#else
 	if (mono_thread_info_new_interrupt_enabled ()) {
 		MonoThreadInfo *info;
 		MonoJitInfo *ji;
@@ -2798,6 +2795,10 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 			mono_thread_info_finish_suspend_and_resume (info);
 		}
 	} else {
+#ifdef HOST_WIN32
+		// FIXME: Remove this since new interrupt is used on win32 now
+		QueueUserAPC (notify_thread_apc, thread->handle, (ULONG_PTR)NULL);
+#else
 		res = mono_thread_kill (thread, mono_thread_get_abort_signal ());
 		if (res) {
 			DEBUG(1, fprintf (log_file, "[%p] mono_thread_kill () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res));
@@ -2806,8 +2807,8 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 			 */
 			tls->terminated = TRUE;
 		}
-	}
 #endif
+	}
 }
 
 static void
