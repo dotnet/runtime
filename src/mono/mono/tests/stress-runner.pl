@@ -72,6 +72,13 @@ my %tests = (
 		'arg-knob' => 2, # loops
 		'ratio' => 10,
 	},
+	'gc-copy-stress' => {
+		'program' => 'gc-copy-stress.exe',
+		# loops, count, persist_factor
+		'args' => [250, 500000, 10],
+		'arg-knob' => 1, # count
+		'ratio' => 4,
+	},
 	'thread-stress' => {
 		'program' => 'thread-stress.exe',
 		# loops

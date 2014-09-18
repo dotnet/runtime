@@ -49,24 +49,8 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 #endif
 
-#ifdef __GNUC__
-	if (objsize <= sizeof (gpointer) * 8) {
-		mword *dest = (mword*)destination;
-		switch (objsize / sizeof (gpointer)) {
-		case 8: (dest) [7] = ((mword*)obj) [7];
-		case 7: (dest) [6] = ((mword*)obj) [6];
-		case 6: (dest) [5] = ((mword*)obj) [5];
-		case 5: (dest) [4] = ((mword*)obj) [4];
-		case 4: (dest) [3] = ((mword*)obj) [3];
-		case 3: (dest) [2] = ((mword*)obj) [2];
-		case 2: (dest) [1] = ((mword*)obj) [1];
-		}
-	} else
-#endif
-	{
-		/*can't trust memcpy doing word copies */
-		mono_gc_memmove_aligned (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
-	}
+	memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
+
 	/* adjust array->bounds */
 	SGEN_ASSERT (9, vt->gc_descr, "vtable %p for class %s:%s has no gc descriptor", vt, vt->klass->name_space, vt->klass->name);
 
