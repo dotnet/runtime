@@ -49,7 +49,7 @@ extern int (*gUnhandledExceptionHandler)(EXCEPTION_POINTERS*);
 #endif
 
 #define W32_SEH_HANDLE_EX(_ex) \
-	if (_ex##_handler) _ex##_handler(0, ep, sctx)
+	if (_ex##_handler) _ex##_handler(0, ep, ctx)
 
 LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 {
@@ -189,7 +189,6 @@ LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 {
 	EXCEPTION_RECORD* er;
 	CONTEXT* ctx;
-	struct sigcontext* sctx;
 	LONG res;
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 
@@ -202,18 +201,6 @@ LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 
 	er = ep->ExceptionRecord;
 	ctx = ep->ContextRecord;
-	sctx = g_malloc(sizeof(struct sigcontext));
-
-	/* Copy Win32 context to UNIX style context */
-	sctx->eax = ctx->Eax;
-	sctx->ebx = ctx->Ebx;
-	sctx->ecx = ctx->Ecx;
-	sctx->edx = ctx->Edx;
-	sctx->ebp = ctx->Ebp;
-	sctx->esp = ctx->Esp;
-	sctx->esi = ctx->Esi;
-	sctx->edi = ctx->Edi;
-	sctx->eip = ctx->Eip;
 
 	switch (er->ExceptionCode) {
 	case EXCEPTION_STACK_OVERFLOW:
@@ -246,22 +233,7 @@ LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 		* can correctly chain the exception.
 		*/
 		res = EXCEPTION_CONTINUE_SEARCH;
-	} else {
-		/* Copy context back */
-		ctx->Eax = sctx->eax;
-		ctx->Ebx = sctx->ebx;
-		ctx->Ecx = sctx->ecx;
-		ctx->Edx = sctx->edx;
-		ctx->Ebp = sctx->ebp;
-		ctx->Esp = sctx->esp;
-		ctx->Esi = sctx->esi;
-		ctx->Edi = sctx->edi;
-		ctx->Eip = sctx->eip;
 	}
-
-	/* TODO: Find right place to free this in stack overflow case */
-	if (er->ExceptionCode != EXCEPTION_STACK_OVERFLOW)
-		g_free (sctx);
 
 	return res;
 }
@@ -952,15 +924,15 @@ mono_arch_ip_from_context (void *sigctx)
 #if defined(__native_client__)
 	printf("WARNING: mono_arch_ip_from_context() called!\n");
 	return (NULL);
-#else
-#ifdef MONO_ARCH_USE_SIGACTION
+#elif defined(MONO_ARCH_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	return (gpointer)UCONTEXT_REG_EIP (ctx);
+#elif defined(HOST_WIN32)
+	return ((CONTEXT*)sigctx)->Eip;
 #else
 	struct sigcontext *ctx = sigctx;
 	return (gpointer)ctx->SC_EIP;
 #endif
-#endif	/* __native_client__ */
 }
 
 /*

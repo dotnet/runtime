@@ -170,34 +170,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	ctx = &tctx->ctx;
 
 	memset (ctx, 0, sizeof (MonoContext));
-#ifdef TARGET_AMD64
-	ctx->rip = context.Rip;
-	ctx->rax = context.Rax;
-	ctx->rcx = context.Rcx;
-	ctx->rdx = context.Rdx;
-	ctx->rbx = context.Rbx;
-	ctx->rsp = context.Rsp;
-	ctx->rbp = context.Rbp;
-	ctx->rsi = context.Rsi;
-	ctx->rdi = context.Rdi;
-	ctx->r8 = context.R8;
-	ctx->r9 = context.R9;
-	ctx->r10 = context.R10;
-	ctx->r11 = context.R11;
-	ctx->r12 = context.R12;
-	ctx->r13 = context.R13;
-	ctx->r14 = context.R14;
-	ctx->r15 = context.R15;
-#else
-	ctx->edi = context.Edi;
-	ctx->esi = context.Esi;
-	ctx->ebx = context.Ebx;
-	ctx->edx = context.Edx;
-	ctx->ecx = context.Ecx;
-	ctx->eax = context.Eax;
-	ctx->ebp = context.Ebp;
-	ctx->esp = context.Esp;
-#endif
+	mono_sigctx_to_monoctx (&context, ctx);
 
 	/* mono_set_jit_tls () sets this */
 	jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);

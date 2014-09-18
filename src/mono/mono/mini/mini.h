@@ -2822,6 +2822,7 @@ void mono_cross_helpers_run (void) MONO_INTERNAL;
 
 #ifndef GET_CONTEXT
 #ifdef HOST_WIN32
+/* seh_vectored_exception_handler () passes in a CONTEXT* */
 #define GET_CONTEXT \
     void *ctx = context;
 #else

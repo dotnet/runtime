@@ -45,7 +45,7 @@ LPTOP_LEVEL_EXCEPTION_FILTER mono_old_win_toplevel_exception_filter;
 void *mono_win_vectored_exception_handle;
 
 #define W32_SEH_HANDLE_EX(_ex) \
-	if (_ex##_handler) _ex##_handler(0, ep, sctx)
+	if (_ex##_handler) _ex##_handler(0, ep, ctx)
 
 static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 {
@@ -68,7 +68,6 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 {
 	EXCEPTION_RECORD* er;
 	CONTEXT* ctx;
-	MonoContext* sctx;
 	LONG res;
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 
@@ -81,22 +80,6 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 
 	er = ep->ExceptionRecord;
 	ctx = ep->ContextRecord;
-	sctx = g_malloc(sizeof(MonoContext));
-
-	/* Copy Win32 context to UNIX style context */
-	sctx->rax = ctx->Rax;
-	sctx->rbx = ctx->Rbx;
-	sctx->rcx = ctx->Rcx;
-	sctx->rdx = ctx->Rdx;
-	sctx->rbp = ctx->Rbp;
-	sctx->rsp = ctx->Rsp;
-	sctx->rsi = ctx->Rsi;
-	sctx->rdi = ctx->Rdi;
-	sctx->rip = ctx->Rip;
-	sctx->r12 = ctx->R12;
-	sctx->r13 = ctx->R13;
-	sctx->r14 = ctx->R14;
-	sctx->r15 = ctx->R15;
 
 	switch (er->ExceptionCode) {
 	case EXCEPTION_ACCESS_VIOLATION:
@@ -126,29 +109,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 		* can correctly chain the exception.
 		*/
 		res = EXCEPTION_CONTINUE_SEARCH;
-	} else {
-		/* Copy context back */
-		/* Nonvolatile */
-		ctx->Rsp = sctx->rsp;
-		ctx->Rdi = sctx->rdi;
-		ctx->Rsi = sctx->rsi;
-		ctx->Rbx = sctx->rbx;
-		ctx->Rbp = sctx->rbp;
-		ctx->R12 = sctx->r12;
-		ctx->R13 = sctx->r13;
-		ctx->R14 = sctx->r14;
-		ctx->R15 = sctx->r15;
-		ctx->Rip = sctx->rip;
-
-		/* Volatile But should not matter?*/
-		ctx->Rax = sctx->rax;
-		ctx->Rcx = sctx->rcx;
-		ctx->Rdx = sctx->rdx;
 	}
-
-	/* TODO: Find right place to free this in stack overflow case */
-	if (er->ExceptionCode != EXCEPTION_STACK_OVERFLOW)
-		g_free (sctx);
 
 	return res;
 }
@@ -841,6 +802,8 @@ mono_arch_ip_from_context (void *sigctx)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	return (gpointer)UCONTEXT_REG_RIP (ctx);
+#elif defined(HOST_WIN32)
+	return ((CONTEXT*)sigctx)->Rip;
 #else
 	MonoContext *ctx = sigctx;
 	return (gpointer)ctx->rip;

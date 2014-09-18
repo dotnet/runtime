@@ -15,6 +15,10 @@
 
 #include <mono/utils/mono-context.h>
 
+#ifdef HOST_WIN32
+#include <windows.h>
+#endif
+
 #ifdef __sun
 #define REG_EAX EAX
 #define REG_EBX EBX
@@ -53,6 +57,17 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = UCONTEXT_REG_ESI (ctx);
 	mctx->edi = UCONTEXT_REG_EDI (ctx);
 	mctx->eip = UCONTEXT_REG_EIP (ctx);
+#elif defined(HOST_WIN32)
+	CONTEXT *context = (CONTEXT*)sigctx;
+
+	mctx->edi = context->Edi;
+	mctx->esi = context->Esi;
+	mctx->ebx = context->Ebx;
+	mctx->edx = context->Edx;
+	mctx->ecx = context->Ecx;
+	mctx->eax = context->Eax;
+	mctx->ebp = context->Ebp;
+	mctx->esp = context->Esp;
 #else	
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
@@ -85,6 +100,18 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	UCONTEXT_REG_ESI (ctx) = mctx->esi;
 	UCONTEXT_REG_EDI (ctx) = mctx->edi;
 	UCONTEXT_REG_EIP (ctx) = mctx->eip;
+#elif defined(HOST_WIN32)
+	CONTEXT *context = (CONTEXT*)sigctx;
+
+	context->Eip = mctx->eip;
+	context->Edi = mctx->edi;
+	context->Esi = mctx->esi;
+	context->Ebx = mctx->ebx;
+	context->Edx = mctx->edx;
+	context->Ecx = mctx->ecx;
+	context->Eax = mctx->eax;
+	context->Ebp = mctx->ebp;
+	context->Esp = mctx->esp;
 #else
 	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
@@ -103,6 +130,10 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
 
 #include <mono/utils/mono-context.h>
+
+#ifdef HOST_WIN32
+#include <windows.h>
+#endif
 
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
@@ -131,6 +162,26 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->r14 = UCONTEXT_REG_R14 (ctx);
 	mctx->r15 = UCONTEXT_REG_R15 (ctx);
 	mctx->rip = UCONTEXT_REG_RIP (ctx);
+#elif defined(HOST_WIN32)
+	CONTEXT *context = (CONTEXT*)sigctx;
+
+	mctx->rip = context->Rip;
+	mctx->rax = context->Rax;
+	mctx->rcx = context->Rcx;
+	mctx->rdx = context->Rdx;
+	mctx->rbx = context->Rbx;
+	mctx->rsp = context->Rsp;
+	mctx->rbp = context->Rbp;
+	mctx->rsi = context->Rsi;
+	mctx->rdi = context->Rdi;
+	mctx->r8 = context->R8;
+	mctx->r9 = context->R9;
+	mctx->r10 = context->R10;
+	mctx->r11 = context->R11;
+	mctx->r12 = context->R12;
+	mctx->r13 = context->R13;
+	mctx->r14 = context->R14;
+	mctx->r15 = context->R15;
 #else
 	MonoContext *ctx = (MonoContext *)sigctx;
 
@@ -181,6 +232,26 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	UCONTEXT_REG_R14 (ctx) = mctx->r14;
 	UCONTEXT_REG_R15 (ctx) = mctx->r15;
 	UCONTEXT_REG_RIP (ctx) = mctx->rip;
+#elif defined(HOST_WIN32)
+	CONTEXT *context = (CONTEXT*)sigctx;
+
+	context->Rip = mctx->rip;
+	context->Rax = mctx->rax;
+	context->Rcx = mctx->rcx;
+	context->Rdx = mctx->rdx;
+	context->Rbx = mctx->rbx;
+	context->Rsp = mctx->rsp;
+	context->Rbp = mctx->rbp;
+	context->Rsi = mctx->rsi;
+	context->Rdi = mctx->rdi;
+	context->R8 = mctx->r8;
+	context->R9 = mctx->r9;
+	context->R10 = mctx->r10;
+	context->R11 = mctx->r11;
+	context->R12 = mctx->r12;
+	context->R13 = mctx->r13;
+	context->R14 = mctx->r14;
+	context->R15 = mctx->r15;
 #else
 	MonoContext *ctx = (MonoContext *)sigctx;
 

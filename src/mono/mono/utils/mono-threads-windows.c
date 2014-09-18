@@ -113,38 +113,9 @@ mono_threads_core_resume (MonoThreadInfo *info)
 		g_assert (context.ContextFlags & CONTEXT_INTEGER);
 		g_assert (context.ContextFlags & CONTEXT_CONTROL);
 
-		// FIXME: This should be in mini-windows.c
-		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
-#ifdef TARGET_AMD64
-		context.Rip = ctx.rip;
-		context.Rax = ctx.rax;
-		context.Rcx = ctx.rcx;
-		context.Rdx = ctx.rdx;
-		context.Rbx = ctx.rbx;
-		context.Rsp = ctx.rsp;
-		context.Rbp = ctx.rbp;
-		context.Rsi = ctx.rsi;
-		context.Rdi = ctx.rdi;
-		context.R8 = ctx.r8;
-		context.R9 = ctx.r9;
-		context.R10 = ctx.r10;
-		context.R11 = ctx.r11;
-		context.R12 = ctx.r12;
-		context.R13 = ctx.r13;
-		context.R14 = ctx.r14;
-		context.R15 = ctx.r15;
-#else
-		context.Eip = ctx.eip;
-		context.Edi = ctx.edi;
-		context.Esi = ctx.esi;
-		context.Ebx = ctx.ebx;
-		context.Edx = ctx.edx;
-		context.Ecx = ctx.ecx;
-		context.Eax = ctx.eax;
-		context.Ebp = ctx.ebp;
-		context.Esp = ctx.esp;
-#endif
+		mono_monoctx_to_sigctx (&ctx, &context);
 
+		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		g_assert (res);
 	}
