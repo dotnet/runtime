@@ -37,10 +37,6 @@ extern long long stat_slots_allocated_in_vain;
 static MONO_ALWAYS_INLINE void
 par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue)
 {
-#ifdef __GNUC__
-	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
-#endif
-
 	SGEN_ASSERT (9, vt->klass->inited, "vtable %p for class %s:%s was not initialized", vt, vt->klass->name_space, vt->klass->name);
 	SGEN_LOG (9, " (to %p, %s size: %lu)", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize);
 	binary_protocol_copy (obj, destination, vt, objsize);
@@ -56,32 +52,21 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 #ifdef __GNUC__
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
-		goto *copy_labels [objsize / sizeof (gpointer)];
-	LAB_8:
-		(dest) [7] = ((mword*)obj) [7];
-	LAB_7:
-		(dest) [6] = ((mword*)obj) [6];
-	LAB_6:
-		(dest) [5] = ((mword*)obj) [5];
-	LAB_5:
-		(dest) [4] = ((mword*)obj) [4];
-	LAB_4:
-		(dest) [3] = ((mword*)obj) [3];
-	LAB_3:
-		(dest) [2] = ((mword*)obj) [2];
-	LAB_2:
-		(dest) [1] = ((mword*)obj) [1];
-	LAB_1:
-		;
-	LAB_0:
-		;
-	} else {
+		switch (objsize / sizeof (gpointer)) {
+		case 8: (dest) [7] = ((mword*)obj) [7];
+		case 7: (dest) [6] = ((mword*)obj) [6];
+		case 6: (dest) [5] = ((mword*)obj) [5];
+		case 5: (dest) [4] = ((mword*)obj) [4];
+		case 4: (dest) [3] = ((mword*)obj) [3];
+		case 3: (dest) [2] = ((mword*)obj) [2];
+		case 2: (dest) [1] = ((mword*)obj) [1];
+		}
+	} else
+#endif
+	{
 		/*can't trust memcpy doing word copies */
 		mono_gc_memmove_aligned (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 	}
-#else
-		mono_gc_memmove_aligned (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
-#endif
 	/* adjust array->bounds */
 	SGEN_ASSERT (9, vt->gc_descr, "vtable %p for class %s:%s has no gc descriptor", vt, vt->klass->name_space, vt->klass->name);
 
