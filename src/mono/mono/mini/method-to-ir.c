@@ -2554,6 +2554,10 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 			//g_assert_not_reached ();
 		}
 	} else if (mini_type_is_vtype (cfg, sig_ret)) {
+		// If the value is being returned via registers we don't need to allocate a temporary variable for it.
+		// Note that this can have effects elsewhere (like with the unbox code) that expects there to be a
+		// variable.
+		if (function_return_value_requires_temporary(sig)) {
 		MonoInst *temp = mono_compile_create_var (cfg, sig_ret, OP_LOCAL);
 		MonoInst *loada;
 
@@ -2577,6 +2581,10 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		call->inst.dreg = temp->dreg;
 
 		call->vret_var = loada;
+		} else {
+			// The value will be returned via register so just allocate a dreg for it (just like for simple return types)
+			call->inst.dreg = alloc_dreg (cfg, call->inst.type);
+		}
 	} else if (!MONO_TYPE_IS_VOID (sig_ret))
 		call->inst.dreg = alloc_dreg (cfg, call->inst.type);
 
@@ -10128,9 +10136,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *val;
 
 				val = handle_unbox_nullable (cfg, *sp, klass, context_used);
+				// If there's no instruction associated with the dreg the value is in a register (the else below)
+				if (get_vreg_to_inst (cfg, val->dreg)) {
 				EMIT_NEW_VARLOADA (cfg, ins, get_vreg_to_inst (cfg, val->dreg), &val->klass->byval_arg);
+					*sp++= ins;
+				} else {
+					// The value will be in a register and later code depends on it being stored so
+					// 1) allocate a temp
+					// 2) store the value (which will be in a register) to the temp
+					// 3) load the temp's address
+					MonoInst *store;
+					MonoInst *temp = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
+					temp->backend.is_pinvoke = sig->pinvoke;
 
+					EMIT_NEW_VARSTORE (cfg, store, temp, &klass->byval_arg, val);
+					EMIT_NEW_VARLOADA (cfg, ins, get_vreg_to_inst (cfg, temp->dreg), &klass->byval_arg);
 				*sp++= ins;
+				}
+
 			} else {
 				ins = handle_unbox (cfg, klass, sp, context_used);
 				*sp++ = ins;
@@ -13448,6 +13471,9 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 				if (var->opcode == OP_REGVAR) {
 					ins->dreg = var->dreg;
+#ifdef MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS
+					mono_arch_handle_multiple_dregs(bb, cfg, ins, var);
+#endif
 				} else if ((ins->dreg == ins->sreg1) && (spec [MONO_INST_DEST] == 'i') && (spec [MONO_INST_SRC1] == 'i') && !vreg_to_lvreg [ins->dreg] && (op_to_op_dest_membase (store_opcode, ins->opcode) != -1)) {
 					/* 
 					 * Instead of emitting a load+store, use a _membase opcode.

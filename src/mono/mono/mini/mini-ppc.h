@@ -139,21 +139,51 @@ typedef struct MonoCompileArch {
 #define PPC_STACK_PARAM_OFFSET 24
 #define PPC_MINIMAL_STACK_SIZE 24
 #define PPC_MINIMAL_PARAM_AREA_SIZE 0
+#define PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS 0
+#define PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTERS 0
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1
+#define PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+#define PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+#define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
+#define MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS 0
+#define MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS 0
 #else
 /* Linux */
 #ifdef __mono_ppc64__
 #define PPC_RET_ADDR_OFFSET 16
-#define PPC_STACK_PARAM_OFFSET 48
-#define PPC_MINIMAL_STACK_SIZE 48
+ // PowerPC64 ELFv2 ABI
+ #if (_CALL_ELF == 2)
+  #define PPC_STACK_PARAM_OFFSET 32
+  #define PPC_MINIMAL_STACK_SIZE 32
+  #define PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS 16
+  #define PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTERS 8
+  #define PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS 1
+  #define PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS 1
+  #define PPC_RETURN_SMALL_STRUCTS_IN_REGS 1
+  #define MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS 1
+  #define MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS 1
+// FIXME: To get the test case  finally_block_ending_in_dead_bb  to work properly we need to define the following
+// and then implement the fuction mono_arch_create_handler_block_trampoline.
+//  #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
+//  #define DEBUG_ELFABIV2
+ #else
+  #define PPC_MINIMAL_STACK_SIZE 48
+  #define PPC_STACK_PARAM_OFFSET 48
+  #define PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS 0
+  #define PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTERS 0
+  #define PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+  #define PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+  #define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
+  #define MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS 0
+  #define MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS 0
+ #endif
 #define PPC_MINIMAL_PARAM_AREA_SIZE 64
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1
-#define PPC_SMALL_RET_STRUCT_IN_REG 0
 #define PPC_THREAD_PTR_REG ppc_r13
 #else
 #define PPC_RET_ADDR_OFFSET 4
@@ -162,7 +192,13 @@ typedef struct MonoCompileArch {
 #define PPC_MINIMAL_PARAM_AREA_SIZE 0
 #define PPC_LAST_FPARG_REG ppc_f8
 #define PPC_PASS_STRUCTS_BY_VALUE 0
-#define PPC_SMALL_RET_STRUCT_IN_REG 1
+#define PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS 0
+#define PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTERS 0
+#define PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+#define PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+#define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
+#define MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS 0
+#define MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS 0
 #define PPC_THREAD_PTR_REG ppc_r2
 #endif
 #define PPC_FIRST_ARG_REG ppc_r3
@@ -327,5 +363,56 @@ gboolean mono_ppc_is_direct_call_sequence (guint32 *code) MONO_INTERNAL;
 void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
 
 void mono_ppc_set_func_into_sigctx (void *sigctx, void *func) MONO_INTERNAL;
+
+// --
+#if PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS
+gboolean is_float_struct_returnable_via_regs  (MonoClass *klass);
+#else
+#define is_float_struct_returnable_via_regs(a) (FALSE)
+#endif
+
+#if PPC_RETURN_SMALL_STRUCTS_IN_REGS
+gboolean is_struct_returnable_via_regs  (MonoClass *klass, gboolean is_pinvoke);
+#else
+#define is_struct_returnable_via_regs(a,b) (FALSE)
+#endif
+
+gint member_count  (MonoClass *klass);
+gint float_member_size  (MonoClass *klass);
+// --
+
+#if PPC_RETURN_SMALL_STRUCTS_IN_REGS
+// If the value is being returned via registers we don't need to allocate a temporary variable for it.
+gboolean function_return_value_requires_temporary (MonoMethodSignature *sig);
+#else
+#define function_return_value_requires_temporary(a) (TRUE)
+#endif
+
+// Debugging macros for ELF ABI v2
+#ifdef DEBUG_ELFABIV2
+
+#define DEBUG_ELFABIV2_printf(a, ...) \
+{if (getenv("DEBUG_ELFABIV2")) { printf(a, ##__VA_ARGS__); fflush(stdout); } }
+
+#define DEBUG_ELFABIV2_mono_print_ins(a) \
+{if (getenv("DEBUG_ELFABIV2")) { if (!a) {printf("null\n");} else {mono_print_ins(a);} fflush(stdout); } }
+
+extern char* mono_type_full_name (MonoType *type);
+
+#define DEBUG_ELFABIV2_mono_print_type(a) \
+{if (getenv("DEBUG_ELFABIV2")) { printf("%s, size: %d\n", mono_type_get_name(&a->klass->byval_arg), mini_type_stack_size (NULL, a, 0)); fflush(stdout); } }
+
+#define DEBUG_ELFABIV2_mono_print_klass(a) \
+{if (getenv("DEBUG_ELFABIV2")) { printf("%s\n", mono_type_get_name(&a->byval_arg)); fflush(stdout); } }
+
+#else
+
+#define DEBUG_ELFABIV2_printf(a, ...)
+#define DEBUG_ELFABIV2_mono_print_ins(a)
+#define DEBUG_ELFABIV2_mono_print_type(a)
+#define DEBUG_ELFABIV2_mono_print_klass(a)
+
+#endif
+
 
 #endif /* __MONO_MINI_PPC_H__ */
