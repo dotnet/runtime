@@ -15,6 +15,7 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/io-layer/threads.h>
 
 #include <errno.h>
 
@@ -851,7 +852,7 @@ mono_thread_info_open_handle (void)
 }
 
 /*
- * mono_thread_info_open_handle:
+ * mono_threads_open_thread_handle:
  *
  *   Return a io-layer/win32 handle for the thread identified by HANDLE/TID.
  * The handle need to be closed by calling CloseHandle () when it is no
@@ -867,4 +868,42 @@ void
 mono_thread_info_set_name (MonoNativeThreadId tid, const char *name)
 {
 	mono_threads_core_set_name (tid, name);
+}
+
+/*
+ * mono_thread_info_prepare_interrupt:
+ *
+ *   See wapi_prepare_interrupt ().
+ */
+gpointer
+mono_thread_info_prepare_interrupt (HANDLE thread_handle)
+{
+	return mono_threads_core_prepare_interrupt (thread_handle);
+}
+
+void
+mono_thread_info_finish_interrupt (gpointer wait_handle)
+{
+	mono_threads_core_finish_interrupt (wait_handle);
+}
+
+void
+mono_thread_info_interrupt (HANDLE thread_handle)
+{
+	gpointer wait_handle;
+
+	wait_handle = mono_thread_info_prepare_interrupt (thread_handle);
+	mono_thread_info_finish_interrupt (wait_handle);
+}
+	
+void
+mono_thread_info_self_interrupt (void)
+{
+	mono_threads_core_self_interrupt ();
+}
+
+void
+mono_thread_info_clear_interruption (void)
+{
+	mono_threads_core_clear_interruption ();
 }

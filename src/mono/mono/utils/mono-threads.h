@@ -302,6 +302,21 @@ mono_thread_info_exit (void);
 HANDLE
 mono_thread_info_open_handle (void);
 
+gpointer
+mono_thread_info_prepare_interrupt (HANDLE thread_handle);
+
+void
+mono_thread_info_finish_interrupt (gpointer wait_handle);
+
+void
+mono_thread_info_interrupt (HANDLE thread_handle);
+
+void
+mono_thread_info_self_interrupt (void);
+
+void
+mono_thread_info_clear_interruption (void);
+
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
@@ -339,6 +354,10 @@ void mono_threads_core_unregister (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 HANDLE mono_threads_core_open_handle (void) MONO_INTERNAL;
 HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INTERNAL;
 void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name) MONO_INTERNAL;
+gpointer mono_threads_core_prepare_interrupt (HANDLE thread_handle);
+void mono_threads_core_finish_interrupt (gpointer wait_handle);
+void mono_threads_core_self_interrupt (void);
+void mono_threads_core_clear_interruption (void);
 
 MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
 

@@ -30,9 +30,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
 #include <mono/io-layer/io-layer.h>
-#ifndef HOST_WIN32
-#include <mono/io-layer/threads.h>
-#endif
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-compiler.h>
@@ -2028,12 +2025,12 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 	 * functions in the io-layer until the signal handler calls QueueUserAPC which will
 	 * make it return.
 	 */
-	wait_handle = wapi_prepare_interrupt_thread (thread->handle);
+	wait_handle = mono_thread_info_prepare_interrupt (thread->handle);
 
 	/* fixme: store the state somewhere */
 	mono_thread_kill (thread, mono_thread_get_abort_signal ());
 
-	wapi_finish_interrupt_thread (wait_handle);
+	mono_thread_info_finish_interrupt (wait_handle);
 #endif /* HOST_WIN32 */
 }
 
@@ -2956,9 +2953,7 @@ void mono_thread_manage (void)
 	 * to get correct user and system times from getrusage/wait/time(1)).
 	 * This could be removed if we avoid pthread_detach() and use pthread_join().
 	 */
-#ifndef HOST_WIN32
 	mono_thread_info_yield ();
-#endif
 }
 
 static void terminate_thread (gpointer key, gpointer value, gpointer user)
@@ -4115,10 +4110,8 @@ static MonoException* mono_thread_execute_interruption (MonoInternalThread *thre
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
 #endif
 		InterlockedDecrement (&thread_interruption_requested);
-#ifndef HOST_WIN32
 		/* Clear the interrupted flag of the thread so it can wait again */
-		wapi_clear_interruption ();
-#endif
+		mono_thread_info_clear_interruption ();
 	}
 
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
@@ -4208,7 +4201,7 @@ mono_thread_request_interruption (gboolean running_managed)
 #ifdef HOST_WIN32
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, (ULONG_PTR)NULL);
 #else
-		wapi_self_interrupt ();
+		mono_thread_info_self_interrupt ();
 #endif
 		return NULL;
 	}
@@ -4241,9 +4234,8 @@ mono_thread_resume_interruption (void)
 		return NULL;
 	InterlockedIncrement (&thread_interruption_requested);
 
-#ifndef HOST_WIN32
-	wapi_self_interrupt ();
-#endif
+	mono_thread_info_self_interrupt ();
+
 	return mono_thread_execute_interruption (thread);
 }
 
@@ -4560,9 +4552,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		MonoException *exc = mono_thread_request_interruption (can_raise_exception); 
 		if (exc)
 			mono_raise_exception (exc);
-#ifndef HOST_WIN32
-		wapi_interrupt_thread (thread->handle);
-#endif
+		mono_thread_info_interrupt (thread->handle);
 		return;
 	}
 
@@ -4601,14 +4591,11 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		 * functions in the io-layer until the signal handler calls QueueUserAPC which will
 		 * make it return.
 		 */
-#ifndef HOST_WIN32
 		gpointer interrupt_handle;
-		interrupt_handle = wapi_prepare_interrupt_thread (thread->handle);
-#endif
+
+		interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
 		mono_thread_info_finish_suspend_and_resume (info);
-#ifndef HOST_WIN32
-		wapi_finish_interrupt_thread (interrupt_handle);
-#endif
+		mono_thread_info_finish_interrupt (interrupt_handle);
 	}
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
 }
@@ -4661,21 +4648,15 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 		if (running_managed && !protected_wrapper) {
 			transition_to_suspended (thread, info);
 		} else {
-#ifndef HOST_WIN32
 			gpointer interrupt_handle;
-#endif
 
 			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
 				InterlockedIncrement (&thread_interruption_requested);
-#ifndef HOST_WIN32
 			if (interrupt)
-				interrupt_handle = wapi_prepare_interrupt_thread (thread->handle);
-#endif
+				interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
 			mono_thread_info_finish_suspend_and_resume (info);
-#ifndef HOST_WIN32
 			if (interrupt)
-				wapi_finish_interrupt_thread (interrupt_handle);
-#endif
+				mono_thread_info_finish_interrupt (interrupt_handle);
 			UNLOCK_THREAD (thread);
 		}
 	}
