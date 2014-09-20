@@ -279,6 +279,8 @@ typedef struct {
 	ctx.pc = ctx.regs [15];			\
 } while (0)
 
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
 #elif (defined(__aarch64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
 
 #include <mono/arch/arm64/arm64-codegen.h>

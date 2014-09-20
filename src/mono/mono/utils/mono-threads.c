@@ -738,6 +738,9 @@ mono_thread_info_new_interrupt_enabled (void)
 #if defined (__i386__)
 	return !disable_new_interrupt;
 #endif
+#if defined(__arm__) && !defined(__APPLE__)
+	return !disable_new_interrupt;
+#endif
 	return FALSE;
 }
 
