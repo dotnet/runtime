@@ -15,7 +15,6 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/io-layer/threads.h>
 
 #include <errno.h>
 
