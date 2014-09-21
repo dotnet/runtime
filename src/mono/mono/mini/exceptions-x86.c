@@ -250,8 +250,9 @@ void win32_seh_init()
 
 void win32_seh_cleanup()
 {
-	if (mono_old_win_toplevel_exception_filter) SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
-	RemoveVectoredExceptionHandler (seh_unhandled_exception_filter);
+	if (mono_old_win_toplevel_exception_filter)
+		SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);
+	RemoveVectoredExceptionHandler (mono_win_vectored_exception_handle);
 }
 
 void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
