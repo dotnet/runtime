@@ -946,8 +946,6 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	return buf;
 }
 
-#ifdef MONO_ARCH_MONITOR_OBJECT_REG
-
 gpointer
 mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 {
@@ -958,8 +956,11 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	int owner_offset, nest_offset, dummy;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+	int obj_reg = MONO_AMD64_ARG_REG1;
+	int sync_reg = MONO_AMD64_ARG_REG2;
+	int tid_reg = MONO_AMD64_ARG_REG3;
 
-	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
+	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == obj_reg);
 
 	mono_monitor_threads_sync_members_offset (&owner_offset, &nest_offset, &dummy);
 	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (owner_offset) == sizeof (gpointer));
@@ -974,50 +975,51 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	unwind_ops = mono_arch_get_cie_program ();
 
 	if (!aot && mono_thread_get_tls_offset () != -1) {
-		/* MonoObject* obj is in RDI */
+		/* MonoObject* obj is in obj_reg */
 		/* is obj null? */
-		amd64_test_reg_reg (code, AMD64_RDI, AMD64_RDI);
+		amd64_test_reg_reg (code, obj_reg, obj_reg);
 		/* if yes, jump to actual trampoline */
 		jump_obj_null = code;
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
-		/* load obj->synchronization to RCX */
-		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RDI, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 8);
+		/* load obj->synchronization to sync_reg */
+		amd64_mov_reg_membase (code, sync_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 8);
 
 		if (mono_gc_is_moving ()) {
 			/*if bit zero is set it's a thin hash*/
 			/*FIXME use testb encoding*/
-			amd64_test_reg_imm (code, AMD64_RCX, 0x01);
+			amd64_test_reg_imm (code, sync_reg, 0x01);
 			jump_sync_thin_hash = code;
 			amd64_branch8 (code, X86_CC_NE, -1, 1);
 
 			/*clear bits used by the gc*/
-			amd64_alu_reg_imm (code, X86_AND, AMD64_RCX, ~0x3);
+			amd64_alu_reg_imm (code, X86_AND, sync_reg, ~0x3);
 		}
 
 		/* is synchronization null? */
-		amd64_test_reg_reg (code, AMD64_RCX, AMD64_RCX);
+		amd64_test_reg_reg (code, sync_reg, sync_reg);
 		/* if yes, jump to actual trampoline */
 		jump_sync_null = code;
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
-		/* load MonoInternalThread* into RDX */
-		code = mono_amd64_emit_tls_get (code, AMD64_RDX, mono_thread_get_tls_offset ());
-		/* load TID into RDX */
-		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 8);
+		/* load MonoInternalThread* into tid_reg */
+		code = mono_amd64_emit_tls_get (code, tid_reg, mono_thread_get_tls_offset ());
+		/* load TID into tid_reg */
+		amd64_mov_reg_membase (code, tid_reg, tid_reg, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 8);
 
 		/* is synchronization->owner null? */
-		amd64_alu_membase_imm_size (code, X86_CMP, AMD64_RCX, owner_offset, 0, 8);
+		amd64_alu_membase_imm_size (code, X86_CMP, sync_reg, owner_offset, 0, 8);
 		/* if not, jump to next case */
 		jump_tid = code;
 		amd64_branch8 (code, X86_CC_NZ, -1, 1);
 
 		/* if yes, try a compare-exchange with the TID */
+		g_assert (tid_reg != X86_EAX);
 		/* zero RAX */
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 		/* compare and exchange */
 		amd64_prefix (code, X86_LOCK_PREFIX);
-		amd64_cmpxchg_membase_reg_size (code, AMD64_RCX, owner_offset, AMD64_RDX, 8);
+		amd64_cmpxchg_membase_reg_size (code, sync_reg, owner_offset, tid_reg, 8);
 		/* if not successful, jump to actual trampoline */
 		jump_cmpxchg_failed = code;
 		amd64_branch8 (code, X86_CC_NZ, -1, 1);
@@ -1027,12 +1029,12 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		/* next case: synchronization->owner is not null */
 		x86_patch (jump_tid, code);
 		/* is synchronization->owner == TID? */
-		amd64_alu_membase_reg_size (code, X86_CMP, AMD64_RCX, owner_offset, AMD64_RDX, 8);
+		amd64_alu_membase_reg_size (code, X86_CMP, sync_reg, owner_offset, tid_reg, 8);
 		/* if not, jump to actual trampoline */
 		jump_other_owner = code;
 		amd64_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if yes, increment nest */
-		amd64_inc_membase_size (code, AMD64_RCX, nest_offset, 4);
+		amd64_inc_membase_size (code, sync_reg, nest_offset, 4);
 		/* return */
 		amd64_ret (code);
 
@@ -1045,9 +1047,8 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	}
 
 	/* jump to the actual trampoline */
-#if MONO_AMD64_ARG_REG1 != AMD64_RDI
-	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RDI);
-#endif
+	if (MONO_AMD64_ARG_REG1 != obj_reg)
+		amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, obj_reg, sizeof (mgreg_t));
 
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_enter");
@@ -1081,8 +1082,10 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	int owner_offset, nest_offset, entry_count_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+	int obj_reg = MONO_AMD64_ARG_REG1;
+	int sync_reg = MONO_AMD64_ARG_REG2;
 
-	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
+	g_assert (obj_reg == MONO_ARCH_MONITOR_OBJECT_REG);
 
 	mono_monitor_threads_sync_members_offset (&owner_offset, &nest_offset, &entry_count_offset);
 	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (owner_offset) == sizeof (gpointer));
@@ -1099,63 +1102,63 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	unwind_ops = mono_arch_get_cie_program ();
 
 	if (!aot && mono_thread_get_tls_offset () != -1) {
-		/* MonoObject* obj is in RDI */
+		/* MonoObject* obj is in obj_reg */
 		/* is obj null? */
-		amd64_test_reg_reg (code, AMD64_RDI, AMD64_RDI);
+		amd64_test_reg_reg (code, obj_reg, obj_reg);
 		/* if yes, jump to actual trampoline */
 		jump_obj_null = code;
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to RCX */
-		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RDI, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 8);
+		amd64_mov_reg_membase (code, sync_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, synchronisation), 8);
 
 		if (mono_gc_is_moving ()) {
 			/*if bit zero is set it's a thin hash*/
 			/*FIXME use testb encoding*/
-			amd64_test_reg_imm (code, AMD64_RCX, 0x01);
+			amd64_test_reg_imm (code, sync_reg, 0x01);
 			jump_sync_thin_hash = code;
 			amd64_branch8 (code, X86_CC_NE, -1, 1);
 
 			/*clear bits used by the gc*/
-			amd64_alu_reg_imm (code, X86_AND, AMD64_RCX, ~0x3);
+			amd64_alu_reg_imm (code, X86_AND, sync_reg, ~0x3);
 		}
 
 		/* is synchronization null? */
-		amd64_test_reg_reg (code, AMD64_RCX, AMD64_RCX);
+		amd64_test_reg_reg (code, sync_reg, sync_reg);
 		/* if yes, jump to actual trampoline */
 		jump_sync_null = code;
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* next case: synchronization is not null */
-		/* load MonoInternalThread* into RDX */
-		code = mono_amd64_emit_tls_get (code, AMD64_RDX, mono_thread_get_tls_offset ());
-		/* load TID into RDX */
-		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 8);
+		/* load MonoInternalThread* into RAX */
+		code = mono_amd64_emit_tls_get (code, AMD64_RAX, mono_thread_get_tls_offset ());
+		/* load TID into RAX */
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, MONO_STRUCT_OFFSET (MonoInternalThread, tid), 8);
 		/* is synchronization->owner == TID */
-		amd64_alu_membase_reg_size (code, X86_CMP, AMD64_RCX, owner_offset, AMD64_RDX, 8);
+		amd64_alu_membase_reg_size (code, X86_CMP, sync_reg, owner_offset, AMD64_RAX, 8);
 		/* if no, jump to actual trampoline */
 		jump_not_owned = code;
 		amd64_branch8 (code, X86_CC_NZ, -1, 1);
 
 		/* next case: synchronization->owner == TID */
 		/* is synchronization->nest == 1 */
-		amd64_alu_membase_imm_size (code, X86_CMP, AMD64_RCX, nest_offset, 1, 4);
+		amd64_alu_membase_imm_size (code, X86_CMP, sync_reg, nest_offset, 1, 4);
 		/* if not, jump to next case */
 		jump_next = code;
 		amd64_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if yes, is synchronization->entry_count zero? */
-		amd64_alu_membase_imm_size (code, X86_CMP, AMD64_RCX, entry_count_offset, 0, 4);
+		amd64_alu_membase_imm_size (code, X86_CMP, sync_reg, entry_count_offset, 0, 4);
 		/* if not, jump to actual trampoline */
 		jump_have_waiters = code;
 		amd64_branch8 (code, X86_CC_NZ, -1 , 1);
 		/* if yes, set synchronization->owner to null and return */
-		amd64_mov_membase_imm (code, AMD64_RCX, owner_offset, 0, 8);
+		amd64_mov_membase_imm (code, sync_reg, owner_offset, 0, 8);
 		amd64_ret (code);
 
 		/* next case: synchronization->nest is not 1 */
 		x86_patch (jump_next, code);
 		/* decrease synchronization->nest and return */
-		amd64_dec_membase_size (code, AMD64_RCX, nest_offset, 4);
+		amd64_dec_membase_size (code, sync_reg, nest_offset, 4);
 		amd64_ret (code);
 
 		x86_patch (jump_obj_null, code);
@@ -1165,9 +1168,8 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	}
 
 	/* jump to the actual trampoline */
-#if MONO_AMD64_ARG_REG1 != AMD64_RDI
-	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RDI);
-#endif
+	if (MONO_AMD64_ARG_REG1 != obj_reg)
+		amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, obj_reg, sizeof (mgreg_t));
 
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_exit");
@@ -1187,7 +1189,6 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	return buf;
 }
-#endif
 
 void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)

@@ -33,7 +33,7 @@ void amd64_nacl_membase_handler (guint8** code, gint8 basereg, gint32 offset, gi
 #include <signal.h>
 #endif
 
-
+#if !defined(_MSC_VER)
 /* sigcontext surrogate */
 struct sigcontext {
 	guint64 eax;
@@ -46,6 +46,7 @@ struct sigcontext {
 	guint64 edi;
 	guint64 eip;
 };
+#endif
 
 typedef void (* MonoW32ExceptionHandler) (int _dummy, EXCEPTION_POINTERS *info, void *context);
 void win32_seh_init(void);
@@ -340,9 +341,11 @@ typedef struct {
 #ifdef HOST_WIN32
 #define MONO_AMD64_ARG_REG1 AMD64_RCX
 #define MONO_AMD64_ARG_REG2 AMD64_RDX
+#define MONO_AMD64_ARG_REG3 AMD64_R8
 #else
 #define MONO_AMD64_ARG_REG1 AMD64_RDI
 #define MONO_AMD64_ARG_REG2 AMD64_RSI
+#define MONO_AMD64_ARG_REG3 AMD64_RDX
 #endif
 
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
@@ -375,9 +378,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#if !defined(HOST_WIN32)
 #define MONO_ARCH_MONITOR_OBJECT_REG MONO_AMD64_ARG_REG1
-#endif
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
@@ -385,9 +386,7 @@ typedef struct {
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
 
-#if !defined(HOST_WIN32) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
-#endif
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
