@@ -2051,7 +2051,6 @@ arg_storage_to_load_membase (ArgStorage storage)
 static void
 emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
-	MonoInst *arg;
 	MonoMethodSignature *tmp_sig;
 	int sig_reg;
 

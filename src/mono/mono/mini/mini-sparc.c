@@ -4354,7 +4354,7 @@ mono_arch_tls_init (void)
 
 	}
 
-	jit_tls = pthread_getspecific (mono_get_jit_tls_key ());
+	jit_tls = mono_get_jit_tls ();
 
 #ifdef MONO_SPARC_THR_TLS
 	thr_setspecific (lmf_addr_key, &jit_tls->lmf);
