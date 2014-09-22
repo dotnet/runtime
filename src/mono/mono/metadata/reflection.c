@@ -7508,14 +7508,52 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		mono_class_init (parent);
 
 		while ((klass = mono_class_get_nested_types (parent, &iter))) {
-			if (ignorecase) {
-				if (mono_utf8_strcasecmp (klass->name, mod->data) == 0)
-					break;
+			char *lastp;
+			char *nested_name, *nested_nspace;
+			gboolean match = TRUE;
+
+			lastp = strrchr (mod->data, '.');
+			if (lastp) {
+				/* Nested classes can have namespaces */
+				int nspace_len;
+
+				nested_name = g_strdup (lastp + 1);
+				nspace_len = lastp - (char*)mod->data;
+				nested_nspace = g_malloc (nspace_len + 1);
+				memcpy (nested_nspace, mod->data, nspace_len);
+				nested_nspace [nspace_len] = '\0';
+
 			} else {
-				if (strcmp (klass->name, mod->data) == 0)
-					break;
+				nested_name = mod->data;
+				nested_nspace = NULL;
 			}
+
+			if (nested_nspace) {
+				if (ignorecase) {
+					if (!(klass->name_space && mono_utf8_strcasecmp (klass->name_space, nested_nspace) == 0))
+						match = FALSE;
+				} else {
+					if (!(klass->name_space && strcmp (klass->name_space, nested_nspace) == 0))
+						match = FALSE;
+				}
+			}
+			if (match) {
+				if (ignorecase) {
+					if (mono_utf8_strcasecmp (klass->name, nested_name) != 0)
+						match = FALSE;
+				} else {
+					if (strcmp (klass->name, nested_name) != 0)
+						match = FALSE;
+				}
+			}
+			if (lastp) {
+				g_free (nested_name);
+				g_free (nested_nspace);
+			}
+			if (match)
+				break;
 		}
+
 		if (!klass)
 			break;
 	}
