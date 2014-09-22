@@ -85,7 +85,7 @@ static int breakpoint_fault_size;
 /* The size of the single step instruction causing the actual fault */
 static int single_step_fault_size;
 
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) && !defined(MONO_AMD64_NO_PUSHES)
 /* On Win64 always reserve first 32 bytes for first four arguments */
 #define ARGS_OFFSET 48
 #else
@@ -940,6 +940,11 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	gr = 0;
 	fr = 0;
 
+#if defined(HOST_WIN32) && defined(MONO_AMD64_NO_PUSHES)
+	/* Reserve space where the callee can save the argument registers */
+	stack_size = 4 * sizeof (mgreg_t);
+#endif
+
 	/* return value */
 	{
 		ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
@@ -1107,6 +1112,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
+
 		case MONO_TYPE_I8:
 			add_general (&gr, &stack_size, ainfo);
 			break;
@@ -1129,7 +1135,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		add_general (&gr, &stack_size, &cinfo->sig_cookie);
 	}
 
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) && !defined(MONO_AMD64_NO_PUSHES)
 	// There always is 32 bytes reserved on the stack when calling on Winx64
 	stack_size += 0x20;
 #endif
@@ -1991,16 +1997,14 @@ mono_arch_create_vars (MonoCompile *cfg)
 		cfg->arch.ss_trigger_page_var = ins;
 	}
 
-#ifdef MONO_AMD64_NO_PUSHES
 	/*
 	 * When this is set, we pass arguments on the stack by moves, and by allocating 
 	 * a bigger stack frame, instead of pushes.
 	 * Pushes complicate exception handling because the arguments on the stack have
 	 * to be popped each time a frame is unwound. They also make fp elimination
 	 * impossible.
-	 * FIXME: This doesn't work inside filter/finally clauses, since those execute
-	 * on a new frame which doesn't include a param area.
 	 */
+#ifdef MONO_AMD64_NO_PUSHES
 	cfg->arch.no_pushes = TRUE;
 #endif
 
@@ -2441,7 +2445,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) && !defined(MONO_AMD64_NO_PUSHES)
 	if (call->inst.opcode != OP_TAILCALL) {
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 0x20);
 	}
@@ -2494,8 +2498,6 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MonoInst *vtaddr, *load;
 		vtaddr = mono_compile_create_var (cfg, &ins->klass->byval_arg, OP_LOCAL);
 		
-		g_assert (!cfg->arch.no_pushes);
-
 		MONO_INST_NEW (cfg, load, OP_LDADDR);
 		cfg->has_indirection = TRUE;
 		load->inst_p0 = vtaddr;
@@ -2513,6 +2515,8 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			arg->inst_imm = 0;
 			MONO_ADD_INS (cfg->cbb, arg);
 			mono_call_inst_add_outarg_reg (cfg, call, arg->dreg, ainfo->pair_regs [0], FALSE);
+		} else if (cfg->arch.no_pushes) {
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, load->dreg);
 		} else {
 			MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
 			arg->sreg1 = load->dreg;
@@ -8426,7 +8430,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
 #ifdef HOST_WIN32
 	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;
-	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && einfo->ExceptionInformation [1] == bp_trigger_page)
+	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && (gpointer)einfo->ExceptionInformation [1] == bp_trigger_page)
 		return TRUE;
 	else
 		return FALSE;
@@ -8490,7 +8494,7 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 {
 #ifdef HOST_WIN32
 	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;
-	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && einfo->ExceptionInformation [1] == ss_trigger_page)
+	if (einfo->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && (gpointer)einfo->ExceptionInformation [1] == ss_trigger_page)
 		return TRUE;
 	else
 		return FALSE;
