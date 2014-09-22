@@ -192,7 +192,7 @@ typedef struct MonoCompileArch {
 	gint32 stack_alloc_size;
 	gint32 sp_fp_offset;
 	guint32 saved_iregs;
-	gboolean omit_fp, omit_fp_computed, no_pushes;
+	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
 	gint32 async_point_count;
 	gpointer vret_addr_loc;
@@ -389,10 +389,6 @@ typedef struct {
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
-
-#ifndef HOST_WIN32
-#define MONO_AMD64_NO_PUSHES 1
-#endif
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
