@@ -160,9 +160,13 @@ gint32
 mono_domain_get_tls_offset (void)
 {
 	int offset = -1;
+
+#ifdef HOST_WIN32
+	if (appdomain_thread_id)
+		offset = appdomain_thread_id;
+#else
 	MONO_THREAD_VAR_OFFSET (tls_appdomain, offset);
-/*	__asm ("jmp 1f; .section writetext, \"awx\"; 1: movl $tls_appdomain@ntpoff, %0; jmp 2f; .previous; 2:" 
-		: "=r" (offset));*/
+#endif
 	return offset;
 }
 

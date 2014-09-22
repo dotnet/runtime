@@ -2629,17 +2629,20 @@ MONO_FAST_TLS_DECLARE(mono_lmf);
 #endif
 #endif
 
-MonoNativeTlsKey
-mono_get_jit_tls_key (void)
-{
-	return mono_jit_tls_id;
-}
-
 gint32
 mono_get_jit_tls_offset (void)
 {
 	int offset;
+
+#ifdef HOST_WIN32
+	if (mono_jit_tls_id)
+		offset = mono_jit_tls_id;
+	else
+		/* FIXME: Happens during startup */
+		offset = -1;
+#else
 	MONO_THREAD_VAR_OFFSET (mono_jit_tls, offset);
+#endif
 	return offset;
 }
 
@@ -2952,11 +2955,7 @@ mini_get_tls_offset (MonoTlsKey key)
 		offset = mono_thread_get_tls_offset ();
 		break;
 	case TLS_KEY_JIT_TLS:
-#ifdef HOST_WIN32
-		offset = mono_get_jit_tls_key ();
-#else
 		offset = mono_get_jit_tls_offset ();
-#endif
 		break;
 	case TLS_KEY_DOMAIN:
 		offset = mono_domain_get_tls_offset ();
