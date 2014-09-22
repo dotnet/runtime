@@ -1396,10 +1396,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	cfg->arch.omit_fp = FALSE;
 #endif
 
-#ifdef HOST_WIN32
-	cfg->arch.omit_fp = FALSE;
-#endif
-
 	if (cfg->disable_omit_fp)
 		cfg->arch.omit_fp = FALSE;
 
