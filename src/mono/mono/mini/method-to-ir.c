@@ -11608,7 +11608,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_MONO_JIT_ATTACH: {
 				MonoInst *args [16], *domain_ins;
-				MonoInst *ad_ins, *lmf_ins;
+				MonoInst *ad_ins, *jit_tls_ins;
 				MonoBasicBlock *next_bb = NULL, *call_bb = NULL;
 
 				cfg->orig_domain_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
@@ -11616,15 +11616,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_PCONST (cfg, ins, NULL);
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
 
-#if TARGET_WIN32
-				ad_ins = NULL;
-				lmf_ins = NULL;
-#else
 				ad_ins = mono_get_domain_intrinsic (cfg);
-				lmf_ins = mono_get_lmf_intrinsic (cfg);
-#endif
+				jit_tls_ins = mono_get_jit_tls_intrinsic (cfg);
 
-				if (MONO_ARCH_HAVE_TLS_GET && ad_ins && lmf_ins) {
+				if (MONO_ARCH_HAVE_TLS_GET && ad_ins && jit_tls_ins) {
 					NEW_BBLOCK (cfg, next_bb);
 					NEW_BBLOCK (cfg, call_bb);
 
@@ -11638,8 +11633,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, ad_ins->dreg, domain_ins->dreg);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, call_bb);
 
-					MONO_ADD_INS (cfg->cbb, lmf_ins);
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, lmf_ins->dreg, 0);
+					MONO_ADD_INS (cfg->cbb, jit_tls_ins);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, jit_tls_ins->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, call_bb);
 
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, next_bb);
