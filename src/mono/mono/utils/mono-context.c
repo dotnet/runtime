@@ -60,6 +60,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #elif defined(HOST_WIN32)
 	CONTEXT *context = (CONTEXT*)sigctx;
 
+	mctx->eip = context->Eip;
 	mctx->edi = context->Edi;
 	mctx->esi = context->Esi;
 	mctx->ebx = context->Ebx;
