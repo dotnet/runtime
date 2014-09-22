@@ -435,7 +435,8 @@ endif
 if X86
 
 if HOST_WIN32
-PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe
+PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
+	bug-18026.exe monitor.exe threadpool-exceptions5.exe
 endif
 
 endif
