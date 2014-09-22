@@ -1207,11 +1207,15 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 {
 	LOCK_THREAD (this_obj);
 
-	if (this_obj->flags & MONO_THREAD_FLAG_NAME_SET) {
+	if ((this_obj->flags & MONO_THREAD_FLAG_NAME_SET) && !this_obj->threadpool_thread) {
 		UNLOCK_THREAD (this_obj);
 		
 		mono_raise_exception (mono_get_exception_invalid_operation ("Thread.Name can only be set once."));
 		return;
+	}
+	if (this_obj->name) {
+		g_free (this_obj->name);
+		this_obj->name_len = 0;
 	}
 	if (name) {
 		this_obj->name = g_new (gunichar2, mono_string_length (name));
