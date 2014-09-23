@@ -1452,8 +1452,10 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: loading from cache: '%s'.", fname);
 	module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
 
-	if (module)
+	if (module) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: found in cache: '%s'.", fname);
 		return module;
+	}
 
 	if (!strcmp (assembly->aname.name, "mscorlib") && !mscorlib_aot_loaded)
 		/*
@@ -1481,7 +1483,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 		fclose (failure_file);
 	}
 
-	mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: compiling assembly '%s'... ", assembly->image->name);
+	mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: compiling assembly '%s', logfile: '%s.log'... ", assembly->image->name, fname);
 
 	/*
 	 * We need to invoke the AOT compiler here. There are multiple approaches:
@@ -1495,11 +1497,14 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 		aot_options = g_strdup_printf ("outfile=%s,internal-logfile=%s.log", fname, fname);
 		/* Maybe due this in another thread ? */
 		res = mono_compile_assembly (assembly, mono_parse_default_optimizations (NULL), aot_options);
-		if (!res) {
+		if (res) {
+			mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: compilation failed.");
 			failure_fname = g_strdup_printf ("%s.failure", fname);
 			failure_file = fopen (failure_fname, "a+");
 			fclose (failure_file);
 			g_free (failure_fname);
+		} else {
+			mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT: compilation succeeded.");
 		}
 	} else {
 		/*
