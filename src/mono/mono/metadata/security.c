@@ -701,9 +701,10 @@ IsUserProtected (gunichar2 *path)
 	gboolean success = FALSE;
 	PACL pDACL = NULL;
 	PSID pEveryoneSid = NULL;
+	PSECURITY_DESCRIPTOR pSecurityDescriptor = NULL;
 
 	DWORD dwRes = GetNamedSecurityInfoW (path, SE_FILE_OBJECT, 
-		DACL_SECURITY_INFORMATION, NULL, NULL, &pDACL, NULL, NULL);
+		DACL_SECURITY_INFORMATION, NULL, NULL, &pDACL, NULL, &pSecurityDescriptor);
 	if (dwRes != ERROR_SUCCESS)
 		return FALSE;
 
@@ -720,8 +721,8 @@ IsUserProtected (gunichar2 *path)
 	/* Note: we don't need to check our own access - 
 	we'll know soon enough when reading the file */
 
-	if (pDACL)
-		LocalFree (pDACL);
+	if (pSecurityDescriptor)
+		LocalFree (pSecurityDescriptor);
 
 	return success;
 }
