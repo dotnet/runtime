@@ -6588,6 +6588,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	gboolean skip;
 	int index, depth;
 	MonoMethod *wrapped;
+	JitFlags flags;
 
 	if (acfg->aot_opts.metadata_only)
 		return;
@@ -6632,7 +6633,12 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	 * the runtime will not see AOT methods during AOT compilation,so it
 	 * does not need to support them by creating a fake GOT etc.
 	 */
-	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), acfg->aot_opts.full_aot ? (JIT_FLAG_AOT|JIT_FLAG_FULL_AOT) : (JIT_FLAG_AOT), 0);
+	flags = JIT_FLAG_AOT;
+	if (acfg->aot_opts.full_aot)
+		flags |= JIT_FLAG_FULL_AOT;
+	if (acfg->llvm)
+		flags |= JIT_FLAG_LLVM;
+	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0);
 	mono_loader_clear_error ();
 
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {

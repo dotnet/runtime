@@ -1320,7 +1320,9 @@ typedef enum {
 	/* Whenever this is an AOT compilation */
 	JIT_FLAG_AOT = (1 << 1),
 	/* Whenever this is a full AOT compilation */
-	JIT_FLAG_FULL_AOT = (1 << 2)
+	JIT_FLAG_FULL_AOT = (1 << 2),
+	/* Whenever to compile with LLVM */
+	JIT_FLAG_LLVM = (1 << 3),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
