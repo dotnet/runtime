@@ -57,12 +57,16 @@
  */
 #define MS_BLOCK_ALLOC_NUM	32
 
+#define BLOCK_INFO_IN_HEADER	1	/* BOOL FASTENABLE */
+#if !BLOCK_INFO_IN_HEADER
+#undef BLOCK_INFO_IN_HEADER
+#endif
+
 /*
  * Number of bytes before the first object in a block.  At the start
  * of a block is the MSBlockHeader, then opional padding, then come
  * the objects, so this must be >= sizeof (MSBlockHeader).
  */
-#define BLOCK_INFO_IN_HEADER
 #define MS_BLOCK_SKIP	((sizeof (MSBlockHeader) + 15) & ~15)
 
 #define MS_BLOCK_FREE	(MS_BLOCK_SIZE - MS_BLOCK_SKIP)
@@ -983,8 +987,15 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 }
 
-//#define USE_PREFETCH_QUEUE
-#define DESCRIPTOR_FAST_PATH
+#define USE_PREFETCH_QUEUE	0	/* BOOL FASTENABLE */
+#if !USE_PREFETCH_QUEUE
+#undef USE_PREFETCH_QUEUE
+#endif
+
+#define DESCRIPTOR_FAST_PATH	1	/* BOOL FASTENABLE */
+#if !DESCRIPTOR_FAST_PATH
+#undef DESCRIPTOR_FAST_PATH
+#endif
 
 #ifdef HEAVY_STATISTICS
 static long long stat_optimized_copy;

@@ -69,7 +69,10 @@ typedef guint64 mword;
  */
 //#define SGEN_HEAVY_BINARY_PROTOCOL
 
-#define SGEN_MARK_ON_ENQUEUE	1
+#define SGEN_MARK_ON_ENQUEUE	1	/* BOOL FASTENABLE */
+#if !SGEN_MARK_ON_ENQUEUE
+#undef SGEN_MARK_ON_ENQUEUE
+#endif
 
 /*
  * This enables checks whenever objects are enqueued in gray queues.

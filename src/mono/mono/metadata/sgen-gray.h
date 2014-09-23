@@ -69,7 +69,10 @@ typedef enum {
 #endif
 
 #ifdef SGEN_MARK_ON_ENQUEUE
-#define SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+#define SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS	1	/* BOOL FASTENABLE */
+#if !SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+#undef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+#endif
 #endif
 
 typedef struct _GrayQueueEntry GrayQueueEntry;
@@ -110,7 +113,7 @@ typedef struct _SgenGrayQueue SgenGrayQueue;
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 typedef void (*GrayQueueEnqueueCheckFunc) (char*);
 
-#define SGEN_GRAY_QUEUE_PREFETCH_SIZE (2)
+#define SGEN_GRAY_QUEUE_PREFETCH_SIZE 2	/* INT FASTENABLE */
 
 struct _SgenGrayQueue {
 	GrayQueueEntry *cursor;
