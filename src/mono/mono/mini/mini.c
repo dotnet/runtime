@@ -7274,6 +7274,41 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	domain->runtime_info = NULL;
 }
 
+static gboolean
+llvm_init_inner (void)
+{
+	if (!mono_llvm_load (NULL))
+		return FALSE;
+
+	mono_llvm_init ();
+	return TRUE;
+}
+
+/*
+ * mini_llvm_init:
+ *
+ *   Load and initialize LLVM support.
+ * Return TRUE on success.
+ */
+gboolean
+mini_llvm_init (void)
+{
+#ifdef ENABLE_LLVM
+	static gboolean llvm_inited;
+	static gboolean init_result;
+
+	mono_loader_lock_if_inited ();
+	if (!llvm_inited) {
+		init_result = llvm_init_inner ();
+		llvm_inited = TRUE;
+	}
+	mono_loader_unlock_if_inited ();
+	return init_result;
+#else
+	return FALSE;
+#endif
+}
+
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {

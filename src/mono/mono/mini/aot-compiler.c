@@ -8885,6 +8885,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			aot_printerrf (acfg, "The 'soft-debug' option is not supported when compiling with LLVM.\n");
 			return 1;
 		}
+
+		mini_llvm_init ();
 	}
 
 	if (acfg->aot_opts.full_aot)
