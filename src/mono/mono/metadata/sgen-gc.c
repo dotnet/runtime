@@ -350,6 +350,9 @@ static long long time_major_fragment_creation = 0;
 static SGEN_TV_DECLARE (time_major_conc_collection_start);
 static SGEN_TV_DECLARE (time_major_conc_collection_end);
 
+static SGEN_TV_DECLARE (last_minor_collection_start_tv);
+static SGEN_TV_DECLARE (last_minor_collection_end_tv);
+
 int gc_debug_level = 0;
 FILE* gc_debug_file;
 
@@ -2227,13 +2230,14 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	ScanThreadDataJobData *stdjd;
 	mword fragment_total;
 	ScanCopyContext ctx;
-	TV_DECLARE (all_atv);
-	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
 	if (disable_minor_collections)
 		return TRUE;
+
+	TV_GETTIME (last_minor_collection_start_tv);
+	atv = last_minor_collection_start_tv;
 
 	MONO_GC_BEGIN (GENERATION_NURSERY);
 	binary_protocol_collection_begin (gc_stats.minor_gc_count, GENERATION_NURSERY);
@@ -2267,9 +2271,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	g_assert (nursery_section->size >= max_garbage_amount);
 
 	/* world must be stopped already */
-	TV_GETTIME (all_atv);
-	atv = all_atv;
-
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
@@ -2449,8 +2450,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	major_collector.finish_nursery_collection ();
 
-	TV_GETTIME (all_btv);
-	gc_stats.minor_gc_time += TV_ELAPSED (all_atv, all_btv);
+	TV_GETTIME (last_minor_collection_end_tv);
+	gc_stats.minor_gc_time += TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv);
 
 	if (heap_dump_file)
 		dump_heap ("minor", gc_stats.minor_gc_count - 1, NULL);
@@ -3067,8 +3068,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 {
 	TV_DECLARE (total_start);
 	TV_DECLARE (total_end);
-	TV_DECLARE (minor_start);
-	TV_DECLARE (minor_end);
 	SgenGrayQueue unpin_queue;
 	memset (&unpin_queue, 0, sizeof (unpin_queue));
 
@@ -3105,9 +3104,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
 
-	TV_GETTIME (minor_start);
 	collect_nursery (&unpin_queue, TRUE);
-	TV_GETTIME (minor_end);
 
 	if (mod_union_consistency_check)
 		sgen_check_mod_union_consistency ();
@@ -3124,7 +3121,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	MONO_GC_CONCURRENT_FINISH_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 
 	TV_GETTIME (total_end);
-	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end) - TV_ELAPSED (minor_start, minor_end);
+	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end) - TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv);
 
 	current_collection_generation = -1;
 
