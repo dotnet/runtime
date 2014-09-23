@@ -1986,10 +1986,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 			cfg->lmf_ir_mono_lmf = TRUE;
 #endif
 	}
-
-#ifndef HOST_WIN32
-	cfg->arch_eh_jit_info = 1;
-#endif
 }
 
 static void

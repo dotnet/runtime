@@ -606,12 +606,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Adjust IP */
 		new_ctx->rip --;
 
-#ifndef MONO_AMD64_NO_PUSHES
-		/* Pop arguments off the stack */
-		if (ji->has_arch_eh_info)
-			new_ctx->rsp += mono_jit_info_get_arch_eh_info (ji)->stack_size;
-#endif
-
 		return TRUE;
 	} else if (*lmf) {
 		guint64 rip;
