@@ -375,7 +375,6 @@ aot_cache_start (gpointer user_data,
 	for (i = 0; attribute_names [i]; ++i) {
 		if (!strcmp (attribute_names [i], "app")) {
 			config->apps = g_slist_prepend (config->apps, g_strdup (attribute_values [i]));
-			return;
 		}
 	}
 
@@ -391,6 +390,8 @@ aot_cache_start (gpointer user_data,
 				config->assemblies = g_slist_prepend (config->assemblies, g_strdup (part));
 			}
 			g_strfreev (parts);
+		} else if (!strcmp (attribute_names [i], "options")) {
+			config->aot_options = g_strdup (attribute_values [i]);
 		}
 	}
 }

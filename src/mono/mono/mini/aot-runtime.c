@@ -1494,7 +1494,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	 * - fork a new process and do the work there.
 	 */
 	if (in_process) {
-		aot_options = g_strdup_printf ("outfile=%s,internal-logfile=%s.log", fname, fname);
+		aot_options = g_strdup_printf ("outfile=%s,internal-logfile=%s.log%s%s", fname, fname, config->aot_options ? "," : "", config->aot_options ? config->aot_options : "");
 		/* Maybe due this in another thread ? */
 		res = mono_compile_assembly (assembly, mono_parse_default_optimizations (NULL), aot_options);
 		if (res) {

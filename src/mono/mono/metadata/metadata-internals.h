@@ -535,6 +535,7 @@ typedef struct {
 	 */
 	GSList *apps;
 	GSList *assemblies;
+	char *aot_options;
 } MonoAotCacheConfig;
 
 #define MONO_SIZEOF_METHOD_SIGNATURE (sizeof (struct _MonoMethodSignature) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)

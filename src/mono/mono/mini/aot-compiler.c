@@ -9011,7 +9011,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		res = emit_llvm_file (acfg);
 		if (!res)
-			return FALSE;
+			return 1;
 	}
 #endif
 
