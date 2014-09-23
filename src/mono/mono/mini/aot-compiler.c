@@ -136,6 +136,7 @@ typedef struct MonoAotOptions {
 	gboolean use_trampolines_page;
 	gboolean no_instances;
 	gboolean gnu_asm;
+	gboolean llvm;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -6392,6 +6393,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->instances_logfile_path = g_strdup (arg + strlen ("log-instances="));
 		} else if (str_begins_with (arg, "log-instances")) {
 			opts->log_instances = TRUE;
+		} else if (str_begins_with (arg, "llvm")) {
+			opts->llvm = TRUE;
 		} else if (str_begins_with (arg, "internal-logfile=")) {
 			opts->logfile = g_strdup (arg + strlen ("internal-logfile="));
 		} else if (str_begins_with (arg, "mtriple=")) {
@@ -8867,7 +8870,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->flags |= MONO_AOT_FILE_FLAG_DEBUG;
 	}
 
-	if (mono_use_llvm) {
+	if (mono_use_llvm || acfg->aot_opts.llvm) {
 		acfg->llvm = TRUE;
 		acfg->aot_opts.asm_writer = TRUE;
 		acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
