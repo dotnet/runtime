@@ -6393,14 +6393,14 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->instances_logfile_path = g_strdup (arg + strlen ("log-instances="));
 		} else if (str_begins_with (arg, "log-instances")) {
 			opts->log_instances = TRUE;
-		} else if (str_begins_with (arg, "llvm")) {
-			opts->llvm = TRUE;
 		} else if (str_begins_with (arg, "internal-logfile=")) {
 			opts->logfile = g_strdup (arg + strlen ("internal-logfile="));
 		} else if (str_begins_with (arg, "mtriple=")) {
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
 			opts->llvm_path = g_strdup (arg + strlen ("llvm-path="));
+		} else if (!strcmp (arg, "llvm")) {
+			opts->llvm = TRUE;
 		} else if (str_begins_with (arg, "readonly-value=")) {
 			add_readonly_value (opts, arg + strlen ("readonly-value="));
 		} else if (str_begins_with (arg, "info")) {
