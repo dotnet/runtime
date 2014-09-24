@@ -7274,6 +7274,7 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	domain->runtime_info = NULL;
 }
 
+#ifdef ENABLE_LLVM
 static gboolean
 llvm_init_inner (void)
 {
@@ -7283,6 +7284,7 @@ llvm_init_inner (void)
 	mono_llvm_init ();
 	return TRUE;
 }
+#endif
 
 /*
  * mini_llvm_init:
