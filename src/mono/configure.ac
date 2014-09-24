@@ -2806,6 +2806,20 @@ if test "x$host" != "x$target"; then
 			;;
 		esac
 		;;
+   i686*-linux-*)
+		TARGET=X86;
+		arch_target=x86;
+		AC_DEFINE(TARGET_X86, 1, [...])
+		AC_DEFINE(TARGET_ANDROID, 1, [...])
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS"
+		jit_wanted=true
+		sgen_supported=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h		
+		with_tls=pthread
+		target_mach=no
+		;;			
 	aarch64-*)
 		TARGET=ARM64
 		JIT_SUPPORTED=yes
