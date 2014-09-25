@@ -702,6 +702,10 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
 
+#if defined(TARGET_X86)
+	g_string_append (acfg->llc_args, " -march=x86 -mattr=sse4.1");
+#endif
+
 #if defined(TARGET_AMD64)
 	g_string_append (acfg->llc_args, " -march=x86-64 -mattr=sse4.1");
 #endif
