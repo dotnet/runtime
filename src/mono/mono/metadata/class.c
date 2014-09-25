@@ -3379,6 +3379,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot, gboolean overwrite)
 	 * vtables for compatible interfaces
 	 */
 	array_interfaces = get_implicit_generic_array_interfaces (class, &num_array_interfaces, &is_enumerator);
+	g_assert (!(num_array_interfaces > 0 && !is_enumerator));
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
@@ -3479,51 +3480,16 @@ setup_interface_offsets (MonoClass *class, int cur_slot, gboolean overwrite)
 		set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, class, cur_slot, TRUE);
 
 	if (num_array_interfaces) {
-		if (is_enumerator) {
-			int ienumerator_idx = find_array_interface (class, "IEnumerator`1");
-			int ienumerator_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ienumerator_idx]);
-			g_assert (ienumerator_offset >= 0);
-			for (i = 0; i < num_array_interfaces; ++i) {
-				ic = array_interfaces [i];
-				if (strcmp (ic->name, "IEnumerator`1") == 0)
-					set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, ienumerator_offset, TRUE);
-				else
-					g_assert_not_reached ();
-				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
-			}
-		} else {
-			int ilist_offset, icollection_offset, ienumerable_offset, ireadonlylist_offset, ireadonlycollection_offset;
-			int ilist_iface_idx = find_array_interface (class, "IList`1");
-			MonoClass* ilist_class = class->interfaces [ilist_iface_idx];
-			int ireadonlylist_iface_idx = find_array_interface (class, "IReadOnlyList`1");
-			MonoClass* ireadonlylist_class = ireadonlylist_iface_idx != -1 ? class->interfaces [ireadonlylist_iface_idx] : NULL;
-			int icollection_iface_idx = find_array_interface (ilist_class, "ICollection`1");
-			int ienumerable_iface_idx = find_array_interface (ilist_class, "IEnumerable`1");
-			int ireadonlycollection_iface_idx = ireadonlylist_iface_idx != -1 ? find_array_interface (ireadonlylist_class, "IReadOnlyCollection`1") : -1;
-			ilist_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ilist_iface_idx]);
-			icollection_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ilist_class->interfaces [icollection_iface_idx]);
-			ienumerable_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ilist_class->interfaces [ienumerable_iface_idx]);
-			ireadonlylist_offset = ireadonlylist_iface_idx != -1 ? find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ireadonlylist_iface_idx]) : -1;
-			ireadonlycollection_offset = ireadonlycollection_iface_idx != -1 ? find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ireadonlylist_class->interfaces [ireadonlycollection_iface_idx]) : -1;
-			g_assert (ilist_offset >= 0 && icollection_offset >= 0 && ienumerable_offset >= 0);
-			for (i = 0; i < num_array_interfaces; ++i) {
-				int offset;
-				ic = array_interfaces [i];
-				if (ic->generic_class->container_class == mono_defaults.generic_ilist_class)
-					offset = ilist_offset;
-				else if (strcmp (ic->name, "ICollection`1") == 0)
-					offset = icollection_offset;
-				else if (strcmp (ic->name, "IEnumerable`1") == 0)
-					offset = ienumerable_offset;
-				else if (strcmp (ic->name, "IReadOnlyList`1") == 0)
-					offset = ireadonlylist_offset;
-				else if (strcmp (ic->name, "IReadOnlyCollection`1") == 0)
-					offset = ireadonlycollection_offset;
-				else
-					g_assert_not_reached ();
-				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, offset, TRUE);
-				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, offset, class->interfaces [0]->name);*/
-			}
+		int ienumerator_idx = find_array_interface (class, "IEnumerator`1");
+		int ienumerator_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ienumerator_idx]);
+		g_assert (ienumerator_offset >= 0);
+		for (i = 0; i < num_array_interfaces; ++i) {
+			ic = array_interfaces [i];
+			if (strcmp (ic->name, "IEnumerator`1") == 0)
+				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, ienumerator_offset, TRUE);
+			else
+				g_assert_not_reached ();
+			/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
 		}
 	}
 
