@@ -2755,6 +2755,28 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 	}
 }
 
+static gboolean mono_array_class_implements_magic_interface (MonoClass *iface, MonoClass *array_class);
+
+static int
+mono_class_array_get_magic_iface_offset (MonoClass *iface, MonoClass *array_class)
+{
+	MonoClass *gtd;
+	int i;
+
+	if (!mono_array_class_implements_magic_interface (iface, array_class))
+		return -1;
+
+	gtd = mono_class_get_generic_type_definition (iface);
+
+	for (i = 0; i < array_class->interface_offsets_count; i++) {
+		if (mono_class_get_generic_type_definition (array_class->interfaces_packed [i]) == gtd) {
+			return array_class->interface_offsets_packed [i];
+		}
+	}
+
+	return -1;
+}
+
 /*
  * mono_class_interface_offset_with_variance:
  * 
@@ -2771,7 +2793,13 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 	*non_exact_match = FALSE;
 	if (i >= 0)
 		return i;
-	
+
+	i = mono_class_array_get_magic_iface_offset (itf, klass);
+	if (i >= 0) {
+		*non_exact_match = TRUE;
+		return i;
+	}
+
 	if (!mono_class_has_variant_generic_params (itf))
 		return -1;
 
@@ -2919,10 +2947,6 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 	gboolean internal_enumerator;
 	gboolean eclass_is_valuetype;
 
-	if (!mono_defaults.generic_ilist_class) {
-		*num = 0;
-		return NULL;
-	}
 	internal_enumerator = FALSE;
 	eclass_is_valuetype = FALSE;
 	original_rank = eclass->rank;
@@ -2941,6 +2965,10 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			*num = 0;
 			return NULL;
 		}
+	} else {
+		/* disable interface generiation for all arrays. */
+		*num = 0;
+		return NULL;
 	}
 
 	/* 
@@ -7920,6 +7948,118 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	return FALSE;
 }
 
+gboolean
+mono_class_is_magical_array_interface (MonoClass *iface)
+{
+	static MonoClass* generic_ilist_class = NULL;
+	static MonoClass* generic_icollection_class = NULL;
+	static MonoClass* generic_ienumerable_class = NULL;
+	static MonoClass* generic_ireadonlylist_class = NULL;
+	static MonoClass* generic_ireadonlycollection_class = NULL;
+
+	if (!generic_ilist_class) {
+		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "ICollection`1");
+		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IEnumerable`1");
+		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IReadOnlyList`1");
+		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IReadOnlyCollection`1");
+
+		mono_memory_barrier ();
+		generic_ilist_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IList`1");
+	}
+
+	iface = mono_class_get_generic_type_definition (iface);
+	return iface == generic_ilist_class ||
+			iface == generic_icollection_class ||
+			iface == generic_ienumerable_class ||
+			iface == generic_ireadonlylist_class ||
+			iface == generic_ireadonlycollection_class;
+}
+
+static MonoClass*
+lower_valuetype_class_for_array_cast (MonoClass *class)
+{
+	switch (class->byval_arg.type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return mono_defaults.byte_class;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return mono_defaults.int16_class;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return mono_defaults.int32_class;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return mono_defaults.int64_class;
+	default:
+		if (class->enumtype && mono_class_enum_basetype (class))
+			return mono_class_from_mono_type (mono_class_enum_basetype (class));
+	}
+	return class;
+}
+
+static gboolean
+mono_array_class_implements_magic_interface (MonoClass *iface, MonoClass *array_class)
+{
+	MonoClass *iface_arg0, *array_arg0;
+
+	if (!array_class->rank)
+		return FALSE;
+
+	if (!mono_class_is_magical_array_interface (iface))
+		return FALSE;
+
+
+	iface_arg0 = mono_class_from_mono_type (iface->generic_class->context.class_inst->type_argv [0]);
+	array_arg0 = array_class->element_class;
+	/* Valuetypes are not compatible with sys.enum, sys.valuetype and sys.object, but mono_class_is_assignable_from will report so. */
+	if (array_arg0->valuetype) {
+		if (iface_arg0 == mono_defaults.enum_class || iface_arg0 == mono_defaults.enum_class->parent || iface_arg0 == mono_defaults.object_class)
+			return FALSE;
+	}
+
+	if (mono_class_is_assignable_from (iface_arg0, array_arg0))
+		return TRUE;
+
+	if (array_arg0->valuetype && iface_arg0->valuetype && lower_valuetype_class_for_array_cast (array_arg0) == lower_valuetype_class_for_array_cast (iface_arg0))
+		return TRUE;
+
+	return FALSE;
+}
+
+static gboolean
+mono_array_class_implements_magic_interface_slow (MonoClass *iface, MonoClass *array_class)
+{
+	MonoClass *iface_arg0, *array_arg0;
+
+	if (!array_class->rank)
+		return FALSE;
+
+	if (!mono_class_is_magical_array_interface (iface))
+		return FALSE;
+
+	iface_arg0 = mono_class_from_mono_type (iface->generic_class->context.class_inst->type_argv [0]);
+	array_arg0 = array_class->element_class;
+	/* Valuetypes are not compatible with sys.enum, sys.valuetype and sys.object, but mono_class_is_assignable_from will report so. */
+	if (array_arg0->valuetype) {
+		if (iface_arg0 == mono_defaults.enum_class || iface_arg0 == mono_defaults.enum_class->parent || iface_arg0 == mono_defaults.object_class)
+			return FALSE;
+	}
+
+	if (mono_class_is_assignable_from_slow (iface_arg0, array_arg0))
+		return TRUE;
+
+	if (array_arg0->valuetype && iface_arg0->valuetype && lower_valuetype_class_for_array_cast (array_arg0) == lower_valuetype_class_for_array_cast (iface_arg0))
+		return TRUE;
+
+	return FALSE;
+}
+
 /**
  * mono_class_is_assignable_from:
  * @klass: the class to be assigned to
@@ -7993,6 +8133,9 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 					return TRUE;
 			}
 		}
+
+		if (mono_array_class_implements_magic_interface (klass, oklass))
+			return TRUE;
 		return FALSE;
 	} else if (klass->delegate) {
 		if (mono_class_has_variant_generic_params (klass) && mono_class_is_variant_compatible (klass, oklass, FALSE))
@@ -8123,6 +8266,9 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				mono_error_cleanup (&error);
 				return FALSE;
 			}
+
+			if (mono_array_class_implements_magic_interface_slow (target, candidate))
+				return TRUE;
 
 			for (i = 0; i < candidate->interface_count; ++i) {
 				if (candidate->interfaces [i] == target)
