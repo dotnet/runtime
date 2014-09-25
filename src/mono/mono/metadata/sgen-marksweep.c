@@ -1023,6 +1023,34 @@ static long long stat_drain_prefetch_fill_failures;
 static long long stat_drain_loops;
 #endif
 
+static inline void
+sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
+	GrayQueueEntry *cursor = queue->prefetch_cursor;
+	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
+	*obj = cursor->obj;
+#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
+	*desc = cursor->desc;
+	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, &cursor->desc);
+#else
+	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
+#endif
+
+#if !defined (SGEN_MARK_ON_ENQUEUE) && defined (BLOCK_INFO_IN_HEADER)
+	{
+		int word, bit;
+		MSBlockInfo *block = (MSBlockInfo*)MS_BLOCK_DATA_FOR_OBJ (cursor->obj);
+		MS_CALC_MARK_BIT (word, bit, cursor->obj);
+		PREFETCH_WRITE (&block->mark_words [word]);
+	}
+#endif
+
+	PREFETCH_READ (cursor->obj);
+	++cursor;
+	if (cursor == end)
+		cursor = queue->prefetch;
+	queue->prefetch_cursor = cursor;
+}
+
 static void major_scan_object (char *start, mword desc, SgenGrayQueue *queue);
 
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_no_evacuation
@@ -1058,34 +1086,6 @@ drain_gray_stack (ScanCopyContext ctx)
 #include "sgen-major-scan-object.h"
 #undef SCAN_FOR_CONCURRENT_MARK
 #endif
-
-static inline void
-sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
-	GrayQueueEntry *cursor = queue->prefetch_cursor;
-	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
-	*obj = cursor->obj;
-#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
-	*desc = cursor->desc;
-	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, &cursor->desc);
-#else
-	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
-#endif
-
-#if !defined (SGEN_MARK_ON_ENQUEUE) && defined (BLOCK_INFO_IN_HEADER)
-	{
-		int word, bit;
-		MSBlockInfo *block = (MSBlockInfo*)MS_BLOCK_DATA_FOR_OBJ (cursor->obj);
-		MS_CALC_MARK_BIT (word, bit, cursor->obj);
-		PREFETCH_WRITE (&block->mark_words [word]);
-	}
-#endif
-
-	PREFETCH_READ (cursor->obj);
-	++cursor;
-	if (cursor == end)
-		cursor = queue->prefetch;
-	queue->prefetch_cursor = cursor;
-}
 
 static void
 major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
