@@ -1394,8 +1394,4 @@ mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_toke
 MonoClass *
 mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error) MONO_INTERNAL;
 
-gboolean
-mono_class_is_magical_array_interface (MonoClass *iface) MONO_INTERNAL;
-
-
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

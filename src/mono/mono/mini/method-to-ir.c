@@ -4045,14 +4045,8 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 	return FALSE;
 }
 
-// FIXME: This doesn't work yet (class libs tests fail?)  (mcs/tests/gtest-304.cs fails)
+// FIXME: This doesn't work yet (class libs tests fail?)
 #define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
-
-static gboolean
-is_invariant_interface_that_required_variant_type_check (MonoClass *klass)
-{
-	return mono_class_is_magical_array_interface (klass);
-}
 
 static MonoInst*
 emit_castclass_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args, MonoBasicBlock **out_bblock)
@@ -9759,7 +9753,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (!context_used && (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || is_invariant_interface_that_required_variant_type_check (klass))) {
+			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoInst *args [3];
 
 				/* obj */
@@ -9822,7 +9816,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (!context_used && (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || is_invariant_interface_that_required_variant_type_check (klass))) {
+			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
 				MonoInst *args [3];
 
@@ -9894,7 +9888,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
-				if (!context_used && (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || is_invariant_interface_that_required_variant_type_check (klass))) {
+				if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 					MonoInst *args [3];
 
 					/* obj */

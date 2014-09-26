@@ -5356,7 +5356,7 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		}
 
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
-		if (mono_class_is_assignable_from (klass, obj->vtable->klass))
+		if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
 			return obj;
 	} else {
 		MonoClass *oklass = vt->klass;
