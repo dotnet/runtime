@@ -289,7 +289,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 36
+#define MINOR_VERSION 37
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -403,7 +403,8 @@ typedef enum {
 	INVOKE_FLAG_DISABLE_BREAKPOINTS = 1,
 	INVOKE_FLAG_SINGLE_THREADED = 2,
 	INVOKE_FLAG_RETURN_OUT_THIS = 4,
-	INVOKE_FLAG_RETURN_OUT_ARGS = 8
+	INVOKE_FLAG_RETURN_OUT_ARGS = 8,
+	INVOKE_FLAG_VIRTUAL = 16
 } InvokeFlags;
 
 typedef enum {
@@ -6562,6 +6563,12 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	if (MONO_CLASS_IS_INTERFACE (m->klass)) {
 		if (!this) {
 			DEBUG (1, fprintf (log_file, "[%p] Error: Interface method invoked without this argument.\n", (gpointer)GetCurrentThreadId ()));
+			return ERR_INVALID_ARGUMENT;
+		}
+		m = mono_object_get_virtual_method (this, m);
+	} else if (invoke->flags & INVOKE_FLAG_VIRTUAL) {
+		if (!this) {
+			DEBUG (1, fprintf (log_file, "[%p] Error: invoke with INVOKE_FLAG_VIRTUAL flag set without this argument.\n", (gpointer)GetCurrentThreadId ()));
 			return ERR_INVALID_ARGUMENT;
 		}
 		m = mono_object_get_virtual_method (this, m);
