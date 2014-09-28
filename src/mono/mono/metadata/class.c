@@ -1642,6 +1642,10 @@ mono_class_setup_fields (MonoClass *class)
 					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Invalid negative field offset %d for %s", field->offset, field->name));
 					break;
 				}
+				if (class->generic_container) {
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Generic class cannot have explicit layout."));
+					break;
+				}
 			}
 		}
 
