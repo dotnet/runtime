@@ -4197,7 +4197,7 @@ mono_thread_request_interruption (gboolean running_managed)
 		if (mono_thread_notify_pending_exc_fn && !running_managed)
 			/* The JIT will notify the thread about the interruption */
 			/* This shouldn't take any locks */
-			mono_thread_notify_pending_exc_fn ();
+			mono_thread_notify_pending_exc_fn (NULL);
 
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
@@ -4658,6 +4658,9 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 				InterlockedIncrement (&thread_interruption_requested);
 			if (interrupt)
 				interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
+			if (mono_thread_notify_pending_exc_fn && !running_managed)
+				/* The JIT will notify the thread about the interruption */
+				mono_thread_notify_pending_exc_fn (info);
 			mono_thread_info_finish_suspend_and_resume (info);
 			if (interrupt)
 				mono_thread_info_finish_interrupt (interrupt_handle);

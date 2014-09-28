@@ -1021,9 +1021,16 @@ static gpointer throw_pending_exception;
  * exception.
  */
 void
-mono_arch_notify_pending_exc (void)
+mono_arch_notify_pending_exc (MonoThreadInfo *info)
 {
 	MonoLMF *lmf = mono_get_lmf ();
+
+	if (!info) {
+		lmf = mono_get_lmf ();
+	} else {
+		g_assert (info->suspend_state.valid);
+		lmf = info->suspend_state.unwind_data [MONO_UNWIND_DATA_LMF];
+	}
 
 	if (!lmf)
 		/* Not yet started */

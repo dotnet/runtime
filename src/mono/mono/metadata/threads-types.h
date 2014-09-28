@@ -18,6 +18,7 @@
 #include <mono/metadata/object.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-threads.h"
 
 /* This is a copy of System.Threading.ThreadState */
 typedef enum {
@@ -40,8 +41,6 @@ typedef enum {
 	ThreadApartmentState_Unknown = 0x00000002
 } MonoThreadApartmentState;
 
-typedef void (*MonoThreadNotifyPendingExcFunc) (void);
-
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
@@ -54,6 +53,7 @@ typedef LPTHREAD_START_ROUTINE WapiThreadStart;
 typedef struct _MonoInternalThread MonoInternalThread;
 
 typedef void (*MonoThreadCleanupFunc) (MonoInternalThread* thread);
+typedef void (*MonoThreadNotifyPendingExcFunc) (MonoThreadInfo *info);
 
 MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size) MONO_INTERNAL;
 

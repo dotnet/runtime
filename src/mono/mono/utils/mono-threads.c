@@ -734,7 +734,7 @@ mono_thread_info_new_interrupt_enabled (void)
 #if defined(HOST_WIN32)
 	return !disable_new_interrupt;
 #endif
-#if defined (__i386__)
+#if defined (__i386__) || defined(__x86_64__)
 	return !disable_new_interrupt;
 #endif
 #if defined(__arm__) && !defined(__APPLE__)
