@@ -2054,19 +2054,13 @@ job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
 	sgen_free_internal_dynamic (job_data, sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA);
 }
 
-typedef struct
-{
-	FinalizeReadyEntry *list;
-} ScanFinalizerEntriesJobData;
-
 static void
 job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
 {
-	ScanFinalizerEntriesJobData *job_data = job_data_untyped;
+	FinalizeReadyEntry *list = job_data_untyped;
 	ScanCopyContext ctx = { NULL, current_object_ops.copy_or_mark_object, sgen_workers_get_job_gray_queue (worker_data) };
 
-	scan_finalizer_entries (job_data->list, ctx);
-	sgen_free_internal_dynamic (job_data, sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA);
+	scan_finalizer_entries (list, ctx);
 }
 
 static void
@@ -2192,7 +2186,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	char *nursery_next;
 	FinishRememberedSetScanJobData *frssjd;
 	ScanFromRegisteredRootsJobData *scrrjd_normal, *scrrjd_wbarrier;
-	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
 	ScanThreadDataJobData *stdjd;
 	mword fragment_total;
 	ScanCopyContext ctx;
@@ -2355,13 +2348,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	g_assert (!sgen_collection_is_concurrent ());
 
 	/* Scan the list of objects ready for finalization. If */
-	sfejd_fin_ready = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
-	sfejd_fin_ready->list = fin_ready_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_fin_ready);
-
-	sfejd_critical_fin = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
-	sfejd_critical_fin->list = critical_fin_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_critical_fin);
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, fin_ready_list);
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, critical_fin_list);
 
 	MONO_GC_CHECKPOINT_8 (GENERATION_NURSERY);
 
@@ -2477,7 +2465,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	GCRootReport root_report = { 0 };
 	ScanFromRegisteredRootsJobData *scrrjd_normal, *scrrjd_wbarrier;
 	ScanThreadDataJobData *stdjd;
-	ScanFinalizerEntriesJobData *sfejd_fin_ready, *sfejd_critical_fin;
 	ScanCopyContext ctx;
 
 	if (concurrent_collection_in_progress) {
@@ -2696,13 +2683,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 		report_finalizer_roots ();
 
 	/* scan the list of objects ready for finalization */
-	sfejd_fin_ready = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
-	sfejd_fin_ready->list = fin_ready_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_fin_ready);
-
-	sfejd_critical_fin = sgen_alloc_internal_dynamic (sizeof (ScanFinalizerEntriesJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
-	sfejd_critical_fin->list = critical_fin_list;
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, sfejd_critical_fin);
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, fin_ready_list);
+	sgen_workers_enqueue_job (job_scan_finalizer_entries, critical_fin_list);
 
 	if (scan_mod_union) {
 		g_assert (finish_up_concurrent_mark);
