@@ -547,7 +547,8 @@ mono_local_deadce (MonoCompile *cfg)
 				}
 			}
 
-			if (reg_is_softreg (ins->dreg, spec [MONO_INST_DEST])) {
+			/* Enabling this on x86 could screw up the fp stack */
+			if (reg_is_softreg_no_fpstack (ins->dreg, spec [MONO_INST_DEST])) {
 				/* 
 				 * Assignments to global vregs can only be eliminated if there is another
 				 * assignment to the same vreg later in the same bblock.
