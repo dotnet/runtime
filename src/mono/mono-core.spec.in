@@ -4,6 +4,9 @@
 
 %ifnarch %ix86 x86_64
 %define llvm no
+%endif
+
+%ifnarch %ix86 x86_64 s390x
 %define sgen no
 %endif
 
@@ -16,10 +19,14 @@ Version:        @VERSION@
 Release:        0
 Source0:        mono-%{version}.tar.bz2
 BuildRequires:  bison
+%if 0%{?suse_version}
 BuildRequires:  fdupes
+BuildRequires:  xorg-x11-libX11-devel
+%else
+BuildRequires:	libX11-devel
+%endif
 BuildRequires:  gcc-c++
 BuildRequires:  pkgconfig
-BuildRequires:  xorg-x11-libX11-devel
 BuildRequires:  zlib-devel
 %ifnarch ia64
 BuildRequires:  valgrind-devel
@@ -48,7 +55,9 @@ Conflicts:      banshee < 1.0
 Conflicts:      f-spot < 0.4
 Conflicts:      helix-banshee < 1.0
 Conflicts:      mono-addins < 0.3.1
+%if 0%{?suse_version}
 Recommends:     libgdiplus0 >= 2.6
+%endif
 %if %llvm == yes
 Recommends:     libmono-llvm0 = %{version}-%{release}
 %endif
@@ -92,6 +101,7 @@ export CFLAGS=" $RPM_OPT_FLAGS -fno-strict-aliasing"
 export PATH=/opt/novell/llvm-mono/bin:$PATH
 %endif
 %configure \
+  --target=%{_host} \
   --with-sgen=%{sgen} \
 %if %llvm == yes
   --enable-loadedllvm \
@@ -104,6 +114,7 @@ export PATH=/opt/novell/llvm-mono/bin:$PATH
   --with-moonlight=no
 #make # We are not -jN safe! %{?jobs:-j%jobs}
 # We are now !
+make get-monolite-latest
 make %{?_smp_mflags}
 
 %install
@@ -130,7 +141,9 @@ rm -f %buildroot%_prefix/lib/mono/2.0/cilc.exe*
 ln -s . %buildroot%_prefix%_prefix
 RPM_BUILD_ROOT=%buildroot%_prefix /usr/lib/rpm/brp-compress
 rm %buildroot%_prefix%_prefix
+%if 0%{?suse_version}
 %fdupes %buildroot%_prefix
+%endif
 %find_lang mcs
 
 %clean
