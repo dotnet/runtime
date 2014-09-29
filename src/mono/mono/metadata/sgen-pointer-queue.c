@@ -113,7 +113,8 @@ sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue)
 size_t
 sgen_pointer_queue_find (SgenPointerQueue *queue, void *ptr)
 {
-	for (size_t i = 0; i < queue->next_slot; ++i)
+	size_t i;
+	for (i = 0; i < queue->next_slot; ++i)
 		if (queue->data [i] == ptr)
 			return i;
 	return (size_t)-1;
