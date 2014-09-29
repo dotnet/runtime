@@ -74,7 +74,7 @@ struct sigcontext {
 #endif /* HAVE_WORKING_SIGALTSTACK */
 #endif /* !HOST_WIN32 */
 
-/* #define MONO_X86_NO_PUSHES 1 */
+#define MONO_X86_NO_PUSHES 1
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
