@@ -139,29 +139,10 @@ prot_flags_for_activate (int activate)
 	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
 }
 
-static void*
-mono_sgen_alloc_os_memory (size_t size, int activate)
-{
-	return mono_valloc (0, size, prot_flags_for_activate (activate));
-}
-
-static void
-mono_sgen_free_os_memory (void *addr, size_t size)
-{
-	mono_vfree (addr, size);
-}
-
-/* size must be a power of 2 */
-static void*
-mono_sgen_alloc_os_memory_aligned (size_t size, size_t alignment, gboolean activate)
-{
-	return mono_valloc_aligned (size, alignment, prot_flags_for_activate (activate));
-}
-
 static gpointer
 alloc_sb (Descriptor *desc)
 {
-	gpointer sb_header = mono_sgen_alloc_os_memory_aligned (SB_SIZE, SB_SIZE, TRUE);
+	gpointer sb_header = mono_valloc_aligned (SB_SIZE, SB_SIZE, prot_flags_for_activate (TRUE));
 	g_assert (sb_header == SB_HEADER_FOR_ADDR (sb_header));
 	DESCRIPTOR_FOR_ADDR (sb_header) = desc;
 	//g_print ("sb %p for %p\n", sb_header, desc);
@@ -173,7 +154,7 @@ free_sb (gpointer sb)
 {
 	gpointer sb_header = SB_HEADER_FOR_ADDR (sb);
 	g_assert ((char*)sb_header + SB_HEADER_SIZE == sb);
-	mono_sgen_free_os_memory (sb_header, SB_SIZE);
+	mono_vfree (sb_header, SB_SIZE);
 	//g_print ("free sb %p\n", sb_header);
 }
 
@@ -198,7 +179,7 @@ desc_alloc (void)
 			Descriptor *d;
 			int i;
 
-			desc = mono_sgen_alloc_os_memory (desc_size * NUM_DESC_BATCH, TRUE);
+			desc = mono_valloc (0, desc_size * NUM_DESC_BATCH, prot_flags_for_activate (TRUE));
 
 			/* Organize into linked list. */
 			d = desc;
@@ -214,7 +195,7 @@ desc_alloc (void)
 			success = (InterlockedCompareExchangePointer ((gpointer * volatile)&desc_avail, desc->next, NULL) == NULL);
 
 			if (!success)
-				mono_sgen_free_os_memory (desc, desc_size * NUM_DESC_BATCH);
+				mono_vfree (desc, desc_size * NUM_DESC_BATCH);
 		}
 
 		mono_hazard_pointer_clear (hp, 1);
