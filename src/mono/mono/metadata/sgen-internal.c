@@ -46,6 +46,10 @@ static const int allocator_sizes [] = {
 static MonoLockFreeAllocSizeClass size_classes [NUM_ALLOCATORS];
 static MonoLockFreeAllocator allocators [NUM_ALLOCATORS];
 
+#ifdef HEAVY_STATISTICS
+static int allocator_sizes_stats [NUM_ALLOCATORS];
+#endif
+
 /*
  * Find the allocator index for memory chunks that can contain @size
  * objects.
@@ -75,6 +79,7 @@ sgen_register_fixed_internal_mem_type (int type, size_t size)
 	int slot;
 
 	g_assert (type >= 0 && type < INTERNAL_MEM_MAX);
+	g_assert (size <= allocator_sizes [NUM_ALLOCATORS - 1]);
 
 	slot = index_for_size (size);
 	g_assert (slot >= 0);
@@ -143,6 +148,10 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 	} else {
 		index = index_for_size (size);
 
+#ifdef HEAVY_STATISTICS
+		++ allocator_sizes_stats [index];
+#endif
+
 		p = mono_lock_free_alloc (&allocators [index]);
 		if (!p)
 			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
@@ -170,10 +179,18 @@ sgen_free_internal_dynamic (void *addr, size_t size, int type)
 void*
 sgen_alloc_internal (int type)
 {
-	int index = fixed_type_allocator_indexes [type];
-	int size = allocator_sizes [index];
+	int index, size;
 	void *p;
+
+	index = fixed_type_allocator_indexes [type];
 	g_assert (index >= 0 && index < NUM_ALLOCATORS);
+
+#ifdef HEAVY_STATISTICS
+	++ allocator_sizes_stats [index];
+#endif
+
+	size = allocator_sizes [index];
+
 	p = mono_lock_free_alloc (&allocators [index]);
 	memset (p, 0, size);
 
@@ -219,8 +236,12 @@ sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 void
 sgen_report_internal_mem_usage (void)
 {
-	/* FIXME: implement */
-	printf ("not implemented yet\n");
+	int i G_GNUC_UNUSED;
+#ifdef HEAVY_STATISTICS
+	printf ("size -> # allocations\n");
+	for (i = 0; i < NUM_ALLOCATORS; ++i)
+		printf ("%d -> %d\n", allocator_sizes [i], allocator_sizes_stats [i]);
+#endif
 }
 
 void
