@@ -590,6 +590,8 @@ mono_lock_free_allocator_check_consistency (MonoLockFreeAllocator *heap)
 void
 mono_lock_free_allocator_init_size_class (MonoLockFreeAllocSizeClass *sc, unsigned int slot_size)
 {
+	g_assert (SB_SIZE > 0);
+	g_assert ((SB_SIZE & (SB_SIZE - 1)) == 0); /* check if power of 2 */
 	g_assert (slot_size <= SB_USABLE_SIZE / 2);
 
 	mono_lock_free_queue_init (&sc->partial);
