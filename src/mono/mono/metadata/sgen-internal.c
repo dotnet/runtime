@@ -23,6 +23,7 @@
 
 #include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
+#include "utils/mono-mmap.h"
 #include "utils/lock-free-alloc.h"
 #include "metadata/sgen-memory-governor.h"
 
@@ -43,12 +44,31 @@ static const int allocator_sizes [] = {
 
 #define NUM_ALLOCATORS	(sizeof (allocator_sizes) / sizeof (int))
 
+static int allocator_block_sizes [NUM_ALLOCATORS];
+
 static MonoLockFreeAllocSizeClass size_classes [NUM_ALLOCATORS];
 static MonoLockFreeAllocator allocators [NUM_ALLOCATORS];
 
 #ifdef HEAVY_STATISTICS
 static int allocator_sizes_stats [NUM_ALLOCATORS];
 #endif
+
+static size_t
+block_size (size_t slot_size)
+{
+	static int pagesize = -1;
+
+	int size;
+
+	if (pagesize == -1)
+		pagesize = mono_pagesize ();
+
+	for (size = pagesize; size < LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
+		if (slot_size * 2 <= LOCK_FREE_ALLOC_SB_USABLE_SIZE (size))
+			return size;
+	}
+	return LOCK_FREE_ALLOC_SB_MAX_SIZE;
+}
 
 /*
  * Find the allocator index for memory chunks that can contain @size
@@ -171,7 +191,7 @@ sgen_free_internal_dynamic (void *addr, size_t size, int type)
 	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
 		sgen_free_os_memory (addr, size, SGEN_ALLOC_INTERNAL);
 	else
-		mono_lock_free_free (addr);
+		mono_lock_free_free (addr, block_size (size));
 
 	MONO_GC_INTERNAL_DEALLOC ((mword)addr, size, type);
 }
@@ -210,7 +230,7 @@ sgen_free_internal (void *addr, int type)
 	index = fixed_type_allocator_indexes [type];
 	g_assert (index >= 0 && index < NUM_ALLOCATORS);
 
-	mono_lock_free_free (addr);
+	mono_lock_free_free (addr, allocator_block_sizes [index]);
 
 	if (MONO_GC_INTERNAL_DEALLOC_ENABLED ()) {
 		int size G_GNUC_UNUSED = allocator_sizes [index];
@@ -247,14 +267,25 @@ sgen_report_internal_mem_usage (void)
 void
 sgen_init_internal_allocator (void)
 {
-	int i;
+	int i, size;
 
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
 		fixed_type_allocator_indexes [i] = -1;
 
 	for (i = 0; i < NUM_ALLOCATORS; ++i) {
-		mono_lock_free_allocator_init_size_class (&size_classes [i], allocator_sizes [i]);
+		allocator_block_sizes [i] = block_size (allocator_sizes [i]);
+		mono_lock_free_allocator_init_size_class (&size_classes [i], allocator_sizes [i], allocator_block_sizes [i]);
 		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i]);
+	}
+
+	for (size = mono_pagesize (); size <= LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
+		int max_size = LOCK_FREE_ALLOC_SB_USABLE_SIZE (size) / 2;
+		/*
+		 * we assert that allocator_sizes contains the biggest possible object size
+		 * per block (4K => 4080 / 2 = 2040, 8k => 8176 / 2 = 4088, 16k => 16368 / 2 = 8184),
+		 * so that we do not get different block sizes for sizes that should go to the same one
+		 */
+		g_assert (allocator_sizes [index_for_size (max_size)] == max_size);
 	}
 }
 
