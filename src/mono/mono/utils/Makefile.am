@@ -32,6 +32,7 @@ monoutils_sources = \
 	mono-math.c  		\
 	mono-mmap.c  		\
 	mono-mmap.h  		\
+	mono-mmap-internal.h	\
 	mono-mutex.c  		\
 	mono-mutex.h  		\
 	mono-networkinterfaces.c		\

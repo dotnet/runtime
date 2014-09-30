@@ -479,22 +479,6 @@ mono_gc_card_table_nursery_check (void)
 }
 
 #if 0
-static void
-collect_faulted_cards (void)
-{
-#define CARD_PAGES (CARD_COUNT_IN_BYTES / 4096)
-	int i, count = 0;
-	unsigned char faulted [CARD_PAGES] = { 0 };
-	mincore (sgen_cardtable, CARD_COUNT_IN_BYTES, faulted);
-
-	for (i = 0; i < CARD_PAGES; ++i) {
-		if (faulted [i])
-			++count;
-	}
-
-	printf ("TOTAL card pages %d faulted %d\n", CARD_PAGES, count);
-}
-
 void
 sgen_card_table_dump_obj_card (char *object, size_t size, void *dummy)
 {

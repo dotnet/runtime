@@ -29,6 +29,7 @@
 #endif
 
 #include "mono-mmap.h"
+#include "mono-mmap-internal.h"
 #include "mono-proclib.h"
 
 #ifndef MAP_ANONYMOUS
@@ -243,6 +244,12 @@ mono_shared_area_instances (void **array, int count)
 	return 0;
 }
 
+int
+mono_pages_not_faulted (void *addr, size_t length)
+{
+	return -1;
+}
+
 #else
 #if defined(HAVE_MMAP)
 
@@ -443,6 +450,30 @@ mono_mprotect (void *addr, size_t length, int flags)
 }
 #endif // __native_client__
 
+int
+mono_pages_not_faulted (void *addr, size_t size)
+{
+	int i;
+	gint64 count;
+	int pagesize = mono_pagesize ();
+	int npages = (size + pagesize - 1) / pagesize;
+	char *faulted = g_malloc0 (sizeof (char*) * npages);
+
+	if (mincore (addr, size, faulted) != 0) {
+		count = -1;
+	} else {
+		count = 0;
+		for (i = 0; i < npages; ++i) {
+			if (faulted [i] != 0)
+				++count;
+		}
+	}
+
+	g_free (faulted);
+
+	return count;
+}
+
 #else
 
 /* dummy malloc-based implementation */
@@ -481,6 +512,13 @@ mono_mprotect (void *addr, size_t length, int flags)
 	}
 	return 0;
 }
+
+int
+mono_pages_not_faulted (void *addr, size_t length)
+{
+	return -1;
+}
+
 #endif // HAVE_MMAP
 
 #if defined(HAVE_SHM_OPEN) && !defined (DISABLE_SHARED_PERFCOUNTERS)
