@@ -74,8 +74,6 @@ struct sigcontext {
 #endif /* HAVE_WORKING_SIGALTSTACK */
 #endif /* !HOST_WIN32 */
 
-#define MONO_X86_NO_PUSHES 1
-
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
 #ifndef DISABLE_SIMD
@@ -169,7 +167,6 @@ struct MonoLMF {
 typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
-	gboolean no_pushes;
 	int sp_fp_offset, param_area_size;
 } MonoCompileArch;
 

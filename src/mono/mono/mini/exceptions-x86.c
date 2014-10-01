@@ -808,29 +808,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Adjust IP */
 		new_ctx->eip --;
 
-
-#ifndef MONO_X86_NO_PUSHES
-		/* Pop arguments off the stack */
-		if (ji->has_arch_eh_info) {
-			int stack_size;
-
-			stack_size = mono_jit_info_get_arch_eh_info (ji)->stack_size;
-
-			if (stack_size) {
-#ifdef ENABLE_LLVM
-				MonoJitInfo *caller_ji;
-
-				caller_ji = mini_jit_info_table_find (domain, (char*)new_ctx->eip, NULL);
-				/* LLVM doesn't push the arguments */
-				if (caller_ji && !caller_ji->from_llvm)
-					new_ctx->esp += stack_size;
-#else
-					new_ctx->esp += stack_size;
-#endif
-			}
-		}
-#endif
-
 		return TRUE;
 	} else if (*lmf) {
 
