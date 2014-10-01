@@ -913,6 +913,7 @@ class Tests
 		}
 	}
 
+	[Category ("GSHAREDVT")]
 	static int test_0_synchronized_gshared () {
 		var c = new SyncClass<string> ();
 		if (c.getInstance () != typeof (string))
@@ -1087,6 +1088,36 @@ class Tests
 
         var s = f2 (f);
 		return s == "A" ? 0 : 1;
+	}
+
+    public interface ICovariant<out R>
+    {
+    }
+
+    // Deleting the `out` modifier from this line stop the problem
+    public interface IExtCovariant<out R> : ICovariant<R>
+    {
+    }
+
+    public class Sample<R> : ICovariant<R>
+    {
+    }
+
+    public interface IMyInterface
+    {
+    }
+
+	public static int test_0_variant_cast_cache () {
+		object covariant = new Sample<IMyInterface>();
+
+		var foo = (ICovariant<IMyInterface>)(covariant);
+
+		try {
+			var extCovariant = (IExtCovariant<IMyInterface>)covariant;
+			return 1;
+		} catch {
+			return 0;
+		}
 	}
 }
 

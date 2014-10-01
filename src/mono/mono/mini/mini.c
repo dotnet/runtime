@@ -3239,9 +3239,10 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
-	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 	case MONO_PATCH_INFO_GOT_OFFSET:
 		return (ji->type << 8);
+	case MONO_PATCH_INFO_CASTCLASS_CACHE:
+		return (ji->type << 8) | (ji->data.index);
 	case MONO_PATCH_INFO_SWITCH:
 		return (ji->type << 8) | ji->data.table->table_size;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
@@ -3306,6 +3307,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.gsharedvt_method->method == ji2->data.gsharedvt_method->method;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		return ji1->data.del_tramp->klass == ji2->data.del_tramp->klass && ji1->data.del_tramp->method == ji2->data.del_tramp->method && ji1->data.del_tramp->virtual == ji2->data.del_tramp->virtual;
+	case MONO_PATCH_INFO_CASTCLASS_CACHE:
+		return ji1->data.index == ji2->data.index;
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;

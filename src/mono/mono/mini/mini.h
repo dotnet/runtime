@@ -123,7 +123,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 102
+#define MONO_AOT_FILE_VERSION 103
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1237,6 +1237,7 @@ struct MonoJumpInfo {
 #else
 		int             offset;
 #endif
+		int index;
 		MonoBasicBlock *bb;
 		MonoInst       *inst;
 		MonoMethod     *method;
@@ -1613,6 +1614,7 @@ typedef struct {
 	/* Symbol used to refer to this method in generated assembly */
 	char *asm_symbol;
 	char *llvm_method_name;
+	int castclass_cache_index;
 
 	MonoJitExceptionInfo *llvm_ex_info;
 	guint32 llvm_ex_info_len;

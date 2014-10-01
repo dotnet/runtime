@@ -4063,6 +4063,33 @@ emit_castclass_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args, 
 	return res;
 }
 
+static MonoInst*
+emit_castclass_with_cache_nonshared (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, MonoBasicBlock **out_bblock)
+{
+	MonoInst *args [3];
+	int idx;
+
+	/* obj */
+	args [0] = obj;
+
+	/* klass */
+	EMIT_NEW_CLASSCONST (cfg, args [1], klass);
+
+	/* inline cache*/
+	if (cfg->compile_aot) {
+		/* Each CASTCLASS_CACHE patch needs a unique index which identifies the call site */
+		cfg->castclass_cache_index ++;
+		idx = (cfg->method_index << 16) | cfg->castclass_cache_index;
+		EMIT_NEW_AOTCONST (cfg, args [2], MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
+	} else {
+		EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
+	}
+
+	/*The wrapper doesn't inline well so the bloat of inlining doesn't pay off.*/
+
+	return emit_castclass_with_cache (cfg, klass, args, out_bblock);
+}
+
 /*
  * Returns NULL and set the cfg exception on error.
  */
@@ -9754,23 +9781,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-				MonoInst *args [3];
-
-				/* obj */
-				args [0] = *sp;
-
-				/* klass */
-				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
-
-				/* inline cache*/
-				if (cfg->compile_aot)
-					EMIT_NEW_AOTCONST (cfg, args [2], MONO_PATCH_INFO_CASTCLASS_CACHE, NULL);
-				else
-					EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
-
-				/*The wrapper doesn't inline well so the bloat of inlining doesn't pay off.*/
-
-				*sp++ = emit_castclass_with_cache (cfg, klass, args, &bblock);
+				*sp = emit_castclass_with_cache_nonshared (cfg, sp [0], klass, &bblock);
+				sp ++;
 				ip += 5;
 				inline_costs += 2;
 			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
@@ -9889,23 +9901,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
 				if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-					MonoInst *args [3];
-
-					/* obj */
-					args [0] = *sp;
-
-					/* klass */
-					EMIT_NEW_CLASSCONST (cfg, args [1], klass);
-
-					/* inline cache*/
-					/*FIXME AOT support*/
-					if (cfg->compile_aot)
-						EMIT_NEW_AOTCONST (cfg, args [2], MONO_PATCH_INFO_CASTCLASS_CACHE, NULL);
-					else
-						EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
-
-					/* The wrapper doesn't inline well so the bloat of inlining doesn't pay off. */
-					*sp++ = emit_castclass_with_cache (cfg, klass, args, &bblock);
+					*sp = emit_castclass_with_cache_nonshared (cfg, sp [0], klass, &bblock);
+					sp ++;
 					ip += 5;
 					inline_costs += 2;
 				} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
