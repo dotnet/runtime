@@ -7441,7 +7441,7 @@ mini_init (const char *filename, const char *runtime_version)
 		printf ("MONO_DISABLE_PENDING_EXCEPTIONS env var set.\n");
 	} else {
 		check_for_pending_exc = FALSE;
-		mono_threads_install_notify_pending_exc (mono_arch_notify_pending_exc);
+		mono_threads_install_notify_pending_exc ((MonoThreadNotifyPendingExcFunc)mono_arch_notify_pending_exc);
 	}
 #endif
 
