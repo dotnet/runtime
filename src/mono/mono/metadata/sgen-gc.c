@@ -2440,7 +2440,11 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 static void
 scan_nursery_objects_callback (char *obj, size_t size, ScanCopyContext *ctx)
 {
-	ctx->scan_func (obj, sgen_obj_get_descriptor (obj), ctx->queue);
+	/*
+	 * This is called on all objects in the nursery, including pinned ones, so we need
+	 * to use sgen_obj_get_descriptor_safe(), which masks out the vtable tag bits.
+	 */
+	ctx->scan_func (obj, sgen_obj_get_descriptor_safe (obj), ctx->queue);
 }
 
 static void
