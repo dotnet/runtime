@@ -4597,6 +4597,10 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		 */
 		gpointer interrupt_handle;
 
+		if (mono_thread_notify_pending_exc_fn)
+			/* The JIT will notify the thread about the interruption */
+			mono_thread_notify_pending_exc_fn (info);
+
 		interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
 		mono_thread_info_finish_suspend_and_resume (info);
 		mono_thread_info_finish_interrupt (interrupt_handle);
