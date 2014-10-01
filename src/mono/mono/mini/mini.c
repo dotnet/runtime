@@ -7436,13 +7436,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
 #ifdef MONO_ARCH_HAVE_NOTIFY_PENDING_EXC
-	// This is experimental code so provide an env var to switch it off
-	if (g_getenv ("MONO_DISABLE_PENDING_EXCEPTIONS")) {
-		printf ("MONO_DISABLE_PENDING_EXCEPTIONS env var set.\n");
-	} else {
-		check_for_pending_exc = FALSE;
-		mono_threads_install_notify_pending_exc ((MonoThreadNotifyPendingExcFunc)mono_arch_notify_pending_exc);
-	}
+	check_for_pending_exc = FALSE;
+	mono_threads_install_notify_pending_exc ((MonoThreadNotifyPendingExcFunc)mono_arch_notify_pending_exc);
 #endif
 
 #define JIT_TRAMPOLINES_WORK
