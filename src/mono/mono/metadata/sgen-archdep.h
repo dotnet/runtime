@@ -21,7 +21,14 @@
 #ifndef __MONO_SGENARCHDEP_H__
 #define __MONO_SGENARCHDEP_H__
 
-#include <mono/utils/mono-sigcontext.h>
+#include <mono/utils/mono-context.h>
+
+/*
+ * Define either USE_MONO_CTX, or
+ * ARCH_SIGCTX_SP/ARCH_SIGCTX_IP/ARCH_STORE_REGS/ARCH_COPY_SIGCTX_REGS.
+ * Define ARCH_NUM_REGS to be the number of general registers in MonoContext, or the
+ * number of registers stored by ARCH_STORE_REGS.
+ */
 
 #if defined(MONO_CROSS_COMPILE)
 
@@ -35,34 +42,22 @@
 
 #elif defined(TARGET_X86)
 
-#include <mono/utils/mono-context.h>
-
 #define REDZONE_SIZE	0
 
 #define ARCH_NUM_REGS 8
 
-#ifdef MONO_ARCH_HAS_MONO_CONTEXT
-#define USE_MONO_CTX
-#else
+#ifndef MONO_ARCH_HAS_MONO_CONTEXT
 #error 0
 #endif
 
-/*FIXME, move this to mono-sigcontext as this is generaly useful.*/
-#define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_ESP ((ctx)))
-#define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_EIP ((ctx)))
+#define USE_MONO_CTX
 
 #elif defined(TARGET_AMD64)
-
-#include <mono/utils/mono-context.h>
 
 #define REDZONE_SIZE	128
 
 #define ARCH_NUM_REGS 16
 #define USE_MONO_CTX
-
-/*FIXME, move this to mono-sigcontext as this is generaly useful.*/
-#define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_RSP (ctx))
-#define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_RIP (ctx))
 
 #elif defined(TARGET_POWERPC)
 
@@ -99,38 +94,8 @@
 
 /* We dont store ip, sp */
 #define ARCH_NUM_REGS 14
-#define ARCH_STORE_REGS(ptr)		\
-	__asm__ __volatile__(			\
-		"push {lr}\n"				\
-		"mov lr, %0\n"				\
-		"stmia lr!, {r0-r12}\n"		\
-		"pop {lr}\n"				\
-		:							\
-		: "r" (ptr)					\
-	)
-
-#define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_REG_SP((ctx)))
-#define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_PC((ctx)))
-#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {			\
-	((a)[0]) = (gpointer) (UCONTEXT_REG_R0((ctx)));		\
-	((a)[1]) = (gpointer) (UCONTEXT_REG_R1((ctx)));		\
-	((a)[2]) = (gpointer) (UCONTEXT_REG_R2((ctx)));		\
-	((a)[3]) = (gpointer) (UCONTEXT_REG_R3((ctx)));		\
-	((a)[4]) = (gpointer) (UCONTEXT_REG_R4((ctx)));		\
-	((a)[5]) = (gpointer) (UCONTEXT_REG_R5((ctx)));		\
-	((a)[6]) = (gpointer) (UCONTEXT_REG_R6((ctx)));		\
-	((a)[7]) = (gpointer) (UCONTEXT_REG_R7((ctx)));		\
-	((a)[8]) = (gpointer) (UCONTEXT_REG_R8((ctx)));		\
-	((a)[9]) = (gpointer) (UCONTEXT_REG_R9((ctx)));		\
-	((a)[10]) = (gpointer) (UCONTEXT_REG_R10((ctx)));	\
-	((a)[11]) = (gpointer) (UCONTEXT_REG_R11((ctx)));	\
-	((a)[12]) = (gpointer) (UCONTEXT_REG_R12((ctx)));	\
-	((a)[13]) = (gpointer) (UCONTEXT_REG_LR((ctx)));	\
-	} while (0)
 
 #elif defined(TARGET_ARM64)
-
-#include <mono/utils/mono-sigcontext.h>
 
 #ifdef __linux__
 #define REDZONE_SIZE    0
@@ -142,12 +107,6 @@
 #define USE_MONO_CTX
 #define ARCH_NUM_REGS 31
 
-#define ARCH_STORE_REGS(ptr) do { g_assert_not_reached (); } while (0)
-
-#define ARCH_SIGCTX_SP(ctx)	UCONTEXT_REG_SP (ctx)
-#define ARCH_SIGCTX_IP(ctx)	UCONTEXT_REG_PC (ctx)
-#define ARCH_COPY_SIGCTX_REGS(a,ctx) do { g_assert_not_reached (); } while (0)
-
 #elif defined(__mips__)
 
 #define REDZONE_SIZE	0
@@ -155,23 +114,12 @@
 #define USE_MONO_CTX
 #define ARCH_NUM_REGS 32
 
-/*
- * These casts are necessary since glibc always makes the
- * gregs 64-bit values in userland.
- */
-#define ARCH_SIGCTX_SP(ctx)	((gsize) UCONTEXT_GREGS((ctx))[29])
-#define ARCH_SIGCTX_IP(ctx)	((gsize) UCONTEXT_REG_PC((ctx)))
-
 #elif defined(__s390x__)
 
 #define REDZONE_SIZE	0
 
-#include <mono/utils/mono-context.h>
-
 #define USE_MONO_CTX
 #define ARCH_NUM_REGS 16	
-#define ARCH_SIGCTX_SP(ctx)	((UCONTEXT_GREGS((ctx))) [15])
-#define ARCH_SIGCTX_IP(ctx)	((ucontext_t *) (ctx))->uc_mcontext.psw.addr
 
 #elif defined(__sparc__)
 
