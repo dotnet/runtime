@@ -876,19 +876,6 @@ major_dump_heap (FILE *heap_dump_file)
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
-#define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {	\
-		int __word, __bit;					\
-		gboolean __was_marked;					\
-		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj); \
-		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
-		MS_PAR_SET_MARK_BIT (__was_marked, (block), __word, __bit); \
-		if (!__was_marked) {					\
-			if (sgen_gc_descr_has_references (desc))			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
-			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
-		}							\
-	} while (0)
 #else
 #define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
 		int __word, __bit;					\
