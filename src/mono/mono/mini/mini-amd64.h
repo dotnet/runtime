@@ -336,6 +336,10 @@ typedef struct {
  */
 #define MONO_ARCH_NOMAP32BIT
 
+#elif defined(HOST_WIN32)
+
+#define MONO_ARCH_NOMAP32BIT 1
+
 #endif /* __FreeBSD__ */
 
 #ifdef HOST_WIN32
