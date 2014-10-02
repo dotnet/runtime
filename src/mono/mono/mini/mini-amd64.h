@@ -280,48 +280,6 @@ typedef struct {
 #define MONO_ARCH_NOMAP32BIT 1
 #endif
 
-#if defined (__NetBSD__)
-
-#define REG_RAX 14
-#define REG_RCX 3
-#define REG_RDX 2
-#define REG_RBX 13
-#define REG_RSP 24
-#define REG_RBP 12
-#define REG_RSI 1
-#define REG_RDI 0
-#define REG_R8 4
-#define REG_R9 5
-#define REG_R10 6
-#define REG_R11 7
-#define REG_R12 8
-#define REG_R13 9
-#define REG_R14 10
-#define REG_R15 11
-#define REG_RIP 21
-
-#elif defined (__FreeBSD__) || defined(__FreeBSD_kernel__)
-
-#define REG_RAX 7
-#define REG_RCX 4
-#define REG_RDX 3
-#define REG_RBX 8
-#define REG_RSP 23
-#define REG_RBP 9
-#define REG_RSI 2
-#define REG_RDI 1
-#define REG_R8  5
-#define REG_R9  6
-#define REG_R10 10
-#define REG_R11 11
-#define REG_R12 12
-#define REG_R13 13
-#define REG_R14 14
-#define REG_R15 15
-#define REG_RIP 20
-
-#endif /* __FreeBSD__ */
-
 #ifdef HOST_WIN32
 #define MONO_AMD64_ARG_REG1 AMD64_RCX
 #define MONO_AMD64_ARG_REG2 AMD64_RDX
@@ -339,7 +297,6 @@ typedef struct {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
-#define MONO_ARCH_ENABLE_REGALLOC_IN_EH_BLOCKS 1
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
@@ -360,7 +317,6 @@ typedef struct {
 #define MONO_ARCH_ENABLE_GLOBAL_RA 1
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
-#define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define MONO_ARCH_MONITOR_OBJECT_REG MONO_AMD64_ARG_REG1
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
