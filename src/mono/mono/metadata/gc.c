@@ -1224,7 +1224,7 @@ mono_gc_cleanup (void)
 				ret = WaitForSingleObjectEx (gc_thread->handle, INFINITE, TRUE);
 				g_assert (ret == WAIT_OBJECT_0);
 
-				mono_thread_join ((gpointer)gc_thread->tid);
+				mono_thread_join (MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid));
 			}
 		}
 		gc_thread = NULL;
