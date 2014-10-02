@@ -240,6 +240,8 @@ extern void mono_context_get_current (void *);
 
 #elif (defined(__arm__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM)) /* defined(__x86_64__) */
 
+#include <mono/arch/arm/arm-codegen.h>
+
 typedef struct {
 	mgreg_t pc;
 	mgreg_t regs [16];
