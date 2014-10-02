@@ -879,7 +879,7 @@ major_dump_heap (FILE *heap_dump_file)
 #else
 #define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
 		int __word, __bit;					\
-		SGEN_ASSERT (0, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
+		SGEN_ASSERT (9, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		if (MS_OBJ_ALLOCED ((obj), (block))) { \
 			if (sgen_gc_descr_has_references (desc)) {						\
@@ -893,7 +893,7 @@ major_dump_heap (FILE *heap_dump_file)
 	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {		\
 		int __word, __bit;					\
-		SGEN_ASSERT (0, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
+		SGEN_ASSERT (9, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
 		{		\

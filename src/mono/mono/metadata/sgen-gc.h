@@ -784,7 +784,7 @@ static inline mword
 sgen_obj_get_descriptor (char *obj)
 {
 	MonoVTable *vtable = ((MonoObject*)obj)->vtable;
-	SGEN_ASSERT (0, !SGEN_POINTER_IS_TAGGED_ANY (vtable), "Object can't be tagged");
+	SGEN_ASSERT (9, !SGEN_POINTER_IS_TAGGED_ANY (vtable), "Object can't be tagged");
 	return sgen_vtable_get_descriptor (vtable);
 }
 
@@ -808,7 +808,7 @@ sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 
 	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
 		mword size = descr & 0xfff8;
-		SGEN_ASSERT (0, size >= sizeof (MonoObject), "Run length object size to small");
+		SGEN_ASSERT (9, size >= sizeof (MonoObject), "Run length object size to small");
 		return size;
 	} else if (descr == SGEN_DESC_STRING) {
 		return offsetof (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
