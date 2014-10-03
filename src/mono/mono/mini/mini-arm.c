@@ -6929,6 +6929,26 @@ mono_arch_get_trampolines (gboolean aot)
 	return mono_arm_get_exception_trampolines (aot);
 }
 
+gpointer
+mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, MonoContext *ctx, gpointer new_value)
+{
+	gpointer *lr_loc;
+	char *old_value;
+	char *bp;
+
+	/*Load the spvar*/
+	bp = MONO_CONTEXT_GET_BP (ctx);
+	lr_loc = (gpointer*)(bp + clause->exvar_offset);
+
+	old_value = *lr_loc;
+	if ((char*)old_value < (char*)ji->code_start || (char*)old_value > ((char*)ji->code_start + ji->code_size))
+		return old_value;
+
+	*lr_loc = new_value;
+
+	return old_value;
+}
+
 #if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED)
 /*
  * mono_arch_set_breakpoint:

@@ -505,17 +505,21 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
+	if (domain) {
+		mono_domain_lock (domain);
 #ifdef USE_JUMP_TABLES
-	code = buf = mono_domain_code_reserve_align (domain, size, 4);
+		code = buf = mono_domain_code_reserve_align (domain, size, 4);
 #else
-	code = buf = mono_domain_code_reserve_align (domain, size, 4);
-	if ((short_branch = branch_for_target_reachable (code + 4, tramp))) {
-		size = 12;
-		mono_domain_code_commit (domain, code, SPEC_TRAMP_SIZE, size);
+		code = buf = mono_domain_code_reserve_align (domain, size, 4);
+		if ((short_branch = branch_for_target_reachable (code + 4, tramp))) {
+			size = 12;
+			mono_domain_code_commit (domain, code, SPEC_TRAMP_SIZE, size);
 	}
 #endif
-	mono_domain_unlock (domain);
+		mono_domain_unlock (domain);
+	} else {
+		code = buf = mono_global_codeman_reserve (size);
+	}
 
 #ifdef USE_JUMP_TABLES
 	/* For jumptables case we always generate the same code for trampolines,
@@ -894,6 +898,59 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	return buf;
 }
 
+static gpointer
+handler_block_trampoline_helper (gpointer *ptr)
+{
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	return jit_tls->handler_block_return_address;
+}
+
+gpointer
+mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	int tramp_size = 64;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	g_assert (!aot);
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD, NULL, NULL);
+
+	/*
+	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
+	*/
+
+	/*
+	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
+	 */
+	/* Obtain jit_tls->handler_block_return_address */
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+	ARM_B (code, 0);
+	*(gpointer*)code = handler_block_trampoline_helper;
+	code += 4;
+
+	/* Set it as the return address so the trampoline will return to it */
+	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_R0);
+
+	/* Call the trampoline */
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+	code = emit_bx (code, ARMREG_R0);
+	*(gpointer*)code = tramp;
+	code += 4;
+
+	mono_arch_flush_icache (buf, code - buf);
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create ("handler_block_trampoline", buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
+
 #else
 
 guchar*
@@ -940,6 +997,13 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 
 gpointer
 mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;
