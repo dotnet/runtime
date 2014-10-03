@@ -887,7 +887,7 @@ create_allocator (int atype)
 		/*
 		 * a string allocator method takes the args: (vtable, len)
 		 *
-		 * bytes = sizeof (MonoString) + ((len + 1) * 2)
+		 * bytes = offsetof (MonoString, chars) + ((len + 1) * 2)
 		 *
 		 * condition:
 		 *
@@ -895,11 +895,11 @@ create_allocator (int atype)
 		 *
 		 * therefore:
 		 *
-		 * sizeof (MonoString) + ((len + 1) * 2) <= INT32_MAX - (SGEN_ALLOC_ALIGN - 1)
-		 * len <= (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - sizeof (MonoString)) / 2 - 1
+		 * offsetof (MonoString, chars) + ((len + 1) * 2) <= INT32_MAX - (SGEN_ALLOC_ALIGN - 1)
+		 * len <= (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - offsetof (MonoString, chars)) / 2 - 1
 		 */
 		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_icon (mb, (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - sizeof (MonoString)) / 2 - 1);
+		mono_mb_emit_icon (mb, (INT32_MAX - (SGEN_ALLOC_ALIGN - 1) - MONO_STRUCT_OFFSET (MonoString, chars)) / 2 - 1);
 		pos = mono_mb_emit_short_branch (mb, MONO_CEE_BLE_UN_S);
 
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -911,7 +911,7 @@ create_allocator (int atype)
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CEE_SHL);
 		//WE manually fold the above + 2 here
-		mono_mb_emit_icon (mb, sizeof (MonoString) + 2);
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoString, chars) + 2);
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_stloc (mb, size_var);
 	} else {

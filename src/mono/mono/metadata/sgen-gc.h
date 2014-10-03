@@ -731,7 +731,7 @@ slow_object_get_size (MonoVTable *vtable, MonoObject* o)
 	 * mono_array_length_fast not using the object's vtable.
 	 */
 	if (klass == mono_defaults.string_class) {
-		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+		return offsetof (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
 	} else if (klass->rank) {
 		MonoArray *array = (MonoArray*)o;
 		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
@@ -782,7 +782,7 @@ sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_BITMAP) {
 		mword size = descr & 0xfff8;
 		if (size == 0) /* This is used to encode a string */
-			return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+			return offsetof (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
 		return size;
 	} else if (type == DESC_TYPE_VECTOR) {
 		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;

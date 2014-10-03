@@ -5041,10 +5041,10 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	size_t size;
 
 	/* check for overflow */
-	if (len < 0 || len > ((SIZE_MAX - sizeof (MonoString) - 2) / 2))
+	if (len < 0 || len > ((SIZE_MAX - offsetof (MonoString, chars) - 2) / 2))
 		mono_gc_out_of_memory (-1);
 
-	size = (sizeof (MonoString) + ((len + 1) * 2));
+	size = (offsetof (MonoString, chars) + ((len + 1) * 2));
 	g_assert (size > 0);
 
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);

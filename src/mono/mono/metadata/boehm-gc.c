@@ -753,7 +753,7 @@ create_allocator (int atype, int tls_key)
 	bytes_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	if (atype == ATYPE_STRING) {
 		/* a string alloator method takes the args: (vtable, len) */
-		/* bytes = (sizeof (MonoString) + ((len + 1) * 2)); */
+		/* bytes = (offsetof (MonoString, chars) + ((len + 1) * 2)); */
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);
