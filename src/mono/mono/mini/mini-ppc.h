@@ -191,7 +191,6 @@ typedef struct MonoCompileArch {
 #if !defined(MONO_CROSS_COMPILE) && !defined(TARGET_PS3)
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
-#define MONO_ARCH_THIS_AS_FIRST_ARG 1
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)

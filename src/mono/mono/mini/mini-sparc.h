@@ -112,8 +112,6 @@ void mono_arch_tls_init (void);
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #endif
 
-#define MONO_ARCH_THIS_AS_FIRST_ARG 1
-
 #ifndef __GNUC__
 /* assume Sun compiler if not GCC */
 static void * __builtin_return_address(int depth)

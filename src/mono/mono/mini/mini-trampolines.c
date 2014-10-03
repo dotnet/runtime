@@ -728,10 +728,6 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	 * We use one vtable trampoline per vtable slot index, so we need only the vtable,
 	 * the other two can be computed from the vtable + the slot index.
 	 */
-#ifndef MONO_ARCH_THIS_AS_FIRST_ARG
-	/* All architectures should support this */
-	g_assert_not_reached ();
-#endif
 
 	/*
 	 * Obtain the vtable from the 'this' arg.
