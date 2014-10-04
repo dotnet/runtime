@@ -298,6 +298,8 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 			add_scanned_object (start);
 #endif
 
+
+#define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 		}
 	}
