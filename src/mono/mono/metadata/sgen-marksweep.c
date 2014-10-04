@@ -1038,14 +1038,16 @@ sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 	queue->prefetch_cursor = cursor;
 }
 
-static void major_scan_object (char *start, mword desc, SgenGrayQueue *queue);
+static void major_scan_object_with_evacuation (char *start, mword desc, SgenGrayQueue *queue);
 
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_no_evacuation
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_no_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_no_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
 #define COPY_OR_MARK_WITH_EVACUATION
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_with_evacuation
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_with_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
@@ -1065,8 +1067,6 @@ drain_gray_stack (ScanCopyContext ctx)
 	else
 		return drain_gray_stack_no_evacuation (ctx);
 }
-
-#include "sgen-major-scan-object.h"
 
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 #define SCAN_FOR_CONCURRENT_MARK
@@ -2143,7 +2143,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->count_cards = major_count_cards;
 
 	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
-	collector->major_ops.scan_object = major_scan_object;
+	collector->major_ops.scan_object = major_scan_object_with_evacuation;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 	if (is_concurrent) {
 		collector->major_concurrent_ops.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;

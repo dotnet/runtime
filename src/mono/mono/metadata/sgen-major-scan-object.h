@@ -86,6 +86,8 @@ CONCURRENT_NAME (major_scan_object_no_mark) (char *start, mword desc, SgenGrayQu
 	HEAVY_STAT (++stat_scan_object_called_major);
 }
 
+/* FIXME: Unify this with optimized code in sgen-marksweep.c. */
+
 static void
 CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *queue)
 {
