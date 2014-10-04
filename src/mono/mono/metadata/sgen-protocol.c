@@ -516,6 +516,13 @@ binary_protocol_scan_vtype_begin (gpointer obj, int size)
 }
 
 void
+binary_protocol_scan_process_reference (gpointer obj, gpointer ptr, gpointer value)
+{
+	SGenProtocolScanProcessReference entry = { obj, ptr, value };
+	protocol_entry (SGEN_PROTOCOL_SCAN_PROCESS_REFERENCE, &entry, sizeof (SGenProtocolScanProcessReference));
+}
+
+void
 binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable)
 {
 	SGenProtocolWBarrier entry = { ptr, value, value_vtable };

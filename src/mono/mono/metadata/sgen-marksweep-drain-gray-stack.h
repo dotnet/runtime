@@ -266,6 +266,7 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 			void *__old = *(ptr);				\
+			binary_protocol_scan_process_reference ((obj), (ptr), __old); \
 			if (__old) {					\
 				gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
