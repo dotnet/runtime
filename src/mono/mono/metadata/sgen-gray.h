@@ -208,7 +208,7 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 {
 	GrayQueueEntry entry;
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-	entry = sgen_gray_object_enqueue (queue);
+	entry = sgen_gray_object_dequeue (queue);
 	*obj = entry.obj;
 #ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
 	*desc = entry.desc;
