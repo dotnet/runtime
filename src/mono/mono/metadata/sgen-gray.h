@@ -218,9 +218,6 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, char** obj, mword *desc)
 		HEAVY_STAT (stat_gray_queue_dequeue_fast_path ++);
 
 		*obj = NULL;
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-		binary_protocol_gray_dequeue (queue, queue->cursor, *obj);
-#endif
 	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
 		entry = sgen_gray_object_dequeue (queue);
 		*obj = entry.obj;
