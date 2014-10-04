@@ -54,7 +54,7 @@ SERIAL_SCAN_OBJECT (char *start, mword desc, SgenGrayQueue *queue)
 	sgen_descriptor_count_scanned_object (desc);
 #endif
 
-	SGEN_ASSERT (0, sgen_get_current_collection_generation () == GENERATION_NURSERY, "Must not use this to scan during major collection.");
+	SGEN_ASSERT (9, sgen_get_current_collection_generation () == GENERATION_NURSERY, "Must not use minor scan during major collection.");
 
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
@@ -67,6 +67,8 @@ static void
 SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
+	SGEN_ASSERT (9, sgen_get_current_collection_generation () == GENERATION_NURSERY, "Must not use minor scan during major collection.");
 
 	/* The descriptors include info about the MonoObject header as well */
 	start -= sizeof (MonoObject);

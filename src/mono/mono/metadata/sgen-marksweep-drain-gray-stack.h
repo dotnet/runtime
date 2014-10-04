@@ -62,7 +62,13 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 
 		HEAVY_STAT (++stat_optimized_copy_nursery);
 
+#if SGEN_MAX_DEBUG_LEVEL >= 9
+		if (sgen_nursery_is_to_space (obj))
+			SGEN_ASSERT (9, !SGEN_VTABLE_IS_PINNED (vtable_word) && !SGEN_VTABLE_IS_FORWARDED (vtable_word), "To-space object can't be pinned or forwarded.");
+#endif
+
 		if (SGEN_VTABLE_IS_PINNED (vtable_word)) {
+			SGEN_ASSERT (9, !SGEN_VTABLE_IS_FORWARDED (vtable_word), "Cannot be both pinned and forwarded.");
 			HEAVY_STAT (++stat_optimized_copy_nursery_pinned);
 			return TRUE;
 		}
@@ -139,6 +145,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 			if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
 				HEAVY_STAT (++stat_optimized_copy_major_forwarded);
 				*ptr = forwarded;
+				SGEN_ASSERT (9, !sgen_ptr_in_nursery (forwarded), "Cannot be forwarded to nursery.");
 				return FALSE;
 			}
 		}
