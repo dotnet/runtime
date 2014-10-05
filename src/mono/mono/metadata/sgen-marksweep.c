@@ -1069,9 +1069,7 @@ drain_gray_stack (ScanCopyContext ctx)
 }
 
 #ifdef SGEN_HAVE_CONCURRENT_MARK
-#define SCAN_FOR_CONCURRENT_MARK
 #include "sgen-major-scan-object.h"
-#undef SCAN_FOR_CONCURRENT_MARK
 #endif
 
 static void

@@ -21,22 +21,6 @@
 
 extern long long stat_scan_object_called_major;
 
-#ifdef FIXED_HEAP
-#define PREFETCH_DYNAMIC_HEAP(addr)
-#else
-#define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH_READ ((addr))
-#endif
-
-#ifdef SCAN_FOR_CONCURRENT_MARK
-#define FOLLOW_OBJECT(addr)	(!sgen_ptr_in_nursery ((addr)))
-#define ALWAYS_ADD_TO_GLOBAL_REMSET	1
-#define CONCURRENT_NAME(x)	x ## _concurrent
-#else
-#define FOLLOW_OBJECT(addr)	1
-#define ALWAYS_ADD_TO_GLOBAL_REMSET	0
-#define CONCURRENT_NAME(x)	x
-#endif
-
 /*
  * FIXME: We use the same scanning function in the concurrent collector whether we scan
  * during the starting/finishing collection pause (with the world stopped) or from the
@@ -53,22 +37,22 @@ extern long long stat_scan_object_called_major;
 		void *__old = *(ptr);					\
 		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
 		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
-		if (__old && FOLLOW_OBJECT (__old)) {			\
+		if (__old && !sgen_ptr_in_nursery (__old)) {		\
 			void *__copy;					\
-			PREFETCH_DYNAMIC_HEAP (__old);			\
-			CONCURRENT_NAME (major_copy_or_mark_object_with_evacuation) ((ptr), __old, queue); \
+			PREFETCH_READ (__old);			\
+			major_copy_or_mark_object_with_evacuation_concurrent ((ptr), __old, queue); \
 			__copy = *(ptr);				\
 			SGEN_COND_LOG (9, __old != __copy, "Overwrote field at %p with %p (was: %p)", (ptr), *(ptr), __old); \
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__copy) && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (__copy))) \
 				sgen_add_to_global_remset ((ptr), __copy);	\
 		} else {						\
-			if (ALWAYS_ADD_TO_GLOBAL_REMSET && G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
 				sgen_add_to_global_remset ((ptr), __old); \
 		}							\
 	} while (0)
 
 static void
-CONCURRENT_NAME (major_scan_object_no_mark) (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *queue)
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
@@ -89,7 +73,7 @@ CONCURRENT_NAME (major_scan_object_no_mark) (char *start, mword desc, SgenGrayQu
 /* FIXME: Unify this with optimized code in sgen-marksweep.c. */
 
 static void
-CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_concurrent (char *start, mword desc, SgenGrayQueue *queue)
 {
 #ifndef SGEN_MARK_ON_ENQUEUE
 	if (!sgen_ptr_in_nursery (start)) {
@@ -109,15 +93,11 @@ CONCURRENT_NAME (major_scan_object) (char *start, mword desc, SgenGrayQueue *que
 	}
 #endif
 
-	CONCURRENT_NAME (major_scan_object_no_mark) (start, desc, queue);
+	major_scan_object_no_mark_concurrent (start, desc, queue);
 }
 
-#ifdef SCAN_FOR_CONCURRENT_MARK
-#ifdef SGEN_PARALLEL_MARK
-#error concurrent and parallel mark not supported yet
-#else
 static void
-CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
+major_scan_vtype_concurrent (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
@@ -135,10 +115,3 @@ CONCURRENT_NAME (major_scan_vtype) (char *start, mword desc, SgenGrayQueue *queu
 
 	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 }
-#endif
-#endif
-
-#undef PREFETCH_DYNAMIC_HEAP
-#undef FOLLOW_OBJECT
-#undef ALWAYS_ADD_TO_GLOBAL_REMSET
-#undef CONCURRENT_NAME
