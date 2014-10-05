@@ -251,6 +251,7 @@ sgen_sources = \
 	sgen-copy-object.h \
 	sgen-major-scan-object.h \
 	sgen-minor-scan-object.h \
+	sgen-marksweep-copy-or-mark-object.h	\
 	sgen-protocol.h		\
 	sgen-scan-object.h	\
 	sgen-nursery-allocator.c	\
