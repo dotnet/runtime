@@ -1291,6 +1291,18 @@ mono_gc_get_los_limit (void)
 	return G_MAXINT;
 }
 
+void
+mono_gc_set_string_length (MonoString *str, gint32 new_length)
+{
+	mono_unichar2 *new_end = str->chars + new_length;
+	
+	/* zero the discarded string. This null-delimits the string and allows 
+	 * the space to be reclaimed by SGen. */
+	 
+	memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2));
+	str->length = new_length;
+}
+
 gboolean
 mono_gc_user_markers_supported (void)
 {

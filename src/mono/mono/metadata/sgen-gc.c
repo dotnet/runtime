@@ -290,6 +290,7 @@ static gboolean disable_major_collections = FALSE;
 gboolean do_pin_stats = FALSE;
 static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
+static gboolean enable_nursery_canaries = FALSE;
 
 #ifdef HEAVY_STATISTICS
 long long stat_objects_alloced_degraded = 0;
@@ -390,6 +391,12 @@ safe_name (void* obj)
 {
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	return vt->klass->name;
+}
+
+gboolean
+nursery_canaries_enabled (void)
+{
+	return enable_nursery_canaries;
 }
 
 #define safe_object_get_size	sgen_safe_object_get_size
@@ -631,10 +638,14 @@ sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc 
 			obj = start;
 		}
 
-		size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
-
-		if ((MonoVTable*)SGEN_LOAD_VTABLE (obj) != array_fill_vtable)
+		if ((MonoVTable*)SGEN_LOAD_VTABLE (obj) != array_fill_vtable) {
+			CHECK_CANARY_FOR_OBJECT (obj);
+			size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 			callback (obj, size, data);
+			CANARIFY_SIZE (size);
+		} else {
+			size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+		}
 
 		start += size;
 	}
@@ -693,8 +704,10 @@ clear_domain_process_object (char *obj, MonoDomain *domain)
 static void
 clear_domain_process_minor_object_callback (char *obj, size_t size, MonoDomain *domain)
 {
-	if (clear_domain_process_object (obj, domain))
+	if (clear_domain_process_object (obj, domain)) {
+		CANARIFY_SIZE (size);
 		memset (obj, 0, size);
+	}
 }
 
 static void
@@ -986,6 +999,10 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 			}
 
 			/* Skip to the next object */
+			if (((MonoObject*)search_start)->synchronisation != GINT_TO_POINTER (-1)) {
+				CHECK_CANARY_FOR_OBJECT (search_start);
+				obj_size = obj_size + CANARY_SIZE;
+			}
 			search_start = (void*)((char*)search_start + obj_size);
 		} while (search_start <= addr);
 
@@ -1007,6 +1024,8 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 		 */
 		if (((MonoObject*)obj_to_pin)->synchronisation == GINT_TO_POINTER (-1))
 			goto next_pin_queue_entry;
+		else
+			pinning_front = (char*)pinning_front + CANARY_SIZE;
 
 		/*
 		 * Finally - pin the object!
@@ -2096,6 +2115,9 @@ verify_nursery (void)
 
 	if (!do_verify_nursery)
 		return;
+		
+	if (nursery_canaries_enabled ())
+		SGEN_LOG (1, "Checking nursery canaries...");
 
 	/*This cleans up unused fragments */
 	sgen_nursery_allocator_prepare_for_pinning ();
@@ -2123,6 +2145,10 @@ verify_nursery (void)
 			if (cur > hole_start)
 				SGEN_LOG (1, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
 			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_get_array_fill_vtable ());
+		}
+		if (nursery_canaries_enabled () && (MonoVTable*)SGEN_LOAD_VTABLE (cur) != array_fill_vtable) {
+			CHECK_CANARY_FOR_OBJECT (cur);
+			CANARIFY_SIZE (size);
 		}
 		cur += size;
 		hole_start = cur;
@@ -4334,6 +4360,25 @@ mono_gc_get_los_limit (void)
 	return MAX_SMALL_OBJ_SIZE;
 }
 
+void
+mono_gc_set_string_length (MonoString *str, gint32 new_length)
+{
+	mono_unichar2 *new_end = str->chars + new_length;
+	
+	/* zero the discarded string. This null-delimits the string and allows 
+	 * the space to be reclaimed by SGen. */
+	 
+	if (nursery_canaries_enabled () && sgen_ptr_in_nursery (str)) {
+		CHECK_CANARY_FOR_OBJECT (str);
+		memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2) + CANARY_SIZE);
+		memcpy (new_end + 1 , CANARY_STRING, CANARY_SIZE);
+	} else {
+		memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2));
+	}
+	
+	str->length = new_length;
+}
+
 gboolean
 mono_gc_user_markers_supported (void)
 {
@@ -4936,6 +4981,10 @@ mono_gc_base_init (void)
 					*colon = '\0';
 				}
 				binary_protocol_init (filename, (long long)limit);
+			} else if (!strcmp (opt, "nursery-canaries")) {
+				do_verify_nursery = TRUE;
+				sgen_set_use_managed_allocator (FALSE);
+				enable_nursery_canaries = TRUE;
 			} else if (!sgen_bridge_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
@@ -4965,6 +5014,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  print-pinning\n");
 				fprintf (stderr, "  heap-dump=<filename>\n");
 				fprintf (stderr, "  binary-protocol=<filename>[:<file-size-limit>]\n");
+				fprintf (stderr, "  nursery-canaries\n");
 				sgen_bridge_print_gc_debug_usage ();
 				fprintf (stderr, "\n");
 
@@ -5344,5 +5394,9 @@ mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
 
 	fin_callbacks = *callbacks;
 }
+
+
+
+
 
 #endif /* HAVE_SGEN_GC */
