@@ -144,7 +144,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 
 	if (threads_callbacks.thread_register) {
 		if (threads_callbacks.thread_register (info, baseptr) == NULL) {
-			g_warning ("thread registation failed\n");
+			// g_warning ("thread registation failed\n");
 			g_free (info);
 			return NULL;
 		}
@@ -605,7 +605,7 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 	for (;;) {
 		const char *suspend_error = "Unknown error";
 		if (!(info = mono_thread_info_suspend_sync (id, interrupt_kernel, &suspend_error))) {
-			g_warning ("failed to suspend thread %p due to %s, hopefully it is dead", (gpointer)id, suspend_error);
+			// g_warning ("failed to suspend thread %p due to %s, hopefully it is dead", (gpointer)id, suspend_error);
 			mono_thread_info_suspend_unlock ();
 			return NULL;
 		}
@@ -614,7 +614,7 @@ mono_thread_info_safe_suspend_sync (MonoNativeThreadId id, gboolean interrupt_ke
 			break;
 
 		if (!mono_thread_info_core_resume (info)) {
-			g_warning ("failed to resume thread %p, hopefully it is dead", (gpointer)id);
+			// g_warning ("failed to resume thread %p, hopefully it is dead", (gpointer)id);
 			mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
 			mono_thread_info_suspend_unlock ();
 			return NULL;
