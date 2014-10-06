@@ -1024,7 +1024,7 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 		 */
 		if (((MonoObject*)obj_to_pin)->synchronisation == GINT_TO_POINTER (-1))
 			goto next_pin_queue_entry;
-		else
+		else if (nursery_canaries_enabled ())
 			pinning_front = (char*)pinning_front + CANARY_SIZE;
 
 		/*
