@@ -785,9 +785,10 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 				GRAY_OBJECT_ENQUEUE (unpin_queue, addr0, sgen_obj_get_descriptor_safe (addr0));
 			else
 				SGEN_UNPIN_OBJECT (addr0);
+			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)addr0));
+			CANARIFY_SIZE (size);
 			sgen_set_nursery_scan_start (addr0);
 			frag_end = addr0;
-			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)addr0));
 			++i;
 		} else {
 			frag_end = addr1;
@@ -871,7 +872,7 @@ sgen_can_alloc_size (size_t size)
 void*
 sgen_nursery_alloc (size_t size)
 {
-	SGEN_ASSERT (1, size >= sizeof (MonoObject) && size <= SGEN_MAX_SMALL_OBJ_SIZE, "Invalid nursery object size");
+	SGEN_ASSERT (1, size >= sizeof (MonoObject) && size <= (SGEN_MAX_SMALL_OBJ_SIZE + CANARY_SIZE), "Invalid nursery object size");
 
 	SGEN_LOG (4, "Searching nursery for size: %zd", size);
 	size = SGEN_ALIGN_UP (size);

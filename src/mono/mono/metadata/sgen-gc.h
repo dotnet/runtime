@@ -811,6 +811,22 @@ sgen_safe_object_get_size (MonoObject *obj)
        return sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
 
+/*
+ * This variant guarantees to return the exact size of the object
+ * before alignment. Needed for canary support.
+ */
+static inline guint
+sgen_safe_object_get_size_unaligned (MonoObject *obj)
+{
+       char *forwarded;
+
+       if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
+               obj = (MonoObject*)forwarded;
+       }
+
+       return slow_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
+}
+
 const char* sgen_safe_name (void* obj) MONO_INTERNAL;
 
 gboolean sgen_object_is_live (void *obj) MONO_INTERNAL;
@@ -1144,6 +1160,35 @@ void sgen_env_var_error (const char *env_var, const char *fallback, const char *
 void sgen_qsort (void *base, size_t nel, size_t width, int (*compar) (const void*, const void*)) MONO_INTERNAL;
 gint64 sgen_timestamp (void) MONO_INTERNAL;
 
+/*
+ * Canary (guard word) support
+ * Notes:
+ * - CANARY_SIZE must be multiple of word size in bytes
+ * - Canary space is not included on checks against SGEN_MAX_SMALL_OBJ_SIZE
+ */
+ 
+gboolean nursery_canaries_enabled (void) MONO_INTERNAL;
+
+#define CANARY_SIZE 8
+#define CANARY_STRING  "koupepia"
+
+#define CANARIFY_SIZE(size) size = size + CANARY_SIZE
+
+#define CANARIFY_ALLOC(addr,size) if (nursery_canaries_enabled ()) {	\
+				memcpy ((char*) (addr) + (size), CANARY_STRING, CANARY_SIZE);	\
+			}
+
+#define CANARY_VALID(addr) (strncmp ((char*) (addr), CANARY_STRING, CANARY_SIZE) == 0)
+
+#define CHECK_CANARY_FOR_OBJECT(addr) if (nursery_canaries_enabled ()) {	\
+				char* canary_ptr = (char*) (addr) + sgen_safe_object_get_size_unaligned ((MonoObject *) (addr));	\
+				if (!CANARY_VALID(canary_ptr)) {	\
+					char canary_copy[CANARY_SIZE +1];	\
+					strncpy (canary_copy, canary_ptr, 8);	\
+					canary_copy[CANARY_SIZE] = 0;	\
+					g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, ((MonoObject*)addr)->vtable->klass->name, CANARY_STRING, canary_copy);	\
+				} }
+				 
 #endif /* HAVE_SGEN_GC */
 
 #endif /* __MONO_SGENGC_H__ */
