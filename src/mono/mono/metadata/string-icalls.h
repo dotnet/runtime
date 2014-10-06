@@ -30,4 +30,7 @@ ves_icall_System_String_InternalIsInterned (MonoString *str) MONO_INTERNAL;
 int
 ves_icall_System_String_GetLOSLimit (void) MONO_INTERNAL;
 
+void
+ves_icall_System_String_InternalSetLength (MonoString *str, gint32 new_length) MONO_INTERNAL;
+
 #endif /* _MONO_CLI_STRING_ICALLS_H_ */

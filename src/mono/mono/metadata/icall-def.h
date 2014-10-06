@@ -797,6 +797,7 @@ ICALL(STRING_8a, "GetLOSLimit", ves_icall_System_String_GetLOSLimit)
 ICALL(STRING_9, "InternalAllocateStr", ves_icall_System_String_InternalAllocateStr)
 ICALL(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern)
 ICALL(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
+ICALL(STRING_12, "InternalSetLength", ves_icall_System_String_InternalSetLength)
 
 ICALL_TYPE(TENC, "System.Text.Encoding", TENC_1)
 ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_Encoding_InternalCodePage)

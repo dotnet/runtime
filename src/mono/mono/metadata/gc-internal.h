@@ -329,6 +329,8 @@ void mono_gc_set_skip_thread (gboolean skip) MONO_INTERNAL;
  */
 gboolean mono_gc_is_disabled (void) MONO_INTERNAL;
 
+void mono_gc_set_string_length (MonoString *str, gint32 new_length) MONO_INTERNAL;
+
 #if defined(__MACH__)
 void mono_gc_register_mach_exception_thread (pthread_t thread) MONO_INTERNAL;
 pthread_t mono_gc_get_mach_exception_thread (void) MONO_INTERNAL;
