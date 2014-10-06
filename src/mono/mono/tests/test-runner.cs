@@ -301,6 +301,7 @@ public class TestRunner
 			lock (monitor) {
 				foreach (Process p in processes) {
 					Console.WriteLine (process_data [p].test);
+					p.Kill ();
 				}
 			}
 			return 1;
