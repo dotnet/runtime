@@ -1001,7 +1001,8 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 			/* Skip to the next object */
 			if (((MonoObject*)search_start)->synchronisation != GINT_TO_POINTER (-1)) {
 				CHECK_CANARY_FOR_OBJECT (search_start);
-				obj_size = obj_size + CANARY_SIZE;
+				CANARIFY_SIZE (obj_size);
+				CANARIFY_SIZE (obj_to_pin_size);
 			}
 			search_start = (void*)((char*)search_start + obj_size);
 		} while (search_start <= addr);
@@ -1024,8 +1025,6 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 		 */
 		if (((MonoObject*)obj_to_pin)->synchronisation == GINT_TO_POINTER (-1))
 			goto next_pin_queue_entry;
-		else if (nursery_canaries_enabled ())
-			pinning_front = (char*)pinning_front + CANARY_SIZE;
 
 		/*
 		 * Finally - pin the object!

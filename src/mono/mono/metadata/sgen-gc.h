@@ -1172,7 +1172,9 @@ gboolean nursery_canaries_enabled (void) MONO_INTERNAL;
 #define CANARY_SIZE 8
 #define CANARY_STRING  "koupepia"
 
-#define CANARIFY_SIZE(size) size = size + CANARY_SIZE
+#define CANARIFY_SIZE(size) if (nursery_canaries_enabled ()) {	\
+			size = size + CANARY_SIZE;	\
+		}
 
 #define CANARIFY_ALLOC(addr,size) if (nursery_canaries_enabled ()) {	\
 				memcpy ((char*) (addr) + (size), CANARY_STRING, CANARY_SIZE);	\
