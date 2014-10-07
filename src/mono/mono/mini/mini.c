@@ -5266,7 +5266,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	/* SSAPRE is not supported on linear IR */
 	cfg->opt &= ~MONO_OPT_SSAPRE;
 
-	i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, NULL, 0, FALSE);
+	i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE);
 
 	if (i < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {

@@ -4689,6 +4689,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	int i;
 #endif
 
+	if (cfg->disable_inline)
+		return FALSE;
 	if (cfg->generic_sharing_context)
 		return FALSE;
 
@@ -4792,6 +4794,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 				return FALSE;
 	}
 #endif
+
+	if (g_list_find (cfg->dont_inline, method))
+		return FALSE;
 
 	return TRUE;
 }
@@ -6003,9 +6008,14 @@ emit_init_local (MonoCompile *cfg, int local, MonoType *type, gboolean init)
 	}
 }
 
+/*
+ * inline_method:
+ *
+ *   Return the cost of inlining CMETHOD.
+ */
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
-		guchar *ip, guint real_offset, GList *dont_inline, gboolean inline_always)
+			   guchar *ip, guint real_offset, gboolean inline_always, MonoBasicBlock **out_cbb)
 {
 	MonoInst *ins, *rvar = NULL;
 	MonoMethodHeader *cheader;
@@ -6022,7 +6032,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	guint32 prev_cil_offset_to_bb_len;
 	MonoMethod *prev_current_method;
 	MonoGenericContext *prev_generic_context;
-	gboolean ret_var_set, prev_ret_var_set, virtual = FALSE;
+	gboolean ret_var_set, prev_ret_var_set, prev_disable_inline, virtual = FALSE;
 
 	g_assert (cfg->exception_type == MONO_EXCEPTION_NONE);
 
@@ -6098,11 +6108,12 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_current_method = cfg->current_method;
 	prev_generic_context = cfg->generic_context;
 	prev_ret_var_set = cfg->ret_var_set;
+	prev_disable_inline = cfg->disable_inline;
 
 	if (*ip == CEE_CALLVIRT && !(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
 		virtual = TRUE;
 
-	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, rvar, dont_inline, sp, real_offset, virtual);
+	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, rvar, sp, real_offset, virtual);
 
 	ret_var_set = cfg->ret_var_set;
 
@@ -6118,6 +6129,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->current_method = prev_current_method;
 	cfg->generic_context = prev_generic_context;
 	cfg->ret_var_set = prev_ret_var_set;
+	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
 	if ((costs >= 0 && costs < 60) || inline_always) {
@@ -6171,6 +6183,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 			cfg->cbb = ebblock;
 		}
+
+		*out_cbb = cfg->cbb;
 
 		if (rvar) {
 			/*
@@ -6854,7 +6868,7 @@ create_magic_tls_access (MonoCompile *cfg, MonoClassField *tls_field, MonoInst *
  */
 int
 mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
-		   MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
+		   MonoInst *return_var, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call)
 {
 	MonoError error;
@@ -6884,13 +6898,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
 	gboolean init_locals, seq_points, skip_dead_blocks;
-	gboolean disable_inline, sym_seq_points = FALSE;
+	gboolean sym_seq_points = FALSE;
 	MonoInst *cached_tls_addr = NULL;
 	MonoDebugMethodInfo *minfo;
 	MonoBitSet *seq_point_locs = NULL;
 	MonoBitSet *seq_point_set_locs = NULL;
 
-	disable_inline = is_jit_optimizer_disabled (method);
+	cfg->disable_inline = is_jit_optimizer_disabled (method);
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -7019,7 +7033,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		param_types [n + sig->hasthis] = sig->params [n];
 	cfg->arg_types = param_types;
 
-	dont_inline = g_list_prepend (dont_inline, method);
+	cfg->dont_inline = g_list_prepend (cfg->dont_inline, method);
 	if (cfg->method == method) {
 
 		if (cfg->prof_options & MONO_PROFILE_INS_COVERAGE)
@@ -8374,8 +8388,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Inlining */
 			if (cmethod && (cfg->opt & MONO_OPT_INLINE) &&
 				(!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
-			    !disable_inline && mono_method_check_inlining (cfg, cmethod) &&
-				 !g_list_find (dont_inline, cmethod)) {
+			    mono_method_check_inlining (cfg, cmethod)) {
 				int costs;
 				gboolean always = FALSE;
 
@@ -8387,10 +8400,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					always = TRUE;
 				}
 
- 				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, dont_inline, always);
+ 				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always, &bblock);
 				if (costs) {
 					cfg->real_offset += 5;
-					bblock = cfg->cbb;
 
  					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 						/* *sp is already set by inline_method */
@@ -9715,14 +9727,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					CHECK_CFG_EXCEPTION;
 				} else if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
-				    !disable_inline && mono_method_check_inlining (cfg, cmethod) &&
-				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
-				    !g_list_find (dont_inline, cmethod)) {
+						   mono_method_check_inlining (cfg, cmethod) &&
+						   !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE)) {
 					int costs;
 
-					if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, dont_inline, FALSE))) {
+					if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE, &bblock))) {
 						cfg->real_offset += 5;
-						bblock = cfg->cbb;
 
 						inline_costs += costs - 5;
 					} else {
@@ -9795,14 +9805,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				
 				save_cast_details (cfg, klass, sp [0]->dreg, TRUE, &bblock);
 				costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), 
-							   iargs, ip, cfg->real_offset, dont_inline, TRUE);
+									   iargs, ip, cfg->real_offset, TRUE, &bblock);
 				reset_cast_details (cfg);
 				CHECK_CFG_EXCEPTION;
 				g_assert (costs > 0);
 				
 				ip += 5;
 				cfg->real_offset += 5;
-				bblock = cfg->cbb;
 
  				*sp++ = iargs [0];
 
@@ -9856,13 +9865,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [0] = sp [0];
 
 				costs = inline_method (cfg, mono_isinst, mono_method_signature (mono_isinst), 
-							   iargs, ip, cfg->real_offset, dont_inline, TRUE);
+									   iargs, ip, cfg->real_offset, TRUE, &bblock);
 				CHECK_CFG_EXCEPTION;
 				g_assert (costs > 0);
 				
 				ip += 5;
 				cfg->real_offset += 5;
-				bblock = cfg->cbb;
 
 				*sp++= iargs [0];
 
@@ -9914,13 +9922,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					iargs [0] = sp [0];
 
 					costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), 
-										   iargs, ip, cfg->real_offset, dont_inline, TRUE);
+										   iargs, ip, cfg->real_offset, TRUE, &bblock);
 					CHECK_CFG_EXCEPTION;
 					g_assert (costs > 0);
 				
 					ip += 5;
 					cfg->real_offset += 5;
-					bblock = cfg->cbb;
 
 					*sp++ = iargs [0];
 					inline_costs += costs;
@@ -10202,12 +10209,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					if (cfg->opt & MONO_OPT_INLINE || cfg->compile_aot) {
 						costs = inline_method (cfg, stfld_wrapper, mono_method_signature (stfld_wrapper), 
-								       iargs, ip, cfg->real_offset, dont_inline, TRUE);
+											   iargs, ip, cfg->real_offset, TRUE, &bblock);
 						CHECK_CFG_EXCEPTION;
 						g_assert (costs > 0);
 						      
 						cfg->real_offset += 5;
-						bblock = cfg->cbb;
 
 						inline_costs += costs;
 					} else {
@@ -10266,9 +10272,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
 				if (cfg->opt & MONO_OPT_INLINE || cfg->compile_aot) {
 					costs = inline_method (cfg, wrapper, mono_method_signature (wrapper), 
-										   iargs, ip, cfg->real_offset, dont_inline, TRUE);
+										   iargs, ip, cfg->real_offset, TRUE, &bblock);
 					CHECK_CFG_EXCEPTION;
-					bblock = cfg->cbb;
 					g_assert (costs > 0);
 						      
 					cfg->real_offset += 5;
@@ -12346,7 +12351,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	g_slist_free (class_inits);
-	dont_inline = g_list_remove (dont_inline, method);
+	cfg->dont_inline = g_list_remove (cfg->dont_inline, method);
 
 	if (inline_costs < 0) {
 		char *mname;
@@ -12356,6 +12361,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
 		cfg->exception_message = g_strdup_printf ("Method %s is too complex.", mname);
 		g_free (mname);
+		inline_costs = -1;
 		cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 		mono_basic_block_free (original_bb);
 		return -1;
@@ -12386,7 +12392,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  cleanup:
 	g_slist_free (class_inits);
 	mono_basic_block_free (original_bb);
-	dont_inline = g_list_remove (dont_inline, method);
+	cfg->dont_inline = g_list_remove (cfg->dont_inline, method);
 	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 	return -1;
 }

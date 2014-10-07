@@ -1524,6 +1524,7 @@ typedef struct {
 	guint            has_atomic_cas_i4 : 1;
 	guint            check_pinvoke_callconv : 1;
 	guint            has_unwind_info_for_epilog : 1;
+	guint            disable_inline : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;
@@ -1539,6 +1540,8 @@ typedef struct {
 	guint8 *         encoded_unwind_ops;
 	guint32          encoded_unwind_ops_len;
 	GSList*          unwind_ops;
+
+	GList*           dont_inline;
 
 	/* Fields used by the local reg allocator */
 	void*            reginfo;
@@ -2295,7 +2298,7 @@ void              mono_tramp_info_register (MonoTrampInfo *info) MONO_INTERNAL;
 int               mini_exception_id_by_name (const char *name) MONO_INTERNAL;
 
 int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
-									 MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
+									 MonoInst *return_var, MonoInst **inline_args,
 									 guint inline_offset, gboolean is_virtual_call) MONO_INTERNAL;
 
 MonoInst         *mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
