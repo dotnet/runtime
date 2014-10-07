@@ -1054,7 +1054,8 @@ static gboolean
 drain_gray_stack (ScanCopyContext ctx)
 {
 	gboolean evacuation = FALSE;
-	for (int i = 0; i < num_block_obj_sizes; ++i) {
+	int i;
+	for (i = 0; i < num_block_obj_sizes; ++i) {
 		if (evacuate_block_obj_sizes [i]) {
 			evacuation = TRUE;
 			break;
