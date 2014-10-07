@@ -2227,8 +2227,8 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 	if (frame->ji)
 		method = jinfo_get_method (frame->ji);
 
-	if (method) {
-		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, mono_domain_get ());
+	if (method && frame->domain) {
+		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, frame->domain);
 		g_string_append_printf (p, "  %s\n", location);
 		g_free (location);
 	} else
