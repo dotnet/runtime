@@ -1190,7 +1190,8 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 
 	if (tp->pool_status == 0 && InterlockedCompareExchange (&tp->pool_status, 1, 0) == 0) {
 		if (!tp->is_io) {
-			mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK);
+			MonoInternalThread* mt = mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK);
+			ves_icall_System_Threading_Thread_SetState (mt, ThreadState_Background);
 			threadpool_start_thread (tp);
 		}
 		/* Create on demand up to min_threads to avoid startup penalty for apps that don't use
