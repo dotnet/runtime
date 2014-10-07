@@ -3047,6 +3047,9 @@ major_start_concurrent_collection (const char *reason)
 	current_collection_generation = -1;
 }
 
+/*
+ * Returns whether the major collection has finished.
+ */
 static gboolean
 major_should_finish_concurrent_collection (void)
 {
@@ -3063,7 +3066,7 @@ major_update_concurrent_collection (void)
 	TV_GETTIME (total_start);
 
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
-	binary_protocol_concurrent_update_finish ();
+	binary_protocol_concurrent_update ();
 
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
@@ -3086,7 +3089,7 @@ major_finish_concurrent_collection (void)
 	TV_GETTIME (total_start);
 
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
-	binary_protocol_concurrent_update_finish ();
+	binary_protocol_concurrent_finish ();
 
 	/*
 	 * The major collector can add global remsets which are processed in the finishing

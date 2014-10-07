@@ -30,7 +30,8 @@ enum {
 	SGEN_PROTOCOL_COLLECTION_BEGIN,
 	SGEN_PROTOCOL_COLLECTION_END,
 	SGEN_PROTOCOL_CONCURRENT_START,
-	SGEN_PROTOCOL_CONCURRENT_UPDATE_FINISH,
+	SGEN_PROTOCOL_CONCURRENT_UPDATE,
+	SGEN_PROTOCOL_CONCURRENT_FINISH,
 	SGEN_PROTOCOL_WORLD_STOPPING,
 	SGEN_PROTOCOL_WORLD_STOPPED,
 	SGEN_PROTOCOL_WORLD_RESTARTING,
@@ -262,7 +263,8 @@ void binary_protocol_collection_force (int generation) MONO_INTERNAL;
 void binary_protocol_collection_begin (int index, int generation) MONO_INTERNAL;
 void binary_protocol_collection_end (int index, int generation, long long num_objects_scanned, long long num_unique_objects_scanned) MONO_INTERNAL;
 void binary_protocol_concurrent_start (void) MONO_INTERNAL;
-void binary_protocol_concurrent_update_finish (void) MONO_INTERNAL;
+void binary_protocol_concurrent_update (void) MONO_INTERNAL;
+void binary_protocol_concurrent_finish (void) MONO_INTERNAL;
 void binary_protocol_world_stopping (long long timestamp) MONO_INTERNAL;
 void binary_protocol_world_stopped (long long timestamp, long long total_major_cards,
 		long long marked_major_cards, long long total_los_cards, long long marked_los_cards) MONO_INTERNAL;

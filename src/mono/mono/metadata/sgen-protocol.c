@@ -351,9 +351,15 @@ binary_protocol_concurrent_start (void)
 }
 
 void
-binary_protocol_concurrent_update_finish (void)
+binary_protocol_concurrent_update (void)
 {
-	protocol_entry (SGEN_PROTOCOL_CONCURRENT_UPDATE_FINISH, NULL, 0);
+	protocol_entry (SGEN_PROTOCOL_CONCURRENT_UPDATE, NULL, 0);
+}
+
+void
+binary_protocol_concurrent_finish (void)
+{
+	protocol_entry (SGEN_PROTOCOL_CONCURRENT_FINISH, NULL, 0);
 }
 
 void
