@@ -890,6 +890,41 @@ mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func)
 	jit_info_find_in_aot_func = func;
 }
 
+int
+mono_jit_info_size (MonoJitInfoFlags flags, int num_clauses, int num_holes)
+{
+	int size = MONO_SIZEOF_JIT_INFO;
+
+	size += num_clauses * sizeof (MonoJitExceptionInfo);
+	if (flags & JIT_INFO_HAS_CAS_INFO)
+		size += sizeof (MonoMethodCasInfo);
+	if (flags & JIT_INFO_HAS_GENERIC_JIT_INFO)
+		size += sizeof (MonoGenericJitInfo);
+	if (flags & JIT_INFO_HAS_TRY_BLOCK_HOLES)
+		size += sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
+	if (flags & JIT_INFO_HAS_ARCH_EH_INFO)
+		size += sizeof (MonoArchEHJitInfo);
+	return size;
+}
+
+void
+mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_size,
+					MonoJitInfoFlags flags, int num_clauses, int num_holes)
+{
+	ji->d.method = method;
+	ji->code_start = code;
+	ji->code_size = code_size;
+	ji->num_clauses = num_clauses;
+	if (flags & JIT_INFO_HAS_CAS_INFO)
+		ji->has_cas_info = 1;
+	if (flags & JIT_INFO_HAS_GENERIC_JIT_INFO)
+		ji->has_generic_jit_info = 1;
+	if (flags & JIT_INFO_HAS_TRY_BLOCK_HOLES)
+		ji->has_try_block_holes = 1;
+	if (flags & JIT_INFO_HAS_ARCH_EH_INFO)
+		ji->has_arch_eh_info = 1;
+}
+
 gpointer
 mono_jit_info_get_code_start (MonoJitInfo* ji)
 {

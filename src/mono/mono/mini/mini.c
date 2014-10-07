@@ -4329,18 +4329,15 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	GSList *tmp;
 	MonoMethodHeader *header;
 	MonoJitInfo *jinfo;
-	int num_clauses;
-	int generic_info_size, arch_eh_info_size = 0;
-	int holes_size = 0, num_holes = 0, cas_size = 0;
+	MonoJitInfoFlags flags = JIT_INFO_NONE;
+	int num_clauses, num_holes = 0;
 	guint32 stack_size = 0;
 
 	g_assert (method_to_compile == cfg->method);
 	header = cfg->header;
 
 	if (cfg->generic_sharing_context)
-		generic_info_size = sizeof (MonoGenericJitInfo);
-	else
-		generic_info_size = 0;
+		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
 
 	if (cfg->arch_eh_jit_info) {
 		MonoJitArgumentInfo *arg_info;
@@ -4354,11 +4351,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		stack_size = mono_arch_get_argument_info (cfg->generic_sharing_context, sig, sig->param_count, arg_info);
 
 		if (stack_size)
-			arch_eh_info_size = sizeof (MonoArchEHJitInfo);
+			flags |= JIT_INFO_HAS_ARCH_EH_INFO;
 	}
 
-	if (cfg->has_unwind_info_for_epilog && !arch_eh_info_size)
-		arch_eh_info_size = sizeof (MonoArchEHJitInfo);
+	if (cfg->has_unwind_info_for_epilog && !(flags & JIT_INFO_HAS_ARCH_EH_INFO))
+		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
 		
 	if (cfg->try_block_holes) {
 		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
@@ -4373,34 +4370,25 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				++num_holes;
 		}
 		if (num_holes)
-			holes_size = sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
+			flags |= JIT_INFO_HAS_TRY_BLOCK_HOLES;
 		if (G_UNLIKELY (cfg->verbose_level >= 4))
 			printf ("Number of try block holes %d\n", num_holes);
 	}
 
-	if (mono_security_method_has_declsec (cfg->method_to_register)) {
-		cas_size = sizeof (MonoMethodCasInfo);
-	}
+	if (mono_security_method_has_declsec (cfg->method_to_register))
+		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
 
 	if (COMPILE_LLVM (cfg))
 		num_clauses = cfg->llvm_ex_info_len;
 	else
 		num_clauses = header->num_clauses;
 
-	if (cfg->method->dynamic) {
-		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size + holes_size + arch_eh_info_size + cas_size);
-	} else {
-		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
-				(num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size + holes_size + arch_eh_info_size + cas_size);
-	}
-
-	jinfo->d.method = cfg->method_to_register;
-	jinfo->code_start = cfg->native_code;
-	jinfo->code_size = cfg->code_len;
+	if (cfg->method->dynamic)
+		jinfo = g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
+	else
+		jinfo = mono_domain_alloc0 (cfg->domain, mono_jit_info_size (flags, num_clauses, num_holes));
+	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
 	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
-	jinfo->num_clauses = num_clauses;
 
 	if (COMPILE_LLVM (cfg))
 		jinfo->from_llvm = TRUE;
@@ -4409,8 +4397,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		MonoInst *inst;
 		MonoGenericJitInfo *gi;
 		GSList *loclist = NULL;
-
-		jinfo->has_generic_jit_info = 1;
 
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);
@@ -4485,7 +4471,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		MonoTryBlockHoleTableJitInfo *table;
 		int i;
 
-		jinfo->has_try_block_holes = 1;
 		table = mono_jit_info_get_try_block_hole_table_info (jinfo);
 		table->num_holes = (guint16)num_holes;
 		i = 0;
@@ -4514,17 +4499,12 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		g_assert (i == num_holes);
 	}
 
-	if (arch_eh_info_size) {
+	if (jinfo->has_arch_eh_info) {
 		MonoArchEHJitInfo *info;
 
-		jinfo->has_arch_eh_info = 1;
 		info = mono_jit_info_get_arch_eh_info (jinfo);
 
 		info->stack_size = stack_size;
-	}
-
-	if (cas_size) {
-		jinfo->has_cas_info = 1;
 	}
 
 	if (COMPILE_LLVM (cfg)) {

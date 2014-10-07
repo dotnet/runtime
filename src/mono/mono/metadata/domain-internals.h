@@ -188,6 +188,14 @@ typedef struct {
 	gboolean    cas_method_permitonly:1;
 } MonoMethodCasInfo;
 
+typedef enum {
+	JIT_INFO_NONE = 0,
+	JIT_INFO_HAS_CAS_INFO = (1 << 0),
+	JIT_INFO_HAS_GENERIC_JIT_INFO = (1 << 1),
+	JIT_INFO_HAS_TRY_BLOCK_HOLES = (1 << 2),
+	JIT_INFO_HAS_ARCH_EH_INFO = (1 << 3)
+} MonoJitInfoFlags;
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
@@ -455,6 +463,13 @@ mono_cleanup (void) MONO_INTERNAL;
 
 void
 mono_close_exe_image (void) MONO_INTERNAL;
+
+int
+mono_jit_info_size (MonoJitInfoFlags flags, int num_clauses, int num_holes) MONO_INTERNAL;
+
+void
+mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_size,
+					MonoJitInfoFlags flags, int num_clauses, int num_holes) MONO_INTERNAL;
 
 void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
