@@ -471,6 +471,12 @@ void
 mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_size,
 					MonoJitInfoFlags flags, int num_clauses, int num_holes) MONO_INTERNAL;
 
+MonoJitInfoTable *
+mono_jit_info_table_new (MonoDomain *domain) MONO_INTERNAL;
+
+void
+mono_jit_info_table_free (MonoJitInfoTable *table) MONO_INTERNAL;
+
 void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 

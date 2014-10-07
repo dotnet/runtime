@@ -124,6 +124,7 @@ common_sources = \
 	icall.c			\
 	icall-def.h		\
 	image.c			\
+	jit-info.c		\
 	loader.c		\
 	locales.c		\
 	locales.h		\
