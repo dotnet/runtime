@@ -995,9 +995,8 @@ static long long stat_optimized_copy_major_small_fast;
 static long long stat_optimized_copy_major_small_slow;
 static long long stat_optimized_copy_major_large;
 #endif
-static long long stat_optimized_major_mark;
-static long long stat_optimized_major_mark_small;
-static long long stat_optimized_major_mark_large;
+static long long stat_optimized_copy_major_forwarded;
+static long long stat_optimized_copy_major_small_evacuate;
 static long long stat_optimized_major_scan;
 static long long stat_optimized_major_scan_no_refs;
 #ifdef DESCRIPTOR_FAST_PATH
@@ -2166,9 +2165,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized copy major small slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_slow);
 	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_large);
 #endif
-	mono_counters_register ("Optimized major mark", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark);
-	mono_counters_register ("Optimized major mark small", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_small);
-	mono_counters_register ("Optimized major mark large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_mark_large);
 	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
 	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_no_refs);
 #ifdef DESCRIPTOR_FAST_PATH
@@ -2182,7 +2178,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #endif
 #endif
 
-#ifdef HEAVY_STATISTICS
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
 	mono_mutex_init (&scanned_objects_list_lock);
 #endif
 
