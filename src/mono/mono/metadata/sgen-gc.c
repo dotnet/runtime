@@ -822,6 +822,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_restart_world (0, NULL);
 
 	binary_protocol_domain_unload_end (domain);
+	binary_protocol_flush_buffers (FALSE);
 
 	UNLOCK_GC;
 }
