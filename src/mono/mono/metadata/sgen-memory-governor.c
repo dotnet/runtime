@@ -72,21 +72,13 @@ static mword last_collection_los_memory_alloced;
 static mword sgen_memgov_available_free_space (void);
 
 
-static mword
-double_to_mword_with_saturation (double value)
-{
-	if (value >= (double)MWORD_MAX_VALUE)
-		return MWORD_MAX_VALUE;
-	return (mword)value;
-}
-
 /* GC trigger heuristics. */
 
 static void
 sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 {
-	size_t num_major_sections, num_major_sections_saved;
-	mword los_memory_saved, new_major, new_heap_size, save_target, allowance_target;
+	size_t num_major_sections;
+	mword new_major, new_heap_size, allowance_target;
 
 	if (overwrite)
 		g_assert (need_calculate_minor_collection_allowance);
@@ -102,32 +94,16 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 
 	num_major_sections = major_collector.get_num_major_sections ();
 
-	num_major_sections_saved = MAX (last_collection_old_num_major_sections - num_major_sections, 0);
-	los_memory_saved = MAX (last_collection_old_los_memory_usage - last_collection_los_memory_usage, 1);
-
 	new_major = num_major_sections * major_collector.section_size;
 	new_heap_size = new_major + last_collection_los_memory_usage;
 
-	save_target = (mword)((new_major + last_collection_los_memory_usage) * SGEN_DEFAULT_SAVE_TARGET_RATIO);
-
 	/*
-	 * We aim to allow the allocation of as many sections as is
-	 * necessary to reclaim save_target sections in the next
-	 * collection.  We assume the collection pattern won't change.
-	 * In the last cycle, we had num_major_sections_saved for
-	 * minor_collection_sections_alloced.  Assuming things won't
-	 * change, this must be the same ratio as save_target for
-	 * allowance_target, i.e.
-	 *
-	 *    num_major_sections_saved            save_target
-	 * --------------------------------- == ----------------
-	 * minor_collection_sections_alloced    allowance_target
-	 *
-	 * hence:
+	 * We allow the heap to grow by one third its current size before we start the next
+	 * major collection.
 	 */
-	allowance_target = double_to_mword_with_saturation ((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + last_collection_los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
+	allowance_target = new_heap_size / 3;
 
-	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+	minor_collection_allowance = MAX (allowance_target, MIN_MINOR_COLLECTION_ALLOWANCE);
 
 	if (new_heap_size + minor_collection_allowance > soft_heap_limit) {
 		if (new_heap_size > soft_heap_limit)
