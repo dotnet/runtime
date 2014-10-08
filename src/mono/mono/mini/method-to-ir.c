@@ -6906,6 +6906,90 @@ create_magic_tls_access (MonoCompile *cfg, MonoClassField *tls_field, MonoInst *
 }
 
 /*
+ * handle_ctor_call:
+ *
+ *   Handle calls made to ctors from NEWOBJ opcodes.
+ *
+ *   REF_BBLOCK will point to the current bblock after the call.
+ */
+static void
+handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used,
+				  MonoInst **sp, guint8 *ip, MonoBasicBlock **ref_bblock, int *inline_costs)
+{
+	MonoInst *vtable_arg = NULL, *callvirt_this_arg = NULL, *ins;
+	MonoBasicBlock *bblock = *ref_bblock;
+
+	if (cmethod->klass->valuetype && mono_class_generic_sharing_enabled (cmethod->klass) &&
+					mono_method_is_generic_sharable (cmethod, TRUE)) {
+		if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
+			mono_class_vtable (cfg->domain, cmethod->klass);
+			CHECK_TYPELOAD (cmethod->klass);
+
+			vtable_arg = emit_get_rgctx_method (cfg, context_used,
+												cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
+		} else {
+			if (context_used) {
+				vtable_arg = emit_get_rgctx_klass (cfg, context_used,
+												   cmethod->klass, MONO_RGCTX_INFO_VTABLE);
+			} else {
+				MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
+
+				CHECK_TYPELOAD (cmethod->klass);
+				EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
+			}
+		}
+	}
+
+	/* Avoid virtual calls to ctors if possible */
+	if (mono_class_is_marshalbyref (cmethod->klass))
+		callvirt_this_arg = sp [0];
+
+	if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_ctor (cfg, cmethod, fsig, sp))) {
+		g_assert (MONO_TYPE_IS_VOID (fsig->ret));
+		CHECK_CFG_EXCEPTION;
+	} else if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
+			   mono_method_check_inlining (cfg, cmethod) &&
+			   !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE)) {
+		int costs;
+
+		if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE, &bblock))) {
+			cfg->real_offset += 5;
+
+			*inline_costs += costs - 5;
+			*ref_bblock = bblock;
+		} else {
+			INLINE_FAILURE ("inline failure");
+			// FIXME-VT: Clean this up
+			if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig))
+				GSHAREDVT_FAILURE(*ip);
+			mono_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp, callvirt_this_arg, NULL, NULL);
+		}
+	} else if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
+		MonoInst *addr;
+
+		addr = emit_get_rgctx_gsharedvt_call (cfg, context_used, fsig, cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
+		mono_emit_calli (cfg, fsig, sp, addr, NULL, vtable_arg);
+	} else if (context_used &&
+			   ((!mono_method_is_generic_sharable_full (cmethod, TRUE, FALSE, FALSE) ||
+				 !mono_class_generic_sharing_enabled (cmethod->klass)) || cfg->gsharedvt)) {
+		MonoInst *cmethod_addr;
+
+		/* Generic calls made out of gsharedvt methods cannot be patched, so use an indirect call */
+
+		cmethod_addr = emit_get_rgctx_method (cfg, context_used,
+											  cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+
+		mono_emit_calli (cfg, fsig, sp, cmethod_addr, NULL, vtable_arg);
+	} else {
+		INLINE_FAILURE ("ctor call");
+		ins = mono_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp,
+										  callvirt_this_arg, NULL, vtable_arg);
+	}
+ exception_exit:
+	return;
+}
+
+/*
  * mono_method_to_ir:
  *
  *   Translate the .net IL into linear IR.
@@ -9612,27 +9696,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			*/
 
-			if (cmethod->klass->valuetype && mono_class_generic_sharing_enabled (cmethod->klass) &&
-					mono_method_is_generic_sharable (cmethod, TRUE)) {
-				if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
-					mono_class_vtable (cfg->domain, cmethod->klass);
-					CHECK_TYPELOAD (cmethod->klass);
-
-					vtable_arg = emit_get_rgctx_method (cfg, context_used,
-														cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
-				} else {
-					if (context_used) {
-						vtable_arg = emit_get_rgctx_klass (cfg, context_used,
-							cmethod->klass, MONO_RGCTX_INFO_VTABLE);
-					} else {
-						MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
-
-						CHECK_TYPELOAD (cmethod->klass);
-						EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
-					}
-				}
-			}
-
 			n = fsig->param_count;
 			CHECK_STACK (n);
 
@@ -9645,8 +9708,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				((n < 1) || (!fsig->params [0]->byref && fsig->params [0]->type == MONO_TYPE_STRING)) && 
 				((n < 2) || (!fsig->params [1]->byref && fsig->params [1]->type == MONO_TYPE_STRING))) {
 				MonoInst *iargs [3];
-
-				g_assert (!vtable_arg);
 
 				sp -= n;
 
@@ -9688,8 +9749,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			iargs [0] = NULL;
 
 			if (mini_class_is_system_array (cmethod->klass)) {
-				g_assert (!vtable_arg);
-
 				*sp = emit_get_rgctx_method (cfg, context_used,
 											 cmethod, MONO_RGCTX_INFO_METHOD);
 
@@ -9712,8 +9771,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* now call the string ctor */
 				alloc = mono_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp, NULL, NULL, NULL);
 			} else {
-				MonoInst* callvirt_this_arg = NULL;
-				
 				if (cmethod->klass->valuetype) {
 					iargs [0] = mono_compile_create_var (cfg, &cmethod->klass->byval_arg, OP_LOCAL);
 					emit_init_rvar (cfg, iargs [0]->dreg, &cmethod->klass->byval_arg);
@@ -9757,56 +9814,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, alloc->dreg);
 
 				/* Now call the actual ctor */
-				/* Avoid virtual calls to ctors if possible */
-				if (mono_class_is_marshalbyref (cmethod->klass))
-					callvirt_this_arg = sp [0];
-
-
-				if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_ctor (cfg, cmethod, fsig, sp))) {
-					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-						type_to_eval_stack_type ((cfg), fsig->ret, ins);
-						*sp = ins;
-						sp++;
-					}
-
-					CHECK_CFG_EXCEPTION;
-				} else if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
-						   mono_method_check_inlining (cfg, cmethod) &&
-						   !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE)) {
-					int costs;
-
-					if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE, &bblock))) {
-						cfg->real_offset += 5;
-
-						inline_costs += costs - 5;
-					} else {
-						INLINE_FAILURE ("inline failure");
-						// FIXME-VT: Clean this up
-						if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig))
-							GSHAREDVT_FAILURE(*ip);
-						mono_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp, callvirt_this_arg, NULL, NULL);
-					}
-				} else if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
-					MonoInst *addr;
-
-					addr = emit_get_rgctx_gsharedvt_call (cfg, context_used, fsig, cmethod, MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE);
-					mono_emit_calli (cfg, fsig, sp, addr, NULL, vtable_arg);
-				} else if (context_used &&
-						   ((!mono_method_is_generic_sharable_full (cmethod, TRUE, FALSE, FALSE) ||
-							 !mono_class_generic_sharing_enabled (cmethod->klass)) || cfg->gsharedvt)) {
-					MonoInst *cmethod_addr;
-
-					/* Generic calls made out of gsharedvt methods cannot be patched, so use an indirect call */
-
-					cmethod_addr = emit_get_rgctx_method (cfg, context_used,
-						cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
-
-					mono_emit_calli (cfg, fsig, sp, cmethod_addr, NULL, vtable_arg);
-				} else {
-					INLINE_FAILURE ("ctor call");
-					ins = mono_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp,
-													  callvirt_this_arg, NULL, vtable_arg);
-				}
+				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &bblock, &inline_costs);
+				CHECK_CFG_EXCEPTION;
 			}
 
 			if (alloc == NULL) {
@@ -9814,9 +9823,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_TEMPLOAD (cfg, ins, iargs [0]->inst_c0);
 				type_to_eval_stack_type (cfg, &ins->klass->byval_arg, ins);
 				*sp++= ins;
-			}
-			else
+			} else {
 				*sp++ = alloc;
+			}
 			
 			ip += 5;
 			inline_costs += 5;
