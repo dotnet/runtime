@@ -1426,8 +1426,6 @@ typedef struct {
 	MonoGenericSharingContext gsctx;
 	MonoGenericContext *gsctx_context;
 
-	gboolean gsharedvt;
-
 	MonoGSharedVtMethodInfo *gsharedvt_info;
 
 	/* Points to the gsharedvt locals area at runtime */
@@ -1525,6 +1523,8 @@ typedef struct {
 	guint            check_pinvoke_callconv : 1;
 	guint            has_unwind_info_for_epilog : 1;
 	guint            disable_inline : 1;
+	guint            gshared : 1;
+	guint            gsharedvt : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;

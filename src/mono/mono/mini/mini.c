@@ -5033,6 +5033,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	if (cfg->generic_sharing_context) {
 		method_to_register = method_to_compile;
+		cfg->gshared = TRUE;
 	} else {
 		g_assert (method == method_to_compile);
 		method_to_register = method;
