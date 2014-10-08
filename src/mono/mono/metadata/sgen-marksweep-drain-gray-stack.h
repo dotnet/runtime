@@ -35,9 +35,7 @@
 static inline MONO_ALWAYS_INLINE gboolean
 COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 {
-#ifdef SGEN_MARK_ON_ENQUEUE
 	MSBlockInfo *block;
-#endif
 
 #ifdef HEAVY_STATISTICS
 	++stat_optimized_copy;
@@ -220,13 +218,13 @@ SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 
 			MS_CALC_MARK_BIT (__word, __bit, (obj));
 			if (MS_MARK_BIT ((block), __word, __bit))
-				continue;
+				return;
 			MS_SET_MARK_BIT ((block), __word, __bit);
 		} else {
 			HEAVY_STAT (++stat_optimized_major_mark_large);
 
 			if (sgen_los_object_is_pinned (obj))
-				continue;
+				return;
 			sgen_los_pin_object (obj);
 		}
 	}
