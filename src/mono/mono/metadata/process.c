@@ -60,11 +60,12 @@ HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 	return(handle);
 }
 
-guint32 ves_icall_System_Diagnostics_Process_GetPid_internal (void)
+guint32
+ves_icall_System_Diagnostics_Process_GetPid_internal (void)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return(GetCurrentProcessId ());
+	return mono_process_current_pid ();
 }
 
 void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *this,

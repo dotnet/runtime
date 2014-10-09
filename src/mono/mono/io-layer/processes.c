@@ -1261,13 +1261,6 @@ guint32 GetProcessId (gpointer handle)
 	return (process_handle->id);
 }
 
-guint32 GetCurrentProcessId (void)
-{
-	mono_once (&process_current_once, process_set_current);
-		
-	return (GetProcessId (current_process));
-}
-
 /* Returns the process id as a convenience to the functions that call this */
 static pid_t signal_process_if_gone (gpointer handle)
 {

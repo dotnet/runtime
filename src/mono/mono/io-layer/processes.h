@@ -188,7 +188,6 @@ extern gboolean CreateProcessWithLogonW (const gunichar2 *username,
 
 extern gpointer GetCurrentProcess (void);
 extern guint32 GetProcessId (gpointer handle);
-extern guint32 GetCurrentProcessId (void);
 extern gboolean CloseProcess (gpointer handle);
 extern gpointer OpenProcess (guint32 access, gboolean inherit, guint32 pid);
 extern gboolean GetExitCodeProcess (gpointer process, guint32 *code);
