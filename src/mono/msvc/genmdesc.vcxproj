@@ -18,6 +18,7 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <Import Project="mono.props" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B7098DFA-31E6-4006-8A15-1C9A4E925149}</ProjectGuid>
     <RootNamespace>genmdesc</RootNamespace>

@@ -18,6 +18,7 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <Import Project="mono.props" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5A435710-E6D2-4DD4-9B3F-A7239A32C6F4}</ProjectGuid>
     <RootNamespace>libtest</RootNamespace>
