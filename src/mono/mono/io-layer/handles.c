@@ -266,6 +266,7 @@ wapi_init (void)
 	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_cond;
 	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_mutex;
 
+	wapi_processes_init ();
 
 	/* Using g_atexit here instead of an explicit function call in
 	 * a cleanup routine lets us cope when a third-party library

@@ -142,19 +142,8 @@ static volatile gint32 mono_processes_cleaning_up = 0;
 static mono_mutex_t mono_processes_mutex;
 static void mono_processes_cleanup (void);
 
-static mono_once_t process_current_once=MONO_ONCE_INIT;
-static gpointer current_process=NULL;
+static gpointer current_process;
 static char *cli_launcher;
-
-static mono_once_t process_ops_once=MONO_ONCE_INIT;
-
-static void process_ops_init (void)
-{
-	_wapi_handle_register_capabilities (WAPI_HANDLE_PROCESS,
-					    WAPI_HANDLE_CAP_WAIT |
-					    WAPI_HANDLE_CAP_SPECIAL_WAIT);
-}
-
 
 /* Check if a pid is valid - i.e. if a process exists with this pid. */
 static gboolean is_pid_valid (pid_t pid)
@@ -571,7 +560,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	struct MonoProcess *mono_process;
 	gboolean fork_failed = FALSE;
 	
-	mono_once (&process_ops_once, process_ops_init);
 	mono_once (&process_sig_chld_once, process_add_sigchld_handler);
 	
 	/* appname and cmdline specify the executable and its args:
@@ -945,18 +933,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			env_count++;
 		}
 	}
-	/* pass process handle info to the child, so it doesn't have
-	 * to do an expensive search over the whole list
-	 */
-	if (env_strings != NULL) {
-		struct _WapiHandleUnshared *handle_data;
-		struct _WapiHandle_shared_ref *ref;
-		
-		handle_data = &_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT(handle));
-		ref = &handle_data->u.shared;
-		
-		env_strings[env_count] = g_strdup_printf ("_WAPI_PROCESS_HANDLE_OFFSET=%d", ref->offset);
-	}
 
 	/* Create a pipe to make sure the child doesn't exit before 
 	 * we can add the process to the linked list of mono_processes */
@@ -1152,65 +1128,16 @@ extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
 #define g_unsetenv(a) unsetenv(a)
 #endif
 
-static void process_set_current (void)
+void
+wapi_processes_init (void)
 {
 	pid_t pid = _wapi_getpid ();
-	const char *handle_env;
 	struct _WapiHandle_process process_handle = {0};
+
+	_wapi_handle_register_capabilities (WAPI_HANDLE_PROCESS,
+					    WAPI_HANDLE_CAP_WAIT |
+					    WAPI_HANDLE_CAP_SPECIAL_WAIT);
 	
-	mono_once (&process_ops_once, process_ops_init);
-	
-	handle_env = g_getenv ("_WAPI_PROCESS_HANDLE_OFFSET");
-	g_unsetenv ("_WAPI_PROCESS_HANDLE_OFFSET");
-	
-	if (handle_env != NULL) {
-		struct _WapiHandle_process *process_handlep;
-		gchar *procname = NULL;
-		gboolean ok;
-		
-		current_process = _wapi_handle_new_from_offset (WAPI_HANDLE_PROCESS, atoi (handle_env), TRUE);
-		
-		DEBUG ("%s: Found my process handle: %p (offset %d 0x%x)",
-			   __func__, current_process, atoi (handle_env),
-			   atoi (handle_env));
-
-		ok = _wapi_lookup_handle (current_process, WAPI_HANDLE_PROCESS,
-					  (gpointer *)&process_handlep);
-		if (ok) {
-			/* This test will probably break on linuxthreads, but
-			 * that should be ancient history on all distros we
-			 * care about by now
-			 */
-			if (process_handlep->id == pid) {
-				procname = process_handlep->proc_name;
-				if (!strcmp (procname, "mono")) {
-					/* Set a better process name */
-					DEBUG ("%s: Setting better process name", __func__);
-					
-					process_set_name (process_handlep);
-				} else {
-					DEBUG ("%s: Leaving process name: %s", __func__, procname);
-				}
-
-				return;
-			}
-
-			/* Wrong pid, so drop this handle and fall through to
-			 * create a new one
-			 */
-			_wapi_handle_unref (current_process);
-		}
-	}
-
-	/* We get here if the handle wasn't specified in the
-	 * environment, or if the process ID was wrong, or if the
-	 * handle lookup failed (eg if the parent process forked and
-	 * quit immediately, and deleted the shared data before the
-	 * child got a chance to attach it.)
-	 */
-
-	DEBUG ("%s: Need to create my own process handle", __func__);
-
 	process_handle.id = pid;
 
 	process_set_defaults (&process_handle);
@@ -1218,27 +1145,22 @@ static void process_set_current (void)
 
 	current_process = _wapi_handle_new (WAPI_HANDLE_PROCESS,
 					    &process_handle);
-	if (current_process == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error creating process handle", __func__);
-		return;
-	}
+	g_assert (current_process);
 }
 
-gpointer _wapi_process_duplicate ()
+gpointer
+_wapi_process_duplicate (void)
 {
-	mono_once (&process_current_once, process_set_current);
-	
 	_wapi_handle_ref (current_process);
 	
-	return(current_process);
+	return current_process;
 }
 
 /* Returns a pseudo handle that doesn't need to be closed afterwards */
-gpointer GetCurrentProcess (void)
+gpointer
+GetCurrentProcess (void)
 {
-	mono_once (&process_current_once, process_set_current);
-		
-	return(_WAPI_PROCESS_CURRENT);
+	return _WAPI_PROCESS_CURRENT;
 }
 
 guint32 GetProcessId (gpointer handle)
@@ -1381,8 +1303,6 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 	/* Find the process handle that corresponds to pid */
 	gpointer handle = NULL;
 	
-	mono_once (&process_current_once, process_set_current);
-
 	DEBUG ("%s: looking for process %d", __func__, pid);
 
 	handle = _wapi_search_handle (WAPI_HANDLE_PROCESS,
@@ -1413,8 +1333,6 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 	gboolean ok;
 	guint32 pid = -1;
 	
-	mono_once (&process_current_once, process_set_current);
-
 	if(code==NULL) {
 		return(FALSE);
 	}
@@ -1465,8 +1383,6 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	gboolean ok;
 	gboolean ku_times_set = FALSE;
 	
-	mono_once (&process_current_once, process_set_current);
-
 	if(create_time==NULL || exit_time==NULL || kernel_time==NULL ||
 	   user_time==NULL) {
 		/* Not sure if w32 allows NULLs here or not */
@@ -2175,8 +2091,6 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	int i;
 	gchar *proc_name = NULL;
 	
-	mono_once (&process_current_once, process_set_current);
-
 	DEBUG ("%s: Getting module base name, process handle %p module %p",
 		   __func__, process, module);
 
@@ -2320,8 +2234,6 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	gboolean ret = FALSE;
 	gchar *proc_name = NULL;
 	
-	mono_once (&process_current_once, process_set_current);
-	
 	DEBUG ("%s: Getting module info, process handle %p module %p",
 		   __func__, process, module);
 
@@ -2393,8 +2305,6 @@ gboolean GetProcessWorkingSetSize (gpointer process, size_t *min, size_t *max)
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	
-	mono_once (&process_current_once, process_set_current);
-
 	if(min==NULL || max==NULL) {
 		/* Not sure if w32 allows NULLs here or not */
 		return(FALSE);
@@ -2425,8 +2335,6 @@ gboolean SetProcessWorkingSetSize (gpointer process, size_t min, size_t max)
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 
-	mono_once (&process_current_once, process_set_current);
-	
 	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
 		/* This is a pseudo handle, so just fail for now
 		 */
