@@ -13,11 +13,7 @@
 #endif
 
 #if _WIN32_WINNT < 0x0502
-/* Required for Vectored Exception Handling.
-   Interlocked* functions are also not available in XP SP1 and below
-*/
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0502
+#error "Mono requires WinXP SP2 or later"
 #endif /* _WIN32_WINNT < 0x0502 */
 
 /*
@@ -198,9 +194,7 @@
 /* #undef HAVE_GETPRIORITY */
 
 /* Define to 1 if you have the `GetProcessId' function. */
-#if (_WIN32_WINNT >= 0x0502)
 #define HAVE_GETPROCESSID 1
-#endif
 
 /* Define to 1 if you have the `getpwnam_r' function. */
 /* #undef HAVE_GETPWNAM_R */

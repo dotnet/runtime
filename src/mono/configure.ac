@@ -115,7 +115,7 @@ case "$host" in
 			AC_DEFINE(MINGW_CROSS_COMPILE,1,[Cross-compiling using MinGW])
 		fi
 		HOST_CC="gcc"
-		# Windows 2000 is required that includes Internet Explorer 5.01
+		# Windows XP SP2 is required
 		CPPFLAGS="$CPPFLAGS -DWINVER=0x0502 -D_WIN32_WINNT=0x0502 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
 		LDFLAGS="$LDFLAGS -lmswsock -lws2_32 -lole32 -loleaut32 -lpsapi -lversion -ladvapi32 -lwinmm -lkernel32"
 		libmono_cflags="-mms-bitfields -mwindows"
