@@ -979,7 +979,7 @@ major_get_and_reset_num_major_objects_marked (void)
 #undef USE_PREFETCH_QUEUE
 #endif
 
-#define DESCRIPTOR_FAST_PATH	1	/* BOOL FASTENABLE */
+#define DESCRIPTOR_FAST_PATH	0	/* BOOL FASTENABLE */
 #if !DESCRIPTOR_FAST_PATH
 #undef DESCRIPTOR_FAST_PATH
 #endif

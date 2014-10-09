@@ -238,22 +238,35 @@ SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 
 	/* Now scan the object. */
 
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {					\
-		void *__old = *(ptr);					\
-		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
-		if (__old) {						\
-			gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
-			if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
-				void *__copy = *(ptr);			\
-				sgen_add_to_global_remset ((ptr), __copy); \
-			}						\
-		}							\
-	} while (0)
-
 #ifdef DESCRIPTOR_FAST_PATH
 	if (type == DESC_TYPE_LARGE_BITMAP) {
+		int i;
+		void *ptrs [LARGE_BITMAP_SIZE];
+		int num_ptrs = 0;
+
+		PREFETCH_WRITE (obj + sizeof (MonoObject));
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+			/* PREFETCH_WRITE ((ptr)); */			\
+			ptrs [num_ptrs++] = (ptr);			\
+		} while (0)
+
 		OBJ_LARGE_BITMAP_FOREACH_PTR (desc, obj);
+
+		for (i = 0; i < num_ptrs; ++i) {
+			void **ptr = ptrs [i];
+			void *__old = *ptr;
+			binary_protocol_scan_process_reference ((obj), (ptr), __old);
+			if (__old) {
+				gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue);
+				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) {
+					void *__copy = *(ptr);
+					sgen_add_to_global_remset ((ptr), __copy);
+				}
+			}
+		}
+
 #ifdef HEAVY_STATISTICS
 		sgen_descriptor_count_scanned_object (desc);
 		++stat_optimized_major_scan_fast;
@@ -273,6 +286,19 @@ SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 		add_scanned_object (start);
 #endif
 
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+		void *__old = *(ptr);					\
+		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+		if (__old) {						\
+			gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
+			if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
+				void *__copy = *(ptr);			\
+				sgen_add_to_global_remset ((ptr), __copy); \
+			}						\
+		}							\
+	} while (0)
 
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
