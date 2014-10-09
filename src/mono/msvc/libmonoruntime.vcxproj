@@ -57,6 +57,7 @@
     <ClCompile Include="..\mono\metadata\gc.c" />
     <ClCompile Include="..\mono\metadata\icall.c" />
     <ClCompile Include="..\mono\metadata\image.c" />
+    <ClCompile Include="..\mono\metadata\jit-info.c" />
     <ClCompile Include="..\mono\metadata\loader.c" />
     <ClCompile Include="..\mono\metadata\locales.c" />
     <ClCompile Include="..\mono\metadata\lock-tracer.c" />
@@ -98,9 +99,6 @@
     <ClCompile Include="..\mono\metadata\sgen-hash-table.c" />
     <ClCompile Include="..\mono\metadata\sgen-internal.c" />
     <ClCompile Include="..\mono\metadata\sgen-los.c" />
-    <ClCompile Include="..\mono\metadata\sgen-marksweep-fixed-par.c" />
-    <ClCompile Include="..\mono\metadata\sgen-marksweep-fixed.c" />
-    <ClCompile Include="..\mono\metadata\sgen-marksweep-par.c" />
     <ClCompile Include="..\mono\metadata\sgen-marksweep.c" />
     <ClCompile Include="..\mono\metadata\sgen-memory-governor.c" />
     <ClCompile Include="..\mono\metadata\sgen-new-bridge.c" />
