@@ -98,7 +98,7 @@ sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue)
 	end = queue->data + queue->next_slot;
 	while (cur < end) {
 		*start = *cur++;
-		while (*start == *cur && cur < end)
+		while (cur < end && *start == *cur)
 			cur++;
 		start++;
 	};
