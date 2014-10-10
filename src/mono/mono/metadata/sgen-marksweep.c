@@ -1866,6 +1866,8 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			end = block_start + MS_BLOCK_SIZE;
 			base = sgen_card_table_align_pointer (obj);
 
+			cards += MS_BLOCK_SKIP >> CARD_BITS;
+
 			while (obj < end) {
 				size_t card_offset;
 
@@ -1919,6 +1921,8 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
 			}
 			card_data_end = card_data + CARDS_PER_BLOCK;
+
+			card_data += MS_BLOCK_SKIP >> CARD_BITS;
 
 			for (card_data = initial_skip_card (card_data); card_data < card_data_end; ++card_data) { //card_data = skip_card (card_data + 1, card_data_end)) {
 				size_t index;
