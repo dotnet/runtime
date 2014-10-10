@@ -16,10 +16,17 @@
 /* There doesn't seem to be a defined symbol for this */
 #define _WAPI_PROCESS_CURRENT (gpointer)0xFFFFFFFF
 
+/*
+ * Handles > _WAPI_PROCESS_UNHANDLED are pseudo handles which represent processes
+ * not started by the runtime.
+ */
 /* This marks a system process that we don't have a handle on */
 /* FIXME: Cope with PIDs > sizeof guint */
 #define _WAPI_PROCESS_UNHANDLED (1 << (8*sizeof(pid_t)-1))
 #define _WAPI_PROCESS_UNHANDLED_PID_MASK (-1 & ~_WAPI_PROCESS_UNHANDLED)
+#define WAPI_IS_PSEUDO_PROCESS_HANDLE(handle) ((GPOINTER_TO_UINT(handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED)
+#define WAPI_PID_TO_HANDLE(pid) GINT_TO_POINTER (_WAPI_PROCESS_UNHANDLED + (pid))
+#define WAPI_HANDLE_TO_PID(handle) (GPOINTER_TO_UINT ((handle)) - _WAPI_PROCESS_UNHANDLED)
 
 void wapi_processes_init (void);
 extern gpointer _wapi_process_duplicate (void);
@@ -70,5 +77,7 @@ struct _WapiHandle_process
 	pid_t self; /* mono_process is shared among processes, but only usable in the process that created it */
 	struct MonoProcess *mono_process;
 };
+
+typedef struct _WapiHandle_process WapiHandle_process;
 
 #endif /* _WAPI_PROCESS_PRIVATE_H_ */
