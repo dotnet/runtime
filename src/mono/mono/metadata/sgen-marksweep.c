@@ -1803,6 +1803,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 				char *start = (char*)(block_start + idx * CARD_SIZE_IN_BYTES);
 				char *end = start + CARD_SIZE_IN_BYTES;
 				char *first_obj, *obj;
+				char *scan_front = NULL;
 
 				HEAVY_STAT (++scanned_cards);
 
@@ -1823,7 +1824,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 
 				obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
 				while (obj < end) {
-					if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
+					if (obj < scan_front || !MS_OBJ_ALLOCED_FAST (obj, block_start))
 						goto next_small;
 
 					if (mod_union) {
@@ -1836,6 +1837,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 
 					HEAVY_STAT (++scanned_objects);
 					scan_func (obj, sgen_obj_get_descriptor (obj), queue);
+					scan_front = obj + block_obj_size;
 				next_small:
 					obj += block_obj_size;
 				}
