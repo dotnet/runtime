@@ -1677,6 +1677,11 @@ skip_card (guint8 *card_data, guint8 *card_data_end)
 	return card_data;
 }
 
+#define SCAN_ALL_CARDS_SMALL	1	/* BOOL FASTENABLE */
+#if !SCAN_ALL_CARDS_SMALL
+#undef SCAN_ALL_CARDS_SMALL
+#endif
+
 #define MS_BLOCK_OBJ_INDEX_FAST(o,b,os)	(((char*)(o) - ((b) + MS_BLOCK_SKIP)) / (os))
 #define MS_BLOCK_OBJ_FAST(b,os,i)			((b) + MS_BLOCK_SKIP + (os) * (i))
 #define MS_OBJ_ALLOCED_FAST(o,b)		(*(void**)(o) && (*(char**)(o) < (b) || *(char**)(o) >= (b) + MS_BLOCK_SIZE))
@@ -1712,6 +1717,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 		block_obj_size = block->obj_size;
 		block_start = MS_BLOCK_FOR_BLOCK_INFO (block);
 
+#ifndef SCAN_ALL_CARDS_SMALL
 		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
 			guint8 *cards;
 #ifndef SGEN_HAVE_OVERLAPPING_CARDS
@@ -1769,7 +1775,9 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			next_large:
 				obj += block_obj_size;
 			}
-		} else {
+		} else
+#endif
+		{
 			guint8 *card_data, *card_base;
 			guint8 *card_data_end;
 
