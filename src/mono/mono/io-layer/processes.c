@@ -237,42 +237,6 @@ utf16_concat (const gunichar2 *first, ...)
 	return ret;
 }
 
-#ifdef PLATFORM_MACOSX
-
-/* 0 = no detection; -1 = not 10.5 or higher;  1 = 10.5 or higher */
-static int osx_10_5_or_higher;
-
-static void
-detect_osx_10_5_or_higher (void)
-{
-	struct utsname u;
-	char *p;
-	int v;
-	
-	if (uname (&u) != 0){
-		osx_10_5_or_higher = 1;
-		return;
-	}
-
-	p = u.release;
-	v = atoi (p);
-	
-	if (v < 9)
-		osx_10_5_or_higher = -1;
-	else 
-		osx_10_5_or_higher = 1;
-}
-
-static gboolean
-is_macos_10_5_or_higher (void)
-{
-	if (osx_10_5_or_higher == 0)
-		detect_osx_10_5_or_higher ();
-	
-	return (osx_10_5_or_higher == 1);
-}
-#endif
-
 static const gunichar2 utf16_space_bytes [2] = { 0x20, 0 };
 static const gunichar2 *utf16_space = utf16_space_bytes; 
 static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
@@ -1822,47 +1786,53 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 	}
 	
 #if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
-	{
-		mods = load_modules ();
+	mods = load_modules ();
+	if (!proc_name) {
+		modules[0] = NULL;
+		*needed = sizeof(gpointer);
+		return TRUE;
+	}
 #else
-	if ((fp = open_process_map (pid, "r")) == NULL) {
+	fp = open_process_map (pid, "r");
+	if (!fp) {
 		/* No /proc/<pid>/maps so just return the main module
 		 * shortcut for now
 		 */
 		modules[0] = NULL;
 		*needed = sizeof(gpointer);
-	} else {
-		mods = load_modules (fp);
-		fclose (fp);
-#endif
-		count = g_slist_length (mods);
-		
-		/* count + 1 to leave slot 0 for the main module */
-		*needed = sizeof(gpointer) * (count + 1);
-
-		/* Use the NULL shortcut, as the first line in
-		 * /proc/<pid>/maps isn't the executable, and we need
-		 * that first in the returned list. Check the module name 
-		 * to see if it ends with the proc name and substitute 
-		 * the first entry with it.  FIXME if this turns out to 
-		 * be a problem.
-		 */
-		modules[0] = NULL;
-		for (i = 0; i < (avail - 1) && i < count; i++) {
-			module = (WapiProcModule *)g_slist_nth_data (mods, i);
-			if (modules[0] != NULL)
-				modules[i] = module->address_start;
-			else if (match_procname_to_modulename (proc_name, module->filename))
-				modules[0] = module->address_start;
-			else
-				modules[i + 1] = module->address_start;
-		}
-		
-		for (i = 0; i < count; i++) {
-			free_procmodule (g_slist_nth_data (mods, i));
-		}
-		g_slist_free (mods);
+		return TRUE;
 	}
+	mods = load_modules (fp);
+	fclose (fp);
+#endif
+	count = g_slist_length (mods);
+		
+	/* count + 1 to leave slot 0 for the main module */
+	*needed = sizeof(gpointer) * (count + 1);
+
+	/*
+	 * Use the NULL shortcut, as the first line in
+	 * /proc/<pid>/maps isn't the executable, and we need
+	 * that first in the returned list. Check the module name 
+	 * to see if it ends with the proc name and substitute 
+	 * the first entry with it.  FIXME if this turns out to 
+	 * be a problem.
+	 */
+	modules[0] = NULL;
+	for (i = 0; i < (avail - 1) && i < count; i++) {
+		module = (WapiProcModule *)g_slist_nth_data (mods, i);
+		if (modules[0] != NULL)
+			modules[i] = module->address_start;
+		else if (match_procname_to_modulename (proc_name, module->filename))
+			modules[0] = module->address_start;
+		else
+			modules[i + 1] = module->address_start;
+	}
+		
+	for (i = 0; i < count; i++) {
+		free_procmodule (g_slist_nth_data (mods, i));
+	}
+	g_slist_free (mods);
 
 	return TRUE;
 }
@@ -2185,15 +2155,15 @@ get_module_name (gpointer process, gpointer module,
 }
 
 guint32
-	GetModuleBaseName (gpointer process, gpointer module,
-					   gunichar2 *basename, guint32 size)
+GetModuleBaseName (gpointer process, gpointer module,
+				   gunichar2 *basename, guint32 size)
 {
 	return get_module_name (process, module, basename, size, TRUE);
 }
 
 guint32
-	GetModuleFileNameEx (gpointer process, gpointer module,
-						 gunichar2 *filename, guint32 size)
+GetModuleFileNameEx (gpointer process, gpointer module,
+					 gunichar2 *filename, guint32 size)
 {
 	return get_module_name (process, module, filename, size, FALSE);
 }
@@ -2236,8 +2206,7 @@ GetModuleInformation (gpointer process, gpointer module,
 	}
 
 #if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
-	{
-		mods = load_modules ();
+	mods = load_modules ();
 #else
 	/* Look up the address in /proc/<pid>/maps */
 	if ((fp = open_process_map (pid, "r")) == NULL) {
@@ -2246,21 +2215,21 @@ GetModuleInformation (gpointer process, gpointer module,
 		 */
 		g_free (proc_name);
 		return FALSE;
-	} else {
-		mods = load_modules (fp);
-		fclose (fp);
+	}
+	mods = load_modules (fp);
+	fclose (fp);
 #endif
-		count = g_slist_length (mods);
+	count = g_slist_length (mods);
 
-		/* If module != NULL compare the address.
-		 * If module == NULL we are looking for the main module.
-		 * The best we can do for now check it the module name end with the process name.
-		 */
-		for (i = 0; i < count; i++) {
+	/* If module != NULL compare the address.
+	 * If module == NULL we are looking for the main module.
+	 * The best we can do for now check it the module name end with the process name.
+	 */
+	for (i = 0; i < count; i++) {
 			found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
 			if (ret == FALSE &&
-			     ((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||
-			      (module != NULL && found_module->address_start == module))) {
+				((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||
+				 (module != NULL && found_module->address_start == module))) {
 				modinfo->lpBaseOfDll = found_module->address_start;
 				modinfo->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
 				modinfo->EntryPoint = found_module->address_offset;
@@ -2268,11 +2237,10 @@ GetModuleInformation (gpointer process, gpointer module,
 			}
 
 			free_procmodule (found_module);
-		}
-
-		g_slist_free (mods);
-		g_free (proc_name);
 	}
+
+	g_slist_free (mods);
+	g_free (proc_name);
 
 	return ret;
 }
