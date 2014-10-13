@@ -48,6 +48,7 @@ static double save_target_ratio = SGEN_DEFAULT_SAVE_TARGET_RATIO;
 /**/
 static mword allocated_heap;
 static mword total_alloc = 0;
+static mword total_alloc_max = 0;
 
 /* GC triggers. */
 
@@ -287,6 +288,7 @@ sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_desc
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
 		if (flags & SGEN_ALLOC_HEAP)
 			MONO_GC_HEAP_ALLOC ((mword)ptr, size);
+		total_alloc_max = MAX (total_alloc_max, total_alloc);
 	}
 	return ptr;
 }
@@ -305,6 +307,7 @@ sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags
 		SGEN_ATOMIC_ADD_P (total_alloc, size);
 		if (flags & SGEN_ALLOC_HEAP)
 			MONO_GC_HEAP_ALLOC ((mword)ptr, size);
+		total_alloc_max = MAX (total_alloc_max, total_alloc);
 	}
 	return ptr;
 }
@@ -321,6 +324,7 @@ sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags)
 	SGEN_ATOMIC_ADD_P (total_alloc, -(gssize)size);
 	if (flags & SGEN_ALLOC_HEAP)
 		MONO_GC_HEAP_FREE ((mword)addr, size);
+	total_alloc_max = MAX (total_alloc_max, total_alloc);
 }
 
 int64_t
@@ -367,6 +371,9 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	debug_print_allowance = debug_allowance;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+
+	mono_counters_register ("Memgov alloc", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE, &total_alloc);
+	mono_counters_register ("Memgov max alloc", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES | MONO_COUNTER_MONOTONIC, &total_alloc_max);
 
 	if (max_heap == 0)
 		return;
