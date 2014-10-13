@@ -1903,6 +1903,9 @@ mono_main (int argc, char* argv[])
 		mono_load_coree (argv [i]);
 #endif
 
+	/* Set rootdir before loading config */
+	mono_set_rootdir ();
+
 	/* Parse gac loading options before loading assemblies. */
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		mono_config_parse (config_file);
