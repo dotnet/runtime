@@ -7802,12 +7802,15 @@ mono_reflection_get_token (MonoObject *obj)
 
 		if (is_field_on_inst (f->field)) {
 			MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass*)f->field->parent->generic_class;
-			int field_index = f->field - dgclass->fields;
-			MonoObject *obj;
 
-			g_assert (field_index >= 0 && field_index < dgclass->count_fields);
-			obj = dgclass->field_objects [field_index];
-			return mono_reflection_get_token (obj);
+			if (f->field >= dgclass->fields && f->field < dgclass->fields + dgclass->count_fields) {
+				int field_index = f->field - dgclass->fields;
+				MonoObject *obj;
+
+				g_assert (field_index >= 0 && field_index < dgclass->count_fields);
+				obj = dgclass->field_objects [field_index];
+				return mono_reflection_get_token (obj);
+			}
 		}
 		token = mono_class_get_field_token (f->field);
 	} else if (strcmp (klass->name, "MonoProperty") == 0) {
