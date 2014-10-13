@@ -347,6 +347,8 @@ static long long time_major_los_sweep = 0;
 static long long time_major_sweep = 0;
 static long long time_major_fragment_creation = 0;
 
+static long long time_max = 0;
+
 static SGEN_TV_DECLARE (time_major_conc_collection_start);
 static SGEN_TV_DECLARE (time_major_conc_collection_end);
 
@@ -1928,6 +1930,8 @@ init_stats (void)
 	if (inited)
 		return;
 
+	mono_counters_register ("Collection max time",  MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME | MONO_COUNTER_MONOTONIC, &time_max);
+
 	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_pre_collection_fragment_clear);
 	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_pinning);
 	mono_counters_register ("Minor scan remembered set", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_minor_scan_remsets);
@@ -3144,6 +3148,8 @@ void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish)
 {
 	TV_DECLARE (gc_end);
+	TV_DECLARE (gc_total_start);
+	TV_DECLARE (gc_total_end);
 	GGTimingInfo infos [2];
 	int overflow_generation_to_collect = -1;
 	int oldest_generation_collected = generation_to_collect;
@@ -3165,6 +3171,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	infos [1].generation = -1;
 
 	sgen_stop_world (generation_to_collect);
+
+	TV_GETTIME (gc_total_start);
 
 	if (concurrent_collection_in_progress) {
 		if (major_update_or_finish_concurrent_collection (wait_to_finish && generation_to_collect == GENERATION_OLD)) {
@@ -3244,6 +3252,9 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
  done:
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+
+	TV_GETTIME (gc_total_end);
+	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
 
 	sgen_restart_world (oldest_generation_collected, infos);
 
