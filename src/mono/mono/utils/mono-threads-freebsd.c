@@ -2,6 +2,7 @@
 
 #if defined(__FreeBSD__)
 
+#include <mono/utils/mono-threads.h>
 #include <pthread.h>
 #include <pthread_np.h>
 
