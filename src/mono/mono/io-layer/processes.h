@@ -10,6 +10,7 @@
 #ifndef _WAPI_PROCESSES_H_
 #define _WAPI_PROCESSES_H_
 
+#include <unistd.h>
 #include <glib.h>
 
 #include <mono/io-layer/handles.h>
