@@ -726,18 +726,10 @@ clean-local:
 
 pkgconfigdir = $(libdir)/pkgconfig
 
-if SUPPORT_SGEN
-sgen_built_sources = buildver-sgen.h
-endif
-
-if SUPPORT_BOEHM
-boehm_built_sources = buildver-boehm.h
-endif
-
 if JIT_SUPPORTED
-BUILT_SOURCES = version.h $(arch_built) $(sgen_built_sources) $(boehm_built_sources)
+BUILT_SOURCES = version.h $(arch_built)
 else
-BUILT_SOURCES = version.h $(sgen_built_sources) $(boehm_built_sources)
+BUILT_SOURCES = version.h
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
