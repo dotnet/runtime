@@ -838,8 +838,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		err_fd = GPOINTER_TO_UINT (GetStdHandle (STD_ERROR_HANDLE));
 	}
 	
-	g_strlcpy (process_handle.proc_name, prog,
-		   _WAPI_PROC_NAME_MAX_LEN - 1);
+	process_handle.proc_name = g_strdup (prog);
 
 	process_set_defaults (&process_handle);
 	
@@ -1075,12 +1074,9 @@ process_set_name (WapiHandle_process *process_handle)
 	if (utf8_progname) {
 		slash = strrchr (utf8_progname, '/');
 		if (slash)
-			g_strlcpy (process_handle->proc_name, slash+1,
-				   _WAPI_PROC_NAME_MAX_LEN - 1);
+			process_handle->proc_name = g_strdup (slash+1);
 		else
-			g_strlcpy (process_handle->proc_name, utf8_progname,
-				   _WAPI_PROC_NAME_MAX_LEN - 1);
-
+			process_handle->proc_name = g_strdup (utf8_progname);
 		g_free (utf8_progname);
 	}
 }
@@ -2491,6 +2487,8 @@ process_close (gpointer handle, gpointer data)
 	DEBUG ("%s", __func__);
 
 	process_handle = (WapiHandle_process *) data;
+	g_free (process_handle->proc_name);
+	process_handle->proc_name = NULL;
 	if (process_handle->mono_process)
 		InterlockedDecrement (&process_handle->mono_process->handle_count);
 	mono_processes_cleanup ();

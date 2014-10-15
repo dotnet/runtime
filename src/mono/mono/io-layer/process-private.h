@@ -34,8 +34,6 @@ extern void wapi_processes_cleanup (void);
 
 extern struct _WapiHandleOps _wapi_process_ops;
 
-#define _WAPI_PROC_NAME_MAX_LEN _POSIX_PATH_MAX
-
 /*
  * MonoProcess describes processes we create.
  * It contains a semaphore that can be waited on in order to wait
@@ -67,7 +65,7 @@ struct _WapiHandle_process
 	gpointer main_thread;
 	WapiFileTime create_time;
 	WapiFileTime exit_time;
-	gchar proc_name[_WAPI_PROC_NAME_MAX_LEN];
+	char *proc_name;
 	size_t min_working_set;
 	size_t max_working_set;
 	gboolean exited;
