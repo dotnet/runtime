@@ -5313,6 +5313,20 @@ mono_test_marshal_return_lpwstr (void)
 	return res;
 }
 
+typedef struct {
+	double d;
+} SingleDoubleStruct;
+
+LIBTEST_API SingleDoubleStruct STDCALL
+mono_test_marshal_return_single_double_struct (void)
+{
+	SingleDoubleStruct res;
+
+	res.d = 3.0;
+
+	return res;
+}
+
 
 #ifndef TARGET_X86
 

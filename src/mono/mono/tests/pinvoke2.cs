@@ -71,6 +71,11 @@ public class Tests {
 		public SimpleDelegate del3;
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SingleDoubleStruct {
+		public double d;
+	}
+
 	/* sparcv9 has complex conventions when passing structs with doubles in them 
 	   by value, some simple tests for them */
 	[StructLayout (LayoutKind.Sequential)]
@@ -1799,6 +1804,17 @@ public class Tests {
 			return 6;
 
 		return 0;
+	}
+
+	[DllImport ("libtest", EntryPoint = "mono_test_marshal_return_single_double_struct")]
+	public static extern SingleDoubleStruct mono_test_marshal_return_single_double_struct ();
+
+	public static int test_0_x86_single_double_struct_ret () {
+		double d = mono_test_marshal_return_single_double_struct ().d;
+		if (d != 3.0)
+			return 1;
+		else
+			return 0;
 	}
 }
 

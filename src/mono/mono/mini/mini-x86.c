@@ -1440,6 +1440,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			 * result there.
 			 */
 			call->vret_in_reg = TRUE;
+#if defined(__APPLE__)
+			if (cinfo->ret.pair_storage [0] == ArgOnDoubleFpStack || cinfo->ret.pair_storage [0] == ArgOnFloatFpStack)
+				call->vret_in_reg_fp = TRUE;
+#endif
 			if (call->vret_var)
 				NULLIFY_INS (call->vret_var);
 		}

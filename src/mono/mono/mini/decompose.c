@@ -1330,18 +1330,18 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					if (call->vret_in_reg) {
 						MonoCallInst *call2;
 
-						/* Replace the vcall with an integer call */
+						/* Replace the vcall with a scalar call */
 						MONO_INST_NEW_CALL (cfg, call2, OP_NOP);
 						memcpy (call2, call, sizeof (MonoCallInst));
 						switch (ins->opcode) {
 						case OP_VCALL:
-							call2->inst.opcode = OP_CALL;
+							call2->inst.opcode = call->vret_in_reg_fp ? OP_FCALL : OP_CALL;
 							break;
 						case OP_VCALL_REG:
-							call2->inst.opcode = OP_CALL_REG;
+							call2->inst.opcode = call->vret_in_reg_fp ? OP_FCALL_REG : OP_CALL_REG;
 							break;
 						case OP_VCALL_MEMBASE:
-							call2->inst.opcode = OP_CALL_MEMBASE;
+							call2->inst.opcode = call->vret_in_reg_fp ? OP_FCALL_MEMBASE : OP_CALL_MEMBASE;
 							break;
 						}
 						call2->inst.dreg = alloc_preg (cfg);
@@ -1367,12 +1367,19 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case 3:
 						case 4:
-							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							if (call->vret_in_reg_fp)
+								MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							else
+								MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
 							break;
 						case 5:
 						case 6:
 						case 7:
 						case 8:
+							if (call->vret_in_reg_fp) {
+								MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+								break;
+							}
 #if SIZEOF_REGISTER == 4
 							/*
 							FIXME Other ABIs might return in different regs than the ones used for LCALL.

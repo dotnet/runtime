@@ -851,6 +851,8 @@ struct MonoCallInst {
 	 * calling convention as OP_CALL.
 	 */
 	guint vret_in_reg : 1;
+	/* Whenever vret_in_reg returns fp values */
+	guint vret_in_reg_fp : 1;
 	/* Whenever there is an IMT argument and it is dynamic */
 	guint dynamic_imt_arg : 1;
 	/* Whenever there is an RGCTX argument */
