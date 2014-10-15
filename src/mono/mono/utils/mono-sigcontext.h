@@ -4,6 +4,9 @@
 #include <config.h>
 #if defined(PLATFORM_ANDROID)
 #include <asm/sigcontext.h>
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
 #endif
 
 #ifdef HAVE_UNISTD_H
