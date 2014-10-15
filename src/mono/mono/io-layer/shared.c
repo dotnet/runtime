@@ -157,7 +157,8 @@ _wapi_shm_enabled (void)
 	return FALSE;
 }
 
-#else
+#else /* DISABLE_SHARED_HANDLES */
+
 /*
  * Use POSIX shared memory if possible, it is simpler, and it has the advantage that 
  * writes to the shared area does not need to be written to disk, avoiding spinning up 

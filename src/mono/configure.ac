@@ -767,7 +767,7 @@ DISABLED_FEATURES=none
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, 
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters, remoting,
-	 security, sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying.],
+	 security, sgen_remset, sgen_marksweep_par, sgen_marksweep_fixed, sgen_marksweep_fixed_par, sgen_copying, shared_handles.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -939,6 +939,11 @@ fi
 if test "x$mono_feature_disable_sgen_copying" = "xyes"; then
 	AC_DEFINE(DISABLE_SGEN_MAJOR_COPYING, 1, [Disable major=copying support in SGEN.])
 	AC_MSG_NOTICE([Disabled major=copying support in SGEN.])
+fi
+
+if test "x$mono_feature_disable_shared_handles" = "xyes"; then
+	AC_DEFINE(DISABLE_SHARED_HANDLES, 1, [Disable inter-process shared handles])
+	AC_SUBST(DISABLE_SHARED_HANDLES)
 fi
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
@@ -2283,6 +2288,7 @@ if test "x$ac_cv_have_dev_random" = "xno" \
 fi
  
 AC_MSG_CHECKING([if inter-process shared handles are requested])
+# Same as --enable-minimal=shared_handles
 AC_ARG_ENABLE(shared-handles, [  --disable-shared-handles disable inter-process shared handles], try_shared_handles=$enableval, try_shared_handles=yes)
 AC_MSG_RESULT($try_shared_handles)
 if test "x$try_shared_handles" != "xyes"; then
