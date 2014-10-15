@@ -498,6 +498,8 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	int state_stack_pos;
 
 	memset (reg_saved, 0, sizeof (reg_saved));
+	state_stack [0].cfa_reg = -1;
+	state_stack [0].cfa_offset = 0;
 
 	p = unwind_info;
 	pos = 0;
