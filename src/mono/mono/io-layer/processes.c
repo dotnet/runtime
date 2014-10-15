@@ -1980,7 +1980,7 @@ get_module_name (gpointer process, gpointer module,
 	DEBUG ("%s: Getting module base name, process handle %p module %p",
 		   __func__, process, module);
 
-	size = size * sizeof(gunichar2); /* adjust for unicode characters */
+	size = size * sizeof (gunichar2); /* adjust for unicode characters */
 
 	if (basename == NULL || size == 0)
 		return 0;
@@ -2003,10 +2003,10 @@ get_module_name (gpointer process, gpointer module,
 
 	/* Look up the address in /proc/<pid>/maps */
 #if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
-	{
-		mods = load_modules ();
+	mods = load_modules ();
 #else
-	if ((fp = open_process_map (pid, "r")) == NULL) {
+	fp = open_process_map (pid, "r");
+	if (fp == NULL) {
 		if (errno == EACCES && module == NULL && base == TRUE) {
 			procname_ext = get_process_name_from_proc (pid);
 		} else {
@@ -2014,47 +2014,45 @@ get_module_name (gpointer process, gpointer module,
 			 * for now
 			 */
 			g_free (proc_name);
-			return(0);
+			return 0;
 		}
 	} else {
 		mods = load_modules (fp);
 		fclose (fp);
+	}
 #endif
-		count = g_slist_length (mods);
+	count = g_slist_length (mods);
 
-		/* If module != NULL compare the address.
-		 * If module == NULL we are looking for the main module.
-		 * The best we can do for now check it the module name end with the process name.
-		 */
-		for (i = 0; i < count; i++) {
-			found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
-			if (procname_ext == NULL &&
-			    ((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||	
-			     (module != NULL && found_module->address_start == module))) {
-				if (base) {
-					procname_ext = g_path_get_basename (found_module->filename);
-				} else {
-					procname_ext = g_strdup (found_module->filename);
-				}
-			}
-
-			free_procmodule (found_module);
+	/* If module != NULL compare the address.
+	 * If module == NULL we are looking for the main module.
+	 * The best we can do for now check it the module name end with the process name.
+	 */
+	for (i = 0; i < count; i++) {
+		found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
+		if (procname_ext == NULL &&
+			((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||
+			 (module != NULL && found_module->address_start == module))) {
+			if (base)
+				procname_ext = g_path_get_basename (found_module->filename);
+			else
+				procname_ext = g_strdup (found_module->filename);
 		}
 
-		if (procname_ext == NULL)
-		{
-			/* If it's *still* null, we might have hit the
-			 * case where reading /proc/$pid/maps gives an
-			 * empty file for this user.
-			 */
-			procname_ext = get_process_name_from_proc (pid);
-		}
-
-		g_slist_free (mods);
-		g_free (proc_name);
+		free_procmodule (found_module);
 	}
 
-	if (procname_ext != NULL) {
+	if (procname_ext == NULL) {
+		/* If it's *still* null, we might have hit the
+		 * case where reading /proc/$pid/maps gives an
+		 * empty file for this user.
+		 */
+		procname_ext = get_process_name_from_proc (pid);
+	}
+
+	g_slist_free (mods);
+	g_free (proc_name);
+
+	if (procname_ext) {
 		DEBUG ("%s: Process name is [%s]", __func__,
 			   procname_ext);
 
@@ -2062,7 +2060,7 @@ get_module_name (gpointer process, gpointer module,
 		if (procname == NULL) {
 			/* bugger */
 			g_free (procname_ext);
-			return(0);
+			return 0;
 		}
 		
 		len = (bytes / 2);
@@ -2084,10 +2082,10 @@ get_module_name (gpointer process, gpointer module,
 		g_free (procname);
 		g_free (procname_ext);
 		
-		return(len);
+		return len;
 	}
 	
-	return(0);
+	return 0;
 }
 
 guint32
