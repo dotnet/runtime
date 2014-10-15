@@ -1005,7 +1005,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		_wapi_handle_ref (handle);
 		mono_process->handle = handle;
 
-		process_handle_data->self = _wapi_getpid ();
 		process_handle_data->mono_process = mono_process;
 
 		mono_mutex_lock (&mono_processes_mutex);
@@ -2492,7 +2491,7 @@ process_close (gpointer handle, gpointer data)
 	DEBUG ("%s", __func__);
 
 	process_handle = (WapiHandle_process *) data;
-	if (process_handle->mono_process && process_handle->self == _wapi_getpid ())
+	if (process_handle->mono_process)
 		InterlockedDecrement (&process_handle->mono_process->handle_count);
 	mono_processes_cleanup ();
 }
@@ -2593,10 +2592,6 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	/* We don't need to lock mono_processes here, the entry
 	 * has a handle_count > 0 which means it will not be freed. */
 	mp = process_handle->mono_process;
-	if (mp && process_handle->self != _wapi_getpid ()) {
-		/* mono_process points to memory in another process' address space: we can't use it */
-		mp = NULL;
-	}
 
 	start = mono_msec_ticks ();
 	now = start;

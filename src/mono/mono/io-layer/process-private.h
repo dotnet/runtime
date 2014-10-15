@@ -50,8 +50,7 @@ struct MonoProcess {
 	gint32 handle_count; /* the number of handles to this mono_process instance */
 	/* we keep a ref to the creating _WapiHandle_process handle until
 	 * the process has exited, so that the information there isn't lost.
-	 * If we put the information there in this structure, it won't be
-	 * available to other processes when using shared handles. */
+	 */
 	gpointer handle;
 	struct MonoProcess *next;
 };
@@ -60,8 +59,6 @@ struct MonoProcess {
 /*
  * _WapiHandle_process is a structure containing all the required information
  * for process handling.
- * The mono_process field is only present if this process has created
- * the corresponding process.
  */
 struct _WapiHandle_process
 {
@@ -74,7 +71,6 @@ struct _WapiHandle_process
 	size_t min_working_set;
 	size_t max_working_set;
 	gboolean exited;
-	pid_t self; /* mono_process is shared among processes, but only usable in the process that created it */
 	struct MonoProcess *mono_process;
 };
 
