@@ -216,6 +216,21 @@ static void handle_cleanup (void)
 		g_free (_wapi_private_handles [i]);
 }
 
+int
+wapi_getdtablesize (void)
+{
+#ifdef HAVE_GETRLIMIT
+	struct rlimit limit;
+	int res;
+
+	res = getrlimit (RLIMIT_NOFILE, &limit);
+	g_assert (res == 0);
+	return limit.rlim_cur;
+#else
+	return getdtablesize ();
+#endif
+}
+
 /*
  * wapi_init:
  *
@@ -226,19 +241,8 @@ wapi_init (void)
 {
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == WAPI_HANDLE_COUNT);
-	
-#ifdef HAVE_GETRLIMIT
-	{
-		struct rlimit limit;
-		int res;
 
-		res = getrlimit (RLIMIT_NOFILE, &limit);
-		g_assert (res == 0);
-		_wapi_fd_reserve = limit.rlim_cur;
-	}
-#else
-	_wapi_fd_reserve = getdtablesize();
-#endif
+	_wapi_fd_reserve = wapi_getdtablesize ();
 
 	/* This is needed by the code in _wapi_handle_new_internal */
 	_wapi_fd_reserve = (_wapi_fd_reserve + (_WAPI_HANDLE_INITIAL_COUNT - 1)) & ~(_WAPI_HANDLE_INITIAL_COUNT - 1);

@@ -20,6 +20,8 @@ extern gboolean DuplicateHandle (gpointer srcprocess, gpointer src, gpointer tar
 extern void wapi_init (void);
 extern void wapi_cleanup (void);
 
+int wapi_getdtablesize (void);
+
 G_END_DECLS
 
 #endif /* _WAPI_HANDLES_H_ */

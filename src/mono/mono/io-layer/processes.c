@@ -952,7 +952,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		}
 		
 		/* Close all file descriptors */
-		for (i = getdtablesize () - 1; i > 2; i--)
+		for (i = wapi_getdtablesize () - 1; i > 2; i--)
 			close (i);
 
 #ifdef DEBUG_ENABLED
