@@ -1842,65 +1842,6 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 		}
 	}
 
-	for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
-		struct _WapiHandleShared *shared;
-		struct _WapiHandle_process *process_handle;
-
-		shared = &_wapi_shared_layout->handles[i];
-		
-		if (shared->type == WAPI_HANDLE_PROCESS) {
-			DIR *fd_dir;
-			struct dirent *fd_entry;
-			char subdir[_POSIX_PATH_MAX];
-
-			process_handle = &shared->u.process;
-			pid = process_handle->id;
-		
-			/* Look in /proc/<pid>/fd/ but ignore
-			 * /proc/<our pid>/fd/<fd>, as we have the
-			 * file open too
-			 */
-			g_snprintf (subdir, _POSIX_PATH_MAX, "/proc/%d/fd",
-				    pid);
-			
-			fd_dir = opendir (subdir);
-			if (fd_dir == NULL) {
-				continue;
-			}
-
-			DEBUG ("%s: Looking in %s", __func__, subdir);
-			
-			proc_fds = TRUE;
-			
-			while ((fd_entry = readdir (fd_dir)) != NULL) {
-				char path[_POSIX_PATH_MAX];
-				struct stat link_stat;
-				
-				if (!strcmp (fd_entry->d_name, ".") ||
-				    !strcmp (fd_entry->d_name, "..") ||
-				    (pid == self &&
-				     fd == atoi (fd_entry->d_name))) {
-					continue;
-				}
-
-				g_snprintf (path, _POSIX_PATH_MAX,
-					    "/proc/%d/fd/%s", pid,
-					    fd_entry->d_name);
-				
-				stat (path, &link_stat);
-				if (link_stat.st_dev == share_info->device &&
-				    link_stat.st_ino == share_info->inode) {
-					DEBUG ("%s:  Found it at %s",
-						   __func__, path);
-
-					found = TRUE;
-				}
-			}
-			
-			closedir (fd_dir);
-		}
-	}
-
 	if (proc_fds == FALSE) {
 		_wapi_handle_check_share_by_pid (share_info);
 	} else if (found == FALSE) {
