@@ -1194,7 +1194,7 @@ if test x$target_win32 = xno; then
 
 	AC_CHECK_HEADERS(execinfo.h)
 
-	AC_CHECK_HEADERS(sys/auxv.h)
+	AC_CHECK_HEADERS(sys/auxv.h sys/resource.h)
 
 	AC_CHECK_FUNCS(getgrgid_r)
 	AC_CHECK_FUNCS(getgrnam_r)
@@ -1213,6 +1213,7 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(dl_iterate_phdr)
 	AC_CHECK_FUNCS(dladdr)
 	AC_CHECK_FUNCS(sysconf)
+	AC_CHECK_FUNCS(getrlimit)
 
 	AC_CHECK_FUNCS(sched_setaffinity)
 	AC_CHECK_FUNCS(sched_getcpu)

@@ -29,6 +29,9 @@
 #  include <dirent.h>
 #endif
 #include <sys/stat.h>
+#ifdef HAVE_SYS_RESOURCE_H
+#  include <sys/resource.h>
+#endif
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -224,7 +227,18 @@ wapi_init (void)
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == WAPI_HANDLE_COUNT);
 	
+#ifdef HAVE_GETRLIMIT
+	{
+		struct rlimit limit;
+		int res;
+
+		res = getrlimit (RLIMIT_NOFILE, &limit);
+		g_assert (res == 0);
+		_wapi_fd_reserve = limit.rlim_cur;
+	}
+#else
 	_wapi_fd_reserve = getdtablesize();
+#endif
 
 	/* This is needed by the code in _wapi_handle_new_internal */
 	_wapi_fd_reserve = (_wapi_fd_reserve + (_WAPI_HANDLE_INITIAL_COUNT - 1)) & ~(_WAPI_HANDLE_INITIAL_COUNT - 1);
