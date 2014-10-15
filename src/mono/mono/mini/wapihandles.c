@@ -42,7 +42,6 @@ static const gchar *thread_details (struct _WapiHandleShared *handle);
 static const gchar *namedmutex_details (struct _WapiHandleShared *handle);
 static const gchar *namedsem_details (struct _WapiHandleShared *handle);
 static const gchar *namedevent_details (struct _WapiHandleShared *handle);
-static const gchar *process_details (struct _WapiHandleShared *handle);
 
 /* This depends on the ordering of the enum WapiHandleType in
  * io-layer/wapi-private.h
@@ -58,7 +57,7 @@ static const gchar * (*details[])(struct _WapiHandleShared *)=
 	unshared_details,		/* event */
 	unshared_details,		/* socket */
 	unshared_details,		/* find */
-	process_details,
+	unshared_details,       /* process */
 	unshared_details,		/* pipe */
 	namedmutex_details,
 	namedsem_details,
@@ -188,20 +187,6 @@ static const gchar *namedevent_details (struct _WapiHandleShared *handle)
 		    name == NULL?(gchar *)"":name,
 		    event->manual?"Manual":"Auto", event->set_count);
 
-	return(buf);
-}
-
-static const gchar *process_details (struct _WapiHandleShared *handle)
-{
-	static gchar buf[80];
-	gchar *name;
-	struct _WapiHandle_process *proc=&handle->u.process;
-	
-	name = proc->proc_name;
-	
-	g_snprintf (buf, sizeof(buf), "[%25.25s] pid: %5u exit: %u",
-		    name==NULL?(gchar *)"":name, proc->id, proc->exitstatus);
-	
 	return(buf);
 }
 

@@ -1139,85 +1139,21 @@ GetProcessId (gpointer handle)
 	return process_handle->id;
 }
 
-/* Returns the process id as a convenience to the functions that call this */
-static pid_t
-signal_process_if_gone (gpointer handle)
-{
-	WapiHandle_process *process_handle;
-	
-	g_assert (!WAPI_IS_PSEUDO_PROCESS_HANDLE (handle));
-	
-	/* Make sure the process is signalled if it has exited - if
-	 * the parent process didn't wait for it then it won't be
-	 */
-	process_handle = lookup_process_handle (handle);
-	if (!process_handle) {
-		/* It's possible that the handle has vanished during
-		 * the _wapi_search_handle before it gets here, so
-		 * don't spam the console with warnings.
-		 */
-/*		g_warning ("%s: error looking up process handle %p",
-  __func__, handle);*/
-		
-		return 0;
-	}
-	
-	DEBUG ("%s: looking at process %d", __func__, process_handle->id);
-
-	if (kill (process_handle->id, 0) == -1 &&
-	    (errno == ESRCH ||
-	     errno == EPERM)) {
-		/* The process is dead, (EPERM tells us a new process
-		 * has that ID, but as it's owned by someone else it
-		 * can't be the one listed in our shared memory file)
-		 */
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
-	}
-
-	return process_handle->id;
-}
-
-#if 0
-static gboolean
-process_enum (gpointer handle, gpointer user_data)
-{
-	GArray *processes = user_data;
-	pid_t pid = signal_process_if_gone (handle);
-	int i;
-	
-	if (pid == 0)
-		return FALSE;
-	
-	/* Ignore processes that have already exited (ie they are signalled) */
-	if (!_wapi_handle_issignalled (handle)) {
-		DEBUG ("%s: process %d added to array", __func__, pid);
-
-		/* This ensures that duplicates aren't returned (see
-		 * the comment above _wapi_search_handle () for why
-		 * it's needed
-		 */
-		for (i = 0; i < processes->len; i++) {
-			if (g_array_index (processes, pid_t, i) == pid) {
-				/* We've already got this one, return
-				 * FALSE to keep searching
-				 */
-				return FALSE;
-			}
-		}
-		
-		g_array_append_val (processes, pid);
-	}
-	
-	/* Return false to keep searching */
-	return FALSE;
-}
-#endif /* 0 */
-
 static gboolean
 process_open_compare (gpointer handle, gpointer user_data)
 {
 	pid_t wanted_pid;
-	pid_t checking_pid = signal_process_if_gone (handle);
+	WapiHandle_process *process_handle;
+	pid_t checking_pid;
+
+	g_assert (!WAPI_IS_PSEUDO_PROCESS_HANDLE (handle));
+	
+	process_handle = lookup_process_handle (handle);
+	g_assert (process_handle);
+	
+	DEBUG ("%s: looking at process %d", __func__, process_handle->id);
+
+	checking_pid = process_handle->id;
 
 	if (checking_pid == 0)
 		return FALSE;
@@ -2745,7 +2681,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	DEBUG ("%s (%p, %u): Setting pid %d signalled, exit status %d",
 		   __func__, handle, timeout, process_handle->id, process_handle->exitstatus);
 
-	_wapi_shared_handle_set_signal_state (handle, TRUE);
+	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 
 	_wapi_handle_unlock_shared_handles ();
 

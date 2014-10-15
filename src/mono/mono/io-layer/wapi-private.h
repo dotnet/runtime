@@ -42,8 +42,7 @@ typedef enum {
 
 extern const char *_wapi_handle_typename[];
 
-#define _WAPI_SHARED_HANDLE(type) (type == WAPI_HANDLE_PROCESS || \
-				   type == WAPI_HANDLE_NAMEDMUTEX || \
+#define _WAPI_SHARED_HANDLE(type) (type == WAPI_HANDLE_NAMEDMUTEX || \
 				   type == WAPI_HANDLE_NAMEDSEM || \
 				   type == WAPI_HANDLE_NAMEDEVENT)
 
@@ -136,6 +135,7 @@ struct _WapiHandleUnshared
 		struct _WapiHandle_sem sem;
 		struct _WapiHandle_socket sock;
 		struct _WapiHandle_thread thread;
+		struct _WapiHandle_process process;
 		struct _WapiHandle_shared_ref shared;
 	} u;
 };
@@ -149,7 +149,6 @@ struct _WapiHandleShared
 	
 	union
 	{
-		struct _WapiHandle_process process;
 		struct _WapiHandle_namedmutex namedmutex;
 		struct _WapiHandle_namedsem namedsem;
 		struct _WapiHandle_namedevent namedevent;
