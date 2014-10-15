@@ -139,7 +139,7 @@ typedef struct {
 
 #define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < MS_BLOCK_FOR_BLOCK_INFO (b) || *(char**)(o) >= MS_BLOCK_FOR_BLOCK_INFO (b) + MS_BLOCK_SIZE))
 
-#define MS_BLOCK_OBJ_SIZE_FACTOR	(sqrt (2.0))
+#define MS_BLOCK_OBJ_SIZE_FACTOR	(pow (2.0, 1.0 / 3))
 
 /*
  * This way we can lookup block object size indexes for sizes up to
