@@ -537,9 +537,9 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	int dummy;
 	struct MonoProcess *mono_process;
 	gboolean fork_failed = FALSE;
-	
+
 	mono_once (&process_sig_chld_once, process_add_sigchld_handler);
-	
+
 	/* appname and cmdline specify the executable and its args:
 	 *
 	 * If appname is not NULL, it is the name of the executable.
@@ -2421,6 +2421,12 @@ mono_processes_cleanup (void)
 		mp = mp->next;
 	}
 
+	/*
+	 * Remove processes which exited from the mono_processes list.
+	 * We need to synchronize with the sigchld handler here, which runs
+	 * asynchronously. The handler requires that the mono_processes list
+	 * remain valid.
+	 */
 	mp = mono_processes;
 	spin = 0;
 	while (mp != NULL) {
@@ -2432,6 +2438,10 @@ mono_processes_cleanup (void)
 
 			/* We've found a candidate */
 			mono_mutex_lock (&mono_processes_mutex);
+			/*
+			 * This code can run parallel with the sigchld handler, but the
+			 * modifications it makes are safe.
+			 */
 			if (candidate == NULL) {
 				/* unlink it */
 				if (mp == mono_processes) {
@@ -2556,14 +2566,6 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	guint32 start;
 	guint32 now;
 	struct MonoProcess *mp;
-	gboolean spin;
-	gpointer current_thread;
-
-	current_thread = wapi_get_current_thread_handle ();
-	if (!current_thread) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return WAIT_FAILED;
-	}
 
 	/* FIXME: We can now easily wait on processes that aren't our own children,
 	 * but WaitFor*Object won't call us for pseudo handles. */
@@ -2590,44 +2592,33 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	/* We don't need to lock mono_processes here, the entry
 	 * has a handle_count > 0 which means it will not be freed. */
 	mp = process_handle->mono_process;
+	g_assert (mp);
 
 	start = mono_msec_ticks ();
 	now = start;
-	spin = mp == NULL;
 
 	while (1) {
-		if (mp != NULL) {
-			/* We have a semaphore we can wait on */
-			if (timeout != INFINITE) {
-				DEBUG ("%s (%p, %u): waiting on semaphore for %li ms...", 
-					__func__, handle, timeout, (timeout - (now - start)));
+		if (timeout != INFINITE) {
+			DEBUG ("%s (%p, %u): waiting on semaphore for %li ms...", 
+				   __func__, handle, timeout, (timeout - (now - start)));
 
-				ret = MONO_SEM_TIMEDWAIT_ALERTABLE (&mp->exit_sem, (timeout - (now - start)), alertable);
-			} else {
-				DEBUG ("%s (%p, %u): waiting on semaphore forever...", 
-					__func__, handle, timeout);
-				ret = MONO_SEM_WAIT_ALERTABLE (&mp->exit_sem, alertable);
-			}
-
-			if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
-				DEBUG ("%s (%p, %u): sem_timedwait failure: %s", 
-					__func__, handle, timeout, g_strerror (errno));
-				/* Should we return a failure here? */
-			}
-
-			if (ret == 0) {
-				/* Success, process has exited */
-				MONO_SEM_POST (&mp->exit_sem);
-				break;
-			}
+			ret = MONO_SEM_TIMEDWAIT_ALERTABLE (&mp->exit_sem, (timeout - (now - start)), alertable);
 		} else {
-			/* We did not create this process, so we can't waidpid / sem_wait it.
-			 * We need to poll for the pid existence */
-			DEBUG ("%s (%p, %u): polling on pid...", __func__, handle, timeout);
-			if (!is_pid_valid (pid)) {
-				/* Success, process has exited */
-				break;
-			}
+			DEBUG ("%s (%p, %u): waiting on semaphore forever...", 
+				   __func__, handle, timeout);
+			ret = MONO_SEM_WAIT_ALERTABLE (&mp->exit_sem, alertable);
+		}
+
+		if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
+			DEBUG ("%s (%p, %u): sem_timedwait failure: %s", 
+				   __func__, handle, timeout, g_strerror (errno));
+			/* Should we return a failure here? */
+		}
+
+		if (ret == 0) {
+			/* Success, process has exited */
+			MONO_SEM_POST (&mp->exit_sem);
+			break;
 		}
 
 		if (timeout == 0) {
@@ -2640,14 +2631,8 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 			DEBUG ("%s (%p, %u): WAIT_TIMEOUT", __func__, handle, timeout);
 			return WAIT_TIMEOUT;
 		}
-
-		if (spin) {
-			/* "timeout - (now - start)" will not underflow, since timeout is always >=0,
-			 * and we passed the check just above */
-			_wapi_handle_spin (MIN (100, timeout - (now - start)));
-		}
 		
-		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		if (alertable && _wapi_thread_cur_apc_pending ()) {
 			DEBUG ("%s (%p, %u): WAIT_IO_COMPLETION", __func__, handle, timeout);
 			return WAIT_IO_COMPLETION;
 		}
@@ -2660,11 +2645,10 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	g_assert (ret == 0);
 
 	status = mp ? mp->status : 0;
-	if (WIFSIGNALED (status)) {
+	if (WIFSIGNALED (status))
 		process_handle->exitstatus = 128 + WTERMSIG (status);
-	} else {
+	else
 		process_handle->exitstatus = WEXITSTATUS (status);
-	}
 	_wapi_time_t_to_filetime (time (NULL), &process_handle->exit_time);
 
 	process_handle->exited = TRUE;
