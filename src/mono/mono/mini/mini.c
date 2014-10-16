@@ -7955,6 +7955,8 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
 			continue;
+		if (method->is_generic || method->klass->generic_container)
+			continue;
 
 		count++;
 		if (mini_verbose > 1) {
