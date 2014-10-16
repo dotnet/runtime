@@ -44,7 +44,7 @@
 
 static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
-gboolean _wapi_shm_disabled = TRUE;
+static gboolean _wapi_shm_disabled = TRUE;
 
 static gpointer wapi_storage [16];
 
@@ -152,7 +152,7 @@ _wapi_shm_detach (_wapi_shm_t type)
 }
 
 gboolean
-_wapi_shm_enabled (void)
+_wapi_shm_enabled_internal (void)
 {
 	return FALSE;
 }
@@ -405,7 +405,7 @@ try_again:
 }
 
 gboolean
-_wapi_shm_enabled (void)
+_wapi_shm_enabled_internal (void)
 {
 	static gboolean env_checked;
 
