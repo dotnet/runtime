@@ -2477,7 +2477,7 @@ mono_class_setup_events (MonoClass *class)
 
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
-		MonoGenericContext *context;
+		MonoGenericContext *context = NULL;
 
 		mono_class_setup_events (gklass);
 		if (gklass->exception_type) {
