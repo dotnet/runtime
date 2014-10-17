@@ -90,7 +90,7 @@
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EIP])
 #else
 
-#if defined(TARGET_ANDROID)
+#if defined(PLATFORM_ANDROID)
 /* No ucontext.h as of NDK v6b */
 typedef int greg_t;
 #define NGREG 19
