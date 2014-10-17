@@ -44,8 +44,6 @@
 
 static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
-static gboolean _wapi_shm_disabled = TRUE;
-
 static gpointer wapi_storage [16];
 
 static void
@@ -167,6 +165,8 @@ _wapi_shm_enabled_internal (void)
 #ifdef HAVE_SHM_OPEN
 #define USE_SHM 1
 #endif
+
+static gboolean _wapi_shm_disabled = TRUE;
 
 static gchar *
 _wapi_shm_base_name (_wapi_shm_t type)
