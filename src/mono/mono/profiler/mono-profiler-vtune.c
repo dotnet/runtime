@@ -37,7 +37,7 @@
 
 #define bool char
 
-#include "jitprofiling.h"
+#include <jitprofiling.h>
 
 /* called at the end of the program */
 static void
@@ -51,7 +51,6 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 	if (result == MONO_PROFILE_OK) {
 		int i;
 		MonoDebugSourceLocation *sourceLoc;
-		MonoDebugMethodInfo *methodDebugInfo;
 		MonoDebugMethodJitInfo *dmji;
 		MonoClass *klass = mono_method_get_class (method);
 		char *signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
