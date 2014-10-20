@@ -12,18 +12,44 @@
 #ifdef ENABLE_EXTENSION_MODULE
 #include "../../../mono-extensions/mono/utils/mono-signal-handler.h"
 #endif
-/*
-Not all platforms support signal handlers in the same way. Some have the same concept but
-for some weird reason pass different kind of arguments.
 
-All signal handler helpers should go here so they can be properly shared across the JIT,
-utils and sgen.
-
-TODO: Cleanup & move mini's macros to here so they can leveraged by other parts.
-
-*/
+/* Don't use this */
 #ifndef MONO_SIGNAL_HANDLER_FUNC
 #define MONO_SIGNAL_HANDLER_FUNC(access, name, arglist) access void name arglist
+#endif
+
+/*
+ * Macros to work around signal handler differences on various platforms.
+ *
+ * To declare a signal handler function:
+ * void MONO_SIG_HANDLER_SIGNATURE (handler_func)
+ * To define a signal handler function:
+ * MONO_SIG_HANDLER_FUNC(access, name)
+ * To call another signal handler function:
+ * handler_func (SIG_HANDLER_PARAMS);
+ * To obtain the signal number:
+ * int signo = MONO_SIG_HANDLER_GET_SIGNO ();
+ * To obtain the signal context:
+ * MONO_SIG_HANDLER_GET_CONTEXT ().
+ * This will define a variable name 'ctx'.
+ */
+
+#ifdef HOST_WIN32
+#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_POINTERS *info, void *context)
+#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, EXCEPTION_POINTERS *info, void *context))
+#define MONO_SIG_HANDLER_PARAMS _dummy, info, context
+#define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
+/* seh_vectored_exception_handler () passes in a CONTEXT* */
+#define MONO_SIG_HANDLER_GET_CONTEXT \
+    void *ctx = context;
+#else
+/* sigaction */
+#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, siginfo_t *info, void *context))
+#define MONO_SIG_HANDLER_PARAMS _dummy, info, context
+#define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
+#define MONO_SIG_HANDLER_GET_CONTEXT \
+    void *ctx = context;
 #endif
 
 #endif

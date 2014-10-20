@@ -6724,14 +6724,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	return runtime_invoke (obj, params, exc, info->compiled_method);
 }
 
-SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
+MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
 	MonoJitInfo *ji;
-#if !(defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32))
-	void *info = NULL;
-#endif
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 
@@ -6749,12 +6746,12 @@ SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 #endif
 
 	if (!ji) {
-		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (SIG_HANDLER_PARAMS);
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
 		}
 	}
@@ -6762,10 +6759,10 @@ SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 	mono_arch_handle_exception (ctx, exc);
 }
 
-SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
+MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 {
 	MonoException *exc;
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
@@ -6776,13 +6773,12 @@ SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 #define HAVE_SIG_INFO
 #endif
 
-SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
+MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 {
 	MonoJitInfo *ji;
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	gpointer fault_addr = NULL;
-
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 #if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && defined(HAVE_SIG_INFO)
 	if (mono_arch_is_single_step_event (info, ctx)) {
@@ -6804,11 +6800,11 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls) {
-		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (SIG_HANDLER_PARAMS);
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
 		}
 	}
@@ -6841,7 +6837,7 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		g_assert_not_reached ();
 	} else {
 		/* The original handler might not like that it is executed on an altstack... */
-		if (!ji && mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!ji && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
 		mono_arch_handle_altstack_exception (ctx, info->si_addr, FALSE);
@@ -6849,13 +6845,13 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 #else
 
 	if (!ji) {
-		if (!mono_do_crash_chaining && mono_chain_signal (SIG_HANDLER_PARAMS))
+		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (SIG_HANDLER_PARAMS);
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
 		}
 	}
@@ -6864,10 +6860,10 @@ SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 #endif
 }
 
-SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
+MONO_SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
 {
 	MonoException *exc;
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
 	

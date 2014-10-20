@@ -277,7 +277,7 @@ mono_console_handle_async_ops (void)
 
 static gboolean in_sigint;
 
-MONO_SIGNAL_HANDLER_FUNC (static, sigint_handler, (int signo))
+MONO_SIG_HANDLER_FUNC (static, sigint_handler)
 {
 	int save_errno;
 	MONO_ARCH_SAVE_REGS;
@@ -295,7 +295,7 @@ MONO_SIGNAL_HANDLER_FUNC (static, sigint_handler, (int signo))
 
 static struct sigaction save_sigcont, save_sigint, save_sigwinch;
 
-MONO_SIGNAL_HANDLER_FUNC (static, sigcont_handler, (int signo, void *the_siginfo, void *data))
+MONO_SIG_HANDLER_FUNC (static, sigcont_handler)
 {
 	int unused;
 	// Ignore error, there is not much we can do in the sigcont handler.
@@ -308,10 +308,10 @@ MONO_SIGNAL_HANDLER_FUNC (static, sigcont_handler, (int signo, void *the_siginfo
 	if (save_sigcont.sa_sigaction != NULL &&
 	    save_sigcont.sa_sigaction != (void *)SIG_DFL &&
 	    save_sigcont.sa_sigaction != (void *)SIG_IGN)
-		(*save_sigcont.sa_sigaction) (signo, the_siginfo, data);
+		(*save_sigcont.sa_sigaction) (MONO_SIG_HANDLER_PARAMS);
 }
 
-MONO_SIGNAL_HANDLER_FUNC (static, sigwinch_handler, (int signo, void *the_siginfo, void *data))
+MONO_SIG_HANDLER_FUNC (static, sigwinch_handler)
 {
 	int dims = terminal_get_dimensions ();
 	if (dims != -1)
@@ -321,7 +321,7 @@ MONO_SIGNAL_HANDLER_FUNC (static, sigwinch_handler, (int signo, void *the_siginf
 	if (save_sigwinch.sa_sigaction != NULL &&
 	    save_sigwinch.sa_sigaction != (void *)SIG_DFL &&
 	    save_sigwinch.sa_sigaction != (void *)SIG_IGN)
-		(*save_sigwinch.sa_sigaction) (signo, the_siginfo, data);
+		(*save_sigwinch.sa_sigaction) (MONO_SIG_HANDLER_PARAMS);
 }
 
 /*

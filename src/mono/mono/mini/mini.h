@@ -31,6 +31,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-conc-hashtable.h>
+#include <mono/utils/mono-signal-handler.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 
@@ -2826,53 +2827,12 @@ void mono_cross_helpers_run (void) MONO_INTERNAL;
 /*
  * Signal handling
  */
-#ifdef MONO_GET_CONTEXT
-#define GET_CONTEXT MONO_GET_CONTEXT
-#endif
 
-#ifndef GET_CONTEXT
-#ifdef HOST_WIN32
-/* seh_vectored_exception_handler () passes in a CONTEXT* */
-#define GET_CONTEXT \
-    void *ctx = context;
-#else
-#ifdef MONO_ARCH_USE_SIGACTION
-#define GET_CONTEXT \
-    void *ctx = context;
-#elif defined(__HAIKU__)
-#define GET_CONTEXT \
-	void *ctx = &regs;
-#else
-#define GET_CONTEXT \
-	void **_p = (void **)&_dummy; \
-	struct sigcontext *ctx = (struct sigcontext *)++_p;
-#endif
-#endif
-#endif
-
-#if defined(MONO_ARCH_USE_SIGACTION) && !defined(HOST_WIN32)
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
-#define SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, siginfo_t *info, void *context))
-#define SIG_HANDLER_PARAMS _dummy, info, context
-#elif defined(HOST_WIN32)
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_POINTERS *info, void *context)
-#define SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, EXCEPTION_POINTERS *info, void *context))
-#define SIG_HANDLER_PARAMS _dummy, info, context
-#elif defined(__HAIKU__)
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *userData, vregs regs)
-#define SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, void *userData, vregs regs))
-#define SIG_HANDLER_PARAMS _dummy, userData, regs
-#else
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
-#define SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy))
-#define SIG_HANDLER_PARAMS _dummy
-#endif
-
-void SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)  MONO_INTERNAL;
-void SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)  MONO_INTERNAL;
-void SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
-void SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
-gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
+void MONO_SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)  MONO_INTERNAL;
+void MONO_SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)  MONO_INTERNAL;
+void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
+void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
+gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 #define ARCH_HAVE_DELEGATE_TRAMPOLINES 1

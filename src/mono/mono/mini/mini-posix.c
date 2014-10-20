@@ -81,7 +81,7 @@ mono_runtime_shutdown_stat_profiler (void)
 
 
 gboolean
-SIG_HANDLER_SIGNATURE (mono_chain_signal)
+MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	return FALSE;
 }
@@ -173,12 +173,11 @@ free_saved_signal_handlers (void)
  * was called, false otherwise.
  */
 gboolean
-SIG_HANDLER_SIGNATURE (mono_chain_signal)
+MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
-	int signal = _dummy;
+	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
 	struct sigaction *saved_handler = get_saved_signal_handler (signal);
-
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
@@ -193,29 +192,28 @@ SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	return FALSE;
 }
 
-SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 {
 	MonoJitInfo *ji = NULL;
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (mono_thread_internal_current ())
-		ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
+		ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 	if (!ji) {
-        if (mono_chain_signal (SIG_HANDLER_PARAMS))
+        if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		mono_handle_native_sigsegv (SIGABRT, ctx);
 	}
 }
 
-SIG_HANDLER_FUNC (static, sigusr1_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, sigusr1_signal_handler)
 {
 	gboolean running_managed;
 	MonoException *exc;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoDomain *domain = mono_domain_get ();
 	void *ji;
-	
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (!thread || !domain) {
 		/* The thread might not have started up yet */
@@ -299,9 +297,9 @@ SIG_HANDLER_FUNC (static, sigusr1_signal_handler)
 #ifdef SIGPROF
 #if defined(__ia64__) || defined(__sparc__) || defined(sparc) || defined(__s390__) || defined(s390)
 
-SIG_HANDLER_FUNC (static, sigprof_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
-	if (mono_chain_signal (SIG_HANDLER_PARAMS))
+	if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 		return;
 
 	NOT_IMPLEMENTED;
@@ -309,11 +307,11 @@ SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 
 #else
 
-SIG_HANDLER_FUNC (static, sigprof_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
 	int call_chain_depth = mono_profiler_stat_get_call_chain_depth ();
 	MonoProfilerCallChainStrategy call_chain_strategy = mono_profiler_stat_get_call_chain_strategy ();
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 	
 	if (call_chain_depth == 0) {
 		mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
@@ -382,17 +380,16 @@ SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 		mono_profiler_stat_call_chain (current_frame_index, & ips [0], ctx);
 	}
 
-	mono_chain_signal (SIG_HANDLER_PARAMS);
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
 #endif
 #endif
 
-SIG_HANDLER_FUNC (static, sigquit_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 {
 	gboolean res;
-
-	GET_CONTEXT;
+	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	/* We use this signal to start the attach agent too */
 	res = mono_attach_start ();
@@ -415,16 +412,16 @@ SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 		mono_print_thread_dump (ctx);
 	}
 
-	mono_chain_signal (SIG_HANDLER_PARAMS);
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
-SIG_HANDLER_FUNC (static, sigusr2_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, sigusr2_signal_handler)
 {
 	gboolean enabled = mono_trace_is_enabled ();
 
 	mono_trace_enable (!enabled);
 
-	mono_chain_signal (SIG_HANDLER_PARAMS);
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
 static void
