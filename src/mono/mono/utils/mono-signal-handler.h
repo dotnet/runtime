@@ -26,7 +26,7 @@
  * To define a signal handler function:
  * MONO_SIG_HANDLER_FUNC(access, name)
  * To call another signal handler function:
- * handler_func (SIG_HANDLER_PARAMS);
+ * handler_func (MONO_SIG_HANDLER_PARAMS);
  * To obtain the signal number:
  * int signo = MONO_SIG_HANDLER_GET_SIGNO ();
  * To obtain the signal context:
