@@ -177,14 +177,13 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
 	struct sigaction *saved_handler = get_saved_signal_handler (signal);
-	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
 			saved_handler->sa_handler (signal);
 		} else {
 #ifdef MONO_ARCH_USE_SIGACTION
-			saved_handler->sa_sigaction (signal, info, ctx);
+			saved_handler->sa_sigaction (MONO_SIG_HANDLER_PARAMS);
 #endif /* MONO_ARCH_USE_SIGACTION */
 		}
 		return TRUE;

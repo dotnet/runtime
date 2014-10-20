@@ -6728,6 +6728,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
 	MonoJitInfo *ji;
+	void *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
@@ -6779,6 +6780,9 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	gpointer fault_addr = NULL;
 	MONO_SIG_HANDLER_GET_CONTEXT;
+#ifdef HAVE_SIG_INFO
+	siginfo_t *info = MONO_SIG_HANDLER_GET_INFO ();
+#endif
 
 #if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && defined(HAVE_SIG_INFO)
 	if (mono_arch_is_single_step_event (info, ctx)) {
