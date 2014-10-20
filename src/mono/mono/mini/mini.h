@@ -54,19 +54,6 @@
 #error "The code in mini/ should not depend on these defines."
 #endif
 
-#ifndef G_LIKELY
-#define G_LIKELY(a) (a)
-#define G_UNLIKELY(a) (a)
-#endif
-
-#ifndef G_MAXINT32
-#define G_MAXINT32 2147483647
-#endif
-
-#ifndef G_MININT32
-#define G_MININT32 (-G_MAXINT32 - 1)
-#endif
-
 #ifndef __GNUC__
 /*#define __alignof__(a) sizeof(a)*/
 #define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
