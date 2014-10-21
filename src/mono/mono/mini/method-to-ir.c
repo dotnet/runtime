@@ -190,14 +190,6 @@ const gint8 ins_sreg_counts[] = {
 	(vi)->idx = (id); \
 } while (0)
 
-void
-mono_inst_set_src_registers (MonoInst *ins, int *regs)
-{
-	ins->sreg1 = regs [0];
-	ins->sreg2 = regs [1];
-	ins->sreg3 = regs [2];
-}
-
 guint32
 mono_alloc_ireg (MonoCompile *cfg)
 {

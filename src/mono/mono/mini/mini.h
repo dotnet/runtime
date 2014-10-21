@@ -946,6 +946,14 @@ enum {
 #define inst_phi_args   data.op[1].phi_args
 #define inst_eh_block	 data.op[1].exception_clause
 
+static inline void
+mono_inst_set_src_registers (MonoInst *ins, int *regs)
+{
+	ins->sreg1 = regs [0];
+	ins->sreg2 = regs [1];
+	ins->sreg3 = regs [2];
+}
+
 /* instruction description for use in regalloc/scheduling */
 enum {
 	MONO_INST_DEST,
@@ -2023,7 +2031,6 @@ MONO_API void      mono_print_method_from_ip         (void *ip);
 MONO_API char     *mono_pmip                         (void *ip);
 gboolean  mono_debug_count                  (void) MONO_INTERNAL;
 MONO_API const char* mono_inst_name                  (int op);
-void      mono_inst_set_src_registers       (MonoInst *ins, int *regs) MONO_INTERNAL;
 int       mono_op_to_op_imm                 (int opcode) MONO_INTERNAL;
 int       mono_op_imm_to_op                 (int opcode) MONO_INTERNAL;
 int       mono_load_membase_to_load_mem     (int opcode) MONO_INTERNAL;

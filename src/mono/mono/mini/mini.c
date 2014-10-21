@@ -711,17 +711,22 @@ mono_debug_count (void)
 {
 	static int count = 0;
 	count ++;
+	static gboolean inited;
+	static const char *value;
 
-	if (!g_getenv ("COUNT"))
+	if (!inited) {
+		value = g_getenv ("COUNT");
+		inited = TRUE;
+	}
+
+	if (!value)
 		return TRUE;
 
-	if (count == atoi (g_getenv ("COUNT"))) {
+	if (count == atoi (value))
 		break_count ();
-	}
 
-	if (count > atoi (g_getenv ("COUNT"))) {
+	if (count > atoi (value))
 		return FALSE;
-	}
 
 	return TRUE;
 }
@@ -1241,7 +1246,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 
 	if ((num + 1) >= cfg->varinfo_count) {
 		int orig_count = cfg->varinfo_count;
-		cfg->varinfo_count = cfg->varinfo_count ? (cfg->varinfo_count * 2) : 64;
+		cfg->varinfo_count = cfg->varinfo_count ? (cfg->varinfo_count * 2) : 32;
 		cfg->varinfo = (MonoInst **)g_realloc (cfg->varinfo, sizeof (MonoInst*) * cfg->varinfo_count);
 		cfg->vars = (MonoMethodVar *)g_realloc (cfg->vars, sizeof (MonoMethodVar) * cfg->varinfo_count);
 		memset (&cfg->vars [orig_count], 0, (cfg->varinfo_count - orig_count) * sizeof (MonoMethodVar));
@@ -4920,6 +4925,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #ifdef ENABLE_LLVM
 	gboolean llvm = (flags & JIT_FLAG_LLVM) ? 1 : 0;
 #endif
+	static gboolean verbose_method_inited;
+	static const char *verbose_method_name;
 
 	InterlockedIncrement (&mono_jit_stats.methods_compiled);
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
@@ -5070,9 +5077,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	{
 		static gboolean inited;
 
-		if (!inited) {
+		if (!inited)
 			inited = TRUE;
-		}
 
 		/* 
 		 * Check for methods which cannot be compiled by LLVM early, to avoid
@@ -5148,8 +5154,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->opt |= MONO_OPT_ABCREM;
 	}
 
-	if (g_getenv ("MONO_VERBOSE_METHOD")) {
-		const char *name = g_getenv ("MONO_VERBOSE_METHOD");
+	if (!verbose_method_inited) {
+		verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");
+		verbose_method_inited = TRUE;
+	}
+	if (verbose_method_name) {
+		const char *name = verbose_method_name;
 
 		if ((strchr (name, '.') > name) || strchr (name, ':')) {
 			MonoMethodDesc *desc;
@@ -5160,7 +5170,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			}
 			mono_method_desc_free (desc);
 		} else {
-			if (strcmp (cfg->method->name, g_getenv ("MONO_VERBOSE_METHOD")) == 0)
+			if (strcmp (cfg->method->name, name) == 0)
 				cfg->verbose_level = 4;
 		}
 	}

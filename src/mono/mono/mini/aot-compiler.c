@@ -3371,8 +3371,9 @@ add_wrappers (MonoAotCompile *acfg)
 			if (info && !has_nullable) {
 				/* Supported by the dynamic runtime-invoke wrapper */
 				skip = TRUE;
-				g_free (info);
 			}
+			if (info)
+				mono_arch_dyn_call_free (info);
 		}
 #endif
 
@@ -6464,9 +6465,10 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoMethod *method = (MonoMethod*)key;
 	MonoJumpInfoToken *ji = (MonoJumpInfoToken*)value;
-	MonoJumpInfoToken *new_ji = g_new0 (MonoJumpInfoToken, 1);
 	MonoAotCompile *acfg = user_data;
+	MonoJumpInfoToken *new_ji;
 
+	new_ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfoToken));
 	new_ji->image = ji->image;
 	new_ji->token = ji->token;
 	g_hash_table_insert (acfg->token_info_hash, method, new_ji);
@@ -6685,6 +6687,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_acfg_lock (acfg);
 	g_hash_table_foreach (cfg->token_info_hash, add_token_info_hash, acfg);
 	mono_acfg_unlock (acfg);
+	g_hash_table_destroy (cfg->token_info_hash);
+	cfg->token_info_hash = NULL;
 
 	/*
 	 * Check for absolute addresses.
@@ -8741,7 +8745,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 		acfg->patch_to_got_offset_by_type [i] = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->got_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
-	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 	acfg->method_to_pinvoke_import = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();

@@ -349,9 +349,10 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 	GSList *l;
 	MonoUnwindOp *op;
 	int loc;
-	guint8 *buf, *p, *res;
+	guint8 buf [4096];
+	guint8 *p, *res;
 
-	p = buf = g_malloc0 (4096);
+	p = buf;
 
 	loc = 0;
 	l = unwind_ops;
@@ -443,7 +444,6 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 	*out_len = p - buf;
 	res = g_malloc (p - buf);
 	memcpy (res, buf, p - buf);
-	g_free (buf);
 	return res;
 }
 

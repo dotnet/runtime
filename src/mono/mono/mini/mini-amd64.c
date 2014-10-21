@@ -6417,7 +6417,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint alignment_check;
 #endif
 
-	cfg->code_size =  MAX (cfg->header->code_size * 4, 10240);
+	cfg->code_size = MAX (cfg->header->code_size * 4, 1024);
 
 #if defined(__default_codegen__)
 	code = cfg->native_code = g_malloc (cfg->code_size);
@@ -6972,7 +6972,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		cfg->native_code = mono_realloc_native_code (cfg);
 		cfg->stat_code_reallocs++;
 	}
-
 	code = cfg->native_code + cfg->code_len;
 
 	cfg->has_unwind_info_for_epilog = TRUE;
