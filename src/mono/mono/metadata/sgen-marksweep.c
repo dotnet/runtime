@@ -57,11 +57,6 @@
  */
 #define MS_BLOCK_ALLOC_NUM	32
 
-#define BLOCK_INFO_IN_HEADER	1	/* BOOL FASTENABLE */
-#if !BLOCK_INFO_IN_HEADER
-#undef BLOCK_INFO_IN_HEADER
-#endif
-
 /*
  * Number of bytes before the first object in a block.  At the start
  * of a block is the MSBlockHeader, then opional padding, then come
@@ -82,9 +77,6 @@ struct _MSBlockInfo {
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
 	unsigned int is_to_space : 1;
 	unsigned int swept : 1;
-#ifndef BLOCK_INFO_IN_HEADER
-	char *block;
-#endif
 	void **free_list;
 	MSBlockInfo *next_free;
 	size_t pin_queue_first_entry;
@@ -95,29 +87,17 @@ struct _MSBlockInfo {
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
-#ifdef BLOCK_INFO_IN_HEADER
 #define MS_BLOCK_FOR_BLOCK_INFO(b)	((char*)(b))
-#else
-#define MS_BLOCK_FOR_BLOCK_INFO(b)	((b)->block)
-#endif
 
 #define MS_BLOCK_OBJ(b,i)		(MS_BLOCK_FOR_BLOCK_INFO(b) + MS_BLOCK_SKIP + (b)->obj_size * (i))
 #define MS_BLOCK_OBJ_FOR_SIZE(b,i,obj_size)		(MS_BLOCK_FOR_BLOCK_INFO(b) + MS_BLOCK_SKIP + (obj_size) * (i))
 #define MS_BLOCK_DATA_FOR_OBJ(o)	((char*)((mword)(o) & ~(mword)(MS_BLOCK_SIZE - 1)))
 
 typedef struct {
-#ifdef BLOCK_INFO_IN_HEADER
 	MSBlockInfo info;
-#else
-	MSBlockInfo *info;
-#endif
 } MSBlockHeader;
 
-#ifdef BLOCK_INFO_IN_HEADER
 #define MS_BLOCK_FOR_OBJ(o)		(&((MSBlockHeader*)MS_BLOCK_DATA_FOR_OBJ ((o)))->info)
-#else
-#define MS_BLOCK_FOR_OBJ(o)		(((MSBlockHeader*)MS_BLOCK_DATA_FOR_OBJ ((o)))->info)
-#endif
 
 /* object index will always be small */
 #define MS_BLOCK_OBJ_INDEX(o,b)	((int)(((char*)(o) - (MS_BLOCK_FOR_BLOCK_INFO(b) + MS_BLOCK_SKIP)) / (b)->obj_size))
@@ -438,17 +418,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	if (!sgen_memgov_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
 		return FALSE;
 
-#ifdef BLOCK_INFO_IN_HEADER
 	info = (MSBlockInfo*)ms_get_empty_block ();
-#else
-	{
-		MSBlockHeader *header;
-		info = sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
-		info->block = ms_get_empty_block ();
-		header = (MSBlockHeader*)info->block;
-		header->info = info;
-	}
-#endif
 
 	SGEN_ASSERT (9, count >= 2, "block with %d objects, it must hold at least 2", count);
 
@@ -1021,7 +991,7 @@ sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
 	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
 #endif
 
-#if !defined (SGEN_MARK_ON_ENQUEUE) && defined (BLOCK_INFO_IN_HEADER)
+#if !defined (SGEN_MARK_ON_ENQUEUE)
 	{
 		int word, bit;
 		MSBlockInfo *block = (MSBlockInfo*)MS_BLOCK_DATA_FOR_OBJ (cursor->obj);
@@ -1303,12 +1273,7 @@ ms_sweep (void)
 			DELETE_BLOCK_IN_FOREACH ();
 
 			binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
-#if defined (FIXED_HEAP) || defined (BLOCK_INFO_IN_HEADER)
 			ms_free_block (block);
-#else
-			ms_free_block (block->block);
-			sgen_free_internal (block, INTERNAL_MEM_MS_BLOCK_INFO);
-#endif
 
 			--num_major_sections;
 		}
