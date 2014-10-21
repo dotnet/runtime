@@ -190,66 +190,19 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 static void
 SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 {
-	int type;
-
-	type = desc & 7;
+	char *start = obj;
 
 #ifdef HEAVY_STATISTICS
 	++stat_optimized_major_scan;
 	if (!sgen_gc_descr_has_references (desc))
 		++stat_optimized_major_scan_no_refs;
+	sgen_descriptor_count_scanned_object (desc);
+#endif
+#ifdef SGEN_HEAVY_BINARY_PROTOCOL
+	add_scanned_object (start);
 #endif
 
 	/* Now scan the object. */
-
-#ifdef DESCRIPTOR_FAST_PATH
-	if (type == DESC_TYPE_LARGE_BITMAP) {
-		int i;
-		void *ptrs [LARGE_BITMAP_SIZE];
-		int num_ptrs = 0;
-
-		PREFETCH_WRITE (obj + sizeof (MonoObject));
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {					\
-			/* PREFETCH_WRITE ((ptr)); */			\
-			ptrs [num_ptrs++] = (ptr);			\
-		} while (0)
-
-		OBJ_LARGE_BITMAP_FOREACH_PTR (desc, obj);
-
-		for (i = 0; i < num_ptrs; ++i) {
-			void **ptr = ptrs [i];
-			void *__old = *ptr;
-			binary_protocol_scan_process_reference ((obj), (ptr), __old);
-			if (__old) {
-				gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue);
-				if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) {
-					void *__copy = *(ptr);
-					sgen_add_to_global_remset ((ptr), __copy);
-				}
-			}
-		}
-
-#ifdef HEAVY_STATISTICS
-		sgen_descriptor_count_scanned_object (desc);
-		++stat_optimized_major_scan_fast;
-#endif
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-		add_scanned_object (obj);
-#endif
-	} else
-#endif
-	{
-		char *start = obj;
-#ifdef HEAVY_STATISTICS
-		++stat_optimized_major_scan_slow;
-		sgen_descriptor_count_scanned_object (desc);
-#endif
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-		add_scanned_object (start);
-#endif
-
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
@@ -266,7 +219,6 @@ SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
-	}
 }
 
 static gboolean

@@ -912,11 +912,6 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 }
 
-#define DESCRIPTOR_FAST_PATH	0	/* BOOL FASTENABLE */
-#if !DESCRIPTOR_FAST_PATH
-#undef DESCRIPTOR_FAST_PATH
-#endif
-
 #ifdef HEAVY_STATISTICS
 static long long stat_optimized_copy;
 static long long stat_optimized_copy_nursery;
@@ -930,10 +925,6 @@ static long long stat_optimized_copy_major_forwarded;
 static long long stat_optimized_copy_major_small_evacuate;
 static long long stat_optimized_major_scan;
 static long long stat_optimized_major_scan_no_refs;
-#ifdef DESCRIPTOR_FAST_PATH
-static long long stat_optimized_major_scan_fast;
-static long long stat_optimized_major_scan_slow;
-#endif
 
 static long long stat_drain_prefetch_fills;
 static long long stat_drain_prefetch_fill_failures;
@@ -2068,10 +2059,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_large);
 	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
 	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_no_refs);
-#ifdef DESCRIPTOR_FAST_PATH
-	mono_counters_register ("Optimized major scan slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_slow);
-	mono_counters_register ("Optimized major scan fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_fast);
-#endif
 
 	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_loops);
 	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fills);
