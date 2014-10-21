@@ -33,7 +33,7 @@ static const int allocator_sizes [] = {
 	   8,   16,   24,   32,   40,   48,   64,   80,
 	  96,  128,  160,  192,  224,  248,  296,  320,
 	 384,  448,  504,  528,  584,  680,  816, 1088,
-	1360, 2040, 2336, 2728, 3272, 4088, 5456, 8184 };
+	1360, 2044, 2336, 2728, 3272, 4092, 5456, 8188 };
 #else
 static const int allocator_sizes [] = {
 	   8,   16,   24,   32,   40,   48,   64,   80,
@@ -282,7 +282,7 @@ sgen_init_internal_allocator (void)
 		int max_size = LOCK_FREE_ALLOC_SB_USABLE_SIZE (size) / 2;
 		/*
 		 * we assert that allocator_sizes contains the biggest possible object size
-		 * per block (4K => 4080 / 2 = 2040, 8k => 8176 / 2 = 4088, 16k => 16368 / 2 = 8184),
+		 * per block (4K => 4080 / 2 = 2040, 8k => 8176 / 2 = 4088, 16k => 16368 / 2 = 8184 on 64bits),
 		 * so that we do not get different block sizes for sizes that should go to the same one
 		 */
 		g_assert (allocator_sizes [index_for_size (max_size)] == max_size);
