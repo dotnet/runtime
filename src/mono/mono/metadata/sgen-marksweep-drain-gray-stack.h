@@ -200,9 +200,6 @@ SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 {
 	int type;
 
-#ifndef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
-	desc = sgen_obj_get_descriptor_safe (obj);
-#endif
 	type = desc & 7;
 
 #ifndef SGEN_MARK_ON_ENQUEUE
