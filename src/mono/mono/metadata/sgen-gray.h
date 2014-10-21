@@ -113,8 +113,6 @@ typedef struct _SgenGrayQueue SgenGrayQueue;
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 typedef void (*GrayQueueEnqueueCheckFunc) (char*);
 
-#define SGEN_GRAY_QUEUE_PREFETCH_SIZE 2	/* INT FASTENABLE */
-
 struct _SgenGrayQueue {
 	GrayQueueEntry *cursor;
 	GrayQueueSection *first;
@@ -124,8 +122,6 @@ struct _SgenGrayQueue {
 	GrayQueueEnqueueCheckFunc enqueue_check_func;
 #endif
 	void *alloc_prepare_data;
-	GrayQueueEntry prefetch [SGEN_GRAY_QUEUE_PREFETCH_SIZE];
-	GrayQueueEntry *prefetch_cursor;
 };
 
 typedef struct _SgenSectionGrayQueue SgenSectionGrayQueue;

@@ -312,35 +312,15 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 
 	SGEN_ASSERT (0, ctx.scan_func == major_scan_object_with_evacuation, "Wrong scan function");
 
-#ifdef USE_PREFETCH_QUEUE
-	HEAVY_STAT (++stat_drain_prefetch_fills);
-	if (!sgen_gray_object_fill_prefetch (queue)) {
-		HEAVY_STAT (++stat_drain_prefetch_fill_failures);
-		return TRUE;
-	}
-#endif
-
 	for (;;) {
 		char *obj;
 		mword desc;
 
 		HEAVY_STAT (++stat_drain_loops);
 
-#ifdef USE_PREFETCH_QUEUE
-		sgen_gray_object_dequeue_fast (queue, &obj, &desc);
-		if (!obj) {
-			HEAVY_STAT (++stat_drain_prefetch_fills);
-			if (!sgen_gray_object_fill_prefetch (queue)) {
-				HEAVY_STAT (++stat_drain_prefetch_fill_failures);
-				return TRUE;
-			}
-			continue;
-		}
-#else
 		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 		if (!obj)
 			return TRUE;
-#endif
 
 		SCAN_OBJECT_FUNCTION_NAME (obj, desc, ctx.queue);
 	}

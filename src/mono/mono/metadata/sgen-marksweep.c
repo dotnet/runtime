@@ -944,11 +944,6 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 }
 
-#define USE_PREFETCH_QUEUE	0	/* BOOL FASTENABLE */
-#if !USE_PREFETCH_QUEUE
-#undef USE_PREFETCH_QUEUE
-#endif
-
 #define DESCRIPTOR_FAST_PATH	0	/* BOOL FASTENABLE */
 #if !DESCRIPTOR_FAST_PATH
 #undef DESCRIPTOR_FAST_PATH
@@ -978,34 +973,6 @@ static long long stat_drain_prefetch_fills;
 static long long stat_drain_prefetch_fill_failures;
 static long long stat_drain_loops;
 #endif
-
-static inline void
-sgen_gray_object_dequeue_fast (SgenGrayQueue *queue, char** obj, mword *desc) {
-	GrayQueueEntry *cursor = queue->prefetch_cursor;
-	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
-	*obj = cursor->obj;
-#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
-	*desc = cursor->desc;
-	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, &cursor->desc);
-#else
-	GRAY_OBJECT_DEQUEUE (queue, &cursor->obj, NULL);
-#endif
-
-#if !defined (SGEN_MARK_ON_ENQUEUE)
-	{
-		int word, bit;
-		MSBlockInfo *block = (MSBlockInfo*)MS_BLOCK_DATA_FOR_OBJ (cursor->obj);
-		MS_CALC_MARK_BIT (word, bit, cursor->obj);
-		PREFETCH_WRITE (&block->mark_words [word]);
-	}
-#endif
-
-	PREFETCH_READ (cursor->obj);
-	++cursor;
-	if (cursor == end)
-		cursor = queue->prefetch;
-	queue->prefetch_cursor = cursor;
-}
 
 static void major_scan_object_with_evacuation (char *start, mword desc, SgenGrayQueue *queue);
 

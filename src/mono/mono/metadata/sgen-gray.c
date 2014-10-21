@@ -369,35 +369,6 @@ sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *
 	unlock_section_queue (queue);
 }
 
-/*
- * Compacts and attempts to fill the prefetch queue from the gray
- * queue. Returns whether the prefetch queue contains any elements.
- */
-gboolean
-sgen_gray_object_fill_prefetch (SgenGrayQueue *queue)
-{
-	GrayQueueEntry *to = queue->prefetch;
-	GrayQueueEntry *from = queue->prefetch;
-	GrayQueueEntry *const end = queue->prefetch + SGEN_GRAY_QUEUE_PREFETCH_SIZE;
-	while (from < end) {
-		if (from->obj)
-			*to++ = *from;
-		++from;
-	}
-	while (to < end) {
-#ifdef SGEN_GRAY_QUEUE_HAVE_DESCRIPTORS
-		GRAY_OBJECT_DEQUEUE (queue, &to->obj, &to->desc);
-#else
-		GRAY_OBJECT_DEQUEUE (queue, &to->obj, NULL);
-#endif
-		/* This doesn't necessarily matter because this function constitutes the slow path. */
-		PREFETCH_READ (to->obj);
-		++to;
-	}
-	queue->prefetch_cursor = queue->prefetch;
-	return queue->prefetch [0].obj != NULL;
-}
-
 void
 sgen_init_gray_queues (void)
 {
