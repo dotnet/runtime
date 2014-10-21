@@ -2596,9 +2596,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 				g_assert (finish_up_concurrent_mark);
 				continue;
 			}
-#ifdef SGEN_MARK_ON_ENQUEUE
 			sgen_los_pin_object (bigobj->data);
-#endif
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
 				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
 			if (G_UNLIKELY (do_pin_stats))

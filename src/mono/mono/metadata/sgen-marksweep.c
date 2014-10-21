@@ -822,7 +822,6 @@ major_dump_heap (FILE *heap_dump_file)
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
-#ifdef SGEN_MARK_ON_ENQUEUE
 #define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
@@ -846,37 +845,6 @@ major_dump_heap (FILE *heap_dump_file)
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
-#else
-#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
-		int __word, __bit;					\
-		SGEN_ASSERT (9, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
-		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
-		if (MS_OBJ_ALLOCED ((obj), (block))) { \
-			if (sgen_gc_descr_has_references (desc)) {						\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
-			} else {					\
-				MS_SET_MARK_BIT ((block), __word, __bit); \
-				binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
-			}						\
-			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
-		}							\
-	} while (0)
-#define MS_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {		\
-		int __word, __bit;					\
-		SGEN_ASSERT (9, sgen_get_current_collection_generation () == GENERATION_OLD, "Can't majorly enqueue objects when doing minor collection"); \
-		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
-		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
-		{		\
-			if (sgen_gc_descr_has_references (desc)) {			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
-			} else {					\
-				MS_SET_MARK_BIT ((block), __word, __bit); \
-				binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
-			}						\
-			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
-		}							\
-	} while (0)
-#endif
 
 static void
 pin_major_object (char *obj, SgenGrayQueue *queue)
@@ -954,12 +922,10 @@ static long long stat_optimized_copy;
 static long long stat_optimized_copy_nursery;
 static long long stat_optimized_copy_nursery_forwarded;
 static long long stat_optimized_copy_nursery_pinned;
-#ifdef SGEN_MARK_ON_ENQUEUE
 static long long stat_optimized_copy_major;
 static long long stat_optimized_copy_major_small_fast;
 static long long stat_optimized_copy_major_small_slow;
 static long long stat_optimized_copy_major_large;
-#endif
 static long long stat_optimized_copy_major_forwarded;
 static long long stat_optimized_copy_major_small_evacuate;
 static long long stat_optimized_major_scan;
@@ -2081,7 +2047,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 	if (is_concurrent) {
 		collector->major_concurrent_ops.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_concurrent_ops.scan_object = major_scan_object_concurrent;
+		collector->major_concurrent_ops.scan_object = major_scan_object_no_mark_concurrent;
 		collector->major_concurrent_ops.scan_vtype = major_scan_vtype_concurrent;
 	}
 #endif
@@ -2096,12 +2062,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized copy nursery", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery);
 	mono_counters_register ("Optimized copy nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery_forwarded);
 	mono_counters_register ("Optimized copy nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery_pinned);
-#ifdef SGEN_MARK_ON_ENQUEUE
 	mono_counters_register ("Optimized copy major", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major);
 	mono_counters_register ("Optimized copy major small fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_fast);
 	mono_counters_register ("Optimized copy major small slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_slow);
 	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_large);
-#endif
 	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
 	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_no_refs);
 #ifdef DESCRIPTOR_FAST_PATH

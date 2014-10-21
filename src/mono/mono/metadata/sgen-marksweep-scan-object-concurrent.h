@@ -51,6 +51,8 @@ extern long long stat_scan_object_called_major;
 		}							\
 	} while (0)
 
+/* FIXME: Unify this with optimized code in sgen-marksweep.c. */
+
 static void
 major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *queue)
 {
@@ -68,32 +70,6 @@ major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *qu
 
 	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 	HEAVY_STAT (++stat_scan_object_called_major);
-}
-
-/* FIXME: Unify this with optimized code in sgen-marksweep.c. */
-
-static void
-major_scan_object_concurrent (char *start, mword desc, SgenGrayQueue *queue)
-{
-#ifndef SGEN_MARK_ON_ENQUEUE
-	if (!sgen_ptr_in_nursery (start)) {
-		if (SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)start)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
-			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (start);
-			int word, bit;
-			MS_CALC_MARK_BIT (word, bit, start);
-			if (MS_MARK_BIT (block, word, bit))
-				return;
-			MS_SET_MARK_BIT (block, word, bit);
-			binary_protocol_mark (start, (gpointer)LOAD_VTABLE (start), sgen_safe_object_get_size ((MonoObject*)start));
-		} else {
-			if (sgen_los_object_is_pinned (start))
-				return;
-			sgen_los_pin_object (start);
-		}
-	}
-#endif
-
-	major_scan_object_no_mark_concurrent (start, desc, queue);
 }
 
 static void

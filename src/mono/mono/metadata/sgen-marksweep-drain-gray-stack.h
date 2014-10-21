@@ -55,9 +55,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
 
 	if (sgen_ptr_in_nursery (obj)) {
-#ifdef SGEN_MARK_ON_ENQUEUE
 		int word, bit;
-#endif
 		char *forwarded, *old_obj;
 		mword vtable_word = *(mword*)obj;
 
@@ -110,7 +108,6 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		if (sgen_ptr_in_nursery (obj))
 			return TRUE;
 
-#ifdef SGEN_MARK_ON_ENQUEUE
 		/*
 		 * FIXME: See comment for copy_object_no_checks().  If
 		 * we have that, we can let the allocation function
@@ -129,11 +126,9 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p already marked", obj);
 		MS_SET_MARK_BIT (block, word, bit);
 		binary_protocol_mark (obj, (gpointer)LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
-#endif
 
 		return FALSE;
 	} else {
-#ifdef SGEN_MARK_ON_ENQUEUE
 		mword vtable_word = *(mword*)obj;
 		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
 		int type = desc & 7;
@@ -188,9 +183,6 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
 		}
 		return FALSE;
-#else
-		GRAY_OBJECT_ENQUEUE (queue, obj, 0);
-#endif
 	}
 	return FALSE;
 }
@@ -201,31 +193,6 @@ SCAN_OBJECT_FUNCTION_NAME (char *obj, mword desc, SgenGrayQueue *queue)
 	int type;
 
 	type = desc & 7;
-
-#ifndef SGEN_MARK_ON_ENQUEUE
-	HEAVY_STAT (++stat_optimized_major_mark);
-
-	/* Mark object or, if already marked, don't process. */
-	if (!sgen_ptr_in_nursery (obj)) {
-		if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
-			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-			int __word, __bit;
-
-			HEAVY_STAT (++stat_optimized_major_mark_small);
-
-			MS_CALC_MARK_BIT (__word, __bit, (obj));
-			if (MS_MARK_BIT ((block), __word, __bit))
-				return;
-			MS_SET_MARK_BIT ((block), __word, __bit);
-		} else {
-			HEAVY_STAT (++stat_optimized_major_mark_large);
-
-			if (sgen_los_object_is_pinned (obj))
-				return;
-			sgen_los_pin_object (obj);
-		}
-	}
-#endif
 
 #ifdef HEAVY_STATISTICS
 	++stat_optimized_major_scan;
