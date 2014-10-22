@@ -5776,39 +5776,14 @@ emit_plt (MonoAotCompile *acfg)
 		plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 		ji = plt_entry->ji;
 
-		if (acfg->llvm) {
-			/*
-			 * If the target is directly callable, alias the plt symbol to point to
-			 * the method code.
-			 * FIXME: Use this to simplify emit_and_reloc_code ().
-			 * FIXME: Avoid the got slot.
-			 * FIXME: Add support to the binary writer.
-			 */
-			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer) {
-				MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, ji->data.method);
-
-				if (callee_cfg) {
-					if (acfg->thumb_mixed && !callee_cfg->compile_llvm) {
-						/* LLVM calls the PLT entries using bl, so emit a stub */
-						emit_set_thumb_mode (acfg);
-						fprintf (acfg->fp, "\n.thumb_func\n");
-						emit_label (acfg, plt_entry->llvm_symbol);
-						fprintf (acfg->fp, "bx pc\n");
-						fprintf (acfg->fp, "nop\n");
-						emit_set_arm_mode (acfg);
-						fprintf (acfg->fp, "b %s\n", callee_cfg->asm_symbol);
-					} else {
-						fprintf (acfg->fp, "\n.set %s, %s\n", plt_entry->llvm_symbol, callee_cfg->asm_symbol);
-					}
-					continue;
-				}
-			}
-		}
-
 		debug_sym = plt_entry->debug_sym;
 
 		if (acfg->thumb_mixed && !plt_entry->jit_used)
 			/* Emit only a thumb version */
+			continue;
+
+		/* Skip plt entries not actually called */
+		if (!plt_entry->jit_used && !plt_entry->llvm_used)
 			continue;
 
 		if (acfg->llvm && !acfg->thumb_mixed)
@@ -5849,9 +5824,6 @@ emit_plt (MonoAotCompile *acfg)
 
 			plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 			ji = plt_entry->ji;
-
-			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer)
-				continue;
 
 			/* Skip plt entries not actually called by LLVM code */
 			if (!plt_entry->llvm_used)
@@ -7025,6 +6997,21 @@ mono_aot_get_method_name (MonoCompile *cfg)
 		return g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash));
 	else
 		return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
+}
+
+gboolean
+mono_aot_is_direct_callable (MonoJumpInfo *patch_info)
+{
+	return is_direct_callable (llvm_acfg, NULL, patch_info);
+}
+
+void
+mono_aot_mark_unused_llvm_plt_entry (MonoJumpInfo *patch_info)
+{
+	MonoPltEntry *plt_entry;
+
+	plt_entry = get_plt_entry (llvm_acfg, patch_info);
+	plt_entry->llvm_used = FALSE;
 }
 
 char*
