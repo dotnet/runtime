@@ -79,7 +79,7 @@ mono_runtime_cleanup_handlers (void)
  * was called, false otherwise.
  */
 gboolean
-SIG_HANDLER_SIGNATURE (mono_chain_signal)
+MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	jit_tls->mono_win_chained_exception_needs_run = TRUE;
