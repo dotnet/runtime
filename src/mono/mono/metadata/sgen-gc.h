@@ -303,30 +303,51 @@ typedef struct {
 	mword desc;
 } GCVTable;
 
-/* these bits are set in the object vtable: we could merge them since an object can be
- * either pinned or forwarded but not both.
- * We store them in the vtable slot because the bits are used in the sync block for
- * other purposes: if we merge them and alloc the sync blocks aligned to 8 bytes, we can change
+/*
+ * We use the lowest bits in the vtable pointer of objects to tag whether they're forwarded,
+ * pinned, and/or cemented.  On 64 bit architectures, where vtables are 8-byte aligned, we
+ * use one bit for each of those.  On 32 bit architectures, we just use the lowest two bits,
+ * which works because objects cannot both be forwarded and pinned/cemented, and cemented
+ * objects are always pinned, too.  These are the valid states:
+ *
+ * | State            | 64 bits | 32 bits |
+ * |------------------+---------+---------|
+ * | default          |     000 |      00 |
+ * | forwarded        |     001 |      01 |
+ * | pinned           |     010 |      10 |
+ * | pinned, cemented |     110 |      11 |
+ *
+ * We store them in the vtable slot because the bits are used in the sync block for other
+ * purposes: if we merge them and alloc the sync blocks aligned to 8 bytes, we can change
  * this and use bit 3 in the syncblock (with the lower two bits both set for forwarded, that
  * would be an invalid combination for the monitor and hash code).
- * The values are already shifted.
- * The forwarding address is stored in the sync block.
  */
-
-#define SGEN_VTABLE_BITS_MASK 0x7
 
 #include "sgen-tagged-pointer.h"
 
+#define SGEN_VTABLE_BITS_MASK	SGEN_TAGGED_POINTER_MASK
+
+#if SIZEOF_VOID_P == 8
 #define SGEN_POINTER_IS_TAGGED_FORWARDED(p)	SGEN_POINTER_IS_TAGGED_1((p))
-#define SGEN_POINTER_TAG_FORWARDED(p)	SGEN_POINTER_TAG_1((p))
+#define SGEN_POINTER_TAG_FORWARDED(p)		SGEN_POINTER_TAG_1((p))
 
 #define SGEN_POINTER_IS_TAGGED_PINNED(p)	SGEN_POINTER_IS_TAGGED_2((p))
-#define SGEN_POINTER_TAG_PINNED(p)	SGEN_POINTER_TAG_2((p))
+#define SGEN_POINTER_TAG_PINNED(p)		SGEN_POINTER_TAG_2((p))
 
 #define SGEN_POINTER_IS_TAGGED_CEMENTED(p)	SGEN_POINTER_IS_TAGGED_4((p))
-#define SGEN_POINTER_TAG_CEMENTED(p)	SGEN_POINTER_TAG_4((p))
+#define SGEN_POINTER_TAG_CEMENTED(p)		SGEN_POINTER_TAG_4((p))
+#else
+#define SGEN_POINTER_IS_TAGGED_FORWARDED(p)	(SGEN_POINTER_TAG_12 ((p)) == 1)
+#define SGEN_POINTER_TAG_FORWARDED(p)		SGEN_POINTER_SET_TAG_12((p), 1)
 
-#define SGEN_POINTER_UNTAG_VTABLE(p)	SGEN_POINTER_UNTAG_ALL((p))
+#define SGEN_POINTER_IS_TAGGED_PINNED(p)	SGEN_POINTER_IS_TAGGED_2 ((p))
+#define SGEN_POINTER_TAG_PINNED(p)		SGEN_POINTER_TAG_2 ((p))
+
+#define SGEN_POINTER_IS_TAGGED_CEMENTED(p)	(SGEN_POINTER_TAG_12 ((p)) == 3)
+#define SGEN_POINTER_TAG_CEMENTED(p)		SGEN_POINTER_SET_TAG_12 ((p), 3)
+#endif
+
+#define SGEN_POINTER_UNTAG_VTABLE(p)		SGEN_POINTER_UNTAG_ALL((p))
 
 /* returns NULL if not forwarded, or the forwarded address */
 #define SGEN_VTABLE_IS_FORWARDED(vtable) (SGEN_POINTER_IS_TAGGED_FORWARDED ((vtable)) ? SGEN_POINTER_UNTAG_VTABLE ((vtable)) : NULL)
@@ -349,7 +370,7 @@ typedef struct {
 	} while (0)
 /* Unpins and uncements */
 #define SGEN_UNPIN_OBJECT(obj) do {	\
-		*(void**)(obj) = SGEN_POINTER_UNTAG_24 (*(void**)(obj)); \
+		*(void**)(obj) = SGEN_POINTER_UNTAG_VTABLE (*(void**)(obj)); \
 	} while (0)
 
 /*
