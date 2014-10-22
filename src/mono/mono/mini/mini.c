@@ -6790,7 +6790,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	gpointer fault_addr = NULL;
 #ifdef HAVE_SIG_INFO
-	siginfo_t *info = MONO_SIG_HANDLER_GET_INFO ();
+	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 #endif
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
