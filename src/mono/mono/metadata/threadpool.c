@@ -158,6 +158,8 @@ static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
 static MonoClass *process_async_call_klass;
 
+static GPtrArray *threads;
+mono_mutex_t threads_lock;
 static GPtrArray *wsqs;
 mono_mutex_t wsqs_lock;
 static gboolean suspended;
@@ -789,6 +791,8 @@ monitor_heuristic (gint16 *current, gint16 *history_size, SamplesHistory *histor
 	int i;
 	gint8 decision;
 	gint16 cur, max = 0;
+	gboolean all_waitsleepjoin;
+	MonoInternalThread *thread;
 
 	/*
 	 * The following heuristic tries to approach the optimal number of threads to maximize jobs throughput. To
@@ -824,22 +828,39 @@ monitor_heuristic (gint16 *current, gint16 *history_size, SamplesHistory *histor
 		history [cur].nthreads_diff = 1;
 		decision = 2;
 	} else {
-		max = cur == 0 ? 1 : 0;
-		for (i = 0; i < *history_size; i++) {
-			if (i == cur)
-				continue;
-			if (history [i].nexecuted > history [max].nexecuted)
-				max = i;
+		mono_mutex_lock (&threads_lock);
+		all_waitsleepjoin = TRUE;
+		for (i = 0; i < threads->len; ++i) {
+			thread = g_ptr_array_index (threads, i);
+			if (!(thread->state & ThreadState_WaitSleepJoin)) {
+				all_waitsleepjoin = FALSE;
+				break;
+			}
 		}
+		mono_mutex_unlock (&threads_lock);
 
-		if (history [cur].nexecuted >= history [max].nexecuted) {
-			/* we improved the situation, let's continue ! */
-			history [cur].nthreads_diff = history [cur].nthreads >= history [max].nthreads ? 1 : -1;
-			decision = 3;
+		if (all_waitsleepjoin) {
+			/* we might be in a condition of starvation/deadlock with tasks waiting for each others */
+			history [cur].nthreads_diff = 1;
+			decision = 5;
 		} else {
-			/* we made it worse, let's return to previous situation */
-			history [cur].nthreads_diff = history [cur].nthreads >= history [max].nthreads ? -1 : 1;
-			decision = 4;
+			max = cur == 0 ? 1 : 0;
+			for (i = 0; i < *history_size; i++) {
+				if (i == cur)
+					continue;
+				if (history [i].nexecuted > history [max].nexecuted)
+					max = i;
+			}
+
+			if (history [cur].nexecuted >= history [max].nexecuted) {
+				/* we improved the situation, let's continue ! */
+				history [cur].nthreads_diff = history [cur].nthreads >= history [max].nthreads ? 1 : -1;
+				decision = 3;
+			} else {
+				/* we made it worse, let's return to previous situation */
+				history [cur].nthreads_diff = history [cur].nthreads >= history [max].nthreads ? -1 : 1;
+				decision = 4;
+			}
 		}
 	}
 
@@ -968,6 +989,9 @@ mono_thread_pool_init (void)
 
 	async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 	g_assert (async_call_klass);
+
+	mono_mutex_init (&threads_lock);
+	threads = g_ptr_array_sized_new (thread_count);
 
 	mono_mutex_init_recursive (&wsqs_lock);
 	wsqs = g_ptr_array_sized_new (MAX (100 * cpu_count, thread_count));
@@ -1120,6 +1144,14 @@ mono_thread_pool_cleanup (void)
 		threadpool_kill_idle_threads (&async_tp);
 		threadpool_free_queue (&async_tp);
 	}
+	
+	if (threads) {
+		mono_mutex_lock (&threads_lock);
+		if (threads)
+			g_ptr_array_free (threads, FALSE);
+		threads = NULL;
+		mono_mutex_unlock (&threads_lock);
+	}
 
 	if (wsqs) {
 		mono_mutex_lock (&wsqs_lock);
@@ -1139,6 +1171,7 @@ threadpool_start_thread (ThreadPool *tp)
 {
 	gint n;
 	guint32 stack_size;
+	MonoInternalThread *thread;
 
 	stack_size = (!tp->is_io) ? 0 : SMALL_STACK;
 	while (!mono_runtime_is_shutting_down () && (n = tp->nthreads) < tp->max_threads) {
@@ -1146,7 +1179,12 @@ threadpool_start_thread (ThreadPool *tp)
 #ifndef DISABLE_PERFCOUNTERS
 			mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
 #endif
-			mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
+			thread = mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
+			if (!tp->is_io) {
+				mono_mutex_lock (&threads_lock);
+				g_ptr_array_add (threads, thread);
+				mono_mutex_unlock (&threads_lock);
+			}
 			return TRUE;
 		}
 	}
@@ -1665,6 +1703,11 @@ async_invoke_thread (gpointer data)
 
 					if (tp_finish_func)
 						tp_finish_func (tp_hooks_user_data);
+
+					mono_mutex_lock (&threads_lock);
+					g_ptr_array_remove_fast (threads, mono_thread_current ()->internal_thread);
+					mono_mutex_unlock (&threads_lock);
+
 					return;
 				}
 			}
