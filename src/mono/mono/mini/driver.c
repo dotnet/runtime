@@ -408,8 +408,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 
 			} else {
 				cfailed++;
-				if (verbose)
-					g_print ("Test '%s' failed compilation.\n", method->name);
+				g_print ("Test '%s' failed compilation.\n", method->name);
 			}
 			if (mini_stats_fd)
 				fprintf (mini_stats_fd, "%f, ",
