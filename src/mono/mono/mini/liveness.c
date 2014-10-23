@@ -812,9 +812,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 				/* Try dead code elimination */
 				if ((var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST)) && !(var->flags & MONO_INST_VOLATILE)) {
 					LIVENESS_DEBUG (printf ("\tdead def of R%d, eliminated\n", ins->dreg));
-					ins->opcode = OP_NOP;
-					ins->dreg = -1;
-					MONO_INST_NULLIFY_SREGS (ins);
+					NULLIFY_INS (ins);
 					return;
 				}
 

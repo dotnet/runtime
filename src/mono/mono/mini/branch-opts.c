@@ -1299,7 +1299,7 @@ mono_optimize_branches (MonoCompile *cfg)
 
 					/* branches to the following block can be removed */
 					if (bb->last_ins && bb->last_ins->opcode == OP_BR && !bbn->out_of_line) {
-						bb->last_ins->opcode = OP_NOP;
+						NULLIFY_INS (bb->last_ins);
 						changed = TRUE;
 						if (cfg->verbose_level > 2)
 							g_print ("br removal triggered %d -> %d\n", bb->block_num, bbn->block_num);

@@ -26,10 +26,8 @@
 //#define DEBUG_SSA 1
 
 #define NEW_PHI(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_PHI;	\
-		(dest)->inst_c0 = (val);	\
-        (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1; \
+	MONO_INST_NEW ((cfg), (dest), OP_PHI); \
+	(dest)->inst_c0 = (val);							   \
 	} while (0)
 
 typedef struct {
@@ -530,8 +528,7 @@ mono_ssa_remove (MonoCompile *cfg)
 						}
 					}
 
-					ins->opcode = OP_NOP;
-					ins->dreg = -1;
+					NULLIFY_INS (ins);
 				}
 			}
 		}
@@ -1287,12 +1284,10 @@ mono_ssa_deadce (MonoCompile *cfg)
 				MonoInst *src_var = get_vreg_to_inst (cfg, def->sreg1);
 				if (src_var && !(src_var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 					add_to_dce_worklist (cfg, info, MONO_VARINFO (cfg, src_var->inst_c0), &work_list);
-				def->opcode = OP_NOP;
-				def->dreg = def->sreg1 = def->sreg2 = -1;
+				NULLIFY_INS (def);
 				info->reg = -1;
 			} else if ((def->opcode == OP_ICONST) || (def->opcode == OP_I8CONST) || MONO_IS_ZERO (def)) {
-				def->opcode = OP_NOP;
-				def->dreg = def->sreg1 = def->sreg2 = -1;
+				NULLIFY_INS (def);
 				info->reg = -1;
 			} else if (MONO_IS_PHI (def)) {
 				int j;
@@ -1300,8 +1295,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 					MonoMethodVar *u = MONO_VARINFO (cfg, get_vreg_to_inst (cfg, def->inst_phi_args [j])->inst_c0);
 					add_to_dce_worklist (cfg, info, u, &work_list);
 				}
-				def->opcode = OP_NOP;
-				def->dreg = def->sreg1 = def->sreg2 = -1;
+				NULLIFY_INS (def);
 				info->reg = -1;
 			}
 			else if (def->opcode == OP_NOP) {

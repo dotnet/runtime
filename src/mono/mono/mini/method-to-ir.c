@@ -9310,7 +9310,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->inst_p1 = (gpointer)(gssize)(sp [1]->inst_c0);
 					ins->sreg2 = -1;
 
-					sp [1]->opcode = OP_NOP;
+					NULLIFY_INS (sp [1]);
 				}
 			}
 
@@ -9371,7 +9371,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					/* Might be followed by an instruction added by ADD_WIDEN_OP */
 					if (sp [1]->next == NULL)
-						sp [1]->opcode = OP_NOP;
+						NULLIFY_INS (sp [1]);
 				}
 			}
 			MONO_ADD_INS ((cfg)->cbb, (ins));
@@ -11779,9 +11779,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * The backends expect the fceq opcodes to do the
 					 * comparison too.
 					 */
-					cmp->opcode = OP_NOP;
 					ins->sreg1 = cmp->sreg1;
 					ins->sreg2 = cmp->sreg2;
+					NULLIFY_INS (cmp);
 				}
 				MONO_ADD_INS (bblock, ins);
 				*sp++ = ins;
