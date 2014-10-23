@@ -807,7 +807,7 @@ sgen_obj_get_descriptor_safe (char *obj)
  * vtable field, is not intact.  This is necessary for the parallel
  * collector.
  */
-static inline mword
+static MONO_NEVER_INLINE mword
 sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
 	mword descr = (mword)vtable->gc_descr;
