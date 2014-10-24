@@ -3,7 +3,6 @@ if HOST_WIN32
 export HOST_CC
 endif
 
-if JIT_SUPPORTED
 if DISABLE_EXECUTABLES
 runtime_lib=../mini/$(LIBMONO_LA) $(static_libs)
 else
@@ -19,9 +18,6 @@ runtime_lib=../mini/$(LIBMONO_LA) $(static_libs)
 else
 runtime_lib=../mini/$(LIBMONO_LA)
 endif
-endif
-else
-runtime_lib=../interpreter/libmint.la
 endif
 
 if DISABLE_EXECUTABLES

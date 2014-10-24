@@ -2505,7 +2505,6 @@ AM_CONDITIONAL(LOADED_LLVM, [test x$enable_loadedllvm = xyes])
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
-JIT_SUPPORTED=no
 LIBC="libc.so.6"
 INTL="libc.so.6"
 SQLITE="libsqlite.so.0"
@@ -2526,7 +2525,6 @@ case "$host" in
 		arch_target=mips;
 		sgen_supported=true
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
 
 		AC_MSG_CHECKING(for mips n32)
 		AC_TRY_COMPILE([],[
@@ -2544,7 +2542,6 @@ case "$host" in
 	i*86-*-*)
 		TARGET=X86;
 		arch_target=x86;
-		JIT_SUPPORTED=yes
 		case $host_os in
 		  solaris*)
 			LIBC="libc.so"
@@ -2590,7 +2587,6 @@ case "$host" in
 	x86_64-*-* | amd64-*-*)
 		TARGET=AMD64;
 		arch_target=amd64;
-		JIT_SUPPORTED=yes
 		if test "x$ac_cv_sizeof_void_p" = "x4"; then
 			AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 			sizeof_register=8
@@ -2622,7 +2618,6 @@ case "$host" in
 		TARGET=IA64
 		arch_target=ia64
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
 		LIBC="libc.so.6.1"
 		INTL="libc.so.6.1"
 		AC_CHECK_LIB(unwind, _U_dyn_register, [], [AC_MSG_ERROR(library libunwind not found)])
@@ -2635,7 +2630,6 @@ case "$host" in
 			TARGET=SPARC
 		fi
 		arch_target=sparc;
-		JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
 		case $host_os in
 		  linux*) ;;
@@ -2668,7 +2662,6 @@ case "$host" in
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__"
 		fi
 		arch_target=ppc;
-		JIT_SUPPORTED=yes
 		case $host_os in
 		  linux*|darwin*)
 			sgen_supported=true
@@ -2679,7 +2672,6 @@ case "$host" in
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		sgen_supported=true
 		;;
@@ -2687,7 +2679,6 @@ case "$host" in
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
 		sgen_supported=true
 		AOT_SUPPORTED="yes"
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
@@ -2697,7 +2688,6 @@ case "$host" in
 #		TARGET=ARM;
 #		arch_target=arm;
 #		ACCESS_UNALIGNED="no"
-#		JIT_SUPPORTED=yes
 #		sgen_supported=true
 #		AOT_SUPPORTED="no"
 #		;;
@@ -2705,7 +2695,6 @@ case "$host" in
 		# https://lkml.org/lkml/2012/7/15/133
 		TARGET=ARM64
 		arch_target=arm64
-		JIT_SUPPORTED=yes
 		sgen_supported=true
 		boehm_supported=false
 		;;
@@ -2713,7 +2702,6 @@ case "$host" in
 		TARGET=S390X;
 		arch_target=s390x;
 		ACCESS_UNALIGNED="yes"
-		JIT_SUPPORTED=yes
 		sgen_supported=true
 		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
 		;;
@@ -2729,9 +2717,7 @@ if test "x$host" != "x$target"; then
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
-		jit_wanted=true
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
 		with_tls=pthread
@@ -2769,7 +2755,6 @@ if test "x$host" != "x$target"; then
 #		arch_target=arm
 #		AC_DEFINE(TARGET_ARM, 1, [...])
 #		ACCESS_UNALIGNED="no"
-#		JIT_SUPPORTED=yes
 #		sizeof_register=4
 #               CPPFLAGS="$CPPFLAGS \
 #                    -D__ARM_EABI__ \
@@ -2779,7 +2764,6 @@ if test "x$host" != "x$target"; then
 #                    -DDISABLE_SOCKETS \
 #                    -DDISABLE_ATTACH \
 #                    -DUSE_NEWLIB"
-#		jit_wanted=true
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
 #		with_tls=pthread
@@ -2796,9 +2780,7 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(TARGET_ARM, 1, [...])
 		AC_DEFINE(TARGET_ANDROID, 1, [...])
 		ACCESS_UNALIGNED="no"
-		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
-		jit_wanted=true
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
 		with_tls=pthread
@@ -2818,9 +2800,7 @@ if test "x$host" != "x$target"; then
 		arch_target=x86;
 		AC_DEFINE(TARGET_X86, 1, [...])
 		AC_DEFINE(TARGET_ANDROID, 1, [...])
-		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS"
-		jit_wanted=true
 		sgen_supported=true
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h		
@@ -2829,8 +2809,6 @@ if test "x$host" != "x$target"; then
 		;;			
 	aarch64-*)
 		TARGET=ARM64
-		JIT_SUPPORTED=yes
-		jit_wanted=true
 		;;
 	*)
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])
@@ -2953,19 +2931,7 @@ fi
 AC_SUBST(SGEN_DEFINES)
 AM_CONDITIONAL(SUPPORT_SGEN, test x$buildsgen = xyes)
 
-USEJIT=false
-if test x$JIT_SUPPORTED = xyes; then
-   if $jit_wanted; then
-      USEJIT=true
-      jit_status="Building and using the JIT"
-   else
-      AC_ERROR(No JIT support available or selected.)
-   fi
-else
-   AC_ERROR(No JIT support available or selected.)
-fi
-
-AM_CONDITIONAL(USE_JIT, test x$USEJIT = xtrue)
+jit_status="Building and using the JIT"
 
 libsuffix=".so"
 
@@ -3368,7 +3334,6 @@ AM_CONDITIONAL(HOST_ARM, test x$HOST = xARM)
 AM_CONDITIONAL(HOST_ARM64, test x$HOST = xARM64)
 AM_CONDITIONAL(CROSS_COMPILE, test "x$host" != "x$target")
 
-AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$libgc = xincluded)
 
 AC_SUBST(LIBC)

@@ -83,8 +83,6 @@ libmonoldflags=$(monoldflags) -version-info 1:0:0
 endif
 endif
 
-if JIT_SUPPORTED
-
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
@@ -166,8 +164,6 @@ libmono_llvm_la_LIBADD += $(top_builddir)/mono/mini/libmonoboehm-$(API_VER).la $
 endif
 endif
 
-endif
-
 mono_boehm_SOURCES = \
 	main.c
 
@@ -196,7 +192,7 @@ endif
 	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
 mono_boehm-main.$(OBJEXT): buildver-boehm.h
 main.c: buildver-boehm.h
-	
+
 endif
 
 if DISABLE_EXECUTABLES
@@ -730,11 +726,7 @@ clean-local:
 
 pkgconfigdir = $(libdir)/pkgconfig
 
-if JIT_SUPPORTED
 BUILT_SOURCES = version.h $(arch_built)
-else
-BUILT_SOURCES = version.h
-endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
