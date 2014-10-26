@@ -20,12 +20,6 @@
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <errno.h>
-
-#include <sys/types.h>
 #ifdef HOST_WIN32
 #include <ws2tcpip.h>
 #else
@@ -36,6 +30,12 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <errno.h>
+
+#include <sys/types.h>
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
