@@ -1,0 +1,98 @@
+#
+# Appveyor configuration file for CI build of Mono on Windows (under Cygwin)
+#
+# For further details see http://www.appveyor.com
+#
+
+# Use 'unstable' Appveyor build worker image as Appveyor have added Cygwin to this for us
+os: Unstable
+
+#
+# Custom environment variables
+#
+environment:
+    global:
+        CYG_ROOT: C:/cygwin
+        CYG_MIRROR: http://cygwin.mirror.constant.com
+        CYG_CACHE: C:/cygwin/var/cache/setup
+        NSIS_ROOT: C:\nsis
+   
+#
+# Initialisation prior to pulling the Mono repository
+#
+init:
+    - 'echo Building Mono for Windows'
+    - 'echo System architecture: %PLATFORM%'
+    - 'echo Repo build branch is: %APPVEYOR_REPO_BRANCH%'
+    - 'echo Build folder is: %APPVEYOR_BUILD_FOLDER%'
+# Attempt to ensure we don't try to convert line endings to Win32 CRLF as this will cause build to fail
+    - 'git config --global core.autocrlf input'
+
+#
+# Install needed build dependencies
+# 
+install:
+# NOTE: Already installed on current Appveyor unstable image
+#    - 'echo Retrieving Cygwin'
+#   - 'appveyor DownloadFile http://cygwin.com/setup-x86.exe -FileName %CYGROOT%/setup-x86.exe'
+    - 'echo Setting up Cygwin dependencies'
+    - '%CYG_ROOT%\setup-x86.exe -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P autoconf -P automake -P bison -P gcc-core -P gcc-g++ -P mingw-runtime -P mingw-binutils -P mingw-gcc-core -P mingw-gcc-g++ -P mingw-pthreads -P mingw-w32api -P libtool -P make -P python -P gettext-devel -P gettext -P intltool -P libiconv -P pkg-config -P git -P wget -P curl > NUL' 
+    - 'echo Check Cygwin setup'
+    - '%CYG_ROOT%/bin/bash -lc "cygcheck -dc cygwin"'
+    - 'echo Done setting up Cygwin'
+    - 'echo Retrieving NSIS'
+    - 'appveyor DownloadFile "http://sunet.dl.sourceforge.net/project/nsis/NSIS 2/2.46/nsis-2.46-setup.exe" -FileName nsissetup.exe'
+    - 'echo Setting up NSIS'
+    - 'nsissetup.exe /S /D=%NSIS_ROOT%'
+    - 'echo Done setting up NSIS'
+
+#
+# NOTE: msbuild doesn't work at present so use Cygwin to build
+#
+#build:
+#    project: C:\projects\mono\msvc\mono.sln 
+#    verbosity: detailed
+
+# Cygwin build script
+#
+# NOTES:
+#
+# The stdin/stdout file descriptor appears not to be valid for the Appveyor
+# build which causes failures as certain functions attempt to redirect 
+# default file handles. Ensure a dummy file descriptor is opened with exec.
+#
+build_script:
+    - cmd: 'echo Cygwin root is: %CYG_ROOT%'
+    - cmd: 'echo Build folder is: %APPVEYOR_BUILD_FOLDER%'
+    - cmd: 'echo Repo build branch is: %APPVEYOR_REPO_BRANCH%'
+    - cmd: 'echo Repo build commit is: %APPVEYOR_REPO_COMMIT%'
+    - cmd: 'echo Autogen running...'
+    - cmd: '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER; exec 0</dev/null; NOCONFIGURE=1 ./autogen.sh --prefix=/usr/local --with-preview=yes"'
+    - cmd: 'echo Configure running...'
+    - cmd: '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER; exec 0</dev/null; ./configure --host=i686-pc-mingw32"'
+    - cmd: 'echo Pulling monolite latest...'
+    - cmd: '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER; exec 0</dev/null; make get-monolite-latest"'
+    - cmd: 'echo Make running...'
+    - cmd: '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER; exec 0</dev/null; make"'
+    - cmd: 'echo Installing...'
+    - cmd: 'mkdir %APPVEYOR_BUILD_FOLDER%\install'
+    - cmd: '%CYG_ROOT%/bin/bash --login -lc "export CYGWIN=winsymlinks:native; mount \"$APPVEYOR_BUILD_FOLDER\install\" /usr/local; cd $APPVEYOR_BUILD_FOLDER; exec 0</dev/null; make install; umount /usr/local"'
+#    - cmd: 'echo Building package...'
+#    - cmd: 'cd %APPVEYOR_BUILD_FOLDER%'
+#    - cmd: '%NSIS_ROOT%\makensis /DMILESTONE=%APPVEYOR_REPO_BRANCH% /DSOURCE_INSTALL_DIR=%APPVEYOR_BUILD_FOLDER\install\*.* /DBUILDNUM=%APPVEYOR_BUILD_VERSION% monowiz.win32.nsi'
+#    - cmd: 'Building distribution...'
+#    - cmd: '%CYG_ROOT%/bin/bash -lc "export CYGWIN=winsymlinks:native; cd $APPVEYOR_BUILD_FOLDER; exec 0</dev/null; make dist"'
+
+#
+# Disable tests for now
+# 
+test: off
+
+#
+# NOTE: Currently this is the Mono installation tree. In future we will create an installation package artifact.
+#       It has to be relative to the project path. Thus we have installed to within the build tree.
+#
+artifacts:
+    - path: install
+      name: mono-binaries
+      type: zip
