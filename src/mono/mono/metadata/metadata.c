@@ -2735,9 +2735,6 @@ free_inflated_signature (MonoInflatedMethodSignature *sig)
 	g_free (sig);
 }
 
-/*
- * LOCKING: assumes the loader lock is held.
- */
 MonoMethodInflated*
 mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
 {
@@ -2753,19 +2750,15 @@ mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
 
 	collect_data_free (&data);
 
-	if (cache) {
-		mono_image_set_lock (set);
+	mono_image_set_lock (set);
+	res = g_hash_table_lookup (set->gmethod_cache, method);
+	if (!res && cache) {
 		g_hash_table_insert (set->gmethod_cache, method, method);
-		mono_image_set_unlock (set);
-
-		return method;
-	} else {
-		mono_image_set_lock (set);
-		res = g_hash_table_lookup (set->gmethod_cache, method);
-		mono_image_set_unlock (set);
-
-		return res;
+		res = method;
 	}
+
+	mono_image_set_unlock (set);
+	return res;
 }
 
 /*

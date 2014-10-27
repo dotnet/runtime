@@ -1082,10 +1082,8 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 			iresult->context.class_inst = iresult->declaring->klass->generic_class->context.class_inst;
 	}
 
-	mono_loader_lock ();
 	cached = mono_method_inflated_lookup (iresult, FALSE);
 	if (cached) {
-		mono_loader_unlock ();
 		g_free (iresult);
 		return (MonoMethod*)cached;
 	}
@@ -1156,12 +1154,9 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	 * is_generic_method_definition().
 	 */
 
-	mono_method_inflated_lookup (iresult, TRUE);
-	mono_loader_unlock ();
-	return result;
+	return mono_method_inflated_lookup (iresult, TRUE);
 
 fail:
-	mono_loader_unlock ();
 	g_free (iresult);
 	return NULL;
 }
@@ -1241,7 +1236,7 @@ mono_method_get_generic_container (MonoMethod *method)
  * mono_method_set_generic_container:
  *
  *   Sets the generic container of METHOD to CONTAINER.
- * LOCKING: Acquires the loader lock.
+ * LOCKING: Acquires the image lock.
  */
 void
 mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* container)
