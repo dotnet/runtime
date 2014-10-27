@@ -1154,7 +1154,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	 * is_generic_method_definition().
 	 */
 
-	return mono_method_inflated_lookup (iresult, TRUE);
+	return (MonoMethod*)mono_method_inflated_lookup (iresult, TRUE);
 
 fail:
 	g_free (iresult);
@@ -6113,8 +6113,11 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 
 #define FAST_CACHE_SIZE 16
 
+/*
+ * LOCKING: Takes the image lock depending on @take_lock.
+ */
 static MonoClass *
-get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar)
+get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_lock)
 {
 	int n = mono_generic_param_num (param) | ((guint32)param->serial << 16);
 	MonoImage *image = param->image;
@@ -6128,26 +6131,33 @@ get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar)
 		else
 			return image->var_cache_fast ? image->var_cache_fast [n] : NULL;
 	} else {
+		MonoClass *klass = NULL;
 		ht = is_mvar ? image->mvar_cache_slow : image->var_cache_slow;
-		return ht ? g_hash_table_lookup (ht, GINT_TO_POINTER (n)) : NULL;
+		if (ht) {
+			if (take_lock)
+				mono_image_lock (image);
+			klass = g_hash_table_lookup (ht, GINT_TO_POINTER (n));
+			if (take_lock)
+				mono_image_unlock (image);
+		}
+		return klass;
 	}
 }
 
 /*
- * LOCKING: Acquires the loader lock.
+ * LOCKING: Image lock (param->image) must be held
  */
 static void
 set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *klass)
 {
 	int n = mono_generic_param_num (param) | ((guint32)param->serial << 16);
 	MonoImage *image = param->image;
-	GHashTable *ht;
 
 	g_assert (image);
 
 	if (n < FAST_CACHE_SIZE) {
 		if (is_mvar) {
-			/* No locking needed */
+			/* Requires locking to avoid droping an already published class */
 			if (!image->mvar_cache_fast)
 				image->mvar_cache_fast = mono_image_alloc0 (image, sizeof (MonoClass*) * FAST_CACHE_SIZE);
 			image->mvar_cache_fast [n] = klass;
@@ -6156,54 +6166,42 @@ set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *kla
 				image->var_cache_fast = mono_image_alloc0 (image, sizeof (MonoClass*) * FAST_CACHE_SIZE);
 			image->var_cache_fast [n] = klass;
 		}
-		return;
-	}
-	ht = is_mvar ? image->mvar_cache_slow : image->var_cache_slow;
-	if (!ht) {
-		mono_image_lock (image);
-		ht = is_mvar ? image->mvar_cache_slow : image->var_cache_slow;
+	} else {
+		GHashTable *ht = is_mvar ? image->mvar_cache_slow : image->var_cache_slow;
 		if (!ht) {
-			ht = g_hash_table_new (NULL, NULL);
-			mono_memory_barrier ();
-			if (is_mvar)
-				image->mvar_cache_slow = ht;
-			else
-				image->var_cache_slow = ht;
+			ht = is_mvar ? image->mvar_cache_slow : image->var_cache_slow;
+			if (!ht) {
+				ht = g_hash_table_new (NULL, NULL);
+				mono_memory_barrier ();
+				if (is_mvar)
+					image->mvar_cache_slow = ht;
+				else
+					image->var_cache_slow = ht;
+			}
 		}
-		mono_image_unlock (image);
+		g_hash_table_insert (ht, GINT_TO_POINTER (n), klass);
 	}
-
-	g_hash_table_insert (ht, GINT_TO_POINTER (n), klass);
 }
 
 /*
- * LOCKING: Acquires the loader lock.
+ * LOCKING: Acquires the image lock (@image).
  */
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
 {
 	MonoGenericContainer *container = mono_generic_param_owner (param);
-	MonoGenericParamInfo *pinfo;
-	MonoClass *klass;
-
-	mono_loader_lock ();
+	MonoGenericParamInfo *pinfo = NULL;
+	MonoClass *klass, *klass2;
 
 	if (container) {
 		pinfo = mono_generic_param_info (param);
-		if (pinfo->pklass) {
-			mono_loader_unlock ();
-			return pinfo->pklass;
-		}
+		klass = pinfo->pklass;
 	} else {
-		pinfo = NULL;
 		image = NULL;
-
-		klass = get_anon_gparam_class (param, is_mvar);
-		if (klass) {
-			mono_loader_unlock ();
-			return klass;
-		}
+		klass = get_anon_gparam_class (param, is_mvar, TRUE);
 	}
+	if (klass)
+		return klass;
 
 	if (!image && container) {
 		if (is_mvar) {
@@ -6221,15 +6219,30 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	mono_memory_barrier ();
 
-	if (container)
-		pinfo->pklass = klass;
-	else
-		set_anon_gparam_class (param, is_mvar, klass);
+	if (!image) //FIXME is this only needed by monodis? Can't we fix monodis instead of having this hack?
+		image = mono_defaults.corlib;
 
-	mono_loader_unlock ();
+	mono_image_lock (image);
+	if (container)
+		klass2 = pinfo->pklass;
+	else
+		klass2 = get_anon_gparam_class (param, is_mvar, FALSE);
+
+	if (klass2) {
+		klass = klass2;
+	} else {
+		if (container)
+			pinfo->pklass = klass;
+		else
+			set_anon_gparam_class (param, is_mvar, klass);
+	}
+	mono_image_unlock (image);
 
 	/* FIXME: Should this go inside 'make_generic_param_klass'? */
-	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
+	if (klass2)
+		mono_profiler_class_loaded (klass2, MONO_PROFILE_FAILED);
+	else
+		mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 
 	return klass;
 }
