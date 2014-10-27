@@ -785,6 +785,13 @@ typedef struct {
 	gint8 nthreads_diff;
 } SamplesHistory;
 
+/*
+ * returns :
+ *  -  1 if the number of threads should increase
+ *  -  0 if it should not change
+ *  - -1 if it should decrease
+ *  - -2 in case of error
+ */
 static gint8
 monitor_heuristic (gint16 *current, gint16 *history_size, SamplesHistory *history, ThreadPool *tp)
 {
@@ -829,6 +836,10 @@ monitor_heuristic (gint16 *current, gint16 *history_size, SamplesHistory *histor
 		decision = 2;
 	} else {
 		mono_mutex_lock (&threads_lock);
+		if (threads == NULL) {
+			mono_mutex_unlock (&threads_lock);
+			return -2;
+		}
 		all_waitsleepjoin = TRUE;
 		for (i = 0; i < threads->len; ++i) {
 			thread = g_ptr_array_index (threads, i);
@@ -910,6 +921,10 @@ monitor_thread (gpointer unused)
 		if (suspended)
 			continue;
 
+		/* threadpool is cleaning up */
+		if (async_tp.pool_status == 2 || async_io_tp.pool_status == 2)
+			break;
+
 		switch (monitor_state) {
 		case MONITOR_STATE_AWAKE:
 			num_waiting_iterations = 0;
@@ -939,9 +954,9 @@ monitor_thread (gpointer unused)
 			} else {
 				gint8 nthreads_diff = monitor_heuristic (&current, &history_size, history, tp);
 
-				if (nthreads_diff > 0)
+				if (nthreads_diff == 1)
 					threadpool_start_thread (tp);
-				else if (nthreads_diff < 0)
+				else if (nthreads_diff == -1)
 					threadpool_kill_thread (tp);
 			}
 		}
@@ -992,6 +1007,7 @@ mono_thread_pool_init (void)
 
 	mono_mutex_init (&threads_lock);
 	threads = g_ptr_array_sized_new (thread_count);
+	g_assert (threads);
 
 	mono_mutex_init_recursive (&wsqs_lock);
 	wsqs = g_ptr_array_sized_new (MAX (100 * cpu_count, thread_count));
@@ -1182,6 +1198,7 @@ threadpool_start_thread (ThreadPool *tp)
 			thread = mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
 			if (!tp->is_io) {
 				mono_mutex_lock (&threads_lock);
+				g_assert (threads != NULL);
 				g_ptr_array_add (threads, thread);
 				mono_mutex_unlock (&threads_lock);
 			}
@@ -1704,9 +1721,14 @@ async_invoke_thread (gpointer data)
 					if (tp_finish_func)
 						tp_finish_func (tp_hooks_user_data);
 
-					mono_mutex_lock (&threads_lock);
-					g_ptr_array_remove_fast (threads, mono_thread_current ()->internal_thread);
-					mono_mutex_unlock (&threads_lock);
+					if (!tp->is_io) {
+						if (threads) {
+							mono_mutex_lock (&threads_lock);
+							if (threads)
+								g_ptr_array_remove_fast (threads, mono_thread_current ()->internal_thread);
+							mono_mutex_unlock (&threads_lock);
+						}
+					}
 
 					return;
 				}
