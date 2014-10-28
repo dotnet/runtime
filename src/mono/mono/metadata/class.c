@@ -2013,10 +2013,13 @@ mono_class_layout_fields (MonoClass *class)
 				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 					continue;
 
+				// FIXME: Too much code does this
+#if 0
 				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field->offset / sizeof (gpointer)]) {
 					char *err_msg = g_strdup_printf ("Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", class->name, field->offset);
 					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
 				}
+#endif
 			}
 			g_free (ref_bitmap);
 		}
