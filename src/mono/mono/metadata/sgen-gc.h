@@ -693,6 +693,7 @@ struct _SgenMajorCollector {
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	gboolean (*have_finished_sweeping) (void);
+	void (*free_swept_blocks) (void);
 	void (*check_scan_starts) (void);
 	void (*dump_heap) (FILE *heap_dump_file);
 	gint64 (*get_used_size) (void);
@@ -701,7 +702,6 @@ struct _SgenMajorCollector {
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (ScannedObjectCounts *counts);
 	gboolean (*drain_gray_stack) (ScanCopyContext ctx);
-	void (*have_computed_minor_collection_allowance) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);

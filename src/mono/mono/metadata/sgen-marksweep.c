@@ -307,6 +307,10 @@ ms_get_empty_block (void)
 	return block;
 }
 
+/*
+ * This doesn't actually free a block immediately, but enqueues it into the `empty_blocks`
+ * list, where it will either be freed later on, or reused in nursery collections.
+ */
 static void
 ms_free_block (void *block)
 {
@@ -1385,7 +1389,7 @@ compare_pointers (const void *va, const void *vb) {
 #endif
 
 static void
-major_have_computer_minor_collection_allowance (void)
+major_free_swept_blocks (void)
 {
 	size_t section_reserve = sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
 
@@ -1975,6 +1979,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
 	collector->have_finished_sweeping = major_have_finished_sweeping;
+	collector->free_swept_blocks = major_free_swept_blocks;
 	collector->check_scan_starts = major_check_scan_starts;
 	collector->dump_heap = major_dump_heap;
 	collector->get_used_size = major_get_used_size;
@@ -1982,7 +1987,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->finish_nursery_collection = major_finish_nursery_collection;
 	collector->start_major_collection = major_start_major_collection;
 	collector->finish_major_collection = major_finish_major_collection;
-	collector->have_computed_minor_collection_allowance = major_have_computer_minor_collection_allowance;
 	collector->ptr_is_in_non_pinned_space = major_ptr_is_in_non_pinned_space;
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
