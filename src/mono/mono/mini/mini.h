@@ -333,21 +333,6 @@ typedef struct {
  */
 typedef MonoStackFrameInfo StackFrameInfo;
 
-#define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
-
-typedef struct {
-	int il_offset, native_offset, flags;
-	/* Indexes of successor sequence points */
-	int *next;
-	/* Number of entries in next */
-	int next_len;
-} SeqPoint;
-
-typedef struct {
-	int len;
-	SeqPoint seq_points [MONO_ZERO_LEN_ARRAY];
-} MonoSeqPointInfo;
-
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
 	for (b = 0; b < n; b++)\
@@ -1597,7 +1582,7 @@ typedef struct {
 	GPtrArray *seq_points;
 
 	/* The encoded sequence point info */
-	MonoSeqPointInfo *seq_point_info;
+	struct MonoSeqPointInfo *seq_point_info;
 
 	/* Method headers which need to be freed after compilation */
 	GSList *headers_to_free;

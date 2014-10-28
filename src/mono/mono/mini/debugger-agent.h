@@ -3,13 +3,6 @@
 
 #include "mini.h"
 
-/* IL offsets used to mark the sequence points belonging to method entry/exit events */
-#define METHOD_ENTRY_IL_OFFSET -1
-#define METHOD_EXIT_IL_OFFSET 0xffffff
-
-/* Native offset used to mark seq points in dead code */
-#define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1
-
 void
 mono_debugger_agent_parse_options (char *options) MONO_INTERNAL;
 
