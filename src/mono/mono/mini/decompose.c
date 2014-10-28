@@ -497,12 +497,12 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 
 			if (power > 1) {
 				intermediate_reg = compensator_reg;
-				MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_IMM : OP_SHR_IMM, intermediate_reg, ins->sreg1, is_long ? 63 : 31);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_IMM : OP_ISHR_IMM, intermediate_reg, ins->sreg1, is_long ? 63 : 31);
 			} else {
 				intermediate_reg = ins->sreg1;
 			}
 
-			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_UN_IMM : OP_SHR_UN_IMM, compensator_reg, intermediate_reg, (is_long ? 64 : 32) - power);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_UN_IMM : OP_ISHR_UN_IMM, compensator_reg, intermediate_reg, (is_long ? 64 : 32) - power);
 			MONO_EMIT_NEW_BIALU (cfg, is_long ? OP_LADD : OP_IADD, ins->dreg, ins->sreg1, compensator_reg);
 			/* Compute remainder */
 			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LAND_IMM : OP_AND_IMM, ins->dreg, ins->dreg, (1 << power) - 1);
