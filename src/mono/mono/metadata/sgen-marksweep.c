@@ -1107,7 +1107,7 @@ bitcount (mword d)
 }
 
 static void
-ms_sweep (void)
+major_sweep (void)
 {
 	int i;
 	MSBlockInfo *block;
@@ -1224,12 +1224,6 @@ ms_sweep (void)
 	want_evacuation = (float)total_evacuate_saved / (float)total_evacuate_heap > (1 - concurrent_evacuation_threshold);
 
 	have_swept = TRUE;
-}
-
-static void
-major_sweep (void)
-{
-	ms_sweep ();
 }
 
 static gboolean
