@@ -1112,22 +1112,18 @@ bitcount (mword d)
 	return count;
 }
 
+/* statistics for evacuation */
+static size_t *sweep_slots_available;
+static size_t *sweep_slots_used;
+static size_t *sweep_num_blocks;
+
 static void
-major_sweep (void)
+sweep_start (void)
 {
 	int i;
-	MSBlockInfo *block;
-
-	/* statistics for evacuation */
-	int *slots_available = alloca (sizeof (int) * num_block_obj_sizes);
-	int *slots_used = alloca (sizeof (int) * num_block_obj_sizes);
-	int *num_blocks = alloca (sizeof (int) * num_block_obj_sizes);
-
-	mword total_evacuate_heap = 0;
-	mword total_evacuate_saved = 0;
 
 	for (i = 0; i < num_block_obj_sizes; ++i)
-		slots_available [i] = slots_used [i] = num_blocks [i] = 0;
+		sweep_slots_available [i] = sweep_slots_used [i] = sweep_num_blocks [i] = 0;
 
 	/* clear all the free lists */
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i) {
@@ -1136,6 +1132,13 @@ major_sweep (void)
 		for (j = 0; j < num_block_obj_sizes; ++j)
 			free_blocks [j] = NULL;
 	}
+}
+
+static mono_native_thread_return_t
+sweep_loop_thread_func (void *dummy)
+{
+	int i;
+	MSBlockInfo *block;
 
 	/* traverse all blocks, free and zero unmarked objects */
 	FOREACH_BLOCK (block) {
@@ -1176,9 +1179,9 @@ major_sweep (void)
 
 		if (have_live) {
 			if (!has_pinned) {
-				++num_blocks [obj_size_index];
-				slots_used [obj_size_index] += nused;
-				slots_available [obj_size_index] += count;
+				++sweep_num_blocks [obj_size_index];
+				sweep_slots_used [obj_size_index] += nused;
+				sweep_slots_available [obj_size_index] += count;
 			}
 
 			/*
@@ -1208,9 +1211,19 @@ major_sweep (void)
 	} END_FOREACH_BLOCK;
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
 
+	return NULL;
+}
+
+static void
+sweep_finish (void)
+{
+	mword total_evacuate_heap = 0;
+	mword total_evacuate_saved = 0;
+	int i;
+
 	for (i = 0; i < num_block_obj_sizes; ++i) {
-		float usage = (float)slots_used [i] / (float)slots_available [i];
-		if (num_blocks [i] > 5 && usage < evacuation_threshold) {
+		float usage = (float)sweep_slots_used [i] / (float)sweep_slots_available [i];
+		if (sweep_num_blocks [i] > 5 && usage < evacuation_threshold) {
 			evacuate_block_obj_sizes [i] = TRUE;
 			/*
 			g_print ("slot size %d - %d of %d used\n",
@@ -1220,16 +1233,24 @@ major_sweep (void)
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
 		{
-			mword total_bytes = block_obj_sizes [i] * slots_available [i];
+			mword total_bytes = block_obj_sizes [i] * sweep_slots_available [i];
 			total_evacuate_heap += total_bytes;
 			if (evacuate_block_obj_sizes [i])
-				total_evacuate_saved += total_bytes - block_obj_sizes [i] * slots_used [i];
+				total_evacuate_saved += total_bytes - block_obj_sizes [i] * sweep_slots_used [i];
 		}
 	}
 
 	want_evacuation = (float)total_evacuate_saved / (float)total_evacuate_heap > (1 - concurrent_evacuation_threshold);
 
 	have_swept = TRUE;
+}
+
+static void
+major_sweep (void)
+{
+	sweep_start ();
+	sweep_loop_thread_func (NULL);
+	sweep_finish ();
 }
 
 static gboolean
@@ -1926,6 +1947,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	evacuate_block_obj_sizes = sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		evacuate_block_obj_sizes [i] = FALSE;
+
+	sweep_slots_available = sgen_alloc_internal_dynamic (sizeof (size_t) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
+	sweep_slots_used = sgen_alloc_internal_dynamic (sizeof (size_t) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
+	sweep_num_blocks = sgen_alloc_internal_dynamic (sizeof (size_t) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 
 	/*
 	{
