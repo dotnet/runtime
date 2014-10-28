@@ -344,6 +344,7 @@ sparc_sources = \
 s390x_sources = \
 	mini-s390x.c		\
 	mini-s390x.h		\
+	support-s390x.h		\
 	exceptions-s390x.c	\
 	tramp-s390x.c
 
