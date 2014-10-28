@@ -666,11 +666,6 @@ struct _SgenMajorCollector {
 	gboolean sweeps_lazily;
 
 	/*
-	 * This is set to TRUE if the sweep for the last major
-	 * collection has been completed.
-	 */
-	gboolean *have_swept;
-	/*
 	 * This is set to TRUE by the sweep if the next major
 	 * collection should be synchronous (for evacuation).  For
 	 * non-concurrent collectors, this should be NULL.
@@ -697,6 +692,7 @@ struct _SgenMajorCollector {
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
+	gboolean (*have_finished_sweeping) (void);
 	void (*check_scan_starts) (void);
 	void (*dump_heap) (FILE *heap_dump_file);
 	gint64 (*get_used_size) (void);

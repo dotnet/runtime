@@ -143,7 +143,7 @@ static float concurrent_evacuation_threshold = 0.666f;
 static gboolean want_evacuation = FALSE;
 
 static gboolean lazy_sweep = TRUE;
-static gboolean have_swept;
+static gboolean have_swept = TRUE;
 
 static gboolean concurrent_mark;
 
@@ -1232,6 +1232,12 @@ major_sweep (void)
 	ms_sweep ();
 }
 
+static gboolean
+major_have_finished_sweeping (void)
+{
+	return have_swept;
+}
+
 static int count_pinned_ref;
 static int count_pinned_nonref;
 static int count_nonpinned_ref;
@@ -1352,6 +1358,9 @@ major_start_major_collection (void)
 
 		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 	}
+
+	SGEN_ASSERT (0, have_swept, "Cannot start major collection without having finished sweeping");
+	have_swept = FALSE;
 }
 
 static void
@@ -1951,8 +1960,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 
-	collector->have_swept = &have_swept;
-
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
@@ -1973,6 +1980,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	}
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
+	collector->have_finished_sweeping = major_have_finished_sweeping;
 	collector->check_scan_starts = major_check_scan_starts;
 	collector->dump_heap = major_dump_heap;
 	collector->get_used_size = major_get_used_size;

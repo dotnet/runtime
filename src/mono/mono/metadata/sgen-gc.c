@@ -2522,7 +2522,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	 */
 
 	objects_pinned = 0;
-	*major_collector.have_swept = FALSE;
 
 	if (xdomain_checks) {
 		sgen_clear_nursery_fragments ();

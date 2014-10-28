@@ -87,7 +87,7 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 	if (!need_calculate_minor_collection_allowance)
 		return;
 
-	if (!*major_collector.have_swept) {
+	if (!major_collector.have_finished_sweeping ()) {
 		if (overwrite)
 			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 		return;
