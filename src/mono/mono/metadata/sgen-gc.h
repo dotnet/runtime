@@ -730,7 +730,7 @@ void sgen_marksweep_conc_init (SgenMajorCollector *collector);
 SgenMajorCollector* sgen_get_major_collector (void);
 
 
-typedef struct _SgenRemeberedSet {
+typedef struct _SgenRememberedSet {
 	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
 	void (*wbarrier_set_arrayref) (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
 	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
@@ -739,16 +739,16 @@ typedef struct _SgenRemeberedSet {
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
-	void (*finish_scan_remsets) (void *start_nursery, void *end_nursery, SgenGrayQueue *queue);
+	void (*scan_remsets) (SgenGrayQueue *queue);
 
 	void (*prepare_for_major_collection) (void);
 
 	void (*finish_minor_collection) (void);
 	gboolean (*find_address) (char *addr);
 	gboolean (*find_address_with_cards) (char *cards_start, guint8 *cards, char *addr);
-} SgenRemeberedSet;
+} SgenRememberedSet;
 
-SgenRemeberedSet *sgen_get_remset (void);
+SgenRememberedSet *sgen_get_remset (void);
 
 static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
 slow_object_get_size (MonoVTable *vtable, MonoObject* o)

@@ -426,7 +426,7 @@ sgen_card_table_finish_minor_collection (void)
 }
 
 static void
-sgen_card_table_finish_scan_remsets (void *start_nursery, void *end_nursery, SgenGrayQueue *queue)
+sgen_card_table_scan_remsets (SgenGrayQueue *queue)
 {
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
@@ -745,7 +745,7 @@ sgen_card_tables_collect_stats (gboolean begin)
 }
 
 void
-sgen_card_table_init (SgenRemeberedSet *remset)
+sgen_card_table_init (SgenRememberedSet *remset)
 {
 	sgen_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "card table");
 
@@ -777,7 +777,7 @@ sgen_card_table_init (SgenRemeberedSet *remset)
 	remset->wbarrier_generic_nostore = sgen_card_table_wbarrier_generic_nostore;
 	remset->record_pointer = sgen_card_table_record_pointer;
 
-	remset->finish_scan_remsets = sgen_card_table_finish_scan_remsets;
+	remset->scan_remsets = sgen_card_table_scan_remsets;
 
 	remset->finish_minor_collection = sgen_card_table_finish_minor_collection;
 	remset->prepare_for_major_collection = sgen_card_table_prepare_for_major_collection;
