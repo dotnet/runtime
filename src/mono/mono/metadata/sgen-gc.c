@@ -4094,46 +4094,6 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 	remset.wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
 }
 
-static char *found_obj;
-
-static void
-find_object_for_ptr_callback (char *obj, size_t size, void *user_data)
-{
-	char *ptr = user_data;
-
-	if (ptr >= obj && ptr < obj + size) {
-		g_assert (!found_obj);
-		found_obj = obj;
-	}
-}
-
-/* for use in the debugger */
-char* find_object_for_ptr (char *ptr);
-char*
-find_object_for_ptr (char *ptr)
-{
-	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
-		found_obj = NULL;
-		sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-				find_object_for_ptr_callback, ptr, TRUE);
-		if (found_obj)
-			return found_obj;
-	}
-
-	found_obj = NULL;
-	sgen_los_iterate_objects (find_object_for_ptr_callback, ptr);
-	if (found_obj)
-		return found_obj;
-
-	/*
-	 * Very inefficient, but this is debugging code, supposed to
-	 * be called from gdb, so we don't care.
-	 */
-	found_obj = NULL;
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, find_object_for_ptr_callback, ptr);
-	return found_obj;
-}
-
 void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
@@ -4144,7 +4104,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
 	/* FIXME: ptr_in_heap must be called with the GC lock held */
 	if (xdomain_checks && *(MonoObject**)ptr && ptr_in_heap (ptr)) {
-		char *start = find_object_for_ptr (ptr);
+		char *start = sgen_find_object_for_ptr (ptr);
 		MonoObject *value = *(MonoObject**)ptr;
 		LOCK_GC;
 		g_assert (start);

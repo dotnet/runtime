@@ -1161,6 +1161,7 @@ void sgen_check_heap_marked (gboolean nursery_must_be_pinned);
 void sgen_check_nursery_objects_pinned (gboolean pinned);
 void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type);
 void sgen_check_for_xdomain_refs (void);
+char* sgen_find_object_for_ptr (char *ptr);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
