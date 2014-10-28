@@ -4,8 +4,12 @@
 #define S390_SET(loc, dr, v)					\
 	do {							\
 		guint64 val = (guint64) v;			\
-		if (s390_is_uimm16(val)) {			\
+		if (s390_is_imm16(val)) {			\
+			s390_lghi(loc, dr, val);		\
+		} else if (s390_is_uimm16(val)) {		\
 			s390_llill(loc, dr, val);		\
+		} else if (s390_is_imm32(val)) {		\
+			s390_lgfi(loc, dr, val);		\
 		} else if (s390_is_uimm32(val)) {		\
 			s390_llilf(loc, dr, val);		\
 		} else {					\

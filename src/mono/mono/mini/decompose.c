@@ -486,6 +486,9 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 			ins->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (ins);
 			ins->inst_c0 = 0;
+#if __s390__
+		}
+#else
 		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) && (power != -1)) {
 			gboolean is_long = ins->opcode == OP_LREM_IMM;
 			int compensator_reg = alloc_ireg (cfg);
@@ -511,6 +514,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 
 			NULLIFY_INS (ins);
 		}
+#endif
 		break;
 	}
 

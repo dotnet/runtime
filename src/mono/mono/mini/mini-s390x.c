@@ -624,7 +624,7 @@ indent (int diff) {
 	if (diff < 0)
 		indent_level += diff;
 	v = indent_level;
-	printf("%p [%3d] ",pthread_self(),v);
+	printf("%p [%3d] ",(void *)pthread_self(),v);
 	while (v-- > 0) {
 		printf (". ");
 	}
@@ -2798,6 +2798,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IREM_UN_IMM:
 		case OP_LAND_IMM:
 		case OP_LOR_IMM:
+		case OP_LREM_IMM:
 		case OP_LXOR_IMM:
 		case OP_LOCALLOC_IMM:
 			mono_decompose_op_imm (cfg, bb, ins);
@@ -3312,6 +3313,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lgr  (code, ins->dreg, s390_r0);
 			break;
 		}
+		case OP_LREM_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi (code, s390_r13, ins->inst_imm);
+			} else {
+				s390_lgfi (code, s390_r13, ins->inst_imm);
+			}
+			s390_lgr  (code, s390_r0, ins->sreg1);
+			s390_dsgr (code, s390_r0, s390_r13);
+			s390_lgfr (code, ins->dreg, s390_r0);
+		}
+			break;
 		case OP_LREM_UN: {
 			s390_lgr   (code, s390_r1, ins->sreg1);
 			s390_lghi  (code, s390_r0, 0);
@@ -5735,9 +5747,35 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
+mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, 
+					    int offset, gboolean load_imt_reg)
 {
-	return NULL;
+       guint8 *code, *start;
+       int size = 20;
+
+       start = code = mono_global_codeman_reserve (size);
+
+       /*
+        * Replace the "this" argument with the target
+        */
+       s390_lgr  (code, s390_r1, s390_r2);
+       s390_lg   (code, s390_r2, s390_r1, 0, MONO_STRUCT_OFFSET(MonoDelegate, target));        
+       
+       /*
+        * Load the IMT register, if needed
+        */
+       if (load_imt_reg) {
+               s390_lg  (code, MONO_ARCH_IMT_REG, s390_r2, 0, MONO_STRUCT_OFFSET(MonoDelegate, method));
+       }
+
+       /*
+        * Load the vTable
+        */
+       s390_lg  (code, s390_r1, s390_r2, 0, MONO_STRUCT_OFFSET(MonoObject, vtable));
+       s390_agfi(code, s390_r1, offset);
+       s390_br  (code, s390_r1);
+
+       return(start);
 }
 
 /*========================= End of Function ========================*/
@@ -5833,7 +5871,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 						s390_lg	  (code, s390_r1, 0, s390_r1, 0);
 					}
 					s390_br	  (code, s390_r1);
-					target = S390_RELATIVE(code, item->jmp_code);
+					target = (gint64) S390_RELATIVE(code, item->jmp_code);
 					s390_patch_rel(item->jmp_code+2, target);
 					S390_SET  (code, s390_r1, fail_tramp);
 					s390_br	  (code, s390_r1);
@@ -5863,7 +5901,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 		if (item->jmp_code) {
 			if (item->check_target_idx) {
 				gint64 offset;
-				offset = S390_RELATIVE(imt_entries [item->check_target_idx]->code_target,
+				offset = (gint64) S390_RELATIVE(imt_entries [item->check_target_idx]->code_target,
 						       item->jmp_code);
 				s390_patch_rel ((guchar *) item->jmp_code + 2, (guint64) offset);
 			}
@@ -5932,7 +5970,7 @@ mono_arch_get_cie_program (void)
 {
 	GSList *l = NULL;
 
-	mono_add_unwind_op_def_cfa (l, NULL, NULL, STK_BASE, 0);
+	mono_add_unwind_op_def_cfa (l, 0, 0, STK_BASE, 0);
 
 	return(l);
 }
