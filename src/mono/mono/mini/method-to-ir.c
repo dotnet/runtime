@@ -68,6 +68,7 @@
 #include "jit-icalls.h"
 #include "jit.h"
 #include "debugger-agent.h"
+#include "seq-points.h"
 
 #define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20

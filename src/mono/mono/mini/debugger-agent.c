@@ -84,6 +84,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/utils/mono-threads.h>
 #include "debugger-agent.h"
 #include "mini.h"
+#include "seq-points.h"
 
 /*
 On iOS we can't use System.Environment.Exit () as it will do the wrong
@@ -3135,24 +3136,6 @@ is_suspended (void)
 	return count_threads_to_wait_for () == 0;
 }
 
-static MonoSeqPointInfo*
-get_seq_points (MonoDomain *domain, MonoMethod *method)
-{
-	MonoSeqPointInfo *seq_points;
-
-	mono_domain_lock (domain);
-	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-	if (!seq_points && method->is_inflated) {
-		/* generic sharing + aot */
-		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mono_method_get_declaring_generic_method (method));
-		if (!seq_points)
-			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, mini_get_shared_method (method));
-	}
-	mono_domain_unlock (domain);
-
-	return seq_points;
-}
-
 static void
 no_seq_points_found (MonoMethod *method)
 {
@@ -3160,87 +3143,6 @@ no_seq_points_found (MonoMethod *method)
 	 * This can happen in full-aot mode with assemblies AOTed without the 'soft-debug' option to save space.
 	 */
 	printf ("Unable to find seq points for method '%s'.\n", mono_method_full_name (method, TRUE));
-}
-
-/*
- * find_next_seq_point_for_native_offset:
- *
- *   Find the first sequence point after NATIVE_OFFSET.
- */
-static SeqPoint*
-find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
-{
-	MonoSeqPointInfo *seq_points;
-	int i;
-
-	seq_points = get_seq_points (domain, method);
-	if (!seq_points) {
-		if (info)
-			*info = NULL;
-		return NULL;
-	}
-	g_assert (seq_points);
-	if (info)
-		*info = seq_points;
-
-	for (i = 0; i < seq_points->len; ++i) {
-		if (seq_points->seq_points [i].native_offset >= native_offset)
-			return &seq_points->seq_points [i];
-	}
-
-	return NULL;
-}
-
-/*
- * find_prev_seq_point_for_native_offset:
- *
- *   Find the first sequence point before NATIVE_OFFSET.
- */
-static SeqPoint*
-find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
-{
-	MonoSeqPointInfo *seq_points;
-	int i;
-
-	seq_points = get_seq_points (domain, method);
-	if (info)
-		*info = seq_points;
-	if (!seq_points)
-		return NULL;
-
-	for (i = seq_points->len - 1; i >= 0; --i) {
-		if (seq_points->seq_points [i].native_offset <= native_offset)
-			return &seq_points->seq_points [i];
-	}
-
-	return NULL;
-}
-
-/*
- * find_seq_point:
- *
- *   Find the sequence point corresponding to the IL offset IL_OFFSET, which
- * should be the location of a sequence point.
- */
-static G_GNUC_UNUSED SeqPoint*
-find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info)
-{
-	MonoSeqPointInfo *seq_points;
-	int i;
-
-	*info = NULL;
-
-	seq_points = get_seq_points (domain, method);
-	if (!seq_points)
-		return NULL;
-	*info = seq_points;
-
-	for (i = 0; i < seq_points->len; ++i) {
-		if (seq_points->seq_points [i].il_offset == il_offset)
-			return &seq_points->seq_points [i];
-	}
-
-	return NULL;
 }
 
 typedef struct {

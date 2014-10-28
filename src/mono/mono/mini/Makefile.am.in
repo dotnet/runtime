@@ -289,6 +289,7 @@ endif
 
 genmdesc_SOURCES = \
 	mini.h		\
+	seq-points.h	\
 	genmdesc.c	\
 	helpers.c	\
 	../metadata/opcodes.c
@@ -375,6 +376,8 @@ endif
 
 common_sources = \
 	mini.c			\
+	seq-points.c	\
+	seq-points.h	\
 	ir-emit.h		\
 	method-to-ir.c		\
 	decompose.c		\

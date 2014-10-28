@@ -58,6 +58,7 @@
 #include <mono/utils/mono-digest.h>
 
 #include "mini.h"
+#include "seq-points.h"
 #include "version.h"
 
 #ifndef DISABLE_AOT
