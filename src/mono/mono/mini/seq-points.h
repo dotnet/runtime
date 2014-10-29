@@ -16,16 +16,25 @@
 
 typedef struct {
 	int il_offset, native_offset, flags;
-	/* Indexes of successor sequence points */
-	int *next;
+	/* Offset of indexes of successor sequence points on the compressed buffer */
+	int next_offset;
 	/* Number of entries in next */
 	int next_len;
 } SeqPoint;
 
-typedef struct MonoSeqPointInfo {
-	int len;
-	SeqPoint seq_points [MONO_ZERO_LEN_ARRAY];
+typedef struct MonoSeqPointInfo{
+	GByteArray* array;
+	GByteArray* next_array;
 } MonoSeqPointInfo;
+
+typedef struct {
+	SeqPoint seq_point;
+	guint8* ptr;
+	MonoSeqPointInfo* info;
+} SeqPointIterator;
+
+void
+seq_point_info_free (gpointer info);
 
 void
 mono_save_seq_point_info (MonoCompile *cfg);
@@ -33,13 +42,22 @@ mono_save_seq_point_info (MonoCompile *cfg);
 MonoSeqPointInfo*
 get_seq_points (MonoDomain *domain, MonoMethod *method);
 
-SeqPoint*
-find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info);
+gboolean
+find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point);
 
-SeqPoint*
-find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info);
+gboolean
+find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point);
 
-G_GNUC_UNUSED SeqPoint*
-find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info);
+gboolean
+find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info, SeqPoint *seq_point);
+
+gboolean
+seq_point_iterator_next (SeqPointIterator* it);
+
+void
+seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info);
+
+void
+seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next);
 
 #endif /* __MONO_SEQ_POINTS_H__ */
