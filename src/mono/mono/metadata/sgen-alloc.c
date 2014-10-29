@@ -291,20 +291,15 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			available_in_tlab = (int)(TLAB_REAL_END - TLAB_NEXT);//We'll never have tlabs > 2Gb
 			if (size > tlab_size || available_in_tlab > SGEN_MAX_NURSERY_WASTE) {
 				/* Allocate directly from the nursery */
-				do {
-					p = sgen_nursery_alloc (size);
-					if (!p) {
-						sgen_ensure_free_space (real_size);
-						if (degraded_mode)
-							return alloc_degraded (vtable, size, FALSE);
-						else
-							p = sgen_nursery_alloc (size);
-					}
-				} while (!p);
+				p = sgen_nursery_alloc (size);
 				if (!p) {
-					// no space left
-					g_assert (0);
+					sgen_ensure_free_space (real_size);
+					if (degraded_mode)
+						return alloc_degraded (vtable, size, FALSE);
+					else
+						p = sgen_nursery_alloc (size);
 				}
+				SGEN_ASSERT (0, p, "Out of memory");
 
 				zero_tlab_if_necessary (p, size);
 			} else {
@@ -313,21 +308,15 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					SGEN_LOG (3, "Retire TLAB: %p-%p [%ld]", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size));
 				sgen_nursery_retire_region (p, available_in_tlab);
 
-				do {
-					p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
-					if (!p) {
-						sgen_ensure_free_space (tlab_size);
-						if (degraded_mode)
-							return alloc_degraded (vtable, size, FALSE);
-						else
-							p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
-					}
-				} while (!p);
-					
+				p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				if (!p) {
-					// no space left
-					g_assert (0);
+					sgen_ensure_free_space (tlab_size);
+					if (degraded_mode)
+						return alloc_degraded (vtable, size, FALSE);
+					else
+						p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				}
+				SGEN_ASSERT (0, p, "Out of memory");
 
 				/* Allocate a new TLAB from the current nursery fragment */
 				TLAB_START = (char*)p;
