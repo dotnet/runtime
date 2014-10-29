@@ -10,6 +10,144 @@
 #include "mini.h"
 #include "seq-points.h"
 
+static guint8
+encode_var_int (guint8* buf, int val)
+{
+	guint8 size = 0;
+
+	do {
+		guint8 byte = val & 0x7f;
+		g_assert (size < 4 && "value has more than 28 bits");
+		val >>= 7;
+		if(val) byte |= 0x80;
+		*(buf++) = byte;
+		size++;
+	} while (val);
+
+	return size;
+}
+
+static guint8
+decode_var_int (guint8* buf, int* val)
+{
+	guint8* p = buf;
+
+	int low;
+	int b;
+	b = *(p++); low   = (b & 0x7f)      ; if(!(b & 0x80)) goto done;
+	b = *(p++); low  |= (b & 0x7f) <<  7; if(!(b & 0x80)) goto done;
+	b = *(p++); low  |= (b & 0x7f) << 14; if(!(b & 0x80)) goto done;
+	b = *(p++); low  |= (b & 0x7f) << 21; if(!(b & 0x80)) goto done;
+
+	g_assert (FALSE && "value has more than 28 bits");
+
+done:
+
+	*val = low;
+	return p-buf;
+}
+
+static guint32
+encode_zig_zag (int val)
+{
+	return (val << 1) ^ (val >> 31);
+}
+
+static int
+decode_zig_zag (guint32 val)
+{
+	int n = val;
+	return (n >> 1) ^ (-(n & 1));
+}
+
+static int
+seq_point_read (SeqPoint* seq_point, guint8* ptr)
+{
+	int value;
+	guint8* ptr0 = ptr;
+
+	ptr += decode_var_int (ptr, &value);
+	seq_point->il_offset += decode_zig_zag (value);
+
+	ptr += decode_var_int (ptr, &value);
+	seq_point->native_offset += decode_zig_zag (value);
+
+	ptr += decode_var_int (ptr, &value);
+	seq_point->flags = value;
+
+	ptr += decode_var_int (ptr, &value);
+	seq_point->next_len = value;
+
+	if (seq_point->next_len) {
+		ptr += decode_var_int (ptr, &value);
+		seq_point->next_offset = value;
+	}
+
+	return ptr - ptr0;
+}
+
+static MonoSeqPointInfo*
+seq_point_info_new (void)
+{
+	MonoSeqPointInfo* info = g_new0 (MonoSeqPointInfo, 1);
+	info->array = g_byte_array_new ();
+	info->next_array = g_byte_array_new ();
+	return info;
+}
+
+void
+seq_point_info_free (gpointer ptr)
+{
+	MonoSeqPointInfo* info = (MonoSeqPointInfo*) ptr;
+
+	g_byte_array_free (info->array, TRUE);
+	g_byte_array_free (info->next_array, TRUE);
+	g_free (info);
+}
+
+static gboolean
+seq_point_info_add_seq_point (MonoSeqPointInfo *info, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next)
+{
+	int il_delta, native_delta;
+	GSList *l;
+	guint8 buffer[4];
+	guint8 len;
+
+	// TODO use flag instead of encoding 4 bytes for METHOD_EXIT_IL_OFFSET
+
+	sp->next_offset = info->next_array->len;
+	sp->next_len = g_slist_length (next);
+
+	il_delta = sp->il_offset - last_seq_point->il_offset;
+	native_delta = sp->native_offset - last_seq_point->native_offset;
+
+	len = encode_var_int (buffer, encode_zig_zag (il_delta));
+	g_byte_array_append (info->array, buffer, len);
+
+	len = encode_var_int (buffer, encode_zig_zag (native_delta));
+	g_byte_array_append (info->array, buffer, len);
+
+	len = encode_var_int (buffer, sp->flags);
+	g_byte_array_append (info->array, buffer, len);
+
+	len = encode_var_int (buffer, sp->next_len);
+	g_byte_array_append (info->array, buffer, len);
+
+	if (sp->next_len) {
+		len = encode_var_int (buffer, sp->next_offset);
+		g_byte_array_append (info->array, buffer, len);
+	}
+
+	for (l = next; l; l = l->next) {
+		int next_index = GPOINTER_TO_UINT (l->data);
+		guint8 buffer[4];
+		int len = encode_var_int (buffer, next_index);
+		g_byte_array_append (info->next_array, buffer, len);
+	}
+
+	return TRUE;
+}
+
 static void
 collect_pred_seq_points (MonoBasicBlock *bb, MonoInst *ins, GSList **next, int depth)
 {
@@ -46,16 +184,16 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	MonoInst *last;
 	MonoDomain *domain = cfg->domain;
 	int i;
-	MonoSeqPointInfo *info;
 	GSList **next;
+	SeqPoint* seq_points;
 
 	if (!cfg->seq_points)
 		return;
 
-	info = g_malloc0 (sizeof (MonoSeqPointInfo) + (cfg->seq_points->len * sizeof (SeqPoint)));
-	info->len = cfg->seq_points->len;
+	seq_points = g_new0 (SeqPoint, cfg->seq_points->len);
+
 	for (i = 0; i < cfg->seq_points->len; ++i) {
-		SeqPoint *sp = &info->seq_points [i];
+		SeqPoint *sp = &seq_points [i];
 		MonoInst *ins = g_ptr_array_index (cfg->seq_points, i);
 
 		sp->il_offset = ins->inst_imm;
@@ -122,40 +260,47 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 	if (cfg->verbose_level > 2) {
 		printf ("\nSEQ POINT MAP: \n");
-	}
 
-	for (i = 0; i < cfg->seq_points->len; ++i) {
-		SeqPoint *sp = &info->seq_points [i];
-		GSList *l;
-		int j, next_index;
+		for (i = 0; i < cfg->seq_points->len; ++i) {
+			SeqPoint *sp = &seq_points [i];
+			GSList *l;
 
-		sp->next_len = g_slist_length (next [i]);
-		sp->next = g_new (int, sp->next_len);
-		j = 0;
-		if (cfg->verbose_level > 2 && next [i]) {
+			if (!next [i])
+				continue;
+
 			printf ("\tIL0x%x ->", sp->il_offset);
 			for (l = next [i]; l; l = l->next) {
-				next_index = GPOINTER_TO_UINT (l->data);
-				printf (" IL0x%x", info->seq_points [next_index].il_offset);
+				int next_index = GPOINTER_TO_UINT (l->data);
+				printf (" IL0x%x", seq_points [next_index].il_offset);
 			}
 			printf ("\n");
 		}
-		for (l = next [i]; l; l = l->next) {
-			next_index = GPOINTER_TO_UINT (l->data);
-			sp->next [j ++] = next_index;
-		}
-		g_slist_free (next [i]);
 	}
-	g_free (next);
 
-	cfg->seq_point_info = info;
+	cfg->seq_point_info = seq_point_info_new ();
+
+	{ /* Add sequence points to seq_point_info */
+		SeqPoint zero_seq_point = {0};
+		SeqPoint* last_seq_point = &zero_seq_point;
+
+		for (i = 0; i < cfg->seq_points->len; ++i) {
+			SeqPoint *sp = &seq_points [i];
+
+			if (seq_point_info_add_seq_point (cfg->seq_point_info, sp, last_seq_point, next[i]))
+				last_seq_point = sp;
+
+			g_slist_free (next [i]);
+		}
+	}
+
+	g_free (next);
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
 		mono_domain_lock (domain);
 		// FIXME: How can the lookup succeed ?
 		if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, cfg->method_to_register))
-			g_hash_table_insert (domain_jit_info (domain)->seq_points, cfg->method_to_register, info);
+			g_hash_table_insert (domain_jit_info (domain)->seq_points, cfg->method_to_register, cfg->seq_point_info);
 		mono_domain_unlock (domain);
 	}
 
@@ -181,33 +326,76 @@ get_seq_points (MonoDomain *domain, MonoMethod *method)
 	return seq_points;
 }
 
+static gboolean
+seq_point_find_next_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
+{
+	SeqPointIterator it;
+	seq_point_iterator_init (&it, info);
+	while (seq_point_iterator_next (&it)) {
+		if (it.seq_point.native_offset >= native_offset) {
+			memcpy (seq_point, &it.seq_point, sizeof (SeqPoint));
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+static gboolean
+seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
+{
+	SeqPoint prev_seq_point;
+	gboolean  is_first = TRUE;
+	SeqPointIterator it;
+	seq_point_iterator_init (&it, info);
+	while (seq_point_iterator_next (&it) && it.seq_point.native_offset <= native_offset) {
+		memcpy (&prev_seq_point, &it.seq_point, sizeof (SeqPoint));
+		is_first = FALSE;
+	}
+
+	if (!is_first && prev_seq_point.native_offset <= native_offset) {
+		memcpy (seq_point, &prev_seq_point, sizeof (SeqPoint));
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* seq_point)
+{
+	SeqPointIterator it;
+	seq_point_iterator_init (&it, info);
+	while (seq_point_iterator_next (&it)) {
+		if (it.seq_point.il_offset == il_offset) {
+			memcpy (seq_point, &it.seq_point, sizeof (SeqPoint));
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 /*
  * find_next_seq_point_for_native_offset:
  *
  *   Find the first sequence point after NATIVE_OFFSET.
  */
-SeqPoint*
-find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
+gboolean
+find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
 {
 	MonoSeqPointInfo *seq_points;
-	int i;
 
 	seq_points = get_seq_points (domain, method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;
-		return NULL;
+		return FALSE;
 	}
-	g_assert (seq_points);
 	if (info)
 		*info = seq_points;
 
-	for (i = 0; i < seq_points->len; ++i) {
-		if (seq_points->seq_points [i].native_offset >= native_offset)
-			return &seq_points->seq_points [i];
-	}
-
-	return NULL;
+	return seq_point_find_next_by_native_offset (seq_points, native_offset, seq_point);
 }
 
 /*
@@ -215,24 +403,21 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
  *
  *   Find the first sequence point before NATIVE_OFFSET.
  */
-SeqPoint*
-find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
+gboolean
+find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
 {
 	MonoSeqPointInfo *seq_points;
-	int i;
 
 	seq_points = get_seq_points (domain, method);
+	if (!seq_points) {
+		if (info)
+			*info = NULL;
+		return FALSE;
+	}
 	if (info)
 		*info = seq_points;
-	if (!seq_points)
-		return NULL;
 
-	for (i = seq_points->len - 1; i >= 0; --i) {
-		if (seq_points->seq_points [i].native_offset <= native_offset)
-			return &seq_points->seq_points [i];
-	}
-
-	return NULL;
+	return seq_point_find_prev_by_native_offset (seq_points, native_offset, seq_point);
 }
 
 /*
@@ -241,23 +426,59 @@ find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
  *   Find the sequence point corresponding to the IL offset IL_OFFSET, which
  * should be the location of a sequence point.
  */
-G_GNUC_UNUSED SeqPoint*
-find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info)
+gboolean
+find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info, SeqPoint *seq_point)
 {
 	MonoSeqPointInfo *seq_points;
-	int i;
-
-	*info = NULL;
 
 	seq_points = get_seq_points (domain, method);
-	if (!seq_points)
-		return NULL;
-	*info = seq_points;
-
-	for (i = 0; i < seq_points->len; ++i) {
-		if (seq_points->seq_points [i].il_offset == il_offset)
-			return &seq_points->seq_points [i];
+	if (!seq_points) {
+		if (info)
+			*info = NULL;
+		return FALSE;
 	}
+	if (info)
+		*info = seq_points;
 
-	return NULL;
+	return seq_point_find_by_il_offset (seq_points, il_offset, seq_point);
+}
+
+void
+seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
+{
+	int i;
+	guint8* ptr;
+	SeqPointIterator it;
+	GArray* seq_points = g_array_new (FALSE, TRUE, sizeof (SeqPoint));
+
+	seq_point_iterator_init (&it, info);
+	while (seq_point_iterator_next (&it))
+		g_array_append_vals (seq_points, &it.seq_point, 1);
+
+	ptr = info->next_array->data + sp.next_offset;
+	for (i = 0; i < sp.next_len; i++) {
+		int next_index;
+		ptr += decode_var_int (ptr, &next_index);
+		g_assert (next_index < seq_points->len);
+		memcpy (&next[i], seq_points->data + next_index * sizeof (SeqPoint), sizeof (SeqPoint));
+	}
+}
+
+gboolean
+seq_point_iterator_next (SeqPointIterator* it)
+{
+	if (it->ptr >= it->info->array->data + it->info->array->len)
+		return FALSE;
+
+	it->ptr += seq_point_read (&it->seq_point, it->ptr);
+
+	return TRUE;
+}
+
+void
+seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
+{
+	it->info = info;
+	it->ptr = it->info->array->data;
+	memset(&it->seq_point, 0, sizeof(SeqPoint));
 }

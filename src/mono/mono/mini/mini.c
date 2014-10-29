@@ -6996,7 +6996,6 @@ register_jit_stats (void)
 }
 
 static void runtime_invoke_info_free (gpointer value);
-static void seq_point_info_free (gpointer value);
 
 static gint
 class_method_pair_equal (gconstpointer ka, gconstpointer kb)
@@ -7064,19 +7063,6 @@ runtime_invoke_info_free (gpointer value)
 	if (info->dyn_call_info)
 		mono_arch_dyn_call_free (info->dyn_call_info);
 #endif
-	g_free (info);
-}
-
-static void seq_point_info_free (gpointer value)
-{
-	int i = 0;
-	MonoSeqPointInfo* info = (MonoSeqPointInfo*)value;
-	
-	for (i = 0; i < info->len; ++i) {
-		SeqPoint *sp = &info->seq_points [i];
-		g_free (sp->next);
-	}
-
 	g_free (info);
 }
 
