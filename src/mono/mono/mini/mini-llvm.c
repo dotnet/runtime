@@ -5390,7 +5390,8 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
 				LLVMValueRef lmethod;
 
 				lmethod = g_hash_table_lookup (module->method_to_lmethod, ji->data.method);
-				if (lmethod) {
+				/* The types might not match because the caller might pass an rgctx */
+				if (lmethod && LLVMTypeOf (callee) == LLVMTypeOf (lmethod)) {
 					mono_llvm_replace_uses_of (callee, lmethod);
 					mono_aot_mark_unused_llvm_plt_entry (ji);
 				}
