@@ -1101,7 +1101,7 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	if (G_UNLIKELY (do_pin_stats))
 		sgen_pin_stats_register_object (object, safe_object_get_size (object));
 
-	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor (object));
+	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor_safe (object));
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
 #ifdef ENABLE_DTRACE
