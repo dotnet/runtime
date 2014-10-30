@@ -5335,7 +5335,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 {
 	MonoMethod *method;
 	int i, k, buf_size, method_index;
-	guint32 debug_info_size;
+	guint32 debug_info_size, seq_points_size;
 	guint8 *code;
 	MonoMethodHeader *header;
 	guint8 *p, *buf, *debug_info;
@@ -5359,7 +5359,9 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	seq_points = cfg->seq_point_info;
 
-	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + (seq_points ? (seq_points->len * 128) : 0) + cfg->gc_map_size;
+	seq_points_size = seq_point_info_write_size (seq_points);
+
+	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + seq_points_size + cfg->gc_map_size;
 	p = buf = g_malloc (buf_size);
 
 	use_unwind_ops = cfg->unwind_ops != NULL;
@@ -5556,27 +5558,9 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
-	if (seq_points) {
-		int il_offset, native_offset, last_il_offset, last_native_offset, j;
+	if (seq_points)
+		p += seq_point_info_write (seq_points, p);
 
-		encode_value (seq_points->len, p, &p);
-		last_il_offset = last_native_offset = 0;
-		for (i = 0; i < seq_points->len; ++i) {
-			SeqPoint *sp = &seq_points->seq_points [i];
-			il_offset = sp->il_offset;
-			native_offset = sp->native_offset;
-			encode_value (il_offset - last_il_offset, p, &p);
-			encode_value (native_offset - last_native_offset, p, &p);
-			last_il_offset = il_offset;
-			last_native_offset = native_offset;
-
-			encode_value (sp->flags, p, &p);
-			encode_value (sp->next_len, p, &p);
-			for (j = 0; j < sp->next_len; ++j)
-				encode_value (sp->next [j], p, &p);
-		}
-	}
-		
 	g_assert (debug_info_size < buf_size);
 
 	encode_value (debug_info_size, p, &p);
