@@ -1274,6 +1274,11 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 		g_assert (code - buf == 8);
 		emit_bytes (acfg, buf, code - buf);
 	}
+
+	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_SPECIFIC] = 16;
+	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_STATIC_RGCTX] = 16;
+	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_IMT_THUNK] = 72;
+	acfg->tramp_page_code_offsets [MONO_AOT_TRAMP_GSHAREDVT_ARG] = 16;
 #elif defined(TARGET_ARM64)
 	arm64_emit_specific_trampoline_pages (acfg);
 #endif

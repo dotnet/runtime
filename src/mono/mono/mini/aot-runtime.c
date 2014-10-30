@@ -4476,13 +4476,6 @@ mono_aot_get_trampoline (const char *name)
 #include <mach/mach.h>
 
 static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
-/* these sizes are for ARM code, parametrize if porting to other architectures (see arch_emit_specific_trampoline_pages)
- * trampoline size is assumed to be 8 bytes below as well (8 is the minimum for 32 bit archs, since we need to store
- * two pointers for trampoline in the data page).
- * the minimum for the common code must be at least sizeof(TrampolinePage), since we store the page info at the
- * beginning of the data page.
- */
-static const int trampolines_pages_code_offsets [MONO_AOT_TRAMP_NUM] = {16, 16, 72, 16};
 
 static unsigned char*
 get_new_trampoline_from_page (int tramp_type)
@@ -4571,11 +4564,7 @@ get_new_trampoline_from_page (int tramp_type)
 		page = (TrampolinePage*)addr;
 		page->next = trampoline_pages [tramp_type];
 		trampoline_pages [tramp_type] = page;
-#ifdef TARGET_ARM64
 		page->trampolines = (void*)(taddr + amodule->info.tramp_page_code_offsets [tramp_type]);
-#else
-		page->trampolines = (void*)(taddr + trampolines_pages_code_offsets [tramp_type]);
-#endif
 		page->trampolines_end = (void*)(taddr + psize - 64);
 		code = page->trampolines;
 		page->trampolines += specific_trampoline_size;
