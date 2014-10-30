@@ -1021,7 +1021,7 @@ mono_debugger_agent_init (void)
 	breakpoints_init ();
 	suspend_init ();
 
-	mini_get_debug_options ()->gen_seq_points = TRUE;
+	mini_get_debug_options ()->gen_seq_points_debug_data = TRUE;
 	/* 
 	 * This is needed because currently we don't handle liveness info.
 	 */
