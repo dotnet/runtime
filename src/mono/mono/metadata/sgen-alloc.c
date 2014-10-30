@@ -293,6 +293,21 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				/* Allocate directly from the nursery */
 				p = sgen_nursery_alloc (size);
 				if (!p) {
+					/*
+					 * We couldn't allocate from the nursery, so we try
+					 * collecting.  Even after the collection, we might
+					 * still not have enough memory to allocate the
+					 * object.  The reason will most likely be that we've
+					 * run out of memory, but there is the theoretical
+					 * possibility that other threads might have consumed
+					 * the freed up memory ahead of us, so doing another
+					 * collection and trying again might actually help.
+					 * Of course the same thing might happen again.
+					 *
+					 * Ideally we'd like to detect that case and loop (if
+					 * we always loop we will loop endlessly in the case of
+					 * OOM).  What we do here is give up right away.
+					 */
 					sgen_ensure_free_space (real_size);
 					if (degraded_mode)
 						return alloc_degraded (vtable, size, FALSE);
@@ -310,6 +325,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 				p = sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				if (!p) {
+					/* See comment above in similar case. */
 					sgen_ensure_free_space (tlab_size);
 					if (degraded_mode)
 						return alloc_degraded (vtable, size, FALSE);
