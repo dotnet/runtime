@@ -126,6 +126,10 @@ seq_point_info_add_seq_point (MonoSeqPointInfo *info, SeqPoint *sp, SeqPoint *la
 	guint8 buffer[4];
 	guint8 len;
 
+	if (!info->has_debug_data &&
+		(sp->il_offset == METHOD_ENTRY_IL_OFFSET || sp->il_offset == METHOD_EXIT_IL_OFFSET))
+		return FALSE;
+
 	/* check that data can be added to the arrays */
 	g_assert (info->alloc_arrays);
 
