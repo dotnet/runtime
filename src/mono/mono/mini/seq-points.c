@@ -127,8 +127,6 @@ seq_point_info_add_seq_point (MonoSeqPointInfo *info, SeqPoint *sp, SeqPoint *la
 	/* check that data can be added to the arrays */
 	g_assert (info->alloc_arrays);
 
-	// TODO use flag instead of encoding 4 bytes for METHOD_EXIT_IL_OFFSET
-
 	sp->next_offset = info->next_array->len;
 	sp->next_len = g_slist_length (next);
 
