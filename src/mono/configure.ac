@@ -578,6 +578,7 @@ else
 fi
 CFLAGS="$CFLAGS -g $WARN"
 CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
+CPPFLAGS="$CPPFLAGS -g $WARN"
 
 # Where's the 'mcs' source tree?
 if test -d $srcdir/mcs; then
