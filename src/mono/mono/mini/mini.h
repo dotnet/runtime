@@ -1487,6 +1487,7 @@ typedef struct {
 	guint            uses_simd_intrinsics : 1;
 	guint            keep_cil_nops : 1;
 	guint            gen_seq_points : 1;
+	guint            gen_seq_points_debug_data : 1;
 	guint            explicit_null_checks : 1;
 	guint            compute_gc_maps : 1;
 	guint            soft_breakpoints : 1;
@@ -1837,7 +1838,11 @@ typedef struct {
 	gboolean suspend_on_unhandled;
 	gboolean dyn_runtime_invoke;
 	gboolean gdb;
-	gboolean gen_seq_points;
+	/*
+	 * Whenever data such as next sequence points and flags is required.
+	 * Next sequence points and flags are required by the debugger agent.
+	 */
+	gboolean gen_seq_points_debug_data;
 	gboolean explicit_null_checks;
 	/*
 	 * Fill stack frames with 0x2a in method prologs. This helps with the
