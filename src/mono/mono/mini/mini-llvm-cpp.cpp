@@ -60,10 +60,6 @@
 
 #include "mini-llvm-cpp.h"
 
-#define LLVM_CHECK_VERSION(major,minor) \
-	((LLVM_MAJOR_VERSION > (major)) ||									\
-	 ((LLVM_MAJOR_VERSION == (major)) && (LLVM_MINOR_VERSION >= (minor))))
-
 // extern "C" void LLVMInitializeARMTargetInfo();
 // extern "C" void LLVMInitializeARMTarget ();
 // extern "C" void LLVMInitializeARMTargetMC ();
