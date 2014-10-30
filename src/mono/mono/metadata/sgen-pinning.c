@@ -59,49 +59,88 @@ sgen_pin_stage_ptr (void *ptr)
 	sgen_pointer_queue_add (&pin_queue, ptr);
 }
 
-void**
-sgen_find_optimized_pin_queue_area (void *start, void *end, size_t *num)
+gboolean
+sgen_find_optimized_pin_queue_area (void *start, void *end, size_t *first_out, size_t *last_out)
 {
-	size_t first, last;
-	first = sgen_pointer_queue_search (&pin_queue, start);
-	last = sgen_pointer_queue_search (&pin_queue, end);
-	*num = last - first;
-	if (first == last)
-		return NULL;
-	return pin_queue.data + first;
+	size_t first = sgen_pointer_queue_search (&pin_queue, start);
+	size_t last = sgen_pointer_queue_search (&pin_queue, end);
+	SGEN_ASSERT (0, last == pin_queue.next_slot || pin_queue.data [last] >= end, "Pin queue search gone awry");
+	*first_out = first;
+	*last_out = last;
+	return first != last;
+}
+
+void**
+sgen_pinning_get_entry (size_t index)
+{
+	SGEN_ASSERT (0, index <= pin_queue.next_slot, "Pin queue entry out of range");
+	return &pin_queue.data [index];
 }
 
 void
 sgen_find_section_pin_queue_start_end (GCMemSection *section)
 {
 	SGEN_LOG (6, "Pinning from section %p (%p-%p)", section, section->data, section->end_data);
-	section->pin_queue_start = sgen_find_optimized_pin_queue_area (section->data, section->end_data, &section->pin_queue_num_entries);
-	SGEN_LOG (6, "Found %zd pinning addresses in section %p", section->pin_queue_num_entries, section);
+
+	sgen_find_optimized_pin_queue_area (section->data, section->end_data,
+			&section->pin_queue_first_entry, &section->pin_queue_last_entry);
+
+	SGEN_LOG (6, "Found %zd pinning addresses in section %p",
+			section->pin_queue_last_entry - section->pin_queue_first_entry, section);
 }
 
 /*This will setup the given section for the while pin queue. */
 void
 sgen_pinning_setup_section (GCMemSection *section)
 {
-	section->pin_queue_start = pin_queue.data;
-	section->pin_queue_num_entries = pin_queue.next_slot;
+	section->pin_queue_first_entry = 0;
+	section->pin_queue_last_entry = pin_queue.next_slot;
 }
 
 void
 sgen_pinning_trim_queue_to_section (GCMemSection *section)
 {
-	pin_queue.next_slot = section->pin_queue_num_entries;
+	SGEN_ASSERT (0, section->pin_queue_first_entry == 0, "Pin queue trimming assumes the whole pin queue is used by the nursery");
+	pin_queue.next_slot = section->pin_queue_last_entry;
 }
 
+/*
+ * This is called when we've run out of memory during a major collection.
+ *
+ * After collecting potential pin entries and sorting the array, this is what it looks like:
+ *
+ * +--------------------+---------------------------------------------+--------------------+
+ * | major heap entries |               nursery entries               | major heap entries |
+ * +--------------------+---------------------------------------------+--------------------+
+ *
+ * Of course there might not be major heap entries before and/or after the nursery entries,
+ * depending on where the major heap sections are in the address space, and whether there
+ * were any potential pointers there.
+ *
+ * When we pin nursery objects, we compact the nursery part of the pin array, which leaves
+ * discarded entries after the ones that actually pointed to nursery objects:
+ *
+ * +--------------------+-----------------+---------------------------+--------------------+
+ * | major heap entries | nursery entries | discarded nursery entries | major heap entries |
+ * +--------------------+-----------------+---------------------------+--------------------+
+ *
+ * When, due to being out of memory, we late pin more objects, the pin array looks like
+ * this:
+ *
+ * +--------------------+-----------------+---------------------------+--------------------+--------------+
+ * | major heap entries | nursery entries | discarded nursery entries | major heap entries | late entries |
+ * +--------------------+-----------------+---------------------------+--------------------+--------------+
+ *
+ * This function gets rid of the discarded nursery entries by nulling them out.  Note that
+ * we can late pin objects not only in the nursery but also in the major heap, which happens
+ * when evacuation fails.
+ */
 void
 sgen_pin_queue_clear_discarded_entries (GCMemSection *section, size_t max_pin_slot)
 {
-	void **start = section->pin_queue_start + section->pin_queue_num_entries;
-	void **end = pin_queue.data + max_pin_slot;
+	void **start = sgen_pinning_get_entry (section->pin_queue_last_entry);
+	void **end = sgen_pinning_get_entry (max_pin_slot);
 	void *addr;
-
-	if (!start)
-		return;
 
 	for (; start < end; ++start) {
 		addr = *start;

@@ -912,8 +912,8 @@ static int
 pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 {
 	GCMemSection *section = nursery_section;
-	void **start = section->pin_queue_start;
-	void **end = start + section->pin_queue_num_entries;
+	void **start =  sgen_pinning_get_entry (section->pin_queue_first_entry);
+	void **end = sgen_pinning_get_entry (section->pin_queue_last_entry);
 	void *start_nursery = section->data;
 	void *end_nursery = section->next_data;
 	void *last = NULL;
@@ -1080,13 +1080,11 @@ pin_objects_in_nursery (ScanCopyContext ctx)
 {
 	size_t reduced_to;
 
-	if (!nursery_section->pin_queue_num_entries)
+	if (nursery_section->pin_queue_first_entry == nursery_section->pin_queue_last_entry)
 		return;
 
 	reduced_to = pin_objects_from_nursery_pin_queue (ctx);
-	nursery_section->pin_queue_num_entries = reduced_to;
-	if (!reduced_to)
-		nursery_section->pin_queue_start = NULL;
+	nursery_section->pin_queue_last_entry = nursery_section->pin_queue_first_entry + reduced_to;
 }
 
 
@@ -1101,7 +1099,7 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	if (G_UNLIKELY (do_pin_stats))
 		sgen_pin_stats_register_object (object, safe_object_get_size (object));
 
-	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor (object));
+	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor_safe (object));
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
 #ifdef ENABLE_DTRACE
@@ -2407,9 +2405,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	 * next allocations.
 	 */
 	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
-	fragment_total = sgen_build_nursery_fragments (nursery_section,
-			nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries,
-			unpin_queue);
+	fragment_total = sgen_build_nursery_fragments (nursery_section, unpin_queue);
 	if (!fragment_total)
 		degraded_mode = 1;
 
@@ -2600,7 +2596,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		size_t dummy;
-		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy)) {
+		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy, &dummy)) {
 			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((MonoObject*)(bigobj->data))));
 
 #ifdef ENABLE_DTRACE
@@ -2860,8 +2856,20 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	if (objects_pinned) {
 		g_assert (!concurrent_collection_in_progress);
 
-		/*This is slow, but we just OOM'd*/
+		/*
+		 * This is slow, but we just OOM'd.
+		 *
+		 * See comment at `sgen_pin_queue_clear_discarded_entries` for how the pin
+		 * queue is laid out at this point.
+		 */
 		sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
+		/*
+		 * We need to reestablish all pinned nursery objects in the pin queue
+		 * because they're needed for fragment creation.  Unpinning happens by
+		 * walking the whole queue, so it's not necessary to reestablish where major
+		 * heap block pins are - all we care is that they're still in there
+		 * somewhere.
+		 */
 		sgen_optimize_pin_queue ();
 		sgen_find_section_pin_queue_start_end (nursery_section);
 		objects_pinned = 0;
@@ -2918,7 +2926,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 		 * next allocations.
 		 */
-		if (!sgen_build_nursery_fragments (nursery_section, nursery_section->pin_queue_start, nursery_section->pin_queue_num_entries, NULL))
+		if (!sgen_build_nursery_fragments (nursery_section, NULL))
 			degraded_mode = 1;
 
 		/* prepare the pin queue for the next collection */

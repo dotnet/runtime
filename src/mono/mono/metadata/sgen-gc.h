@@ -144,8 +144,8 @@ struct _GCMemSection {
 	 */
 	char **scan_starts;
 	/* in major collections indexes in the pin_queue for objects that pin this section */
-	void **pin_queue_start;
-	size_t pin_queue_num_entries;
+	size_t pin_queue_first_entry;
+	size_t pin_queue_last_entry;
 	size_t num_scan_start;
 };
 
@@ -485,10 +485,6 @@ void sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure) MONO_INTERNAL;
 void sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
-
-void** sgen_find_optimized_pin_queue_area (void *start, void *end, size_t *num) MONO_INTERNAL;
-void sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
-void sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx) MONO_INTERNAL;
 
 void sgen_pin_stats_register_object (char *obj, size_t size);
 void sgen_pin_stats_register_global_remset (char *obj);
@@ -978,7 +974,7 @@ gboolean sgen_los_object_is_pinned (char *obj) MONO_INTERNAL;
 void sgen_clear_nursery_fragments (void) MONO_INTERNAL;
 void sgen_nursery_allocator_prepare_for_pinning (void) MONO_INTERNAL;
 void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nursery_end) MONO_INTERNAL;
-mword sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_t num_entries, SgenGrayQueue *unpin_queue) MONO_INTERNAL;
+mword sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpin_queue) MONO_INTERNAL;
 void sgen_init_nursery_allocator (void) MONO_INTERNAL;
 void sgen_nursery_allocator_init_heavy_stats (void) MONO_INTERNAL;
 void sgen_alloc_init_heavy_stats (void) MONO_INTERNAL;

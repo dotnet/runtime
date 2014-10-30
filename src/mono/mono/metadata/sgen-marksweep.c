@@ -41,6 +41,7 @@
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/gc-internal.h"
 #include "metadata/sgen-pointer-queue.h"
+#include "metadata/sgen-pinning.h"
 
 #define SGEN_HAVE_CONCURRENT_MARK
 
@@ -74,7 +75,6 @@ typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
 	int obj_size;
 	int obj_size_index;
-	size_t pin_queue_num_entries;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
@@ -83,7 +83,8 @@ struct _MSBlockInfo {
 	char *block;
 	void **free_list;
 	MSBlockInfo *next_free;
-	void **pin_queue_start;
+	size_t pin_queue_first_entry;
+	size_t pin_queue_last_entry;
 #ifdef SGEN_HAVE_CONCURRENT_MARK
 	guint8 *cardtable_mod_union;
 #endif
@@ -1074,18 +1075,21 @@ major_get_and_reset_num_major_objects_marked (void)
 static void
 mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 {
-	int i;
+	void **entry, **end;
 	int last_index = -1;
 
-	if (!block->pin_queue_num_entries)
+	if (block->pin_queue_first_entry == block->pin_queue_last_entry)
 		return;
 
 	block->has_pinned = TRUE;
 
-	for (i = 0; i < block->pin_queue_num_entries; ++i) {
-		int index = MS_BLOCK_OBJ_INDEX (block->pin_queue_start [i], block);
+	entry = sgen_pinning_get_entry (block->pin_queue_first_entry);
+	end = sgen_pinning_get_entry (block->pin_queue_last_entry);
+
+	for (; entry < end; ++entry) {
+		int index = MS_BLOCK_OBJ_INDEX (*entry, block);
 		char *obj;
-		SGEN_ASSERT (9, index >= 0 && index < MS_BLOCK_FREE / block->obj_size, "invalid object %p index %d max-index %d", block->pin_queue_start [i], index, MS_BLOCK_FREE / block->obj_size);
+		SGEN_ASSERT (9, index >= 0 && index < MS_BLOCK_FREE / block->obj_size, "invalid object %p index %d max-index %d", *entry, index, MS_BLOCK_FREE / block->obj_size);
 		if (index == last_index)
 			continue;
 		obj = MS_BLOCK_OBJ (block, index);
@@ -1626,8 +1630,8 @@ major_find_pin_queue_start_ends (SgenGrayQueue *queue)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		block->pin_queue_start = sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
-				&block->pin_queue_num_entries);
+		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
+				&block->pin_queue_first_entry, &block->pin_queue_last_entry);
 	} END_FOREACH_BLOCK;
 }
 

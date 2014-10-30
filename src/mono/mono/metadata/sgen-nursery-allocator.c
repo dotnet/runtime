@@ -71,6 +71,7 @@
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-pinning.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
@@ -747,12 +748,12 @@ fragment_list_reverse (SgenFragmentAllocator *allocator)
 }
 
 mword
-sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_t num_entries, SgenGrayQueue *unpin_queue)
+sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpin_queue)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
-	size_t i = 0;
 	SgenFragment *frags_ranges;
+	void **pin_start, **pin_entry, **pin_end;
 
 #ifdef NALLOC_DEBUG
 	reset_alloc_records ();
@@ -769,14 +770,17 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 	/* clear scan starts */
 	memset (nursery_section->scan_starts, 0, nursery_section->num_scan_start * sizeof (gpointer));
 
-	while (i < num_entries || frags_ranges) {
+	pin_start = pin_entry = sgen_pinning_get_entry (nursery_section->pin_queue_first_entry);
+	pin_end = sgen_pinning_get_entry (nursery_section->pin_queue_last_entry);
+
+	while (pin_entry < pin_end || frags_ranges) {
 		char *addr0, *addr1;
 		size_t size;
 		SgenFragment *last_frag = NULL;
 
 		addr0 = addr1 = sgen_nursery_end;
-		if (i < num_entries)
-			addr0 = start [i];
+		if (pin_entry < pin_end)
+			addr0 = *pin_entry;
 		if (frags_ranges)
 			addr1 = frags_ranges->fragment_start;
 
@@ -789,7 +793,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 			CANARIFY_SIZE (size);
 			sgen_set_nursery_scan_start (addr0);
 			frag_end = addr0;
-			++i;
+			++pin_entry;
 		} else {
 			frag_end = addr1;
 			size = frags_ranges->fragment_next - addr1;
@@ -809,7 +813,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 
 		frag_size = size;
 #ifdef NALLOC_DEBUG
-		add_alloc_record (start [i], frag_size, PINNING);
+		add_alloc_record (*pin_entry, frag_size, PINNING);
 #endif
 		frag_start = frag_end + frag_size;
 	}
@@ -830,9 +834,10 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, void **start, size_
 	sgen_minor_collector.build_fragments_finish (&mutator_allocator);
 
 	if (!unmask (mutator_allocator.alloc_head)) {
-		SGEN_LOG (1, "Nursery fully pinned (%zd)", num_entries);
-		for (i = 0; i < num_entries; ++i) {
-			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", start [i], sgen_safe_name (start [i]), sgen_safe_object_get_size (start [i]));
+		SGEN_LOG (1, "Nursery fully pinned");
+		for (pin_entry = pin_start; pin_entry < pin_end; ++pin_entry) {
+			void *p = *pin_entry;
+			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", p, sgen_safe_name (p), sgen_safe_object_get_size (p));
 		}
 	}
 	return fragment_total;
