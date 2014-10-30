@@ -87,11 +87,17 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr)
 }
 
 static MonoSeqPointInfo*
-seq_point_info_new (void)
+seq_point_info_new (gboolean alloc_arrays)
 {
 	MonoSeqPointInfo* info = g_new0 (MonoSeqPointInfo, 1);
-	info->array = g_byte_array_new ();
-	info->next_array = g_byte_array_new ();
+	info->alloc_arrays = alloc_arrays;
+	if (alloc_arrays) {
+		info->array = g_byte_array_new ();
+		info->next_array = g_byte_array_new ();
+	} else {
+		info->array = g_new0 (GByteArray, 1);
+		info->next_array = g_new0 (GByteArray, 1);
+	}
 	return info;
 }
 
@@ -100,8 +106,13 @@ seq_point_info_free (gpointer ptr)
 {
 	MonoSeqPointInfo* info = (MonoSeqPointInfo*) ptr;
 
-	g_byte_array_free (info->array, TRUE);
-	g_byte_array_free (info->next_array, TRUE);
+	if (info->alloc_arrays) {
+		g_byte_array_free (info->array, TRUE);
+		g_byte_array_free (info->next_array, TRUE);
+	} else {
+		g_free (info->array);
+		g_free (info->next_array);
+	}
 	g_free (info);
 }
 
@@ -112,6 +123,9 @@ seq_point_info_add_seq_point (MonoSeqPointInfo *info, SeqPoint *sp, SeqPoint *la
 	GSList *l;
 	guint8 buffer[4];
 	guint8 len;
+
+	/* check that data can be added to the arrays */
+	g_assert (info->alloc_arrays);
 
 	// TODO use flag instead of encoding 4 bytes for METHOD_EXIT_IL_OFFSET
 
@@ -277,7 +291,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		}
 	}
 
-	cfg->seq_point_info = seq_point_info_new ();
+	cfg->seq_point_info = seq_point_info_new (TRUE);
 
 	{ /* Add sequence points to seq_point_info */
 		SeqPoint zero_seq_point = {0};
@@ -481,4 +495,61 @@ seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
 	it->info = info;
 	it->ptr = it->info->array->data;
 	memset(&it->seq_point, 0, sizeof(SeqPoint));
+}
+
+int
+seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
+{
+	guint8* buffer0 = buffer;
+
+	//Write sequence points
+	buffer += encode_var_int (buffer, info->array->len);
+	memcpy (buffer, info->array->data, info->array->len);
+	buffer += info->array->len;
+
+	//Write next values
+	buffer += encode_var_int (buffer, info->next_array->len);
+	memcpy (buffer, info->next_array->data, info->next_array->len);
+	buffer += info->next_array->len;
+
+	return buffer - buffer0;
+}
+
+int
+seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
+{
+	guint8* buffer0 = buffer;
+	int size;
+
+	(*info) = seq_point_info_new (copy);
+
+	buffer += decode_var_int (buffer, &size);
+	if (copy)
+		g_byte_array_append ((*info)->array, buffer, size);
+	else {
+		(*info)->array->data = buffer;
+		(*info)->array->len = size;
+	}
+	buffer += size;
+
+	buffer += decode_var_int (buffer, &size);
+	if (copy)
+		g_byte_array_append ((*info)->array, buffer, size);
+	else {
+		(*info)->array->data = buffer;
+		(*info)->array->len = size;
+	}
+	buffer += size;
+
+	return buffer - buffer0;
+}
+
+/*
+ * Returns the maximum size of mono_seq_point_info_write.
+ */
+int
+seq_point_info_write_size (MonoSeqPointInfo* info)
+{
+	//8 is the maximum size required to store the size of the arrays.
+	return 8 + info->array->len + info->next_array->len;
 }
