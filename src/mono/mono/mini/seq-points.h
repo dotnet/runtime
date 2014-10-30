@@ -25,6 +25,10 @@ typedef struct {
 typedef struct MonoSeqPointInfo{
 	GByteArray* array;
 	GByteArray* next_array;
+	/* true when the array data allocation/deallocation is managed by this structure 
+	 * when this is false the arrays are read only
+	 */
+	gboolean alloc_arrays;
 } MonoSeqPointInfo;
 
 typedef struct {
@@ -59,5 +63,14 @@ seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info);
 
 void
 seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next);
+
+int
+seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer);
+
+int
+seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy);
+
+int
+seq_point_info_write_size (MonoSeqPointInfo* info);
 
 #endif /* __MONO_SEQ_POINTS_H__ */
