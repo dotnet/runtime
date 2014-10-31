@@ -22,9 +22,8 @@ typedef struct {
 	int next_len;
 } SeqPoint;
 
-typedef struct MonoSeqPointInfo{
+typedef struct MonoSeqPointInfo {
 	GByteArray* array;
-	GByteArray* next_array;
 	/* When has_debug_data is set to false only il and native deltas are saved */
 	gboolean has_debug_data;
 	/* true when the array data allocation/deallocation is managed by this structure 
