@@ -1091,8 +1091,6 @@ pin_objects_in_nursery (ScanCopyContext ctx)
 void
 sgen_pin_object (void *object, GrayQueue *queue)
 {
-	g_assert (!concurrent_collection_in_progress);
-
 	SGEN_PIN_OBJECT (object);
 	sgen_pin_stage_ptr (object);
 	++objects_pinned;
