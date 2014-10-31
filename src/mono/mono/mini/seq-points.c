@@ -10,6 +10,15 @@
 #include "mini.h"
 #include "seq-points.h"
 
+typedef struct {
+	guint8 *data;
+	int len;
+	/* When has_debug_data is set to false only il and native deltas are saved */
+	gboolean has_debug_data;
+	/* When alloc_data is set to true data allocation/deallocation is managed by this structure */
+	gboolean alloc_data;
+} SeqPointInfoInflated;
+
 static guint8
 encode_var_int (guint8* buf, int val)
 {
@@ -60,12 +69,67 @@ decode_zig_zag (guint32 val)
 	return (n >> 1) ^ (-(n & 1));
 }
 
-static void
-allocated_seq_point_size_add (MonoSeqPointInfo *info)
+static SeqPointInfoInflated
+seq_point_info_inflate (MonoSeqPointInfo *info)
 {
-	int size = sizeof (MonoSeqPointInfo) + info->len;
+	SeqPointInfoInflated info_inflated;
+	guint8 *ptr = (guint8*) info;
+	int value;
 
-	mono_jit_stats.allocated_seq_points_size += size;
+	ptr += decode_var_int (ptr, &value);
+
+	info_inflated.len = value >> 2;
+	info_inflated.has_debug_data = (value & 1) != 0;
+	info_inflated.alloc_data = (value & 2) != 0;
+
+	if (info_inflated.alloc_data)
+		info_inflated.data = ptr;
+	else
+		memcpy (&info_inflated.data, ptr, sizeof (guint8*));
+
+	return info_inflated;
+}
+
+static MonoSeqPointInfo*
+seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_debug_data)
+{
+	MonoSeqPointInfo *info;
+	guint8 *info_ptr;
+	guint8 buffer[4];
+	int buffer_len;
+	int value;
+	int data_size;
+
+	value = len << 2;
+	if (has_debug_data)
+		value |= 1;
+	if (alloc_data)
+		value |= 2;
+
+	buffer_len = encode_var_int (buffer, value);
+
+	data_size = buffer_len + (alloc_data? len : sizeof (guint8*));
+	info_ptr = g_new0 (guint8, data_size);
+	info = (MonoSeqPointInfo*) info_ptr;
+
+	memcpy (info_ptr, buffer, buffer_len);
+	info_ptr += buffer_len;
+
+	if (alloc_data)
+		memcpy (info_ptr, data, len);
+	else
+		memcpy (info_ptr, &data, sizeof (guint8*));
+
+	mono_jit_stats.allocated_seq_points_size += data_size;
+
+	return info;
+}
+
+void
+seq_point_info_free (gpointer ptr)
+{
+	MonoSeqPointInfo* info = (MonoSeqPointInfo*) ptr;
+	g_free (info);
 }
 
 static int
@@ -95,29 +159,6 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 	}
 
 	return ptr - ptr0;
-}
-
-static MonoSeqPointInfo*
-seq_point_info_new (int len, gboolean alloc_data, gboolean has_debug_data)
-{
-	MonoSeqPointInfo* info = g_new0 (MonoSeqPointInfo, 1);
-	info->has_debug_data = has_debug_data;
-	info->alloc_data = alloc_data;
-	info->len = len;
-
-	if (info->alloc_data)
-		info->data = g_new0 (guint8, len);
-
-	return info;
-}
-
-void
-seq_point_info_free (gpointer ptr)
-{
-	MonoSeqPointInfo* info = (MonoSeqPointInfo*) ptr;
-	if (info->alloc_data)
-		g_free (info->data);
-	g_free (info);
 }
 
 static gboolean
@@ -319,11 +360,9 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	if (has_debug_data)
 		g_free (next);
 
-	cfg->seq_point_info = seq_point_info_new (array->len, TRUE, has_debug_data);
-	memcpy (cfg->seq_point_info->data, array->data, array->len);
-	g_byte_array_free (array, TRUE);
+	cfg->seq_point_info = seq_point_info_new (array->len, TRUE, array->data, has_debug_data);
 
-	allocated_seq_point_size_add (cfg->seq_point_info);
+	g_byte_array_free (array, TRUE);
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
@@ -480,14 +519,15 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 	guint8* ptr;
 	SeqPointIterator it;
 	GArray* seq_points = g_array_new (FALSE, TRUE, sizeof (SeqPoint));
+	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 
-	g_assert (info->has_debug_data);
+	g_assert (info_inflated.has_debug_data);
 
 	seq_point_iterator_init (&it, info);
 	while (seq_point_iterator_next (&it))
 		g_array_append_vals (seq_points, &it.seq_point, 1);
 
-	ptr = info->data + sp.next_offset;
+	ptr = info_inflated.data + sp.next_offset;
 	for (i = 0; i < sp.next_len; i++) {
 		int next_index;
 		ptr += decode_var_int (ptr, &next_index);
@@ -501,10 +541,10 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 gboolean
 seq_point_iterator_next (SeqPointIterator* it)
 {
-	if (it->ptr >= it->info->data + it->info->len)
+	if (it->ptr >= it->end)
 		return FALSE;
 
-	it->ptr += seq_point_read (&it->seq_point, it->ptr, it->info->data, it->info->has_debug_data);
+	it->ptr += seq_point_read (&it->seq_point, it->ptr, it->begin, it->has_debug_data);
 
 	return TRUE;
 }
@@ -512,8 +552,11 @@ seq_point_iterator_next (SeqPointIterator* it)
 void
 seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
 {
-	it->info = info;
-	it->ptr = it->info->data;
+	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
+	it->ptr = info_inflated.data;
+	it->begin = info_inflated.data;
+	it->end = it->begin + info_inflated.len;
+	it->has_debug_data = info_inflated.has_debug_data;
 	memset(&it->seq_point, 0, sizeof(SeqPoint));
 }
 
@@ -521,14 +564,15 @@ int
 seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 {
 	guint8* buffer0 = buffer;
+	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 
-	memcpy (buffer, &info->has_debug_data, 1);
+	memcpy (buffer, &info_inflated.has_debug_data, 1);
 	buffer++;
 
 	//Write sequence points
-	buffer += encode_var_int (buffer, info->len);
-	memcpy (buffer, info->data, info->len);
-	buffer += info->len;
+	buffer += encode_var_int (buffer, info_inflated.len);
+	memcpy (buffer, info_inflated.data, info_inflated.len);
+	buffer += info_inflated.len;
 
 	return buffer - buffer0;
 }
@@ -544,11 +588,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 	buffer++;
 
 	buffer += decode_var_int (buffer, &size);
-	(*info) = seq_point_info_new (size, copy, has_debug_data);
-	if (copy)
-		memcpy ((*info)->data, buffer, size);
-	else
-		(*info)->data = buffer;
+	(*info) = seq_point_info_new (size, copy, buffer, has_debug_data);
 	buffer += size;
 
 	return buffer - buffer0;
@@ -560,9 +600,11 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 int
 seq_point_info_write_size (MonoSeqPointInfo* info)
 {
+	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
+
 	//4 is the maximum size required to store the size of the data.
 	//1 is the byte used to store has_debug_data.
-	int size = 4 + 1 + info->len;
+	int size = 4 + 1 + info_inflated.len;
 
 	return size;
 }
