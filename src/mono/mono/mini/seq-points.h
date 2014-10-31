@@ -23,18 +23,14 @@ typedef struct {
 } SeqPoint;
 
 typedef struct MonoSeqPointInfo {
-	guint8 *data;
-	int len;
-	/* When has_debug_data is set to false only il and native deltas are saved */
-	gboolean has_debug_data;
-	/* When alloc_data is set to true data allocation/deallocation is managed by this structure */
-	gboolean alloc_data;
 } MonoSeqPointInfo;
 
 typedef struct {
 	SeqPoint seq_point;
 	guint8* ptr;
-	MonoSeqPointInfo* info;
+	guint8* begin;
+	guint8* end;
+	gboolean has_debug_data;
 } SeqPointIterator;
 
 void
