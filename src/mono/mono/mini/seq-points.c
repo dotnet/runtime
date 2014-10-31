@@ -63,7 +63,7 @@ decode_zig_zag (guint32 val)
 static void
 allocated_seq_point_size_add (MonoSeqPointInfo *info)
 {
-	int size = sizeof (MonoSeqPointInfo) + sizeof (GByteArray) + info->array->len;
+	int size = sizeof (MonoSeqPointInfo) + info->len;
 
 	mono_jit_stats.allocated_seq_points_size += size;
 }
@@ -98,16 +98,16 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 }
 
 static MonoSeqPointInfo*
-seq_point_info_new (gboolean alloc_arrays, gboolean has_debug_data)
+seq_point_info_new (int len, gboolean alloc_data, gboolean has_debug_data)
 {
 	MonoSeqPointInfo* info = g_new0 (MonoSeqPointInfo, 1);
-	info->alloc_arrays = alloc_arrays;
 	info->has_debug_data = has_debug_data;
-	if (alloc_arrays) {
-		info->array = g_byte_array_new ();
-	} else {
-		info->array = g_new0 (GByteArray, 1);
-	}
+	info->alloc_data = alloc_data;
+	info->len = len;
+
+	if (info->alloc_data)
+		info->data = g_new0 (guint8, len);
+
 	return info;
 }
 
@@ -115,54 +115,47 @@ void
 seq_point_info_free (gpointer ptr)
 {
 	MonoSeqPointInfo* info = (MonoSeqPointInfo*) ptr;
-
-	if (info->alloc_arrays) {
-		g_byte_array_free (info->array, TRUE);
-	} else {
-		g_free (info->array);
-	}
+	if (info->alloc_data)
+		g_free (info->data);
 	g_free (info);
 }
 
 static gboolean
-seq_point_info_add_seq_point (MonoSeqPointInfo *info, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next)
+seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data)
 {
 	int il_delta, native_delta;
 	GSList *l;
 	guint8 buffer[4];
 	guint8 len;
 
-	if (!info->has_debug_data &&
+	if (!has_debug_data &&
 		(sp->il_offset == METHOD_ENTRY_IL_OFFSET || sp->il_offset == METHOD_EXIT_IL_OFFSET))
 		return FALSE;
-
-	/* check that data can be added to the arrays */
-	g_assert (info->alloc_arrays);
 
 	il_delta = sp->il_offset - last_seq_point->il_offset;
 	native_delta = sp->native_offset - last_seq_point->native_offset;
 
 	len = encode_var_int (buffer, encode_zig_zag (il_delta));
-	g_byte_array_append (info->array, buffer, len);
+	g_byte_array_append (array, buffer, len);
 
 	len = encode_var_int (buffer, encode_zig_zag (native_delta));
-	g_byte_array_append (info->array, buffer, len);
+	g_byte_array_append (array, buffer, len);
 
-	if (info->has_debug_data) {
-		sp->next_offset = info->array->len;
+	if (has_debug_data) {
+		sp->next_offset = array->len;
 		sp->next_len = g_slist_length (next);
 
 		len = encode_var_int (buffer, sp->flags);
-		g_byte_array_append (info->array, buffer, len);
+		g_byte_array_append (array, buffer, len);
 
 		len = encode_var_int (buffer, sp->next_len);
-		g_byte_array_append (info->array, buffer, len);
+		g_byte_array_append (array, buffer, len);
 
 		for (l = next; l; l = l->next) {
 			int next_index = GPOINTER_TO_UINT (l->data);
 			guint8 buffer[4];
 			int len = encode_var_int (buffer, next_index);
-			g_byte_array_append (info->array, buffer, len);
+			g_byte_array_append (array, buffer, len);
 		}
 	}
 
@@ -207,6 +200,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	int i;
 	GSList **next;
 	SeqPoint* seq_points;
+	GByteArray* array;
 	gboolean has_debug_data = cfg->gen_seq_points_debug_data;
 
 	if (!cfg->seq_points)
@@ -301,7 +295,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		}
 	}
 
-	cfg->seq_point_info = seq_point_info_new (TRUE, has_debug_data);
+	array = g_byte_array_new ();
 
 	{ /* Add sequence points to seq_point_info */
 		SeqPoint zero_seq_point = {0};
@@ -314,7 +308,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 			if (has_debug_data)
 				next_list = next[i];
 
-			if (seq_point_info_add_seq_point (cfg->seq_point_info, sp, last_seq_point, next_list))
+			if (seq_point_info_add_seq_point (array, sp, last_seq_point, next_list, has_debug_data))
 				last_seq_point = sp;
 
 			if (has_debug_data)
@@ -324,6 +318,10 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 	if (has_debug_data)
 		g_free (next);
+
+	cfg->seq_point_info = seq_point_info_new (array->len, TRUE, has_debug_data);
+	memcpy (cfg->seq_point_info->data, array->data, array->len);
+	g_byte_array_free (array, TRUE);
 
 	allocated_seq_point_size_add (cfg->seq_point_info);
 
@@ -489,7 +487,7 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 	while (seq_point_iterator_next (&it))
 		g_array_append_vals (seq_points, &it.seq_point, 1);
 
-	ptr = info->array->data + sp.next_offset;
+	ptr = info->data + sp.next_offset;
 	for (i = 0; i < sp.next_len; i++) {
 		int next_index;
 		ptr += decode_var_int (ptr, &next_index);
@@ -503,10 +501,10 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 gboolean
 seq_point_iterator_next (SeqPointIterator* it)
 {
-	if (it->ptr >= it->info->array->data + it->info->array->len)
+	if (it->ptr >= it->info->data + it->info->len)
 		return FALSE;
 
-	it->ptr += seq_point_read (&it->seq_point, it->ptr, it->info->array->data, it->info->has_debug_data);
+	it->ptr += seq_point_read (&it->seq_point, it->ptr, it->info->data, it->info->has_debug_data);
 
 	return TRUE;
 }
@@ -515,7 +513,7 @@ void
 seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
 {
 	it->info = info;
-	it->ptr = it->info->array->data;
+	it->ptr = it->info->data;
 	memset(&it->seq_point, 0, sizeof(SeqPoint));
 }
 
@@ -528,9 +526,9 @@ seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 	buffer++;
 
 	//Write sequence points
-	buffer += encode_var_int (buffer, info->array->len);
-	memcpy (buffer, info->array->data, info->array->len);
-	buffer += info->array->len;
+	buffer += encode_var_int (buffer, info->len);
+	memcpy (buffer, info->data, info->len);
+	buffer += info->len;
 
 	return buffer - buffer0;
 }
@@ -545,15 +543,12 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 	memcpy (&has_debug_data, buffer, 1);
 	buffer++;
 
-	(*info) = seq_point_info_new (copy, has_debug_data);
-
 	buffer += decode_var_int (buffer, &size);
+	(*info) = seq_point_info_new (size, copy, has_debug_data);
 	if (copy)
-		g_byte_array_append ((*info)->array, buffer, size);
-	else {
-		(*info)->array->data = buffer;
-		(*info)->array->len = size;
-	}
+		memcpy ((*info)->data, buffer, size);
+	else
+		(*info)->data = buffer;
 	buffer += size;
 
 	return buffer - buffer0;
@@ -565,9 +560,9 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 int
 seq_point_info_write_size (MonoSeqPointInfo* info)
 {
-	//8 is the maximum size required to store the size of the arrays.
+	//4 is the maximum size required to store the size of the data.
 	//1 is the byte used to store has_debug_data.
-	int size = 8 + 1 + info->array->len;
+	int size = 4 + 1 + info->len;
 
 	return size;
 }
