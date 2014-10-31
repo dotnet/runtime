@@ -1660,6 +1660,7 @@ typedef struct {
 	gint32 max_code_size_ratio;
 	gint32 biggest_method_size;
 	gint32 allocated_code_size;
+	gint32 allocated_seq_points_size;
 	gint32 inlineable_methods;
 	gint32 inlined_methods;
 	gint32 basic_blocks;

@@ -60,6 +60,12 @@ decode_zig_zag (guint32 val)
 	return (n >> 1) ^ (-(n & 1));
 }
 
+static void allocated_seq_point_size_add (MonoSeqPointInfo *info) {
+	int size = sizeof (MonoSeqPointInfo) + 2 * sizeof (GByteArray) + info->array->len + info->next_array->len;
+
+	mono_jit_stats.allocated_seq_points_size += size;
+}
+
 static int
 seq_point_read (SeqPoint* seq_point, guint8* ptr, gboolean has_debug_data)
 {
@@ -324,6 +330,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 
 	if (has_debug_data)
 		g_free (next);
+
+	allocated_seq_point_size_add (cfg->seq_point_info);
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
