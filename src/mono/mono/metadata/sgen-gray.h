@@ -20,6 +20,8 @@
 #ifndef __MONO_SGEN_GRAY_H__
 #define __MONO_SGEN_GRAY_H__
 
+#include "sgen-protocol.h"
+
 /*
  * This gray queue has to be as optimized as possible, because it is in the core of
  * the mark/copy phase of the garbage collector. The memory access has then to be as

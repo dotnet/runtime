@@ -146,7 +146,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	entry = *queue->cursor--;
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	binary_protocol_gray_dequeue (queue, queue->cursor + 1, obj);
+	binary_protocol_gray_dequeue (queue, queue->cursor + 1, entry.obj);
 #endif
 
 	if (G_UNLIKELY (queue->cursor < GRAY_FIRST_CURSOR_POSITION (queue->first))) {
