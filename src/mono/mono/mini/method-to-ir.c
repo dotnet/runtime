@@ -134,6 +134,9 @@ int mono_op_to_op_imm_noemul (int opcode);
 
 MONO_API MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature *sig, MonoInst **args);
 
+static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
+						  guchar *ip, guint real_offset, gboolean inline_always, MonoBasicBlock **out_cbb);
+
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_class_init_trampoline;
 static MonoMethodSignature *helper_sig_domain_get;
@@ -4129,12 +4132,46 @@ emit_castclass_with_cache_nonshared (MonoCompile *cfg, MonoInst *obj, MonoClass 
  * Returns NULL and set the cfg exception on error.
  */
 static MonoInst*
-handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_used)
+handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, guint8 *ip, MonoBasicBlock **out_bb, int *inline_costs)
 {
 	MonoBasicBlock *is_null_bb;
 	int obj_reg = src->dreg;
 	int vtable_reg = alloc_preg (cfg);
-	MonoInst *klass_inst = NULL;
+	int context_used;
+	MonoInst *klass_inst = NULL, *res;
+	MonoBasicBlock *bblock;
+
+	*out_bb = cfg->cbb;
+
+	context_used = mini_class_check_context_used (cfg, klass);
+
+	if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
+		res = emit_castclass_with_cache_nonshared (cfg, src, klass, &bblock);
+		(*inline_costs) += 2;
+		*out_bb = cfg->cbb;
+		return res;
+	} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		MonoMethod *mono_castclass;
+		MonoInst *iargs [1];
+		int costs;
+
+		mono_castclass = mono_marshal_get_castclass (klass); 
+		iargs [0] = src;
+				
+		save_cast_details (cfg, klass, src->dreg, TRUE, &bblock);
+		costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), 
+							   iargs, ip, cfg->real_offset, TRUE, &bblock);
+		reset_cast_details (cfg);
+		CHECK_CFG_EXCEPTION;
+		g_assert (costs > 0);
+				
+		cfg->real_offset += 5;
+
+		(*inline_costs) += costs;
+
+		*out_bb = cfg->cbb;
+		return src;
+	}
 
 	if (context_used) {
 		MonoInst *args [3];
@@ -4199,7 +4236,12 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 	reset_cast_details (cfg);
 
+	*out_bb = cfg->cbb;
+
 	return src;
+
+exception_exit:
+	return NULL;
 }
 
 /*
@@ -9832,42 +9874,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			context_used = mini_class_check_context_used (cfg, klass);
+			ins = handle_castclass (cfg, klass, *sp, ip, &bblock, &inline_costs);
+			CHECK_CFG_EXCEPTION;
 
-			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-				*sp = emit_castclass_with_cache_nonshared (cfg, sp [0], klass, &bblock);
-				sp ++;
-				ip += 5;
-				inline_costs += 2;
-			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-				MonoMethod *mono_castclass;
-				MonoInst *iargs [1];
-				int costs;
-
-				mono_castclass = mono_marshal_get_castclass (klass); 
-				iargs [0] = sp [0];
-				
-				save_cast_details (cfg, klass, sp [0]->dreg, TRUE, &bblock);
-				costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), 
-									   iargs, ip, cfg->real_offset, TRUE, &bblock);
-				reset_cast_details (cfg);
-				CHECK_CFG_EXCEPTION;
-				g_assert (costs > 0);
-				
-				ip += 5;
-				cfg->real_offset += 5;
-
- 				*sp++ = iargs [0];
-
-				inline_costs += costs;
-			}
-			else {
-				ins = handle_castclass (cfg, klass, *sp, context_used);
-				CHECK_CFG_EXCEPTION;
-				bblock = cfg->cbb;
-				*sp ++ = ins;
-				ip += 5;
-			}
+			*sp ++ = ins;
+			ip += 5;
 			break;
 		case CEE_ISINST: {
 			CHECK_STACK (1);
@@ -9930,6 +9941,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_UNBOX_ANY: {
+			MonoInst *res, *addr;
+
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
@@ -9942,67 +9955,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (mini_is_gsharedvt_klass (cfg, klass)) {
-				*sp = handle_unbox_gsharedvt (cfg, klass, *sp, &bblock);
-				sp ++;
-
-				ip += 5;
+				res = handle_unbox_gsharedvt (cfg, klass, *sp, &bblock);
 				inline_costs += 2;
-				break;
+			} else if (generic_class_is_reference_type (cfg, klass)) {
+				res = handle_castclass (cfg, klass, *sp, ip, &bblock, &inline_costs);
+				CHECK_CFG_EXCEPTION;
+			} else if (mono_class_is_nullable (klass)) {
+				res = handle_unbox_nullable (cfg, *sp, klass, context_used);
+			} else {
+				addr = handle_unbox (cfg, klass, sp, context_used);
+				/* LDOBJ */
+				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0);
+				res = ins;
+				inline_costs += 2;
 			}
 
-			if (generic_class_is_reference_type (cfg, klass)) {
-				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
-				if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-					*sp = emit_castclass_with_cache_nonshared (cfg, sp [0], klass, &bblock);
-					sp ++;
-					ip += 5;
-					inline_costs += 2;
-				} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-					MonoMethod *mono_castclass;
-					MonoInst *iargs [1];
-					int costs;
-
-					mono_castclass = mono_marshal_get_castclass (klass); 
-					iargs [0] = sp [0];
-
-					costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), 
-										   iargs, ip, cfg->real_offset, TRUE, &bblock);
-					CHECK_CFG_EXCEPTION;
-					g_assert (costs > 0);
-				
-					ip += 5;
-					cfg->real_offset += 5;
-
-					*sp++ = iargs [0];
-					inline_costs += costs;
-				} else {
-					ins = handle_castclass (cfg, klass, *sp, context_used);
-					CHECK_CFG_EXCEPTION;
-					bblock = cfg->cbb;
-					*sp ++ = ins;
-					ip += 5;
-				}
-				break;
-			}
-
-			if (mono_class_is_nullable (klass)) {
-				ins = handle_unbox_nullable (cfg, *sp, klass, context_used);
-				*sp++= ins;
-				ip += 5;
-				break;
-			}
-
-			/* UNBOX */
-			ins = handle_unbox (cfg, klass, sp, context_used);
-			*sp = ins;
-
+			*sp ++ = res;
 			ip += 5;
-
-			/* LDOBJ */
-			EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0);
-			*sp++ = ins;
-
-			inline_costs += 2;
 			break;
 		}
 		case CEE_BOX: {
