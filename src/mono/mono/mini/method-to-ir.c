@@ -4081,8 +4081,7 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 	return FALSE;
 }
 
-// FIXME: This doesn't work yet (class libs tests fail?)
-#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 static MonoInst*
 emit_castclass_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args, MonoBasicBlock **out_bblock)
