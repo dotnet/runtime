@@ -601,7 +601,6 @@ gray_queue_redirect (SgenGrayQueue *queue)
 {
 	gboolean wake = FALSE;
 
-
 	for (;;) {
 		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
 		if (!section)
@@ -613,7 +612,7 @@ gray_queue_redirect (SgenGrayQueue *queue)
 	if (wake) {
 		g_assert (concurrent_collection_in_progress);
 		if (sgen_workers_have_started ()) {
-			sgen_workers_wake_up_all ();
+			sgen_workers_ensure_awake ();
 		} else {
 			if (concurrent_collection_in_progress)
 				g_assert (current_collection_generation == -1);
@@ -3027,7 +3026,7 @@ major_start_concurrent_collection (const char *reason)
 	major_start_collection (TRUE, NULL);
 
 	gray_queue_redirect (&gray_queue);
-	sgen_workers_wait_for_jobs ();
+	sgen_workers_wait_for_jobs_finished ();
 
 	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
 	MONO_GC_CONCURRENT_START_END (GENERATION_OLD, num_objects_marked);
