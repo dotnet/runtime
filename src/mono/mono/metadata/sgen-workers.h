@@ -54,7 +54,6 @@ void sgen_workers_ensure_awake (void) MONO_INTERNAL;
 void sgen_workers_init_distribute_gray_queue (void) MONO_INTERNAL;
 void sgen_workers_enqueue_job (JobFunc func, void *data) MONO_INTERNAL;
 void sgen_workers_wait_for_jobs_finished (void) MONO_INTERNAL;
-void sgen_workers_start_marking (void) MONO_INTERNAL;
 void sgen_workers_distribute_gray_queue_sections (void) MONO_INTERNAL;
 void sgen_workers_reset_data (void) MONO_INTERNAL;
 void sgen_workers_join (void) MONO_INTERNAL;

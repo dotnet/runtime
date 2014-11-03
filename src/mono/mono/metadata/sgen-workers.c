@@ -33,7 +33,6 @@ static void *workers_gc_thread_major_collector_data = NULL;
 static SgenSectionGrayQueue workers_distribute_gray_queue;
 static gboolean workers_distribute_gray_queue_inited;
 
-static volatile gboolean workers_marking = FALSE;
 static gboolean workers_started = FALSE;
 
 enum {
@@ -417,7 +416,7 @@ workers_thread_func (void *data_untyped)
 			/* FIXME: maybe distribute the gray queue here? */
 		}
 
-		if (workers_marking && (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
+		if (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data)) {
 			SgenObjectOperations *ops = sgen_concurrent_collection_in_progress ()
 				? &major->major_concurrent_ops
 				: &major->major_ops;
@@ -536,8 +535,6 @@ sgen_workers_start_all_workers (void)
 	old_state = new_state = workers_state;
 	assert_not_working (old_state);
 
-	workers_marking = FALSE;
-
 	g_assert (workers_job_queue_num_entries == 0);
 	workers_num_jobs_enqueued = 0;
 	workers_num_jobs_finished = 0;
@@ -562,20 +559,6 @@ gboolean
 sgen_workers_have_started (void)
 {
 	return workers_started;
-}
-
-void
-sgen_workers_start_marking (void)
-{
-	if (!collection_needs_workers ())
-		return;
-
-	SGEN_ASSERT (0, workers_started, "Workers must have been started to start marking");
-	SGEN_ASSERT (0, !workers_marking, "Can't start marking if already marking");
-
-	workers_marking = TRUE;
-
-	workers_signal_enqueue_work_if_necessary (workers_num);
 }
 
 void
@@ -617,8 +600,6 @@ sgen_workers_join (void)
 	}
 
 	/* At this point all the workers have stopped. */
-
-	workers_marking = FALSE;
 
 	if (sgen_get_major_collector ()->reset_worker_data) {
 		for (i = 0; i < workers_num; ++i)

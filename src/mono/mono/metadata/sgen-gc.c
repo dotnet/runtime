@@ -2306,7 +2306,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 		sgen_check_consistency ();
 
 	sgen_workers_start_all_workers ();
-	sgen_workers_start_marking ();
 
 	frssjd = sgen_alloc_internal_dynamic (sizeof (FinishRememberedSetScanJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	frssjd->heap_start = sgen_get_nursery_start ();
@@ -2568,10 +2567,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (concurrent_collection_in_progress) {
+	if (concurrent_collection_in_progress)
 		sgen_workers_start_all_workers ();
-		sgen_workers_start_marking ();
-	}
 
 	/*
 	 * pin_queue now contains all candidate pointers, sorted and
