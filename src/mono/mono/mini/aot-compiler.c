@@ -4872,13 +4872,14 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 	char *name1, *name2, *cached;
 	int i, j, len, count;
 
+	name1 = mono_method_full_name (method, TRUE);
+
 #ifdef TARGET_MACH
 	// This is so that we don't accidentally create a local symbol (which starts with 'L')
-	if (!prefix || !*prefix)
+	if ((!prefix || !*prefix) && name1 [0] == 'L')
 		prefix = "_";
 #endif
 
-	name1 = mono_method_full_name (method, TRUE);
 	len = strlen (name1);
 	name2 = malloc (strlen (prefix) + len + 16);
 	memcpy (name2, prefix, strlen (prefix));
@@ -7102,7 +7103,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 
 	tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
-	mono_llvm_emit_aot_module (tempbc, acfg->final_got_size);
+	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name), acfg->final_got_size);
 	g_free (tempbc);
 
 	/*
