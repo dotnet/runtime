@@ -2269,6 +2269,13 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	gc_stats.minor_gc_count ++;
 
+	if (whole_heap_check_before_collection) {
+		sgen_clear_nursery_fragments ();
+		sgen_check_whole_heap (finish_up_concurrent_mark);
+	}
+	if (consistency_check_at_minor_collection)
+		sgen_check_consistency ();
+
 	MONO_GC_CHECKPOINT_1 (GENERATION_NURSERY);
 
 	sgen_process_fin_stage_entries ();
@@ -2297,13 +2304,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
 	MONO_GC_CHECKPOINT_3 (GENERATION_NURSERY);
-
-	if (whole_heap_check_before_collection) {
-		sgen_clear_nursery_fragments ();
-		sgen_check_whole_heap (finish_up_concurrent_mark);
-	}
-	if (consistency_check_at_minor_collection)
-		sgen_check_consistency ();
 
 	sgen_workers_start_all_workers ();
 
