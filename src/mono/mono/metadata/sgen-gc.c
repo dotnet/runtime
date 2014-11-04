@@ -2455,6 +2455,9 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 		sgen_check_nursery_objects_pinned (unpin_queue != NULL);
 
+	if (concurrent_collection_in_progress)
+		sgen_workers_signal_finish_nursery_collection ();
+
 	return needs_major;
 }
 
@@ -3050,6 +3053,8 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
 
 	if (!force_finish && !sgen_workers_all_done ()) {
+		sgen_workers_signal_start_nursery_collection_and_wait ();
+
 		major_collector.update_cardtable_mod_union ();
 		sgen_los_update_cardtable_mod_union ();
 

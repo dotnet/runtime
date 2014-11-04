@@ -37,14 +37,17 @@ static gboolean workers_started = FALSE;
 
 enum {
 	STATE_NOT_WORKING,
-	STATE_WORKING
+	STATE_WORKING,
+	STATE_NURSERY_COLLECTION
 } WorkersStateName;
 
 /*
- * | state             | num_awake | num_posted                 | post_done |
- * |-------------------+-----------+----------------------------+-----------|
- * | STATE_NOT_WORKING | 0         | *                          |         0 |
- * | STATE_WORKING     | > 0       | <= workers_num - num_awake |         * |
+ * | state                    | num_awake | num_posted                 | post_done |
+ * |--------------------------+-----------+----------------------------+-----------|
+ * | STATE_NOT_WORKING        | 0         | *                          |         0 |
+ * | STATE_WORKING            | > 0       | <= workers_num - num_awake |         * |
+ * | STATE_NURSERY_COLLECTION | *         | <= workers_num - num_awake |         1 |
+ * | STATE_NURSERY_COLLECTION | 0         | 0                          |         0 |
  */
 typedef union {
 	gint32 value;
@@ -78,6 +81,11 @@ static long long stat_workers_num_waited;
 static gboolean
 set_state (State old_state, State new_state)
 {
+	if (old_state.data.state == STATE_NOT_WORKING)
+		SGEN_ASSERT (0, new_state.data.state != STATE_NURSERY_COLLECTION, "Can't go from not working to nursery collection");
+	else if (old_state.data.state == STATE_NURSERY_COLLECTION)
+		SGEN_ASSERT (0, new_state.data.state != STATE_NOT_WORKING, "Can't go from nursery collection to not working");
+
 	return InterlockedCompareExchange (&workers_state.value,
 			new_state.value, old_state.value) == old_state.value;
 }
@@ -93,7 +101,42 @@ assert_not_working (State state)
 }
 
 static void
-workers_signal_enqueue_work (int num_wake_up)
+assert_working (State state, gboolean from_worker)
+{
+	SGEN_ASSERT (0, state.data.state == STATE_WORKING, "A worker can't wait without being in working state");
+	if (from_worker)
+		SGEN_ASSERT (0, state.data.num_awake > 0, "How can we be awake, yet we are not counted?");
+	else
+		SGEN_ASSERT (0, state.data.num_awake + state.data.num_posted > 0, "How can we be working, yet no worker threads are awake or to be awoken?");
+	SGEN_ASSERT (0, state.data.num_awake + state.data.num_posted <= workers_num, "There are too many worker threads awake");
+}
+
+static void
+assert_nursery_collection (State state, gboolean from_worker)
+{
+	SGEN_ASSERT (0, state.data.state == STATE_NURSERY_COLLECTION, "Must be in the nursery collection state");
+	if (from_worker) {
+		SGEN_ASSERT (0, state.data.num_awake > 0, "We're awake, but num_awake is zero");
+		SGEN_ASSERT (0, state.data.post_done, "post_done must be set in the nursery collection state");
+	}
+	SGEN_ASSERT (0, state.data.num_awake <= workers_num, "There are too many worker threads awake");
+	if (!state.data.post_done) {
+		SGEN_ASSERT (0, state.data.num_awake == 0, "Once done has been posted no threads can be awake");
+		SGEN_ASSERT (0, state.data.num_posted == 0, "Once done has been posted no thread must be awoken");
+	}
+}
+
+static void
+assert_working_or_nursery_collection (State state)
+{
+	if (state.data.state == STATE_WORKING)
+		assert_working (state, TRUE);
+	else
+		assert_nursery_collection (state, TRUE);
+}
+
+static void
+workers_signal_enqueue_work (int num_wake_up, gboolean from_nursery_collection)
 {
 	State old_state = workers_state;
 	State new_state = old_state;
@@ -102,7 +145,10 @@ workers_signal_enqueue_work (int num_wake_up)
 
 	SGEN_ASSERT (0, num_wake_up <= workers_num, "Cannot wake up more workers than are present");
 
-	assert_not_working (old_state);
+	if (from_nursery_collection)
+		assert_nursery_collection (old_state, FALSE);
+	else
+		assert_not_working (old_state);
 
 	new_state.data.state = STATE_WORKING;
 	new_state.data.num_posted = num_wake_up;
@@ -118,12 +164,13 @@ static void
 workers_signal_enqueue_work_if_necessary (int num_wake_up)
 {
 	if (workers_state.data.state == STATE_NOT_WORKING)
-		workers_signal_enqueue_work (num_wake_up);
+		workers_signal_enqueue_work (num_wake_up, FALSE);
 }
 
 void
 sgen_workers_ensure_awake (void)
 {
+	SGEN_ASSERT (0, workers_state.data.state != STATE_NURSERY_COLLECTION, "Can't wake workers during nursery collection");
 	workers_signal_enqueue_work_if_necessary (workers_num);
 }
 
@@ -131,23 +178,29 @@ static void
 workers_wait (void)
 {
 	State old_state, new_state;
+	gboolean post_done;
 
 	++stat_workers_num_waited;
 
 	do {
 		new_state = old_state = workers_state;
 
-		SGEN_ASSERT (0, old_state.data.state == STATE_WORKING, "A worker can't wait without being in working state");
-		SGEN_ASSERT (0, old_state.data.num_awake > 0, "How can we wait if we're not awake?");
+		assert_working_or_nursery_collection (old_state);
 
 		--new_state.data.num_awake;
+		post_done = FALSE;
 		if (!new_state.data.num_awake && !new_state.data.num_posted) {
-			new_state.data.state = STATE_NOT_WORKING;
+			/* We are the last thread to go to sleep. */
+			if (old_state.data.state == STATE_WORKING)
+				new_state.data.state = STATE_NOT_WORKING;
+
 			new_state.data.post_done = 0;
+			if (old_state.data.post_done)
+				post_done = TRUE;
 		}
 	} while (!set_state (old_state, new_state));
 
-	if (old_state.data.post_done && new_state.data.state == STATE_NOT_WORKING)
+	if (post_done)
 		MONO_SEM_POST (&workers_done_sem);
 
 	MONO_SEM_WAIT (&workers_waiting_sem);
@@ -155,12 +208,13 @@ workers_wait (void)
 	do {
 		new_state = old_state = workers_state;
 
-		SGEN_ASSERT (0, old_state.data.state == STATE_WORKING, "We must only awake in the working state");
 		SGEN_ASSERT (0, old_state.data.num_posted > 0, "How can we be awake without the semaphore having been posted?");
 		SGEN_ASSERT (0, old_state.data.num_awake < workers_num, "There are too many worker threads awake");
 
 		--new_state.data.num_posted;
 		++new_state.data.num_awake;
+
+		assert_working_or_nursery_collection (new_state);
 	} while (!set_state (old_state, new_state));
 }
 
@@ -180,6 +234,8 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 		func (NULL, data);
 		return;
 	}
+
+	SGEN_ASSERT (0, workers_state.data.state != STATE_NURSERY_COLLECTION, "Can't enqueue jobs during nursery collection");
 
 	entry = sgen_alloc_internal (INTERNAL_MEM_JOB_QUEUE_ENTRY);
 	entry->func = func;
@@ -204,6 +260,45 @@ sgen_workers_wait_for_jobs_finished (void)
 		/* FIXME: sleep less? */
 		g_usleep (1000);
 	}
+}
+
+void
+sgen_workers_signal_start_nursery_collection_and_wait (void)
+{
+	State old_state, new_state;
+
+	do {
+		new_state = old_state = workers_state;
+
+		if (old_state.data.state == STATE_NOT_WORKING)
+			return;
+
+		assert_working (old_state, FALSE);
+		SGEN_ASSERT (0, !old_state.data.post_done, "We are not waiting for the workers");
+
+		new_state.data.state = STATE_NURSERY_COLLECTION;
+		new_state.data.post_done = 1;
+	} while (!set_state (old_state, new_state));
+
+	MONO_SEM_WAIT (&workers_done_sem);
+
+	old_state = workers_state;
+	assert_nursery_collection (old_state, FALSE);
+	SGEN_ASSERT (0, !old_state.data.post_done, "We got the semaphore, so it must have been posted");
+}
+
+void
+sgen_workers_signal_finish_nursery_collection (void)
+{
+	State old_state = workers_state;
+
+	if (old_state.data.state == STATE_NOT_WORKING)
+		return;
+
+	assert_nursery_collection (old_state, FALSE);
+	SGEN_ASSERT (0, !old_state.data.post_done, "We are finishing the nursery collection, so we should have waited for the semaphore earlier");
+
+	workers_signal_enqueue_work (workers_num, TRUE);
 }
 
 static gboolean
@@ -411,7 +506,7 @@ workers_thread_func (void *data_untyped)
 	for (;;) {
 		gboolean did_work = FALSE;
 
-		while (workers_dequeue_and_do_job (data)) {
+		while (workers_state.data.state == STATE_WORKING && workers_dequeue_and_do_job (data)) {
 			did_work = TRUE;
 			/* FIXME: maybe distribute the gray queue here? */
 		}
@@ -424,8 +519,12 @@ workers_thread_func (void *data_untyped)
 
 			g_assert (!sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 
-			while (!sgen_drain_gray_stack (32, ctx))
+			while (!sgen_drain_gray_stack (32, ctx)) {
+				if (workers_state.data.state == STATE_NURSERY_COLLECTION)
+					workers_wait ();
+
 				workers_gray_queue_share_redirect (&data->private_gray_queue);
+			}
 			g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
 
 			init_private_gray_queue (data);
@@ -540,7 +639,7 @@ sgen_workers_start_all_workers (void)
 	workers_num_jobs_finished = 0;
 
 	if (workers_started) {
-		workers_signal_enqueue_work (workers_num);
+		workers_signal_enqueue_work (workers_num, FALSE);
 		return;
 	}
 
@@ -572,6 +671,8 @@ sgen_workers_join (void)
 
 	for (;;) {
 		old_state = workers_state;
+		SGEN_ASSERT (0, old_state.data.state != STATE_NURSERY_COLLECTION, "Can't be in nursery collection when joining");
+
 		if (old_state.data.state == STATE_WORKING) {
 			State new_state = old_state;
 
@@ -596,7 +697,7 @@ sgen_workers_join (void)
 		if (!workers_job_queue_num_entries && sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue))
 			break;
 
-		workers_signal_enqueue_work (workers_num);
+		workers_signal_enqueue_work (workers_num, FALSE);
 	}
 
 	/* At this point all the workers have stopped. */
