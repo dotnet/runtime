@@ -90,6 +90,7 @@ static int do_mono_sample = 0;
 static int in_shutdown = 0;
 static int do_debug = 0;
 static int do_counters = 0;
+static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 
 /* For linux compile with:
  * gcc -fPIC -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
@@ -2692,6 +2693,14 @@ mono_profiler_startup (const char *desc)
 			do_debug = 1;
 			continue;
 		}
+		if ((opt = match_option (p, "sampling-real", NULL)) != p) {
+			sampling_mode = MONO_PROFILER_STAT_MODE_REAL;
+			continue;
+		}
+		if ((opt = match_option (p, "sampling-process", NULL)) != p) {
+			sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
+			continue;
+		}
 		if ((opt = match_option (p, "heapshot", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
@@ -2781,6 +2790,7 @@ mono_profiler_startup (const char *desc)
 	
 	if (do_mono_sample && sample_type == SAMPLE_CYCLES) {
 		events |= MONO_PROFILE_STATISTICAL;
+		mono_profiler_set_statistical_mode (sampling_mode, 1000000 / sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
 	}
 
