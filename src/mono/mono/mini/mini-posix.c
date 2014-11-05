@@ -25,6 +25,8 @@
 #ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h>
 #endif
+#include <errno.h>
+
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -55,6 +57,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
+#include <mono/utils/mono-threads.h>
 
 #include "mini.h"
 #include <string.h>
@@ -306,12 +309,43 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 
 #else
 
-MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
+static int
+get_stage2_signal_handler (void)
+{
+#if defined(PLATFORM_ANDROID)
+	return SIGINFO;
+#elif !defined (SIGRTMIN)
+#ifdef SIGUSR2
+	return SIGUSR2;
+#else
+	return -1;
+#endif /* SIGUSR2 */
+#else
+	static int prof2_signum = -1;
+	int i;
+	if (prof2_signum != -1)
+		return prof2_signum;
+	/* we try to avoid SIGRTMIN and any one that might have been set already */
+	for (i = SIGRTMIN + 2; i < SIGRTMAX; ++i) {
+		struct sigaction sinfo;
+		sigaction (i, NULL, &sinfo);
+		if (sinfo.sa_handler == SIG_DFL && (void*)sinfo.sa_sigaction == (void*)SIG_DFL) {
+			prof2_signum = i;
+			return i;
+		}
+	}
+	/* fallback to the old way */
+	return SIGRTMIN + 2;
+#endif
+}
+
+
+static void
+per_thread_profiler_hit (void *ctx)
 {
 	int call_chain_depth = mono_profiler_stat_get_call_chain_depth ();
 	MonoProfilerCallChainStrategy call_chain_strategy = mono_profiler_stat_get_call_chain_strategy ();
-	MONO_SIG_HANDLER_GET_CONTEXT;
-	
+
 	if (call_chain_depth == 0) {
 		mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
 	} else {
@@ -378,6 +412,34 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 		
 		mono_profiler_stat_call_chain (current_frame_index, & ips [0], ctx);
 	}
+}
+
+MONO_SIG_HANDLER_FUNC (static, sigprof_stage2_signal_handler)
+{
+	MONO_SIG_HANDLER_GET_CONTEXT;
+
+	per_thread_profiler_hit (ctx);
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+}
+
+MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
+{
+	MonoThreadInfo *info;
+	int old_errno = errno;
+	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
+	MONO_SIG_HANDLER_GET_CONTEXT;
+
+	FOREACH_THREAD_SAFE (info) {
+		if (mono_thread_info_get_tid (info) == mono_native_thread_id_get ())
+			continue;
+		mono_threads_pthread_kill (info, get_stage2_signal_handler ());
+	} END_FOREACH_THREAD_SAFE;
+
+	per_thread_profiler_hit (ctx);
+
+	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
+	errno = old_errno;
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
@@ -647,11 +709,12 @@ mono_runtime_setup_stat_profiler (void)
 	itval.it_interval.tv_usec = 999;
 	itval.it_interval.tv_sec = 0;
 	itval.it_value = itval.it_interval;
-	setitimer (ITIMER_PROF, &itval, NULL);
 	if (inited)
 		return;
 	inited = 1;
 	add_signal_handler (SIGPROF, sigprof_signal_handler);
+	add_signal_handler (get_stage2_signal_handler (), sigprof_stage2_signal_handler);
+	setitimer (ITIMER_PROF, &itval, NULL);
 #endif
 }
 
