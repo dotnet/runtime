@@ -2199,8 +2199,9 @@ init_gray_queue (void)
 }
 
 /*
- * Collect objects in the nursery.  Returns whether to trigger a major
- * collection.
+ * Perform a nursery collection.
+ *
+ * Return whether any objects were late-pinned due to being out of memory.
  */
 static gboolean
 collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
@@ -2479,7 +2480,7 @@ scan_nursery_objects (ScanCopyContext ctx)
 }
 
 static void
-major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_concurrent_mark, gboolean scan_mod_union)
+major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_concurrent_mark, gboolean scan_mod_union, gboolean scan_whole_nursery)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2642,10 +2643,15 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	 * we need to do a full front-to-back scan of the nursery,
 	 * marking all objects.
 	 *
+	 * A further complication arises when we have late-pinned objects from the preceding
+	 * nursery collection.  Those are the result of being out of memory when trying to
+	 * evacuate objects.  They won't be found from the roots, so we just scan the whole
+	 * nursery.
+	 *
 	 * Non-concurrent mark evacuates from the nursery, so it's
 	 * sufficient to just scan pinned nursery objects.
 	 */
-	if (concurrent_collection_in_progress && sgen_minor_collector.is_split) {
+	if (scan_whole_nursery || (concurrent_collection_in_progress && sgen_minor_collector.is_split)) {
 		scan_nursery_objects (ctx);
 	} else {
 		pin_objects_in_nursery (ctx);
@@ -2778,7 +2784,7 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, FALSE, FALSE);
+	major_copy_or_mark_from_roots (old_next_pin_slot, FALSE, FALSE, FALSE);
 }
 
 static void
@@ -2804,7 +2810,7 @@ join_workers (void)
 }
 
 static void
-major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean scan_mod_union)
+major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean scan_mod_union, gboolean scan_whole_nursery)
 {
 	LOSObject *bigobj, *prevbo;
 	TV_DECLARE (atv);
@@ -2818,7 +2824,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	if (concurrent_collection_in_progress) {
 		current_object_ops = major_collector.major_concurrent_ops;
 
-		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union);
+		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union, scan_whole_nursery);
 		join_workers ();
 
 		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
@@ -2826,6 +2832,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		if (do_concurrent_checks)
 			check_nursery_is_clean ();
 	} else {
+		SGEN_ASSERT (0, !scan_whole_nursery, "scan_whole_nursery only applies to concurrent collections");
 		current_object_ops = major_collector.major_ops;
 	}
 
@@ -2994,7 +3001,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (time_start);
 
 	major_start_collection (FALSE, &old_next_pin_slot);
-	major_finish_collection (reason, old_next_pin_slot, FALSE);
+	major_finish_collection (reason, old_next_pin_slot, FALSE, FALSE);
 
 	TV_GETTIME (time_end);
 	gc_stats.major_gc_time += TV_ELAPSED (time_start, time_end);
@@ -3045,6 +3052,7 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 {
 	TV_DECLARE (total_start);
 	TV_DECLARE (total_end);
+	gboolean late_pinned;
 	SgenGrayQueue unpin_queue;
 	memset (&unpin_queue, 0, sizeof (unpin_queue));
 
@@ -3083,13 +3091,13 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
 
-	collect_nursery (&unpin_queue, TRUE);
+	late_pinned = collect_nursery (&unpin_queue, TRUE);
 
 	if (mod_union_consistency_check)
 		sgen_check_mod_union_consistency ();
 
 	current_collection_generation = GENERATION_OLD;
-	major_finish_collection ("finishing", -1, TRUE);
+	major_finish_collection ("finishing", -1, TRUE, late_pinned);
 
 	if (whole_heap_check_before_collection)
 		sgen_check_whole_heap (FALSE);
