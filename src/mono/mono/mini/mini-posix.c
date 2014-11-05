@@ -662,6 +662,30 @@ mono_runtime_shutdown_stat_profiler (void)
 #endif
 }
 
+#ifdef ITIMER_PROF
+static int
+get_itimer_mode (void)
+{
+	switch (mono_profiler_get_sampling_mode ()) {
+	case MONO_PROFILER_STAT_MODE_PROCESS: return ITIMER_PROF;
+	case MONO_PROFILER_STAT_MODE_REAL: return ITIMER_REAL;
+	}
+	g_assert_not_reached ();
+	return 0;
+}
+
+static int
+get_itimer_signal (void)
+{
+	switch (mono_profiler_get_sampling_mode ()) {
+	case MONO_PROFILER_STAT_MODE_PROCESS: return SIGPROF;
+	case MONO_PROFILER_STAT_MODE_REAL: return SIGALRM;
+	}
+	g_assert_not_reached ();
+	return 0;
+}
+#endif
+
 void
 mono_runtime_setup_stat_profiler (void)
 {
@@ -706,15 +730,15 @@ mono_runtime_setup_stat_profiler (void)
 		return;
 #endif
 
-	itval.it_interval.tv_usec = 999;
+	itval.it_interval.tv_usec = (1000000 / mono_profiler_get_sampling_rate ()) - 1;
 	itval.it_interval.tv_sec = 0;
 	itval.it_value = itval.it_interval;
 	if (inited)
 		return;
 	inited = 1;
-	add_signal_handler (SIGPROF, sigprof_signal_handler);
+	add_signal_handler (get_itimer_signal (), sigprof_signal_handler);
 	add_signal_handler (get_stage2_signal_handler (), sigprof_stage2_signal_handler);
-	setitimer (ITIMER_PROF, &itval, NULL);
+	setitimer (get_itimer_mode (), &itval, NULL);
 #endif
 }
 

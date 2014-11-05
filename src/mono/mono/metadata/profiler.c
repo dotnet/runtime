@@ -273,12 +273,46 @@ mono_profiler_install_monitor  (MonoProfileMonitorFunc callback)
 	prof_list->monitor_event_cb = callback;
 }
 
+static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
+static int64_t sampling_frequency = 1000; //1ms
+
+/**
+ * mono_profiler_set_statistical_mode:
+ * @mode the sampling mode used.
+ * @sample_frequency_is_us the sampling frequency in microseconds.
+ *
+ * Set the sampling parameters for the profiler. Sampling mode affects the effective sampling rate as in samples/s you'll witness.
+ * The default sampling mode is process mode, which only reports samples when there's activity in the process.
+ *
+ * Sampling frequency should be interpreted as a suggestion that can't always be honored due to how most kernels expose alarms.
+ *
+ * Said that, when using statistical sampling, always assume variable rate sampling as all sort of external factors can interfere.
+ */
+void
+mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_is_us)
+{
+	sampling_mode = mode;
+	sampling_frequency = sampling_frequency_is_us;
+}
+
 void 
 mono_profiler_install_statistical (MonoProfileStatFunc callback)
 {
 	if (!prof_list)
 		return;
 	prof_list->statistical_cb = callback;
+}
+
+int64_t
+mono_profiler_get_sampling_rate (void)
+{
+	return sampling_frequency;
+}
+
+MonoProfileSamplingMode
+mono_profiler_get_sampling_mode (void)
+{
+	return sampling_mode;
 }
 
 void 

@@ -77,5 +77,8 @@ void mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeB
 
 void mono_profiler_runtime_initialized (void) MONO_INTERNAL;
 
+int64_t mono_profiler_get_sampling_rate (void) MONO_INTERNAL;
+MonoProfileSamplingMode mono_profiler_get_sampling_mode (void) MONO_INTERNAL;
+
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
 

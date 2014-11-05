@@ -193,6 +193,15 @@ MONO_API void mono_profiler_install_iomap (MonoProfileIomapFunc callback);
 
 MONO_API void mono_profiler_load             (const char *desc);
 
+typedef enum {
+	/* Elapsed time is tracked by user+kernel time of the process - this is the default*/
+	MONO_PROFILER_STAT_MODE_PROCESS = 0,
+	/* Elapsed time is tracked by wallclock time */
+	MONO_PROFILER_STAT_MODE_REAL = 1,
+} MonoProfileSamplingMode;
+
+MONO_API void mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_is_us);
+
 MONO_END_DECLS
 
 #endif /* __MONO_PROFILER_H__ */
