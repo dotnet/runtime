@@ -2878,7 +2878,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
 	if (check_mark_bits_after_major_collection)
-		sgen_check_major_heap_marked ();
+		sgen_check_heap_marked ();
 
 	MONO_GC_SWEEP_BEGIN (GENERATION_OLD, !major_collector.sweeps_lazily);
 

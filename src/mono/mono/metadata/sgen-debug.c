@@ -348,6 +348,16 @@ find_object_in_nursery_dump (char *object)
 	return FALSE;
 }
 
+static void
+iterate_valid_nursery_objects (IterateObjectCallbackFunc callback, void *data)
+{
+	int i;
+	for (i = 0; i < valid_nursery_object_count; ++i) {
+		char *obj = valid_nursery_objects [i];
+		callback (obj, safe_object_get_size ((MonoObject*)obj), data);
+	}
+}
+
 static char*
 describe_nursery_ptr (char *ptr, gboolean need_setup)
 {
@@ -559,7 +569,9 @@ check_marked_callback (char *start, size_t size, void *dummy)
 	gboolean is_los = (gboolean) (size_t) dummy;
 	mword desc;
 
-	if (is_los) {
+	if (sgen_ptr_in_nursery (start)) {
+		SGEN_ASSERT (0, SGEN_OBJECT_IS_PINNED (start), "All objects remaining in the nursery must be pinned");
+	} else if (is_los) {
 		if (!sgen_los_object_is_pinned (start))
 			return;
 	} else {
@@ -567,16 +579,17 @@ check_marked_callback (char *start, size_t size, void *dummy)
 			return;
 	}
 
-	desc = sgen_obj_get_descriptor (start);
+	desc = sgen_obj_get_descriptor_safe (start);
 
 #include "sgen-scan-object.h"
 }
 
 void
-sgen_check_major_heap_marked (void)
+sgen_check_heap_marked (void)
 {
 	setup_valid_nursery_objects ();
 
+	iterate_valid_nursery_objects (check_marked_callback, (void*)FALSE);
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, check_marked_callback, (void*)FALSE);
 	sgen_los_iterate_objects (check_marked_callback, (void*)TRUE);
 }
