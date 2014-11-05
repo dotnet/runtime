@@ -328,11 +328,9 @@ mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INT
 
 #if !defined(HOST_WIN32)
 
-#if !defined(__MACH__)
 /*Use this instead of pthread_kill */
 int
 mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum) MONO_INTERNAL;
-#endif
 
 #endif /* !defined(HOST_WIN32) */
 

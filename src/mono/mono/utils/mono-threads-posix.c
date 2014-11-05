@@ -260,6 +260,26 @@ mono_threads_core_clear_interruption (void)
 	wapi_clear_interruption ();
 }
 
+int
+mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
+{
+#if defined (PLATFORM_ANDROID)
+	int result, old_errno = errno;
+	result = tkill (info->native_handle, signum);
+	if (result < 0) {
+		result = errno;
+		errno = old_errno;
+	}
+	return result;
+#elif defined(__native_client__)
+	/* Workaround pthread_kill abort() in NaCl glibc. */
+	return 0;
+#else
+	return pthread_kill (mono_thread_info_get_tid (info), signum);
+#endif
+
+}
+
 #if !defined (__MACH__)
 
 #if !defined(__native_client__)
@@ -339,26 +359,6 @@ mono_threads_init_platform (void)
 void
 mono_threads_core_interrupt (MonoThreadInfo *info)
 {
-}
-
-int
-mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
-{
-#if defined (PLATFORM_ANDROID)
-	int result, old_errno = errno;
-	result = tkill (info->native_handle, signum);
-	if (result < 0) {
-		result = errno;
-		errno = old_errno;
-	}
-	return result;
-#elif defined(__native_client__)
-	/* Workaround pthread_kill abort() in NaCl glibc. */
-	return 0;
-#else
-	return pthread_kill (mono_thread_info_get_tid (info), signum);
-#endif
-
 }
 
 void
