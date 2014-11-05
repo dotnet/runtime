@@ -301,8 +301,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_mtlr (code, ppc_r12);
 		ppc_blrl (code);
 	}  else {
-		ppc_load_func (code, ppc_r0, mono_get_lmf_addr);
-		ppc_mtlr (code, ppc_r0);
+		ppc_load_func (code, PPC_CALL_REG, mono_get_lmf_addr);
+		ppc_mtlr (code, PPC_CALL_REG);
 		ppc_blrl (code);
 	}
 	/* we build the MonoLMF structure on the stack - see mini-ppc.h
@@ -363,8 +363,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_blrl (code);
 	} else {
 		tramp_handler = mono_get_trampoline_func (tramp_type);
-		ppc_load_func (code, ppc_r0, tramp_handler);
-		ppc_mtlr (code, ppc_r0);
+		ppc_load_func (code, PPC_CALL_REG, tramp_handler);
+		ppc_mtlr (code, PPC_CALL_REG);
 		ppc_blrl (code);
 	}
 		

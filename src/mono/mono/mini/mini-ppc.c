@@ -1789,8 +1789,8 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	ppc_load_ptr (code, ppc_r3, cfg->method);
 	ppc_li (code, ppc_r4, 0); /* NULL ebp for now */
-	ppc_load_func (code, ppc_r0, func);
-	ppc_mtlr (code, ppc_r0);
+	ppc_load_func (code, PPC_CALL_REG, func);
+	ppc_mtlr (code, PPC_CALL_REG);
 	ppc_blrl (code);
 	return code;
 }
@@ -1887,8 +1887,8 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	}
 
 	ppc_load_ptr (code, ppc_r3, cfg->method);
-	ppc_load_func (code, ppc_r0, func);
-	ppc_mtlr (code, ppc_r0);
+	ppc_load_func (code, PPC_CALL_REG, func);
+	ppc_mtlr (code, PPC_CALL_REG);
 	ppc_blrl (code);
 
 	switch (save_mode) {
@@ -2933,7 +2933,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 
 			if (!is_fd) {
 				guint8 *buf = (guint8*)&seq [5];
-				ppc_mr (buf, ppc_r0, ppc_r12);
+				ppc_mr (buf, PPC_CALL_REG, ppc_r12);
 				ppc_nop (buf);
 			}
 		} else {
@@ -2946,7 +2946,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		/* FIXME: we're assuming we're using r12 here */
 		ppc_load_ptr_sequence (code, ppc_r12, target);
 #else
-		ppc_load_ptr_sequence (code, ppc_r0, target);
+		ppc_load_ptr_sequence (code, PPC_CALL_REG, target);
 #endif
 		mono_arch_flush_icache ((guint8*)seq, 28);
 #else
@@ -2962,8 +2962,8 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		g_assert ((seq [2] >> 26) == 31);
 		g_assert (seq [3] == 0x4e800021 || seq [3] == 0x4e800020 || seq [3] == 0x4e800420);
 		/* FIXME: make this thread safe */
-		ppc_lis (code, ppc_r0, (guint32)(target) >> 16);
-		ppc_ori (code, ppc_r0, ppc_r0, (guint32)(target) & 0xffff);
+		ppc_lis (code, PPC_CALL_REG, (guint32)(target) >> 16);
+		ppc_ori (code, PPC_CALL_REG, PPC_CALL_REG, (guint32)(target) & 0xffff);
 		mono_arch_flush_icache (code - 8, 8);
 #endif
 	} else {
@@ -3381,8 +3381,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_break");
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
-				ppc_load_func (code, ppc_r0, 0);
-				ppc_mtlr (code, ppc_r0);
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
 			} else {
 				ppc_bl (code, 0);
@@ -3829,8 +3829,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
-				ppc_load_func (code, ppc_r0, 0);
-				ppc_mtlr (code, ppc_r0);
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
 			} else {
 				ppc_bl (code, 0);
@@ -3923,8 +3923,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
-				ppc_load_func (code, ppc_r0, 0);
-				ppc_mtlr (code, ppc_r0);
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
 			} else {
 				ppc_bl (code, 0);
@@ -3937,8 +3937,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_rethrow_exception");
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
-				ppc_load_func (code, ppc_r0, 0);
-				ppc_mtlr (code, ppc_r0);
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
 			} else {
 				ppc_bl (code, 0);
@@ -5098,8 +5098,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
-				ppc_load_func (code, ppc_r0, 0);
-				ppc_mtlr (code, ppc_r0);
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
 			} else {
 				ppc_bl (code, 0);
@@ -5408,8 +5408,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->data.name = "mono_arch_throw_corlib_exception";
 			patch_info->ip.i = code - cfg->native_code;
 			if (FORCE_INDIR_CALL || cfg->method->dynamic) {
-				ppc_load_func (code, ppc_r0, 0);
-				ppc_mtctr (code, ppc_r0);
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtctr (code, PPC_CALL_REG);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);

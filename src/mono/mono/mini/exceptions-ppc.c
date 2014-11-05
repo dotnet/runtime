@@ -391,8 +391,8 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 		} else {
 			ppc_load (code, ppc_r3, (gulong)mono_defaults.corlib);
-			ppc_load_func (code, ppc_r0, mono_exception_from_token);
-			ppc_mtctr (code, ppc_r0);
+			ppc_load_func (code, PPC_CALL_REG, mono_exception_from_token);
+			ppc_mtctr (code, PPC_CALL_REG);
 			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 		}
 	}
@@ -426,8 +426,8 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 		ppc_mtctr (code, ppc_r12);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	} else {
-		ppc_load_func (code, ppc_r0, mono_ppc_throw_exception);
-		ppc_mtctr (code, ppc_r0);
+		ppc_load_func (code, PPC_CALL_REG, mono_ppc_throw_exception);
+		ppc_mtctr (code, PPC_CALL_REG);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	}
 	/* we should never reach this breakpoint */
