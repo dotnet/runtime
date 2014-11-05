@@ -935,7 +935,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		char *forwarded, *old_obj;
 
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-			*ptr = forwarded;
+			SGEN_UPDATE_REFERENCE (ptr, forwarded);
 			return;
 		}
 		if (SGEN_OBJECT_IS_PINNED (obj))
@@ -961,7 +961,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 			}
 			return;
 		}
-		*ptr = obj;
+		SGEN_UPDATE_REFERENCE (ptr, obj);
 
 		/*
 		 * FIXME: See comment for copy_object_no_checks().  If
@@ -996,7 +996,7 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 		 * we have to do this check first.
 		 */
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-			*ptr = forwarded;
+			SGEN_UPDATE_REFERENCE (ptr, forwarded);
 			return;
 		}
 

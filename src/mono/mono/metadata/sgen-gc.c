@@ -4134,7 +4134,7 @@ void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? safe_name (value) : "null");
-	*(void**)ptr = value;
+	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
 	sgen_dummy_use (value);
@@ -4167,7 +4167,7 @@ void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size
 		if (bitmap & 0x1)
 			mono_gc_wbarrier_generic_store (dest, (MonoObject*)*src);
 		else
-			*dest = *src;
+			SGEN_UPDATE_REFERENCE_ALLOW_NULL (dest, *src);
 		++src;
 		++dest;
 		size -= SIZEOF_VOID_P;

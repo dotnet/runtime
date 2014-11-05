@@ -85,6 +85,15 @@ typedef guint64 mword;
 //#define SGEN_CHECK_GRAY_OBJECT_SECTIONS
 
 /*
+ * Enable this to check every reference update for null references and whether the update is
+ * made in a worker thread.  In only a few cases do we potentially update references by
+ * writing nulls, so we assert in all the cases where it's not allowed.  The concurrent
+ * collector's worker thread is not allowed to update references at all, so we also assert
+ * that we're not in the worker thread.
+ */
+//#define SGEN_CHECK_UPDATE_REFERENCE
+
+/*
  * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
  * have cross-domain checks in the write barrier.
  */
