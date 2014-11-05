@@ -355,8 +355,10 @@ sgen_memgov_release_space (mword size, int space)
 gboolean
 sgen_memgov_try_alloc_space (mword size, int space)
 {
-	if (sgen_memgov_available_free_space () < size)
+	if (sgen_memgov_available_free_space () < size) {
+		SGEN_ASSERT (4, !sgen_is_worker_thread (mono_native_thread_id_get ()), "Memory shouldn't run out in worker thread");
 		return FALSE;
+	}
 
 	SGEN_ATOMIC_ADD_P (allocated_heap, size);
 	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
