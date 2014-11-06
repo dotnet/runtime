@@ -11,6 +11,36 @@ using Validation;
 
 namespace System.Collections.Immutable
 {
+    /// <summary>
+    /// Object pooling utilities.
+    /// </summary>
+    internal class SecureObjectPool
+    {
+        /// <summary>
+        /// The ever-incrementing (and wrap-on-overflow) integer for owner id's.
+        /// </summary>
+        private static int poolUserIdCounter;
+
+        /// <summary>
+        /// The ID reserved for unassigned objects.
+        /// </summary>
+        internal const int UnassignedId = -1;
+
+        /// <summary>
+        /// Returns a new ID.
+        /// </summary>
+        internal static int NewId()
+        {
+            int result = Interlocked.Increment(ref poolUserIdCounter);
+            if (result == UnassignedId)
+            {
+                result = Interlocked.Increment(ref poolUserIdCounter);
+            }
+
+            return result;
+        }
+    }
+
     internal class SecureObjectPool<T, TCaller>
         where TCaller : ISecurePooledObjectUser
     {
@@ -23,7 +53,7 @@ namespace System.Collections.Immutable
                 // Only allow the caller to recycle this object if it is the current owner.
                 if (caller.PoolUserId == item.Owner)
                 {
-                    item.Owner = Guid.Empty;
+                    item.Owner = SecureObjectPool.UnassignedId;
                     this.pool.TryAdd(item);
                 }
             }
@@ -31,7 +61,7 @@ namespace System.Collections.Immutable
 
         public bool TryTake(TCaller caller, out SecurePooledObject<T> item)
         {
-            if (caller.PoolUserId != Guid.Empty && this.pool.TryTake(out item))
+            if (caller.PoolUserId != SecureObjectPool.UnassignedId && this.pool.TryTake(out item))
             {
                 item.Owner = caller.PoolUserId;
                 return true;
@@ -54,13 +84,13 @@ namespace System.Collections.Immutable
 
     internal interface ISecurePooledObjectUser
     {
-        Guid PoolUserId { get; }
+        int PoolUserId { get; }
     }
 
     internal class SecurePooledObject<T>
     {
         private readonly T value;
-        private Guid owner;
+        private int owner;
 
         internal SecurePooledObject(T newValue)
         {
@@ -68,7 +98,7 @@ namespace System.Collections.Immutable
             this.value = newValue;
         }
 
-        internal Guid Owner
+        internal int Owner
         {
             get
             {
