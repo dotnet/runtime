@@ -98,6 +98,14 @@ namespace System.Collections.Immutable
             this.value = newValue;
         }
 
+        /// <summary>
+        /// Gets or sets the current owner of this recyclable object.
+        /// </summary>
+        /// <remarks>
+        /// We lock (this) because SecurePooledObjectUser calls also locks this (through Monitor.Enter)
+        /// and this ensure we don't allow reassignment of the owner while the current owner is using it.
+        /// We also lock (this) in TryAdd.
+        /// </remarks>
         internal int Owner
         {
             get
