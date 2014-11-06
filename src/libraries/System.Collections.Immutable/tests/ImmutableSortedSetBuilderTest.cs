@@ -313,5 +313,17 @@ namespace System.Collections.Immutable.Test
             Assert.NotNull(builder.SyncRoot);
             Assert.Same(builder.SyncRoot, builder.SyncRoot);
         }
+
+        [Fact]
+        public void Indexer()
+        {
+            var builder = ImmutableSortedSet.Create(1, 3, 2).ToBuilder();
+            Assert.Equal(1, builder[0]);
+            Assert.Equal(2, builder[1]);
+            Assert.Equal(3, builder[2]);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder[3]);
+        }
     }
 }
