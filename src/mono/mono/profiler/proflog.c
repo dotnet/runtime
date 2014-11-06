@@ -677,6 +677,7 @@ process_requests (MonoProfiler *profiler)
 }
 
 static void counters_init (MonoProfiler *profiler);
+static void counters_sample (MonoProfiler *profiler);
 
 static void
 runtime_initialized (MonoProfiler *profiler)
@@ -684,6 +685,7 @@ runtime_initialized (MonoProfiler *profiler)
 	runtime_inited = 1;
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
+	counters_sample (profiler);
 #endif
 	/* ensure the main thread data and startup are available soon */
 	safe_dump (profiler, ensure_logbuf (0));
