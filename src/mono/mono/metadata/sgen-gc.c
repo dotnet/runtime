@@ -1227,6 +1227,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			if (addr >= (mword)start_nursery && addr < (mword)end_nursery) {
 				SGEN_LOG (6, "Pinning address %p from %p", (void*)addr, start);
 				sgen_pin_stage_ptr ((void*)addr);
+				binary_protocol_pin_stage (start, (void*)addr, thread_info);
 				count++;
 			}
 			if (G_UNLIKELY (do_pin_stats)) { 

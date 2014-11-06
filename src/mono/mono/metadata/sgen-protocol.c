@@ -438,6 +438,13 @@ binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size)
 }
 
 void
+binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr, gpointer thread)
+{
+	SGenProtocolPinStage entry = { addr_ptr, addr, thread };
+	protocol_entry (SGEN_PROTOCOL_PIN_STAGE, &entry, sizeof (SGenProtocolPinStage));
+}
+
+void
 binary_protocol_pin (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolPin entry = { obj, vtable, size };
