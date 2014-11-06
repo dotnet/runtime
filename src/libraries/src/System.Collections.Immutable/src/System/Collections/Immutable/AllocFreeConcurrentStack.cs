@@ -9,31 +9,37 @@ using System.Text;
 
 namespace System.Collections.Immutable
 {
-    [DebuggerDisplay("Count = {stack.Count}")]
-    internal class AllocFreeConcurrentStack<T>
+    [DebuggerDisplay("Count = {stack != null ? stack.Count : 0}")]
+    internal static class AllocFreeConcurrentStack<T>
     {
-        /// <summary>
-        /// We use locks to protect this rather than ThreadLocal{T} because in perf tests
-        /// uncontested locks are much faster than looking up thread-local storage.
-        /// </summary>
-        private readonly Stack<RefAsValueType<T>> stack = new Stack<RefAsValueType<T>>();
+        private const int MaxSize = 35;
 
-        public void TryAdd(T item)
+        [ThreadStatic]
+        private static Stack<RefAsValueType<T>> stack;
+
+        public static void TryAdd(T item)
         {
-            lock (this.stack)
+            if (stack == null)
             {
-                this.stack.Push(new RefAsValueType<T>(item));
+                stack = new Stack<RefAsValueType<T>>(MaxSize);
+            }
+
+            // Just in case we're in a scenario where an object is continually requested on one thread
+            // and returned on another, avoid unbounded growth of the stack.
+            if (stack.Count < MaxSize)
+            {
+                stack.Push(new RefAsValueType<T>(item));
             }
         }
 
-        public bool TryTake(out T item)
+        public static bool TryTake(out T item)
         {
-            lock (this.stack)
+            if (stack != null)
             {
-                int count = this.stack.Count;
+                int count = stack.Count;
                 if (count > 0)
                 {
-                    item = this.stack.Pop().Value;
+                    item = stack.Pop().Value;
                     return true;
                 }
             }
