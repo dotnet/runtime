@@ -1572,17 +1572,13 @@ namespace System.Collections.Immutable
                 this.reversed = reversed;
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.poolUserId = Guid.NewGuid();
+                this.stack = null;
                 if (this.count > 0)
                 {
-                    this.stack = null;
                     if (!EnumeratingStacks.TryTake(this, out this.stack))
                     {
                         this.stack = EnumeratingStacks.PrepNew(this, new Stack<RefAsValueType<IBinaryTree<T>>>(root.Height));
                     }
-                }
-                else
-                {
-                    this.stack = null;
                 }
 
                 this.Reset();
