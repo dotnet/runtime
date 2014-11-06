@@ -46,15 +46,12 @@ namespace System.Collections.Immutable
     {
         public void TryAdd(TCaller caller, SecurePooledObject<T> item)
         {
-            lock (item)
-            {
                 // Only allow the caller to recycle this object if it is the current owner.
                 if (caller.PoolUserId == item.Owner)
                 {
                     item.Owner = SecureObjectPool.UnassignedId;
                     AllocFreeConcurrentStack<SecurePooledObject<T>>.TryAdd(item);
                 }
-            }
         }
 
         public bool TryTake(TCaller caller, out SecurePooledObject<T> item)
@@ -99,28 +96,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets or sets the current owner of this recyclable object.
         /// </summary>
-        /// <remarks>
-        /// We lock (this) because SecurePooledObjectUser calls also locks this (through Monitor.Enter)
-        /// and this ensure we don't allow reassignment of the owner while the current owner is using it.
-        /// We also lock (this) in TryAdd.
-        /// </remarks>
         internal int Owner
         {
-            get
-            {
-                lock (this)
-                {
-                    return this.owner;
-                }
-            }
-
-            set
-            {
-                lock (this)
-                {
-                    this.owner = value;
-                }
-            }
+            get { return this.owner; }
+            set { this.owner = value; }
         }
 
         internal SecurePooledObjectUser Use<TCaller>(TCaller caller)
@@ -146,7 +125,6 @@ namespace System.Collections.Immutable
             internal SecurePooledObjectUser(SecurePooledObject<T> value)
             {
                 this.value = value;
-                Monitor.Enter(value);
             }
 
             internal T Value
@@ -156,7 +134,6 @@ namespace System.Collections.Immutable
 
             public void Dispose()
             {
-                Monitor.Exit(value);
             }
         }
     }
