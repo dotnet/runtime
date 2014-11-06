@@ -957,7 +957,7 @@ namespace System.Collections.Immutable
             /// A unique ID for this instance of this enumerator.
             /// Used to protect pooled objects from use after they are recycled.
             /// </summary>
-            private readonly Guid poolUserId;
+            private readonly int poolUserId;
 
             /// <summary>
             /// The set being enumerated.
@@ -992,7 +992,7 @@ namespace System.Collections.Immutable
                 this.builder = builder;
                 this.current = null;
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
-                this.poolUserId = Guid.NewGuid();
+                this.poolUserId = SecureObjectPool.NewId();
                 this.stack = null;
                 if (!this.root.IsEmpty)
                 {
@@ -1023,7 +1023,7 @@ namespace System.Collections.Immutable
             }
 
             /// <inheritdoc/>
-            Guid ISecurePooledObjectUser.PoolUserId
+            int ISecurePooledObjectUser.PoolUserId
             {
                 get { return this.poolUserId; }
             }
