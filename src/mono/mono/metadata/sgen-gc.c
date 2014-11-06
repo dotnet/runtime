@@ -425,8 +425,8 @@ size_t degraded_mode = 0;
 static mword bytes_pinned_from_failed_allocation = 0;
 
 GCMemSection *nursery_section = NULL;
-static mword lowest_heap_address = ~(mword)0;
-static mword highest_heap_address = 0;
+static volatile mword lowest_heap_address = ~(mword)0;
+static volatile mword highest_heap_address = 0;
 
 LOCK_DECLARE (sgen_interruption_mutex);
 static LOCK_DECLARE (pin_queue_mutex);
