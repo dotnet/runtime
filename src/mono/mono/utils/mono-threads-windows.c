@@ -58,7 +58,7 @@ mono_threads_core_self_suspend (MonoThreadInfo *info)
 }
 
 gboolean
-mono_threads_core_suspend (MonoThreadInfo *info)
+mono_threads_core_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle;

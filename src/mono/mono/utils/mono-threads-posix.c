@@ -39,6 +39,10 @@ typedef struct {
 	HANDLE handle;
 } StartInfo;
 
+#ifdef PLATFORM_ANDROID
+static int no_interrupt_signo;
+#endif
+
 static void*
 inner_start_thread (void *arg)
 {
@@ -325,7 +329,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 #endif
 
 static void
-mono_posix_add_signal_handler (int signo, gpointer handler)
+mono_posix_add_signal_handler (int signo, gpointer handler, int flags)
 {
 #if !defined(__native_client__)
 	/*FIXME, move the code from mini to utils and do the right thing!*/
@@ -335,7 +339,7 @@ mono_posix_add_signal_handler (int signo, gpointer handler)
 
 	sa.sa_sigaction = handler;
 	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
+	sa.sa_flags = SA_SIGINFO | flags;
 	ret = sigaction (signo, &sa, &previous_sa);
 
 	g_assert (ret != -1);
@@ -346,19 +350,36 @@ void
 mono_threads_init_platform (void)
 {
 #if !defined(__native_client__)
+	int abort_signo;
+
 	/*
 	FIXME we should use all macros from mini to make this more portable
 	FIXME it would be very sweet if sgen could end up using this too.
 	*/
-	if (mono_thread_info_new_interrupt_enabled ())
-		mono_posix_add_signal_handler (mono_thread_get_abort_signal (), suspend_signal_handler);
+	if (!mono_thread_info_new_interrupt_enabled ())
+		return;
+	abort_signo = mono_thread_get_abort_signal ();
+	mono_posix_add_signal_handler (abort_signo, suspend_signal_handler, 0);
+
+#ifdef PLATFORM_ANDROID
+	/*
+	 * Lots of android native code can't handle the EINTR caused by
+	 * the normal abort signal, so use a different signal for the
+	 * no interruption case, which is used by sdb.
+	 * FIXME: Use this on all platforms.
+	 * SIGUSR1 is used by dalvik/art.
+	 */
+	no_interrupt_signo = SIGUSR2;
+	g_assert (abort_signo != no_interrupt_signo);
+	mono_posix_add_signal_handler (abort_signo, suspend_signal_handler, SA_RESTART);
+#endif
 #endif
 }
 
-/*nothing to be done here since suspend always abort syscalls due using signals*/
 void
 mono_threads_core_interrupt (MonoThreadInfo *info)
 {
+	/* Handled in mono_threads_core_suspend () */
 }
 
 void
@@ -379,10 +400,17 @@ mono_threads_core_needs_abort_syscall (void)
 }
 
 gboolean
-mono_threads_core_suspend (MonoThreadInfo *info)
+mono_threads_core_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	/*FIXME, check return value*/
-	mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
+#ifdef PLATFORM_ANDROID
+	if (interrupt_kernel)
+		mono_threads_pthread_kill (info, no_interrupt_signo);
+	else
+		mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
+#else
+		mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
+#endif
 	while (MONO_SEM_WAIT (&info->begin_suspend_semaphore) != 0) {
 		/* g_assert (errno == EINTR); */
 	}
@@ -406,7 +434,7 @@ mono_threads_platform_register (MonoThreadInfo *info)
 	MONO_SEM_INIT (&info->begin_suspend_semaphore, 0);
 
 #if defined (PLATFORM_ANDROID)
-	info->native_handle = (gpointer) gettid ();
+	info->native_handle = gettid ();
 #endif
 }
 

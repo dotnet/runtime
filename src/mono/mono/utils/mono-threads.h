@@ -336,7 +336,7 @@ mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum) MONO_INTERNAL;
 
 /* Plartform specific functions DON'T use them */
 void mono_threads_init_platform (void) MONO_INTERNAL; //ok
-gboolean mono_threads_core_suspend (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+gboolean mono_threads_core_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel) MONO_INTERNAL;
 gboolean mono_threads_core_resume (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 void mono_threads_platform_register (THREAD_INFO_TYPE *info) MONO_INTERNAL; //ok
 void mono_threads_platform_free (THREAD_INFO_TYPE *info) MONO_INTERNAL;

@@ -48,7 +48,7 @@ mono_threads_core_needs_abort_syscall (void)
 }
 
 gboolean
-mono_threads_core_suspend (MonoThreadInfo *info)
+mono_threads_core_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	kern_return_t ret;
 	gboolean res;

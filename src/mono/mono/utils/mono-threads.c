@@ -426,7 +426,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 		return info;
 	}
 
-	if (!mono_threads_core_suspend (info)) {
+	if (!mono_threads_core_suspend (info, interrupt_kernel)) {
 		MONO_SEM_POST (&info->suspend_semaphore);
 		mono_hazard_pointer_clear (hp, 1);
 		*error_condition = "Could not suspend thread";
