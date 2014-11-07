@@ -519,6 +519,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 		mono_domain_unlock (domain);
 	} else {
 		code = buf = mono_global_codeman_reserve (size);
+		short_branch = FALSE;
 	}
 
 #ifdef USE_JUMP_TABLES
