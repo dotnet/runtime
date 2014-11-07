@@ -20,10 +20,13 @@
 #ifndef __MONO_SGEN_POINTER_QUEUE_H__
 #define __MONO_SGEN_POINTER_QUEUE_H__
 
+#include <glib.h>
+
 typedef struct {
 	void **data;
 	size_t size;
 	size_t next_slot;
+	int mem_type;
 } SgenPointerQueue;
 
 void sgen_pointer_queue_add (SgenPointerQueue *queue, void *ptr) MONO_INTERNAL;
@@ -32,5 +35,9 @@ void sgen_pointer_queue_remove_nulls (SgenPointerQueue *queue) MONO_INTERNAL;
 void sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue) MONO_INTERNAL;
 size_t sgen_pointer_queue_search (SgenPointerQueue *queue, void *addr) MONO_INTERNAL;
 size_t sgen_pointer_queue_find (SgenPointerQueue *queue, void *ptr) MONO_INTERNAL;
+void sgen_pointer_queue_init (SgenPointerQueue *queue, int mem_type) MONO_INTERNAL;
+void* sgen_pointer_queue_pop (SgenPointerQueue *queue) MONO_INTERNAL;
+gboolean sgen_pointer_queue_is_empty (SgenPointerQueue *queue) MONO_INTERNAL;
+void sgen_pointer_queue_free (SgenPointerQueue *queue) MONO_INTERNAL;
 
 #endif

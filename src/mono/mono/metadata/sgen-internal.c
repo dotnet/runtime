@@ -150,6 +150,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_TOGGLEREF_DATA: return "toggleref-data";
 	case INTERNAL_MEM_CARDTABLE_MOD_UNION: return "cardtable-mod-union";
 	case INTERNAL_MEM_BINARY_PROTOCOL: return "binary-protocol";
+	case INTERNAL_MEM_TEMPORARY: return "temporary";
 	default:
 		g_assert_not_reached ();
 	}
