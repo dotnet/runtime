@@ -1,0 +1,40 @@
+{
+    // ==++==
+    // 
+    //    Copyright (c) Microsoft Corporation.  All rights reserved.
+    // 
+    // ==--==
+
+    //  NOTE: do not use \", use ' instead
+    //  NOTE: Use # or ; for comments
+
+    //  These are the managed resources for System.Xml.Linq.dll.  See
+    //  ResourceManager documentation and the ResGen tool.
+
+    "Argument_AddAttribute" : "An attribute cannot be added to content.",
+    "Argument_AddNode" : "A node of type {0} cannot be added to content.",
+    "Argument_AddNonWhitespace" : "Non white space characters cannot be added to content.",
+    "Argument_ConvertToString" : "The argument cannot be converted to a string.",
+    "Argument_InvalidExpandedName" : "'{0}' is an invalid expanded name.",
+    "Argument_InvalidPIName" : "'{0}' is an invalid name for a processing instruction.",
+    "Argument_InvalidPrefix" : "'{0}' is an invalid prefix.",
+    "Argument_MustBeDerivedFrom" : "The argument must be derived from {0}.",
+    "Argument_NamespaceDeclarationPrefixed" : "The prefix '{0}' cannot be bound to the empty namespace name.",
+    "Argument_NamespaceDeclarationXml" : "The prefix 'xml' is bound to the namespace name 'http://www.w3.org/XML/1998/namespace'. Other prefixes must not be bound to this namespace name, and it must not be declared as the default namespace.",
+    "Argument_NamespaceDeclarationXmlns" : "The prefix 'xmlns' is bound to the namespace name 'http://www.w3.org/2000/xmlns/'. It must not be declared. Other prefixes must not be bound to this namespace name, and it must not be declared as the default namespace.",
+    "Argument_XObjectValue" : "An XObject cannot be used as a value.",
+    "InvalidOperation_DocumentStructure" : "This operation would create an incorrectly structured document.",
+    "InvalidOperation_DuplicateAttribute" : "Duplicate attribute.",
+    "InvalidOperation_ExpectedEndOfFile" : "The XmlReader state should be EndOfFile after this operation.",
+    "InvalidOperation_ExpectedInteractive" : "The XmlReader state should be Interactive.",
+    "InvalidOperation_ExpectedNodeType" : "The XmlReader must be on a node of type {0} instead of a node of type {1}.",
+    "InvalidOperation_ExternalCode" : "This operation was corrupted by external code.",
+    "InvalidOperation_MissingAncestor" : "A common ancestor is missing.",
+    "InvalidOperation_MissingParent" : "The parent is missing.",
+    "InvalidOperation_MissingRoot" : "The root element is missing.",
+    "InvalidOperation_UnexpectedNodeType" : "The XmlReader should not be on a node of type {0}.",
+    "InvalidOperation_UnresolvedEntityReference" : "The XmlReader cannot resolve entity references.",
+    "InvalidOperation_WriteAttribute" : "An attribute cannot be written after content.",
+    "NotSupported_WriteBase64" : "This XmlWriter does not support base64 encoded data.",
+    "NotSupported_WriteEntityRef" : "This XmlWriter does not support entity references."
+}

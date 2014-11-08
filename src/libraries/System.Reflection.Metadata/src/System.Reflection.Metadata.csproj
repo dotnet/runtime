@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    --> 
+
+    <_WindowsKitBinPath>C:\Program Files (x86)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>C:\Program Files (x86)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{F3E433C8-352F-4944-BF7F-765CE435370D}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.Metadata</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <DocumentationFile>$(OutputPath)System.Reflection.Metadata.xml</DocumentationFile>
+    <RootNamespace>System.Reflection.Metadata</RootNamespace>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <DefaultLanguage>en-US</DefaultLanguage>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>1591</NoWarn>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\MetadataResources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MetadataResources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\AbstractMemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\ByteArrayMemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\ByteArrayMemoryProvider.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\ExternalMemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\ExternalMemoryBlockProvider.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\MemoryBlockProvider.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\MemoryMappedFileBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\NativeHeapMemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamConstraints.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamMemoryBlockProvider.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\EmptyArray.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\ReadOnlyUnmanagedMemoryStream.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.cs" />
+    <Compile Include="System\Reflection\Metadata\AssemblyDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\AssemblyFile.cs" />
+    <Compile Include="System\Reflection\Metadata\AssemblyReference.cs" />
+    <Compile Include="System\Reflection\Metadata\BlobReader.cs" />
+    <Compile Include="System\Reflection\Metadata\Constant.cs" />
+    <Compile Include="System\Reflection\Metadata\ConstantTypeCode.cs" />
+    <Compile Include="System\Reflection\Metadata\CustomAttribute.cs" />
+    <Compile Include="System\Reflection\Metadata\CustomAttributeNamedArgumentKind.cs" />
+    <Compile Include="System\Reflection\Metadata\DeclarativeSecurityAttribute.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueLogEntry.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\EditAndContinueOperation.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\ExportedTypeExtensions.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\HeapIndex.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\MetadataReaderExtensions.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\MetadataTokens.cs" />
+    <Compile Include="System\Reflection\Metadata\Ecma335\TableIndex.cs" />
+    <Compile Include="System\Reflection\Metadata\EventDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\ExceptionRegion.cs" />
+    <Compile Include="System\Reflection\Metadata\ExceptionRegionKind.cs" />
+    <Compile Include="System\Reflection\Metadata\ExportedType.cs" />
+    <Compile Include="System\Reflection\Metadata\FieldDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\GenericParameter.cs" />
+    <Compile Include="System\Reflection\Metadata\GenericParameterConstraint.cs" />
+    <Compile Include="System\Reflection\Metadata\HandleCollections.cs" />
+    <Compile Include="System\Reflection\Metadata\HandleComparer.cs" />
+    <Compile Include="System\Reflection\Metadata\HandleKind.cs" />
+    <Compile Include="System\Reflection\Metadata\Handles.cs" />
+    <Compile Include="System\Reflection\Metadata\InterfaceImplementation.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\COR20Constants.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\CorElementType.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\CustomAttributeTypeTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\HasConstantTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\HasCustomAttributeTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\HasDeclSecurityTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\HasFieldMarshalTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\HasSemanticsTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\Heaps.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\ImplementationTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MemberForwardedTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MemberRefParentTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MetadataFlags.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MetadataHeader.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MetadataStreamConstants.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MetadataTableHeader.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\MethodDefOrRefTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\NamespaceCache.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\NamespaceData.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\ResolutionScopeTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\StreamHeader.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\Tables.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\Treatments.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\TypeDefOrRefTag.cs" />
+    <Compile Include="System\Reflection\Metadata\Internal\TypeOrMethodDefTag.cs" />
+    <Compile Include="System\Reflection\Metadata\ManifestResource.cs" />
+    <Compile Include="System\Reflection\Metadata\MemberReference.cs" />
+    <Compile Include="System\Reflection\Metadata\MemberReferenceKind.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataAggregator.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataKind.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataReader.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataReader.WinMD.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataReaderOptions.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataStringComparer.cs" />
+    <Compile Include="System\Reflection\Metadata\MetadataStringDecoder.cs" />
+    <Compile Include="System\Reflection\Metadata\MethodBodyBlock.cs" />
+    <Compile Include="System\Reflection\Metadata\MethodDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\MethodImplementation.cs" />
+    <Compile Include="System\Reflection\Metadata\MethodImport.cs" />
+    <Compile Include="System\Reflection\Metadata\MethodSpecification.cs" />
+    <Compile Include="System\Reflection\Metadata\ModuleDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\ModuleReference.cs" />
+    <Compile Include="System\Reflection\Metadata\NamespaceDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\Parameter.cs" />
+    <Compile Include="System\Reflection\Metadata\PEReaderExtensions.cs" />
+    <Compile Include="System\Reflection\Metadata\PropertyDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\SerializationTypeCode.cs" />
+    <Compile Include="System\Reflection\Metadata\SignatureAttributes.cs" />
+    <Compile Include="System\Reflection\Metadata\SignatureCallingConvention.cs" />
+    <Compile Include="System\Reflection\Metadata\SignatureHeader.cs" />
+    <Compile Include="System\Reflection\Metadata\SignatureKind.cs" />
+    <Compile Include="System\Reflection\Metadata\SignatureTypeCode.cs" />
+    <Compile Include="System\Reflection\Metadata\StandaloneSignature.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeLayout.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeReference.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeSpecification.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\CoffHeader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\CorFlags.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\CorHeader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DirectoryEntry.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\Machine.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEBinaryReader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEFileConstants.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEFileFlags.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEHeader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEHeaders.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEMemoryBlock.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEReader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEStreamOptions.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\SectionHeader.cs" />
+    <Compile Include="System\Reflection\System.Reflection.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\MetadataResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>MetadataResources.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>System.Reflection.Metadata</CustomToolNamespace>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.1.32-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+</Project>

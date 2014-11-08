@@ -1,0 +1,6 @@
+{
+    "Argument_CreateNavigator" : "This XPathNavigator cannot be created on a node of type {0}.",
+    "InvalidOperation_BadNodeType" : "This operation is not valid on a node of type {0}.",
+    "InvalidOperation_UnexpectedEvaluation" : "The XPath expression evaluated to unexpected type {0}.",
+    "NotSupported_MoveToId" : "This XPathNavigator does not support IDs."
+}

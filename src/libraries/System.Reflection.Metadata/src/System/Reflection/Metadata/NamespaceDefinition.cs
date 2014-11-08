@@ -1,0 +1,65 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
+
+namespace System.Reflection.Metadata
+{
+    public struct NamespaceDefinition
+    {
+        private NamespaceData data;
+
+        internal NamespaceDefinition(NamespaceData data)
+        {
+            Debug.Assert(data != null);
+            this.data = data;
+        }
+
+        /// <summary>
+        /// Gets the unqualified name of the NamespaceDefinition.
+        /// </summary>
+        public StringHandle Name
+        {
+            get { return data.Name; }
+        }
+
+        /// <summary>
+        /// Gets the parent namespace.
+        /// </summary>
+        public NamespaceDefinitionHandle Parent
+        {
+            get { return data.Parent; }
+        }
+
+        /// <summary>
+        /// Gets the namespace definitions that are direct children of the current
+        /// namespace definition. 
+        /// 
+        /// System.Collections and System.Linq are direct children of System. 
+        /// System.Collections.Generic is a direct child of System.Collections.
+        /// System.Collections.Generic is *not* a direct child of System.
+        /// </summary>
+        public ImmutableArray<NamespaceDefinitionHandle> NamespaceDefinitions
+        {
+            get { return data.NamespaceDefinitions; }
+        }
+
+        /// <summary>
+        /// Gets all type definitions that reside directly in a namespace.
+        /// </summary>
+        public ImmutableArray<TypeDefinitionHandle> TypeDefinitions
+        {
+            get { return data.TypeDefinitions; }
+        }
+
+        /// <summary>
+        /// Gets all exported types that reside directly in a namespace.
+        /// </summary>
+        public ImmutableArray<ExportedTypeHandle> ExportedTypes
+        {
+            get { return data.ExportedTypes; }
+        }
+    }
+}

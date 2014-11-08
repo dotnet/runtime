@@ -1,0 +1,1679 @@
+<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core.dll" #>
+<#@ Assembly Name="System.Xml.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Runtime.InteropServices" #>
+<#@ include file="..\src\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+
+using System;
+using Xunit;
+using System.Globalization;
+using System.Reflection;
+using System.Linq;
+
+namespace System.Numerics.Tests
+{
+    /// <summary>
+    ///  Vector{T} tests that use random number generation and a unified generic test structure
+    /// </summary>
+    public class GenericVectorTests
+    {
+        // Static constructor in top-level class\
+        static System.Numerics.Vector<float> dummy;
+        static GenericVectorTests()
+        {
+            dummy = System.Numerics.Vector<float>.One;
+        }
+
+        #region Constructor Tests
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Constructor<#=type.Name#>() { TestConstructor<<#=type.Name#>>(); }
+<#
+    }
+#>
+
+        private void TestConstructor<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(values);
+            ValidateVector(
+                vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorWithOffset<#=type.Name#>() { TestConstructorWithOffset<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConstructorWithOffset<T>() where T : struct
+        {
+            int offsetAmount = Util.GenerateSingleValue<int>(2, 250);
+            T[] values = new T[offsetAmount].Concat(GenerateRandomValuesForVector<T>()).ToArray();
+            var vector = new Vector<T>(values, offsetAmount);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index + offsetAmount], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorConstantValue<#=type.Name#>() { TestConstructorConstantValue<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConstructorConstantValue<T>() where T : struct
+        {
+            T constantValue = Util.GenerateSingleValue<T>(GetMinValue<T>(), GetMaxValue<T>());
+            var vector = new Vector<T>(constantValue);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(val, constantValue);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorDefault<#=type.Name#>() { TestConstructorDefault<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConstructorDefault<T>() where T : struct
+        {
+            var vector = new Vector<T>();
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(val, (T)(dynamic)0);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorException<#=type.Name#>() { TestConstructorArrayTooSmallException<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConstructorArrayTooSmallException<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>().Skip(1).ToArray();
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var vector = new Vector<T>(values);
+            });
+        }
+        #endregion Constructor Tests
+
+        #region Indexer Tests
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void IndexerOutOfRange<#=type.Name#>() { TestIndexerOutOfRange<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestIndexerOutOfRange<T>() where T : struct
+        {
+            Vector<T> vector = Vector<T>.One;
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                T value = vector[Vector<T>.Count];
+            });
+        }
+        #endregion
+
+        #region Static Member Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void StaticOneVector<#=type.Name#>() { TestStaticOneVector<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestStaticOneVector<T>() where T : struct
+        {
+            Vector<T> vector = Vector<T>.One;
+            T oneValue = Util.One<T>();
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(oneValue, val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void StaticZeroVector<#=type.Name#>() { TestStaticZeroVector<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestStaticZeroVector<T>() where T : struct
+        {
+            Vector<T> vector = Vector<T>.Zero;
+            T zeroValue = Util.Zero<T>();
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(zeroValue, val);
+                });
+        }
+        #endregion
+
+        #region CopyTo (array) Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void CopyTo<#=type.Name#>() { TestCopyTo<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestCopyTo<T>() where T : struct
+        {
+            var initialValues = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(initialValues);
+            T[] array = new T[Vector<T>.Count];
+            vector.CopyTo(array);
+            for (int g = 0; g < array.Length; g++)
+            {
+                Assert.Equal(initialValues[g], array[g]);
+                Assert.Equal(vector[g], array[g]);
+            }
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void CopyToWithOffset<#=type.Name#>() { TestCopyToWithOffset<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestCopyToWithOffset<T>() where T : struct
+        {
+            int offset = Util.GenerateSingleValue<int>(5, 500);
+            var initialValues = GenerateRandomValuesForVector<T>();
+            var vector = new Vector<T>(initialValues);
+            T[] array = new T[Vector<T>.Count + offset];
+            vector.CopyTo(array, offset);
+            for (int g = 0; g < initialValues.Length; g++)
+            {
+                Assert.Equal(initialValues[g], array[g + offset]);
+                Assert.Equal(vector[g], array[g + offset]);
+            }
+        }
+        #endregion
+
+        #region EqualsTests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void EqualsObject<#=type.Name#>() { TestEqualsObject<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestEqualsObject<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values);
+
+            string stringObject = "This is not a Vector<T> object.";
+            DateTime dateTimeObject = DateTime.UtcNow;
+
+            Assert.False(vector1.Equals(stringObject));
+            Assert.False(vector1.Equals(dateTimeObject));
+
+            if (typeof(T) != typeof(Int32))
+            {
+                Vector<Int32> intVector = new Vector<Int32>(GenerateRandomValuesForVector<Int32>());
+                Assert.False(vector1.Equals(intVector));
+                Assert.False(intVector.Equals(vector1));
+            }
+            else
+            {
+                Vector<Single> floatVector = new Vector<Single>(GenerateRandomValuesForVector<Single>());
+                Assert.False(vector1.Equals(floatVector));
+                Assert.False(floatVector.Equals(vector1));
+            }
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void EqualsVector<#=type.Name#>() { TestEqualsVector<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestEqualsVector<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values);
+            Vector<T> vector2 = new Vector<T>(values);
+
+            Assert.True(vector1.Equals(vector2));
+            Assert.True(vector2.Equals(vector1));
+
+            Assert.True(Vector<T>.Zero.Equals(Vector<T>.Zero));
+            Assert.True(Vector<T>.One.Equals(Vector<T>.One));
+
+            Assert.True(Vector<T>.Zero.Equals(new Vector<T>(Util.Zero<T>())));
+            Assert.True(Vector<T>.One.Equals(new Vector<T>(Util.One<T>())));
+
+            Assert.False(Vector<T>.Zero.Equals(Vector<T>.One));
+            Assert.False(Vector<T>.Zero.Equals(new Vector<T>(Util.One<T>())));
+        }
+        #endregion
+
+        #region System.Object Overloads
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void GetHashCode<#=type.Name#>() { TestGetHashCode<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestGetHashCode<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> v1 = new Vector<T>(values1);
+            int hash = v1.GetHashCode();
+
+            int expected = 0;
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                expected = (((expected << 5) + expected) ^ v1[g].GetHashCode());
+            }
+
+            Assert.Equal(expected, hash);
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ToStringGeneral<#=type.Name#>() { TestToString<<#=type.Name#>>("G", CultureInfo.CurrentCulture); }
+<#
+    }
+#>
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ToStringCurrency<#=type.Name#>() { TestToString<<#=type.Name#>>("c", CultureInfo.CurrentCulture); }
+<#
+    }
+#>
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ToStringExponential<#=type.Name#>() { TestToString<<#=type.Name#>>("E3", CultureInfo.CurrentCulture); }
+<#
+    }
+#>
+
+        private void TestToString<T>(string format, IFormatProvider provider) where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> v1 = new Vector<T>(values1);
+            string result = v1.ToString(format, provider);
+
+            string expected = "<";
+            for (int g = 0; g < Vector<T>.Count - 1; g++)
+            {
+                expected += ((IFormattable)v1[g]).ToString(format, provider);
+                expected += ", ";
+            }
+            expected += ((IFormattable)v1[Vector<T>.Count - 1]).ToString(format, provider);
+            expected += ">";
+            Assert.Equal(expected, result);
+        }
+        #endregion System.Object Overloads
+
+        #region Arithmetic Operator Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Addition<#=type.Name#>() { TestAddition<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestAddition<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var sum = v1 + v2;
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Add(values1[index], values2[index]), val);
+                });
+        }
+
+<# 
+    foreach (var type in integralTypes)
+    {
+#>
+        [Fact]
+        public void AdditionOverflow<#=type.Name#>() { TestAdditionOverflow<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestAdditionOverflow<T>() where T : struct
+        {
+            T maxValue = (T)(dynamic)typeof(T).GetRuntimeField("MaxValue").GetValue(null);
+            Vector<T> maxValueVector = new Vector<T>(maxValue);
+            Vector<T> secondVector = new Vector<T>(GenerateRandomValuesForVector<T>());
+            Vector<T> sum = maxValueVector + secondVector;
+
+            T minValue = (T)(dynamic)typeof(T).GetRuntimeField("MinValue").GetValue(null);
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Subtract(Util.Add(secondVector[index], minValue), (T)(dynamic)1), sum[index]);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Subtraction<#=type.Name#>() { TestSubtraction<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestSubtraction<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var sum = v1 - v2;
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Subtract(values1[index], values2[index]), val);
+                });
+        }
+
+<# 
+    foreach (var type in integralTypes)
+    {
+#>
+        [Fact]
+        public void SubtractionOverflow<#=type.Name#>() { TestSubtractionOverflow<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestSubtractionOverflow<T>() where T : struct
+        {
+            T minValue = (T)(dynamic)typeof(T).GetRuntimeField("MinValue").GetValue(null);
+            Vector<T> minValueVector = new Vector<T>(minValue);
+            Vector<T> secondVector = new Vector<T>(GenerateRandomValuesForVector<T>());
+            Vector<T> difference = minValueVector - secondVector;
+
+            T maxValue = (T)(dynamic)typeof(T).GetRuntimeField("MaxValue").GetValue(null);
+            ValidateVector(difference,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Add(Util.Subtract(maxValue, secondVector[index]), (T)(dynamic)1), val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Multiplication<#=type.Name#>() { TestMultiplication<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestMultiplication<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var sum = v1 * v2;
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Multiply(values1[index], values2[index]), val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void MultiplicationWithScalar<#=type.Name#>() { TestMultiplicationWithScalar<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestMultiplicationWithScalar<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            T factor = Util.GenerateSingleValue<T>(GetMinValue<T>(), GetMaxValue<T>());
+            var vector = new Vector<T>(values);
+            var product1 = vector * factor;
+            ValidateVector(product1,
+                (index, val) =>
+                {
+                    T expected = Util.Multiply(values[index], factor);
+                    Assert.Equal(expected, val);
+                });
+
+            var product2 = factor * vector;
+            ValidateVector(product2,
+                (index, val) =>
+                {
+                    T expected = Util.Multiply(values[index], factor);
+                    Assert.Equal(expected, val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Division<#=type.Name#>() { TestDivision<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestDivision<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            values1 = values1.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            values2 = values2.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
+            // I replace all Zero's with One's above to avoid Divide-by-zero.
+
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var sum = v1 / v2;
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Divide(values1[index], values2[index]), val);
+                });
+        }
+
+        [Fact]
+        public void DivisionByZeroExceptionByte() { TestDivisionByZeroException<Byte>(); }
+        [Fact]
+        public void DivisionByZeroExceptionSByte() { TestDivisionByZeroException<SByte>(); }
+        [Fact]
+        public void DivisionByZeroExceptionUInt16() { TestDivisionByZeroException<UInt16>(); }
+        [Fact]
+        public void DivisionByZeroExceptionInt16() { TestDivisionByZeroException<Int16>(); }
+        [Fact]
+        public void DivisionByZeroExceptionInt32() { TestDivisionByZeroException<Int32>(); }
+        [Fact]
+        public void DivisionByZeroExceptionInt64() { TestDivisionByZeroException<Int64>(); }
+        private void TestDivisionByZeroException<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values1);
+            Assert.Throws<DivideByZeroException>(() =>
+            {
+                var result = vector / Vector<T>.Zero;
+            });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void UnaryMinus<#=type.Name#>() { TestUnaryMinus<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestUnaryMinus<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+            var negated = -vector;
+            ValidateVector(negated,
+                (index, value) =>
+                {
+                    T expected = Util.Subtract(Util.Zero<T>(), values[index]);
+                    Assert.Equal(expected, value);
+                });
+        }
+        #endregion
+
+        #region Bitwise Operator Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void BitwiseAndOperator<#=type.Name#>() { TestBitwiseAndOperator<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestBitwiseAndOperator<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> randomVector = new Vector<T>(values1);
+            Vector<T> zeroVector = Vector<T>.Zero;
+
+            Vector<T> selfAnd = randomVector & randomVector;
+            Assert.Equal(randomVector, selfAnd);
+
+            Vector<T> zeroAnd = randomVector & zeroVector;
+            Assert.Equal(zeroVector, zeroAnd);
+        }
+
+<# 
+    foreach (var type in integralTypes)
+    {
+#>
+        [Fact]
+        public void BitwiseOrOperator<#=type.Name#>() { TestBitwiseOrOperator<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestBitwiseOrOperator<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> randomVector = new Vector<T>(values1);
+            Vector<T> zeroVector = Vector<T>.Zero;
+
+            Vector<T> selfOr = randomVector | randomVector;
+            Assert.Equal(randomVector, selfOr);
+
+            Vector<T> zeroOr = randomVector | zeroVector;
+            Assert.Equal(randomVector, zeroOr);
+
+            Vector<T> allOnesVector = new Vector<T>(GetValueWithAllOnesSet<T>());
+            Vector<T> allOnesOrZero = zeroVector | allOnesVector;
+            Assert.Equal(allOnesVector, allOnesOrZero);
+        }
+
+<# 
+    foreach (var type in integralTypes)
+    {
+#>
+        [Fact]
+        public void BitwiseXorOperator<#=type.Name#>() { TestBitwiseXorOperator<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestBitwiseXorOperator<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> randomVector1 = new Vector<T>(values1);
+            Vector<T> randomVector2 = new Vector<T>(values2);
+
+            Vector<T> result = randomVector1 ^ randomVector2;
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    T expected = Util.Xor(values1[index], values2[index]);
+                    Assert.Equal(expected, val);
+                });
+        }
+
+<# 
+    foreach (var type in integralTypes)
+    {
+#>
+        [Fact]
+        public void BitwiseOnesComplementOperator<#=type.Name#>() { TestBitwiseOnesComplementOperator<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestBitwiseOnesComplementOperator<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> randomVector1 = new Vector<T>(values1);
+
+            Vector<T> result = ~randomVector1;
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    T expected = Util.OnesComplement(values1[index]);
+                    Assert.Equal(expected, val);
+                });
+        }
+
+<# 
+    foreach (var type in integralTypes)
+    {
+#>
+        [Fact]
+        public void BitwiseAndNot<#=type.Name#>() { TestBitwiseAndNot<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestBitwiseAndNot<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> randomVector1 = new Vector<T>(values1);
+            Vector<T> randomVector2 = new Vector<T>(values2);
+
+            Vector<T> result = Vector.AndNot(randomVector1, randomVector2);
+            Vector<T> result2 = randomVector1 & ~randomVector2;
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    T expected = Util.AndNot(values1[index], values2[index]);
+                    Assert.Equal(expected, val);
+                    Assert.Equal(expected, result2[index]);
+                    Assert.Equal(result2[index], val);
+                });
+        }
+        #endregion
+
+        #region Comparison Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void VectorGreaterThan<#=type.Name#>() { TestVectorGreaterThan<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorGreaterThan<T>() where T : struct
+        {
+            var values1 = GenerateRandomValuesForVector<T>();
+            var values2 = GenerateRandomValuesForVector<T>();
+            var vec1 = new Vector<T>(values1);
+            var vec2 = new Vector<T>(values2);
+
+            var result = Vector.GreaterThan<T>(vec1, vec2);
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    bool isGreater = Util.GreaterThan(values1[index], values2[index]);
+                    T expected = isGreater ? GetValueWithAllOnesSet<T>() : Util.Zero<T>();
+                    Assert.Equal(expected, result[index]);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void GreaterThanOrEqual<#=type.Name#>() { TestVectorGreaterThanOrEqual<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorGreaterThanOrEqual<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            Vector<T> result = Vector.GreaterThanOrEqual<T>(vec1, vec2);
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    bool isGreaterOrEqual = Util.GreaterThanOrEqual(values1[index], values2[index]);
+                    T expected = isGreaterOrEqual ? GetValueWithAllOnesSet<T>() : Util.Zero<T>();
+                    Assert.Equal(expected, result[index]);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void GreaterThanAny<#=type.Name#>() { TestVectorGreaterThanAny<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorGreaterThanAny<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)(g + 10);
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g * 5 + 9);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (T)(dynamic)(g + 12);
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+
+            Assert.True(Vector.GreaterThanAny(vec1, vec2));
+            Assert.True(Vector.GreaterThanAny(vec2, vec1));
+            Assert.True(Vector.GreaterThanAny(vec3, vec1));
+            Assert.True(Vector.GreaterThanAny(vec2, vec3));
+            Assert.False(Vector.GreaterThanAny(vec1, vec3));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void GreaterThanAll<#=type.Name#>() { TestVectorGreaterThanAll<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorGreaterThanAll<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)(g + 10);
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g * 5 + 9);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (T)(dynamic)(g + 12);
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+
+            Assert.False(Vector.GreaterThanAll(vec1, vec2));
+            Assert.False(Vector.GreaterThanAll(vec2, vec1));
+            Assert.True(Vector.GreaterThanAll(vec3, vec1));
+            Assert.False(Vector.GreaterThanAll(vec1, vec3));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void GreaterThanOrEqualAny<#=type.Name#>() { TestVectorGreaterThanOrEqualAny<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorGreaterThanOrEqualAny<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)(g);
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g * 5);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (T)(dynamic)(g * 5 + 3);
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+
+            Assert.True(Vector.GreaterThanOrEqualAny(vec1, vec2));
+            Assert.True(Vector.GreaterThanOrEqualAny(vec2, vec1));
+            Assert.True(Vector.GreaterThanOrEqualAny(vec3, vec1));
+            Assert.True(Vector.GreaterThanOrEqualAny(vec3, vec2));
+            Assert.False(Vector.GreaterThanOrEqualAny(vec1, vec3));
+            Assert.False(Vector.GreaterThanOrEqualAny(vec2, vec3));
+
+            Assert.True(Vector.GreaterThanOrEqualAny(vec1, vec1));
+            Assert.True(Vector.GreaterThanOrEqualAny(vec2, vec2));
+            Assert.True(Vector.GreaterThanOrEqualAny(vec3, vec3));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void GreaterThanOrEqualAll<#=type.Name#>() { TestVectorGreaterThanOrEqualAll<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorGreaterThanOrEqualAll<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)(g);
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g * 5);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (T)(dynamic)(g * 5 + 3);
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+
+            Assert.False(Vector.GreaterThanOrEqualAll(vec1, vec2));
+            Assert.True(Vector.GreaterThanOrEqualAll(vec2, vec1));
+            Assert.True(Vector.GreaterThanOrEqualAll(vec3, vec1));
+            Assert.True(Vector.GreaterThanOrEqualAll(vec3, vec2));
+            Assert.False(Vector.GreaterThanOrEqualAll(vec1, vec3));
+
+            Assert.True(Vector.GreaterThanOrEqualAll(vec1, vec1));
+            Assert.True(Vector.GreaterThanOrEqualAll(vec2, vec2));
+            Assert.True(Vector.GreaterThanOrEqualAll(vec3, vec3));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void LessThan<#=type.Name#>() { TestVectorLessThan<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorLessThan<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            var result = Vector.LessThan<T>(vec1, vec2);
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    bool isLess = Util.LessThan(values1[index], values2[index]);
+                    T expected = isLess ? GetValueWithAllOnesSet<T>() : Util.Zero<T>();
+                    Assert.Equal(expected, result[index]);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void LessThanOrEqual<#=type.Name#>() { TestVectorLessThanOrEqual<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorLessThanOrEqual<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            var result = Vector.LessThanOrEqual<T>(vec1, vec2);
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    bool isLessOrEqual = Util.LessThanOrEqual(values1[index], values2[index]);
+                    T expected = isLessOrEqual ? GetValueWithAllOnesSet<T>() : Util.Zero<T>();
+                    Assert.Equal(expected, result[index]);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void LessThanAny<#=type.Name#>() { TestVectorLessThanAny<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorLessThanAny<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)g;
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+            values1[0] = Util.Add(values1[0], Util.One<T>());
+            Vector<T> vec2 = new Vector<T>(values1);
+
+            Assert.False(Vector.LessThanAny(vec1, vec1));
+            Assert.True(Vector.LessThanAny(vec1, vec2));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void LessThanAll<#=type.Name#>() { TestVectorLessThanAll<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorLessThanAll<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)g;
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g + 25);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            Assert.True(Vector.LessThanAll(vec1, vec2));
+            Assert.True(Vector.LessThanAll(Vector<T>.Zero, Vector<T>.One));
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (g < Vector<T>.Count / 2) ? Util.Zero<T>() : Util.One<T>();
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+            Assert.False(Vector.LessThanAll(vec3, Vector<T>.One));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void LessThanOrEqualAny<#=type.Name#>() { TestVectorLessThanOrEqualAny<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorLessThanOrEqualAny<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)g;
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g * 2);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (T)(dynamic)(g + 2);
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+
+            Assert.True(Vector.LessThanOrEqualAny(vec1, vec2));
+            Assert.True(Vector.LessThanOrEqualAny(vec2, vec1));
+
+            Assert.False(Vector.LessThanOrEqualAny(vec3, vec1));
+            Assert.True(Vector.LessThanOrEqualAny(vec1, vec3));
+            Assert.True(Vector.LessThanOrEqualAny(vec2, vec3));
+
+            Assert.True(Vector.LessThanOrEqualAny(vec1, vec1));
+            Assert.True(Vector.LessThanOrEqualAny(vec2, vec2));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void LessThanOrEqualAll<#=type.Name#>() { TestVectorLessThanOrEqualAll<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorLessThanOrEqualAll<T>() where T : struct
+        {
+            T[] values1 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values1[g] = (T)(dynamic)g;
+            }
+            Vector<T> vec1 = new Vector<T>(values1);
+
+            T[] values2 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values2[g] = (T)(dynamic)(g * 2);
+            }
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            T[] values3 = new T[Vector<T>.Count];
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                values3[g] = (T)(dynamic)(g + 2);
+            }
+            Vector<T> vec3 = new Vector<T>(values3);
+
+            Assert.True(Vector.LessThanOrEqualAll(vec1, vec2));
+            Assert.False(Vector.LessThanOrEqualAll(vec2, vec1));
+
+            Assert.False(Vector.LessThanOrEqualAll(vec3, vec1));
+            Assert.True(Vector.LessThanOrEqualAll(vec1, vec3));
+
+            Assert.True(Vector.LessThanOrEqualAll(vec1, vec1));
+            Assert.True(Vector.LessThanOrEqualAll(vec2, vec2));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void VectorEquals<#=type.Name#>() { TestVectorEquals<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorEquals<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2;
+            do
+            {
+                values2 = GenerateRandomValuesForVector<T>();
+            }
+            while (Util.AnyEqual(values1, values2));
+
+            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            Vector<T> result = Vector.Equals(vec1, vec2);
+            for (int g = 0; g < Vector<T>.Count / 2; g++)
+            {
+                Assert.Equal(GetValueWithAllOnesSet<T>(), result[g]);
+            }
+            for (int g = Vector<T>.Count / 2; g < Vector<T>.Count; g++)
+            {
+                Assert.Equal((T)(dynamic)0, result[g]);
+            }
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void VectorEqualsAny<#=type.Name#>() { TestVectorEqualsAny<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorEqualsAny<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2;
+            do
+            {
+                values2 = GenerateRandomValuesForVector<T>();
+            }
+            while (Util.AnyEqual(values1, values2));
+
+            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            bool result = Vector.EqualsAny(vec1, vec2);
+            Assert.True(result);
+
+            do
+            {
+                values2 = GenerateRandomValuesForVector<T>();
+            }
+            while (Util.AnyEqual(values1, values2));
+
+            vec2 = new Vector<T>(values2);
+            result = Vector.EqualsAny(vec1, vec2);
+            Assert.False(result);
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void VectorEqualsAll<#=type.Name#>() { TestVectorEqualsAll<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestVectorEqualsAll<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2;
+            do
+            {
+                values2 = GenerateRandomValuesForVector<T>();
+            }
+            while (Util.AnyEqual(values1, values2));
+
+            Array.Copy(values1, 0, values2, 0, Vector<T>.Count / 2);
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            bool result = Vector.EqualsAll(vec1, vec2);
+            Assert.False(result);
+
+            result = Vector.EqualsAny(vec1, vec1);
+            Assert.True(result);
+        }
+        #endregion
+
+        #region Selection Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConditionalSelect<#=type.Name#>() { TestConditionalSelect<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConditionalSelect<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> vec1 = new Vector<T>(values1);
+            Vector<T> vec2 = new Vector<T>(values2);
+
+            // Using Greater Than mask
+            Vector<T> mask = Vector.GreaterThan(vec1, vec2);
+            Vector<T> result = Vector.ConditionalSelect(mask, vec1, vec2);
+            ValidateVector(result,
+                (index, val) =>
+                {
+                    bool isGreater = Util.GreaterThan(values1[index], values2[index]);
+                    T expected = isGreater ? values1[index] : values2[index];
+                    Assert.Equal(expected, val);
+                });
+
+            // Using Less Than Or Equal mask
+            Vector<T> mask2 = Vector.LessThanOrEqual(vec1, vec2);
+            Vector<T> result2 = Vector.ConditionalSelect(mask2, vec1, vec2);
+            ValidateVector(result2,
+                (index, val) =>
+                {
+                    bool isLessOrEqual = Util.LessThanOrEqual(values1[index], values2[index]);
+                    T expected = isLessOrEqual ? values1[index] : values2[index];
+                    Assert.Equal(expected, val);
+                });
+        }
+        #endregion
+
+        #region Vector Tests
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void DotProduct<#=type.Name#>() { TestDotProduct<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestDotProduct<T>() where T : struct
+        {
+            T[] values1 = Util.GenerateRandomValues<T>(Vector<T>.Count);
+            T[] values2 = Util.GenerateRandomValues<T>(Vector<T>.Count);
+            Vector<T> vector1 = new Vector<T>(values1);
+            Vector<T> vector2 = new Vector<T>(values2);
+
+            T dotProduct = Vector.Dot(vector1, vector2);
+            T expected = Util.Zero<T>();
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                expected = Util.Add(expected, Util.Multiply(values1[g], values2[g]));
+            }
+            Assert.Equal(expected, dotProduct);
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Max<#=type.Name#>() { TestMax<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestMax<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values1);
+            Vector<T> vector2 = new Vector<T>(values2);
+
+            Vector<T> maxVector = Vector.Max(vector1, vector2);
+            ValidateVector(maxVector,
+                (index, val) =>
+                {
+                    T expected = Util.GreaterThan(values1[index], values2[index]) ? values1[index] : values2[index];
+                    Assert.Equal(expected, val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Min<#=type.Name#>() { TestMin<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestMin<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values1);
+            Vector<T> vector2 = new Vector<T>(values2);
+
+            Vector<T> minVector = Vector.Min(vector1, vector2);
+            ValidateVector(minVector,
+                (index, val) =>
+                {
+                    T expected = Util.LessThan(values1[index], values2[index]) ? values1[index] : values2[index];
+                    Assert.Equal(expected, val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void SquareRoot<#=type.Name#>() { TestSquareRoot<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestSquareRoot<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            Vector<T> SquareRootVector = Vector.SquareRoot(vector);
+            ValidateVector(SquareRootVector,
+                (index, val) =>
+                {
+                    T expected = Util.Sqrt(values[index]);
+                    Assert.Equal(expected, val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void Abs<#=type.Name#>() { TestAbs<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestAbs<T>() where T : struct
+        {
+            T[] values = Util.GenerateRandomValues<T>(Vector<T>.Count, GetMinValue<T>() + 1, GetMaxValue<T>());
+            Vector<T> vector = new Vector<T>(values);
+            Vector<T> AbsVector = Vector.Abs(vector);
+            ValidateVector(AbsVector,
+                (index, val) =>
+                {
+                    T expected = Util.Abs(values[index]);
+                    Assert.Equal(expected, val);
+                });
+        }
+
+        #endregion
+
+        #region Reflection Tests
+        // These tests ensure that, when invoked through reflection, methods behave as expected. There are potential
+        // oddities when intrinsic methods are invoked through reflection which could have unexpected effects for the developer.
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void MultiplicationReflection<#=type.Name#>() { TestMultiplicationReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestMultiplicationReflection<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var multOperatorMethod = typeof(Vector<T>).GetTypeInfo().GetDeclaredMethods("op_Multiply")
+                .Where(mi => mi.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(Vector<T>), typeof(Vector<T>) }))
+                .Single();
+            Vector<T> sum = (Vector<T>)multOperatorMethod.Invoke(null, new object[] { v1, v2 });
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Multiply(values1[index], values2[index]), val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void AdditionReflection<#=type.Name#>() { TestAdditionReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestAdditionReflection<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var addOperatorMethod = typeof(Vector<T>).GetTypeInfo().GetDeclaredMethods("op_Addition")
+                .Where(mi => mi.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(Vector<T>), typeof(Vector<T>) }))
+                .Single();
+            Vector<T> sum = (Vector<T>)addOperatorMethod.Invoke(null, new object[] { v1, v2 });
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Add(values1[index], values2[index]), val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void DivisionReflection<#=type.Name#>() { TestDivisionReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestDivisionReflection<T>() where T : struct
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            values1 = values1.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
+            T[] values2 = GenerateRandomValuesForVector<T>();
+            values2 = values2.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
+            // I replace all Zero's with One's above to avoid Divide-by-zero.
+
+            var v1 = new Vector<T>(values1);
+            var v2 = new Vector<T>(values2);
+            var divideOperatorMethod = typeof(Vector<T>).GetTypeInfo().GetDeclaredMethods("op_Division")
+                .Where(mi => mi.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(Vector<T>), typeof(Vector<T>) }))
+                .Single();
+            Vector<T> sum = (Vector<T>)divideOperatorMethod.Invoke(null, new object[] { v1, v2 });
+            ValidateVector(sum,
+                (index, val) =>
+                {
+                    Assert.Equal(Util.Divide(values1[index], values2[index]), val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorSingleValueReflection<#=type.Name#>() { TestConstructorSingleValueReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConstructorSingleValueReflection<T>() where T : struct
+        {
+            ConstructorInfo constructor = typeof(Vector<T>).GetTypeInfo().DeclaredConstructors
+                .Where(ci => ci.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(T) }))
+                .Single();
+            T constantValue = Util.GenerateSingleValue<T>();
+            Vector<T> vec = (Vector<T>)constructor.Invoke(new object[] { constantValue });
+            ValidateVector(vec, (index, value) =>
+                {
+                    for (int g = 0; g < Vector<T>.Count; g++)
+                    {
+                        Assert.Equal(constantValue, vec[g]);
+                    }
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorArrayReflection<#=type.Name#>() { TestConstructorArrayReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestConstructorArrayReflection<T>() where T : struct
+        {
+            ConstructorInfo constructor = typeof(Vector<T>).GetTypeInfo().DeclaredConstructors
+                .Where(ci => ci.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(T[]) }))
+                .Single();
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vec = (Vector<T>)constructor.Invoke(new object[] { values });
+            ValidateVector(vec, (index, value) =>
+                {
+                    for (int g = 0; g < Vector<T>.Count; g++)
+                    {
+                        Assert.Equal(values[g], vec[g]);
+                    }
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void CopyToReflection<#=type.Name#>() { TestCopyToReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestCopyToReflection<T>() where T : struct
+        {
+            MethodInfo copyToMethod = typeof(Vector<T>).GetTypeInfo().GetDeclaredMethods("CopyTo")
+                .Where(mi => mi.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(T[]) }))
+                .Single();
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+            T[] array = new T[Vector<T>.Count];
+            copyToMethod.Invoke(vector, new object[] { array });
+            for (int g = 0; g < array.Length; g++)
+            {
+                Assert.Equal(values[g], array[g]);
+                Assert.Equal(vector[g], array[g]);
+            }
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void CopyToWithOffsetReflection<#=type.Name#>() { TestCopyToWithOffsetReflection<<#=type.Name#>>(); }
+<#
+    }
+#>
+        private void TestCopyToWithOffsetReflection<T>() where T : struct
+        {
+            MethodInfo copyToMethod = typeof(Vector<T>).GetTypeInfo().GetDeclaredMethods("CopyTo")
+                .Where(mi => mi.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(new Type[] { typeof(T[]), typeof(int) }))
+                .Single();
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+            int offset = Util.GenerateSingleValue<int>();
+            T[] array = new T[Vector<T>.Count + offset];
+            copyToMethod.Invoke(vector, new object[] { array, offset });
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                Assert.Equal(values[g], array[g + offset]);
+                Assert.Equal(vector[g], array[g + offset]);
+            }
+        }
+        #endregion Reflection Tests
+
+        #region Helper Methods
+        private static void ValidateVector<T>(Vector<T> vector, Action<int, T> indexValidationFunc) where T : struct
+        {
+            for (int g = 0; g < Vector<T>.Count; g++)
+            {
+                indexValidationFunc(g, vector[g]);
+            }
+        }
+
+        internal static T[] GenerateRandomValuesForVector<T>() where T : struct
+        {
+            int minValue = GetMinValue<T>();
+            int maxValue = GetMaxValue<T>();
+            return Util.GenerateRandomValues<T>(Vector<T>.Count, minValue, maxValue);
+        }
+
+        internal static int GetMinValue<T>() where T : struct
+        {
+            if (typeof(T) == typeof(Int64) || typeof(T) == typeof(Single) || typeof(T) == typeof(Double) || typeof(T) == typeof(UInt32) || typeof(T) == typeof(UInt64))
+            {
+                return int.MinValue;
+            }
+            var typeInfo = typeof(T).GetTypeInfo();
+            var field = typeInfo.GetDeclaredField("MinValue");
+            var value = field.GetValue(null);
+            return (int)(dynamic)value;
+        }
+
+        internal static int GetMaxValue<T>() where T : struct
+        {
+            if (typeof(T) == typeof(Int64) || typeof(T) == typeof(Single) || typeof(T) == typeof(Double) || typeof(T) == typeof(UInt32) || typeof(T) == typeof(UInt64))
+            {
+                return int.MaxValue;
+            }
+            var typeInfo = typeof(T).GetTypeInfo();
+            var field = typeInfo.GetDeclaredField("MaxValue");
+            var value = field.GetValue(null);
+            return (int)(dynamic)value;
+        }
+
+        internal static T GetValueWithAllOnesSet<T>() where T : struct
+        {
+            if (typeof(T) == typeof(Byte))
+            {
+                return (T)(object)ConstantHelper.GetByteWithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(SByte))
+            {
+                return (T)(object)ConstantHelper.GetSByteWithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(UInt16))
+            {
+                return (T)(object)ConstantHelper.GetUInt16WithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(Int16))
+            {
+                return (T)(object)ConstantHelper.GetInt16WithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(Int32))
+            {
+                return (T)(object)ConstantHelper.GetInt32WithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(Int64))
+            {
+                return (T)(object)ConstantHelper.GetInt64WithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(Single))
+            {
+                return (T)(object)ConstantHelper.GetSingleWithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(Double))
+            {
+                return (T)(object)ConstantHelper.GetDoubleWithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(UInt32))
+            {
+                return (T)(object)ConstantHelper.GetUInt32WithAllBitsSet();
+            }
+            else if (typeof(T) == typeof(UInt64))
+            {
+                return (T)(object)ConstantHelper.GetUInt64WithAllBitsSet();
+            }
+            throw new NotSupportedException();
+        }
+        #endregion
+    }
+}

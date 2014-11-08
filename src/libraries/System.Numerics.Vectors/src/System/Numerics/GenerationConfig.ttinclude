@@ -1,0 +1,69 @@
+﻿<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#+ 
+    /*    This file includes static data used as compilation configuration for the rest of the code generation. 
+        It is shared here to ensure that all generated code compiles with the same constants and configurations.    */
+
+    // The set of supported numeric types to compile
+    public static Type[] supportedTypes = new[] 
+    { 
+        typeof(Byte), typeof(SByte), typeof(UInt16), typeof(Int16),
+        typeof(UInt32), typeof(Int32), typeof(UInt64), typeof(Int64),
+        typeof(Single), typeof(Double)
+    };
+
+    // The set of unsigned types, a subset of the above. Used for excluding from certain methods, i.e. Abs and Negate
+    public static Type[] unsignedTypes = new[]
+    {
+        typeof(Byte), typeof(UInt16), typeof(UInt32), typeof(UInt64)
+    };
+
+    public static Type[] integralTypes = new[]
+    {
+        typeof(Byte), typeof(SByte), typeof(UInt16), typeof(Int16),
+        typeof(UInt32), typeof(Int32), typeof(UInt64), typeof(Int64)
+    };
+
+    public static Type[] nonClsCompliantTypes = new[]
+    {
+        typeof(SByte), typeof(UInt16), 
+        typeof(UInt32), typeof(UInt64)
+    };
+
+    // The total register size, in bytes. 16 for SSE2, 32 for AVX, 64 for AVX512
+    public static int totalSize = 16;
+
+    /* General template helper procedures */
+
+    // Returns the constructed register field name for the given type and index.
+    public string GetRegisterFieldName(Type t, int index)
+    {
+        return "register." + t.Name.ToLowerInvariant() + "_" + index;
+    }
+
+    // Returns the number of fields for a given type, based on the current configuration's register size
+    public int GetNumFields(Type t, int totalSize)
+    {
+        return totalSize / Marshal.SizeOf(t);
+    }
+
+    public void GenerateCopyrightHeader()
+    {
+#>// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under MIT. See LICENSE in the project root for license information.
+// This file is auto-generated, do not make permanent modifications.
+<#+
+    }
+
+    public string GenerateIfStatementHeader(Type type)
+    {
+        string keyword = (type == supportedTypes[0]) ? "if" : "else if";
+        return string.Format("{0} (typeof(T) == typeof({1}))", keyword, type.Name);
+    }
+
+    public string GenerateIfStatementHeader(Type type, IEnumerable<Type> allTypes)
+    {
+        string keyword = (type == allTypes.ToArray()[0]) ? "if" : "else if";
+        return string.Format("{0} (typeof(T) == typeof({1}))", keyword, type.Name);
+    }
+#>

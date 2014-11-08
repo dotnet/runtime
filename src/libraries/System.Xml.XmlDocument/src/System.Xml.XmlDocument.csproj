@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    --> 
+     
+    <_WindowsKitBinPath>C:\Program Files (x86)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>C:\Program Files (x86)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.XmlDocument</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <RootNamespace>System.Xml.XmlDocument</RootNamespace>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResInputPath>$(MSBuildThisFileDirectory)Res</ResInputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Text.Encoding" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\System.Xml.Common\System\Xml\Ref.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\SecureStringHasher.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlTextWriter.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\Base64Encoder.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlTextWriterBase64Encoder.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\BinHexEncoder.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlConvertEx.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\ExceptionType.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlConst.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlCharType.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\ValidateNames.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlParsingHelper.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlNameHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Xml\Dom\DomNameTable.cs" />
+    <Compile Include="System\Xml\Dom\XmlAttribute.cs" />
+    <Compile Include="System\Xml\Dom\XmlAttributeCollection.cs" />
+    <Compile Include="System\Xml\Dom\XmlCDATASection.cs" />
+    <Compile Include="System\Xml\Dom\XmlCharacterData.cs" />
+    <Compile Include="System\Xml\Dom\XmlChildEnumerator.cs" />
+    <Compile Include="System\Xml\Dom\XmlChildNodes.cs" />
+    <Compile Include="System\Xml\Dom\XmlComment.cs" />
+    <Compile Include="System\Xml\Dom\XmlDeclaration.cs" />
+    <Compile Include="System\Xml\Dom\XmlDocument.cs" />
+    <Compile Include="System\Xml\Dom\XmlDocumentFragment.cs" />
+    <Compile Include="System\Xml\Dom\XmlDocumentType.cs" />
+    <Compile Include="System\Xml\Dom\XmlDomTextWriter.cs" />
+    <Compile Include="System\Xml\Dom\XmlElement.cs" />
+    <Compile Include="System\Xml\Dom\XmlElementList.cs" />
+    <Compile Include="System\Xml\Dom\XmlEntity.cs" />
+    <Compile Include="System\Xml\Dom\XmlEntityReference.cs" />
+    <Compile Include="System\Xml\Dom\XmlEventChangedAction.cs" />
+    <Compile Include="System\Xml\Dom\XmlImplementation.cs" />
+    <Compile Include="System\Xml\Dom\XmlLinkedNode.cs" />
+    <Compile Include="System\Xml\Dom\XmlLoader.cs" />
+    <Compile Include="System\Xml\Dom\XmlName.cs" />
+    <Compile Include="System\Xml\Dom\XmlNamedNodeMap.cs" />
+    <Compile Include="System\Xml\Dom\XmlNamedNodeMap.SmallXmlNodeList.cs" />
+    <Compile Include="System\Xml\Dom\XmlNode.cs" />
+    <Compile Include="System\Xml\Dom\XmlNodeChangedEventArgs.cs" />
+    <Compile Include="System\Xml\Dom\XmlNodeChangedEventHandler.cs" />
+    <Compile Include="System\Xml\Dom\XmlNodeList.cs" />
+    <Compile Include="System\Xml\Dom\XmlProcessingInstruction.cs" />
+    <Compile Include="System\Xml\Dom\XmlSignificantWhitespace.cs" />
+    <Compile Include="System\Xml\Dom\XmlText.cs" />
+    <Compile Include="System\Xml\Dom\XmlUnspecifiedAttribute.cs" />
+    <Compile Include="System\Xml\Dom\XmlWhitespace.cs" />
+    <Compile Include="System\Xml\EmptyEnumerator.cs" />
+    <Compile Include="System\Xml\XmlTextEncoder.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\System.Xml.Common\System\SR.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\ArrayT.cs" />
+    <Compile Include="..\..\System.Xml.Common\System\NotImplemented.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+</Project>

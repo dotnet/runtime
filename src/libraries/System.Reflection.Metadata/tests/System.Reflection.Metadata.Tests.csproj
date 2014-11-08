@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    --> 
+
+    <_WindowsKitBinPath>C:\Program Files (x86)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>C:\Program Files (x86)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.Metadata.Tests</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <RootNamespace>System.Reflection.Metadata.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ExternallyShipping>false</ExternallyShipping>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable, Version=1.1.32.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\System.Collections.Immutable.1.1.32-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net" />
+    <Reference Include="xunit, Version=1.9.2.1705, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
+      <Project>{f3e433c8-352f-4944-bf7f-765ce435370d}</Project>
+      <Name>System.Reflection.Metadata</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Metadata\ClassLayoutRow.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataAggregatorTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataTokensTests.cs" />
+    <Compile Include="Metadata\HandleCollectionTests.cs" />
+    <Compile Include="Metadata\HandleComparerTests.cs" />
+    <Compile Include="Metadata\HandleTests.cs" />
+    <Compile Include="Metadata\MetadataReaderTestHelpers.cs" />
+    <Compile Include="Metadata\MetadataReaderTests.cs" />
+    <Compile Include="Metadata\MethodImportRow.cs" />
+    <Compile Include="Metadata\TagToTokenTests.cs" />
+    <Compile Include="PortableExecutable\AbstractMemoryBlockTests.cs" />
+    <Compile Include="PortableExecutable\BadImageFormat.cs" />
+    <Compile Include="PortableExecutable\PEReaderTests.cs" />
+    <Compile Include="PortableExecutable\StreamExtensionsTests.cs" />
+    <Compile Include="Resources\Interop\Interop.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Interop.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\Misc\Misc.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Misc.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\Namespace\Namespace.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Namespace.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\NetModule\NetModule.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>NetModule.resx</DependentUpon>
+    </Compile>
+    <Compile Include="TestUtilities\AssertEx.cs" />
+    <Compile Include="TestUtilities\DiffUtil.cs" />
+    <Compile Include="TestUtilities\WorkItemAttribute.cs" />
+    <Compile Include="Utilities\BlobReaderTests.cs" />
+    <Compile Include="Utilities\CompressedIntegerTests.cs" />
+    <Compile Include="Utilities\MemoryBlockTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Interop\Interop.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <CustomToolNamespace>TestResources</CustomToolNamespace>
+      <LastGenOutput>Interop.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Misc\Misc.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Misc.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>TestResources</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Namespace\Namespace.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Namespace.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>TestResources</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\NetModule\NetModule.resx">
+      <CustomToolNamespace>TestResources</CustomToolNamespace>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>NetModule.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
+    <None Include="Resources\Namespace\NamespaceTests.cs" />
+    <None Include="Resources\Interop\Interop.Mock01.cs" />
+    <None Include="Resources\Interop\Interop.Mock01.Impl.cs" />
+    <None Include="Resources\Interop\IndexerWithByRefParam.il" />
+    <None Include="Resources\Interop\IndexerWithByRefParam.dll" />
+    <None Include="Resources\Interop\Interop.Mock01.dll" />
+    <None Include="Resources\Interop\Interop.Mock01.Impl.dll" />
+    <None Include="Resources\Misc\CPPClassLibrary2.h" />
+    <None Include="Resources\Misc\CPPClassLibrary2.obj" />
+    <None Include="Resources\Misc\EmptyType.il" />
+    <None Include="Resources\Misc\EmptyType.dll" />
+    <None Include="Resources\Misc\Members.cs" />
+    <None Include="Resources\Misc\Members.dll" />
+    <None Include="Resources\Namespace\NamespaceForwardedCS.dll" />
+    <None Include="Resources\Namespace\NamespaceTests.dll" />
+    <None Include="Resources\NetModule\AppCS.cs" />
+    <None Include="Resources\NetModule\AppCS.exe" />
+    <None Include="Resources\NetModule\ModuleCS00.cs" />
+    <None Include="Resources\NetModule\ModuleCS00.mod" />
+    <None Include="Resources\NetModule\ModuleCS01.cs" />
+    <None Include="Resources\NetModule\ModuleCS01.mod" />
+    <None Include="Resources\NetModule\ModuleVB01.mod" />
+    <None Include="Resources\NetModule\ModuleVB01.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

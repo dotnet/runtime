@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    --> 
+     
+    <_WindowsKitBinPath>C:\Program Files (x86)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>C:\Program Files (x86)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+  
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7EAFC2D8-48D2-4a56-A9C6-6BADF2053499}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.XmlDocument.Tests</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <RootNamespace>System.Xml.XmlDocument.UnitTests</RootNamespace>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="xunit">
+      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="XmlAttributeTests\SpecifiedTests.cs" />
+    <Compile Include="XmlCharacterDataTests\AppendDataTests.cs" />
+    <Compile Include="XmlCharacterDataTests\DataTests.cs" />
+    <Compile Include="XmlCharacterDataTests\DeleteDataTests.cs" />
+    <Compile Include="XmlCharacterDataTests\InsertDataTests.cs" />
+    <Compile Include="XmlCharacterDataTests\LengthTests.cs" />
+    <Compile Include="XmlCharacterDataTests\ReplaceTests.cs" />
+    <Compile Include="XmlCharacterDataTests\SubstringTests.cs" />
+    <Compile Include="XmlDocumentTests\CreateAttributeTests.cs" />
+    <Compile Include="XmlDocumentTests\CreateCDataSectionTests.cs" />
+    <Compile Include="XmlDocumentTests\CreateCommentTests.cs" />
+    <Compile Include="XmlDocumentTests\CreateDocumentFragment.cs" />
+    <Compile Include="XmlDocumentTests\CreateElementTests.cs" />
+    <Compile Include="XmlDocumentTests\CreateProcessingInstruction.cs" />
+    <Compile Include="XmlDocumentTests\CreateTextNodeTests.cs" />
+    <Compile Include="XmlDocumentTests\CreateXmlDeclarationTests.cs" />
+    <Compile Include="XmlDocumentTests\GetElementsByTagNameTests.cs" />
+    <Compile Include="XmlDocumentTests\ImportNodeTests.cs" />
+    <Compile Include="XmlDocumentTests\NodeChangedTests.cs" />
+    <Compile Include="XmlDocumentTests\NodeChangingTests.cs" />
+    <Compile Include="XmlDocumentTests\NodeInsertedTests.cs" />
+    <Compile Include="XmlDocumentTests\NodeInsertingTests.cs" />
+    <Compile Include="XmlDocumentTests\NodeRemovedTests.cs" />
+    <Compile Include="XmlDocumentTests\NodeRemovingTests.cs" />
+    <Compile Include="XmlElementTests\GetAttributeNodeTests.cs" />
+    <Compile Include="XmlElementTests\GetAttributeTests.cs" />
+    <Compile Include="XmlElementTests\GetElementsByTagNameTests.cs" />
+    <Compile Include="XmlElementTests\HasAttributeTests.cs" />
+    <Compile Include="XmlElementTests\RemoveAttributeNodeTests.cs" />
+    <Compile Include="XmlElementTests\RemoveAttributeTests.cs" />
+    <Compile Include="XmlElementTests\SetAttributeNodeTests.cs" />
+    <Compile Include="XmlElementTests\SetAttributeTests.cs" />
+    <Compile Include="XmlImplementationTests\CreateDocumentTests.cs" />
+    <Compile Include="XmlImplementationTests\HasFeatureTests.cs" />
+    <Compile Include="XmlNamedNodeMapTests\CountTests.cs" />
+    <Compile Include="XmlNamedNodeMapTests\GetNamedItemTests.cs" />
+    <Compile Include="XmlNamedNodeMapTests\GetNameTests.cs" />
+    <Compile Include="XmlNamedNodeMapTests\ItemTests.cs" />
+    <Compile Include="XmlNamedNodeMapTests\RemoveNamedItemTests.cs" />
+    <Compile Include="XmlNamedNodeMapTests\SetNamedItemTests.cs" />
+    <Compile Include="XmlNodeListTests\CountTests.cs" />
+    <Compile Include="XmlNodeListTests\ItemTests.cs" />
+    <Compile Include="XmlNodeTests\AppendChildTests.cs" />
+    <Compile Include="XmlNodeTests\AttributesTests.cs" />
+    <Compile Include="XmlNodeTests\ChildNodesTests.cs" />
+    <Compile Include="XmlNodeTests\CloneNodeTests.cs" />
+    <Compile Include="XmlNodeTests\FirstChildTests.cs" />
+    <Compile Include="XmlNodeTests\HasChildNodesTests.cs" />
+    <Compile Include="XmlNodeTests\InsertBeforeTests.cs" />
+    <Compile Include="XmlNodeTests\LastChildTests.cs" />
+    <Compile Include="XmlNodeTests\LocalNameTests.cs" />
+    <Compile Include="XmlNodeTests\NamespaceURITests.cs" />
+    <Compile Include="XmlNodeTests\NameTests.cs" />
+    <Compile Include="XmlNodeTests\NextSiblingTests.cs" />
+    <Compile Include="XmlNodeTests\NodeTypeTests.cs" />
+    <Compile Include="XmlNodeTests\NormalizeTests.cs" />
+    <Compile Include="XmlNodeTests\OwnerDocumentTests.cs" />
+    <Compile Include="XmlNodeTests\ParentNodeTests.cs" />
+    <Compile Include="XmlNodeTests\PrefixTests.cs" />
+    <Compile Include="XmlNodeTests\PreviousSiblingTests.cs" />
+    <Compile Include="XmlNodeTests\RemoveChildTests.cs" />
+    <Compile Include="XmlNodeTests\ReplaceChildTests.cs" />
+    <Compile Include="XmlNodeTests\SupportsTests.cs" />
+    <Compile Include="XmlNodeTests\ValueTests.cs" />
+    <Compile Include="XmlNodeTests\InsertTests\OneElementTests.cs" />
+    <Compile Include="XmlNodeTests\InsertTests\TestHelper.cs" />
+    <Compile Include="XmlNodeTests\InsertTests\ThreeElementTests.cs" />
+    <Compile Include="XmlNodeTests\InsertTests\TwoElementTests.cs" />
+    <Compile Include="XmlNodeTests\InsertTests\TwoTextNodeTests.cs" />
+    <Compile Include="XmlProcessingInstructionTests\DataTests.cs" />
+    <Compile Include="XmlProcessingInstructionTests\TargetTests.cs" />
+    <Compile Include="XmlTextTests\SplitTextTests.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Xml.XmlDocument.csproj">
+      <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
+      <Name>System.Xml.XmlDocument</Name>
+    </ProjectReference>
+  </ItemGroup>
+  
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\xunit.1.9.2\lib\net20\xunit.dll')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.1.9.2\lib\net20\xunit.dll'))" />
+  </Target>
+
+  
+</Project>

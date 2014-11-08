@@ -1,0 +1,2440 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
+using System.Text;
+using TestUtilities;
+using Xunit;
+
+namespace System.Reflection.Metadata.Tests
+{
+    public class MetadataReaderTests
+    {
+        #region Helpers
+
+        // Table Value << 24
+        private enum TableConstant : uint
+        {
+            mdtModule = 0,
+            mdtTypeRef = 0x01000000,
+            mdtTypeDef = 0x02000000,
+            mdtFieldDef = 0x04000000,
+            mdtMethodDef = 0x06000000,
+            mdtParamDef = 0x08000000,
+            mdtInterfaceImpl = 0x09000000,
+            mdtMemberRef = 0x0A000000,
+            mdtCustomAttribute = 0x0C000000,
+            mdtDeclSecurity = 0x0E000000, // Permission
+            mdtStandAloneSig = 0x11000000, // Signature
+            mdtEvent = 0x14000000,
+            mdtProperty = 0x17000000,
+            mdtModuleRef = 0x1A000000,
+            mdtTypeSpec = 0x1B000000,
+            mdtAssembly = 0x20000000,
+            mdtAssemblyRef = 0x23000000,
+            mdtFile = 0x26000000,
+            mdtExportedType = 0x27000000,
+            mdtManifestResource = 0x28000000,
+            mdtMethodSpec = 0x2B000000,
+            mdtGenericParam = 0x2A000000,
+            mdtGenericParamConstraint = 0x2C000000,
+
+            // ===========================
+            mdtConstant = 0x0B000000,
+            mdtFieldMarshal = 0x0D000000,
+            mdtClassLayout = 0x0F000000,
+            mdtFieldLayout = 0x10000000,
+            mdtEventMap = 0x12000000,
+            mdtPropertyMap = 0x15000000,
+            mdtMethodSemantics = 0x18000000,
+            mdtMethodImpl = 0x19000000,
+            mdtImplMap = 0x1C000000,
+            mdtFieldRVA = 0x1D000000,
+            mdtAssemblyProperssor = 0x21000000,
+            mdtAssemblyOS = 0x22000000,
+            mdtAssemblyRefProperssor = 0x24000000,
+            mdtAssemblyRefOS = 0x25000000,
+            mdtNestedClass = 0x29000000,
+        }
+
+        internal static readonly Dictionary<byte[], GCHandle> peImages = new Dictionary<byte[], GCHandle>();
+
+        internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, bool isModule = false, MetadataStringDecoder decoder = null)
+        {
+            int _;
+            return GetMetadataReader(peImage, out _, isModule, decoder);
+        }
+
+        internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, out int metadataStartOffset, bool isModule = false, MetadataStringDecoder decoder = null)
+        {
+            GCHandle pinned;
+            if (!peImages.TryGetValue(peImage, out pinned))
+            {
+                peImages.Add(peImage, pinned = GCHandle.Alloc(peImage, GCHandleType.Pinned));
+            }
+            var headers = new PEHeaders(new MemoryStream(peImage));
+            metadataStartOffset = headers.MetadataStartOffset;
+            return new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize, MetadataReaderOptions.Default, decoder);
+        }
+
+        private List<CustomAttributeHandle> GetCustomAttributes(MetadataReader reader, uint token)
+        {
+            var attributes = new List<CustomAttributeHandle>();
+            foreach (var caHandle in reader.GetCustomAttributes(new Handle(token)))
+            {
+                attributes.Add(caHandle);
+            }
+
+            return attributes;
+        }
+
+        #endregion
+
+
+        [Fact]
+        public unsafe void EmptyMetadata()
+        {
+            byte* ptr = stackalloc byte[1];
+
+            Assert.Throws<ArgumentNullException>(() => new MetadataReader(null, 10));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataReader(ptr, -10));
+        }
+
+        [Fact]
+        public void StreamLengths()
+        {
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            Assert.Equal(0x038, reader.GetHeapSize(HeapIndex.UserString));
+            Assert.Equal(0x3c2, reader.GetHeapSize(HeapIndex.String));
+            Assert.Equal(0x1cc, reader.GetHeapSize(HeapIndex.Blob));
+            Assert.Equal(0x010, reader.GetHeapSize(HeapIndex.Guid));
+        }
+
+        [Fact]
+        public void CannotInstantiateReaderWithNonUtf8Decoder()
+        {
+            var decoder = new MetadataStringDecoder(Encoding.ASCII);
+            var exception = Assert.Throws<ArgumentException>(() => GetMetadataReader(TestResources.Misc.Members, decoder: decoder));
+            Assert.Equal("utf8Decoder", exception.ParamName);
+        }
+
+        [Fact]
+        public void CanCustomizeReaderUtf8Fallback()
+        {
+            // start with a valid PE (cloned because we'll mutate it).
+            byte[] peImage = (byte[])TestResources.Namespace.NamespaceTests.Clone();
+
+            // find a System string in its string heap.
+            int metadataStartOffset;
+            var reader = GetMetadataReader(peImage, out metadataStartOffset);
+
+            List<string> strings = new List<string>();
+            StringHandle handle;
+            for (handle = MetadataTokens.StringHandle(1); !handle.IsNil; handle = reader.GetNextHandle(handle))
+                if (reader.StringComparer.Equals(handle, "NSTests.WithNestedType"))
+                    break;
+
+            Assert.Equal("NSTests.WithNestedType", reader.GetString(handle));
+            Assert.True(reader.StringComparer.Equals(handle.WithWinRTPrefix(), "<WinRT>NSTests.WithNestedType"));
+            Assert.True(reader.StringComparer.StartsWith(handle.WithWinRTPrefix(), "<WinRT>N"));
+
+            // now let's see how well the API we added to make small patches to binaries works
+            // and use it to corrupt the NSTests.WithNestedType entry in the string heap.
+
+            int stringHeapOffset = reader.GetHeapMetadataOffset(HeapIndex.String);
+            int stringHandleOffset = reader.GetHeapOffset(handle);
+            int totalPEOffset = metadataStartOffset + stringHeapOffset + stringHandleOffset;
+
+            Assert.Equal((byte)'N', peImage[totalPEOffset]);
+            peImage[metadataStartOffset + stringHeapOffset + stringHandleOffset] = 0xC0;
+
+            // metadata reader is over pinned byte[]. Our changes are live. :)
+            Assert.Equal("\uFFFDSTests.WithNestedType", reader.GetString(handle)); // default fallback
+            Assert.Equal("<WinRT>\uFFFDSTests.WithNestedType", reader.GetString(handle.WithWinRTPrefix()));
+            Assert.Equal("\uFFFDSTests", reader.GetString(handle.WithDotTermination()));
+
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // TODO: MetadataStringComparer needs to use the user-supplied encoding
+            // These still use incorrect code for comparison - uncomment when fixed
+            //Assert.True(reader.StringComparer.Equals(handle, "\uFFFDSTests.WithNestedType"); 
+            //Assert.True(reader.StringComparer.Equals(handle.WithDotTermination(), "\uFFFDSTests"));
+
+            // This one calls the decoder already because we don't bother optimizing uncommon winrt prefix case.
+            Assert.True(reader.StringComparer.StartsWith(handle.WithWinRTPrefix(), "<WinRT>\uFFFDS"));
+            Assert.True(reader.StringComparer.Equals(handle.WithWinRTPrefix(), "<WinRT>\uFFFDSTests.WithNestedType"));
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            // recreate our reader with exception fallback decoder.
+            reader = GetMetadataReader(
+                peImage,
+                decoder: new MetadataStringDecoder(
+                            Encoding.GetEncoding(
+                                "utf-8",
+                                EncoderFallback.ExceptionFallback,
+                                DecoderFallback.ExceptionFallback)));
+
+            // since we're reading the same PE image our handles are still valid.
+            Assert.Throws<DecoderFallbackException>(() => reader.GetString(handle)); // BOOM!
+        }
+
+        /// <summary>
+        /// Assembly Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags (4 byte uint) - none, noappdomain, noprocess, nomachine
+        ///     MajorVersion, MinorVersion, BuildNumber, RevisionNumber (2 byte unsigned)
+        ///     PublicKey (offset to #blob)
+        ///     Locale (offset to #String)
+        ///     HashAlgId (4 byte unsigned)
+        /// </summary>
+        [Fact]
+        public void ValidateAssemblyTableExe()
+        {
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            // only one
+            Assert.Equal((uint)1, reader.AssemblyTable.NumberOfRows);
+
+            // 1 based
+            AssemblyDefinition row = reader.GetAssemblyDefinition();
+            Assert.Equal("AppCS", reader.GetString(row.Name));
+
+            // Flags
+            Assert.Equal((uint)0, (uint)row.Flags); // AssemblyFlags
+
+            // Locale
+            Assert.True(row.Culture.IsNil);
+
+            // PublicKey
+            Assert.True(row.PublicKey.IsNil);
+
+            // Version
+            Assert.Equal(new Version(1, 2, 3, 4), row.Version);
+
+            // 32772
+            Assert.Equal(AssemblyHashAlgorithm.Sha1, row.HashAlgorithm);
+        }
+
+        /// <summary>
+        /// AssemblyRef Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags (4 byte uint) - none, noappdomain, noprocess, nomachine
+        ///     MajorVersion, MinorVersion, BuildNumber, RevisionNumber (2 byte ushort)
+        ///     PublicKeyOrToken (offset to #blob)
+        ///     Locale (offset to #String)
+        ///     HashValue (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateAssemblyRefTable()
+        {
+            var expRefs = new string[] { "mscorlib", "System.Core", "System", "Microsoft.VisualBasic" };
+
+            byte[][] expKeys = new byte[][]
+            {
+                new byte[] { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 },
+                new byte[] { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 },
+                new byte[] { 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 },
+
+                // VB: B0 3F 5F 7F 11 D5 0A 3A
+                new byte[] { 0xb0, 0x3f, 0x5f, 0x7f, 0x11, 0xd5, 0x0a, 0x3a }
+            };
+            var expVers = new Version[]
+            {
+                new Version(4, 0, 0, 0),
+                new Version(4, 0, 0, 0),
+                new Version(4, 0, 0, 0),
+                new Version(/*VB*/10, 0, 0, 0),
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            int i = 0;
+            foreach (var assemblyRef in reader.AssemblyReferences)
+            {
+                var row = reader.GetAssemblyReference(assemblyRef);
+                Assert.Equal(expRefs[i], reader.GetString(row.Name));
+                Assert.Equal((uint)0, (uint)row.Flags);
+                Assert.True(row.Culture.IsNil);
+
+                var pubKey = reader.GetBlobBytes(row.PublicKeyOrToken);
+                Assert.Equal(pubKey.Length, expKeys[i].Length);
+                for (int j = 0; j < pubKey.Length; j++)
+                {
+                    Assert.Equal(pubKey[j], expKeys[i][j]);
+                }
+
+                // Data Validation
+                Assert.Equal(expVers[i], row.Version);
+
+                Assert.True(row.HashValue.IsNil);
+
+                i++;
+            }
+
+            Assert.Equal(expRefs.Length, i);
+        }
+
+        /// <summary>
+        /// Module Table Columns:
+        ///     Name (offset to #String)
+        ///     Mvid (offset to #Guid)
+        ///     Generation (2-byte ushort) EnC
+        ///     EncId, EncBaseId (offset to #Guid)
+        /// </summary>
+        [Fact]
+        public void ValidateModuleTable()
+        {
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            ModuleDefinition moduleDef = reader.GetModuleDefinition();
+
+            // Validity Rules
+            Assert.Equal("AppCS.exe", reader.GetString(moduleDef.Name));
+
+            // Data Validation
+            Assert.Equal(@"F130D514-7D4E-4B7E-9767-58808BC06A7E", reader.GetGuid(moduleDef.Mvid).ToString().ToUpperInvariant());
+        }
+
+        [Fact]
+        public void ValidateModuleTableMod()
+        {
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            ModuleDefinition moduleDef = reader.GetModuleDefinition();
+
+            // Validity Rules
+            Assert.Equal("ModuleVB01.mod", reader.GetString(moduleDef.Name));
+
+            // Data Validation
+            Assert.Equal(@"A7C4B488-9378-4750-801B-9E78BCF98995", reader.GetGuid(moduleDef.Mvid).ToString().ToUpperInvariant());
+        }
+
+        /// <summary>
+        /// ModuleRef Table Columns:
+        ///     Name (offset to #String)
+        /// -----------------------------    
+        /// File Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags (4 byte uint)
+        ///     HashValue (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateModuleRefTableAndFileTableManaged()
+        {
+            // AppCS has 2 modules
+            var expMods = new string[] { "ModuleCS01.mod", "ModuleVB01.mod" };
+            var expHashs = new byte[][]
+            {
+                // ModuleCS01.mod - 2B 56 10 8B 34 A1 DC CD CC B5 CF 66 5E 43 94 5E 09 9F 34 A3
+                new byte[] { 0x2B, 0x56, 0x10, 0x8B, 0x34, 0xA1, 0xDC, 0xCD, 0xCC, 0xB5, 0xCF, 0x66, 0x5E, 0x43, 0x94, 0x5E, 0x09, 0x9F, 0x34, 0xA3 },
+
+                // ModuleVB01.mod - A7 F0 25 28 0F 3C 29 2E 83 90 F0 FA A7 13 8E E4 54 16 D7 A0 
+                new byte[] { 0xA7, 0xF0, 0x25, 0x28, 0x0F, 0x3C, 0x29, 0x2E, 0x83, 0x90, 0xF0, 0xFA, 0xA7, 0x13, 0x8E, 0xE4, 0x54, 0x16, 0xD7, 0xA0 }
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            Assert.Equal(expMods.Length, reader.GetTableRowCount(TableIndex.ModuleRef));
+            int m = 0;
+            foreach (var moduleRefName in reader.GetReferencedModuleNames())
+            {
+                Assert.Equal(expMods[m], reader.GetString(moduleRefName));
+                m++;
+            }
+
+            // -- FileTable --
+
+            // # of mod == # of file
+            Assert.Equal(reader.GetTableRowCount(TableIndex.ModuleRef), reader.GetTableRowCount(TableIndex.File));
+            Assert.Equal(expMods.Length, reader.GetTableRowCount(TableIndex.File));
+
+            int i = 0;
+            foreach (var fileHandle in reader.AssemblyFiles)
+            {
+                var file = reader.GetAssemblyFile(fileHandle);
+
+                Assert.Equal(expMods[i], reader.GetString(file.Name));
+                Assert.True(file.ContainsMetadata);
+
+                var hv = reader.GetBlobBytes(file.HashValue);
+                Assert.Equal(hv.Length, expHashs[i].Length);
+                for (int j = 0; j < hv.Length; j++)
+                {
+                    Assert.Equal(hv[j], expHashs[i][j]);
+                }
+
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// ModuleRef Table Columns:
+        ///     Name (offset to #String)
+        /// -----------------------------    
+        /// File Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags (4 byte uint)
+        ///     HashValue (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateModuleRefTableMod()
+        {
+            // AppCS has 2 modules
+            var expMods = new string[] { "ModuleCS00.mod" };
+            var expHashs = new byte[][]
+            {
+                // ModuleCS00.mod
+                // new byte [] { 0xd4, 0x6b, 0xec, 0x25, 0x47, 0x01, 0x20, 0x30, 0x05, 0x42, 0x34, 0x4b, 0x31, 0x22, 0x44, 0xd8, 0x1c, 0x87, 0xd0, 0x98 }, 
+            };
+
+            // ModuleVB01
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+
+            Assert.Equal((uint)expMods.Length, reader.ModuleRefTable.NumberOfRows);
+            int m = 0;
+            foreach (var moduleRefName in reader.GetReferencedModuleNames())
+            {
+                Assert.Equal(expMods[m], reader.GetString(moduleRefName));
+                m++;
+            }
+
+            // ==================================================
+            // ModuleCS01
+            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+
+            Assert.Equal((uint)expMods.Length, reader.ModuleRefTable.NumberOfRows);
+            m = 0;
+            foreach (var moduleRefName in reader.GetReferencedModuleNames())
+            {
+                Assert.Equal(expMods[m], reader.GetString(moduleRefName));
+            }
+        }
+
+        /// <summary>
+        /// ExportType Table Columns:
+        ///     TypeName, TypeNamespace (offset to #String)
+        ///     Flags (4 byte uint)
+        ///     TypeDefId (4 byte uint)
+        ///     Implementation (coded token)
+        /// </summary>
+        [Fact]
+        public void ValidateExportedTypeTable()
+        {
+            // 14
+            var expTypes = new string[]
+            {
+                "ModChainA", "ModChainB", "ModChainC", "Extension", "GenDele`1",
+                "ModIGen2`2", "ModClassImplImp`1", "ModStructImplExp", "ModVBClass", "ModVBStruct",
+                "ModVBInnerEnum", "ModVBInnerStruct", "ModVBDele", "ModVBInnerIFoo",
+            };
+            var expNamespaces = new string[]
+            {
+                "NS.Module.CS01", "NS.Module.CS01", "NS.Module.CS01", "NS.Module.CS01", "NS.Module.CS01",
+                "NS.Module.CS01.CS02", "NS.Module.CS01.CS02", "NS.Module.CS01.CS02", string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty,
+            };
+            var expFlags = new uint[]
+            {
+                0x00100081, 0x00100001, 0x00100101, 0x00100181, 0x00000101,
+                0x000000a1, 0x00100001, 0x00100109, 0x00000001, 0x00100109,
+                0x00000102, 0x0000010a, 0x00000102, 0x000000a2
+            };
+            var expTDefTokens = new uint[]
+            {
+                0x02000002, 0x02000003, 0x02000004, 0x02000005, 0x02000006, 0x02000007, 0x02000008,
+                0x02000009, 0x02000002, 0x02000003, 0x02000004, 0x02000005, 0x02000006, 0x02000007
+            };
+            var expImplTokens = new uint[]
+            {
+                0x26000001, 0x26000001, 0x26000001, 0x26000001, 0x26000001, 0x26000001, 0x26000001,
+                0x26000001, 0x26000002, 0x26000002, 0x27000009, 0x2700000a, 0x2700000a, 0x2700000c
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            Assert.Equal((uint)expTypes.Length, reader.ExportedTypeTable.NumberOfRows);
+            for (uint i = 0; i < reader.ExportedTypeTable.NumberOfRows; i++)
+            {
+                uint rid = i + 1;
+                Assert.Equal(expTypes[i], reader.GetString(reader.ExportedTypeTable.GetTypeName(rid)));
+                Assert.Equal(expNamespaces[i], reader.GetString(reader.ExportedTypeTable.GetTypeNamespace(rid)));
+                Assert.Equal(expFlags[i], (uint)reader.ExportedTypeTable.GetFlags(rid));
+                Assert.Equal(expTDefTokens[i], reader.ExportedTypeTable.GetTypeDefId(rid));
+                Assert.Equal(expImplTokens[i], reader.ExportedTypeTable.GetImplementation(rid).value);
+            }
+        }
+
+        /// <summary>
+        /// TypeRef Table Columns:
+        ///     Name, Namespace (offset to #String)
+        ///     ResolutionScope (token to Assembly)
+        /// </summary>
+        [Fact]
+        public void ValidateTypeRefTable()
+        {
+            // 24
+            var expNames = new string[]
+            {
+                "RuntimeCompatibilityAttribute", "ExtensionAttribute", "Object", "ModChainB", "ModIGen2`2",
+                "Expression", "ModChainA", "ModClassImplImp`1", "ModVBClass", "ModVBInnerEnum",
+                "ModVBStruct", "ModVBInnerStruct", "ModVBInnerIFoo", "AssemblyTitleAttribute", "AssemblyVersionAttribute",
+                "AssemblyCultureAttribute", "CompilationRelaxationsAttribute", "ModStructImplExp", "EventLog", "EventArgs",
+                "Extension", "DefaultMemberAttribute", "Action`1", "Activator",
+            };
+            var expNamespaces = new string[]
+            {
+                "System.Runtime.CompilerServices", "System.Runtime.CompilerServices", "System", "NS.Module.CS01", "NS.Module.CS01.CS02",
+                "System.Linq.Expressions", "NS.Module.CS01", "NS.Module.CS01.CS02", string.Empty, string.Empty,
+                string.Empty, string.Empty, string.Empty, "System.Reflection", "System.Reflection",
+                "System.Reflection", "System.Runtime.CompilerServices", "NS.Module.CS01.CS02", "System.Diagnostics", "System",
+                "NS.Module.CS01", "System.Reflection", "System", "System",
+            };
+            var expAsmTokens = new uint[]
+            {
+                0x23000001, 0x23000002, 0x23000001, 0x1a000001, 0x1a000001,
+                0x23000002, 0x1a000001, 0x1a000001, 0x1a000002, 0x01000009,
+                0x1a000002, 0x0100000b, 0x0100000c, 0x23000001, 0x23000001,
+                0x23000001, 0x23000001, 0x1a000001, 0x23000003, 0x23000001,
+                0x1a000001, 0x23000001, 0x23000001, 0x23000001
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            Assert.Equal(expNames.Length, reader.TypeReferences.Count);
+            int i = 0;
+            foreach (var typeRef in reader.TypeReferences)
+            {
+                TypeReference row = reader.GetTypeReference(typeRef);
+
+                // var n = reader.GetString(row.Name);
+                // var ns = reader.GetString(row.Namespace);
+                Assert.Equal(expNames[i], reader.GetString(row.Name));
+                Assert.Equal(expNamespaces[i], reader.GetString(row.Namespace));
+                Assert.Equal(expAsmTokens[i], row.ResolutionScope.value);
+
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// TypeRef Table Columns:
+        ///     Name, Namespace (offset to #String)
+        ///     ResolutionScope (token to Assembly)
+        /// </summary>
+        [Fact]
+        public void ValidateTypeRefTableMod()
+        {
+            // ModuleCS01 - 0x16
+            var expNames = new string[]
+            {
+                "Object", "MulticastDelegate", "Action`1", "ValueType", "Expression",
+                "EventLog", "EventArgs", "ModStruct", "ModIDerive", "IsVolatile",
+                "IAsyncResult", "AsyncCallback", "Func`3", "OutAttribute", "RuntimeCompatibilityAttribute",
+                "AssemblyAttributesGoHere", "ExtensionAttribute", "CompilerGeneratedAttribute",
+                "DefaultMemberAttribute", "Delegate", "StructLayoutAttribute", "LayoutKind",
+            };
+            var expNamespaces = new string[]
+            {
+                "System", "System", "System", "System", "System.Linq.Expressions",
+                "System.Diagnostics", "System", "NS.Module", "NS.Module", "System.Runtime.CompilerServices",
+                "System", "System", "System", "System.Runtime.InteropServices", "System.Runtime.CompilerServices",
+                "System.Runtime.CompilerServices", "System.Runtime.CompilerServices",  "System.Runtime.CompilerServices", "System.Reflection", "System",
+                "System.Runtime.InteropServices", "System.Runtime.InteropServices",
+            };
+            var expAsmTokens = new uint[]
+            {
+                0x23000001, 0x23000001, 0x23000001, 0x23000001, 0x23000002,
+                0x23000003, 0x23000001, 0x1a000001, 0x1a000001, 0x23000001,
+                0x23000001, 0x23000001, 0x23000001, 0x23000001, 0x23000001,
+                0x23000001, 0x23000002, 0x23000001, 0x23000001, 0x23000001, 0x23000001, 0x23000001,
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            Assert.Equal(expNames.Length, reader.TypeReferences.Count);
+
+            int i = 0;
+            foreach (var typeRef in reader.TypeReferences)
+            {
+                TypeReference row = reader.GetTypeReference(typeRef);
+                Assert.Equal(expNames[i], reader.GetString(row.Name));
+                Assert.Equal(expNamespaces[i], reader.GetString(row.Namespace));
+                Assert.Equal(expAsmTokens[i], row.ResolutionScope.value);
+
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// TypeDef Table Columns:
+        ///     Name, Namespace (offset to #String)
+        ///     Flags (4 byte unsigned)
+        ///     Extends (token)
+        ///     FieldList, MethodList (RID)
+        /// </summary>
+        /// <TODO> flag 0x00040000 set -> DeclSecurity record or SuppressUnmanagedCodeSecurityAttribute
+        /// </TODO>
+        [Fact]
+        public void ValidateTypeDefTable()
+        {
+            var expNames = new string[]
+            {
+                "<Module>", "App", "UseModule", "IContraVar`1", "ICoVar`1", "INormal`1",
+                "ContraInClass`1", "CoOutClass`1", "NormalClass`1", "Animal", "Tiger", "Test"
+            };
+            var expNamespaces = new string[]
+            {
+                string.Empty, "AppCS", "AppCS", "AppCS", "AppCS", "AppCS",
+                "AppCS", "AppCS", "AppCS", "AppCS", "AppCS", "AppCS",
+            };
+            var expFlags = new uint[]
+            {
+                0, 0x00100001, 0x00100001, 0x000000a1, 0x000000a1, 0x000000a0,
+                0x00100000, 0x00100000, 0x00100000, 0x00100000, 0x00100000, 0x00100001
+            };
+            var expExtends = new uint[]
+            {
+                0x02000000, 0x01000003, 0x01000003, 0x02000000, 0x02000000, 0x02000000,
+                0x01000003, 0x01000003, 0x01000003, 0x01000003, 0x0200000a, 0x01000003,
+            };
+            var expNest = new bool[] { false, false, false, false, false, false, false, false, false, false, false, false };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            Assert.Equal(expNames.Length, reader.TypeDefinitions.Count);
+
+            uint prevFieldStart = 0;
+            uint prevMethodStart = 0;
+
+            int i = 0;
+            foreach (var typeDefHandle in reader.TypeDefinitions)
+            {
+                var typeDef = reader.GetTypeDefinition(typeDefHandle);
+                uint fieldStart = reader.TypeDefTable.GetFieldStart(typeDefHandle.RowId);
+                uint methodStart = reader.TypeDefTable.GetMethodStart(typeDefHandle.RowId);
+
+                Assert.Equal(expNames[i], reader.GetString(typeDef.Name));
+                Assert.Equal(expNamespaces[i], reader.GetString(typeDef.Namespace));
+
+                // Assert.Equal((TypeDefFlags)expFlags[i], (TypeDefFlags)row.Flags);
+                Assert.Equal(expFlags[i], (uint)typeDef.Attributes);
+                Assert.Equal(expExtends[i], typeDef.BaseType.value);
+                Assert.Equal(expNest[i], typeDef.Attributes.IsNested());
+
+                // validate previous row's member as it needs current row's member other to calc how many
+                if (i > 0)
+                {
+                    ValidateFieldDef(reader, prevFieldStart, fieldStart - prevFieldStart);
+                    ValidateMethodDef(reader, prevMethodStart, methodStart - prevMethodStart);
+                    // ValidatePropertyByType(i + 1, expMemberCount[i * 4 + 2]);
+                    // ValidateEventByType(i + 1, expMemberCount[i * 4 + 3]);
+                }
+
+                // Last
+                if (i == reader.TypeDefinitions.Count - 1)
+                {
+                    ValidateFieldDef(reader, prevFieldStart, 0xF0000000);
+                    ValidateMethodDef(reader, prevMethodStart, 0xF0000000);
+                    // ValidatePropertyByType(i + 1, expMemberCount[i * 4 + 2]);
+                    // ValidateEventByType(i + 1, expMemberCount[i * 4 + 3]);
+                }
+
+                prevFieldStart = fieldStart;
+                prevMethodStart = methodStart;
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// TypeDef Table Columns:
+        ///     Name, Namespace (offset to #String)
+        ///     Flags (4 byte unsigned)
+        ///     Extends (token)
+        ///     FieldList, MethodList (RID)
+        /// </summary>
+        /// <TODO> flag 0x00040000 set -> DeclSecurity record or SuppressUnmanagedCodeSecurityAttribute
+        /// </TODO>
+        [Fact]
+        public void ValidateTypeDefTableMod()
+        {
+            // 7
+            var expNames = new string[]
+            {
+                "<Module>", "ModVBClass", "ModVBStruct", "ModVBInnerEnum", "ModVBInnerStruct", "ModVBDele", "ModVBInnerIFoo",
+            };
+            var expNamespaces = new string[]
+            {
+                string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
+            };
+            var expFlags = new TypeAttributes[]
+            {
+                /* 0 */
+                        TypeAttributes.NotPublic, /* 1 */ TypeAttributes.Public,
+                /* 0x00100109 */
+                                 TypeAttributes.BeforeFieldInit | TypeAttributes.Sealed | TypeAttributes.SequentialLayout | TypeAttributes.Public,
+                /* 0x0102 */
+                             TypeAttributes.Sealed | TypeAttributes.NestedPublic,
+                /* 0x010a */
+                             TypeAttributes.Sealed | TypeAttributes.SequentialLayout | TypeAttributes.NestedPublic,
+                /* 0x0102 */
+                             TypeAttributes.Sealed | TypeAttributes.NestedPublic,
+                /* 0x00a2 */
+                             TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.NestedPublic,
+            };
+            var expExtends = new uint[] { 0x02000000, 0x01000001, 0x01000007, 0x01000009, 0x01000007, 0x0100000a, 0x02000000 };
+
+            // var expNest = new bool[] { false, false, false, true, true, true, true };
+            // count is calc-ed by the smaller of last row of table OR next row in EventMap table
+            // TODO: check with DEV - too much work to figure out, hard code for now - property, event 
+            var expMemberCount = new uint[]
+            {
+                /*<Module>*/0, 0, /*ModVBClass*/ 2, 0, /*ModVBStruct*/ 0, 1,
+                /*ModVBInnerEnum*/ 0, 0, /*ModVBInnerStruct*/ 0, 0, /*ModVBDele*/0, 0, /*ModVBInnerIFoo*/0, 0,
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            Assert.Equal(expNames.Length, reader.TypeDefinitions.Count);
+
+            bool first = true;
+
+            // uint prevPid = 0, prevEid = 0, currPid = 0, currEid = 0;
+            uint prevFieldStart = 0;
+            uint prevMethodStart = 0;
+
+            int i = 0;
+            foreach (var typeDefHandle in reader.TypeDefinitions)
+            {
+                var typeDef = reader.GetTypeDefinition(typeDefHandle);
+                uint fieldStart = reader.TypeDefTable.GetFieldStart(typeDefHandle.RowId);
+                uint methodStart = reader.TypeDefTable.GetMethodStart(typeDefHandle.RowId);
+
+                Assert.Equal(expNames[i], reader.GetString(typeDef.Name));
+                Assert.Equal(expNamespaces[i], reader.GetString(typeDef.Namespace));
+                Assert.Equal(expFlags[i], typeDef.Attributes);
+                Assert.Equal(expExtends[i], typeDef.BaseType.value);
+
+                // Assert.Equal(expNest[i], row.IsNested);
+                if (typeDef.Attributes.IsNested())
+                {
+                    ValidateNestedClass(reader, typeDefHandle, true);
+                }
+
+                // == Property
+                var rid = reader.PropertyMapTable.FindPropertyMapRowIdFor(typeDefHandle);
+
+                // other == 0 means no property for this type
+                if (0 != rid)
+                {
+                    ValidateProperty(reader, ((uint)TableConstant.mdtTypeDef | typeDefHandle.RowId),
+                        reader.PropertyMapTable.GetPropertyListStartFor(rid), expMemberCount[i * 2], true);
+                }
+
+                // == Event
+                rid = reader.EventMapTable.FindEventMapRowIdFor(typeDefHandle);
+                if (0 != rid)
+                {
+                    ValidateEvent(reader, ((uint)TableConstant.mdtTypeDef | typeDefHandle.RowId),
+                        reader.EventMapTable.GetEventListStartFor(rid), expMemberCount[i * 2 + 1], true);
+                }
+
+                // == Field & Method: validate previous row's member as it needs current row's member other to calc how many
+                if (!first)
+                {
+                    ValidateFieldDef(reader, prevFieldStart, fieldStart - prevFieldStart, true);
+                    ValidateMethodDef(reader, prevMethodStart, methodStart - prevMethodStart, true);
+                    // ValidateProperty(reader, rowId, prevPid, currPid - prevPid, true);
+                    // ValidateEvent(reader, rowId, prevEid, currEid - prevEid, true);
+                }
+
+                // Last
+                if (i + 1 == reader.TypeDefinitions.Count)
+                {
+                    ValidateFieldDef(reader, prevFieldStart, 0xF0000000, true);
+                    ValidateMethodDef(reader, prevMethodStart, 0xF0000000, true);
+                }
+
+                prevFieldStart = fieldStart;
+                prevMethodStart = methodStart;
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// Helper method that will validate that a NamespaceDefinition (and all NamespaceDefinitions considered children
+        /// of it) report correct values for their child namespaces, types, etc. All namespaces in the module are expected
+        /// to be listed in the allNamespaces array. Additionally, the global namespace is expected to have type definitions
+        /// for GlobalClassA, GlobalClassB, and Module. No type forwarder declarations are expected.
+        /// 
+        /// All namespaces that aren't the global NS are expected to have type definitions equal to the array
+        /// @namespaceName.Split('.')
+        /// So, ns1.Ns2.NS3 is expected to have type definitions
+        /// {"ns1", "Ns2", "NS3"}.
+        /// 
+        /// definitionExceptions and forwarderExceptions may be used to override the default expectations. Pass in 
+        /// namespace (key) and what is expected (list of strings) for each exception.
+        /// </summary>
+        private void ValidateNamespaceChildren(
+            MetadataReader reader,
+            NamespaceDefinitionHandle initHandle,
+            string[] allNamespaces,
+            IReadOnlyDictionary<string, IList<string>> definitionExceptions = null,
+            IReadOnlyDictionary<string, IList<string>> forwarderExceptions = null)
+        {
+            // Don't want to have to deal with null.
+            if (definitionExceptions == null)
+            {
+                definitionExceptions = new Dictionary<string, IList<string>>();
+            }
+
+            if (forwarderExceptions == null)
+            {
+                forwarderExceptions = new Dictionary<string, IList<string>>();
+            }
+
+            var rootNamespaceDefinition = reader.GetNamespaceDefinition(initHandle);
+            string rootNamespaceName = reader.GetString(initHandle);
+
+            // We need to be in the table of all namespaces...
+            Assert.Contains(rootNamespaceName, allNamespaces);
+
+            // Cool. Now check to make sure that .Name only returns the last bit of our namespace name.
+            var expNamespaceNameSegment = rootNamespaceName.Split('.').Last();
+            var rootNamespaceNameSegment = reader.GetString(rootNamespaceDefinition.Name);
+            Assert.Equal(expNamespaceNameSegment, rootNamespaceNameSegment);
+
+            bool isGlobalNamespace = rootNamespaceName.Length == 0;
+            string[] expTypeDefinitions = null;
+            // Special case: Global NS has GlobalClassA, GlobalClassB. Others just have autogenerated classes.
+            if (definitionExceptions.ContainsKey(rootNamespaceName))
+            {
+                expTypeDefinitions = definitionExceptions[rootNamespaceName].ToArray();
+            }
+            else if (isGlobalNamespace)
+            {
+                expTypeDefinitions = new[] { "GlobalClassA", "GlobalClassB", "<Module>" };
+            }
+            else
+            {
+                expTypeDefinitions = rootNamespaceName.Split('.');
+            }
+
+            // Validating type definitions inside the namespace...
+            int numberOfTypeDefinitions = 0;
+            foreach (var definitionHandle in rootNamespaceDefinition.TypeDefinitions)
+            {
+                var definition = reader.GetTypeDefinition(definitionHandle);
+                var definitionName = reader.GetString(definition.Name);
+                var definitionFullNamespaceName = reader.GetString(definition.Namespace);
+                Assert.Equal(rootNamespaceName, definitionFullNamespaceName);
+                Assert.Contains(definitionName, expTypeDefinitions);
+                numberOfTypeDefinitions += 1;
+            }
+
+            // Guarantee that there are no extra unexpected members...
+            Assert.Equal(numberOfTypeDefinitions, expTypeDefinitions.Length);
+
+            string[] expTypeForwarders = null;
+            if (forwarderExceptions.ContainsKey(rootNamespaceName))
+            {
+                expTypeForwarders = forwarderExceptions[rootNamespaceName].ToArray();
+            }
+            else
+            {
+                expTypeForwarders = new string[] { };
+            }
+
+            int numberOfTypeForwarders = 0;
+            foreach (var forwarderHandle in rootNamespaceDefinition.ExportedTypes)
+            {
+                var forwarder = reader.GetExportedType(forwarderHandle);
+                Assert.True(reader.StringComparer.Equals(forwarder.Namespace, rootNamespaceName));
+                var forwarderName = reader.GetString(forwarder.Name);
+                Assert.Contains(forwarderName, expTypeForwarders);
+                numberOfTypeForwarders += 1;
+            }
+            Assert.Equal(expTypeForwarders.Length, numberOfTypeForwarders);
+
+            // Validate sub-namespaces
+
+            // If the last index of '.' in a namespace name is == the current name's length, then
+            // that ns is a direct child of the current one!
+            IList<String> expChildren = null;
+
+            // Special case: Global NS's children won't have .s in them.
+            if (isGlobalNamespace)
+            {
+                expChildren = allNamespaces.Where(ns => !String.IsNullOrEmpty(ns) && !ns.Contains('.')).ToList();
+            }
+            else
+            {
+                expChildren = allNamespaces
+                    .Where(ns => ns.StartsWith(rootNamespaceName) && ns.LastIndexOf('.') == rootNamespaceName.Length)
+                    .ToList();
+            }
+
+            int numberOfSubNamespaces = 0;
+            foreach (var subNamespaceHandle in rootNamespaceDefinition.NamespaceDefinitions)
+            {
+                Assert.False(subNamespaceHandle.IsNil);
+                string subNamespaceFullName = reader.GetString(subNamespaceHandle);
+                NamespaceDefinition subNamespace = reader.GetNamespaceDefinition(subNamespaceHandle);
+
+                string subNamespaceName = subNamespaceFullName.Split('.').Last();
+                Assert.Equal(subNamespaceName, reader.GetString(subNamespace.Name));
+                Assert.True(reader.StringComparer.Equals(subNamespace.Name, subNamespaceName));
+                Assert.True(reader.StringComparer.StartsWith(subNamespace.Name, subNamespaceName));
+                Assert.True(reader.StringComparer.StartsWith(subNamespace.Name, subNamespaceName.Substring(0, subNamespaceName.Length - 1)));
+
+                Assert.Equal(subNamespace.Parent, initHandle);
+                Assert.Contains(subNamespaceFullName, expChildren);
+                ValidateNamespaceChildren(reader, subNamespaceHandle, allNamespaces, definitionExceptions, forwarderExceptions);
+                numberOfSubNamespaces += 1;
+            }
+            // Guarantee no extra unexpected namespaces...
+            Assert.Equal(expChildren.Count, numberOfSubNamespaces);
+        }
+
+        /// <summary>
+        /// Validates that NamespaceDefinition type properly provides the functionality it is intended to
+        /// </summary>
+        [Fact]
+        public void ValidateNamespaceFunctionality()
+        {
+            var expNamespaces = new[]
+            {
+                "", // Global NS
+                "NSTests",
+                "NSTests.WithNestedType",
+                "NSTests.Nested",
+                "NSTests.Nested.AndAgain",
+                "NSTests.Nested.Multiple",
+                "Nstests",
+                "Nstests.Nested",
+                "NSTests.nested",
+                "SkipFirst",
+                "SkipFirst.Namespace",
+                "SkipFirst.AndSecond",
+                "SkipFirst.AndSecond.Namespace",
+                "SkipFirstOnce",
+                "SkipFirstOnce.Namespace",
+                "Forwarder",
+                "Forwarder.NoDefs"
+            };
+
+            var uniqueForwarders = new Dictionary<string, IList<string>>();
+            uniqueForwarders.Add("Forwarder", new[] { "FwdType" });
+            uniqueForwarders.Add("Forwarder.NoDefs", new[] { "FwdType" });
+            var uniqueDefinitions = new Dictionary<string, IList<string>>();
+            uniqueDefinitions.Add("Forwarder.NoDefs", new string[] { });
+            uniqueDefinitions.Add("SkipFirst", new string[] { });
+            uniqueDefinitions.Add("SkipFirst.AndSecond", new string[] { });
+            uniqueDefinitions.Add("SkipFirstOnce", new string[] { });
+
+            var reader = GetMetadataReader(TestResources.Namespace.NamespaceTests);
+
+            NamespaceDefinitionHandle globalHandle = NamespaceDefinitionHandle.FromIndexOfFullName(0);
+            ValidateNamespaceChildren(reader, globalHandle, expNamespaces, uniqueDefinitions, uniqueForwarders);
+        }
+
+        /// <summary>
+        /// Validates that the namespace cache is lazy and will not automatically be created with simple name lookups.
+        /// </summary>
+        [Fact]
+        public void ValidateNamespaceCacheLaziness()
+        {
+            var reader = GetMetadataReader(TestResources.Namespace.NamespaceTests);
+
+            Assert.False(reader.NamespaceCache.CacheIsRealized);
+
+            var namespaceSet = new HashSet<NamespaceDefinitionHandle>();
+
+            foreach (var typeHandle in reader.TypeDefinitions)
+            {
+                namespaceSet.Add(reader.GetTypeDefinition(typeHandle).Namespace);
+            }
+
+            Assert.False(reader.NamespaceCache.CacheIsRealized);
+
+            foreach (var typeForwarderHandle in reader.ExportedTypes)
+            {
+                namespaceSet.Add(reader.GetExportedType(typeForwarderHandle).Namespace);
+            }
+
+            Assert.False(reader.NamespaceCache.CacheIsRealized);
+
+            foreach (var namespaceHandle in namespaceSet)
+            {
+                Assert.False(reader.NamespaceCache.CacheIsRealized);
+                Assert.True(namespaceHandle.HasFullName);
+                var fullyQualifiedName = reader.GetString(namespaceHandle);
+                var expFullyQualifiedName = reader.GetString(namespaceHandle);
+                Assert.NotNull(fullyQualifiedName);
+                Assert.Equal(fullyQualifiedName, expFullyQualifiedName);
+                Assert.False(reader.NamespaceCache.CacheIsRealized);
+                var comparisonResult = reader.StringComparer.Equals(namespaceHandle, fullyQualifiedName);
+                Assert.True(comparisonResult);
+                Assert.False(reader.NamespaceCache.CacheIsRealized);
+            }
+        }
+
+        /// <summary>
+        /// TypeSpec Table Columns: (vector, array, generic, unmanaged pointer, function pointer)
+        ///     Signature (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateTypeSpecTable()
+        {
+            var expSigs = new byte[][]
+            {
+                // GenericInst Class AppCS.IContraVar`1< Var!0>
+                new byte[] { 0x15, 0x12, 0x10, 0x01, 0x13, 00 },
+
+                // GenericInst Class AppCS.ICoVar`1< Var!0>
+                new byte[] { 0x15, 0x12, 0x14, 0x01, 0x13, 00 },
+
+                // GenericInst Class AppCS.INormal`1< Var!0>
+                new byte[] { 0x15, 0x12, 0x18, 0x01, 0x13, 00 },
+
+                // GenericInst Class NS.Module.CS01.CS02.ModClassImplImp`1< Class ModVBInnerIFoo>
+                new byte[] { 0x15, 0x12, 0x21, 0x01, 0x12, 0x35 },
+
+                // Var!0
+                new byte[] { 0x13, 0x00 },
+
+                // GenericInst Class AppCS.ContraInClass`1< Class AppCS.Animal>
+                new byte[] { 0x15, 0x12, 0x1c, 0x01, 0x12, 0x28 },
+
+                // GenericInst Class AppCS.CoOutClass`1< Class AppCS.Tiger>
+                new byte[] { 0x15, 0x12, 0x20, 0x01, 0x12, 0x2c },
+
+                // GenericInst Class AppCS.NormalClass`1< Class AppCS.Animal>
+                new byte[] { 0x15, 0x12, 0x24, 0x01, 0x12, 0x28 },
+
+                // GenericInst Class AppCS.NormalClass`1< Class AppCS.Tiger>
+                new byte[] { 0x15, 0x12, 0x24, 0x01, 0x12, 0x2c },
+
+                // GenericInst Class AppCS.INormal`1< Class AppCS.Animal>
+                new byte[] { 0x15, 0x12, 0x18, 0x01, 0x12, 0x28 },
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+            var table = reader.TypeSpecTable;
+
+            // Validity Rules
+            Assert.Equal((uint)expSigs.Length, table.NumberOfRows);
+            for (uint i = 0; i < table.NumberOfRows; i++)
+            {
+                var sig = reader.GetBlobBytes(table.GetSignature(TypeSpecificationHandle.FromRowId(i + 1)));
+                for (int j = 0; j < expSigs[i].Length; j++)
+                {
+                    Assert.Equal(expSigs[i][j], sig[j]);
+                }
+            }
+        }
+
+        [Fact]
+        public void ValidateTypeSpecTableMod()
+        {
+            var expSigs = new byte[][]
+            {
+                // MDArray ValueClass ModVBInnerStruct 2 0 2 0 0
+                new byte[] { 0x14, 0x11, 0x14, 0x02, 0x00, 0x02, 0x00, 0x00 },
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            var table = reader.TypeSpecTable;
+
+            // Validity Rules
+            Assert.Equal((uint)expSigs.Length, table.NumberOfRows);
+            for (uint i = 0; i < table.NumberOfRows; i++)
+            {
+                var sig = reader.GetBlobBytes(table.GetSignature(TypeSpecificationHandle.FromRowId(i + 1)));
+                for (int j = 0; j < expSigs[i].Length; j++)
+                {
+                    Assert.Equal(expSigs[i][j], sig[j]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Field Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags (2 byte unsigned)
+        ///     Signature (offset to #blob)
+        /// </summary>
+        private void ValidateFieldDef(MetadataReader reader, uint startIndex, uint count, bool isMod = false)
+        {
+            if (count == 0)
+            {
+                return;
+            }
+
+            // APPCS
+            var expNames = new string[] { "AppField01", "AppField02" };
+            var expFlags = new FieldAttributes[]
+            {
+                /*0x11*/
+                         FieldAttributes.Private | FieldAttributes.Static,
+                /*0x01*/ FieldAttributes.Private,
+                };
+            var expSigs = new byte[][] { new byte[] { 0x06, 0x12, 0x11 }, new byte[] { 0x06, 0x12, 0x25 }, };
+
+            // =====================================================================================================
+            // VB Module - 8
+            var modNames = new string[] { "ConstString", "ArrayField", "AnEventEvent", "value__", "None", "Red", "Yellow", "Blue", };
+            var modFlags = new FieldAttributes[]
+            {
+                /* 0x8053 */
+                             FieldAttributes.HasDefault | FieldAttributes.Literal | FieldAttributes.Static | FieldAttributes.FamANDAssem | FieldAttributes.Private,
+                /* 0x0016 */ FieldAttributes.Static | FieldAttributes.Family | FieldAttributes.FamANDAssem,
+                /* 0x0001 */ FieldAttributes.Private,
+                /* 0x0606 */ FieldAttributes.RTSpecialName | FieldAttributes.SpecialName | FieldAttributes.Family | FieldAttributes.FamANDAssem,
+                /* 0x8056 */ FieldAttributes.HasDefault | FieldAttributes.Literal | FieldAttributes.Static | FieldAttributes.Family | FieldAttributes.FamANDAssem,
+                /* 0x8056 */ FieldAttributes.HasDefault | FieldAttributes.Literal | FieldAttributes.Static | FieldAttributes.Family | FieldAttributes.FamANDAssem,
+                /* 0x8056 */ FieldAttributes.HasDefault | FieldAttributes.Literal | FieldAttributes.Static | FieldAttributes.Family | FieldAttributes.FamANDAssem,
+                /* 0x8056 */ FieldAttributes.HasDefault | FieldAttributes.Literal | FieldAttributes.Static | FieldAttributes.Family | FieldAttributes.FamANDAssem,
+                };
+            var modSigs = new byte[][]
+            {
+                new byte[] { 0x06, 0x0e }, new byte[] { 0x06, 0x14, 0x11, 0x14, 02, 00, 02, 00, 00 },
+                new byte[] { 0x06, 0x12, 0x18 }, new byte[] { 0x06, 0x08 },
+                new byte[] { 0x06, 0x11, 0x10 }, new byte[] { 0x06, 0x11, 0x10 },
+                new byte[] { 0x06, 0x11, 0x10 }, new byte[] { 0x06, 0x11, 0x10 },
+            };
+
+            if (startIndex > reader.FieldTable.NumberOfRows)
+            {
+                return;
+            }
+
+            uint zeroBased = startIndex - 1;
+            uint delta = count;
+
+            // Last one
+            if (0xF0000000 == count)
+            {
+                delta = reader.FieldTable.NumberOfRows - zeroBased;
+                if (0 == delta)
+                {
+                    return;
+                }
+            }
+
+            Assert.InRange(reader.FieldTable.NumberOfRows, zeroBased + delta, uint.MaxValue); // 1 based
+            for (uint i = zeroBased; i < zeroBased + delta; i++)
+            {
+                var handle = FieldDefinitionHandle.FromRowId(i + 1);
+                var row = reader.GetFieldDefinition(handle);
+
+                if (isMod)
+                {
+                    Assert.Equal(modNames[i], reader.GetString(row.Name));
+                    Assert.Equal(modFlags[i], row.Attributes);
+                }
+                else
+                {
+                    Assert.Equal(expNames[i], reader.GetString(row.Name));
+                    Assert.Equal(expFlags[i], row.Attributes);
+                }
+
+                var sig = reader.GetBlobBytes(row.Signature);
+
+                // calling convention, always 6 for field
+                Assert.Equal(sig[0], 6);
+                int len = 0;
+                if (isMod)
+                {
+                    len = modSigs[i].Length;
+                }
+                else
+                {
+                    len = expSigs[i].Length;
+                }
+
+                for (int j = 1; j < len; j++)
+                {
+                    if (isMod)
+                    {
+                        Assert.Equal(modSigs[i][j], sig[j]);
+                    }
+                    else
+                    {
+                        Assert.Equal(expSigs[i][j], sig[j]);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Method Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags, ImplFlags (2 byte unsigned)
+        ///     Signature (offset to #blob)
+        ///     ParamList (RID to Param)
+        ///     RVA (4-byte unsigned) -> body
+        /// </summary>
+        private void ValidateMethodDef(MetadataReader reader, uint startIndex, uint count, bool isMod = false)
+        {
+            if (0 == count)
+            {
+                return;
+            }
+
+            var expNames = new string[]
+            {
+                "get_AppProp", ".ctor", "AppMethod", ".cctor", "get_Item",
+                "Use", ".ctor", "set_ContraFooProp", "CoFooMethod", "NormalFoo",
+                "set_ContraFooProp", ".ctor", "CoFooMethod", ".ctor", "NormalFoo",
+                ".ctor", ".ctor", ".ctor", "Main", ".ctor",
+            };
+            var expFlags = new ushort[]
+            {
+                0x0883, 0x1886, 0x0084, 0x1891, 0x0881,   0x0086, 0x1886, 0x0dc6, 0x05c6, 0x05c6,
+                    0x09e6, 0x1886, 0x01e6, 0x1886, 0x01e6, 0x1886, 0x1886, 0x1886, 0x0096, 0x1886
+                };
+            var expRVAs = new uint[]
+            {
+                0x2050, 0x2070, 0x20a4, 0x20b7, 0x20c0, 0x20d4, 0x2105, 0, 0, 0,
+                0x2115, 0x2118, 0x2120, 0x2152, 0x215c, 0x2177, 0x217f, 0x2187, 0x2190, 0x21d5
+            };
+
+            var expSigs = new byte[][]
+            {
+                new byte[] { 0x20, 0x00, 0x15, 0x12, 0x15, 0x02, 0x12, 0x19, 0x1c }, new byte[] { 0x20, 01, 01, 0x10, 0x12, 0x1d },
+                new byte[] { 0x30, 01, 01, 0x15, 0x12, 0x21, 0x01, 0x1e, 00, 0x1e, 00 }, new byte[] { 0x00, 0x00, 0x01 },
+                new byte[] { 0x20, 01, 0x11, 0x29, 0x11, 0x29 }, new byte[] { 0x20, 00, 0x15, 0x12, 0x21, 0x01, 0x12, 0x35 },
+                new byte[] { 0x20, 00, 01 }, new byte[] { 0x20, 01, 01, 0x13, 00 },
+                new byte[] { 0x20, 00, 0x13, 00 }, new byte[] { 0x20, 01, 0x13, 00, 0x13, 00 },
+                new byte[] { 0x20, 01, 01, 0x13, 00 }, new byte[] { 0x20, 00, 01 },
+                new byte[] { 0x20, 00, 0x13, 00 }, new byte[] { 0x20, 00, 01 },
+                new byte[] { 0x20, 01, 0x13, 00, 0x13, 00 }, new byte[] { 0x20, 00, 01 },
+                new byte[] { 0x20, 00, 01 }, new byte[] { 0x20, 00, 01 }, new byte[] { 00, 00, 08 }, new byte[] { 0x20, 00, 01 },
+            };
+
+            var modNames = new string[]
+            {
+                ".ctor", "get_ModVBDefaultProp", "set_ModVBDefaultProp", "get_ModVBProp", "BCSub01",
+                "BCFunc02", ".cctor", "add_AnEvent", "remove_AnEvent", "EventHandler1",
+                "BSFunc01", ".ctor", "BeginInvoke", "EndInvoke", "Invoke",
+            };
+            var modFlags = new ushort[]
+            {
+                0x1806, 0x0803, 0x0803, 0x0806, 0x0006,
+                0x0006, 0x1811, 0x0806, 0x0806, 0x0006, 0x0006, 0x1806, 0x0346, 0x0346, 0x0346,
+                };
+            var modImpls = new ushort[]
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3,
+            };
+            var modRVAs = new uint[]
+            {
+                0x2050, 0x2058, 0x2070, 0x2074, 0x2090,
+                    0x20a8, 0x20bc, 0x20cc, 0x20e8, 0x2104,  0x2108, 0, 0, 0, 0
+            };
+            var modSigs = new byte[][]
+            {
+                new byte[] { 0x20, 0x00, 0x01 }, new byte[] { 0x20, 01, 0x0e, 0x08 },
+                new byte[] { 0x20, 02, 01, 0x08, 0x0e }, new byte[] { 0x20, 00, 0x11, 0x09 },
+                new byte[] { 0x20, 02, 01, 0x11, 0x0d, 0x12, 0x11 }, new byte[] { 0x20, 01, 0x12, 0x15, 0x10, 0x12, 0x19 },
+                new byte[] { 0x00, 00, 01 }, new byte[] { 0x20, 01, 01, 0x12, 0x18 },
+                new byte[] { 0x20, 01, 01, 0x12, 0x18 }, new byte[] { 0x20, 02, 01, 0x1c, 0x12, 0x21 },
+                new byte[] { 0x20, 01, 0x1c, 0x10, 0x11, 0x14 }, new byte[] { 0x20, 02, 01, 0x1c, 0x18 },
+                new byte[] { 0x20, 04, 0x12, 0x2d, 0x1c, 0x12, 0x21, 0x12, 0x31, 0x1c }, new byte[] { 0x20, 01, 01, 0x12, 0x2d },
+                new byte[] { 0x20, 02, 01, 0x1c, 0x12, 0x21 },
+            };
+
+            if (startIndex > reader.MethodDefTable.NumberOfRows)
+            {
+                return;
+            }
+
+            uint zeroBased = startIndex - 1;
+            uint delta = count;
+
+            // Last one
+            if (0xF0000000 == count)
+            {
+                delta = reader.MethodDefTable.NumberOfRows - zeroBased;
+                if (0 == delta)
+                {
+                    return;
+                }
+            }
+
+            Assert.InRange(reader.MethodDefTable.NumberOfRows, zeroBased + delta, uint.MaxValue); // 1 based
+            bool first = true;
+            uint prevParamStart = 0;
+            for (uint i = zeroBased; i < zeroBased + delta; i++)
+            {
+                var handle = MethodDefinitionHandle.FromRowId(i + 1);
+                var flags = reader.MethodDefTable.GetFlags(handle);
+                var implFlags = reader.MethodDefTable.GetImplFlags(handle);
+                var rva = reader.MethodDefTable.GetRva(handle);
+                var name = reader.MethodDefTable.GetName(handle);
+                var signature = reader.MethodDefTable.GetSignature(handle);
+                var paramStart = reader.MethodDefTable.GetParamStart(i + 1);
+
+                if (isMod)
+                {
+                    // Console.WriteLine("M: {0}", reader.GetString(row.Name));
+                    Assert.Equal(modNames[i], reader.GetString(name));
+
+                    Assert.Equal(modFlags[i], (ushort)flags);
+                    Assert.Equal(modImpls[i], (ushort)implFlags);
+                    Assert.Equal(modRVAs[i], (uint)rva);
+                }
+                else
+                {
+                    // Console.WriteLine("M: {0}", reader.GetString(row.Name));
+                    Assert.Equal(expNames[i], reader.GetString(name));
+
+                    Assert.Equal(expFlags[i], (ushort)flags);
+                    Assert.Equal((ushort)0, (ushort)implFlags);
+                    Assert.Equal(expRVAs[i], (uint)rva);
+                }
+
+                var sig = reader.GetBlobBytes(signature);
+                int len = 0;
+                if (isMod)
+                {
+                    len = modSigs[i].Length;
+                }
+                else
+                {
+                    len = expSigs[i].Length;
+                }
+
+                for (int j = 0; j < len; j++)
+                {
+                    if (isMod)
+                    {
+                        Assert.Equal(modSigs[i][j], sig[j]);
+                    }
+                    else
+                    {
+                        Assert.Equal(expSigs[i][j], sig[j]);
+                    }
+                }
+
+                // validate previous row's param as it needs current row's other to calc how many
+                if (!first)
+                {
+                    ValidateParam(reader, prevParamStart, paramStart - prevParamStart, isMod);
+                }
+
+                // Last
+                if (i + 1 == reader.MethodDefTable.NumberOfRows)
+                {
+                    ValidateParam(reader, paramStart, 0xF0000000, isMod);
+                }
+
+                prevParamStart = paramStart;
+                first = false;
+            }
+        }
+
+        /// <summary>
+        /// Param Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags, Sequence (2 byte unsigned)
+        /// </summary>
+        private void ValidateParam(MetadataReader reader, uint startIndex, uint count, bool isMod = false)
+        {
+            if (count == 0)
+            {
+                return;
+            }
+
+            // AppCS - 7
+            var expNames = new string[] { "p", "t", "p", "value", "t", "value", "t" };
+
+            // =================
+            // ModuleVB01 - 20
+            var modNames = new string[]
+            {
+                "index", "index", "value", "em", "cls",    "del", "obj", "obj", "o", "e",
+                "p", "TargetObject", "TargetMethod", "o", "e",
+                "DelegateCallback", "DelegateAsyncState", "DelegateAsyncResult", "o", "e",
+            };
+            var modFlags = new ushort[] { 0, 0, 0, 0, 0x1010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
+            var modSeqs = new ushort[] { 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 2, 1, 2, 3, 4, 1, 1, 2, };
+
+            if (startIndex > reader.ParamTable.NumberOfRows)
+            {
+                return;
+            }
+
+            uint zeroBased = startIndex - 1;
+            uint delta = count;
+
+            // Last one
+            if (0xF0000000 == count)
+            {
+                delta = reader.ParamTable.NumberOfRows - zeroBased;
+                if (0 == delta)
+                {
+                    return;
+                }
+            }
+
+            Assert.InRange(reader.ParamTable.NumberOfRows, zeroBased + delta, uint.MaxValue); // 1 based
+            for (uint i = zeroBased; i < zeroBased + delta; i++)
+            {
+                var handle = ParameterHandle.FromRowId(i + 1);
+                var row = reader.GetParameter(handle);
+
+                // Console.WriteLine("P: {0}", GetStringData(row.Name));
+                if (isMod)
+                {
+                    Assert.Equal(modNames[i], reader.GetString(row.Name));
+                    Assert.Equal(modFlags[i], (ushort)row.Attributes);
+                    Assert.Equal(modSeqs[i], row.SequenceNumber);
+                }
+                else
+                {
+                    Assert.Equal(expNames[i], reader.GetString(row.Name));
+                    Assert.Equal((ushort)0, (ushort)row.Attributes);
+                    Assert.Equal((ushort)1, row.SequenceNumber);
+                }
+            } // for
+        }
+
+        /// <summary>
+        /// PropertyMap Table Columns:
+        ///     Parent (RID to TypeDef)
+        ///     PropertyList (RID to EventTable)
+        /// ===========================================
+        /// Property Table Columns:
+        ///     Name (offset to #String)
+        ///     PropFlags (2 byte unsigned)
+        ///     Type (offset to #blob - Signature)
+        /// </summary>
+        private void ValidateProperty(MetadataReader reader, uint rowId, uint startIndex, uint count, bool isVBMod = false)
+        {
+            if (0 == count)
+            {
+                return;
+            }
+
+            // ModuleCS01
+            var expNames = new string[]
+            {
+                "AppProp", "P01", "Item", "P01", "Item",
+                "CS1IGoo<System.Linq.Expressions.Expression,System.Object>.P01",
+                "CS1IGoo<System.Linq.Expressions.Expression,System.Object>.Item",
+            };
+            var expSigs = new byte[][]
+            {
+                new byte[] { 0x28, 00, 0x15, 0x12, 0x21, 0x02, 0x12, 0x19, 0x1c }, new byte[] { 0x28, 00, 0x13, 00 },
+                new byte[] { 0x28, 01, 0x1c, 0x13, 00 }, new byte[] { 0x28, 0x00, 0x13, 00 }, new byte[] { 0x28, 0x01, 0x1c, 0x13, 00 },
+                new byte[] { 0x28, 00, 0x12, 0x19 }, new byte[] { 0x28, 01, 0x1c, 0x12, 0x19 }
+            };
+
+            // ModuleVB01
+            // Prop: 0:0000, 1:string#13c, 2:blob#70 | 0:0000, 1:string#14d, 2:blob#75
+            var modNames = new string[]
+            {
+                "ModVBDefaultProp", "ModVBProp",
+            };
+            var modSigs = new byte[][]
+            {
+                new byte[] { 0x28, 01, 0x0e, 0x08 }, new byte[] { 0x28, 00, 0x11, 0x09 },
+            };
+
+            // Validity Rules
+            uint zeroBased = startIndex - 1;
+            uint delta = count;
+
+            // Last one
+            if (0xF0000000 == count)
+            {
+                delta = reader.PropertyTable.NumberOfRows - zeroBased;
+                if (0 == delta)
+                {
+                    return;
+                }
+            }
+
+            Assert.InRange(reader.PropertyTable.NumberOfRows, zeroBased + count, uint.MaxValue);
+            for (uint i = zeroBased; i < zeroBased + count; i++)
+            {
+                var handle = PropertyDefinitionHandle.FromRowId(i + 1);
+                var row = reader.GetPropertyDefinition(handle);
+
+                // Name
+                if (isVBMod)
+                {
+                    Assert.Equal(modNames[i], reader.GetString(row.Name));
+                }
+                else
+                {
+                    Assert.Equal(expNames[i], reader.GetString(row.Name));
+                }
+
+                Assert.Equal(0, (ushort)row.Attributes);
+
+                var sig = reader.GetBlobBytes(row.Signature);
+                Assert.Equal(40, sig[0]);
+                byte[] exp;
+                if (isVBMod)
+                {
+                    exp = modSigs[i];
+                }
+                else
+                {
+                    exp = expSigs[i];
+                }
+
+                for (int j = 0; j < exp.Length; j++)
+                {
+                    Assert.Equal(exp[j], sig[j]);
+                }
+            } // for
+        }
+
+        /// <summary>
+        /// EventMap Table Columns:
+        ///     Parent (RID to TypeDef)
+        ///     EventList (RID to EventTable)
+        /// ===========================================
+        /// Event Table Columns:
+        ///     Name (offset to #String)
+        ///     Flags (2 byte unsigned)
+        ///     EventType (token to TypeDefOrRef)
+        /// </summary>
+        private void ValidateEvent(MetadataReader reader, uint rowId, uint startIdx, uint count, bool isVBMod = false)
+        {
+            if (0 == count)
+            {
+                return;
+            }
+
+            var expNames = new string[] { "E01", "E01", "CS1IGoo<System.Linq.Expressions.Expression,System.Object>.E01" };
+
+            // ModuleVB01
+            // Map: 0:TypeDef[2000003], 1:Event[14000001]
+            // Event: 0:0000, 1:string#1c6, 2:TypeDefOrRef[02000006]
+            var modNames = new string[] { "AnEvent" };
+            var modTokens = new uint[] { 0x02000006 };
+
+            uint zeroBased = startIdx - 1;
+            uint delta = count;
+
+            // Last one
+            if (0xF0000000 == count)
+            {
+                delta = reader.EventTable.NumberOfRows - zeroBased;
+                if (0 == delta)
+                {
+                    return;
+                }
+            }
+
+            // Validity Rules
+            Assert.InRange(reader.EventTable.NumberOfRows, zeroBased + count, uint.MaxValue);
+            for (uint i = zeroBased; i < zeroBased + count; i++)
+            {
+                var handle = EventDefinitionHandle.FromRowId(i + 1);
+                var evnt = reader.GetEventDefinition(handle);
+
+                // Name
+                if (isVBMod)
+                {
+                    Assert.Equal(modNames[i], reader.GetString(evnt.Name));
+                }
+                else
+                {
+                    Assert.Equal(expNames[i], reader.GetString(evnt.Name));
+                }
+
+                Assert.Equal(0, (ushort)evnt.Attributes);
+                if (isVBMod)
+                {
+                    Assert.Equal(modTokens[i], evnt.Type.value);
+                }
+                else
+                {
+                    Assert.Equal(rowId, evnt.Type.RowId); // could be TypeSpec Id if it's in generic
+                }
+            }
+        }
+
+        /// <summary>
+        /// NestedClass Table Columns:
+        ///     NestedClass (RID to TypeDef) nestee
+        ///     EnclosingClass (RID to TypeDef)
+        /// </summary>
+        private void ValidateNestedClass(MetadataReader reader, TypeDefinitionHandle typeDef, bool isMod = false)
+        {
+            // var expNC = new uint[] { 4, 5, 6 };
+            var expClasses = new uint[][] { new uint[] { 4, 5, 6 }, new uint[] { 3, 3, 5 } };
+            var modClasses = new uint[][] { new uint[] { 4, 5, 6, 7 }, new uint[] { 2, 3, 3, 5 } };
+
+            uint rid = reader.NestedClassTable.FindEnclosingType(typeDef).RowId;
+            uint[][] classes = expClasses;
+
+            if (isMod)
+            {
+                classes = modClasses;
+            }
+
+            for (int i = 0; i < classes[0].Length; i++)
+            {
+                if (typeDef.RowId == classes[0][i])
+                {
+                    Assert.Equal(classes[1][i], rid);
+                    return;
+                }
+            }
+
+            Assert.False(true);
+            // for (uint i = 0; i < table.NumberOfRows; i++)
+            // {
+            //    var row = table[i + 1];
+            //    Assert.Equal(expNC[i], row.NestedClass);
+            //    Assert.Equal(expEC[i], row.EnclosingClass);
+            // }
+        }
+
+        /// <summary>
+        /// MemberRef Table Columns:
+        ///     Name (offset to #string)
+        ///     Class (4-bytes unsigned) - Parent
+        ///     Signature (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateMemberRefTableMod()
+        {
+            // 6
+            var expNames = new string[]
+            {
+                ".ctor", "CM", ".ctor", ".ctor", "Combine", "Remove",
+            };
+            var expClass = new uint[]
+            {
+                0x01000001, 0x01000004, 0x0100000f, 0x1b000001, 0x01000010, 0x01000010,
+                };
+            var expSigs = new byte[][]
+            {
+                new byte[] { 0x20, 00, 01 }, new byte[] { 0x20, 03, 0x12, 0x39, 0x08, 0x09, 0x0a },
+                    new byte[] { 0x20, 01, 01, 0x0e }, new byte[] { 0x20, 02, 01, 08, 08 },
+                    new byte[] { 00, 02, 0x12, 0x41, 0x12, 0x41, 0x12, 0x41 },
+                    new byte[] { 00, 02, 0x12, 0x41, 0x12, 0x41, 0x12, 0x41 },
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+
+            // Validity Rules
+            Assert.Equal(expNames.Length, reader.MemberReferences.Count);
+            int i = 0;
+            foreach (var memberRef in reader.MemberReferences)
+            {
+                var row = reader.GetMemberReference(memberRef);
+                Assert.Equal(reader.GetString(row.Name), expNames[i]);
+                Assert.Equal(row.Parent.value, expClass[i]);
+
+                var sig = reader.GetBlobBytes(row.Signature);
+                for (int j = 0; j < expSigs[i].Length; j++)
+                {
+                    Assert.Equal(expSigs[i][j], sig[j]);
+                }
+
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// InterfaceImpl Table Columns:
+        ///     Class (RID to TypeDef)
+        ///     Interface (token to typeDefOrRef)
+        /// </summary>
+        [Fact]
+        public void ValidateInterfaceImplTableMod()
+        {
+            // CSModule1
+            var expTDef = new uint[] { 0x02000007, 0x2000008 }; // class other who implements the interface
+            var expIfs = new uint[] { 0x1b000001, 0x1b000002 }; // TypeSpec table 
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            Assert.Equal((uint)2, reader.InterfaceImplTable.NumberOfRows);
+
+            // uint ct = 0;
+            // var xxx = table.FindInterfaceImplForType(7, out ct); // 0x01
+            // var yyy = table.FindInterfaceImplForType(8, out ct); // 0x02
+            for (uint i = 0; i < reader.InterfaceImplTable.NumberOfRows; i++)
+            {
+                var ioffset = reader.InterfaceImplTable.GetInterface(i + 1).value; // 0x1b000001|2
+                Assert.Equal(ioffset, expIfs[i]);
+            }
+        }
+
+        /// <summary>
+        /// GenericParam Columns:
+        ///     Name (offset to #string)
+        ///     Flags, Number (2 byte unsigned)
+        ///     Owner (token to TypeDefOrRef)
+        /// </summary>
+        [Fact]
+        public void ValidateGenericParamTable()
+        {
+            // AppCS - 7
+            var expNames = new string[] { "V", "CT", "CO", "T", "CT1", "CO1", "T1" };
+            var expFlags = new GenericParameterAttributes[]
+            {
+                /* 4 */
+                        GenericParameterAttributes.ReferenceTypeConstraint,
+                /* 6 */ GenericParameterAttributes.ReferenceTypeConstraint | GenericParameterAttributes.Contravariant,
+                /* 1 */ GenericParameterAttributes.Covariant,
+                /* 0 */ GenericParameterAttributes.None,
+                /* 4 */ GenericParameterAttributes.ReferenceTypeConstraint,
+                /* 0x10 */ GenericParameterAttributes.DefaultConstructorConstraint, // Mask 001C
+                /* 0 */ GenericParameterAttributes.None
+            };
+            var expNumber = new ushort[] { 0, 0, 0, 0, 0, 0, 0 };
+            var expTypeTokens = new uint[] { 0x06000003, 0x02000004, 0x02000005, 0x02000006, 0x02000007, 0x02000008, 0x02000009, };
+
+            // ---------------------------------------------------
+            // ModuleCS01 - 5
+            var modNames = new string[] { "T", "T", "R", "T", "X" };
+            var modFlags = new GenericParameterAttributes[]
+            {
+                /* 0 */
+                        GenericParameterAttributes.None,
+                /* 4 */
+                        GenericParameterAttributes.ReferenceTypeConstraint,
+                /* 4 */ GenericParameterAttributes.ReferenceTypeConstraint,
+                /* 4 */ GenericParameterAttributes.ReferenceTypeConstraint,
+                /* 0 */ GenericParameterAttributes.None
+            };
+            var modNumber = new ushort[] { 0, 0, 1, 0, 0 };
+            var modTypeTokens = new uint[] { 0x02000006, 0x02000007, 0x02000007, 0x02000008, 0x06000025, };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            // Validity Rules
+            Assert.Equal((uint)expNames.Length, reader.GenericParamTable.NumberOfRows);
+
+            for (uint i = 0; i < reader.GenericParamTable.NumberOfRows; i++)
+            {
+                var handle = GenericParameterHandle.FromRowId(i + 1);
+                Assert.Equal(expNames[i], reader.GetString(reader.GenericParamTable.GetName(handle)));
+                Assert.Equal(expFlags[i], reader.GenericParamTable.GetFlags(handle));
+                Assert.Equal(expNumber[i], reader.GenericParamTable.GetNumber(handle));
+                Assert.Equal(expTypeTokens[i], reader.GenericParamTable.GetOwner(handle).value);
+            }
+
+            // =======================================
+
+            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+
+            // Validity Rules
+            Assert.Equal((uint)modNames.Length, reader.GenericParamTable.NumberOfRows);
+
+            for (uint i = 0; i < reader.GenericParamTable.NumberOfRows; i++)
+            {
+                var handle = GenericParameterHandle.FromRowId(i + 1);
+                Assert.Equal(modNames[i], reader.GetString(reader.GenericParamTable.GetName(handle)));
+                Assert.Equal(modFlags[i], reader.GenericParamTable.GetFlags(handle));
+                Assert.Equal(modNumber[i], reader.GenericParamTable.GetNumber(handle));
+                Assert.Equal(modTypeTokens[i], reader.GenericParamTable.GetOwner(handle).value);
+            }
+        }
+
+        /// <summary>
+        /// Class Layout Table Columns:
+        ///     PackingSize (2 byte unsigned)
+        ///     ClassSize (4 byte unsigned)
+        ///     Parent (RID to TypeDef)
+        /// </summary>
+        [Fact]
+        public void ValidateClassLayoutTable()
+        {
+            // Interop
+            var comTypeRids = new uint[] { 4 };
+            var comPkSize = new ushort[] { 0x10 };
+            var comCsSize = new uint[] { 8 };
+
+            // VBModule
+            var modTypeRids = new uint[] { 5 };
+            var modPkSize = new ushort[] { 0 };
+            var modCsSize = new uint[] { 1 };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+
+            for (uint i = 0; i < reader.ClassLayoutTable.NumberOfRows; i++)
+            {
+                var row = reader.GetTypeLayout(TypeDefinitionHandle.FromRowId(comTypeRids[i]));
+                Assert.Equal(comPkSize[i], row.PackingSize);
+                Assert.Equal(comCsSize[i], row.ClassSize);
+            }
+
+            // =============================================
+            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+            for (uint i = 0; i < reader.ClassLayoutTable.NumberOfRows; i++)
+            {
+                var row = reader.GetTypeLayout(TypeDefinitionHandle.FromRowId(modTypeRids[i]));
+                Assert.Equal(modPkSize[i], row.PackingSize);
+                Assert.Equal(modCsSize[i], row.ClassSize);
+            }
+        }
+
+        /// <summary>
+        /// FieldLayout Table Columns:
+        ///     Offset (4 byte unsigned)
+        ///     Field (token to Field Table)
+        /// </summary>
+        [Fact]
+        public void ValidateFieldLayoutTable()
+        {
+            // Interop
+            var comFieldRids = new uint[] { 7, 8, 9, 10 };
+            var comOffset = new int[] { 0, 0, 0, 0 };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+
+            for (int i = 0; i < comFieldRids.Length; i++)
+            {
+                var field = reader.GetFieldDefinition(FieldDefinitionHandle.FromRowId(comFieldRids[i]));
+                Assert.Equal(comOffset[i], field.GetOffset());
+            }
+        }
+
+        /// <summary>
+        /// FieldMarshal Table Columns:
+        ///     Parent (token to Field/Param table)
+        ///     Native Type (offset to #blob)
+        /// </summary>
+        [Fact]
+        private void ValidateFieldMarshal()
+        {
+            var comParents = new uint[]
+            {
+                0x08000001, 0x08000002, 0x08000005, 0x04000007, 0x04000008, 0x04000009,
+                0x0400000a, 0x0400000d, 0x0800000e, 0x0800000f, 0x08000032, 0x08000033
+            };
+            var comNatives = new byte[][]
+            {
+                new byte[] { 0x08 }, new byte[] { 0x1b },
+                new byte[] { 0x13 }, new byte[] { 0x03 },
+                new byte[] { 0x06 }, new byte[] { 0x07 },
+                new byte[] { 0x0a }, new byte[] { 0x1b },
+                new byte[] { 0x1a }, new byte[] { 0x1a },
+                new byte[] { 0x2a, 0x50 }, new byte[] { 0x2a, 0x50 },
+            };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+
+            for (uint i = 0; i < reader.FieldMarshalTable.NumberOfRows; i++)
+            {
+                uint rid = i + 1;
+                Assert.Equal(comParents[i], reader.FieldMarshalTable.GetParent(rid).value);
+
+                var blob = reader.GetBlobBytes(reader.FieldMarshalTable.GetNativeType(rid));
+                for (int j = 0; j < comNatives[i].Length; j++)
+                {
+                    Assert.Equal(comNatives[i][j], blob[j]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// InterfaceImpl Table Columns:
+        ///     Class (RID to TypeDef)
+        ///     Interface (token to typeDefOrRef)
+        /// </summary>
+        [Fact]
+        public void ValidateInterfaceImplTable()
+        {
+            // class other who implements the interface
+            // InteropImpl
+            var comClassRids = new uint[] { 2, 3, 4 }; // , 0x02000002, 0x2000003, 0x2000004, };
+            // TypeDef/Ref/Spec table 
+            var comInterface = new uint[] { 0x01000002, 0x01000004, 0x01000005, };
+
+            // CSModule1
+            var modClassRids = new uint[] { 8, 9 }; // 0x02000008, 0x2000009 };
+            var modInterface = new uint[] { 0x1b000001, 0x1b000002 };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01_Impl);
+
+            for (int i = 0; i < comClassRids.Length; i++)
+            {
+                var impls = reader.GetTypeDefinition(TypeDefinitionHandle.FromRowId(comClassRids[i])).GetInterfaceImplementations();
+                Assert.Equal(comInterface[i], reader.GetInterfaceImplementation(impls.Single()).Interface.value);
+            }
+
+            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+            for (int i = 0; i < modClassRids.Length; i++)
+            {
+                var impls = reader.GetTypeDefinition(TypeDefinitionHandle.FromRowId(modClassRids[i])).GetInterfaceImplementations();
+                Assert.Equal(modInterface[i], reader.GetInterfaceImplementation(impls.Single()).Interface.value);
+            }
+        }
+
+        /// <summary>
+        /// MethodImpl Table Columns:
+        ///     Class  (RID to TypeDef)
+        ///     MethodBody (token to MethodDefOrRef)
+        ///     MethodDecl (token to MethodDefOrRef)
+        /// </summary>
+        [Fact]
+        public void ValidateMethodImplTable()
+        {
+            // 6
+            var comClassRids = new uint[] { /*0x2000002*/ 2, 2, 2, 2, 2, 2, };
+            var comMthBody = new uint[] { 0x06000001, 0x06000002, 0x06000003, 0x06000004, 0x06000005, 0x06000006, };
+            var comMthDecl = new uint[] { 0x0a000001, 0x0a000002, 0x0a000003, 0x0a000004, 0x0a000005, 0x0a000006, };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01_Impl);
+
+            // Validity Rules
+            Assert.Equal((uint)comClassRids.Length, reader.MethodImplTable.NumberOfRows);
+            for (uint i = 0; i < reader.MethodImplTable.NumberOfRows; i++)
+            {
+                var handle = MethodImplementationHandle.FromRowId(i + 1);
+                var row = reader.GetMethodImplementation(handle);
+                Assert.Equal(comClassRids[i], row.Type.RowId);
+                Assert.Equal(comMthBody[i], row.MethodBody.value);
+                Assert.Equal(comMthDecl[i], row.MethodDeclaration.value);
+            }
+        }
+
+        /// <summary>
+        /// Field Table Columns:
+        ///     Parent (token of type HasCustomAttribute)
+        ///     Types (token of type CustomAttributeType)
+        ///     Value (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateCustomAttribute()
+        {
+            // Interop - 0x37 (55) - check every 5th
+            var comTypes = new uint[]
+            {
+                0x0a000002, 0x0a00000e, 0x0a000013, 0x0a00001b, 0x0a000002,
+                0x0a000021, 0x0a00001a, 0x0a00001a, 0x0a00001b, 0x0a00001b, 0x0a000006
+            };
+            var comParents = new uint[]
+            {
+                0x08000001, 0x20000001, 0x20000001, 0x06000002, 0x02000004,
+                0x06000007, 0x04000008, 0x04000009, 0x0400000b, 0x0400000d, 0x0800000f
+            };
+            var comValues = new byte[][]
+            {
+                new byte[] { 01, 00, 00, 00 },
+                new byte[]
+                {
+                    0x01, 00, 00, 01, 00, 0x53, 0x02, 0x15, 0x54, 0x68, 0x72, 0x6f, 0x77, 0x4f, 0x6e,
+                             0x55, 0x6e, 0x6d, 0x61, 0x70, 0x70, 0x61, 0x62, 0x6c, 0x65, 0x43, 0x68, 0x61, 0x72, 0x01
+                },
+                new byte[] { 01, 00, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00 },
+                new byte[] { 01, 00, 0xf3, 03, 00, 00, 00, 00 }, new byte[] { 01, 00, 00, 00 }, new byte[] { 01, 00, 00, 00 },
+                new byte[] { 01, 00, 04, 00, 00, 00, 00, 00 },   new byte[] { 01, 00, 04, 00, 00, 00, 00, 00 },
+                new byte[] { 01, 00, 01, 00, 00, 00, 00, 00 },
+                new byte[] { 01, 00, 03, 00, 00, 00, 00, 00 },   new byte[] { 01, 00, 00, 00 },
+              };
+
+            // ModuleVb01
+            var modTypes = new uint[] { 0x0a000003 };
+            var modParents = new uint[] { 0x02000002 };
+            var modValues = new byte[][] { new byte[] { 0x01, 00, 0x10, 0x4d, 0x6f, 0x64, 0x56, 0x42, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x50, 0x72, 0x6f, 0x70, 00, 00 } };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01);
+
+            int i = 0;
+            foreach (var caHandle in reader.CustomAttributes)
+            {
+                if (i % 5 == 0)
+                {
+                    var row = reader.GetCustomAttribute(caHandle);
+                    Assert.Equal(comTypes[i / 5], row.Constructor.value);
+                    Assert.Equal(comParents[i / 5], row.Parent.value);
+
+                    var sig = reader.GetBlobBytes(row.Value);
+                    var blob = comValues[i / 5];
+                    for (int j = 0; j < blob.Length; j++)
+                    {
+                        Assert.Equal(blob[j], sig[j]);
+                    }
+                }
+
+                i++;
+            }
+
+            Assert.Equal(0x37, i);
+
+            // ====================================================
+            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+
+            i = 0;
+            foreach (var caHandle in reader.CustomAttributes)
+            {
+                var row = reader.GetCustomAttribute(caHandle);
+                Assert.Equal(modTypes[i], row.Constructor.value);
+                Assert.Equal(modParents[i], row.Parent.value);
+
+                var sig = reader.GetBlobBytes(row.Value);
+                var blob = modValues[i];
+                for (int j = 0; j < blob.Length; j++)
+                {
+                    Assert.Equal(blob[j], sig[j]);
+                }
+
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// MethodSematics Table
+        ///     Semantic (2-byte unsigned)
+        ///     Method (RID to method table)
+        ///     Association (Token)    
+        /// </summary>
+        [Fact]
+        public void ValidateMethodSematicsTable()
+        {
+            // ModuleCS01 0x17 - chkec every 5
+            var expSems = new ushort[] { 0x10, 0x08, 0x02, 0x10, 0x01, };
+
+            // MethodTable always 0x06000000
+            var expMets = new uint[] { /*0x6000018*/ 0x19, 0x1a, 0x017, 0x2c, 0x28, };
+            var expAsso = new uint[] { 0x14000001, 0x14000002, 0x17000003, 0x14000005, 0x17000006, };
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+
+            // Validity Rules
+            // Assert.Equal((uint)expSems.Length, table1.NumberOfRows);
+            for (uint i = 0; i < reader.GetTableRowCount(TableIndex.MethodSemantics); i += 5)
+            {
+                var rid = i + 1;
+                Assert.Equal(expSems[i / 5], (uint)reader.MethodSemanticsTable.GetSemantics(rid));
+                Assert.Equal(expMets[i / 5], reader.MethodSemanticsTable.GetMethod(rid).RowId);
+                Assert.Equal(expAsso[i / 5], reader.MethodSemanticsTable.GetAssociation(rid).value);
+            }
+        }
+
+        /// <summary>
+        /// StandAloneSigTable Columns: (Prop or return type)
+        ///     Name (offset to #String)
+        ///     Flags, Sequence (2 byte unsigned)
+        ///     Signature (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateSignature()
+        {
+            // InteropImpl - 8
+            var expSigs = new byte[][]
+            {
+                new byte[] { 0x07, 01, 0x11, 0x19 }, new byte[] { 0x07, 02, 0x11, 0x1d, 0x11, 0x1d },
+                new byte[] { 0x07, 01, 0x0e },  new byte[] { 0x07, 01, 0x1c },
+                new byte[] { 0x07, 04, 0x12, 0x31, 0x12, 0x31, 0x12, 0x31, 0x02 },
+                new byte[] { 0x07, 04, 0x12, 0x35, 0x12, 0x35, 0x12, 0x35, 0x02 },
+                new byte[] { 0x07, 04, 0x12, 0x39, 0x12, 0x39, 0x12, 0x39, 0x02 }, new byte[] { 0x07, 01, 02 }
+            };
+
+            // ModuleVB01 - 5
+            var modSigs = new byte[][]
+            {
+                new byte[] { 0x07, 01, 0x0e },
+                new byte[] { 0x07, 0x02, 0x11, 0x09, 0x11, 0x09 },
+                new byte[] { 0x07, 01, 0x12, 0x35 },
+                new byte[] { 0x07, 01, 0x12, 0x15 },
+                new byte[] { 0x07, 01, 0x1c }
+            };
+
+            var reader = GetMetadataReader(TestResources.Interop.Interop_Mock01_Impl);
+
+            // Validity Rules
+            Assert.Equal((uint)expSigs.Length, reader.StandAloneSigTable.NumberOfRows);
+            for (int i = 0; i < reader.GetTableRowCount(TableIndex.StandAloneSig); i++)
+            {
+                var signature = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(i + 1)).Signature;
+                var sig = reader.GetBlobBytes(signature);
+                var exp = expSigs[i];
+                for (int j = 0; j < exp.Length; j++)
+                {
+                    Assert.Equal(exp[j], sig[j]);
+                }
+            }
+
+            // ==============================================================
+            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+
+            // Validity Rules
+            Assert.Equal((uint)modSigs.Length, reader.StandAloneSigTable.NumberOfRows);
+            for (int i = 0; i < reader.GetTableRowCount(TableIndex.StandAloneSig); i++)
+            {
+                var signature = reader.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(i + 1)).Signature;
+                var sig = reader.GetBlobBytes(signature);
+                var exp = modSigs[i];
+                for (int j = 0; j < exp.Length; j++)
+                {
+                    Assert.Equal(exp[j], sig[j]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// ConstantTable Columns:
+        ///     Type (1 byte unsigned)
+        ///     Parent (token)
+        ///     Value (offset to #blob)
+        /// </summary>
+        [Fact]
+        public void ValidateConstantTable()
+        {
+            // ModuleCS01 - 9
+            var expTypes = new byte[] { 0x12, 0x0b, 0x12, 0x0e, 0x12, 0x0b, 0x09, 0x12, 0x0e };
+            var expParent = new uint[]
+            {
+                0x08000001, 0x08000003, 0x08000005, 0x08000006, 0x08000008, 0x0800000a, 0x0800000d, 0x0800000f, 0x08000010,
+            };
+            var expSigs = new byte[][]
+            {
+                new byte[] { 0x00, 00, 00, 00 }, new byte[] { 0xbc, 01, 00, 00, 00, 00, 00, 00 }, new byte[] { 0x00, 00, 00, 00 },
+                new byte[]
+                {
+                    0x4f, 00, 0x70, 00, 0x74, 00, 0x69, 00, 0x6f, 00, 0x6e, 00, 0x61, 00, 0x6c, 00,
+                        0x2e, 00, 0x53, 00, 0x74, 00, 0x72, 00, 0x69, 00, 0x6e, 00, 0x67, 00, 0x2e, 00,
+                        0x43, 00, 0x6f, 00, 0x6e, 00, 0x73, 00, 0x74, 00, 0x61, 00, 0x6e, 00, 0x74, 00
+                },
+                new byte[] { 0x00, 00, 00, 00 }, new byte[] { 00, 00, 00, 00, 00, 00, 00, 00 },
+                new byte[] { 0x00, 00, 00, 00 }, new byte[] { 0x00, 00, 00, 00 },
+                new byte[]
+                {
+                    0x4f, 00, 0x76, 00, 0x65, 00, 0x72, 00, 0x72, 00, 0x69, 00, 0x64, 00, 0x65, 00,
+                    0x20, 00, 0x4f, 00, 0x70, 00, 0x74, 00, 0x69, 00, 0x6f, 00, 0x6e, 00, 0x61, 00,
+                    0x6c, 00, 0x2e, 00, 0x53, 00, 0x74, 00, 0x72, 00, 0x69, 00, 0x6e, 00, 0x67, 00
+                }
+            };
+
+            // ---------------------------------------------------
+            // ModuleVB01 - 6
+            var modTypes = new byte[] { 0x0e, 0x08, 0x12, 0x08, 0x08, 0x08, };
+            var modParent = new uint[] { 0x04000001, 0x04000005, 0x08000005, 0x04000006, 0x04000007, 0x04000008, };
+            var modSigs = new byte[][]
+            {
+                new byte[]
+                {
+                    0x56, 0x00, 0x42, 0x00, 0x20, 0x00, 0x43, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x73, 0x00, 0x74, 0x00,
+                            0x61, 0x00, 0x6e, 0x00, 0x74, 0x00, 0x20, 0x00, 0x53, 0x00, 0x74, 0x00, 0x72, 0x00, 0x69, 0x00,
+                            0x6e, 0x00, 0x67, 0x00, 0x20, 0x00, 0x46, 0x00, 0x69, 0x00, 0x65, 0x00, 0x6c, 0x00, 0x64, 0x00
+                },
+                new byte[] { 0, 0, 0, 0 }, new byte[] { 0, 0, 0, 0 },
+                new byte[] { 1, 0, 0, 0 }, new byte[] { 2, 0, 0, 0 }, new byte[] { 3, 0, 0, 0 },
+            };
+
+            var reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+
+            // Validity Rules
+            Assert.Equal(expTypes.Length, reader.GetTableRowCount(TableIndex.Constant));
+            int i = 0;
+            foreach (var handle in reader.GetConstants())
+            {
+                Constant constant = reader.GetConstant(handle);
+
+                Assert.Equal(expTypes[i], (byte)constant.TypeCode);
+                Assert.Equal(expParent[i], constant.Parent.value);
+
+                var sig = reader.GetBlobBytes(constant.Value);
+                for (int j = 0; j < expSigs[i].Length; j++)
+                {
+                    Assert.Equal(expSigs[i][j], sig[j]);
+                }
+
+                i++;
+            }
+
+            // =======================================
+            reader = GetMetadataReader(TestResources.NetModule.ModuleVB01, true);
+
+            // Validity Rules
+            Assert.Equal(modTypes.Length, reader.GetTableRowCount(TableIndex.Constant));
+            i = 0;
+            foreach (var handle in reader.GetConstants())
+            {
+                Constant constant = reader.GetConstant(handle);
+
+                Assert.Equal(modTypes[i], (byte)constant.TypeCode);
+                Assert.Equal(modParent[i], constant.Parent.value);
+
+                var sig = reader.GetBlobBytes(constant.Value);
+                for (int j = 0; j < modSigs[i].Length; j++)
+                {
+                    Assert.Equal(modSigs[i][j], sig[j]);
+                }
+
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// User defined string#:
+        ///     Offset
+        /// </summary>
+        [Fact]
+        public void ValidateUserStringStream()
+        {
+            // AppCS
+            var expOffset = new uint[] { 1 };
+            var expCount = new int[] { 25 };
+            var expValues = new string[] { "String Parameter Constant" };
+
+            // ModuleCS01
+            var modOffset = new uint[] { 1, 0x2f };
+            var modCount = new int[] { 22, 24 };
+            var modValues = new string[] { "Static String Constant", "Readonly-String_Constant" };
+
+            var reader = GetMetadataReader(TestResources.NetModule.AppCS);
+
+            for (uint i = 0; i < expOffset.Length; i++)
+            {
+                var data = reader.GetUserString(UserStringHandle.FromIndex(expOffset[i]));
+                Assert.Equal(expCount[i], data.Length);
+                Assert.Equal(expValues[i], data);
+            }
+
+            // =============================================
+            reader = GetMetadataReader(TestResources.NetModule.ModuleCS01, true);
+
+            for (uint i = 0; i < modOffset.Length; i++)
+            {
+                var data = reader.GetUserString(UserStringHandle.FromIndex(modOffset[i]));
+                Assert.Equal(modCount[i], data.Length);
+                Assert.Equal(modValues[i], data);
+            }
+        }
+
+        [Fact]
+        public void EmptyType()
+        {
+            var reader = GetMetadataReader(TestResources.Misc.EmptyType);
+            var typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(2).First());
+
+            Assert.Equal("C", reader.GetString(typeDef.Name));
+
+            Assert.Equal(3U, reader.TypeDefTable.NumberOfRows);
+            Assert.Equal(0U, reader.TypeDefTable.GetMethodStart(3));
+
+            var methods = typeDef.GetMethods();
+            Assert.Equal(0, methods.Count);
+            var e = methods.GetEnumerator();
+            Assert.True(e.Current.IsNil);
+            Assert.False(e.MoveNext());
+            Assert.True(e.Current.IsNil);
+        }
+
+        /// <summary>
+        /// Import .OBJ file as a netmodule.
+        /// </summary>
+        [Fact]
+        public void Bug17109()
+        {
+            var reader = GetMetadataReader(TestResources.Misc.CPPClassLibrary2);
+
+            var typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.First());
+            string name = reader.GetString(typeDef.Name);
+            var genericParams = typeDef.GetGenericParameters();
+
+            Assert.Equal("<Module>", name);
+            Assert.Equal(0, genericParams.Count);
+
+            typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(1).First());
+            name = reader.GetString(typeDef.Name);
+            genericParams = typeDef.GetGenericParameters();
+
+            Assert.Equal("Class1", name);
+            Assert.Equal(0, genericParams.Count);
+        }
+
+        [Fact]
+        public void MemberCollections_AllMembers()
+        {
+            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var methodNames = (from m in reader.MethodDefinitions
+                               select reader.GetString(reader.GetMethodDefinition(m).Name)).ToArray();
+
+            var fieldNames = (from f in reader.FieldDefinitions
+                              select reader.GetString(reader.GetFieldDefinition(f).Name)).ToArray();
+
+            var eventNames = (from e in reader.EventDefinitions
+                              select reader.GetString(reader.GetEventDefinition(e).Name)).ToArray();
+
+            var propertyNames = (from p in reader.PropertyDefinitions
+                                 select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
+
+            AssertEx.Equal(methodNames, new[] {
+                    "MC1",
+                    "MC2",
+                    "add_EC1",
+                    "remove_EC1",
+                    "add_EC2",
+                    "remove_EC2",
+                    "add_EC3",
+                    "remove_EC3",
+                    ".ctor",
+                    "MD1",
+                    "get_PE1",
+                    "set_PE1",
+                    "add_ED1",
+                    "remove_ED1",
+                    ".ctor",
+                    "get_PE1",
+                    "set_PE1",
+                    "get_PE2",
+                    "set_PE2",
+                    ".ctor"
+                });
+
+            AssertEx.Equal(fieldNames, new[] {
+                    "EC1",
+                    "EC2",
+                    "EC3",
+                    "FD1",
+                    "ED1",
+                    "FE1",
+                    "FE2",
+                    "FE3",
+                    "FE4",
+                });
+
+            AssertEx.Equal(propertyNames, new[] {
+                    "PE1",
+                    "PE1",
+                    "PE2",
+                });
+
+            AssertEx.Equal(eventNames, new[] {
+                    "EC1",
+                    "EC2",
+                    "EC3",
+                    "ED1",
+                });
+        }
+
+        [Fact]
+        public void MemberCollections_TypeMembers_FirstTypeDef()
+        {
+            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var typeModule = reader.GetTypeDefinition(reader.TypeDefinitions.First());
+            Assert.Equal("<Module>", reader.GetString(typeModule.Name));
+
+            var methodNames = (from m in typeModule.GetMethods()
+                               select reader.GetString(reader.GetMethodDefinition(m).Name)).ToArray();
+
+            var fieldNames = (from f in typeModule.GetFields()
+                              select reader.GetString(reader.GetFieldDefinition(f).Name)).ToArray();
+
+            var eventNames = (from e in typeModule.GetEvents()
+                              select reader.GetString(reader.GetEventDefinition(e).Name)).ToArray();
+
+            var propertyNames = (from p in typeModule.GetProperties()
+                                 select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
+
+            AssertEx.Equal(methodNames, new string[0]);
+            AssertEx.Equal(fieldNames, new string[0]);
+            AssertEx.Equal(propertyNames, new string[0]);
+            AssertEx.Equal(eventNames, new string[0]);
+        }
+
+        [Fact]
+        public void MemberCollections_TypeMembers_MiddleTypeDef()
+        {
+            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var typeC = reader.GetTypeDefinition(reader.TypeDefinitions.Where(t => reader.GetString(reader.GetTypeDefinition(t).Name) == "C").Single());
+
+            var methodNames = (from m in typeC.GetMethods()
+                               select reader.GetString(reader.GetMethodDefinition(m).Name)).ToArray();
+
+            var fieldNames = (from f in typeC.GetFields()
+                              select reader.GetString(reader.GetFieldDefinition(f).Name)).ToArray();
+
+            var eventNames = (from e in typeC.GetEvents()
+                              select reader.GetString(reader.GetEventDefinition(e).Name)).ToArray();
+
+            var propertyNames = (from p in typeC.GetProperties()
+                                 select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
+
+            AssertEx.Equal(methodNames, new[] {
+                    "MC1",
+                    "MC2",
+                    "add_EC1",
+                    "remove_EC1",
+                    "add_EC2",
+                    "remove_EC2",
+                    "add_EC3",
+                    "remove_EC3",
+                    ".ctor",
+                });
+
+            AssertEx.Equal(fieldNames, new[] {
+                    "EC1",
+                    "EC2",
+                    "EC3",
+                });
+
+            AssertEx.Equal(propertyNames, new string[0]);
+
+            AssertEx.Equal(eventNames, new[] {
+                    "EC1",
+                    "EC2",
+                    "EC3"
+                });
+        }
+
+        [Fact]
+        public void MemberCollections_TypeMembers_LastTypeDef()
+        {
+            var reader = GetMetadataReader(TestResources.Misc.Members);
+            var typeE = reader.GetTypeDefinition(reader.TypeDefinitions.Last());
+            Assert.Equal("E", reader.GetString(typeE.Name));
+
+            var methodNames = (from m in typeE.GetMethods()
+                               select reader.GetString(reader.GetMethodDefinition(m).Name)).ToArray();
+
+            var fieldNames = (from f in typeE.GetFields()
+                              select reader.GetString(reader.GetFieldDefinition(f).Name)).ToArray();
+
+            var eventNames = (from e in typeE.GetEvents()
+                              select reader.GetString(reader.GetEventDefinition(e).Name)).ToArray();
+
+            var propertyNames = (from p in typeE.GetProperties()
+                                 select reader.GetString(reader.GetPropertyDefinition(p).Name)).ToArray();
+
+            AssertEx.Equal(methodNames, new[] {
+                    "get_PE1",
+                    "set_PE1",
+                    "get_PE2",
+                    "set_PE2",
+                    ".ctor"
+                });
+
+            AssertEx.Equal(fieldNames, new[] {
+                    "FE1",
+                    "FE2",
+                    "FE3",
+                    "FE4",
+                });
+
+            AssertEx.Equal(propertyNames, new[] {
+                    "PE1",
+                    "PE2",
+                });
+
+            AssertEx.Equal(eventNames, new string[0]);
+        }
+
+        [Fact]
+        public void Handles()
+        {
+            var assemblyRef = AssemblyReferenceHandle.FromVirtualIndex(0);
+            Handle handle = (Handle)assemblyRef;
+
+            Assert.False(assemblyRef.IsNil);
+            Assert.False(handle.IsNil);
+            Assert.Equal(handle.RowId, assemblyRef.RowId);
+        }
+    }
+}
