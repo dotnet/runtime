@@ -1,0 +1,10 @@
+syntax: glob
+*.user
+*.suo
+bin
+obj
+msbuild.log
+packages
+*.sln.ide
+*.metaproj
+*.metaproj.tmp

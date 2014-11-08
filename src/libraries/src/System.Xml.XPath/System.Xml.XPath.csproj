@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    --> 
+     
+    <_WindowsKitBinPath>C:\Program Files (x86)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>C:\Program Files (x86)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.XPath</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResInputPath>$(MSBuildThisFileDirectory)Res</ResInputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\System.Xml.Common\System\Xml\Base64Decoder.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\Base64Encoder.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlRawWriterBase64Encoder.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\BinHexDecoder.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\Bits.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\ValidateNames.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlCharType.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlConvertEx.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\ExceptionType.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlReaderExtensions.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlWriterExtensions.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\IncrementalReadDecoders.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\ReadContentAsBinaryHelper.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlRawWriter.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlStandalone.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XmlConst.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\Schema\XmlUntypedConverter.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\Schema\XsdDateTime.cs" />
+    <Compile Include="..\System.Xml.Common\System\Xml\XPathNavigatorEx.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Xml\Cache\XPathDocumentBuilder.cs" />
+    <Compile Include="System\Xml\Cache\XPathDocumentNavigator.cs" />
+    <Compile Include="System\Xml\Cache\XPathNode.cs" />
+    <Compile Include="System\Xml\Cache\XPathNodeHelper.cs" />
+    <Compile Include="System\Xml\Cache\XPathNodeInfoAtom.cs" />
+    <Compile Include="System\Xml\XmlNodeOrder.cs" />
+    <Compile Include="System\Xml\XPath\Internal\AbsoluteQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\AstNode.cs" />
+    <Compile Include="System\Xml\XPath\Internal\AttributeQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Axis.cs" />
+    <Compile Include="System\Xml\XPath\Internal\BaseAxisQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\BooleanExpr.cs" />
+    <Compile Include="System\Xml\XPath\Internal\BooleanFunctions.cs" />
+    <Compile Include="System\Xml\XPath\Internal\CacheAxisQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\CacheChildrenQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\CacheOutputQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ChildrenQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ClonableStack.cs" />
+    <Compile Include="System\Xml\XPath\Internal\CompiledXpathExpr.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ContextQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\DescendantBaseQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\DescendantOverDescendantQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\DescendantQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\DocumentOrderQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\EmptyQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ExtensionQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Filter.cs" />
+    <Compile Include="System\Xml\XPath\Internal\FilterQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\FollowingQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\FollSiblingQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ForwardPositionQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Function.cs" />
+    <Compile Include="System\Xml\XPath\Internal\FunctionQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Group.cs" />
+    <Compile Include="System\Xml\XPath\Internal\GroupQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\IDQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\IteratorFilter.cs" />
+    <Compile Include="System\Xml\XPath\Internal\LogicalExpr.cs" />
+    <Compile Include="System\Xml\XPath\Internal\MergeFilterQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\NamespaceQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\NodeFunctions.cs" />
+    <Compile Include="System\Xml\XPath\Internal\NumberFunctions.cs" />
+    <Compile Include="System\Xml\XPath\Internal\NumericExpr.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Operand.cs" />
+    <Compile Include="System\Xml\XPath\Internal\OperandQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Operator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ParentQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\PrecedingQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\PreSiblingQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Query.cs" />
+    <Compile Include="System\Xml\XPath\Internal\QueryBuilder.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ResetableIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ReversePositionQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Root.cs" />
+    <Compile Include="System\Xml\XPath\Internal\SortQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\StringFunctions.cs" />
+    <Compile Include="System\Xml\XPath\Internal\UnionExpr.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ValueQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\Variable.cs" />
+    <Compile Include="System\Xml\XPath\Internal\VariableQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathAncestorIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathAncestorQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathArrayIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathAxisIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathChildIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathDescendantIterator.cs" />
+    <Compile Include="System\Xml\Cache\XPathDocumentIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathEmptyIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathParser.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathScanner.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathSelectionIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathSelfQuery.cs" />
+    <Compile Include="System\Xml\XPath\Internal\XPathSingletonIterator.cs" />
+    <Compile Include="System\Xml\XPath\IXPathNavigable.cs" />
+    <Compile Include="System\Xml\XPath\XPathDocument.cs" />
+    <Compile Include="System\Xml\XPath\XPathException.cs" />
+    <Compile Include="System\Xml\XPath\XPathExpr.cs" />
+    <Compile Include="System\Xml\XPath\XPathItem.cs" />
+    <Compile Include="System\Xml\XPath\XPathNamespaceScope.cs" />
+    <Compile Include="System\Xml\XPath\XPathNavigator.cs" />
+    <Compile Include="System\Xml\XPath\XPathNavigatorKeyComparer.cs" />
+    <Compile Include="System\Xml\XPath\XPathNavigatorReader.cs" />
+    <Compile Include="System\Xml\XPath\XPathNodeIterator.cs" />
+    <Compile Include="System\Xml\XPath\XPathNodeType.cs" />
+    <Compile Include="System\Xml\Xsl\XsltContext.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\System.Xml.Common\System\SR.cs" />
+    <Compile Include="..\System.Xml.Common\System\ArrayT.cs" />
+    <Compile Include="..\System.Xml.Common\System\NotImplemented.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+</Project>

@@ -1,0 +1,326 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+
+namespace System.Reflection.Metadata.Ecma335
+{
+    public sealed class MetadataAggregator
+    {
+        // For each heap handle and each delta contains aggregate heap lengths.
+        // heapSizes[heap kind][reader index] == Sum { 0..index | reader[i].XxxHeapLength }
+        private readonly ImmutableArray<ImmutableArray<int>> heapSizes;
+
+        private readonly ImmutableArray<ImmutableArray<RowCounts>> rowCounts;
+
+        // internal for testing
+        internal struct RowCounts : IComparable<RowCounts>
+        {
+            public int AggregateInserts;
+            public int Updates;
+
+            public int CompareTo(RowCounts other)
+            {
+                return AggregateInserts - other.AggregateInserts;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("+0x{0:x} ~0x{1:x}", AggregateInserts, Updates);
+            }
+        }
+
+        public MetadataAggregator(MetadataReader baseReader, IReadOnlyList<MetadataReader> deltaReaders)
+            : this(baseReader, null, null, deltaReaders)
+        {
+        }
+
+        public MetadataAggregator(
+            IReadOnlyList<int> baseTableRowCounts,
+            IReadOnlyList<int> baseHeapSizes,
+            IReadOnlyList<MetadataReader> deltaReaders)
+            : this(null, baseTableRowCounts, baseHeapSizes, deltaReaders)
+        {
+        }
+
+        private MetadataAggregator(
+            MetadataReader baseReader,
+            IReadOnlyList<int> baseTableRowCounts,
+            IReadOnlyList<int> baseHeapSizes,
+            IReadOnlyList<MetadataReader> deltaReaders)
+        {
+            if (baseTableRowCounts == null)
+            {
+                if (baseReader == null)
+                {
+                    throw new ArgumentNullException("deltaReaders");
+                }
+
+                if (baseReader.GetTableRowCount(TableIndex.EncMap) != 0)
+                {
+                    throw new ArgumentException("Base reader must be a full metadata reader.", "baseReader");
+                }
+
+                CalculateBaseCounts(baseReader, out baseTableRowCounts, out baseHeapSizes);
+            }
+            else
+            {
+                if (baseTableRowCounts == null)
+                {
+                    throw new ArgumentNullException("baseTableRowCounts");
+                }
+
+                if (baseTableRowCounts.Count != MetadataTokens.TableCount)
+                {
+                    throw new ArgumentException("Must have " + MetadataTokens.TableCount + " elements", "baseTableRowCounts");
+                }
+
+                if (baseHeapSizes == null)
+                {
+                    throw new ArgumentNullException("baseHeapSizes");
+                }
+
+                if (baseHeapSizes.Count != MetadataTokens.HeapCount)
+                {
+                    throw new ArgumentException("Must have " + MetadataTokens.HeapCount + " elements", "baseTableRowCounts");
+                }
+            }
+
+            if (deltaReaders == null || deltaReaders.Count == 0)
+            {
+                throw new ArgumentException("Must not be empty.", "deltaReaders");
+            }
+
+            for (int i = 0; i < deltaReaders.Count; i++)
+            {
+                if (deltaReaders[i].GetTableRowCount(TableIndex.EncMap) == 0 || !deltaReaders[i].IsMinimalDelta)
+                {
+                    throw new ArgumentException("All delta readers must be minimal delta metadata readers.", "deltaReaders");
+                }
+            }
+
+            this.heapSizes = CalculateHeapSizes(baseHeapSizes, deltaReaders);
+            this.rowCounts = CalculateRowCounts(baseTableRowCounts, deltaReaders);
+        }
+
+        // for testing only
+        internal MetadataAggregator(RowCounts[][] rowCounts, int[][] heapSizes)
+        {
+            this.rowCounts = ToImmutable(rowCounts);
+            this.heapSizes = ToImmutable(heapSizes);
+        }
+
+        private static void CalculateBaseCounts(
+            MetadataReader baseReader,
+            out IReadOnlyList<int> baseTableRowCounts,
+            out IReadOnlyList<int> baseHeapSizes)
+        {
+            int[] rowCounts = new int[MetadataTokens.TableCount];
+            int[] heapSizes = new int[MetadataTokens.HeapCount];
+
+            for (int i = 0; i < rowCounts.Length; i++)
+            {
+                rowCounts[i] = baseReader.GetTableRowCount((TableIndex)i);
+            }
+
+            for (int i = 0; i < heapSizes.Length; i++)
+            {
+                heapSizes[i] = baseReader.GetHeapSize((HeapIndex)i);
+            }
+
+            baseTableRowCounts = rowCounts;
+            baseHeapSizes = heapSizes;
+        }
+
+        private static ImmutableArray<ImmutableArray<int>> CalculateHeapSizes(
+            IReadOnlyList<int> baseSizes,
+            IReadOnlyList<MetadataReader> deltaReaders)
+        {
+            // GUID heap index is multiple of sizeof(Guid) == 16
+            const int guidSize = 16;
+            int generationCount = 1 + deltaReaders.Count;
+
+            var userStringSizes = new int[generationCount];
+            var stringSizes = new int[generationCount];
+            var blobSizes = new int[generationCount];
+            var guidSizes = new int[generationCount];
+
+            userStringSizes[0] = baseSizes[(int)HeapIndex.UserString];
+            stringSizes[0] = baseSizes[(int)HeapIndex.String];
+            blobSizes[0] = baseSizes[(int)HeapIndex.Blob];
+            guidSizes[0] = baseSizes[(int)HeapIndex.Guid] / guidSize;
+
+            for (int r = 0; r < deltaReaders.Count; r++)
+            {
+                userStringSizes[r + 1] = userStringSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.UserString);
+                stringSizes[r + 1] = stringSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.String);
+                blobSizes[r + 1] = blobSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.Blob);
+                guidSizes[r + 1] = guidSizes[r] + deltaReaders[r].GetHeapSize(HeapIndex.Guid) / guidSize;
+            }
+
+            return ImmutableArray.Create(
+                userStringSizes.ToImmutableArray(),
+                stringSizes.ToImmutableArray(),
+                blobSizes.ToImmutableArray(),
+                guidSizes.ToImmutableArray());
+        }
+
+        private static ImmutableArray<ImmutableArray<RowCounts>> CalculateRowCounts(
+            IReadOnlyList<int> baseRowCounts,
+            IReadOnlyList<MetadataReader> deltaReaders)
+        {
+            // TODO: optimize - we don't need to allocate all these arrays
+            var rowCounts = GetBaseRowCounts(baseRowCounts, generations: 1 + deltaReaders.Count);
+
+            for (int generation = 1; generation <= deltaReaders.Count; generation++)
+            {
+                CalculateDeltaRowCountsForGeneration(rowCounts, generation, ref deltaReaders[generation - 1].EncMapTable);
+            }
+
+            return ToImmutable(rowCounts);
+        }
+
+        private static ImmutableArray<ImmutableArray<T>> ToImmutable<T>(T[][] array)
+        {
+            var immutable = new ImmutableArray<T>[array.Length];
+            for (int i = 0; i < array.Length; i++)
+            {
+                immutable[i] = array[i].ToImmutableArray();
+            }
+
+            return immutable.ToImmutableArray();
+        }
+
+        // internal for testing
+        internal static RowCounts[][] GetBaseRowCounts(IReadOnlyList<int> baseRowCounts, int generations)
+        {
+            var rowCounts = new RowCounts[TableIndexExtensions.Count][];
+
+            for (int t = 0; t < rowCounts.Length; t++)
+            {
+                rowCounts[t] = new RowCounts[generations];
+                rowCounts[t][0].AggregateInserts = baseRowCounts[t];
+            }
+
+            return rowCounts;
+        }
+
+        // internal for testing
+        internal static void CalculateDeltaRowCountsForGeneration(RowCounts[][] rowCounts, int generation, ref EnCMapTableReader encMapTable)
+        {
+            foreach (var tableRowCounts in rowCounts)
+            {
+                tableRowCounts[generation].AggregateInserts = tableRowCounts[generation - 1].AggregateInserts;
+            }
+
+            int mapRowCount = (int)encMapTable.NumberOfRows;
+            for (uint mapRid = 1; mapRid <= mapRowCount; mapRid++)
+            {
+                uint token = encMapTable.GetToken(mapRid);
+                int rid = (int)(token & TokenTypeIds.RIDMask);
+
+                var tableRowCounts = rowCounts[token >> TokenTypeIds.RowIdBitCount];
+
+                if (rid > tableRowCounts[generation].AggregateInserts)
+                {
+                    if (rid != tableRowCounts[generation].AggregateInserts + 1)
+                    {
+                        throw new BadImageFormatException(MetadataResources.EnCMapNotSorted);
+                    }
+
+                    // insert:
+                    tableRowCounts[generation].AggregateInserts = rid;
+                }
+                else
+                {
+                    // update:
+                    tableRowCounts[generation].Updates++;
+                }
+            }
+        }
+
+        public Handle GetGenerationHandle(Handle handle, out int generation)
+        {
+            if (handle.IsVirtual)
+            {
+                // TODO: if a virtual handle is connected to real handle then translate the rid, 
+                // otherwise return vhandle and base.
+                throw new NotSupportedException();
+            }
+
+            int rowId = (int)handle.RowId;
+            uint typeId = handle.TokenType;
+            int relativeRowId;
+
+            if (handle.IsHeapHandle)
+            {
+                HeapIndex heapIndex;
+                MetadataTokens.TryGetHeapIndex(handle.Kind, out heapIndex);
+
+                var sizes = heapSizes[(int)heapIndex];
+
+                generation = sizes.BinarySearch(rowId);
+                if (generation >= 0)
+                {
+                    Debug.Assert(sizes[generation] == rowId);
+
+                    // the index points to the start of the next generation that added data to the heap:
+                    do
+                    {
+                        generation++;
+                    }
+                    while (generation < sizes.Length && sizes[generation] == rowId);
+                }
+                else
+                {
+                    generation = ~generation;
+                }
+
+                if (generation >= sizes.Length)
+                {
+                    throw new ArgumentException("Handle belongs to a future generation", "handle");
+                }
+
+                // GUID heap accumulates - previous heap is copied to the next generation 
+                relativeRowId = (typeId == TokenTypeIds.Guid || generation == 0) ? rowId : rowId - sizes[generation - 1];
+            }
+            else
+            {
+                var sizes = rowCounts[(int)handle.value >> TokenTypeIds.RowIdBitCount];
+
+                generation = sizes.BinarySearch(new RowCounts { AggregateInserts = rowId });
+                if (generation >= 0)
+                {
+                    Debug.Assert(sizes[generation].AggregateInserts == rowId);
+
+                    // the row is in a generation that inserted exactly one row -- the one that we are looking for;
+                    // or it's in a preceeding generation if the current one didn't insert any rows of the kind:
+                    while (generation > 0 && sizes[generation - 1].AggregateInserts == rowId)
+                    {
+                        generation--;
+                    }
+                }
+                else
+                {
+                    // the row is in a generation that inserted multiple new rows:
+                    generation = ~generation;
+
+                    if (generation >= sizes.Length)
+                    {
+                        throw new ArgumentException("Handle belongs to a future generation", "handle");
+                    }
+                }
+
+                // In each delta table updates always precede inserts.
+                relativeRowId = (generation == 0) ? rowId :
+                    rowId -
+                    sizes[generation - 1].AggregateInserts +
+                    sizes[generation].Updates;
+            }
+
+            return new Handle(typeId | (uint)relativeRowId);
+        }
+    }
+}

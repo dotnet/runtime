@@ -1,0 +1,48 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace System.Collections.Immutable
+{
+    /// <summary>
+    /// An interface for binary tree nodes that allow our common enumerator to walk the graph.
+    /// </summary>
+    /// <typeparam name="T">The type of value for each node.</typeparam>
+    internal interface IBinaryTree<out T>
+    {
+        /// <summary>
+        /// Gets the depth of the tree below this node.
+        /// </summary>
+        int Height { get; }
+
+        /// <summary>
+        /// Gets the value represented by the current node.
+        /// </summary>
+        T Value { get; }
+
+        /// <summary>
+        /// Gets the left branch of this node.
+        /// </summary>
+        IBinaryTree<T> Left { get; }
+
+        /// <summary>
+        /// Gets the right branch of this node.
+        /// </summary>
+        IBinaryTree<T> Right { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this node is empty.
+        /// </summary>
+        bool IsEmpty { get; }
+
+        /// <summary>
+        /// Gets the number of non-empty nodes at this node and below.
+        /// </summary>
+        /// <exception cref="NotSupportedException">Thrown if the implementation does not store this value at the node.</exception>
+        int Count { get; }
+    }
+}

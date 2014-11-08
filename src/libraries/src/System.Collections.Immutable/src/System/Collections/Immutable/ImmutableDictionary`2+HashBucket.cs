@@ -1,0 +1,473 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Validation;
+
+namespace System.Collections.Immutable
+{
+    /// <content>
+    /// Contains the inner HashBucket struct.
+    /// </content>
+    public partial class ImmutableDictionary<TKey, TValue>
+    {
+        /// <summary>
+        /// Contains all the key/values in the collection that hash to the same value.
+        /// </summary>
+        internal struct HashBucket : IEnumerable<KeyValuePair<TKey, TValue>>, IEquatable<HashBucket>
+        {
+            /// <summary>
+            /// One of the values in this bucket.
+            /// </summary>
+            private readonly KeyValuePair<TKey, TValue> firstValue;
+
+            /// <summary>
+            /// Any other elements that hash to the same value.
+            /// </summary>
+            /// <value>
+            /// This is null if and only if the entire bucket is empty (including <see cref="firstValue"/>).  
+            /// It's empty if <see cref="firstValue"/> has an element but no additional elements.
+            /// </value>
+            private readonly ImmutableList<KeyValuePair<TKey, TValue>>.Node additionalElements;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.HashBucket"/> struct.
+            /// </summary>
+            /// <param name="firstElement">The first element.</param>
+            /// <param name="additionalElements">The additional elements.</param>
+            private HashBucket(KeyValuePair<TKey, TValue> firstElement, ImmutableList<KeyValuePair<TKey, TValue>>.Node additionalElements = null)
+            {
+                this.firstValue = firstElement;
+                this.additionalElements = additionalElements ?? ImmutableList<KeyValuePair<TKey, TValue>>.Node.EmptyNode;
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether this instance is empty.
+            /// </summary>
+            /// <value>
+            ///   <c>true</c> if this instance is empty; otherwise, <c>false</c>.
+            /// </value>
+            internal bool IsEmpty
+            {
+                get { return this.additionalElements == null; }
+            }
+
+            /// <summary>
+            /// Gets the first value in this bucket.
+            /// </summary>
+            internal KeyValuePair<TKey, TValue> FirstValue
+            {
+                get
+                {
+                    if (this.IsEmpty)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    return this.firstValue;
+                }
+            }
+
+            /// <summary>
+            /// Gets the list of additional (hash collision) elements.
+            /// </summary>
+            internal ImmutableList<KeyValuePair<TKey, TValue>>.Node AdditionalElements
+            {
+                get { return this.additionalElements; }
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(this);
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the collection.
+            /// </summary>
+            /// <returns>
+            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// </returns>
+            IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through a collection.
+            /// </summary>
+            /// <returns>
+            /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            /// </returns>
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Throws an exception to catch any errors in comparing HashBucket instances.
+            /// </summary>
+            bool IEquatable<HashBucket>.Equals(HashBucket other)
+            {
+                // This should never be called, as hash buckets don't know how to equate themselves.
+                throw new Exception();
+            }
+
+            /// <summary>
+            /// Adds the specified key.
+            /// </summary>
+            /// <param name="key">The key to add.</param>
+            /// <param name="value">The value to add.</param>
+            /// <param name="keyOnlyComparer">The key comparer.</param>
+            /// <param name="valueComparer">The value comparer.</param>
+            /// <param name="behavior">The intended behavior for certain cases that may come up during the operation.</param>
+            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
+            /// <returns>A new HashBucket that contains the added value and any values already held by this hashbucket.</returns>
+            internal HashBucket Add(TKey key, TValue value, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, IEqualityComparer<TValue> valueComparer, KeyCollisionBehavior behavior, out OperationResult result)
+            {
+                var kv = new KeyValuePair<TKey, TValue>(key, value);
+                if (this.IsEmpty)
+                {
+                    result = OperationResult.SizeChanged;
+                    return new HashBucket(kv);
+                }
+
+                if (keyOnlyComparer.Equals(kv, this.firstValue))
+                {
+                    switch (behavior)
+                    {
+                        case KeyCollisionBehavior.SetValue:
+                            result = OperationResult.AppliedWithoutSizeChange;
+                            return new HashBucket(kv, this.additionalElements);
+                        case KeyCollisionBehavior.Skip:
+                            result = OperationResult.NoChangeRequired;
+                            return this;
+                        case KeyCollisionBehavior.ThrowIfValueDifferent:
+                            if (!valueComparer.Equals(this.firstValue.Value, value))
+                            {
+                                throw new ArgumentException(Strings.DuplicateKey);
+                            }
+
+                            result = OperationResult.NoChangeRequired;
+                            return this;
+                        case KeyCollisionBehavior.ThrowAlways:
+                            throw new ArgumentException(Strings.DuplicateKey);
+                        default:
+                            throw new InvalidOperationException(); // unreachable
+                    }
+                }
+
+                int keyCollisionIndex = this.additionalElements.IndexOf(kv, keyOnlyComparer);
+                if (keyCollisionIndex < 0)
+                {
+                    result = OperationResult.SizeChanged;
+                    return new HashBucket(this.firstValue, this.additionalElements.Add(kv));
+                }
+                else
+                {
+                    switch (behavior)
+                    {
+                        case KeyCollisionBehavior.SetValue:
+                            result = OperationResult.AppliedWithoutSizeChange;
+                            return new HashBucket(this.firstValue, this.additionalElements.ReplaceAt(keyCollisionIndex, kv));
+                        case KeyCollisionBehavior.Skip:
+                            result = OperationResult.NoChangeRequired;
+                            return this;
+                        case KeyCollisionBehavior.ThrowIfValueDifferent:
+                            var existingEntry = this.additionalElements[keyCollisionIndex];
+                            if (!valueComparer.Equals(existingEntry.Value, value))
+                            {
+                                throw new ArgumentException(Strings.DuplicateKey);
+                            }
+
+                            result = OperationResult.NoChangeRequired;
+                            return this;
+                        case KeyCollisionBehavior.ThrowAlways:
+                            throw new ArgumentException(Strings.DuplicateKey);
+                        default:
+                            throw new InvalidOperationException(); // unreachable
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Removes the specified value if it exists in the collection.
+            /// </summary>
+            /// <param name="key">The key to remove.</param>
+            /// <param name="keyOnlyComparer">The equality comparer.</param>
+            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
+            /// <returns>A new HashBucket that does not contain the removed value and any values already held by this hashbucket.</returns>
+            internal HashBucket Remove(TKey key, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, out OperationResult result)
+            {
+                if (this.IsEmpty)
+                {
+                    result = OperationResult.NoChangeRequired;
+                    return this;
+                }
+
+                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue));
+                if (keyOnlyComparer.Equals(this.firstValue, kv))
+                {
+                    if (this.additionalElements.IsEmpty)
+                    {
+                        result = OperationResult.SizeChanged;
+                        return new HashBucket();
+                    }
+                    else
+                    {
+                        // We can promote any element from the list into the first position, but it's most efficient
+                        // to remove the root node in the binary tree that implements the list.
+                        int indexOfRootNode = ((IBinaryTree<KeyValuePair<TKey, TValue>>)this.additionalElements).Left.Count;
+                        result = OperationResult.SizeChanged;
+                        return new HashBucket(this.additionalElements.Key, this.additionalElements.RemoveAt(indexOfRootNode));
+                    }
+                }
+
+                int index = this.additionalElements.IndexOf(kv, keyOnlyComparer);
+                if (index < 0)
+                {
+                    result = OperationResult.NoChangeRequired;
+                    return this;
+                }
+                else
+                {
+                    result = OperationResult.SizeChanged;
+                    return new HashBucket(this.firstValue, this.additionalElements.RemoveAt(index));
+                }
+            }
+
+            /// <summary>
+            /// Gets the value for the given key in the collection if one exists..
+            /// </summary>
+            /// <param name="key">The key to search for.</param>
+            /// <param name="keyOnlyComparer">The key comparer.</param>
+            /// <param name="value">The value for the given key.</param>
+            /// <returns>A value indicating whether the key was found.</returns>
+            internal bool TryGetValue(TKey key, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, out TValue value)
+            {
+                if (this.IsEmpty)
+                {
+                    value = default(TValue);
+                    return false;
+                }
+
+                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue));
+                if (keyOnlyComparer.Equals(this.firstValue, kv))
+                {
+                    value = this.firstValue.Value;
+                    return true;
+                }
+
+                var index = this.additionalElements.IndexOf(kv, keyOnlyComparer);
+                if (index < 0)
+                {
+                    value = default(TValue);
+                    return false;
+                }
+
+                value = this.additionalElements[index].Value;
+                return true;
+            }
+
+            /// <summary>
+            /// Searches the dictionary for a given key and returns the equal key it finds, if any.
+            /// </summary>
+            /// <param name="equalKey">The key to search for.</param>
+            /// <param name="keyOnlyComparer">The key comparer.</param>
+            /// <param name="actualKey">The key from the dictionary that the search found, or <paramref name="equalKey"/> if the search yielded no match.</param>
+            /// <returns>A value indicating whether the search was successful.</returns>
+            /// <remarks>
+            /// This can be useful when you want to reuse a previously stored reference instead of
+            /// a newly constructed one (so that more sharing of references can occur) or to look up
+            /// the canonical value, or a value that has more complete data than the value you currently have,
+            /// although their comparer functions indicate they are equal.
+            /// </remarks>
+            internal bool TryGetKey(TKey equalKey, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, out TKey actualKey)
+            {
+                if (this.IsEmpty)
+                {
+                    actualKey = equalKey;
+                    return false;
+                }
+
+                var kv = new KeyValuePair<TKey, TValue>(equalKey, default(TValue));
+                if (keyOnlyComparer.Equals(this.firstValue, kv))
+                {
+                    actualKey = this.firstValue.Key;
+                    return true;
+                }
+
+                var index = this.additionalElements.IndexOf(kv, keyOnlyComparer);
+                if (index < 0)
+                {
+                    actualKey = equalKey;
+                    return false;
+                }
+
+                actualKey = this.additionalElements[index].Key;
+                return true;
+            }
+
+            /// <summary>
+            /// Freezes this instance so that any further mutations require new memory allocations.
+            /// </summary>
+            internal void Freeze()
+            {
+                if (this.additionalElements != null)
+                {
+                    this.additionalElements.Freeze();
+                }
+            }
+
+            /// <summary>
+            /// Enumerates all the elements in this instance.
+            /// </summary>
+            internal struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDisposable
+            {
+                /// <summary>
+                /// The bucket being enumerated.
+                /// </summary>
+                private readonly HashBucket bucket;
+
+                /// <summary>
+                /// The current position of this enumerator.
+                /// </summary>
+                private Position currentPosition;
+
+                /// <summary>
+                /// The enumerator that represents the current position over the additionalValues of the HashBucket.
+                /// </summary>
+                private ImmutableList<KeyValuePair<TKey, TValue>>.Enumerator additionalEnumerator;
+
+                /// <summary>
+                /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.HashBucket.Enumerator"/> struct.
+                /// </summary>
+                /// <param name="bucket">The bucket.</param>
+                internal Enumerator(HashBucket bucket)
+                {
+                    this.bucket = bucket;
+                    this.currentPosition = Position.BeforeFirst;
+                    this.additionalEnumerator = default(ImmutableList<KeyValuePair<TKey, TValue>>.Enumerator);
+                }
+
+                /// <summary>
+                /// Describes the positions the enumerator state machine may be in.
+                /// </summary>
+                private enum Position
+                {
+                    /// <summary>
+                    /// The first element has not yet been moved to.
+                    /// </summary>
+                    BeforeFirst,
+
+                    /// <summary>
+                    /// We're at the firstValue of the containing bucket.
+                    /// </summary>
+                    First,
+
+                    /// <summary>
+                    /// We're enumerating the additionalValues in the bucket.
+                    /// </summary>
+                    Additional,
+
+                    /// <summary>
+                    /// The end of enumeration has been reached.
+                    /// </summary>
+                    End,
+                }
+
+                /// <summary>
+                /// Gets the current element.
+                /// </summary>
+                object IEnumerator.Current
+                {
+                    get { return this.Current; }
+                }
+
+                /// <summary>
+                /// Gets the current element.
+                /// </summary>
+                public KeyValuePair<TKey, TValue> Current
+                {
+                    get
+                    {
+                        switch (this.currentPosition)
+                        {
+                            case Position.First:
+                                return this.bucket.firstValue;
+                            case Position.Additional:
+                                return this.additionalEnumerator.Current;
+                            default:
+                                throw new InvalidOperationException();
+                        }
+                    }
+                }
+
+                /// <summary>
+                /// Advances the enumerator to the next element of the collection.
+                /// </summary>
+                /// <returns>
+                /// true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
+                /// </returns>
+                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                public bool MoveNext()
+                {
+                    if (this.bucket.IsEmpty)
+                    {
+                        this.currentPosition = Position.End;
+                        return false;
+                    }
+
+                    switch (this.currentPosition)
+                    {
+                        case Position.BeforeFirst:
+                            this.currentPosition = Position.First;
+                            return true;
+                        case Position.First:
+                            if (this.bucket.additionalElements.IsEmpty)
+                            {
+                                this.currentPosition = Position.End;
+                                return false;
+                            }
+
+                            this.currentPosition = Position.Additional;
+                            this.additionalEnumerator = new ImmutableList<KeyValuePair<TKey, TValue>>.Enumerator(this.bucket.additionalElements);
+                            return this.additionalEnumerator.MoveNext();
+                        case Position.Additional:
+                            return this.additionalEnumerator.MoveNext();
+                        case Position.End:
+                            return false;
+                        default:
+                            throw new InvalidOperationException();
+                    }
+                }
+
+                /// <summary>
+                /// Sets the enumerator to its initial position, which is before the first element in the collection.
+                /// </summary>
+                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                public void Reset()
+                {
+                    // We can safely dispose of the additional enumerator because if the client reuses this enumerator
+                    // we'll acquire a new one anyway (and so for that matter we should be sure to dispose of this).  
+                    this.additionalEnumerator.Dispose();
+                    this.currentPosition = Position.BeforeFirst;
+                }
+
+                /// <summary>
+                /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+                /// </summary>
+                public void Dispose()
+                {
+                    this.additionalEnumerator.Dispose();
+                }
+            }
+        }
+    }
+}
