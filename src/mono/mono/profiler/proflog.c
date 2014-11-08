@@ -2637,6 +2637,7 @@ mono_profiler_startup (const char *desc)
 	int fast_time = 0;
 	int calls_enabled = 0;
 	int allocs_enabled = 0;
+	int only_counters = 0;
 	int events = MONO_PROFILE_GC|MONO_PROFILE_ALLOCATIONS|
 		MONO_PROFILE_GC_MOVES|MONO_PROFILE_CLASS_EVENTS|MONO_PROFILE_THREADS|
 		MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_EXCEPTIONS|
@@ -2754,6 +2755,10 @@ mono_profiler_startup (const char *desc)
 			do_counters = 1;
 			continue;
 		}
+		if ((opt = match_option (p, "countersonly", NULL)) != p) {
+			only_counters = 1;
+			continue;
+		}
 		if (opt == p) {
 			usage (0);
 			exit (0);
@@ -2765,6 +2770,8 @@ mono_profiler_startup (const char *desc)
 	}
 	if (allocs_enabled)
 		events |= MONO_PROFILE_ALLOCATIONS;
+	if (only_counters)
+		events = 0;
 	utils_init (fast_time);
 
 	prof = create_profiler (filename);
@@ -2788,7 +2795,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_runtime_initialized (runtime_initialized);
 
 	
-	if (do_mono_sample && sample_type == SAMPLE_CYCLES) {
+	if (do_mono_sample && sample_type == SAMPLE_CYCLES && !only_counters) {
 		events |= MONO_PROFILE_STATISTICAL;
 		mono_profiler_set_statistical_mode (sampling_mode, 1000000 / sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
