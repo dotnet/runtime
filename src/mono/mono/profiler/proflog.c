@@ -677,6 +677,7 @@ process_requests (MonoProfiler *profiler)
 }
 
 static void counters_init (MonoProfiler *profiler);
+static void counters_sample (MonoProfiler *profiler);
 
 static void
 runtime_initialized (MonoProfiler *profiler)
@@ -684,6 +685,7 @@ runtime_initialized (MonoProfiler *profiler)
 	runtime_inited = 1;
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
+	counters_sample (profiler);
 #endif
 	/* ensure the main thread data and startup are available soon */
 	safe_dump (profiler, ensure_logbuf (0));
@@ -1980,8 +1982,10 @@ counters_init (MonoProfiler *profiler)
 }
 
 static void
-counters_sample (MonoProfiler *profiler, uint64_t timestamp)
+counters_sample (MonoProfiler *profiler)
 {
+	static uint64_t start = -1, timestamp;
+
 	MonoCounterAgent *agent;
 	MonoCounter *counter;
 	LogBuffer *logbuffer;
@@ -1990,8 +1994,13 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	void *buffer;
 	int size;
 
+	if (start == -1)
+		start = current_time ();
+
 	if (!counters_initialized)
 		return;
+
+	timestamp = (current_time () - start) / 1000/ 1000;
 
 	buffer_size = 8;
 	buffer = calloc (1, buffer_size);
@@ -2098,6 +2107,8 @@ log_shutdown (MonoProfiler *prof)
 {
 	in_shutdown = 1;
 #ifndef DISABLE_HELPER_THREAD
+	counters_sample (prof);
+
 	if (prof->command_port) {
 		char c = 1;
 		void *res;
@@ -2197,10 +2208,8 @@ helper_thread (void* arg)
 	int len;
 	char buf [64];
 	MonoThread *thread = NULL;
-	uint64_t start, now;
 
 	//fprintf (stderr, "Server listening\n");
-	start = current_time ();
 	command_socket = -1;
 	while (1) {
 		fd_set rfds;
@@ -2229,8 +2238,8 @@ helper_thread (void* arg)
 			}
 		}
 #endif
-		now = current_time ();
-		counters_sample (prof, (now - start) / 1000/ 1000);
+
+		counters_sample (prof);
 
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
