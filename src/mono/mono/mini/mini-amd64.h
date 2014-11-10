@@ -122,14 +122,17 @@ struct sigcontext {
 
 #define MONO_ARCH_FP_RETURN_REG AMD64_XMM0
 
-/* xmm15 is reserved for use by some opcodes */
 #ifdef TARGET_WIN32
-#define MONO_ARCH_CALLEE_FREGS 0x3f
+/* xmm5 is used as a scratch register */
+#define MONO_ARCH_CALLEE_FREGS 0x1f
 /* xmm6:xmm15 */
-#define MONO_ARCH_CALLEE_SAVED_FREGS (0x7fff - 0x3f)
+#define MONO_ARCH_CALLEE_SAVED_FREGS (0xffff - 0x3f)
+#define MONO_ARCH_FP_SCRATCH_REG AMD64_XMM5
 #else
+/* xmm15 is used as a scratch register */
 #define MONO_ARCH_CALLEE_FREGS 0x7fff
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
+#define MONO_ARCH_FP_SCRATCH_REG AMD64_XMM15
 #endif
 
 #define MONO_MAX_XREGS MONO_MAX_FREGS
