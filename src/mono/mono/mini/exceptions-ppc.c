@@ -600,31 +600,13 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 void
 mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 {
-#ifdef MONO_CROSS_COMPILE
-	g_assert_not_reached ();
-#else
-	os_ucontext *uc = ctx;
-
-	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
-	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
-	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 13), sizeof (mgreg_t) * MONO_SAVED_GREGS);
-	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 14), sizeof (double) * MONO_SAVED_FREGS);
-#endif
+	return mono_sigctx_to_monoctx (ctx, mctx);
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
-#ifdef MONO_CROSS_COMPILE
-	g_assert_not_reached ();
-#else
-	os_ucontext *uc = ctx;
-
-	UCONTEXT_REG_NIP(uc) = mctx->sc_ir;
-	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
-	memcpy (&UCONTEXT_REG_Rn(uc, 13), &mctx->regs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
-	memcpy (&UCONTEXT_REG_FPRn(uc, 14), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
-#endif
+	return mono_monoctx_to_sigctx (mctx, ctx);
 }
 
 gpointer

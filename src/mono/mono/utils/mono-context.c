@@ -421,4 +421,30 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	}
 }
 
+#elif (((defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) && !defined(MONO_CROSS_COMPILE))) || (defined(TARGET_POWERPC))
+
+#include <mono/utils/mono-context.h>
+
+void
+mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+	os_ucontext *uc = sigctx;
+
+	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
+	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
+	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 13), sizeof (mgreg_t) * MONO_SAVED_GREGS);
+	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 14), sizeof (double) * MONO_SAVED_FREGS);
+}
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+	os_ucontext *uc = sigctx;
+
+	UCONTEXT_REG_NIP(uc) = mctx->sc_ir;
+	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
+	memcpy (&UCONTEXT_REG_Rn(uc, 13), &mctx->regs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
+	memcpy (&UCONTEXT_REG_FPRn(uc, 14), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
+}
+
 #endif /* #if defined(__i386__) */
