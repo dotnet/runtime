@@ -39,6 +39,7 @@ namespace System.Collections.Immutable
             /// <param name="capacity">The initial capacity of the internal array.</param>
             internal Builder(int capacity)
             {
+                Requires.Range(capacity >= 0, "capacity");
                 this.elements = new RefAsValueType<T>[capacity];
                 this.Count = 0;
             }
