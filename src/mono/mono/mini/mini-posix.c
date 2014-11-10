@@ -356,7 +356,7 @@ per_thread_profiler_hit (void *ctx)
 		MonoContext mono_context;
 		guchar *ips [call_chain_depth + 1];
 
-		mono_arch_sigctx_to_monoctx (ctx, &mono_context);
+		mono_sigctx_to_monoctx (ctx, &mono_context);
 		ips [0] = MONO_CONTEXT_GET_IP (&mono_context);
 		
 		if (jit_tls != NULL) {

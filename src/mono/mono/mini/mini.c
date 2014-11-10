@@ -6835,7 +6835,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (fault_addr == NULL) {
 		MonoContext mctx;
 
-		mono_arch_sigctx_to_monoctx (ctx, &mctx);
+		mono_sigctx_to_monoctx (ctx, &mctx);
 
 		fault_addr = MONO_CONTEXT_GET_SP (&mctx);
 	}

@@ -2183,7 +2183,7 @@ mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 	mono_runtime_printf_err ("Stack overflow: IP: %p, fault addr: %p", mono_arch_ip_from_context (ctx), fault_addr);
 
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
-	mono_arch_sigctx_to_monoctx (ctx, &mctx);
+	mono_sigctx_to_monoctx (ctx, &mctx);
 			
 	mono_runtime_printf_err ("Stacktrace:");
 
@@ -2409,7 +2409,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	} else if (!sigctx)
 		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_print_thread_dump);
 	else
-		mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+		mono_sigctx_to_monoctx (sigctx, &ctx);
 
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 #else
@@ -2606,7 +2606,7 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	}
 
 	if (sigctx)
-		mono_arch_sigctx_to_monoctx (sigctx, &ctx->ctx);
+		mono_sigctx_to_monoctx (sigctx, &ctx->ctx);
 	else
 #if MONO_ARCH_HAS_MONO_CONTEXT && !defined(MONO_CROSS_COMPILE)
 		MONO_CONTEXT_GET_CURRENT (ctx->ctx);

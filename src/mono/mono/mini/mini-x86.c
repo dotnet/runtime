@@ -868,7 +868,7 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 	MonoContext ctx;
 	guint8* ip;
 
-	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+	mono_sigctx_to_monoctx (sigctx, &ctx);
 
 	ip = (guint8*)ctx.eip;
 

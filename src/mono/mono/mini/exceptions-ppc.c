@@ -594,21 +594,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	return FALSE;
 }
 
-/*
- * This is the function called from the signal handler
- */
-void
-mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
-{
-	return mono_sigctx_to_monoctx (ctx, mctx);
-}
-
-void
-mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
-{
-	return mono_monoctx_to_sigctx (mctx, ctx);
-}
-
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
@@ -641,7 +626,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj)
 {
 	MonoContext mctx;
 
-	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+	mono_sigctx_to_monoctx (sigctx, &mctx);
 	mono_handle_exception (&mctx, obj);
 	mono_restore_context (&mctx);
 }
@@ -764,7 +749,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	void *uc = sigctx;
 
 	/* Pass the ctx parameter in TLS */
-	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
+	mono_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 	/* The others in registers */
 	UCONTEXT_REG_Rn (sigctx, PPC_FIRST_ARG_REG) = (gsize)obj;
 
@@ -783,13 +768,13 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	MonoContext mctx;
 	gboolean result;
 
-	mono_arch_sigctx_to_monoctx (ctx, &mctx);
+	mono_sigctx_to_monoctx (ctx, &mctx);
 
 	result = mono_handle_exception (&mctx, obj);
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */
-	mono_arch_monoctx_to_sigctx (&mctx, ctx);
+	mono_monoctx_to_sigctx (&mctx, ctx);
 	return result;
 #endif
 }

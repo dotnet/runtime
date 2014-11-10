@@ -534,39 +534,6 @@ mono_arch_handle_exception (void *uc, gpointer obj)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_sigctx_to_monoctx.                      */
-/*                                                                  */
-/* Function	- Called from the signal handler to convert signal  */
-/*                context to MonoContext.                           */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
-{
-	mono_sigctx_to_monoctx(ctx, mctx);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_monoctx_to_sigctx.                      */
-/*                                                                  */
-/* Function	- Convert MonoContext structure to signal context.  */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
-{
-	mono_monoctx_to_sigctx(mctx, ctx);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_ip_from_context                         */
 /*                                                                  */
 /* Function	- Return the instruction pointer from the context.  */

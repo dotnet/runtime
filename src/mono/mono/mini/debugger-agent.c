@@ -2652,7 +2652,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 			 */
 			data.last_frame_set = FALSE;
 			if (sigctx) {
-				mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+				mono_sigctx_to_monoctx (sigctx, &ctx);
 				/* 
 				 * Don't pass MONO_UNWIND_ACTUAL_METHOD, its not signal safe, and
 				 * get_last_frame () doesn't need it, the last frame cannot be a ginst
@@ -4907,14 +4907,14 @@ resume_from_signal_handler (void *sigctx, void *func)
 	// clobbered by a single step/breakpoint event. If this turns out to be a problem,
 	// clob:c could be added to op_seq_point.
 
-	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+	mono_sigctx_to_monoctx (sigctx, &ctx);
 	memcpy (&tls->handler_ctx, &ctx, sizeof (MonoContext));
 #ifdef MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX
 	mono_arch_setup_resume_sighandler_ctx (&ctx, func);
 #else
 	MONO_CONTEXT_SET_IP (&ctx, func);
 #endif
-	mono_arch_monoctx_to_sigctx (&ctx, sigctx);
+	mono_monoctx_to_sigctx (&ctx, sigctx);
 
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 	mono_ppc_set_func_into_sigctx (sigctx, func);
@@ -5104,9 +5104,9 @@ mono_debugger_agent_single_step_event (void *sigctx)
 		 */
 		MonoContext ctx;
 
-		mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+		mono_sigctx_to_monoctx (sigctx, &ctx);
 		mono_arch_skip_single_step (&ctx);
-		mono_arch_monoctx_to_sigctx (&ctx, sigctx);
+		mono_monoctx_to_sigctx (&ctx, sigctx);
 		return;
 	}
 
