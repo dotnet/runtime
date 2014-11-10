@@ -2313,9 +2313,11 @@ helper_thread (void* arg)
 				sbufbase->next->next = NULL;
 				if (do_debug)
 					fprintf (stderr, "stat buffer dump\n");
-				dump_sample_hits (prof, sbuf, 1);
-				free_buffer (sbuf, sbuf->size);
-				safe_dump (prof, ensure_logbuf (0));
+				if (sbuf) {
+					dump_sample_hits (prof, sbuf, 1);
+					free_buffer (sbuf, sbuf->size);
+					safe_dump (prof, ensure_logbuf (0));
+				}
 				continue;
 			}
 			/* time to shut down */
