@@ -855,21 +855,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if ((guint32)((*lmf)->previous_lmf) & 1) {
 			/* lmf->esp is set by the trampoline code */
 			new_ctx->esp = (*lmf)->esp;
-
-			/* Pop arguments off the stack */
-			/* FIXME: Handle the delegate case too ((*lmf)->method == NULL) */
-			/* FIXME: Handle the IMT/vtable case too */
-#if 0
-#ifndef ENABLE_LLVM
-			if ((*lmf)->method) {
-				MonoMethod *method = (*lmf)->method;
-				MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (method)->param_count + 1);
-
-				guint32 stack_to_pop = mono_arch_get_argument_info (NULL, mono_method_signature (method), mono_method_signature (method)->param_count, arg_info);
-				new_ctx->esp += stack_to_pop;
-			}
-#endif
-#endif
 		}
 		else
 			/* the lmf is always stored on the stack, so the following
