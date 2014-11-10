@@ -309,38 +309,7 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 
 #else
 
-static int
-get_stage2_signal_handler (void)
-{
-#if defined(PLATFORM_ANDROID)
-	// FIXME:
-	g_assert_not_reached ();
-	return -1;
-#elif !defined (SIGRTMIN)
-#ifdef SIGUSR2
-	return SIGUSR2;
-#else
-	return -1;
-#endif /* SIGUSR2 */
-#else
-	static int prof2_signum = -1;
-	int i;
-	if (prof2_signum != -1)
-		return prof2_signum;
-	/* we try to avoid SIGRTMIN and any one that might have been set already */
-	for (i = SIGRTMIN + 2; i < SIGRTMAX; ++i) {
-		struct sigaction sinfo;
-		sigaction (i, NULL, &sinfo);
-		if (sinfo.sa_handler == SIG_DFL && (void*)sinfo.sa_sigaction == (void*)SIG_DFL) {
-			prof2_signum = i;
-			return i;
-		}
-	}
-	/* fallback to the old way */
-	return SIGRTMIN + 2;
-#endif
-}
-
+static int profiling_signal_in_use;
 
 static void
 per_thread_profiler_hit (void *ctx)
@@ -416,26 +385,6 @@ per_thread_profiler_hit (void *ctx)
 	}
 }
 
-MONO_SIG_HANDLER_FUNC (static, sigprof_stage2_signal_handler)
-{
-	int old_errno = errno;
-	int hp_save_index;
-	MONO_SIG_HANDLER_GET_CONTEXT;
-
-	if (mono_thread_info_get_small_id () == -1)
-		return; //an non-attached thread got the signal
-
-	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
-	mono_thread_info_set_is_async_context (TRUE);
-	per_thread_profiler_hit (ctx);
-	mono_thread_info_set_is_async_context (FALSE);
-
-	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
-	errno = old_errno;
-
-	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-}
-
 MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
 	MonoThreadInfo *info;
@@ -447,11 +396,17 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 		return; //an non-attached thread got the signal
 
 	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
-	FOREACH_THREAD_SAFE (info) {
-		if (mono_thread_info_get_tid (info) == mono_native_thread_id_get ())
-			continue;
-		mono_threads_pthread_kill (info, get_stage2_signal_handler ());
-	} END_FOREACH_THREAD_SAFE;
+
+	/* If we can't consume a profiling request it means we're the initiator. */
+	if (!(mono_threads_consume_async_jobs () & MONO_SERVICE_REQUEST_SAMPLE)) {
+		FOREACH_THREAD_SAFE (info) {
+			if (mono_thread_info_get_tid (info) == mono_native_thread_id_get ())
+				continue;
+
+			mono_threads_add_async_job (info, MONO_SERVICE_REQUEST_SAMPLE);
+			mono_threads_pthread_kill (info, profiling_signal_in_use);
+		} END_FOREACH_THREAD_SAFE;
+	}
 
 	mono_thread_info_set_is_async_context (TRUE);
 	per_thread_profiler_hit (ctx);
@@ -725,7 +680,8 @@ mono_runtime_setup_stat_profiler (void)
 			perror ("open /dev/rtc");
 			return;
 		}
-		add_signal_handler (SIGPROF, sigprof_signal_handler);
+		profiling_signal_in_use = SIGPROF;
+		add_signal_handler (profiling_signal_in_use, sigprof_signal_handler);
 		if (ioctl (rtc_fd, RTC_IRQP_SET, freq) == -1) {
 			perror ("set rtc freq");
 			return;
@@ -755,8 +711,8 @@ mono_runtime_setup_stat_profiler (void)
 	if (inited)
 		return;
 	inited = 1;
-	add_signal_handler (get_itimer_signal (), sigprof_signal_handler);
-	add_signal_handler (get_stage2_signal_handler (), sigprof_stage2_signal_handler);
+	profiling_signal_in_use = get_itimer_signal ();
+	add_signal_handler (profiling_signal_in_use, sigprof_signal_handler);
 	setitimer (get_itimer_mode (), &itval, NULL);
 #endif
 }
