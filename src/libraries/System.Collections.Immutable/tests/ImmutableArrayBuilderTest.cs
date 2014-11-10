@@ -21,6 +21,12 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void CreateBuilderInvalidCapacity()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => ImmutableArray.CreateBuilder<int>(-1));
+        }
+
+        [Fact]
         public void NormalConstructionValueType()
         {
             var builder = ImmutableArray.CreateBuilder<int>(3);
