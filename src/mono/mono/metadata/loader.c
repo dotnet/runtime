@@ -2278,16 +2278,49 @@ mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
 	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_DEFAULT, &ud);
 }
 
+typedef struct {
+	MonoStackWalkAsyncSafe func;
+	gpointer user_data;
+} AsyncStackWalkUserData;
+
+
+static gboolean
+async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	AsyncStackWalkUserData *d = data;
+
+	switch (frame->type) {
+	case FRAME_TYPE_DEBUGGER_INVOKE:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+		return FALSE;
+	case FRAME_TYPE_MANAGED:
+		if (!frame->ji)
+			return FALSE;
+		if (frame->ji->async)
+			return d->func (NULL, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
+		else
+			return d->func (mono_jit_info_get_method (frame->ji), frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
+		break;
+	default:
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
+
+
 /*
  * mono_stack_walk_async_safe:
  *
  *   Async safe version callable from signal handlers.
  */
 void
-mono_stack_walk_async_safe (MonoStackWalk func, gpointer user_data)
+mono_stack_walk_async_safe (MonoStackWalkAsyncSafe func, void *initial_sig_context, void *user_data)
 {
-	StackWalkUserData ud = { func, user_data };
-	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_NONE, &ud);
+	MonoContext ctx;
+	AsyncStackWalkUserData ud = { func, user_data };
+
+	mono_sigctx_to_monoctx (initial_sig_context, &ctx);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (async_stack_walk_adapter, NULL, MONO_UNWIND_SIGNAL_SAFE, &ud);
 }
 
 static gboolean
