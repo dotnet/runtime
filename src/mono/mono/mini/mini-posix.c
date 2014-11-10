@@ -418,9 +418,20 @@ per_thread_profiler_hit (void *ctx)
 
 MONO_SIG_HANDLER_FUNC (static, sigprof_stage2_signal_handler)
 {
+	int old_errno = errno;
+	int hp_save_index;
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
+	if (mono_thread_info_get_small_id () == -1)
+		return; //an non-attached thread got the signal
+
+	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
+	mono_thread_info_set_is_async_context (TRUE);
 	per_thread_profiler_hit (ctx);
+	mono_thread_info_set_is_async_context (FALSE);
+
+	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
+	errno = old_errno;
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
@@ -429,16 +440,22 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
 	MonoThreadInfo *info;
 	int old_errno = errno;
-	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
+	int hp_save_index;
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
+	if (mono_thread_info_get_small_id () == -1)
+		return; //an non-attached thread got the signal
+
+	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 	FOREACH_THREAD_SAFE (info) {
 		if (mono_thread_info_get_tid (info) == mono_native_thread_id_get ())
 			continue;
 		mono_threads_pthread_kill (info, get_stage2_signal_handler ());
 	} END_FOREACH_THREAD_SAFE;
 
+	mono_thread_info_set_is_async_context (TRUE);
 	per_thread_profiler_hit (ctx);
+	mono_thread_info_set_is_async_context (FALSE);
 
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
 	errno = old_errno;
