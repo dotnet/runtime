@@ -13,7 +13,7 @@
 
 #ifndef DISABLE_SOCKETS
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #define __APPLE_USE_RFC_3542
 #endif
 
@@ -106,7 +106,7 @@
 #define AI_ADDRCONFIG 0
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 /*
  * We remove this until we have a Darwin implementation
  * that can walk the result of struct ifconf.  The current
@@ -2051,7 +2051,7 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 #endif /* AF_INET6 */
 #endif
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 
 #if defined(HAVE_GETIFADDRS) && defined(HAVE_IF_NAMETOINDEX)
 static int
@@ -2089,7 +2089,7 @@ get_local_interface_id (int family)
 }
 #endif
 
-#endif /* __APPLE__ */
+#endif /* defined(__APPLE__) || defined(__FreeBSD__) */
 
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
@@ -2187,7 +2187,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				field=mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
 				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
 				
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 				/*
 				* Bug #5504:
 				*
