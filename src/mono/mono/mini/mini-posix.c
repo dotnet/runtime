@@ -313,7 +313,9 @@ static int
 get_stage2_signal_handler (void)
 {
 #if defined(PLATFORM_ANDROID)
-	return SIGINFO;
+	// FIXME:
+	g_assert_not_reached ();
+	return -1;
 #elif !defined (SIGRTMIN)
 #ifdef SIGUSR2
 	return SIGUSR2;
