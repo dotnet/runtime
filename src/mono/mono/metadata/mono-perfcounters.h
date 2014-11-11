@@ -2,8 +2,8 @@
 #define __MONO_PERFCOUNTERS_H__
 
 #include <glib.h>
-#include <metadata/object.h>
-#include <utils/mono-compiler.h>
+#include <mono/metadata/object.h>
+#include <mono/utils/mono-compiler.h>
 
 typedef struct _MonoCounterSample MonoCounterSample;
 
@@ -25,6 +25,8 @@ MonoArray*  mono_perfcounter_category_names  (MonoString *machine) MONO_INTERNAL
 MonoArray*  mono_perfcounter_counter_names   (MonoString *category, MonoString *machine) MONO_INTERNAL;
 MonoArray*  mono_perfcounter_instance_names  (MonoString *category, MonoString *machine) MONO_INTERNAL;
 
+typedef gboolean (*PerfCounterEnumCallback) (char *category_name, char *name, unsigned char type, gint64 value, gpointer user_data);
+MONO_API void mono_perfcounter_foreach (PerfCounterEnumCallback cb, gpointer user_data);
 
 #endif /* __MONO_PERFCOUNTERS_H__ */
 

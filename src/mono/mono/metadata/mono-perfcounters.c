@@ -224,6 +224,9 @@ typedef struct {
 	int num_instances;
 	/* variable length data follows */
 	char name [1];
+	// string name
+	// string help
+	// SharedCounter counters_info [num_counters]
 } SharedCategory;
 
 typedef struct {
@@ -231,6 +234,7 @@ typedef struct {
 	unsigned int category_offset;
 	/* variable length data follows */
 	char instance_name [1];
+	// string name
 } SharedInstance;
 
 typedef struct {
@@ -238,6 +242,8 @@ typedef struct {
 	guint8 seq_num;
 	/* variable length data follows */
 	char name [1];
+	// string name
+	// string help
 } SharedCounter;
 
 typedef struct {
@@ -629,7 +635,7 @@ find_custom_counter (SharedCategory* cat, MonoString *name)
 typedef struct {
 	unsigned int cat_offset;
 	SharedCategory* cat;
-	MonoString *instance;
+	char *name;
 	SharedInstance* result;
 	GSList *list;
 } InstanceSearch;
@@ -641,8 +647,8 @@ instance_search (SharedHeader *header, void *data)
 	if (header->ftype == FTYPE_INSTANCE) {
 		SharedInstance *ins = (SharedInstance*)header;
 		if (search->cat_offset == ins->category_offset) {
-			if (search->instance) {
-				if (mono_string_compare_ascii (search->instance, ins->instance_name) == 0) {
+			if (search->name) {
+				if (strcmp (search->name, ins->instance_name) == 0) {
 					search->result = ins;
 					return FALSE;
 				}
@@ -655,12 +661,12 @@ instance_search (SharedHeader *header, void *data)
 }
 
 static SharedInstance*
-find_custom_instance (SharedCategory* cat, MonoString *instance)
+find_custom_instance (SharedCategory* cat, char *name)
 {
 	InstanceSearch search;
 	search.cat_offset = (char*)cat - (char*)shared_area;
 	search.cat = cat;
-	search.instance = instance;
+	search.name = name;
 	search.list = NULL;
 	search.result = NULL;
 	foreach_shared_item (instance_search, &search);
@@ -673,7 +679,7 @@ get_custom_instances_list (SharedCategory* cat)
 	InstanceSearch search;
 	search.cat_offset = (char*)cat - (char*)shared_area;
 	search.cat = cat;
-	search.instance = NULL;
+	search.name = NULL;
 	search.list = NULL;
 	search.result = NULL;
 	foreach_shared_item (instance_search, &search);
@@ -1150,16 +1156,14 @@ custom_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 }
 
 static SharedInstance*
-custom_get_instance (SharedCategory *cat, SharedCounter *scounter, MonoString* instance)
+custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
 {
 	SharedInstance* inst;
 	char *p;
 	int size, data_offset;
-	char *name;
-	inst = find_custom_instance (cat, instance);
+	inst = find_custom_instance (cat, name);
 	if (inst)
 		return inst;
-	name = mono_string_to_utf8 (instance);
 	size = sizeof (SharedInstance) + strlen (name);
 	size += 7;
 	size &= ~7;
@@ -1179,7 +1183,6 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, MonoString* i
 	strcpy (p, name);
 	p += strlen (name) + 1;
 	perfctr_unlock ();
-	g_free (name);
 
 	return inst;
 }
@@ -1198,24 +1201,33 @@ custom_vtable (SharedCounter *scounter, SharedInstance* inst, char *data)
 	return (ImplVtable*)vtable;
 }
 
+static gpointer
+custom_get_value_address (SharedCounter *scounter, SharedInstance* sinst)
+{
+	int offset = sizeof (SharedInstance) + strlen (sinst->instance_name);
+	offset += 7;
+	offset &= ~7;
+	offset += scounter->seq_num * sizeof (guint64);
+	return (char*)sinst + offset;
+}
+
 static void*
 custom_get_impl (SharedCategory *cat, MonoString* counter, MonoString* instance, int *type)
 {
 	SharedCounter *scounter;
 	SharedInstance* inst;
-	int size;
+	char *name;
 
 	scounter = find_custom_counter (cat, counter);
 	if (!scounter)
 		return NULL;
 	*type = simple_type_to_type [scounter->type];
-	inst = custom_get_instance (cat, scounter, counter);
+	name = mono_string_to_utf8 (counter);
+	inst = custom_get_instance (cat, scounter, name);
+	g_free (name);
 	if (!inst)
 		return NULL;
-	size = sizeof (SharedInstance) + strlen (inst->instance_name);
-	size += 7;
-	size &= ~7;
-	return custom_vtable (scounter, inst, (char*)inst + size + scounter->seq_num * sizeof (guint64));
+	return custom_vtable (scounter, inst, custom_get_value_address (scounter, inst));
 }
 
 static const CategoryDesc*
@@ -1466,6 +1478,8 @@ int
 mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, MonoString *machine)
 {
 	const CategoryDesc *cdesc;
+	SharedInstance *sinst;
+	char *name;
 	/* no support for counters on other machines */
 	/*FIXME: machine appears to be wrong
 	if (mono_string_compare_ascii (machine, "."))
@@ -1476,7 +1490,10 @@ mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, Mo
 		scat = find_custom_category (category);
 		if (!scat)
 			return FALSE;
-		if (find_custom_instance (scat, instance))
+		name = mono_string_to_utf8 (instance);
+		sinst = find_custom_instance (scat, name);
+		g_free (name);
+		if (sinst)
 			return TRUE;
 	} else {
 		/* FIXME: search instance */
@@ -1692,6 +1709,65 @@ mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
 		return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
 	}
 }
+
+typedef struct {
+	PerfCounterEnumCallback cb;
+	void *data;
+} PerfCounterForeachData;
+
+static gboolean
+mono_perfcounter_foreach_shared_item (SharedHeader *header, gpointer data)
+{
+	int i;
+	char *p, *name, *help;
+	unsigned char type;
+	int seq_num;
+	void *addr;
+	SharedCategory *cat;
+	SharedCounter *counter;
+	SharedInstance *inst;
+	PerfCounterForeachData *foreach_data = data;
+
+	if (header->ftype == FTYPE_CATEGORY) {
+		cat = (SharedCategory*)header;
+
+		p = cat->name;
+		p += strlen (p) + 1; /* skip category name */
+		p += strlen (p) + 1; /* skip category help */
+
+		for (i = 0; i < cat->num_counters; ++i) {
+			counter = (SharedCounter*) p;
+			type = (unsigned char)*p++;
+			seq_num = (int)*p++;
+			name = p;
+			p += strlen (p) + 1;
+			help = p;
+			p += strlen (p) + 1;
+
+			inst = custom_get_instance (cat, counter, name);
+			if (!inst)
+				return FALSE;
+			addr = custom_get_value_address (counter, inst);
+			if (!foreach_data->cb (cat->name, name, type, addr ? *(gint64*)addr : 0, foreach_data->data))
+				return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+void
+mono_perfcounter_foreach (PerfCounterEnumCallback cb, gpointer data)
+{
+	PerfCounterForeachData foreach_data = { cb, data };
+
+	perfctr_lock ();
+
+	foreach_shared_item (mono_perfcounter_foreach_shared_item, &foreach_data);
+
+	perfctr_unlock ();
+}
+
 #else
 void*
 mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString* instance, MonoString* machine, int *type, MonoBoolean *custom)

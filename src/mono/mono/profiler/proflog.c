@@ -13,6 +13,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-perfcounters.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
@@ -315,11 +316,13 @@ typedef struct _LogBuffer LogBuffer;
  * if exinfo == TYPE_SAMPLE_COUNTERS_DESC
  * 	[len: uleb128] number of counters
  * 	for i = 0 to len
- * 		[section: uleb128] section name of counter
+ * 		[section: uleb128] section of counter
+ * 		if section == MONO_COUNTER_PERFCOUNTERS:
+ * 			[section_name: string] section name of counter
  * 		[name: string] name of counter
- * 		[type: uleb128] type name of counter
- * 		[unit: uleb128] unit name of counter
- * 		[variance: uleb128] variance name of counter
+ * 		[type: uleb128] type of counter
+ * 		[unit: uleb128] unit of counter
+ * 		[variance: uleb128] variance of counter
  * 		[index: uleb128] unique index of counter
  * if exinfo == TYPE_SAMPLE_COUNTERS
  * 	[timestamp: uleb128] sampling timestamp
@@ -678,7 +681,7 @@ process_requests (MonoProfiler *profiler)
 }
 
 static void counters_init (MonoProfiler *profiler);
-static void counters_sample (MonoProfiler *profiler);
+static void counters_sample (MonoProfiler *profiler, uint64_t timestamp);
 
 static void
 runtime_initialized (MonoProfiler *profiler)
@@ -686,7 +689,7 @@ runtime_initialized (MonoProfiler *profiler)
 	runtime_inited = 1;
 #ifndef DISABLE_HELPER_THREAD
 	counters_init (profiler);
-	counters_sample (profiler);
+	counters_sample (profiler, 0);
 #endif
 	/* ensure the main thread data and startup are available soon */
 	safe_dump (profiler, ensure_logbuf (0));
@@ -2084,10 +2087,8 @@ counters_emit (MonoProfiler *profiler)
 }
 
 static void
-counters_sample (MonoProfiler *profiler)
+counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 {
-	static uint64_t start = -1, timestamp;
-
 	MonoCounterAgent *agent;
 	MonoCounter *counter;
 	LogBuffer *logbuffer;
@@ -2096,15 +2097,10 @@ counters_sample (MonoProfiler *profiler)
 	void *buffer;
 	int size;
 
-	if (start == -1)
-		start = current_time ();
-
 	if (!counters_initialized)
 		return;
 
 	counters_emit (profiler);
-
-	timestamp = (current_time () - start) / 1000/ 1000;
 
 	buffer_size = 8;
 	buffer = calloc (1, buffer_size);
@@ -2208,6 +2204,161 @@ counters_sample (MonoProfiler *profiler)
 	mono_mutex_unlock (&counters_mutex);
 }
 
+typedef struct _PerfCounterAgent PerfCounterAgent;
+struct _PerfCounterAgent {
+	PerfCounterAgent *next;
+	int index;
+	char *category_name;
+	char *name;
+	int type;
+	gint64 value;
+	guint8 emitted;
+	guint8 updated;
+	guint8 deleted;
+};
+
+static PerfCounterAgent *perfcounters = NULL;
+
+static void
+perfcounters_emit (MonoProfiler *profiler)
+{
+	PerfCounterAgent *pcagent;
+	LogBuffer *logbuffer;
+	int size = 1 + 5, len = 0;
+
+	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+		if (pcagent->emitted)
+			continue;
+
+		size += strlen (pcagent->name) + 1 + 5 * 5;
+		len += 1;
+	}
+
+	if (!len)
+		return;
+
+	logbuffer = ensure_logbuf (size);
+
+	ENTER_LOG (logbuffer, "perfcounters");
+	emit_byte (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
+	emit_value (logbuffer, len);
+	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+		if (pcagent->emitted)
+			continue;
+
+		emit_value (logbuffer, MONO_COUNTER_PERFCOUNTERS);
+		emit_string (logbuffer, pcagent->category_name, strlen (pcagent->category_name) + 1);
+		emit_string (logbuffer, pcagent->name, strlen (pcagent->name) + 1);
+		emit_value (logbuffer, MONO_COUNTER_LONG);
+		emit_value (logbuffer, MONO_COUNTER_RAW);
+		emit_value (logbuffer, MONO_COUNTER_VARIABLE);
+		emit_value (logbuffer, pcagent->index);
+
+		pcagent->emitted = 1;
+	}
+	EXIT_LOG (logbuffer);
+
+	safe_dump (profiler, ensure_logbuf (0));
+}
+
+static gboolean
+perfcounters_foreach (char *category_name, char *name, unsigned char type, gint64 value, gpointer user_data)
+{
+	PerfCounterAgent *pcagent;
+
+	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+		if (strcmp (pcagent->category_name, category_name) != 0 || strcmp (pcagent->name, name) != 0)
+			continue;
+		if (pcagent->value == value)
+			return TRUE;
+
+		pcagent->value = value;
+		pcagent->updated = 1;
+		pcagent->deleted = 0;
+		return TRUE;
+	}
+
+	pcagent = g_new0 (PerfCounterAgent, 1);
+	pcagent->next = perfcounters;
+	pcagent->index = counters_index++;
+	pcagent->category_name = g_strdup (category_name);
+	pcagent->name = g_strdup (name);
+	pcagent->type = (int) type;
+	pcagent->value = value;
+	pcagent->emitted = 0;
+	pcagent->updated = 1;
+	pcagent->deleted = 0;
+
+	perfcounters = pcagent;
+
+	return TRUE;
+}
+
+static void
+perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
+{
+	PerfCounterAgent *pcagent;
+	LogBuffer *logbuffer;
+	int size;
+
+	if (!counters_initialized)
+		return;
+
+	mono_mutex_lock (&counters_mutex);
+
+	/* mark all perfcounters as deleted, foreach will unmark them as necessary */
+	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next)
+		pcagent->deleted = 1;
+
+	mono_perfcounter_foreach (perfcounters_foreach, perfcounters);
+
+	perfcounters_emit (profiler);
+
+
+	size = 1 + 10 + 5;
+	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+		if (pcagent->deleted || !pcagent->updated)
+			continue;
+		size += 10 * 2 + sizeof (gint64);
+	}
+
+	logbuffer = ensure_logbuf (size);
+
+	ENTER_LOG (logbuffer, "perfcounters");
+	emit_byte (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE);
+	emit_uvalue (logbuffer, timestamp);
+	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+		if (pcagent->deleted || !pcagent->updated)
+			continue;
+		emit_uvalue (logbuffer, pcagent->index);
+		emit_uvalue (logbuffer, MONO_COUNTER_LONG);
+		emit_svalue (logbuffer, pcagent->value);
+
+		pcagent->updated = 0;
+	}
+
+	emit_value (logbuffer, 0);
+	EXIT_LOG (logbuffer);
+
+	safe_dump (profiler, ensure_logbuf (0));
+
+	mono_mutex_unlock (&counters_mutex);
+}
+
+static void
+counters_and_perfcounters_sample (MonoProfiler *prof)
+{
+	static uint64_t start = -1;
+	uint64_t now;
+
+	if (start == -1)
+		start = current_time ();
+
+	now = current_time ();
+	counters_sample (prof, (now - start) / 1000/ 1000);
+	perfcounters_sample (prof, (now - start) / 1000/ 1000);
+}
+
 #endif /* DISABLE_HELPER_THREAD */
 
 static void
@@ -2215,7 +2366,7 @@ log_shutdown (MonoProfiler *prof)
 {
 	in_shutdown = 1;
 #ifndef DISABLE_HELPER_THREAD
-	counters_sample (prof);
+	counters_and_perfcounters_sample (prof);
 
 	if (prof->command_port) {
 		char c = 1;
@@ -2347,7 +2498,7 @@ helper_thread (void* arg)
 		}
 #endif
 
-		counters_sample (prof);
+		counters_and_perfcounters_sample (prof);
 
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;

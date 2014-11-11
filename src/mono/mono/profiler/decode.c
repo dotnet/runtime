@@ -101,7 +101,7 @@ struct _CounterValue {
 typedef struct _Counter Counter;
 struct _Counter {
 	int index;
-	int section;
+	const char *section;
 	const char *name;
 	int type;
 	int unit;
@@ -118,7 +118,7 @@ struct _CounterList {
 
 typedef struct _CounterSection CounterSection;
 struct _CounterSection {
-	int value;
+	const char *value;
 	CounterList *counters;
 	CounterList *counters_last;
 	CounterSection *next;
@@ -153,7 +153,7 @@ add_counter_to_section (Counter *counter)
 	clist->counter = counter;
 
 	for (csection = counters_sections; csection; csection = csection->next) {
-		if (csection->value == counter->section) {
+		if (strcmp (csection->value, counter->section) == 0) {
 			/* If section exist */
 			if (!csection->counters)
 				csection->counters = clist;
@@ -181,7 +181,7 @@ add_counter_to_section (Counter *counter)
 }
 
 static void
-add_counter (int section, const char *name, int type, int unit, int variance, int index)
+add_counter (const char *section, const char *name, int type, int unit, int variance, int index)
 {
 	CounterList *list, *l;
 	Counter *counter;
@@ -227,7 +227,7 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 	for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
 		if (ctimestamp->value == timestamp) {
 			for (csection = ctimestamp->sections; csection; csection = csection->next) {
-				if (csection->value == counter->section) {
+				if (strcmp (csection->value, counter->section) == 0) {
 					/* if timestamp exist and section exist */
 					if (!csection->counters)
 						csection->counters = clist;
@@ -446,7 +446,7 @@ dump_counters (void)
 				for (i = 0; counters_to_print [i][0] != 0; i++) {
 					if (strcmp (counters_to_print [i], counter->name) == 0) {
 						if (!section_printed) {
-							fprintf (outfile, "\t%s:\n", section_name (csection->value));
+							fprintf (outfile, "\t%s:\n", csection->value);
 							section_printed = 1;
 						}
 
@@ -466,7 +466,7 @@ dump_counters (void)
 				(unsigned long long) (ctimestamp->value % 1000));
 
 			for (csection = ctimestamp->sections; csection; csection = csection->next) {
-				fprintf (outfile, "\t\t%s:\n", section_name (csection->value));
+				fprintf (outfile, "\t\t%s:\n", csection->value);
 
 				for (clist = csection->counters; clist; clist = clist->next) {
 					counter = clist->counter;
@@ -481,7 +481,7 @@ dump_counters (void)
 		}
 	} else if (counters_sort_mode == COUNTERS_SORT_CATEGORY) {
 		for (csection = counters_sections; csection; csection = csection->next) {
-			fprintf (outfile, "\t%s:\n", section_name (csection->value));
+			fprintf (outfile, "\t%s:\n", csection->value);
 
 			for (clist = csection->counters; clist; clist = clist->next) {
 				counter = clist->counter;
@@ -2412,13 +2412,20 @@ decode_buffer (ProfContext *ctx)
 				for (i = 0; i < len; i++) {
 					uint64_t type, unit, variance, index;
 					uint64_t section = decode_uleb128 (p, &p);
-					char *name = pstrdup ((char*)p);
+					char *section_str, *name;
+					if (section != MONO_COUNTER_PERFCOUNTERS) {
+						section_str = (char*) section_name (section);
+					} else {
+						section_str = pstrdup ((char*)p);
+						while (*p++);
+					}
+					name = pstrdup ((char*)p);
 					while (*p++);
 					type = decode_uleb128 (p, &p);
 					unit = decode_uleb128 (p, &p);
 					variance = decode_uleb128 (p, &p);
 					index = decode_uleb128 (p, &p);
-					add_counter ((int)section, name, (int)type, (int)unit, (int)variance, (int)index);
+					add_counter (section_str, name, (int)type, (int)unit, (int)variance, (int)index);
 				}
 			} else if (subtype == TYPE_SAMPLE_COUNTERS) {
 				int i;

@@ -5,7 +5,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
 #define LOG_VERSION_MINOR 4
-#define LOG_DATA_VERSION 6
+#define LOG_DATA_VERSION 7
 /*
  * Changes in data versions:
  * version 2: added offsets in heap walk
