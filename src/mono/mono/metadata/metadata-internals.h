@@ -204,7 +204,7 @@ struct _MonoImage {
 	guint32 module_count;
 	gboolean *modules_loaded;
 
-	MonoImage **files;
+	MonoImage **files; /*protected by the image lock*/
 
 	gpointer aot_module;
 
