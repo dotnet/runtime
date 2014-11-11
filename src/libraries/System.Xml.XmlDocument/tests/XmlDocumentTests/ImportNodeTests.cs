@@ -18,7 +18,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Throws<InvalidOperationException>(() => xmlDocument.ImportNode(null, true));
         }
 
-        /*[Fact]* TODO*/
+        /*[Fact] */
         public static void ImportDocumentNode()
         {
             var xmlDocument = new XmlDocument();

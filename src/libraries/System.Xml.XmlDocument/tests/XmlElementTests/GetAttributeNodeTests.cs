@@ -49,7 +49,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void CreateAttributeNode()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             xmlDocument.DocumentElement.SetAttribute("attr2", "value");
 
@@ -64,7 +64,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void CloneAttributeNodeDeepTrue()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\" attr2=\"value\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\" attr2=\"value\">This is a test</elem1>");
 
             var attribute = xmlDocument.DocumentElement.GetAttributeNode("attr2");
 
@@ -77,7 +77,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void CloneAttributeNodeDeepFalse()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\" attr2=\"value\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\" attr2=\"value\">This is a test</elem1>");
 
             var attribute = xmlDocument.DocumentElement.GetAttributeNode("attr2");
 
@@ -90,7 +90,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void CreateAttributeWithNamespaceNode()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             var attribute = (XmlAttribute)xmlDocument.CreateAttribute("foo:bar");
 
@@ -109,7 +109,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void NonExistentAttribute()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             Assert.Null(xmlDocument.DocumentElement.GetAttributeNode("attr2"));
         }
@@ -118,7 +118,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void EmptyString()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             Assert.Null(xmlDocument.DocumentElement.GetAttributeNode(string.Empty));
         }
@@ -127,7 +127,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void GetRemovedAttribute()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
             xmlDocument.DocumentElement.RemoveAttribute("attr1");
 
             Assert.Null(xmlDocument.DocumentElement.GetAttributeNode("attr1"));
