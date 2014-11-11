@@ -48,7 +48,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void SetAttributeAndGetIt()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             xmlDocument.DocumentElement.SetAttribute("attr2", "test");
 
@@ -59,7 +59,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void RemoveAnAttributeAndGetIt()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             xmlDocument.DocumentElement.RemoveAttribute("attr1");
 
@@ -70,7 +70,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void RemoveFirstOfThreeAttributeAndGetIt()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\" attr2=\"bar\" attr3=\"foo\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\" attr2=\"bar\" attr3=\"foo\">This is a test</elem1>");
 
             xmlDocument.DocumentElement.RemoveAttribute("attr1");
 
@@ -81,7 +81,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void SetAttributeThatExistsAndGetIt()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             xmlDocument.DocumentElement.SetAttribute("attr1", "test");
 

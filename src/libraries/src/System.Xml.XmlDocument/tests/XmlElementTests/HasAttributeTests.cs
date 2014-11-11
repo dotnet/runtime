@@ -12,7 +12,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void ExistingAttribute()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<elem1 attr1=\"foobar\">This is a test</elem1>");
+            xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
             Assert.True(xmlDocument.DocumentElement.HasAttribute("attr1"));
         }

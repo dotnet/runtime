@@ -12,7 +12,7 @@ namespace XmlDocumentTests.XmlElementTests
         public static void GetElements()
         {
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<doc> <elem1 attr1=\"foobar\" attr2=\"foo\" attr3=\"foo\">This is a test</elem1> text after </doc>");
+            xmlDocument.LoadXml("<doc> <elem1 attr1=\"attr1\" attr2=\"foo\" attr3=\"foo\">This is a test</elem1> text after </doc>");
 
             var node = (XmlElement)xmlDocument.DocumentElement.FirstChild;
             Assert.Equal(3, node.Attributes.Count);
