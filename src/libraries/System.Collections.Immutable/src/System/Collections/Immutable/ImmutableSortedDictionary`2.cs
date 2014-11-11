@@ -1381,7 +1381,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + dictionarySize, "arrayIndex");
 
-                if (IsEmpty)
+                if (this.IsEmpty)
                 {
                     return;
                 }
