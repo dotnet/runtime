@@ -2628,21 +2628,22 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
 
 	/*
-	 * Concurrent mark never follows references into the nursery.
-	 * In the start and finish pauses we must scan live nursery
-	 * objects, though.  We could simply scan all nursery objects,
-	 * but that would be conservative.  The easiest way is to do a
-	 * nursery collection, which copies all live nursery objects
-	 * (except pinned ones, with the simple nursery) to the major
-	 * heap.  Scanning the mod union table later will then scan
-	 * those promoted objects, provided they're reachable.  Pinned
-	 * objects in the nursery - which we can trivially find in the
-	 * pinning queue - are treated as roots in the mark pauses.
+	 * Concurrent mark never follows references into the nursery.  In the start and
+	 * finish pauses we must scan live nursery objects, though.
 	 *
-	 * The split nursery complicates the latter part because
-	 * non-pinned objects can survive in the nursery.  That's why
-	 * we need to do a full front-to-back scan of the nursery,
-	 * marking all objects.
+	 * In the finish pause we do this conservatively by scanning all nursery objects.
+	 * Previously we would only scan pinned objects here.  We assumed that all objects
+	 * that were pinned during the nursery collection immediately preceding this finish
+	 * mark would be pinned again here.  Due to the way we get the stack end for the GC
+	 * thread, however, that's not necessarily the case: we scan part of the stack used
+	 * by the GC itself, which changes constantly, so pinning isn't entirely
+	 * deterministic.
+	 *
+	 * The split nursery also complicates things because non-pinned objects can survive
+	 * in the nursery.  That's why we need to do a full scan of the nursery for it, too.
+	 *
+	 * In the future we shouldn't do a preceding nursery collection at all and instead
+	 * do the finish pause with promotion from the nursery.
 	 *
 	 * A further complication arises when we have late-pinned objects from the preceding
 	 * nursery collection.  Those are the result of being out of memory when trying to
@@ -2652,7 +2653,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	 * Non-concurrent mark evacuates from the nursery, so it's
 	 * sufficient to just scan pinned nursery objects.
 	 */
-	if (scan_whole_nursery || (concurrent_collection_in_progress && sgen_minor_collector.is_split)) {
+	if (scan_whole_nursery || finish_up_concurrent_mark || (concurrent_collection_in_progress && sgen_minor_collector.is_split)) {
 		scan_nursery_objects (ctx);
 	} else {
 		pin_objects_in_nursery (ctx);
