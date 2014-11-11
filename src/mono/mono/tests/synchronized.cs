@@ -47,6 +47,14 @@ class Tests {
 		return true;
 	}
 
+	class Gen<T>
+	{
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public static void Run ()
+		{
+		}
+	}
+
 	public delegate int Delegate1 ();
 
 	static public int Main (String[] args) {
@@ -112,6 +120,15 @@ class Tests {
 		}
 		if (is_synchronized (b))
 			return 1;
+
+		Monitor.Enter (typeof (Gen<>));
+		Thread t = new Thread (() =>
+			{
+				Gen<object>.Run ();
+			});
+		t.Start ();
+		t.Join ();
+		Monitor.Exit (typeof (Gen<>));
 
 		return 0;
 	}
