@@ -384,8 +384,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override void WriteCharEntity(char ch)
         {
-            char[] chars = { ch };
-            WriteString(new string(chars), TextBlockType.Text);
+            WriteString(new string(ch, 1), TextBlockType.Text);
         }
 
         /// <summary>

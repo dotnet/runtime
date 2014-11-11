@@ -148,7 +148,7 @@ namespace System.Xml
         // Forward call to WriteString(string).
         public override void WriteCharEntity(char ch)
         {
-            WriteString(new string(new char[] { ch }));
+            WriteString(new string(ch, 1));
         }
 
         // Forward call to WriteString(string).
