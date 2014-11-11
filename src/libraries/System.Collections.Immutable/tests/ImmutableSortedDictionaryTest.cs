@@ -367,7 +367,7 @@ namespace System.Collections.Immutable.Test
             File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing.txt"), string.Join(Environment.NewLine, timing));
         }
 
-        [Fact]
+        ////[Fact] // not really a functional test -- but very useful to enable when collecting perf traces.
         public void EnumerationPerformance_Empty()
         {
             var dictionary = ImmutableSortedDictionary<int, int>.Empty;
