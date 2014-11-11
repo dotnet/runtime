@@ -1689,7 +1689,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (IsEmpty)
+                if (this.IsEmpty)
                 {
                     return;
                 }

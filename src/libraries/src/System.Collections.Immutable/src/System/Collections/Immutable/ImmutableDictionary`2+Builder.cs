@@ -345,7 +345,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (count == 0) 
+                if (this.count == 0) 
                 {
                     return;
                 }
