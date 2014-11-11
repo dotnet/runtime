@@ -6258,15 +6258,14 @@ mono_ptr_class_get (MonoType *type)
 	el_class = mono_class_from_mono_type (type);
 	image = el_class->image;
 
-	mono_loader_lock ();
-
-	if (!image->ptr_cache)
-		image->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-	if ((result = g_hash_table_lookup (image->ptr_cache, el_class))) {
-		mono_loader_unlock ();
-		return result;
+	mono_image_lock (image);
+	if (image->ptr_cache) {
+		if ((result = g_hash_table_lookup (image->ptr_cache, el_class))) {
+			return result;
+		}
 	}
+	mono_image_unlock (image);
+	
 	result = mono_image_alloc0 (image, sizeof (MonoClass));
 
 	classes_size += sizeof (MonoClass);
@@ -6293,9 +6292,19 @@ mono_ptr_class_get (MonoType *type)
 
 	mono_class_setup_supertypes (result);
 
+	mono_image_lock (image);
+	if (image->ptr_cache) {
+		MonoClass *result2;
+		if ((result2 = g_hash_table_lookup (image->ptr_cache, el_class))) {
+			mono_image_unlock (image);
+			mono_profiler_class_loaded (result, MONO_PROFILE_FAILED);
+			return result2;
+		}
+	} else {
+		image->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	}
 	g_hash_table_insert (image->ptr_cache, el_class, result);
-
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 
 	mono_profiler_class_loaded (result, MONO_PROFILE_OK);
 
