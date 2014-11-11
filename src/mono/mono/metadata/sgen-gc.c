@@ -2886,8 +2886,33 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
+	if (!concurrent_collection_in_progress) {
+		/* walk the pin_queue, build up the fragment list of free memory, unmark
+		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
+		 * next allocations.
+		 */
+		if (!sgen_build_nursery_fragments (nursery_section, NULL))
+			degraded_mode = 1;
+
+		/* prepare the pin queue for the next collection */
+		sgen_finish_pinning ();
+
+		/* Clear TLABs for all threads */
+		sgen_clear_tlabs ();
+
+		sgen_pin_stats_reset ();
+	}
+
+	if (concurrent_collection_in_progress)
+		sgen_cement_concurrent_finish ();
+	sgen_cement_clear_below_threshold ();
+
 	if (check_mark_bits_after_major_collection)
-		sgen_check_heap_marked ();
+		sgen_check_heap_marked (concurrent_collection_in_progress);
+
+	TV_GETTIME (btv);
+	time_major_fragment_creation += TV_ELAPSED (atv, btv);
+
 
 	MONO_GC_SWEEP_BEGIN (GENERATION_OLD, !major_collector.sweeps_lazily);
 
@@ -2914,44 +2939,20 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		bigobj = bigobj->next;
 	}
 
-	TV_GETTIME (btv);
-	time_major_free_bigobjs += TV_ELAPSED (atv, btv);
+	TV_GETTIME (atv);
+	time_major_free_bigobjs += TV_ELAPSED (btv, atv);
 
 	sgen_los_sweep ();
 
-	TV_GETTIME (atv);
-	time_major_los_sweep += TV_ELAPSED (btv, atv);
+	TV_GETTIME (btv);
+	time_major_los_sweep += TV_ELAPSED (atv, btv);
 
 	major_collector.sweep ();
 
 	MONO_GC_SWEEP_END (GENERATION_OLD, !major_collector.sweeps_lazily);
 
-	TV_GETTIME (btv);
-	time_major_sweep += TV_ELAPSED (atv, btv);
-
-	if (!concurrent_collection_in_progress) {
-		/* walk the pin_queue, build up the fragment list of free memory, unmark
-		 * pinned objects as we go, memzero() the empty fragments so they are ready for the
-		 * next allocations.
-		 */
-		if (!sgen_build_nursery_fragments (nursery_section, NULL))
-			degraded_mode = 1;
-
-		/* prepare the pin queue for the next collection */
-		sgen_finish_pinning ();
-
-		/* Clear TLABs for all threads */
-		sgen_clear_tlabs ();
-
-		sgen_pin_stats_reset ();
-	}
-
-	if (concurrent_collection_in_progress)
-		sgen_cement_concurrent_finish ();
-	sgen_cement_clear_below_threshold ();
-
 	TV_GETTIME (atv);
-	time_major_fragment_creation += TV_ELAPSED (btv, atv);
+	time_major_sweep += TV_ELAPSED (btv, atv);
 
 	if (heap_dump_file)
 		dump_heap ("major", gc_stats.major_gc_count - 1, reason);
@@ -5049,6 +5050,9 @@ mono_gc_base_init (void)
 		}
 		g_strfreev (opts);
 	}
+
+	if (check_mark_bits_after_major_collection)
+		nursery_clear_policy = CLEAR_AT_GC;
 
 	if (major_collector.post_param_init)
 		major_collector.post_param_init (&major_collector);
