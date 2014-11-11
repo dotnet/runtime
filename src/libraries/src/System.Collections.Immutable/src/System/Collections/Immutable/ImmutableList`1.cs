@@ -2590,9 +2590,11 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
+                int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
                 foreach (var element in this)
                 {
-                    array.SetValue(element, arrayIndex++);
+                    indices[0] = arrayIndex++;
+                    array.SetValue(element, indices);
                 }
             }
 
