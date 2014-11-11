@@ -73,9 +73,10 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void EnumeratorRecyclingMisuse()
         {
-            var collection = ImmutableHashSet.Create<int>();
+            var collection = ImmutableHashSet.Create<int>().Add(5);
             var enumerator = collection.GetEnumerator();
             var enumeratorCopy = enumerator;
+            Assert.True(enumerator.MoveNext());
             Assert.False(enumerator.MoveNext());
             enumerator.Dispose();
             Assert.Throws<ObjectDisposedException>(() => enumerator.MoveNext());
@@ -90,6 +91,7 @@ namespace System.Collections.Immutable.Test
             // We expect that acquiring a new enumerator will use the same underlying Stack<T> object,
             // but that it will not throw exceptions for the new enumerator.
             enumerator = collection.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
             Assert.False(enumerator.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             enumerator.Dispose();
