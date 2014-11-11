@@ -92,16 +92,16 @@ namespace XmlDocumentTests.XmlElementTests
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml("<elem1 attr1=\"attr1\">This is a test</elem1>");
 
-            var attribute = (XmlAttribute)xmlDocument.CreateAttribute("foo:bar");
+            var attribute = (XmlAttribute)xmlDocument.CreateAttribute("val1:val2");
 
             attribute.Value = "value";
             xmlDocument.DocumentElement.SetAttributeNode(attribute);
 
-            var retrievedAttribute = xmlDocument.DocumentElement.GetAttributeNode("foo:bar");
+            var retrievedAttribute = xmlDocument.DocumentElement.GetAttributeNode("val1:val2");
 
             Assert.NotNull(retrievedAttribute);
             Assert.Equal("value", retrievedAttribute.Value);
-            Assert.Equal("foo:bar", retrievedAttribute.Name);
+            Assert.Equal("val1:val2", retrievedAttribute.Name);
             Assert.Equal(XmlNodeType.Attribute, retrievedAttribute.NodeType);
         }
 
