@@ -121,21 +121,11 @@
     </Compile>
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
-    <Compile Include="Validation\ValidationStrings.Designer.cs">
-      <DependentUpon>Validation\ValidationStrings.resx</DependentUpon>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Validation\ValidationStrings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ValidationStrings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Validation</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
