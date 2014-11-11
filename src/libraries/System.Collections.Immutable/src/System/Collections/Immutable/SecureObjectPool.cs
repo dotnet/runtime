@@ -31,11 +31,12 @@ namespace System.Collections.Immutable
         /// </summary>
         internal static int NewId()
         {
-            int result = Interlocked.Increment(ref poolUserIdCounter);
-            if (result == UnassignedId)
+            int result;
+            do
             {
                 result = Interlocked.Increment(ref poolUserIdCounter);
             }
+            while (result == UnassignedId);
 
             return result;
         }
@@ -46,12 +47,12 @@ namespace System.Collections.Immutable
     {
         public void TryAdd(TCaller caller, SecurePooledObject<T> item)
         {
-                // Only allow the caller to recycle this object if it is the current owner.
-                if (caller.PoolUserId == item.Owner)
-                {
-                    item.Owner = SecureObjectPool.UnassignedId;
-                    AllocFreeConcurrentStack<SecurePooledObject<T>>.TryAdd(item);
-                }
+            // Only allow the caller to recycle this object if it is the current owner.
+            if (caller.PoolUserId == item.Owner)
+            {
+                item.Owner = SecureObjectPool.UnassignedId;
+                AllocFreeConcurrentStack<SecurePooledObject<T>>.TryAdd(item);
+            }
         }
 
         public bool TryTake(TCaller caller, out SecurePooledObject<T> item)
