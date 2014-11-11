@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System.Xml;
 
@@ -55,7 +58,5 @@ namespace XmlDocumentTests.XmlElementTests
             xmlDocument.DocumentElement.RemoveAttribute("att26", "ns2");
             Assert.Equal(6, xmlDocument.DocumentElement.Attributes.Count);
         }
-
-
     }
 }

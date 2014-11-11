@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System;
 using System.Xml;
@@ -12,7 +15,6 @@ namespace XmlDocumentTests.XmlNodeTests
         [Fact]
         public static void IterativelyRemoveAllChildNodes()
         {
-
             var xml = @"<root>
   text node one
   <elem1 child1="""" child2=""duu"" child3=""e1;e2;"" child4=""a1"" child5=""goody"">
