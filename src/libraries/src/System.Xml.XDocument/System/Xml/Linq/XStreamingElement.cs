@@ -1,0 +1,224 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Xml;
+using CultureInfo = System.Globalization.CultureInfo;
+using Debug = System.Diagnostics.Debug;
+using IEnumerable = System.Collections.IEnumerable;
+using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
+using Enumerable = System.Linq.Enumerable;
+using IComparer = System.Collections.IComparer;
+using IEqualityComparer = System.Collections.IEqualityComparer;
+using StringBuilder = System.Text.StringBuilder;
+using Encoding = System.Text.Encoding;
+using Interlocked = System.Threading.Interlocked;
+using System.Reflection;
+
+namespace System.Xml.Linq
+{
+    /// <summary>
+    /// Represents a class that allows elements to be streamed
+    /// on input and output.
+    /// </summary>
+    public class XStreamingElement
+    {
+        internal XName name;
+        internal object content;
+
+        /// <summary>
+        ///  Creates a <see cref="XStreamingElement"/> node with a given name
+        /// </summary>
+        /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
+        public XStreamingElement(XName name)
+        {
+            if (name == null) throw new ArgumentNullException("name");
+            this.name = name;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="XStreamingElement"/> node with a given name and content
+        /// </summary>
+        /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
+        /// <param name="content">The content to assign to the new <see cref="XStreamingElement"/> node</param>
+        public XStreamingElement(XName name, object content)
+            : this(name)
+        {
+            this.content = content is List<object> ? new object[] { content } : content;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="XStreamingElement"/> node with a given name and content
+        /// </summary>
+        /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
+        /// <param name="content">An array containing content to assign to the new <see cref="XStreamingElement"/> node</param>
+        public XStreamingElement(XName name, params object[] content)
+            : this(name)
+        {
+            this.content = content;
+        }
+
+        /// <summary>
+        /// Gets or sets the name of this streaming element.
+        /// </summary>
+        public XName Name
+        {
+            get
+            {
+                return name;
+            }
+            set
+            {
+                if (value == null) throw new ArgumentNullException("value");
+                name = value;
+            }
+        }
+
+        /// <summary>
+        /// Add content to an <see cref="XStreamingElement"/>
+        /// </summary>
+        /// <param name="content">Object containg content to add</param>
+        public void Add(object content)
+        {
+            if (content != null)
+            {
+                List<object> list = this.content as List<object>;
+                if (list == null)
+                {
+                    list = new List<object>();
+                    if (this.content != null) list.Add(this.content);
+                    this.content = list;
+                }
+                list.Add(content);
+            }
+        }
+
+        /// <summary>
+        /// Add content to an <see cref="XStreamingElement"/>
+        /// </summary>
+        /// <param name="content">array of objects containg content to add</param>
+        public void Add(params object[] content)
+        {
+            Add((object)content);
+        }
+
+        /// <summary>
+        /// Save the contents of an <see cref="XStreamingElement"/> to a <see cref="Stream"/>
+        /// with formatting.
+        /// </summary>
+        /// <param name="stream"><see cref="Stream"/> to write to </param>      
+        public void Save(Stream stream)
+        {
+            Save(stream, SaveOptions.None);
+        }
+
+        /// <summary>
+        /// Save the contents of an <see cref="XStreamingElement"/> to a <see cref="Stream"/>,
+        /// optionally formatting.
+        /// </summary>
+        /// <param name="stream"><see cref="Stream"/> to write to </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        public void Save(Stream stream, SaveOptions options)
+        {
+            XmlWriterSettings ws = XNode.GetXmlWriterSettings(options);
+            using (XmlWriter w = XmlWriter.Create(stream, ws))
+            {
+                Save(w);
+            }
+        }
+
+        /// <summary>
+        /// Save the contents of an <see cref="XStreamingElement"/> to a text writer
+        /// with formatting.
+        /// </summary>
+        /// <param name="textWriter"><see cref="TextWriter"/> to write to </param>      
+        public void Save(TextWriter textWriter)
+        {
+            Save(textWriter, SaveOptions.None);
+        }
+
+        /// <summary>
+        /// Save the contents of an <see cref="XStreamingElement"/> to a text writer
+        /// optionally formatting.
+        /// </summary>
+        /// <param name="textWriter"><see cref="TextWriter"/> to write to </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        public void Save(TextWriter textWriter, SaveOptions options)
+        {
+            XmlWriterSettings ws = XNode.GetXmlWriterSettings(options);
+            using (XmlWriter w = XmlWriter.Create(textWriter, ws))
+            {
+                Save(w);
+            }
+        }
+
+        /// <summary>
+        /// Save the contents of an <see cref="XStreamingElement"/> to an XML writer, not preserving whitepace
+        /// </summary>
+        /// <param name="writer"><see cref="XmlWriter"/> to write to </param>    
+        public void Save(XmlWriter writer)
+        {
+            if (writer == null) throw new ArgumentNullException("writer");
+            writer.WriteStartDocument();
+            WriteTo(writer);
+            writer.WriteEndDocument();
+        }
+
+        /// <summary>
+        /// Get the XML content of an <see cref="XStreamingElement"/> as a 
+        /// formatted string.
+        /// </summary>
+        /// <returns>The XML text as a formatted string</returns>
+        public override string ToString()
+        {
+            return GetXmlString(SaveOptions.None);
+        }
+
+        /// <summary>
+        /// Gets the XML content of this streaming element as a string.
+        /// </summary>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the content is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        /// <returns>An XML string</returns>
+        public string ToString(SaveOptions options)
+        {
+            return GetXmlString(options);
+        }
+
+        /// <summary>
+        /// Write this <see cref="XStreamingElement"/> to an <see cref="XmlWriter"/>
+        /// </summary>
+        /// <param name="writer"></param>
+        public void WriteTo(XmlWriter writer)
+        {
+            if (writer == null) throw new ArgumentNullException("writer");
+            new StreamingElementWriter(writer).WriteStreamingElement(this);
+        }
+
+        string GetXmlString(SaveOptions o)
+        {
+            using (StringWriter sw = new StringWriter(CultureInfo.InvariantCulture))
+            {
+                XmlWriterSettings ws = new XmlWriterSettings();
+                ws.OmitXmlDeclaration = true;
+                if ((o & SaveOptions.DisableFormatting) == 0) ws.Indent = true;
+                if ((o & SaveOptions.OmitDuplicateNamespaces) != 0) ws.NamespaceHandling |= NamespaceHandling.OmitDuplicates;
+                using (XmlWriter w = XmlWriter.Create(sw, ws))
+                {
+                    WriteTo(w);
+                }
+                return sw.ToString();
+            }
+        }
+    }
+}

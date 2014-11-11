@@ -72,8 +72,35 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\Extensions.cs" />
+    <Compile Include="System\Xml\Linq\LineInfoAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\LineInfoEndElementAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\XAttribute.cs" />
+    <Compile Include="System\Xml\Linq\XCData.cs" />
+    <Compile Include="System\Xml\Linq\XComment.cs" />
+    <Compile Include="System\Xml\Linq\XContainer.cs" />
+    <Compile Include="System\Xml\Linq\XDeclaration.cs" />
+    <Compile Include="System\Xml\Linq\XDocument.cs" />
+    <Compile Include="System\Xml\Linq\XDocumentType.cs" />
+    <Compile Include="System\Xml\Linq\XElement.cs" />
+    <Compile Include="System\Xml\Linq\XHashtable.cs" />
+    <Compile Include="System\Xml\Linq\XHelper.cs" />
     <Compile Include="System\Xml\Linq\XLinq.cs" />
     <Compile Include="System\Linq\Enumerable.cs" />
+    <Compile Include="System\Xml\Linq\XName.cs" />
+    <Compile Include="System\Xml\Linq\XNamespace.cs" />
+    <Compile Include="System\Xml\Linq\XNode.cs" />
+    <Compile Include="System\Xml\Linq\XNodeBuilder.cs" />
+    <Compile Include="System\Xml\Linq\XNodeDocumentOrderComparer.cs" />
+    <Compile Include="System\Xml\Linq\XNodeEqualityComparer.cs" />
+    <Compile Include="System\Xml\Linq\XNodeReader.cs" />
+    <Compile Include="System\Xml\Linq\XObject.cs" />
+    <Compile Include="System\Xml\Linq\XObjectChangeAnnotation.cs" />
+    <Compile Include="System\Xml\Linq\XObjectChangeEventArgs.cs" />
+    <Compile Include="System\Xml\Linq\XProcessingInstruction.cs" />
+    <Compile Include="System\Xml\Linq\XStreamingElement.cs" />
+    <Compile Include="System\Xml\Linq\XText.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
