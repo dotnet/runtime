@@ -21,6 +21,8 @@ namespace System.Xml.Linq
 {
     internal class XNodeReader : XmlReader, IXmlLineInfo
     {
+        private static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };  
+
         // The reader position is encoded by the tuple (source, parent).
         // Lazy text uses (instance, parent element). Attribute value
         // uses (instance, parent attribute). End element uses (instance, 
@@ -442,7 +444,7 @@ namespace System.Xml.Linq
                         XAttribute a = e.Attribute(name);
                         if (a != null)
                         {
-                            switch (a.Value.Trim(new char[] { ' ', '\t', '\n', '\r' }))
+                            switch (a.Value.Trim(WhitespaceChars))
                             {
                                 case "preserve":
                                     return XmlSpace.Preserve;

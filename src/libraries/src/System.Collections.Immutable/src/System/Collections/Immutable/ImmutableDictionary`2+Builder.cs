@@ -345,9 +345,16 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
+                if (this.count == 0) 
+                {
+                    return;
+                }
+
+                int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
                 foreach (var item in this)
                 {
-                    array.SetValue(new DictionaryEntry(item.Key, item.Value), arrayIndex++);
+                    indices[0] = arrayIndex++;
+                    array.SetValue(new DictionaryEntry(item.Key, item.Value), indices);
                 }
             }
 
