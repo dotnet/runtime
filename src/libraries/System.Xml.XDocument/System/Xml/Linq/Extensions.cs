@@ -1,0 +1,426 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Xml;
+using CultureInfo = System.Globalization.CultureInfo;
+using Debug = System.Diagnostics.Debug;
+using IEnumerable = System.Collections.IEnumerable;
+using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
+using Enumerable = System.Linq.Enumerable;
+using IComparer = System.Collections.IComparer;
+using IEqualityComparer = System.Collections.IEqualityComparer;
+using StringBuilder = System.Text.StringBuilder;
+using Encoding = System.Text.Encoding;
+using Interlocked = System.Threading.Interlocked;
+using System.Reflection;
+
+namespace System.Xml.Linq
+{
+    /// <summary>
+    /// Defines the LINQ to XML extension methods.
+    /// </summary>
+    public static class Extensions
+    {
+        /// <summary>
+        /// Returns all of the <see cref="XAttribute"/>s for each <see cref="XElement"/> of
+        /// this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XAttribute"/> containing the XML
+        /// Attributes for every <see cref="XElement"/> in the target <see cref="IEnumerable"/>
+        /// of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XAttribute> Attributes(this IEnumerable<XElement> source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetAttributes(source, null);
+        }
+
+        /// <summary>
+        /// Returns the <see cref="XAttribute"/>s that have a matching <see cref="XName"/>.  Each
+        /// <see cref="XElement"/>'s <see cref="XAttribute"/>s in the target <see cref="IEnumerable"/> 
+        /// of <see cref="XElement"/> are scanned for a matching <see cref="XName"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XAttribute"/> containing the XML
+        /// Attributes with a matching <see cref="XName"/> for every <see cref="XElement"/> in 
+        /// the target <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XAttribute> Attributes(this IEnumerable<XElement> source, XName name)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return name != null ? GetAttributes(source, name) : XAttribute.EmptySequence;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
+        /// and it's parent up to the root) of each of the <see cref="XElement"/>s in this 
+        /// <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
+        /// and it's parent up to the root) of each of the <see cref="XElement"/>s in this 
+        /// <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> Ancestors<T>(this IEnumerable<T> source) where T : XNode
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetAncestors(source, null, false);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
+        /// and it's parent up to the root) that have a matching <see cref="XName"/>.  This is done for each 
+        /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the ancestors (parent
+        /// and it's parent up to the root) that have a matching <see cref="XName"/>.  This is done for each 
+        /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> Ancestors<T>(this IEnumerable<T> source, XName name) where T : XNode
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return name != null ? GetAncestors(source, name, false) : XElement.EmptySequence;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root).
+        /// This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of 
+        /// <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root).
+        /// This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of 
+        /// <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> AncestorsAndSelf(this IEnumerable<XElement> source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetAncestors(source, null, true);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root)
+        /// that match the passed in <see cref="XName"/>.  This is done for each 
+        /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's ancestors (parent and it's parent up to the root)
+        /// that match the passed in <see cref="XName"/>.  This is done for each 
+        /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> AncestorsAndSelf(this IEnumerable<XElement> source, XName name)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return name != null ? GetAncestors(source, name, true) : XElement.EmptySequence;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XNode"/> over the content of a set of nodes
+        /// </summary>
+        public static IEnumerable<XNode> Nodes<T>(this IEnumerable<T> source) where T : XContainer
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (XContainer root in source)
+            {
+                if (root != null)
+                {
+                    XNode n = root.LastNode;
+                    if (n != null)
+                    {
+                        do
+                        {
+                            n = n.next;
+                            yield return n;
+                        } while (n.parent == root && n != root.content);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XNode"/> over the descendants of a set of nodes
+        /// </summary>     
+        public static IEnumerable<XNode> DescendantNodes<T>(this IEnumerable<T> source) where T : XContainer
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetDescendantNodes(source, false);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
+        /// and their children down to the leaf level).  This is done for each <see cref="XElement"/> in  
+        /// this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
+        /// and their children down to the leaf level).  This is done for each <see cref="XElement"/> in  
+        /// this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> Descendants<T>(this IEnumerable<T> source) where T : XContainer
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetDescendants(source, null, false);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
+        /// and their children down to the leaf level) that have a matching <see cref="XName"/>.  This is done 
+        /// for each <see cref="XElement"/> in the target <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the descendants (children
+        /// and their children down to the leaf level) that have a matching <see cref="XName"/>.  This is done 
+        /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> Descendants<T>(this IEnumerable<T> source, XName name) where T : XContainer
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return name != null ? GetDescendants(source, name, false) : XElement.EmptySequence;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's descendants
+        /// that match the passed in <see cref="XName"/>.  This is done for each 
+        /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and descendants.
+        /// This is done for each 
+        /// <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>      
+        public static IEnumerable<XNode> DescendantNodesAndSelf(this IEnumerable<XElement> source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetDescendantNodes(source, true);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's descendants (children and children's children down 
+        /// to the leaf nodes).  This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> 
+        /// of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's descendants (children and children's children down 
+        /// to the leaf nodes).  This is done for each <see cref="XElement"/> in this <see cref="IEnumerable"/> 
+        /// of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> DescendantsAndSelf(this IEnumerable<XElement> source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetDescendants(source, null, true);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's descendants (children and children's children down 
+        /// to the leaf nodes) that match the passed in <see cref="XName"/>.  This is done for 
+        /// each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the 
+        /// <see cref="XElement"/> and it's descendants (children and children's children down 
+        /// to the leaf nodes) that match the passed in <see cref="XName"/>.  This is done for 
+        /// each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> DescendantsAndSelf(this IEnumerable<XElement> source, XName name)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return name != null ? GetDescendants(source, name, true) : XElement.EmptySequence;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the child elements
+        /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the child elements
+        /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> Elements<T>(this IEnumerable<T> source) where T : XContainer
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return GetElements(source, null);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the child elements
+        /// with a matching for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the child elements
+        /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </returns>
+        public static IEnumerable<XElement> Elements<T>(this IEnumerable<T> source, XName name) where T : XContainer
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            return name != null ? GetElements(source, name) : XElement.EmptySequence;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerable"/> of <see cref="XElement"/> containing the child elements
+        /// with a matching for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable"/> of <see cref="XElement"/> containing the child elements
+        /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
+        /// in document order
+        /// </returns>
+        public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode
+        {
+            return Enumerable.OrderBy(source, n => (XNode)n, XNode.DocumentOrderComparer);
+        }
+
+        /// <summary>
+        /// Removes each <see cref="XAttribute"/> represented in this <see cref="IEnumerable"/> of
+        /// <see cref="XAttribute"/>.  Note that this method uses snapshot semantics (copies the
+        /// attributes to a <see cref="List&lt;T>"/> before deleting each).
+        /// </summary>
+        public static void Remove(this IEnumerable<XAttribute> source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (XAttribute a in new List<XAttribute>(source))
+                if (a != null) a.Remove();
+        }
+
+        /// <summary>
+        /// Removes each <see cref="XNode"/> represented in this <see cref="IEnumerable"/>
+        /// T which must be a derived from <see cref="XNode"/>.  Note that this method uses snapshot semantics 
+        /// (copies the <see cref="XNode"/>s to a List before deleting each).
+        /// </summary>
+        public static void Remove<T>(this IEnumerable<T> source) where T : XNode
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (T node in new List<T>(source))
+                if (node != null) node.Remove();
+        }
+
+        static IEnumerable<XAttribute> GetAttributes(IEnumerable<XElement> source, XName name)
+        {
+            foreach (XElement e in source)
+            {
+                if (e != null)
+                {
+                    XAttribute a = e.lastAttr;
+                    if (a != null)
+                    {
+                        do
+                        {
+                            a = a.next;
+                            if (name == null || a.name == name) yield return a;
+                        } while (a.parent == e && a != e.lastAttr);
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<XElement> GetAncestors<T>(IEnumerable<T> source, XName name, bool self) where T : XNode
+        {
+            foreach (XNode node in source)
+            {
+                if (node != null)
+                {
+                    XElement e = (self ? node : node.parent) as XElement;
+                    while (e != null)
+                    {
+                        if (name == null || e.name == name) yield return e;
+                        e = e.parent as XElement;
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<XNode> GetDescendantNodes<T>(IEnumerable<T> source, bool self) where T : XContainer
+        {
+            foreach (XContainer root in source)
+            {
+                if (root != null)
+                {
+                    if (self) yield return root;
+                    XNode n = root;
+                    while (true)
+                    {
+                        XContainer c = n as XContainer;
+                        XNode first;
+                        if (c != null && (first = c.FirstNode) != null)
+                        {
+                            n = first;
+                        }
+                        else
+                        {
+                            while (n != null && n != root && n == n.parent.content) n = n.parent;
+                            if (n == null || n == root) break;
+                            n = n.next;
+                        }
+                        yield return n;
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<XElement> GetDescendants<T>(IEnumerable<T> source, XName name, bool self) where T : XContainer
+        {
+            foreach (XContainer root in source)
+            {
+                if (root != null)
+                {
+                    if (self)
+                    {
+                        XElement e = (XElement)root;
+                        if (name == null || e.name == name) yield return e;
+                    }
+                    XNode n = root;
+                    XContainer c = root;
+                    while (true)
+                    {
+                        if (c != null && c.content is XNode)
+                        {
+                            n = ((XNode)c.content).next;
+                        }
+                        else
+                        {
+                            while (n != null && n != root && n == n.parent.content) n = n.parent;
+                            if (n == null || n == root) break;
+                            n = n.next;
+                        }
+                        XElement e = n as XElement;
+                        if (e != null && (name == null || e.name == name)) yield return e;
+                        c = e;
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<XElement> GetElements<T>(IEnumerable<T> source, XName name) where T : XContainer
+        {
+            foreach (XContainer root in source)
+            {
+                if (root != null)
+                {
+                    XNode n = root.content as XNode;
+                    if (n != null)
+                    {
+                        do
+                        {
+                            n = n.next;
+                            XElement e = n as XElement;
+                            if (e != null && (name == null || e.name == name)) yield return e;
+                        } while (n.parent == root && n != root.content);
+                    }
+                }
+            }
+        }
+    }
+}
