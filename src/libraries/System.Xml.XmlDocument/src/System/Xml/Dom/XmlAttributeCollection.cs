@@ -246,8 +246,12 @@ namespace System.Xml
 
         void ICollection.CopyTo(Array array, int index)
         {
+            int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
             for (int i = 0, max = Count; i < max; i++, index++)
-                array.SetValue(nodes[i], index);
+            {
+                indices[0] = index;
+                array.SetValue(nodes[i], indices);
+            }
         }
 
         bool ICollection.IsSynchronized
