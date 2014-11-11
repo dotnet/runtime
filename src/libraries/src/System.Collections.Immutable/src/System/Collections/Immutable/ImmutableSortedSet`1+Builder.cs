@@ -98,6 +98,20 @@ namespace System.Collections.Immutable
             #endregion
 
             /// <summary>
+            /// Gets the element of the set at the given index.
+            /// </summary>
+            /// <param name="index">The 0-based index of the element in the set to return.</param>
+            /// <returns>The element at the given position.</returns>
+            /// <remarks>
+            /// No index setter is offered because the element being replaced may not sort
+            /// to the same position in the sorted collection as the replacing element.
+            /// </remarks>
+            public T this[int index]
+            {
+                get { return this.root[index]; }
+            }
+
+            /// <summary>
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
