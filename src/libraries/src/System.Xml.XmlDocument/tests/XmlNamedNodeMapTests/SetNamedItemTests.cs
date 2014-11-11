@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System.Xml;
 
@@ -19,7 +22,7 @@ namespace XmlDocumentTests.XmlNamedNodeMapTests
 
             Assert.NotNull(newAttribute);
             Assert.Equal(1, namedNodeMap.Count);
-            Assert.Equal(newAttribute,namedNodeMap.GetNamedItem("newNode"));
+            Assert.Equal(newAttribute, namedNodeMap.GetNamedItem("newNode"));
         }
     }
 }

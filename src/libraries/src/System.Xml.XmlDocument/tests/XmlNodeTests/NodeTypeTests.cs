@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System.Xml;
 
@@ -73,7 +76,6 @@ namespace XmlDocumentTests.XmlNodeTests
             var item = xmlDocument.DocumentElement.FirstChild;
 
             Assert.Equal(XmlNodeType.ProcessingInstruction, item.NodeType);
-
         }
     }
 }
