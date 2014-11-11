@@ -55,7 +55,7 @@ MonoDefaults mono_defaults;
  * See domain-internals.h for locking policy in combination with the
  * domain lock.
  */
-static mono_mutex_t loader_mutex;
+static mono_mutex_t loader_mutex, global_loader_data_mutex;
 static gboolean loader_lock_inited;
 
 /* Statistics */
@@ -77,6 +77,19 @@ MonoNativeTlsKey loader_lock_nest_id;
 
 static void dllmap_cleanup (void);
 
+
+static void
+global_loader_data_lock (void)
+{
+	mono_locks_acquire (&global_loader_data_mutex, LoaderGlobalDataLock);
+}
+
+static void
+global_loader_data_unlock (void)
+{
+	mono_locks_release (&global_loader_data_mutex, LoaderGlobalDataLock);
+}
+
 void
 mono_loader_init ()
 {
@@ -84,6 +97,7 @@ mono_loader_init ()
 
 	if (!inited) {
 		mono_mutex_init_recursive (&loader_mutex);
+		mono_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
 
 		mono_native_tls_alloc (&loader_error_thread_id, NULL);
@@ -111,6 +125,7 @@ mono_loader_cleanup (void)
 	mono_native_tls_free (loader_lock_nest_id);
 
 	mono_mutex_destroy (&loader_mutex);
+	mono_mutex_destroy (&global_loader_data_mutex);
 	loader_lock_inited = FALSE;	
 }
 
@@ -1164,7 +1179,7 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 	if (!dll_map)
 		return 0;
 
-	mono_loader_lock ();
+	global_loader_data_lock ();
 
 	/* 
 	 * we use the first entry we find that matches, since entries from
@@ -1191,7 +1206,7 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 		}
 	}
 
-	mono_loader_unlock ();
+	global_loader_data_unlock ();
 	return found;
 }
 
@@ -1250,10 +1265,10 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 		entry->func = func? g_strdup (func): NULL;
 		entry->target_func = tfunc? g_strdup (tfunc): NULL;
 
-		mono_loader_lock ();
+		global_loader_data_lock ();
 		entry->next = global_dll_map;
 		global_dll_map = entry;
-		mono_loader_unlock ();
+		global_loader_data_unlock ();
 	} else {
 		entry = mono_image_alloc0 (assembly, sizeof (MonoDllMap));
 		entry->dll = dll? mono_image_strdup (assembly, dll): NULL;
@@ -1299,18 +1314,18 @@ cached_module_load (const char *name, int flags, char **err)
 
 	if (err)
 		*err = NULL;
-	mono_loader_lock ();
+	global_loader_data_lock ();
 	if (!global_module_map)
 		global_module_map = g_hash_table_new (g_str_hash, g_str_equal);
 	res = g_hash_table_lookup (global_module_map, name);
 	if (res) {
-		mono_loader_unlock ();
+		global_loader_data_unlock ();
 		return res;
 	}
 	res = mono_dl_open (name, flags, err);
 	if (res)
 		g_hash_table_insert (global_module_map, g_strdup (name), res);
-	mono_loader_unlock ();
+	global_loader_data_unlock ();
 	return res;
 }
 
