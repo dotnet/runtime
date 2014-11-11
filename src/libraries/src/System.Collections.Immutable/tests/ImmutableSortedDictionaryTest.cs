@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -316,9 +318,10 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void EnumeratorRecyclingMisuse()
         {
-            var collection = ImmutableSortedDictionary.Create<int, int>();
+            var collection = ImmutableSortedDictionary.Create<int, int>().Add(3, 5);
             var enumerator = collection.GetEnumerator();
             var enumeratorCopy = enumerator;
+            Assert.True(enumerator.MoveNext());
             Assert.False(enumerator.MoveNext());
             enumerator.Dispose();
             Assert.Throws<ObjectDisposedException>(() => enumerator.MoveNext());
@@ -334,9 +337,58 @@ namespace System.Collections.Immutable.Test
             // We expect that acquiring a new enumerator will use the same underlying Stack<T> object,
             // but that it will not throw exceptions for the new enumerator.
             enumerator = collection.GetEnumerator();
+            Assert.True(enumerator.MoveNext());
             Assert.False(enumerator.MoveNext());
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             enumerator.Dispose();
+        }
+
+        ////[Fact] // not really a functional test -- but very useful to enable when collecting perf traces.
+        public void EnumerationPerformance()
+        {
+            var dictionary = Enumerable.Range(1, 1000).ToImmutableSortedDictionary(k => k, k => k);
+
+            var timing = new TimeSpan[3];
+            var sw = new Stopwatch();
+            for (int j = 0; j < timing.Length; j++)
+            {
+                sw.Start();
+                for (int i = 0; i < 10000; i++)
+                {
+                    foreach (var entry in dictionary)
+                    {
+                    }
+                }
+
+                timing[j] = sw.Elapsed;
+                sw.Reset();
+            }
+
+            File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing.txt"), string.Join(Environment.NewLine, timing));
+        }
+
+        ////[Fact] // not really a functional test -- but very useful to enable when collecting perf traces.
+        public void EnumerationPerformance_Empty()
+        {
+            var dictionary = ImmutableSortedDictionary<int, int>.Empty;
+
+            var timing = new TimeSpan[3];
+            var sw = new Stopwatch();
+            for (int j = 0; j < timing.Length; j++)
+            {
+                sw.Start();
+                for (int i = 0; i < 10000; i++)
+                {
+                    foreach (var entry in dictionary)
+                    {
+                    }
+                }
+
+                timing[j] = sw.Elapsed;
+                sw.Reset();
+            }
+
+            File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing_empty.txt"), string.Join(Environment.NewLine, timing));
         }
 
         protected override IImmutableDictionary<TKey, TValue> Empty<TKey, TValue>()

@@ -994,9 +994,12 @@ namespace System.Collections.Immutable
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.poolUserId = Guid.NewGuid();
                 this.stack = null;
-                if (!enumeratingStacks.TryTake(this, out this.stack))
+                if (!this.root.IsEmpty)
                 {
-                    this.stack = enumeratingStacks.PrepNew(this, new Stack<RefAsValueType<IBinaryTree<KeyValuePair<TKey, TValue>>>>(root.Height));
+                    if (!enumeratingStacks.TryTake(this, out this.stack))
+                    {
+                        this.stack = enumeratingStacks.PrepNew(this, new Stack<RefAsValueType<IBinaryTree<KeyValuePair<TKey, TValue>>>>(root.Height));
+                    }
                 }
 
                 this.Reset();
@@ -1062,21 +1065,22 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
                 this.ThrowIfChanged();
 
-                using (var stack = this.stack.Use(this))
+                if (this.stack != null)
                 {
-                    if (stack.Value.Count > 0)
+                    using (var stack = this.stack.Use(this))
                     {
-                        IBinaryTree<KeyValuePair<TKey, TValue>> n = stack.Value.Pop().Value;
-                        this.current = n;
-                        this.PushLeft(n.Right);
-                        return true;
-                    }
-                    else
-                    {
-                        this.current = null;
-                        return false;
+                        if (stack.Value.Count > 0)
+                        {
+                            IBinaryTree<KeyValuePair<TKey, TValue>> n = stack.Value.Pop().Value;
+                            this.current = n;
+                            this.PushLeft(n.Right);
+                            return true;
+                        }
                     }
                 }
+
+                this.current = null;
+                return false;
             }
 
             /// <summary>
@@ -1088,12 +1092,15 @@ namespace System.Collections.Immutable
 
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.current = null;
-                using (var stack = this.stack.Use(this))
+                if (this.stack != null)
                 {
-                    stack.Value.Clear();
-                }
+                    using (var stack = this.stack.Use(this))
+                    {
+                        stack.Value.Clear();
+                    }
 
-                this.PushLeft(this.root);
+                    this.PushLeft(this.root);
+                }
             }
 
             /// <summary>
