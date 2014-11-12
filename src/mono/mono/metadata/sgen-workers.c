@@ -81,9 +81,7 @@ static long long stat_workers_num_waited;
 static gboolean
 set_state (State old_state, State new_state)
 {
-	if (old_state.data.state == STATE_NOT_WORKING)
-		SGEN_ASSERT (0, new_state.data.state != STATE_NURSERY_COLLECTION, "Can't go from not working to nursery collection");
-	else if (old_state.data.state == STATE_NURSERY_COLLECTION)
+	if (old_state.data.state == STATE_NURSERY_COLLECTION)
 		SGEN_ASSERT (0, new_state.data.state != STATE_NOT_WORKING, "Can't go from nursery collection to not working");
 
 	return InterlockedCompareExchange (&workers_state.value,
@@ -235,8 +233,6 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 		return;
 	}
 
-	SGEN_ASSERT (0, workers_state.data.state != STATE_NURSERY_COLLECTION, "Can't enqueue jobs during nursery collection");
-
 	entry = sgen_alloc_internal (INTERNAL_MEM_JOB_QUEUE_ENTRY);
 	entry->func = func;
 	entry->data = data;
@@ -248,7 +244,8 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 	++workers_num_jobs_enqueued;
 	mono_mutex_unlock (&workers_job_queue_mutex);
 
-	workers_signal_enqueue_work_if_necessary (num_entries);
+	if (workers_state.data.state != STATE_NURSERY_COLLECTION)
+		workers_signal_enqueue_work_if_necessary (num_entries);
 }
 
 void
@@ -270,17 +267,20 @@ sgen_workers_signal_start_nursery_collection_and_wait (void)
 	do {
 		new_state = old_state = workers_state;
 
-		if (old_state.data.state == STATE_NOT_WORKING)
-			return;
-
-		assert_working (old_state, FALSE);
-		SGEN_ASSERT (0, !old_state.data.post_done, "We are not waiting for the workers");
-
 		new_state.data.state = STATE_NURSERY_COLLECTION;
-		new_state.data.post_done = 1;
+
+		if (old_state.data.state == STATE_NOT_WORKING) {
+			assert_not_working (old_state);
+		} else {
+			assert_working (old_state, FALSE);
+			SGEN_ASSERT (0, !old_state.data.post_done, "We are not waiting for the workers");
+
+			new_state.data.post_done = 1;
+		}
 	} while (!set_state (old_state, new_state));
 
-	MONO_SEM_WAIT (&workers_done_sem);
+	if (new_state.data.post_done)
+		MONO_SEM_WAIT (&workers_done_sem);
 
 	old_state = workers_state;
 	assert_nursery_collection (old_state, FALSE);
@@ -291,9 +291,6 @@ void
 sgen_workers_signal_finish_nursery_collection (void)
 {
 	State old_state = workers_state;
-
-	if (old_state.data.state == STATE_NOT_WORKING)
-		return;
 
 	assert_nursery_collection (old_state, FALSE);
 	SGEN_ASSERT (0, !old_state.data.post_done, "We are finishing the nursery collection, so we should have waited for the semaphore earlier");
@@ -505,6 +502,8 @@ workers_thread_func (void *data_untyped)
 
 	for (;;) {
 		gboolean did_work = FALSE;
+
+		SGEN_ASSERT (0, sgen_get_current_collection_generation () != GENERATION_NURSERY, "Why are we doing work while there's a nursery collection happening?");
 
 		while (workers_state.data.state == STATE_WORKING && workers_dequeue_and_do_job (data)) {
 			did_work = TRUE;
@@ -719,6 +718,13 @@ gboolean
 sgen_workers_all_done (void)
 {
 	return workers_state.data.state == STATE_NOT_WORKING;
+}
+
+gboolean
+sgen_workers_are_working (void)
+{
+	State state = workers_state;
+	return state.data.num_awake > 0 || state.data.num_posted > 0;
 }
 
 gboolean

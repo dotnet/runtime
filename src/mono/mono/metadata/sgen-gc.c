@@ -620,6 +620,16 @@ gray_queue_redirect (SgenGrayQueue *queue)
 	}
 }
 
+static void
+gray_queue_enable_redirect (SgenGrayQueue *queue)
+{
+	if (!concurrent_collection_in_progress)
+		return;
+
+	sgen_gray_queue_set_alloc_prepare (queue, gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
+	gray_queue_redirect (queue);
+}
+
 void
 sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
@@ -2190,13 +2200,9 @@ check_nursery_is_clean (void)
 static void
 init_gray_queue (void)
 {
-	if (sgen_collection_is_concurrent ()) {
+	if (sgen_collection_is_concurrent ())
 		sgen_workers_init_distribute_gray_queue ();
-		sgen_gray_object_queue_init_with_alloc_prepare (&gray_queue, NULL,
-				gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
-	} else {
-		sgen_gray_object_queue_init (&gray_queue, NULL);
-	}
+	sgen_gray_object_queue_init (&gray_queue, NULL);
 }
 
 /*
@@ -2306,8 +2312,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
 	MONO_GC_CHECKPOINT_3 (GENERATION_NURSERY);
-
-	sgen_workers_start_all_workers ();
 
 	frssjd = sgen_alloc_internal_dynamic (sizeof (FinishRememberedSetScanJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	frssjd->heap_start = sgen_get_nursery_start ();
@@ -2457,9 +2461,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 		sgen_check_nursery_objects_pinned (unpin_queue != NULL);
 
-	if (concurrent_collection_in_progress)
-		sgen_workers_signal_finish_nursery_collection ();
-
 	return needs_major;
 }
 
@@ -2481,7 +2482,7 @@ scan_nursery_objects (ScanCopyContext ctx)
 }
 
 static void
-major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_concurrent_mark, gboolean scan_mod_union, gboolean scan_whole_nursery)
+major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurrent_mark, gboolean finish_up_concurrent_mark, gboolean scan_mod_union, gboolean scan_whole_nursery)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2565,15 +2566,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	}
 
 	sgen_optimize_pin_queue ();
-
-	/*
-	 * The concurrent collector doesn't move objects, neither on
-	 * the major heap nor in the nursery, so we can mark even
-	 * before pinning has finished.  For the non-concurrent
-	 * collector we start the workers after pinning.
-	 */
-	if (concurrent_collection_in_progress)
-		sgen_workers_start_all_workers ();
 
 	/*
 	 * pin_queue now contains all candidate pointers, sorted and
@@ -2671,6 +2663,17 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean finish_up_con
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
 	major_collector.init_to_space ();
+
+	/*
+	 * The concurrent collector doesn't move objects, neither on
+	 * the major heap nor in the nursery, so we can mark even
+	 * before pinning has finished.  For the non-concurrent
+	 * collector we start the workers after pinning.
+	 */
+	if (start_concurrent_mark) {
+		sgen_workers_start_all_workers ();
+		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	}
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 	main_gc_thread = mono_native_thread_self ();
@@ -2786,7 +2789,7 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, FALSE, FALSE, FALSE);
+	major_copy_or_mark_from_roots (old_next_pin_slot, concurrent, FALSE, FALSE, FALSE);
 }
 
 static void
@@ -2794,21 +2797,6 @@ wait_for_workers_to_finish (void)
 {
 	while (!sgen_workers_all_done ())
 		g_usleep (200);
-}
-
-static void
-join_workers (void)
-{
-	if (concurrent_collection_in_progress) {
-		gray_queue_redirect (&gray_queue);
-		sgen_workers_join ();
-	}
-
-	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
-
-#ifdef SGEN_DEBUG_INTERNAL_ALLOC
-	main_gc_thread = NULL;
-#endif
 }
 
 static void
@@ -2820,16 +2808,23 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 	TV_GETTIME (btv);
 
-	if (concurrent_collection_in_progress)
-		join_workers ();
-
 	if (concurrent_collection_in_progress) {
+		sgen_workers_signal_start_nursery_collection_and_wait ();
+
 		current_object_ops = major_collector.major_concurrent_ops;
 
-		major_copy_or_mark_from_roots (NULL, TRUE, scan_mod_union, scan_whole_nursery);
-		join_workers ();
+		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, scan_mod_union, scan_whole_nursery);
 
-		g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
+		sgen_workers_signal_finish_nursery_collection ();
+		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+
+		sgen_workers_join ();
+
+		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&gray_queue), "Why is the gray queue not empty after workers have finished working?");
+
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+		main_gc_thread = NULL;
+#endif
 
 		if (do_concurrent_checks)
 			check_nursery_is_clean ();
@@ -3051,7 +3046,34 @@ major_start_concurrent_collection (const char *reason)
 }
 
 static gboolean
-major_update_or_finish_concurrent_collection (gboolean force_finish)
+major_should_finish_concurrent_collection (void)
+{
+	SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&gray_queue), "Why is the gray queue not empty before we have started doing anything?");
+	return sgen_workers_all_done ();
+}
+
+static void
+major_update_concurrent_collection (void)
+{
+	TV_DECLARE (total_start);
+	TV_DECLARE (total_end);
+
+	TV_GETTIME (total_start);
+
+	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
+	binary_protocol_concurrent_update_finish ();
+
+	major_collector.update_cardtable_mod_union ();
+	sgen_los_update_cardtable_mod_union ();
+
+	MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
+
+	TV_GETTIME (total_end);
+	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end);
+}
+
+static void
+major_finish_concurrent_collection (void)
 {
 	TV_DECLARE (total_start);
 	TV_DECLARE (total_end);
@@ -3063,22 +3085,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 
 	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
 	binary_protocol_concurrent_update_finish ();
-
-	g_assert (sgen_gray_object_queue_is_empty (&gray_queue));
-
-	if (!force_finish && !sgen_workers_all_done ()) {
-		sgen_workers_signal_start_nursery_collection_and_wait ();
-
-		major_collector.update_cardtable_mod_union ();
-		sgen_los_update_cardtable_mod_union ();
-
-		MONO_GC_CONCURRENT_UPDATE_END (GENERATION_OLD, major_collector.get_and_reset_num_major_objects_marked ());
-
-		TV_GETTIME (total_end);
-		gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end);
-
-		return FALSE;
-	}
 
 	/*
 	 * The major collector can add global remsets which are processed in the finishing
@@ -3114,8 +3120,6 @@ major_update_or_finish_concurrent_collection (gboolean force_finish)
 	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end) - TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv);
 
 	current_collection_generation = -1;
-
-	return TRUE;
 }
 
 /*
@@ -3196,13 +3200,21 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		 * We update the concurrent collection.  If it finished, we're done.  If
 		 * not, and we've been asked to do a nursery collection, we do that.
 		 */
-		gboolean force_finish = wait_to_finish && generation_to_collect == GENERATION_OLD;
+		gboolean finish = major_should_finish_concurrent_collection () || (wait_to_finish && generation_to_collect == GENERATION_OLD);
 
-		if (major_update_or_finish_concurrent_collection (force_finish)) {
+		if (finish) {
+			major_finish_concurrent_collection ();
 			oldest_generation_collected = GENERATION_OLD;
-		} else if (generation_to_collect == GENERATION_NURSERY) {
-			collect_nursery (NULL, FALSE);
+		} else {
+			sgen_workers_signal_start_nursery_collection_and_wait ();
+
+			major_update_concurrent_collection ();
+			if (generation_to_collect == GENERATION_NURSERY)
+				collect_nursery (NULL, FALSE);
+
+			sgen_workers_signal_finish_nursery_collection ();
 		}
+
 		goto done;
 	}
 

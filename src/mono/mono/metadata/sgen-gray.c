@@ -253,12 +253,19 @@ sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
 }
 
 void
+sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
+{
+	SGEN_ASSERT (0, !queue->alloc_prepare_func && !queue->alloc_prepare_data, "Can't set gray queue alloc-prepare twice");
+	queue->alloc_prepare_func = alloc_prepare_func;
+	queue->alloc_prepare_data = data;
+}
+
+void
 sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
 		GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
 {
 	sgen_gray_object_queue_init (queue, enqueue_check_func);
-	queue->alloc_prepare_func = alloc_prepare_func;
-	queue->alloc_prepare_data = data;
+	sgen_gray_queue_set_alloc_prepare (queue, alloc_prepare_func, data);
 }
 
 void

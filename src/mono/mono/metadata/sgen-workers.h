@@ -58,6 +58,7 @@ void sgen_workers_distribute_gray_queue_sections (void) MONO_INTERNAL;
 void sgen_workers_reset_data (void) MONO_INTERNAL;
 void sgen_workers_join (void) MONO_INTERNAL;
 gboolean sgen_workers_all_done (void) MONO_INTERNAL;
+gboolean sgen_workers_are_working (void) MONO_INTERNAL;
 SgenSectionGrayQueue* sgen_workers_get_distribute_section_gray_queue (void) MONO_INTERNAL;
 
 void sgen_workers_signal_start_nursery_collection_and_wait (void) MONO_INTERNAL;

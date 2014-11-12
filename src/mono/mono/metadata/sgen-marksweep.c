@@ -42,6 +42,7 @@
 #include "metadata/gc-internal.h"
 #include "metadata/sgen-pointer-queue.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-workers.h"
 
 #define SGEN_HAVE_CONCURRENT_MARK
 
@@ -890,6 +891,9 @@ pin_major_object (char *obj, SgenGrayQueue *queue)
 static void
 major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
 {
+	SGEN_ASSERT (9, sgen_concurrent_collection_in_progress (), "Why are we scanning concurrently when there's no concurrent collection on?");
+	SGEN_ASSERT (9, !sgen_workers_are_working () || sgen_is_worker_thread (mono_native_thread_id_get ()), "We must not scan from two threads at the same time!");
+
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
 
 	if (!sgen_ptr_in_nursery (obj)) {
@@ -926,6 +930,8 @@ major_copy_or_mark_object (void **ptr, void *obj, SgenGrayQueue *queue)
 	MSBlockInfo *block;
 
 	HEAVY_STAT (++stat_copy_object_called_major);
+
+	SGEN_ASSERT (9, !sgen_concurrent_collection_in_progress (), "Why are we scanning non-concurrently when there's a concurrent collection on?");
 
 	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);

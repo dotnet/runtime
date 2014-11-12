@@ -141,6 +141,7 @@ void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *s
 void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue) MONO_INTERNAL;
 void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
 void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data) MONO_INTERNAL;
 void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
 		GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
 void sgen_gray_object_queue_deinit (SgenGrayQueue *queue) MONO_INTERNAL;
