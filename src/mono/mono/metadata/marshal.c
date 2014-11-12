@@ -8958,6 +8958,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 #ifndef DISABLE_COM
 		return mono_cominterop_get_native_wrapper (method);
 #else
+		if (aot)
+			return method;
 		g_assert_not_reached ();
 #endif
 	}
