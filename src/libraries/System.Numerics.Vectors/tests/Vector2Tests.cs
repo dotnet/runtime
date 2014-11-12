@@ -67,7 +67,7 @@ namespace System.Numerics.Tests
             Assert.Equal("<$2.00, $3.00>", v1strformatted);
 
             string v2strformatted = v1.ToString("c");
-            Assert.Equal("<$2.00, $3.00>", v2strformatted);
+            Assert.Equal(string.Format("<{0:C}, {1:C}>", 2, 3), v2strformatted);
         }
 
         // A test for Distance (Vector2f, Vector2f)
