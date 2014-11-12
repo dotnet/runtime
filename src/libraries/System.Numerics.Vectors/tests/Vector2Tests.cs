@@ -541,7 +541,7 @@ namespace System.Numerics.Tests
 
         // A test for Normalize (Vector2f)
         // Normalize zero length vector
-        [Fact(Skip="Build Machine Issue")]
+        //[Fact(Skip="GitHub Issue #22")]
         public void Vector2NormalizeTest1()
         {
             Vector2 a = new Vector2(); // no parameter, default to 0.0f
