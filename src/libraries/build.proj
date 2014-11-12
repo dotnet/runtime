@@ -34,7 +34,10 @@
         <![CDATA[
            var directory = System.IO.Path.GetDirectoryName(FileName);
            System.IO.Directory.CreateDirectory(directory);
-           new System.Net.WebClient().DownloadFile(Address, FileName);
+           var client = new System.Net.WebClient();
+           client.Proxy = System.Net.WebRequest.DefaultWebProxy;
+           client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+           client.DownloadFile(Address, FileName);
         ]]>
       </Code>
     </Task>
