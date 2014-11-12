@@ -6261,6 +6261,7 @@ mono_ptr_class_get (MonoType *type)
 	mono_image_lock (image);
 	if (image->ptr_cache) {
 		if ((result = g_hash_table_lookup (image->ptr_cache, el_class))) {
+			mono_image_unlock (image);
 			return result;
 		}
 	}
