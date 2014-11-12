@@ -91,9 +91,10 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void UnionTest()
         {
-            var values1 = new[] { 2, 4, 6 };
-            var values2 = new[] { 1, 3, 5, 8 };
-            this.UnionTestHelper(this.Empty<int>().Union(values1), values2);
+            this.UnionTestHelper(this.Empty<int>(), new[] { 1, 3, 5, 7 });
+            this.UnionTestHelper(this.Empty<int>().Union(new[] { 2, 4, 6 }), new[] { 1, 3, 5, 7 });
+            this.UnionTestHelper(this.Empty<int>().Union(new[] { 1, 2, 3 }), new int[0] { });
+            this.UnionTestHelper(this.Empty<int>().Union(new[] { 2 }), Enumerable.Range(0, 1000).ToArray());
         }
 
         [Fact]
@@ -184,9 +185,13 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ICollectionMethods()
         {
-            var builder = (ICollection)this.Empty<string>().Add("a");
+            ICollection builder = (ICollection)this.Empty<string>();
+            string[] array = new string[0];
+            builder.CopyTo(array, 0);
 
-            var array = new string[builder.Count + 1];
+            builder = (ICollection)this.Empty<string>().Add("a");
+            array = new string[builder.Count + 1];
+
             builder.CopyTo(array, 1);
             Assert.Equal(new[] { null, "a" }, array);
 

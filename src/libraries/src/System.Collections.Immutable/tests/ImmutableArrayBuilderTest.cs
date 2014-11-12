@@ -186,6 +186,7 @@ namespace System.Collections.Immutable.Test
             IndexOfTests.LastIndexOfTest(
                 seq => (ImmutableArray<int>.Builder)this.GetEnumerableOf(seq),
                 (b, v) => b.LastIndexOf(v),
+                (b, v, eq) => b.LastIndexOf(v, b.Count > 0 ? b.Count - 1 : 0, b.Count, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
@@ -277,6 +278,7 @@ namespace System.Collections.Immutable.Test
             builder.AddRange(2, 4, 1, 3);
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.Sort(-1, 2, Comparer<int>.Default));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.Sort(1, 4, Comparer<int>.Default));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.Sort(0, -1, Comparer<int>.Default));
 
             builder.Sort(builder.Count, 0, Comparer<int>.Default);
             Assert.Equal(new int[] { 2, 4, 1, 3 }, builder);

@@ -209,7 +209,7 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void RemoveTest()
         {
-            var list = ImmutableList<int>.Empty;
+            ImmutableList<int> list = ImmutableList<int>.Empty;
             for (int i = 1; i <= 10; i++)
             {
                 list = list.Add(i * 10);
@@ -232,6 +232,29 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(5, list.Count);
             Assert.False(list.Contains(20));
             Assert.False(list.Contains(70));
+
+            IImmutableList<int> list2 = ImmutableList<int>.Empty;
+            for (int i = 1; i <= 10; i++)
+            {
+                list2 = list2.Add(i * 10);
+            }
+
+            list2 = list2.Remove(30);
+            Assert.Equal(9, list2.Count);
+            Assert.False(list2.Contains(30));
+
+            list2 = list2.Remove(100);
+            Assert.Equal(8, list2.Count);
+            Assert.False(list2.Contains(100));
+
+            list2 = list2.Remove(10);
+            Assert.Equal(7, list2.Count);
+            Assert.False(list2.Contains(10));
+
+            list2 = list2.RemoveAll(removeList.Contains);
+            Assert.Equal(5, list2.Count);
+            Assert.False(list2.Contains(20));
+            Assert.False(list2.Contains(70));
         }
 
         [Fact]
@@ -304,6 +327,7 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
 
             Assert.Equal(3, ((IList)list)[2]);
+            Assert.Equal(3, ((IList<int>)list)[2]);
         }
 
         [Fact]
@@ -329,12 +353,14 @@ namespace System.Collections.Immutable.Test
             IndexOfTests.LastIndexOfTest(
                 seq => ImmutableList.CreateRange(seq),
                 (b, v) => b.LastIndexOf(v),
+                (b, v, eq) => b.LastIndexOf(v, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
             IndexOfTests.LastIndexOfTest(
                 seq => (IImmutableList<int>)ImmutableList.CreateRange(seq),
                 (b, v) => b.LastIndexOf(v),
+                (b, v, eq) => b.LastIndexOf(v, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
@@ -348,11 +374,16 @@ namespace System.Collections.Immutable.Test
             Assert.Equal<int>(new[] { 4, 5, 8 }, list.Replace(3, 4));
             Assert.Equal<int>(new[] { 3, 6, 8 }, list.Replace(5, 6));
             Assert.Equal<int>(new[] { 3, 5, 9 }, list.Replace(8, 9));
+            Assert.Equal<int>(new[] { 4, 5, 8 }, ((IImmutableList<int>)list).Replace(3, 4));
+            Assert.Equal<int>(new[] { 3, 6, 8 }, ((IImmutableList<int>)list).Replace(5, 6));
+            Assert.Equal<int>(new[] { 3, 5, 9 }, ((IImmutableList<int>)list).Replace(8, 9));
 
             // Verify replacement of first element when there are duplicates.
             list = ImmutableList<int>.Empty.Add(3).Add(3).Add(5);
             Assert.Equal<int>(new[] { 4, 3, 5 }, list.Replace(3, 4));
             Assert.Equal<int>(new[] { 4, 4, 5 }, list.Replace(3, 4).Replace(3, 4));
+            Assert.Equal<int>(new[] { 4, 3, 5 }, ((IImmutableList<int>)list).Replace(3, 4));
+            Assert.Equal<int>(new[] { 4, 4, 5 }, ((IImmutableList<int>)list).Replace(3, 4).Replace(3, 4));
         }
 
         [Fact]
@@ -446,6 +477,7 @@ namespace System.Collections.Immutable.Test
             ImmutableList<int> removed13 = list.RemoveRange(new[] { 1, 3, 5 });
             Assert.Equal(1, removed13.Count);
             Assert.Equal(new[] { 2 }, removed13);
+            Assert.Equal(new[] { 2 }, ((IImmutableList<int>)list).RemoveRange(new[] { 1, 3, 5 }));
 
             Assert.Same(list, list.RemoveRange(new[] { 5 }));
             Assert.Same(ImmutableList.Create<int>(), ImmutableList.Create<int>().RemoveRange(new[] { 1 }));
@@ -453,6 +485,9 @@ namespace System.Collections.Immutable.Test
             var listWithDuplicates = ImmutableList.Create(1, 2, 2, 3);
             Assert.Equal(new[] { 1, 2, 3 }, listWithDuplicates.RemoveRange(new[] { 2 }));
             Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(new[] { 2, 2 }));
+
+            Assert.Throws<ArgumentNullException>(() => ((IImmutableList<int>)ImmutableList.Create(1, 2, 3)).RemoveRange(null));
+            Assert.Equal(new[] { 1, 3 }, ((IImmutableList<int>)ImmutableList.Create(1, 2, 3)).RemoveRange(new[] { 2 }));
         }
 
         [Fact]
