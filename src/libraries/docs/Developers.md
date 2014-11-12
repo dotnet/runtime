@@ -6,33 +6,39 @@ You can build .NET Core either via the command line or by using Visual Studio.
 We currently only support building and running on Windows. Other platforms will
 come later.
 
-The command line build is invoked via
+### Required Software
 
-```
-build.cmd
-```
+Install [Visual Studio 2013 Desktop Express with Update 3](http://www.microsoft.com/en-us/download/details.aspx?id=43733) 
+or Visual Studio 2015 Community Preview.
 
-In order to build successfully, you must have Visual Studio 2013 or higher
-installed.
+### Building From the Command Line
+
+Open a [Visual Studio Command Prompt](http://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx). 
+From the root of the repository, type `build`. This will build everything and run
+the core tests for the project. Visual Studio Solution (.sln) files exist for
+related groups of libraries. These can be loaded to build, debug and test inside
+the Visual Studio IDE.
 
 ### Running Tests
 
 We use the OSS testing framework [xUnit.net][xunit].
 
-Running the tests from the command line is as simple as invoking `build.cmd`.
+By default, the core tests are run as part of the build. Running the tests from
+the command line is as simple as invoking `build.cmd`. A test report for the
+build will be output on the console at the end of a successful build.
 
-You can also run the tests from within Visual Studio. See [this page][xunit-runner]
-for more details on how to install the required test runner and how you can
-invoke the tests using Test Explorer.
+You can also run the tests from within Visual Studio. See [this page][xunit-runner] 
+for more details on how to install the **xUnit.net runner for Visual
+Studio** test runner and how you can invoke the tests using Test Explorer.
 
 [xunit]: http://xunit.github.io/
 [xunit-runner]: https://xunit.codeplex.com/wikipage?title=HowToUseVs2012
 
-## Strong Name Signing
+### Strong Name Signing
 
 All .NET Core binaries are strong named. In order for us to enable you to build
-binaries that have a matching identity we leverage a mechanism called
-*OSS signing*.
+binaries that have a matching identity we leverage a mechanism called *OSS
+signing*.
 
 OSS signing is essentially just [delay signing][delay-signing] the assembly
 except that the resulting assembly is marked as fully signed. This allows you to
