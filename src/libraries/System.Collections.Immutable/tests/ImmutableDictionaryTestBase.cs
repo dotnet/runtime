@@ -235,6 +235,8 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ICollectionMembers()
         {
+            ((ICollection)Empty<string, int>()).CopyTo(new object[0], 0);
+
             var dictionary = (ICollection)Empty<string, int>().Add("a", 1);
             Assert.True(dictionary.IsSynchronized);
             Assert.NotNull(dictionary.SyncRoot);

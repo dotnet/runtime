@@ -259,6 +259,7 @@ namespace System.Collections.Immutable.Test
             IndexOfTests.LastIndexOfTest(
                 seq => ImmutableList.CreateRange(seq).ToBuilder(),
                 (b, v) => b.LastIndexOf(v),
+                (b, v, eq) => b.LastIndexOf(v, b.Count > 0 ? b.Count - 1 : 0, b.Count, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
