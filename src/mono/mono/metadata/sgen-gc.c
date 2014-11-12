@@ -3168,6 +3168,7 @@ sgen_ensure_free_space (size_t size)
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish)
 {
+	TV_DECLARE (gc_start);
 	TV_DECLARE (gc_end);
 	TV_DECLARE (gc_total_start);
 	TV_DECLARE (gc_total_end);
@@ -3180,67 +3181,86 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	if (wait_to_finish)
 		binary_protocol_collection_force (generation_to_collect);
 
-	g_assert (generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD);
+	SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD, "What generation is this?");
 
-	memset (infos, 0, sizeof (infos));
 	mono_profiler_gc_event (MONO_GC_EVENT_START, generation_to_collect);
 
-	infos [0].generation = generation_to_collect;
-	infos [0].reason = reason;
-	infos [0].is_overflow = FALSE;
-	TV_GETTIME (infos [0].total_time);
-	infos [1].generation = -1;
+	TV_GETTIME (gc_start);
 
 	sgen_stop_world (generation_to_collect);
 
 	TV_GETTIME (gc_total_start);
 
 	if (concurrent_collection_in_progress) {
-		if (major_update_or_finish_concurrent_collection (wait_to_finish && generation_to_collect == GENERATION_OLD)) {
+		/*
+		 * We update the concurrent collection.  If it finished, we're done.  If
+		 * not, and we've been asked to do a nursery collection, we do that.
+		 */
+		gboolean force_finish = wait_to_finish && generation_to_collect == GENERATION_OLD;
+
+		if (major_update_or_finish_concurrent_collection (force_finish)) {
 			oldest_generation_collected = GENERATION_OLD;
-			goto done;
+		} else if (generation_to_collect == GENERATION_NURSERY) {
+			collect_nursery (NULL, FALSE);
 		}
-		if (generation_to_collect == GENERATION_OLD)
-			goto done;
-	} else {
-		if (generation_to_collect == GENERATION_OLD &&
-				allow_synchronous_major &&
-				major_collector.want_synchronous_collection &&
-				*major_collector.want_synchronous_collection) {
-			wait_to_finish = TRUE;
-		}
+		goto done;
 	}
 
-	//FIXME extract overflow reason
+	/*
+	 * If we've been asked to do a major collection, and the major collector wants to
+	 * run synchronously (to evacuate), we set the flag to do that.
+	 */
+	if (generation_to_collect == GENERATION_OLD &&
+			allow_synchronous_major &&
+			major_collector.want_synchronous_collection &&
+			*major_collector.want_synchronous_collection) {
+		wait_to_finish = TRUE;
+	}
+
+	SGEN_ASSERT (0, !concurrent_collection_in_progress, "Why did this not get handled above?");
+
+	/*
+	 * There's no concurrent collection in progress.  Collect the generation we're asked
+	 * to collect.  If the major collector is concurrent and we're not forced to wait,
+	 * start a concurrent collection.
+	 */
+	// FIXME: extract overflow reason
 	if (generation_to_collect == GENERATION_NURSERY) {
 		if (collect_nursery (NULL, FALSE)) {
 			overflow_generation_to_collect = GENERATION_OLD;
 			overflow_reason = "Minor overflow";
 		}
 	} else {
-		if (major_collector.is_concurrent) {
-			g_assert (!concurrent_collection_in_progress);
-			if (!wait_to_finish)
-				collect_nursery (NULL, FALSE);
-		}
-
 		if (major_collector.is_concurrent && !wait_to_finish) {
+			collect_nursery (NULL, FALSE);
 			major_start_concurrent_collection (reason);
 			// FIXME: set infos[0] properly
 			goto done;
-		} else {
-			if (major_do_collection (reason)) {
-				overflow_generation_to_collect = GENERATION_NURSERY;
-				overflow_reason = "Excessive pinning";
-			}
+		}
+
+		if (major_do_collection (reason)) {
+			overflow_generation_to_collect = GENERATION_NURSERY;
+			overflow_reason = "Excessive pinning";
 		}
 	}
 
 	TV_GETTIME (gc_end);
-	infos [0].total_time = SGEN_TV_ELAPSED (infos [0].total_time, gc_end);
 
+	memset (infos, 0, sizeof (infos));
+	infos [0].generation = generation_to_collect;
+	infos [0].reason = reason;
+	infos [0].is_overflow = FALSE;
+	infos [1].generation = -1;
+	infos [0].total_time = SGEN_TV_ELAPSED (gc_start, gc_end);
 
-	if (!major_collector.is_concurrent && overflow_generation_to_collect != -1) {
+	SGEN_ASSERT (0, !concurrent_collection_in_progress, "Why did this not get handled above?");
+
+	if (overflow_generation_to_collect != -1) {
+		/*
+		 * We need to do an overflow collection, either because we ran out of memory
+		 * or the nursery is fully pinned.
+		 */
+
 		mono_profiler_gc_event (MONO_GC_EVENT_START, overflow_generation_to_collect);
 		infos [1].generation = overflow_generation_to_collect;
 		infos [1].reason = overflow_reason;
