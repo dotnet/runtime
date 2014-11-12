@@ -62,16 +62,33 @@ namespace System.Numerics.Tests
         [Fact]
         public void Vector3ToStringTest()
         {
+            string separator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
+            CultureInfo enUsCultureInfo = new CultureInfo("en-US");
+
             Vector3 v1 = new Vector3(2.0f, 3.0f, 3.3f);
             string v1str = v1.ToString();
-            Assert.Equal("<2, 3, 3.3>", v1str);
+            string expectedv1 = string.Format(CultureInfo.CurrentCulture
+                , "<{1:G}{0} {2:G}{0} {3:G}>"
+                , separator, 2, 3, 3.3);
+            Assert.Equal(expectedv1, v1str);
 
-            string v1strformatted = v1.ToString("c", new CultureInfo("en-US"));
-            Assert.Equal("<$2.00, $3.00, $3.30>", v1strformatted);
+            string v1strformatted = v1.ToString("c", CultureInfo.CurrentCulture);
+            string expectedv1formatted = string.Format(CultureInfo.CurrentCulture
+                , "<{1:c}{0} {2:c}{0} {3:c}>"
+                , separator, 2, 3, 3.3);
+            Assert.Equal(expectedv1formatted, v1strformatted);
 
-            string v2strformatted = v1.ToString("c");
+            string v2strformatted = v1.ToString("c", enUsCultureInfo);
+            string expectedv2formatted = string.Format(enUsCultureInfo
+                , "<{1:c}{0} {2:c}{0} {3:c}>"
+                , enUsCultureInfo.NumberFormat.NumberGroupSeparator, 2, 3, 3.3);
+            Assert.Equal(expectedv2formatted, v2strformatted);
 
-            Assert.Equal(string.Format("<{0:C}, {1:C}, {2:C}>", 2, 3, 3.3), v2strformatted);
+            string v3strformatted = v1.ToString("c");
+            string expectedv3formatted = string.Format(CultureInfo.CurrentCulture
+                , "<{1:c}{0} {2:c}{0} {3:c}>"
+                , separator, 2, 3, 3.3);
+            Assert.Equal(expectedv3formatted, v3strformatted);
         }
 
         // A test for Cross (Vector3f, Vector3f)
