@@ -234,8 +234,9 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
-        // Add more test cases when fixing this.
-        [Fact(Skip = "TODO: MetadataStringComparer needs to use the user-supplied encoding.")]
+        // TODO: Issue #26: MetadataStringComparer needs to use the user-supplied encoding.
+        //       Add more test cases when fixing this and re-enabling the test.
+        /*[Fact]*/
         public unsafe void ComparisonToInvalidByteSequenceMatchesFallback()
         {
             // dangling lead byte
@@ -248,7 +249,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.False(new MemoryBlock(ptr, buffer.Length).Utf8NullTerminatedEquals(0, Encoding.UTF8.GetString(buffer)));
             }
 
-            // overload encoding
+            // overlong encoding
             fixed (byte* ptr = (buffer = new byte[] { (byte)'a', 0xC0, 0xAF, (byte)'b', 0x0 }))
             {
                 var block = new MemoryBlock(ptr, buffer.Length);
