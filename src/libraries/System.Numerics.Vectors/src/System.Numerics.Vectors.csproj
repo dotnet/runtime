@@ -70,7 +70,7 @@
       <DependentUpon>ConstantHelper.tt</DependentUpon>
     </Compile>
     <Compile Include="System\Numerics\HashCodeHelper.cs" />
-    <Compile Include="System\Numerics\JITIntrinsicAttribute.cs" />
+    <Compile Include="System\Numerics\JitIntrinsicAttribute.cs" />
     <Compile Include="System\Numerics\Matrix3x2.cs" />
     <Compile Include="System\Numerics\Matrix4x4.cs" />
     <Compile Include="System\Numerics\Plane.cs" />
