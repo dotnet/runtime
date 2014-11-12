@@ -81,7 +81,7 @@ namespace System.Numerics
         public float M44;
         #endregion Public Fields
 
-        private static Matrix4x4 _identity = new Matrix4x4
+        private static readonly Matrix4x4 _identity = new Matrix4x4
         (
             1f, 0f, 0f, 0f,
             0f, 1f, 0f, 0f,

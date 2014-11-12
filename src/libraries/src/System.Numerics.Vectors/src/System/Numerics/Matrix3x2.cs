@@ -38,7 +38,7 @@ namespace System.Numerics
         public float M32;
         #endregion Public Fields
 
-        private static Matrix3x2 _identity = new Matrix3x2
+        private static readonly Matrix3x2 _identity = new Matrix3x2
         (
             1f, 0f,
             0f, 1f,
