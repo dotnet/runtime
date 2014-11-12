@@ -37,7 +37,7 @@ namespace System.Collections.Immutable
         private readonly T head;
 
         /// <summary>
-        /// A stack that constaints the rest of the elements (under the top element).
+        /// A stack that contains the rest of the elements (under the top element).
         /// </summary>
         private readonly ImmutableStack<T> tail;
 
