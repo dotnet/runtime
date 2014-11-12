@@ -533,12 +533,13 @@ namespace System.Numerics.Tests
             T[] values1 = GenerateRandomValuesForVector<T>();
             Vector<T> v1 = new Vector<T>(values1);
             string result = v1.ToString(format, provider);
+            string cultureSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator + " ";
 
             string expected = "<";
             for (int g = 0; g < Vector<T>.Count - 1; g++)
             {
                 expected += ((IFormattable)v1[g]).ToString(format, provider);
-                expected += ", ";
+                expected += cultureSeparator;
             }
             expected += ((IFormattable)v1[Vector<T>.Count - 1]).ToString(format, provider);
             expected += ">";
