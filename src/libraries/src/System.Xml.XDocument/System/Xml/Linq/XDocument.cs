@@ -65,7 +65,7 @@ namespace System.Xml.Linq
         /// <item>Zero or more comments</item>
         /// <item>Zero or more processing instructions</item>
         /// </list>
-        /// See XContainer.Add(object content) for details about the content that can be added
+        /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
         public XDocument(params object[] content)
@@ -93,7 +93,7 @@ namespace System.Xml.Linq
         /// <item>Zero or more processing instructions</item>
         /// <item></item>
         /// </list>
-        /// See XContainer.Add(object content) for details about the content that can be added
+        /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
         public XDocument(XDeclaration declaration, params object[] content)

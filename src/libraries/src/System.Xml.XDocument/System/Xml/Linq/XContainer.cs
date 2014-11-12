@@ -89,12 +89,12 @@ namespace System.Xml.Linq
         }
 
         /// <overloads>
-        /// Adds the specified content as a child (or as children) to this XContainer. The
+        /// Adds the specified content as a child (or as children) to this <see cref="XContainer"/>. The
         /// content can be simple content, a collection of content objects, a parameter list
         /// of content objects, or null.
         /// </overloads>
         /// <summary>
-        /// Adds the specified content as a child (or children) of this XContainer.
+        /// Adds the specified content as a child (or children) of this <see cref="XContainer"/>.
         /// </summary>
         /// <param name="content">
         /// A content object containing simple content or a collection of content objects
@@ -187,7 +187,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Adds the specified content as a child (or children) of this XContainer.
+        /// Adds the specified content as a child (or children) of this <see cref="XContainer"/>.
         /// </summary>
         /// <param name="content">
         /// A parameter list of content objects.
@@ -214,7 +214,7 @@ namespace System.Xml.Linq
         /// to be added.
         /// </param>
         /// <remarks>
-        /// See XContainer.Add(object content) for details about the content that can be added
+        /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
         public void AddFirst(object content)
@@ -256,7 +256,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Get descendant elements plus leaf nodes contained in an <see cref="XContainer"/>
         /// </summary>
-        /// <returns>IEnumerable<XNode> over all descendants</XNode></returns>
+        /// <returns><![CDATA[IEnumerable<XNode>]]> over all descendants</returns>
         public IEnumerable<XNode> DescendantNodes()
         {
             return GetDescendantNodes(false);
