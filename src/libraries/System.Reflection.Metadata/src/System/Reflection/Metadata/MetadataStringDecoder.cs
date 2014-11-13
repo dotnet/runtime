@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Reflection.Metadata
 {
     /// <summary>
-    /// Provides the <see cref="MetadataReader"/> with a custom mechansim for decoding
+    /// Provides the <see cref="MetadataReader"/> with a custom mechanism for decoding
     /// byte sequences in metadata that represent text.
     /// </summary>
     /// <remarks>
