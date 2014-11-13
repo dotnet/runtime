@@ -57,7 +57,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is Vector3))
+            if (!(obj is Vector3))
                 return false;
             return Equals((Vector3)obj);
         }
