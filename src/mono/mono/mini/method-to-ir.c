@@ -3582,11 +3582,11 @@ static void
 save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg, gboolean null_check, MonoBasicBlock **out_bblock)
 {
 	if (mini_get_debug_options ()->better_cast_details) {
-		int to_klass_reg = alloc_preg (cfg);
 		int vtable_reg = alloc_preg (cfg);
 		int klass_reg = alloc_preg (cfg);
 		MonoBasicBlock *is_null_bb = NULL;
 		MonoInst *tls_get;
+		int to_klass_reg, context_used;
 
 		if (null_check) {
 			NEW_BBLOCK (cfg, is_null_bb);
@@ -3606,7 +3606,17 @@ save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg, gboolean nul
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), klass_reg);
-		MONO_EMIT_NEW_PCONST (cfg, to_klass_reg, klass);
+
+		context_used = mini_class_check_context_used (cfg, klass);
+		if (context_used) {
+			MonoInst *class_ins;
+
+			class_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+			to_klass_reg = class_ins->dreg;
+		} else {
+			to_klass_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_CLASSCONST (cfg, to_klass_reg, klass);
+		}
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, class_cast_to), to_klass_reg);
 
 		if (null_check) {
