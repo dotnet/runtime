@@ -7,7 +7,9 @@ root = true
 # Default settings:
 # A newline ending every file
 # 4 space indentation
+# Trim trailing whitespace
 [*]
 insert_final_newline = true
 indent_style = space
 indent_size = 4
+trim_trailing_whitespace = true
