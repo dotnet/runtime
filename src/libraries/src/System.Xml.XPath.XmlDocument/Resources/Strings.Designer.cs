@@ -9,7 +9,6 @@
 //------------------------------------------------------------------------------
 
 namespace Resources {
-    using System;
     using System.Reflection;
     
     

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-public delegate byte ModDele(sbyte p1, ref string p2);
+﻿public delegate byte ModDele(sbyte p1, ref string p2);
 
 public enum ModEnum : ulong
 {

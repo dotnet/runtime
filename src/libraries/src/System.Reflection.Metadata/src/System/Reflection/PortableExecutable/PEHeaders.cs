@@ -5,7 +5,6 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Text;
 
 namespace System.Reflection.PortableExecutable
 {
