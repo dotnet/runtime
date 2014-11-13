@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 using System.Numerics;
+using System.Globalization;
 
 namespace System.Numerics.Tests
 {
@@ -522,10 +523,12 @@ namespace System.Numerics.Tests
         public void QuaternionToStringTest()
         {
             Quaternion target = new Quaternion(-1.0f, 2.2f, 3.3f, -4.4f);
-            string expected = "{X:-1 Y:2.2 Z:3.3 W:-4.4}";
-            string actual;
 
-            actual = target.ToString();
+            string expected = string.Format(CultureInfo.CurrentCulture
+                , "{{X:{0} Y:{1} Z:{2} W:{3}}}"
+                , -1.0f, 2.2f, 3.3f, -4.4f);
+
+            string actual = target.ToString();
             Assert.Equal(expected, actual);
         }
 
