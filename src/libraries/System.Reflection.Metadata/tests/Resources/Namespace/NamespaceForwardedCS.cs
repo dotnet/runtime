@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Forwarder
+﻿namespace Forwarder
 {
     // Forwarded type's destination.
     public class FwdType 

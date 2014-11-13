@@ -5,7 +5,6 @@ using MS.Internal.Xml.Cache;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Xml;
 
 namespace System.Xml.XPath
 {
