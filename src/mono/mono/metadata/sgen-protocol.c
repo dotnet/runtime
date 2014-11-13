@@ -30,6 +30,7 @@
 #include "utils/mono-threads.h"
 
 /* If not null, dump binary protocol to this file */
+/* FIXME: Don't use FILE - use system calls, otherwise we might deadlock. */
 static FILE *binary_protocol_file = NULL;
 
 /* We set this to -1 to indicate an exclusive lock */
