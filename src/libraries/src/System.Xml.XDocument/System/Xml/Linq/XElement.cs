@@ -1062,7 +1062,7 @@ namespace System.Xml.Linq
         /// Cast the value of this <see cref="XElement"/> to a <see cref="string"/>.
         /// </summary>
         /// <remarks>
-        /// If the <see cref="XElement"/> is a subtre (an <see cref="XElement"/>
+        /// If the <see cref="XElement"/> is a subtree (an <see cref="XElement"/>
         /// that has <see cref="XElement"/> children.  The concatenated string
         /// value of all of the <see cref="XElement"/>'s text and descendants
         /// text is returned.

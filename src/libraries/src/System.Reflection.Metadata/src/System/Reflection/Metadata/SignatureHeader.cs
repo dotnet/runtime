@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
     /// </summary>
     /// <remarks>
     /// This header byte is present in all method definition, method reference, standalone method, field, 
-    /// property, and local variable signatures, but not in type specificiation signatures.
+    /// property, and local variable signatures, but not in type specification signatures.
     /// </remarks>
     public struct SignatureHeader : IEquatable<SignatureHeader>
     {
