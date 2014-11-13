@@ -1224,23 +1224,23 @@ namespace System.Reflection.Metadata
 
             for (uint i = 1; i <= numberOfNestedTypes; i++)
             {
-                TypeDefinitionHandle enclosignClass = NestedClassTable.GetEnclosingClass(i);
+                TypeDefinitionHandle enclosingClass = NestedClassTable.GetEnclosingClass(i);
 
-                Debug.Assert(!enclosignClass.IsNil);
+                Debug.Assert(!enclosingClass.IsNil);
 
-                if (enclosignClass != previousEnclosingClass)
+                if (enclosingClass != previousEnclosingClass)
                 {
-                    if (!groupedNestedTypes.TryGetValue(enclosignClass, out builder))
+                    if (!groupedNestedTypes.TryGetValue(enclosingClass, out builder))
                     {
                         builder = ImmutableArray.CreateBuilder<TypeDefinitionHandle>();
-                        groupedNestedTypes.Add(enclosignClass, builder);
+                        groupedNestedTypes.Add(enclosingClass, builder);
                     }
 
-                    previousEnclosingClass = enclosignClass;
+                    previousEnclosingClass = enclosingClass;
                 }
                 else
                 {
-                    Debug.Assert(builder == groupedNestedTypes[enclosignClass]);
+                    Debug.Assert(builder == groupedNestedTypes[enclosingClass]);
                 }
 
                 builder.Add(NestedClassTable.GetNestedClass(i));
