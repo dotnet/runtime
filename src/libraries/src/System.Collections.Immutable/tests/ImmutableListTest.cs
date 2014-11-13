@@ -129,6 +129,17 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void AddRangeTest()
+        {
+            var list = ImmutableList<int>.Empty;
+            list = list.AddRange(new[] { 1, 2, 3 });
+            list = list.AddRange(Enumerable.Range(4, 2));
+            list = list.AddRange(ImmutableList<int>.Empty.AddRange(new[] { 6, 7, 8 }));
+            list = list.AddRange(new int[0]);
+            Assert.Equal(Enumerable.Range(1, 8), list);
+        }
+
+        [Fact]
         public void AddRangeOptimizationsTest()
         {
             // All these optimizations are tested based on filling an empty list.
@@ -177,12 +188,13 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(1, new[] { 1 }));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(-1, new[] { 1 }));
 
-            list = list.InsertRange(0, new[] { 1, 4, 5 });
-            list = list.InsertRange(1, new[] { 2, 3 });
-            list = list.InsertRange(2, new int[0]);
-            Assert.Equal(Enumerable.Range(1, 5), list);
+            list = list.InsertRange(0, new[] { 1, 6, 7, 8 });
+            list = list.InsertRange(1, new[] { 2, 5 });
+            list = list.InsertRange(2, ImmutableList<int>.Empty.InsertRange(0, new[] { 3, 4 }));
+            list = list.InsertRange(3, new int[0]);
+            Assert.Equal(Enumerable.Range(1, 8), list);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(6, new[] { 1 }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(9, new[] { 1 }));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(-1, new[] { 1 }));
         }
 

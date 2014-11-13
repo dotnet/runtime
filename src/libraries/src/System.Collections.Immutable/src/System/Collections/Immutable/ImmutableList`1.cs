@@ -314,13 +314,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(items, "items");
             Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
-            // Let's not implement in terms of ImmutableList.Add so that we're
-            // not unnecessarily generating a new list object for each item.
-            var result = this.root;
-            foreach (T item in items)
-            {
-                result = result.Insert(index++, item);
-            }
+            var result = this.root.InsertRange(index, items);
 
             return this.Wrap(result);
         }
