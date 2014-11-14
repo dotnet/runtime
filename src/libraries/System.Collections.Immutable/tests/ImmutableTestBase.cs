@@ -3,11 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Text;
-using System.Reflection;
 using System.Linq;
-using Xunit;
+using System.Reflection;
+using System.Text;
 using Validation;
+using Xunit;
 
 namespace System.Collections.Immutable.Test
 {
