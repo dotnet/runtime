@@ -1370,6 +1370,17 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Returns the Root Node of the list
+        /// </summary>
+        internal Node Root
+        {
+            get
+            {
+                return this.root;
+            }
+        }
+
+        /// <summary>
         /// Creates a new sorted set wrapper for a node tree.
         /// </summary>
         /// <param name="root">The root of the collection.</param>
@@ -2103,7 +2114,7 @@ namespace System.Collections.Immutable
                         result = this.Mutate(right: newRight);
                     }
 
-                    return MakeBalanced(result);
+                    return BalanceNode(result);
                 }
             }
 
@@ -3133,6 +3144,25 @@ namespace System.Collections.Immutable
                 }
 
                 return tree;
+            }
+
+            private static Node BalanceNode(Node node)
+            {
+                while (IsRightHeavy(node) || IsLeftHeavy(node))
+                {
+                    if (IsRightHeavy(node))
+                    {
+                        node = Balance(node.right) < 0 ? DoubleLeft(node) : RotateLeft(node);
+                        node.Mutate(left: BalanceNode(node.left));
+                    }
+                    else
+                    {
+                        node = Balance(node.left) > 0 ? DoubleRight(node) : RotateRight(node);
+                        node.Mutate(right: BalanceNode(node.right));
+                    }
+                }
+
+                return node;
             }
 
             #endregion
