@@ -399,7 +399,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Resizes the array to accomodate the specified capacity requirement.
+            /// Resizes the array to accommodate the specified capacity requirement.
             /// </summary>
             /// <param name="capacity">The required capacity.</param>
             public void EnsureCapacity(int capacity)
