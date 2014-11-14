@@ -33,7 +33,7 @@ namespace System.Xml.Linq
         string standalone;
 
         /// <summary>
-        /// Initilizes a new instance of the <see cref="XDeclaration"/> class from the
+        /// Initializes a new instance of the <see cref="XDeclaration"/> class from the
         /// specified version, encoding, and standalone properties.
         /// </summary>
         /// <param name="version">

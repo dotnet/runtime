@@ -76,7 +76,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XDocument"/> class
-        /// with the specifed <see cref="XDeclaration"/> and content.
+        /// with the specified <see cref="XDeclaration"/> and content.
         /// </summary>
         /// <param name="declaration">
         /// The XML declaration for the document.

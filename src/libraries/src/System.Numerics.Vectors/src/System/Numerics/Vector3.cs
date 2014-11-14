@@ -228,7 +228,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns the reflection of a vector off a suface that has the specified normal.
+        /// Returns the reflection of a vector off a surface that has the specified normal.
         /// </summary>
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">The normal of the surface being reflected off.</param>

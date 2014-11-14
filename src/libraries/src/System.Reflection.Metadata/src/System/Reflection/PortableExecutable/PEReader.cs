@@ -41,7 +41,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is negative.</exception>
         /// <remarks>
         /// The memory is owned by the caller and not released on disposal of the <see cref="PEReader"/>.
-        /// The caller is reponsible for keeping the memory alive and unmodified throughout the lifetime of the <see cref="PEReader"/>.
+        /// The caller is responsible for keeping the memory alive and unmodified throughout the lifetime of the <see cref="PEReader"/>.
         /// The content of the image is not read during the construction of the <see cref="PEReader"/>
         /// </remarks>
         public unsafe PEReader(byte* peImage, int size)
