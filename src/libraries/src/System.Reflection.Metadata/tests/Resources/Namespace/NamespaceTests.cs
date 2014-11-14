@@ -10,7 +10,6 @@
  * There are no type forwarders in any of these namespaces except the Forwarder namespace.
  */
 
-using System;
 using System.Runtime.CompilerServices;
 
 [assembly: TypeForwardedTo(typeof(Forwarder.FwdType))]
