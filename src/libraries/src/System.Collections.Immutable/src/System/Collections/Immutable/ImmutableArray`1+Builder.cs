@@ -590,7 +590,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Sort()
             {
-                Array.Sort(this.elements, 0, this.Count, new Comparer(Comparer<T>.Default));
+                Array.Sort(this.elements, 0, this.Count, Comparer.Default);
             }
 
             /// <summary>
@@ -701,6 +701,8 @@ namespace System.Collections.Immutable
             private sealed class Comparer : IComparer<RefAsValueType<T>>
             {
                 private readonly IComparer<T> comparer;
+
+                public static readonly Comparer Default = new Comparer(Comparer<T>.Default);
 
                 internal Comparer(IComparer<T> comparer = null)
                 {
