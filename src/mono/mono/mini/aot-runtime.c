@@ -896,8 +896,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			break;
 		}
 		case MONO_WRAPPER_UNKNOWN: {
-			MonoMethodDesc *desc;
-			MonoMethod *orig_method;
 			int subtype = decode_value (p, &p);
 
 			if (subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE || subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR) {
@@ -937,18 +935,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
 				ref->method = mono_marshal_get_gsharedvt_out_wrapper ();
 			} else {
-				if (subtype == WRAPPER_SUBTYPE_FAST_MONITOR_ENTER)
-					desc = mono_method_desc_new ("Monitor:Enter", FALSE);
-				else if (subtype == WRAPPER_SUBTYPE_FAST_MONITOR_EXIT)
-					desc = mono_method_desc_new ("Monitor:Exit", FALSE);
-				else if (subtype == WRAPPER_SUBTYPE_FAST_MONITOR_ENTER_V4)
-					desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-				else
-					g_assert_not_reached ();
-				orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-				g_assert (orig_method);
-				mono_method_desc_free (desc);
-				ref->method = mono_monitor_get_fast_path (orig_method);
+				g_assert_not_reached ();
 			}
 			break;
 		}

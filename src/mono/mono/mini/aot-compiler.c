@@ -3366,8 +3366,6 @@ add_wrappers (MonoAotCompile *acfg)
  	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
-		MonoMethodDesc *desc;
-		MonoMethod *orig_method;
 		int nallocators;
 
 		/* Runtime invoke wrappers */
@@ -3444,25 +3442,6 @@ add_wrappers (MonoAotCompile *acfg)
 				if (m)
 					add_method (acfg, m);
 			}
-
-			/* Monitor Enter/Exit */
-			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			/* This is a v4 method */
-			if (orig_method) {
-				method = mono_monitor_get_fast_path (orig_method);
-				if (method)
-					add_method (acfg, method);
-			}
-			mono_method_desc_free (desc);
-
-			desc = mono_method_desc_new ("Monitor:Exit(object)", FALSE);
-			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			g_assert (orig_method);
-			mono_method_desc_free (desc);
-			method = mono_monitor_get_fast_path (orig_method);
-			if (method)
-				add_method (acfg, method);
 		}
 
 		/* Stelemref wrappers */
@@ -3480,22 +3459,6 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_castclass_with_cache ());
 		/* isinst_with_check wrapper */
 		add_method (acfg, mono_marshal_get_isinst_with_cache ());
-
-#if defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
-		{
-			MonoMethodDesc *desc;
-			MonoMethod *m;
-
-			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-			m = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			mono_method_desc_free (desc);
-			if (m) {
-				m = mono_monitor_get_fast_path (m);
-				if (m)
-					add_method (acfg, m);
-			}
-		}
-#endif
 
 		/* JIT icall wrappers */
 		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall hash*/

@@ -5567,24 +5567,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_memory_barrier (cfg, FullBarrier);
 		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
-
-		/* FIXME this should be integrated to the check below once we support the trampoline version */
-#if defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
-		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 2) {
-			MonoMethod *fast_method = NULL;
-
-			/* Avoid infinite recursion */
-			if (cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN && !strcmp (cfg->method->name, "FastMonitorEnterV4"))
-				return NULL;
-				
-			fast_method = mono_monitor_get_fast_path (cmethod);
-			if (!fast_method)
-				return NULL;
-
-			return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);
-		}
-#endif
-
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 1) {
 			MonoCallInst *call;
@@ -5616,24 +5598,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 
 			return (MonoInst*)call;
-		}
-#elif defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
-		{
-		MonoMethod *fast_method = NULL;
-
-		/* Avoid infinite recursion */
-		if (cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN &&
-				(strcmp (cfg->method->name, "FastMonitorEnter") == 0 ||
-				 strcmp (cfg->method->name, "FastMonitorExit") == 0))
-			return NULL;
-
-		if ((strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 2) ||
-				strcmp (cmethod->name, "Exit") == 0)
-			fast_method = mono_monitor_get_fast_path (cmethod);
-		if (!fast_method)
-			return NULL;
-
-		return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);
 		}
 #endif
 	} else if (cmethod->klass->image == mono_defaults.corlib &&
