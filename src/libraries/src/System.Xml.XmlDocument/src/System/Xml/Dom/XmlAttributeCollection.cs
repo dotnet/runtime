@@ -95,7 +95,10 @@ namespace System.Xml
         // Adds a XmlNode using its Name property
         public override XmlNode SetNamedItem(XmlNode node)
         {
-            if (node != null && !(node is XmlAttribute))
+            if (node == null)
+                return null;
+
+            if (!(node is XmlAttribute))
                 throw new ArgumentException(SR.Xdom_AttrCol_Object);
 
             int offset = FindNodeOffset(node.LocalName, node.NamespaceURI);
