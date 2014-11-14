@@ -1,5 +1,4 @@
 ﻿using System;
-using MockInterop01;
 
 namespace MockInterop01.Impl
 {

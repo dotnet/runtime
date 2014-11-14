@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Reflection.Internal;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using TestUtilities;
 using Xunit;

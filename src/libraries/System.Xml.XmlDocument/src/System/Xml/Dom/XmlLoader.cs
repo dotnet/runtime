@@ -2,10 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
-using System.Collections;
 using System.Diagnostics;
-using System.Text;
-using System.Xml.Schema;
 using System.Globalization;
 using System.Collections.Generic;
 

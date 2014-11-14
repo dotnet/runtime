@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
-using System.Text;
 using System.Threading;
 
 namespace System.Reflection.PortableExecutable
