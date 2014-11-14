@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -7,7 +7,6 @@ using IEqualityComparer = System.Collections.IEqualityComparer;
 
 namespace System.Xml.Linq
 {
-
     /// <summary>
     /// Contains functionality to compare nodes for value equality.
     /// This class cannot be inherited.
