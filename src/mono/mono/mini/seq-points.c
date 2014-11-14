@@ -598,7 +598,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
  * Returns the maximum size of mono_seq_point_info_write.
  */
 int
-seq_point_info_write_size (MonoSeqPointInfo* info)
+seq_point_info_get_write_size (MonoSeqPointInfo* info)
 {
 	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 

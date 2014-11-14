@@ -67,6 +67,6 @@ int
 seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy);
 
 int
-seq_point_info_write_size (MonoSeqPointInfo* info);
+seq_point_info_get_write_size (MonoSeqPointInfo* info);
 
 #endif /* __MONO_SEQ_POINTS_H__ */
