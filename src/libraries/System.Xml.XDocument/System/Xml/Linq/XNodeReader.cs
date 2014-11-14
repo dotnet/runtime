@@ -7,7 +7,7 @@ namespace System.Xml.Linq
 {
     internal class XNodeReader : XmlReader, IXmlLineInfo
     {
-        private static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };  
+        private static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
 
         // The reader position is encoded by the tuple (source, parent).
         // Lazy text uses (instance, parent element). Attribute value
