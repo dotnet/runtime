@@ -371,7 +371,7 @@ mono_threads_init_platform (void)
 	 */
 	no_interrupt_signo = SIGUSR2;
 	g_assert (abort_signo != no_interrupt_signo);
-	mono_posix_add_signal_handler (abort_signo, suspend_signal_handler, SA_RESTART);
+	mono_posix_add_signal_handler (no_interrupt_signo, suspend_signal_handler, SA_RESTART);
 #endif
 #endif
 }
@@ -404,7 +404,7 @@ mono_threads_core_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	/*FIXME, check return value*/
 #ifdef PLATFORM_ANDROID
-	if (interrupt_kernel)
+	if (!interrupt_kernel)
 		mono_threads_pthread_kill (info, no_interrupt_signo);
 	else
 		mono_threads_pthread_kill (info, mono_thread_get_abort_signal ());
