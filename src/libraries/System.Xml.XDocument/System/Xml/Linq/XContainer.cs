@@ -256,7 +256,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Get descendant elements plus leaf nodes contained in an <see cref="XContainer"/>
         /// </summary>
-        /// <returns><![CDATA[IEnumerable<XNode>]]> over all descendants</returns>
+        /// <returns><see cref="IEnumerable{XNode}"/> over all descendants</returns>
         public IEnumerable<XNode> DescendantNodes()
         {
             return GetDescendantNodes(false);
