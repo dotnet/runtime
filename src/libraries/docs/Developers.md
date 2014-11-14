@@ -9,7 +9,7 @@ come later.
 ### Required Software
 
 Install [Visual Studio 2013 Desktop Express with Update 3](http://www.microsoft.com/en-us/download/details.aspx?id=43733) 
-or Visual Studio 2015 Community Preview.
+or [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284)
 
 ### Building From the Command Line
 
