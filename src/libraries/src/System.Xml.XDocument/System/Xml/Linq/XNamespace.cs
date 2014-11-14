@@ -274,7 +274,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// This function is used by the <![CDATA[XHashtable<XName>]]> to extract the local name part from an <see cref="XName"/>.  The hash table
+        /// This function is used by the <see cref="XHashtable{XName}"/> to extract the local name part from an <see cref="XName"/>.  The hash table
         /// uses the local name as the hash key.
         /// </summary>
         private static string ExtractLocalName(XName n)
@@ -284,7 +284,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// This function is used by the <![CDATA[XHashtable<WeakReference>]]> to extract the XNamespace that the WeakReference is
+        /// This function is used by the <see cref="XHashtable{WeakReference}"/> to extract the XNamespace that the WeakReference is
         /// referencing.  In cases where the XNamespace has been cleaned up, this function returns null.
         /// </summary>
         private static string ExtractNamespace(WeakReference r)
