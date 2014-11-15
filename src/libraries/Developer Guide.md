@@ -1,5 +1,3 @@
-# Building, Testing, and Running
-
 You can build .NET Core either via the command line or by using Visual Studio.
 We currently only support building and running on Windows. Other platforms will
 come later.
