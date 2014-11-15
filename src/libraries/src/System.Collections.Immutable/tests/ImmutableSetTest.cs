@@ -292,6 +292,7 @@ namespace System.Collections.Immutable.Test
                 new SetTriad(SetWith<int>(), new int[] { 5 }, false),
                 new SetTriad(SetWith<int>(5, 8), new int[] { 5 }, false),
                 new SetTriad(SetWith<int>(5), new int[] { 5, 8 }, false),
+                new SetTriad(SetWith<int>(5, 8), SetWith<int>(5, 8), true),
             };
         }
 
