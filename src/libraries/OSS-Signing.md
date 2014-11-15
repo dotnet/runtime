@@ -1,4 +1,4 @@
-For reasons listed over on [Strong Naming](https://github.com/dotnet/corefx/wiki/Strong-Naming), all .NET Core assemblies are strong-named.
+For reasons listed over on [Strong Naming](Strong Naming), all .NET Core assemblies are strong-named.
 
 To enable you to build assemblies that have a matching identity to what Microsoft would build, we leverage a new signing mechanism called _OSS Signing_. This lets you clone the dotnet/corefx repository, build and then drop the resulting assembly in your application with zero changes to consuming libraries. By default, all .NET Core projects build using OSS Signing.
 
