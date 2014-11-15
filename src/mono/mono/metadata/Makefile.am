@@ -158,6 +158,8 @@ common_sources = \
 	mono-perfcounters.h	\
 	mono-perfcounters-def.h	\
 	mono-ptr-array.h	\
+	mono-route.c		\
+	mono-route.h		\
 	mono-wsq.c		\
 	mono-wsq.h		\
 	monitor.h		\
