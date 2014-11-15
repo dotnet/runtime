@@ -239,13 +239,11 @@ namespace System.Xml
         /// </summary>
         internal static int ParseQName(string s, int offset, out int colonOffset)
         {
-            int len, lenLocal;
-
             // Assume no colon
             colonOffset = 0;
 
             // Parse NCName (may be prefix, may be local name)
-            len = ParseNCName(s, offset);
+            int len = ParseNCName(s, offset);
             if (len != 0)
             {
                 // Non-empty NCName, so look for colon if there are any characters left
@@ -253,7 +251,7 @@ namespace System.Xml
                 if (offset < s.Length && s[offset] == ':')
                 {
                     // First NCName was prefix, so look for local name part
-                    lenLocal = ParseNCName(s, offset + 1);
+                    int lenLocal = ParseNCName(s, offset + 1);
                     if (lenLocal != 0)
                     {
                         // Local name part found, so increase total QName length (add 1 for colon)
