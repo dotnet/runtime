@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -438,7 +438,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             public int FindIndex(Predicate<T> match)
             {
@@ -456,7 +456,7 @@ namespace System.Collections.Immutable
             /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             public int FindIndex(int startIndex, Predicate<T> match)
             {
@@ -477,7 +477,7 @@ namespace System.Collections.Immutable
             /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             public int FindIndex(int startIndex, int count, Predicate<T> match)
             {
@@ -518,7 +518,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             public int FindLastIndex(Predicate<T> match)
             {
@@ -537,7 +537,7 @@ namespace System.Collections.Immutable
             /// to search for.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             public int FindLastIndex(int startIndex, Predicate<T> match)
             {
@@ -561,7 +561,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             public int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
@@ -589,7 +589,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
             /// elements in the ImmutableList&lt;T&gt; that extends from index
-            /// to the last element, if found; otherwise, –1.
+            /// to the last element, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int IndexOf(T item, int index)
@@ -616,7 +616,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
-            /// contains count number of elements, if found; otherwise, –1.
+            /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int IndexOf(T item, int index, int count)
@@ -644,7 +644,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
-            /// contains count number of elements, if found; otherwise, –1.
+            /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -667,7 +667,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the last occurrence of item within the range of elements
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
-            /// and ends at index, if found; otherwise, –1.
+            /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int LastIndexOf(T item)
@@ -694,7 +694,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the last occurrence of item within the range of elements
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
-            /// and ends at index, if found; otherwise, –1.
+            /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int LastIndexOf(T item, int startIndex)
@@ -722,7 +722,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the last occurrence of item within the range of elements
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
-            /// and ends at index, if found; otherwise, –1.
+            /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int LastIndexOf(T item, int startIndex, int count)
@@ -746,7 +746,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the last occurrence of item within the range of elements
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
-            /// and ends at index, if found; otherwise, –1.
+            /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
             public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer)
