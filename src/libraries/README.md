@@ -42,16 +42,24 @@ This project is licensed under the [MIT license](LICENSE).
 
 ## .NET Foundation
 
-This project is a part of the [.NET Foundation](http://www.dotnetfoundation.org/projects).
+This project is a part of the [.NET Foundation].
+
+[.NET Foundation]: http://www.dotnetfoundation.org/projects
 
 ## How to Engage, Contribute and Provide Feedback
 
-To contribute to .NET Core, see the [Contributing Guide](https://github.com/Microsoft/dotnet/blob/master/CONTRIBUTING.md).
+To contribute to .NET Core, see the [Contributing Guide].
+
+[Contributing Guide]: https://github.com/Microsoft/dotnet/blob/master/CONTRIBUTING.md
 
 You are also encouraged to start a discussion by filing an issue or creating a
 gist. See the contributing guides for more details. You can discuss .NET OSS
-more generally in the [.NET Foundation forums](http://www.dotnetfoundation.org/).
+more generally in the [.NET Foundation forums].
+
+[.NET Foundation forums]: http://www.dotnetfoundation.org/
 
 ## Building and Testing
 
-To find out how you can build and test .NET Core, see the [Developer Guide](docs/Developers.md).
+To find out how you can build and test .NET Core, see the [Developer Guide].
+
+[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
