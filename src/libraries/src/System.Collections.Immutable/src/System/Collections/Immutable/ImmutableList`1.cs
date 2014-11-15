@@ -3146,6 +3146,12 @@ namespace System.Collections.Immutable
                 return tree;
             }
 
+            /// <summary>
+            /// Balance the specified node.  Allows for a large imbalance between left and
+            /// right nodes, but assumes left and right nodes are individually balanced.
+            /// </summary>
+            /// <param name="node">The node.</param>
+            /// <returns>A balanced node</returns>
             private static Node BalanceNode(Node node)
             {
                 while (IsRightHeavy(node) || IsLeftHeavy(node))
