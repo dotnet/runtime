@@ -1,5 +1,7 @@
 # .NET Core
 
+[![Build status](https://ci.appveyor.com/api/projects/status/github/dotnet/corefx?svg=true)](https://ci.appveyor.com/project/dotnet/corefx)
+
 This repository contains the class libraries for .NET Core. This is currently a
 work in progress, and does not currently contain the entire set of libraries
 that we plan on open sourcing. Make sure to watch this repository in order to be
