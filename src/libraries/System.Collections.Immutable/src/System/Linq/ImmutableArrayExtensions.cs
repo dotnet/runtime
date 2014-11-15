@@ -76,22 +76,10 @@ namespace System.Linq
             // underlying array, we can avoid a few allocations, in particular for the boxed
             // immutable array object that would be allocated when it's passed as an IEnumerable<T>, 
             // and for the EnumeratorObject that would be allocated when enumerating the boxed array.
-            return SelectManyIterator(immutableArray, collectionSelector, resultSelector);
-        }
 
-        /// <summary>Provides the core iterator implementation of SelectMany.</summary>
-        private static IEnumerable<TResult> SelectManyIterator<TSource, TCollection, TResult>(
-            this ImmutableArray<TSource> immutableArray,
-            Func<TSource, IEnumerable<TCollection>> collectionSelector,
-            Func<TSource, TCollection, TResult> resultSelector)
-        {
-            foreach (TSource item in immutableArray.array)
-            {
-                foreach (TCollection result in collectionSelector(item))
-                {
-                    yield return resultSelector(item, result);
-                }
-            }
+            return immutableArray.Length == 0 ?
+                Enumerable.Empty<TResult>() :
+                SelectManyIterator(immutableArray, collectionSelector, resultSelector);
         }
 
         /// <summary>
@@ -742,6 +730,23 @@ namespace System.Linq
             Requires.NotNull(builder, "builder");
 
             return builder.Count > 0;
+        }
+        #endregion
+
+        #region Private Implementation Details
+        /// <summary>Provides the core iterator implementation of SelectMany.</summary>
+        private static IEnumerable<TResult> SelectManyIterator<TSource, TCollection, TResult>(
+            this ImmutableArray<TSource> immutableArray,
+            Func<TSource, IEnumerable<TCollection>> collectionSelector,
+            Func<TSource, TCollection, TResult> resultSelector)
+        {
+            foreach (TSource item in immutableArray.array)
+            {
+                foreach (TCollection result in collectionSelector(item))
+                {
+                    yield return resultSelector(item, result);
+                }
+            }
         }
         #endregion
     }
