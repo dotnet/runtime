@@ -289,6 +289,11 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, "other");
 
+            if (object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return SetEquals(other, this.Origin);
         }
 
