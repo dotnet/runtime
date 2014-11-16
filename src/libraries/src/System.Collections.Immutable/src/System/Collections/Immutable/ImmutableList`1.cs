@@ -283,13 +283,7 @@ namespace System.Collections.Immutable
                 return this.FillFromEmpty(items);
             }
 
-            // Let's not implement in terms of ImmutableList.Add so that we're
-            // not unnecessarily generating a new list object for each item.
-            var result = this.root;
-            foreach (T item in items)
-            {
-                result = result.Add(item);
-            }
+            var result = this.root.AddRange(items);
 
             return this.Wrap(result);
         }
@@ -316,13 +310,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(items, "items");
             Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
-            // Let's not implement in terms of ImmutableList.Add so that we're
-            // not unnecessarily generating a new list object for each item.
-            var result = this.root;
-            foreach (T item in items)
-            {
-                result = result.Insert(index++, item);
-            }
+            var result = this.root.InsertRange(index, items);
 
             return this.Wrap(result);
         }
@@ -2078,6 +2066,56 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Adds the specified keys to the tree.
+            /// </summary>
+            /// <param name="keys">The keys.</param>
+            /// <returns>The new tree.</returns>
+            internal Node AddRange(IEnumerable<T> keys)
+            {
+                return this.InsertRange(this.count, keys);
+            }
+
+            /// <summary>
+            /// Adds a collection of values at a given index to this node.
+            /// </summary>
+            /// <param name="index">The location for the new values.</param>
+            /// <param name="keys">The values to add.</param>
+            /// <returns>The new tree.</returns>
+            internal Node InsertRange(int index, IEnumerable<T> keys)
+            {
+                Requires.Range(index >= 0 && index <= this.Count, "index");
+                Requires.NotNull(keys, "keys");
+
+                if (this.IsEmpty)
+                {
+                    ImmutableList<T> other;
+                    if (TryCastToImmutableList(keys, out other))
+                    {
+                        return other.root;
+                    }
+
+                    var list = keys.AsOrderedCollection();
+                    return Node.NodeTreeFromList(list, 0, list.Count);
+                }
+                else
+                {
+                    Node result;
+                    if (index <= this.left.count)
+                    {
+                        var newLeft = this.left.InsertRange(index, keys);
+                        result = this.Mutate(left: newLeft);
+                    }
+                    else
+                    {
+                        var newRight = this.right.InsertRange(index - this.left.count - 1, keys);
+                        result = this.Mutate(right: newRight);
+                    }
+
+                    return BalanceNode(result);
+                }
+            }
+
+            /// <summary>
             /// Removes a value at a given index to this node.
             /// </summary>
             /// <param name="index">The location for the new value.</param>
@@ -3103,6 +3141,31 @@ namespace System.Collections.Immutable
                 }
 
                 return tree;
+            }
+
+            /// <summary>
+            /// Balance the specified node.  Allows for a large imbalance between left and
+            /// right nodes, but assumes left and right nodes are individually balanced.
+            /// </summary>
+            /// <param name="node">The node.</param>
+            /// <returns>A balanced node</returns>
+            private static Node BalanceNode(Node node)
+            {
+                while (IsRightHeavy(node) || IsLeftHeavy(node))
+                {
+                    if (IsRightHeavy(node))
+                    {
+                        node = Balance(node.right) < 0 ? DoubleLeft(node) : RotateLeft(node);
+                        node.Mutate(left: BalanceNode(node.left));
+                    }
+                    else
+                    {
+                        node = Balance(node.left) > 0 ? DoubleRight(node) : RotateRight(node);
+                        node.Mutate(right: BalanceNode(node.right));
+                    }
+                }
+
+                return node;
             }
 
             #endregion

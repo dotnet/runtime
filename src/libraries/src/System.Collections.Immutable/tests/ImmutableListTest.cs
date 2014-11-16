@@ -132,6 +132,18 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void AddRangeTest()
+        {
+            var list = ImmutableList<int>.Empty;
+            list = list.AddRange(new[] { 1, 2, 3 });
+            list = list.AddRange(Enumerable.Range(4, 2));
+            list = list.AddRange(ImmutableList<int>.Empty.AddRange(new[] { 6, 7, 8 }));
+            list = list.AddRange(new int[0]);
+            list = list.AddRange(ImmutableList<int>.Empty.AddRange(Enumerable.Range(9, 1000)));
+            Assert.Equal(Enumerable.Range(1, 1008), list);
+        }
+
+        [Fact]
         public void AddRangeOptimizationsTest()
         {
             // All these optimizations are tested based on filling an empty list.
@@ -147,6 +159,66 @@ namespace System.Collections.Immutable.Test
             // Adding a Builder instance to an empty list should be seen through.
             var builderOfNonEmptyListDefaultComparer = nonEmptyListDefaultComparer.ToBuilder();
             Assert.Same(nonEmptyListDefaultComparer, emptyList.AddRange(builderOfNonEmptyListDefaultComparer));
+        }
+
+        [Fact]
+        public void AddRangeBalanceTest()
+        {
+            var list = ImmutableList<int>.Empty;
+
+            // Add batches of 32, 128 times, giving 4096 items
+            int batchSize = 32;
+            for (int i = 0; i < 128; i++)
+            {
+                list = list.AddRange(Enumerable.Range(batchSize * i + 1, batchSize));
+                list.Root.VerifyBalanced();
+            }
+
+            // Add a single large batch to the end
+            list = list.AddRange(Enumerable.Range(4097, 61440));
+            Assert.Equal(Enumerable.Range(1, 65536), list);
+
+            list.Root.VerifyBalanced();
+
+            // Ensure that tree height is no more than 1 from optimal
+            var root = list.Root as IBinaryTree<int>;
+
+            var optimalHeight = Math.Ceiling(Math.Log(root.Count, 2));
+
+            Console.WriteLine("Tree depth is {0}, optimal is {1}", root.Height, optimalHeight);
+            Assert.InRange(root.Height, optimalHeight, optimalHeight + 1);
+        }
+
+        [Fact]
+        public void InsertRangeRandomBalanceTest()
+        {
+            int randSeed = (int)DateTime.Now.Ticks;
+            Console.WriteLine("Random seed: {0}", randSeed);
+            var random = new Random(randSeed);
+
+            var immutableList = ImmutableList.CreateBuilder<int>();
+            var list = new List<int>();
+
+            const int maxBatchSize = 32;
+            int valueCounter = 0;
+            for (int i = 0; i < 24; i++)
+            {
+                int startPosition = random.Next(list.Count + 1);
+                int length = random.Next(maxBatchSize + 1);
+                int[] values = new int[length];
+                for (int j = 0; j < length; j++)
+                {
+                    values[j] = ++valueCounter;
+                }
+
+                immutableList.InsertRange(startPosition, values);
+                list.InsertRange(startPosition, values);
+
+                Assert.Equal(list, immutableList);
+                immutableList.Root.VerifyBalanced();
+            }
+
+            immutableList.Root.VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
@@ -198,6 +270,24 @@ namespace System.Collections.Immutable.Test
 
             Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(6, new[] { 1 }));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(-1, new[] { 1 }));
+        }
+
+        [Fact]
+        public void InsertRangeImmutableTest()
+        {
+            var list = ImmutableList<int>.Empty;
+            var nonEmptyList = ImmutableList.Create(1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(1, nonEmptyList));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(-1, nonEmptyList));
+
+            list = list.InsertRange(0, ImmutableList.Create(1, 104, 105));
+            list = list.InsertRange(1, ImmutableList.Create(2, 3));
+            list = list.InsertRange(2, ImmutableList<int>.Empty);
+            list = list.InsertRange(3, ImmutableList<int>.Empty.InsertRange(0, Enumerable.Range(4, 100)));
+            Assert.Equal(Enumerable.Range(1, 105), list);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(106, nonEmptyList));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.InsertRange(-1, nonEmptyList));
         }
 
         [Fact]
@@ -657,20 +747,7 @@ namespace System.Collections.Immutable.Test
 
         private static void VerifyBalanced<T>(ImmutableList<T> tree)
         {
-            VerifyBalanced(tree.Root);
-        }
-
-        private static void VerifyBalanced<T>(IBinaryTree<T> node)
-        {
-            if (node.Count <= 2)
-            {
-                return;
-            }
-
-            VerifyBalanced(node.Left);
-            VerifyBalanced(node.Right);
-
-            Assert.InRange(node.Left.Height - node.Right.Height, -1, 1);
+            tree.Root.VerifyBalanced();
         }
 
         private struct Person
