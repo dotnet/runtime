@@ -747,20 +747,7 @@ namespace System.Collections.Immutable.Test
 
         private static void VerifyBalanced<T>(ImmutableList<T> tree)
         {
-            VerifyBalanced(tree.Root);
-        }
-
-        private static void VerifyBalanced<T>(IBinaryTree<T> node)
-        {
-            if (node.Count <= 2)
-            {
-                return;
-            }
-
-            VerifyBalanced(node.Left);
-            VerifyBalanced(node.Right);
-
-            Assert.InRange(node.Left.Height - node.Right.Height, -1, 1);
+            tree.Root.VerifyBalanced();
         }
 
         private struct Person
