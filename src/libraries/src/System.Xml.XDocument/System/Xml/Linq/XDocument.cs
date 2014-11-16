@@ -1,21 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Xml;
-using CultureInfo = System.Globalization.CultureInfo;
-using Debug = System.Diagnostics.Debug;
-using IEnumerable = System.Collections.IEnumerable;
+
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
-using Enumerable = System.Linq.Enumerable;
-using IComparer = System.Collections.IComparer;
-using IEqualityComparer = System.Collections.IEqualityComparer;
-using StringBuilder = System.Text.StringBuilder;
 using Encoding = System.Text.Encoding;
-using Interlocked = System.Threading.Interlocked;
-using System.Reflection;
 
 namespace System.Xml.Linq
 {
@@ -65,7 +54,7 @@ namespace System.Xml.Linq
         /// <item>Zero or more comments</item>
         /// <item>Zero or more processing instructions</item>
         /// </list>
-        /// See XContainer.Add(object content) for details about the content that can be added
+        /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
         public XDocument(params object[] content)
@@ -76,7 +65,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XDocument"/> class
-        /// with the specifed <see cref="XDeclaration"/> and content.
+        /// with the specified <see cref="XDeclaration"/> and content.
         /// </summary>
         /// <param name="declaration">
         /// The XML declaration for the document.
@@ -93,7 +82,7 @@ namespace System.Xml.Linq
         /// <item>Zero or more processing instructions</item>
         /// <item></item>
         /// </list>
-        /// See XContainer.Add(object content) for details about the content that can be added
+        /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
         public XDocument(XDeclaration declaration, params object[] content)

@@ -4,7 +4,6 @@
 using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
-using TestUtilities;
 using Xunit;
 using RowCounts = System.Reflection.Metadata.Ecma335.MetadataAggregator.RowCounts;
 

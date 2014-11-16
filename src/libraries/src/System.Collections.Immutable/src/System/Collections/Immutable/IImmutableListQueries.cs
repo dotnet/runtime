@@ -1,11 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
 
 namespace System.Collections.Immutable
 {
@@ -151,7 +147,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         int FindIndex(Predicate<T> match);
 
@@ -165,7 +161,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         int FindIndex(int startIndex, Predicate<T> match);
 
@@ -180,7 +176,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         int FindIndex(int startIndex, int count, Predicate<T> match);
 
@@ -209,7 +205,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         int FindLastIndex(Predicate<T> match);
 
@@ -224,7 +220,7 @@ namespace System.Collections.Immutable
         /// to search for.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         int FindLastIndex(int startIndex, Predicate<T> match);
 
@@ -242,7 +238,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         int FindLastIndex(int startIndex, int count, Predicate<T> match);
 

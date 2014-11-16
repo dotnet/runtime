@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata
         // ELEMENT_TYPE_I1, ELEMENT_TYPE_U1, ELEMENT_TYPE_I2, ELEMENT_TYPE_U2,
         // ELEMENT_TYPE_I4, ELEMENT_TYPE_U4, ELEMENT_TYPE_I8, ELEMENT_TYPE_U8,
         // ELEMENT_TYPE_R4, ELEMENT_TYPE_R8, or ELEMENT_TYPE_STRING; or
-        // ELEMENT_TYPE_CLASS with a Value of zero (§II.23.1.16)
+        // ELEMENT_TYPE_CLASS with a Value of zero (Section II.23.1.16)
         Invalid = 0,
 
         Boolean = CorElementType.ELEMENT_TYPE_BOOLEAN,

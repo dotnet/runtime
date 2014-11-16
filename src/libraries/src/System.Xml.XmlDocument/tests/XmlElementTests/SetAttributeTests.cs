@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
 using System.Xml;
 
@@ -122,8 +125,5 @@ namespace XmlDocumentTests.XmlElementTests
             Assert.Equal(attribute.Value, "newvalue");
             Assert.Equal(2, node.Attributes.Count);
         }
-
-
-
     }
 }

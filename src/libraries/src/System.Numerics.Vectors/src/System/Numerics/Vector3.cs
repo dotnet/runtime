@@ -57,7 +57,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is Vector3))
+            if (!(obj is Vector3))
                 return false;
             return Equals((Vector3)obj);
         }
@@ -228,7 +228,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns the reflection of a vector off a suface that has the specified normal.
+        /// Returns the reflection of a vector off a surface that has the specified normal.
         /// </summary>
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">The normal of the surface being reflected off.</param>

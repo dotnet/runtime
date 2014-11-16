@@ -668,7 +668,7 @@ namespace MS.Internal.Xml.XPath
                 if (this.scanner.Name == "id")
                 {
                     ParamInfo pi = (ParamInfo)functionTable["id"];
-                    NextLex();;
+                    NextLex();
                     PassToken(XPathScanner.LexKind.LParens);
                     CheckToken(XPathScanner.LexKind.String);
                     argList.Add(new Operand(this.scanner.StringValue));
