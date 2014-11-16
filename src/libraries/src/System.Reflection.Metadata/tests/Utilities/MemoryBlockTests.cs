@@ -73,16 +73,16 @@ namespace System.Reflection.Metadata.Tests
             fixed (byte* ptr = (buffer = new byte[] { 0xC0 }))
             {
                 string s = new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, null, decoder, out bytesRead);
-                Assert.Equal("�", new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, null, decoder, out bytesRead));
+                Assert.Equal("\uFFFD", new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, null, decoder, out bytesRead));
                 Assert.Equal(s, Encoding.UTF8.GetString(buffer));
                 Assert.Equal(buffer.Length, bytesRead);
 
                 s = new MemoryBlock(ptr, buffer.Length).PeekUtf8NullTerminated(0, Encoding.UTF8.GetBytes("Hello"), decoder, out bytesRead);
-                Assert.Equal("Hello�", s);
+                Assert.Equal("Hello\uFFFD", s);
                 Assert.Equal(s, "Hello" + Encoding.UTF8.GetString(buffer));
                 Assert.Equal(buffer.Length, bytesRead);
 
-                Assert.Equal("�", new MemoryBlock(ptr, buffer.Length).PeekUtf8(0, buffer.Length));
+                Assert.Equal("\uFFFD", new MemoryBlock(ptr, buffer.Length).PeekUtf8(0, buffer.Length));
             }
 
             // overlong encoding
@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata.Tests
             var utf8 = Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             byte[] buffer;
             int bytesRead;
-            string str = "你好. Comment ça va?";
+            string str = "\u4F60\u597D. Comment \u00E7a va?";
 
             var decoder = MetadataStringDecoder.DefaultUTF8;
 
@@ -142,9 +142,9 @@ namespace System.Reflection.Metadata.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => decoder.GetString((byte*)1, -1));
 
             byte[] bytes;
-            fixed (byte* ptr = (bytes = Encoding.Unicode.GetBytes("Ça marche très bien.")))
+            fixed (byte* ptr = (bytes = Encoding.Unicode.GetBytes("\u00C7a marche tr\u00E8s bien.")))
             {
-                Assert.Equal("Ça marche très bien.", decoder.GetString(ptr, bytes.Length));
+                Assert.Equal("\u00C7a marche tr\u00E8s bien.", decoder.GetString(ptr, bytes.Length));
             }
         }
 
