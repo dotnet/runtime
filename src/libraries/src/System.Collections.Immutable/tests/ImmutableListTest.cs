@@ -215,13 +215,7 @@ namespace System.Collections.Immutable.Test
                 immutableList.Root.VerifyBalanced();
             }
 
-            // Ensure that tree height is no more than 1 from optimal
-            var root = immutableList.Root as IBinaryTree<int>;
-
-            var optimalHeight = Math.Ceiling(Math.Log(root.Count, 2));
-
-            Console.WriteLine("Tree depth is {0}, optimal is {1}", root.Height, optimalHeight);
-            Assert.InRange(root.Height, optimalHeight, optimalHeight + 1);
+            immutableList.Root.VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
