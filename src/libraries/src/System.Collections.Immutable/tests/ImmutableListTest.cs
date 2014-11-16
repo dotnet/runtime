@@ -161,22 +161,35 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void AddRangeBalanceTest()
         {
+            int randSeed = (int)DateTime.Now.Ticks;
+            Console.WriteLine("Random seed: {0}", randSeed);
+            var random = new Random(randSeed);
+
+            int expectedTotalSize = 0;
+
             var list = ImmutableList<int>.Empty;
 
-            // Add batches of 32, 128 times, giving 4096 items
-            int batchSize = 32;
+            // Add some small batches, verifying balance after each
             for (int i = 0; i < 128; i++)
             {
-                list = list.AddRange(Enumerable.Range(batchSize * i + 1, batchSize));
-                VerifyBalanced(list.Root);
+                int batchSize = random.Next(32);
+                Console.WriteLine("Adding {0} elements to the list", batchSize);
+                list = list.AddRange(Enumerable.Range(expectedTotalSize+1, batchSize));
+                VerifyBalanced(list);
+                expectedTotalSize += batchSize;
             }
 
             // Add a single large batch to the end
-            list = list.AddRange(Enumerable.Range(4097, 61440));
-            Assert.Equal(Enumerable.Range(1, 65536), list);
+            int largeBatchSize = random.Next(32768) + 32768;
+            Console.WriteLine("Adding {0} elements to the list", largeBatchSize);
+            list = list.AddRange(Enumerable.Range(expectedTotalSize + 1, largeBatchSize));
+            VerifyBalanced(list);
+            expectedTotalSize += largeBatchSize;
 
-            VerifyBalanced(list.Root);
+            Assert.Equal(Enumerable.Range(1, expectedTotalSize), list);
 
+            // The following is not guaranteed by AVL trees but has not failed
+            // for any iterations of this test so far
             // Ensure that tree height is no more than 1 from optimal
             var root = list.Root as IBinaryTree<int>;
 
@@ -214,6 +227,8 @@ namespace System.Collections.Immutable.Test
 
             Assert.Equal(list, immutableList);
 
+            /* We don't actually have this guarantee for AVL trees
+               An example where the following assertion fails is with randSeed = -69928973;
             // Ensure that tree height is no more than 1 from optimal
             var root = immutableList.Root as IBinaryTree<int>;
 
@@ -221,6 +236,7 @@ namespace System.Collections.Immutable.Test
 
             Console.WriteLine("Tree depth is {0}, optimal is {1}", root.Height, optimalHeight);
             Assert.InRange(root.Height, optimalHeight, optimalHeight + 1);
+            */
         }
 
         [Fact]
@@ -734,6 +750,11 @@ namespace System.Collections.Immutable.Test
         internal override IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
         {
             return list;
+        }
+
+        private static void VerifyBalanced<T>(ImmutableList<T> tree)
+        {
+            VerifyBalanced(tree.Root);
         }
 
         private static void VerifyBalanced<T>(IBinaryTree<T> node)
