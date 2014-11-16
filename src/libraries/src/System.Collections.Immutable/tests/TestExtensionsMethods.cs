@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Validation;
+using Xunit;
 
 namespace System.Collections.Immutable.Test
 {
@@ -38,6 +39,19 @@ namespace System.Collections.Immutable.Test
             }
 
             throw new NotSupportedException();
+        }
+
+        internal static void VerifyBalanced<T>(this IBinaryTree<T> node)
+        {
+            if (node.Count <= 2)
+            {
+                return;
+            }
+
+            VerifyBalanced(node.Left);
+            VerifyBalanced(node.Right);
+
+            Assert.InRange(node.Left.Height - node.Right.Height, -1, 1);
         }
     }
 }

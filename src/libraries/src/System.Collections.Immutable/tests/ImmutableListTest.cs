@@ -168,14 +168,14 @@ namespace System.Collections.Immutable.Test
             for (int i = 0; i < 128; i++)
             {
                 list = list.AddRange(Enumerable.Range(batchSize * i + 1, batchSize));
-                VerifyBalanced(list.Root);
+                list.Root.VerifyBalanced();
             }
 
             // Add a single large batch to the end
             list = list.AddRange(Enumerable.Range(4097, 61440));
             Assert.Equal(Enumerable.Range(1, 65536), list);
 
-            VerifyBalanced(list.Root);
+            list.Root.VerifyBalanced();
 
             // Ensure that tree height is no more than 1 from optimal
             var root = list.Root as IBinaryTree<int>;
@@ -212,7 +212,7 @@ namespace System.Collections.Immutable.Test
                 list.InsertRange(startPosition, values);
 
                 Assert.Equal(list, immutableList);
-                VerifyBalanced(immutableList.Root);
+                immutableList.Root.VerifyBalanced();
             }
 
             // Ensure that tree height is no more than 1 from optimal
@@ -735,19 +735,6 @@ namespace System.Collections.Immutable.Test
         internal override IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
         {
             return list;
-        }
-
-        private static void VerifyBalanced<T>(IBinaryTree<T> node)
-        {
-            if (node.Count <= 2)
-            {
-                return;
-            }
-
-            VerifyBalanced(node.Left);
-            VerifyBalanced(node.Right);
-
-            Assert.InRange(node.Left.Height - node.Right.Height, -1, 1);
         }
 
         private struct Person
