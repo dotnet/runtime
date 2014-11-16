@@ -2088,6 +2088,7 @@ namespace System.Collections.Immutable
             internal Node InsertRange(int index, IEnumerable<T> keys)
             {
                 Requires.Range(index >= 0 && index <= this.Count, "index");
+                Requires.NotNull(keys, "keys");
 
                 if (this.IsEmpty)
                 {
