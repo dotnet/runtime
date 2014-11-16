@@ -1,10 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
-using System.Numerics;
 
 namespace System.Numerics.Tests
 {
@@ -1480,13 +1479,14 @@ namespace System.Numerics.Tests
             a.M43 = 43.0f;
             a.M44 = 44.0f;
 
-            string expected = "{ {M11:11 M12:-12 M13:-13.3 M14:14.4} " +
-                                "{M21:21 M22:22 M23:23 M24:24} " +
-                                "{M31:31 M32:32 M33:33 M34:34} " +
-                                "{M41:41 M42:42 M43:43 M44:44} }";
-            string actual;
-
-            actual = a.ToString();
+            string expected = String.Format(CultureInfo.CurrentCulture,
+                "{{ {{M11:{0} M12:{1} M13:{2} M14:{3}}} {{M21:{4} M22:{5} M23:{6} M24:{7}}} {{M31:{8} M32:{9} M33:{10} M34:{11}}} {{M41:{12} M42:{13} M43:{14} M44:{15}}} }}",
+                    11.0f, -12.0f, -13.3f, 14.4f,
+                    21.0f, 22.0f, 23.0f, 24.0f,
+                    31.0f, 32.0f, 33.0f, 34.0f,
+                    41.0f, 42.0f, 43.0f, 44.0f);
+            
+            string actual = a.ToString();
             Assert.Equal(expected, actual);
         }
 

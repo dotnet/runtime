@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
-using System.Xml;
 using System.Xml.Schema;
 
 namespace System.Xml.XPath

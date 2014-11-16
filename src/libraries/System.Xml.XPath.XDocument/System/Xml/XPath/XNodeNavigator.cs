@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace System.Xml.XPath
@@ -41,10 +38,10 @@ namespace System.Xml.XPath
 
         static XAttribute XmlNamespaceDeclaration;
 
-        // The navigator position is encoded by the tuple (source, parent). 
-        // Lazy text uses (instance, parent element). Namespace declaration uses 
-        // (instance, parent element). Common XObjects uses (instance, null).
-        object source;
+        // The navigator position is encoded by the tuple (source, parent).
+        // Namespace declaration uses (instance, parent element).
+        // Common XObjects uses (instance, null).
+        XObject source;
         XElement parent;
 
         XmlNameTable nameTable;
@@ -66,10 +63,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                XObject o = source as XObject;
-                if (o != null)
+                if (source != null)
                 {
-                    return o.BaseUri;
+                    return source.BaseUri;
                 }
                 if (parent != null)
                 {
@@ -83,20 +79,15 @@ namespace System.Xml.XPath
         {
             get
             {
-                XElement e = source as XElement;
-                if (e != null)
+                XElement element = source as XElement;
+                if (element != null)
                 {
-                    XAttribute a = e.LastAttribute;
-                    if (a != null)
+                    foreach (XAttribute attribute in element.Attributes())
                     {
-                        do
+                        if (!attribute.IsNamespaceDeclaration)
                         {
-                            a = a.NextAttribute;
-                            if (!a.IsNamespaceDeclaration)
-                            {
-                                return true;
-                            }
-                        } while (a != e.LastAttribute);
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -107,22 +98,15 @@ namespace System.Xml.XPath
         {
             get
             {
-                XContainer c = source as XContainer;
-                if (c != null)
+                XContainer container = source as XContainer;
+                if (container != null)
                 {
-                    XNode content = c.LastNode;
-                    XNode n = content;
-                    if (n != null)
+                    foreach (XNode node in container.Nodes())
                     {
-                        do
+                        if (IsContent(container, node))
                         {
-                            n = n.NextNode;
-                            if (IsContent(c, n))
-                            {
-                                return true;
-                            }
-                        } while (n != content);
-                        return false;
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -213,19 +197,15 @@ namespace System.Xml.XPath
         {
             get
             {
-                XObject o = source as XObject;
-                if (o != null)
+                if (source != null)
                 {
-                    switch (o.NodeType)
+                    switch (source.NodeType)
                     {
                         case XmlNodeType.Element:
                             return XPathNodeType.Element;
                         case XmlNodeType.Attribute:
-                            if (parent != null)
-                            {
-                                return XPathNodeType.Namespace;
-                            }
-                            return XPathNodeType.Attribute;
+                            XAttribute attribute = (XAttribute)source;
+                            return attribute.IsNamespaceDeclaration ? XPathNodeType.Namespace : XPathNodeType.Attribute;
                         case XmlNodeType.Document:
                             return XPathNodeType.Root;
                         case XmlNodeType.Comment:
@@ -277,12 +257,6 @@ namespace System.Xml.XPath
         {
             get
             {
-                if (source is string)
-                {
-                    // convert lazy text to eager text
-                    source = parent.LastNode;
-                    parent = null;
-                }
                 return source;
             }
         }
@@ -291,30 +265,29 @@ namespace System.Xml.XPath
         {
             get
             {
-                XObject o = source as XObject;
-                if (o != null)
+                if (source != null)
                 {
-                    switch (o.NodeType)
+                    switch (source.NodeType)
                     {
                         case XmlNodeType.Element:
-                            return ((XElement)o).Value;
+                            return ((XElement)source).Value;
                         case XmlNodeType.Attribute:
-                            return ((XAttribute)o).Value;
+                            return ((XAttribute)source).Value;
                         case XmlNodeType.Document:
-                            XElement root = ((XDocument)o).Root;
+                            XElement root = ((XDocument)source).Root;
                             return root != null ? root.Value : string.Empty;
                         case XmlNodeType.Text:
                         case XmlNodeType.CDATA:
-                            return CollectText((XText)o);
+                            return CollectText((XText)source);
                         case XmlNodeType.Comment:
-                            return ((XComment)o).Value;
+                            return ((XComment)source).Value;
                         case XmlNodeType.ProcessingInstruction:
-                            return ((XProcessingInstruction)o).Data;
+                            return ((XProcessingInstruction)source).Data;
                         default:
                             return string.Empty;
                     }
                 }
-                return (string)source;
+                return string.Empty;
             }
         }
 
@@ -350,20 +323,15 @@ namespace System.Xml.XPath
             XElement e = source as XElement;
             if (e != null)
             {
-                XAttribute a = e.LastAttribute;
-                if (a != null)
+                foreach (XAttribute attribute in e.Attributes())
                 {
-                    do
+                    if (attribute.Name.LocalName == localName &&
+                        attribute.Name.NamespaceName == namespaceName &&
+                        !attribute.IsNamespaceDeclaration)
                     {
-                        a = a.NextAttribute;
-                        if (a.Name.LocalName == localName &&
-                            a.Name.NamespaceName == namespaceName &&
-                            !a.IsNamespaceDeclaration)
-                        {
-                            source = a;
-                            return true;
-                        }
-                    } while (a != e.LastAttribute);
+                        source = attribute;
+                        return true;
+                    }
                 }
             }
             return false;
@@ -374,22 +342,14 @@ namespace System.Xml.XPath
             XContainer c = source as XContainer;
             if (c != null)
             {
-                XNode content = c.LastNode;
-                XNode n = content;
-                if (n != null)
+                foreach (XElement element in c.Elements())
                 {
-                    do
+                    if (element.Name.LocalName == localName &&
+                        element.Name.NamespaceName == namespaceName)
                     {
-                        n = n.NextNode;
-                        XElement e = n as XElement;
-                        if (e != null &&
-                            e.Name.LocalName == localName &&
-                            e.Name.NamespaceName == namespaceName)
-                        {
-                            source = e;
-                            return true;
-                        }
-                    } while (n != content);
+                        source = element;
+                        return true;
+                    }
                 }
             }
             return false;
@@ -400,25 +360,18 @@ namespace System.Xml.XPath
             XContainer c = source as XContainer;
             if (c != null)
             {
-                XNode content = c.LastNode;
-                XNode n = content;
-                if (n != null)
+                int mask = GetElementContentMask(type);
+                if ((TextMask & mask) != 0 && c.GetParent() == null && c is XDocument)
                 {
-                    int mask = GetElementContentMask(type);
-                    if ((TextMask & mask) != 0 && c.GetParent() == null && c is XDocument)
+                    mask &= ~TextMask;
+                }
+                foreach (XNode node in c.Nodes())
+                {
+                    if (((1 << (int)node.NodeType) & mask) != 0)
                     {
-                        mask &= ~TextMask;
+                        source = node;
+                        return true;
                     }
-                    do
-                    {
-                        n = n.NextNode;
-                        if (((1 << (int)n.NodeType) & mask) != 0)
-                        {
-                            source = n;
-                            return true;
-                        }
-                    } while (n != content);
-                    return false;
                 }
             }
             return false;
@@ -429,18 +382,13 @@ namespace System.Xml.XPath
             XElement e = source as XElement;
             if (e != null)
             {
-                XAttribute a = e.LastAttribute;
-                if (a != null)
+                foreach (XAttribute attribute in e.Attributes())
                 {
-                    do
+                    if (!attribute.IsNamespaceDeclaration)
                     {
-                        a = a.NextAttribute;
-                        if (!a.IsNamespaceDeclaration)
-                        {
-                            source = a;
-                            return true;
-                        }
-                    } while (a != e.LastAttribute);
+                        source = attribute;
+                        return true;
+                    }
                 }
             }
             return false;
@@ -448,23 +396,16 @@ namespace System.Xml.XPath
 
         public override bool MoveToFirstChild()
         {
-            XContainer c = source as XContainer;
-            if (c != null)
+            XContainer container = source as XContainer;
+            if (container != null)
             {
-                XNode content = c.LastNode;
-                XNode n = content;
-                if (n != null)
+                foreach (XNode node in container.Nodes())
                 {
-                    do
+                    if (IsContent(container, node))
                     {
-                        n = n.NextNode;
-                        if (IsContent(c, n))
-                        {
-                            source = n;
-                            return true;
-                        }
-                    } while (n != content);
-                    return false;
+                        source = node;
+                        return true;
+                    }
                 }
             }
             return false;
@@ -547,22 +488,25 @@ namespace System.Xml.XPath
 
         public override bool MoveToNext()
         {
-            XNode n = source as XNode;
-            if (n != null)
+            XNode currentNode = source as XNode;
+            if (currentNode != null)
             {
-                XContainer c = n.GetParent();
-                if (c != null)
+                XContainer container = currentNode.GetParent();
+                if (container != null)
                 {
-                    XNode content = c.LastNode;
-                    while (n != content)
+                    XNode next = null;
+                    for (XNode node = currentNode; node != null; node = next)
                     {
-                        XNode next = n.NextNode;
-                        if (IsContent(c, next) && !(n is XText && next is XText))
+                        next = node.NextNode;
+                        if (next == null)
+                        {
+                            break;
+                        }
+                        if (IsContent(container, next) && !(node is XText && next is XText))
                         {
                             source = next;
                             return true;
                         }
-                        n = next;
                     }
                 }
             }
@@ -571,24 +515,16 @@ namespace System.Xml.XPath
 
         public override bool MoveToNext(string localName, string namespaceName)
         {
-            XNode n = source as XNode;
-            if (n != null)
+            XNode currentNode = source as XNode;
+            if (currentNode != null)
             {
-                XContainer c = n.GetParent();
-                if (c != null)
+                foreach (XElement element in currentNode.ElementsAfterSelf())
                 {
-                    XNode content = c.LastNode;
-                    while (n != content)
+                    if (element.Name.LocalName == localName &&
+                        element.Name.NamespaceName == namespaceName)
                     {
-                        n = n.NextNode;
-                        XElement e = n as XElement;
-                        if (e != null &&
-                            e.Name.LocalName == localName &&
-                            e.Name.NamespaceName == namespaceName)
-                        {
-                            source = e;
-                            return true;
-                        }
+                        source = element;
+                        return true;
                     }
                 }
             }
@@ -597,27 +533,26 @@ namespace System.Xml.XPath
 
         public override bool MoveToNext(XPathNodeType type)
         {
-            XNode n = source as XNode;
-            if (n != null)
+            XNode currentNode = source as XNode;
+            if (currentNode != null)
             {
-                XContainer c = n.GetParent();
-                if (c != null)
+                XContainer container = currentNode.GetParent();
+                if (container != null)
                 {
-                    XNode content = c.LastNode;
                     int mask = GetElementContentMask(type);
-                    if ((TextMask & mask) != 0 && c.GetParent() == null && c is XDocument)
+                    if ((TextMask & mask) != 0 && container.GetParent() == null && container is XDocument)
                     {
                         mask &= ~TextMask;
                     }
-                    while (n != content)
+                    XNode next = null;
+                    for (XNode node = currentNode; node != null; node = next)
                     {
-                        XNode next = n.NextNode;
-                        if (((1 << (int)next.NodeType) & mask) != 0 && !(n is XText && next is XText))
+                        next = node.NextNode;
+                        if (((1 << (int)next.NodeType) & mask) != 0 && !(node is XText && next is XText))
                         {
                             source = next;
                             return true;
                         }
-                        n = next;
                     }
                 }
             }
@@ -626,18 +561,17 @@ namespace System.Xml.XPath
 
         public override bool MoveToNextAttribute()
         {
-            XAttribute a = source as XAttribute;
-            if (a != null && parent == null)
+            XAttribute currentAttribute = source as XAttribute;
+            if (currentAttribute != null && parent == null)
             {
-                XElement e = (XElement)a.GetParent();
+                XElement e = (XElement)currentAttribute.GetParent();
                 if (e != null)
                 {
-                    while (a != e.LastAttribute)
+                    for (XAttribute attribute = currentAttribute.NextAttribute; attribute != null; attribute = attribute.NextAttribute)
                     {
-                        a = a.NextAttribute;
-                        if (!a.IsNamespaceDeclaration)
+                        if (!attribute.IsNamespaceDeclaration)
                         {
-                            source = a;
+                            source = attribute;
                             return true;
                         }
                     }
@@ -698,10 +632,10 @@ namespace System.Xml.XPath
                 parent = null;
                 return true;
             }
-            XObject o = (XObject)source;
-            if (o.GetParent() != null)
+            XNode parentNode = source.GetParent();
+            if (parentNode != null)
             {
-                source = o.GetParent();
+                source = parentNode;
                 return true;
             }
             return false;
@@ -709,28 +643,28 @@ namespace System.Xml.XPath
 
         public override bool MoveToPrevious()
         {
-            XNode n = source as XNode;
-            if (n != null)
+            XNode currentNode = source as XNode;
+            if (currentNode != null)
             {
-                XContainer c = n.GetParent();
-                if (c != null)
+                XContainer container = currentNode.GetParent();
+                if (container != null)
                 {
-                    XNode q = c.LastNode;
-                    if (q.NextNode != n)
+                    XNode previous = null;
+                    foreach (XNode node in container.Nodes())
                     {
-                        XNode p = null;
-                        do
+                        if (node == currentNode)
                         {
-                            q = q.NextNode;
-                            if (IsContent(c, q))
+                            if (previous != null)
                             {
-                                p = p is XText && q is XText ? p : q;
+                                source = previous;
+                                return true;
                             }
-                        } while (q.NextNode != n);
-                        if (p != null)
+                            return false;
+                        }
+
+                        if (IsContent(container, node))
                         {
-                            source = p;
-                            return true;
+                            previous = node;
                         }
                     }
                 }
@@ -786,11 +720,11 @@ namespace System.Xml.XPath
             string s = n.Value;
             if (n.GetParent() != null)
             {
-                while (n != n.GetParent().LastNode)
+                foreach (XNode node in n.NodesAfterSelf())
                 {
-                    n = n.NextNode as XText;
-                    if (n == null) break;
-                    s += n.Value;
+                    XText t = node as XText;
+                    if (t == null) break;
+                    s += t.Value;
                 }
             }
             return s;
@@ -816,25 +750,7 @@ namespace System.Xml.XPath
 
         static bool IsSamePosition(XNodeNavigator n1, XNodeNavigator n2)
         {
-            if (n1.source == n2.source && n1.parent == n2.parent)
-            {
-                return true;
-            }
-            // compare lazy text with eager text 
-            if (n1.parent != null ^ n2.parent != null)
-            {
-                XText t1 = n1.source as XText;
-                if (t1 != null)
-                {
-                    return (object)t1.Value == (object)n2.source && t1.GetParent() == n2.parent;
-                }
-                XText t2 = n2.source as XText;
-                if (t2 != null)
-                {
-                    return (object)t2.Value == (object)n1.source && t2.GetParent() == n1.parent;
-                }
-            }
-            return false;
+            return n1.source == n2.source && n1.source.GetParent() == n2.source.GetParent();
         }
 
         static bool IsXmlNamespaceDeclaration(XAttribute a)
@@ -863,17 +779,12 @@ namespace System.Xml.XPath
 
         static XAttribute GetFirstNamespaceDeclarationLocal(XElement e)
         {
-            XAttribute a = e.LastAttribute;
-            if (a != null)
+            foreach (XAttribute attribute in e.Attributes())
             {
-                do
+                if (attribute.IsNamespaceDeclaration)
                 {
-                    a = a.NextAttribute;
-                    if (a.IsNamespaceDeclaration)
-                    {
-                        return a;
-                    }
-                } while (a != e.LastAttribute);
+                    return attribute;
+                }
             }
             return null;
         }
@@ -900,18 +811,19 @@ namespace System.Xml.XPath
 
         static XAttribute GetNextNamespaceDeclarationLocal(XAttribute a)
         {
-            XElement e = (XElement)a.GetParent();
+            XElement e = a.Parent;
             if (e == null)
             {
                 return null;
             }
-            while (a != e.LastAttribute)
+            a = a.NextAttribute;
+            while (a != null)
             {
-                a = a.NextAttribute;
                 if (a.IsNamespaceDeclaration)
                 {
                     return a;
                 }
+                a = a.NextAttribute;
             }
             return null;
         }
@@ -964,9 +876,9 @@ namespace System.Xml.XPath
                 XText t = r as XText;
                 if (t != null && t.GetParent() != null)
                 {
-                    while (t != t.GetParent().LastNode)
+                    foreach (XNode node in t.GetParent().Nodes())
                     {
-                        t = t.NextNode as XText;
+                        t = node as XText;
                         if (t == null) break;
                         yield return (T)(object)t;
                     }
@@ -1088,27 +1000,23 @@ namespace System.Xml.XPath
 
         static XText CalibrateText(XText n)
         {
-            if (n.GetParent() == null)
+            XContainer parentNode = n.GetParent();
+            if (parentNode == null)
             {
                 return n;
             }
-            XNode p = n.GetParent().LastNode;
-            while (true)
+            foreach (XNode node in parentNode.Nodes())
             {
-                p = p.NextNode;
-                XText t = p as XText;
-                if (t != null)
+                XText t = node as XText;
+                bool isTextNode = t != null;
+                if (isTextNode && node == n)
                 {
-                    do
-                    {
-                        if (p == n)
-                        {
-                            return t;
-                        }
-                        p = p.NextNode;
-                    } while (p is XText);
+                    return t; 
                 }
             }
+
+            System.Diagnostics.Debug.Assert(false, "Parent node doesn't contain itself.");
+            return null;
         }
     }
 }

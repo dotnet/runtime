@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Threading;
 
 namespace System.Reflection.Internal

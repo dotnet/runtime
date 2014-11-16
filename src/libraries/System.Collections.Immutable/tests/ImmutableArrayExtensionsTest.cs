@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Collections.Immutable.Test
@@ -41,6 +39,25 @@ namespace System.Collections.Immutable.Test
         {
             Assert.Throws<ArgumentNullException>(() => ImmutableArrayExtensions.Select<int, bool>(empty, null));
             Assert.False(ImmutableArrayExtensions.Select(empty, n => true).Any());
+        }
+
+        [Fact]
+        public void SelectMany()
+        {
+            Func<int, IEnumerable<int>> collectionSelector = i => Enumerable.Range(i, 10);
+            Func<int, int, int> resultSelector = (i, e) => e * 2;
+            foreach (var arr in new[] { empty, oneElement, manyElements })
+            {
+                Assert.Equal(
+                    Enumerable.SelectMany(arr, collectionSelector, resultSelector),
+                    ImmutableArrayExtensions.SelectMany(arr, collectionSelector, resultSelector));
+            }
+
+            Assert.Throws<NullReferenceException>(() => ImmutableArrayExtensions.SelectMany<int, int, int>(emptyDefault, null, null));
+            Assert.Throws<ArgumentNullException>(() => 
+                ImmutableArrayExtensions.SelectMany<int, int, int>(manyElements, null, (i, e) => e));
+            Assert.Throws<ArgumentNullException>(() =>
+                ImmutableArrayExtensions.SelectMany<int, int, int>(manyElements, i => new[] { i }, null));
         }
 
         [Fact]

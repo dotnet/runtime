@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System.Xml;
 using Xunit;
 
@@ -5,7 +8,7 @@ namespace XmlDocumentTests.XmlAttributeTests
 {
     public static class SpecifiedTests
     {
-        [Fact]
+        //[Fact(Skip = "Issue #18: Outer loop test")]
         public static void AttributeSpecifiedTest()
         {
             var xmlDocument = new XmlDocument();

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Xml;
 
 namespace System.Xml.XPath
 {
@@ -590,7 +589,7 @@ namespace System.Xml.XPath
                         else
                         {
                             XPathNavigator prev = nav.Clone();
-                            for (;;)
+                            for (; ;)
                             {
                                 if (!nav.MoveToNextNamespace(XPathNamespaceScope.Local))
                                 {
