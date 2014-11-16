@@ -1378,6 +1378,17 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Returns the Root Node of the list
+        /// </summary>
+        internal Node Root
+        {
+            get
+            {
+                return this.root;
+            }
+        }
+
+        /// <summary>
         /// Creates a new sorted set wrapper for a node tree.
         /// </summary>
         /// <param name="root">The root of the collection.</param>
@@ -3083,12 +3094,12 @@ namespace System.Collections.Immutable
 
                 if (IsRightHeavy(tree))
                 {
-                    return IsLeftHeavy(tree.right) ? DoubleLeft(tree) : RotateLeft(tree);
+                    return Balance(tree.right) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
                 }
 
                 if (IsLeftHeavy(tree))
                 {
-                    return IsRightHeavy(tree.left) ? DoubleRight(tree) : RotateRight(tree);
+                    return Balance(tree.left) > 0 ? DoubleRight(tree) : RotateRight(tree);
                 }
 
                 return tree;
