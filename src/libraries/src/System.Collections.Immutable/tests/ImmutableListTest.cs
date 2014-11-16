@@ -168,15 +168,54 @@ namespace System.Collections.Immutable.Test
             for (int i = 0; i < 128; i++)
             {
                 list = list.AddRange(Enumerable.Range(batchSize * i + 1, batchSize));
+                VerifyBalanced(list.Root);
             }
 
             // Add a single large batch to the end
             list = list.AddRange(Enumerable.Range(4097, 61440));
+            Assert.Equal(Enumerable.Range(1, 65536), list);
 
             VerifyBalanced(list.Root);
 
             // Ensure that tree height is no more than 1 from optimal
             var root = list.Root as IBinaryTree<int>;
+
+            var optimalHeight = Math.Ceiling(Math.Log(root.Count, 2));
+
+            Console.WriteLine("Tree depth is {0}, optimal is {1}", root.Height, optimalHeight);
+            Assert.InRange(root.Height, optimalHeight, optimalHeight + 1);
+        }
+
+        [Fact]
+        public void InsertRangeRandomBalanceTest()
+        {
+            int randSeed = (int)DateTime.Now.Ticks;
+            Console.WriteLine("Random seed: {0}", randSeed);
+            var random = new Random(randSeed);
+
+            var immutableList = ImmutableList.CreateBuilder<int>();
+            var list = new List<int>();
+
+            const int maxBatchSize = 32;
+            for (int i = 0; i < 24; i++)
+            {
+                int startPosition = random.Next(list.Count + 1);
+                int length = random.Next(maxBatchSize + 1);
+                int[] values = new int[length];
+                for (int j = 0; j < length; j++)
+                {
+                    values[j] = random.Next();
+                }
+
+                immutableList.InsertRange(startPosition, values);
+                list.InsertRange(startPosition, values);
+                VerifyBalanced(immutableList.Root);
+            }
+
+            Assert.Equal(list, immutableList);
+
+            // Ensure that tree height is no more than 1 from optimal
+            var root = immutableList.Root as IBinaryTree<int>;
 
             var optimalHeight = Math.Ceiling(Math.Log(root.Count, 2));
 
@@ -697,7 +736,7 @@ namespace System.Collections.Immutable.Test
             return list;
         }
 
-        private void VerifyBalanced<T>(IBinaryTree<T> node)
+        private static void VerifyBalanced<T>(IBinaryTree<T> node)
         {
             if (node.Count <= 2)
             {
