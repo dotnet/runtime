@@ -19,17 +19,18 @@ Today, it contains the following components:
 
 * **SIMD enabled vector types**. We've recently added a set of basic vector
   types that leverage single instruction, multiple data (SIMD) CPU instructions.
-  See our [recent announcement][simd-post] for more details.
+  See our [recent][simd-post-1] [announcements][simd-post-2] for more details.
 
 * **XML**. This includes the DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq as well the corresponding XPath extension methods.
 
 More is coming soon. Stay tuned!
 
-[blog post]: http://blogs.msdn.com/b/dotnet
+[blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
 [roslyn]: https://roslyn.codeplex.com/
 [immutable-msdn]: http://msdn.microsoft.com/en-us/library/dn385366(v=vs.110).aspx
-[simd-post]: http://blogs.msdn.com/b/dotnet
+[simd-post-1]: http://blogs.msdn.com/b/dotnet/archive/2014/04/07/the-jit-finally-proposed-jit-and-simd-are-getting-married.aspx
+[simd-post-2]: http://blogs.msdn.com/b/dotnet/archive/2014/05/13/update-to-simd-support.aspx
 
 ## Related Projects
 
