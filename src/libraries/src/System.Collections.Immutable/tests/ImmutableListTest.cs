@@ -197,6 +197,7 @@ namespace System.Collections.Immutable.Test
             var list = new List<int>();
 
             const int maxBatchSize = 32;
+            int valueCounter = 0;
             for (int i = 0; i < 24; i++)
             {
                 int startPosition = random.Next(list.Count + 1);
@@ -204,15 +205,15 @@ namespace System.Collections.Immutable.Test
                 int[] values = new int[length];
                 for (int j = 0; j < length; j++)
                 {
-                    values[j] = random.Next();
+                    values[j] = ++valueCounter;
                 }
 
                 immutableList.InsertRange(startPosition, values);
                 list.InsertRange(startPosition, values);
+
+                Assert.Equal(list, immutableList);
                 VerifyBalanced(immutableList.Root);
             }
-
-            Assert.Equal(list, immutableList);
 
             // Ensure that tree height is no more than 1 from optimal
             var root = immutableList.Root as IBinaryTree<int>;
