@@ -40,6 +40,7 @@ namespace System.Collections.Immutable.Test
                         Console.WriteLine("Adding \"{0}\" to the list.", value);
                         expected.Add(value);
                         actual = actual.Add(value);
+                        VerifyBalanced(actual);
                         break;
                     case Operation.AddRange:
                         int inputLength = random.Next(100);
@@ -47,6 +48,7 @@ namespace System.Collections.Immutable.Test
                         Console.WriteLine("Adding {0} elements to the list.", inputLength);
                         expected.AddRange(values);
                         actual = actual.AddRange(values);
+                        VerifyBalanced(actual);
                         break;
                     case Operation.Insert:
                         int position = random.Next(expected.Count + 1);
@@ -54,6 +56,7 @@ namespace System.Collections.Immutable.Test
                         Console.WriteLine("Adding \"{0}\" to position {1} in the list.", value, position);
                         expected.Insert(position, value);
                         actual = actual.Insert(position, value);
+                        VerifyBalanced(actual);
                         break;
                     case Operation.InsertRange:
                         inputLength = random.Next(100);
@@ -62,6 +65,7 @@ namespace System.Collections.Immutable.Test
                         Console.WriteLine("Adding {0} elements to position {1} in the list.", inputLength, position);
                         expected.InsertRange(position, values);
                         actual = actual.InsertRange(position, values);
+                        VerifyBalanced(actual);
                         break;
                     case Operation.RemoveAt:
                         if (expected.Count > 0)
@@ -70,6 +74,7 @@ namespace System.Collections.Immutable.Test
                             Console.WriteLine("Removing element at position {0} from the list.", position);
                             expected.RemoveAt(position);
                             actual = actual.RemoveAt(position);
+                            VerifyBalanced(actual);
                         }
 
                         break;
@@ -79,6 +84,7 @@ namespace System.Collections.Immutable.Test
                         Console.WriteLine("Removing {0} elements starting at position {1} from the list.", inputLength, position);
                         expected.RemoveRange(position, inputLength);
                         actual = actual.RemoveRange(position, inputLength);
+                        VerifyBalanced(actual);
                         break;
                 }
 
@@ -165,6 +171,17 @@ namespace System.Collections.Immutable.Test
 
             Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(7, 5));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, 5));
+        }
+
+        [Fact]
+        public void InsertBalanceTest()
+        {
+            var list = ImmutableList.Create(1);
+
+            list = list.Insert(0, 2);
+            list = list.Insert(1, 3);
+
+            VerifyBalanced(list);
         }
 
         [Fact]
@@ -636,6 +653,24 @@ namespace System.Collections.Immutable.Test
         internal override IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
         {
             return list;
+        }
+
+        private static void VerifyBalanced<T>(ImmutableList<T> tree)
+        {
+            VerifyBalanced(tree.Root);
+        }
+
+        private static void VerifyBalanced<T>(IBinaryTree<T> node)
+        {
+            if (node.Count <= 2)
+            {
+                return;
+            }
+
+            VerifyBalanced(node.Left);
+            VerifyBalanced(node.Right);
+
+            Assert.InRange(node.Left.Height - node.Right.Height, -1, 1);
         }
 
         private struct Person
