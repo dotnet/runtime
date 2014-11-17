@@ -42,6 +42,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <CommonPath>..\..\Common\src</CommonPath>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -58,19 +61,19 @@
     <Reference Include="System.Text.Encoding" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\System.Xml.Common\System\Xml\Ref.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\SecureStringHasher.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlTextWriter.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\Base64Encoder.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlTextWriterBase64Encoder.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\BinHexEncoder.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlConvertEx.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\ExceptionType.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlConst.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlCharType.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\ValidateNames.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlParsingHelper.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlNameHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Ref.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\SecureStringHasher.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlTextWriter.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlTextWriterBase64Encoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\BinHexEncoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlParsingHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlNameHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Resources\Strings.Designer.cs">
@@ -116,9 +119,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\System.Xml.Common\System\SR.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\ArrayT.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\SR.cs" />
+    <Compile Include="$(CommonPath)\System\ArrayT.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">

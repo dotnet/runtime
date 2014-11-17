@@ -48,6 +48,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <CommonPath>..\..\Common\src</CommonPath>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -104,7 +107,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\System.Xml.Common\System\SR.cs" />
+    <Compile Include="$(CommonPath)\System\SR.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
