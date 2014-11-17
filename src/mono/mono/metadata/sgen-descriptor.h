@@ -91,6 +91,9 @@ enum {
 	DESC_TYPE_COMPLEX_ARR = 6,  /* index for bitmap into complex_descriptors */
 	DESC_TYPE_COMPLEX_PTRFREE = 7, /* Nothing, used to encode large ptr objects and strings. */
 	DESC_TYPE_MAX = 7,
+
+	DESC_TYPE_PTRFREE_MASK = 3,
+	DESC_TYPE_PTRFREE_BITS = 3
 };
 
 /* values for array kind */
@@ -138,7 +141,7 @@ static inline gboolean
 sgen_gc_descr_has_references (mword desc)
 {
 	/* This covers SMALL_PTRFREE and COMPLEX_PTRFREE */
-	if ((desc & 3) == 3)
+	if ((desc & DESC_TYPE_PTRFREE_MASK) == DESC_TYPE_PTRFREE_BITS)
 		return FALSE;
 
 	/*The array is ptr-free*/
