@@ -99,6 +99,10 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void SetEqualsTest()
         {
+            Assert.True(this.Empty<int>().SetEquals(this.Empty<int>()));
+            var nonEmptySet = this.Empty<int>().Add(5);
+            Assert.True(nonEmptySet.SetEquals(nonEmptySet));
+
             this.SetCompareTestHelper(s => s.SetEquals, s => s.SetEquals, this.GetSetEqualsScenarios());
         }
 
@@ -292,6 +296,7 @@ namespace System.Collections.Immutable.Test
                 new SetTriad(SetWith<int>(), new int[] { 5 }, false),
                 new SetTriad(SetWith<int>(5, 8), new int[] { 5 }, false),
                 new SetTriad(SetWith<int>(5), new int[] { 5, 8 }, false),
+                new SetTriad(SetWith<int>(5, 8), SetWith<int>(5, 8), true),
             };
         }
 

@@ -6,7 +6,7 @@ using System.Xml;
 
 namespace XmlDocumentTests.XmlNodeListTests
 {
-    class CountTests
+    public class CountTests
     {
         [Fact]
         public static void CountTest1()

@@ -5,6 +5,7 @@ using System.Xml.XPath;
 
 // this file is only placeholder for supporting Xslt
 // if we add Xslt remove this file and add appropriate reference assembly
+
 namespace System.Xml.Xsl
 {
     internal interface IXsltContextFunction

@@ -76,7 +76,7 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// The alignment factor (in bytes) that is used to align the raw data of sections in the image file. 
         /// The value should be a power of 2 between 512 and 64K, inclusive. The default is 512. 
-        /// If the <see cref="SectionAlignment"/> is less than the architecture’s page size, 
+        /// If the <see cref="SectionAlignment"/> is less than the architecture's page size, 
         /// then <see cref="FileAlignment"/> must match <see cref="SectionAlignment"/>.
         /// </summary>
         public int FileAlignment { get; private set; }
