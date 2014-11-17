@@ -191,15 +191,7 @@ namespace System.Collections.Immutable.Test
 
             Assert.Equal(Enumerable.Range(1, expectedTotalSize), list);
 
-            // The following is not guaranteed by AVL trees but has not failed
-            // for any iterations of this test so far
-            // Ensure that tree height is no more than 1 from optimal
-            var root = list.Root as IBinaryTree<int>;
-
-            var optimalHeight = Math.Ceiling(Math.Log(root.Count, 2));
-
-            Console.WriteLine("Tree depth is {0}, optimal is {1}", root.Height, optimalHeight);
-            Assert.InRange(root.Height, optimalHeight, optimalHeight + 1);
+            list.Root.VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
