@@ -348,6 +348,16 @@ find_object_in_nursery_dump (char *object)
 	return FALSE;
 }
 
+static void
+iterate_valid_nursery_objects (IterateObjectCallbackFunc callback, void *data)
+{
+	int i;
+	for (i = 0; i < valid_nursery_object_count; ++i) {
+		char *obj = valid_nursery_objects [i];
+		callback (obj, safe_object_get_size ((MonoObject*)obj), data);
+	}
+}
+
 static char*
 describe_nursery_ptr (char *ptr, gboolean need_setup)
 {
@@ -540,15 +550,14 @@ find_pinning_reference (char *obj, size_t size)
 #define HANDLE_PTR(ptr,obj)	do {					\
 		char* __target = *(char**)ptr;				\
 		if (__target) {						\
-			g_assert (is_valid_object_pointer (__target));	\
 			if (sgen_ptr_in_nursery (__target)) {		\
-				g_assert (SGEN_OBJECT_IS_PINNED (__target)); \
-			} else if (sgen_los_is_valid_object (__target)) { \
-				g_assert (sgen_los_object_is_pinned (__target)); \
-			} else if (major_collector.is_valid_object (__target)) { \
-				g_assert (major_collector.is_object_live (__target)); \
+				g_assert (!SGEN_OBJECT_IS_FORWARDED (__target)); \
 			} else {					\
-				g_assert_not_reached ();		\
+				mword __size = sgen_safe_object_get_size ((MonoObject*)__target); \
+				if (__size <= SGEN_MAX_SMALL_OBJ_SIZE)	\
+					g_assert (major_collector.is_object_live (__target)); \
+				else					\
+					g_assert (sgen_los_object_is_pinned (__target)); \
 			}						\
 		}							\
 	} while (0)
@@ -556,10 +565,13 @@ find_pinning_reference (char *obj, size_t size)
 static void
 check_marked_callback (char *start, size_t size, void *dummy)
 {
-	gboolean is_los = (gboolean) (size_t) dummy;
+	gboolean flag = (gboolean) (size_t) dummy;
 	mword desc;
 
-	if (is_los) {
+	if (sgen_ptr_in_nursery (start)) {
+		if (flag)
+			SGEN_ASSERT (0, SGEN_OBJECT_IS_PINNED (start), "All objects remaining in the nursery must be pinned");
+	} else if (flag) {
 		if (!sgen_los_object_is_pinned (start))
 			return;
 	} else {
@@ -567,16 +579,17 @@ check_marked_callback (char *start, size_t size, void *dummy)
 			return;
 	}
 
-	desc = sgen_obj_get_descriptor (start);
+	desc = sgen_obj_get_descriptor_safe (start);
 
 #include "sgen-scan-object.h"
 }
 
 void
-sgen_check_major_heap_marked (void)
+sgen_check_heap_marked (gboolean nursery_must_be_pinned)
 {
 	setup_valid_nursery_objects ();
 
+	iterate_valid_nursery_objects (check_marked_callback, (void*)(size_t)nursery_must_be_pinned);
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, check_marked_callback, (void*)FALSE);
 	sgen_los_iterate_objects (check_marked_callback, (void*)TRUE);
 }
@@ -620,7 +633,7 @@ scan_object_for_specific_ref (char *start, MonoObject *key)
 		start = forwarded;
 
 	if (scan_object_for_specific_ref_precise) {
-		mword desc = sgen_obj_get_descriptor (start);
+		mword desc = sgen_obj_get_descriptor_safe (start);
 		#include "sgen-scan-object.h"
 	} else {
 		mword *words = (mword*)start;

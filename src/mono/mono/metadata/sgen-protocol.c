@@ -30,6 +30,7 @@
 #include "utils/mono-threads.h"
 
 /* If not null, dump binary protocol to this file */
+/* FIXME: Don't use FILE - use system calls, otherwise we might deadlock. */
 static FILE *binary_protocol_file = NULL;
 
 /* We set this to -1 to indicate an exclusive lock */
@@ -435,6 +436,13 @@ binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size)
 {
 	SGenProtocolCopy entry = { from, to, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_COPY, &entry, sizeof (SGenProtocolCopy));
+}
+
+void
+binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr, gpointer thread)
+{
+	SGenProtocolPinStage entry = { addr_ptr, addr, thread };
+	protocol_entry (SGEN_PROTOCOL_PIN_STAGE, &entry, sizeof (SGenProtocolPinStage));
 }
 
 void

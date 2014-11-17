@@ -610,6 +610,27 @@ extern SgenMinorCollector sgen_minor_collector;
 void sgen_simple_nursery_init (SgenMinorCollector *collector) MONO_INTERNAL;
 void sgen_split_nursery_init (SgenMinorCollector *collector) MONO_INTERNAL;
 
+/* Updating references */
+
+#ifdef SGEN_CHECK_UPDATE_REFERENCE
+static inline void
+sgen_update_reference (void **p, void *o, gboolean allow_null)
+{
+	if (!allow_null)
+		SGEN_ASSERT (0, o, "Cannot update a reference with a NULL pointer");
+	SGEN_ASSERT (0, !sgen_is_worker_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
+	*p = o;
+}
+
+#define SGEN_UPDATE_REFERENCE_ALLOW_NULL(p,o)	sgen_update_reference ((void**)(p), (void*)(o), TRUE)
+#define SGEN_UPDATE_REFERENCE(p,o)		sgen_update_reference ((void**)(p), (void*)(o), FALSE)
+#else
+#define SGEN_UPDATE_REFERENCE_ALLOW_NULL(p,o)	(*(void**)(p) = (void*)(o))
+#define SGEN_UPDATE_REFERENCE(p,o)		SGEN_UPDATE_REFERENCE_ALLOW_NULL ((p), (o))
+#endif
+
+/* Major collector */
+
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 
@@ -1120,7 +1141,7 @@ void sgen_check_major_refs (void);
 void sgen_check_whole_heap (gboolean allow_missing_pinning);
 void sgen_check_whole_heap_stw (void) MONO_INTERNAL;
 void sgen_check_objref (char *obj);
-void sgen_check_major_heap_marked (void) MONO_INTERNAL;
+void sgen_check_heap_marked (gboolean nursery_must_be_pinned) MONO_INTERNAL;
 void sgen_check_nursery_objects_pinned (gboolean pinned) MONO_INTERNAL;
 void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type) MONO_INTERNAL;
 void sgen_check_for_xdomain_refs (void) MONO_INTERNAL;

@@ -37,6 +37,7 @@ enum {
 	SGEN_PROTOCOL_WORLD_RESTARTED,
 	SGEN_PROTOCOL_ALLOC,
 	SGEN_PROTOCOL_COPY,
+	SGEN_PROTOCOL_PIN_STAGE,
 	SGEN_PROTOCOL_PIN,
 	SGEN_PROTOCOL_MARK,
 	SGEN_PROTOCOL_SCAN_BEGIN,
@@ -111,6 +112,12 @@ typedef struct {
 	gpointer vtable;
 	int size;
 } SGenProtocolCopy;
+
+typedef struct {
+	gpointer addr_ptr;
+	gpointer addr;
+	gpointer thread;
+} SGenProtocolPinStage;
 
 typedef struct {
 	gpointer obj;
@@ -272,6 +279,7 @@ void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERN
 void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr, gpointer thread) MONO_INTERNAL;
 void binary_protocol_pin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_mark (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_scan_begin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
@@ -296,6 +304,7 @@ void binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpointer val
 #define binary_protocol_alloc_pinned(obj, vtable, size)
 #define binary_protocol_alloc_degraded(obj, vtable, size)
 #define binary_protocol_copy(from, to, vtable, size)
+#define binary_protocol_pin_stage(addr_ptr, addr, thread)
 #define binary_protocol_pin(obj, vtable, size)
 #define binary_protocol_mark(obj, vtable, size)
 #define binary_protocol_scan_begin(obj, vtable, size)

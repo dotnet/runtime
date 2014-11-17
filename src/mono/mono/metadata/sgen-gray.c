@@ -146,7 +146,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	entry = *queue->cursor--;
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	binary_protocol_gray_dequeue (queue, queue->cursor + 1, obj);
+	binary_protocol_gray_dequeue (queue, queue->cursor + 1, entry.obj);
 #endif
 
 	if (G_UNLIKELY (queue->cursor < GRAY_FIRST_CURSOR_POSITION (queue->first))) {
@@ -253,12 +253,19 @@ sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
 }
 
 void
+sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
+{
+	SGEN_ASSERT (0, !queue->alloc_prepare_func && !queue->alloc_prepare_data, "Can't set gray queue alloc-prepare twice");
+	queue->alloc_prepare_func = alloc_prepare_func;
+	queue->alloc_prepare_data = data;
+}
+
+void
 sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
 		GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
 {
 	sgen_gray_object_queue_init (queue, enqueue_check_func);
-	queue->alloc_prepare_func = alloc_prepare_func;
-	queue->alloc_prepare_data = data;
+	sgen_gray_queue_set_alloc_prepare (queue, alloc_prepare_func, data);
 }
 
 void

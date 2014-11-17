@@ -52,6 +52,7 @@ static MONO_ALWAYS_INLINE void
 SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue) 
 {
 	char *forwarded;
+	char *copy;
 	char *obj = *obj_slot;
 
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_NURSERY, "calling minor-serial-copy from a %d generation collection", current_collection_generation);
@@ -75,7 +76,7 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 		SGEN_ASSERT (9, (*(MonoVTable**)SGEN_LOAD_VTABLE (obj))->gc_descr,  "forwarded object %p has no gc descriptor", forwarded);
 		SGEN_LOG (9, " (already forwarded to %p)", forwarded);
 		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
-		*obj_slot = forwarded;
+		SGEN_UPDATE_REFERENCE (obj_slot, forwarded);
 		return;
 	}
 	if (G_UNLIKELY (SGEN_OBJECT_IS_PINNED (obj))) {
@@ -96,7 +97,8 @@ SERIAL_COPY_OBJECT (void **obj_slot, SgenGrayQueue *queue)
 
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
-	*obj_slot = copy_object_no_checks (obj, queue);
+	copy = copy_object_no_checks (obj, queue);
+	SGEN_UPDATE_REFERENCE (obj_slot, copy);
 }
 
 /*
@@ -132,7 +134,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 		SGEN_ASSERT (9, (*(MonoVTable**)SGEN_LOAD_VTABLE (obj))->gc_descr,  "forwarded object %p has no gc descriptor", forwarded);
 		SGEN_LOG (9, " (already forwarded to %p)", forwarded);
 		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
-		*obj_slot = forwarded;
+		SGEN_UPDATE_REFERENCE (obj_slot, forwarded);
 #ifndef SGEN_SIMPLE_NURSERY
 		if (G_UNLIKELY (sgen_ptr_in_nursery (forwarded) && !sgen_ptr_in_nursery (obj_slot)))
 			sgen_add_to_global_remset (obj_slot, forwarded);
@@ -197,7 +199,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (void **obj_slot, SgenGrayQueue *queue)
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
 	copy = copy_object_no_checks (obj, queue);
-	*obj_slot = copy;
+	SGEN_UPDATE_REFERENCE (obj_slot, copy);
 #ifndef SGEN_SIMPLE_NURSERY
 	if (G_UNLIKELY (sgen_ptr_in_nursery (copy) && !sgen_ptr_in_nursery (obj_slot)))
 		sgen_add_to_global_remset (obj_slot, copy);

@@ -113,7 +113,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 
 		for (; dest >= start; --src, --dest) {
 			gpointer value = *src;
-			*dest = value;
+			SGEN_UPDATE_REFERENCE_ALLOW_NULL (dest, value);
 			if (need_mod_union || sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
@@ -122,7 +122,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 		gpointer *end = dest + count;
 		for (; dest < end; ++src, ++dest) {
 			gpointer value = *src;
-			*dest = value;
+			SGEN_UPDATE_REFERENCE_ALLOW_NULL (dest, value);
 			if (need_mod_union || sgen_ptr_in_nursery (value))
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);

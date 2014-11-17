@@ -235,8 +235,9 @@ sgen_stop_world (int generation)
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 	MONO_GC_WORLD_STOP_END ();
 	if (binary_protocol_is_enabled ()) {
-		long long major_total, major_marked, los_total, los_marked;
-		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+		long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
+		if (binary_protocol_is_heavy_enabled ())
+			count_cards (&major_total, &major_marked, &los_total, &los_marked);
 		binary_protocol_world_stopped (sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 	}
 
@@ -262,8 +263,9 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	unsigned long usec, bridge_usec;
 
 	if (binary_protocol_is_enabled ()) {
-		long long major_total, major_marked, los_total, los_marked;
-		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+		long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
+		if (binary_protocol_is_heavy_enabled ())
+			count_cards (&major_total, &major_marked, &los_total, &los_marked);
 		binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 	}
 
