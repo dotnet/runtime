@@ -789,10 +789,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(items, "items");
 
-                foreach (var item in items)
-                {
-                    this.Root = this.Root.Add(item);
-                }
+                this.Root = this.Root.AddRange(items);
             }
 
             /// <summary>
@@ -812,10 +809,7 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0 && index <= this.Count, "index");
                 Requires.NotNull(items, "items");
 
-                foreach (T item in items)
-                {
-                    this.Root = this.Root.Insert(index++, item);
-                }
+                this.Root = this.Root.InsertRange(index, items);
             }
 
             /// <summary>

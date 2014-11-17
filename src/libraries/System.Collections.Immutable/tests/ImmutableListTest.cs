@@ -164,29 +164,34 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void AddRangeBalanceTest()
         {
+            int randSeed = (int)DateTime.Now.Ticks;
+            Console.WriteLine("Random seed: {0}", randSeed);
+            var random = new Random(randSeed);
+
+            int expectedTotalSize = 0;
+
             var list = ImmutableList<int>.Empty;
 
-            // Add batches of 32, 128 times, giving 4096 items
-            int batchSize = 32;
+            // Add some small batches, verifying balance after each
             for (int i = 0; i < 128; i++)
             {
-                list = list.AddRange(Enumerable.Range(batchSize * i + 1, batchSize));
-                list.Root.VerifyBalanced();
+                int batchSize = random.Next(32);
+                Console.WriteLine("Adding {0} elements to the list", batchSize);
+                list = list.AddRange(Enumerable.Range(expectedTotalSize+1, batchSize));
+                VerifyBalanced(list);
+                expectedTotalSize += batchSize;
             }
 
             // Add a single large batch to the end
-            list = list.AddRange(Enumerable.Range(4097, 61440));
-            Assert.Equal(Enumerable.Range(1, 65536), list);
+            int largeBatchSize = random.Next(32768) + 32768;
+            Console.WriteLine("Adding {0} elements to the list", largeBatchSize);
+            list = list.AddRange(Enumerable.Range(expectedTotalSize + 1, largeBatchSize));
+            VerifyBalanced(list);
+            expectedTotalSize += largeBatchSize;
 
-            list.Root.VerifyBalanced();
+            Assert.Equal(Enumerable.Range(1, expectedTotalSize), list);
 
-            // Ensure that tree height is no more than 1 from optimal
-            var root = list.Root as IBinaryTree<int>;
-
-            var optimalHeight = Math.Ceiling(Math.Log(root.Count, 2));
-
-            Console.WriteLine("Tree depth is {0}, optimal is {1}", root.Height, optimalHeight);
-            Assert.InRange(root.Height, optimalHeight, optimalHeight + 1);
+            list.Root.VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
