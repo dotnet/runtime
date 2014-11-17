@@ -99,6 +99,10 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void SetEqualsTest()
         {
+            Assert.True(this.Empty<int>().SetEquals(this.Empty<int>()));
+            var nonEmptySet = this.Empty<int>().Add(5);
+            Assert.True(nonEmptySet.SetEquals(nonEmptySet));
+
             this.SetCompareTestHelper(s => s.SetEquals, s => s.SetEquals, this.GetSetEqualsScenarios());
         }
 
