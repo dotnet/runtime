@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -52,7 +51,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is Vector2))
+            if (!(obj is Vector2))
                 return false;
             return Equals((Vector2)obj);
         }
@@ -207,7 +206,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns the reflection of a vector off a suface that has the specified normal.
+        /// Returns the reflection of a vector off a surface that has the specified normal.
         /// </summary>
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">The normal of the surface being reflected off.</param>

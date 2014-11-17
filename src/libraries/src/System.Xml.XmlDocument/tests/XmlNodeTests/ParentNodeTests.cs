@@ -1,5 +1,7 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using Xunit;
-using System;
 using System.Xml;
 
 namespace XmlDocumentTests.XmlNodeTests
@@ -52,7 +54,7 @@ namespace XmlDocumentTests.XmlNodeTests
             Assert.Same(xmlDocument, xmlDocument.DocumentElement.ParentNode);
         }
 
-        /*[Fact] TODO*/
+        [Fact]
         public static void OnDocumentNode()
         {
             var xmlDocument = new XmlDocument();

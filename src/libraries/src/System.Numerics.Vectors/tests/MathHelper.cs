@@ -1,22 +1,19 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Numerics;
-
 namespace System.Numerics
 {
     static class MathHelper
     {
         public const float Pi = (float)Math.PI;
-        public const float PiOver2 = (float)Math.PI / 2f;
-        public const float PiOver4 = (float)Math.PI / 4f;
+        public const float PiOver2 = Pi / 2f;
+        public const float PiOver4 = Pi / 4f;
 
 
         // Angle conversion helper.
         public static float ToRadians(float degrees)
         {
-            return degrees * (float)Math.PI / 180f;
+            return degrees * Pi / 180f;
         }
 
 

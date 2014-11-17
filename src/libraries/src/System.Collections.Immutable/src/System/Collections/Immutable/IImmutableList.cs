@@ -1,9 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 
@@ -48,7 +46,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
         /// elements in the ImmutableList&lt;T&gt; that starts at index and
-        /// contains count number of elements, if found; otherwise, –1.
+        /// contains count number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
         int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer);
@@ -71,7 +69,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
         /// in the ImmutableList&lt;T&gt; that contains count number of elements
-        /// and ends at index, if found; otherwise, –1.
+        /// and ends at index, if found; otherwise, -1.
         /// </returns>
         [Pure]
         int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer);

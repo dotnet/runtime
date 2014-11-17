@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace System.Collections.Immutable
 {
@@ -19,29 +16,27 @@ namespace System.Collections.Immutable
 
         public static void TryAdd(T item)
         {
-            if (stack == null)
+            Stack<RefAsValueType<T>> localStack = stack; // cache in a local to avoid unnecessary TLS hits on repeated accesses
+            if (localStack == null)
             {
-                stack = new Stack<RefAsValueType<T>>(MaxSize);
+                stack = localStack = new Stack<RefAsValueType<T>>(MaxSize);
             }
 
             // Just in case we're in a scenario where an object is continually requested on one thread
             // and returned on another, avoid unbounded growth of the stack.
-            if (stack.Count < MaxSize)
+            if (localStack.Count < MaxSize)
             {
-                stack.Push(new RefAsValueType<T>(item));
+                localStack.Push(new RefAsValueType<T>(item));
             }
         }
 
         public static bool TryTake(out T item)
         {
-            if (stack != null)
+            Stack<RefAsValueType<T>> localStack = stack; // cache in a local to avoid unnecessary TLS hits on repeated accesses
+            if (localStack != null && localStack.Count > 0)
             {
-                int count = stack.Count;
-                if (count > 0)
-                {
-                    item = stack.Pop().Value;
-                    return true;
-                }
+                item = localStack.Pop().Value;
+                return true;
             }
 
             item = default(T);

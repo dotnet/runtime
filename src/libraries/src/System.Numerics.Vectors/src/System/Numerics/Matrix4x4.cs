@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Globalization;
 
 namespace System.Numerics
@@ -81,7 +80,7 @@ namespace System.Numerics
         public float M44;
         #endregion Public Fields
 
-        private static Matrix4x4 _identity = new Matrix4x4
+        private static readonly Matrix4x4 _identity = new Matrix4x4
         (
             1f, 0f, 0f, 0f,
             0f, 1f, 0f, 0f,

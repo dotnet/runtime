@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections;
 using System.Xml.XPath;
 
 // this file is only placeholder for supporting Xslt
 // if we add Xslt remove this file and add appropriate reference assembly
+
 namespace System.Xml.Xsl
 {
     internal interface IXsltContextFunction

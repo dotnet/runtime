@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
@@ -142,7 +141,7 @@ namespace System.Xml
             int endPos = offset + count;
             int i = offset;
             char ch = (char)0;
-            for (;;)
+            for (; ;)
             {
                 int startPos = i;
                 unsafe
@@ -275,7 +274,7 @@ namespace System.Xml
             int i = 0;
             int startPos = 0;
             char ch = (char)0;
-            for (;;)
+            for (; ;)
             {
                 unsafe
                 {
@@ -311,7 +310,7 @@ namespace System.Xml
             }
 
             char[] helperBuffer = new char[256];
-            for (;;)
+            for (; ;)
             {
                 if (startPos < i)
                 {
@@ -420,7 +419,7 @@ namespace System.Xml
             int i = 0;
             char ch = (char)0;
 
-            for (;;)
+            for (; ;)
             {
                 unsafe
                 {

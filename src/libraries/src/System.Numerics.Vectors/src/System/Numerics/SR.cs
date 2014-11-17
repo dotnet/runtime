@@ -11,7 +11,7 @@ namespace System.Numerics
     /// </summary>
     internal static class SR
     {
-        private static ResourceManager _resourceManager;
+        private static readonly ResourceManager _resourceManager;
 
         static SR()
         {
