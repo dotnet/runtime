@@ -68,7 +68,13 @@ typedef struct MonoCompileArch {
 #ifdef __mono_ppc64__
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
+
+/* ELFv2 ABI doesn't use function descriptors.  */
+#if _CALL_ELF == 2
+#undef PPC_USES_FUNCTION_DESCRIPTOR
+#else
 #define PPC_USES_FUNCTION_DESCRIPTOR
+#endif
 
 #ifndef __mono_ilp32__
 #define MONO_ARCH_HAVE_TLS_GET 1

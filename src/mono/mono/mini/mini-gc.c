@@ -436,6 +436,13 @@ static int callee_saved_regs [] = { ARMREG_V1, ARMREG_V2, ARMREG_V3, ARMREG_V4, 
 static int callee_saved_regs [] = { };
 #elif defined(TARGET_S390X)
 static int callee_saved_regs [] = { s390_r6, s390_r7, s390_r8, s390_r9, s390_r10, s390_r11, s390_r12, s390_r13, s390_r14 };
+#elif defined(TARGET_POWERPC64) && _CALL_ELF == 2
+static int callee_saved_regs [] = {
+  ppc_r13, ppc_r14, ppc_r15, ppc_r16,
+  ppc_r17, ppc_r18, ppc_r19, ppc_r20,
+  ppc_r21, ppc_r22, ppc_r23, ppc_r24,
+  ppc_r25, ppc_r26, ppc_r27, ppc_r28,
+  ppc_r29, ppc_r30, ppc_r31 };
 #elif defined(TARGET_POWERPC)
 static int callee_saved_regs [] = { ppc_r6, ppc_r7, ppc_r8, ppc_r9, ppc_r10, ppc_r11, ppc_r12, ppc_r13, ppc_r14 };
 #endif

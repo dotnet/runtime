@@ -2822,14 +2822,14 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 static void
 patch_ins (guint8 *code, guint32 ins)
 {
-	*(guint32*)code = GUINT32_TO_BE (ins);
+	*(guint32*)code = ins;
 	mono_arch_flush_icache (code, 4);
 }
 
 void
 ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 {
-	guint32 ins = GUINT32_FROM_BE (*(guint32*)code);
+	guint32 ins = *(guint32*)code;
 	guint32 prim = ins >> 26;
 	guint32 ovf;
 
@@ -2912,7 +2912,13 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 			else
 				code -= 24;
 		} else {
-			if (ppc_is_load_op (seq [5]) || ppc_opcode (seq [5]) == 31) /* ld || lwz || mr */
+			if (ppc_is_load_op (seq [5])
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+			    /* With function descs we need to do more careful
+			       matches.  */
+			    || ppc_opcode (seq [5]) == 31 /* ld || lwz || mr */
+#endif
+			   )
 				branch_ins = seq + 8;
 			else
 				branch_ins = seq + 6;
@@ -2936,8 +2942,12 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		}
 
 		/* FIXME: make this thread safe */
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* FIXME: we're assuming we're using r11 here */
 		ppc_load_ptr_sequence (code, ppc_r11, target);
+#else
+		ppc_load_ptr_sequence (code, ppc_r0, target);
+#endif
 		mono_arch_flush_icache ((guint8*)seq, 28);
 #else
 		guint32 *seq;
@@ -4509,6 +4519,16 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 #ifdef __mono_ppc64__
+#ifdef _LITTLE_ENDIAN
+#define patch_load_sequence(ip,val) do {\
+		guint16 *__load = (guint16*)(ip);	\
+		g_assert (sizeof (val) == sizeof (gsize)); \
+		__load [0] = (((guint64)(gsize)(val)) >> 48) & 0xffff;	\
+		__load [2] = (((guint64)(gsize)(val)) >> 32) & 0xffff;	\
+		__load [6] = (((guint64)(gsize)(val)) >> 16) & 0xffff;	\
+		__load [8] =  ((guint64)(gsize)(val))        & 0xffff;	\
+	} while (0)
+#elif defined _BIG_ENDIAN
 #define patch_load_sequence(ip,val) do {\
 		guint16 *__load = (guint16*)(ip);	\
 		g_assert (sizeof (val) == sizeof (gsize)); \
@@ -4517,6 +4537,9 @@ mono_arch_register_lowlevel_calls (void)
 		__load [7] = (((guint64)(gsize)(val)) >> 16) & 0xffff;	\
 		__load [9] =  ((guint64)(gsize)(val))        & 0xffff;	\
 	} while (0)
+#else
+#error huh?  No endianess defined by compiler
+#endif
 #else
 #define patch_load_sequence(ip,val) do {\
 		guint16 *__lis_ori = (guint16*)(ip);	\
