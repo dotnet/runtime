@@ -32,7 +32,7 @@ namespace System.Collections.Immutable
         [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableSortedSet<>.Builder.DebuggerProxy))]
+        [DebuggerTypeProxy(typeof(ImmutableSortedSetBuilderDebuggerProxy<>))]
         public sealed class Builder : ISortKeyCollection<T>, IReadOnlyCollection<T>, ISet<T>, ICollection
         {
             /// <summary>
@@ -487,49 +487,49 @@ namespace System.Collections.Immutable
             }
 
             #endregion
+        }
+    }
 
-            /// <summary>
-            /// A simple view of the immutable collection that the debugger can show to the developer.
-            /// </summary>
-            [ExcludeFromCodeCoverage]
-            private class DebuggerProxy
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableSortedSetBuilderDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableSortedSet<T>.Builder set;
+
+        /// <summary>
+        /// The simple view of the collection.
+        /// </summary>
+        private T[] contents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableSortedSetBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="builder">The collection to display in the debugger</param>
+        public ImmutableSortedSetBuilderDebuggerProxy(ImmutableSortedSet<T>.Builder builder)
+        {
+            Requires.NotNull(builder, "builder");
+            this.set = builder;
+        }
+
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Contents
+        {
+            get
             {
-                /// <summary>
-                /// The collection to be enumerated.
-                /// </summary>
-                private readonly ImmutableSortedSet<T>.Node set;
-
-                /// <summary>
-                /// The simple view of the collection.
-                /// </summary>
-                private T[] contents;
-
-                /// <summary>   
-                /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-                /// </summary>
-                /// <param name="builder">The collection to display in the debugger</param>
-                public DebuggerProxy(ImmutableSortedSet<T>.Builder builder)
+                if (this.contents == null)
                 {
-                    Requires.NotNull(builder, "builder");
-                    this.set = builder.Root;
+                    this.contents = this.set.ToArray(this.set.Count);
                 }
 
-                /// <summary>
-                /// Gets a simple debugger-viewable collection.
-                /// </summary>
-                [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-                public T[] Contents
-                {
-                    get
-                    {
-                        if (this.contents == null)
-                        {
-                            this.contents = this.set.ToArray(this.set.Count);
-                        }
-
-                        return this.contents;
-                    }
-                }
+                return this.contents;
             }
         }
     }

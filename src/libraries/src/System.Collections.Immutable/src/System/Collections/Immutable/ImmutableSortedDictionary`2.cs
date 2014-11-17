@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(ImmutableSortedDictionary<,>.DebuggerProxy))]
+    [DebuggerTypeProxy(typeof(ImmutableSortedDictionaryDebuggerProxy<,>))]
     public sealed partial class ImmutableSortedDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, ISortKeyCollection<TKey>, IDictionary<TKey, TValue>, IDictionary
     {
         /// <summary>
@@ -1996,48 +1996,48 @@ namespace System.Collections.Immutable
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableSortedDictionaryDebuggerProxy<TKey,TValue>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableSortedDictionary<TKey, TValue> map;
 
         /// <summary>
-        /// A simple view of the immutable collection that the debugger can show to the developer.
+        /// The simple view of the collection.
         /// </summary>
-        [ExcludeFromCodeCoverage]
-        private class DebuggerProxy
+        private KeyValuePair<TKey, TValue>[] contents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryDebuggerProxy&lt;TKey,TValue&gt;"/> class.
+        /// </summary>
+        /// <param name="map">The collection to display in the debugger</param>
+        public ImmutableSortedDictionaryDebuggerProxy(ImmutableSortedDictionary<TKey, TValue> map)
         {
-            /// <summary>
-            /// The collection to be enumerated.
-            /// </summary>
-            private readonly ImmutableSortedDictionary<TKey, TValue> map;
+            Requires.NotNull(map, "map");
+            this.map = map;
+        }
 
-            /// <summary>
-            /// The simple view of the collection.
-            /// </summary>
-            private KeyValuePair<TKey, TValue>[] contents;
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="map">The collection to display in the debugger</param>
-            public DebuggerProxy(ImmutableSortedDictionary<TKey, TValue> map)
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public KeyValuePair<TKey, TValue>[] Contents
+        {
+            get
             {
-                Requires.NotNull(map, "map");
-                this.map = map;
-            }
-
-            /// <summary>
-            /// Gets a simple debugger-viewable collection.
-            /// </summary>
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePair<TKey, TValue>[] Contents
-            {
-                get
+                if (this.contents == null)
                 {
-                    if (this.contents == null)
-                    {
-                        this.contents = this.map.ToArray(this.map.Count);
-                    }
-
-                    return this.contents;
+                    this.contents = this.map.ToArray(this.map.Count);
                 }
+
+                return this.contents;
             }
         }
     }

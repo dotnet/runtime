@@ -32,7 +32,7 @@ namespace System.Collections.Immutable
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableList<>.DebuggerProxy))]
+        [DebuggerTypeProxy(typeof(ImmutableListBuilderDebuggerProxy<>))]
         public sealed class Builder : IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IReadOnlyList<T>
         {
             /// <summary>
@@ -1175,6 +1175,50 @@ namespace System.Collections.Immutable
                 }
             }
             #endregion
+        }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable list that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableListBuilderDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableList<T>.Builder list;
+
+        /// <summary>
+        /// The simple view of the collection.
+        /// </summary>
+        private T[] cachedContents;
+      
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="builder">The list to display in the debugger</param>
+        public ImmutableListBuilderDebuggerProxy(ImmutableList<T>.Builder builder)
+        {
+            Requires.NotNull(builder, "builder");
+            this.list = builder;
+        }
+
+        /// <summary>
+        /// Gets a simple debugger-viewable list.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Contents
+        {
+            get
+            {
+                if (this.cachedContents == null)
+                {
+                    this.cachedContents = this.list.ToArray(this.list.Count);
+                }
+
+                return this.cachedContents;
+            }
         }
     }
 }
