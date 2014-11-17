@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Debug = System.Diagnostics.Debug;
@@ -46,10 +46,10 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an XName object created from the current instance and the specified local name.
+        /// Returns an <see cref="XName"/> object created from the current instance and the specified local name.
         /// </summary>
         /// <remarks>
-        /// The returned XName object is guaranteed to be atomic (i.e. the only one in the system for this
+        /// The returned <see cref="XName"/> object is guaranteed to be atomic (i.e. the only one in the system for this
         /// particular expanded name).
         /// </remarks>
         public XName GetName(string localName)
@@ -68,7 +68,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Gets the XNamespace object that corresponds to no namespace.
+        /// Gets the <see cref="XNamespace"/> object that corresponds to no namespace.
         /// </summary>
         /// <remarks>
         /// If an element or attribute is in no namespace, its namespace
@@ -83,7 +83,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Gets the XNamespace object that corresponds to the xml uri (http://www.w3.org/XML/1998/namespace).
+        /// Gets the <see cref="XNamespace"/> object that corresponds to the xml uri (http://www.w3.org/XML/1998/namespace).
         /// </summary>
         public static XNamespace Xml
         {
@@ -94,7 +94,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Gets the XNamespace object that corresponds to the xmlns uri (http://www.w3.org/2000/xmlns/).
+        /// Gets the <see cref="XNamespace"/> object that corresponds to the xmlns uri (http://www.w3.org/2000/xmlns/).
         /// </summary>
         public static XNamespace Xmlns
         {
@@ -105,10 +105,10 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Gets an XNamespace created from the specified namespace name.
+        /// Gets an <see cref="XNamespace"/> created from the specified namespace name.
         /// </summary>
         /// <remarks>
-        /// The returned XNamespace object is guaranteed to be atomic
+        /// The returned <see cref="XNamespace"/> object is guaranteed to be atomic
         /// (i.e. the only one in the system for that particular namespace name).
         /// </remarks>
         public static XNamespace Get(string namespaceName)
@@ -118,10 +118,10 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Converts a string containing a namespace name to an XNamespace.
+        /// Converts a string containing a namespace name to an <see cref="XNamespace"/>.
         /// </summary>
         /// <param name="namespaceName">A string containing the namespace name.</param>
-        /// <returns>An XNamespace constructed from the namespace name string.</returns>
+        /// <returns>An <see cref="XNamespace"/> constructed from the namespace name string.</returns>
         [CLSCompliant(false)]
         public static implicit operator XNamespace(string namespaceName)
         {
@@ -144,9 +144,9 @@ namespace System.Xml.Linq
         /// <summary>
         /// Determines whether the specified <see cref="XNamespace"/> is equal to the current <see cref="XNamespace"/>.
         /// </summary>
-        /// <param name="obj">The XNamespace to compare to the current XNamespace.</param>
+        /// <param name="obj">The <see cref="XNamespace"/> to compare to the current <see cref="XNamespace"/>.</param>
         /// <returns>
-        /// true if the specified <see cref="XNamespace"/> is equal to the current XNamespace; otherwise false.
+        /// true if the specified <see cref="XNamespace"/> is equal to the current <see cref="XNamespace"/>; otherwise false.
         /// </returns>
         /// <remarks>
         /// For two <see cref="XNamespace"/> objects to be equal they must have the same 
@@ -176,12 +176,12 @@ namespace System.Xml.Linq
         /// <summary>
         /// Returns a value indicating whether two instances of <see cref="XNamespace"/> are equal.
         /// </summary>
-        /// <param name="left">The first XNamespace to compare.</param>
-        /// <param name="right">The second XNamespace to compare.</param>
+        /// <param name="left">The first <see cref="XNamespace"/> to compare.</param>
+        /// <param name="right">The second <see cref="XNamespace"/> to compare.</param>
         /// <returns>true if left and right are equal; otherwise false.</returns>
         /// <remarks>
         /// This overload is included to enable the comparison between
-        /// an instance of XNamespace and string.
+        /// an instance of <see cref="XNamespace"/> and string.
         /// </remarks>
         public static bool operator ==(XNamespace left, XNamespace right)
         {
@@ -191,12 +191,12 @@ namespace System.Xml.Linq
         /// <summary>
         /// Returns a value indicating whether two instances of <see cref="XNamespace"/> are not equal.
         /// </summary>
-        /// <param name="left">The first XNamespace to compare.</param>
-        /// <param name="right">The second XNamespace to compare.</param>
+        /// <param name="left">The first <see cref="XNamespace"/> to compare.</param>
+        /// <param name="right">The second <see cref="XNamespace"/> to compare.</param>
         /// <returns>true if left and right are not equal; otherwise false.</returns>
         /// <remarks>
         /// This overload is included to enable the comparison between
-        /// an instance of XNamespace and string.
+        /// an instance of <see cref="XNamespace"/> and string.
         /// </remarks>
         public static bool operator !=(XNamespace left, XNamespace right)
         {
@@ -205,7 +205,7 @@ namespace System.Xml.Linq
 
         /// <summary>
         /// Returns an <see cref="XName"/> created from this XNamespace <see cref="XName"/> and a portion of the passed in
-        /// local name parameter.  The returned XName object is guaranteed to be atomic (i.e. the only one in the system for
+        /// local name parameter.  The returned <see cref="XName"/> object is guaranteed to be atomic (i.e. the only one in the system for
         /// this particular expanded name).
         /// </summary>
         internal XName GetName(string localName, int index, int count)
@@ -223,7 +223,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Returns an <see cref="XNamespace"/> created from a portion of the passed in namespace name parameter.  The returned XNamespace
+        /// Returns an <see cref="XNamespace"/> created from a portion of the passed in namespace name parameter.  The returned <see cref="XNamespace"/>
         /// object is guaranteed to be atomic (i.e. the only one in the system for this particular namespace name).
         /// </summary>
         internal static XNamespace Get(string namespaceName, int index, int count)
@@ -262,7 +262,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// This function is used by the <![CDATA[XHashtable<XName>]]> to extract the local name part from an XName.  The hash table
+        /// This function is used by the <see cref="XHashtable{XName}"/> to extract the local name part from an <see cref="XName"/>.  The hash table
         /// uses the local name as the hash key.
         /// </summary>
         private static string ExtractLocalName(XName n)
@@ -272,7 +272,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// This function is used by the <![CDATA[XHashtable<WeakReference>]]> to extract the XNamespace that the WeakReference is
+        /// This function is used by the <see cref="XHashtable{WeakReference}"/> to extract the XNamespace that the WeakReference is
         /// referencing.  In cases where the XNamespace has been cleaned up, this function returns null.
         /// </summary>
         private static string ExtractNamespace(WeakReference r)

@@ -282,6 +282,7 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<ArgumentNullException>(() => builder.SetEquals(null));
             Assert.False(builder.SetEquals(new[] { "b" }));
             Assert.True(builder.SetEquals(new[] { "a" }));
+            Assert.True(builder.SetEquals(builder));
         }
 
         [Fact]

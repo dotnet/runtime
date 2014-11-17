@@ -368,6 +368,11 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, "other");
 
+            if (object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             var otherSet = new SortedSet<T>(other, this.KeyComparer);
             if (this.Count != otherSet.Count)
             {

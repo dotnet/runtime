@@ -1,4 +1,7 @@
-﻿/* This file contains multiple namespace/class definitions used to test the namespace walking
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/* This file contains multiple namespace/class definitions used to test the namespace walking
  * capabilities of the namespace reader.
  * 
  * Note that type definitions inside of the namespaces (with the exception of the global namespace)

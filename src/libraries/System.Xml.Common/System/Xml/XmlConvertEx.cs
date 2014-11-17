@@ -208,7 +208,7 @@ namespace System.Xml
 
             int i = 0;
             int len = data.Length;
-            for (;;)
+            for (; ;)
             {
                 while (i < len && (xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
                 {
