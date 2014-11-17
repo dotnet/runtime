@@ -19,8 +19,8 @@ typedef struct {
 	gboolean alloc_data;
 } SeqPointInfoInflated;
 
-static guint8
-encode_var_int (guint8* buf, int val)
+static int
+encode_var_int (guint8 *buf, guint8 **out_buf, int val)
 {
 	guint8 size = 0;
 
@@ -33,11 +33,14 @@ encode_var_int (guint8* buf, int val)
 		size++;
 	} while (val);
 
+	if (out_buf)
+		*out_buf = buf;
+
 	return size;
 }
 
-static guint8
-decode_var_int (guint8* buf, int* val)
+static int
+decode_var_int (guint8* buf, guint8 **out_buf)
 {
 	guint8* p = buf;
 
@@ -52,8 +55,10 @@ decode_var_int (guint8* buf, int* val)
 
 done:
 
-	*val = low;
-	return p-buf;
+	if (out_buf)
+		*out_buf = p;
+
+	return low;
 }
 
 static guint32
@@ -76,7 +81,7 @@ seq_point_info_inflate (MonoSeqPointInfo *info)
 	guint8 *ptr = (guint8*) info;
 	int value;
 
-	ptr += decode_var_int (ptr, &value);
+	value = decode_var_int (ptr, &ptr);
 
 	info_inflated.len = value >> 2;
 	info_inflated.has_debug_data = (value & 1) != 0;
@@ -106,7 +111,7 @@ seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_deb
 	if (alloc_data)
 		value |= 2;
 
-	buffer_len = encode_var_int (buffer, value);
+	buffer_len = encode_var_int (buffer, NULL, value);
 
 	data_size = buffer_len + (alloc_data? len : sizeof (guint8*));
 	info_ptr = g_new0 (guint8, data_size);
@@ -138,17 +143,17 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 	int value;
 	guint8* ptr0 = ptr;
 
-	ptr += decode_var_int (ptr, &value);
+	value = decode_var_int (ptr, &ptr);
 	seq_point->il_offset += decode_zig_zag (value);
 
-	ptr += decode_var_int (ptr, &value);
+	value = decode_var_int (ptr, &ptr);
 	seq_point->native_offset += decode_zig_zag (value);
 
 	if (has_debug_data) {
-		ptr += decode_var_int (ptr, &value);
+		value = decode_var_int (ptr, &ptr);
 		seq_point->flags = value;
 
-		ptr += decode_var_int (ptr, &value);
+		value = decode_var_int (ptr, &ptr);
 		seq_point->next_len = value;
 
 		if (seq_point->next_len) {
@@ -176,26 +181,26 @@ seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_se
 	il_delta = sp->il_offset - last_seq_point->il_offset;
 	native_delta = sp->native_offset - last_seq_point->native_offset;
 
-	len = encode_var_int (buffer, encode_zig_zag (il_delta));
+	len = encode_var_int (buffer, NULL, encode_zig_zag (il_delta));
 	g_byte_array_append (array, buffer, len);
 
-	len = encode_var_int (buffer, encode_zig_zag (native_delta));
+	len = encode_var_int (buffer, NULL, encode_zig_zag (native_delta));
 	g_byte_array_append (array, buffer, len);
 
 	if (has_debug_data) {
 		sp->next_offset = array->len;
 		sp->next_len = g_slist_length (next);
 
-		len = encode_var_int (buffer, sp->flags);
+		len = encode_var_int (buffer, NULL, sp->flags);
 		g_byte_array_append (array, buffer, len);
 
-		len = encode_var_int (buffer, sp->next_len);
+		len = encode_var_int (buffer, NULL, sp->next_len);
 		g_byte_array_append (array, buffer, len);
 
 		for (l = next; l; l = l->next) {
 			int next_index = GPOINTER_TO_UINT (l->data);
 			guint8 buffer[4];
-			int len = encode_var_int (buffer, next_index);
+			int len = encode_var_int (buffer, NULL, next_index);
 			g_byte_array_append (array, buffer, len);
 		}
 	}
@@ -530,7 +535,7 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 	ptr = info_inflated.data + sp.next_offset;
 	for (i = 0; i < sp.next_len; i++) {
 		int next_index;
-		ptr += decode_var_int (ptr, &next_index);
+		next_index = decode_var_int (ptr, &ptr);
 		g_assert (next_index < seq_points->len);
 		memcpy (&next[i], seq_points->data + next_index * sizeof (SeqPoint), sizeof (SeqPoint));
 	}
@@ -570,7 +575,7 @@ seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 	buffer++;
 
 	//Write sequence points
-	buffer += encode_var_int (buffer, info_inflated.len);
+	encode_var_int (buffer, &buffer, info_inflated.len);
 	memcpy (buffer, info_inflated.data, info_inflated.len);
 	buffer += info_inflated.len;
 
@@ -587,7 +592,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 	memcpy (&has_debug_data, buffer, 1);
 	buffer++;
 
-	buffer += decode_var_int (buffer, &size);
+	size = decode_var_int (buffer, &buffer);
 	(*info) = seq_point_info_new (size, copy, buffer, has_debug_data);
 	buffer += size;
 
