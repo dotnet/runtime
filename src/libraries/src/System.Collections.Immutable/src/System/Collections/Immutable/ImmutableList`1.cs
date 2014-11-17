@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using Validation;
 
 namespace System.Collections.Immutable
@@ -2662,7 +2661,7 @@ namespace System.Collections.Immutable
             internal ImmutableList<TOutput>.Node ConvertAll<TOutput>(Func<T, TOutput> converter)
             {
                 var root = ImmutableList<TOutput>.Node.EmptyNode;
-                return root.AddRange(this.Select(converter));
+                return root.AddRange(Linq.Enumerable.Select(this, converter));
             }
 
             /// <summary>
@@ -2765,7 +2764,7 @@ namespace System.Collections.Immutable
                 Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
                 var builder = ImmutableList<T>.Empty.ToBuilder();
-                builder.AddRange(this.Where(x => match.Invoke(x)));
+                builder.AddRange(Linq.Enumerable.Where(this, x => match.Invoke(x)));
 
                 return builder.ToImmutable();
             }
