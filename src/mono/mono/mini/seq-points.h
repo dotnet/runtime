@@ -6,10 +6,11 @@
 #define __MONO_SEQ_POINTS_H__
 
 #define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
+#define MONO_SEQ_POINT_FLAG_EXIT_IL 2
 
 /* IL offsets used to mark the sequence points belonging to method entry/exit events */
 #define METHOD_ENTRY_IL_OFFSET -1
-#define METHOD_EXIT_IL_OFFSET -2
+#define METHOD_EXIT_IL_OFFSET 0xffffff
 
 /* Native offset used to mark seq points in dead code */
 #define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1

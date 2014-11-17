@@ -153,6 +153,9 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 		value = decode_var_int (ptr, &ptr);
 		seq_point->flags = value;
 
+		if (seq_point->flags & MONO_SEQ_POINT_FLAG_EXIT_IL)
+			seq_point->il_offset = METHOD_EXIT_IL_OFFSET;
+
 		value = decode_var_int (ptr, &ptr);
 		seq_point->next_len = value;
 
@@ -173,6 +176,7 @@ seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_se
 	GSList *l;
 	guint8 buffer[4];
 	guint8 len;
+	int flags;
 
 	if (!has_debug_data &&
 		(sp->il_offset == METHOD_ENTRY_IL_OFFSET || sp->il_offset == METHOD_EXIT_IL_OFFSET))
@@ -180,6 +184,13 @@ seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_se
 
 	il_delta = sp->il_offset - last_seq_point->il_offset;
 	native_delta = sp->native_offset - last_seq_point->native_offset;
+
+	flags = sp->flags;
+
+	if (has_debug_data && sp->il_offset == METHOD_EXIT_IL_OFFSET) {
+		il_delta = 0;
+		flags |= MONO_SEQ_POINT_FLAG_EXIT_IL;
+	}
 
 	len = encode_var_int (buffer, NULL, encode_zig_zag (il_delta));
 	g_byte_array_append (array, buffer, len);
@@ -191,7 +202,7 @@ seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_se
 		sp->next_offset = array->len;
 		sp->next_len = g_slist_length (next);
 
-		len = encode_var_int (buffer, NULL, sp->flags);
+		len = encode_var_int (buffer, NULL, flags);
 		g_byte_array_append (array, buffer, len);
 
 		len = encode_var_int (buffer, NULL, sp->next_len);
