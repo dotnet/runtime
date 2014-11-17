@@ -8955,11 +8955,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		return res;
 
 	if (MONO_CLASS_IS_IMPORT (method->klass)) {
+		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
+		if (aot)
+			return method;
 #ifndef DISABLE_COM
 		return mono_cominterop_get_native_wrapper (method);
 #else
-		if (aot)
-			return method;
 		g_assert_not_reached ();
 #endif
 	}
