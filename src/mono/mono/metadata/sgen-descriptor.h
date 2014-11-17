@@ -91,10 +91,16 @@ enum {
 	DESC_TYPE_COMPLEX_ARR = 6,  /* index for bitmap into complex_descriptors */
 	DESC_TYPE_COMPLEX_PTRFREE = 7, /* Nothing, used to encode large ptr objects and strings. */
 	DESC_TYPE_MAX = 7,
-	/* values for array kind */
+};
+
+/* values for array kind */
+enum {
 	DESC_TYPE_V_SZARRAY = 0, /*vector with no bounds data */
 	DESC_TYPE_V_ARRAY = 1, /* array with bounds data */
-	/* subtypes for arrays and vectors */
+};
+
+/* subtypes for arrays and vectors */
+enum {
 	DESC_TYPE_V_PTRFREE = 0,/* there are no refs: keep first so it has a zero value  */
 	DESC_TYPE_V_REFS,       /* all the array elements are refs */
 	DESC_TYPE_V_RUN_LEN,    /* elements are run-length encoded as DESC_TYPE_RUN_LENGTH */
