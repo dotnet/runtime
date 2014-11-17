@@ -218,6 +218,8 @@ namespace System.Collections.Immutable.Test
 
         protected abstract ISet<T> EmptyMutable<T>();
 
+        internal abstract IBinaryTree GetRootNode<T>(IImmutableSet<T> set);
+
         protected void TryGetValueTestHelper(IImmutableSet<string> set)
         {
             Requires.NotNull(set, "set");
@@ -496,6 +498,8 @@ namespace System.Collections.Immutable.Test
 
             var actualSet = set.Except(valuesToRemove);
             CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
+
+            this.VerifyAVLTreeState(actualSet);
         }
 
         private void SymmetricExceptTestHelper<T>(IImmutableSet<T> set, params T[] otherCollection)
@@ -508,6 +512,8 @@ namespace System.Collections.Immutable.Test
 
             var actualSet = set.SymmetricExcept(otherCollection);
             CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
+
+            this.VerifyAVLTreeState(actualSet);
         }
 
         private void IntersectTestHelper<T>(IImmutableSet<T> set, params T[] values)
@@ -522,6 +528,8 @@ namespace System.Collections.Immutable.Test
 
             var actual = set.Intersect(values);
             CollectionAssertAreEquivalent(expected.ToList(), actual.ToList());
+
+            this.VerifyAVLTreeState(actual);
         }
 
         private void UnionTestHelper<T>(IImmutableSet<T> set, params T[] values)
@@ -534,6 +542,8 @@ namespace System.Collections.Immutable.Test
 
             var actual = set.Union(values);
             CollectionAssertAreEquivalent(expected.ToList(), actual.ToList());
+
+            this.VerifyAVLTreeState(actual);
         }
 
         private void AddTestHelper<T>(IImmutableSet<T> set, params T[] values)
@@ -577,6 +587,13 @@ namespace System.Collections.Immutable.Test
                 Assert.Same(nextSet, nextSet.Add(value)); //, "Adding duplicate value {0} should keep the original reference.", value);
                 set = nextSet;
             }
+        }
+
+        private void VerifyAVLTreeState<T>(IImmutableSet<T> set)
+        {
+            var rootNode = this.GetRootNode(set);
+            rootNode.VerifyBalanced();
+            rootNode.VerifyHeightIsWithinTolerance(set.Count);
         }
     }
 }

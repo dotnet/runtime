@@ -148,6 +148,14 @@ namespace System.Collections.Immutable
         #endregion
 
         /// <summary>
+        /// Gets the root node (for testing purposes).
+        /// </summary>
+        internal IBinaryTree Root
+        {
+            get { return this.root; }
+        }
+
+        /// <summary>
         /// Gets a data structure that captures the current state of this map, as an input into a query or mutating function.
         /// </summary>
         private MutationInput Origin
