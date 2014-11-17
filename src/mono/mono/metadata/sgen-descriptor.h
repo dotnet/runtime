@@ -52,10 +52,23 @@
 #define VECTOR_KIND_SZARRAY  (DESC_TYPE_V_SZARRAY << VECTOR_KIND_SHIFT)
 #define VECTOR_KIND_ARRAY  (DESC_TYPE_V_ARRAY << VECTOR_KIND_SHIFT)
 
-/* objects are aligned to 8 bytes boundaries
+/*
+ * Objects are aligned to 8 bytes boundaries.
+ *
  * A descriptor is a pointer in MonoVTable, so 32 or 64 bits of size.
  * The low 3 bits define the type of the descriptor. The other bits
  * depend on the type.
+ *
+ * It's important to be able to quickly identify two properties of classes from their
+ * descriptors: whether they are small enough to live in the regular major heap (size <=
+ * SGEN_MAX_SMALL_OBJ_SIZE), and whether they contain references.
+ *
+ * To that end we have three descriptor types that only apply to small classes: RUN_LENGTH,
+ * BITMAP, and SMALL_PTRFREE.  We also have the type COMPLEX_PTRFREE, which applies to
+ * classes that are either not small or of unknown size (those being strings and arrays).
+ * The lowest two bits of the SMALL_PTRFREE and COMPLEX_PTRFREE tags are the same, so we can
+ * quickly check for references.
+ *
  * As a general rule the 13 remaining low bits define the size, either
  * of the whole object or of the elements in the arrays. While for objects
  * the size is already in bytes, for arrays we need to shift, because
@@ -69,19 +82,11 @@
  * will be allocated in the large object heap.
  * If we want 4-bytes alignment, we need to put vector and small bitmap
  * inside complex.
+ *
+ * We don't use 0 so that 0 isn't a valid GC descriptor.  No deep reason for this other than
+ * to be able to identify a non-inited descriptor for debugging.
  */
 enum {
-	/*
-	 * We don't use 0 so that 0 isn't a valid GC descriptor.  No
-	 * deep reason for this other than to be able to identify a
-	 * non-inited descriptor for debugging.
-	 *
-	 * If an object contains no references, its GC descriptor is
-	 * always DESC_TYPE_RUN_LENGTH, without a size, no exceptions.
-	 * This is so that we can quickly check for that in
-	 * copy_object_no_checks(), without having to fetch the
-	 * object's class.
-	 */
 	DESC_TYPE_RUN_LENGTH = 1,   /* 16 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
 	DESC_TYPE_BITMAP = 2,	    /* | 29-61 bitmap bits */
 	DESC_TYPE_SMALL_PTRFREE = 3,
