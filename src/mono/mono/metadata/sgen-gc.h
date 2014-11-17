@@ -825,7 +825,7 @@ static inline mword
 sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
 	mword descr = (mword)vtable->gc_descr;
-	mword type = descr & 0x7;
+	mword type = descr & DESC_TYPE_MASK;
 
 	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
 		mword size = descr & 0xfff8;

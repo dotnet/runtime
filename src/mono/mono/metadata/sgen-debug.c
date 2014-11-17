@@ -131,7 +131,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 	desc = ((GCVTable*)vtable)->desc;
 	printf ("Descriptor: %lx\n", (long)desc);
 
-	type = desc & 0x7;
+	type = desc & DESC_TYPE_MASK;
 	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
 
 	size = sgen_safe_object_get_size ((MonoObject*)ptr);

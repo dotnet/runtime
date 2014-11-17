@@ -228,7 +228,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 	mword d = (mword)descr;
 	gsize *bitmap;
 
-	switch (d & 0x7) {
+	switch (d & DESC_TYPE_MASK) {
 	case DESC_TYPE_RUN_LENGTH: {		
 		int first_set = (d >> 16) & 0xff;
 		int num_set = (d >> 24) & 0xff;
@@ -345,7 +345,7 @@ sgen_get_user_descriptor_func (mword desc)
 void
 sgen_descriptor_count_scanned_object (mword desc)
 {
-	int type = desc & 7;
+	int type = desc & DESC_TYPE_MASK;
 	SGEN_ASSERT (0, type, "Descriptor type can't be zero");
 	++stat_scanned_count_per_descriptor [type - 1];
 }
@@ -353,7 +353,7 @@ sgen_descriptor_count_scanned_object (mword desc)
 void
 sgen_descriptor_count_copied_object (mword desc)
 {
-	int type = desc & 7;
+	int type = desc & DESC_TYPE_MASK;
 	SGEN_ASSERT (0, type, "Descriptor type can't be zero");
 	++stat_copied_count_per_descriptor [type - 1];
 }

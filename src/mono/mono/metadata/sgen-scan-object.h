@@ -53,7 +53,7 @@
 	binary_protocol_scan_vtype_begin (start + sizeof (MonoObject), size);
 #endif
 #endif
-	switch (desc & 0x7) {
+	switch (desc & DESC_TYPE_MASK) {
 	case DESC_TYPE_RUN_LENGTH:
 #define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN

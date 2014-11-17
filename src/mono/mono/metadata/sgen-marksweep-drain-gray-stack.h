@@ -131,7 +131,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 	} else {
 		mword vtable_word = *(mword*)obj;
 		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
-		int type = desc & 7;
+		int type = desc & DESC_TYPE_MASK;
 
 		HEAVY_STAT (++stat_optimized_copy_major);
 
