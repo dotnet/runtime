@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Text;
-using System.Reflection.Internal;
 using System.Diagnostics;
+using System.Reflection.Internal;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
     /// <summary>
-    /// Provides the <see cref="MetadataReader"/> with a custom mechansim for decoding
+    /// Provides the <see cref="MetadataReader"/> with a custom mechanism for decoding
     /// byte sequences in metadata that represent text.
     /// </summary>
     /// <remarks>

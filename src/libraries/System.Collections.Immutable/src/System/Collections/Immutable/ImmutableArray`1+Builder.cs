@@ -1,14 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Validation;
 
 namespace System.Collections.Immutable
@@ -399,7 +395,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Resizes the array to accomodate the specified capacity requirement.
+            /// Resizes the array to accommodate the specified capacity requirement.
             /// </summary>
             /// <param name="capacity">The required capacity.</param>
             public void EnsureCapacity(int capacity)
@@ -594,7 +590,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Sort()
             {
-                Array.Sort(this.elements, 0, this.Count, new Comparer(Comparer<T>.Default));
+                Array.Sort(this.elements, 0, this.Count, Comparer.Default);
             }
 
             /// <summary>
@@ -705,6 +701,8 @@ namespace System.Collections.Immutable
             private sealed class Comparer : IComparer<RefAsValueType<T>>
             {
                 private readonly IComparer<T> comparer;
+
+                public static readonly Comparer Default = new Comparer(Comparer<T>.Default);
 
                 internal Comparer(IComparer<T> comparer = null)
                 {

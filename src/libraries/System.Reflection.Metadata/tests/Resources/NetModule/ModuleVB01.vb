@@ -1,4 +1,7 @@
-﻿Imports System.Collections.Generic
+﻿' Copyright (c) Microsoft. All rights reserved.
+' Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+Imports System.Collections.Generic
 
 ' Use types exposed from ModuleCS00
 Public Class ModVBClass

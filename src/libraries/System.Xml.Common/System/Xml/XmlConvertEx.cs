@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Globalization;
 
 namespace System.Xml
@@ -209,7 +208,7 @@ namespace System.Xml
 
             int i = 0;
             int len = data.Length;
-            for (;;)
+            for (; ;)
             {
                 while (i < len && (xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
                 {

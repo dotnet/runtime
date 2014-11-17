@@ -63,16 +63,34 @@ namespace System.Numerics.Tests
         [Fact]
         public void Vector4ToStringTest()
         {
+            string separator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
+            CultureInfo enUsCultureInfo = new CultureInfo("en-US");
+
             Vector4 v1 = new Vector4(2.5f, 2.0f, 3.0f, 3.3f);
 
             string v1str = v1.ToString();
-            Assert.Equal("<2.5, 2, 3, 3.3>", v1str);
+            string expectedv1 = string.Format(CultureInfo.CurrentCulture
+                , "<{1:G}{0} {2:G}{0} {3:G}{0} {4:G}>"
+                , separator, 2.5, 2, 3, 3.3);
+            Assert.Equal(expectedv1, v1str);
 
-            string v1strformatted = v1.ToString("c", new CultureInfo("en-US"));
-            Assert.Equal("<$2.50, $2.00, $3.00, $3.30>", v1strformatted);
+            string v1strformatted = v1.ToString("c", CultureInfo.CurrentCulture);
+            string expectedv1formatted = string.Format(CultureInfo.CurrentCulture
+                , "<{1:c}{0} {2:c}{0} {3:c}{0} {4:c}>"
+                , separator, 2.5, 2, 3, 3.3);
+            Assert.Equal(expectedv1formatted, v1strformatted);
 
-            string v2strformatted = v1.ToString("c");
-            Assert.Equal("<$2.50, $2.00, $3.00, $3.30>", v1strformatted);
+            string v2strformatted = v1.ToString("c", enUsCultureInfo);
+            string expectedv2formatted = string.Format(enUsCultureInfo
+                , "<{1:c}{0} {2:c}{0} {3:c}{0} {4:c}>"
+                , enUsCultureInfo.NumberFormat.NumberGroupSeparator, 2.5, 2, 3, 3.3);
+            Assert.Equal(expectedv2formatted, v2strformatted);
+
+            string v3strformatted = v1.ToString("c");
+            string expectedv3formatted = string.Format(CultureInfo.CurrentCulture
+                , "<{1:c}{0} {2:c}{0} {3:c}{0} {4:c}>"
+                , separator, 2.5, 2, 3, 3.3);
+            Assert.Equal(expectedv3formatted, v3strformatted);
         }
 
         // A test for DistanceSquared (Vector4f, Vector4f)

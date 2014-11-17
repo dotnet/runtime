@@ -14,6 +14,10 @@ namespace System.Xml.XPath
             {
                 ret = obj.Document;
             }
+            if (ret == obj)
+            {
+                return null;
+            }
             return ret;
         }
     }

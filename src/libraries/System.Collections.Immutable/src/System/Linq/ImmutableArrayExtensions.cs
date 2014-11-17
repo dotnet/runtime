@@ -4,14 +4,9 @@
 
 // ReSharper disable CheckNamespace
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using Validation;
 
 namespace System.Linq
@@ -40,6 +35,51 @@ namespace System.Linq
             // They also do not modify the source arrays or expose them to modifications.
             // Therefore we will just apply Select/Where to the underlying this.array array.
             return immutableArray.array.Select(selector);
+        }
+
+        /// <summary>
+        /// Projects each element of a sequence to an <see cref="IEnumerable{T}"/>,
+        /// flattens the resulting sequences into one sequence, and invokes a result
+        /// selector function on each element therein.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="immutableArray"/>.</typeparam>
+        /// <typeparam name="TCollection">The type of the intermediate elements collected by collectionSelector.</typeparam>
+        /// <typeparam name="TResult">The type of the elements of the resulting sequence.</typeparam>
+        /// <param name="immutableArray">The immutable array.</param>
+        /// <param name="collectionSelector">A transform function to apply to each element of the input sequence.</param>
+        /// <param name="resultSelector">A transform function to apply to each element of the intermediate sequence.</param>
+        /// <returns>
+        /// An <see cref="IEnumerable{T}"/> whose elements are the result
+        /// of invoking the one-to-many transform function collectionSelector on each
+        /// element of source and then mapping each of those sequence elements and their
+        /// corresponding source element to a result element.
+        /// </returns>
+        [Pure]
+        public static IEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(
+            this ImmutableArray<TSource> immutableArray,
+            Func<TSource, IEnumerable<TCollection>> collectionSelector,
+            Func<TSource, TCollection, TResult> resultSelector)
+        {
+            immutableArray.ThrowNullRefIfNotInitialized();
+            if (collectionSelector == null || resultSelector == null)
+            {
+                // throw the same exception as would LINQ
+                return Enumerable.SelectMany(immutableArray, collectionSelector, resultSelector);
+            }
+
+            // This SelectMany overload is used by the C# compiler for a query of the form:
+            //     from i in immutableArray
+            //     from j in anotherCollection
+            //     select Something(i, j);
+            // SelectMany accepts an IEnumerable<TSource>, and ImmutableArray<TSource> is a struct.
+            // By having a special implementation of SelectMany that operates on the ImmutableArray's
+            // underlying array, we can avoid a few allocations, in particular for the boxed
+            // immutable array object that would be allocated when it's passed as an IEnumerable<T>, 
+            // and for the EnumeratorObject that would be allocated when enumerating the boxed array.
+
+            return immutableArray.Length == 0 ?
+                Enumerable.Empty<TResult>() :
+                SelectManyIterator(immutableArray, collectionSelector, resultSelector);
         }
 
         /// <summary>
@@ -690,6 +730,23 @@ namespace System.Linq
             Requires.NotNull(builder, "builder");
 
             return builder.Count > 0;
+        }
+        #endregion
+
+        #region Private Implementation Details
+        /// <summary>Provides the core iterator implementation of SelectMany.</summary>
+        private static IEnumerable<TResult> SelectManyIterator<TSource, TCollection, TResult>(
+            this ImmutableArray<TSource> immutableArray,
+            Func<TSource, IEnumerable<TCollection>> collectionSelector,
+            Func<TSource, TCollection, TResult> resultSelector)
+        {
+            foreach (TSource item in immutableArray.array)
+            {
+                foreach (TCollection result in collectionSelector(item))
+                {
+                    yield return resultSelector(item, result);
+                }
+            }
         }
         #endregion
     }
