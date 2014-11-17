@@ -33,7 +33,7 @@ namespace System.Collections.Immutable
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableDictionary<,>.Builder.DebuggerProxy))]
+        [DebuggerTypeProxy(typeof(ImmutableDictionaryBuilderDebuggerProxy<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         {
             /// <summary>
@@ -341,7 +341,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (this.count == 0) 
+                if (this.count == 0)
                 {
                     return;
                 }
@@ -711,48 +711,49 @@ namespace System.Collections.Immutable
                 this.count += result.CountAdjustment;
                 return result.CountAdjustment != 0;
             }
-            /// <summary>
-            /// A simple view of the immutable collection that the debugger can show to the developer.
-            /// </summary>
-            [ExcludeFromCodeCoverage]
-            private class DebuggerProxy
+        }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableDictionary<TKey, TValue>.Builder map;
+
+        /// <summary>
+        /// The simple view of the collection.
+        /// </summary>
+        private KeyValuePair<TKey, TValue>[] contents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy&lt;TKey, TValue&gt;"/> class.
+        /// </summary>
+        /// <param name="map">The collection to display in the debugger</param>
+        public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
+        {
+            Requires.NotNull(map, "map");
+            this.map = map;
+        }
+
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public KeyValuePair<TKey, TValue>[] Contents
+        {
+            get
             {
-                /// <summary>
-                /// The collection to be enumerated.
-                /// </summary>
-                private readonly ImmutableDictionary<TKey, TValue>.Builder map;
-
-                /// <summary>
-                /// The simple view of the collection.
-                /// </summary>
-                private KeyValuePair<TKey, TValue>[] contents;
-
-                /// <summary>   
-                /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-                /// </summary>
-                /// <param name="map">The collection to display in the debugger</param>
-                public DebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
+                if (this.contents == null)
                 {
-                    Requires.NotNull(map, "map");
-                    this.map = map;
+                    this.contents = this.map.ToArray(this.map.Count);
                 }
 
-                /// <summary>
-                /// Gets a simple debugger-viewable collection.
-                /// </summary>
-                [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-                public KeyValuePair<TKey, TValue>[] Contents
-                {
-                    get
-                    {
-                        if (this.contents == null)
-                        {
-                            this.contents = this.map.ToArray(this.map.Count);
-                        }
-
-                        return this.contents;
-                    }
-                }
+                return this.contents;
             }
         }
     }

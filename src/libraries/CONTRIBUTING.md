@@ -1,9 +1,11 @@
 # Contributing
 
-General information on contributing to dotnet projects is in the [Contributing Guide](https://github.com/Microsoft/dotnet/blob/master/CONTRIBUTING.md). 
-This document contains information about coding styles, source structure, making
+See [Contributing] on the wiki for information about coding styles, source structure, making
 pull requests, and more.
 
+[Contributing]: https://github.com/dotnet/corefx/wiki/Contributing
 # Developers
 
-For details about developing in this repo see the [Developer Guide](https://github.com/dotnet/corefx/blob/master/docs/Developers.md).
+See the [Developer Guide] for details about developing in this repo.
+
+[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide

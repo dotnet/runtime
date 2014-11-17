@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of element stored by the stack.</typeparam>
     [DebuggerDisplay("IsEmpty = {IsEmpty}; Top = {head}")]
-    [DebuggerTypeProxy(typeof(ImmutableStack<>.DebuggerProxy))]
+    [DebuggerTypeProxy(typeof(ImmutableStackDebuggerProxy<>))]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public sealed class ImmutableStack<T> : IImmutableStack<T>
@@ -415,49 +415,49 @@ namespace System.Collections.Immutable
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableStackDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableStack<T> stack;
 
         /// <summary>
-        /// A simple view of the immutable collection that the debugger can show to the developer.
+        /// The simple view of the collection.
         /// </summary>
-        [ExcludeFromCodeCoverage]
-        private class DebuggerProxy
+        private T[] contents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableStackDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="stack">The collection to display in the debugger</param>
+        public ImmutableStackDebuggerProxy(ImmutableStack<T> stack)
         {
-            /// <summary>
-            /// The collection to be enumerated.
-            /// </summary>
-            private readonly ImmutableStack<T> stack;
+            Requires.NotNull(stack, "stack");
+            this.stack = stack;
+        }
 
-            /// <summary>
-            /// The simple view of the collection.
-            /// </summary>
-            private T[] contents;
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="stack">The collection to display in the debugger</param>
-            public DebuggerProxy(ImmutableStack<T> stack)
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Contents
+        {
+            get
             {
-                Requires.NotNull(stack, "stack");
-                this.stack = stack;
-            }
-
-            /// <summary>
-            /// Gets a simple debugger-viewable collection.
-            /// </summary>
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Contents
-            {
-                get
+                if (this.contents == null)
                 {
-                    if (this.contents == null)
-                    {
-                        this.contents = this.stack.ToArray();
-                    }
-
-                    return this.contents;
+                    this.contents = this.stack.ToArray();
                 }
+
+                return this.contents;
             }
         }
-    }
+    }    
 }
