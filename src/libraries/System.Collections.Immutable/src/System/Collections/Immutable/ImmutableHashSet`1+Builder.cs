@@ -330,6 +330,11 @@ namespace System.Collections.Immutable
             /// <returns>true if the current set is equal to other; otherwise, false.</returns>
             public bool SetEquals(IEnumerable<T> other)
             {
+                if (object.ReferenceEquals(this, other))
+                {
+                    return true;
+                }
+
                 return ImmutableHashSet<T>.SetEquals(other, this.Origin);
             }
 
