@@ -1183,6 +1183,8 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #ifdef MONO_CROSS_COMPILE
 #elif __APPLE__
 	sys_icache_invalidate (code, size);
+#elif __GNUC_PREREQ(4, 3)
+    __builtin___clear_cache (code, code + size);
 #elif __GNUC_PREREQ(4, 1)
 	__clear_cache (code, code + size);
 #elif defined(PLATFORM_ANDROID)
