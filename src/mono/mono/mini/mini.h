@@ -333,6 +333,21 @@ typedef struct {
  */
 typedef MonoStackFrameInfo StackFrameInfo;
 
+#define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
+
+typedef struct {
+	int il_offset, native_offset, flags;
+	/* Indexes of successor sequence points */
+	int *next;
+	/* Number of entries in next */
+	int next_len;
+} SeqPoint;
+
+typedef struct {
+	int len;
+	SeqPoint seq_points [MONO_ZERO_LEN_ARRAY];
+} MonoSeqPointInfo;
+
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
 	for (b = 0; b < n; b++)\
@@ -1487,7 +1502,6 @@ typedef struct {
 	guint            uses_simd_intrinsics : 1;
 	guint            keep_cil_nops : 1;
 	guint            gen_seq_points : 1;
-	guint            gen_seq_points_debug_data : 1;
 	guint            explicit_null_checks : 1;
 	guint            compute_gc_maps : 1;
 	guint            soft_breakpoints : 1;
@@ -1583,7 +1597,7 @@ typedef struct {
 	GPtrArray *seq_points;
 
 	/* The encoded sequence point info */
-	struct MonoSeqPointInfo *seq_point_info;
+	MonoSeqPointInfo *seq_point_info;
 
 	/* Method headers which need to be freed after compilation */
 	GSList *headers_to_free;
@@ -1660,7 +1674,6 @@ typedef struct {
 	gint32 max_code_size_ratio;
 	gint32 biggest_method_size;
 	gint32 allocated_code_size;
-	gint32 allocated_seq_points_size;
 	gint32 inlineable_methods;
 	gint32 inlined_methods;
 	gint32 basic_blocks;
@@ -1839,11 +1852,7 @@ typedef struct {
 	gboolean suspend_on_unhandled;
 	gboolean dyn_runtime_invoke;
 	gboolean gdb;
-	/*
-	 * Whenever data such as next sequence points and flags is required.
-	 * Next sequence points and flags are required by the debugger agent.
-	 */
-	gboolean gen_seq_points_debug_data;
+	gboolean gen_seq_points;
 	gboolean explicit_null_checks;
 	/*
 	 * Fill stack frames with 0x2a in method prologs. This helps with the
