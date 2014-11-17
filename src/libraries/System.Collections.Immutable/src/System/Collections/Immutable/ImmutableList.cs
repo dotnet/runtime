@@ -143,7 +143,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
         /// elements in the ImmutableList&lt;T&gt; that extends from index
-        /// to the last element, if found; otherwise, –1.
+        /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item)
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
         /// elements in the ImmutableList&lt;T&gt; that extends from index
-        /// to the last element, if found; otherwise, –1.
+        /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T> equalityComparer)
@@ -191,7 +191,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
         /// elements in the ImmutableList&lt;T&gt; that extends from index
-        /// to the last element, if found; otherwise, –1.
+        /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item, int startIndex)
@@ -220,7 +220,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
         /// elements in the ImmutableList&lt;T&gt; that extends from index
-        /// to the last element, if found; otherwise, –1.
+        /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item, int startIndex, int count)
@@ -240,7 +240,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the entire the
-        /// ImmutableList&lt;T&gt;, if found; otherwise, –1.
+        /// ImmutableList&lt;T&gt;, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item)
@@ -268,7 +268,7 @@ namespace System.Collections.Immutable
         /// <param name="equalityComparer">The equality comparer to use in the search.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the entire the
-        /// ImmutableList&lt;T&gt;, if found; otherwise, –1.
+        /// ImmutableList&lt;T&gt;, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T> equalityComparer)
@@ -300,7 +300,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
         /// in the ImmutableList&lt;T&gt; that extends from the first element
-        /// to index, if found; otherwise, –1.
+        /// to index, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, int startIndex)
@@ -334,7 +334,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
         /// in the ImmutableList&lt;T&gt; that extends from the first element
-        /// to index, if found; otherwise, –1.
+        /// to index, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, int startIndex, int count)

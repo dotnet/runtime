@@ -7,18 +7,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata.Tests", "System.Reflection.Metadata\tests\System.Reflection.Metadata.Tests.csproj", "{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}"
 EndProject
 Global
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 4
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = http://vstfdevdiv:8080/devdiv2
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = System.Reflection.Metadata\\src\\System.Reflection.Metadata.csproj
-		SccProjectName1 = System.Reflection.Metadata
-		SccLocalPath1 = System.Reflection.Metadata
-		SccProjectUniqueName2 = System.Reflection.Metadata\\tests\\System.Reflection.Metadata.Tests.csproj
-		SccProjectName2 = System.Reflection.Metadata.UnitTests
-		SccLocalPath2 = System.Reflection.Metadata\\Test
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

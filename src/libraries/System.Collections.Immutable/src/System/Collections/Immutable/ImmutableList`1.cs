@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(ImmutableList<>.DebuggerProxy))]
+    [DebuggerTypeProxy(typeof(ImmutableListDebuggerProxy<>))]
     public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>
     {
         /// <summary>
@@ -283,13 +283,7 @@ namespace System.Collections.Immutable
                 return this.FillFromEmpty(items);
             }
 
-            // Let's not implement in terms of ImmutableList.Add so that we're
-            // not unnecessarily generating a new list object for each item.
-            var result = this.root;
-            foreach (T item in items)
-            {
-                result = result.Add(item);
-            }
+            var result = this.root.AddRange(items);
 
             return this.Wrap(result);
         }
@@ -316,13 +310,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(items, "items");
             Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
-            // Let's not implement in terms of ImmutableList.Add so that we're
-            // not unnecessarily generating a new list object for each item.
-            var result = this.root;
-            foreach (T item in items)
-            {
-                result = result.Insert(index++, item);
-            }
+            var result = this.root.InsertRange(index, items);
 
             return this.Wrap(result);
         }
@@ -770,7 +758,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         public int FindIndex(Predicate<T> match)
         {
@@ -788,7 +776,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         public int FindIndex(int startIndex, Predicate<T> match)
         {
@@ -809,7 +797,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         public int FindIndex(int startIndex, int count, Predicate<T> match)
         {
@@ -850,7 +838,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         public int FindLastIndex(Predicate<T> match)
         {
@@ -869,7 +857,7 @@ namespace System.Collections.Immutable
         /// to search for.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         public int FindLastIndex(int startIndex, Predicate<T> match)
         {
@@ -893,7 +881,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, –1.
+        /// conditions defined by match, if found; otherwise, -1.
         /// </returns>
         public int FindLastIndex(int startIndex, int count, Predicate<T> match)
         {
@@ -927,7 +915,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
         /// elements in the ImmutableList&lt;T&gt; that starts at index and
-        /// contains count number of elements, if found; otherwise, –1.
+        /// contains count number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -953,7 +941,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
         /// in the ImmutableList&lt;T&gt; that contains count number of elements
-        /// and ends at index, if found; otherwise, –1.
+        /// and ends at index, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -1375,6 +1363,17 @@ namespace System.Collections.Immutable
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this.root);
+        }
+
+        /// <summary>
+        /// Returns the Root Node of the list
+        /// </summary>
+        internal Node Root
+        {
+            get
+            {
+                return this.root;
+            }
         }
 
         /// <summary>
@@ -2067,6 +2066,56 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Adds the specified keys to the tree.
+            /// </summary>
+            /// <param name="keys">The keys.</param>
+            /// <returns>The new tree.</returns>
+            internal Node AddRange(IEnumerable<T> keys)
+            {
+                return this.InsertRange(this.count, keys);
+            }
+
+            /// <summary>
+            /// Adds a collection of values at a given index to this node.
+            /// </summary>
+            /// <param name="index">The location for the new values.</param>
+            /// <param name="keys">The values to add.</param>
+            /// <returns>The new tree.</returns>
+            internal Node InsertRange(int index, IEnumerable<T> keys)
+            {
+                Requires.Range(index >= 0 && index <= this.Count, "index");
+                Requires.NotNull(keys, "keys");
+
+                if (this.IsEmpty)
+                {
+                    ImmutableList<T> other;
+                    if (TryCastToImmutableList(keys, out other))
+                    {
+                        return other.root;
+                    }
+
+                    var list = keys.AsOrderedCollection();
+                    return Node.NodeTreeFromList(list, 0, list.Count);
+                }
+                else
+                {
+                    Node result;
+                    if (index <= this.left.count)
+                    {
+                        var newLeft = this.left.InsertRange(index, keys);
+                        result = this.Mutate(left: newLeft);
+                    }
+                    else
+                    {
+                        var newRight = this.right.InsertRange(index - this.left.count - 1, keys);
+                        result = this.Mutate(right: newRight);
+                    }
+
+                    return BalanceNode(result);
+                }
+            }
+
+            /// <summary>
             /// Removes a value at a given index to this node.
             /// </summary>
             /// <param name="index">The location for the new value.</param>
@@ -2394,7 +2443,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
-            /// contains count number of elements, if found; otherwise, –1.
+            /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
             internal int IndexOf(T item, IEqualityComparer<T> equalityComparer)
@@ -2422,7 +2471,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
-            /// contains count number of elements, if found; otherwise, –1.
+            /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
             internal int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -2465,7 +2514,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The zero-based index of the last occurrence of item within the range of elements
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
-            /// and ends at index, if found; otherwise, –1.
+            /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
             internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -2742,7 +2791,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             internal int FindIndex(Predicate<T> match)
             {
@@ -2762,7 +2811,7 @@ namespace System.Collections.Immutable
             /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             internal int FindIndex(int startIndex, Predicate<T> match)
             {
@@ -2784,7 +2833,7 @@ namespace System.Collections.Immutable
             /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             internal int FindIndex(int startIndex, int count, Predicate<T> match)
             {
@@ -2851,7 +2900,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             internal int FindLastIndex(Predicate<T> match)
             {
@@ -2877,7 +2926,7 @@ namespace System.Collections.Immutable
             /// to search for.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             internal int FindLastIndex(int startIndex, Predicate<T> match)
             {
@@ -2907,7 +2956,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, –1.
+            /// conditions defined by match, if found; otherwise, -1.
             /// </returns>
             internal int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
@@ -3083,15 +3132,40 @@ namespace System.Collections.Immutable
 
                 if (IsRightHeavy(tree))
                 {
-                    return IsLeftHeavy(tree.right) ? DoubleLeft(tree) : RotateLeft(tree);
+                    return Balance(tree.right) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
                 }
 
                 if (IsLeftHeavy(tree))
                 {
-                    return IsRightHeavy(tree.left) ? DoubleRight(tree) : RotateRight(tree);
+                    return Balance(tree.left) > 0 ? DoubleRight(tree) : RotateRight(tree);
                 }
 
                 return tree;
+            }
+
+            /// <summary>
+            /// Balance the specified node.  Allows for a large imbalance between left and
+            /// right nodes, but assumes left and right nodes are individually balanced.
+            /// </summary>
+            /// <param name="node">The node.</param>
+            /// <returns>A balanced node</returns>
+            private static Node BalanceNode(Node node)
+            {
+                while (IsRightHeavy(node) || IsLeftHeavy(node))
+                {
+                    if (IsRightHeavy(node))
+                    {
+                        node = Balance(node.right) < 0 ? DoubleLeft(node) : RotateLeft(node);
+                        node.Mutate(left: BalanceNode(node.left));
+                    }
+                    else
+                    {
+                        node = Balance(node.left) > 0 ? DoubleRight(node) : RotateRight(node);
+                        node.Mutate(right: BalanceNode(node.right));
+                    }
+                }
+
+                return node;
             }
 
             #endregion
@@ -3146,58 +3220,48 @@ namespace System.Collections.Immutable
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable list that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableListDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableList<T> list;
 
         /// <summary>
-        /// A simple view of the immutable list that the debugger can show to the developer.
+        /// The simple view of the collection.
         /// </summary>
-        [ExcludeFromCodeCoverage]
-        private class DebuggerProxy
+        private T[] cachedContents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableListDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="list">The list to display in the debugger</param>
+        public ImmutableListDebuggerProxy(ImmutableList<T> list)
         {
-            /// <summary>
-            /// The collection to be enumerated.
-            /// </summary>
-            private readonly ImmutableList<T>.Node list;
+            Requires.NotNull(list, "list");
+            this.list = list;
+        }
 
-            /// <summary>
-            /// The simple view of the collection.
-            /// </summary>
-            private T[] cachedContents;
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="list">The list to display in the debugger</param>
-            public DebuggerProxy(ImmutableList<T> list)
+        /// <summary>
+        /// Gets a simple debugger-viewable list.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Contents
+        {
+            get
             {
-                Requires.NotNull(list, "list");
-                this.list = list.root;
-            }
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="builder">The list to display in the debugger</param>
-            public DebuggerProxy(ImmutableList<T>.Builder builder)
-            {
-                Requires.NotNull(builder, "builder");
-                this.list = builder.Root;
-            }
-
-            /// <summary>
-            /// Gets a simple debugger-viewable list.
-            /// </summary>
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Contents
-            {
-                get
+                if (this.cachedContents == null)
                 {
-                    if (this.cachedContents == null)
-                    {
-                        this.cachedContents = this.list.ToArray(this.list.Count);
-                    }
-
-                    return this.cachedContents;
+                    this.cachedContents = this.list.ToArray(this.list.Count);
                 }
+
+                return this.cachedContents;
             }
         }
     }

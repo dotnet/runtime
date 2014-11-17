@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(ImmutableHashSet<>.DebuggerProxy))]
+    [DebuggerTypeProxy(typeof(ImmutableHashSetDebuggerProxy<>))]
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection
     {
         /// <summary>
@@ -288,6 +288,11 @@ namespace System.Collections.Immutable
         public bool SetEquals(IEnumerable<T> other)
         {
             Requires.NotNull(other, "other");
+
+            if (object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
 
             return SetEquals(other, this.Origin);
         }

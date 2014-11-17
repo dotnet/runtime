@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
         /// instance without allocating memory.
         /// </summary>
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableArray<>.Builder.DebuggerProxy))]
+        [DebuggerTypeProxy(typeof(ImmutableArrayBuilderDebuggerProxy<>))]
         public sealed class Builder : IList<T>, IReadOnlyList<T>
         {
             /// <summary>
@@ -668,36 +668,6 @@ namespace System.Collections.Immutable
                 }
             }
 
-            #region DebuggerProxy
-
-            [ExcludeFromCodeCoverage]
-            private sealed class DebuggerProxy
-            {
-                private readonly Builder builder;
-
-                public DebuggerProxy(Builder builder)
-                {
-                    this.builder = builder;
-                }
-
-                [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-                public T[] A
-                {
-                    get
-                    {
-                        var result = new T[this.builder.Count];
-                        for (int i = 0; i < result.Length; i++)
-                        {
-                            result[i] = this.builder.elements[i].Value;
-                        }
-
-                        return result;
-                    }
-                }
-            }
-
-            #endregion
-
             private sealed class Comparer : IComparer<RefAsValueType<T>>
             {
                 private readonly IComparer<T> comparer;
@@ -714,6 +684,38 @@ namespace System.Collections.Immutable
                 {
                     return this.comparer.Compare(x.Value, y.Value);
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal sealed class ImmutableArrayBuilderDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableArray<T>.Builder builder;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableArrayBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="builder">The collection to display in the debugger</param>
+        public ImmutableArrayBuilderDebuggerProxy(ImmutableArray<T>.Builder builder)
+        {
+            this.builder = builder;
+        }
+
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] A
+        {
+            get
+            {
+                return this.builder.ToArray();
             }
         }
     }
