@@ -2379,13 +2379,17 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 	MonoContext ctx;
 #endif
-	GString* text = g_string_new (0);
+	GString* text;
 	char *name;
 #ifndef HOST_WIN32
 	char *wapi_desc;
 #endif
 	GError *error = NULL;
 
+	if (!thread)
+		return;
+
+	text = g_string_new (0);
 	if (thread->name) {
 		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &error);
 		g_assert (!error);
